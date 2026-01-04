@@ -220,6 +220,9 @@ export function useMayaChat({
     },
   })
 
+  // Ref to track retry state and prevent infinite recursion
+  const loadChatRetryRef = useRef(false)
+
   // Load chat function
   const loadChat = useCallback(
     async (specificChatId?: number, explicitChatType?: string) => {
@@ -240,8 +243,38 @@ export function useMayaChat({
         console.log("[useMayaChat] Load chat response status:", response.status)
 
         if (!response.ok) {
+          // Handle 404 gracefully - if specific chat not found, create new one
+          if (response.status === 404) {
+            if (specificChatId && !loadChatRetryRef.current) {
+              // Specific chat not found - clear it and create new chat (only retry once)
+              console.warn("[useMayaChat] Chat not found (404), creating new chat")
+              setChatId(null)
+              saveChatIdToStorage(null, chatType)
+              loadChatRetryRef.current = true // Prevent infinite recursion
+              // Create new chat by calling loadChat again without specificChatId
+              const result = await loadChat(undefined, explicitChatType)
+              loadChatRetryRef.current = false // Reset after retry
+              return result
+            } else {
+              // User not found or other 404 - log error but don't crash
+              const errorText = await response.text().catch(() => "Unknown error")
+              console.error("[useMayaChat] Failed to load chat (404):", errorText)
+              setIsLoadingChat(false)
+              loadChatRetryRef.current = false // Reset on error
+              // Set empty state instead of throwing
+              setChatId(null)
+              setChatTitle("Chat with Maya")
+              setMessages([])
+              return
+            }
+          }
+          // For other errors, throw as before
+          loadChatRetryRef.current = false // Reset on error
           throw new Error(`Failed to load chat: ${response.status}`)
         }
+        
+        // Reset retry flag on success
+        loadChatRetryRef.current = false
 
         let data: any
         try {

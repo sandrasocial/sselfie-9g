@@ -35,7 +35,7 @@ interface FeedPreviewCardProps {
   isSaved?: boolean // Flag to indicate if feed is saved
   onSave?: (feedId: number) => void // Callback when feed is saved
   // Options for saving (passed from parent)
-  studioProMode?: boolean
+  proMode?: boolean // 🔴 FIX: Changed from studioProMode to proMode
   styleStrength?: number
   promptAccuracy?: number
   aspectRatio?: string
@@ -53,7 +53,7 @@ export default function FeedPreviewCard({
   strategy,
   isSaved: isSavedProp = true, // Default to true for backward compatibility
   onSave,
-  studioProMode = false,
+  proMode = false, // 🔴 FIX: Changed from studioProMode to proMode
   styleStrength = 0.8,
   promptAccuracy = 0.8,
   aspectRatio = "1:1",
@@ -387,7 +387,7 @@ export default function FeedPreviewCard({
     try {
       console.log("[FeedPreviewCard] 💾 Saving feed strategy...", {
         hasStrategy: !!strategy,
-        studioProMode,
+        proMode,
         styleStrength,
         promptAccuracy,
         aspectRatio,
@@ -395,7 +395,8 @@ export default function FeedPreviewCard({
       })
 
       const options: CreateFeedOptions = {
-        studioProMode,
+        // 🔴 FIX: Pass userModePreference based on proMode toggle
+        userModePreference: proMode ? 'pro' : 'classic',
         customSettings: {
           styleStrength,
           promptAccuracy,
@@ -465,11 +466,13 @@ export default function FeedPreviewCard({
             credentials: 'include',
             body: JSON.stringify({
               strategy,
-              studioProMode,
-              styleStrength,
-              promptAccuracy,
-              aspectRatio,
-              realismStrength,
+              userModePreference: proMode ? 'pro' : 'classic', // 🔴 FIX: Pass userModePreference instead of proMode
+              customSettings: {
+                styleStrength,
+                promptAccuracy,
+                aspectRatio,
+                realismStrength,
+              },
             }),
           })
 

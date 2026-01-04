@@ -39,7 +39,7 @@ interface MayaPromptsTabProps {
   userId?: string
   creditBalance?: number
   onCreditsUpdate?: (newBalance: number) => void
-  studioProMode?: boolean
+  proMode?: boolean // 🔴 FIX: Changed from studioProMode to proMode
   imageLibrary?: {
     selfies: string[]
     products: string[]
@@ -56,7 +56,7 @@ export default function MayaPromptsTab({
   userId,
   creditBalance,
   onCreditsUpdate,
-  studioProMode = false,
+  proMode = false, // 🔴 FIX: Changed from studioProMode to proMode
   imageLibrary: externalImageLibrary,
   onOpenUploadFlow,
 }: MayaPromptsTabProps) {
@@ -599,7 +599,7 @@ export default function MayaPromptsTab({
     generatedImages.forEach((genImage, promptId) => {
       // For Pro mode: only need predictionId
       // For Classic mode: need both predictionId and generationId
-      const canPoll = studioProMode
+      const canPoll = proMode
         ? (genImage.isGenerating && genImage.predictionId && !genImage.isGenerated)
         : (genImage.isGenerating && genImage.predictionId && genImage.generationId && !genImage.isGenerated)
       
@@ -607,8 +607,9 @@ export default function MayaPromptsTab({
         const interval = setInterval(async () => {
           try {
             // Use different polling endpoint based on mode
-            const pollingUrl = studioProMode
-              ? `/api/maya/check-studio-pro?predictionId=${genImage.predictionId}`
+            // 🔴 FIX: Pro Mode uses /api/maya/pro/check-generation (not deleted /api/maya/check-studio-pro)
+            const pollingUrl = proMode
+              ? `/api/maya/pro/check-generation?predictionId=${genImage.predictionId}`
               : `/api/maya/check-generation?predictionId=${genImage.predictionId}&generationId=${genImage.generationId}`
             
             const response = await fetch(pollingUrl)
@@ -672,7 +673,7 @@ export default function MayaPromptsTab({
             clearInterval(interval)
             pollIntervals.delete(promptId)
           }
-        }, studioProMode ? 5000 : 3000) // Poll every 5s for Pro, 3s for Classic
+        }, proMode ? 5000 : 3000) // Poll every 5s for Pro, 3s for Classic
 
         pollIntervals.set(promptId, interval)
       }
@@ -681,7 +682,7 @@ export default function MayaPromptsTab({
     return () => {
       pollIntervals.forEach((interval) => clearInterval(interval))
     }
-  }, [generatedImages, studioProMode])
+  }, [generatedImages, proMode])
 
   const fetchPrompts = async () => {
     setIsLoading(true)
@@ -769,7 +770,7 @@ export default function MayaPromptsTab({
       let response: Response
       let data: any
 
-      if (studioProMode) {
+      if (proMode) {
         // PRO MODE: Use Nano Banana Pro with image library
         // Check if we have at least selfies (required for Pro mode)
         if (imageLibrary.selfies.length === 0) {
@@ -789,18 +790,17 @@ export default function MayaPromptsTab({
           return
         }
 
-        response = await fetch("/api/maya/generate-studio-pro", {
+        // 🔴 FIX: Use Pro Mode API endpoint instead of deleted Studio Pro endpoint
+        response = await fetch("/api/maya/pro/generate-image", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify({
-            mode: "brand-scene", // Use brand-scene mode for prompt-based generation
-            userRequest: prompt.prompt_text, // Use the prompt text directly
-            inputImages: {
-              baseImages: imageLibrary.selfies.map(url => ({ url, type: 'user-photo' })),
-              productImages: imageLibrary.products.map(url => ({ url, label: 'Product', type: 'product' })),
-              styleRefs: [...imageLibrary.people, ...imageLibrary.vibes].map(url => ({ url, type: 'style-reference' }))
-            },
+            fullPrompt: prompt.prompt_text, // Use the prompt text as full prompt
+            conceptTitle: prompt.concept_title || "Prompt Generation",
+            conceptDescription: prompt.guide_description || "",
+            category: prompt.category || "concept",
+            linkedImages: imageLibrary.selfies.slice(0, 5), // Use up to 5 selfies
             resolution: "2K",
             aspectRatio: "1:1"
           }),
@@ -810,7 +810,7 @@ export default function MayaPromptsTab({
         try {
           data = JSON.parse(text)
         } catch (jsonError) {
-          console.error("[MayaPromptsTab] Failed to parse Studio Pro response:", jsonError)
+          console.error("[MayaPromptsTab] Failed to parse Pro Mode response:", jsonError)
           throw new Error("Invalid response from server. Please try again.")
         }
       } else {
@@ -860,14 +860,14 @@ export default function MayaPromptsTab({
       }
 
       // Update with prediction ID and generation ID
-      // Studio Pro returns predictionId, Classic returns both predictionId and generationId
+      // Pro Mode returns predictionId (generationId may be null), Classic returns both predictionId and generationId
       setGeneratedImages((prev) => {
         const newMap = new Map(prev)
         newMap.set(prompt.id, {
           promptId: prompt.id,
           imageUrl: existingGen?.imageUrl || null, // Keep existing image if regenerating
           predictionId: data.predictionId,
-          generationId: studioProMode ? null : (data.generationId?.toString() || null), // Classic mode only
+          generationId: proMode ? null : (data.generationId?.toString() || null), // Classic mode only
           isGenerating: true,
           isGenerated: false,
           error: null,
