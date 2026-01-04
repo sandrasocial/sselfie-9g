@@ -120,7 +120,6 @@ export function useMayaChat({
   const savedMessageIds = useRef(new Set<string>())
   const lastModeRef = useRef<string | null>(null)
   const hasClearedStateRef = useRef(false)
-  const previousActiveTabRef = useRef<string | undefined>(activeTab) // Track previous tab for tab switch detection
 
   // Helper function to get the correct chatType based on activeTab
   // Feed tab uses "feed-planner", otherwise use getModeString() result
@@ -158,9 +157,11 @@ export function useMayaChat({
 
   // Create a unique ID for the chat session to force useChat to reset when chatId changes
   // This ensures that when a new chat is created, all previous messages are cleared
+  // NOTE: We DON'T include currentChatType here because each tab stores its own chatId
+  // Including chatType causes useChat to reset on tab switch, which clears messages
   const chatSessionId = useMemo(() => {
-    return `maya-chat-${chatId || 'new'}-${currentChatType}`
-  }, [chatId, currentChatType])
+    return `maya-chat-${chatId || 'new'}`
+  }, [chatId])
 
   const { messages, sendMessage, status, setMessages } = useChat({
     id: chatSessionId, // Force reset when chatId or chatType changes
@@ -524,59 +525,6 @@ export function useMayaChat({
     // loadChat is NOT in dependencies to avoid infinite loops, but we pass currentChatType explicitly
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, studioProMode, activeTab])
-
-  // 🔧 FIX: Dedicated useEffect to handle tab switching
-  // When user switches between Photos/Feed tabs, reload the correct chat for that tab
-  useEffect(() => {
-    // Check if tab actually changed (not just initial render or re-render)
-    const previousTab = previousActiveTabRef.current
-    const tabActuallyChanged = previousTab !== activeTab && previousTab !== undefined
-    
-    // Update ref for next comparison
-    previousActiveTabRef.current = activeTab
-    
-    // Skip if:
-    // 1. Tab didn't actually change (initial render or re-render with same tab)
-    // 2. This is the first load (no chat loaded yet)
-    // 3. User is not available
-    // 4. Currently loading a chat
-    if (!tabActuallyChanged || !hasLoadedChatRef.current || !user || isLoadingChat) {
-      if (!tabActuallyChanged) {
-        console.log("[useMayaChat] 🔄 Tab switch useEffect: No actual tab change detected, skipping")
-      }
-      return
-    }
-    
-    console.log("[useMayaChat] 🔄 Tab switch detected - activeTab changed from", previousTab, "to", activeTab, "- reloading chat")
-    
-    // Reset loading flag to allow reload
-    hasLoadedChatRef.current = false
-    
-    // Get the correct chatType for the current tab
-    const newChatType = getChatType()
-    
-    // Check if there's a saved chat for this tab
-    const savedChatIdForTab = loadChatIdFromStorage(newChatType)
-    
-    if (savedChatIdForTab) {
-      console.log("[useMayaChat] 🔄 Loading saved chat for", newChatType, "tab:", savedChatIdForTab)
-      loadChat(savedChatIdForTab, newChatType).catch((error) => {
-        console.error("[useMayaChat] ❌ Error loading chat after tab switch:", error)
-        setIsLoadingChat(false)
-        hasLoadedChatRef.current = false
-      })
-    } else {
-      console.log("[useMayaChat] 🔄 No saved chat for", newChatType, "tab - loading most recent")
-      loadChat(undefined, newChatType).catch((error) => {
-        console.error("[useMayaChat] ❌ Error loading chat after tab switch:", error)
-        setIsLoadingChat(false)
-        hasLoadedChatRef.current = false
-      })
-    }
-  }, [activeTab]) // Only watch activeTab changes
-  // Note: We deliberately don't include loadChat, getChatType, etc. in dependencies
-  // because we only want this to run when the tab actually switches
-  // eslint-disable-next-line react-hooks/exhaustive-deps
 
   // Save chatId to localStorage when it changes (chat-type-specific)
   // BUT: Skip saving if we're in the middle of creating a new chat (to prevent reload)

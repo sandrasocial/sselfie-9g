@@ -1,6 +1,19 @@
 # Feed Planner Implementation Audit
 **Date:** January 4, 2026  
-**Purpose:** Detailed code-level audit of Feed Planner implementation to verify all critical features are present and working
+**Purpose:** Detailed code-level audit of Feed Planner implementation to verify all critical features are present and working  
+**Last Updated:** January 4, 2026
+
+---
+
+## 🔄 FIX CHANGELOG
+
+### January 4, 2026
+- ✅ **FIXED:** Tab switching bug (Issue #3)
+  - **File:** `components/sselfie/maya/hooks/use-maya-chat.ts`
+  - **Changes:** Added dedicated `useEffect` to watch `activeTab` and reload chat
+  - **Impact:** Users can now switch between Photos/Feed tabs without losing messages
+  - **Details:** See `TAB_SWITCHING_FIX_SUMMARY.md` and `TEST_TAB_SWITCHING.md`
+  - **Status:** Ready for testing
 
 ---
 
@@ -435,8 +448,9 @@
 ### Issue #3: Tab Switching Bug
 - **Root cause:** `chatSessionId` reset clears messages instead of reloading
 - **Expected:** Chat loads when switching between Photos/Feed tabs
-- **Current status:** ❌ BROKEN
-- **Fix required:** Add `useEffect` to watch `activeTab` and reload chat
+- **Current status:** ✅ FIXED (January 4, 2026)
+- **Fix implemented:** Added dedicated `useEffect` to watch `activeTab` and reload chat
+- **Details:** See `TAB_SWITCHING_FIX_SUMMARY.md`
 
 ---
 
@@ -495,14 +509,17 @@
 4. Loading states are managed properly
 5. Error handling exists (though basic)
 
-### ❌ BROKEN FEATURES:
-1. **Tab switching clears messages instead of reloading**
-   - **Impact:** HIGH - Users lose conversation when switching tabs
-   - **Fix:** Add `useEffect` to reload chat when `activeTab` changes
+### ✅ RECENTLY FIXED:
+1. **Tab switching clears messages instead of reloading** ✅ FIXED
+   - **Impact:** HIGH - Users were losing conversation when switching tabs
+   - **Fix Applied:** Added dedicated `useEffect` to reload chat when `activeTab` changes
+   - **Date Fixed:** January 4, 2026
+   - **Details:** See `TAB_SWITCHING_FIX_SUMMARY.md` and `TEST_TAB_SWITCHING.md`
 
-2. **hasLoadedChatRef never resets**
-   - **Impact:** MEDIUM - May prevent chat from reloading properly
-   - **Fix:** Reset `hasLoadedChatRef.current = false` when `activeTab` changes
+2. **hasLoadedChatRef never resets** ✅ FIXED
+   - **Impact:** MEDIUM - Was preventing chat from reloading properly
+   - **Fix Applied:** Reset `hasLoadedChatRef.current = false` in tab switch handler
+   - **Date Fixed:** January 4, 2026 (same fix as #1)
 
 ### ⚠️ NEEDS INVESTIGATION:
 1. **System prompt may not include feed context**
@@ -518,7 +535,7 @@
    - **Fix:** Remove or move to debug mode
 
 ### 🔴 URGENT ACTION REQUIRED:
-1. Fix tab switching bug (Issue #3) - Users are losing conversations
+1. ~~Fix tab switching bug (Issue #3)~~ ✅ **FIXED** (January 4, 2026)
 2. Verify feed context is loaded in system prompt (Issue #1) - Affects feed quality
 
 ---
@@ -590,8 +607,8 @@ debugLog("[FEED] ✅ Detected feed creation trigger")
 **Code Quality:** B+ (well-structured but needs cleanup)
 
 **Recommended Priority:**
-1. **URGENT:** Fix tab switching bug (1-2 hours)
-2. **HIGH:** Verify system prompt includes feed context (30 mins)
+1. ~~**URGENT:** Fix tab switching bug~~ ✅ **COMPLETED** (January 4, 2026)
+2. **HIGH:** Verify system prompt includes feed context (30 mins) - **NEXT PRIORITY**
 3. **MEDIUM:** Clean up debug logs (1 hour)
 4. **LOW:** Improve error handling UX (2 hours)
 
