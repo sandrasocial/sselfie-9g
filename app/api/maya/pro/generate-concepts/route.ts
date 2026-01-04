@@ -1,3 +1,31 @@
+/**
+ * PRO MODE CONCEPT GENERATION API
+ * 
+ * PURPOSE: Generates concepts for Pro Mode (Nano Banana Pro) image generation.
+ * 
+ * FLOW:
+ * 1. User requests concepts in Pro Mode
+ * 2. System uses Maya's AI personality to generate natural language prompts
+ * 3. System prompt instructs Maya to use brand-library-2025.ts for brand variety
+ * 4. Post-processing removes markdown, ensures identity preservation phrase
+ * 5. Output: 150-400 word natural language prompts with linked images
+ * 
+ * KEY FEATURES:
+ * - Identity preservation phrase (required for Nano Banana Pro)
+ * - Brand intelligence via brand-library-2025.ts (dynamic variety)
+ * - Natural flowing sentences (no markdown)
+ * - Editorial, Pinterest-style format
+ * - Image linking (3-5 images per concept)
+ * 
+ * DIFFERENCES FROM CLASSIC MODE:
+ * - No trigger words (Nano Banana Pro doesn't need them)
+ * - Identity preservation phrase instead
+ * - Longer, more detailed prompts (150-400 words)
+ * - Natural language only (no technical specs)
+ * 
+ * Last Updated: January 4, 2026 (Post-cleanup: Added brand intelligence, fixed prompts)
+ */
+
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"

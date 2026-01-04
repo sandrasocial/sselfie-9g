@@ -1,3 +1,33 @@
+/**
+ * CLASSIC MODE CONCEPT GENERATION API
+ * 
+ * PURPOSE: Generates concepts for Classic Mode (Flux LoRA) image generation.
+ * 
+ * FLOW:
+ * 1. User requests concepts in Classic Mode
+ * 2. API calls buildPrompt() or buildPromptWithFeatures() from prompt-constructor.ts
+ * 3. Builder uses brand-library-2025.ts for brand intelligence
+ * 4. Output: 250-500 word prompts with trigger word
+ * 
+ * KEY FEATURES:
+ * - Trigger word included (required for Flux LoRA)
+ * - Brand names from brand-library-2025.ts
+ * - Technical camera/lighting specs
+ * - Concise, structured format
+ * 
+ * PROMPT BUILDER:
+ * - Uses: prompt-constructor.ts (buildPrompt, buildPromptWithFeatures)
+ * - Intelligence: brand-library-2025.ts (generateCompleteOutfit)
+ * 
+ * DIFFERENCES FROM PRO MODE:
+ * - Uses trigger words (Flux LoRA requirement)
+ * - Shorter, more technical prompts
+ * - Structured format with camera specs
+ * - No identity preservation phrase
+ * 
+ * Last Updated: January 4, 2026 (Post-cleanup: Verified working correctly)
+ */
+
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"

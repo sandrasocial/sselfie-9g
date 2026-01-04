@@ -1,12 +1,28 @@
 /**
- * PROMPT CONSTRUCTOR
+ * PROMPT CONSTRUCTOR - Classic Mode Builder
  * 
- * Builds prompts EXACTLY like our actual prompt library.
+ * PURPOSE: Builds prompts for Classic Mode (Flux LoRA) image generation.
+ * 
+ * USAGE:
+ * - Called from: app/api/maya/generate-concepts/route.ts (Classic Mode)
+ * - Used by: Classic Mode concept generation and image generation
+ * 
+ * OUTPUT FORMAT:
+ * - Length: 250-500 words
+ * - Structure: Trigger word + brand names + detailed descriptions + camera specs
+ * - Style: Technical, includes camera specs, lighting details, aesthetic reference
+ * 
+ * INTELLIGENCE SOURCE:
+ * - Uses brand-library-2025.ts for brand intelligence (generateCompleteOutfit)
+ * - Includes real brand names: Alo Yoga, Lululemon, Nike, The Row, Bottega, etc.
+ * 
+ * KEY FUNCTIONS:
+ * - buildPrompt() - Main prompt builder
+ * - buildPromptWithFeatures() - Enhanced version with additional features
+ * - validatePromptLength() - Ensures prompt length is within limits
+ * 
  * Based on 100+ real prompts used in production.
- * 
- * Output: 250-500 words with specific brand names, detailed descriptions,
- * camera specs, lighting, location details, aesthetic reference,
- * "Hyper-realistic" + "4K resolution"
+ * Last Updated: January 4, 2026 (Post-cleanup)
  */
 
 import { generateCompleteOutfit, getDetailedDescription } from './brand-library-2025'

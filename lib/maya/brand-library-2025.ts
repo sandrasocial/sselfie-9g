@@ -1,13 +1,33 @@
 /**
- * BRAND LIBRARY 2025
+ * BRAND LIBRARY 2025 - Core Brand Intelligence
  * 
- * Based on 100+ real prompts used in production.
- * Critical rules:
+ * PURPOSE: Primary source of brand intelligence for Maya's prompt system.
+ * Contains 100+ real brand items with specific product names, colors, and details.
+ * 
+ * USAGE:
+ * - Used by: prompt-constructor.ts (Classic Mode)
+ * - Used by: prompt-constructor-enhanced.ts (Pro Mode)
+ * - Used by: app/api/maya/pro/generate-concepts/route.ts (Pro Mode system prompt)
+ * 
+ * KEY FUNCTIONS:
+ * - generateCompleteOutfit() - Generates complete outfit with brand names
+ * - getDetailedDescription() - Gets detailed description of brand items
+ * 
+ * BRAND RULES:
  * - ✅ ALWAYS brand: Alo Yoga, Lululemon, Adidas Gazelle, Nike AF1, New Balance 550, Levi's 501, UGG slippers, Bottega bags
  * - ⚡ SOMETIMES brand: Outerwear, basic tops, accessories
  * - ❌ USUALLY DON'T brand: "white sneakers", generic basics, jewelry (unless Cartier)
  * - 💎 MAX 1-2 luxury pieces per outfit (usually just the bag)
  * - 🎯 Athletic brands for athletic, casual brands for casual
+ * 
+ * BRANDS INCLUDED:
+ * - Athletic: Alo Yoga, Lululemon, Nike, Adidas, New Balance
+ * - Luxury: The Row, Bottega Veneta, Toteme, Khaite, Brunello Cucinelli
+ * - Casual: Everlane, COS, Arket, Levi's
+ * - And 90+ more brands
+ * 
+ * Based on 100+ real prompts used in production.
+ * Last Updated: January 4, 2026 (Post-cleanup)
  */
 
 // ============================================================================
