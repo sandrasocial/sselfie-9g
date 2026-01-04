@@ -69,6 +69,8 @@ export async function GET(req: NextRequest) {
     // Include username and brandName for consistency
     const username = feedLayout.username || ""
     const brandName = feedLayout.brand_name || ""
+    // Include user's display name
+    const userDisplayName = user.display_name || user.name || user.email?.split("@")[0] || "User"
 
     return Response.json({
       exists: true,
@@ -78,6 +80,7 @@ export async function GET(req: NextRequest) {
       highlights: highlights || [],
       username,
       brandName,
+      userDisplayName,
     })
   } catch (error: any) {
     console.error("[v0] ❌ Error fetching latest feed:", {

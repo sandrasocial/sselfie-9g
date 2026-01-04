@@ -68,6 +68,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ feed
       // Include username and brandName for consistency with /api/feed/latest response format
       const username = feedLayout.username || ""
       const brandName = feedLayout.brand_name || ""
+      // Include user's display name
+      const userDisplayName = user.display_name || user.name || user.email?.split("@")[0] || "User"
 
       return Response.json({
         exists: true,
@@ -77,6 +79,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ feed
         highlights: highlights || [],
         username,
         brandName,
+        userDisplayName,
       })
     }
 
@@ -344,11 +347,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ feed
       return Response.json({ error: "Invalid feed data structure" }, { status: 500 })
     }
 
+    // Include user's display name
+    const userDisplayName = user.display_name || user.name || user.email?.split("@")[0] || "User"
+
     const response = {
       feed: feedObject,
       posts: feedPosts || [],
       bio: bios && bios.length > 0 ? bios[0] : null,
       highlights: highlights || [],
+      userDisplayName,
     }
 
     console.log("[v0] [FEED API] Returning feed data:", {

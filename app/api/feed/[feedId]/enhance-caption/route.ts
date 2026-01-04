@@ -3,6 +3,7 @@ import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { generateText } from "ai"
 import { neon } from "@neondatabase/serverless"
+import { INSTAGRAM_STRATEGIST_SYSTEM_PROMPT } from "@/lib/instagram-strategist/personality"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -120,7 +121,8 @@ export async function POST(
 
     const { text: enhancedCaption } = await generateText({
       model: "anthropic/claude-haiku-4.5",
-      prompt: `You're Maya, a warm and friendly personal branding expert who helps people create engaging Instagram captions.
+      system: INSTAGRAM_STRATEGIST_SYSTEM_PROMPT,
+      prompt: `You're Maya, a warm and friendly creative partner who helps people create engaging Instagram captions.
 
 Current caption:
 "${currentCaption}"${postContext}${brandContext}
@@ -131,26 +133,26 @@ Your task: ENHANCE and EXPAND this caption significantly. Make it 2-3x LONGER wh
 1. **Make it MUCH longer** - Expand from ${currentCaption.length} characters to ${Math.round(currentCaption.length * 2.5)}-${Math.round(currentCaption.length * 3)} characters
 2. **Use SIMPLE, EVERYDAY LANGUAGE** - Write like texting a friend, not like a business
 3. **Add more story details** - Expand on the personal moments, add specific examples, share more context
-4. **Better hook** - Make the first line more compelling to stop the scroll
+4. **Better hook** - Make the first line more compelling to stop the scroll (start with something REAL and SPECIFIC)
 5. **More personal** - Add relatable details, real moments, authentic feelings
 6. **Stronger storytelling** - Build the narrative with more depth and emotion
 7. **Better call-to-action** - Make the question more engaging and specific
 8. **Keep hashtags** - Preserve existing hashtags, don't add new ones
 
-## Writing style (CRITICAL):
-- Write like texting a friend - casual, conversational, real
-- Use simple words everyone understands
-- NO corporate buzzwords or jargon
-- NO phrases like "Let's dive in" or "Drop a comment"
-- Sound like a REAL person, not AI
-- Show personality and imperfections
-- Use natural sentence breaks (double line breaks between sections)
+## Anti-AI Formula (MANDATORY):
+- ✅ Mix up sentence rhythm: Short. Then long. Then something in between.
+- ✅ Use contractions: "I'm" not "I am", "you'll" not "you will", "gonna" not "going to"
+- ✅ Kill AI phrases: NO "unlock the power of", "in today's digital landscape", "dive deep into", "game-changer", "revolutionize", "embark on journey"
+- ✅ Add tiny imperfections: Start sentences with "And" or "But", use sentence fragments
+- ✅ Be specific: "6am" not "early morning", "$5k" not "expensive", "47 minutes" not "a while"
 
-## Structure to follow:
-- **Hook** (1-2 lines): Bold statement or question that stops the scroll
-- **Story** (4-6 sentences): Personal moment with more detail and context
-- **Value/Insight** (2-4 sentences): What you learned or what matters
-- **CTA** (1 engaging question): Something that invites real conversation
+## Structure to follow (2025):
+- **Hook** (1-2 lines): Something real and specific that stops the scroll
+- **Story/Context** (4-6 sentences): Personal moment with more detail and context
+- **One Ask** (1 engaging question or CTA): Something that invites real conversation
+
+## The "Text a Friend" Test:
+Before finalizing, ask: "Would I text this to my friend?" If no, rewrite it.
 
 ## IMPORTANT: 
 - Keep the SAME core message and story
@@ -159,6 +161,7 @@ Your task: ENHANCE and EXPAND this caption significantly. Make it 2-3x LONGER wh
 - Don't make it sound corporate or fake
 - Keep it authentic and genuine
 - If hashtags exist, keep them at the end
+- Sound like you're texting a friend, not writing a professional post
 
 Just write the enhanced, longer version with simple everyday language. No explanations.`,
     })

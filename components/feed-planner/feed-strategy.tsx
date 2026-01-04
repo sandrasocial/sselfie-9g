@@ -1,29 +1,128 @@
 "use client"
 
+import { useState } from "react"
 import ReactMarkdown from "react-markdown"
+import { toast } from "@/hooks/use-toast"
 
 interface FeedStrategyProps {
   feedData: any
+  feedId: number
   onCreateStrategy?: () => void
+  onStrategyGenerated?: () => void
 }
 
-export default function FeedStrategy({ feedData, onCreateStrategy }: FeedStrategyProps) {
+export default function FeedStrategy({ feedData, feedId, onCreateStrategy, onStrategyGenerated }: FeedStrategyProps) {
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [generatedStrategy, setGeneratedStrategy] = useState<string | null>(null)
+
+  const handleCreateStrategy = async () => {
+    if (!feedId) {
+      toast({
+        title: "Error",
+        description: "Feed ID is missing",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsGenerating(true)
+    setGeneratedStrategy(null)
+
+    try {
+      const response = await fetch(`/api/feed/${feedId}/generate-strategy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Failed to generate strategy' }))
+        throw new Error(errorData.error || 'Failed to generate strategy')
+      }
+
+      const data = await response.json()
+      
+      if (data.success && data.strategy) {
+        setGeneratedStrategy(data.strategy)
+        
+        // Auto-save strategy to feed
+        try {
+          const saveResponse = await fetch(`/api/feed/${feedId}/add-strategy`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ strategy: data.strategy }),
+          })
+
+          if (saveResponse.ok) {
+            toast({
+              title: "Strategy created!",
+              description: "Your comprehensive Instagram strategy is ready",
+            })
+            
+            if (onStrategyGenerated) {
+              onStrategyGenerated()
+            }
+          }
+        } catch (saveError) {
+          console.error("[FeedStrategy] Error saving strategy:", saveError)
+          // Don't show error - strategy is still generated, just not saved
+        }
+      } else {
+        throw new Error(data.error || 'Failed to generate strategy')
+      }
+    } catch (error) {
+      console.error("[FeedStrategy] Error generating strategy:", error)
+      const errorMessage = error instanceof Error ? error.message : "Failed to generate strategy. Please try again."
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      })
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  // Use generated strategy if available, otherwise use feed description
+  const displayStrategy = generatedStrategy || feedData.feed?.description
+
   return (
     <div className="p-4 md:p-8">
       {/* Create Strategy Button - Show if no strategy exists */}
-      {!feedData.feed?.description && (
-        <div className="flex justify-center pb-6">
-          <button
-            onClick={onCreateStrategy}
-            className="px-6 py-3 bg-stone-900 text-white rounded-xl text-sm font-medium hover:bg-stone-800 transition-colors flex items-center gap-2"
-          >
-            <span>Create Strategy</span>
-          </button>
+      {!displayStrategy && (
+        <div className="flex flex-col items-center justify-center py-12 space-y-6">
+          {isGenerating ? (
+            <div className="flex flex-col items-center space-y-4 max-w-md text-center">
+              <div className="w-8 h-8 border-2 border-stone-300 border-t-stone-900 rounded-full animate-spin" />
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-stone-900">I'm crafting your comprehensive strategy...</p>
+                <p className="text-xs text-stone-500">This includes posting schedules, reel ideas, hashtags, and growth tactics! ✨</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="text-center space-y-2 max-w-md">
+                <h3 className="text-lg font-semibold text-stone-900">Create Your Instagram Strategy</h3>
+                <p className="text-sm text-stone-600">
+                  Get a comprehensive strategy including posting schedules, reel ideas, hashtag strategy, growth tactics, and more.
+                </p>
+              </div>
+              <button
+                onClick={handleCreateStrategy}
+                disabled={isGenerating}
+                className="px-6 py-3 bg-stone-900 text-white rounded-xl text-sm font-medium hover:bg-stone-800 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span>Create Strategy</span>
+              </button>
+            </>
+          )}
         </div>
       )}
       {/* Full Strategy Document */}
+      {displayStrategy && (
       <div className="bg-white/50 backdrop-blur-3xl border border-white/60 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-xl shadow-stone-900/5">
-        {feedData.feed?.description ? (
+        {displayStrategy ? (
           <div className="prose prose-sm max-w-none prose-headings:font-serif prose-headings:font-light prose-headings:text-stone-900 prose-headings:tracking-wide prose-h1:text-2xl prose-h1:mb-4 prose-h2:text-xl prose-h2:mt-8 prose-h2:mb-4 prose-h3:text-lg prose-h3:mt-6 prose-h3:mb-3 prose-p:text-stone-700 prose-p:leading-relaxed prose-p:mb-4 prose-strong:text-stone-900 prose-strong:font-medium prose-ul:text-stone-700 prose-ol:text-stone-700 prose-li:text-stone-700 prose-li:leading-relaxed prose-li:mb-2 prose-code:text-stone-600 prose-code:bg-stone-100 prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:text-xs prose-blockquote:border-l-4 prose-blockquote:border-stone-300 prose-blockquote:pl-4 prose-blockquote:italic prose-blockquote:text-stone-600">
             <ReactMarkdown
               components={{
@@ -59,15 +158,12 @@ export default function FeedStrategy({ feedData, onCreateStrategy }: FeedStrateg
                 ),
               }}
             >
-              {feedData.feed.description}
+              {displayStrategy}
             </ReactMarkdown>
           </div>
-        ) : (
-          <div className="text-sm font-light text-stone-600 leading-relaxed">
-            Strategy document is being generated...
-          </div>
-        )}
+        ) : null}
       </div>
+      )}
 
       {/* Posting Strategy */}
       {feedData.strategy?.posting_schedule && (

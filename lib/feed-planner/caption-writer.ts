@@ -20,6 +20,9 @@ interface CaptionWriterParams {
   previousCaptions?: Array<{ position: number; hook?: string; caption?: string }>
   researchData?: any
   narrativeRole?: string
+  // Strategic caption type for variety
+  captionType?: 'story' | 'value' | 'motivational'
+  contentPillars?: any[] // All content pillars from brand profile
 }
 
 interface BioCaptionWriterParams {
@@ -49,7 +52,9 @@ export async function generateInstagramCaption(params: CaptionWriterParams): Pro
     hashtags: strategyHashtags,
     previousCaptions = [],
     researchData,
-    narrativeRole
+    narrativeRole,
+    captionType = 'story',
+    contentPillars = []
   } = params
 
   console.log(`[v0] Caption Writer: Creating caption for post ${postPosition}`)
@@ -104,6 +109,57 @@ CRITICAL: Your hook MUST be completely different. Rotate hook styles:
 `
     : ""
 
+  // Build content pillars context
+  const contentPillarsContext = contentPillars.length > 0
+    ? `
+## CONTENT PILLARS (Use these strategically):
+${contentPillars.map((pillar, idx) => {
+      const name = pillar?.name || pillar || 'General'
+      const desc = pillar?.description || ''
+      return `- **${name}**: ${desc || 'Content theme for this brand'}`
+    }).join('\n')}
+
+Current Post Pillar: **${contentPillar || purpose}**
+`
+    : ''
+
+  // Build caption type instructions
+  const captionTypeInstructions = {
+    story: `
+## CAPTION TYPE: STORY (Personal, Behind-the-Scenes, Journey)
+This caption should:
+- Share a personal story, moment, or experience
+- Be authentic and vulnerable (real talk, not polished)
+- Connect to the user's journey or transformation
+- Use specific details and moments (not generic)
+- Show the "behind the scenes" or "real life" aspect
+- Examples: "Three years ago I couldn't afford...", "Took this at 6am before coffee...", "Nobody talks about how..."
+- Focus on the PERSON, not the image
+`,
+    value: `
+## CAPTION TYPE: VALUE/TIPS (Educational, Actionable, Helpful)
+This caption should:
+- Provide actionable tips, strategies, or insights
+- Teach something valuable to the audience
+- Be specific and practical (not vague advice)
+- Use examples, frameworks, or step-by-step guidance
+- Help the audience solve a problem or achieve a goal
+- Examples: "Here's the exact framework I use...", "3 things that changed everything...", "The mistake I see most people make..."
+- Focus on VALUE, not the image
+`,
+    motivational: `
+## CAPTION TYPE: MOTIVATIONAL/INSPIRATIONAL (Uplifting, Empowering, Transformation)
+This caption should:
+- Inspire and uplift the audience
+- Share transformation or success stories
+- Empower with belief and confidence
+- Use powerful, emotional language (but still human, not corporate)
+- Connect to bigger purpose or vision
+- Examples: "You're closer than you think...", "What if I told you...", "This is your sign to..."
+- Focus on INSPIRATION and TRANSFORMATION, not the image
+`,
+  }[captionType] || ''
+
   const captionPrompt = `Create an Instagram caption for post position ${postPosition} of a 9-post feed.
 
 POST CONTEXT:
@@ -115,6 +171,10 @@ POST CONTEXT:
 ${narrativeRole === "origin" ? "- This is part of the origin/introduction phase (posts 1-3)" : ""}
 ${narrativeRole === "conflict" ? "- This is part of the journey/challenge phase (posts 4-6)" : ""}
 ${narrativeRole === "outcome" ? "- This is part of the outcome/invitation phase (posts 7-9)" : ""}
+
+${captionTypeInstructions}
+
+${contentPillarsContext}
 
 BRAND PROFILE:
 ${JSON.stringify(brandProfile, null, 2)}
@@ -128,34 +188,63 @@ ${strategyConcepts}
 
 ${researchContext}
 
-## CRITICAL REQUIREMENTS:
+## CRITICAL REQUIREMENTS (2025 Human-Sounding Research):
 
-1. **UNIQUE HOOK**: Must be COMPLETELY different from previous hooks. Rotate styles:
-   - Post 1-3: Bold statements, questions, origin story hooks
-   - Post 4-6: Vulnerability, challenges, "nobody talks about" hooks
-   - Post 7-9: Transformation, invitations, community hooks
+1. **THE "TEXT A FRIEND" TEST**: Read your caption out loud. If you wouldn't say it to a friend over coffee, rewrite it. That's the whole game.
 
-2. **Hook-Story-Value-CTA structure (MANDATORY)**
-   - Hook: 1 line that stops the scroll
-   - Story: 2-4 sentences, personal and specific
-   - Value: 1-3 sentences with actionable insight
-   - CTA: 1 engaging question or action
+2. **STRATEGIC CAPTION TYPE (CRITICAL)**: This caption MUST follow the ${captionType.toUpperCase()} type specified above. 
+   - This ensures variety across the 9-post feed (not all the same type)
+   - Each post serves a different purpose: Story, Value/Tips, or Motivational
+   - Use the content pillar "${contentPillar || purpose}" to inform the topic, but keep the ${captionType} format
+   - DO NOT mix types - stick to the assigned type for this post
 
-3. **Authentic Voice**:
+3. **UNIQUE HOOK**: Must be COMPLETELY different from previous hooks. Start with something REAL and SPECIFIC:
+   - Story type: Personal moments, specific details, behind-the-scenes
+   - Value type: Actionable tip, framework, or insight
+   - Motivational type: Empowering statement, transformation moment, or invitation
+   - ❌ NEVER: "Today I'm excited to share..." or "As a [job title], I believe..."
+   - ✅ ALWAYS: Specific, real, and aligned with the caption type
+
+3. **2025 Caption Structure: Hook → Story/Context → One Ask**
+   - Hook: 1-2 lines that stop the scroll (something real and specific)
+   - Story/Context: 2-4 sentences, personal and specific (what happened, why it matters)
+   - One Ask: Clear next step (question, CTA, or invitation)
+
+4. **Anti-AI Formula (MANDATORY)**:
+   - ✅ Mix up sentence rhythm: Short. Then long. Then something in between.
+   - ✅ Use contractions: "I'm" not "I am", "you'll" not "you will", "gonna" not "going to"
+   - ✅ Kill AI phrases: NO "unlock the power of", "in today's digital landscape", "dive deep into", "game-changer", "revolutionize", "embark on journey", "delve into"
+   - ✅ Add tiny imperfections: Start sentences with "And" or "But", use sentence fragments, casual language
+   - ✅ Be specific: "6am" not "early morning", "$5k" not "expensive", "47 minutes" not "a while"
+
+5. **Authentic Voice (Maya's Style)**:
    - Write like texting a friend
-   - Simple, conversational language
-   - NO corporate buzzwords
+   - Simple, everyday language
+   - Use "you" and "I" - make it a conversation
+   - Add emotion: "honestly," "real talk," "not gonna lie"
+   - Include doubt/vulnerability: "I'm still figuring this out but..."
+   - Use parentheses for conversational asides: (like this)
+   - NO corporate buzzwords or jargon
    - NO "Let's dive in" or "Drop a comment"
    - Sound like a REAL person, not AI
 
-4. **Formatting**:
+6. **Formatting**:
    - Double line breaks (\\n\\n) between sections
-   - 2-4 emojis TOTAL, naturally placed
+   - 2-3 emojis TOTAL, naturally placed (max 3)
    - 5-10 strategic hashtags at the end
 
-5. **Length**: 80-150 words (optimal for engagement)
+7. **Length**: 80-150 words (optimal for engagement)
 
-OUTPUT: Only the caption text, ready to post. NO explanations, NO research notes.`
+8. **The Edit Checklist** (apply before finalizing):
+   - Would I text this to my friend? ✓
+   - Did I vary my sentence length? ✓
+   - Am I using normal words? ✓
+   - Does this sound like ME? ✓
+   - Is there a specific detail/story? ✓
+   - Did I use contractions? ✓
+   - Did I kill all AI phrases? ✓
+
+OUTPUT: Only the caption text, ready to post. NO explanations, NO research notes. Sound like you're texting a friend, not writing a professional post.`
 
   const { text } = await generateText({
     model: "anthropic/claude-sonnet-4", // Upgraded to Sonnet 4 for better quality and uniqueness

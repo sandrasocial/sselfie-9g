@@ -1,7 +1,9 @@
 "use client"
 
+import { useState } from "react"
 import Image from "next/image"
 import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Loader2, Copy, Check, Sparkles } from "lucide-react"
+import { toast } from "@/hooks/use-toast"
 
 interface FeedPostsListProps {
   posts: any[]
@@ -9,10 +11,12 @@ interface FeedPostsListProps {
   copiedCaptions: Set<number>
   enhancingCaptions: Set<number>
   isManualFeed?: boolean // Flag to identify manual feeds
+  feedId: number // Feed ID for caption generation
   onToggleCaption: (postId: number) => void
   onCopyCaption: (caption: string, postId: number) => void
   onEnhanceCaption: (postId: number, caption: string) => void
   onAddImage?: (postId: number) => void // Open gallery selector (upload + gallery)
+  onRefresh?: () => void // Callback to refresh feed data after caption generation
 }
 
 export default function FeedPostsList({
@@ -21,28 +25,84 @@ export default function FeedPostsList({
   copiedCaptions,
   enhancingCaptions,
   isManualFeed = false,
+  feedId,
   onToggleCaption,
   onCopyCaption,
   onEnhanceCaption,
   onAddImage,
+  onRefresh,
 }: FeedPostsListProps) {
+  const [isGeneratingCaptions, setIsGeneratingCaptions] = useState(false)
+
+  const handleCreateCaptions = async () => {
+    if (!feedId) {
+      toast({
+        title: "Error",
+        description: "Feed ID is missing",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsGeneratingCaptions(true)
+    try {
+      const response = await fetch(`/api/feed/${feedId}/generate-captions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Failed to generate captions' }))
+        throw new Error(errorData.error || 'Failed to generate captions')
+      }
+
+      const data = await response.json()
+      
+      if (data.success) {
+        toast({
+          title: "Captions generated!",
+          description: data.message || `Successfully created ${data.captionsGenerated || posts.length} captions`,
+        })
+        
+        // Refresh feed data to show new captions
+        if (onRefresh) {
+          await onRefresh()
+        }
+      } else {
+        throw new Error(data.error || 'Failed to generate captions')
+      }
+    } catch (error) {
+      console.error("[v0] Error generating captions:", error)
+      const errorMessage = error instanceof Error ? error.message : "Failed to generate captions. Please try again."
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      })
+    } finally {
+      setIsGeneratingCaptions(false)
+    }
+  }
+
   return (
     <div className="space-y-6 md:space-y-8">
       {/* Create Captions Button - Show if no captions exist */}
       {posts.length > 0 && posts.every((p: any) => !p.caption || p.caption.trim() === "") && (
         <div className="flex justify-center pb-4">
           <button
-            onClick={() => {
-              // Navigate to Maya Feed tab with "Create captions" prompt
-              window.location.href = "/studio#maya/feed"
-              // Small delay to ensure tab is loaded, then trigger prompt
-              setTimeout(() => {
-                // The prompt will be sent via quick prompt click or user can type it
-              }, 500)
-            }}
-            className="px-6 py-3 bg-stone-900 text-white rounded-xl text-sm font-medium hover:bg-stone-800 transition-colors flex items-center gap-2"
+            onClick={handleCreateCaptions}
+            disabled={isGeneratingCaptions}
+            className="px-6 py-3 bg-stone-900 text-white rounded-xl text-sm font-medium hover:bg-stone-800 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <span>Create Captions</span>
+            {isGeneratingCaptions ? (
+              <>
+                <Loader2 size={18} className="animate-spin" />
+                <span>Generating Captions...</span>
+              </>
+            ) : (
+              <span>Create Captions</span>
+            )}
           </button>
         </div>
       )}

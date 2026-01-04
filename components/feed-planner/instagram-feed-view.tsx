@@ -52,6 +52,8 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
     
     setIsSavingBio(true)
     setShowBioModal(true)
+    // Clear existing bio text when starting generation
+    setBioText("")
     
     try {
       // Generate bio using AI
@@ -70,6 +72,7 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
       
       if (data.bio) {
         setBioText(data.bio)
+        setIsSavingBio(false)
         await mutate() // Refresh feed data
         toast({
           title: "Bio generated",
@@ -80,7 +83,13 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
       }
     } catch (error) {
       console.error("[v0] Error generating bio:", error)
+      setIsSavingBio(false)
       const errorMessage = error instanceof Error ? error.message : "Failed to generate bio. Please try again."
+      
+      // If generation fails, load existing bio if available
+      if (feedData?.bio?.bio_text) {
+        setBioText(feedData.bio.bio_text)
+      }
       
       // Check if it's a brand profile error
       if (errorMessage.includes("brand profile")) {
@@ -452,19 +461,20 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
             copiedCaptions={actions.copiedCaptions}
             enhancingCaptions={actions.enhancingCaptions}
             isManualFeed={isManualFeed}
+            feedId={feedId}
             onToggleCaption={actions.toggleCaption}
             onCopyCaption={actions.copyCaptionToClipboard}
             onEnhanceCaption={actions.handleEnhanceCaption}
             onAddImage={setShowGallery}
+            onRefresh={mutate}
           />
         )}
 
         {activeTab === "strategy" && (
           <FeedStrategy
             feedData={feedData}
-            onCreateStrategy={() => {
-              window.location.href = "/studio#maya/feed"
-            }}
+            feedId={feedId}
+            onStrategyGenerated={mutate}
           />
         )}
       </div>
@@ -516,12 +526,15 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => !isSavingBio && setShowBioModal(false)}>
           <div className="bg-white rounded-lg max-w-md w-full p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-semibold text-stone-900">
-              {isSavingBio && !bioText ? "Generating Bio..." : "Edit Bio"}
+              {isSavingBio && !bioText ? "Creating Your Bio" : "Edit Bio"}
             </h2>
             {isSavingBio && !bioText ? (
-              <div className="flex items-center justify-center py-8">
+              <div className="flex flex-col items-center justify-center py-8 space-y-4">
                 <div className="w-6 h-6 border-2 border-stone-300 border-t-stone-900 rounded-full animate-spin" />
-                <span className="ml-3 text-sm text-stone-600">AI is creating your bio...</span>
+                <div className="text-center space-y-2">
+                  <p className="text-sm font-medium text-stone-900">I'm crafting your perfect bio...</p>
+                  <p className="text-xs text-stone-500">This will just take a moment! ✨</p>
+                </div>
               </div>
             ) : (
               <>

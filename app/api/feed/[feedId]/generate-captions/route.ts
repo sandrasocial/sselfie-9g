@@ -8,8 +8,8 @@ const sql = neon(process.env.DATABASE_URL!)
 
 /**
  * Generate captions for all posts in a feed
- * Returns captions as array (for preview cards)
- * Does NOT save to database - user approves first via "Add to Feed"
+ * Saves captions directly to database
+ * Returns success message with caption count
  */
 export async function POST(
   request: NextRequest,
@@ -47,8 +47,7 @@ export async function POST(
         position,
         prompt,
         content_pillar,
-        post_type,
-        description
+        post_type
       FROM feed_posts
       WHERE feed_layout_id = ${feedId}
       AND user_id = ${neonUser.id}
@@ -89,17 +88,71 @@ export async function POST(
 
     console.log(`[GENERATE-CAPTIONS] Generating captions for ${posts.length} posts`)
 
+    // Parse content pillars from brand profile
+    let contentPillars: any[] = []
+    if (brandProfile?.content_pillars) {
+      try {
+        const parsed = typeof brandProfile.content_pillars === 'string' 
+          ? JSON.parse(brandProfile.content_pillars) 
+          : brandProfile.content_pillars
+        contentPillars = Array.isArray(parsed) ? parsed : (parsed?.pillars || [])
+      } catch (error) {
+        console.warn("[GENERATE-CAPTIONS] Failed to parse content_pillars:", error)
+      }
+    }
+
+    // Strategic caption type rotation for 9 posts
+    // Pattern: Story → Value/Tips → Motivational → Story → Value/Tips → Motivational → Story → Value/Tips → Motivational
+    const getCaptionType = (position: number): 'story' | 'value' | 'motivational' => {
+      const pattern: ('story' | 'value' | 'motivational')[] = [
+        'story',        // Post 1: Personal story/origin
+        'value',        // Post 2: Educational tip
+        'motivational', // Post 3: Inspiration
+        'story',        // Post 4: Journey/challenge
+        'value',        // Post 5: Actionable tip
+        'motivational', // Post 6: Transformation
+        'story',        // Post 7: Outcome/success
+        'value',        // Post 8: Advanced tip
+        'motivational', // Post 9: Community/invitation
+      ]
+      return pattern[position - 1] || 'story'
+    }
+
+    // Get content pillar for this post (rotate through available pillars)
+    const getContentPillarForPost = (position: number, postContentPillar: string | null): { name: string; description?: string } => {
+      // If post has a specific content_pillar, use it
+      if (postContentPillar) {
+        return { name: postContentPillar }
+      }
+      
+      // Otherwise, rotate through brand's content pillars
+      if (contentPillars.length > 0) {
+        const pillarIndex = (position - 1) % contentPillars.length
+        const pillar = contentPillars[pillarIndex]
+        return {
+          name: pillar?.name || pillar || 'lifestyle',
+          description: pillar?.description || undefined,
+        }
+      }
+      
+      // Fallback
+      return { name: 'lifestyle' }
+    }
+
     // Generate captions for all posts
     const captionResults = []
     const previousCaptions: Array<{ position: number; caption: string }> = []
 
     for (const post of posts) {
       try {
+        const captionType = getCaptionType(post.position)
+        const pillarInfo = getContentPillarForPost(post.position, post.content_pillar)
+        
         const captionResult = await generateInstagramCaption({
           postPosition: post.position,
           shotType: post.post_type || 'portrait',
-          purpose: post.content_pillar || post.description || 'general',
-          emotionalTone: 'warm',
+          purpose: pillarInfo.name,
+          emotionalTone: captionType === 'motivational' ? 'inspiring' : captionType === 'value' ? 'helpful' : 'warm',
           brandProfile: brandProfile || {
             business_type: 'Personal Brand',
             brand_vibe: 'Strategic',
@@ -108,9 +161,11 @@ export async function POST(
           },
           targetAudience: brandProfile?.target_audience || 'general audience',
           brandVoice: brandProfile?.brand_voice || 'authentic',
-          contentPillar: post.content_pillar || 'lifestyle',
+          contentPillar: pillarInfo.name,
           previousCaptions,
           researchData: researchData || null,
+          captionType, // Pass caption type for strategic variety
+          contentPillars, // Pass all pillars for context
         })
 
         const caption = captionResult.caption || ''
@@ -118,12 +173,21 @@ export async function POST(
         const hashtagMatches = caption.match(/#\w+/g) || []
         const hashtags = hashtagMatches.map(tag => tag.replace('#', ''))
 
+        // Save caption directly to database
+        await sql`
+          UPDATE feed_posts
+          SET caption = ${caption.trim()}, updated_at = NOW()
+          WHERE id = ${post.id}
+          AND feed_layout_id = ${feedId}
+          AND user_id = ${neonUser.id}
+        `
+
         captionResults.push({
           postId: post.id,
           position: post.position,
           caption,
           hashtags,
-          prompt: post.prompt || post.description || '',
+          prompt: post.prompt || '',
         })
 
         // Track for variety in next captions
@@ -132,7 +196,7 @@ export async function POST(
           caption,
         })
 
-        console.log(`[GENERATE-CAPTIONS] ✅ Caption generated for post ${post.position}`)
+        console.log(`[GENERATE-CAPTIONS] ✅ Caption generated and saved for post ${post.position}`)
       } catch (error) {
         console.error(`[GENERATE-CAPTIONS] ❌ Error generating caption for post ${post.position}:`, error)
         // Continue with other posts even if one fails
@@ -141,18 +205,24 @@ export async function POST(
           position: post.position,
           caption: `Check out this post! #instagram #feed`,
           hashtags: ['instagram', 'feed'],
-          prompt: post.prompt || post.description || '',
+          prompt: post.prompt || '',
           error: error instanceof Error ? error.message : 'Failed to generate caption',
         })
       }
     }
 
-    console.log(`[GENERATE-CAPTIONS] ✅ Generated ${captionResults.length} captions`)
+    const successfulCaptions = captionResults.filter(c => !c.error).length
+    const failedCaptions = captionResults.filter(c => c.error).length
+
+    console.log(`[GENERATE-CAPTIONS] ✅ Generated and saved ${successfulCaptions} captions${failedCaptions > 0 ? ` (${failedCaptions} failed)` : ''}`)
 
     return NextResponse.json({
       success: true,
       feedId: parseInt(feedId),
-      captions: captionResults,
+      captionsGenerated: successfulCaptions,
+      captionsFailed: failedCaptions,
+      totalPosts: posts.length,
+      message: `Successfully generated ${successfulCaptions} captions${failedCaptions > 0 ? ` (${failedCaptions} failed)` : ''}`,
     })
   } catch (error) {
     console.error("[GENERATE-CAPTIONS] Error:", error)

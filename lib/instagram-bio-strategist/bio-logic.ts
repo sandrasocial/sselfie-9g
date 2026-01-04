@@ -27,6 +27,13 @@ export async function generateInstagramBio(params: GenerateBioParams): Promise<{
   try {
     const sql = neon(process.env.DATABASE_URL!)
 
+    // Get user's display name (not business name)
+    const [userData] = await sql`
+      SELECT display_name, email FROM users
+      WHERE id = ${userId}
+      LIMIT 1
+    `
+
     const [userProfile] = await sql`
       SELECT instagram_handle, full_name FROM user_profiles
       WHERE user_id = ${userId}
@@ -39,20 +46,14 @@ export async function generateInstagramBio(params: GenerateBioParams): Promise<{
       LIMIT 1
     `
 
-    const [personalBrand] = await sql`
-      SELECT name FROM user_personal_brand
-      WHERE user_id = ${userId}
-      AND is_completed = true
-      LIMIT 1
-    `
-
     const instagramHandle = userProfile?.instagram_handle || brandOnboarding?.instagram_handle || null
-    const businessName = brandOnboarding?.business_name || personalBrand?.name || userProfile?.full_name || null
+    // Use user's display name instead of business name
+    const userDisplayName = userData?.display_name || userProfile?.full_name || (userData?.email ? userData.email.split("@")[0] : null) || null
 
     console.log("[v0] [BIO STRATEGIST] Instagram Handle:", instagramHandle)
-    console.log("[v0] [BIO STRATEGIST] Business Name:", businessName)
+    console.log("[v0] [BIO STRATEGIST] User Display Name:", userDisplayName)
 
-    const prompt = `Create a high-converting Instagram bio for a ${businessType}.
+    const prompt = `Create a high-converting Instagram bio using the 3-Line Power Structure for a ${businessType}.
 
 **Brand Profile:**
 - Business Type: ${businessType}
@@ -60,7 +61,7 @@ export async function generateInstagramBio(params: GenerateBioParams): Promise<{
 ${brandVoice ? `- Brand Voice: ${brandVoice}` : ""}
 ${targetAudience ? `- Target Audience: ${targetAudience}` : ""}
 ${businessGoals ? `- Business Goals: ${businessGoals}` : ""}
-${businessName ? `- Business Name: ${businessName}` : ""}
+${userDisplayName ? `- User Name: ${userDisplayName}` : ""}
 ${instagramHandle ? `- Instagram Handle: @${instagramHandle.replace("@", "")}` : ""}
 
 ${
@@ -70,26 +71,55 @@ ${researchData}
 
 Use these insights to:
 - Identify what makes this brand unique vs competitors
-- Incorporate trending keywords and phrases from the industry
+- Incorporate trending keywords and phrases from the industry (naturally, for search)
 - Address specific pain points or desires of the target audience
 - Position the brand strategically in the market
 `
     : ""
 }
 
-**EXAMPLE FORMAT (follow this structure):**
-"Personal brand strategy for ambitious entrepreneurs ✨ | Founder @SSELFIE STUDIO | Transform your story into influence | Link below 📈"
+**THE 3-LINE POWER STRUCTURE (REQUIRED):**
+Line 1: [WHO YOU HELP] achieve [SPECIFIC RESULT]
+Line 2: [PROOF POINT or UNIQUE APPROACH]
+Line 3: [CLEAR CTA] → [Link description]
+
+**EXAMPLE FORMATS:**
+
+For Thought Leaders:
+"Helping ambitious entrepreneurs build 6-figure businesses 💼 | 10+ years coaching | Free guide → Link below"
+
+For Product-Based:
+"Sustainable fashion for conscious consumers 🌿 | Ethically sourced, planet-friendly | Shop → Collection below"
+
+For Personal Brands:
+"Teaching millennials to master their money 💰 | Certified financial coach | Start here → Free toolkit"
 
 **CRITICAL REQUIREMENTS:**
-1. Use simple, everyday language - NO fancy words
-2. Use " | " (space pipe space) to separate sections for line breaks
-3. Add 2-3 strategic emojis throughout (NOT just at the end)
-4. Maximum 150 characters total
-5. Structure: WHAT YOU DO | WHO YOU ARE${businessName ? ` (include @${businessName.toUpperCase().replace(/\s+/g, " ")})` : ""} | VALUE PROP | CTA
-6. Sound like a real person texting, NOT like AI
-7. Be specific and benefit-focused
-8. Include a clear call-to-action at the end
-${researchData ? "9. Leverage the market intelligence to differentiate from competitors" : ""}
+1. Use the 3-Line Power Structure exactly as shown above
+2. Use simple, everyday language - NO fancy words or corporate jargon
+3. Use " | " (space pipe space) to separate the 3 lines
+4. Add 2-3 strategic emojis throughout (NOT just at the end, max 3 total)
+5. Maximum 150 characters total
+6. Sound like a real person texting a friend, NOT like AI
+7. Be specific and results-focused - tangible outcomes, not vague promises
+8. Lead with your "why" (purpose/mission) - what transformation you create
+9. Include industry keywords naturally for Instagram search
+10. Include a clear call-to-action at the end
+${researchData ? "11. Leverage the market intelligence to differentiate from competitors" : ""}
+
+**2025 TRENDS TO IMPLEMENT:**
+- Keywords for Search: Include industry terms naturally (e.g., "financial coach", "sustainable fashion", "business coach")
+- Purpose Over Polish: Lead with your "why" - what transformation you create, not perfect corporate speak
+- Results-Focused: Specific, tangible outcomes (e.g., "build 6-figure businesses", "master your money", "reduce waste by 50%")
+- Video-First Mention: If they create video content, mention it (e.g., "Video content creator", "Reels daily")
+- Community Language: Use words like "community", "together", "join us" when appropriate
+
+**WHAT NOT TO DO:**
+❌ Don't use generic templated phrases ("live your best life", "follow your dreams", "be yourself")
+❌ Avoid more than 3 emojis (looks unprofessional)
+❌ Skip vague buzzwords without meaning ("authentic", "passionate" - unless you explain what they mean)
+❌ Don't just list what you do - explain the transformation you provide
+❌ Never use fancy fonts that hurt readability
 
 **WRITING STYLE:**
 - Write how people actually talk on Instagram
@@ -97,9 +127,10 @@ ${researchData ? "9. Leverage the market intelligence to differentiate from comp
 - Be authentic and relatable
 - NO corporate jargon or fancy words
 - Think: "How would I explain this to a friend?"
+- Mission-driven: Lead with your "why", not just what you do
 ${researchData ? "- Use insights from competitor analysis to stand out" : ""}
 
-${businessName ? `\n**IMPORTANT:** Include the business name "${businessName}" in the bio (e.g., "Founder @${businessName.toUpperCase().replace(/\s+/g, " ")}")` : ""}
+${userDisplayName ? `\n**IMPORTANT:** Use the user's name "${userDisplayName}" naturally in the bio if it fits, but prioritize the 3-Line Power Structure and transformation message.` : ""}
 
 Return ONLY the bio text with " | " separators and emojis, nothing else.`
 

@@ -48,8 +48,7 @@ export async function POST(
         post_type,
         content_pillar,
         prompt,
-        caption,
-        description
+        caption
       FROM feed_posts
       WHERE feed_layout_id = ${feedId}
       AND user_id = ${neonUser.id}
@@ -68,9 +67,7 @@ export async function POST(
         brand_vibe,
         brand_voice,
         target_audience,
-        content_pillars,
-        niche,
-        origin_story
+        content_pillars
       FROM user_personal_brand
       WHERE user_id = ${neonUser.id}
       LIMIT 1
@@ -82,7 +79,7 @@ export async function POST(
     const feedPosts = posts.map(post => ({
       position: post.position,
       shotType: post.post_type || 'portrait',
-      purpose: post.content_pillar || post.description || 'general',
+      purpose: post.content_pillar || 'general',
       caption: post.caption || '',
     }))
 
@@ -109,9 +106,7 @@ You provide COMPREHENSIVE strategies with NO length limits - your advice is thor
 - Brand Vibe: ${brandProfile?.brand_vibe || 'Strategic'}
 - Brand Voice: ${brandProfile?.brand_voice || 'Authentic'}
 - Target Audience: ${brandProfile?.target_audience || 'general audience'}
-- Brand Story: ${brandProfile?.origin_story || 'building personal brand'}
 - Content Pillars: ${brandProfile?.content_pillars || 'education, inspiration, connection'}
-- Niche: ${brandProfile?.niche || 'general'}
 
 **THE 9-POST FEED LAYOUT:**
 ${feedPosts
