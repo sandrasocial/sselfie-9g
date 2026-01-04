@@ -14,45 +14,39 @@
  * @param userSelectedMode - The mode the user has explicitly selected via toggle:
  *   - "pro": User wants ALL posts in Pro Mode (2 credits each)
  *   - "classic": User wants ALL posts in Classic Mode (1 credit each)
- *   - null/undefined: Auto-detect mode per post (default behavior)
+ *   - null/undefined: Default to Classic Mode (toggle should always be set, but fallback to Classic)
  */
 
 export function getFeedPlannerContextAddon(userSelectedMode: "pro" | "classic" | null = null): string {
   // Build mode-specific instructions
+  // 🔴 CRITICAL: NO AUTO-DETECT - only toggle decides mode
+  // If userSelectedMode is null, default to Classic Mode (toggle should always be set)
+  const mode = userSelectedMode || "classic"
+  
   let modeInstructions = ""
   
-  if (userSelectedMode === "pro") {
+  if (mode === "pro") {
     modeInstructions = `
-**🎯 GENERATION MODE: PRO MODE (USER SELECTED)**
+**🎯 GENERATION MODE: PRO MODE (TOGGLE SELECTED)**
 
-The user has EXPLICITLY selected PRO MODE via the toggle. This means:
+The user has selected PRO MODE via the toggle. This means:
 - **ALL 9 posts** must use Pro Mode generation (2 credits each)
 - Set "generationMode": "pro" for EVERY post in the strategy
 - Total credits: 9 posts × 2 credits = 18 credits
-- Do NOT auto-detect mode - user has chosen Pro Mode explicitly
 - Pro Mode uses reference images (avatar library) instead of trained model
+- NO mixing - ALL posts must be Pro Mode
 `
-  } else if (userSelectedMode === "classic") {
+  } else {
+    // Default to Classic Mode
     modeInstructions = `
-**🎯 GENERATION MODE: CLASSIC MODE (USER SELECTED)**
+**🎯 GENERATION MODE: CLASSIC MODE (TOGGLE SELECTED)**
 
-The user has EXPLICITLY selected CLASSIC MODE via the toggle. This means:
+The user has selected CLASSIC MODE via the toggle (or default). This means:
 - **ALL 9 posts** must use Classic Mode generation (1 credit each)
 - Set "generationMode": "classic" for EVERY post in the strategy
 - Total credits: 9 posts × 1 credit = 9 credits
-- Do NOT auto-detect mode - user has chosen Classic Mode explicitly
 - Classic Mode uses trained model (LoRA) instead of reference images
-- Note: Complex compositions may be limited in Classic Mode
-`
-  } else {
-    modeInstructions = `
-**🎯 GENERATION MODE: AUTO-DETECT (DEFAULT)**
-
-No explicit mode selection - auto-detect the best mode for each post:
-- **Pro Mode** (2 credits): Complex compositions, text overlays, multiple elements
-- **Classic Mode** (1 credit): Portraits, simple lifestyle shots
-- Mixed feeds are allowed (some Pro, some Classic)
-- Set "generationMode" field appropriately for each post based on its complexity
+- NO mixing - ALL posts must be Classic Mode
 `
   }
 

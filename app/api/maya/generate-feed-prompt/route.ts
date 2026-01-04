@@ -6,6 +6,7 @@ import { streamText } from "ai"
 import { getMayaPersonality } from "@/lib/maya/personality-enhanced"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getFluxPromptingPrinciples } from "@/lib/maya/flux-prompting-principles"
+import { getNanoBananaPromptingPrinciples } from "@/lib/maya/nano-banana-prompt-builder"
 
 const sql = neon(process.env.DATABASE_URL || "")
 
@@ -17,8 +18,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    // Check for Pro Mode header (same pattern as Maya chat API)
+    const studioProHeader = request.headers.get("x-studio-pro-mode")
+    const hasStudioProHeader = studioProHeader === "true"
+
     const body = await request.json()
-    const { postType, caption, feedPosition, colorTheme, brandVibe, referencePrompt, isRegeneration, category } = body
+    const { postType, caption, feedPosition, colorTheme, brandVibe, referencePrompt, isRegeneration, category, proMode } = body
+    
+    // Determine if Pro Mode is enabled (from header or body)
+    const isProMode = hasStudioProHeader || proMode === true
+    
+    console.log("[v0] [FEED-PROMPT] Pro Mode detection:", {
+      headerValue: studioProHeader,
+      hasHeader: hasStudioProHeader,
+      bodyValue: proMode,
+      isProMode,
+      mode: isProMode ? "PRO (Nano Banana)" : "CLASSIC (FLUX)"
+    })
 
     console.log("[v0] [FEED-PROMPT] Starting prompt generation for:", {
       postType,
@@ -155,17 +171,21 @@ export async function POST(request: NextRequest) {
 
     // Build Maya's system prompt for feed post generation
     const mayaPersonality = getMayaPersonality()
-    const fluxPrinciples = getFluxPromptingPrinciples()
+    
+    // Use Nano Banana principles for Pro Mode, FLUX principles for Classic Mode
+    const promptingPrinciples = isProMode 
+      ? getNanoBananaPromptingPrinciples()
+      : getFluxPromptingPrinciples()
 
     const systemPrompt = `${mayaPersonality}
 
 ${userContext}
 
-${fluxPrinciples}
+${promptingPrinciples}
 
 === YOUR TASK: GENERATE INSTAGRAM FEED POST PROMPT ===
 
-You are Maya, an elite AI Fashion Stylist generating a FLUX prompt for an Instagram feed post. This is NOT a concept card - this is for the user's actual Instagram feed that will be published.
+You are Maya, an elite AI Fashion Stylist generating ${isProMode ? "a Nano Banana Pro" : "a FLUX"} prompt for an Instagram feed post. This is NOT a concept card - this is for the user's actual Instagram feed that will be published.
 
 Apply YOUR fashion expertise:
 - Create SPECIFIC outfit descriptions (material + color + garment type), NOT generic terms like "trendy outfit"
@@ -187,9 +207,18 @@ ${cleanedReferencePrompt ? `- Reference Prompt (from strategy - IGNORE THIS FORM
 
 === 🔴 CRITICAL RULES FOR THIS GENERATION (NON-NEGOTIABLE) ===
 
+${isProMode ? `
+**PRO MODE (Nano Banana Pro):**
+- Use natural language prompts (50-80 words)
+- NO trigger words - Nano Banana uses reference images instead
+- Professional photography aesthetic
+- Rich visual storytelling with brand context
+` : `
+**CLASSIC MODE (FLUX LoRA):**
 TRIGGER WORD: "${triggerWord}"
 GENDER: "${userGender}"
 ${ethnicity ? `ETHNICITY: "${ethnicity}" (MUST include in prompt for accurate representation)` : ""}
+`}
 ${
   physicalPreferences
     ? `
@@ -198,16 +227,24 @@ ${
 
 CRITICAL INSTRUCTIONS:
 - These are USER-REQUESTED appearance modifications that MUST be in EVERY prompt
-- **IMPORTANT:** Convert instruction language to descriptive language for FLUX, but PRESERVE USER INTENT
+- **IMPORTANT:** Convert instruction language to descriptive language${isProMode ? " for Nano Banana" : " for FLUX"}, but PRESERVE USER INTENT
 - **REMOVE INSTRUCTION PHRASES:** "Always keep my", "dont change", "keep my", "don't change my", "preserve my", "maintain my" - these are instructions, not prompt text
 - **CONVERT TO DESCRIPTIVE:** Convert to descriptive appearance features while preserving intent
-- Include them RIGHT AFTER the gender/ethnicity descriptor as DESCRIPTIVE features, not instructions
+- Include them ${isProMode ? "naturally in the description" : "RIGHT AFTER the gender/ethnicity descriptor as DESCRIPTIVE features, not instructions"}
 `
     : ""
 }
 
 **🔴 MANDATORY REQUIREMENTS (EVERY PROMPT MUST HAVE):**
 
+${isProMode ? `
+**PRO MODE (Nano Banana Pro):**
+1. **Natural Language Description** - Start with a natural scene description (50-80 words)
+2. **NO trigger words** - Use reference images for identity preservation
+3. **Professional photography** - Professional camera specs (e.g., "85mm lens, f/2.0 depth of field")
+4. **Rich styling details** - Specific outfit, location, lighting descriptions
+5. **Brand context** - Include brand mentions when applicable
+` : `
 1. **Start with EXACT FORMAT** ${postType?.toLowerCase().includes('object') || postType?.toLowerCase().includes('flatlay') || postType?.toLowerCase().includes('scenery') || postType?.toLowerCase().includes('place') ? '(ONLY FOR USER POSTS - SKIP FOR OBJECT/FLATLAY/SCENERY POSTS):' : '(FOR USER POSTS):'} "${postType?.toLowerCase().includes('object') || postType?.toLowerCase().includes('flatlay') || postType?.toLowerCase().includes('scenery') || postType?.toLowerCase().includes('place') ? '[object/scenery/flatlay description]' : `${triggerWord}, ${ethnicity ? ethnicity + " " : ""}${userGender}${physicalPreferences ? `, [converted physical preferences - descriptive only, no instructions]` : ""}`}"
 
    **CRITICAL - TRIGGER WORD PLACEMENT** ${postType?.toLowerCase().includes('object') || postType?.toLowerCase().includes('flatlay') || postType?.toLowerCase().includes('scenery') || postType?.toLowerCase().includes('place') ? '(SKIP FOR OBJECT/FLATLAY/SCENERY POSTS):' : '(FOR USER POSTS):'}
@@ -230,9 +267,23 @@ CRITICAL INSTRUCTIONS:
    - ❌ NO film grain requirements (removed - too complex)
    - ❌ NO muted color requirements (removed - too complex)
    - ❌ NO skin texture descriptions beyond "natural" (removed - too complex)
+`}
 
 **🔴 PROMPT STRUCTURE ARCHITECTURE (FOLLOW THIS ORDER):**
 
+${isProMode ? `
+**PRO MODE (Nano Banana Pro) - Natural Language (50-80 words):**
+1. **SCENE DESCRIPTION** - Natural language scene description with person, outfit, location
+2. **STYLING DETAILS** - Specific outfit details (material, color, garment type, brand if applicable)
+3. **LOCATION & ENVIRONMENT** - Detailed location description that matches brand aesthetic
+4. **LIGHTING & MOOD** - Professional lighting description (e.g., "soft diffused natural window light")
+5. **CAMERA SPECS** - Professional photography specs (e.g., "85mm lens, f/2.0 depth of field")
+6. **POSE & EXPRESSION** - Natural posing and expression
+7. **BRAND CONTEXT** - Include brand mentions when applicable (e.g., "from Alo", "Alo brand outfit")
+
+**NO trigger words** - Use reference images for identity preservation
+**Natural language** - Write like describing to a photographer, not keyword stuffing
+` : `
 ${postType?.toLowerCase().includes('object') || postType?.toLowerCase().includes('flatlay') || postType?.toLowerCase().includes('scenery') || postType?.toLowerCase().includes('place') ? `
 **FOR OBJECT/FLATLAY/SCENERY POSTS (NO USER):**
 1. **OBJECT/SCENERY DESCRIPTION** (detailed description of items/scenery - 8-15 words)
@@ -248,6 +299,7 @@ ${postType?.toLowerCase().includes('object') || postType?.toLowerCase().includes
 4. **LIGHTING** (simple, natural only - 3-5 words, NO dramatic/cinematic terms)
 5. **POSE + EXPRESSION** (simple, natural action - 3-5 words, NO "striking poses")
 6. **TECHNICAL SPECS** (basic iPhone only - 5-8 words, keep minimal)
+`}
 `}
 
 **Post Type Considerations:**
@@ -271,23 +323,59 @@ ${brandColors ? `**CRITICAL**: Incorporate the user's brand colors (${brandColor
 **NO BANNED WORDS:** Never use "ultra realistic", "photorealistic", "8K", "4K", "high quality", "perfect", "flawless", "stunning", "beautiful", "gorgeous", "professional photography", "editorial", "magazine quality", "dramatic" (for lighting), "cinematic", "hyper detailed", "sharp focus", "ultra sharp", "crystal clear", "studio lighting", "perfect lighting", "smooth skin", "flawless skin", "airbrushed", "dramatic lighting", "professional yet approachable" - these cause plastic/generic faces and override the user LoRA.
 
 **🔴 CRITICAL: PROMPT QUALITY CHECKLIST - EVERY PROMPT MUST HAVE:**
+${isProMode ? `
+1. ✅ Natural language description (NO trigger words)
+2. ✅ Specific outfit description (material + color + garment type, brand if applicable)
+3. ✅ Detailed location/environment description
+4. ✅ Professional lighting description
+5. ✅ Professional camera specs (e.g., "85mm lens, f/2.0 depth of field")
+6. ✅ Natural pose/expression
+7. ✅ Brand context (when applicable)
+8. ✅ Total length: 50-80 words (natural language, not keyword stuffing)
+
+**Total target: 50-80 words for rich visual storytelling and professional quality**
+` : `
 1. ✅ Trigger word + ethnicity + gender (no duplicates, format: "${triggerWord}, ${ethnicity ? ethnicity + ", " : ""}${userGender}")
 2. ✅ Specific outfit description (material + color + garment type - NOT "trendy outfit", stay detailed here)
 3. ✅ Simple setting (one-line location, keep brief)
 4. ✅ Simple natural lighting (NO dramatic/cinematic terms)
 5. ✅ Natural pose/action (NO "striking poses")
 6. ✅ Authentic iPhone specs: Includes "candid photo" or "candid moment"? Includes "amateur cellphone photo" or "cellphone photo"? "shot on iPhone 15 Pro portrait mode, shallow depth of field" OR "shot on iPhone, natural bokeh"?
-7. ✅ Total length: 50-80 words (optimal for LoRA activation)
+7. ✅ Total length: 30-60 words (optimal for LoRA activation)
 
-**Total target: 50-80 words for optimal LoRA activation and accurate character representation**
+**Total target: 30-60 words for optimal LoRA activation and accurate character representation**
+`}
 
-Now generate the FLUX prompt for this ${postType} feed post.
+Now generate the ${isProMode ? "Nano Banana Pro" : "FLUX"} prompt for this ${postType} feed post.
 
 ${postType?.toLowerCase().includes('object') || postType?.toLowerCase().includes('flatlay') || postType?.toLowerCase().includes('scenery') || postType?.toLowerCase().includes('place') ? `
 ⚠️ **CRITICAL REMINDER:** This is a ${postType} post - DO NOT include the user, trigger word, or any person in the prompt. Focus only on objects, products, flatlays, or scenery.
+` : isProMode ? `
+**CRITICAL: Use YOUR fashion expertise to create detailed, specific styling for Pro Mode (Nano Banana).**
+- Generate a 50-80 word natural language prompt (NO trigger words)
+- Start with a natural scene description (e.g., "Woman in...", "Person wearing...")
+- Include SPECIFIC outfit details (material + color + garment type, brand if applicable)
+- Include DETAILED location/environment description
+- Include professional lighting description (e.g., "soft diffused natural window light")
+- Include professional camera specs (e.g., "85mm lens, f/2.0 depth of field")
+- Use natural language - write like describing to a photographer
+- Make it feel like professional photography, not iPhone snaps
+
+**🔴 EXAMPLE OF WHAT YOU MUST CREATE (PRO MODE):**
+"Woman in sage green silk blouse with relaxed fit tucked into high-waisted cream linen trousers, standing with hand on marble bar counter, looking over shoulder naturally, upscale restaurant with marble surfaces and modern minimalist design, soft diffused natural window light creating gentle shadows, professional photography, 85mm lens, f/2.0 depth of field, natural skin texture"
+
+**🔴 EXAMPLE OF WHAT YOU MUST NEVER CREATE:**
+"Woman, confident expression, wearing stylish business casual outfit, urban background with clean lines, edgy-minimalist aesthetic with perfect lighting"
+
+**Why the bad example is wrong:**
+- ❌ "stylish business casual outfit" = generic (must be specific material + color + garment)
+- ❌ "urban background" = generic (must be detailed location description)
+- ❌ "perfect lighting" = vague (must be specific professional lighting description)
+- ❌ Missing professional camera specs
+- ❌ Too short and generic
 ` : `
 **CRITICAL: Use YOUR fashion expertise to create detailed, specific styling.**
-- Generate a 50-80 word prompt that includes ALL requirements above
+- Generate a 30-60 word prompt that includes ALL requirements above
 - Start with: "${triggerWord}, ${ethnicity ? ethnicity + ", " : ""}${userGender}" (do NOT duplicate like "White, woman, White woman")
 - Include SPECIFIC outfit details (material + color + garment), NOT generic "trendy outfit" or "stylish business casual outfit"
 - Include SPECIFIC but simple location details, NOT generic "urban background" or "urban setting"
@@ -347,7 +435,7 @@ Reference (IGNORE FORMAT - GENERIC AND INCOMPLETE): ${cleanedReferencePrompt.sub
           },
           {
             role: "user",
-            content: `Generate the FLUX prompt for this ${postType} post.`,
+            content: `Generate the ${isProMode ? "Nano Banana Pro" : "FLUX"} prompt for this ${postType} post.`,
           },
         ],
         temperature: 0.8,
@@ -410,15 +498,16 @@ Reference (IGNORE FORMAT - GENERIC AND INCOMPLETE): ${cleanedReferencePrompt.sub
     console.log("[v0] [FEED-PROMPT] Generated prompt preview (raw):", generatedPrompt.substring(0, 200))
     
     // CRITICAL: Strip any markdown formatting, prefixes, or metadata that AI might include
-    // Remove patterns like "**FLUX PROMPT (Flatlay - 62 words):**" or similar prefixes
+    // Remove patterns like "**FLUX PROMPT (Flatlay - 62 words):**" or "**Nano Banana PROMPT:**" etc.
     generatedPrompt = generatedPrompt
       // Remove markdown bold/italic formatting
       .replace(/\*\*/g, '')
       .replace(/\*/g, '')
       .replace(/__/g, '')
       .replace(/_/g, '')
-      // Remove common prefix patterns like "FLUX PROMPT (Type - X words):" or "PROMPT:" etc.
+      // Remove common prefix patterns like "FLUX PROMPT (Type - X words):" or "Nano Banana PROMPT:" etc.
       .replace(/^.*?FLUX\s+PROMPT\s*\([^)]*\)\s*:?\s*/i, '')
+      .replace(/^.*?NANO\s+BANANA\s+(PRO\s+)?PROMPT\s*:?\s*/i, '')
       .replace(/^.*?PROMPT\s*:?\s*/i, '')
       .replace(/^.*?FLUX\s*:?\s*/i, '')
       // Remove word count patterns like "(62 words)" or "(X words)"
@@ -428,6 +517,7 @@ Reference (IGNORE FORMAT - GENERIC AND INCOMPLETE): ${cleanedReferencePrompt.sub
       .trim()
     
     console.log("[v0] [FEED-PROMPT] Generated prompt preview (cleaned):", generatedPrompt.substring(0, 200))
+    console.log("[v0] [FEED-PROMPT] Mode:", isProMode ? "PRO (Nano Banana - skipping trigger word processing)" : "CLASSIC (FLUX - processing trigger words)")
 
     // CRITICAL: Handle object/flatlay/scenery posts differently (no user/trigger word)
     const isNonUserPost = postType?.toLowerCase().includes('object') || 
@@ -435,7 +525,18 @@ Reference (IGNORE FORMAT - GENERIC AND INCOMPLETE): ${cleanedReferencePrompt.sub
                           postType?.toLowerCase().includes('scenery') || 
                           postType?.toLowerCase().includes('place')
     
-    if (isNonUserPost) {
+    // For Pro Mode, skip trigger word processing (Nano Banana doesn't use trigger words)
+    if (isProMode) {
+      // Pro Mode: Just clean up the prompt, no trigger word processing
+      console.log("[v0] [FEED-PROMPT] ✅ Pro Mode - skipping trigger word processing (Nano Banana uses reference images)")
+      // Final cleanup for Pro Mode prompts
+      generatedPrompt = generatedPrompt
+        .replace(/,\s*,/g, ',')
+        .replace(/^,\s*/, '')
+        .replace(/\s*,\s*$/, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+    } else if (isNonUserPost) {
       // For object/flatlay/scenery posts - remove any user references
       let cleanedPrompt = generatedPrompt.trim()
       const promptLower = cleanedPrompt.toLowerCase()
