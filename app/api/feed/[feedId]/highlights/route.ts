@@ -5,7 +5,7 @@ import { neon } from "@neondatabase/serverless"
 
 const sql = neon(process.env.DATABASE_URL!)
 
-export async function POST(request: Request, { params }: { params: { feedId: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ feedId: string }> | { feedId: string } }) {
   try {
     const { user: authUser, error: authError } = await getAuthenticatedUser()
 
@@ -18,14 +18,21 @@ export async function POST(request: Request, { params }: { params: { feedId: str
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    const { feedId } = params
+    const resolvedParams = await Promise.resolve(params)
+    const { feedId } = resolvedParams
+    const feedIdInt = parseInt(String(feedId), 10)
+
+    if (isNaN(feedIdInt)) {
+      return NextResponse.json({ error: "Invalid feed ID format" }, { status: 400 })
+    }
+
     const body = await request.json()
     const { highlights } = body
 
     // Delete existing highlights for this feed
     await sql`
       DELETE FROM instagram_highlights 
-      WHERE feed_layout_id = ${feedId} AND user_id = ${neonUser.id}
+      WHERE feed_layout_id = ${feedIdInt} AND user_id = ${neonUser.id}
     `
 
     // Insert new highlights
@@ -42,7 +49,7 @@ export async function POST(request: Request, { params }: { params: { feedId: str
             generation_status
           )
           VALUES (
-            ${feedId},
+            ${feedIdInt},
             ${neonUser.id},
             ${highlight.title},
             ${highlight.coverUrl || highlight.image_url},
@@ -57,11 +64,15 @@ export async function POST(request: Request, { params }: { params: { feedId: str
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error("[v0] Error saving highlights:", error)
-    return NextResponse.json({ error: "Failed to save highlights" }, { status: 500 })
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    return NextResponse.json(
+      { error: "Failed to save highlights", details: errorMessage },
+      { status: 500 }
+    )
   }
 }
 
-export async function GET(request: Request, { params }: { params: { feedId: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ feedId: string }> | { feedId: string } }) {
   try {
     const { user: authUser, error: authError } = await getAuthenticatedUser()
 
@@ -74,11 +85,17 @@ export async function GET(request: Request, { params }: { params: { feedId: stri
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    const { feedId } = params
+    const resolvedParams = await Promise.resolve(params)
+    const { feedId } = resolvedParams
+    const feedIdInt = parseInt(String(feedId), 10)
+
+    if (isNaN(feedIdInt)) {
+      return NextResponse.json({ error: "Invalid feed ID format" }, { status: 400 })
+    }
 
     const highlights = await sql`
       SELECT * FROM instagram_highlights 
-      WHERE feed_layout_id = ${feedId} AND user_id = ${neonUser.id}
+      WHERE feed_layout_id = ${feedIdInt} AND user_id = ${neonUser.id}
       ORDER BY created_at ASC
     `
 

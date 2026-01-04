@@ -264,3 +264,4 @@ Hyper-realistic photo in vertical 2:3 portrait, athletic aesthetic, premium work
 **AUDIT COMPLETE** ✅  
 **Next Action:** Test if removing brand names improves Flux output, or confirm current format is optimal.
 
+

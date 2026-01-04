@@ -16,6 +16,7 @@ interface FeedHeaderProps {
   onProfileImageClick: () => void
   onWriteBio: () => void
   onFeedChange?: (feedId: number) => void
+  onCreateHighlights?: () => void
 }
 
 export default function FeedHeader({
@@ -25,6 +26,7 @@ export default function FeedHeader({
   onProfileImageClick,
   onWriteBio,
   onFeedChange,
+  onCreateHighlights,
 }: FeedHeaderProps) {
   const router = useRouter()
   const [isCreatingFeed, setIsCreatingFeed] = useState(false)
@@ -191,11 +193,9 @@ export default function FeedHeader({
                   </>
                 )}
               </button>
-              {/* TODO: Implement highlights creation feature */}
               <button
-                disabled
-                className="flex-1 md:flex-none md:px-8 bg-stone-100 text-stone-400 text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors cursor-not-allowed opacity-60"
-                title="Coming soon - Create Highlights feature"
+                onClick={onCreateHighlights}
+                className="flex-1 md:flex-none md:px-8 bg-stone-100 hover:bg-stone-200 text-stone-900 text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors"
               >
                 Create Highlights
               </button>
@@ -225,6 +225,72 @@ export default function FeedHeader({
                 </div>
               )}
             </div>
+
+            {/* Highlights - below buttons, mobile optimized */}
+            {feedData?.highlights && feedData.highlights.length > 0 && (
+              <div className="w-full mt-4 -mx-4 px-4 md:mx-0 md:px-0">
+                <div className="flex gap-3 md:gap-4 overflow-x-auto pb-2 scrollbar-hide">
+                  {feedData.highlights.map((highlight: any) => {
+                    const isColorHighlight = !highlight.image_url || highlight.image_url.startsWith("#")
+                    const displayColor = isColorHighlight
+                      ? (highlight.image_url?.startsWith("#")
+                          ? highlight.image_url
+                          : "#D4C5B9")
+                      : null
+                    
+                    // Extract brand colors from feed
+                    const brandColors = feedData?.feed?.color_palette
+                      ? typeof feedData.feed.color_palette === "string"
+                        ? JSON.parse(feedData.feed.color_palette)
+                            .filter((c: any) => typeof c === "string")
+                            .slice(0, 4)
+                        : Array.isArray(feedData.feed.color_palette)
+                        ? feedData.feed.color_palette
+                            .filter((c: any) => typeof c === "string")
+                            .slice(0, 4)
+                        : Object.values(feedData.feed.color_palette)
+                            .filter((c: any) => typeof c === "string")
+                            .slice(0, 4)
+                      : []
+                    const defaultColors = ["#D4C5B9", "#E8D5C4", "#F5E6D3", "#C9B8A8"]
+                    const availableColors = brandColors.length > 0 ? brandColors : defaultColors
+                    const highlightColor = displayColor || availableColors[feedData.highlights.indexOf(highlight) % availableColors.length]
+
+                    return (
+                      <div key={highlight.id || highlight.title} className="flex flex-col items-center gap-2 min-w-[64px] md:min-w-[70px] flex-shrink-0">
+                        <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 p-[2px]">
+                          <div className="w-full h-full rounded-full bg-white p-[2px]">
+                            {isColorHighlight ? (
+                              <div
+                                className="w-full h-full rounded-full flex items-center justify-center"
+                                style={{ backgroundColor: highlightColor }}
+                              >
+                                <span className="text-base md:text-lg font-bold text-white drop-shadow-lg">
+                                  {highlight.title ? highlight.title.charAt(0).toUpperCase() : "H"}
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="relative w-full h-full rounded-full overflow-hidden">
+                                <Image
+                                  src={highlight.image_url}
+                                  alt={highlight.title || "Highlight"}
+                                  fill
+                                  className="object-cover"
+                                  sizes="(max-width: 768px) 56px, 64px"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <span className="text-xs text-stone-900 text-center leading-tight max-w-[64px] md:max-w-[70px] truncate">
+                          {highlight.title}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

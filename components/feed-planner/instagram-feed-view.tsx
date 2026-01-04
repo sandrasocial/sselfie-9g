@@ -16,6 +16,7 @@ import FeedPostsList from "./feed-posts-list"
 import FeedStrategy from "./feed-strategy"
 import FeedModals from "./feed-modals"
 import FeedLoadingOverlay from "./feed-loading-overlay"
+import FeedHighlightsModal from "./feed-highlights-modal"
 
 interface InstagramFeedViewProps {
   feedId: number
@@ -39,6 +40,7 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
   const [showBioModal, setShowBioModal] = useState(false)
   const [bioText, setBioText] = useState("")
   const [isSavingBio, setIsSavingBio] = useState(false)
+  const [showHighlightsModal, setShowHighlightsModal] = useState(false)
 
   // Initialize bio text when modal opens
   useEffect(() => {
@@ -419,6 +421,7 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
         onProfileImageClick={() => setShowProfileGallery(true)}
         onWriteBio={handleWriteBio}
         onFeedChange={handleFeedChange}
+        onCreateHighlights={() => setShowHighlightsModal(true)}
       />
       
       <FeedTabs
@@ -572,6 +575,32 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
           </div>
         </div>
       )}
+
+      {/* Highlights Modal */}
+      <FeedHighlightsModal
+        feedId={feedId}
+        isOpen={showHighlightsModal}
+        onClose={() => setShowHighlightsModal(false)}
+        onSave={async () => {
+          await mutate() // Refresh feed data to show updated highlights
+        }}
+        existingHighlights={feedData?.highlights || []}
+        brandColors={
+          feedData?.feed?.color_palette
+            ? typeof feedData.feed.color_palette === "string"
+              ? JSON.parse(feedData.feed.color_palette)
+                  .filter((c: any) => typeof c === "string")
+                  .slice(0, 8)
+              : Array.isArray(feedData.feed.color_palette)
+              ? feedData.feed.color_palette
+                  .filter((c: any) => typeof c === "string")
+                  .slice(0, 8)
+              : Object.values(feedData.feed.color_palette)
+                  .filter((c: any) => typeof c === "string")
+                  .slice(0, 8)
+            : []
+        }
+      />
     </div>
   )
 }
