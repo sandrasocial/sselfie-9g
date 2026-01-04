@@ -70,11 +70,15 @@ We help women imagine themselves in outfits, settings, and lifestyles they never
 - Download high-resolution photos
 - Share directly to social media
 
-### 📅 Feed Designer
+### 📅 Feed Planner
 - Plan your Instagram feed strategy
-- Create cohesive feed layouts
-- Generate captions with Maya
-- Schedule content calendar
+- Create cohesive 9-post feed layouts
+- Generate captions, hashtags, and strategies with AI
+- Create and manage story highlights (3-4 max)
+- Drag-and-drop post reordering
+- Generate images for posts
+- Manage multiple feeds
+- Mobile-optimized interface
 
 ### 🎓 Academy
 - Learn personal branding strategies

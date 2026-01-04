@@ -955,10 +955,10 @@ export default function MayaChatInterface({
                   {/* Status Text */}
                   <div className="text-center space-y-1">
                     <p className="text-sm font-medium text-stone-900 tracking-wide">
-                      Generating Your Images
+                      Creating your concepts...
                     </p>
                     <p className="text-xs text-stone-600 leading-relaxed">
-                      Maya is creating your visuals using AI
+                      Working on some amazing concepts for you! ✨
                     </p>
                   </div>
                 </div>
