@@ -17,11 +17,11 @@ interface MayaFeedTabProps {
   messages: any[]
   filteredMessages: any[]
   setMessages: (messages: any[] | ((prev: any[]) => any[])) => void
-  studioProMode: boolean
+  proMode: boolean
   isTyping: boolean
   status: "idle" | "streaming" | "submitted" | "ready" // Chat status from useChat hook
   isGeneratingConcepts: boolean
-  isGeneratingStudioPro: boolean
+  isGeneratingPro: boolean
   isCreatingFeed: boolean
   setIsCreatingFeed: (isCreating: boolean) => void
   contentFilter: "all" | "photos" | "videos"
@@ -41,7 +41,6 @@ interface MayaFeedTabProps {
   userId: string
   user: any
   promptSuggestions: any[]
-  generateCarouselRef: React.RefObject<((params: { title: string; textOverlay?: string }) => Promise<void>) | null>
   // Feed-specific props
   styleStrength: number
   promptAccuracy: number
@@ -76,11 +75,11 @@ export default function MayaFeedTab({
   messages,
   filteredMessages,
   setMessages,
-  studioProMode,
+  proMode,
   isTyping,
   status,
   isGeneratingConcepts,
-  isGeneratingStudioPro,
+  isGeneratingPro,
   isCreatingFeed,
   setIsCreatingFeed,
   contentFilter,
@@ -100,7 +99,6 @@ export default function MayaFeedTab({
   userId,
   user,
   promptSuggestions,
-  generateCarouselRef,
   styleStrength,
   promptAccuracy,
   aspectRatio,
@@ -170,7 +168,7 @@ export default function MayaFeedTab({
                     posts: strategy.posts || [],
                     isSaved: false, // Flag to indicate unsaved state
                     // Store settings for saving later
-                    studioProMode,
+                    proMode,
                     styleStrength,
                     promptAccuracy,
                     aspectRatio,
@@ -241,7 +239,7 @@ export default function MayaFeedTab({
       setMessages,
       onCreateFeed,
       setIsCreatingFeed,
-      studioProMode,
+      proMode,
       styleStrength,
       promptAccuracy,
       aspectRatio,
@@ -582,10 +580,10 @@ export default function MayaFeedTab({
           messages={messages}
           filteredMessages={filteredMessages}
           setMessages={setMessages}
-          studioProMode={studioProMode}
+          proMode={proMode}
           isTyping={isTyping}
           isGeneratingConcepts={isGeneratingConcepts}
-          isGeneratingStudioPro={isGeneratingStudioPro}
+          isGeneratingPro={isGeneratingPro}
           isCreatingFeed={isCreatingFeed}
           contentFilter={contentFilter}
           messagesContainerRef={messagesContainerRef}
@@ -604,7 +602,6 @@ export default function MayaFeedTab({
           userId={userId}
           user={user}
           promptSuggestions={promptSuggestions}
-          generateCarouselRef={generateCarouselRef}
         />
         {/* Empty State - Feed Tab */}
         {isEmpty && !isTyping && (
@@ -628,7 +625,7 @@ export default function MayaFeedTab({
               onSelect={handleSendMessage}
               disabled={isTyping}
               variant="empty-state"
-              studioProMode={studioProMode}
+              proMode={proMode}
               isEmpty={isEmpty}
             />
           </div>

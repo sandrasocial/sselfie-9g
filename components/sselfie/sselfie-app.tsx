@@ -89,7 +89,7 @@ export default function SselfieApp({
   // Feed Planner Pro Mode state (shared with Maya via localStorage)
   const [feedPlannerProMode, setFeedPlannerProMode] = useState<boolean>(() => {
     if (typeof window === "undefined") return false
-    const saved = localStorage.getItem("mayaStudioProMode")
+    const saved = localStorage.getItem("mayaProMode")
     return saved === "true"
   })
   
@@ -98,7 +98,7 @@ export default function SselfieApp({
     if (typeof window === "undefined") return
     
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "mayaStudioProMode") {
+      if (e.key === "mayaProMode") {
         setFeedPlannerProMode(e.newValue === "true")
       }
     }
@@ -112,7 +112,7 @@ export default function SselfieApp({
     
     // Also check localStorage periodically for same-window changes
     const interval = setInterval(() => {
-      const saved = localStorage.getItem("mayaStudioProMode")
+      const saved = localStorage.getItem("mayaProMode")
       const newMode = saved === "true"
       if (newMode !== feedPlannerProMode) {
         setFeedPlannerProMode(newMode)
@@ -413,7 +413,7 @@ export default function SselfieApp({
                         currentMode={feedPlannerProMode ? "pro" : "classic"}
                         onToggle={() => {
                           const newMode = !feedPlannerProMode
-                          localStorage.setItem("mayaStudioProMode", newMode.toString())
+                          localStorage.setItem("mayaProMode", newMode.toString())
                           setFeedPlannerProMode(newMode)
                           // Trigger a custom event so Feed Planner can react
                           window.dispatchEvent(new CustomEvent("feedPlannerModeChanged", { detail: { mode: newMode } }))

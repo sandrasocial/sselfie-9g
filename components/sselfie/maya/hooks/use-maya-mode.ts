@@ -1,8 +1,8 @@
 /**
  * useMayaMode Hook
  * 
- * Manages Maya Studio Pro Mode state with localStorage persistence:
- * - studioProMode: boolean (default: false)
+ * Manages Maya Pro Mode state with localStorage persistence:
+ * - proMode: boolean (default: false)
  * - Mode persistence to localStorage
  * - Support for forced mode (admin mode)
  * 
@@ -14,7 +14,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 
-const STORAGE_KEY = "mayaStudioProMode"
+const STORAGE_KEY = "mayaProMode"
 
 /**
  * Load mode from localStorage
@@ -38,7 +38,7 @@ function saveModeToStorage(mode: boolean) {
 
   try {
     localStorage.setItem(STORAGE_KEY, mode.toString())
-    console.log("[useMayaMode] 💾 Saved mode to localStorage:", mode ? "Studio Pro" : "Classic")
+    console.log("[useMayaMode] 💾 Saved mode to localStorage:", mode ? "Pro" : "Classic")
   } catch (error) {
     console.error("[useMayaMode] ❌ Error saving mode to localStorage:", error)
   }
@@ -46,10 +46,10 @@ function saveModeToStorage(mode: boolean) {
 
 export interface UseMayaModeReturn {
   // Mode state
-  studioProMode: boolean
+  proMode: boolean
   
   // Setter
-  setStudioProMode: (mode: boolean) => void
+  setProMode: (mode: boolean) => void
   
   // Get current mode as string ('pro' | 'maya')
   getModeString: () => "pro" | "maya"
@@ -59,7 +59,7 @@ export interface UseMayaModeReturn {
 }
 
 /**
- * Hook to manage Maya Studio Pro Mode
+ * Hook to manage Maya Pro Mode
  * 
  * @param forcedMode - Optional forced mode (from admin/props). If provided, this takes precedence over localStorage
  * @returns Mode state and utilities
@@ -68,7 +68,7 @@ export function useMayaMode(forcedMode?: boolean): UseMayaModeReturn {
   const hasLoadedFromStorageRef = useRef(false)
   
   // Initialize state: forcedMode takes precedence, then localStorage, then default false
-  const [studioProMode, setStudioProModeState] = useState<boolean>(() => {
+  const [proMode, setProModeState] = useState<boolean>(() => {
     // If forcedMode is explicitly provided (even if false), use it
     if (forcedMode !== undefined) {
       return forcedMode
@@ -80,9 +80,9 @@ export function useMayaMode(forcedMode?: boolean): UseMayaModeReturn {
 
   // Update state if forcedMode changes (for admin mode changes)
   useEffect(() => {
-    if (forcedMode !== undefined && forcedMode !== studioProMode) {
-      console.log("[useMayaMode] Forced mode changed, updating:", forcedMode ? "Studio Pro" : "Classic")
-      setStudioProModeState(forcedMode)
+    if (forcedMode !== undefined && forcedMode !== proMode) {
+      console.log("[useMayaMode] Forced mode changed, updating:", forcedMode ? "Pro" : "Classic")
+      setProModeState(forcedMode)
     }
   }, [forcedMode])
 
@@ -99,25 +99,25 @@ export function useMayaMode(forcedMode?: boolean): UseMayaModeReturn {
       return
     }
 
-    saveModeToStorage(studioProMode)
-  }, [studioProMode, forcedMode])
+    saveModeToStorage(proMode)
+  }, [proMode, forcedMode])
 
   // Setter wrapper that can be called externally
-  const setStudioProMode = (mode: boolean) => {
+  const setProMode = (mode: boolean) => {
     // Don't allow changes if forced mode is set (admin control)
     if (forcedMode !== undefined) {
-      console.log("[useMayaMode] ⚠️ Mode change blocked - forced mode is active:", forcedMode ? "Studio Pro" : "Classic")
+      console.log("[useMayaMode] ⚠️ Mode change blocked - forced mode is active:", forcedMode ? "Pro" : "Classic")
       return
     }
     
-    console.log("[useMayaMode] ✅ Mode change allowed, setting to:", mode ? "Studio Pro" : "Classic")
-    setStudioProModeState(mode)
+    console.log("[useMayaMode] ✅ Mode change allowed, setting to:", mode ? "Pro" : "Classic")
+    setProModeState(mode)
   }
 
   // Get current mode as string (memoized to prevent infinite loops)
   const getModeString = useCallback((): "pro" | "maya" => {
-    return studioProMode ? "pro" : "maya"
-  }, [studioProMode])
+    return proMode ? "pro" : "maya"
+  }, [proMode])
 
   // Check if mode changed from previous mode string
   const hasModeChanged = (previousMode: string | null): boolean => {
@@ -129,8 +129,8 @@ export function useMayaMode(forcedMode?: boolean): UseMayaModeReturn {
   }
 
   return {
-    studioProMode,
-    setStudioProMode,
+    proMode,
+    setProMode,
     getModeString,
     hasModeChanged,
   }

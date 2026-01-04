@@ -68,7 +68,7 @@ interface MayaChatScreenProps {
   setActiveTab?: (tab: string) => void // Navigation handler from parent
   userId?: string // User ID (optional, can be derived from user, also used for admin guide controls)
   initialChatId?: number // Initial chat ID to load
-  studioProMode?: boolean // Force Pro Mode (for admin)
+  proMode?: boolean // Force Pro Mode (for admin)
   isAdmin?: boolean // Admin mode - enables save to guide functionality
   selectedGuideId?: number | null // Selected guide ID for saving
   selectedGuideCategory?: string | null // Selected guide category
@@ -82,7 +82,7 @@ export default function MayaChatScreen({
   setActiveTab,
   userId,
   initialChatId,
-  studioProMode: forcedStudioProMode,
+  proMode: forcedProMode,
   isAdmin = false,
   selectedGuideId = null,
   selectedGuideCategory = null,
@@ -140,7 +140,7 @@ export default function MayaChatScreen({
   })
   
   // Mode managed by useMayaMode hook
-  const { studioProMode, setStudioProMode, getModeString, hasModeChanged } = useMayaMode(forcedStudioProMode)
+  const { proMode, setProMode, getModeString, hasModeChanged } = useMayaMode(forcedProMode)
   
   // Settings managed by useMayaSettings hook
   const {
@@ -180,7 +180,7 @@ export default function MayaChatScreen({
     setMessages,
   } = useMayaChat({
     initialChatId,
-    studioProMode,
+    proMode,
     user,
     getModeString,
     activeTab: activeMayaTab, // Pass Feed tab flag
@@ -229,7 +229,7 @@ export default function MayaChatScreen({
     setUploadedImages,
     galleryImages,
     loadGalleryImages,
-  } = useMayaImages(studioProMode)
+  } = useMayaImages(proMode)
 
   // Shared images between Photos and Videos tabs
   const {
@@ -245,7 +245,7 @@ export default function MayaChatScreen({
   })
 
   // Feature flags - derived from mode for clearer conditional rendering
-  // These make it explicit what features are enabled, rather than just checking studioProMode
+  // These make it explicit what features are enabled, rather than just checking proMode
   // Must be defined after useMayaImages hook since hasImageLibrary depends on imageLibrary
   // 
   // Progressive Enhancement Pattern:
@@ -253,20 +253,16 @@ export default function MayaChatScreen({
   // - Pro features conditionally appear when hasProFeatures is true
   // - No conditional rendering of entire components (use unified components instead)
   // - Only conditionally show/hide specific features within unified components
-  const hasProFeatures = studioProMode
-  const hasImageLibrary = studioProMode && imageLibrary
-  const hasLibraryManagement = studioProMode
+  const hasProFeatures = proMode
+  const hasImageLibrary = proMode && imageLibrary
+  const hasLibraryManagement = proMode
   
   // Shared images from first concept card - auto-populates other cards
   const [sharedConceptImages, setSharedConceptImages] = useState<Array<string | null>>([null, null, null])
   const [showGallerySelector, setShowGallerySelector] = useState(false)
-  const [isGeneratingStudioPro, setIsGeneratingStudioPro] = useState(false)
-  const processedStudioProMessagesRef = useRef<Set<string>>(new Set())
+  const [isGeneratingPro, setIsGeneratingPro] = useState(false)
   const promptGenerationTriggeredRef = useRef<Set<string>>(new Set()) // Track messages that have already triggered prompt generation
-  const carouselCardsAddedRef = useRef<Set<string>>(new Set()) // Track messages that already have carousel cards added
   // processedFeedMessagesRef moved to MayaFeedTab component (feed trigger detection is now handled in FeedTab)
-  const generateCarouselRef = useRef<((params: { topic: string; slideCount: number }) => Promise<void>) | null>(null)
-  const generateReelCoverRef = useRef<((params: { title: string; textOverlay?: string }) => Promise<void>) | null>(null)
   
   // Pro features onboarding state
   const [showStudioProOnboarding, setShowStudioProOnboarding] = useState(false)
@@ -358,208 +354,6 @@ export default function MayaChatScreen({
     // FeedTab manages the actual generation and message updates
   }, [])
 
-  // Pro features: Generate carousel (defined BEFORE useEffect that processes messages)
-  const generateCarousel = useCallback(async ({ topic, slideCount }: { topic: string; slideCount: number }) => {
-    try {
-      setIsGeneratingStudioPro(true)
-
-      const response = await fetch('/api/studio-pro/generate/carousel', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          topic,
-          slideCount,
-        }),
-        credentials: 'include',
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        const errorMessage = errorData.error || 'Carousel generation failed'
-        
-        if (response.status === 402) {
-          // Show buy credits modal instead of alert
-          setShowBuyCreditsModal(true)
-        } else {
-          alert(`Failed to generate carousel: ${errorMessage}`)
-        }
-        
-        throw new Error(errorMessage)
-      }
-
-      const result = await response.json()
-      console.log('[CAROUSEL] Generation result:', { 
-        success: result.success, 
-        imageCount: result.imageUrls?.length,
-        generationId: result.generationId 
-      })
-
-      // Add carousel results as a message in chat
-      if (result.imageUrls && result.imageUrls.length > 0) {
-        console.log('[CAROUSEL] Adding carousel images to chat:', result.imageUrls.length)
-        
-        const carouselMessage = {
-          id: `carousel-${result.generationId}-${Date.now()}`,
-          role: 'assistant' as const,
-          content: `Created your ${result.imageUrls.length}-slide carousel about "${topic}"! Here are your slides:`,
-          parts: [
-            {
-              type: 'text' as const,
-              text: `Created your ${result.imageUrls.length}-slide carousel about "${topic}"! Here are your slides:`,
-            },
-            ...result.imageUrls.map((url: string, index: number) => ({
-              type: 'image' as const,
-              image: url,
-            })),
-            {
-              type: 'text' as const,
-              text: `\n\nWant to turn this into a reel cover? Or adapt it for a different brand kit?`,
-            },
-          ],
-        }
-
-        console.log('[CAROUSEL] Carousel message structure:', {
-          id: carouselMessage.id,
-          partsCount: carouselMessage.parts.length,
-          imageParts: carouselMessage.parts.filter(p => p.type === 'image').length,
-        })
-
-        setMessages((prev: any[]) => {
-          const updated = [...prev, carouselMessage]
-          console.log('[CAROUSEL] Updated messages, total count:', updated.length)
-          return updated
-        })
-
-        // Add images to shared images for Videos tab
-        if (result.imageUrls && result.imageUrls.length > 0) {
-          addSharedImages(
-            result.imageUrls.map((url: string, index: number) => ({
-              url,
-              id: `carousel-${result.generationId}-${index}`,
-              prompt: `Carousel slide ${index + 1} about "${topic}"`,
-              description: `Carousel slide ${index + 1} about "${topic}"`,
-              category: "carousel",
-            }))
-          )
-        }
-
-        // Refresh gallery
-        if (onImageGenerated) {
-          onImageGenerated()
-        }
-      } else {
-        console.warn('[CAROUSEL] No image URLs in result:', result)
-      }
-
-      setIsGeneratingStudioPro(false)
-    } catch (error) {
-      console.error('[CAROUSEL] Generation error:', error)
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      
-      // Check if error is about insufficient credits
-      if (errorMessage.toLowerCase().includes("insufficient credits") || 
-          errorMessage.toLowerCase().includes("insufficient credit")) {
-        setShowBuyCreditsModal(true)
-      }
-      
-      setIsGeneratingStudioPro(false)
-    }
-  }, [onImageGenerated, setMessages, setIsGeneratingStudioPro])
-
-  // Studio Pro: Generate reel cover (defined BEFORE useEffect that processes messages)
-  const generateReelCover = useCallback(async ({ title, textOverlay }: { title: string; textOverlay?: string }) => {
-    try {
-      setIsGeneratingStudioPro(true)
-
-      const response = await fetch('/api/studio-pro/generate/reel-cover', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title,
-          textOverlay,
-        }),
-        credentials: 'include',
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        const errorMessage = errorData.error || 'Reel cover generation failed'
-        
-        if (response.status === 402) {
-          // Show buy credits modal instead of alert
-          setShowBuyCreditsModal(true)
-        } else {
-          alert(`Failed to generate reel cover: ${errorMessage}`)
-        }
-        
-        throw new Error(errorMessage)
-      }
-
-      const result = await response.json()
-
-      // Add reel cover result as a message in chat
-      if (result.imageUrl) {
-        const reelCoverMessage = {
-          id: `reel-cover-${result.generationId}-${Date.now()}`,
-          role: 'assistant' as const,
-          parts: [
-            {
-              type: 'text' as const,
-              text: `Created your reel cover for "${title}"!${textOverlay ? ` With text: "${textOverlay}"` : ''}`,
-            },
-            {
-              type: 'image' as const,
-              image: result.imageUrl,
-            },
-            {
-              type: 'text' as const,
-              text: `\n\nWant to create a carousel to go with this reel? Or adapt it for a different brand kit?`,
-            },
-          ],
-        }
-
-        setMessages((prev: any[]) => {
-          const updated = [...prev, reelCoverMessage as any]
-          return updated as any
-        })
-
-        // Add image to shared images for Videos tab
-        if (result.imageUrl) {
-          addImage({
-            url: result.imageUrl,
-            id: `reel-cover-${result.generationId}`,
-            prompt: `Reel cover for "${title}"${textOverlay ? ` with text: "${textOverlay}"` : ''}`,
-            description: `Reel cover for "${title}"${textOverlay ? ` with text: "${textOverlay}"` : ''}`,
-            category: "reel-cover",
-          })
-        }
-
-        // Refresh gallery
-        if (onImageGenerated) {
-          onImageGenerated()
-        }
-      }
-
-      setIsGeneratingStudioPro(false)
-    } catch (error) {
-      console.error('[REEL-COVER] Generation error:', error)
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      
-      // Check if error is about insufficient credits
-      if (errorMessage.toLowerCase().includes("insufficient credits") || 
-          errorMessage.toLowerCase().includes("insufficient credit")) {
-        setShowBuyCreditsModal(true)
-      }
-      
-      setIsGeneratingStudioPro(false)
-    }
-  }, [onImageGenerated, setMessages, setIsGeneratingStudioPro])
-
-  // Update refs when functions change
-  useEffect(() => {
-    generateCarouselRef.current = generateCarousel
-    generateReelCoverRef.current = generateReelCover
-  }, [generateCarousel, generateReelCover])
 
   // Detect [GENERATE_CONCEPTS] trigger in messages
   useEffect(() => {
@@ -580,24 +374,6 @@ export default function MayaChatScreen({
 
     const messageId = lastAssistantMessage.id?.toString() || `msg-${Date.now()}`
     
-    // Check if we've already added a carousel card to this message (prevent infinite loops)
-    if (carouselCardsAddedRef.current.has(messageId)) {
-      // Already added carousel card, skip
-      processedStudioProMessagesRef.current.add(messageId)
-      return
-    }
-    
-    // Also check if message already has carousel card in parts (from previous render)
-    const hasCarouselCard = lastAssistantMessage.parts?.some(
-      (p: any) => p.type === "tool-generateCarousel"
-    )
-    if (hasCarouselCard) {
-      // Already has carousel card, mark as processed and skip
-      carouselCardsAddedRef.current.add(messageId)
-      processedStudioProMessagesRef.current.add(messageId)
-      return
-    }
-    
     const alreadyHasConceptCards = lastAssistantMessage.parts?.some(
       (p: any) => p.type === "tool-generateConcepts" && p.output?.concepts?.length > 0,
     )
@@ -611,7 +387,7 @@ export default function MayaChatScreen({
     // 🔴 CRITICAL: Since status is NOT "streaming", the message is complete
     // Process the trigger immediately - the status check above ensures we only get here when streaming is done
 
-    console.log("[CAROUSEL-DEBUG] Checking message for triggers:", {
+    console.log("[v0] Checking message for triggers:", {
       messageId,
       hasContent: !!textContent,
       contentType: typeof textContent,
@@ -619,8 +395,7 @@ export default function MayaChatScreen({
       partsLength: lastAssistantMessage.parts?.length,
       textContentLength: textContent.length,
       textContentPreview: textContent.substring(0, 200),
-      isGeneratingStudioPro,
-      alreadyProcessed: processedStudioProMessagesRef.current.has(messageId),
+      isGeneratingPro,
       status,
     })
 
@@ -631,12 +406,12 @@ export default function MayaChatScreen({
     // const uploadModuleMatch = textContent.match(/\[SHOW_IMAGE_UPLOAD_MODULE\]\s*(.+?)(?:\n|$|\[|$)/i) || 
     //                          textContent.match(/\[SHOW_IMAGE_UPLOAD_MODULE\]/i)
     // 
-    // if (uploadModuleMatch && studioProMode && !messagesWithUploadModule.has(messageId)) {
+    // if (uploadModuleMatch && proMode && !messagesWithUploadModule.has(messageId)) {
     //   const categoryContext = uploadModuleMatch[1]?.trim() || textContent.split('[SHOW_IMAGE_UPLOAD_MODULE]')[1]?.trim() || ''
     //   console.log("[v0] ✅ Detected image upload module trigger:", {
     //     categoryContext,
     //     messageId,
-    //     studioProMode
+    //     proMode
     //   })
     //   
     //   // Mark this message to show upload module
@@ -646,7 +421,7 @@ export default function MayaChatScreen({
     // }
     
     // Check for [GENERATE_CONCEPTS] trigger (after images are uploaded)
-    // CRITICAL: In Studio Pro mode, only process this trigger if images have been uploaded
+    // CRITICAL: In Pro mode, only process this trigger if images have been uploaded
     // CRITICAL: Only process if message appears complete (trigger at end or minimal text after)
     const conceptMatch = textContent.match(/\[GENERATE_CONCEPTS\]\s*(.+?)(?:\n|$|\[|$)/i) || 
                         textContent.match(/\[GENERATE_CONCEPTS\]/i)
@@ -657,14 +432,14 @@ export default function MayaChatScreen({
         conceptRequest,
         fullText: textContent.substring(0, 200),
         messageId,
-        studioProMode
+        proMode
       })
       
       setPendingConceptRequest(conceptRequest || 'concept generation')
       return // Don't check other triggers for concept generation
-    } else if (studioProMode && textContent.toLowerCase().includes('concept') && !isGeneratingConcepts && !pendingConceptRequest) {
+    } else if (proMode && textContent.toLowerCase().includes('concept') && !isGeneratingConcepts && !pendingConceptRequest) {
       // FALLBACK: If Maya mentions "concept" but didn't include trigger, log for debugging
-      console.log("[v0] ⚠️ Studio Pro mode: Maya mentioned 'concept' but no [GENERATE_CONCEPTS] trigger found:", {
+      console.log("[v0] ⚠️ Pro mode: Maya mentioned 'concept' but no [GENERATE_CONCEPTS] trigger found:", {
         textContent: textContent.substring(0, 300),
         messageId,
         hasTrigger: textContent.includes('[GENERATE_CONCEPTS]')
@@ -673,125 +448,7 @@ export default function MayaChatScreen({
 
     // Feed trigger detection moved to MayaFeedTab component
     // (Feed tab handles its own triggers: [CREATE_FEED_STRATEGY], [GENERATE_CAPTIONS], [GENERATE_STRATEGY])
-
-    // Check for Studio Pro generation triggers FIRST (before other Studio Pro checks)
-    // [GENERATE_CAROUSEL: ...]
-    // Use a more robust regex that handles the full parameter string
-    console.log("[CAROUSEL-DEBUG] Checking for carousel trigger in textContent:", {
-      textContentLength: textContent.length,
-      containsGenerateCarousel: textContent.includes('[GENERATE_CAROUSEL'),
-      isGeneratingStudioPro,
-    })
-    
-    const carouselMatch = textContent.match(/\[GENERATE_CAROUSEL:\s*([^\]]+)\]/i)
-    console.log("[CAROUSEL-DEBUG] Regex match result:", carouselMatch ? "MATCHED" : "NO MATCH", carouselMatch)
-    
-    if (carouselMatch && !isGeneratingStudioPro) {
-      const params = carouselMatch[1].trim()
-      console.log("[CAROUSEL] Raw params extracted:", params)
-      
-      // Parse params: topic, slideCount
-      // Format: [GENERATE_CAROUSEL: topic: X, slides: Y] or [GENERATE_CAROUSEL: X, slides: Y]
-      // Try to match "topic: ..." first, then fall back to extracting before "slides:"
-      let topic = ''
-      let slideCount = 5
-      
-      // Try explicit "topic:" format
-      const topicMatch = params.match(/topic[:\s]+([^,]+?)(?:\s*,\s*slides?|$)/i)
-      if (topicMatch) {
-        topic = topicMatch[1].trim()
-      } else {
-        // Try to extract everything before "slides:" or the last number
-        const beforeSlides = params.split(/,\s*slides?[:\s]*/i)[0]
-        if (beforeSlides) {
-          topic = beforeSlides.trim()
-        } else {
-          // Fallback: take everything before the last comma or number
-          topic = params.split(',').slice(0, -1).join(',').trim() || params.split(/\d+/)[0].trim() || 'carousel'
-        }
-      }
-      
-      // Extract slide count
-      const slideCountMatch = params.match(/slides?[:\s]*(\d+)/i) || params.match(/(\d+)\s*slides?/i) || params.match(/(\d+)$/)
-      if (slideCountMatch) {
-        slideCount = parseInt(slideCountMatch[1])
-      }
-      
-      // Clean up topic (remove any trailing commas or numbers)
-      topic = topic.replace(/,\s*$/, '').trim()
-      
-      console.log("[CAROUSEL] Detected carousel generation trigger:", { topic, slideCount, originalParams: params })
-      
-      if (topic && slideCount > 0) {
-        // Mark as processed FIRST to prevent infinite loops
-        processedStudioProMessagesRef.current.add(messageId)
-        
-        // Check if carousel card already exists in the message
-        const existingParts = lastAssistantMessage.parts || []
-        const hasCarouselCard = existingParts.some(
-          (p: any) => p.type === "tool-generateCarousel"
-        )
-        
-        // Mark that we're adding a carousel card to prevent infinite loops
-        carouselCardsAddedRef.current.add(messageId)
-        
-        // Instead of generating immediately, add a carousel card part to the message
-        // This allows the user to click the card to generate (like concept cards)
-        const carouselCardPart = {
-          type: "tool-generateCarousel",
-          output: {
-            state: "ready",
-            topic,
-            slideCount,
-            credits: slideCount * 5,
-          },
-        }
-        
-        // Add the carousel card part to the last assistant message
-        setMessages((prev: any[]) => {
-          const updated = [...prev]
-          const lastIndex = updated.length - 1
-          if (lastIndex >= 0 && updated[lastIndex].role === "assistant") {
-            const lastMsg = updated[lastIndex]
-            const msgParts = lastMsg.parts || []
-            // Double-check it doesn't already exist (race condition protection)
-            const alreadyHasCard = msgParts.some(
-              (p: any) => p.type === "tool-generateCarousel"
-            )
-            if (!alreadyHasCard) {
-              updated[lastIndex] = {
-                ...lastMsg,
-                parts: [...msgParts, carouselCardPart as any], // Type assertion for custom tool part
-              }
-            }
-          }
-          return updated
-        })
-        
-        return // Don't check other triggers after carousel
-      } else {
-        console.warn("[CAROUSEL] Failed to parse carousel params:", { topic, slideCount, params })
-      }
-    }
-
-    // Check for Studio Pro generation triggers: [GENERATE_REEL_COVER: ...]
-    const reelCoverMatch = textContent.match(/\[GENERATE_REEL_COVER:\s*(.+?)\]/i)
-    if (reelCoverMatch && !isGeneratingStudioPro) {
-      const params = reelCoverMatch[1].trim()
-      // Parse params: title, textOverlay
-      // Format: [GENERATE_REEL_COVER: title: X, text: Y] or [GENERATE_REEL_COVER: X, Y]
-      const titleMatch = params.match(/title[:\s]+([^,]+)/i) || params.match(/^([^,]+?)(?:\s*,\s*text|$)/i)
-      const textMatch = params.match(/text[:\s]+([^,]+)/i) || params.match(/,\s*(.+)$/i)
-      
-      const title = titleMatch?.[1]?.trim() || params.split(',')[0]?.trim() || 'Reel Cover'
-      const textOverlay = textMatch?.[1]?.trim() || undefined
-      
-      console.log("[REEL-COVER] Detected reel cover generation trigger:", { title, textOverlay })
-      processedStudioProMessagesRef.current.add(messageId)
-      // Call generateReelCover via ref to avoid dependency issues
-      generateReelCoverRef.current?.({ title, textOverlay })
-    }
-  }, [messages, status, isGeneratingConcepts, pendingConceptRequest, isGeneratingStudioPro, studioProMode, messagesWithUploadModule, activeMayaTab, isCreatingFeed])
+  }, [messages, status, isGeneratingConcepts, pendingConceptRequest, proMode, messagesWithUploadModule, activeMayaTab, isCreatingFeed])
 
   // The problem was: message was saved BEFORE concepts were generated, so concepts were never persisted
   useEffect(() => {
@@ -979,16 +636,18 @@ export default function MayaChatScreen({
 
         let response: Response
         try {
-          // 🔴 CRITICAL FIX: Use Pro Mode API when studioProMode is true
-          const apiEndpoint = studioProMode 
+          // 🔴 CRITICAL FIX: Use Pro Mode API when proMode is true
+          // Double-check proMode value to ensure we're using the current state
+          const currentProMode = proMode
+          const apiEndpoint = currentProMode 
             ? "/api/maya/pro/generate-concepts"
             : "/api/maya/generate-concepts"
           
-          console.log("[v0] 📤 Calling concept generation API:", apiEndpoint, "studioProMode:", studioProMode)
+          console.log("[v0] 📤 Calling concept generation API:", apiEndpoint, "proMode:", currentProMode, "pendingRequest:", pendingConceptRequest?.substring(0, 50))
           
           // Pro Mode API expects: userRequest, imageLibrary, category (optional), essenceWords (optional)
-          // Classic Mode API expects: userRequest, count, conversationContext, referenceImageUrl, studioProMode, etc.
-          const requestBody = studioProMode
+          // Classic Mode API expects: userRequest, count, conversationContext, referenceImageUrl, proMode, etc.
+          const requestBody = currentProMode
             ? {
                 userRequest: pendingConceptRequest,
                 imageLibrary: imageLibrary, // Required for Pro Mode
@@ -1002,7 +661,7 @@ export default function MayaChatScreen({
                 // consistencyMode is Pro Mode only - not sent in Classic Mode
                 conversationContext: conversationContext || undefined,
                 referenceImageUrl: allImages.length > 0 ? allImages[0] : referenceImageUrl, // Primary image
-                studioProMode: studioProMode, // Pass Studio Pro mode to use Nano Banana prompting
+                proMode: proMode, // Pass Pro mode to use Nano Banana prompting
                 enhancedAuthenticity: !hasProFeatures && enhancedAuthenticity, // Only pass if Classic mode and toggle is ON
                 guidePrompt: guidePromptActive && extractedGuidePrompt ? extractedGuidePrompt : undefined, // Pass guide prompt if active
                 // Include full image library in Pro Mode
@@ -1055,7 +714,7 @@ export default function MayaChatScreen({
           hasState: !!result.state,
           state: result.state,
           conceptsCount: concepts?.length,
-          isProMode: studioProMode,
+          isProMode: proMode,
         })
 
         if (concepts && Array.isArray(concepts) && concepts.length > 0) {
@@ -1074,9 +733,9 @@ export default function MayaChatScreen({
             }
           }
 
-          // In Studio Pro mode, show concept cards (they now support image upload/selection)
+          // In Pro mode, show concept cards (they now support image upload/selection)
           // Workbench is kept separate for manual prompt creation
-          // Always show concept cards - they work in both Classic and Studio Pro modes
+          // Always show concept cards - they work in both Classic and Pro modes
           setMessages((prevMessages: any[]) => {
             const newMessages = [...prevMessages]
             const lastIndex = newMessages.length - 1
@@ -1159,7 +818,7 @@ export default function MayaChatScreen({
     }
 
     generateConcepts()
-  }, [pendingConceptRequest, isGeneratingConcepts, setMessages, messages, chatId])
+  }, [pendingConceptRequest, isGeneratingConcepts, setMessages, messages, chatId, proMode, imageLibrary, consistencyMode, hasImageLibrary, hasProFeatures, enhancedAuthenticity, getMessageText])
 
   useEffect(() => {
     // Don't save if we're currently generating concepts - wait for them to be added first
@@ -1745,7 +1404,7 @@ export default function MayaChatScreen({
           setUserGender(data.gender || null)
           
           // 🔴 FIX: Use Pro Mode prompts if in Pro Mode
-          if (studioProMode) {
+          if (proMode) {
             // Get Pro Mode category-specific prompts
             const proPrompts = getProModeQuickSuggestions()
             console.log("[v0] Setting Pro Mode prompts:", proPrompts.length)
@@ -1762,12 +1421,12 @@ export default function MayaChatScreen({
         }
       } catch (error) {
         console.error("[v0] Error fetching user gender:", error)
-        // Fallback: use studioProMode directly if hasProFeatures not available
-        setCurrentPrompts(studioProMode ? getProModeQuickSuggestions() : getRandomPrompts(null))
+        // Fallback: use proMode directly if hasProFeatures not available
+        setCurrentPrompts(proMode ? getProModeQuickSuggestions() : getRandomPrompts(null))
       }
     }
     fetchUserGender()
-  }, [studioProMode, activeMayaTab])
+  }, [proMode, activeMayaTab])
 
   useEffect(() => {
     const fetchCredits = async () => {
@@ -2153,9 +1812,9 @@ export default function MayaChatScreen({
 
     // Call hook's base handler
     await baseHandleNewChat()
-  }, [studioProMode, clearLibrary, baseHandleNewChat, clearSharedImages])
+  }, [proMode, clearLibrary, baseHandleNewChat, clearSharedImages])
 
-  // Handle mode switching - creates a new chat when switching between Classic and Studio Pro
+  // Handle mode switching - creates a new chat when switching between Classic and Pro
   // Handle saving concept to guide (admin mode)
   const handleSaveToGuide = useCallback(async (concept: any, imageUrl?: string) => {
     if (!isAdmin) return // Only available in admin mode
@@ -2239,15 +1898,15 @@ export default function MayaChatScreen({
 
   const handleModeSwitch = async (newMode: boolean) => {
     // Only create new chat if mode is actually changing
-    if (studioProMode === newMode) {
+    if (proMode === newMode) {
       console.log("[v0] Mode switch skipped - already in", newMode ? "Pro" : "Classic", "mode")
       return
     }
 
     console.log("[v0] 🔄 Switching mode:", {
-      from: studioProMode ? "Pro" : "Classic",
+      from: proMode ? "Pro" : "Classic",
       to: newMode ? "Pro" : "Classic",
-      forcedMode: forcedStudioProMode
+      forcedMode: forcedProMode
     })
 
     try {
@@ -2272,7 +1931,7 @@ export default function MayaChatScreen({
       
       // Switch mode first (this will be saved to localStorage by the hook)
       console.log("[v0] Setting mode to:", newMode ? "Pro" : "Classic")
-      setStudioProMode(newMode)
+      setProMode(newMode)
       
       // Then reset chat state
       setChatId(data.chatId)
@@ -2282,6 +1941,8 @@ export default function MayaChatScreen({
       setUploadedImages([]) // Clear Pro mode images
       setPromptSuggestions([]) // Clear prompt suggestions
       promptGenerationTriggeredRef.current.clear() // Clear prompt generation tracking
+      setPendingConceptRequest(null) // 🔴 CRITICAL: Clear any pending concept requests to prevent using old mode
+      setIsGeneratingConcepts(false) // Also clear generation state
 
       localStorage.setItem("mayaCurrentChatId", data.chatId.toString())
 
@@ -2339,214 +2000,6 @@ export default function MayaChatScreen({
     setShowNavMenu(false)
   }
 
-  // Studio Pro: Handle product image upload
-  const handleProductUpload = async (e: any) => {
-    const files = Array.from(e.target?.files || []) as File[]
-    if (files.length === 0) return
-
-    // Check total limit
-    const currentCount = uploadedImages.length
-    const remainingSlots = 14 - currentCount
-    const filesToUpload = files.slice(0, remainingSlots)
-    
-    if (files.length > remainingSlots) {
-      alert(`Only ${remainingSlots} more image${remainingSlots !== 1 ? 's' : ''} can be added (14 total limit)`)
-    }
-
-    try {
-      setIsUploadingImage(true)
-      
-      // Upload all files
-      for (const file of filesToUpload) {
-        const formData = new FormData()
-        formData.append('file', file)
-
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData
-        })
-
-        if (!response.ok) throw new Error('Upload failed')
-
-        const { url } = await response.json()
-
-        // Prompt for product label
-        const label = prompt(`What product is this? (${file.name})`) || 'Product'
-
-        // Add to uploaded images
-        setUploadedImages(prev => [
-          ...prev,
-          {
-            url,
-            type: 'product',
-            source: 'upload',
-            label
-          }
-        ])
-
-        console.log('[STUDIO-PRO] Product uploaded:', label)
-      }
-    } catch (error) {
-      console.error('[STUDIO-PRO] Upload error:', error)
-      alert('Failed to upload image. Please try again.')
-    } finally {
-      setIsUploadingImage(false)
-    }
-  }
-
-  // Studio Pro: Clear all uploaded images
-  const clearStudioProImages = () => {
-    setUploadedImages([])
-  }
-
-  // Studio Pro: Generate content
-  const generateStudioProContent = async (mode: string, prompt: string) => {
-    try {
-      setIsGeneratingStudioPro(true)
-
-      // Prepare input images from uploaded images
-      const baseImages = uploadedImages
-        .filter(img => img.type === 'base')
-        .map(img => ({ url: img.url, type: 'user-photo' }))
-      
-      const productImages = uploadedImages
-        .filter(img => img.type === 'product')
-        .map(img => ({ url: img.url, label: img.label || 'product' }))
-
-      if (baseImages.length === 0) {
-        alert('Please select at least one base image from your gallery')
-        setIsGeneratingStudioPro(false)
-        return
-      }
-
-      // Validate total image count (Nano Banana Pro supports up to 14 images)
-      const totalImages = baseImages.length + productImages.length
-      if (totalImages > 14) {
-        alert(`Too many images selected. Maximum 14 images allowed (you have ${totalImages}).`)
-        setIsGeneratingStudioPro(false)
-        return
-      }
-
-      const response = await fetch('/api/maya/generate-studio-pro', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          mode,
-          userRequest: prompt,
-          inputImages: {
-            baseImages,
-            productImages
-          },
-          resolution: '2K',
-          aspectRatio: '1:1'
-        })
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        const errorMessage = errorData.error || 'Generation failed'
-        
-        // Handle insufficient credits
-        if (response.status === 402) {
-          console.error('[STUDIO-PRO] Insufficient credits:', errorMessage)
-          // Show buy credits modal instead of alert
-          setShowBuyCreditsModal(true)
-        } else {
-          console.error('[STUDIO-PRO] Generation failed:', errorMessage)
-          alert(`Failed to generate: ${errorMessage}`)
-        }
-        
-        throw new Error(errorMessage)
-      }
-
-      const result = await response.json()
-
-      // Poll for completion
-      pollStudioProStatus(result.predictionId)
-
-    } catch (error) {
-      console.error('[STUDIO-PRO] Generation error:', error)
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      
-      // Check if error is about insufficient credits
-      if (errorMessage.toLowerCase().includes("insufficient credits") || 
-          errorMessage.toLowerCase().includes("insufficient credit")) {
-        setShowBuyCreditsModal(true)
-      }
-      
-      setIsGeneratingStudioPro(false)
-    }
-  }
-
-  // Studio Pro: Poll status
-  const pollStudioProStatus = async (predictionId: string) => {
-    const maxAttempts = 60 // 5 minutes max
-    let attempts = 0
-
-    const checkStatus = async () => {
-      try {
-        const response = await fetch(
-          `/api/maya/check-studio-pro?predictionId=${predictionId}`
-        )
-        const status = await response.json()
-
-        if (status.status === 'succeeded') {
-          setIsGeneratingStudioPro(false)
-          
-          // Refresh gallery to show new image
-          if (studioProMode) {
-            loadGalleryImages()
-          }
-          
-          // Add result to messages
-          setMessages((prev: any[]) => {
-            const newMessages = [...prev]
-            const lastIndex = newMessages.length - 1
-            
-            if (lastIndex >= 0 && newMessages[lastIndex].role === 'assistant') {
-              newMessages[lastIndex] = {
-                ...newMessages[lastIndex],
-                parts: [
-                  ...(newMessages[lastIndex].parts || []),
-                  {
-                    type: 'studio-pro-result',
-                    output: {
-                      state: 'ready',
-                      imageUrl: status.output
-                    }
-                  } as any
-                ]
-              }
-            }
-            
-            return newMessages
-          })
-          
-          return
-        }
-
-        if (status.status === 'failed') {
-          setIsGeneratingStudioPro(false)
-          alert('Generation failed. Please try again.')
-          return
-        }
-
-        // Still processing - check again
-        if (attempts < maxAttempts) {
-          attempts++
-          setTimeout(checkStatus, 5000) // Check every 5 seconds
-        } else {
-          setIsGeneratingStudioPro(false)
-        }
-
-      } catch (error) {
-        console.error('[STUDIO-PRO] Status check error:', error)
-        setIsGeneratingStudioPro(false)
-      }
-    }
-
-    checkStatus()
-  }
 
   const filteredMessages = messages.filter((msg) => {
     if (contentFilter === "all") return true
@@ -2566,7 +2019,7 @@ export default function MayaChatScreen({
 
   // Helper function to parse prompt suggestions from Maya's messages
   const parsePromptSuggestions = (text: string): Array<{ label: string; prompt: string; description?: string }> => {
-    if (!text || !studioProMode) return []
+    if (!text || !proMode) return []
     
     const suggestions: Array<{ label: string; prompt: string; description?: string }> = []
     
@@ -2957,8 +2410,8 @@ export default function MayaChatScreen({
 
   const isEmpty = !messages || messages.length === 0
 
-  // NOTE: Workbench should always be available in Studio Pro mode for manual creation
-  // Therefore, we always show the chat UI when in Studio Pro mode, which includes the workbench
+  // NOTE: Workbench should always be available in Pro mode for manual creation
+  // Therefore, we always show the chat UI when in Pro mode, which includes the workbench
   // The old ProModeWrapper (form-based interface) has been removed in favor of the workbench-based chat UI
 
   return (
@@ -2995,7 +2448,7 @@ export default function MayaChatScreen({
         }}
       >
         <MayaHeader
-          studioProMode={studioProMode}
+          proMode={proMode}
           chatTitle={chatTitle}
           showNavMenu={showNavMenu}
           onToggleNavMenu={() => setShowNavMenu(!showNavMenu)}
@@ -3086,9 +2539,9 @@ export default function MayaChatScreen({
         </div>
       )}
 
-      {/* Old Simplified Studio Pro Guidance removed - now using ImageUploadFlow component */}
+      {/* Old Simplified Pro Mode Guidance removed - now using ImageUploadFlow component */}
 
-      {/* Old Studio Pro Controls removed - now using ImageUploadFlow component */}
+      {/* Old Pro Mode Controls removed - now using ImageUploadFlow component */}
 
       {/* Gallery Selector Modal */}
       {showGallerySelector && (
@@ -3291,7 +2744,7 @@ export default function MayaChatScreen({
         onAspectRatioChange={setAspectRatio}
         onRealismStrengthChange={setRealismStrength}
         onEnhancedAuthenticityChange={setEnhancedAuthenticity}
-        studioProMode={studioProMode}
+        proMode={proMode}
       />
 
       {/* Tab Content - Photos Tab */}
@@ -3308,10 +2761,10 @@ export default function MayaChatScreen({
         messages={messages}
         filteredMessages={filteredMessages}
         setMessages={setMessages}
-        studioProMode={studioProMode}
+        proMode={proMode}
         isTyping={isTyping}
         isGeneratingConcepts={isGeneratingConcepts}
-        isGeneratingStudioPro={isGeneratingStudioPro}
+        isGeneratingPro={isGeneratingPro}
         contentFilter={contentFilter}
         messagesContainerRef={messagesContainerRef as React.RefObject<HTMLDivElement>}
         messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
@@ -3330,7 +2783,6 @@ export default function MayaChatScreen({
         userId={userId}
         user={user}
         promptSuggestions={promptSuggestions}
-        generateCarouselRef={generateCarouselRef}
       />
           {/* Empty State - Pro Features: Image Upload Flow, Classic: Welcome Screen */}
           {isEmpty && hasProFeatures && !isTyping && (
@@ -3481,7 +2933,7 @@ export default function MayaChatScreen({
                             onSelect={handleSendMessage}
                             disabled={isTyping || isGeneratingConcepts}
                       variant="empty-state"
-                            studioProMode={studioProMode}
+                            proMode={proMode}
                             isEmpty={isEmpty}
                           />
                   </div>
@@ -3491,7 +2943,7 @@ export default function MayaChatScreen({
           )}
 
           {/* Classic Mode Empty State */}
-          {isEmpty && !studioProMode && !isTyping && (
+          {isEmpty && !proMode && !isTyping && (
             <div className="flex flex-col items-center justify-center h-full px-4 py-8 animate-in fade-in duration-500">
               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-stone-200/60 overflow-hidden mb-4 sm:mb-6">
                 <img
@@ -3511,7 +2963,7 @@ export default function MayaChatScreen({
                 onSelect={handleSendMessage}
                 disabled={isTyping}
                 variant="empty-state"
-                studioProMode={studioProMode}
+                proMode={proMode}
               />
             </div>
           )}
@@ -3537,7 +2989,7 @@ export default function MayaChatScreen({
             onSelect={handleSendMessage}
             disabled={isTyping}
             variant="input-area"
-            studioProMode={studioProMode}
+            proMode={proMode}
             isEmpty={isEmpty}
             uploadedImage={uploadedImage}
           />
@@ -3561,7 +3013,7 @@ export default function MayaChatScreen({
           {/* Input Area - Unified for both Classic and Pro Mode */}
           {/* Pro Feature: Generation Options (collapsible section with quick prompts and concept consistency)
               Progressive enhancement: This section only appears when Pro features are enabled */}
-          {studioProMode && (
+          {proMode && (
               <div 
                 className="w-full border-b border-stone-200/30"
                 style={{
@@ -3610,7 +3062,7 @@ export default function MayaChatScreen({
                         onSelect={handleSendMessage}
                         disabled={isTyping || isGeneratingConcepts}
                         variant="pro-mode-options"
-                        studioProMode={studioProMode}
+                        proMode={proMode}
                         isEmpty={isEmpty}
                         uploadedImage={uploadedImage}
                       />
@@ -3662,7 +3114,7 @@ export default function MayaChatScreen({
             onManageLibrary={undefined} // Removed - image icon handles library access
             onNewProject={handleNewChat}
             onHistory={() => hasProFeatures ? setShowProModeHistory(true) : setShowHistory(true)}
-            studioProMode={studioProMode}
+            proMode={proMode}
           />
         </div>
       )}
@@ -3722,7 +3174,7 @@ export default function MayaChatScreen({
             userId={userId}
             creditBalance={creditBalance}
             onCreditsUpdate={setCreditBalance}
-            studioProMode={studioProMode}
+            proMode={proMode}
             imageLibrary={imageLibrary}
             onOpenUploadFlow={() => setShowUploadFlow(true)}
           />
@@ -3735,11 +3187,11 @@ export default function MayaChatScreen({
               messages={messages}
               filteredMessages={filteredMessages}
               setMessages={setMessages}
-              studioProMode={studioProMode}
+              proMode={proMode}
               isTyping={isTyping}
               status={status}
               isGeneratingConcepts={isGeneratingConcepts}
-              isGeneratingStudioPro={isGeneratingStudioPro}
+              isGeneratingPro={isGeneratingPro}
               isCreatingFeed={isCreatingFeed}
           setIsCreatingFeed={setIsCreatingFeed}
               contentFilter={contentFilter}
@@ -3759,7 +3211,6 @@ export default function MayaChatScreen({
               userId={userId}
               user={user}
               promptSuggestions={promptSuggestions}
-              generateCarouselRef={generateCarouselRef}
           styleStrength={styleStrength}
           promptAccuracy={promptAccuracy}
           aspectRatio={aspectRatio}
@@ -3790,7 +3241,7 @@ export default function MayaChatScreen({
         </div>
       )}
 
-        {/* Studio Pro Onboarding Modal - Rendered via Portal to avoid stacking context issues */}
+        {/* Pro Mode Onboarding Modal - Rendered via Portal to avoid stacking context issues */}
         {showStudioProOnboarding && typeof window !== 'undefined' && createPortal(
           <div 
             className="fixed inset-0 bg-black/50 flex items-start sm:items-center justify-center p-4 overflow-y-auto" 
@@ -3812,7 +3263,7 @@ export default function MayaChatScreen({
               
               {/* Header */}
               <h2 className="text-xl font-serif font-light tracking-[0.15em] uppercase text-stone-900 mb-2 pr-8">
-                Studio Pro
+                Pro
               </h2>
               <p className="text-sm text-stone-600 mb-6 leading-relaxed">
                 Professional content creation guided by Maya
@@ -3920,8 +3371,8 @@ export default function MayaChatScreen({
 
         {showChatMenu && (
           <div className="absolute bottom-full left-3 right-3 mb-2 bg-white/95 backdrop-blur-3xl border border-stone-200 rounded-2xl overflow-hidden shadow-xl shadow-stone-950/10 animate-in slide-in-from-bottom-2 duration-300">
-            {studioProMode ? (
-              // Studio Pro Mode Menu (text-only, no icons)
+            {proMode ? (
+              // Pro Mode Menu (text-only, no icons)
               <>
                 <button
                   onClick={() => {

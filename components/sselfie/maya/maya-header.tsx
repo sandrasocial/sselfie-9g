@@ -32,7 +32,7 @@ interface Guide {
 
 interface MayaHeaderUnifiedProps {
   // Mode
-  studioProMode: boolean
+  proMode: boolean
   
   // Classic Mode props
   chatTitle: string
@@ -71,7 +71,7 @@ interface MayaHeaderUnifiedProps {
  * Unified Maya Header Component
  * 
  * Single header component that handles both Classic and Pro Mode.
- * Uses progressive disclosure - Pro features appear when studioProMode is enabled.
+ * Uses progressive disclosure - Pro features appear when proMode is enabled.
  * 
  * **Progressive Enhancement Pattern:**
  * - Base UI structure is the same for both modes
@@ -93,7 +93,7 @@ interface MayaHeaderUnifiedProps {
  * - Settings access
  */
 export default function MayaHeaderUnified({
-  studioProMode,
+  proMode,
   chatTitle,
   showNavMenu,
   onToggleNavMenu,
@@ -129,10 +129,10 @@ export default function MayaHeaderUnified({
 
   useEffect(() => {
     setIsMounted(true)
-    if (studioProMode && isAdmin && userId) {
+    if (proMode && isAdmin && userId) {
       loadGuides()
     }
-  }, [studioProMode, isAdmin, userId])
+  }, [proMode, isAdmin, userId])
 
   const loadGuides = async () => {
     if (!userId) return
@@ -251,7 +251,7 @@ export default function MayaHeaderUnified({
 
           {/* Mode Toggle - Always show (segmented control showing both options)
               Progressive enhancement: Same component, different state based on current mode */}
-          {studioProMode ? (
+          {proMode ? (
             onSwitchToClassic && (
               <MayaModeToggle
                 currentMode="pro"
@@ -274,7 +274,7 @@ export default function MayaHeaderUnified({
               onClick={onToggleNavMenu}
               data-menu-trigger
               className="touch-manipulation active:scale-95 flex items-center justify-center shrink-0 min-w-[44px] min-h-[44px]"
-              style={studioProMode ? {
+              style={proMode ? {
                 width: '44px',
                 height: '44px',
                 minWidth: '44px',
@@ -286,18 +286,18 @@ export default function MayaHeaderUnified({
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
               } : {}}
-              onMouseEnter={studioProMode ? (e) => {
+              onMouseEnter={proMode ? (e) => {
                 e.currentTarget.style.backgroundColor = Colors.hover
                 e.currentTarget.style.borderColor = Colors.primary
               } : undefined}
-              onMouseLeave={studioProMode ? (e) => {
+              onMouseLeave={proMode ? (e) => {
                 e.currentTarget.style.backgroundColor = 'transparent'
                 e.currentTarget.style.borderColor = Colors.border
               } : undefined}
               aria-label="Navigation menu"
               aria-expanded={showNavMenu}
             >
-              {studioProMode ? (
+              {proMode ? (
                 <MoreVertical size={18} strokeWidth={2} />
               ) : (
                 <span className="text-xs sm:text-sm font-serif tracking-[0.2em] text-stone-950 uppercase">MENU</span>
@@ -349,7 +349,7 @@ export default function MayaHeaderUnified({
             ref={menuRef}
             className="fixed top-0 right-0 bottom-0 w-80 bg-white/95 backdrop-blur-3xl border-l border-stone-200 shadow-2xl z-[100] animate-in slide-in-from-right duration-300 flex flex-col"
             style={{
-              borderColor: studioProMode ? Colors.border : undefined,
+              borderColor: proMode ? Colors.border : undefined,
               height: '100vh',
               maxHeight: '100vh',
             }}
@@ -358,11 +358,11 @@ export default function MayaHeaderUnified({
             <div
               className="shrink-0 flex items-center justify-between px-6 py-4 border-b"
               style={{
-                borderColor: studioProMode ? Colors.border : undefined,
+                borderColor: proMode ? Colors.border : undefined,
               }}
             >
               <h3
-                style={studioProMode ? {
+                style={proMode ? {
                   fontFamily: Typography.subheaders.fontFamily,
                   fontSize: Typography.subheaders.sizes.md,
                   fontWeight: Typography.subheaders.weights.regular,
@@ -371,7 +371,7 @@ export default function MayaHeaderUnified({
                 } : {
                   fontFamily: 'inherit',
                 }}
-                className={!studioProMode ? "text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-950" : ""}
+                className={!proMode ? "text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-950" : ""}
               >
                 Menu
               </h3>
@@ -389,10 +389,10 @@ export default function MayaHeaderUnified({
               <div
                 className="shrink-0 px-6 py-6 border-b"
                 style={{
-                  borderColor: studioProMode ? Colors.border : undefined,
+                  borderColor: proMode ? Colors.border : undefined,
                 }}
               >
-                {studioProMode ? (
+                {proMode ? (
                   <>
                     <div
                       style={{
@@ -439,7 +439,7 @@ export default function MayaHeaderUnified({
                     onToggleNavMenu()
                   }}
                   className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-stone-50"
-                  style={studioProMode ? {
+                  style={proMode ? {
                     fontFamily: Typography.ui.fontFamily,
                     fontSize: Typography.ui.sizes.md,
                     fontWeight: Typography.ui.weights.medium,
@@ -455,7 +455,7 @@ export default function MayaHeaderUnified({
                     onToggleNavMenu()
                   }}
                   className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-stone-50"
-                  style={studioProMode ? {
+                  style={proMode ? {
                     fontFamily: Typography.ui.fontFamily,
                     fontSize: Typography.ui.sizes.md,
                     fontWeight: Typography.ui.weights.medium,
@@ -470,7 +470,7 @@ export default function MayaHeaderUnified({
                     onToggleNavMenu()
                   }}
                   className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors bg-stone-100/50 border-l-2"
-                  style={studioProMode ? {
+                  style={proMode ? {
                     fontFamily: Typography.ui.fontFamily,
                     fontSize: Typography.ui.sizes.md,
                     fontWeight: Typography.ui.weights.medium,
@@ -488,7 +488,7 @@ export default function MayaHeaderUnified({
                     onToggleNavMenu()
                   }}
                   className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-stone-50"
-                  style={studioProMode ? {
+                  style={proMode ? {
                     fontFamily: Typography.ui.fontFamily,
                     fontSize: Typography.ui.sizes.md,
                     fontWeight: Typography.ui.weights.medium,
@@ -503,7 +503,7 @@ export default function MayaHeaderUnified({
                     onToggleNavMenu()
                   }}
                   className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-stone-50"
-                  style={studioProMode ? {
+                  style={proMode ? {
                     fontFamily: Typography.ui.fontFamily,
                     fontSize: Typography.ui.sizes.md,
                     fontWeight: Typography.ui.weights.medium,
@@ -518,7 +518,7 @@ export default function MayaHeaderUnified({
                     onToggleNavMenu()
                   }}
                   className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-stone-50"
-                  style={studioProMode ? {
+                  style={proMode ? {
                     fontFamily: Typography.ui.fontFamily,
                     fontSize: Typography.ui.sizes.md,
                     fontWeight: Typography.ui.weights.medium,
@@ -529,7 +529,7 @@ export default function MayaHeaderUnified({
                 </button>
 
                 {/* Pro Mode: Generation Settings */}
-                {studioProMode && onSettings && (
+                {proMode && onSettings && (
                   <button
                     onClick={() => {
                       onSettings()
@@ -548,7 +548,7 @@ export default function MayaHeaderUnified({
                 )}
 
                 {/* Switch Mode - Pro Mode shows "Switch to Classic" in menu on mobile */}
-                {studioProMode && onSwitchToClassic && (
+                {proMode && onSwitchToClassic && (
                   <>
                     <div
                       className="border-t my-2"
@@ -575,7 +575,7 @@ export default function MayaHeaderUnified({
                 )}
 
                 {/* Pro Mode: Manage Library section (if available) */}
-                {studioProMode && libraryCount > 0 && (
+                {proMode && libraryCount > 0 && (
                   <>
                     <div
                       className="border-t my-2"
@@ -678,7 +678,7 @@ export default function MayaHeaderUnified({
               <div
                 className="shrink-0 px-6 py-4 border-t bg-white/95"
                 style={{
-                  borderColor: studioProMode ? Colors.border : undefined,
+                  borderColor: proMode ? Colors.border : undefined,
                 }}
               >
                 <button
@@ -694,7 +694,7 @@ export default function MayaHeaderUnified({
                     fontWeight: Typography.ui.weights.medium,
                     color: '#dc2626',
                     backgroundColor: 'transparent',
-                    border: `1px solid ${studioProMode ? Colors.border : '#e5e7eb'}`,
+                    border: `1px solid ${proMode ? Colors.border : '#e5e7eb'}`,
                   }}
                   onMouseEnter={(e) => {
                     if (!isLoggingOut) {

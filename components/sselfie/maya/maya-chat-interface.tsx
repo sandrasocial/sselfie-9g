@@ -18,12 +18,12 @@ interface MayaChatInterfaceProps {
   setMessages: React.Dispatch<React.SetStateAction<UIMessage[]>>
   
   // Mode
-  studioProMode: boolean
+  proMode: boolean
   
   // States
   isTyping: boolean
   isGeneratingConcepts: boolean
-  isGeneratingStudioPro: boolean
+  isGeneratingPro: boolean
   isCreatingFeed?: boolean
   contentFilter: "all" | "photos" | "videos"
   
@@ -52,8 +52,6 @@ interface MayaChatInterfaceProps {
   // Prompt Suggestions
   promptSuggestions: PromptSuggestion[]
   
-  // Carousel Generation
-  generateCarouselRef: React.MutableRefObject<((params: { topic: string; slideCount: number }) => Promise<void>) | null>
 }
 
 /**
@@ -74,10 +72,10 @@ export default function MayaChatInterface({
   messages,
   filteredMessages,
   setMessages,
-  studioProMode,
+  proMode,
   isTyping,
   isGeneratingConcepts,
-  isGeneratingStudioPro,
+  isGeneratingPro,
   isCreatingFeed = false,
   contentFilter,
   messagesContainerRef,
@@ -97,7 +95,6 @@ export default function MayaChatInterface({
   userId,
   user,
   promptSuggestions,
-  generateCarouselRef,
 }: MayaChatInterfaceProps) {
   
   // Helper function to remove emojis from text
@@ -292,7 +289,7 @@ export default function MayaChatInterface({
 
   // Parse prompt suggestions from text (for Studio Pro mode)
   const parsePromptSuggestions = (text: string): Array<{ label: string; prompt: string; description?: string }> => {
-    if (!text || !studioProMode) return []
+    if (!text || !proMode) return []
     
     const suggestions: Array<{ label: string; prompt: string; description?: string }> = []
     
@@ -475,7 +472,7 @@ export default function MayaChatInterface({
                                   .trim()
                                 
                                 // Remove prompts that are rendered as cards (Classic Mode)
-                                if (!studioProMode && parsedPromptSuggestions.length > 0) {
+                                if (!proMode && parsedPromptSuggestions.length > 0) {
                                   parsedPromptSuggestions.forEach(suggestion => {
                                     if (suggestion.label.includes('Slide')) {
                                       const slideNumMatch = suggestion.label.match(/Slide\s+(\d+)/i)
@@ -632,7 +629,7 @@ export default function MayaChatInterface({
                                     key={partIndex}
                                     messageId={msg.id}
                                     concepts={concepts}
-                                    studioProMode={studioProMode}
+                                    studioProMode={proMode}
                                     chatId={chatId}
                                     uploadedImages={uploadedImages}
                                     onCreditsUpdate={setCreditBalance}
@@ -765,7 +762,7 @@ export default function MayaChatInterface({
                                   strategy={output.strategy}
                                   isSaved={isSaved}
                                   onSave={handleSave}
-                                  studioProMode={output.studioProMode ?? studioProMode}
+                                  proMode={output.proMode ?? proMode}
                                   styleStrength={output.styleStrength ?? 0.8}
                                   promptAccuracy={output.promptAccuracy ?? 0.8}
                                   aspectRatio={output.aspectRatio ?? "1:1"}
@@ -829,134 +826,6 @@ export default function MayaChatInterface({
                               return null
                             }
 
-                            // Render carousel generation card
-                            if (part.type === "tool-generateCarousel") {
-                              const toolPart = part as any
-                              const output = toolPart.output
-
-                              if (output && output.state === "ready") {
-                                const { topic, slideCount, credits } = output
-
-                                return (
-                                  <div key={partIndex} className="mt-3">
-                                    <div className="bg-white border rounded-lg overflow-hidden transition-all duration-300 hover:shadow-lg border-stone-300 bg-linear-to-br from-stone-50 to-white">
-                                      <div className="flex items-center justify-between px-3 py-2.5 border-b border-stone-200">
-                                        <div className="flex items-center gap-2.5">
-                                          <div className="relative">
-                                            <div className="absolute inset-0 bg-linear-to-tr from-purple-600 via-pink-600 to-orange-500 rounded-full p-[2px]">
-                                              <div className="bg-white rounded-full w-full h-full"></div>
-                                            </div>
-                                            <div className="relative w-8 h-8 rounded-full bg-linear-to-br from-stone-200 to-stone-300 flex items-center justify-center">
-                                              <span className="text-xs font-bold text-stone-700">S</span>
-                                            </div>
-                                          </div>
-                                          <div className="flex flex-col">
-                                            <div className="flex items-center gap-2">
-                                              <span className="text-sm font-semibold text-stone-950">sselfie</span>
-                                              <span className="text-[10px] font-medium text-stone-600 px-1.5 py-0.5 bg-stone-200/50 rounded">
-                                                Studio Pro
-                                              </span>
-                                            </div>
-                                            <span className="text-xs text-stone-500">Carousel</span>
-                                          </div>
-                                        </div>
-                                      </div>
-
-                                      <div className="px-3 py-3 space-y-3">
-                                        <div className="space-y-1">
-                                          <p className="text-sm leading-relaxed text-stone-950">
-                                            <span className="font-semibold">sselfie</span> {topic}
-                                          </p>
-                                          <p className="text-sm leading-relaxed text-stone-600 line-clamp-2">
-                                            {slideCount}-slide carousel with text overlay
-                                          </p>
-                                        </div>
-
-                                        {!isGeneratingStudioPro && (
-                                          <div className="space-y-2">
-                                            <button
-                                              onClick={() => {
-                                                if (generateCarouselRef.current) {
-                                                  generateCarouselRef.current({ topic, slideCount })
-                                                }
-                                              }}
-                                              className="group relative w-full text-white px-4 py-2.5 rounded-lg font-semibold text-sm transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] min-h-[40px] flex items-center justify-center bg-linear-to-br from-stone-800 via-stone-900 to-stone-950 hover:from-stone-900 hover:via-stone-950 hover:to-black"
-                                            >
-                                              <span>Create with Studio Pro</span>
-                                            </button>
-                                            <div className="space-y-1">
-                                              <p className="text-[10px] text-stone-500 text-center leading-relaxed">
-                                                {credits} credits • {slideCount} slides
-                                              </p>
-                                              <p className="text-[10px] text-stone-400 text-center leading-relaxed">
-                                                Multi-image composition with character consistency
-                                              </p>
-                                            </div>
-                                          </div>
-                                        )}
-
-                                        {isGeneratingStudioPro && (
-                                          <div className="flex flex-col items-center justify-center py-6 space-y-3">
-                                            <div className="flex gap-1.5">
-                                              <div className="w-2 h-2 bg-stone-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                                              <div className="w-2 h-2 bg-stone-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                                              <div className="w-2 h-2 bg-stone-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                                            </div>
-                                            <p className="text-xs text-stone-600">Generating carousel...</p>
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-                                )
-                              }
-                              return null
-                            }
-
-                            // Studio Pro result display
-                            if ((part as any).type === "studio-pro-result") {
-                              const output = (part as any).output
-
-                              if (output && output.state === "ready" && output.imageUrl) {
-                                return (
-                                  <div key={partIndex} className="mt-3">
-                                    <div className="bg-white/50 backdrop-blur-xl border border-white/70 rounded-xl p-4 space-y-3">
-                                      <div className="relative aspect-square rounded-lg overflow-hidden">
-                                        <img 
-                                          src={output.imageUrl} 
-                                          alt="Studio Pro generation"
-                                          className="w-full h-full object-cover"
-                                        />
-                                      </div>
-                                      <div className="flex items-center justify-between">
-                                        <span className="text-xs text-stone-600">Studio Pro</span>
-                                        <button
-                                          onClick={() => window.open(output.imageUrl, '_blank')}
-                                          className="px-3 py-1.5 bg-stone-900 text-white text-xs rounded-lg hover:bg-stone-700 transition-colors"
-                                        >
-                                          Download
-                                        </button>
-                                      </div>
-                                    </div>
-                                  </div>
-                                )
-                              }
-
-                              if (output && output.state === "processing") {
-                                return (
-                                  <div key={partIndex} className="mt-3">
-                                    <div className="flex items-center gap-2 text-stone-600">
-                                      <div className="w-1.5 h-1.5 border-2 border-stone-600 border-t-transparent rounded-full animate-spin" />
-                                      <span className="text-xs tracking-[0.15em] uppercase font-light">
-                                        Generating Studio Pro content...
-                                      </span>
-                                    </div>
-                                  </div>
-                                )
-                              }
-
-                              return null
-                            }
 
                             if (part.type === "tool-generateVideo") {
                               const toolPart = part as any

@@ -44,7 +44,7 @@ export default function MayaModeToggle({
       return (
         <div className={`flex items-center ${className}`}>
           <span className="text-sm font-medium text-stone-600">
-            {isProMode ? "Studio Pro" : "Classic"}
+            {isProMode ? "Pro" : "Classic"}
           </span>
         </div>
       )
@@ -87,8 +87,8 @@ export default function MayaModeToggle({
               ? "bg-stone-950 text-white cursor-default"
               : "bg-white text-stone-600 hover:bg-stone-50 cursor-pointer"
           }`}
-          aria-label="Switch to Studio Pro Mode - Image library, advanced options, and enhanced concept generation"
-          title="Switch to Studio Pro Mode - Image library, advanced options, and enhanced concept generation"
+          aria-label="Switch to Pro Mode - Image library, advanced options, and enhanced concept generation"
+          title="Switch to Pro Mode - Image library, advanced options, and enhanced concept generation"
           disabled={isProMode}
         >
           <span className="text-[10px] sm:text-xs md:text-sm font-serif font-extralight tracking-[0.2em] uppercase whitespace-nowrap">
@@ -106,14 +106,14 @@ export default function MayaModeToggle({
         onClick={onToggle}
         className="touch-manipulation active:scale-95 px-4 py-2 rounded-lg transition-colors bg-stone-100 text-stone-900 hover:bg-stone-200 border border-stone-300 min-h-[36px]"
         aria-label={isClassicMode 
-          ? "Switch to Studio Pro Mode - Enable image library, advanced options, and enhanced concept generation"
+          ? "Switch to Pro Mode - Enable image library, advanced options, and enhanced concept generation"
           : "Switch to Classic Mode - Basic chat interface with simple image generation"}
         title={isClassicMode 
-          ? "Switch to Studio Pro Mode - Enable image library, advanced options, and enhanced concept generation"
+          ? "Switch to Pro Mode - Enable image library, advanced options, and enhanced concept generation"
           : "Switch to Classic Mode - Basic chat interface with simple image generation"}
       >
         <span className="text-xs sm:text-sm font-serif font-extralight tracking-[0.2em] uppercase">
-          {isClassicMode ? "Switch to Studio Pro" : "Switch to Classic"}
+          {isClassicMode ? "Switch to Pro" : "Switch to Classic"}
         </span>
       </button>
     </div>

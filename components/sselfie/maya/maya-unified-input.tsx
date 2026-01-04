@@ -13,7 +13,7 @@ import { Typography, Colors, BorderRadius, ButtonLabels } from '@/lib/maya/pro/d
  * 
  * **Progressive Enhancement Pattern:**
  * - Base input structure (textarea, send button, image upload) is identical
- * - Pro features conditionally appear when studioProMode is enabled
+ * - Pro features conditionally appear when proMode is enabled
  * - No layout shifts when switching modes
  * - Consistent user experience
  * 
@@ -62,7 +62,7 @@ interface MayaUnifiedInputProps {
   onHistory?: () => void
   
   // Styling
-  studioProMode?: boolean
+  proMode?: boolean
 }
 
 export default function MayaUnifiedInput({
@@ -82,7 +82,7 @@ export default function MayaUnifiedInput({
   onManageLibrary,
   onNewProject,
   onHistory,
-  studioProMode = false,
+  proMode = false,
 }: MayaUnifiedInputProps) {
   const [inputValue, setInputValue] = useState('')
   const internalFileInputRef = useRef<HTMLInputElement>(null)
@@ -104,7 +104,7 @@ export default function MayaUnifiedInput({
       setInputValue('')
       // Reset textarea height
       if (textareaRef.current) {
-        textareaRef.current.style.height = studioProMode ? '44px' : '48px'
+        textareaRef.current.style.height = proMode ? '44px' : '48px'
       }
     }
   }
@@ -151,16 +151,16 @@ export default function MayaUnifiedInput({
     setInputValue(e.target.value)
     // Auto-resize textarea
     e.target.style.height = 'auto'
-    e.target.style.height = `${Math.min(e.target.scrollHeight, studioProMode ? 200 : 80)}px`
+    e.target.style.height = `${Math.min(e.target.scrollHeight, proMode ? 200 : 80)}px`
   }
 
   // Use Pro Mode design system styling when in Pro Mode, Classic styling otherwise
   // Subtle background for contrast - light enough to not block bottom nav
-  const inputContainerClass = studioProMode
+  const inputContainerClass = proMode
     ? "w-full"
     : "w-full"
     
-  const inputContainerStyle = studioProMode
+  const inputContainerStyle = proMode
     ? {
         backgroundColor: 'rgba(255, 255, 255, 0.4)',
         backdropFilter: 'blur(8px)',
@@ -171,15 +171,15 @@ export default function MayaUnifiedInput({
       }
     : {}
 
-  const inputWrapperClass = studioProMode
+  const inputWrapperClass = proMode
     ? "max-w-[1200px] mx-auto"
     : "w-full"
 
-  const textareaClass = studioProMode
+  const textareaClass = proMode
     ? "focus:outline-none touch-manipulation"
     : "w-full pl-12 pr-12 py-3 bg-white border border-stone-200 rounded-xl text-stone-950 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-950/50 focus:bg-white font-medium text-[16px] min-h-[48px] max-h-[80px] shadow-lg shadow-stone-950/10 transition-all duration-300 resize-none overflow-y-auto leading-relaxed touch-manipulation"
 
-  const textareaStyle = studioProMode
+  const textareaStyle = proMode
     ? {
         fontFamily: Typography.body.fontFamily,
         fontSize: 'clamp(15px, 4vw, 16px)',
@@ -199,11 +199,11 @@ export default function MayaUnifiedInput({
       }
     : {}
 
-  const imageButtonClass = studioProMode
+  const imageButtonClass = proMode
     ? "touch-manipulation active:scale-95 shrink-0"
     : "touch-manipulation active:scale-95 shrink-0 flex items-center justify-center w-11 h-11 rounded-lg border border-stone-300 bg-white hover:bg-stone-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
 
-  const imageButtonStyle = studioProMode
+  const imageButtonStyle = proMode
     ? {
         display: 'flex',
         alignItems: 'center',
@@ -222,11 +222,11 @@ export default function MayaUnifiedInput({
       }
     : {}
 
-  const sendButtonClass = studioProMode
+  const sendButtonClass = proMode
     ? "touch-manipulation active:scale-95 shrink-0"
     : "absolute right-2 bottom-2.5 w-9 h-9 flex items-center justify-center text-stone-600 hover:text-stone-950 transition-colors disabled:opacity-50 touch-manipulation active:scale-95 z-10 pointer-events-auto"
 
-  const sendButtonStyle = studioProMode
+  const sendButtonStyle = proMode
     ? {
         display: 'flex',
         alignItems: 'center',
@@ -260,13 +260,13 @@ export default function MayaUnifiedInput({
       <form onSubmit={handleSubmit} className={inputWrapperClass}>
         {/* Uploaded image preview */}
         {uploadedImage && (
-          <div className={`mb-3 flex items-center gap-2 ${studioProMode ? '' : 'mx-3'}`}>
+          <div className={`mb-3 flex items-center gap-2 ${proMode ? '' : 'mx-3'}`}>
             <div className="relative">
               <img
                 src={uploadedImage}
                 alt="Uploaded"
-                className={`${studioProMode ? 'w-16 h-16' : 'w-20 h-20 sm:w-16 sm:h-16'} object-cover rounded-lg overflow-hidden border border-white/60 shadow-lg`}
-                style={studioProMode ? {
+                className={`${proMode ? 'w-16 h-16' : 'w-20 h-20 sm:w-16 sm:h-16'} object-cover rounded-lg overflow-hidden border border-white/60 shadow-lg`}
+                style={proMode ? {
                   borderRadius: BorderRadius.image,
                   border: `1px solid ${Colors.border}`,
                 } : {}}
@@ -276,17 +276,17 @@ export default function MayaUnifiedInput({
                   type="button"
                   onClick={onRemoveImage}
                   className={`absolute -top-1 -right-1 w-6 h-6 bg-stone-950 text-white rounded-full flex items-center justify-center hover:scale-110 transition-transform ${
-                    studioProMode ? '' : 'text-xs'
+                    proMode ? '' : 'text-xs'
                   }`}
-                  style={studioProMode ? {
+                  style={proMode ? {
                     fontSize: '10px',
                   } : {}}
                 >
-                  <span className={studioProMode ? 'text-xs' : ''}>×</span>
+                  <span className={proMode ? 'text-xs' : ''}>×</span>
                 </button>
               )}
             </div>
-            {studioProMode ? (
+            {proMode ? (
               <span
                 style={{
                   fontFamily: Typography.ui.fontFamily,
@@ -302,7 +302,7 @@ export default function MayaUnifiedInput({
           </div>
         )}
 
-        <div className={`flex ${studioProMode ? 'items-end gap-2 sm:gap-3' : 'gap-2 items-end'}`}>
+        <div className={`flex ${proMode ? 'items-end gap-2 sm:gap-3' : 'gap-2 items-end'}`}>
           {/* Image upload button */}
           <button
             type="button"
@@ -310,13 +310,13 @@ export default function MayaUnifiedInput({
             disabled={isLoading || disabled || isUploadingImage}
             className={imageButtonClass}
             style={imageButtonStyle}
-            onMouseEnter={studioProMode ? (e) => {
+            onMouseEnter={proMode ? (e) => {
               if (!isLoading && !disabled && !isUploadingImage) {
                 e.currentTarget.style.backgroundColor = Colors.hover
                 e.currentTarget.style.borderColor = Colors.primary
               }
             } : undefined}
-            onMouseLeave={studioProMode ? (e) => {
+            onMouseLeave={proMode ? (e) => {
               e.currentTarget.style.backgroundColor = 'transparent'
               e.currentTarget.style.borderColor = Colors.border
             } : undefined}
@@ -331,7 +331,7 @@ export default function MayaUnifiedInput({
               disabled={isLoading || disabled || isUploadingImage}
             />
             {isUploadingImage ? (
-              studioProMode ? (
+              proMode ? (
                 <LoadingSpinner size="sm" />
               ) : (
                 <div className="w-5 h-5 border-2 border-stone-400 border-t-transparent rounded-full animate-spin" />
@@ -371,10 +371,10 @@ export default function MayaUnifiedInput({
               disabled={isLoading || disabled || isUploadingImage}
               className={textareaClass}
               style={textareaStyle}
-              onFocus={studioProMode ? (e) => {
+              onFocus={proMode ? (e) => {
                 e.currentTarget.style.borderColor = Colors.primary
               } : undefined}
-              onBlur={studioProMode ? (e) => {
+              onBlur={proMode ? (e) => {
                 e.currentTarget.style.borderColor = Colors.border
               } : undefined}
               aria-label="Message input"
@@ -388,7 +388,7 @@ export default function MayaUnifiedInput({
             />
 
             {/* Send button - Classic Mode: absolute positioned, Pro Mode: in flex */}
-            {!studioProMode && (
+            {!proMode && (
               <button
                 onClick={handleSubmit}
                 className={sendButtonClass}
@@ -402,7 +402,7 @@ export default function MayaUnifiedInput({
           </div>
 
           {/* Send button - Pro Mode only (in flex layout) */}
-          {studioProMode && (
+          {proMode && (
             <button
               type="submit"
               disabled={(!inputValue.trim() && !uploadedImage) || isLoading || disabled}

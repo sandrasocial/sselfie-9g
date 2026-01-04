@@ -28,7 +28,7 @@ function getChatIdStorageKey(chatType: string): string {
 
 export interface UseMayaChatProps {
   initialChatId?: number
-  studioProMode: boolean
+  proMode: boolean
   user: any | null
   getModeString: () => "pro" | "maya" | "feed-planner"
   activeTab?: string // Feed tab flag
@@ -104,7 +104,7 @@ function saveChatIdToStorage(chatId: number | null, chatType: string) {
 
 export function useMayaChat({
   initialChatId,
-  studioProMode,
+  proMode,
   user,
   getModeString,
   activeTab,
@@ -132,18 +132,18 @@ export function useMayaChat({
 
   // Integrate useChat from AI SDK
   // NOTE: Headers are evaluated once when transport is created, so we use useMemo to recreate transport when dependencies change
-  // This ensures headers reflect the current activeTab and studioProMode
+  // This ensures headers reflect the current activeTab and proMode
   const currentChatType = getChatType()
   const chatTransport = useMemo(() => {
     const headers = {
-      "x-studio-pro-mode": studioProMode ? "true" : "false",
+      "x-studio-pro-mode": proMode ? "true" : "false",
       "x-chat-type": currentChatType,
       ...(activeTab ? { "x-active-tab": activeTab } : {}),
     }
     console.log("[useMayaChat] 🚀 Creating chat transport with headers:", {
       headers,
       activeTab,
-      studioProMode,
+      proMode,
       currentChatType,
       // PRODUCTION DEBUG: Confirm headers are being set
       hasActiveTabHeader: !!headers["x-active-tab"],
@@ -153,7 +153,7 @@ export function useMayaChat({
       api: "/api/maya/chat",
       headers,
     }) as any
-  }, [studioProMode, currentChatType, activeTab])
+  }, [proMode, currentChatType, activeTab])
 
   // Create a unique ID for the chat session to force useChat to reset when chatId changes
   // This ensures that when a new chat is created, all previous messages are cleared
@@ -234,7 +234,7 @@ export function useMayaChat({
           ? `/api/maya/load-chat?chatId=${specificChatId}`
           : `/api/maya/load-chat?chatType=${chatType}`
 
-        console.log("[useMayaChat] Loading chat from URL:", url, "chatType:", chatType, "activeTab:", activeTab, "studioProMode:", studioProMode, "explicitChatType:", explicitChatType)
+        console.log("[useMayaChat] Loading chat from URL:", url, "chatType:", chatType, "activeTab:", activeTab, "proMode:", proMode, "explicitChatType:", explicitChatType)
 
         const response = await fetch(url)
         console.log("[useMayaChat] Load chat response status:", response.status)
@@ -340,7 +340,7 @@ export function useMayaChat({
         console.log("[useMayaChat] ❌ Chat load failed, hasLoadedChatRef reset to false")
       }
     },
-    [getChatType, activeTab, studioProMode, setMessages],
+    [getChatType, activeTab, proMode, setMessages],
   )
 
   // Check if user has chat history
@@ -353,8 +353,8 @@ export function useMayaChat({
       }
 
       try {
-        // Calculate chat type directly from activeTab and studioProMode to avoid function reference issues
-        const chatType = activeTab === "feed" ? "feed-planner" : (studioProMode ? "pro" : "maya")
+        // Calculate chat type directly from activeTab and proMode to avoid function reference issues
+        const chatType = activeTab === "feed" ? "feed-planner" : (proMode ? "pro" : "maya")
 
         // Validate chatType before making request
         if (!chatType || typeof chatType !== "string") {
@@ -375,7 +375,7 @@ export function useMayaChat({
             hasChats,
             chatCount: data.chats?.length || 0,
             chatType,
-            studioProMode,
+            proMode,
           })
         } else {
           console.warn("[useMayaChat] Chat history check failed with status:", response.status)
@@ -393,7 +393,7 @@ export function useMayaChat({
     }
 
     checkChatHistory()
-  }, [user, studioProMode, activeTab])
+  }, [user, proMode, activeTab])
 
   // Load chat when user or mode changes
   useEffect(() => {
@@ -437,11 +437,11 @@ export function useMayaChat({
     // Reset cleared state ref when user becomes available
     hasClearedStateRef.current = false
 
-    console.log("[useMayaChat] 🚀 Loading chat for user:", user?.email || user?.id || "unknown", "studioProMode:", studioProMode, "activeTab:", activeTab, "hasLoadedChatRef:", hasLoadedChatRef.current)
+    console.log("[useMayaChat] 🚀 Loading chat for user:", user?.email || user?.id || "unknown", "proMode:", proMode, "activeTab:", activeTab, "hasLoadedChatRef:", hasLoadedChatRef.current)
 
     // Check if mode/chatType changed (using chatType instead of mode to handle Feed tab)
-    // Calculate chatType directly from activeTab and studioProMode to avoid function reference issues
-    const currentChatType = activeTab === "feed" ? "feed-planner" : (studioProMode ? "pro" : "maya")
+    // Calculate chatType directly from activeTab and proMode to avoid function reference issues
+    const currentChatType = activeTab === "feed" ? "feed-planner" : (proMode ? "pro" : "maya")
     const chatTypeChanged = lastModeRef.current !== null && lastModeRef.current !== currentChatType
 
     console.log("[useMayaChat] Current chatType:", currentChatType, "lastModeRef:", lastModeRef.current, "chatTypeChanged:", chatTypeChanged, "chatId:", chatId, "messagesCount:", messages.length)
@@ -520,11 +520,11 @@ export function useMayaChat({
     } else {
       console.log("[useMayaChat] Chat already loaded - hasLoadedChatRef:", hasLoadedChatRef.current, "chatId:", chatId, "messagesCount:", messages.length, "savedChatId:", savedChatIdForThisType)
     }
-    // Dependencies: user, studioProMode, activeTab
-    // Note: We calculate chatType directly from activeTab and studioProMode (not using getModeString) to avoid function reference issues
+    // Dependencies: user, proMode, activeTab
+    // Note: We calculate chatType directly from activeTab and proMode (not using getModeString) to avoid function reference issues
     // loadChat is NOT in dependencies to avoid infinite loops, but we pass currentChatType explicitly
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, studioProMode, activeTab])
+  }, [user, proMode, activeTab])
 
   // Save chatId to localStorage when it changes (chat-type-specific)
   // BUT: Skip saving if we're in the middle of creating a new chat (to prevent reload)
