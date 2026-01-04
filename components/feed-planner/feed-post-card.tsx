@@ -17,15 +17,14 @@ interface FeedPostCardProps {
     generation_status: string
   }
   feedId: number
-  onGenerate: () => void
+  onUpdate?: () => void
+  onNavigateToMaya?: () => void // Navigate to Maya Chat for image generation
 }
 
-export default function FeedPostCard({ post, feedId, onGenerate }: FeedPostCardProps) {
-  const [isGenerating, setIsGenerating] = useState(false)
+export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya }: FeedPostCardProps) {
   const [showFullCaption, setShowFullCaption] = useState(false)
   const [copiedCaption, setCopiedCaption] = useState(false)
   const [isEnhancing, setIsEnhancing] = useState(false)
-  const [isRegenerating, setIsRegenerating] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editedCaption, setEditedCaption] = useState("")
   const [isSaving, setIsSaving] = useState(false)
@@ -49,33 +48,11 @@ export default function FeedPostCard({ post, feedId, onGenerate }: FeedPostCardP
     return typeDescriptions[postTypeLabel] || `Post ${post.position}`
   }
 
-  const handleGenerate = async () => {
-    setIsGenerating(true)
-
-    try {
-      const response = await fetch(`/api/feed/${feedId}/generate-single`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ postId: post.id }),
-      })
-
-      if (!response.ok) throw new Error("Failed to generate")
-
-      toast({
-        title: "Generating photo",
-        description: "This takes about 30 seconds",
-      })
-
-      onGenerate()
-    } catch (error) {
-      console.error("[v0] Generate error:", error)
-      toast({
-        title: "Generation failed",
-        description: "Please try again",
-        variant: "destructive",
-      })
-    } finally {
-      setIsGenerating(false)
+  const handleNavigateToMaya = () => {
+    if (onNavigateToMaya) {
+      onNavigateToMaya()
+    } else if (typeof window !== "undefined") {
+      window.location.href = "/studio#maya/feed"
     }
   }
 
@@ -162,8 +139,8 @@ export default function FeedPostCard({ post, feedId, onGenerate }: FeedPostCardP
       const data = await response.json()
       
       if (data.enhancedCaption) {
-        // Refresh the component by calling onGenerate to trigger a re-fetch
-        onGenerate()
+        // Refresh the component by calling onUpdate to trigger a re-fetch
+        onUpdate?.()
         toast({
           title: "Caption enhanced!",
           description: "Maya has improved your caption. Refresh to see the update.",
@@ -201,8 +178,8 @@ export default function FeedPostCard({ post, feedId, onGenerate }: FeedPostCardP
       const data = await response.json()
       
       if (data.caption) {
-        // Refresh the component by calling onGenerate to trigger a re-fetch
-        onGenerate()
+        // Refresh the component by calling onUpdate to trigger a re-fetch
+        onUpdate?.()
         toast({
           title: "Caption regenerated!",
           description: "Maya has created a new caption for this post.",
@@ -262,7 +239,7 @@ export default function FeedPostCard({ post, feedId, onGenerate }: FeedPostCardP
         throw new Error(errorData.error || "Failed to update caption")
       }
 
-      onGenerate()
+      onUpdate?.()
       setIsEditing(false)
       toast({
         title: "Caption updated!",
@@ -340,7 +317,7 @@ export default function FeedPostCard({ post, feedId, onGenerate }: FeedPostCardP
             className="object-cover"
             sizes="(max-width: 768px) 100vw, 470px"
           />
-        ) : isGenerating || post.generation_status === "generating" ? (
+        ) : post.generation_status === "generating" && post.prediction_id ? (
           <div className="w-full h-full flex flex-col items-center justify-center">
             <div className="relative mb-4">
               <div className="w-16 h-16 rounded-full border-4 border-stone-200 border-t-stone-900 animate-spin"></div>
@@ -378,15 +355,16 @@ export default function FeedPostCard({ post, feedId, onGenerate }: FeedPostCardP
                 {getPostDescription()}
               </p>
               
-              {/* Generate Button */}
-              <button
-                onClick={handleGenerate}
-                disabled={isGenerating}
-                className="group px-8 py-3.5 bg-stone-900 hover:bg-stone-800 text-white text-sm font-medium tracking-wide rounded-xl transition-all hover:shadow-xl hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center gap-2"
-              >
-                <Wand2 size={16} className="group-hover:rotate-12 transition-transform" strokeWidth={2} />
-                <span>Generate</span>
-              </button>
+              {/* Go to Maya Button */}
+              {onNavigateToMaya && (
+                <button
+                  onClick={handleNavigateToMaya}
+                  className="group px-8 py-3.5 bg-stone-900 hover:bg-stone-800 text-white text-sm font-medium tracking-wide rounded-xl transition-all hover:shadow-xl hover:scale-[1.02] flex items-center gap-2"
+                >
+                  <Wand2 size={16} className="group-hover:rotate-12 transition-transform" strokeWidth={2} />
+                  <span>Generate in Maya</span>
+                </button>
+              )}
             </div>
             
             {/* Position indicator - subtle in corner */}

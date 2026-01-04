@@ -16,13 +16,15 @@ export function useFeedDragDrop(
   const [isSavingOrder, setIsSavingOrder] = useState(false)
 
   // Track previous posts to detect actual changes
+  // Include image_url in the key so we detect when images are updated
   const prevPostsRef = useRef<string>('')
-  const postsKey = posts.map((p: any) => `${p.id}-${p.position}`).join(',')
+  const postsKey = posts.map((p: any) => `${p.id}-${p.position}-${p.image_url || ''}`).join(',')
 
   // Initialize reorderedPosts when posts change (only if not currently dragging)
   // CRITICAL: reorderedPosts must always be in sync with posts for drag handlers to work correctly
   useEffect(() => {
-    // Only update if posts actually changed (by comparing IDs and positions)
+    // Update if posts changed (by comparing IDs, positions, AND image_urls)
+    // This ensures we catch image updates, not just position changes
     if (draggedIndex === null && posts.length > 0 && prevPostsRef.current !== postsKey) {
       prevPostsRef.current = postsKey
       setReorderedPosts(posts)

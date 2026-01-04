@@ -1,10 +1,11 @@
 "use client"
 
+import { useState } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import useSWR from "swr"
 import InstagramFeedView from "./instagram-feed-view"
-import UnifiedLoading from "../sselfie/unified-loading"
-import { ArrowLeft, ImageIcon } from "lucide-react"
+import { ArrowLeft, ImageIcon, Loader2, ChevronDown } from "lucide-react"
+import { toast } from "@/hooks/use-toast"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -28,6 +29,7 @@ interface FeedViewScreenProps {
 export default function FeedViewScreen({ feedId: feedIdProp }: FeedViewScreenProps = {}) {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const [isCreatingManual, setIsCreatingManual] = useState(false)
   
   // Get feedId from prop, query param, or null
   const feedIdFromQuery = feedIdProp ?? (searchParams.get('feedId') ? parseInt(searchParams.get('feedId')!, 10) : null)
@@ -56,34 +58,71 @@ export default function FeedViewScreen({ feedId: feedIdProp }: FeedViewScreenPro
   // Check if feed exists (latest endpoint returns { exists: false } when no feed)
   const feedExists = feedData?.exists !== false && (feedData?.feed || feedData?.posts)
 
+  // Fetch feed list for selector (only if we have a feed)
+  const { data: feedListData } = useSWR(
+    feedExists ? '/api/feed/list' : null,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    }
+  )
+
+  const feeds = feedListData?.feeds || []
+  const hasMultipleFeeds = feeds.length > 1
+
   const handleBackToMaya = () => {
     // Route to Maya Feed tab using hash navigation
     if (typeof window !== "undefined") {
-      // Use window.location.hash for client-side hash navigation
-      window.location.hash = "#maya/feed"
-      // Also navigate to root to ensure we're on the right page
-      router.push("/")
+      // Navigate to studio with Maya feed tab
+      window.location.href = "/studio#maya/feed"
     }
   }
 
   const handleCreateFeed = () => {
     // Navigate to Maya Feed tab to create a feed
     if (typeof window !== "undefined") {
-      window.location.hash = "#maya/feed"
-      router.push("/")
+      window.location.href = "/studio#maya/feed"
     }
   }
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="flex flex-col flex-1 overflow-hidden min-h-0">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <UnifiedLoading message="Loading your feed..." />
-        </div>
-      </div>
-    )
+  const handleCreateManualFeed = async () => {
+    setIsCreatingManual(true)
+    try {
+      const response = await fetch('/api/feed/create-manual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Failed to create feed' }))
+        throw new Error(error.error || 'Failed to create feed')
+      }
+
+      const data = await response.json()
+      
+      // Navigate to the new feed
+      router.push(`/feed-planner?feedId=${data.feedId}`)
+      
+      toast({
+        title: "Feed created",
+        description: "Your new feed is ready. Start adding images!",
+      })
+    } catch (error) {
+      console.error("[v0] Error creating manual feed:", error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to create feed. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsCreatingManual(false)
+    }
   }
+
+  // Loading state - show feed view immediately (data will load in background)
+  // No loading indicator per requirements
 
   // Error state (actual errors, not "no feed exists")
   if (feedError || (feedData?.error && feedData.exists !== false)) {
@@ -137,17 +176,26 @@ export default function FeedViewScreen({ feedId: feedIdProp }: FeedViewScreenPro
                 Create Your First Feed
               </h2>
               <p className="text-sm sm:text-base text-stone-600 font-light">
-                Start a conversation with Maya in the Feed tab to create your strategic Instagram feed.
+                Create a feed manually or generate one with Maya's AI assistance.
               </p>
             </div>
 
-            {/* CTA Button */}
-            <button
-              onClick={handleCreateFeed}
-              className="w-full sm:w-auto px-6 py-3 bg-stone-900 hover:bg-stone-800 active:bg-stone-700 text-white text-sm font-light tracking-wider uppercase transition-colors duration-200 border border-stone-900 min-h-[44px] touch-manipulation"
-            >
-              Create Feed in Maya Chat
-            </button>
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-3 justify-center items-stretch sm:items-center">
+              <button
+                onClick={handleCreateManualFeed}
+                disabled={isCreatingManual}
+                className="w-full sm:w-auto px-6 py-3 bg-stone-900 hover:bg-stone-800 active:bg-stone-700 text-white text-sm font-light tracking-wider uppercase transition-colors duration-200 border border-stone-900 min-h-[44px] touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isCreatingManual ? "Creating..." : "+ Create New Feed"}
+              </button>
+              <button
+                onClick={handleCreateFeed}
+                className="w-full sm:w-auto px-6 py-3 bg-white hover:bg-stone-50 active:bg-stone-100 text-stone-900 text-sm font-light tracking-wider uppercase transition-colors duration-200 border border-stone-300 min-h-[44px] touch-manipulation"
+              >
+                Create with Maya
+              </button>
+            </div>
 
             {/* Placeholder Grid Preview (Visual Guide) */}
             <div className="pt-8 border-t border-stone-200">
@@ -192,17 +240,67 @@ export default function FeedViewScreen({ feedId: feedIdProp }: FeedViewScreenPro
     )
   }
 
+  const handleFeedChange = (newFeedId: number) => {
+    router.push(`/feed-planner?feedId=${newFeedId}`)
+  }
+
+  const currentFeedTitle = feedData?.feed?.brand_name || `Feed ${effectiveFeedId}`
+
   return (
     <div className="flex flex-col flex-1 overflow-hidden min-h-0">
-      {/* Header with Back button */}
-      <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-stone-200 bg-white/60 backdrop-blur-md">
+      {/* Header with Back button, Feed Selector, and Create New Feed */}
+      <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-stone-200 bg-white/60 backdrop-blur-md gap-3">
         <button
           onClick={handleBackToMaya}
-          className="text-sm font-light text-stone-500 hover:text-stone-900 transition-colors flex items-center gap-2"
+          className="text-sm font-light text-stone-500 hover:text-stone-900 transition-colors flex items-center gap-2 flex-shrink-0"
         >
           <ArrowLeft size={16} />
           Back to Maya Chat
         </button>
+        
+        <div className="flex items-center gap-3 flex-1 justify-end">
+          {/* Feed Selector - only show if multiple feeds */}
+          {hasMultipleFeeds && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-stone-500 uppercase tracking-wider hidden sm:inline">
+                My Feeds
+              </span>
+              <div className="relative">
+                <select
+                  value={effectiveFeedId || ''}
+                  onChange={(e) => handleFeedChange(Number(e.target.value))}
+                  className="appearance-none bg-white border border-stone-300 rounded-lg px-4 py-2 pr-8 text-sm font-light text-stone-900 hover:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:border-transparent transition-colors cursor-pointer"
+                >
+                  {feeds.map((feed: any) => (
+                    <option key={feed.id} value={feed.id}>
+                      {feed.title} {feed.image_count > 0 ? `(${feed.image_count}/9)` : ''}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown 
+                  size={16} 
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-500 pointer-events-none" 
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Create New Feed Button - show when feed exists */}
+          <button
+            onClick={handleCreateManualFeed}
+            disabled={isCreatingManual}
+            className="text-sm font-light text-stone-600 hover:text-stone-900 transition-colors px-3 py-1.5 border border-stone-300 rounded-lg hover:bg-stone-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 whitespace-nowrap"
+          >
+            {isCreatingManual ? (
+              <>
+                <Loader2 size={14} className="animate-spin" />
+                Creating...
+              </>
+            ) : (
+              "+ Create New Feed"
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Feed View */}

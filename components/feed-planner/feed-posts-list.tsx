@@ -8,10 +8,11 @@ interface FeedPostsListProps {
   expandedCaptions: Set<number>
   copiedCaptions: Set<number>
   enhancingCaptions: Set<number>
+  isManualFeed?: boolean // Flag to identify manual feeds
   onToggleCaption: (postId: number) => void
   onCopyCaption: (caption: string, postId: number) => void
   onEnhanceCaption: (postId: number, caption: string) => void
-  onGeneratePost: (postId: number) => void
+  onAddImage?: (postId: number) => void // Open gallery selector (upload + gallery)
 }
 
 export default function FeedPostsList({
@@ -19,10 +20,11 @@ export default function FeedPostsList({
   expandedCaptions,
   copiedCaptions,
   enhancingCaptions,
+  isManualFeed = false,
   onToggleCaption,
   onCopyCaption,
   onEnhanceCaption,
-  onGeneratePost,
+  onAddImage,
 }: FeedPostsListProps) {
   return (
     <div className="space-y-6 md:space-y-8">
@@ -78,17 +80,22 @@ export default function FeedPostsList({
                   className="object-cover"
                   sizes="(max-width: 768px) 100vw, 935px"
                 />
-              ) : post.generation_status === "generating" ? (
+              ) : !isManualFeed && post.generation_status === "generating" && post.prediction_id ? (
                 <div className="absolute inset-0 flex items-center justify-center">
                   <Loader2 size={32} className="animate-spin text-stone-400" strokeWidth={1.5} />
                 </div>
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <button
-                    onClick={() => onGeneratePost(post.id)}
+                    onClick={() => {
+                      // Always open gallery selector (upload + gallery) for all feeds
+                      if (onAddImage) {
+                        onAddImage(post.id)
+                      }
+                    }}
                     className="px-6 py-3 bg-stone-900 text-white rounded-xl text-sm font-medium hover:bg-stone-800 transition-colors"
                   >
-                    Generate Photo
+                    Add Image
                   </button>
                 </div>
               )}

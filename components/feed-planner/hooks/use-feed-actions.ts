@@ -16,8 +16,6 @@ export function useFeedActions(
   const [copiedCaptions, setCopiedCaptions] = useState<Set<number>>(new Set())
   const [enhancingCaptions, setEnhancingCaptions] = useState<Set<number>>(new Set())
   const [isGeneratingBio, setIsGeneratingBio] = useState(false)
-  const [regeneratingPost, setRegeneratingPost] = useState<number | null>(null)
-  const [generatingRemaining, setGeneratingRemaining] = useState(false)
   const [isDownloadingBundle, setIsDownloadingBundle] = useState(false)
 
   const toggleCaption = (postId: number) => {
@@ -189,241 +187,10 @@ export function useFeedActions(
     }
   }
 
-  const handleGenerateSingle = async (postId: number) => {
-    try {
-      const response = await fetch(`/api/feed/${feedId}/generate-single`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ postId }),
-      })
-
-      if (!response.ok) {
-        let errorData = {}
-        let errorMessage = "Failed to generate"
-        try {
-          const errorText = await response.text()
-          if (errorText) {
-            errorData = JSON.parse(errorText)
-            errorMessage = errorData.error || errorData.details || errorMessage
-          }
-        } catch (parseError) {
-          errorData = { 
-            error: `HTTP ${response.status}: ${response.statusText}`,
-            message: "Failed to parse error response"
-          }
-        }
-        console.error(`[v0] ❌ Failed to generate post ${postId}:`, {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorData,
-          feedId: feedId
-        })
-        throw new Error(errorMessage)
-      }
-
-      let data
-      try {
-        data = await response.json()
-        console.log("[v0] ✅ Generated post:", postId, "prediction ID:", data.predictionId)
-      } catch (parseError) {
-        console.error(`[v0] ⚠️ Success response but failed to parse JSON for post ${postId}:`, parseError)
-        throw new Error("Failed to parse response")
-      }
-
-      toast({
-        title: "Creating your photo",
-        description: "This takes about 30 seconds",
-      })
-
-      // Refresh feed data after a short delay to pick up prediction_id
-      setTimeout(() => {
-        onUpdate()
-      }, 1000)
-      
-      // Additional refresh after 5 seconds to catch early completions
-      setTimeout(() => {
-        onUpdate()
-      }, 5000)
-    } catch (error: any) {
-      toast({
-        title: "Generation failed",
-        description: error.message || "Please try again",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const handleGenerateRemaining = async () => {
-    const postsWithoutPrediction = posts.filter(
-      (p: any) => !p.prediction_id && p.generation_status !== "completed" && !p.image_url,
-    )
-
-    if (postsWithoutPrediction.length === 0) {
-      toast({
-        title: "All posts are generating",
-        description: "No remaining posts to generate",
-      })
-      return
-    }
-
-    setGeneratingRemaining(true)
-    toast({
-      title: `Generating ${postsWithoutPrediction.length} remaining images`,
-      description: "This may take a few minutes",
-    })
-
-    try {
-      // Use queue-all-images API (same as create-strategy does)
-      console.log(`[v0] Queueing ${postsWithoutPrediction.length} remaining images via queue-all-images API`)
-      const response = await fetch(`/api/feed-planner/queue-all-images`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ feedLayoutId: feedId }),
-      })
-
-      if (!response.ok) {
-        let errorData = {}
-        try {
-          const errorText = await response.text()
-          if (errorText) {
-            errorData = JSON.parse(errorText)
-          }
-        } catch (parseError) {
-          errorData = { 
-            error: `HTTP ${response.status}: ${response.statusText}`,
-            message: "Failed to parse error response"
-          }
-        }
-        throw new Error(errorData.error || `HTTP ${response.status}: Failed to queue images`)
-      }
-
-      const data = await response.json()
-      console.log(`[v0] ✅ Successfully queued ${data.queuedCount || postsWithoutPrediction.length} images`)
-
-      // Refresh feed data after a short delay
-      setTimeout(() => {
-        onUpdate()
-        setGeneratingRemaining(false)
-        toast({
-          title: "Generation started",
-          description: `Started generating ${data.queuedCount || postsWithoutPrediction.length} images`,
-        })
-      }, 2000)
-    } catch (error: any) {
-      setGeneratingRemaining(false)
-      console.error(`[v0] ❌ Error queueing images:`, error)
-      toast({
-        title: "Generation failed",
-        description: error.message || "Please try again",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const handleRegeneratePost = async (postId: number) => {
-    if (!feedId) {
-      toast({
-        title: "Error",
-        description: "Feed ID not found. Please refresh the page.",
-        variant: "destructive",
-      })
-      return
-    }
-
-    if (!confirm("Regenerate this photo? This will use 1 credit.")) {
-      return
-    }
-
-    setRegeneratingPost(postId)
-
-    try {
-      console.log(`[v0] Regenerating post ${postId} in feed ${feedId}`)
-      const response = await fetch(`/api/feed/${feedId}/generate-single`, {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ postId }),
-      })
-
-      if (!response.ok) {
-        let errorData: any = {}
-        let errorMessage = `Failed to regenerate (HTTP ${response.status})`
-        
-        try {
-          const contentType = response.headers.get("content-type")
-          if (contentType && contentType.includes("application/json")) {
-            errorData = await response.json()
-            errorMessage = errorData.error || errorData.details || errorMessage
-          } else {
-            const errorText = await response.text()
-            if (errorText && errorText.trim().length > 0) {
-              try {
-                errorData = JSON.parse(errorText)
-                errorMessage = errorData.error || errorData.details || errorMessage
-              } catch {
-                errorMessage = errorText.substring(0, 200) || errorMessage
-              }
-            }
-          }
-        } catch (parseError) {
-          console.error(`[v0] Error parsing response:`, parseError)
-          errorMessage = `HTTP ${response.status}: ${response.statusText || "Unknown error"}`
-        }
-        
-        // Provide user-friendly error messages based on status code
-        if (response.status === 401) {
-          errorMessage = errorData?.details || "Authentication failed. Please refresh the page and try again."
-        } else if (response.status === 402) {
-          errorMessage = "Insufficient credits. Please purchase more credits to regenerate."
-        } else if (response.status === 429) {
-          errorMessage = "Rate limit exceeded. Please wait a moment and try again."
-        } else if (response.status === 404) {
-          errorMessage = "Post or feed not found. Please refresh the page."
-        } else if (response.status === 400) {
-          errorMessage = errorData?.details || "Invalid request. Please check your input and try again."
-        }
-        
-        throw new Error(errorMessage)
-      }
-
-      let data
-      try {
-        const responseText = await response.text()
-        if (!responseText || responseText.trim().length === 0) {
-          throw new Error("Empty response from server")
-        }
-        data = JSON.parse(responseText)
-      } catch (parseError) {
-        console.error(`[v0] Failed to parse response:`, parseError)
-        throw new Error("Invalid response from server. Please try again.")
-      }
-      
-      console.log(`[v0] ✅ Successfully queued regeneration for post ${postId}, prediction ID:`, data.predictionId)
-
-      if (!data.predictionId) {
-        throw new Error("No prediction ID returned. Please try again.")
-      }
-
-      toast({
-        title: "Regenerating photo",
-        description: "Creating a new variation in the same category. This takes about 30 seconds.",
-      })
-
-      // Refresh feed data to show generating status
-      await onUpdate()
-    } catch (error) {
-      console.error(`[v0] Error regenerating post ${postId}:`, error)
-      toast({
-        title: "Regeneration failed",
-        description: error instanceof Error ? error.message : "Please try again",
-        variant: "destructive",
-      })
-    } finally {
-      setRegeneratingPost(null)
+  // Helper function to navigate to Maya Chat for image generation
+  const navigateToMayaChat = () => {
+    if (typeof window !== "undefined") {
+      window.location.href = "/studio#maya/feed"
     }
   }
 
@@ -471,17 +238,13 @@ export function useFeedActions(
     copiedCaptions,
     enhancingCaptions,
     isGeneratingBio,
-    regeneratingPost,
-    generatingRemaining,
     isDownloadingBundle,
     // Actions
     toggleCaption,
     copyCaptionToClipboard,
     handleGenerateBio,
     handleEnhanceCaption,
-    handleGenerateSingle,
-    handleGenerateRemaining,
-    handleRegeneratePost,
+    navigateToMayaChat,
     handleDownloadBundle,
   }
 }

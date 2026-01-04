@@ -11,13 +11,12 @@ interface FeedModalsProps {
   showProfileGallery: boolean
   feedId: number
   feedData: any
-  regeneratingPost: number | null
   onClosePost: () => void
   onCloseGallery: () => void
   onCloseProfileGallery: () => void
-  onRegeneratePost: (postId: number) => void
   onShowGallery: (postId: number) => void
-  onUpdate: () => void | Promise<void>
+  onNavigateToMaya?: () => void // Navigate to Maya Chat for image generation
+  onUpdate: (updatedPost?: any) => void | Promise<void>
 }
 
 export default function FeedModals({
@@ -26,11 +25,11 @@ export default function FeedModals({
   showProfileGallery,
   feedId,
   feedData,
-  regeneratingPost,
   onClosePost,
   onCloseGallery,
   onCloseProfileGallery,
-  onRegeneratePost,
+  onShowGallery,
+  onNavigateToMaya,
   onUpdate,
 }: FeedModalsProps) {
   return (
@@ -55,16 +54,17 @@ export default function FeedModals({
             {/* Action buttons - shown when image exists */}
             {selectedPost.image_url && (
               <div className="absolute -top-12 left-0 z-10 flex items-center gap-2">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onRegeneratePost(selectedPost.id)
-                  }}
-                  disabled={regeneratingPost === selectedPost.id}
-                  className="px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {regeneratingPost === selectedPost.id ? "Regenerating..." : "Regenerate"}
-                </button>
+                {onNavigateToMaya && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onNavigateToMaya()
+                    }}
+                    className="px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white text-sm font-medium rounded-lg transition-colors"
+                  >
+                    Regenerate in Maya
+                  </button>
+                )}
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
@@ -82,10 +82,11 @@ export default function FeedModals({
             <FeedPostCard
               post={selectedPost}
               feedId={feedId}
-              onGenerate={async () => {
+              onUpdate={async () => {
                 await onUpdate()
                 onClosePost()
               }}
+              onNavigateToMaya={onNavigateToMaya}
             />
           </div>
         </div>
@@ -96,14 +97,12 @@ export default function FeedModals({
           type="post"
           postId={showGallery}
           feedId={feedData.feed.id}
-          onClose={async () => {
+          onClose={() => {
             onCloseGallery()
-            // Refresh feed data to show updated image
-            await onUpdate()
           }}
-          onImageSelected={async () => {
-            // Refresh feed data to show updated image
-            await onUpdate()
+          onImageSelected={async (updatedPost?: any) => {
+            // Force immediate revalidation of feed data
+            await onUpdate(updatedPost)
             toast({
               title: "Image updated",
               description: "The post image has been updated from your gallery.",

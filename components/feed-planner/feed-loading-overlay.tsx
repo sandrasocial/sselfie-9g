@@ -9,8 +9,6 @@ interface FeedLoadingOverlayProps {
   overallProgress: number
   processingStage?: string
   isValidating: boolean
-  generatingRemaining: boolean
-  onGenerateRemaining: () => void
   getProgressMessage: () => string
 }
 
@@ -20,8 +18,6 @@ export default function FeedLoadingOverlay({
   totalPosts,
   overallProgress,
   isValidating,
-  generatingRemaining,
-  onGenerateRemaining,
   getProgressMessage,
 }: FeedLoadingOverlayProps) {
   return (
@@ -119,15 +115,6 @@ export default function FeedLoadingOverlay({
                       <span className="text-xs text-stone-400 ml-2">(checking...)</span>
                     )}
                   </div>
-                  {readyPosts < totalPosts && (
-                    <button
-                      onClick={onGenerateRemaining}
-                      disabled={generatingRemaining}
-                      className="mt-4 px-4 py-2 bg-stone-900 text-white text-xs font-light rounded-lg hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {generatingRemaining ? "Generating..." : `Generate Remaining ${totalPosts - readyPosts} Images`}
-                    </button>
-                  )}
                 </div>
               </>
             )}
