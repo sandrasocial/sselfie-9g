@@ -1086,10 +1086,10 @@ export default function MayaChatInterface({
                   {/* Status Text */}
                   <div className="text-center space-y-1">
                     <p className="text-sm font-medium text-stone-900 tracking-wide">
-                      Creating Your Feed Layout
+                      Generating Your Images
                     </p>
                     <p className="text-xs text-stone-600 leading-relaxed">
-                      Maya is designing your Instagram feed strategy
+                      Maya is creating your visuals using AI
                     </p>
                   </div>
                 </div>
