@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo, useRef } from "react"
+import { useState, useMemo, useEffect } from "react"
 import type React from "react"
 import {
   Grid3x3,
@@ -20,34 +20,16 @@ import {
   ImageIcon,
 } from "lucide-react"
 import Image from "next/image"
-import useSWR from "swr"
 import { toast } from "@/hooks/use-toast"
 import { FeedPostGallerySelector } from "./feed-post-gallery-selector"
 import { FeedProfileGallerySelector } from "./feed-profile-gallery-selector"
 import FeedPostCard from "./feed-post-card"
 import ReactMarkdown from "react-markdown"
-
-const fetcher = async (url: string) => {
-  const res = await fetch(url)
-  const data = await res.json()
-  
-  // If the response has an error and is not a 200 status, throw to let SWR handle it
-  if (!res.ok && data.error) {
-    // Return the error data so SWR can handle it properly
-    return data
-  }
-  
-  // Validate response structure
-  if (data && !data.feed && !data.error && !data.exists) {
-    console.warn("[v0] Fetcher: Unexpected response structure:", {
-      url,
-      dataKeys: Object.keys(data),
-      status: res.status,
-    })
-  }
-  
-  return data
-}
+import { useFeedPolling } from "./hooks/use-feed-polling"
+import { useFeedModals } from "./hooks/use-feed-modals"
+import { useFeedDragDrop } from "./hooks/use-feed-drag-drop"
+import { useFeedActions } from "./hooks/use-feed-actions"
+import { useFeedConfetti } from "./hooks/use-feed-confetti"
 
 interface InstagramFeedViewProps {
   feedId: number
@@ -55,113 +37,10 @@ interface InstagramFeedViewProps {
 }
 
 export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewProps) {
-  // Declare refs and functions BEFORE useSWR (they're used in the onSuccess callback)
-  const hasShownConfettiRef = useRef(false)
+  // Use custom hooks for all complex logic
+  const { feedData, feedError, mutate, isLoading: isFeedLoading, isValidating } = useFeedPolling(feedId)
+  const { selectedPost, setSelectedPost, showGallery, setShowGallery, showProfileGallery, setShowProfileGallery } = useFeedModals()
   
-  const triggerConfetti = () => {
-    const duration = 3000
-    const animationEnd = Date.now() + duration
-    const colors = ["#292524", "#57534e", "#78716c"] // stone colors only
-
-    const randomInRange = (min: number, max: number) => {
-      return Math.random() * (max - min) + min
-    }
-
-    const confettiInterval = setInterval(() => {
-      const timeLeft = animationEnd - Date.now()
-
-      if (timeLeft <= 0) {
-        clearInterval(confettiInterval)
-        return
-      }
-
-      const particleCount = 3
-
-      // Create confetti particles
-      for (let i = 0; i < particleCount; i++) {
-        const particle = document.createElement("div")
-        particle.style.position = "fixed"
-        particle.style.width = "8px"
-        particle.style.height = "8px"
-        particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)]
-        particle.style.left = Math.random() * window.innerWidth + "px"
-        particle.style.top = "-10px"
-        particle.style.zIndex = "9999"
-        particle.style.pointerEvents = "none"
-        particle.style.borderRadius = "2px"
-        particle.style.transition = "transform 3s linear, opacity 3s linear"
-        
-        document.body.appendChild(particle)
-
-        requestAnimationFrame(() => {
-          particle.style.transform = `translateY(${window.innerHeight + 100}px) rotate(${randomInRange(-180, 180)}deg)`
-          particle.style.opacity = "0"
-        })
-
-        setTimeout(() => {
-          particle.remove()
-        }, duration)
-      }
-    }, 50)
-
-    setTimeout(() => {
-      clearInterval(confettiInterval)
-    }, duration)
-  }
-
-  // Use SWR for data fetching with intelligent polling
-  // Track last update time to continue polling for a grace period after updates
-  const lastUpdateRef = useRef<number>(Date.now())
-  
-  const { data: feedData, error: feedError, mutate, isLoading: isFeedLoading, isValidating } = useSWR(
-    feedId ? `/api/feed/${feedId}` : null,
-    fetcher,
-    {
-      refreshInterval: (data) => {
-        // Poll if:
-        // 1. Posts are generating images (prediction_id but no image_url)
-        // 2. Feed is processing prompts/captions (status: processing/queueing/generating)
-        const hasGeneratingPosts = data?.posts?.some(
-          (p: any) => p.prediction_id && !p.image_url
-        )
-        const isProcessing = data?.feed?.status === 'processing' || 
-                            data?.feed?.status === 'queueing' ||
-                            data?.feed?.status === 'generating'
-        
-        // Continue polling if generating or processing
-        if (hasGeneratingPosts || isProcessing) {
-          lastUpdateRef.current = Date.now()
-          return 3000 // Poll every 3s (faster for better UX)
-        }
-        
-        // Grace period: Continue polling for 15s after last update
-        // This ensures UI catches database updates even if timing is slightly off
-        const timeSinceLastUpdate = Date.now() - lastUpdateRef.current
-        const shouldContinuePolling = timeSinceLastUpdate < 15000
-        
-        return shouldContinuePolling ? 3000 : 0
-      },
-      refreshWhenHidden: false, // Stop when tab hidden
-      revalidateOnFocus: true, // Refresh when tab becomes visible
-      onSuccess: (data) => {
-        // Update last update time when data changes
-        if (data?.posts) {
-          const hasNewImages = data.posts.some((p: any) => p.image_url)
-          if (hasNewImages) {
-            lastUpdateRef.current = Date.now()
-          }
-        }
-        
-        // Check if all posts complete - trigger confetti
-        // Note: Confetti is also triggered in useEffect below, but we check ref here to avoid double-trigger
-        const allComplete = data?.posts?.every((p: any) => p.image_url)
-        if (allComplete && !hasShownConfettiRef.current) {
-          // Don't trigger here - let the useEffect handle it to avoid double confetti
-          // The useEffect (lines 251-266) will handle the confetti animation
-        }
-      },
-    }
-  )
   console.log("[v0] ==================== INSTAGRAM FEED VIEW RENDERED ====================")
   console.log("[v0] feedData:", feedData ? "exists" : "null")
   console.log("[v0] feedData structure:", feedData ? Object.keys(feedData) : "null")
@@ -171,42 +50,15 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
   console.log("[v0] feedData.error:", feedData?.error)
 
   const [activeTab, setActiveTab] = useState<"grid" | "posts" | "strategy">("grid")
-  const [selectedPost, setSelectedPost] = useState<any | null>(null)
-  const [expandedCaptions, setExpandedCaptions] = useState<Set<number>>(new Set())
-  const [regeneratingPost, setRegeneratingPost] = useState<number | null>(null)
-  const [showGallery, setShowGallery] = useState<number | null>(null)
-  const [showProfileGallery, setShowProfileGallery] = useState(false)
 
-  // Prevent body scroll when any modal is open
-  useEffect(() => {
-    const hasOpenModal = !!selectedPost || !!showGallery || showProfileGallery
-    
-    if (hasOpenModal) {
-      // Save original overflow style
-      const originalOverflow = document.body.style.overflow
-      // Prevent body scroll
-      document.body.style.overflow = 'hidden'
-      // Cleanup: restore original overflow on unmount or when modal closes
-      return () => {
-        document.body.style.overflow = originalOverflow
-      }
-    }
-  }, [selectedPost, showGallery, showProfileGallery])
-
-  const [showConfetti, setShowConfetti] = useState(false)
-  const [generatingRemaining, setGeneratingRemaining] = useState(false)
-  const [copiedCaptions, setCopiedCaptions] = useState<Set<number>>(new Set())
-  const [enhancingCaptions, setEnhancingCaptions] = useState<Set<number>>(new Set())
-  const [isGeneratingBio, setIsGeneratingBio] = useState(false)
-  
-  // Drag-and-drop state for reordering posts
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
-  const [reorderedPosts, setReorderedPosts] = useState<any[]>([])
-  const [isSavingOrder, setIsSavingOrder] = useState(false)
+  // Memoize posts to prevent unnecessary re-renders
+  // NOTE: This hook MUST be called before any early returns to comply with Rules of Hooks
+  const posts = useMemo(() => {
+    return feedData?.posts ? [...feedData.posts].sort((a: any, b: any) => a.position - b.position) : []
+  }, [feedData?.posts])
 
   // Derived state from feedData (single source of truth)
   // SIMPLIFIED: A post is complete if it has an image_url (regardless of generation_status)
-  // This fixes the issue where images are ready but status isn't updated to 'completed'
   const postStatuses = useMemo(() => {
     if (!feedData?.posts) return []
     
@@ -224,50 +76,13 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
     }))
   }, [feedData])
 
-  // Memoize posts to prevent unnecessary re-renders
-  // NOTE: This hook MUST be called before any early returns to comply with Rules of Hooks
-  const posts = useMemo(() => {
-    return feedData?.posts ? [...feedData.posts].sort((a: any, b: any) => a.position - b.position) : []
-  }, [feedData?.posts])
-
-  // ALL HOOKS MUST BE DECLARED BEFORE EARLY RETURNS (Rules of Hooks)
-  // Track previous posts to detect actual changes
-  const prevPostsRef = useRef<string>('')
-  const postsKey = posts.map((p: any) => `${p.id}-${p.position}`).join(',')
-
-  // Download bundle state
-  const [isDownloadingBundle, setIsDownloadingBundle] = useState(false)
-
-  // Initialize reorderedPosts when posts change (only if not currently dragging)
-  // CRITICAL: reorderedPosts must always be in sync with posts for drag handlers to work correctly
-  useEffect(() => {
-    // Only update if posts actually changed (by comparing IDs and positions)
-    if (draggedIndex === null && posts.length > 0 && prevPostsRef.current !== postsKey) {
-      prevPostsRef.current = postsKey
-      setReorderedPosts(posts)
-    }
-  }, [posts, draggedIndex, postsKey])
-
-  // Confetti trigger when all posts are complete (single trigger point to avoid duplicate)
+  // Use hooks for complex logic
+  const dragDrop = useFeedDragDrop(posts, feedId, mutate)
+  const actions = useFeedActions(feedId, posts, feedData, mutate)
+  
+  // Calculate ready posts for confetti
   const readyPosts = postStatuses.filter(p => p.isComplete).length
-  useEffect(() => {
-    const totalPosts = 9
-    if (readyPosts === totalPosts && !hasShownConfettiRef.current) {
-      // Set ref immediately to prevent duplicate triggers (from SWR onSuccess or multiple renders)
-      hasShownConfettiRef.current = true
-      
-      console.log("[v0] 🎉 All posts complete! Revealing feed with confetti")
-      setTimeout(() => {
-        setShowConfetti(true)
-        triggerConfetti()
-      }, 500)
-      
-      // Clear confetti after 3 seconds
-      setTimeout(() => {
-        setShowConfetti(false)
-      }, 3500)
-    }
-  }, [readyPosts])
+  const { showConfetti } = useFeedConfetti(readyPosts)
 
   // Log post status for debugging (optional - can be removed in production)
   useEffect(() => {
@@ -435,612 +250,8 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
     return 'Complete!'
   }
 
-  // Ensure reorderedPosts is always initialized (use posts as fallback for rendering if empty)
-  const displayPosts = reorderedPosts.length > 0 ? reorderedPosts : posts
-
-  // Drag-and-drop handlers for reordering posts
-  const handleDragStart = (index: number) => {
-    // Only allow dragging if post is complete
-    // Use displayPosts to ensure we're working with the same array that's rendered
-    const post = displayPosts[index]
-    if (!post?.image_url || post.generation_status !== 'completed') {
-      return
-    }
-    // Ensure reorderedPosts is initialized if it was empty
-    if (reorderedPosts.length === 0) {
-      setReorderedPosts(displayPosts)
-    }
-    setDraggedIndex(index)
-  }
-
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>, index: number) => {
-    e.preventDefault()
-    if (draggedIndex !== null && draggedIndex !== index) {
-      const newPosts = [...reorderedPosts]
-      const [draggedPost] = newPosts.splice(draggedIndex, 1)
-      newPosts.splice(index, 0, draggedPost)
-      setReorderedPosts(newPosts)
-      setDraggedIndex(index)
-    }
-  }
-
-  const handleDragEnd = async () => {
-    if (draggedIndex === null) return
-    
-    const originalIndex = draggedIndex
-    setDraggedIndex(null)
-    
-    // Check if order actually changed
-    const orderChanged = reorderedPosts.some((post, index) => {
-      const originalPost = posts[index]
-      return !originalPost || post.id !== originalPost.id
-    })
-    
-    if (!orderChanged) {
-      // Order didn't change, revert to original
-      setReorderedPosts(posts)
-      return
-    }
-    
-    // Save new order to database
-    try {
-      setIsSavingOrder(true)
-      const response = await fetch(`/api/feed/${feedId}/reorder`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          postOrders: reorderedPosts.map((post, index) => ({
-            postId: post.id,
-            newPosition: index + 1, // 1-9
-          })),
-        }),
-      })
-      
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: 'Failed to save order' }))
-        throw new Error(error.error || 'Failed to save order')
-      }
-      
-      toast({
-        title: "Feed reordered",
-        description: "Your feed layout has been updated",
-      })
-      
-      // Refresh feed data to get updated positions
-      await mutate()
-    } catch (error) {
-      console.error("[v0] Reorder error:", error)
-      toast({
-        title: "Failed to save order",
-        description: error instanceof Error ? error.message : "Please try again",
-        variant: "destructive",
-      })
-      // Revert to original order
-      setReorderedPosts(posts)
-    } finally {
-      setIsSavingOrder(false)
-    }
-  }
-
-  // Download bundle handler
-  const handleDownloadBundle = async () => {
-    if (!feedData || !isFeedComplete) return
-    
-    try {
-      setIsDownloadingBundle(true)
-      const response = await fetch(`/api/feed/${feedId}/download-bundle`)
-      
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({ error: 'Download failed' }))
-        throw new Error(error.error || 'Download failed')
-      }
-      
-      const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `instagram-feed-${feedId}.zip`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      window.URL.revokeObjectURL(url)
-      
-      toast({
-        title: "Download started",
-        description: "Your feed bundle is downloading",
-      })
-    } catch (error) {
-      console.error("[v0] Download bundle error:", error)
-      toast({
-        title: "Download failed",
-        description: error instanceof Error ? error.message : "Please try again",
-        variant: "destructive",
-      })
-    } finally {
-      setIsDownloadingBundle(false)
-    }
-  }
-
-  const toggleCaption = (postId: number) => {
-    const newExpanded = new Set(expandedCaptions)
-    if (newExpanded.has(postId)) {
-      newExpanded.delete(postId)
-    } else {
-      newExpanded.add(postId)
-    }
-    setExpandedCaptions(newExpanded)
-  }
-
-  const copyCaptionToClipboard = async (caption: string, postId: number) => {
-    try {
-      await navigator.clipboard.writeText(caption)
-      const newCopied = new Set(copiedCaptions)
-      newCopied.add(postId)
-      setCopiedCaptions(newCopied)
-      setTimeout(() => {
-        const updated = new Set(copiedCaptions)
-        updated.delete(postId)
-        setCopiedCaptions(updated)
-      }, 2000)
-      toast({
-        title: "Copied!",
-        description: "Caption copied to clipboard",
-      })
-    } catch (error) {
-      console.error("[v0] Failed to copy caption:", error)
-      toast({
-        title: "Copy failed",
-        description: "Please try again",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const handleGenerateBio = async () => {
-    if (!feedData?.feed?.id) {
-      toast({
-        title: "Error",
-        description: "Feed ID is missing. Please refresh the page.",
-        variant: "destructive",
-      })
-      return
-    }
-
-    setIsGeneratingBio(true)
-
-    try {
-      const response = await fetch(`/api/feed/${feedData.feed.id}/generate-bio`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      })
-
-      if (!response.ok) {
-        let errorData: any = {}
-        let errorMessage = "Failed to generate bio"
-        
-        try {
-          const contentType = response.headers.get("content-type")
-          if (contentType && contentType.includes("application/json")) {
-            errorData = await response.json()
-            errorMessage = errorData.error || errorMessage
-          } else {
-            const errorText = await response.text()
-            if (errorText && errorText.trim().length > 0) {
-              try {
-                errorData = JSON.parse(errorText)
-                errorMessage = errorData.error || errorMessage
-              } catch {
-                errorMessage = errorText.substring(0, 200) || errorMessage
-              }
-            }
-          }
-        } catch (parseError) {
-          console.error(`[v0] Error parsing response:`, parseError)
-          errorMessage = `HTTP ${response.status}: ${response.statusText || "Unknown error"}`
-        }
-        
-        console.error(`[v0] ❌ Failed to generate bio:`, {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorData,
-          feedId: feedData?.feed?.id
-        })
-        
-        throw new Error(errorMessage)
-      }
-
-      let data
-      try {
-        const responseText = await response.text()
-        if (!responseText || responseText.trim().length === 0) {
-          throw new Error("Empty response from server")
-        }
-        data = JSON.parse(responseText)
-      } catch (parseError) {
-        console.error(`[v0] Failed to parse response:`, parseError)
-        throw new Error("Invalid response from server. Please try again.")
-      }
-
-      if (data.bio) {
-        // Refresh feed data to show updated bio
-        await mutate(`/api/feed/${feedData.feed.id}`)
-        toast({
-          title: feedData.bio?.bio_text ? "Bio regenerated!" : "Bio generated!",
-          description: "Your Instagram bio has been created based on your brand profile.",
-        })
-      } else {
-        throw new Error("No bio returned")
-      }
-    } catch (error) {
-      console.error("[v0] Generate bio error:", error)
-      toast({
-        title: "Generation failed",
-        description: error instanceof Error ? error.message : "Please try again",
-        variant: "destructive",
-      })
-    } finally {
-      setIsGeneratingBio(false)
-    }
-  }
-
-  const handleEnhanceCaption = async (postId: number, currentCaption: string) => {
-    if (!feedData?.feed?.id) {
-      toast({
-        title: "Error",
-        description: "Feed ID is missing. Please refresh the page.",
-        variant: "destructive",
-      })
-      return
-    }
-
-    const newEnhancing = new Set(enhancingCaptions)
-    newEnhancing.add(postId)
-    setEnhancingCaptions(newEnhancing)
-
-    try {
-      const response = await fetch(`/api/feed/${feedData.feed.id}/enhance-caption`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ postId, currentCaption }),
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.error || "Failed to enhance caption")
-      }
-
-      const data = await response.json()
-      
-      if (data.enhancedCaption) {
-        // Refresh feed data to show updated caption
-        await mutate(`/api/feed/${feedData.feed.id}`)
-        toast({
-          title: "Caption enhanced!",
-          description: "Maya has improved your caption. You can edit it further if needed.",
-        })
-      } else {
-        throw new Error("No enhanced caption returned")
-      }
-    } catch (error) {
-      console.error("[v0] Enhance caption error:", error)
-      toast({
-        title: "Enhancement failed",
-        description: error instanceof Error ? error.message : "Please try again",
-        variant: "destructive",
-      })
-    } finally {
-      const updated = new Set(enhancingCaptions)
-      updated.delete(postId)
-      setEnhancingCaptions(updated)
-    }
-  }
-
-  const handleGenerateSingle = async (postId: number) => {
-    try {
-      setGeneratingPosts((prev) => new Set(prev).add(postId))
-
-      const response = await fetch(`/api/feed/${feedId}/generate-single`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ postId }),
-      })
-
-      if (!response.ok) {
-        let errorData = {}
-        let errorMessage = "Failed to generate"
-        try {
-          const errorText = await response.text()
-          if (errorText) {
-            errorData = JSON.parse(errorText)
-            errorMessage = errorData.error || errorData.details || errorMessage
-          }
-        } catch (parseError) {
-          errorData = { 
-            error: `HTTP ${response.status}: ${response.statusText}`,
-            message: "Failed to parse error response"
-          }
-        }
-        console.error(`[v0] ❌ Failed to generate post ${postId}:`, {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorData,
-          feedId: feedId
-        })
-        throw new Error(errorMessage)
-      }
-
-      let data
-      try {
-        data = await response.json()
-        console.log("[v0] ✅ Generated post:", postId, "prediction ID:", data.predictionId)
-      } catch (parseError) {
-        console.error(`[v0] ⚠️ Success response but failed to parse JSON for post ${postId}:`, parseError)
-        throw new Error("Failed to parse response")
-      }
-
-      toast({
-        title: "Creating your photo",
-        description: "This takes about 30 seconds",
-      })
-
-      // Refresh feed data after a short delay to pick up prediction_id
-      // Then refresh again after longer delay to catch completed images
-      setTimeout(() => {
-        mutate(`/api/feed/${feedId}`)
-      }, 1000)
-      
-      // Additional refresh after 5 seconds to catch early completions
-      setTimeout(() => {
-        mutate(`/api/feed/${feedId}`)
-      }, 5000)
-    } catch (error: any) {
-      setGeneratingPosts((prev) => {
-        const next = new Set(prev)
-        next.delete(postId)
-        return next
-      })
-
-      toast({
-        title: "Generation failed",
-        description: error.message || "Please try again",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const handleGenerateRemaining = async () => {
-    const postsWithoutPrediction = posts.filter(
-      (p: any) => !p.prediction_id && p.generation_status !== "completed" && !p.image_url,
-    )
-
-    if (postsWithoutPrediction.length === 0) {
-      toast({
-        title: "All posts are generating",
-        description: "No remaining posts to generate",
-      })
-      return
-    }
-
-    setGeneratingRemaining(true)
-    toast({
-      title: `Generating ${postsWithoutPrediction.length} remaining images`,
-      description: "This may take a few minutes",
-    })
-
-    try {
-      // Use queue-all-images API (same as create-strategy does)
-      console.log(`[v0] Queueing ${postsWithoutPrediction.length} remaining images via queue-all-images API`)
-      const response = await fetch(`/api/feed-planner/queue-all-images`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ feedLayoutId: feedId }),
-      })
-
-      if (!response.ok) {
-        let errorData = {}
-        try {
-          const errorText = await response.text()
-          if (errorText) {
-            errorData = JSON.parse(errorText)
-          }
-        } catch (parseError) {
-          errorData = { 
-            error: `HTTP ${response.status}: ${response.statusText}`,
-            message: "Failed to parse error response"
-          }
-        }
-        throw new Error(errorData.error || `HTTP ${response.status}: Failed to queue images`)
-      }
-
-      const data = await response.json()
-      console.log(`[v0] ✅ Successfully queued ${data.queuedCount || postsWithoutPrediction.length} images`)
-
-      // Refresh feed data after a short delay
-      setTimeout(() => {
-        mutate(`/api/feed/${feedId}`)
-        setGeneratingRemaining(false)
-        toast({
-          title: "Generation started",
-          description: `Started generating ${data.queuedCount || postsWithoutPrediction.length} images`,
-        })
-      }, 2000)
-    } catch (error: any) {
-      setGeneratingRemaining(false)
-      console.error(`[v0] ❌ Error queueing images:`, error)
-      toast({
-        title: "Generation failed",
-        description: error.message || "Please try again",
-        variant: "destructive",
-      })
-    }
-  }
-
-  const handleRegeneratePost = async (postId: number) => {
-    if (!feedId) {
-      toast({
-        title: "Error",
-        description: "Feed ID not found. Please refresh the page.",
-        variant: "destructive",
-      })
-      return
-    }
-
-    if (!confirm("Regenerate this photo? This will use 1 credit.")) {
-      return
-    }
-
-    setRegeneratingPost(postId)
-
-    try {
-      if (!feedId) {
-        throw new Error("Feed ID is missing. Please refresh the page.")
-      }
-      
-      console.log(`[v0] Regenerating post ${postId} in feed ${feedId}`)
-      const url = `/api/feed/${feedId}/generate-single`
-      console.log(`[v0] Making request to:`, url)
-      
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ postId }),
-      })
-
-      console.log(`[v0] Regenerate response:`, {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok,
-        headers: Object.fromEntries(response.headers.entries())
-      })
-
-      if (!response.ok) {
-        let errorData: any = {}
-        let errorMessage = `Failed to regenerate (HTTP ${response.status})`
-        
-        // Try to get error details from response
-        try {
-          const contentType = response.headers.get("content-type")
-          if (contentType && contentType.includes("application/json")) {
-            errorData = await response.json()
-            errorMessage = errorData.error || errorData.details || errorMessage
-          } else {
-            const errorText = await response.text()
-            if (errorText && errorText.trim().length > 0) {
-              try {
-                errorData = JSON.parse(errorText)
-                errorMessage = errorData.error || errorData.details || errorMessage
-              } catch {
-                errorMessage = errorText.substring(0, 200) || errorMessage
-              }
-            }
-          }
-        } catch (parseError) {
-          console.error(`[v0] Error parsing response:`, parseError)
-          errorMessage = `HTTP ${response.status}: ${response.statusText || "Unknown error"}`
-        }
-        
-        console.error(`[v0] ❌ Failed to regenerate post ${postId}:`, {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorData,
-          feedId: feedId,
-          hasErrorData: Object.keys(errorData).length > 0
-        })
-        
-        // Provide user-friendly error messages based on status code
-        if (response.status === 401) {
-          // Check if the error response suggests a refresh is needed
-          if (errorData?.requiresRefresh || errorData?.shouldRetry) {
-            errorMessage = "Your session has expired. Please refresh the page and try again."
-          } else {
-            errorMessage = errorData?.details || "Authentication failed. Please refresh the page and try again."
-          }
-        } else if (response.status === 402) {
-          errorMessage = "Insufficient credits. Please purchase more credits to regenerate."
-        } else if (response.status === 429) {
-          errorMessage = "Rate limit exceeded. Please wait a moment and try again."
-        } else if (response.status === 404) {
-          errorMessage = "Post or feed not found. Please refresh the page."
-        } else if (response.status === 400) {
-          errorMessage = errorData?.details || "Invalid request. Please check your input and try again."
-        }
-        
-        // Show toast with error
-        toast({
-          title: "Error",
-          description: errorMessage,
-          variant: "destructive",
-        })
-        
-        throw new Error(errorMessage)
-      }
-
-      let data
-      try {
-        const responseText = await response.text()
-        if (!responseText || responseText.trim().length === 0) {
-          throw new Error("Empty response from server")
-        }
-        data = JSON.parse(responseText)
-      } catch (parseError) {
-        console.error(`[v0] Failed to parse response:`, parseError)
-        throw new Error("Invalid response from server. Please try again.")
-      }
-      
-      console.log(`[v0] ✅ Successfully queued regeneration for post ${postId}, prediction ID:`, data.predictionId)
-
-      if (!data.predictionId) {
-        throw new Error("No prediction ID returned. Please try again.")
-      }
-
-      // Add to generating posts set so polling picks it up
-      setGeneratingPosts((prev) => new Set(prev).add(postId))
-      
-      // Track when this regeneration started (for timeout detection)
-      setPostStartTimes((prev) => {
-        const updated = new Map(prev)
-        updated.set(postId, Date.now())
-        return updated
-      })
-      
-      // Remove from completed posts so polling will check it again
-      setCompletedPosts((prev) => {
-        const updated = new Set(prev)
-        updated.delete(postId)
-        return updated
-      })
-
-      toast({
-        title: "Regenerating photo",
-        description: "Creating a new variation in the same category. This takes about 30 seconds.",
-      })
-
-      // Refresh feed data to show generating status
-      await mutate(`/api/feed/${feedId}`)
-      
-      // Force polling to restart if it's not active
-      if (!isPollingActiveRef.current && pollIntervalRef.current === null) {
-        console.log("[v0] Restarting polling for regenerated post:", postId)
-        // The useEffect will pick this up and restart polling
-      }
-    } catch (error) {
-      console.error(`[v0] Error regenerating post ${postId}:`, error)
-      toast({
-        title: "Regeneration failed",
-        description: error instanceof Error ? error.message : "Please try again",
-        variant: "destructive",
-      })
-    } finally {
-      setRegeneratingPost(null)
-    }
-  }
+  // Use reorderedPosts from drag-drop hook
+  const displayPosts = dragDrop.reorderedPosts
 
   if (!feedId || !isFeedComplete) {
     return (
@@ -1140,11 +351,11 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
           </div>
           {readyPosts < totalPosts && (
             <button
-              onClick={handleGenerateRemaining}
-              disabled={generatingRemaining}
+              onClick={actions.handleGenerateRemaining}
+              disabled={actions.generatingRemaining}
               className="mt-4 px-4 py-2 bg-stone-900 text-white text-xs font-light rounded-lg hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {generatingRemaining ? "Generating..." : `Generate Remaining ${totalPosts - readyPosts} Images`}
+              {actions.generatingRemaining ? "Generating..." : `Generate Remaining ${totalPosts - readyPosts} Images`}
             </button>
           )}
         </div>
@@ -1229,12 +440,12 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
                     {feedData.bio?.bio_text || "Your Instagram feed strategy created by Maya"}
                   </div>
                   <button
-                    onClick={handleGenerateBio}
-                    disabled={isGeneratingBio || !feedData?.feed?.id}
+                    onClick={actions.handleGenerateBio}
+                    disabled={actions.isGeneratingBio || !feedData?.feed?.id}
                     className="p-2 hover:bg-stone-100 rounded-lg transition-colors border border-stone-200 hover:border-stone-300 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                     title={feedData.bio?.bio_text ? "Regenerate bio" : "Generate bio"}
                   >
-                    {isGeneratingBio ? (
+                    {actions.isGeneratingBio ? (
                       <Loader2 size={18} className="text-stone-600 animate-spin" />
                     ) : (
                       <Sparkles size={18} className="text-stone-600" />
@@ -1299,11 +510,11 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
                 All 9 images have been generated. You can now download them, edit captions, or regenerate individual posts if needed.
               </p>
               <button
-                onClick={handleDownloadBundle}
-                disabled={isDownloadingBundle}
+                onClick={actions.handleDownloadBundle}
+                disabled={actions.isDownloadingBundle}
                 className="mt-2 px-4 py-2 bg-stone-900 text-white rounded-lg text-sm font-medium hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isDownloadingBundle ? "Preparing download..." : `Download All (${totalPosts} images + captions + strategy)`}
+                {actions.isDownloadingBundle ? "Preparing download..." : `Download All (${totalPosts} images + captions + strategy)`}
               </button>
             </div>
           </div>
@@ -1316,22 +527,22 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
             {displayPosts.map((post: any, index: number) => {
               const postStatus = postStatuses.find(p => p.id === post.id)
               const isGenerating = postStatus?.isGenerating || post.generation_status === "generating"
-              const isRegenerating = regeneratingPost === post.id
+              const isRegenerating = actions.regeneratingPost === post.id
               // SIMPLIFIED: A post is complete if it has an image_url (regardless of status)
               const isComplete = !!post.image_url
-              const isDragging = draggedIndex === index
+              const isDragging = dragDrop.draggedIndex === index
 
               return (
                 <div
                   key={post.id}
-                  draggable={isComplete && !isSavingOrder}
-                  onDragStart={() => handleDragStart(index)}
-                  onDragOver={(e) => handleDragOver(e, index)}
-                  onDragEnd={handleDragEnd}
+                  draggable={isComplete && !dragDrop.isSavingOrder}
+                  onDragStart={() => dragDrop.handleDragStart(index)}
+                  onDragOver={(e) => dragDrop.handleDragOver(e, index)}
+                  onDragEnd={dragDrop.handleDragEnd}
                   className={`aspect-square bg-stone-100 relative transition-all duration-200 ${
                     isDragging ? 'opacity-50 scale-95' : ''
                   } ${
-                    isComplete && !isSavingOrder ? 'cursor-move hover:opacity-90' : 'cursor-pointer'
+                    isComplete && !dragDrop.isSavingOrder ? 'cursor-move hover:opacity-90' : 'cursor-pointer'
                   }`}
                 >
                   {post.image_url && !isRegenerating && !isGenerating ? (
@@ -1355,7 +566,7 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
                       className="absolute inset-0 bg-white flex flex-col items-center justify-center p-3 cursor-pointer hover:bg-stone-50 transition-colors"
                       onClick={(e) => {
                         e.stopPropagation()
-                        handleGenerateSingle(post.id)
+                        actions.handleGenerateSingle(post.id)
                       }}
                     >
                       <ImageIcon className="w-10 h-10 text-stone-300 mb-2" strokeWidth={1.5} />
@@ -1389,7 +600,7 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
               </div>
             )}
             {posts.map((post: any) => {
-              const isExpanded = expandedCaptions.has(post.id)
+              const isExpanded = actions.expandedCaptions.has(post.id)
               const caption = post.caption || ""
               const shouldTruncate = caption.length > 150
               const displayCaption = isExpanded || !shouldTruncate ? caption : caption.substring(0, 150) + "..."
@@ -1463,7 +674,7 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
                           <span className="text-stone-900 whitespace-pre-wrap break-words">{displayCaption}</span>
                           {shouldTruncate && (
                             <button
-                              onClick={() => toggleCaption(post.id)}
+                              onClick={() => actions.toggleCaption(post.id)}
                               className="text-stone-500 ml-1 hover:text-stone-700 transition-colors"
                             >
                               {isExpanded ? "less" : "more"}
@@ -1472,23 +683,23 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
                         </div>
                         <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
                           <button
-                            onClick={() => copyCaptionToClipboard(post.caption, post.id)}
+                            onClick={() => actions.copyCaptionToClipboard(post.caption, post.id)}
                             className="p-2 hover:bg-stone-100 rounded-lg transition-colors border border-stone-200 hover:border-stone-300"
                             title="Copy caption"
                           >
-                            {copiedCaptions.has(post.id) ? (
+                            {actions.copiedCaptions.has(post.id) ? (
                               <Check size={18} className="text-green-600" />
                             ) : (
                               <Copy size={18} className="text-stone-600" />
                             )}
                           </button>
                           <button
-                            onClick={() => handleEnhanceCaption(post.id, post.caption)}
-                            disabled={enhancingCaptions.has(post.id)}
+                            onClick={() => actions.handleEnhanceCaption(post.id, post.caption)}
+                            disabled={actions.enhancingCaptions.has(post.id)}
                             className="p-2 hover:bg-stone-100 rounded-lg transition-colors border border-stone-200 hover:border-stone-300 disabled:opacity-50 disabled:cursor-not-allowed"
                             title="Enhance with Maya"
                           >
-                            {enhancingCaptions.has(post.id) ? (
+                            {actions.enhancingCaptions.has(post.id) ? (
                               <Loader2 size={18} className="text-stone-600 animate-spin" />
                             ) : (
                               <Sparkles size={18} className="text-stone-600" />
@@ -1808,7 +1019,7 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
-                    handleRegeneratePost(selectedPost.id)
+                    actions.handleRegeneratePost(selectedPost.id)
                   }}
                   disabled={regeneratingPost === selectedPost.id}
                   className="px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
