@@ -911,8 +911,8 @@ export default function FeedPreviewCard({
 
       {/* Action Buttons */}
       <div className="border-t border-stone-200 px-3 sm:px-4 md:px-6 py-3 sm:py-4 bg-white space-y-2 sm:space-y-3">
-        {/* Generate Images Button - Show for unsaved feeds (saves first, then generates) */}
-        {(!isSaved || !feedId) && strategy && (
+        {/* Generate Feed Images Button - Single button for all cases (auto-saves if needed) */}
+        {strategy && (pendingCount > 0 || (!isSaved || !feedId)) && !isAnyGenerating && (
           <button
             onClick={handleGenerateImages}
             disabled={isGenerating || isSaving}
@@ -929,86 +929,20 @@ export default function FeedPreviewCard({
                 Starting Generation...
               </>
             ) : (
-              "Generate Images"
+              `Generate Feed Images${pendingCount > 0 && feedId ? ` (${pendingCount} remaining)` : ''}`
             )}
           </button>
         )}
 
-        {/* Only show generation/caption buttons for saved feeds */}
-        {isSaved && feedId && (
-          <>
-            {/* Generate Feed Button - Show when there are pending posts and not generating */}
-            {pendingCount > 0 && !isAnyGenerating && (
-              <button
-                onClick={() => handleGenerateFeedWithId(feedId)}
-                disabled={isGenerating}
-                className="w-full py-3 sm:py-3 bg-stone-900 hover:bg-stone-800 active:bg-stone-700 text-white text-xs sm:text-sm font-light tracking-wider uppercase transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed border border-stone-900 min-h-[44px] touch-manipulation"
-              >
-                {isGenerating ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <Loader2 size={16} className="animate-spin" />
-                    Starting Generation...
-                  </span>
-                ) : (
-                  `Generate All ${pendingCount} Image${pendingCount > 1 ? 's' : ''}`
-                )}
-              </button>
-            )}
-            
-            {/* Generating State - Show when any images are generating */}
-            {isAnyGenerating && (
-              <div className="w-full py-3 bg-stone-100 text-stone-600 text-xs font-light tracking-wider uppercase text-center border border-stone-200 min-h-[44px] flex items-center justify-center">
-                Generating {generatingCount > 0 ? `${generatingCount} ` : ''}Images...
-              </div>
-            )}
-            
-            {/* Create Captions Button - Show after images are generated */}
-            {hasImages && (
-              <button
-                onClick={() => {
-                  router.push("/studio#maya/feed")
-                  setTimeout(() => {}, 100)
-                }}
-                className="w-full py-3 bg-stone-900 text-white hover:bg-stone-800 active:bg-stone-700 transition-colors duration-200 text-xs font-light tracking-wider uppercase border border-stone-900 min-h-[44px] touch-manipulation"
-              >
-                Create Captions
-              </button>
-            )}
-            
-            {/* Create Strategy Button - Show after images are generated */}
-            {hasImages && (
-              <button
-                onClick={() => {
-                  router.push("/studio#maya/feed")
-                  setTimeout(() => {}, 100)
-                }}
-                className="w-full py-3 bg-stone-900 text-white hover:bg-stone-800 active:bg-stone-700 transition-colors duration-200 text-xs font-light tracking-wider uppercase border border-stone-900 min-h-[44px] touch-manipulation"
-              >
-                Create Strategy
-              </button>
-            )}
-          </>
+        {/* Generating State - Show when any images are generating */}
+        {isAnyGenerating && (
+          <div className="w-full py-3 bg-stone-100 text-stone-600 text-xs font-light tracking-wider uppercase text-center border border-stone-200 min-h-[44px] flex items-center justify-center">
+            Generating {generatingCount > 0 ? `${generatingCount} ` : ''}Images...
+          </div>
         )}
         
-        {/* Save Feed or View Feed Button */}
-        {!isSaved || !feedId ? (
-          // Unsaved state: Show "Save Feed" button (secondary action)
-          <button
-            onClick={handleSaveFeed}
-            disabled={isSaving || isGenerating || !strategy}
-            className="w-full py-3 bg-white border border-stone-200 text-stone-900 hover:bg-stone-50 active:bg-stone-100 hover:border-stone-300 transition-all duration-200 text-xs font-light tracking-wider uppercase disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] touch-manipulation flex items-center justify-center gap-2"
-          >
-            {isSaving ? (
-              <>
-                <Loader2 size={16} className="animate-spin" />
-                Saving Feed...
-              </>
-            ) : (
-              "Save Feed"
-            )}
-          </button>
-        ) : (
-          // Saved state: Show "View Feed" button
+        {/* View Feed Button - Show after feed is saved */}
+        {isSaved && feedId && (
           <button
             onClick={handleViewFullFeed}
             className="w-full py-3 bg-white border border-stone-200 text-stone-900 hover:bg-stone-50 active:bg-stone-100 hover:border-stone-300 transition-all duration-200 text-xs font-light tracking-wider uppercase min-h-[44px] touch-manipulation"

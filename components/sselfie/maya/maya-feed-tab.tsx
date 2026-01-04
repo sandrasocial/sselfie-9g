@@ -6,8 +6,6 @@ import MayaChatInterface from "./maya-chat-interface"
 import MayaQuickPrompts from "./maya-quick-prompts"
 import {
   createFeedFromStrategyHandler,
-  generateCaptionsHandler,
-  generateStrategyHandler,
   saveFeedMarkerToMessage,
   type FeedStrategy,
   type CreateFeedOptions,
@@ -47,8 +45,6 @@ interface MayaFeedTabProps {
   aspectRatio: string
   realismStrength: number
   onCreateFeed: (strategy: any) => Promise<void>
-  onGenerateCaptions: () => Promise<void>
-  onGenerateStrategy: () => Promise<void>
   currentPrompts: Array<{ label: string; prompt: string }>
   handleSendMessage: (message: any) => void
   isEmpty: boolean
@@ -58,18 +54,16 @@ interface MayaFeedTabProps {
  * Maya Feed Tab Component
  * 
  * Extracted from maya-chat-screen.tsx to work as a separate tab component.
- * Handles feed creation, strategy generation, and caption generation.
+ * Handles feed creation with captions included in strategy.
  * 
  * **Features:**
- * - Feed strategy creation via [CREATE_FEED_STRATEGY] trigger
- * - Caption generation via [GENERATE_CAPTIONS] trigger
- * - Strategy document generation via [GENERATE_STRATEGY] trigger
+ * - Feed strategy creation via [CREATE_FEED_STRATEGY] trigger (includes captions)
  * - Feed-specific quick prompts
  * - Empty state with feed-specific messaging
  * 
- * **Removed Dependencies:**
- * - Feed handlers moved to this component (will be extracted to lib/maya/feed-generation-handler.ts in Phase 2)
- * - Feed trigger detection moved here from parent
+ * **Note:**
+ * - Captions are included in the feed strategy JSON (no separate generation needed)
+ * - Strategy document generation is available in Feed Planner (optional feature)
  */
 export default function MayaFeedTab({
   messages,
@@ -104,8 +98,6 @@ export default function MayaFeedTab({
   aspectRatio,
   realismStrength,
   onCreateFeed,
-  onGenerateCaptions,
-  onGenerateStrategy,
   currentPrompts,
   handleSendMessage,
   isEmpty,
@@ -229,7 +221,7 @@ export default function MayaFeedTab({
         await onCreateFeed(strategy)
       } catch (error) {
         console.error("[FEED] ❌ Error storing feed strategy:", error)
-        alert("Failed to create feed strategy. Please try again.")
+        // Error will be handled by parent component
       } finally {
         setIsCreatingFeed(false)
       }
@@ -246,154 +238,6 @@ export default function MayaFeedTab({
       realismStrength,
     ]
   )
-
-  const handleGenerateCaptions = useCallback(async () => {
-    // Extract feedId from the latest feed card in messages
-    let feedId: string | undefined
-    
-    // Find the most recent feed card in messages
-    for (let i = messages.length - 1; i >= 0; i--) {
-      const msg = messages[i]
-      if (msg.role === "assistant" && msg.parts) {
-        const feedCardPart = msg.parts.find((p: any) => p.type === "tool-generateFeed")
-        if (feedCardPart?.output?.feedId) {
-          feedId = String(feedCardPart.output.feedId)
-          break
-        }
-      }
-    }
-    
-    if (!feedId) {
-      console.error("[FEED-CAPTIONS] ❌ No feed ID found in messages")
-      alert("Please create a feed first before generating captions.")
-      return
-    }
-    
-    console.log("[FEED-CAPTIONS] Generating captions for feed:", feedId)
-    const result = await generateCaptionsHandler(feedId)
-
-    if (!result.success || !result.captions) {
-      console.error("[FEED-CAPTIONS] Failed to generate captions:", result.error)
-      alert(result.error || "Failed to generate captions. Please try again.")
-      return
-    }
-
-    // Update messages with caption cards
-    setMessages((prevMessages: any[]) => {
-      const updatedMessages = [...prevMessages]
-
-      // Find the last assistant message (iterate backwards)
-      for (let i = updatedMessages.length - 1; i >= 0; i--) {
-        if (updatedMessages[i].role === "assistant") {
-          const lastAssistant = updatedMessages[i]
-          const existingParts = lastAssistant.parts || []
-
-          // Check if caption cards already exist
-          const hasCaptionCards = existingParts.some(
-            (p: any) => p.type === "tool-generateCaptions"
-          )
-
-          if (!hasCaptionCards) {
-            const updatedParts = [
-              ...existingParts,
-              {
-                type: "tool-generateCaptions",
-                output: {
-                  feedId: result.feedId,
-                  captions: result.captions,
-                },
-              },
-            ]
-
-            updatedMessages[i] = {
-              ...lastAssistant,
-              parts: updatedParts,
-            }
-          }
-          break
-        }
-      }
-
-      return updatedMessages
-    })
-
-    // Call parent callback
-    await onGenerateCaptions()
-  }, [messages, setMessages, onGenerateCaptions])
-
-  const handleGenerateStrategy = useCallback(async () => {
-    // Extract feedId from the latest feed card in messages
-    let feedId: string | undefined
-    
-    // Find the most recent feed card in messages
-    for (let i = messages.length - 1; i >= 0; i--) {
-      const msg = messages[i]
-      if (msg.role === "assistant" && msg.parts) {
-        const feedCardPart = msg.parts.find((p: any) => p.type === "tool-generateFeed")
-        if (feedCardPart?.output?.feedId) {
-          feedId = String(feedCardPart.output.feedId)
-          break
-        }
-      }
-    }
-    
-    if (!feedId) {
-      console.error("[FEED-STRATEGY] ❌ No feed ID found in messages")
-      alert("Please create a feed first before generating strategy.")
-      return
-    }
-    
-    console.log("[FEED-STRATEGY] Generating strategy for feed:", feedId)
-    const result = await generateStrategyHandler(feedId)
-
-    if (!result.success || !result.strategy) {
-      console.error("[FEED-STRATEGY] Failed to generate strategy:", result.error)
-      alert(result.error || "Failed to generate strategy. Please try again.")
-      return
-    }
-
-    // Update messages with strategy card
-    setMessages((prevMessages: any[]) => {
-      const updatedMessages = [...prevMessages]
-
-      // Find the last assistant message (iterate backwards)
-      for (let i = updatedMessages.length - 1; i >= 0; i--) {
-        if (updatedMessages[i].role === "assistant") {
-          const lastAssistant = updatedMessages[i]
-          const existingParts = lastAssistant.parts || []
-
-          // Check if strategy card already exists
-          const hasStrategyCard = existingParts.some(
-            (p: any) => p.type === "tool-generateStrategy"
-          )
-
-          if (!hasStrategyCard) {
-            const updatedParts = [
-              ...existingParts,
-              {
-                type: "tool-generateStrategy",
-                output: {
-                  feedId: result.feedId,
-                  strategy: result.strategy,
-                },
-              },
-            ]
-
-            updatedMessages[i] = {
-              ...lastAssistant,
-              parts: updatedParts,
-            }
-          }
-          break
-        }
-      }
-
-      return updatedMessages
-    })
-
-    // Call parent callback
-    await onGenerateStrategy()
-  }, [messages, setMessages, onGenerateStrategy])
 
   // Detect feed triggers in messages
   useEffect(() => {
@@ -547,25 +391,7 @@ export default function MayaFeedTab({
       processFeedCreation()
       return
     }
-
-    // Check for [GENERATE_CAPTIONS] trigger
-    const generateCaptionsMatch = textContent.match(/\[GENERATE_CAPTIONS\]/i)
-    if (generateCaptionsMatch) {
-      console.log("[FEED-CAPTIONS] ✅ Detected caption generation trigger")
-      handleGenerateCaptions()
-      processedFeedMessagesRef.current.add(messageKey)
-      return
-    }
-
-    // Check for [GENERATE_STRATEGY] trigger
-    const generateStrategyMatch = textContent.match(/\[GENERATE_STRATEGY\]/i)
-    if (generateStrategyMatch) {
-      console.log("[FEED-STRATEGY] ✅ Detected strategy generation trigger")
-      handleGenerateStrategy()
-      processedFeedMessagesRef.current.add(messageKey)
-      return
-    }
-  }, [messages, status, isCreatingFeed, handleCreateFeed, handleGenerateCaptions, handleGenerateStrategy])
+  }, [messages, status, isCreatingFeed, handleCreateFeed])
 
   return (
     <>

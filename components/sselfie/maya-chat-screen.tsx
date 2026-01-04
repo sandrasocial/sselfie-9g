@@ -340,19 +340,6 @@ export default function MayaChatScreen({
     console.log("[FEED] Feed creation completed via FeedTab:", strategy?.posts?.length || 0, "posts")
   }, [])
 
-  // Generate captions for feed handler - now just a placeholder
-  // Actual caption generation logic moved to FeedTab component using lib/maya/feed-generation-handler.ts
-  const generateCaptionsForFeed = useCallback(async () => {
-    // This callback is called by FeedTab after it handles the caption generation
-    // FeedTab manages the actual generation and message updates
-  }, [])
-
-  // Generate strategy for feed handler - now just a placeholder
-  // Actual strategy generation logic moved to FeedTab component using lib/maya/feed-generation-handler.ts
-  const generateStrategyForFeed = useCallback(async () => {
-    // This callback is called by FeedTab after it handles the strategy generation
-    // FeedTab manages the actual generation and message updates
-  }, [])
 
 
   // Detect [GENERATE_CONCEPTS] trigger in messages
@@ -3216,8 +3203,6 @@ export default function MayaChatScreen({
           aspectRatio={aspectRatio}
           realismStrength={realismStrength}
           onCreateFeed={createFeedFromStrategy}
-          onGenerateCaptions={generateCaptionsForFeed}
-          onGenerateStrategy={generateStrategyForFeed}
           currentPrompts={currentPrompts}
           handleSendMessage={handleSendMessage}
                   isEmpty={isEmpty}
