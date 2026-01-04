@@ -1702,19 +1702,86 @@ You MUST generate prompts following the EXACT structure shown in these perfect e
 
 ${getNanoBananaPerfectExamples()}
 
-**CRITICAL RULES:**
-1. ALWAYS start with: "maintaining exactly the same physical characteristics of the woman in the attached image..."
-2. Describe outfit with EXTREME detail: specific brands, materials, textures, how garments fall/fit
-3. Describe hair with PRECISION: part type, texture, shine level, exact styling method
-4. List ALL accessories: eyewear, jewelry (metals, styles), bags with specific details
-5. Specify expression AND pose: facial expression, head position, lip/mouth details, attitude
-6. Include technical lighting: light source, angle, shadows, how it affects skin/materials
-7. End with aesthetic description: luxury level + brand identity + attitude/energy + style category
-8. Length: 150-200 words
-9. Format: Natural flowing description - NO bullet points, NO ** sections, NO "Note:" additions
-10. VARY outfits across all ${count} concepts - each should have DIFFERENT outfit/styling
+**CRITICAL PROMPT STRUCTURE - FOLLOW THIS EXACT FORMAT:**
 
-**GENERATE ${count} PROMPTS NOW - each matching the structure above but with varied outfits/scenes.**
+**OPENING LINE (Always start with this format):**
+[IMAGE TYPE] + [STYLE REFERENCE] of a woman, maintaining exactly the same physical characteristics of the woman in the attached image (face, body, skin tone, hair, and visual identity), without modifications.
+
+**IMAGE TYPE OPTIONS:**
+- High fashion portrait
+- Editorial fashion portrait
+- Lifestyle fashion portrait
+- Street style editorial
+- Timeless fashion portrait
+
+**STYLE REFERENCE OPTIONS:**
+- Influencer/Pinterest style
+- Editorial fashion magazine style
+- Street style blogger aesthetic
+- Luxury brand campaign style
+- Modern minimalist fashion style
+- Parisian chic style
+- It-girl aesthetic
+- Athletic influencer aesthetic
+- Urban fashion blogger aesthetic
+
+**THEN CONTINUE WITH:**
+
+1. **[MAIN GARMENT/OUTFIT DETAILS]**
+   - Describe outfit with EXTREME detail: specific brands (use your fashion knowledge), materials, textures, how garments fall/fit
+   - Use your intelligence to select appropriate brands based on context - do NOT use generic templates
+
+2. **[HAIR STYLING]**
+   - Describe hair with PRECISION: part type, texture, shine level, exact styling method
+
+3. **[ACCESSORIES & JEWELRY]**
+   - List ALL accessories: eyewear, jewelry (metals, styles), bags with specific details
+
+4. **[EXPRESSION & POSE]**
+   - Specify expression AND pose: facial expression, head position, lip/mouth details, attitude
+
+5. **Lighting: [TECHNICAL LIGHTING SPECS]**
+   - Include technical lighting: light source, angle, shadows, how it affects skin/materials
+   - Always start with "Lighting: " then describe
+
+6. **Aesthetic: [OVERALL VIBE + BRAND IDENTITY + ENERGY]**
+   - End with aesthetic description: luxury level + brand identity + attitude/energy + style category
+   - Always start with "Aesthetic: " then describe
+
+**FORMAT RULES:**
+- Length: 150-200 words
+- Natural flowing description - NO bullet points, NO ** sections, NO "Note:" additions
+- DO NOT add: "Professional editorial photography", "Pinterest-style editorial portrait", or "Character consistency with provided reference images" - these are NOT in the examples
+
+**🔴🔴🔴 CRITICAL VARIETY REQUIREMENT - THIS IS MANDATORY:**
+- Each of the ${count} concepts MUST be COMPLETELY DIFFERENT - think of ${count} distinct fashion scenarios
+- Concept 1: Different brand + different outfit + different scene + different aesthetic
+- Concept 2: DIFFERENT brand + DIFFERENT outfit + DIFFERENT scene + DIFFERENT aesthetic  
+- Concept 3: DIFFERENT brand + DIFFERENT outfit + DIFFERENT scene + DIFFERENT aesthetic
+- And so on for ALL ${count} concepts
+
+**YOU MUST VARY EVERYTHING:**
+- Outfits: Different brands (don't repeat The Row/Alo/Chanel - mix them up), different colors, different styles, different materials
+- Hair styling: Different part, different texture, different styling method
+- Locations/scenes: Different settings (don't repeat minimalist apartment - vary between street, studio, outdoor, etc.)
+- Lighting styles: Different light sources, different times of day, different moods
+- Poses/expressions: Different poses, different expressions, different energy
+- Aesthetic vibes: Different luxury levels, different brand identities, different attitudes
+
+**DO NOT REPEAT:**
+- Same brand across concepts (if Concept 1 uses The Row, Concept 2 MUST use a different brand)
+- Same location/scene across concepts (if Concept 1 is minimalist apartment, Concept 2 MUST be different)
+- Same outfit style across concepts (if Concept 1 is quiet luxury, Concept 2 MUST be different aesthetic)
+- Same hair styling across concepts
+- Same lighting style across concepts
+
+**THINK LIKE A FASHION EDITOR:**
+- Each concept is a DIFFERENT editorial spread
+- Each concept showcases a DIFFERENT brand/style/aesthetic
+- Each concept is a COMPLETELY SEPARATE fashion moment
+- Variety makes the concepts valuable - sameness makes them useless
+
+**GENERATE ${count} COMPLETELY UNIQUE PROMPTS NOW - each one MUST be DISTINCT from all others.**
 `
     : `=== YOUR FLUX PROMPTING MASTERY FOR CLASSIC MODE ===
 
@@ -1998,52 +2065,7 @@ ${
 12. **NO BANNED WORDS:** Never use "ultra realistic", "photorealistic", "8K", "4K", "high quality", "perfect", "flawless", "stunning", "beautiful", "gorgeous", "professional photography", "editorial", "magazine quality", "dramatic" (for lighting), "cinematic", "hyper detailed", "sharp focus", "ultra sharp", "crystal clear", "studio lighting", "perfect lighting", "smooth skin", "flawless skin", "airbrushed" - these cause plastic/generic faces and override the user LoRA.
 
 ${studioProMode ? `
-9. **🔴 CRITICAL: BRAND LIBRARY - ALWAYS USE SPECIFIC BRAND NAMES**
-   
-   Based on the detected category, you MUST use these specific brands in your outfit descriptions:
-   
-   ${(() => {
-     // Include conversationContext for better category detection (like Classic Mode)
-     const enrichedRequest = conversationContext 
-       ? `${userRequest || ''} ${conversationContext}`.trim()
-       : userRequest || ''
-     const detectedCat = detectCategoryFromRequest(enrichedRequest, aesthetic, context, conversationContext)
-     // Map category to format expected by generateCompleteOutfit
-     const mappedCategory = mapCategoryForBrandLibrary(detectedCat, userRequest)
-     // Only generate outfit if we have a valid mapping (no fallbacks)
-     if (!mappedCategory) {
-       return `**Category: ${detectedCat || 'Not detected'}**\n\nNo specific brand guidance for this category. Use appropriate brands based on context.`
-     }
-     const outfit = generateCompleteOutfit(mappedCategory, userRequest || aesthetic || '')
-     
-     let brandGuidance = `**Category: ${detectedCat || 'Not detected'}**\n\n`
-     brandGuidance += `You MUST include these specific brand names in your prompts:\n\n`
-     
-     if (outfit.top) {
-       brandGuidance += `- Top: ${outfit.top}\n`
-     }
-     if (outfit.bottom) {
-       brandGuidance += `- Bottom: ${outfit.bottom}\n`
-     }
-     if (outfit.shoes) {
-       brandGuidance += `- Shoes: ${outfit.shoes}\n`
-     }
-     if (outfit.bag) {
-       brandGuidance += `- Bag: ${outfit.bag}\n`
-     }
-     if (outfit.accessory) {
-       brandGuidance += `- Accessory: ${outfit.accessory}\n`
-     }
-     if (outfit.jewelry) {
-       brandGuidance += `- Jewelry: ${outfit.jewelry}\n`
-     }
-     
-     brandGuidance += `\n**CRITICAL:** Always use the EXACT brand names and product names shown above. Do not use generic descriptions like "sneakers" - use "Nike Air Force 1 Low sneakers". Do not use "leggings" - use "Alo Yoga Airbrush leggings".`
-     
-     return brandGuidance
-   })()}
-
-10. Apply the OUTFIT PRINCIPLE with your FASHION INTELLIGENCE - use the brand library above
+9. Apply the OUTFIT PRINCIPLE with your FASHION INTELLIGENCE - use your knowledge to select appropriate brands based on context and aesthetic
 ` : `
 10. Apply the OUTFIT PRINCIPLE with your FASHION INTELLIGENCE
 `}
