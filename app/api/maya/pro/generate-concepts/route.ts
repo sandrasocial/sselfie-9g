@@ -17,6 +17,7 @@ import {
   createVariationFromGuidePrompt,
   type ReferenceImages,
 } from "@/lib/maya/prompt-builders/guide-prompt-handler"
+import { generateCompleteOutfit } from "@/lib/maya/brand-library-2025"
 
 export const maxDuration = 120 // Increased to 2 minutes to handle slow AI responses
 
@@ -386,9 +387,55 @@ export async function POST(req: NextRequest) {
     // Get Maya's personality for Pro Mode
     const mayaPersonality = getMayaPersonality()
 
+    // 🔴 FIX: Get brand intelligence from brand-library-2025.ts
+    // Map Pro Mode categories to brand-library categories
+    const mapProCategoryToBrandLibrary = (proCategory: string | null): string | null => {
+      if (!proCategory) return null
+      const categoryLower = proCategory.toLowerCase()
+      
+      // Map Pro Mode categories to brand-library categories
+      if (categoryLower === 'wellness' || categoryLower === 'alo-workout' || categoryLower.includes('workout') || categoryLower.includes('athletic')) {
+        return 'workout'
+      }
+      if (categoryLower === 'luxury' || categoryLower === 'luxury-fashion') {
+        return 'luxury'
+      }
+      if (categoryLower === 'casual' || categoryLower === 'casual-lifestyle' || categoryLower === 'lifestyle') {
+        return 'casual'
+      }
+      if (categoryLower === 'travel' || categoryLower === 'travel-airport') {
+        return 'travel'
+      }
+      if (categoryLower.includes('cozy') || categoryLower === 'home') {
+        return 'cozy'
+      }
+      if (categoryLower === 'street-style' || categoryLower === 'fashion') {
+        return 'street-style'
+      }
+      
+      // Default to casual if no match
+      return 'casual'
+    }
+
+    // Get outfit suggestions from brand library for variety
+    const brandLibraryCategory = mapProCategoryToBrandLibrary(categoryKey)
+    const outfitSuggestions = brandLibraryCategory 
+      ? generateCompleteOutfit(brandLibraryCategory, categoryInfo?.name?.toLowerCase() || '')
+      : generateCompleteOutfit('casual', '')
+    
+    // Extract brand names from outfit suggestions for variety
+    const availableBrands = new Set<string>()
+    Object.values(outfitSuggestions).forEach((item: string) => {
+      // Extract brand names from outfit items (e.g., "Alo Yoga Airlift bralette" → "Alo Yoga")
+      const brandMatch = item.match(/^(Alo Yoga|Lululemon|Nike|Adidas|New Balance|Levi's|UGG|Bottega Veneta|The Row|Cartier|Hermès|Chanel|Louis Vuitton|Brunello Cucinelli|Toteme|Khaite|Jenni Kayne|Glossier)/i)
+      if (brandMatch) {
+        availableBrands.add(brandMatch[1])
+      }
+    })
+
     // Category context is OPTIONAL - just a hint, not a requirement
     const categoryHint = categoryInfo && categoryInfo.name && categoryInfo.description
-      ? `\n**Optional Category Hint:** ${categoryInfo.name} - ${categoryInfo.description}${(categoryInfo.brands && Array.isArray(categoryInfo.brands) && categoryInfo.brands.length > 0) ? `\nRelevant brands: ${categoryInfo.brands.join(", ")}` : ""}\n(Use this as inspiration, but determine the best category based on the user's request)`
+      ? `\n**Optional Category Hint:** ${categoryInfo.name} - ${categoryInfo.description}\n(Use this as inspiration, but determine the best category based on the user's request)`
       : ""
 
     const libraryContext = `
@@ -543,41 +590,50 @@ The "prompt" field must be a COMPLETE, STRUCTURED PROMPT ready for Nano Banana P
 - ✅ Show variety in activities and settings
 - ✅ Make each concept feel distinct
 
-**PROMPT FORMAT (Pro Mode - Editorial Quality):**
+**PROMPT FORMAT (Pro Mode - Natural Flowing Sentences):**
 
-For concepts 0-2 (Editorial - first 3 concepts):
-Professional photography. Pinterest-style editorial portrait. Character consistency with provided reference images. Match the exact facial features, hair, skin tone, body type, and physical characteristics of the person in the reference images. This is the same person in a different scene. Editorial quality, professional photography aesthetic.
+🔴🔴🔴 MANDATORY: EVERY prompt MUST start with this EXACT phrase:
+"Maintain exactly the characteristics of the person in the attachment (face, visual identity). Do not copy the original photo."
 
-**Outfit:** [Complete outfit with ALL brands, materials, and specific pieces. Example: "Brand-appropriate sophisticated outfit with complete styling details including all pieces, materials, and accessories"]
+This is REQUIRED for Pro Mode (NanoBanana) - DO NOT skip it or use variations.
 
-**Pose:** [Exact action and body position. Example: "Natural pose and action matching the setting and mood of the concept, with specific body language and positioning"]
+Generate prompts as NATURAL FLOWING SENTENCES, not structured sections. NO markdown formatting (**Outfit:**, **Pose:**, etc.).
 
-**Setting:** [ALL specific items and environment details. Example: "Detailed environment description with specific elements that create the desired atmosphere and context"]
+**PROMPT LENGTH REQUIREMENT:**
+- Minimum 150 words (optimal 200-400 words)
+- Include detailed outfit descriptions with ALL pieces, materials, colors, and brands
+- Include detailed setting/environment descriptions
+- Include detailed pose and body language
+- Include detailed lighting descriptions
+- Include camera specifications
+- Include mood and aesthetic descriptions
 
-**Lighting:** [Exact lighting description. Example: "Specific lighting conditions that match the time of day and mood, with detailed light sources and quality"]
+Format: [MANDATORY IDENTITY PRESERVATION PHRASE] → Photography style → Character consistency → Detailed outfit → Detailed pose → Detailed setting → Detailed lighting → Camera specs → Mood → Aesthetic
 
-**Camera Composition:** Editorial portrait from mid-thigh upward, frontal camera position, symmetrical centered framing, professional DSLR, Canon EOS R5 or Sony A7R IV, 85mm f/1.4 lens, camera distance 1.5-2m from subject, shallow depth of field (f/2.0-f/2.8).
+**For concepts 0-2 (Editorial - first 3 concepts):**
 
-**Mood:** [Mood words from description. Example: "Mood words that capture the emotional tone and atmosphere of the concept"]
+Example GOOD format (200+ words):
+"Maintain exactly the characteristics of the person in the attachment (face, visual identity). Do not copy the original photo. Professional editorial photography. Pinterest-style fashion portrait. Character consistency with provided reference images. Woman wearing oversized black wool blazer from The Row, charcoal wide-leg trousers from Toteme, chunky leather platform boots from Bottega Veneta. Standing confidently against industrial concrete wall, one hand in pocket, other adjusting blazer collar, strong architectural pose. Urban cityscape background with modern buildings and clean lines. Dramatic directional lighting creating angular shadows, late afternoon golden light. Shot with Canon EOS R5, 85mm f/1.4 lens, shallow depth of field. High-fashion editorial aesthetic, urban sophistication, contemporary street style elegance."
 
-**Aesthetic:** [Aesthetic from description with Pinterest language. Example: "Aesthetic description using Pinterest-style language that captures the visual style and aspirational quality"]
+Example BAD format (DO NOT USE - too short, missing identity phrase):
+"Professional photography. Character consistency. Woman wearing The Row blazer. Standing by window. Shot with Canon EOS R5."
 
-For concepts 3-5 (Authentic iPhone - last 3 concepts):
-Authentic influencer content. Pinterest-style portrait. Character consistency with provided reference images. Match the exact facial features, hair, skin tone, body type, and physical characteristics of the person in the reference images. This is the same person in a different scene. Natural, relatable iPhone aesthetic.
+**For concepts 3-5 (Authentic iPhone - last 3 concepts):**
 
-**Outfit:** [Complete outfit with ALL brands and materials. Example: "Complete outfit description with all brands, materials, and styling details appropriate to the concept"]
+Example GOOD format (200+ words):
+"Maintain exactly the characteristics of the person in the attachment (face, visual identity). Do not copy the original photo. Authentic influencer content. Pinterest-style portrait. Character consistency with provided reference images. Woman wearing black wool blazer from The Row, charcoal trousers from Toteme, minimal leather accessories. Standing confidently against concrete wall, weight shifted to one leg, hands in pockets, relaxed but strong posture. Urban street setting with architectural details and natural city backdrop. Dramatic directional lighting creating angular shadows, late afternoon light with warm tones. Shot with iPhone 15 Pro portrait mode, 77mm equivalent, natural bokeh effect, shallow depth of field. Dark minimalist editorial aesthetic, contemporary street style, urban sophistication."
 
-**Pose:** [Exact action. Example: "Natural pose and action that matches the concept's setting and mood"]
+Example BAD format (DO NOT USE - too short, missing identity phrase):
+"Authentic influencer content. Woman wearing The Row blazer. Standing confidently. Shot with iPhone 15 Pro."
 
-**Setting:** [Environment details. Example: "Detailed environment description with specific elements that create the desired atmosphere"]
-
-**Lighting:** [Lighting description. Example: "Specific lighting conditions that match the time of day and mood of the concept"]
-
-**Camera Composition:** Authentic iPhone 15 Pro portrait mode, 77mm equivalent, natural bokeh effect, shot from 1.5m distance, portrait mode depth creating soft background blur, influencer content aesthetic.
-
-**Mood:** [Mood. Example: "Mood words that capture the emotional tone of the concept"]
-
-**Aesthetic:** [Aesthetic. Example: "Aesthetic description using Pinterest-style language that captures the visual style"]
+**CRITICAL REQUIREMENTS:**
+- 🔴 MUST start with: "Maintain exactly the characteristics of the person in the attachment (face, visual identity). Do not copy the original photo."
+- 🔴 Minimum 150 words (optimal 200-400 words)
+- Write as natural flowing sentences, NOT structured sections
+- NO markdown formatting (**Outfit:**, **Pose:**, **Setting:**, etc.)
+- NO section labels or headers
+- Natural language flow from identity preservation → photography style → character consistency → detailed outfit → detailed pose → detailed setting → detailed lighting → camera → mood → aesthetic
+- Each concept should read like a complete, natural description with ALL details
 
 **SELFIE HANDLING:**
 If the concept is a selfie (description mentions "selfie", "front camera", "mirror selfie"):
@@ -586,10 +642,23 @@ If the concept is a selfie (description mentions "selfie", "front camera", "mirr
 - Maintain same quality and luxury as professional concepts
 - Use "iPhone 15 Pro front camera selfie" or "iPhone 15 Pro mirror selfie" in Camera Composition section
 
-**BRAND RULES:**
-- Include specific luxury brands naturally: The Row, Alo Yoga, Toteme, Khaite, Bottega Veneta, Glossier, Lululemon, Jenni Kayne, Brunello Cucinelli, Cartier, Hermès
+**BRAND INTELLIGENCE:**
+
+Use brand-library-2025.ts to select VARIED brands based on category and request. The brand library provides intelligent brand selection based on context:
+
+Example outfit from brand library: ${JSON.stringify(outfitSuggestions)}
+
+**CRITICAL BRAND VARIETY RULES:**
+- Choose DIFFERENT brands for each concept (don't repeat same brands across all 6 concepts)
+- Match brands to the specific request:
+  * Workout/Wellness → Alo Yoga, Lululemon, Nike, Adidas
+  * Luxury → The Row, Bottega Veneta, Toteme, Khaite, Brunello Cucinelli, Cartier, Hermès
+  * Casual → Levi's, Adidas, New Balance, Everlane, COS
+  * Travel → Lululemon, Away, Louis Vuitton (for luxury travel)
+  * Cozy → UGG, Cartier (minimal luxury accent)
+- Use brand names naturally in descriptions (not as labels)
+- Vary brand combinations: Concept 1 might use The Row + Toteme, Concept 2 might use Khaite + Bottega Veneta, Concept 3 might use Brunello Cucinelli + Hermès
 - No "MANDATORY" language - natural integration only
-- Brands as inspiration, not forced mentions
 - Copy brands/products EXACTLY (The Row → "The Row", not "luxury brand")
 - No vague language ("elegant sweater" → "The Row cream cashmere turtleneck")
 - Include ALL brands/items mentioned in description
@@ -677,10 +746,46 @@ Make each concept unique, sophisticated, and based on the user's request. Use yo
           // Simple fallback only if Maya didn't generate a prompt
           if (!fullPrompt || fullPrompt.trim().length === 0) {
             console.warn(`[v0] [PRO MODE] Concept ${index + 1} missing prompt, using fallback`)
-            fullPrompt = `Professional photography. ${safeTitle}. ${safeDescription}. Shot on iPhone 15 Pro portrait mode, shallow depth of field, natural skin texture with pores visible, film grain, muted colors, authentic iPhone photo aesthetic.`
+            fullPrompt = `Maintain exactly the characteristics of the person in the attachment (face, visual identity). Do not copy the original photo. Professional photography. ${safeTitle}. ${safeDescription}. Shot on iPhone 15 Pro portrait mode, shallow depth of field, natural skin texture with pores visible, film grain, muted colors, authentic iPhone photo aesthetic.`
           }
           
+          // 🔴 FIX: Ensure identity preservation phrase is present (REQUIRED for Pro Mode)
+          const identityPhrase = "Maintain exactly the characteristics of the person in the attachment (face, visual identity). Do not copy the original photo."
+          if (!fullPrompt.toLowerCase().includes("maintain exactly the characteristics")) {
+            console.warn(`[v0] [PRO MODE] Concept ${index + 1} missing identity preservation phrase, adding it`)
+            fullPrompt = `${identityPhrase} ${fullPrompt}`
+          }
+          
+          // 🔴 FIX: Check prompt length and warn if too short
+          const wordCount = fullPrompt.split(/\s+/).length
+          if (wordCount < 150) {
+            console.warn(`[v0] [PRO MODE] Concept ${index + 1} prompt is too short (${wordCount} words, minimum 150). Maya should generate longer prompts.`)
+          }
+          
+          // 🔴 FIX: Clean markdown formatting from prompts before returning
+          // Remove markdown bold formatting
+          fullPrompt = fullPrompt.replace(/\*\*/g, '')
+          
+          // Remove section labels if they snuck through
+          fullPrompt = fullPrompt
+            .replace(/Outfit:\s*/gi, '')
+            .replace(/Pose:\s*/gi, '')
+            .replace(/Setting:\s*/gi, '')
+            .replace(/Lighting:\s*/gi, '')
+            .replace(/Camera Composition:\s*/gi, '')
+            .replace(/Mood:\s*/gi, '')
+            .replace(/Aesthetic:\s*/gi, '')
+            .replace(/Camera:\s*/gi, '')
+          
+          // Clean up extra whitespace and newlines
+          fullPrompt = fullPrompt.replace(/\n{3,}/g, '\n\n') // Max 2 consecutive newlines
+          fullPrompt = fullPrompt.replace(/[ \t]+/g, ' ') // Multiple spaces to single space
+          fullPrompt = fullPrompt.replace(/^\s+|\s+$/gm, '') // Trim each line
+          fullPrompt = fullPrompt.replace(/\n\s*\n/g, '\n') // Remove empty lines between content
+          fullPrompt = fullPrompt.trim()
+          
           console.log(`[v0] [PRO MODE] Using Maya's prompt for concept ${index + 1} (${fullPrompt.length} chars)`)
+          console.log(`[v0] [PRO MODE] Cleaned prompt preview:`, fullPrompt.substring(0, 200))
 
           // Create a mock UniversalPrompt for image linking (using safe values)
           const mockUniversalPrompt = {
