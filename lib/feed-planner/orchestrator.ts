@@ -189,7 +189,7 @@ What Instagram feed should we create?`,
       ${colorPalette ? JSON.stringify(colorPalette) : null},
       ${truncateString(layoutStrategy.overallStrategy, 1000)},
       ${truncateString(research.researchSummary, 1000)},
-      ${"draft"}
+      ${"saved"}
     )
     RETURNING id
   `

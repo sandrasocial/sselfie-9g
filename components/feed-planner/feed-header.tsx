@@ -1,13 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { ChevronLeft, MoreHorizontal, ChevronDown, Plus } from "lucide-react"
+import { ChevronLeft, MoreHorizontal, Plus } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
-import useSWR from "swr"
-
-const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 interface FeedHeaderProps {
   feedData: any
@@ -15,7 +12,6 @@ interface FeedHeaderProps {
   onBack?: () => void
   onProfileImageClick: () => void
   onWriteBio: () => void
-  onFeedChange?: (feedId: number) => void
   onCreateHighlights?: () => void
 }
 
@@ -25,25 +21,10 @@ export default function FeedHeader({
   onBack,
   onProfileImageClick,
   onWriteBio,
-  onFeedChange,
   onCreateHighlights,
 }: FeedHeaderProps) {
   const router = useRouter()
   const [isCreatingFeed, setIsCreatingFeed] = useState(false)
-  
-  // Fetch feed list for selector
-  const { data: feedListData, mutate: mutateFeedList } = useSWR(
-    currentFeedId ? '/api/feed/list' : null,
-    fetcher,
-    {
-      revalidateOnFocus: true, // Revalidate when tab becomes visible
-      revalidateOnReconnect: true, // Revalidate on reconnect
-      refreshInterval: 0, // Don't auto-poll, but allow manual refresh
-    }
-  )
-
-  const feeds = feedListData?.feeds || []
-  const hasMultipleFeeds = feeds.length > 1
 
   const handleCreateNewFeed = async () => {
     setIsCreatingFeed(true)
@@ -60,11 +41,6 @@ export default function FeedHeader({
       }
 
       const data = await response.json()
-      
-      // Refresh feed list
-      if (mutateFeedList) {
-        await mutateFeedList()
-      }
       
       // Navigate to the new feed
       router.push(`/feed-planner?feedId=${data.feedId}`)
@@ -88,10 +64,14 @@ export default function FeedHeader({
   const hasProfileImage = !!feedData?.feed?.profile_image_url
   const hasBio = !!feedData?.bio?.bio_text
 
-  // Format username for Instagram header (lowercase, no spaces)
-  const displayUsername = feedData?.feed?.username || 
-    (feedData?.userDisplayName ? feedData.userDisplayName.toLowerCase().replace(/\s+/g, "") : null) ||
-    "sselfie"
+  // Get feed name (title) - prefer title, then brand_name, then fallback
+  const feedName = feedData?.feed?.title || 
+    feedData?.feed?.brand_name || 
+    `Feed ${currentFeedId}` ||
+    "My Feed"
+
+  // Get feed color for checkmark (default to blue if not set)
+  const feedColor = feedData?.feed?.display_color || "#3b82f6" // Default blue
 
   return (
     <div className="bg-white border-b border-stone-200">
@@ -102,8 +82,13 @@ export default function FeedHeader({
           </button>
         )}
         <div className="flex items-center gap-1">
-          <span className="text-base font-semibold text-stone-900">{displayUsername}</span>
-          <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
+          <span className="text-base font-semibold text-stone-900">{feedName}</span>
+          <svg 
+            className="w-4 h-4" 
+            fill="currentColor" 
+            viewBox="0 0 24 24"
+            style={{ color: feedColor }}
+          >
             <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
           </svg>
         </div>
@@ -199,31 +184,6 @@ export default function FeedHeader({
               >
                 Create Highlights
               </button>
-              {/* Feed Selector - show if multiple feeds */}
-              {hasMultipleFeeds && onFeedChange && (
-                <div className="flex items-center gap-2 w-full md:w-auto">
-                  <span className="text-xs text-stone-500 uppercase tracking-wider hidden sm:inline whitespace-nowrap">
-                    My Feeds:
-                  </span>
-                  <div className="relative flex-1 md:flex-none">
-                    <select
-                      value={currentFeedId || ''}
-                      onChange={(e) => onFeedChange(Number(e.target.value))}
-                      className="appearance-none bg-white border border-stone-300 rounded-lg px-4 py-1.5 pr-8 text-sm font-light text-stone-900 hover:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:border-transparent transition-colors cursor-pointer w-full md:w-auto"
-                    >
-                      {feeds.map((feed: any) => (
-                        <option key={feed.id} value={feed.id}>
-                          {feed.title} {feed.image_count > 0 ? `(${feed.image_count}/9)` : ''}
-                        </option>
-                      ))}
-                    </select>
-                    <ChevronDown 
-                      size={16} 
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-500 pointer-events-none" 
-                    />
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Highlights - below buttons, mobile optimized */}

@@ -73,7 +73,8 @@ export async function POST(req: NextRequest) {
         photoshoot_base_outfit,
         photoshoot_base_location,
         photoshoot_enabled,
-        created_by
+        created_by,
+        status
       )
       VALUES (
         ${user.id},
@@ -84,7 +85,8 @@ export async function POST(req: NextRequest) {
         ${session.baseOutfit},
         ${session.baseLocation},
         true,
-        'maya'
+        'maya',
+        'saved'
       )
       RETURNING id
     `

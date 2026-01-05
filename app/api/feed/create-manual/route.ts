@@ -41,6 +41,7 @@ export async function POST(req: NextRequest) {
     const title = body.title || `My Feed - ${new Date().toLocaleDateString()}`
 
     // Create feed layout
+    // Set status to 'saved' so feed appears immediately in Feed Planner
     // Try with created_by field first, fallback if field doesn't exist
     let feedResult: any[]
     try {
@@ -58,7 +59,7 @@ export async function POST(req: NextRequest) {
           ${title},
           ${user.name?.toLowerCase().replace(/\s+/g, "") || "yourbrand"},
           NULL,
-          'draft',
+          'saved',
           'manual'
         )
         RETURNING *
@@ -80,7 +81,7 @@ export async function POST(req: NextRequest) {
             ${title},
             ${user.name?.toLowerCase().replace(/\s+/g, "") || "yourbrand"},
             NULL,
-            'draft'
+            'saved'
           )
           RETURNING *
         ` as any[]

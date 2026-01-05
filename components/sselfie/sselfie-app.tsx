@@ -41,9 +41,21 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Pencil, Palette } from "lucide-react"
 import { DesignClasses } from "@/lib/design-tokens"
 import { AnimatePresence, motion } from "framer-motion"
 import MayaModeToggle from "./maya/maya-mode-toggle"
+import useSWR from "swr"
+import { useRouter, useSearchParams } from "next/navigation"
+import { ChevronDown } from "lucide-react"
 
 interface SselfieAppProps {
   userId: string | number // Can be string or number (from database)
@@ -127,6 +139,94 @@ export default function SselfieApp({
   }, [feedPlannerProMode])
   const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  
+  // Fetch feed list for feed planner header
+  const fetcher = async (url: string) => {
+    const res = await fetch(url)
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}))
+      throw new Error(errorData.details || errorData.error || `Failed to fetch: ${res.status}`)
+    }
+    const data = await res.json()
+    // Validate response structure
+    if (!data || typeof data !== 'object') {
+      throw new Error('Invalid response format')
+    }
+    if (!Array.isArray(data.feeds)) {
+      return { feeds: [] }
+    }
+    return data
+  }
+  const { data: feedListData, error: feedListError, isLoading: isLoadingFeeds, mutate: mutateFeeds } = useSWR(
+    activeTab === "feed-planner" ? '/api/feed/list' : null,
+    fetcher,
+    {
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+      refreshInterval: 0,
+    }
+  )
+  const feeds = feedListData?.feeds || []
+  const currentFeedId = searchParams.get('feedId') ? parseInt(searchParams.get('feedId')!, 10) : null
+
+  // Feed edit modal state
+  const [editingFeed, setEditingFeed] = useState<{ id: number; title: string; display_color: string | null } | null>(null)
+  const [editTitle, setEditTitle] = useState("")
+  const [editColor, setEditColor] = useState<string | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
+
+  // Preset colors for feed organization
+  const presetColors = [
+    { name: "Pink", value: "#ec4899" },
+    { name: "Purple", value: "#a855f7" },
+    { name: "Blue", value: "#3b82f6" },
+    { name: "Teal", value: "#14b8a6" },
+    { name: "Green", value: "#10b981" },
+    { name: "Yellow", value: "#eab308" },
+    { name: "Orange", value: "#f97316" },
+    { name: "Red", value: "#ef4444" },
+    { name: "Rose", value: "#f43f5e" },
+    { name: "Indigo", value: "#6366f1" },
+    { name: "Gray", value: "#6b7280" },
+    { name: "None", value: null },
+  ]
+
+  const handleEditFeed = (feed: any) => {
+    setEditingFeed({ id: feed.id, title: feed.title || "", display_color: feed.display_color || null })
+    setEditTitle(feed.title || "")
+    setEditColor(feed.display_color || null)
+  }
+
+  const handleSaveFeed = async () => {
+    if (!editingFeed) return
+
+    setIsSaving(true)
+    try {
+      const response = await fetch(`/api/feed/${editingFeed.id}/update-metadata`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: editTitle.trim() || undefined,
+          display_color: editColor || undefined,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to update feed")
+      }
+
+      // Refresh feed list
+      await mutateFeeds()
+      setEditingFeed(null)
+    } catch (error) {
+      console.error("Error updating feed:", error)
+      alert("Failed to update feed. Please try again.")
+    } finally {
+      setIsSaving(false)
+    }
+  }
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [isNavVisible, setIsNavVisible] = useState(true)
   const lastScrollY = useRef(0)
@@ -395,6 +495,142 @@ export default function SselfieApp({
                 </div>
 
                 <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                  {/* My Feed dropdown - only show in feed planner */}
+                  {activeTab === "feed-planner" && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          className={`flex items-center gap-1.5 px-3 py-1.5 ${DesignClasses.radius.sm} bg-white/70 ${DesignClasses.border.medium} hover:bg-white/90 transition-colors text-xs font-medium text-stone-700`}
+                          aria-label="My Feed"
+                        >
+                          <span>My Feed</span>
+                          <ChevronDown size={14} className="text-stone-500" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className={`w-56 ${DesignClasses.background.overlay} ${DesignClasses.blur.md} ${DesignClasses.border.stone} shadow-lg`}>
+                        <div className="px-3 py-2">
+                          <div className={`${DesignClasses.typography.label.uppercase} ${DesignClasses.text.tertiary} mb-2`}>Feed History</div>
+                          <div className="max-h-64 overflow-y-auto">
+                            {isLoadingFeeds ? (
+                              <div className="px-2 py-4 text-center text-xs text-stone-500">Loading feeds...</div>
+                            ) : feedListError ? (
+                              <div className="px-2 py-4 text-center text-xs text-red-500">Failed to load feeds</div>
+                            ) : feeds.length === 0 ? (
+                              <div className="px-2 py-4 text-center text-xs text-stone-500">No feeds yet</div>
+                            ) : (
+                              feeds.map((feed: any) => (
+                                <div key={feed.id} className="group relative">
+                                  <DropdownMenuItem
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      // Update search params - router.replace updates URL without navigation
+                                      const currentPath = window.location.pathname
+                                      router.replace(`${currentPath}?feedId=${feed.id}#feed-planner`)
+                                    }}
+                                    className={`cursor-pointer ${currentFeedId === feed.id ? 'bg-stone-100' : ''}`}
+                                  >
+                                    <div className="flex items-center gap-2 w-full">
+                                      {/* Color indicator */}
+                                      <div
+                                        className="w-3 h-3 rounded-full shrink-0 border border-stone-200"
+                                        style={{
+                                          backgroundColor: feed.display_color || 'transparent',
+                                          borderColor: feed.display_color || '#e7e5e4',
+                                        }}
+                                      />
+                                      <div className="flex flex-col flex-1 min-w-0">
+                                        <span className="text-sm font-medium text-stone-900 truncate">{feed.title || `Feed ${feed.id}`}</span>
+                                        {feed.image_count !== undefined && (
+                                          <span className="text-xs text-stone-500">{feed.image_count}/9 images</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </DropdownMenuItem>
+                                  {/* Edit button - appears on hover */}
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleEditFeed(feed)
+                                    }}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-stone-200 rounded"
+                                    aria-label="Edit feed"
+                                  >
+                                    <Pencil size={12} className="text-stone-600" />
+                                  </button>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+
+                  {/* Feed Edit Modal */}
+                  <Dialog open={!!editingFeed} onOpenChange={(open) => !open && setEditingFeed(null)}>
+                    <DialogContent className="sm:max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Edit Feed</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <div>
+                          <label className="text-sm font-medium text-stone-700 mb-1.5 block">
+                            Feed Name
+                          </label>
+                          <Input
+                            value={editTitle}
+                            onChange={(e) => setEditTitle(e.target.value)}
+                            placeholder="Enter feed name"
+                            className="w-full"
+                            maxLength={50}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-stone-700 mb-2 block">
+                            Color
+                          </label>
+                          <div className="grid grid-cols-6 gap-2">
+                            {presetColors.map((color) => (
+                              <button
+                                key={color.value || "none"}
+                                onClick={() => setEditColor(color.value)}
+                                className={`w-10 h-10 rounded-full border-2 transition-all ${
+                                  editColor === color.value
+                                    ? 'border-stone-900 scale-110'
+                                    : 'border-stone-300 hover:border-stone-400'
+                                }`}
+                                style={{
+                                  backgroundColor: color.value || 'transparent',
+                                  borderStyle: color.value ? 'solid' : 'dashed',
+                                }}
+                                aria-label={color.name}
+                                title={color.name}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <button
+                          onClick={() => setEditingFeed(null)}
+                          className="px-4 py-2 text-sm text-stone-600 hover:text-stone-900"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleSaveFeed}
+                          disabled={isSaving}
+                          className={`px-4 py-2 text-sm font-medium rounded-md ${
+                            isSaving
+                              ? 'bg-stone-300 text-stone-500 cursor-not-allowed'
+                              : 'bg-stone-900 text-white hover:bg-stone-800'
+                          }`}
+                        >
+                          {isSaving ? "Saving..." : "Save"}
+                        </button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
 
                   <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
                   <DropdownMenuTrigger asChild>
