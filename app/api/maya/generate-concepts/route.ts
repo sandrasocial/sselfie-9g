@@ -93,12 +93,6 @@ type MayaConcept = {
   referenceImages?: string[] // Optional: Array of reference image URLs used for generation
 }
 
-/**
- * Consistency Mode for Concept Generation
- * - variety: Each concept has different outfit/location/scene (default)
- * - consistent: All concepts use same outfit/location/lighting, only vary poses/angles
- */
-type ConsistencyMode = 'variety' | 'consistent'
 
 // Guide prompt handler functions are now imported from lib/maya/prompt-builders/guide-prompt-handler.ts
 
@@ -748,7 +742,6 @@ export async function POST(req: NextRequest) {
       enhancedAuthenticity = false, // Enhanced authenticity toggle - only for Classic mode
       guidePrompt, // NEW: Guide prompt from user (for concept #1, then variations for 2-6)
       templateExamples: providedTemplateExamples, // NEW: Pre-loaded template examples from admin prompt builder
-      consistencyMode = 'variety', // Consistency mode: 'variety' (default) or 'consistent' (for video editing)
       aspectRatio = "1:1", // Aspect ratio for image generation (default to 1:1)
     } = body
 
@@ -828,7 +821,6 @@ export async function POST(req: NextRequest) {
       context,
       mode,
       count,
-      consistencyMode: studioProMode ? consistencyMode : undefined, // Only log if Pro Mode
       studioProMode,
       enhancedAuthenticity,
       hasConversationContext: !!conversationContext,
@@ -1615,21 +1607,13 @@ Create ${count} variations that maintain EXACT styling consistency for video edi
     ? `MODE: PHOTOSHOOT - Create ${count} variations of ONE cohesive look (same outfit and location, different poses/angles/moments)`
     : `MODE: CONCEPTS - Create ${count} THEMATICALLY CONSISTENT concepts that ALL relate to the user's request
 
-**CONSISTENCY GUIDANCE:**
-${consistencyMode === 'consistent'
-  ? `The user wants CONSISTENT concepts for video editing:
-- Use the SAME outfit across all ${count} concepts (same brands, colors, style)
-- Use the SAME location/setting
-- Use the SAME lighting and mood
-- ONLY vary: poses, angles, expressions, camera framing
-- Think: "one photoshoot, different shots"
-Example: If you choose a cream cashmere sweater in concept 1, use that EXACT sweater in all ${count} concepts`
-  : `The user wants VARIETY across concepts:
+**VARIETY GUIDANCE:**
+The user wants VARIETY across concepts:
 - Create DIFFERENT outfits for each concept (different styles, brands, colors)
 - Create DIFFERENT locations and settings
 - Vary poses, angles, lighting, and moods
 - Think: "diverse portfolio of looks"
-Example: Concept 1 might be athletic wear at yoga studio, concept 2 might be luxury pieces at rooftop, etc.`}
+Example: Concept 1 might be athletic wear at yoga studio, concept 2 might be luxury pieces at rooftop, etc.`
 
 **🔴🔴🔴 CRITICAL: OUTFIT VARIATION RULE - DEFAULT BEHAVIOR (ONLY WHEN NOT USING GUIDE PROMPT):**
 - **This rule ONLY applies when there is NO guide prompt**

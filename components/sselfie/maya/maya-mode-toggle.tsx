@@ -17,7 +17,6 @@ interface MayaModeToggleProps {
  * 
  * **Pro Features Include:**
  * - Image library management (upload, organize, and reuse images)
- * - Advanced generation options (quick prompts, concept consistency)
  * - Enhanced concept generation with linked images
  * - Library-based image selection for concepts
  * 

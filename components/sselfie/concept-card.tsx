@@ -603,11 +603,13 @@ export default function ConceptCard({
       const customSettings = parsedSettings
         ? {
             ...parsedSettings,
-            // CRITICAL FIX: Use !== undefined check to preserve 0 values
-            // If user sets realismStrength to 0, it should stay 0, not become 0.2
-            extraLoraScale: parsedSettings.realismStrength !== undefined 
-              ? parsedSettings.realismStrength 
-              : 0.2,
+            // CRITICAL FIX: Map realismStrength to extraLoraScale for API
+            // Use !== undefined check to preserve 0 values
+            // If user sets realismStrength to 0, it should stay 0
+            // If undefined, don't set extraLoraScale - let API use preset default
+            ...(parsedSettings.realismStrength !== undefined && {
+              extraLoraScale: parsedSettings.realismStrength,
+            }),
           }
         : null
 

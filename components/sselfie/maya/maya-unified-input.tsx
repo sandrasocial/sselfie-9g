@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { ImageIcon, Send, Sliders } from 'lucide-react'
+import { createPortal } from 'react-dom'
 import LoadingSpinner from '../loading-spinner'
 import { Typography, Colors, BorderRadius, ButtonLabels } from '@/lib/maya/pro/design-system'
 
@@ -52,6 +53,7 @@ interface MayaUnifiedInputProps {
   // Classic Mode features
   showSettingsButton?: boolean
   onSettingsClick?: () => void
+  showChatMenu?: boolean // Pass menu state from parent
   
   // Pro Mode features
   showLibraryButton?: boolean
@@ -78,6 +80,7 @@ export default function MayaUnifiedInput({
   placeholder = "Message Maya...",
   showSettingsButton = false,
   onSettingsClick,
+  showChatMenu = false,
   showLibraryButton = false,
   onManageLibrary,
   onNewProject,
@@ -255,8 +258,48 @@ export default function MayaUnifiedInput({
   return (
     <div
       className={inputContainerClass}
-      style={inputContainerStyle}
+      style={{ ...inputContainerStyle, position: 'relative' }}
     >
+      {/* Chat Menu Dropdown - Rendered via portal to avoid positioning issues (Classic Mode only) */}
+      {showSettingsButton && showChatMenu && typeof window !== 'undefined' && createPortal(
+        <div 
+          className="fixed bg-white/95 backdrop-blur-3xl border border-stone-200 rounded-2xl overflow-hidden shadow-xl shadow-stone-950/10 animate-in slide-in-from-bottom-2 duration-300 z-[70]"
+          style={{
+            bottom: 'calc(80px + 60px)', // Above bottom nav + input area
+            left: '12px',
+            right: '12px',
+            maxWidth: 'calc(100vw - 24px)',
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            onClick={() => {
+              if (onSettingsClick) {
+                onSettingsClick() // This will close the menu and open settings (handled by parent)
+              }
+            }}
+            className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-stone-700 hover:bg-stone-50 transition-colors touch-manipulation"
+          >
+            <Sliders size={18} strokeWidth={2} />
+            <span className="font-medium">Generation Settings</span>
+          </button>
+        </div>,
+        document.body
+      )}
+      
+      {/* Click outside to close menu */}
+      {showSettingsButton && showChatMenu && typeof window !== 'undefined' && createPortal(
+        <div
+          className="fixed inset-0 z-[60]"
+          onClick={() => {
+            if (onSettingsClick) {
+              onSettingsClick() // Close menu when clicking outside
+            }
+          }}
+        />,
+        document.body
+      )}
+      
       <form onSubmit={handleSubmit} className={inputWrapperClass}>
         {/* Uploaded image preview */}
         {uploadedImage && (
@@ -348,7 +391,8 @@ export default function MayaUnifiedInput({
               <button
                 onClick={onSettingsClick}
                 disabled={isLoading || disabled}
-                className="absolute left-2 bottom-2.5 w-9 h-9 flex items-center justify-center text-stone-600 hover:text-stone-950 transition-colors disabled:opacity-50 touch-manipulation active:scale-95 z-10 pointer-events-auto"
+                className="absolute left-2 bottom-2.5 w-9 h-9 flex items-center justify-center text-stone-600 hover:text-stone-950 transition-colors disabled:opacity-50 touch-manipulation active:scale-95 z-20 pointer-events-auto"
+                style={{ zIndex: 20 }}
                 aria-label="Settings menu"
                 type="button"
               >
@@ -370,7 +414,11 @@ export default function MayaUnifiedInput({
               placeholder={uploadedImage ? "Describe the style..." : placeholder}
               disabled={isLoading || disabled || isUploadingImage}
               className={textareaClass}
-              style={textareaStyle}
+              style={{
+                ...textareaStyle,
+                position: 'relative',
+                zIndex: 1,
+              }}
               onFocus={proMode ? (e) => {
                 e.currentTarget.style.borderColor = Colors.primary
               } : undefined}

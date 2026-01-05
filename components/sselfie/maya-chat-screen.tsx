@@ -21,7 +21,6 @@ import {
   Sparkles,
   Image,
   Menu,
-  ChevronDown,
   ChevronRight,
   Film,
   GraduationCap,
@@ -53,7 +52,6 @@ import type { PromptSuggestion } from "@/lib/maya/prompt-generator"
 import ImageUploadFlow from "./pro-mode/ImageUploadFlow"
 import { getConceptPrompt } from "@/lib/maya/concept-templates"
 import BuyCreditsModal from "./buy-credits-modal"
-import { ConceptConsistencyToggle } from './concept-consistency-toggle'
 // Pro Mode Components
 import MayaHeader from "./maya/maya-header"
 import ImageLibraryModal from "./pro-mode/ImageLibraryModal"
@@ -197,18 +195,6 @@ export default function MayaChatScreen({
   
   // Concept consistency mode state - persist user preference in localStorage
   // Smart default: Only apply when no saved preference exists, and only based on concept count
-  const [consistencyMode, setConsistencyMode] = useState<'variety' | 'consistent'>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('mayaConsistencyMode')
-      if (saved === 'variety' || saved === 'consistent') {
-        return saved // Use saved preference if it exists
-      }
-    }
-    return 'variety' // Default to variety if no saved preference
-  })
-  
-  // Collapsible section state for quick prompts and concept style
-  const [isOptionsExpanded, setIsOptionsExpanded] = useState(false)
   
   // hasUsedMayaBefore is now provided by useMayaChat hook
   
@@ -314,15 +300,6 @@ export default function MayaChatScreen({
   )
 
   // Chat history checking is now handled by useMayaChat hook
-
-  // Save consistency mode to localStorage when user changes it
-  const handleConsistencyModeChange = useCallback((mode: 'variety' | 'consistent') => {
-    setConsistencyMode(mode)
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('mayaConsistencyMode', mode)
-      console.log('[v0] User set consistency mode to:', mode, '(saved to localStorage)')
-    }
-  }, [])
 
   // Chat loading and persistence are now handled by useMayaChat hook
 
@@ -640,12 +617,10 @@ export default function MayaChatScreen({
                 imageLibrary: imageLibrary, // Required for Pro Mode
                 category: null, // Let Maya determine dynamically
                 essenceWords: pendingConceptRequest?.split(' ').slice(0, 5).join(' ') || undefined, // Extract essence words from request
-                consistencyMode: consistencyMode, // NEW: Send consistency mode to backend
               }
             : {
                 userRequest: pendingConceptRequest,
                 count: 6, // Changed from hardcoded 3 to 6, allowing Maya to create more concepts
-                // consistencyMode is Pro Mode only - not sent in Classic Mode
                 conversationContext: conversationContext || undefined,
                 referenceImageUrl: allImages.length > 0 ? allImages[0] : referenceImageUrl, // Primary image
                 proMode: proMode, // Pass Pro mode to use Nano Banana prompting
@@ -805,7 +780,7 @@ export default function MayaChatScreen({
     }
 
     generateConcepts()
-  }, [pendingConceptRequest, isGeneratingConcepts, setMessages, messages, chatId, proMode, imageLibrary, consistencyMode, hasImageLibrary, hasProFeatures, enhancedAuthenticity, getMessageText])
+  }, [pendingConceptRequest, isGeneratingConcepts, setMessages, messages, chatId, proMode, imageLibrary, hasImageLibrary, hasProFeatures, enhancedAuthenticity, getMessageText])
 
   useEffect(() => {
     // Don't save if we're currently generating concepts - wait for them to be added first
@@ -2998,77 +2973,6 @@ export default function MayaChatScreen({
           )}
 
           {/* Input Area - Unified for both Classic and Pro Mode */}
-          {/* Pro Feature: Generation Options (collapsible section with quick prompts and concept consistency)
-              Progressive enhancement: This section only appears when Pro features are enabled */}
-          {proMode && (
-              <div 
-                className="w-full border-b border-stone-200/30"
-                style={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.4)',
-                  backdropFilter: 'blur(8px)',
-                }}
-              >
-                <div className="max-w-[1200px] mx-auto">
-                  {/* Collapsible Header */}
-                  <button
-                    onClick={() => setIsOptionsExpanded(!isOptionsExpanded)}
-                    className="w-full flex items-center justify-between px-4 sm:px-6 py-3 hover:bg-stone-50/50 transition-colors touch-manipulation"
-                    style={{
-                      paddingLeft: 'clamp(12px, 3vw, 24px)',
-                      paddingRight: 'clamp(12px, 3vw, 24px)',
-                    }}
-                  >
-                    <span
-                    className="text-xs sm:text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-600"
-                    title="Advanced generation options: Quick prompts and concept consistency controls"
-                    >
-                      Generation Options
-                    </span>
-                    <ChevronDown
-                      size={18}
-                      className="text-stone-500 transition-transform duration-200"
-                      style={{
-                        transform: isOptionsExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                      }}
-                    />
-                  </button>
-
-                  {/* Collapsible Content */}
-                  {isOptionsExpanded && (
-                    <div 
-                      className="px-4 sm:px-6 pb-4 space-y-4"
-                      style={{
-                        paddingLeft: 'clamp(12px, 3vw, 24px)',
-                        paddingRight: 'clamp(12px, 3vw, 24px)',
-                        paddingBottom: 'clamp(12px, 3vw, 16px)',
-                      }}
-                    >
-                      {/* Quick Suggestions */}
-                      <MayaQuickPrompts
-                        prompts={currentPrompts}
-                        onSelect={handleSendMessage}
-                        disabled={isTyping || isGeneratingConcepts}
-                        variant="pro-mode-options"
-                        proMode={proMode}
-                        isEmpty={isEmpty}
-                        uploadedImage={uploadedImage}
-                      />
-
-                      {/* Concept Consistency Toggle */}
-                      <div className="border-t border-stone-200/50 pt-4">
-                        <ConceptConsistencyToggle
-                          value={consistencyMode}
-                          onChange={handleConsistencyModeChange}
-                          count={6}
-                          className=""
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-          )}
-
           {/* Unified Input Component - Works for Photos and Feed tabs */}
           <MayaUnifiedInput
             onSend={(message, imageUrl) => {
@@ -3096,7 +3000,14 @@ export default function MayaChatScreen({
             disabled={isTyping || isGeneratingConcepts}
             placeholder={hasProFeatures ? "What would you like to create?" : "Message Maya..."}
             showSettingsButton={!hasProFeatures}
-            onSettingsClick={() => setShowChatMenu(!showChatMenu)}
+            onSettingsClick={() => {
+              if (showChatMenu) {
+                // If menu is open, clicking settings button should open settings panel
+                setShowSettings(true)
+              }
+              setShowChatMenu(!showChatMenu)
+            }}
+            showChatMenu={showChatMenu}
             showLibraryButton={false} // Removed - image icon handles library access
             onManageLibrary={undefined} // Removed - image icon handles library access
             onNewProject={handleNewChat}
@@ -3354,57 +3265,6 @@ export default function MayaChatScreen({
           document.body
         )}
 
-        {showChatMenu && (
-          <div className="absolute bottom-full left-3 right-3 mb-2 bg-white/95 backdrop-blur-3xl border border-stone-200 rounded-2xl overflow-hidden shadow-xl shadow-stone-950/10 animate-in slide-in-from-bottom-2 duration-300">
-            {proMode ? (
-              // Pro Mode Menu (text-only, no icons)
-              <>
-                <button
-                  onClick={() => {
-                    // Upload functionality will be handled by new Pro Mode system
-                    console.log("[v0] New reference images clicked - new Pro Mode system will handle this")
-                    setShowChatMenu(false)
-                  }}
-                  className="w-full px-4 py-3 text-left text-sm text-stone-700 hover:bg-stone-50 transition-colors border-b border-stone-100 touch-manipulation"
-                >
-                  <span className="font-medium">New reference images</span>
-                </button>
-                <button
-                  onClick={() => {
-                    handleNewChat()
-                    setShowChatMenu(false)
-                  }}
-                  className="w-full px-4 py-3 text-left text-sm text-stone-700 hover:bg-stone-50 transition-colors border-b border-stone-100 touch-manipulation"
-                >
-                  <span className="font-medium">New chat</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setShowHistory(!showHistory)
-                    setShowChatMenu(false)
-                  }}
-                  className="w-full px-4 py-3 text-left text-sm text-stone-700 hover:bg-stone-50 transition-colors touch-manipulation"
-                >
-                  <span className="font-medium">Chat history</span>
-                </button>
-              </>
-            ) : (
-              // Classic Mode Menu (with icons) - Only settings-related items (removed duplicates that are now in bottom nav or as icon buttons)
-              <>
-                <button
-                  onClick={() => {
-                    setShowSettings(!showSettings)
-                    setShowChatMenu(false)
-                  }}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-stone-700 hover:bg-stone-50 transition-colors touch-manipulation"
-                >
-                  <Sliders size={18} strokeWidth={2} />
-                  <span className="font-medium">Generation Settings</span>
-                </button>
-              </>
-            )}
-          </div>
-        )}
       </div>
 
       <BuyCreditsModal

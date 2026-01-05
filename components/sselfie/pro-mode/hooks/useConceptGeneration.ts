@@ -33,7 +33,7 @@ interface UseConceptGenerationReturn {
   concepts: ProModeConcept[]
   isLoading: boolean
   error: string | null
-  generateConcepts: (userRequest: string, imageLibrary: ImageLibrary, essenceWords?: string, consistencyMode?: 'variety' | 'consistent') => Promise<void>
+  generateConcepts: (userRequest: string, imageLibrary: ImageLibrary, essenceWords?: string) => Promise<void>
   clearConcepts: () => void
 }
 
@@ -65,7 +65,7 @@ export function useConceptGeneration(): UseConceptGenerationReturn {
    * This ensures Maya's personality and expertise are used, and proper image linking (3-5 images)
    */
   const generateConcepts = useCallback(
-    async (userRequest: string, imageLibrary: ImageLibrary, essenceWords?: string, consistencyMode: 'variety' | 'consistent' = 'variety') => {
+    async (userRequest: string, imageLibrary: ImageLibrary, essenceWords?: string) => {
       setIsLoading(true)
       setError(null)
 
@@ -76,7 +76,7 @@ export function useConceptGeneration(): UseConceptGenerationReturn {
         }
 
         // 🔴 FIX: Call API directly - let Maya generate concepts using her personality
-        console.log('[useConceptGeneration] Calling API to generate concepts with Maya\'s expertise, consistencyMode:', consistencyMode)
+        console.log('[useConceptGeneration] Calling API to generate concepts with Maya\'s expertise')
         
         const response = await fetch(API_BASE, {
           method: 'POST',
@@ -88,7 +88,6 @@ export function useConceptGeneration(): UseConceptGenerationReturn {
             imageLibrary,
             category: null, // Let Maya determine categories dynamically
             essenceWords,
-            consistencyMode, // Send consistency mode to backend
             // Don't send pre-generated concepts - let API do all the work
           }),
         })
