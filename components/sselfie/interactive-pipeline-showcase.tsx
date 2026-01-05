@@ -918,7 +918,7 @@ export default function InteractivePipelineShowcase() {
             Ready to Create Your Photos?
           </h3>
           <p className="text-sm sm:text-base font-light leading-relaxed text-stone-700 mb-6 sm:mb-8 px-4">
-            Join the beta and get 50% off for life.
+            Start creating professional photos today.
           </p>
           <Link
             href="/auth/sign-up"

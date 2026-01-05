@@ -140,8 +140,6 @@ export async function POST(request: NextRequest) {
               productTag = "one-time-session"
             } else if (productType === "sselfie_studio_membership") {
               productTag = "content-creator-studio"
-            } else if (productType === "brand_studio_membership") {
-              productTag = "brand-studio"
             } else if (productType === "credit_topup") {
               productTag = "credit-topup"
             }
@@ -1437,11 +1435,8 @@ export async function POST(request: NextRequest) {
             `[v0] ⚠️ Skipping credit grant - this is a TEST MODE payment. Credits are only granted for real (production) payments.`,
           )
         } else {
-          // Grant credits for studio membership subscriptions (Content Creator Studio or Brand Studio)
-          if (
-            sub.product_type === "sselfie_studio_membership" ||
-            sub.product_type === "brand_studio_membership"
-          ) {
+          // Grant credits for studio membership subscriptions (Creator Studio)
+          if (sub.product_type === "sselfie_studio_membership") {
             // Check if we've already granted credits for this invoice period (idempotency)
             // Use invoice.period_start to check for duplicates, not subscription period
             const invoicePeriodStart = invoice.period_start
@@ -1477,7 +1472,7 @@ export async function POST(request: NextRequest) {
                 
                 const result = await grantMonthlyCredits(
                   sub.user_id,
-                  sub.product_type as "sselfie_studio_membership" | "brand_studio_membership",
+                  "sselfie_studio_membership",
                   false, // Always false for production payments
                 )
                 if (result.success) {

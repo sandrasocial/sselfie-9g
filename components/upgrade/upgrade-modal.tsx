@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { getProductById } from "@/lib/products"
 
-type TierId = "one_time_session" | "sselfie_studio_membership" | "brand_studio_membership"
+type TierId = "one_time_session" | "sselfie_studio_membership"
 
 interface UpgradeModalProps {
   open: boolean
@@ -12,7 +12,7 @@ interface UpgradeModalProps {
   onClose: () => void
 }
 
-export function UpgradeModal({ open, currentTier, targetTier = "brand_studio_membership", onClose }: UpgradeModalProps) {
+export function UpgradeModal({ open, currentTier, targetTier = "sselfie_studio_membership", onClose }: UpgradeModalProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -77,12 +77,10 @@ export function UpgradeModal({ open, currentTier, targetTier = "brand_studio_mem
   }
 
   const targetProduct = getProductById(targetTier)
-  const targetName = targetTier === "brand_studio_membership" 
-    ? "Brand Studio" 
-    : targetTier === "sselfie_studio_membership"
-    ? "Studio Membership"
+  const targetName = targetTier === "sselfie_studio_membership"
+    ? "Creator Studio"
     : "One-Time Session"
-  const targetCredits = targetProduct?.credits || (targetTier === "brand_studio_membership" ? 300 : targetTier === "sselfie_studio_membership" ? 150 : 70)
+  const targetCredits = targetProduct?.credits || (targetTier === "sselfie_studio_membership" ? 200 : 50)
   const isSubscription = targetTier !== "one_time_session"
 
   return (

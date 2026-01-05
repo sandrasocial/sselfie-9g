@@ -1302,7 +1302,7 @@ export default function BrandBlueprintPage() {
                           className="text-4xl sm:text-5xl font-light text-stone-50"
                           style={{ fontFamily: "'Times New Roman', serif" }}
                         >
-                          $79
+                          $97
                         </span>
                         <span className="text-sm sm:text-base font-light text-stone-300">/month</span>
                       </div>
@@ -1318,23 +1318,23 @@ export default function BrandBlueprintPage() {
                     <ul className="space-y-3 mb-6 sm:mb-8">
                       <li className="flex items-start gap-2 text-sm font-light text-stone-100">
                         <span className="text-stone-50 mt-0.5 shrink-0">✓</span>
-                        <span>Unlimited professional photoshoots</span>
+                        <span>200 credits per month</span>
                       </li>
                       <li className="flex items-start gap-2 text-sm font-light text-stone-100">
                         <span className="text-stone-50 mt-0.5 shrink-0">✓</span>
-                        <span>100+ images per month</span>
+                        <span>~100 Pro photos OR ~200 Classic photos</span>
                       </li>
                       <li className="flex items-start gap-2 text-sm font-light text-stone-100">
                         <span className="text-stone-50 mt-0.5 shrink-0">✓</span>
-                        <span>Feed planning & strategy</span>
+                        <span>Unlimited Maya AI strategist</span>
                       </li>
                       <li className="flex items-start gap-2 text-sm font-light text-stone-100">
                         <span className="text-stone-50 mt-0.5 shrink-0">✓</span>
-                        <span>New caption templates monthly</span>
+                        <span>Unlimited captions & feed planning</span>
                       </li>
                       <li className="flex items-start gap-2 text-sm font-light text-stone-100">
                         <span className="text-stone-50 mt-0.5 shrink-0">✓</span>
-                        <span>Cancel anytime</span>
+                        <span>Video b-roll creation</span>
                       </li>
                     </ul>
                     <button

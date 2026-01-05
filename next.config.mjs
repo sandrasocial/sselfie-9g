@@ -21,6 +21,10 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'kcnmiu7u3eszdkja.public.blob.vercel-storage.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
     ],
   },
   serverExternalPackages: ['prettier', 'prettier/plugins/html', 'prettier/standalone'],

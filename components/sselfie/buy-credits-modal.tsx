@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button"
 import { EmbeddedCheckout, EmbeddedCheckoutProvider } from "@stripe/react-stripe-js"
 import { loadStripe } from "@stripe/stripe-js"
-import { CREDIT_PACKAGES } from "@/lib/credit-packages"
+import { CREDIT_PACKAGES } from "@/lib/products"
 import { Check, Sparkles } from 'lucide-react'
 import { startCreditCheckoutSession } from "@/app/actions/stripe"
 

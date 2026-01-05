@@ -1,5 +1,5 @@
 import { stripe } from "@/lib/stripe"
-import { CREDIT_PACKAGES } from "@/lib/credit-packages"
+import { CREDIT_PACKAGES } from "@/lib/products"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 

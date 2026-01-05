@@ -236,7 +236,7 @@ export default function SselfieApp({
   const [upgradeOpportunities, setUpgradeOpportunities] = useState<UpgradeOpportunity[]>([])
   const [dismissedUpgradeTypes, setDismissedUpgradeTypes] = useState<Set<string>>(new Set())
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
-  const [currentTierForUpgrade] = useState<"one_time_session" | "sselfie_studio_membership" | "brand_studio_membership">(
+  const [currentTierForUpgrade] = useState<"one_time_session" | "sselfie_studio_membership">(
     "sselfie_studio_membership",
   )
 
@@ -838,7 +838,7 @@ export default function SselfieApp({
       <UpgradeModal
         open={showUpgradeModal}
         currentTier={currentTierForUpgrade}
-        targetTier="brand_studio_membership"
+        targetTier="sselfie_studio_membership"
         onClose={() => setShowUpgradeModal(false)}
       />
 

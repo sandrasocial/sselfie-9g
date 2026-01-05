@@ -43,7 +43,16 @@ export async function GET() {
     const subscriptionBreakdown = subscriptionsResult.map((sub) => {
       // Get actual price from products config
       const product = PRICING_PRODUCTS.find((p) => p.type === sub.product_type)
-      const priceCents = product?.priceInCents || 0
+      
+      // Handle legacy brand_studio_membership (no longer in PRICING_PRODUCTS)
+      let priceCents: number
+      if (sub.product_type === "brand_studio_membership") {
+        // Legacy Brand Studio: $149/month (14900 cents)
+        priceCents = 14900
+      } else {
+        priceCents = product?.priceInCents || 0
+      }
+      
       const revenue = (Number(sub.count) * priceCents) / 100
       
       // MRR only includes recurring subscriptions (not one-time sessions)
@@ -53,9 +62,9 @@ export async function GET() {
       
       // Map product type to display tier name
       const tierMap: Record<string, string> = {
-        sselfie_studio_membership: "Content Creator Studio",
-        brand_studio_membership: "Brand Studio",
-        one_time_session: "One-Time Session",
+        sselfie_studio_membership: "Creator Studio",
+        brand_studio_membership: "Brand Studio (Legacy)",
+        one_time_session: "Starter Photoshoot",
       }
       const tier = tierMap[sub.product_type] || sub.product_type
       

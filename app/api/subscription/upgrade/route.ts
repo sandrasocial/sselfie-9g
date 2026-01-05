@@ -5,7 +5,7 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 import { getDb } from "@/lib/db"
 import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
 
-type SupportedTier = "sselfie_studio_membership" | "brand_studio_membership"
+type SupportedTier = "sselfie_studio_membership"
 
 interface UpgradeRequestBody {
   targetTier?: SupportedTier
@@ -14,9 +14,9 @@ interface UpgradeRequestBody {
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json().catch(() => ({}))) as UpgradeRequestBody
-    const targetTier: SupportedTier = body.targetTier ?? "brand_studio_membership"
+    const targetTier: SupportedTier = body.targetTier ?? "sselfie_studio_membership"
 
-    if (targetTier !== "brand_studio_membership") {
+    if (targetTier !== "sselfie_studio_membership") {
       return NextResponse.json({ error: "Unsupported upgrade target" }, { status: 400 })
     }
 
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
         console.error("[UPGRADE_API] Error creating checkout session:", checkoutError)
         return NextResponse.json(
           { 
-            error: checkoutError?.message || "Failed to create checkout session. Please ensure STRIPE_BRAND_STUDIO_MEMBERSHIP_PRICE_ID is configured." 
+            error: checkoutError?.message || "Failed to create checkout session. Please ensure STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID is configured." 
           },
           { status: 500 }
         )
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
 
     // For existing subscriptions, try to upgrade via subscription update first
     // But use the same price lookup as landing checkout for consistency
-    let targetPriceId = process.env.STRIPE_BRAND_STUDIO_MEMBERSHIP_PRICE_ID
+    let targetPriceId = process.env.STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID
     
     if (!targetPriceId) {
       // If env var not set, fall back to checkout session (same as landing page)

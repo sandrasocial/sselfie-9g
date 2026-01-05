@@ -8,7 +8,7 @@ export interface UpgradeOpportunity {
   type: UpgradeType
   priority: UpgradePriority
   message: string
-  suggestedTier: "sselfie_studio_membership" | "brand_studio_membership"
+  suggestedTier: "sselfie_studio_membership"
   context: Record<string, unknown>
   showUpgradePrompt: boolean
 }
@@ -48,8 +48,9 @@ export async function detectUpgradeOpportunities(userId: string): Promise<Upgrad
     const opportunities: UpgradeOpportunity[] = []
     const productType = subscription?.product_type as keyof typeof SUBSCRIPTION_CREDITS | undefined
     const monthlyGrant = productType ? SUBSCRIPTION_CREDITS[productType] ?? 0 : 0
-    const suggestedTier =
-      productType === "sselfie_studio_membership" ? "brand_studio_membership" : "sselfie_studio_membership"
+    // Only suggest Creator Studio for users without subscriptions
+    // Users already on Creator Studio should consider credit top-ups instead
+    const suggestedTier = "sselfie_studio_membership"
 
     // High usage: using most of monthly allocation
     if (monthlyGrant > 0) {

@@ -2,7 +2,7 @@ import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId, getOrCreateNeonUser } from "@/lib/user-mapping"
 import { redirect } from "next/navigation"
 import { headers } from "next/headers"
-import LandingPage from "@/components/sselfie/landing-page"
+import LandingPage from "@/components/sselfie/landing-page-new"
 
 export const dynamic = "force-dynamic"
 

@@ -232,12 +232,11 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
   const isStudioMembership = userInfo?.product_type === "sselfie_studio_membership"
   const hasActiveSubscription = subscriptionInfo?.status === "active"
   const currentTier = (userInfo?.product_type as any) ?? "one_time_session"
+  // Only show upgrade for users without Creator Studio membership
   const upgradeTargetTier =
-    currentTier === "brand_studio_membership"
-      ? null
-      : currentTier === "sselfie_studio_membership"
-        ? "brand_studio_membership"
-        : "sselfie_studio_membership"
+    currentTier === "sselfie_studio_membership" || currentTier === "brand_studio_membership"
+      ? null // Already on Creator Studio (or legacy Brand Studio)
+      : "sselfie_studio_membership"
 
   const navigateToTab = (tabId: string) => {
     window.location.hash = tabId
@@ -516,7 +515,7 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
               </div>
               <div>
                 <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">
-                  {upgradeTargetTier === "brand_studio_membership" ? "Upgrade to Brand Studio" : "Upgrade to Studio Membership"}
+                  Upgrade to Creator Studio
                 </h3>
                 <p className="text-sm text-stone-600">More credits, premium features, priority support.</p>
               </div>
@@ -535,11 +534,11 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
               />
               <InfoPill
                 label="Upgrade to"
-                value={upgradeTargetTier === "brand_studio_membership" ? "Brand Studio" : "Studio Membership"}
+                value="Creator Studio"
               />
               <InfoPill
                 label="Credits"
-                value={upgradeTargetTier === "brand_studio_membership" ? "300 credits / month" : "150 credits / month"}
+                value="200 credits / month"
               />
             </div>
 

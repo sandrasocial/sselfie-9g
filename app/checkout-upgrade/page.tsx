@@ -23,8 +23,7 @@ function CheckoutUpgradeContent() {
       setError(null)
       
       // Track checkout start for analytics
-      const productType = tier === "creator" ? "sselfie_studio_membership" : "brand_studio_membership"
-      trackCheckoutStart(productType)
+      trackCheckoutStart("sselfie_studio_membership")
       
       // Call server action to create checkout session
       const clientSecret = await createUpgradeCheckoutSession(tier, promoCode)
@@ -86,7 +85,7 @@ function CheckoutUpgradeContent() {
           <div className="font-serif text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extralight tracking-[0.3em] uppercase text-white mb-3">
             S S E L F I E
           </div>
-          <p className="text-sm sm:text-base text-white/90 font-light">Upgrade to Content Creator Studio</p>
+          <p className="text-sm sm:text-base text-white/90 font-light">Upgrade to Creator Studio</p>
           {promoCode && (
             <p className="text-xs sm:text-sm text-white/80 font-light mt-2">
               ✨ Special offer: 40% off your first month

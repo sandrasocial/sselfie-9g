@@ -293,7 +293,7 @@ export default function WhyStudioPage() {
               <ul className="space-y-4 mb-8">
                 <li className="flex items-start gap-3">
                   <span className="text-stone-400">•</span>
-                  <span className="text-base font-light text-stone-600">70 credits (one-time)</span>
+                  <span className="text-base font-light text-stone-600">50 credits (one-time)</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-stone-400">•</span>
@@ -323,7 +323,7 @@ export default function WhyStudioPage() {
               <ul className="space-y-4 mb-8">
                 <li className="flex items-start gap-3">
                   <span className="text-stone-400">✓</span>
-                  <span className="text-base font-light text-stone-100">150+ credits every month</span>
+                  <span className="text-base font-light text-stone-100">200 credits every month</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-stone-400">✓</span>
@@ -347,7 +347,7 @@ export default function WhyStudioPage() {
                 </li>
               </ul>
               <p className="text-3xl sm:text-4xl font-light text-stone-50 mb-2" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
-                $79
+                $97
               </p>
               <p className="text-sm font-light text-stone-300">per month</p>
             </div>
@@ -405,7 +405,7 @@ export default function WhyStudioPage() {
                     $49
                   </span>
                 </div>
-                <p className="text-sm sm:text-base font-light text-stone-600 mt-2">one-time • 70 credits</p>
+                <p className="text-sm sm:text-base font-light text-stone-600 mt-2">one-time • 50 credits</p>
               </div>
               <div className="space-y-3 sm:space-y-4 mb-8 sm:mb-10">
                 <p className="text-base sm:text-lg font-light text-stone-700">
@@ -438,10 +438,10 @@ export default function WhyStudioPage() {
                     className="text-5xl sm:text-6xl font-light"
                     style={{ fontFamily: "'Times New Roman', Times, serif" }}
                   >
-                    $79
+                    $97
                   </span>
                 </div>
-                <p className="text-sm sm:text-base font-light text-stone-300 mt-2">per month • 150 credits/month</p>
+                <p className="text-sm sm:text-base font-light text-stone-300 mt-2">per month • 200 credits/month</p>
               </div>
               <div className="space-y-3 sm:space-y-4 mb-8 sm:mb-10">
                 <p className="text-base sm:text-lg font-light text-stone-100">

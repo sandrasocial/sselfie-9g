@@ -1,14 +1,16 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Play, Heart, GraduationCap, Instagram } from 'lucide-react'
 import { useScroll, useTransform, motion } from 'framer-motion'
-import { trackEvent } from '@/lib/analytics'
+import { trackEvent, trackCTAClick, trackCheckoutStart } from '@/lib/analytics'
+import { startEmbeddedCheckout } from '@/lib/start-embedded-checkout'
 
 export default function BioPage() {
   const heroContainer = useRef<HTMLDivElement>(null)
+  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null)
   const { scrollYProgress } = useScroll({
     target: heroContainer,
     offset: ["start start", "end start"],
@@ -32,31 +34,60 @@ export default function BioPage() {
     }
   }
 
-  const handleScrollToPricing = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    e.preventDefault()
-    handleLinkClick('bio_cta_photoshoot', '/#pricing')
-    window.location.href = '/#pricing'
-  }
-
-  const handleStudioClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    e.preventDefault()
-    handleLinkClick('bio_cta_studio', '/#pricing')
-    window.location.href = '/#pricing'
+  const handleStartCheckout = async (productId: string) => {
+    try {
+      setCheckoutLoading(productId)
+      
+      const productNames: Record<string, string> = {
+        one_time_session: "Starter Photoshoot",
+        sselfie_studio_membership: "Creator Studio",
+      }
+      const productName = productNames[productId] || productId
+      trackCheckoutStart(productId, undefined)
+      trackCTAClick('bio', productName, '/checkout')
+      
+      const clientSecret = await startEmbeddedCheckout(productId)
+      window.location.href = `/checkout?client_secret=${clientSecret}`
+    } catch (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("Checkout error:", error)
+      }
+      alert("Failed to start checkout. Please try again.")
+      setCheckoutLoading(null)
+    }
   }
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-black">
+      {/* Navigation */}
+      <nav className="fixed top-0 left-0 right-0 z-50 px-5 py-5 pt-[calc(20px+env(safe-area-inset-top))] flex justify-between items-center pointer-events-none">
+        <div className="pointer-events-auto" style={{ fontFamily: "'Times New Roman', serif" }}>
+          <Link href="/" className="text-xl text-white tracking-[0.05em]">
+            SSELFIE
+          </Link>
+        </div>
+        <Link
+          href="/auth/login"
+          className="pointer-events-auto text-[10px] uppercase tracking-[0.2em] text-white opacity-90 hover:opacity-100 transition-opacity py-2"
+          onClick={() => trackCTAClick("nav", "Login", "/auth/login")}
+        >
+          Login
+        </Link>
+      </nav>
+
       {/* Full-Bleed Hero Section */}
-      <section ref={heroContainer} className="h-screen overflow-hidden bg-white relative">
+      <section ref={heroContainer} className="h-screen overflow-hidden bg-black relative">
         <motion.div style={{ y }} className="relative h-full">
-          <Image
-            src="https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/maya-pro-generations/mf79hwcsn9rmw0cvbcdvepnb6w-j2UoUcVyshmamoN1ot2ZFtuPdPKrNt.png"
-            fill
-            alt="Sandra, founder of SSELFIE"
-            style={{ objectFit: "cover", objectPosition: "50% 30%" }}
-            priority
-            quality={90}
+          {/* Background Image */}
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{
+              backgroundImage: "url('https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/feed-posts/2964-Z5YG6DA4jyEAVnKwh4HNecJyCepqhz.png')",
+            }}
           />
+          
+          {/* Dark Overlay */}
+          <div className="absolute inset-0 bg-black/50" />
 
           {/* Gradient Overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
@@ -66,12 +97,12 @@ export default function BioPage() {
             <div className="text-center text-white max-w-2xl mx-auto w-full">
               <h1
                 className="text-3xl sm:text-4xl md:text-5xl font-light mb-4 leading-tight"
-                style={{ fontFamily: "'Times New Roman', Times, serif" }}
+                style={{ fontFamily: "'Times New Roman', serif", fontStyle: "italic" }}
               >
                 Hi, I'm Sandra
               </h1>
               
-              <p className="text-lg sm:text-xl font-light leading-relaxed mb-8 max-w-md mx-auto text-white/90">
+              <p className="text-lg sm:text-xl font-light leading-relaxed mb-8 max-w-md mx-auto text-white/90" style={{ fontFamily: "'Inter', -apple-system, sans-serif" }}>
                 Built from selfies. Built from nothing.
                 <br />
                 <br />
@@ -81,7 +112,25 @@ export default function BioPage() {
               <a
                 href="#options"
                 onClick={scrollToOptions}
-                className="inline-block px-8 py-3.5 bg-white text-black text-sm uppercase tracking-wider transition-all duration-300 hover:bg-black hover:text-white border border-white font-light"
+                className="btn"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: "16px 32px",
+                  minHeight: "48px",
+                  background: "#fafaf9",
+                  color: "#0c0a09",
+                  fontSize: "11px",
+                  fontWeight: 600,
+                  letterSpacing: "0.15em",
+                  textTransform: "uppercase",
+                  textDecoration: "none",
+                  borderRadius: "100px",
+                  transition: "all 0.3s ease",
+                  cursor: "pointer",
+                  border: "1px solid #fafaf9",
+                }}
               >
                 SEE WHAT I CAN DO FOR YOU
               </a>
@@ -91,78 +140,172 @@ export default function BioPage() {
       </section>
 
       {/* Main Options Section */}
-      <section id="options" className="py-16 sm:py-20 px-6">
+      <section id="options" className="py-16 sm:py-20 px-6 bg-[#0c0a09]">
         <div className="max-w-2xl mx-auto">
           {/* Section Headline */}
-          <h2 className="text-xs uppercase tracking-wider text-stone-500 text-center mb-8">
+          <h2 
+            className="text-center mb-12"
+            style={{
+              fontFamily: "'Inter', -apple-system, sans-serif",
+              fontSize: "10px",
+              letterSpacing: "0.25em",
+              textTransform: "uppercase",
+              color: "rgba(255, 255, 255, 0.8)",
+            }}
+          >
             CHOOSE YOUR PATH
           </h2>
 
-          {/* Primary CTAs */}
-          <div className="space-y-4 mb-16 max-w-lg mx-auto">
+          {/* Primary CTAs with Thumbnails */}
+          <div className="space-y-6 mb-16 max-w-lg mx-auto">
             {/* Button 1: Photoshoot */}
             <a
-              href="/#pricing"
-              onClick={handleScrollToPricing}
-              className="flex items-center justify-center w-full bg-stone-950 text-white py-4 px-6 rounded-lg hover:bg-stone-800 transition-colors min-h-[48px]"
+              href="#"
+              onClick={(e) => {
+                e.preventDefault()
+                if (checkoutLoading) return
+                handleStartCheckout("one_time_session")
+              }}
+              className={`group relative block overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm hover:bg-white/10 transition-all ${
+                checkoutLoading === "one_time_session" ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+              }`}
             >
-              <span className="text-sm md:text-base font-medium">Professional Instagram Photos - $49</span>
+              <div className="relative h-32 overflow-hidden">
+                <img
+                  src="https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/maya-pro-generations/mg0q5j29yhrmr0cvh4gax57cnr-p22TsIJ1grFHwnQrt2tXZ5foPm1vvv.png"
+                  alt="Starter Photoshoot"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  style={{ objectPosition: "center top" }}
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+              </div>
+              <div className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-serif text-white mb-1">Starter Photoshoot</h3>
+                    <p className="text-xs text-white/60 uppercase tracking-wider">Try It First</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-xl font-serif text-white">$49</span>
+                    <span className="text-[9px] uppercase text-white/50 block">one-time</span>
+                  </div>
+                </div>
+              </div>
             </a>
 
             {/* Button 2: Studio - MOST POPULAR */}
             <a
-              href="/#pricing"
-              onClick={handleStudioClick}
-              className="flex items-center justify-center w-full bg-stone-900 text-white py-4 px-6 rounded-lg hover:bg-stone-800 transition-colors relative min-h-[48px]"
+              href="#"
+              onClick={(e) => {
+                e.preventDefault()
+                if (checkoutLoading) return
+                handleStartCheckout("sselfie_studio_membership")
+              }}
+              className={`group relative block overflow-hidden rounded-2xl border border-white/20 bg-white/5 backdrop-blur-sm hover:bg-white/10 transition-all ${
+                checkoutLoading === "sselfie_studio_membership" ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+              }`}
             >
-              <div className="absolute top-2 right-2 bg-stone-700 text-white text-xs px-2 py-1 rounded">
+              <div className="absolute top-0 left-0 w-1 h-full bg-white z-10" />
+              <div className="absolute top-3 right-3 bg-white/10 backdrop-blur-md px-2 py-1 rounded text-[8px] uppercase tracking-widest text-white border border-white/20 z-10">
                 MOST POPULAR
               </div>
-              <span className="text-sm md:text-base font-medium">Content Creator Studio - $79/mo</span>
+              <div className="relative h-32 overflow-hidden">
+                <img
+                  src="https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/maya-pro-generations/6sb8n7v1g9rmr0cvhyjr95kg5g-5IoNZKlXP8Umw6U040gkJeTer43jLY.png"
+                  alt="Creator Studio"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  style={{ objectPosition: "center 25%" }}
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+              </div>
+              <div className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-serif text-white mb-1">Creator Studio</h3>
+                    <p className="text-xs text-white/60 uppercase tracking-wider">Most Popular</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-xl font-serif text-white">$97</span>
+                    <span className="text-[9px] uppercase text-white/50 block">/ month</span>
+                  </div>
+                </div>
+              </div>
             </a>
 
             {/* Button 3: Blueprint */}
             <Link
               href="/blueprint"
               onClick={() => handleLinkClick('bio_cta_blueprint', '/blueprint')}
-              className="flex items-center justify-center w-full bg-white border-2 border-stone-300 text-stone-900 py-4 px-6 rounded-lg hover:bg-stone-50 transition-colors min-h-[48px]"
+              className="group relative block overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm hover:bg-white/10 transition-all"
             >
-              <span className="text-sm md:text-base font-medium">Get Free Brand Blueprint</span>
+              <div className="relative h-32 overflow-hidden">
+                <img
+                  src="https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/tmpbmq4nfg7.png"
+                  alt="Free Brand Blueprint"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  style={{ objectPosition: "center center" }}
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+              </div>
+              <div className="p-6">
+                <div className="flex items-center justify-center">
+                  <h3 className="text-lg font-serif text-white">Get Free Brand Blueprint</h3>
+                </div>
+              </div>
             </Link>
           </div>
 
           {/* Secondary Links */}
           <div className="mb-16 max-w-lg mx-auto">
-            <h3 className="text-xs uppercase tracking-wider text-stone-500 text-center mb-6">
+            <h3 
+              className="text-center mb-6"
+              style={{
+                fontFamily: "'Inter', -apple-system, sans-serif",
+                fontSize: "10px",
+                letterSpacing: "0.25em",
+                textTransform: "uppercase",
+                color: "rgba(255, 255, 255, 0.8)",
+              }}
+            >
               MORE WAYS TO CONNECT
             </h3>
             
-            <div className="bg-white rounded-lg overflow-hidden border border-stone-200 divide-y divide-stone-200">
+            <div 
+              className="rounded-2xl overflow-hidden"
+              style={{
+                background: "rgba(255, 255, 255, 0.03)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                backdropFilter: "blur(10px)",
+              }}
+            >
               <Link
                 href="/"
                 onClick={() => handleLinkClick('bio_link_demo', '/')}
-                className="flex items-center gap-3 p-4 hover:bg-stone-50 transition-colors"
+                className="flex items-center gap-3 p-4 hover:bg-white/5 transition-colors border-b border-white/10 last:border-b-0"
               >
-                <Play className="w-5 h-5 text-stone-600 flex-shrink-0" />
-                <span className="text-base text-stone-700">Watch How It Works</span>
+                <Play className="w-5 h-5 text-white/60 flex-shrink-0" />
+                <span className="text-base text-white/90">Watch How It Works</span>
               </Link>
 
               <Link
                 href="/"
                 onClick={() => handleLinkClick('bio_link_story', '/')}
-                className="flex items-center gap-3 p-4 hover:bg-stone-50 transition-colors"
+                className="flex items-center gap-3 p-4 hover:bg-white/5 transition-colors border-b border-white/10 last:border-b-0"
               >
-                <Heart className="w-5 h-5 text-stone-600 flex-shrink-0" />
-                <span className="text-base text-stone-700">Read My Story</span>
+                <Heart className="w-5 h-5 text-white/60 flex-shrink-0" />
+                <span className="text-base text-white/90">Read My Story</span>
               </Link>
 
               <Link
                 href="/academy"
                 onClick={() => handleLinkClick('bio_link_academy', '/academy')}
-                className="flex items-center gap-3 p-4 hover:bg-stone-50 transition-colors"
+                className="flex items-center gap-3 p-4 hover:bg-white/5 transition-colors border-b border-white/10 last:border-b-0"
               >
-                <GraduationCap className="w-5 h-5 text-stone-600 flex-shrink-0" />
-                <span className="text-base text-stone-700">Brand Academy</span>
+                <GraduationCap className="w-5 h-5 text-white/60 flex-shrink-0" />
+                <span className="text-base text-white/90">Brand Academy</span>
               </Link>
 
               <a
@@ -170,25 +313,25 @@ export default function BioPage() {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => handleLinkClick('bio_link_instagram', 'https://instagram.com/sandra.social')}
-                className="flex items-center gap-3 p-4 hover:bg-stone-50 transition-colors"
+                className="flex items-center gap-3 p-4 hover:bg-white/5 transition-colors"
               >
-                <Instagram className="w-5 h-5 text-stone-600 flex-shrink-0" />
-                <span className="text-base text-stone-700">Follow on Instagram</span>
+                <Instagram className="w-5 h-5 text-white/60 flex-shrink-0" />
+                <span className="text-base text-white/90">Follow on Instagram</span>
               </a>
             </div>
           </div>
 
           {/* Footer */}
           <div className="text-center space-y-4 max-w-lg mx-auto">
-            <div className="flex items-center justify-center gap-4 text-sm text-stone-500">
-              <Link href="/privacy" className="hover:text-stone-900 transition-colors">Privacy</Link>
+            <div className="flex items-center justify-center gap-4 text-sm text-white/60">
+              <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
               <span>|</span>
-              <Link href="/terms" className="hover:text-stone-900 transition-colors">Terms</Link>
+              <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
               <span>|</span>
-              <a href="mailto:hello@sselfie.ai" className="hover:text-stone-900 transition-colors">Contact</a>
+              <a href="mailto:hello@sselfie.ai" className="hover:text-white transition-colors">Contact</a>
             </div>
             
-            <p className="text-xs text-stone-400">
+            <p className="text-xs text-white/40" style={{ fontFamily: "'Inter', -apple-system, sans-serif" }}>
               © 2025 SSELFIE. Built with love from Norway.
             </p>
           </div>

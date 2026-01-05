@@ -196,7 +196,7 @@ export function BetaCountdown({ compact }: { compact?: boolean }) {
             </li>
             <li>Remove the beta discount calculation (line ~50)</li>
             <li>
-              Use regular pricing from <code className="bg-stone-100 px-1 py-0.5 rounded">lib/pricing.config.ts</code>
+              Use regular pricing from <code className="bg-stone-100 px-1 py-0.5 rounded">lib/products.ts</code>
             </li>
             <li>Deploy changes to production</li>
           </ol>

@@ -283,6 +283,7 @@ handleStartCheckout(tierId: string) {
 - [ ] Implement navigation dots component
 - [ ] Add Intersection Observer for animations
 - [ ] Set up scene components
+- [ ] Create `/checkout/credits` route for one-time packs
 
 ### Phase 2: Content Migration
 - [ ] Scene 1: Hero with new copy
@@ -290,8 +291,10 @@ handleStartCheckout(tierId: string) {
 - [ ] Scene 3: Maya Modes (split view)
 - [ ] Scene 4: Feed Planner
 - [ ] Scene 5: Academy + Blueprint CTA
-- [ ] Scene 6: Pricing (verify $29 vs $79)
-- [ ] Scene 7: Footer with FAQ
+- [ ] Scene 6: Pricing ($79/month, $49 one-time, $149 brand studio)
+- [ ] Scene 7: Testimonials (horizontal auto carousel)
+- [ ] Scene 8: Story Section (minimal text, new design style)
+- [ ] Scene 9: Footer with FAQ
 
 ### Phase 3: Logic Integration
 - [ ] Add analytics tracking to all CTAs

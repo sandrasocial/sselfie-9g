@@ -2,8 +2,7 @@
 
 import { stripe } from "@/lib/stripe"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { getCreditPackageById } from "@/lib/credit-packages"
-import { getProductById } from "@/lib/products"
+import { getCreditPackageById, getProductById } from "@/lib/products"
 import { createServerClient } from "@/lib/supabase/server"
 
 export async function startCreditCheckoutSession(packageId: string, promoCode?: string) {

@@ -327,7 +327,7 @@ export default function WhatsNewPage() {
               </button>
             </div>
 
-            {/* Tier 2: Content Creator Studio - MOST POPULAR */}
+            {/* Tier 2: Creator Studio - MOST POPULAR */}
             <div className="bg-stone-950 text-stone-50 rounded-2xl p-6 sm:p-8 border-2 border-stone-950 relative hover:shadow-xl transition-shadow duration-300">
               <div className="absolute -top-3 right-4 bg-stone-950 text-stone-50 px-3 py-1.5 rounded-sm border border-stone-50/20">
                 <p className="text-[9px] sm:text-[10px] font-light tracking-[0.2em] uppercase whitespace-nowrap">
@@ -335,16 +335,16 @@ export default function WhatsNewPage() {
                 </p>
               </div>
               <p className="text-xs sm:text-sm font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-stone-400 mb-3">
-                CONTENT CREATOR STUDIO
+                CREATOR STUDIO
               </p>
               <h3
                 className="text-xl sm:text-2xl font-light mb-2 text-stone-50"
                 style={{ fontFamily: "'Times New Roman', Times, serif" }}
               >
-                Stop Scrambling for Content Every Week
+                Your Complete AI Content Team
               </h3>
               <p className="text-sm sm:text-base font-light text-stone-300 mb-4">
-                Unlimited Photos + Videos + Feed Planning
+                For less than one photoshoot
               </p>
               <div className="mb-6 sm:mb-8">
                 <div className="flex items-baseline gap-2">
@@ -352,7 +352,7 @@ export default function WhatsNewPage() {
                     className="text-5xl sm:text-6xl font-light text-stone-50"
                     style={{ fontFamily: "'Times New Roman', Times, serif" }}
                   >
-                    $79
+                    $97
                   </span>
                 </div>
                 <p className="text-sm sm:text-base font-light text-stone-300 mt-2">per month</p>
@@ -368,27 +368,23 @@ export default function WhatsNewPage() {
               <div className="space-y-3 sm:space-y-4 mb-8 sm:mb-10">
                 <p className="text-sm sm:text-base font-light text-stone-100 flex items-start gap-2">
                   <span className="text-stone-50 mt-0.5">✓</span>
-                  <span>Unlimited professional photoshoots (fair use: 3-4/month)</span>
+                  <span>200 credits per month</span>
                 </p>
                 <p className="text-sm sm:text-base font-light text-stone-100 flex items-start gap-2">
                   <span className="text-stone-50 mt-0.5">✓</span>
-                  <span>100+ images per month</span>
+                  <span>~100 Pro photos OR ~200 Classic photos</span>
                 </p>
                 <p className="text-sm sm:text-base font-light text-stone-100 flex items-start gap-2">
                   <span className="text-stone-50 mt-0.5">✓</span>
-                  <span>20 video clips per month</span>
+                  <span>Unlimited Maya AI strategist</span>
                 </p>
                 <p className="text-sm sm:text-base font-light text-stone-100 flex items-start gap-2">
                   <span className="text-stone-50 mt-0.5">✓</span>
-                  <span>9-post feed planner (saves 10 hours/month)</span>
+                  <span>Unlimited captions & feed planning</span>
                 </p>
                 <p className="text-sm sm:text-base font-light text-stone-100 flex items-start gap-2">
                   <span className="text-stone-50 mt-0.5">✓</span>
-                  <span>Priority generation queue</span>
-                </p>
-                <p className="text-sm sm:text-base font-light text-stone-100 flex items-start gap-2">
-                  <span className="text-stone-50 mt-0.5">✓</span>
-                  <span>Cancel anytime</span>
+                  <span>Video b-roll creation</span>
                 </p>
               </div>
               <button
@@ -397,86 +393,6 @@ export default function WhatsNewPage() {
                 className="w-full bg-stone-50 text-stone-950 px-6 py-3 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-100 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
               >
                 {checkoutLoading === "sselfie_studio_membership" ? "LOADING..." : "Start My Studio Membership"}
-              </button>
-            </div>
-
-            {/* Tier 3: Brand Studio */}
-            <div className="bg-stone-50 rounded-2xl p-6 sm:p-8 border border-stone-200 hover:shadow-lg transition-shadow duration-300">
-              <p className="text-xs sm:text-sm font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-stone-500 mb-3">
-                BRAND STUDIO
-              </p>
-              <h3
-                className="text-xl sm:text-2xl font-light mb-2 text-stone-900"
-                style={{ fontFamily: "'Times New Roman', Times, serif" }}
-              >
-                Your Complete AI Content Team
-              </h3>
-              <p className="text-sm sm:text-base font-light text-stone-600 mb-4">
-                Everything You Need to Run a Premium Brand
-              </p>
-              <div className="mb-6 sm:mb-8">
-                <div className="flex items-baseline gap-2">
-                  <span
-                    className="text-5xl sm:text-6xl font-light text-stone-900"
-                    style={{ fontFamily: "'Times New Roman', Times, serif" }}
-                  >
-                    $149
-                  </span>
-                </div>
-                <p className="text-sm sm:text-base font-light text-stone-600 mt-2">per month</p>
-                <div className="mt-2">
-                  <span className="inline-block bg-stone-200/50 text-stone-700 px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-light tracking-wide">
-                    Worth $3,000+/month
-                  </span>
-                </div>
-              </div>
-              <p className="text-base sm:text-lg font-light text-stone-700 mb-6 sm:mb-8 leading-relaxed">
-                Photos, videos, strategy, templates, and an AI strategist who knows your brand inside out.
-              </p>
-              <div className="space-y-3 sm:space-y-4 mb-8 sm:mb-10">
-                <p className="text-sm sm:text-base font-light text-stone-700 flex items-start gap-2">
-                  <span className="text-stone-900 mt-0.5">✓</span>
-                  <span>Everything in Creator Studio</span>
-                </p>
-                <p className="text-sm sm:text-base font-light text-stone-700 flex items-start gap-2">
-                  <span className="text-stone-900 mt-0.5">✓</span>
-                  <span>200+ images per month</span>
-                </p>
-                <p className="text-sm sm:text-base font-light text-stone-700 flex items-start gap-2">
-                  <span className="text-stone-900 mt-0.5">✓</span>
-                  <span>40+ video clips per month</span>
-                </p>
-                <p className="text-sm sm:text-base font-light text-stone-700 flex items-start gap-2">
-                  <span className="text-stone-900 mt-0.5">✓</span>
-                  <span>Maya AI strategist (unlimited consulting)</span>
-                </p>
-                <p className="text-sm sm:text-base font-light text-stone-700 flex items-start gap-2">
-                  <span className="text-stone-900 mt-0.5">✓</span>
-                  <span>Personal brand academy (2 full courses)</span>
-                </p>
-                <p className="text-sm sm:text-base font-light text-stone-700 flex items-start gap-2">
-                  <span className="text-stone-900 mt-0.5">✓</span>
-                  <span>100+ Canva templates</span>
-                </p>
-                <p className="text-sm sm:text-base font-light text-stone-700 flex items-start gap-2">
-                  <span className="text-stone-900 mt-0.5">✓</span>
-                  <span>Monthly brand strategy drops</span>
-                </p>
-                <p className="text-sm sm:text-base font-light text-stone-700 flex items-start gap-2">
-                  <span className="text-stone-900 mt-0.5">✓</span>
-                  <span>Direct access to Sandra</span>
-                </p>
-                <p className="text-sm sm:text-base font-light text-stone-700 flex items-start gap-2">
-                  <span className="text-stone-900 mt-0.5">✓</span>
-                  <span>Priority support</span>
-                </p>
-              </div>
-              <button
-                onClick={() => handleStartCheckout("brand_studio_membership")}
-                disabled={checkoutLoading === "brand_studio_membership"}
-                className="w-full bg-stone-950 text-stone-50 px-6 py-3 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
-              >
-                {checkoutLoading === "brand_studio_membership" ? "LOADING..." : "Join Brand Studio"}
               </button>
             </div>
           </div>

@@ -25,13 +25,8 @@ export async function createUpgradeCheckoutSession(
     throw new Error("User not found")
   }
 
-  // Map tier to product ID (EXACT same as landing page uses)
-  const productIdMap: Record<string, string> = {
-    creator: "sselfie_studio_membership",
-    brand: "brand_studio_membership",
-  }
-  
-  const productId = productIdMap[tier] || "sselfie_studio_membership"
+  // Map tier to product ID - only Creator Studio available now
+  const productId = "sselfie_studio_membership"
 
   // Get product details (EXACT same pattern as landing-checkout.ts)
   const product = getProductById(productId)
@@ -46,29 +41,18 @@ export async function createUpgradeCheckoutSession(
     stripePriceId = process.env.STRIPE_ONE_TIME_SESSION_PRICE_ID
   } else if (product.type === "sselfie_studio_membership") {
     stripePriceId = process.env.STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID
-  } else if (product.type === "brand_studio_membership") {
-    stripePriceId = process.env.STRIPE_BRAND_STUDIO_MEMBERSHIP_PRICE_ID
   }
 
-  // For upgrade checkout, use the correct Price ID for Content Creator Studio
-  // Correct Price ID: price_1SdbgLEVJvME7vkwoBRlHdNZ
-  if (product.type === "sselfie_studio_membership" && tier === "creator") {
-    const correctPriceId = "price_1SdbgLEVJvME7vkwoBRlHdNZ"
-    if (stripePriceId !== correctPriceId) {
-      console.warn(`[v0] ⚠️ Environment variable STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID (${stripePriceId}) does not match correct price ID (${correctPriceId})`)
-      console.warn(`[v0] Using correct price ID: ${correctPriceId}`)
-    }
-    stripePriceId = correctPriceId
-  }
+  // Use environment variable for price ID (no hardcoded fallback)
+  // Correct Price ID should be set in STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID
+  // Expected: price_1SmIRaEVJvME7vkwMo5vSLzf ($97/month)
 
   if (!stripePriceId) {
     console.error("[v0] Missing Stripe Price ID for:", productId)
     const envVarName =
       product.type === "one_time_session"
         ? "STRIPE_ONE_TIME_SESSION_PRICE_ID"
-        : product.type === "sselfie_studio_membership"
-          ? "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID"
-          : "STRIPE_BRAND_STUDIO_MEMBERSHIP_PRICE_ID"
+        : "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID"
     console.error("[v0] Environment variable needed:", envVarName)
     throw new Error(`Stripe Price ID not configured for ${productId}`)
   }

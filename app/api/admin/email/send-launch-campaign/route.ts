@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
                     </p>
                     <ul style="margin: 0 0 24px 0; padding-left: 20px; color: #292524; font-size: 14px; font-weight: 300; line-height: 1.8;">
                       <li>Custom AI model trained on YOUR photos</li>
-                      <li>70 professional images with Maya</li>
+                      <li>50 professional images with Maya</li>
                       <li>Experience the SSELFIE magic before committing</li>
                     </ul>
                     <a href="https://sselfie.ai/studio?checkout=one_time" style="display: block; background-color: #1c1917; color: #fafaf9; padding: 14px 24px; text-decoration: none; border-radius: 8px; font-size: 13px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; text-align: center;">
@@ -139,17 +139,17 @@ export async function POST(request: NextRequest) {
                       SSELFIE STUDIO
                     </h3>
                     <p style="margin: 0 0 4px; color: #fafaf9; font-size: 28px; font-weight: 700;">
-                      $49.50<span style="font-size: 16px; font-weight: 400; color: #d6d3d1;">/month</span>
+                      $48.50<span style="font-size: 16px; font-weight: 400; color: #d6d3d1;">/month</span>
                     </p>
                     <p style="margin: 0 0 4px; color: #a8a29e; font-size: 13px; font-weight: 300; text-decoration: line-through;">
-                      Regular $79/mo
+                      Regular $97/mo
                     </p>
                     <p style="margin: 0 0 20px; color: #d6d3d1; font-size: 14px; font-weight: 300;">
                       50% OFF FOREVER as a founding member
                     </p>
                     <ul style="margin: 0 0 24px 0; padding-left: 20px; color: #e7e5e4; font-size: 14px; font-weight: 300; line-height: 1.8;">
                       <li>Custom AI model trained on YOUR photos</li>
-                      <li>150+ professional images monthly</li>
+                      <li>200 credits monthly (~100 Pro photos OR ~200 Classic photos)</li>
                       <li>Full academy with video courses & templates</li>
                       <li>Feed Designer for content planning</li>
                       <li>Monthly drops with newest strategies</li>

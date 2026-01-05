@@ -60,7 +60,7 @@ export function UpgradeOrCredits({ feature = "Studio" }: UpgradeOrCreditsProps) 
           <div className="pt-6 space-y-2 text-xs text-stone-500">
             <div className="flex items-center justify-between px-4 py-2 bg-stone-50 rounded-lg">
               <span>Studio Membership</span>
-              <span className="font-medium text-stone-900">150 credits/month</span>
+              <span className="font-medium text-stone-900">200 credits/month</span>
             </div>
             <div className="flex items-center justify-between px-4 py-2 bg-stone-50 rounded-lg">
               <span>One-time credits</span>
