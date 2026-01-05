@@ -84,13 +84,23 @@ export default function FeedStrategy({ feedData, feedId, onCreateStrategy, onStr
     }
   }
 
-  // Use generated strategy if available, otherwise use feed description
-  const displayStrategy = generatedStrategy || feedData.feed?.description
+  // Helper function to detect if description is a full strategy document
+  const isFullStrategy = (text: string | null | undefined): boolean => {
+    if (!text) return false
+    // Strategy documents have markdown headers (# ## ###) and are longer
+    const hasHeaders = /^#{1,3}\s/m.test(text)
+    const isLongEnough = text.length > 500
+    return hasHeaders && isLongEnough
+  }
+
+  const feedDescription = feedData.feed?.description
+  const hasFullStrategy = isFullStrategy(feedDescription)
+  const displayStrategy = generatedStrategy || (hasFullStrategy ? feedDescription : null)
 
   return (
     <div className="p-4 md:p-8">
-      {/* Create Strategy Button - Show if no strategy exists */}
-      {!displayStrategy && (
+      {/* Create Strategy Button - Show if no full strategy exists */}
+      {!displayStrategy && !hasFullStrategy && (
         <div className="flex flex-col items-center justify-center py-12 space-y-6">
           {isGenerating ? (
             <div className="flex flex-col items-center space-y-4 max-w-md text-center">

@@ -64,11 +64,16 @@ export default function FeedHighlightsModal({
 
       const data = await response.json()
       const generatedTitles = data.highlights || []
+      
+      // Use brand colors from API response if available, otherwise use prop, otherwise use defaults
+      const colorsToUse = data.brandColors && data.brandColors.length > 0 
+        ? data.brandColors 
+        : (brandColors.length > 0 ? brandColors : availableColors)
 
-      // Create highlights with color placeholders
+      // Create highlights with brand colors
       const newHighlights = generatedTitles.map((title: string, index: number) => ({
         title,
-        image_url: availableColors[index % availableColors.length],
+        image_url: colorsToUse[index % colorsToUse.length],
         icon_style: "color",
       }))
 

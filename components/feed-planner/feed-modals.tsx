@@ -36,7 +36,7 @@ export default function FeedModals({
     <>
       {selectedPost && (
         <div
-          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 overflow-y-auto"
+          className="fixed inset-0 z-[80] bg-black/90 flex items-center justify-center p-4 overflow-y-auto"
           onClick={onClosePost}
         >
           <div

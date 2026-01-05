@@ -384,44 +384,17 @@ export default function SselfieApp({
 
       <main className="relative h-full mx-1 sm:mx-2 md:mx-3 pb-2 sm:pb-3 md:pb-4">
         <div className={`h-full ${DesignClasses.container} ${activeTab === "maya" ? "overflow-visible" : "overflow-hidden"}`}>
-          {/* Hide header when in Maya tab - MayaChatScreen has its own header */}
-          {activeTab !== "maya" && (
+          {/* Hide header when in Maya or Feed Planner tab - they have their own unified headers */}
+          {activeTab !== "maya" && activeTab !== "feed-planner" && (
             <header className={`sticky top-0 z-10 bg-white/70 ${DesignClasses.blur.md} border-b ${DesignClasses.border.stone} ${DesignClasses.spacing.paddingX.sm} py-3 pt-safe`}>
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 shrink-0">
                   <div className={`${DesignClasses.typography.heading.h4} ${DesignClasses.text.primary}`}>
-                    {activeTab === "feed-planner" ? "FEED PLANNER" : "SSELFIE"}
+                    SSELFIE
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                  {/* Feed Planner: Credits and Pro Mode Toggle */}
-                  {activeTab === "feed-planner" && (
-                    <>
-                      {/* Credits Display */}
-                      <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded border border-stone-200 bg-stone-50/50 min-h-[36px] sm:min-h-[40px]">
-                        <span className="text-[9px] sm:text-[10px] md:text-xs font-light text-stone-500 uppercase tracking-wider">
-                          Credits
-                        </span>
-                        <span className="text-xs sm:text-sm md:text-base font-semibold text-stone-950 tabular-nums">
-                          {creditBalance.toFixed(1)}
-                        </span>
-                      </div>
-
-                      {/* Mode Toggle */}
-                      <MayaModeToggle
-                        currentMode={feedPlannerProMode ? "pro" : "classic"}
-                        onToggle={() => {
-                          const newMode = !feedPlannerProMode
-                          localStorage.setItem("mayaProMode", newMode.toString())
-                          setFeedPlannerProMode(newMode)
-                          // Trigger a custom event so Feed Planner can react
-                          window.dispatchEvent(new CustomEvent("feedPlannerModeChanged", { detail: { mode: newMode } }))
-                        }}
-                        variant="compact"
-                      />
-                    </>
-                  )}
 
                   <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
                   <DropdownMenuTrigger asChild>

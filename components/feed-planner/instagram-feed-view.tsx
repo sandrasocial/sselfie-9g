@@ -41,6 +41,58 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
   const [bioText, setBioText] = useState("")
   const [isSavingBio, setIsSavingBio] = useState(false)
   const [showHighlightsModal, setShowHighlightsModal] = useState(false)
+  const [brandColors, setBrandColors] = useState<string[]>([])
+
+  // Helper function to get colors from theme ID
+  const getColorsFromTheme = (theme: string | null): string[] => {
+    const themeColors: Record<string, string[]> = {
+      'dark-moody': ["#000000", "#2C2C2C", "#4A4A4A", "#6B6B6B"],
+      'minimalist-clean': ["#FFFFFF", "#F5F5F0", "#E8E4DC", "#D4CFC4"],
+      'beige-creamy': ["#F5F1E8", "#E8DCC8", "#D4C4A8", "#B8A88A"],
+      'pastel-coastal': ["#E8F4F8", "#B8E0E8", "#88CCD8", "#5BA8B8"],
+      'warm-terracotta': ["#E8D4C8", "#C8A898", "#A88878", "#886858"],
+      'bold-colorful': ["#FF6B9D", "#FFA07A", "#FFD700", "#98D8C8"],
+    }
+    return themeColors[theme || ''] || []
+  }
+
+  // Fetch brand colors from user profile
+  useEffect(() => {
+    fetch('/api/profile/personal-brand')
+      .then(res => res.json())
+      .then(data => {
+        if (data.completed && data.data) {
+          // Extract colors from colorPalette (JSONB) or colorTheme
+          let colors: string[] = []
+          if (data.data.colorPalette) {
+            try {
+              const palette = typeof data.data.colorPalette === 'string' 
+                ? JSON.parse(data.data.colorPalette)
+                : data.data.colorPalette
+              if (Array.isArray(palette)) {
+                // Extract hex values from array (could be strings or objects with hex property)
+                colors = palette.map((c: any) => {
+                  if (typeof c === 'string') return c
+                  if (c?.hex) return c.hex
+                  if (c?.color) return c.color
+                  return null
+                }).filter(Boolean)
+              }
+            } catch (e) {
+              console.error("[v0] Failed to parse colorPalette:", e)
+            }
+          }
+          // Fallback to theme-based colors if no palette
+          if (colors.length === 0 && data.data.colorTheme) {
+            colors = getColorsFromTheme(data.data.colorTheme)
+          }
+          if (colors.length > 0) {
+            setBrandColors(colors)
+          }
+        }
+      })
+      .catch(err => console.error("[v0] Failed to fetch brand colors:", err))
+  }, [])
 
   // Initialize bio text when modal opens
   useEffect(() => {
@@ -585,7 +637,7 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
           await mutate() // Refresh feed data to show updated highlights
         }}
         existingHighlights={feedData?.highlights || []}
-        brandColors={
+        brandColors={brandColors.length > 0 ? brandColors : (
           feedData?.feed?.color_palette
             ? typeof feedData.feed.color_palette === "string"
               ? JSON.parse(feedData.feed.color_palette)
@@ -599,7 +651,7 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
                   .filter((c: any) => typeof c === "string")
                   .slice(0, 8)
             : []
-        }
+        )}
       />
     </div>
   )
