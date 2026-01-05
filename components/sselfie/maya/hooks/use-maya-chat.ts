@@ -179,6 +179,59 @@ export function useMayaChat({
         currentMessagesCount: currentMessages.length, // Use SDK-provided messages
       })
       
+      // CRITICAL FIX: Save assistant message to database when streaming finishes
+      // This ensures messages exist in DB before feed cards try to update them
+      if (message.role === "assistant" && chatId) {
+        // Extract text content from message
+        let textContent = ""
+        if (message.content && typeof message.content === "string") {
+          textContent = message.content
+        } else if (message.parts && Array.isArray(message.parts)) {
+          const textParts = message.parts.filter((p: any) => p && p.type === "text")
+          textContent = textParts.map((p: any) => p.text || "").join(" ")
+        }
+        
+        // Extract feed cards from parts if they exist
+        let feedCards: any[] | undefined = undefined
+        if (message.parts && Array.isArray(message.parts)) {
+          const feedCardParts = message.parts.filter((p: any) => p && p.type === "tool-generateFeed" && p.output)
+          if (feedCardParts.length > 0) {
+            feedCards = feedCardParts.map((p: any) => p.output)
+            console.log("[useMayaChat] 💾 Found feed cards in message parts, will save with message:", feedCards.length)
+          }
+        }
+        
+        // Save message to database (non-blocking)
+        fetch('/api/maya/save-message', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            chatId: chatId,
+            role: 'assistant',
+            content: textContent,
+            feedCards: feedCards, // Include feed cards if they exist
+          }),
+        })
+          .then(async (response) => {
+            if (response.ok) {
+              const result = await response.json()
+              console.log("[useMayaChat] ✅ Saved assistant message to database:", {
+                messageId: result.message?.id,
+                hasFeedCards: !!feedCards,
+                feedCardsCount: feedCards?.length || 0,
+              })
+            } else {
+              const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+              console.error("[useMayaChat] ⚠️ Failed to save assistant message:", response.status, errorData)
+            }
+          })
+          .catch((error) => {
+            console.error("[useMayaChat] ⚠️ Error saving assistant message:", error.message || String(error))
+            // Non-critical - message will still work in UI, just won't persist
+          })
+      }
+      
       // Check if feed cards are still in messages after finish
       // CRITICAL: Use currentMessages from SDK callback, not closure variable
       const feedCardMessages = currentMessages.filter((m: any) => 
@@ -305,8 +358,45 @@ export function useMayaChat({
         if (data.messages && Array.isArray(data.messages)) {
           let conceptCardsFound = 0
 
-          // CRITICAL: Populate refs BEFORE setting messages to prevent trigger detection
+          // CRITICAL FIX: Deduplicate messages by ID to prevent duplicates
+          // Use a Map to keep the first occurrence of each message ID
+          const messageMap = new Map<string, any>()
           data.messages.forEach((msg: any) => {
+            if (msg.id) {
+              const msgId = msg.id.toString()
+              // Only add if we haven't seen this ID before (keeps first occurrence)
+              if (!messageMap.has(msgId)) {
+                messageMap.set(msgId, msg)
+              } else {
+                console.warn("[useMayaChat] ⚠️ Duplicate message ID detected:", msgId, "- keeping first occurrence")
+              }
+            }
+          })
+
+          // Convert Map back to array and sort by createdAt to ensure correct chronological order
+          // CRITICAL: Sort by createdAt to fix message ordering issue on page refresh
+          const uniqueMessages = Array.from(messageMap.values()).sort((a, b) => {
+            // Handle both Date objects and ISO strings
+            // Fallback to 0 if createdAt is missing or invalid (will sort to beginning)
+            const getTime = (msg: any): number => {
+              if (!msg.createdAt) return 0
+              try {
+                if (msg.createdAt instanceof Date) {
+                  return msg.createdAt.getTime()
+                }
+                const parsed = new Date(msg.createdAt)
+                return isNaN(parsed.getTime()) ? 0 : parsed.getTime()
+              } catch {
+                return 0
+              }
+            }
+            const aTime = getTime(a)
+            const bTime = getTime(b)
+            return aTime - bTime // Ascending order (oldest first)
+          })
+
+          // CRITICAL: Populate refs BEFORE setting messages to prevent trigger detection
+          uniqueMessages.forEach((msg: any) => {
             if (msg.id) {
               savedMessageIds.current.add(msg.id.toString())
             }
@@ -323,15 +413,18 @@ export function useMayaChat({
 
           console.log(
             "[useMayaChat] Chat loaded with",
-            data.messages.length,
-            "messages, savedIds:",
+            uniqueMessages.length,
+            "unique messages (removed",
+            data.messages.length - uniqueMessages.length,
+            "duplicates), savedIds:",
             savedMessageIds.current.size,
             "conceptCardsFound:",
             conceptCardsFound,
           )
 
-          // Now set messages AFTER refs are populated
-          setMessages(data.messages)
+          // CRITICAL FIX: Set sorted and deduplicated messages
+          // This ensures messages are in correct chronological order and have no duplicates
+          setMessages(uniqueMessages)
           
           // CRITICAL DEBUG: Check if loaded messages have feed cards
           const loadedFeedCardMessages = data.messages.filter((m: any) => 
@@ -512,7 +605,16 @@ export function useMayaChat({
     // 4. hasLoadedChatRef is true but chatId doesn't match saved chatId for this chatType (wrong chat loaded)
     const savedChatIdForThisType = loadChatIdFromStorage(currentChatType)
     const hasWrongChatId = chatId !== null && savedChatIdForThisType !== null && chatId !== savedChatIdForThisType
-    const needsLoad = !hasLoadedChatRef.current || chatTypeChanged || (!chatId && messages.length === 0) || hasWrongChatId
+    
+    // CRITICAL FIX: Prevent infinite loop by checking if we're already loading
+    // BUT: Allow loading if hasLoadedChatRef is false (initial state) even if isLoadingChat is true
+    // This is because isLoadingChat starts as true, but we still need to trigger the first load
+    const isCurrentlyLoading = isLoadingChat && hasLoadedChatRef.current
+    
+    // CRITICAL FIX: Only consider needsLoad if we're not already loading
+    // This prevents the infinite loop where the effect keeps triggering loadChat
+    // BUT: Allow initial load even if isLoadingChat is true (it starts as true)
+    const needsLoad = !isCurrentlyLoading && (!hasLoadedChatRef.current || chatTypeChanged || (!chatId && messages.length === 0) || hasWrongChatId)
 
     if (needsLoad) {
       if (!hasLoadedChatRef.current) {

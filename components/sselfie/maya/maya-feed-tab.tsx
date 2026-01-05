@@ -263,39 +263,70 @@ export default function MayaFeedTab({
             realismStrength,
           }
           
-          // Update message in database with feed card in styling_details column
-          fetch('/api/maya/update-message', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              messageId: messageIdToSave,
-              content: messageContentToSave || "", // Preserve existing content
-              feedCards: [feedCardData], // Save to styling_details column
-              append: false,
-            }),
-          })
-            .then(async response => {
+          // CRITICAL FIX: Save/update message in database with feed card in styling_details column
+          // First try to update existing message, if that fails (message doesn't exist), save it
+          const saveFeedCard = async (retryCount = 0): Promise<void> => {
+            try {
+              const response = await fetch('/api/maya/update-message', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  messageId: messageIdToSave,
+                  content: messageContentToSave || "", // Preserve existing content
+                  feedCards: [feedCardData], // Save to styling_details column
+                  append: false,
+                }),
+                credentials: 'include', // Ensure cookies are sent for authentication
+              })
+              
               if (response.ok) {
                 console.log("[FEED] ✅ Saved feed card to styling_details column for persistence")
-              } else {
-                const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-                console.error("[FEED] ⚠️ Failed to save feed card to database:", {
-                  status: response.status,
-                  error: errorData.error,
-                  details: errorData.details,
-                  messageId: messageIdToSave,
-                })
+                return
               }
-            })
-            .catch(error => {
-              console.error("[FEED] ⚠️ Error saving feed card to database:", {
+              
+              const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+              
+              // If message doesn't exist (404) and we haven't retried, save it first
+              if (response.status === 404 && retryCount === 0 && chatId) {
+                console.log("[FEED] ⚠️ Message not found, saving message first, then retrying update")
+                
+                // Save message first with feed cards
+                const saveResponse = await fetch('/api/maya/save-message', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  credentials: 'include',
+                  body: JSON.stringify({
+                    chatId: chatId,
+                    role: 'assistant',
+                    content: messageContentToSave || "",
+                    feedCards: [feedCardData], // Save feed cards with message
+                  }),
+                })
+                
+                if (saveResponse.ok) {
+                  console.log("[FEED] ✅ Saved message with feed cards to database")
+                } else {
+                  console.error("[FEED] ⚠️ Failed to save message:", saveResponse.status)
+                }
+              } else {
+                console.error("[FEED] ⚠️ Failed to save feed card to database:", response.status, errorData)
+              }
+            } catch (error: any) {
+              console.error("[FEED] ⚠️ Network/Request error saving feed card to database:", {
                 error: error.message || String(error),
+                errorName: error.name,
+                errorStack: error.stack,
                 messageId: messageIdToSave,
+                chatId: chatId,
               })
               // Non-critical error - feed card will still work, just won't persist on refresh
-            })
+            }
+          }
+          
+          // Attempt to save (with automatic retry if message doesn't exist)
+          saveFeedCard()
         } else {
           console.warn("[FEED] ⚠️ Cannot save feed card - missing messageId or chatId:", {
             messageId: messageIdToSave,
@@ -324,6 +355,20 @@ export default function MayaFeedTab({
       realismStrength,
     ]
   )
+
+  // CRITICAL FIX: Clear isCreatingFeed when feed card is detected in messages
+  // This prevents the loader from getting stuck if feed card is created but isCreatingFeed wasn't cleared
+  // Also clears on page refresh when messages are loaded with feed cards
+  useEffect(() => {
+    const hasFeedCard = messages.some((m: any) => 
+      m.parts?.some((p: any) => p.type === "tool-generateFeed")
+    )
+    
+    if (isCreatingFeed && hasFeedCard) {
+      console.log("[FEED] ✅ Feed card detected in messages - clearing isCreatingFeed")
+      setIsCreatingFeed(false)
+    }
+  }, [messages, isCreatingFeed, setIsCreatingFeed])
 
   // Detect feed triggers in messages
   useEffect(() => {

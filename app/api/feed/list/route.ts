@@ -28,7 +28,9 @@ export async function GET(req: NextRequest) {
     const sql = getDb()
 
     // Get all feeds for user with post counts
-    // Note: Uses feed_layout_id (if feed_id exists, migration scripts handle the rename)
+    // CRITICAL: Only show feeds explicitly saved to planner (status='saved' or 'completed')
+    // Feeds with status='chat' or 'pending' are saved in chat but NOT in planner
+    // This prevents incomplete feeds from appearing in planner and confusing users
     const feeds = await sql`
       SELECT 
         fl.id,
@@ -41,6 +43,7 @@ export async function GET(req: NextRequest) {
       FROM feed_layouts fl
       LEFT JOIN feed_posts fp ON fl.id = fp.feed_layout_id
       WHERE fl.user_id = ${user.id}
+        AND fl.status IN ('saved', 'completed')
       GROUP BY fl.id, fl.brand_name, fl.title, fl.name, fl.created_at, fl.created_by, fl.status
       ORDER BY fl.created_at DESC
     ` as any[]

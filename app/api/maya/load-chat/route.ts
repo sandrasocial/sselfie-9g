@@ -37,6 +37,23 @@ export async function GET(request: NextRequest) {
 
     const messages = await getChatMessages(chat.id)
 
+    // CRITICAL DEBUG: Log styling_details for all messages to diagnose parsing issues
+    console.log("[v0] 🔍 DEBUG: Checking styling_details for all messages:", {
+      totalMessages: messages.length,
+      messagesWithStylingDetails: messages.filter((m: any) => m.styling_details !== null && m.styling_details !== undefined).length,
+      stylingDetailsTypes: messages
+        .filter((m: any) => m.styling_details !== null && m.styling_details !== undefined)
+        .map((m: any) => ({
+          id: m.id,
+          type: typeof m.styling_details,
+          isArray: Array.isArray(m.styling_details),
+          isString: typeof m.styling_details === 'string',
+          preview: typeof m.styling_details === 'string' 
+            ? m.styling_details.substring(0, 100) 
+            : JSON.stringify(m.styling_details).substring(0, 100),
+        })),
+    })
+
     const messagesWithConcepts = messages.filter(
       (msg) => msg.concept_cards && Array.isArray(msg.concept_cards) && msg.concept_cards.length > 0,
     )
@@ -55,6 +72,23 @@ export async function GET(request: NextRequest) {
         id: msg.id.toString(),
         role: msg.role,
         createdAt: msg.created_at,
+      }
+
+      // CRITICAL FIX: Parse styling_details if it's a string (from Redis cache)
+      // PostgreSQL JSONB returns parsed objects, but Redis cache might store strings
+      let parsedStylingDetails: any = null
+      if (msg.styling_details) {
+        if (typeof msg.styling_details === 'string') {
+          try {
+            parsedStylingDetails = JSON.parse(msg.styling_details)
+            console.log("[v0] 🔍 Parsed styling_details from string for message", msg.id)
+          } catch (parseError) {
+            console.error("[v0] ❌ Failed to parse styling_details string for message", msg.id, ":", parseError)
+            parsedStylingDetails = null
+          }
+        } else {
+          parsedStylingDetails = msg.styling_details
+        }
       }
 
       // Extract inspiration image from content if present (backward compatibility)
@@ -95,16 +129,144 @@ export async function GET(request: NextRequest) {
         })
         
         // CRITICAL: Check for feed cards in styling_details column (message can have both concept cards and feed cards)
-        if (msg.styling_details && Array.isArray(msg.styling_details) && msg.styling_details.length > 0) {
-          console.log("[v0] ✅ Found feed cards in styling_details column for message", msg.id, "count:", msg.styling_details.length)
-          msg.styling_details.forEach((feedCard: any) => {
+        // Use parsedStylingDetails instead of msg.styling_details
+        if (parsedStylingDetails && Array.isArray(parsedStylingDetails) && parsedStylingDetails.length > 0) {
+          console.log("[v0] ✅ Found feed cards in styling_details column for message", msg.id, "count:", parsedStylingDetails.length)
+          
+          // Process each feed card - if it has feedId, fetch fresh data from database
+          for (const feedCard of parsedStylingDetails) {
             // Check if feed card part already exists (avoid duplicates)
             const hasExistingFeedCard = parts.some((p: any) => 
               p.type === 'tool-generateFeed' && 
               (p.output?.feedId === feedCard.feedId || (!feedCard.feedId && !p.output?.feedId))
             )
             
-            if (!hasExistingFeedCard) {
+            if (hasExistingFeedCard) {
+              continue // Skip if already exists
+            }
+            
+          // CRITICAL: If feed card doesn't have feedId, find user's most recent feed with images
+          // This fixes existing feeds that were created before feedId was saved
+          let feedIdToFetch = feedCard.feedId ? Number(feedCard.feedId) : null
+          
+          if (!feedIdToFetch) {
+            try {
+              // Find most recent feed that has at least one post with an image (likely the one we want)
+              const [matchingFeed] = await sql`
+                SELECT fl.id
+                FROM feed_layouts fl
+                JOIN feed_posts fp ON fp.feed_layout_id = fl.id
+                WHERE fl.user_id = ${neonUser.id}
+                  AND fp.image_url IS NOT NULL
+                GROUP BY fl.id
+                ORDER BY fl.created_at DESC
+                LIMIT 1
+              `
+              if (matchingFeed?.id) {
+                feedIdToFetch = matchingFeed.id
+                console.log("[v0] 🔍 Found feedId by matching feed with images:", feedIdToFetch)
+              }
+            } catch (error) {
+              console.error("[v0] ❌ Error finding feedId:", error)
+            }
+          }
+          
+          if (feedIdToFetch && !isNaN(feedIdToFetch)) {
+              try {
+                console.log("[v0] 🔍 Feed card has feedId, fetching fresh data from database:", feedIdToFetch, "(original type:", typeof feedCard.feedId, ")")
+                const [feedData] = await sql`
+                  SELECT 
+                    fl.id as feed_id,
+                    fl.title as feed_title,
+                    fl.description as feed_description,
+                    fl.brand_vibe,
+                    fl.color_palette,
+                    json_agg(
+                      json_build_object(
+                        'id', fp.id,
+                        'position', fp.position,
+                        'prompt', fp.prompt,
+                        'caption', fp.caption,
+                        'content_pillar', fp.content_pillar,
+                        'post_type', fp.post_type,
+                        'image_url', fp.image_url,
+                        'generation_status', fp.generation_status
+                      ) ORDER BY fp.position ASC
+                    ) as posts
+                  FROM feed_layouts fl
+                  LEFT JOIN feed_posts fp ON fp.feed_layout_id = fl.id
+                  WHERE fl.id = ${feedIdToFetch} AND fl.user_id = ${neonUser.id}
+                  GROUP BY fl.id, fl.title, fl.description, fl.brand_vibe, fl.color_palette
+                `
+                
+                if (feedData) {
+                  const posts = feedData.posts === null ? [] : (feedData.posts || [])
+                  const postsWithImages = posts.filter((p: any) => p.image_url)
+                  console.log("[v0] ✅ Fetched fresh feed data with", posts.length, "posts (", postsWithImages.length, "with images) for feedId:", feedIdToFetch)
+                  
+                  // CRITICAL: Update styling_details with feedId so future loads work correctly
+                  // This fixes feeds that were created before feedId was saved
+                  if (!feedCard.feedId && feedIdToFetch) {
+                    try {
+                      // Parse current styling_details, update the feed card with feedId, then save back
+                      const currentStyling = parsedStylingDetails || []
+                      const updatedStyling = currentStyling.map((card: any, idx: number) => {
+                        // Match by checking if this is the same feed card (same title or same posts count)
+                        if (idx === 0 || (card.title === feedCard.title) || (card.posts?.length === feedCard.posts?.length)) {
+                          return { ...card, feedId: feedIdToFetch }
+                        }
+                        return card
+                      })
+                      
+                      await sql`
+                        UPDATE maya_chat_messages
+                        SET styling_details = ${JSON.stringify(updatedStyling)}::jsonb
+                        WHERE id = ${msg.id}
+                      `
+                      console.log("[v0] ✅ Updated styling_details with feedId:", feedIdToFetch, "for message:", msg.id)
+                    } catch (updateError) {
+                      console.error("[v0] ⚠️ Failed to update styling_details with feedId:", updateError)
+                    }
+                  }
+                  
+                  parts.push({
+                    type: "tool-generateFeed",
+                    toolCallId: `tool_feed_${msg.id}_${feedIdToFetch}`,
+                    state: "ready",
+                    input: {},
+                    output: {
+                      feedId: feedIdToFetch,
+                      title: feedData.feed_title || feedCard.title || 'Instagram Feed',
+                      description: feedData.feed_description || feedCard.description || '',
+                      posts: posts, // Use fresh posts with images from database
+                      strategy: feedCard.strategy || {
+                        gridPattern: feedData.brand_vibe || '',
+                        visualRhythm: feedData.color_palette || '',
+                      },
+                      isSaved: true,
+                      // Preserve settings from cached feedCard if available
+                      proMode: feedCard.proMode,
+                      styleStrength: feedCard.styleStrength,
+                      promptAccuracy: feedCard.promptAccuracy,
+                      aspectRatio: feedCard.aspectRatio,
+                      realismStrength: feedCard.realismStrength,
+                    },
+                  })
+                  console.log("[v0] ✅ Restored feed card with fresh data from database for feedId:", feedIdToFetch, "- posts with images:", postsWithImages.length, "/", posts.length)
+                  continue // Skip to next feed card
+                } else {
+                  console.warn("[v0] ⚠️ Feed not found in database for feedId:", feedIdToFetch, "- using cached data")
+                  // Fall through to use cached data
+                }
+              } catch (error) {
+                console.error("[v0] ❌ Error fetching fresh feed data for feedId:", feedIdToFetch, ":", error)
+                // Fall through to use cached data as fallback
+              }
+            }
+            
+            // Only use cached data if we couldn't find feedId AND couldn't fetch fresh data
+            // This prevents showing stale cached data when feedId exists in database
+            if (!feedIdToFetch) {
               parts.push({
                 type: "tool-generateFeed",
                 toolCallId: `tool_feed_${msg.id}_${feedCard.feedId || 'unsaved'}`,
@@ -112,9 +274,11 @@ export async function GET(request: NextRequest) {
                 input: {},
                 output: feedCard,
               })
-              console.log("[v0] ✅ Restored feed card from styling_details:", feedCard.feedId || "unsaved")
+              console.log("[v0] ✅ Restored feed card from styling_details (cached, no feedId found):", feedCard.feedId || "unsaved")
+            } else {
+              console.log("[v0] ⚠️ Found feedId but fetch failed - skipping cached data to prevent duplicates")
             }
-          })
+          }
         }
         
         // CRITICAL: Check for UNSAVED feed strategy in messages with concept cards (backward compatibility)
@@ -277,6 +441,130 @@ export async function GET(request: NextRequest) {
           image: imageUrl,
         })
         console.log("[v0] ✅ Restored inspiration image for message", msg.id)
+      }
+
+      // CRITICAL: Check for feed cards in styling_details column FIRST (primary source)
+      // This ensures feed cards are restored even for messages without concept cards
+      // Use parsedStylingDetails instead of msg.styling_details
+      if (parsedStylingDetails && Array.isArray(parsedStylingDetails) && parsedStylingDetails.length > 0) {
+        console.log("[v0] ✅ Found feed cards in styling_details column for regular message", msg.id, "count:", parsedStylingDetails.length)
+        
+        // Process each feed card - if it has feedId, fetch fresh data from database
+        for (const feedCard of parsedStylingDetails) {
+          // Check if feed card part already exists (avoid duplicates)
+          const hasExistingFeedCard = parts.some((p: any) => 
+            p.type === 'tool-generateFeed' && 
+            (p.output?.feedId === feedCard.feedId || (!feedCard.feedId && !p.output?.feedId))
+          )
+          
+          if (hasExistingFeedCard) {
+            continue // Skip if already exists
+          }
+          
+          // CRITICAL: If feed card doesn't have feedId, find user's most recent feed with images
+          let feedIdToFetch2 = feedCard.feedId ? Number(feedCard.feedId) : null
+          
+          if (!feedIdToFetch2) {
+            try {
+              const [matchingFeed] = await sql`
+                SELECT fl.id
+                FROM feed_layouts fl
+                JOIN feed_posts fp ON fp.feed_layout_id = fl.id
+                WHERE fl.user_id = ${neonUser.id}
+                  AND fp.image_url IS NOT NULL
+                GROUP BY fl.id
+                ORDER BY fl.created_at DESC
+                LIMIT 1
+              `
+              if (matchingFeed?.id) {
+                feedIdToFetch2 = matchingFeed.id
+                console.log("[v0] 🔍 Found feedId by matching feed with images:", feedIdToFetch2)
+              }
+            } catch (error) {
+              console.error("[v0] ❌ Error finding feedId:", error)
+            }
+          }
+          
+          if (feedIdToFetch2 && !isNaN(feedIdToFetch2)) {
+            try {
+              console.log("[v0] 🔍 Feed card has feedId, fetching fresh data from database:", feedIdToFetch2)
+              const [feedData] = await sql`
+                SELECT 
+                  fl.id as feed_id,
+                  fl.title as feed_title,
+                  fl.description as feed_description,
+                  fl.brand_vibe,
+                  fl.color_palette,
+                  json_agg(
+                    json_build_object(
+                      'id', fp.id,
+                      'position', fp.position,
+                      'prompt', fp.prompt,
+                      'caption', fp.caption,
+                      'content_pillar', fp.content_pillar,
+                      'post_type', fp.post_type,
+                      'image_url', fp.image_url,
+                      'generation_status', fp.generation_status
+                    ) ORDER BY fp.position ASC
+                  ) as posts
+                FROM feed_layouts fl
+                LEFT JOIN feed_posts fp ON fp.feed_layout_id = fl.id
+                WHERE fl.id = ${feedIdToFetch2} AND fl.user_id = ${neonUser.id}
+                GROUP BY fl.id, fl.title, fl.description, fl.brand_vibe, fl.color_palette
+              `
+              
+              if (feedData) {
+                const posts = feedData.posts === null ? [] : (feedData.posts || [])
+                console.log("[v0] ✅ Fetched fresh feed data with", posts.length, "posts including images for feedId:", feedIdToFetch2)
+                parts.push({
+                  type: "tool-generateFeed",
+                  toolCallId: `tool_feed_${msg.id}_${feedIdToFetch2}`,
+                  state: "ready",
+                  input: {},
+                  output: {
+                    feedId: feedIdToFetch2,
+                    title: feedData.feed_title || feedCard.title || 'Instagram Feed',
+                    description: feedData.feed_description || feedCard.description || '',
+                    posts: posts, // Use fresh posts with images from database
+                    strategy: feedCard.strategy || {
+                      gridPattern: feedData.brand_vibe || '',
+                      visualRhythm: feedData.color_palette || '',
+                    },
+                    isSaved: true,
+                    // Preserve settings from cached feedCard if available
+                    proMode: feedCard.proMode,
+                    styleStrength: feedCard.styleStrength,
+                    promptAccuracy: feedCard.promptAccuracy,
+                    aspectRatio: feedCard.aspectRatio,
+                    realismStrength: feedCard.realismStrength,
+                  },
+                })
+                console.log("[v0] ✅ Restored feed card with fresh data from database for feedId:", feedIdToFetch2)
+                continue // Skip to next feed card
+              } else {
+                console.warn("[v0] ⚠️ Feed not found in database for feedId:", feedIdToFetch2, "- using cached data")
+                // Fall through to use cached data
+              }
+            } catch (error) {
+              console.error("[v0] ❌ Error fetching fresh feed data for feedId:", feedIdToFetch2, ":", error)
+              // Fall through to use cached data as fallback
+            }
+          }
+          
+          // Only use cached data if we couldn't find feedId AND couldn't fetch fresh data
+          if (!feedIdToFetch2) {
+            parts.push({
+              type: "tool-generateFeed",
+              toolCallId: `tool_feed_${msg.id}_${feedCard.feedId || 'unsaved'}`,
+              state: "ready",
+              input: {},
+              output: feedCard,
+            })
+            console.log("[v0] ✅ Restored feed card from styling_details (cached, no feedId found):", feedCard.feedId || "unsaved")
+          } else {
+            console.log("[v0] ⚠️ Found feedId but fetch failed - skipping cached data to prevent duplicates")
+          }
+        }
       }
 
       // CRITICAL: Check for UNSAVED feed strategy (CREATE_FEED_STRATEGY trigger)

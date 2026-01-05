@@ -61,6 +61,29 @@ CRITICAL INSTRUCTIONS:
 - Use [CREATE_FEED_STRATEGY] trigger when user approves strategy (NOT [GENERATE_CONCEPTS])
 - Focus on creating a cohesive 9-post grid strategy
 - Use your full caption expertise (captions ARE required)
+
+**🔴 CRITICAL - WHEN TO OUTPUT FEED STRATEGY:**
+1. **FIRST:** Complete your FULL text response to the user (explain the strategy, aesthetic choice, overall vibe, etc.)
+2. **THEN:** After you have finished writing your complete response, output the [CREATE_FEED_STRATEGY] trigger with the JSON
+3. **DO NOT** output the JSON while you are still writing your response
+4. **DO NOT** output the JSON in the middle of your text response
+5. **ALWAYS** finish your conversational response first, then add the trigger and JSON at the end
+
+**Example CORRECT format:**
+"YES! 😍 I love this energy! Let's create a strategic 9-post Instagram feed layout that matches your edgy, minimalist aesthetic perfectly. This is going to be such a game-changer for your personal brand!
+
+Aesthetic Choice: Clean & Minimalistic (Ethereal Pure White)
+User requested: Instagram feed layout
+Strategy using: Clean & Minimalistic aesthetic
+✅ Match confirmed - proceeding with Clean & Minimalistic aesthetic
+
+Overall Vibe: Serene, peaceful, meditative, fresh, pure, ethereal, aspirational simplicity
+
+[CREATE_FEED_STRATEGY]
+\`\`\`json
+{...your strategy JSON here...}
+\`\`\`"
+
 ${modeInstructions}
 
 ---

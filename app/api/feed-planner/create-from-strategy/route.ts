@@ -77,7 +77,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Get Maya's strategy from request
-    const { strategy, customSettings, userModePreference, imageLibrary } = await request.json()
+    const { strategy, customSettings, userModePreference, imageLibrary, saveToPlanner = false } = await request.json()
+    
+    // CRITICAL: saveToPlanner determines if feed appears in Feed Planner screen
+    // - saveToPlanner: false → status: 'chat' (feed saved for persistence, but NOT in planner)
+    // - saveToPlanner: true → status: 'saved' (feed explicitly saved to planner)
+    // This prevents incomplete feeds from appearing in planner and confusing users
+    const feedStatus = saveToPlanner ? 'saved' : 'chat'
+    console.log(`[FEED-FROM-STRATEGY] Feed status: ${feedStatus} (saveToPlanner: ${saveToPlanner})`)
     
     // CRITICAL: User's mode preference (from toggle) takes precedence over auto-detection
     // userModePreference: 'pro' | 'classic' | undefined
@@ -366,7 +373,7 @@ export async function POST(request: NextRequest) {
         ${strategy.userRequest || 'Conversational feed creation'},
         ${truncate('user' + neonUser.id, 255)},
         ${truncate(brandProfile?.brand_name, 255, 'Personal Brand')},
-        'pending',
+        ${feedStatus},
         ${brandProfile?.color_palette || null},
         true,
         ${photoshootBaseSeed},
@@ -581,7 +588,7 @@ export async function POST(request: NextRequest) {
       success: true,
       feedLayoutId: feedLayout.id,
       message: "Feed saved! Click 'Generate Feed' to create images and captions.",
-      status: "draft", // Feed is saved, waiting for user to generate images
+      status: feedStatus, // Feed status: 'chat' (not in planner) or 'saved' (in planner)
     })
   } catch (error) {
     console.error("[FEED-FROM-STRATEGY] Error:", error)

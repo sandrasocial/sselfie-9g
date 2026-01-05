@@ -40,6 +40,9 @@ interface FeedPreviewCardProps {
   promptAccuracy?: number
   aspectRatio?: string
   realismStrength?: number
+  // NEW: Prompt editing (similar to concept cards)
+  messageId?: string // Message ID for updating prompts in chat
+  onPromptUpdate?: (messageId: string, postId: number, newPrompt: string) => void // Callback when prompt is edited
 }
 
 export default function FeedPreviewCard({
@@ -58,6 +61,9 @@ export default function FeedPreviewCard({
   promptAccuracy = 0.8,
   aspectRatio = "1:1",
   realismStrength = 0.8,
+  // NEW: Prompt editing
+  messageId,
+  onPromptUpdate,
 }: FeedPreviewCardProps) {
   const router = useRouter()
   
@@ -79,6 +85,8 @@ export default function FeedPreviewCard({
   // State for title and description that can be updated from fetched data
   const [displayTitle, setDisplayTitle] = useState<string>(feedTitle || "Instagram Feed")
   const [displayDescription, setDisplayDescription] = useState<string>(feedDescription || "")
+  // Track feed status to determine if it's saved to planner
+  const [feedStatus, setFeedStatus] = useState<string | null>(null) // 'chat', 'saved', 'pending', etc.
   const [isGenerating, setIsGenerating] = useState(() => {
     // Initialize generating state based on posts - if any have prediction_id or generating status
     return posts.some(p => p.generation_status === "generating" || (p.prediction_id && !p.image_url))
@@ -88,6 +96,9 @@ export default function FeedPreviewCard({
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [showPromptModal, setShowPromptModal] = useState(false)
   const [selectedPostForPrompt, setSelectedPostForPrompt] = useState<FeedPost | null>(null)
+  // NEW: Prompt editing state (similar to ConceptCardPro)
+  const [editingPostId, setEditingPostId] = useState<number | null>(null)
+  const [editedPrompts, setEditedPrompts] = useState<Record<number, string>>({})
   
   // Track if we've attempted to fetch to avoid stale closure issues
   // Store fetchKey string to track fetches per feedId/needsRestore combination
@@ -111,11 +122,17 @@ export default function FeedPreviewCard({
   }, [feedIdProp])
   
   // Update state from props when they change (separate effect to avoid resetting fetch flag)
+  // CRITICAL FIX: Don't override postsData if feedId exists and needsRestore is true
+  // This prevents stale props from overriding fresh data fetched from database
   useEffect(() => {
     setDisplayTitle(feedTitle || "Instagram Feed")
     setDisplayDescription(feedDescription || "")
-    setPostsData(posts)
-  }, [feedTitle, feedDescription, posts])
+    // Only set posts from props if feed is unsaved (no feedId) or if we haven't fetched yet
+    // For saved feeds, let the fetch effect handle posts data to ensure images are included
+    if (!feedId || !needsRestore || hasFetchedRef.current === false) {
+      setPostsData(posts)
+    }
+  }, [feedTitle, feedDescription, posts, feedId, needsRestore])
   
   // CRITICAL: Always fetch feed data when needsRestore is true OR when posts is empty/missing
   // This ensures feed cards restore correctly on page reload
@@ -140,8 +157,16 @@ export default function FeedPreviewCard({
     // Determine if we should fetch:
     // 1. If needsRestore is true and we haven't fetched for this restore combination yet
     // 2. OR if we haven't fetched at all AND posts are empty/missing
+    // CRITICAL FIX: Always fetch if needsRestore is true (even if posts are provided)
+    // This ensures we get fresh data with images from database, not stale cached props
     const shouldFetch = (needsRestore && !hasFetchedForThisRestore) || 
                        (hasFetchedRef.current === false && (!posts || posts.length === 0))
+    
+    // CRITICAL: If needsRestore is true, we MUST fetch to get fresh images from database
+    // Don't rely on props - they might be stale cached data without images
+    if (needsRestore && !hasFetchedForThisRestore) {
+      console.log("[FeedPreviewCard] 🔄 needsRestore=true - will fetch fresh data with images from database")
+    }
     
     if (shouldFetch) {
       // Set flag BEFORE fetch to prevent duplicate fetches on same render cycle
@@ -211,6 +236,11 @@ export default function FeedPreviewCard({
             })
           }
           
+          // Update feed status from fetched data
+          if (feedData.feed?.status || feedData.status) {
+            setFeedStatus(feedData.feed?.status || feedData.status)
+          }
+          
           // Update title from fetched data (priority: title > brand_name > feed.title > feed.brand_name > existing)
           const fetchedTitle = feedData.title || 
                               feedData.brand_name || 
@@ -272,12 +302,14 @@ export default function FeedPreviewCard({
   const sortedPosts = [...effectivePosts].sort((a, b) => a.position - b.position)
   const readyCount = effectivePosts.filter(p => p.image_url).length
   const totalPosts = effectivePosts.length
-  const pendingCount = effectivePosts.filter(p => !p.image_url && p.generation_status !== "generating").length
+  const pendingCount = effectivePosts.filter(p => !p.image_url && p.generation_status !== "generating" && p.generation_status !== "failed").length
+  const failedCount = effectivePosts.filter(p => p.generation_status === "failed").length
   const generatingCount = effectivePosts.filter(p => {
     const post = p as FeedPost
     return p.generation_status === "generating" || (post.prediction_id && !p.image_url)
   }).length
   const hasPendingPosts = pendingCount > 0
+  const hasFailedPosts = failedCount > 0
   const hasImages = effectivePosts.some(p => p.image_url)
   const isAnyGenerating = generatingCount > 0 || isGenerating
 
@@ -374,7 +406,57 @@ export default function FeedPreviewCard({
     }
   }
 
-  // Handle saving an unsaved feed strategy
+  // Handle saving feed to Feed Planner (explicit action)
+  const handleSaveToPlanner = async () => {
+    if (!feedId) {
+      console.error("[FeedPreviewCard] ❌ Cannot save to planner: no feedId")
+      toast({
+        title: "Error",
+        description: "Feed must be saved first before adding to planner",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsSaving(true)
+    
+    try {
+      console.log("[FeedPreviewCard] 💾 Saving feed to planner...", { feedId })
+
+      const response = await fetch(`/api/feed-planner/save-to-planner`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ feedId }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to save feed to planner')
+      }
+
+      const data = await response.json()
+      
+      console.log("[FeedPreviewCard] ✅ Feed saved to planner successfully")
+      setFeedStatus('saved') // Update local status
+
+      toast({
+        title: "Saved to Planner",
+        description: "Your feed has been added to Feed Planner. You can access it anytime from the Feed Planner screen.",
+      })
+    } catch (error) {
+      console.error("[FeedPreviewCard] ❌ Error saving feed to planner:", error)
+      toast({
+        title: "Failed to save",
+        description: error instanceof Error ? error.message : "An error occurred while saving to planner",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  // Handle saving an unsaved feed strategy (legacy - for explicit save action)
   const handleSaveFeed = async () => {
     if (!strategy) {
       console.error("[FeedPreviewCard] ❌ Cannot save feed: no strategy provided")
@@ -409,7 +491,12 @@ export default function FeedPreviewCard({
         },
       }
 
-      const result = await createFeedFromStrategyHandler(strategy, options)
+      // CRITICAL: Pass saveToPlanner: true for explicit "Save Feed" action
+      // This distinguishes from "Generate Feed" which saves with saveToPlanner: false
+      const result = await createFeedFromStrategyHandler(strategy, {
+        ...options,
+        saveToPlanner: true, // Explicit save action → save to planner
+      })
       
       if (!result || !result.success || !result.feedId) {
         throw new Error("Failed to save feed: no feed ID returned")
@@ -417,13 +504,14 @@ export default function FeedPreviewCard({
 
       const newFeedId = Number(result.feedId)
       
-      console.log("[FeedPreviewCard] ✅ Feed saved successfully:", newFeedId)
+      console.log("[FeedPreviewCard] ✅ Feed saved to planner successfully:", newFeedId)
 
       // Mark that we just saved to preserve strategy posts until data is fetched
       justSavedRef.current = true
       
       // Update local state
       setSavedFeedId(newFeedId)
+      setFeedStatus('saved') // Mark as saved to planner
 
       // Call onSave callback to update parent component (e.g., update message part)
       if (onSave) {
@@ -432,7 +520,7 @@ export default function FeedPreviewCard({
 
       toast({
         title: "Feed saved",
-        description: "Your feed has been saved successfully. Redirecting to Feed Planner...",
+        description: "Your feed has been saved to Feed Planner.",
       })
       
       // CRITICAL FIX (Bug 2): Do NOT redirect when in chat context
@@ -477,6 +565,7 @@ export default function FeedPreviewCard({
                 aspectRatio,
                 realismStrength,
               },
+              saveToPlanner: false, // CRITICAL: Generate Feed saves to database but NOT to planner
             }),
           })
 
@@ -782,25 +871,48 @@ export default function FeedPreviewCard({
   }, [isModalOpen])
 
   return (
-    <div className="bg-white rounded-none border border-stone-200 overflow-hidden">
+    <div className={`rounded-none border overflow-hidden transition-colors duration-200 ${
+      isSaved 
+        ? 'bg-black border-stone-700' 
+        : 'bg-white border-stone-200'
+    }`}>
+      {/* Saved to Feed Banner - Show only when saved */}
+      {isSaved && (
+        <div className="bg-black border-b border-stone-700 px-3 sm:px-4 md:px-6 py-2">
+          <p className="text-[10px] sm:text-xs text-white uppercase tracking-wider sm:tracking-widest font-light">
+            Saved to Feed
+          </p>
+        </div>
+      )}
+      
       {/* Header - Editorial Style */}
-      <div className="border-b border-stone-200 px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+      <div className={`border-b px-3 sm:px-4 md:px-6 py-3 sm:py-4 ${
+        isSaved ? 'border-stone-700' : 'border-stone-200'
+      }`}>
         <h3 
-          className="text-base sm:text-lg md:text-xl font-light tracking-wide text-stone-950 break-words"
+          className={`text-base sm:text-lg md:text-xl font-light tracking-wide break-words ${
+            isSaved ? 'text-white' : 'text-stone-950'
+          }`}
           style={{ fontFamily: "'Times New Roman', serif" }}
         >
           {displayTitle}
         </h3>
-        <p className="text-[10px] sm:text-xs text-stone-500 mt-1 uppercase tracking-wider sm:tracking-widest">
+        <p className={`text-[10px] sm:text-xs mt-1 uppercase tracking-wider sm:tracking-widest ${
+          isSaved ? 'text-stone-300' : 'text-stone-500'
+        }`}>
           Instagram Feed Preview
         </p>
         {displayDescription && (
-          <p className="text-xs sm:text-sm text-stone-600 mt-2 font-light leading-relaxed break-words">
+          <p className={`text-xs sm:text-sm mt-2 font-light leading-relaxed break-words ${
+            isSaved ? 'text-stone-300' : 'text-stone-600'
+          }`}>
             {displayDescription}
           </p>
         )}
         {/* Status indicators - Editorial style - Stack on mobile */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-3 text-[10px] sm:text-xs text-stone-500 uppercase tracking-wider">
+        <div className={`flex flex-wrap items-center gap-2 sm:gap-4 mt-3 text-[10px] sm:text-xs uppercase tracking-wider ${
+          isSaved ? 'text-stone-300' : 'text-stone-500'
+        }`}>
           <span>{readyCount} Ready</span>
           {pendingCount > 0 && <span>{pendingCount} Pending</span>}
           {generatingCount > 0 && <span>{generatingCount} Generating</span>}
@@ -808,10 +920,14 @@ export default function FeedPreviewCard({
       </div>
 
       {/* 3x3 Grid - Real Instagram Layout - Full width on mobile */}
-      <div className="p-2 sm:p-3 md:p-4 bg-stone-50">
+      <div className={`p-2 sm:p-3 md:p-4 ${
+        isSaved ? 'bg-stone-900' : 'bg-stone-50'
+      }`}>
         {/* Show grid only if we have posts */}
         {sortedPosts.length > 0 ? (
-          <div className="grid grid-cols-3 gap-0.5 sm:gap-1 bg-white w-full sm:max-w-[600px] sm:mx-auto">
+          <div className={`grid grid-cols-3 gap-0.5 sm:gap-1 w-full sm:max-w-[600px] sm:mx-auto ${
+            isSaved ? 'bg-stone-800' : 'bg-white'
+          }`}>
           {sortedPosts.slice(0, 9).map((post, index) => {
           const postWithPrediction = post as FeedPost
           const isGeneratingPost = post.generation_status === "generating" || 
@@ -891,10 +1007,12 @@ export default function FeedPreviewCard({
           </div>
         ) : (
           // Loading state when posts are being fetched
-          <div className="w-full sm:max-w-[600px] sm:mx-auto bg-white aspect-square flex items-center justify-center min-h-[300px]">
+          <div className={`w-full sm:max-w-[600px] sm:mx-auto aspect-square flex items-center justify-center min-h-[300px] ${
+            isSaved ? 'bg-stone-800' : 'bg-white'
+          }`}>
             <div className="flex flex-col items-center gap-2">
-              <Loader2 className="w-6 h-6 text-stone-400 animate-spin" strokeWidth={1.5} />
-              <span className="text-xs text-stone-500 uppercase tracking-wider">Loading feed posts...</span>
+              <Loader2 className={`w-6 h-6 animate-spin ${isSaved ? 'text-stone-400' : 'text-stone-400'}`} strokeWidth={1.5} />
+              <span className={`text-xs uppercase tracking-wider ${isSaved ? 'text-stone-300' : 'text-stone-500'}`}>Loading feed posts...</span>
             </div>
           </div>
         )}
@@ -902,11 +1020,17 @@ export default function FeedPreviewCard({
 
       {/* Caption Preview - Editorial Format */}
       {sortedPosts.length > 0 && sortedPosts[0].caption && (
-        <div className="border-t border-stone-200 px-3 sm:px-4 md:px-6 py-3 sm:py-4 bg-white">
-          <p className="text-[10px] sm:text-xs text-stone-500 uppercase tracking-wider sm:tracking-widest mb-2">
+        <div className={`border-t px-3 sm:px-4 md:px-6 py-3 sm:py-4 ${
+          isSaved ? 'border-stone-700 bg-black' : 'border-stone-200 bg-white'
+        }`}>
+          <p className={`text-[10px] sm:text-xs uppercase tracking-wider sm:tracking-widest mb-2 ${
+            isSaved ? 'text-stone-300' : 'text-stone-500'
+          }`}>
             Feed Strategy
           </p>
-          <p className="text-xs sm:text-sm text-stone-700 leading-relaxed font-light break-words">
+          <p className={`text-xs sm:text-sm leading-relaxed font-light break-words ${
+            isSaved ? 'text-stone-200' : 'text-stone-700'
+          }`}>
             {sortedPosts[0].caption.substring(0, 150)}
             {sortedPosts[0].caption.length > 150 ? '...' : ''}
           </p>
@@ -914,9 +1038,29 @@ export default function FeedPreviewCard({
       )}
 
       {/* Action Buttons */}
-      <div className="border-t border-stone-200 px-3 sm:px-4 md:px-6 py-3 sm:py-4 bg-white space-y-2 sm:space-y-3">
+      <div className={`border-t px-3 sm:px-4 md:px-6 py-3 sm:py-4 space-y-2 sm:space-y-3 ${
+        isSaved ? 'border-stone-700 bg-black' : 'border-stone-200 bg-white'
+      }`}>
+        {/* Retry Failed Images Button - Show when there are failed posts */}
+        {hasFailedPosts && feedId && !isAnyGenerating && (
+          <button
+            onClick={() => handleGenerateFeedWithId(feedId)}
+            disabled={isGenerating || isSaving}
+            className="w-full py-3 sm:py-3 bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white text-xs sm:text-sm font-light tracking-wider uppercase transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed border border-amber-600 min-h-[44px] touch-manipulation flex items-center justify-center gap-2"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                Retrying Failed Images...
+              </>
+            ) : (
+              `Retry Failed Images (${failedCount})`
+            )}
+          </button>
+        )}
+        
         {/* Generate Feed Images Button - Single button for all cases (auto-saves if needed) */}
-        {strategy && (pendingCount > 0 || (!isSaved || !feedId)) && !isAnyGenerating && (
+        {strategy && (pendingCount > 0 || (!isSaved || !feedId)) && !isAnyGenerating && !hasFailedPosts && (
           <button
             onClick={handleGenerateImages}
             disabled={isGenerating || isSaving}
@@ -940,13 +1084,35 @@ export default function FeedPreviewCard({
 
         {/* Generating State - Show when any images are generating */}
         {isAnyGenerating && (
-          <div className="w-full py-3 bg-stone-100 text-stone-600 text-xs font-light tracking-wider uppercase text-center border border-stone-200 min-h-[44px] flex items-center justify-center">
+          <div className={`w-full py-3 text-xs font-light tracking-wider uppercase text-center border min-h-[44px] flex items-center justify-center ${
+            isSaved 
+              ? 'bg-stone-800 text-stone-200 border-stone-700' 
+              : 'bg-stone-100 text-stone-600 border-stone-200'
+          }`}>
             Generating {generatingCount > 0 ? `${generatingCount} ` : ''}Images...
           </div>
         )}
         
-        {/* View Feed Button - Show after feed is saved */}
-        {isSaved && feedId && (
+        {/* Save to Planner Button - Show when feed is saved but not yet in planner */}
+        {isSaved && feedId && feedStatus !== 'saved' && feedStatus !== 'completed' && (
+          <button
+            onClick={handleSaveToPlanner}
+            disabled={isSaving}
+            className="w-full py-3 bg-stone-900 hover:bg-stone-800 active:bg-stone-700 text-white text-xs sm:text-sm font-light tracking-wider uppercase transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed border border-stone-900 min-h-[44px] touch-manipulation flex items-center justify-center gap-2"
+          >
+            {isSaving ? (
+              <>
+                <Loader2 size={16} className="animate-spin" />
+                Saving to Planner...
+              </>
+            ) : (
+              "Save to Planner"
+            )}
+          </button>
+        )}
+
+        {/* View Feed Button - Show after feed is saved to planner */}
+        {isSaved && feedId && (feedStatus === 'saved' || feedStatus === 'completed') && (
           <button
             onClick={handleViewFullFeed}
             className="w-full py-3 bg-white border border-stone-200 text-stone-900 hover:bg-stone-50 active:bg-stone-100 hover:border-stone-300 transition-all duration-200 text-xs font-light tracking-wider uppercase min-h-[44px] touch-manipulation"
@@ -1026,7 +1192,12 @@ export default function FeedPreviewCard({
       {showPromptModal && typeof window !== 'undefined' && createPortal(
         <div
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
-          onClick={() => setShowPromptModal(false)}
+          onClick={() => {
+            setShowPromptModal(false)
+            // Reset editing state when modal closes
+            setEditingPostId(null)
+            setEditedPrompts({})
+          }}
         >
           <div
             className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col"
@@ -1039,7 +1210,12 @@ export default function FeedPreviewCard({
                 <p className="text-sm text-stone-500 mt-1">Review prompts before generating</p>
               </div>
               <button
-                onClick={() => setShowPromptModal(false)}
+                onClick={() => {
+                  setShowPromptModal(false)
+                  // Reset editing state when modal closes
+                  setEditingPostId(null)
+                  setEditedPrompts({})
+                }}
                 className="p-2 hover:bg-stone-100 rounded-full transition-colors"
                 aria-label="Close"
               >
@@ -1084,17 +1260,82 @@ export default function FeedPreviewCard({
 
                     {/* Prompt Content */}
                     <div className="p-4 bg-white">
-                      {post.prompt ? (
+                      {post.prompt || editedPrompts[post.id] ? (
                         <>
-                          <div className="bg-stone-50 rounded-lg p-4 border border-stone-200">
-                            <p className="text-xs text-stone-700 font-mono leading-relaxed whitespace-pre-wrap">
-                              {post.prompt}
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-xs font-medium text-stone-700 uppercase tracking-wider">
+                              Prompt
                             </p>
+                            {!editingPostId && onPromptUpdate && messageId && (
+                              <button
+                                onClick={() => {
+                                  setEditingPostId(post.id)
+                                  setEditedPrompts(prev => ({
+                                    ...prev,
+                                    [post.id]: editedPrompts[post.id] || post.prompt || ''
+                                  }))
+                                }}
+                                className="text-xs text-stone-600 hover:text-stone-900 px-2 py-1 border border-stone-300 rounded hover:bg-stone-50 transition-colors"
+                              >
+                                Edit
+                              </button>
+                            )}
+                            {editingPostId === post.id && (
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => {
+                                    const newPrompt = editedPrompts[post.id] || post.prompt || ''
+                                    if (onPromptUpdate && messageId && newPrompt.trim() !== (post.prompt || '')) {
+                                      onPromptUpdate(messageId, post.id, newPrompt.trim())
+                                    }
+                                    setEditingPostId(null)
+                                  }}
+                                  className="text-xs text-white bg-stone-900 hover:bg-stone-800 px-3 py-1 rounded transition-colors"
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setEditingPostId(null)
+                                    setEditedPrompts(prev => {
+                                      const updated = { ...prev }
+                                      delete updated[post.id]
+                                      return updated
+                                    })
+                                  }}
+                                  className="text-xs text-stone-600 hover:text-stone-900 px-3 py-1 border border-stone-300 rounded hover:bg-stone-50 transition-colors"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            )}
                           </div>
-                          <div className="mt-2 flex items-center justify-between text-xs text-stone-500">
-                            <span>{post.prompt.length} characters</span>
-                            <span>{post.prompt.split(/\s+/).length} words</span>
+                          <div className="bg-stone-50 rounded-lg p-4 border border-stone-200">
+                            {editingPostId === post.id ? (
+                              <textarea
+                                value={editedPrompts[post.id] || post.prompt || ''}
+                                onChange={(e) => {
+                                  setEditedPrompts(prev => ({
+                                    ...prev,
+                                    [post.id]: e.target.value
+                                  }))
+                                }}
+                                className="w-full resize-none text-xs text-stone-700 font-mono leading-relaxed bg-transparent border-none outline-none min-h-[150px]"
+                                rows={8}
+                                autoFocus
+                              />
+                            ) : (
+                              <p className="text-xs text-stone-700 font-mono leading-relaxed whitespace-pre-wrap">
+                                {editedPrompts[post.id] || post.prompt}
+                              </p>
+                            )}
                           </div>
+                          {!editingPostId && (
+                            <div className="mt-2 flex items-center justify-between text-xs text-stone-500">
+                              <span>{(editedPrompts[post.id] || post.prompt || '').length} characters</span>
+                              <span>{(editedPrompts[post.id] || post.prompt || '').split(/\s+/).filter(w => w.length > 0).length} words</span>
+                            </div>
+                          )}
                         </>
                       ) : (
                         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
@@ -1125,7 +1366,12 @@ export default function FeedPreviewCard({
                 {sortedPosts.filter(p => p.prompt).length} of {sortedPosts.length} prompts ready
               </p>
               <button
-                onClick={() => setShowPromptModal(false)}
+                onClick={() => {
+                  setShowPromptModal(false)
+                  // Reset editing state when modal closes
+                  setEditingPostId(null)
+                  setEditedPrompts({})
+                }}
                 className="px-4 py-2 text-sm font-medium text-white bg-stone-900 hover:bg-stone-800 rounded-lg transition-colors"
               >
                 Close

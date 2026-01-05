@@ -772,6 +772,7 @@ export interface CreateFeedOptions {
   }
   userModePreference?: 'classic' | 'pro' | null
   imageLibrary?: any
+  saveToPlanner?: boolean // CRITICAL: If false, feed saved with status='chat' (not in planner). If true, status='saved' (in planner)
 }
 
 /**
@@ -801,6 +802,7 @@ export async function createFeedFromStrategyHandler(
         customSettings: options.customSettings,
         userModePreference: options.userModePreference,
         imageLibrary: options.imageLibrary,
+        saveToPlanner: options.saveToPlanner ?? false, // Default to false (chat feed, not in planner)
       }),
     })
 

@@ -1072,16 +1072,24 @@ export default function MayaChatScreen({
     }
     
     // Prepare updated feed card data with feedId
+    // CRITICAL FIX: When feedId exists, don't include posts in styling_details
+    // Posts will be fetched fresh from database when feed card is restored
+    // This ensures generated images are always included (not stale cached data)
+    const { posts, ...feedCardWithoutPosts } = feedCardPart.output
     const updatedFeedCard = {
-      ...feedCardPart.output,
+      ...feedCardWithoutPosts,
       feedId: feedId,
       isSaved: true,
+      // Don't include posts - they'll be fetched fresh from database with images
     }
     
-    console.log("[v0] 🔄 Updating message with feed card:", {
+    console.log("[v0] 🔄 Updating message with feed card (feedId assigned):", {
       messageId,
       feedId,
       hasFeedCard: !!feedCardPart,
+      hadPosts: !!posts,
+      postsCount: posts?.length || 0,
+      note: "Posts excluded from styling_details - will be fetched fresh from database with images",
     })
     
     // Save to database using update-message endpoint with feedCards parameter
@@ -1091,7 +1099,8 @@ export default function MayaChatScreen({
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          messageId: parseInt(messageId, 10),
+          messageId: messageId, // CRITICAL FIX: Pass as string - API handles string-to-number conversion
+          // parseInt() would corrupt UUIDs (if they existed) or fail silently for invalid formats
           content: textContent, // Preserve existing text content
           feedCards: [updatedFeedCard], // Save to styling_details column
           append: false,

@@ -460,18 +460,13 @@ export default function MayaChatInterface({
                                                       text.includes("Aesthetic Choice:") ||
                                                       text.includes("Overall Vibe:")
                                 
-                                // If feed is being created and this message has feed content, hide text and show loading
-                                if (isCreatingFeed && hasFeedTrigger && !msg.parts?.some((p: any) => p.type === "tool-generateFeed")) {
-                                  return (
-                                    <div key={idx} className="flex justify-center py-4">
-                                      <UnifiedLoading 
-                                        variant="section" 
-                                        message="Creating Your Feed Layout" 
-                                        className="max-w-md w-full"
-                                      />
-                                    </div>
-                                  )
-                                }
+                                // Check if feed card already exists (if it does, don't show loader)
+                                const hasFeedCard = msg.parts?.some((p: any) => p.type === "tool-generateFeed")
+                                
+                                // If feed is being created and this message has feed content, show loading instead of text
+                                // CRITICAL: Only show loader if feed card doesn't exist yet (prevents stuck loader)
+                                // CRITICAL: Don't return early - allow text processing to continue for trigger detection
+                                const shouldShowLoader = isCreatingFeed && hasFeedTrigger && !hasFeedCard
                                 
                                 // Check for prompt suggestions in workbench mode
                                 const parsedPromptSuggestions = parsePromptSuggestions(text)
@@ -596,12 +591,26 @@ export default function MayaChatInterface({
                                 
                                 return (
                                   <div key={idx}>
-                                    {renderMessageContent(displayText, msg.role === "user")}
-                                    
-                                    {/* Render prompt suggestion cards from API */}
-                                    {msg.role === 'assistant' &&
-                                      promptSuggestions.length > 0 &&
-                                      msg.id === messages[messages.length - 1]?.id && (
+                                    {/* CRITICAL: Show loader if feed is being created, otherwise show processed text */}
+                                    {/* This allows text processing to continue for trigger detection while hiding the raw JSON from users */}
+                                    {shouldShowLoader ? (
+                                      <div className="flex items-center justify-center w-full py-8 sm:py-12">
+                                        <div className="w-full max-w-md px-4 sm:px-6">
+                                          <UnifiedLoading 
+                                            variant="section" 
+                                            message="Creating Your Feed Layout" 
+                                            className="w-full"
+                                          />
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <>
+                                        {renderMessageContent(displayText, msg.role === "user")}
+                                        
+                                        {/* Render prompt suggestion cards from API */}
+                                        {msg.role === 'assistant' &&
+                                          promptSuggestions.length > 0 &&
+                                          msg.id === messages[messages.length - 1]?.id && (
                                       <div className="mt-4 space-y-3">
                                         <div className="text-xs text-stone-700 mb-1">
                                           Step 2 – Pick a concept you like, then send it to your Workbench below.
@@ -671,6 +680,8 @@ export default function MayaChatInterface({
                                       }
                                       return null
                                     })()}
+                                      </>
+                                    )}
                                   </div>
                                 )
                               })}
@@ -846,6 +857,10 @@ export default function MayaChatInterface({
                                 }
                               }
                               
+                              // CRITICAL FIX: Always set needsRestore=true for saved feeds (with feedId) to ensure fresh data fetch
+                              // This ensures images are always fetched from database, not stale cached data
+                              const shouldRestore = output.feedId ? true : (output._needsRestore === true)
+                              
                               return (
                                 <FeedPreviewCard
                                   key={partIndex}
@@ -853,7 +868,7 @@ export default function MayaChatInterface({
                                   feedTitle={output.title || 'Instagram Feed'}
                                   feedDescription={output.description || ''}
                                   posts={output.posts || []}
-                                  needsRestore={output._needsRestore === true}
+                                  needsRestore={shouldRestore}
                                   strategy={output.strategy}
                                   isSaved={isSaved}
                                   onSave={handleSave}
@@ -862,6 +877,89 @@ export default function MayaChatInterface({
                                   promptAccuracy={output.promptAccuracy ?? 0.8}
                                   aspectRatio={output.aspectRatio ?? "1:1"}
                                   realismStrength={output.realismStrength ?? 0.8}
+                                  messageId={msg.id}
+                                  onPromptUpdate={(messageId, postId, newPrompt) => {
+                                    // Update message state with edited prompt (similar to concept cards)
+                                    setMessages((prevMessages) => {
+                                      return prevMessages.map((message) => {
+                                        if (message.id === messageId && message.parts) {
+                                          return {
+                                            ...message,
+                                            parts: message.parts.map((part: any) => {
+                                              if (part.type === 'tool-generateFeed' && part.output) {
+                                                // Find the post to get its position
+                                                const postToUpdate = (part.output.posts || []).find((p: any) => p.id === postId)
+                                                const postPosition = postToUpdate?.position
+                                                
+                                                // Update posts array with edited prompt
+                                                const updatedPosts = (part.output.posts || []).map((p: any) => {
+                                                  if (p.id === postId) {
+                                                    return {
+                                                      ...p,
+                                                      prompt: newPrompt,
+                                                      visualDirection: newPrompt, // Also update visualDirection if it exists
+                                                    }
+                                                  }
+                                                  return p
+                                                })
+                                                
+                                                // Also update strategy posts if they exist
+                                                let updatedStrategy = part.output.strategy
+                                                if (updatedStrategy && updatedStrategy.posts && postPosition) {
+                                                  updatedStrategy = {
+                                                    ...updatedStrategy,
+                                                    posts: updatedStrategy.posts.map((p: any) => {
+                                                      if (p.position === postPosition) {
+                                                        return {
+                                                          ...p,
+                                                          prompt: newPrompt,
+                                                          visualDirection: newPrompt,
+                                                        }
+                                                      }
+                                                      return p
+                                                    })
+                                                  }
+                                                }
+                                                
+                                                const updatedOutput = {
+                                                  ...part.output,
+                                                  posts: updatedPosts,
+                                                  strategy: updatedStrategy,
+                                                }
+                                                
+                                                // Save to database via update-message API
+                                                // CRITICAL FIX: messageId is already a string from msg.id.toString() in load-chat route
+                                                // The API handles string-to-number conversion, so pass it as-is
+                                                // parseInt() would corrupt UUIDs (if they existed) or fail silently for invalid formats
+                                                if (chatId && messageId) {
+                                                  fetch('/api/maya/update-message', {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    credentials: 'include',
+                                                    body: JSON.stringify({
+                                                      messageId: messageId, // Pass as string - API handles conversion
+                                                      content: message.content || '',
+                                                      feedCards: [updatedOutput],
+                                                      append: false,
+                                                    }),
+                                                  }).catch(error => {
+                                                    console.error('[MayaChatInterface] ❌ Error saving edited prompt:', error)
+                                                  })
+                                                }
+                                                
+                                                return {
+                                                  ...part,
+                                                  output: updatedOutput,
+                                                }
+                                              }
+                                              return part
+                                            }),
+                                          }
+                                        }
+                                        return message
+                                      })
+                                    })
+                                  }}
                                   onViewFullFeed={() => {
                                     // Navigate will be handled by FeedPreviewCard component
                                   }}
@@ -989,48 +1087,54 @@ export default function MayaChatInterface({
             ))}
 
           {/* Global typing indicator - Show "Creating Your Feed Layout" when creating feed, otherwise "Maya is thinking..." */}
-          {isTyping && (
+          {/* CRITICAL FIX: Only show typing indicator when NOT creating feed, or when creating feed but feed card already exists */}
+          {/* This prevents duplication with the feed creation loader below */}
+          {isTyping && !isCreatingFeed && (
             <div className="flex justify-start">
               <div className="bg-white/50 backdrop-blur-xl border border-white/70 p-3 rounded-2xl max-w-[85%] shadow-lg shadow-stone-900/5">
-                {isCreatingFeed ? (
-                  // Show UnifiedLoading when creating feed (consistent with concept cards)
-                  <UnifiedLoading 
-                    variant="inline" 
-                    message="Creating Your Feed Layout" 
-                    className="w-full"
-                  />
-                ) : (
-                  // Default typing indicator
-                  <div className="flex items-center gap-3">
-                    <div className="flex gap-1">
-                      <div className="w-1.5 h-1.5 rounded-full animate-bounce bg-stone-700"></div>
-                      <div
-                        className="w-1.5 h-1.5 rounded-full animate-bounce bg-stone-700"
-                        style={{ animationDelay: "0.2s" }}
-                      ></div>
-                      <div
-                        className="w-1.5 h-1.5 rounded-full animate-bounce bg-stone-700"
-                        style={{ animationDelay: "0.4s" }}
-                      ></div>
-                    </div>
-                    <span className="text-xs font-light text-stone-600">Maya is thinking...</span>
+                <div className="flex items-center gap-3">
+                  <div className="flex gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full animate-bounce bg-stone-700"></div>
+                    <div
+                      className="w-1.5 h-1.5 rounded-full animate-bounce bg-stone-700"
+                      style={{ animationDelay: "0.2s" }}
+                    ></div>
+                    <div
+                      className="w-1.5 h-1.5 rounded-full animate-bounce bg-stone-700"
+                      style={{ animationDelay: "0.4s" }}
+                    ></div>
                   </div>
-                )}
+                  <span className="text-xs font-light text-stone-600">Maya is thinking...</span>
+                </div>
               </div>
             </div>
           )}
 
           {/* Feed Creation Loading - Show only if feed is being created but no message has feed card yet */}
-          {/* Note: Individual message loading is handled inline to hide JSON during streaming */}
+          {/* CRITICAL FIX: Only show if no message has feed trigger (inline loader handles those) */}
+          {/* This prevents duplication with inline loaders that replace message content */}
+          {/* CRITICAL FIX: Center loader in entire chat viewport, mobile optimized */}
           {isCreatingFeed && !filteredMessages.some((m: any) => 
             m.parts?.some((p: any) => p.type === "tool-generateFeed")
-          ) && (
-            <div className="flex justify-center mt-8 mb-4">
-              <UnifiedLoading 
-                variant="section" 
-                message="Creating Your Feed Layout" 
-                className="max-w-md w-full"
-              />
+          ) && !filteredMessages.some((m: any) => {
+            // Check if any message has feed trigger content (which would show inline loader)
+            const textContent = m.parts?.find((p: any) => p.type === "text")?.text || ""
+            const hasFeedTrigger = textContent.includes("[CREATE_FEED_STRATEGY") || 
+                                  textContent.includes("```json") ||
+                                  textContent.includes('"feedStrategy"') ||
+                                  textContent.includes('"position"') ||
+                                  textContent.includes("Aesthetic Choice:") ||
+                                  textContent.includes("Overall Vibe:")
+            return hasFeedTrigger && !m.parts?.some((p: any) => p.type === "tool-generateFeed")
+          }) && (
+            <div className="flex items-center justify-center min-h-[calc(100vh-320px)] sm:min-h-[calc(100vh-280px)] w-full py-8 sm:py-12">
+              <div className="w-full max-w-md px-4 sm:px-6">
+                <UnifiedLoading 
+                  variant="section" 
+                  message="Creating Your Feed Layout" 
+                  className="w-full"
+                />
+              </div>
             </div>
           )}
 

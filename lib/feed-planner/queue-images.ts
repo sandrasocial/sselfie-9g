@@ -48,6 +48,7 @@ export async function queueAllImagesForFeed(
 
   // Get all posts for this feed that need images (including Pro Mode info)
   // Note: description column doesn't exist - visual direction is in prompt field or strategy
+  // CRITICAL: Include 'failed' status so users can retry failed images without being charged again
   const posts = await sql`
     SELECT id, position, prompt, post_type, caption, content_pillar, generation_status, prediction_id, image_url, generation_mode, pro_mode_type
     FROM feed_posts

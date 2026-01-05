@@ -69,8 +69,24 @@ export async function generateWithNanoBanana(
   })
 
   try {
+    // CRITICAL: Add "Generate an image of..." prefix to prevent "No images were returned" errors
+    // Nano Banana Pro sometimes gets confused if the prompt doesn't explicitly request image generation
+    let finalPrompt = input.prompt.trim()
+    const promptLower = finalPrompt.toLowerCase()
+    
+    // Only add prefix if prompt doesn't already start with generation-related phrases
+    if (!promptLower.startsWith('generate an image') && 
+        !promptLower.startsWith('create an image') && 
+        !promptLower.startsWith('generate a') &&
+        !promptLower.startsWith('create a') &&
+        !promptLower.startsWith('make an image') &&
+        !promptLower.startsWith('produce an image')) {
+      finalPrompt = `Generate an image of ${finalPrompt}`
+      console.log("[NANO-BANANA] Added 'Generate an image of...' prefix to prevent 'No images were returned' error")
+    }
+    
     const replicateInput = {
-      prompt: input.prompt.trim(),
+      prompt: finalPrompt,
       image_input: input.image_input || [],
       aspect_ratio: input.aspect_ratio || "1:1",
       resolution: input.resolution || "2K",

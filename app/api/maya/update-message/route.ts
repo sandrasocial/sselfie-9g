@@ -57,7 +57,12 @@ export async function POST(request: NextRequest) {
 
     if (!currentMessage) {
       console.error("[update-message] ❌ Message not found:", messageIdNum)
-      return NextResponse.json({ error: "Message not found" }, { status: 404 })
+      // Return 404 with clear error message so frontend can handle it (e.g., save message first)
+      return NextResponse.json({ 
+        error: "Message not found",
+        messageId: messageIdNum,
+        suggestion: "Message may not exist in database yet. Try saving the message first."
+      }, { status: 404 })
     }
 
     // Verify message belongs to user's chat
@@ -78,8 +83,9 @@ export async function POST(request: NextRequest) {
 
     // Update content and feed cards (styling_details column) if provided
     if (feedCards && Array.isArray(feedCards)) {
+      let feedCardsJson: string | null = null
       try {
-        const feedCardsJson = JSON.stringify(feedCards)
+        feedCardsJson = JSON.stringify(feedCards)
         console.log("[update-message] Updating message with feed cards:", {
           messageId: messageIdNum,
           feedCardsCount: feedCards.length,
@@ -88,9 +94,10 @@ export async function POST(request: NextRequest) {
         })
         
         // Use same pattern as INSERT - pass JSON string directly, Neon will handle JSONB conversion
+        // NOTE: maya_chat_messages table does not have updated_at column
         await sql`
           UPDATE maya_chat_messages
-          SET content = ${updatedContent}, styling_details = ${feedCardsJson}, updated_at = NOW()
+          SET content = ${updatedContent}, styling_details = ${feedCardsJson}
           WHERE id = ${messageIdNum}
         `
         console.log("[update-message] ✅ Updated message with feed cards:", feedCards.length)
@@ -100,14 +107,15 @@ export async function POST(request: NextRequest) {
           stack: dbError?.stack,
           messageId: messageIdNum,
           feedCardsCount: feedCards.length,
-          feedCardsJson: feedCardsJson?.substring(0, 200), // First 200 chars for debugging
+          feedCardsJson: feedCardsJson ? feedCardsJson.substring(0, 200) : "Failed to stringify", // First 200 chars for debugging
         })
         throw dbError
       }
     } else {
+      // NOTE: maya_chat_messages table does not have updated_at column
       await sql`
         UPDATE maya_chat_messages
-        SET content = ${updatedContent}, updated_at = NOW()
+        SET content = ${updatedContent}
         WHERE id = ${messageIdNum}
       `
     }

@@ -294,6 +294,46 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ feed
             }
           } else if (prediction.status === "failed") {
             console.log(`[v0] [FEED API] ❌ Post ${post.position} failed in Replicate`)
+            
+            // Check for "No images were returned" error specifically
+            const errorMessage = prediction.error ? String(prediction.error) : ''
+            const isNoImagesError = errorMessage.toLowerCase().includes('no images were returned') || 
+                                   errorMessage.toLowerCase().includes('no images')
+            
+            if (isNoImagesError) {
+              console.log(`[v0] [FEED API] ⚠️ Post ${post.position} failed with "No images were returned" - this should be prevented by prompt prefix`)
+            }
+            
+            // Refund credits for failed predictions (user shouldn't pay for errors)
+            try {
+              const { addCredits } = await import("@/lib/credits")
+              const { getStudioProCreditCost } = await import("@/lib/nano-banana-client")
+              const { CREDIT_COSTS } = await import("@/lib/credits")
+              
+              // Get post generation mode to determine credit cost
+              const [postData] = await sql`
+                SELECT generation_mode FROM feed_posts WHERE id = ${post.id}
+              `
+              
+              const creditsToRefund = postData?.generation_mode === 'pro' 
+                ? getStudioProCreditCost('2K')
+                : CREDIT_COSTS.IMAGE
+              
+              console.log(`[v0] [FEED API] 💰 Refunding ${creditsToRefund} credit(s) for failed post ${post.position}`)
+              
+              await addCredits(
+                user.id.toString(),
+                creditsToRefund,
+                "refund",
+                `Refund for failed feed post generation (post ${post.position})`,
+              )
+              
+              console.log(`[v0] [FEED API] ✅ Credits refunded for failed post ${post.position}`)
+            } catch (refundError) {
+              console.error(`[v0] [FEED API] ❌ Failed to refund credits for post ${post.position}:`, refundError)
+              // Don't fail the whole request if refund fails
+            }
+            
             await sql`
               UPDATE feed_posts
               SET 
