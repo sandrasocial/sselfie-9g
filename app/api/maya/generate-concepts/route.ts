@@ -35,9 +35,7 @@ import { generateText } from "ai"
 import { getFluxPromptingPrinciples } from "@/lib/maya/flux-prompting-principles"
 import { getFashionIntelligencePrinciples } from "@/lib/maya/fashion-knowledge-2025"
 import { getLifestyleContextIntelligence } from "@/lib/maya/lifestyle-contexts"
-import INFLUENCER_POSING_KNOWLEDGE from "@/lib/maya/influencer-posing-knowledge"
 import INSTAGRAM_LOCATION_INTELLIGENCE from "@/lib/maya/instagram-location-intelligence"
-import { getLuxuryLifestyleSettings } from "@/lib/maya/luxury-lifestyle-settings"
 import { getNanoBananaPromptingPrinciples } from "@/lib/maya/nano-banana-prompt-builder"
 import { getNanoBananaPerfectExamples } from "@/lib/maya/nano-banana-examples"
 import { getFluxPerfectExamples } from "@/lib/maya/flux-examples"
@@ -52,6 +50,7 @@ import {
   type ReferenceImages
 } from "@/lib/maya/prompt-builders/guide-prompt-handler"
 import { generateCompleteOutfit } from "@/lib/maya/brand-library-2025"
+import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import { 
   buildPrompt, 
   buildPromptWithFeatures, 
@@ -197,7 +196,7 @@ function mapCategoryForBrandLibrary(mappedCategory: string | null, userRequest?:
   if (categoryLower === 'travel-airport' || categoryLower.includes('travel') || categoryLower === 'airport') {
     return 'travel'
   }
-  if (categoryLower === 'casual-lifestyle') { {
+  if (categoryLower === 'casual-lifestyle') {
     // For casual-lifestyle, infer from user request context
     if (/coffee|cafe|coffeeshop/i.test(requestLower)) {
       return 'coffee-run'
@@ -1430,30 +1429,12 @@ This is the vibe check. Don't just read these - embody them in your outfit choic
     : ""
 }
 
-=== NATURAL POSING REFERENCE ===
-Use this for inspiration on authentic, Instagram-style poses. These are REAL influencer poses that look natural and candid:
-
-${INFLUENCER_POSING_KNOWLEDGE}
-
-Remember: Describe poses SIMPLY and NATURALLY, like you're telling a friend what someone is doing. Avoid technical photography language.
-
-**IMPORTANT:** This is REFERENCE MATERIAL for inspiration. Maya generates diverse poses naturally based on context - she does NOT randomly select from this list.
-===
-
 === INSTAGRAM LOCATION INTELLIGENCE (REFERENCE) ===
 Use this as inspiration for diverse, Instagram-worthy locations. These are examples to spark creativity:
 
 ${INSTAGRAM_LOCATION_INTELLIGENCE}
 
 **IMPORTANT:** This is REFERENCE MATERIAL for inspiration. Maya generates diverse locations naturally based on context - she does NOT randomly select from this list.
-===
-
-=== LUXURY LIFESTYLE SETTINGS (REFERENCE) ===
-Use this as guidance for elevating content with subtle luxury markers:
-
-${getLuxuryLifestyleSettings()}
-
-**IMPORTANT:** This is REFERENCE MATERIAL for inspiration. Maya integrates luxury elements naturally based on context - she does NOT randomly select from this list.
 ===
 
 ${
@@ -2393,6 +2374,15 @@ Each carousel slide prompt MUST follow this complete structure:
 
 === JSON OUTPUT FORMAT ===
 
+**🔴 CRITICAL - RESPONSE FORMAT:**
+- DO NOT include the prompts in your text response
+- DO NOT describe the prompts or show them to the user
+- ONLY output: A brief acknowledgment (1-2 sentences max) + the JSON array
+- The prompts are embedded in the JSON concept cards - they are NOT for the user to read
+- Example response format:
+  "Perfect! I've created ${count} concept cards for you. Here they are:"
+  [JSON array here]
+
 ${
   templateExamples.length > 0 && studioProMode
     ? `**Final Reminder: Template Examples:**
@@ -2485,7 +2475,14 @@ DO NOT add "with visible pores" at the end - use "natural skin texture with visi
   }
 ]
 `
-    : `Return ONLY valid JSON array, no markdown:
+    : `**🔴 CRITICAL - YOUR RESPONSE FORMAT:**
+- DO NOT show the prompts to the user in your text response
+- DO NOT describe or list the prompts
+- ONLY output: A brief acknowledgment (1-2 sentences) + the JSON array
+- Example: "Perfect! I've created ${count} concept cards for you. Here they are:" followed by the JSON array
+- The prompts are embedded in the JSON - they are for the system, not for the user to read
+
+Return ONLY valid JSON array, no markdown:
 [
   {
     "title": "Simple, catchy title (2-4 words, everyday language)",
@@ -2650,6 +2647,13 @@ ${shouldIncludeSkinTexture(userRequest, detectedGuidePrompt || undefined, templa
 
 Now create ${count} brand scene concepts with natural product/brand integration. Use the SAME outfit across all concepts. NO TEXT OVERLAYS.`
     : `Now apply your fashion intelligence and prompting mastery. Create ${count} concepts where every outfit choice is intentional and story-driven.
+
+**🔴 CRITICAL - YOUR RESPONSE:**
+- DO NOT show or describe the prompts in your text response
+- ONLY output: A brief acknowledgment (1-2 sentences max) + the JSON array
+- Example: "Perfect! I've created ${count} concept cards for you. Here they are:"
+- The prompts are embedded in the JSON concept cards - they are for the system, NOT for the user to read
+- Keep your acknowledgment short and friendly - no technical details about prompts
 
 **Requirements:**
 
