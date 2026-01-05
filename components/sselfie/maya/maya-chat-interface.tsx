@@ -460,13 +460,17 @@ export default function MayaChatInterface({
                                                       text.includes("Aesthetic Choice:") ||
                                                       text.includes("Overall Vibe:")
                                 
-                                // Check if feed card already exists (if it does, don't show loader)
+                                // Check if feed card already exists (if it does, don't show loader or text)
                                 const hasFeedCard = msg.parts?.some((p: any) => p.type === "tool-generateFeed")
                                 
                                 // If feed is being created and this message has feed content, show loading instead of text
                                 // CRITICAL: Only show loader if feed card doesn't exist yet (prevents stuck loader)
                                 // CRITICAL: Don't return early - allow text processing to continue for trigger detection
                                 const shouldShowLoader = isCreatingFeed && hasFeedTrigger && !hasFeedCard
+                                
+                                // CRITICAL: If feed card exists, hide all text content (including JSON)
+                                // This prevents raw JSON from being displayed to users
+                                const shouldHideText = hasFeedCard && hasFeedTrigger
                                 
                                 // Check for prompt suggestions in workbench mode
                                 const parsedPromptSuggestions = parsePromptSuggestions(text)
@@ -603,6 +607,9 @@ export default function MayaChatInterface({
                                           />
                                         </div>
                                       </div>
+                                    ) : shouldHideText ? (
+                                      // CRITICAL: Hide text content when feed card exists to prevent JSON from showing
+                                      null
                                     ) : (
                                       <>
                                         {renderMessageContent(displayText, msg.role === "user")}

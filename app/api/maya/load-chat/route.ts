@@ -6,6 +6,36 @@ import { neon } from "@neondatabase/serverless"
 
 const sql = neon(process.env.DATABASE_URL!)
 
+/**
+ * Helper function to detect if description is a full strategy document
+ * Strategy documents should only appear in feed planner, not in chat feed cards
+ */
+function isStrategyDocument(text: string | null | undefined): boolean {
+  if (!text) return false
+  // Strategy documents have markdown headers (# ## ###) and are longer
+  const hasHeaders = /^#{1,3}\s/m.test(text)
+  const isLongEnough = text.length > 500
+  return hasHeaders && isLongEnough
+}
+
+/**
+ * Get a short description for feed card (excludes strategy documents)
+ * Strategy documents are stored in description field but should not appear in chat
+ * Strategy documents should only appear in feed planner, not in chat feed cards
+ */
+function getFeedCardDescription(feedDescription: string | null | undefined, fallback: string = ''): string {
+  if (!feedDescription) {
+    // Also check if fallback is a strategy document
+    return isStrategyDocument(fallback) ? '' : fallback
+  }
+  // If description is a strategy document, don't use it for feed card
+  if (isStrategyDocument(feedDescription)) {
+    // Check if fallback is also a strategy document
+    return isStrategyDocument(fallback) ? '' : fallback
+  }
+  return feedDescription
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { user, error: authError } = await getAuthenticatedUser()
@@ -237,7 +267,9 @@ export async function GET(request: NextRequest) {
                     output: {
                       feedId: feedIdToFetch,
                       title: feedData.feed_title || feedCard.title || 'Instagram Feed',
-                      description: feedData.feed_description || feedCard.description || '',
+                      // CRITICAL: Filter out strategy documents from description
+                      // Strategy documents should only appear in feed planner, not in chat feed cards
+                      description: getFeedCardDescription(feedData.feed_description, feedCard.description || ''),
                       posts: posts, // Use fresh posts with images from database
                       strategy: feedCard.strategy || {
                         gridPattern: feedData.brand_vibe || '',
@@ -376,7 +408,9 @@ export async function GET(request: NextRequest) {
                   output: {
                     feedId: feedId, // CRITICAL: Ensure feedId is always included
                     title: feedData.feed_title || 'Instagram Feed',
-                    description: feedData.feed_description || '',
+                    // CRITICAL: Filter out strategy documents from description
+                    // Strategy documents should only appear in feed planner, not in chat feed cards
+                    description: getFeedCardDescription(feedData.feed_description, ''),
                     posts: posts,
                     strategy: {
                       gridPattern: feedData.brand_vibe || '',
@@ -524,7 +558,9 @@ export async function GET(request: NextRequest) {
                   output: {
                     feedId: feedIdToFetch2,
                     title: feedData.feed_title || feedCard.title || 'Instagram Feed',
-                    description: feedData.feed_description || feedCard.description || '',
+                    // CRITICAL: Filter out strategy documents from description
+                    // Strategy documents should only appear in feed planner, not in chat feed cards
+                    description: getFeedCardDescription(feedData.feed_description, feedCard.description || ''),
                     posts: posts, // Use fresh posts with images from database
                     strategy: feedCard.strategy || {
                       gridPattern: feedData.brand_vibe || '',
@@ -662,20 +698,22 @@ export async function GET(request: NextRequest) {
               // Convert NULL to empty array to properly handle saved feeds with no posts
               const posts = feedData.posts === null ? [] : (feedData.posts || [])
               console.log("[v0] ✅ Loaded feed data with", posts.length, "posts including captions")
-              parts.push({
-                type: 'tool-generateFeed',
-                output: {
-                  feedId: feedId,
-                  title: feedData.feed_title || 'Instagram Feed',
-                  description: feedData.feed_description || '',
-                  posts: posts,
-                  strategy: {
-                    gridPattern: feedData.brand_vibe || '',
-                    visualRhythm: feedData.color_palette || '',
+                parts.push({
+                  type: 'tool-generateFeed',
+                  output: {
+                    feedId: feedId,
+                    title: feedData.feed_title || 'Instagram Feed',
+                    // CRITICAL: Filter out strategy documents from description
+                    // Strategy documents should only appear in feed planner, not in chat feed cards
+                    description: getFeedCardDescription(feedData.feed_description, ''),
+                    posts: posts,
+                    strategy: {
+                      gridPattern: feedData.brand_vibe || '',
+                      visualRhythm: feedData.color_palette || '',
+                    },
+                    isSaved: true,
                   },
-                  isSaved: true,
-                },
-              })
+                })
             } else {
               // Fallback if feed not found
               console.warn("[v0] ⚠️ Feed not found for feedId:", feedId, "- using empty placeholder")
