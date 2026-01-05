@@ -472,7 +472,7 @@ export async function POST(req: NextRequest) {
 
 Generate 6 unique, creative concept cards based on the user's request. Use your fashion expertise and editorial knowledge to create diverse, sophisticated concepts.
 
-**🔴🔴🔴 CRITICAL: USER'S REQUEST IS YOUR PRIMARY GUIDE**
+**CRITICAL: USER'S REQUEST IS YOUR PRIMARY GUIDE**
 **USER'S REQUEST:**
 ${userRequest}
 
@@ -496,7 +496,7 @@ The user wants VARIETY across concepts:
 - Create DIFFERENT locations and settings
 - Vary poses, angles, lighting, and moods
 - Think: "diverse portfolio of looks"
-Example: Concept 1 might be Alo athleisure at yoga studio, concept 2 might be The Row luxury at rooftop, etc.`
+Example: Concept 1 might be Alo athleisure at yoga studio, concept 2 might be The Row luxury at rooftop, etc.
 
 **YOUR TASK:**
 Create 6 diverse, creative concepts. Each concept must be:
@@ -519,14 +519,14 @@ SSELFIE Studio celebrates authentic selfie content. Consider including selfie co
 When creating selfie concepts, describe them naturally: "iPhone front camera selfie", "mirror selfie reflection", "handheld selfie", etc. Maintain same quality and luxury as professional concepts.
 
 
-**🔴 CRITICAL: DESCRIPTION REQUIREMENTS**
+**CRITICAL: DESCRIPTION REQUIREMENTS**
 Your "description" field MUST include:
 - Specific outfit details (e.g., "wearing cozy holiday pajamas" or "elegant holiday evening wear")
 - Specific setting details (e.g., "cozy living room with Christmas tree" or "festive holiday market")
 - Specific mood/atmosphere (e.g., "warm festive atmosphere" or "magical holiday ambiance")
 - Do NOT use generic descriptions - be specific and match the user's request
 
-**🔴🔴🔴 CRITICAL INSTRUCTION FOR DESCRIPTIONS:**
+**CRITICAL INSTRUCTION FOR DESCRIPTIONS:**
 Your description field must be EXACTLY what will appear in the final prompt. The description you write will be used directly to build the image generation prompt, so it must include:
 
 1. SPECIFIC OUTFIT DETAILS: Not "cozy outfit" but "cream cashmere sweater, high-waisted denim, Bottega Veneta leather bag"
@@ -578,7 +578,7 @@ Return ONLY a valid JSON array of 6 concepts:
   }
 ]
 
-**🔴 CRITICAL: PROMPT FIELD REQUIREMENTS**
+**CRITICAL: PROMPT FIELD REQUIREMENTS**
 
 The "prompt" field must be a COMPLETE, STRUCTURED PROMPT ready for Nano Banana Pro. Generate this directly - do not generate a description that needs transformation.
 
@@ -605,7 +605,7 @@ The "prompt" field must be a COMPLETE, STRUCTURED PROMPT ready for Nano Banana P
 
 **PROMPT FORMAT (Pro Mode - Natural Flowing Sentences):**
 
-🔴🔴🔴 MANDATORY: EVERY prompt MUST start with this EXACT phrase:
+MANDATORY: EVERY prompt MUST start with this EXACT phrase:
 "Maintain exactly the characteristics of the person in the attachment (face, visual identity). Do not copy the original photo."
 
 This is REQUIRED for Pro Mode (NanoBanana) - DO NOT skip it or use variations.
@@ -640,8 +640,8 @@ Example BAD format (DO NOT USE - too short, missing identity phrase):
 "Authentic influencer content. Woman wearing The Row blazer. Standing confidently. Shot with iPhone 15 Pro."
 
 **CRITICAL REQUIREMENTS:**
-- 🔴 MUST start with: "Maintain exactly the characteristics of the person in the attachment (face, visual identity). Do not copy the original photo."
-- 🔴 Minimum 150 words (optimal 200-400 words)
+- MUST start with: "Maintain exactly the characteristics of the person in the attachment (face, visual identity). Do not copy the original photo."
+- Minimum 150 words (optimal 200-400 words)
 - Write as natural flowing sentences, NOT structured sections
 - NO markdown formatting (**Outfit:**, **Pose:**, **Setting:**, etc.)
 - NO section labels or headers

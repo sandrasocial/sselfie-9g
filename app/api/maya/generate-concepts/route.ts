@@ -1613,9 +1613,9 @@ The user wants VARIETY across concepts:
 - Create DIFFERENT locations and settings
 - Vary poses, angles, lighting, and moods
 - Think: "diverse portfolio of looks"
-Example: Concept 1 might be athletic wear at yoga studio, concept 2 might be luxury pieces at rooftop, etc.`
+Example: Concept 1 might be athletic wear at yoga studio, concept 2 might be luxury pieces at rooftop, etc.
 
-**🔴🔴🔴 CRITICAL: OUTFIT VARIATION RULE - DEFAULT BEHAVIOR (ONLY WHEN NOT USING GUIDE PROMPT):**
+**CRITICAL: OUTFIT VARIATION RULE - DEFAULT BEHAVIOR (ONLY WHEN NOT USING GUIDE PROMPT):**
 - **This rule ONLY applies when there is NO guide prompt**
 - **If guide prompt is active:** Use the EXACT same outfit, hair, location, lighting from guide prompt (see guide prompt section above)
 - **DEFAULT BEHAVIOR (NO guide prompt):** Each concept MUST have a DIFFERENT, UNIQUE outfit that fits the theme
