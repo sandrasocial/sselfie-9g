@@ -38,7 +38,7 @@ import {
   type CategoryInfo,
 } from "@/lib/maya/pro/category-system"
 import { getCategoryByKey } from "@/lib/maya/pro/category-system"
-import { getMayaPersonality } from "@/lib/maya/personality-enhanced"
+import { getMayaSystemPrompt, MAYA_PRO_CONFIG } from "@/lib/maya/mode-adapters"
 import {
   mergeGuidePromptWithImages,
   extractPromptElements,
@@ -412,8 +412,8 @@ export async function POST(req: NextRequest) {
     // Declare generatedConcepts outside try block so it's accessible later
     let generatedConcepts: any[] = []
 
-    // Get Maya's personality for Pro Mode
-    const mayaPersonality = getMayaPersonality()
+    // Get Maya's personality for Pro Mode using unified system
+    const mayaPersonality = getMayaSystemPrompt(MAYA_PRO_CONFIG)
 
     // 🔴 FIX: Get brand intelligence from brand-library-2025.ts
     // Map Pro Mode categories to brand-library categories

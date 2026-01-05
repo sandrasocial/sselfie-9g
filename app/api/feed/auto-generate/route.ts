@@ -4,7 +4,10 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 import { neon } from "@neondatabase/serverless"
 import { generateText } from "ai"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
-import { PhotoshootSessionBuilder } from "@/lib/maya/photoshoot-session"
+// photoshoot-session removed - using unified system instead
+// import { PhotoshootSessionBuilder } from "@/lib/maya/photoshoot-session"
+// Placeholder - functionality moved to unified Maya system
+const PhotoshootSessionBuilder = null as any
 
 export const maxDuration = 60
 

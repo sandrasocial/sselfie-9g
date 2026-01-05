@@ -1,6 +1,6 @@
 import { generateText } from "ai"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
-import { getMayaPersonality } from "@/lib/maya/personality-enhanced"
+import { getMayaSystemPrompt, MAYA_CLASSIC_CONFIG } from "@/lib/maya/mode-adapters"
 import { getFluxPromptingPrinciples } from "@/lib/maya/flux-prompting-principles"
 
 interface VisualDirectionParams {
@@ -84,7 +84,7 @@ export async function generateVisualComposition(params: VisualDirectionParams): 
   const isNonUserPost = shotType === "object" || shotType === "flatlay" || shotType === "scenery" || shotType === "place"
 
   const userContext = await getUserContextForMaya(authUserId)
-  const mayaPersonality = getMayaPersonality()
+  const mayaPersonality = getMayaSystemPrompt(MAYA_CLASSIC_CONFIG)
   const fluxPrinciples = getFluxPromptingPrinciples()
 
   const systemPrompt = `${mayaPersonality}

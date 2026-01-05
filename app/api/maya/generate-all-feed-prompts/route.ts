@@ -11,7 +11,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
-import { getMayaPersonality } from "@/lib/maya/personality-enhanced"
+import { getMayaSystemPrompt, MAYA_CLASSIC_CONFIG } from "@/lib/maya/mode-adapters"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getFluxPromptingPrinciples } from "@/lib/maya/flux-prompting-principles"
 
@@ -80,8 +80,8 @@ export async function POST(request: NextRequest) {
     // Get user context for Maya (same as individual endpoint)
     const mayaUserContext = await getUserContextForMaya(neonUser.id)
     
-    // Build comprehensive system prompt with caching
-    const mayaPersonality = getMayaPersonality()
+    // Build comprehensive system prompt with caching using unified system
+    const mayaPersonality = getMayaSystemPrompt(MAYA_CLASSIC_CONFIG)
     const fluxPrinciples = getFluxPromptingPrinciples()
 
     const systemPrompt = `${mayaPersonality}

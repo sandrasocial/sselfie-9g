@@ -1,16 +1,21 @@
 /**
- * Perfect Nano Banana Pro Prompt Examples
+ * NANO BANANA PRO PERFECT EXAMPLES (TESTED & APPROVED)
  * 
- * These are shown to Maya during concept generation so she learns
- * the exact structure, detail level, and format to generate.
+ * These examples show the THREE types of photography Maya creates in Pro Mode:
+ * 1. iPhone Selfie (mirror selfies, getting ready, authentic home moments)
+ * 2. Candid Lifestyle (spontaneous street moments, café scenes, natural captures)
+ * 3. Editorial Professional (studio lighting, fashion editorial, Vogue aesthetic)
  * 
- * DO NOT modify these - they represent the gold standard.
+ * Maya mixes these across 3-6 concepts to give users variety.
  */
 
-export const NANO_BANANA_PERFECT_EXAMPLES = `
-## PERFECT EXAMPLE 1 - LUXURY BRAND FASHION (Chanel-style)
+export function getNanoBananaPerfectExamples(): string {
+  return `
+---
 
-High fashion portrait of a woman, Influencer/pinterest style, maintaining exactly the same physical characteristics of the woman in the attached image (face, body, skin tone, hair, and visual identity), without modifications.
+## PERFECT EXAMPLE 1 - Editorial Professional (Chanel Bold Luxury)
+
+High fashion portrait of a woman, Influencer/pinterest style of a woman maintaining exactly the same physical characteristics of the woman in the attached image (face, body, skin tone, hair, and visual identity), without modifications.
 
 She wears a black leather jacket falling partially over her shoulders, revealing a beige Chanel headband with logo stamp prominently displayed. Hair is parted in the middle, extremely polished and shiny, held in a low sleek bun.
 
@@ -24,168 +29,238 @@ Aesthetic of bold luxury, logo-loaded and attitude-driven, conveying absolute co
 
 ---
 
-## PERFECT EXAMPLE 2 - QUIET LUXURY
+## PERFECT EXAMPLE 2 - iPhone Selfie (Alo Yoga Wellness)
 
-Editorial fashion portrait, Modern minimalist style, maintaining exactly the same physical characteristics of the woman in the attached image (face, body, skin tone, hair, and visual identity), without modifications.
+High fashion portrait of a woman, Influencer/pinterest style of a woman maintaining exactly the same physical characteristics of the woman in the attached image (face, body, skin tone, hair, and visual identity), without modifications.
 
-She wears an oversized cream cashmere sweater with deliberate shoulder drop, paired with high-waisted beige linen trousers with brown leather belt showing designer buckle.
+She wears an oversized cream Alo Yoga hoodie with matching ribbed joggers, soft fabric draping naturally. Hair pulled into messy bun with loose pieces framing face.
 
-Hair is center-parted, pulled into low messy bun with face-framing pieces falling naturally, slightly undone texture showing effortless sophistication.
+Minimal jewelry—small gold hoop earrings and delicate stacked rings. Holding phone up for mirror selfie in natural bedroom setting.
 
-She wears thin gold-rimmed glasses, simple gold hoop earrings, one delicate gold chain necklace, minimal rings.
+Expression is relaxed and natural, slight authentic smile while checking outfit. One hand adjusting hoodie sleeve casually.
 
-Expression is relaxed and approachable, with soft genuine smile and warm eye contact, head slightly tilted conveying accessible elegance.
+Lighting: soft morning light streaming through window, creating gentle shadows and warm glow on skin, real texture visible.
 
-Lighting: soft natural window light from right side, creating gentle dimensional shadows while preserving authentic skin texture and fabric details.
-
-Aesthetic of quiet luxury, investment pieces worn effortlessly, conveying sophisticated simplicity and timeless style. Clean girl aesthetic.
+Aesthetic of cozy luxury and wellness lifestyle, authentic getting-ready moment captured naturally. Instagram influencer home content style.
 
 ---
 
-## PERFECT EXAMPLE 3 - ATHLETIC LUXURY (Alo Yoga-style)
+## PERFECT EXAMPLE 3 - Editorial Professional (Chanel Boutique)
 
-Lifestyle fashion portrait, Athletic influencer aesthetic, maintaining exactly the same physical characteristics of the woman in the attached image (face, body, skin tone, hair, and visual identity), without modifications.
+Maintain rigorously the characteristics of the woman in attachment (face, proportions, visual identity). Do not copy the attached photo. Don't change face or make it look over edited.
 
-She wears a black Alo Yoga sports bra with signature logo detail, paired with high-waisted black leggings with mesh panel inserts. Over this, an oversized ivory ribbed cardigan falls open casually.
+Fashion editorial portrait captured in front of a luxury boutique, with a softly blurred CHANEL awning above the scene. The woman is positioned outside the store, looking toward the camera in a medium body framing, integrating elegantly into the sophisticated urban environment.
 
-Hair is pulled back in high ponytail with smooth crown, wrapped with her own hair around elastic, ends slightly tousled showing post-workout texture.
+She wears a structured tan tweed blazer with classic golden buttons, combined with a fine silk blouse in light tone and black tailored shorts, creating a refined and timeless contrast. Styling is balanced, elegant and faithful to contemporary French fashion aesthetic.
 
-She wears no jewelry except small gold stud earrings and Apple Watch with sport band, holding a green juice in one hand.
+Polished hair is held in a low sleek bun (low chignon), reinforcing the clean sophistication of the visual. She carries a classic CHANEL quilted bag with golden hardware, treated as an iconic styling element.
 
-Expression is energetic and confident, mid-laugh with mouth open showing teeth and eyes crinkling naturally, embodying wellness lifestyle.
+Pose is natural and confident: one hand rests discreetly inside the bag, while the body leans slightly in rotation, with gaze cast subtly over the shoulder in a contemplative manner. Expression is serene and assured, with relaxed lips and elegant posture.
 
-Lighting: golden hour natural light creating warm glow on skin, soft shadows emphasizing healthy complexion and athletic build.
+Natural daylight reflects softly on the polished marble floors in the background, creating diffused shine and visual depth without distractions. Background remains clean and sophisticated, reinforcing focus on the silhouette and styling.
 
-Aesthetic of athletic luxury, wellness-focused lifestyle with premium activewear, conveying healthy confidence and approachable fitness inspiration. Modern wellness influencer style.
-
----
-
-## PERFECT EXAMPLE 4 - STREET LUXE (Off-White-style)
-
-Street style editorial, Urban fashion blogger aesthetic, maintaining exactly the same physical characteristics of the woman in the attached image (face, body, skin tone, hair, and visual identity), without modifications.
-
-She wears an oversized black leather bomber jacket over white graphic tee with visible designer logo, paired with vintage straight-leg Levi's 501 jeans with brown leather belt showing Off-White signature belt detail.
-
-Hair is swept in deep side part, falling in natural waves with lived-in texture and subtle shine, tucked behind one ear showing gold ear cuff and hoops.
-
-She wears black rectangular sunglasses, chunky gold chain necklace, multiple gold rings across both hands, holding designer crossbody bag with chain strap.
-
-Expression is cool and confident, looking slightly away from camera with subtle smirk, chin down creating editorial edge and mysterious allure.
-
-Lighting: bright urban outdoor lighting with natural shadows, capturing street photography authenticity and movement with slight lens flare.
-
-Aesthetic of high-low mix, accessible luxury with attitude, conveying cool-girl confidence and relatable aspirational style. Modern street style energy.
+Balanced natural lighting, preserving real skin texture. 50mm camera, vertical 2:3 framing. Image evokes a luxury urban editorial inspired by the Chanel universe—classic, modern, and absolutely timeless.
 
 ---
 
-## PERFECT EXAMPLE 5 - PARISIAN ELEGANCE (Hermès-style)
+## PERFECT EXAMPLE 4 - Candid Lifestyle (Aime Leon Dore Street Style)
 
-Timeless fashion portrait, Parisian chic style, maintaining exactly the same physical characteristics of the woman in the attached image (face, body, skin tone, hair, and visual identity), without modifications.
+High fashion portrait of a woman, Influencer/pinterest style of a woman maintaining exactly the same physical characteristics of the woman in the attached image (face, body, skin tone, hair, and visual identity), without modifications.
 
-She wears a classic black turtleneck in fine merino wool tucked into high-waisted navy trousers with subtle pinstripe, finished with black leather loafers and structured leather Hermès Kelly bag in cognac brown.
+She wears an oversized Aime Leon Dore hoodie in white with relaxed fit denim jeans. Hair in natural loose style with subtle waves.
 
-Hair is effortlessly tousled in natural texture, pushed back from face with slight volume at crown, appearing undone but intentional with French-girl ease.
+Minimal accessories—simple gold necklace and white sneakers. Holding takeaway coffee cup while walking.
 
-She wears no sunglasses, small gold studs, one thin gold necklace, vintage Cartier Tank watch, and classic red lipstick as main statement.
+Captured mid-motion walking down city street, while glancing down at phone. Natural stride, relaxed body language.
 
-Expression is mysterious and alluring, looking past camera with slight smile and knowing look, conveying European sophistication and refined confidence.
+Lighting: overcast natural daylight creating soft even light, no harsh shadows, real urban environment with slight background blur.
 
-Lighting: soft diffused outdoor light creating even illumination with subtle shadows, capturing timeless European street style authenticity.
-
-Aesthetic of effortless French elegance, classic pieces styled with ease, conveying understated confidence and refined taste. Timeless European fashion.
+Aesthetic of effortless New York cool and street style elegance, authentic moment that captures lifestyle. Urban lifestyle content style.
 
 ---
 
-## PERFECT EXAMPLE 6 - EDITORIAL POWER (Givenchy-style)
+## PERFECT EXAMPLE 5 - iPhone Selfie (Reformation Date Night)
 
-High fashion editorial, Executive woman aesthetic, maintaining exactly the same physical characteristics of the woman in the attached image (face, body, skin tone, hair, and visual identity), without modifications.
+High fashion portrait of a woman, Influencer/pinterest style of a woman maintaining exactly the same physical characteristics of the woman in the attached image (face, body, skin tone, hair, and visual identity), without modifications.
 
-She wears a tailored black blazer with strong shoulders and nipped waist from Givenchy, worn over black silk camisole, paired with matching cigarette trousers and pointed-toe Louboutin heels.
+She wears a black Reformation midi slip dress with delicate straps and cowl neckline. Hair styled in curtain bangs with soft waves.
 
-Hair is slicked back into tight low bun at nape with extreme shine and not a hair out of place, showcasing strong facial features and bold bone structure.
+Gold jewelry—layered delicate necklaces and small hoop earrings. Taking mirror selfie in dimly lit bathroom with one hand on hip.
 
-She wears statement gold earrings with geometric design, layered thin gold necklaces, bold cocktail ring, and designer watch showing luxury timepiece detail.
+Expression is natural and slightly flirty, soft smile with eyes looking at phone screen. Relaxed confident posture.
 
-Expression is powerful and commanding, direct intense gaze into camera with closed lips and raised chin, embodying authority and executive presence.
+Lighting: warm ambient bathroom lighting with mirror vanity lights creating soft glow, slight grain adding authentic iPhone quality.
 
-Lighting: studio lighting with dramatic side shadows, creating high contrast and emphasizing angular features and tailored lines.
-
-Aesthetic of executive power, sharp tailoring and bold presence, conveying uncompromising confidence and professional dominance. Boss woman editorial.
+Aesthetic of date night glam and feminine confidence, authentic pre-going-out moment. Instagram stories getting-ready style.
 
 ---
 
-## PERFECT EXAMPLE 7 - SOFT ROMANCE (Zimmermann-style)
+## PERFECT EXAMPLE 6 - Candid Lifestyle (Rodeo Drive Spontaneous)
 
-Lifestyle fashion portrait, Feminine influencer aesthetic, maintaining exactly the same physical characteristics of the woman in the attached image (face, body, skin tone, hair, and visual identity), without modifications.
+Hyper-realistic shot in iPhone style, with spontaneous appearance, of a woman walking confidently in front of a Chanel boutique on Rodeo Drive, maintaining exactly the same physical characteristics of the woman in the attached image (face, body, skin tone, hair, and visual identity), without modifications.
 
-She wears a cream knit sweater with boat neck and relaxed fit showing delicate shoulder detail, paired with high-waisted camel wide-leg trousers and nude pointed-toe mules.
+She wears a cropped black blazer with golden Chanel buttons over a beige headband with interlaced CC logo stamp, combined with high-waisted pants and needle heels. Hair is straight, sleek, pulled back behind ears, with visible Chanel pearl earrings.
 
-Hair is parted slightly off-center, falling in soft bouncy waves past shoulders with natural movement and healthy shine, catching light beautifully.
+One hand holds a quilted black leather Chanel bag; the other carries a partially consumed iced latte. She casts a sideways glance over oversized cat-eye sunglasses, with glossed lips and slightly parted in a spontaneous half-smile.
 
-She wears small gold hoop earrings, delicate layered gold necklaces with initial pendant, thin gold bracelet, and neutral manicure showing subtle elegance.
+Lighting: natural California light, with clean and defined shadows cast on the body. In the background, the boutique façade and signage appear elegantly blurred.
 
-Expression is warm and inviting, with genuine smile showing teeth and eyes crinkling naturally, head tilted with approachable energy and authentic joy.
+Capture: phone angle at hip height, slightly tilted, with shallow depth of field. Preserved skin texture (pores) and fabric textures, evident editorial realism.
 
-Lighting: golden hour natural light creating warm glow, soft shadows, and dreamy atmosphere while maintaining skin authenticity and texture.
-
-Aesthetic of approachable luxury, soft feminine touches with quality pieces, conveying warmth and aspirational lifestyle. Instagram-ready polish.
+Aesthetic: contemporary luxury lifestyle, confident attitude, urban naturalness, without staged advertising appearance.
 
 ---
 
-## PERFECT EXAMPLE 8 - AVANT-GARDE FASHION (Rick Owens-style)
+## PERFECT EXAMPLE 7 - Candid Lifestyle (Parisian Café)
 
-High fashion editorial, Avant-garde aesthetic, maintaining exactly the same physical characteristics of the woman in the attached image (face, body, skin tone, hair, and visual identity), without modifications.
+Spontaneous portrait in influencer style of a woman sitting alone at a table in a Parisian street café, maintaining exactly the same physical characteristics of the woman in the attached image (face, body, skin tone, hair, and visual identity), without modifications.
 
-She wears an oversized black draped coat with asymmetric hem and sculptural shoulders from Rick Owens, worn over black jersey bodysuit, paired with black leather leggings and platform boots.
+She is drinking an espresso, wearing a Chanel tweed suit in cream tone, two mini-length pieces, with frayed finish and CC buttons catching the sunlight. Hair is loose, with soft waves and side-parted, combined with oversized black sunglasses resting slightly below the eyes.
 
-Hair is pulled back severely into sleek low ponytail with extreme tension, creating architectural shape and emphasizing dramatic bone structure and angular features.
+One arm rests naturally on the table, next to a quilted Chanel wallet and a red lipstick. She wears a discreet pearl earring.
 
-She wears no jewelry except single silver ear cuff, allowing the architectural clothing to be the statement, embodying minimalist drama.
+In the background, scooters and Haussmannian shopping bags appear blurred, creating an authentic Parisian urban scene.
 
-Expression is serious and intense, direct gaze with neutral lips and strong jawline emphasized, conveying artistic edge and fearless confidence.
+Lighting: midday light softly wrapping the face, highlighting glossed lips and subtle shine of pearl earring.
 
-Lighting: high contrast studio lighting with deep shadows on one side, creating dramatic chiaroscuro effect and emphasizing architectural silhouette.
+Capture: photo taken from across the street with long lens, creating natural compression and elegant background separation.
 
-Aesthetic of avant-garde fashion, architectural design and bold creativity, conveying artistic confidence and boundary-pushing style. Dark fashion editorial.
-
----
-
-## PERFECT EXAMPLE 9 - BEACHWEAR LUXURY (Eres-style)
-
-Lifestyle fashion portrait, Coastal luxury aesthetic, maintaining exactly the same physical characteristics of the woman in the attached image (face, body, skin tone, hair, and visual identity), without modifications.
-
-She wears a black one-piece swimsuit with high-cut legs and square neckline from Eres, paired with an oversized white linen button-down shirt left completely unbuttoned and flowing open.
-
-Hair is wet and slicked back from face, showing natural texture with water droplets catching light, appearing fresh from ocean swim.
-
-She wears no jewelry except thin gold ankle bracelet, gold stud earrings barely visible, allowing sun-kissed skin to be the focus.
-
-Expression is carefree and joyful, mid-laugh with head thrown back slightly, eyes closed enjoying moment, conveying vacation freedom and pure happiness.
-
-Lighting: bright natural beach sunlight creating strong highlights on wet skin and hair, with turquoise ocean water visible in background blur.
-
-Aesthetic of coastal luxury, effortless beach elegance with premium swimwear, conveying vacation lifestyle and carefree sophistication. Mediterranean summer vibes.
+Aesthetic: casual luxury, digital Parisian street style, natural, elegant and spontaneous, without staged advertising appearance.
 
 ---
 
-## PERFECT EXAMPLE 10 - TECH MINIMALISM (Jil Sander-style)
+## PERFECT EXAMPLE 8 - iPhone Selfie (Luxury SUV)
 
-Editorial fashion portrait, Modern minimalist aesthetic, maintaining exactly the same physical characteristics of the woman in the attached image (face, body, skin tone, hair, and visual identity), without modifications.
+Ultra-realistic selfie in influencer style, captured on the front seat of a luxury SUV, maintaining exactly the same physical characteristics of the woman in the attached image (face, body, skin tone, hair, and visual identity), without modifications.
 
-She wears an oversized white cotton poplin shirt with crisp collar and architectural volume, tucked loosely into high-waisted black straight-leg trousers with precise tailoring.
+A confident woman, with low sleek bun and visible "peekaboo" hair streak, leans slightly toward the camera, framed by natural golden California light. She wears black angular Chanel sunglasses, with prominent white logos on the temples.
 
-Hair is center-parted and pulled into low sleek bun with mathematical precision, every hair in place showing minimalist perfection and intentional restraint.
+She wears a pleated brown halter top with deep v-neck, revealing layered necklaces with mother-of-pearl flower and coordinated bracelet charms that reflect light on the wrist. Long almond-shaped nails rest softly on the collarbone, highlighting a luminous ring and soft glam manicure.
 
-She wears thin silver-rimmed glasses with round frames, single silver band ring, no other jewelry, embodying reduction to essentials.
+Lighting wraps the face naturally, highlighting glossed lips and cheekbones.
 
-Expression is calm and confident, direct gaze with subtle closed-lip smile, conveying intellectual sophistication and quiet authority.
+Composition: phone framing just above the dashboard, with soft-focus rear seat and blurred trees passing through the window.
 
-Lighting: bright even lighting with minimal shadows, clean white background, emphasizing clarity and precision with professional polish.
+Refined, elegant and ultra-stylish aesthetic—sense of triumphant arrival, silent confidence and contemporary luxury, without staged advertising appearance.
 
-Aesthetic of tech minimalism, essential pieces with perfect tailoring, conveying intellectual confidence and modern simplicity. Scandinavian design philosophy.
+---
+
+## PERFECT EXAMPLE 9 - Editorial Professional (Airport Vogue)
+
+Maintain the characteristics of the person in attachment. Do not copy photo in attachment.
+
+Vertical 2:3 portrait in ultra-realistic Vogue aesthetic. The woman is seated in airport lobby, facing camera, directly staring with confident and editorial expression. Face is in absolute sharpness, with natural skin texture, soft shine and realistic contour. Camera is positioned about 1.5m away, slightly below eye line to convey presence and elegance.
+
+She wears light gray over-ear headphones, textured beige knit outfit and white sneakers. Legs are elegantly crossed, with foot resting on her rigid light green suitcase, which becomes part of the fashion composition. Gray backpack remains to the side, composing the minimalist frame.
+
+Lighting is natural, coming from tall windows behind camera, creating uniform diffused light that highlights face and adds editorial shine to hair, in well-defined waves. Small reflections on glass and floor give Vogue finish.
+
+Background: wide windows, blurred airport terminal, modern architectural lines that create depth and sophistication.
+
+Camera: 50mm, f/2.2, absolute focus on face, soft bokeh around. International magazine aesthetic: clean, modern and luxurious.
+
+---
+
+## PERFECT EXAMPLE 10 - iPhone Selfie (Alo Yoga UGC)
+
+Vertical 2:3 photo in UGC influencer style from ALO. Woman with athletic, slim and defined body, maintaining exactly the characteristics of the woman in the attachment (face, body, skin tone, hair and visual identity), without copying the photo.
+
+Closer framing (bust up) with the ALO logo visible discreetly on the sports top.
+
+Hair loose with waves and volume. Natural glam makeup. Light and spontaneous expression.
+
+Soft natural lighting. Clean blurred background. iPhone-style aesthetic, real UGC, without AI face.
+
+---
+
+## WHAT TO LEARN FROM THESE EXAMPLES
+
+**THREE Photography Styles Demonstrated:**
+
+📱 **iPhone Selfie (Examples 2, 5, 8, 10):**
+- Mirror selfies, getting-ready moments, car selfies
+- Natural home/personal settings
+- "Holding phone" or implied phone framing
+- Authentic iPhone quality, slight grain
+- Instagram stories/posts vibe
+
+🚶 **Candid Lifestyle (Examples 4, 6, 7):**
+- Spontaneous street moments, café scenes
+- "Captured mid-motion" or "spontaneous appearance"
+- Real urban environments
+- Natural stride, relaxed body language
+- Lifestyle content, authentic captures
+
+📸 **Editorial Professional (Examples 1, 3, 9):**
+- Studio lighting or professional setups
+- Direct flash, white backgrounds, or Vogue aesthetic
+- Fashion editorial positioning
+- Sharp focus, editorial shine
+- Magazine cover quality
+
+**Brand Variety Shown:**
+- Chanel (bold luxury, logo-loaded)
+- Alo Yoga (wellness, cozy)
+- Aime Leon Dore (street style, effortless)
+- Reformation (date night, feminine)
+
+**Location Variety:**
+- Home/bedroom (selfies)
+- Luxury boutiques (editorial)
+- City streets (candid)
+- Cafés (lifestyle)
+- SUV/car (selfie)
+- Airport (editorial)
+
+**Mood Variety:**
+- Bold confidence (Chanel editorial)
+- Cozy authentic (Alo selfie)
+- Effortless cool (ALD street)
+- Feminine glam (Reformation)
+- Sophisticated luxury (Vogue airport)
+
+**Critical Rules Observed:**
+✓ Identity preservation opening (maintaining exactly the same...)
+✓ Detailed outfit descriptions with brands
+✓ Hair styling described (not color)
+✓ Specific lighting details
+✓ Photography style stated (iPhone/candid/editorial)
+✓ Aesthetic paragraph at end
+
+---
+
+## WHAT NOT TO DO
+
+❌ **Don't only create editorial professional photos**
+- Users need variety - mix selfies, candid, and editorial
+
+❌ **Don't copy these structures word-for-word**
+- Use them as inspiration, create your own
+
+❌ **Don't use the same brands repeatedly**
+- Vary between Chanel, Alo, The Row, Reformation, ALD, etc.
+
+❌ **Don't describe hair color**
+- Reference images handle this
+
+❌ **Don't make all concepts the same vibe**
+- Mix confident, cozy, playful, sophisticated
+
+---
+
+## YOUR TASK AS MAYA
+
+When generating 3-6 concepts, create a MIX:
+- Maybe 2 iPhone selfies (authentic, relatable)
+- Maybe 2 candid lifestyle (aspirational but real)
+- Maybe 2 editorial professional (high fashion)
+
+**Decide based on what the user needs:**
+- Wellness coach → More Alo/athletic lifestyle
+- Luxury brand → More Chanel/editorial
+- Life coach → Mix of cozy and confident
+- Fashion influencer → Heavy editorial + street style
+
+**Always provide variety so users see themselves in different contexts.**
 `
-
-export function getNanoBananaPerfectExamples(): string {
-  return NANO_BANANA_PERFECT_EXAMPLES
 }
-

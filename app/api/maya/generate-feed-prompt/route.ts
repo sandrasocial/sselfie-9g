@@ -3,7 +3,7 @@ import { neon } from "@neondatabase/serverless"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import { streamText } from "ai"
-import { getMayaPersonality } from "@/lib/maya/personality-enhanced"
+import { getMayaSystemPrompt, MAYA_CLASSIC_CONFIG, MAYA_PRO_CONFIG } from "@/lib/maya/mode-adapters"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getFluxPromptingPrinciples } from "@/lib/maya/flux-prompting-principles"
 import { getNanoBananaPromptingPrinciples } from "@/lib/maya/nano-banana-prompt-builder"
@@ -169,8 +169,9 @@ export async function POST(request: NextRequest) {
     const userContext = await getUserContextForMaya(user.id)
     console.log("[v0] [FEED-PROMPT] User context retrieved, length:", userContext.length)
 
-    // Build Maya's system prompt for feed post generation
-    const mayaPersonality = getMayaPersonality()
+    // Build Maya's system prompt for feed post generation using unified system
+    const config = isProMode ? MAYA_PRO_CONFIG : MAYA_CLASSIC_CONFIG
+    const mayaPersonality = getMayaSystemPrompt(config)
     
     // Use Nano Banana principles for Pro Mode, FLUX principles for Classic Mode
     const promptingPrinciples = isProMode 

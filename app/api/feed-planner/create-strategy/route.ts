@@ -11,7 +11,9 @@ import { getFluxPromptingPrinciples } from "@/lib/maya/flux-prompting-principles
 import { detectRequiredMode, detectProModeType } from "@/lib/feed-planner/mode-detection"
 import { buildNanoBananaPrompt } from "@/lib/maya/nano-banana-prompt-builder"
 import { getFashionIntelligencePrinciples } from "@/lib/maya/fashion-knowledge-2025"
-import INFLUENCER_POSING_KNOWLEDGE from "@/lib/maya/influencer-posing-knowledge"
+// influencer-posing-knowledge removed - Maya uses her intelligence from core-personality
+// import INFLUENCER_POSING_KNOWLEDGE from "@/lib/maya/influencer-posing-knowledge"
+const INFLUENCER_POSING_KNOWLEDGE = "" // Placeholder - Maya's intelligence handles this
 
 /**
  * @deprecated This endpoint is deprecated. 

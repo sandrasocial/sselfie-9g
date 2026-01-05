@@ -16,7 +16,6 @@
  */
 
 import { getUserContextForMaya } from './get-user-context'
-import { detectCategoryAndBrand } from './prompt-templates/high-end-brands'
 
 /**
  * Studio Pro Mode Types
@@ -520,17 +519,13 @@ export async function buildNanoBananaPrompt(params: {
     
     case 'brand-scene': {
       // Detect brand for context (guidance only, not replacement)
-      const brandIntent = detectCategoryAndBrand(userRequest)
+      // Maya uses her intelligence to detect brands from user request - no template system needed
       let brandContext: { name?: string; aesthetic?: any; visuals?: any } | null = null
 
-      if (brandIntent.confidence >= 0.7 && brandIntent.suggestedBrands.length > 0) {
-        const detectedBrand = brandIntent.suggestedBrands[0] as { id: string; name: string; aesthetic?: any; visuals?: any }
-        brandContext = {
-          name: detectedBrand.name,
-          aesthetic: detectedBrand.aesthetic,
-          visuals: detectedBrand.visuals,
-        }
-        console.log('[PROMPT-BUILDER] Detected brand for context:', {
+      // Brand context is now handled by Maya's intelligence in the system prompt
+      // No need for template-based detection
+      if (false) {
+        console.log('[PROMPT-BUILDER] Brand detection removed - Maya handles this intelligently:', {
           brandId: detectedBrand.id,
           brandName: detectedBrand.name,
         })

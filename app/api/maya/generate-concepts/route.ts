@@ -40,7 +40,9 @@ import INSTAGRAM_LOCATION_INTELLIGENCE from "@/lib/maya/instagram-location-intel
 import { getLuxuryLifestyleSettings } from "@/lib/maya/luxury-lifestyle-settings"
 import { getNanoBananaPromptingPrinciples } from "@/lib/maya/nano-banana-prompt-builder"
 import { getNanoBananaPerfectExamples } from "@/lib/maya/nano-banana-examples"
+import { getFluxPerfectExamples } from "@/lib/maya/flux-examples"
 import { validateNanoBananaPrompt } from "@/lib/maya/nano-banana-validator"
+import { getMayaSystemPrompt, MAYA_CLASSIC_CONFIG, MAYA_PRO_CONFIG } from "@/lib/maya/mode-adapters"
 import { getConceptPrompt } from "@/lib/maya/concept-templates"
 import {
   shouldIncludeSkinTexture,
@@ -49,8 +51,6 @@ import {
   createVariationFromGuidePrompt,
   type ReferenceImages
 } from "@/lib/maya/prompt-builders/guide-prompt-handler"
-import { SHARED_MAYA_PERSONALITY } from "@/lib/maya/personality/shared-personality"
-import { getMayaPersonality } from "@/lib/maya/personality-enhanced"
 import { MAYA_SYSTEM_PROMPT } from "@/lib/maya/personality"
 import { generateCompleteOutfit } from "@/lib/maya/brand-library-2025"
 import { 
@@ -59,14 +59,8 @@ import {
   validatePromptLength,
   type PromptConstructorParams 
 } from "@/lib/maya/prompt-constructor"
-import { buildEnhancedPrompt, type EnhancedPromptParams } from "@/lib/maya/prompt-constructor-enhanced"
-import { 
-  findMatchingPrompt, 
-  getRandomPrompts,
-  getPromptsForCategory,
-  getPromptById,
-  type UniversalPrompt 
-} from "@/lib/maya/universal-prompts"
+// prompt-constructor-enhanced removed - using unified system instead
+// import { buildEnhancedPrompt, type EnhancedPromptParams } from "@/lib/maya/prompt-constructor-enhanced"
 import {
   applyProgrammaticFixes,
   validatePromptLight,
@@ -526,6 +520,7 @@ function mapConceptToPromptId(category: string, conceptValue: string): string | 
  * Map internal category to Universal Prompts library category
  * Now simplified since detectCategoryFromRequest already returns Universal Prompt categories
  */
+// Universal prompts system removed - this function is deprecated
 function mapToUniversalPromptCategory(category: string, userRequest?: string): string | null {
   // detectCategoryFromRequest now directly returns Universal Prompt categories
   // So we can use it directly, but we also need to handle prompt constructor categories
@@ -1243,14 +1238,70 @@ IMPORTANT:
       studioProMode
     })
 
-    // Use enhanced personality for Studio Pro Mode (with SSELFIE design system)
-    // Use full MAYA_SYSTEM_PROMPT for Classic Mode (includes all fashion expertise, styling knowledge, location inspiration, etc.)
-    const mayaPersonalitySection = studioProMode 
-      ? getMayaPersonality()
-      : MAYA_SYSTEM_PROMPT
+    // Get unified Maya system prompt with mode-specific adapters
+    const config = studioProMode ? MAYA_PRO_CONFIG : MAYA_CLASSIC_CONFIG
+    const baseSystemPrompt = getMayaSystemPrompt(config)
 
-    // Use shared personality from module
-    const conceptPrompt = `${mayaPersonalitySection}
+
+    // Get user context before building prompt (async call must be outside template string)
+    const userContext = await getUserContextForMaya(authUser.id)
+
+    // Build the unified system prompt with examples and task
+    const isProMode = studioProMode
+    const conceptPrompt = `${baseSystemPrompt}
+
+---
+
+## PERFECT EXAMPLES
+
+These examples teach you the STRUCTURE and STYLE, not formulas to copy.
+Use them as inspiration to create fresh, unique prompts for this specific user.
+
+${isProMode ? getNanoBananaPerfectExamples() : getFluxPerfectExamples()}
+
+---
+
+## YOUR TASK
+
+The user requests: "${userRequest}"
+
+${userContext}
+
+**Generate 3-6 diverse concept cards** (you decide the right number).
+
+${!isProMode ? `
+**CRITICAL - CLASSIC MODE RULES (TESTED & VERIFIED):**
+
+❌ NEVER DESCRIBE:
+- Expressions (smile, laugh, looking away, direct gaze, etc.)
+- Poses (relaxed posture, confident stride, etc.)
+- Emotional states (serene, thoughtful, confident, etc.)
+- Specific iPhone models (say "iPhone" only)
+
+✅ ALWAYS INCLUDE:
+- End with: "grainy iphone photo IMG_XXXX.HEIC" OR "IMG_XXXX.HEIC amateur photo"
+- Random IMG number (make it authentic)
+- "shot on iPhone" (no model number)
+- "shallow depth of field"
+
+✅ DESCRIBE ONLY:
+- Hair style (not color)
+- Essential outfit pieces
+- Basic location (minimal)
+- Lighting type (simple)
+
+The LoRA model handles ALL expressions, poses, and personality. Don't override it.
+` : ''}
+
+**Variety Checklist:**
+✓ Different style categories (luxury, athletic, cozy, etc.)
+✓ Different locations (home, café, street, studio)
+✓ Different outfits and color palettes
+✓ ${isProMode ? 'Different photography types (iPhone selfie/candid/editorial)' : 'Different lighting conditions'}
+
+Remember: Create what feels RIGHT for this user, not formulaic prompts.
+
+---
 
 ${
   studioProMode
@@ -1339,7 +1390,13 @@ ${trendFilterInstruction}
     : ""
 }
 
-${detectedGuidePrompt ? `\n${SHARED_MAYA_PERSONALITY.guidePromptPriority}
+${detectedGuidePrompt ? `\n**Guide Prompt Priority:**
+When a user provides an exact guide prompt, it takes absolute priority:
+- Use the guide prompt exactly for concept #1
+- Create variations (concepts 2-6) that maintain the same outfit, location, and lighting
+- Only vary poses, angles, moments, and expressions
+- Ignore all other instructions when a guide prompt is active
+
 
 **Concept #1:** Use this exact prompt:
 "${detectedGuidePrompt}"
@@ -3246,34 +3303,10 @@ Same quality/luxury/styling as professional concepts, but with:
             ? detectedCategory
             : (category ? mapToUniversalPromptCategory(category, userRequest) : null)
           
-          if (universalPromptCategory) {
-            try {
-              const fallbackPrompts = getRandomPrompts(universalPromptCategory, count)
-              
-              if (fallbackPrompts.length > 0) {
-                const universalPromptConcepts: MayaConcept[] = fallbackPrompts.map((universalPrompt: UniversalPrompt) => ({
-                  title: universalPrompt.title,
-                  description: universalPrompt.description,
-                  category: mapComponentCategoryToMayaCategory(detectedCategoryForMapping || 'casual-lifestyle'),
-                  fashionIntelligence: '',
-                  lighting: '',
-                  location: location || 'street', // 🔴 FIX: Ensure location is always string, not null
-                  prompt: universalPrompt.prompt,
-                }))
-                
-                concepts = universalPromptConcepts
-                console.log(`[v0] [UNIVERSAL-PROMPTS] ✅ Used ${concepts.length} Universal Prompts as fallback`)
-              } else {
-                console.warn(`[v0] [UNIVERSAL-PROMPTS] No fallback prompts found for ${universalPromptCategory}`)
-              }
-            } catch (error) {
-              console.error('[v0] [UNIVERSAL-PROMPTS] ❌ Error using fallback prompts:', error)
-            }
-          } else {
-            // No universal prompt category - this means category is null
-            // AI generation path will be used (already handled above)
-            console.log('[v0] [UNIVERSAL-PROMPTS] No category for Universal Prompts - AI generation will be used')
-          }
+          // Universal prompts system removed - Maya generates directly using her intelligence
+          // This fallback code path is disabled - Maya uses her intelligence instead of templates
+          // No action needed - Maya will generate concepts directly below
+          console.log('[v0] [UNIVERSAL-PROMPTS] No category for Universal Prompts - AI generation will be used')
         }
       } else {
         console.log(`[v0] [PROMPT-CONSTRUCTOR] Skipping - category ${category} not supported or no valid mapping`)

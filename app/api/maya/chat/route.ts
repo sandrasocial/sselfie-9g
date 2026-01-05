@@ -1,6 +1,6 @@
 import { streamText, convertToModelMessages, type UIMessage } from "ai"
 import { MAYA_SYSTEM_PROMPT } from "@/lib/maya/personality"
-import { MAYA_PRO_SYSTEM_PROMPT } from "@/lib/maya/pro-personality"
+import { getMayaSystemPrompt, MAYA_CLASSIC_CONFIG, MAYA_PRO_CONFIG } from "@/lib/maya/mode-adapters"
 import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
@@ -718,8 +718,11 @@ export async function POST(req: Request) {
                  "Auto-detect mode per post (default)"
       })
     } else {
-      // Use Maya Pro personality if in Studio Pro mode, otherwise use standard Maya
-      systemPrompt = isStudioProMode ? MAYA_PRO_SYSTEM_PROMPT : MAYA_SYSTEM_PROMPT
+      // Use unified Maya system with mode-specific adapters
+      // Note: getMayaSystemPrompt() includes MAYA_VOICE, MAYA_CORE_INTELLIGENCE,
+      // and MAYA_PROMPT_PHILOSOPHY - no direct import needed
+      const config = isStudioProMode ? MAYA_PRO_CONFIG : MAYA_CLASSIC_CONFIG
+      systemPrompt = getMayaSystemPrompt(config)
     }
 
     // Add user context to system prompt

@@ -9,17 +9,17 @@
  * - iPhone/natural photo aesthetic
  * - Avoiding words that conflict with LoRA (forbidden words like "ultra realistic", "8K", etc.)
  * 
- * DO NOT use this personality for Pro Mode - use personality-enhanced.ts instead.
+ * NOTE: This file is kept for backward compatibility. New code should use the unified system:
+ * - lib/maya/core-personality.ts (Maya's voice and intelligence)
+ * - lib/maya/mode-adapters.ts (Mode-specific configurations)
  * 
  * Classic Mode = User has LoRA, wants natural selfie-style photos
  * Pro Mode = User has reference images, wants luxury influencer content (150-400 word prompts)
  */
 
-import { MAYA_PERSONALITY } from "./personality-enhanced"
-import type { MayaPersonality } from "./personality-enhanced"
-
-export type { MayaPersonality }
-export { MAYA_PERSONALITY }
+// Removed imports from deleted personality-enhanced.ts
+// This file now only exports MAYA_SYSTEM_PROMPT for backward compatibility
+// New code should use getMayaSystemPrompt() from mode-adapters.ts
 
 export const MAYA_SYSTEM_PROMPT = `You're Maya - a creative partner who helps people create stunning Instagram content.
 

@@ -1,5 +1,5 @@
 import { streamText, convertToModelMessages, type UIMessage } from "ai"
-import { MAYA_PRO_SYSTEM_PROMPT } from "@/lib/maya/pro-personality"
+import { getMayaSystemPrompt, MAYA_PRO_CONFIG } from "@/lib/maya/mode-adapters"
 import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
@@ -103,8 +103,8 @@ export async function POST(req: NextRequest) {
     // Get user context (memory, brand, etc.)
     const userContext = await getUserContextForMaya(userId)
 
-    // Build Pro Mode system prompt with context
-    const systemPrompt = `${MAYA_PRO_SYSTEM_PROMPT}
+    // Build Pro Mode system prompt with context using unified system
+    const systemPrompt = `${getMayaSystemPrompt(MAYA_PRO_CONFIG)}
 
 ${userContext}
 

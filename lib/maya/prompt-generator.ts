@@ -3,12 +3,30 @@
  * Analyzes workbench context and generates optimized prompts
  */
 
-import { CAROUSEL_TEMPLATES } from './prompt-templates/carousel-prompts'
-import { UGC_TEMPLATES } from './prompt-templates/ugc-prompts'
-import { PRODUCT_MOCKUP_TEMPLATES } from './prompt-templates/product-mockup-prompts'
-import { BRAND_PARTNERSHIP_TEMPLATES } from './prompt-templates/brand-partnership-prompts'
-import { REEL_COVER_TEMPLATES } from './prompt-templates/reel-cover-prompts'
-import type { PromptTemplate, PromptContext, ImageReference } from './prompt-templates/types'
+// Template system removed - this file is deprecated
+// All template imports removed as part of Phase 5 consolidation
+// TODO: This file should be refactored or removed if not actively used
+
+// Placeholder types for backward compatibility
+type PromptTemplate = any
+type PromptContext = any
+type ImageReference = any
+
+const CAROUSEL_TEMPLATES: Record<string, PromptTemplate> = {}
+const UGC_TEMPLATES: Record<string, PromptTemplate> = {}
+const PRODUCT_MOCKUP_TEMPLATES: Record<string, PromptTemplate> = {}
+const BRAND_PARTNERSHIP_TEMPLATES: Record<string, PromptTemplate> = {}
+const REEL_COVER_TEMPLATES: Record<string, PromptTemplate> = {}
+
+// BrandProfile type definition (replaces deleted prompt-templates/types import)
+export interface BrandProfile {
+  brandName?: string
+  brandValues?: string[]
+  targetAudience?: string
+  aesthetic?: string
+  colorPalette?: string[]
+  [key: string]: any // Allow additional properties
+}
 
 export interface WorkbenchContext {
   images: WorkbenchImage[]
@@ -16,7 +34,7 @@ export interface WorkbenchContext {
   contentType: ContentType
   previousPrompts?: string[] // For learning
   userPreferences?: UserPreferences
-  brandProfile?: import('./prompt-templates/types').BrandProfile // User's brand context
+  brandProfile?: BrandProfile // User's brand context
 }
 
 export interface WorkbenchImage {
