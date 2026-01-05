@@ -51,7 +51,6 @@ import {
   createVariationFromGuidePrompt,
   type ReferenceImages
 } from "@/lib/maya/prompt-builders/guide-prompt-handler"
-import { MAYA_SYSTEM_PROMPT } from "@/lib/maya/personality"
 import { generateCompleteOutfit } from "@/lib/maya/brand-library-2025"
 import { 
   buildPrompt, 

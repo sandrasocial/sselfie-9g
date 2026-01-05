@@ -1,5 +1,4 @@
 import { streamText, convertToModelMessages, type UIMessage } from "ai"
-import { MAYA_SYSTEM_PROMPT } from "@/lib/maya/personality"
 import { getMayaSystemPrompt, MAYA_CLASSIC_CONFIG, MAYA_PRO_CONFIG } from "@/lib/maya/mode-adapters"
 import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
 import { createServerClient } from "@/lib/supabase/server"
@@ -705,7 +704,13 @@ export async function POST(req: Request) {
         userSelectedMode = null
       }
       
-      systemPrompt = getFeedPlannerContextAddon(userSelectedMode) + MAYA_SYSTEM_PROMPT
+      // Use new unified Maya system instead of old MAYA_SYSTEM_PROMPT
+      // Default to Classic Mode if mode is null (auto-detect)
+      const config = userSelectedMode === "pro" ? MAYA_PRO_CONFIG : MAYA_CLASSIC_CONFIG
+      const unifiedSystemPrompt = getMayaSystemPrompt(config)
+      
+      // Combine feed planner context with unified system
+      systemPrompt = getFeedPlannerContextAddon(userSelectedMode) + unifiedSystemPrompt
       console.log("[Maya Chat] ✅✅✅ FEED PLANNER AESTHETIC EXPERTISE LOADED ✅✅✅", {
         userSelectedMode,
         studioProHeader,
@@ -713,9 +718,10 @@ export async function POST(req: Request) {
         isFeedTab,
         systemPromptLength: systemPrompt.length,
         feedContextLength: getFeedPlannerContextAddon(userSelectedMode).length,
+        unifiedSystemLength: unifiedSystemPrompt.length,
         message: userSelectedMode === "pro" ? "User selected Pro Mode - all posts will be Pro" :
                  userSelectedMode === "classic" ? "User selected Classic Mode - all posts will be Classic" :
-                 "Auto-detect mode per post (default)"
+                 "Auto-detect mode per post (default - using Classic Mode config)"
       })
     } else {
       // Use unified Maya system with mode-specific adapters

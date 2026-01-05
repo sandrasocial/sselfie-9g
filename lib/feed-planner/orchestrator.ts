@@ -4,7 +4,7 @@ import { generateFeedLayout, type FeedLayoutStrategy } from "./layout-strategist
 import { conductContentResearch } from "../content-research-strategist/research-logic"
 import { generateInstagramBio } from "../instagram-bio-strategist/bio-logic"
 import { generateInstagramCaption } from "./caption-writer"
-import { MAYA_PERSONALITY } from "../maya/personality"
+import { getMayaSystemPrompt, MAYA_CLASSIC_CONFIG } from "../maya/mode-adapters"
 import { getFluxPromptingPrinciples } from "../maya/flux-prompting-principles"
 import { getFashionIntelligencePrinciples } from "../maya/fashion-knowledge-2025"
 import INFLUENCER_POSING_KNOWLEDGE from "../maya/influencer-posing-knowledge"
@@ -121,7 +121,7 @@ export async function orchestrateFeedPlanning(params: FeedPlannerParams): Promis
   try {
     const mayaAnalysis = await generateText({
       model: "anthropic/claude-haiku-4.5",
-      system: `${MAYA_PERSONALITY}
+      system: `${getMayaSystemPrompt(MAYA_CLASSIC_CONFIG)}
 
 You're helping design an Instagram feed. Analyze what the user wants and extract key details.
 
