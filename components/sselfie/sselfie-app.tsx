@@ -529,15 +529,23 @@ export default function SselfieApp({
                                     }}
                                     className={`cursor-pointer ${currentFeedId === feed.id ? 'bg-stone-100' : ''}`}
                                   >
-                                    <div className="flex items-center gap-2 w-full">
-                                      {/* Color indicator */}
+                                    <div className="flex items-center gap-2.5 w-full">
+                                      {/* Color indicator - always visible */}
                                       <div
-                                        className="w-3 h-3 rounded-full shrink-0 border border-stone-200"
+                                        className="w-4 h-4 rounded-full shrink-0 border-2 flex-shrink-0"
                                         style={{
-                                          backgroundColor: feed.display_color || 'transparent',
-                                          borderColor: feed.display_color || '#e7e5e4',
+                                          backgroundColor: feed.display_color || '#f5f5f4',
+                                          borderColor: feed.display_color || '#d4d4d4',
+                                          borderStyle: feed.display_color ? 'solid' : 'dashed',
                                         }}
-                                      />
+                                        title={feed.display_color ? `Color: ${feed.display_color}` : 'No color set'}
+                                      >
+                                        {!feed.display_color && (
+                                          <div className="w-full h-full flex items-center justify-center">
+                                            <div className="w-1.5 h-1.5 rounded-full bg-stone-400"></div>
+                                          </div>
+                                        )}
+                                      </div>
                                       <div className="flex flex-col flex-1 min-w-0">
                                         <span className="text-sm font-medium text-stone-900 truncate">{feed.title || `Feed ${feed.id}`}</span>
                                         {feed.image_count !== undefined && (

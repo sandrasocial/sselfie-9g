@@ -81,7 +81,18 @@ export default function FeedHeader({
             <ChevronLeft size={24} className="text-stone-900" strokeWidth={2} />
           </button>
         )}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
+          {/* Color badge */}
+          {feedData?.feed?.display_color && (
+            <div
+              className="w-3 h-3 rounded-full border-2 shrink-0"
+              style={{
+                backgroundColor: feedData.feed.display_color,
+                borderColor: feedData.feed.display_color,
+              }}
+              title={`Feed color: ${feedData.feed.display_color}`}
+            />
+          )}
           <span className="text-base font-semibold text-stone-900">{feedName}</span>
           <svg 
             className="w-4 h-4" 
