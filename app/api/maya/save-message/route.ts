@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     console.log("[v0] Request body:", body)
 
-    const { chatId, role, content, conceptCards } = body
+    const { chatId, role, content, conceptCards, feedCards } = body
 
     console.log("[v0] Parsed data:", {
       chatId,
@@ -45,6 +45,8 @@ export async function POST(request: NextRequest) {
       contentLength: content?.length || 0,
       hasConceptCards: !!conceptCards,
       conceptCardsCount: Array.isArray(conceptCards) ? conceptCards.length : 0,
+      hasFeedCards: !!feedCards,
+      feedCardsCount: Array.isArray(feedCards) ? feedCards.length : 0,
       conceptCards,
     })
 
@@ -78,9 +80,10 @@ export async function POST(request: NextRequest) {
           role,
           contentLength: safeContent?.length || 0,
           conceptCardsCount: Array.isArray(conceptCards) ? conceptCards.length : 0,
+          feedCardsCount: Array.isArray(feedCards) ? feedCards.length : 0,
         })
 
-        message = await saveChatMessage(chatId, role, safeContent, conceptCards)
+        message = await saveChatMessage(chatId, role, safeContent, conceptCards, feedCards)
 
         console.log("[v0] ✅ Message saved to database:", {
           messageId: message.id,

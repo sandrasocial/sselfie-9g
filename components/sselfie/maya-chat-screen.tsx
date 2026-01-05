@@ -1041,7 +1041,7 @@ export default function MayaChatScreen({
   // This ensures saved feeds persist across page reloads and tab switches with their images
   const handleFeedSaved = useCallback(async (messageId: string, feedId: number) => {
     if (!chatId) {
-      console.warn("[v0] ❌ No chatId available, cannot save feed marker")
+      console.warn("[v0] ❌ No chatId available, cannot save feed card")
       return
     }
     
@@ -1054,7 +1054,14 @@ export default function MayaChatScreen({
       return
     }
     
-    // Extract text content and replace [CREATE_FEED_STRATEGY:...] with [FEED_CARD:feedId]
+    // Extract feed card data from message parts
+    const feedCardPart = message.parts?.find((p: any) => p.type === "tool-generateFeed")
+    if (!feedCardPart || !feedCardPart.output) {
+      console.error("[v0] ❌ Feed card part not found in message:", messageId)
+      return
+    }
+    
+    // Extract text content (preserve existing content)
     let textContent = ""
     if (message.parts && Array.isArray(message.parts)) {
       const textParts = message.parts.filter((p: any) => p.type === "text")
@@ -1064,30 +1071,30 @@ export default function MayaChatScreen({
       textContent = message.content
     }
     
-    // Remove [CREATE_FEED_STRATEGY:...] trigger and add [FEED_CARD:feedId] marker
-    const updatedContent = textContent
-      .replace(/\[CREATE_FEED_STRATEGY:\s*\{[\s\S]*?\}\]/gi, '')
-      .trim() + `\n[FEED_CARD:${feedId}]`
+    // Prepare updated feed card data with feedId
+    const updatedFeedCard = {
+      ...feedCardPart.output,
+      feedId: feedId,
+      isSaved: true,
+    }
     
-    console.log("[v0] 🔄 Updating message content:", {
+    console.log("[v0] 🔄 Updating message with feed card:", {
       messageId,
       feedId,
-      hadTrigger: textContent.includes("[CREATE_FEED_STRATEGY"),
-      addedMarker: updatedContent.includes(`[FEED_CARD:${feedId}]`),
+      hasFeedCard: !!feedCardPart,
     })
     
-    // Save to database
+    // Save to database using update-message endpoint with feedCards parameter
     try {
-      const response = await fetch("/api/maya/save-message", {
+      const response = await fetch("/api/maya/update-message", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          chatId,
-          messageId,
-          role: message.role,
-          content: updatedContent,
-          conceptCards: [], // No concept cards in feed messages
+          messageId: parseInt(messageId, 10),
+          content: textContent, // Preserve existing text content
+          feedCards: [updatedFeedCard], // Save to styling_details column
+          append: false,
         }),
       })
       
@@ -1097,12 +1104,12 @@ export default function MayaChatScreen({
       
       const data = await response.json()
       if (data.success) {
-        console.log("[v0] ✅ Feed marker saved to database:", { messageId, feedId })
+        console.log("[v0] ✅ Feed card saved to styling_details column:", { messageId, feedId })
       } else {
-        console.error("[v0] ❌ Failed to save feed marker:", data.error)
+        console.error("[v0] ❌ Failed to save feed card:", data.error)
       }
     } catch (error) {
-      console.error("[v0] ❌ Error saving feed marker:", error)
+      console.error("[v0] ❌ Error saving feed card:", error)
     }
   }, [chatId, messages])
 

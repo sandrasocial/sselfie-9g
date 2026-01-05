@@ -249,15 +249,19 @@ export default function FeedPreviewCard({
   // This was causing duplicate polling and incorrect state management
 
   // For unsaved feeds OR just-saved feeds (before data arrives), use strategy posts if available
-  // Preserve strategy posts until real data is fetched (postsData has items)
-  const shouldUseStrategyPosts = (!feedId || justSavedRef.current) && strategy?.posts && postsData.length === 0
-  const effectivePosts = shouldUseStrategyPosts
+  // CRITICAL FIX: Use strategy posts if we have strategy AND (no feedId OR postsData is empty)
+  // This ensures unsaved feeds always show strategy posts, even if postsData has stale data
+  const shouldUseStrategyPosts = strategy?.posts && (!feedId || postsData.length === 0 || justSavedRef.current)
+  
+  const effectivePosts = shouldUseStrategyPosts && strategy.posts.length > 0
     ? strategy.posts.map((p: any, index: number) => ({
         id: index + 1, // Temporary ID for display
         position: p.position || index + 1,
         image_url: null,
         generation_status: 'pending',
-        prompt: p.prompt || p.imagePrompt || '',
+        // CRITICAL FIX: Maya's posts use visualDirection, not prompt
+        // Also check for prompt/imagePrompt for backward compatibility
+        prompt: p.prompt || p.imagePrompt || p.visualDirection || '',
         caption: p.caption || '',
         post_type: p.postType || p.type || 'user',
         content_pillar: p.purpose || '',

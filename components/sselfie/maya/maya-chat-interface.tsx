@@ -10,6 +10,7 @@ import { ArrowDown } from "lucide-react"
 import FeedPreviewCard from "@/components/feed-planner/feed-preview-card"
 import FeedCaptionCard from "@/components/feed-planner/feed-caption-card"
 import FeedStrategyCard from "@/components/feed-planner/feed-strategy-card"
+import UnifiedLoading from "../unified-loading"
 
 interface MayaChatInterfaceProps {
   // Messages
@@ -117,6 +118,8 @@ export default function MayaChatInterface({
   // Helper function to parse and render markdown-style text
   const renderMarkdownText = (text: string): React.ReactNode => {
     let cleanedText = text
+    // Remove all ** markdown formatting (user requested)
+    cleanedText = cleanedText.replace(/\*\*/g, '')
     const lines = cleanedText.split('\n')
     const elements: React.ReactNode[] = []
     let currentList: React.ReactNode[][] = []
@@ -127,21 +130,10 @@ export default function MayaChatInterface({
       // Handle list items
       if (trimmedLine.match(/^[-*]\s+/)) {
         const listItem = trimmedLine.replace(/^[-*]\s+/, '')
+        // Remove ** markdown (user requested)
+        const cleanedListItem = listItem.replace(/\*\*/g, '')
         const processedItem: React.ReactNode[] = []
-        const parts = listItem.split(/(\*\*[^*]+\*\*)/g)
-        
-        parts.forEach((part, partIdx) => {
-          if (part.match(/^\*\*[^*]+\*\*$/)) {
-            const boldText = part.replace(/\*\*/g, '')
-            processedItem.push(
-              <strong key={`bold-${partIdx}`} className="font-semibold text-stone-950">
-                {boldText}
-              </strong>
-            )
-          } else if (part) {
-            processedItem.push(<span key={`text-${partIdx}`}>{part}</span>)
-          }
-        })
+        processedItem.push(<span key="text-0">{cleanedListItem}</span>)
         
         if (processedItem.length === 0) {
           processedItem.push(<span key="text-0">{listItem}</span>)
@@ -162,23 +154,12 @@ export default function MayaChatInterface({
           currentList = []
         }
         
-        // Handle regular paragraphs with bold text
+        // Handle regular paragraphs (removed bold markdown per user request)
         if (trimmedLine) {
-          const parts = trimmedLine.split(/(\*\*[^*]+\*\*)/g)
+          // Remove ** markdown (user requested)
+          const cleanedLine = trimmedLine.replace(/\*\*/g, '')
           const processedLine: React.ReactNode[] = []
-          
-          parts.forEach((part, partIdx) => {
-            if (part.match(/^\*\*[^*]+\*\*$/)) {
-              const boldText = part.replace(/\*\*/g, '')
-              processedLine.push(
-                <strong key={`bold-${partIdx}`} className="font-semibold text-stone-950">
-                  {boldText}
-                </strong>
-              )
-            } else if (part) {
-              processedLine.push(<span key={`text-${partIdx}`}>{part}</span>)
-            }
-          })
+          processedLine.push(<span key="text-0">{cleanedLine}</span>)
           
           if (processedLine.length === 0) {
             processedLine.push(<span key="text-0">{trimmedLine}</span>)
@@ -243,6 +224,40 @@ export default function MayaChatInterface({
       }
       feedStrategyIndex = cleanedText.search(/\[CREATE_FEED_STRATEGY:/i)
     }
+    
+    // Also remove standalone [CREATE_FEED_STRATEGY] trigger (without JSON)
+    cleanedText = cleanedText.replace(/\[CREATE_FEED_STRATEGY\]/gi, '').trim()
+    
+    // Remove feed strategy JSON blocks that appear after the trigger
+    // Pattern: ```json followed by any content (including incomplete JSON)
+    cleanedText = cleanedText.replace(/```json[\s\S]*?```/gi, '').trim()
+    
+    // Remove any remaining ``` code blocks that might contain JSON
+    cleanedText = cleanedText.replace(/```[\s\S]*?```/g, '').trim()
+    
+    // Also remove JSON blocks that start with { "feedStrategy"
+    cleanedText = cleanedText.replace(/\{\s*"feedStrategy"[\s\S]*?\}/g, '').trim()
+    
+    // Remove incomplete JSON blocks (starting with { but might be cut off)
+    cleanedText = cleanedText.replace(/\{\s*"feedStrategy"[\s\S]*$/g, '').trim()
+    cleanedText = cleanedText.replace(/\{\s*"position"[\s\S]*$/g, '').trim()
+    
+    // Remove "Aesthetic Choice:" section headers and content
+    cleanedText = cleanedText.replace(/Aesthetic Choice:[\s\S]*?(?=\n\n|\nOverall|$)/gi, '').trim()
+    
+    // Remove "Overall Vibe:" section headers and content
+    cleanedText = cleanedText.replace(/Overall Vibe:[\s\S]*?(?=\n\n|\nGrid|$)/gi, '').trim()
+    
+    // Remove any remaining "FEED STRATEGY:" headers and following content until next section
+    cleanedText = cleanedText.replace(/FEED STRATEGY:\s*"[^"]*"\s*/gi, '').trim()
+    cleanedText = cleanedText.replace(/Strategic Rationale:[\s\S]*?(?=\n\n|\nGrid|$)/gi, '').trim()
+    cleanedText = cleanedText.replace(/Grid Layout:[\s\S]*?(?=\n\n|\nPosts:|$)/gi, '').trim()
+    cleanedText = cleanedText.replace(/Posts:[\s\S]*?(?=\n\n|$)/gi, '').trim()
+    
+    // Remove any standalone JSON-like structures (incomplete or complete)
+    cleanedText = cleanedText.replace(/"position":\s*\d+[\s\S]*$/g, '').trim()
+    cleanedText = cleanedText.replace(/"postType":\s*"[^"]*"[\s\S]*$/g, '').trim()
+    
     cleanedText = cleanedText.trim()
     // Also remove other feed-related triggers
     cleanedText = cleanedText.replace(/\[GENERATE_CAPTIONS\]/gi, "").trim()
@@ -436,6 +451,28 @@ export default function MayaChatInterface({
                               {textParts.map((part, idx) => {
                                 const text = (part as any)?.text || ''
                                 
+                                // CRITICAL: Hide text content while feed is being created (same as concept cards)
+                                // Check if this message contains feed creation trigger and feed is still being created
+                                const hasFeedTrigger = text.includes("[CREATE_FEED_STRATEGY") || 
+                                                      text.includes("```json") ||
+                                                      text.includes('"feedStrategy"') ||
+                                                      text.includes('"position"') ||
+                                                      text.includes("Aesthetic Choice:") ||
+                                                      text.includes("Overall Vibe:")
+                                
+                                // If feed is being created and this message has feed content, hide text and show loading
+                                if (isCreatingFeed && hasFeedTrigger && !msg.parts?.some((p: any) => p.type === "tool-generateFeed")) {
+                                  return (
+                                    <div key={idx} className="flex justify-center py-4">
+                                      <UnifiedLoading 
+                                        variant="section" 
+                                        message="Creating Your Feed Layout" 
+                                        className="max-w-md w-full"
+                                      />
+                                    </div>
+                                  )
+                                }
+                                
                                 // Check for prompt suggestions in workbench mode
                                 const parsedPromptSuggestions = parsePromptSuggestions(text)
                                 
@@ -443,7 +480,7 @@ export default function MayaChatInterface({
                                 let displayText = text
                                 
                                 // Remove feed-related triggers from display text (always, regardless of mode)
-                                // Use bracket counting to properly match nested JSON structures
+                                // First, remove [CREATE_FEED_STRATEGY:...] with JSON inside brackets
                                 let feedStrategyIndex = displayText.search(/\[CREATE_FEED_STRATEGY:/i)
                                 while (feedStrategyIndex >= 0) {
                                   let bracketCount = 0
@@ -466,10 +503,62 @@ export default function MayaChatInterface({
                                   }
                                   feedStrategyIndex = displayText.search(/\[CREATE_FEED_STRATEGY:/i)
                                 }
+                                
+                                // Remove standalone [CREATE_FEED_STRATEGY] trigger (without JSON)
+                                displayText = displayText.replace(/\[CREATE_FEED_STRATEGY\]/gi, '').trim()
+                                
+                                // Remove feed strategy JSON blocks (```json code blocks)
+                                // Match ```json followed by any content including incomplete JSON
+                                displayText = displayText.replace(/```json[\s\S]*?```/gi, '').trim()
+                                
+                                // Remove any remaining ``` code blocks that might contain JSON
+                                displayText = displayText.replace(/```[\s\S]*?```/g, '').trim()
+                                
+                                // Remove JSON blocks that start with { "feedStrategy" (without code fences)
+                                // Match from opening brace to closing brace, handling nested structures
+                                // Use non-greedy matching with proper brace counting
+                                let jsonMatch
+                                while ((jsonMatch = displayText.match(/\{\s*"feedStrategy"[\s\S]*?\}/)) !== null) {
+                                  displayText = displayText.replace(/\{\s*"feedStrategy"[\s\S]*?\}/, '').trim()
+                                }
+                                
+                                // Remove incomplete JSON blocks (starting with { but might be cut off)
+                                // Match from { to end of text or next section
+                                displayText = displayText.replace(/\{\s*"feedStrategy"[\s\S]*$/g, '').trim()
+                                displayText = displayText.replace(/\{\s*"position"[\s\S]*$/g, '').trim()
+                                
+                                // Remove "Aesthetic Choice:" section headers and content
+                                displayText = displayText.replace(/Aesthetic Choice:[\s\S]*?(?=\n\n|\nOverall|$)/gi, '').trim()
+                                
+                                // Remove "Overall Vibe:" section headers and content
+                                displayText = displayText.replace(/Overall Vibe:[\s\S]*?(?=\n\n|\nGrid|$)/gi, '').trim()
+                                
+                                // Remove "FEED STRATEGY:" section headers and content
+                                displayText = displayText.replace(/FEED STRATEGY:\s*"[^"]*"\s*/gi, '').trim()
+                                
+                                // Remove "Strategic Rationale:" section and content until next section
+                                displayText = displayText.replace(/Strategic Rationale:[\s\S]*?(?=\n\n|\nGrid|$)/gi, '').trim()
+                                
+                                // Remove "Grid Layout:" section and content
+                                displayText = displayText.replace(/Grid Layout:[\s\S]*?(?=\n\n|\nPosts:|$)/gi, '').trim()
+                                
+                                // Remove "Posts:" section and JSON content
+                                displayText = displayText.replace(/Posts:\s*```json[\s\S]*?```/gi, '').trim()
+                                displayText = displayText.replace(/Posts:\s*\{[\s\S]*?\}/g, '').trim()
+                                
+                                // Remove any standalone JSON-like structures (incomplete or complete)
+                                // Match patterns like: "position": 2, "postType": "lifestyle"
+                                displayText = displayText.replace(/"position":\s*\d+[\s\S]*$/g, '').trim()
+                                displayText = displayText.replace(/"postType":\s*"[^"]*"[\s\S]*$/g, '').trim()
+                                
+                                // Clean up any remaining feed-related triggers
                                 displayText = displayText
                                   .replace(/\[GENERATE_CAPTIONS\]/gi, '')
                                   .replace(/\[GENERATE_STRATEGY\]/gi, '')
                                   .trim()
+                                
+                                // Remove excessive blank lines
+                                displayText = displayText.replace(/\n{3,}/g, '\n\n').trim()
                                 
                                 // Remove prompts that are rendered as cards (Classic Mode)
                                 if (!proMode && parsedPromptSuggestions.length > 0) {
@@ -712,11 +801,15 @@ export default function MayaChatInterface({
                                 console.log("[MayaChatInterface] Feed saved, updating message:", feedId)
                                 
                                 // CRITICAL: Update message parts with feedId
+                                // Use functional update to ensure we're working with latest messages
+                                // The AI SDK might update messages, so we need to merge, not replace
                                 setMessages((prevMessages: any[]) => {
+                                  // CRITICAL: Create a deep copy to avoid mutating the original array
                                   return prevMessages.map((message) => {
                                     // Find the message by ID
                                     if (message.id === currentMessageId && message.parts && Array.isArray(message.parts)) {
-                                      // Find and update the tool-generateFeed part
+                                      // CRITICAL: Preserve all existing parts and only update the feed card
+                                      // This ensures we don't lose parts added by the AI SDK
                                       const updatedParts = message.parts.map((p: any) => {
                                         if (p.type === "tool-generateFeed") {
                                           // Create new output object without strategy property
@@ -730,7 +823,8 @@ export default function MayaChatInterface({
                                             },
                                           }
                                         }
-                                        return p
+                                        // CRITICAL: Return a copy of the part to avoid mutation
+                                        return { ...p }
                                       })
                                       
                                       console.log("[MayaChatInterface] 🔄 Message updated with feedId:", feedId, "triggering re-save")
@@ -740,7 +834,8 @@ export default function MayaChatInterface({
                                         parts: updatedParts,
                                       }
                                     }
-                                    return message
+                                    // CRITICAL: Return a copy of the message to avoid mutation
+                                    return { ...message }
                                   })
                                 })
                                 
@@ -893,76 +988,60 @@ export default function MayaChatInterface({
               </div>
             ))}
 
+          {/* Global typing indicator - Show "Creating Your Feed Layout" when creating feed, otherwise "Maya is thinking..." */}
           {isTyping && (
             <div className="flex justify-start">
               <div className="bg-white/50 backdrop-blur-xl border border-white/70 p-3 rounded-2xl max-w-[85%] shadow-lg shadow-stone-900/5">
-                <div className="flex items-center gap-3">
-                  <div className="flex gap-1">
-                    <div className="w-1.5 h-1.5 rounded-full animate-bounce bg-stone-700"></div>
-                    <div
-                      className="w-1.5 h-1.5 rounded-full animate-bounce bg-stone-700"
-                      style={{ animationDelay: "0.2s" }}
-                    ></div>
-                    <div
-                      className="w-1.5 h-1.5 rounded-full animate-bounce bg-stone-700"
-                      style={{ animationDelay: "0.4s" }}
-                    ></div>
+                {isCreatingFeed ? (
+                  // Show UnifiedLoading when creating feed (consistent with concept cards)
+                  <UnifiedLoading 
+                    variant="inline" 
+                    message="Creating Your Feed Layout" 
+                    className="w-full"
+                  />
+                ) : (
+                  // Default typing indicator
+                  <div className="flex items-center gap-3">
+                    <div className="flex gap-1">
+                      <div className="w-1.5 h-1.5 rounded-full animate-bounce bg-stone-700"></div>
+                      <div
+                        className="w-1.5 h-1.5 rounded-full animate-bounce bg-stone-700"
+                        style={{ animationDelay: "0.2s" }}
+                      ></div>
+                      <div
+                        className="w-1.5 h-1.5 rounded-full animate-bounce bg-stone-700"
+                        style={{ animationDelay: "0.4s" }}
+                      ></div>
+                    </div>
+                    <span className="text-xs font-light text-stone-600">Maya is thinking...</span>
                   </div>
-                  <span className="text-xs font-light text-stone-600">Maya is thinking...</span>
-                </div>
+                )}
               </div>
             </div>
           )}
 
-          {/* Feed Creation Loading - Show first if active */}
-          {isCreatingFeed && (
+          {/* Feed Creation Loading - Show only if feed is being created but no message has feed card yet */}
+          {/* Note: Individual message loading is handled inline to hide JSON during streaming */}
+          {isCreatingFeed && !filteredMessages.some((m: any) => 
+            m.parts?.some((p: any) => p.type === "tool-generateFeed")
+          ) && (
             <div className="flex justify-center mt-8 mb-4">
-              <div className="bg-white rounded-2xl border border-stone-200/60 p-6 max-w-md w-full shadow-lg">
-                <div className="space-y-4">
-                  {/* Animated Progress */}
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-stone-900 animate-pulse"></div>
-                    <div className="w-2 h-2 rounded-full bg-stone-700 animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                    <div className="w-2 h-2 rounded-full bg-stone-500 animate-pulse" style={{ animationDelay: '0.4s' }}></div>
-                  </div>
-                  
-                  {/* Status Text */}
-                  <div className="text-center space-y-1">
-                    <p className="text-sm font-medium text-stone-900 tracking-wide">
-                      Creating Your Feed Layout
-                    </p>
-                    <p className="text-xs text-stone-600 leading-relaxed">
-                      Maya is designing your Instagram feed strategy
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <UnifiedLoading 
+                variant="section" 
+                message="Creating Your Feed Layout" 
+                className="max-w-md w-full"
+              />
             </div>
           )}
 
           {/* Enhanced Concept Generation Loading - Only show if NOT creating feed */}
           {isGeneratingConcepts && !isCreatingFeed && (
             <div className="flex justify-center mt-8 mb-4">
-              <div className="bg-white rounded-2xl border border-stone-200/60 p-6 max-w-md w-full shadow-lg">
-                <div className="space-y-4">
-                  {/* Animated Progress */}
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-stone-900 animate-pulse"></div>
-                    <div className="w-2 h-2 rounded-full bg-stone-700 animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                    <div className="w-2 h-2 rounded-full bg-stone-500 animate-pulse" style={{ animationDelay: '0.4s' }}></div>
-                  </div>
-                  
-                  {/* Status Text */}
-                  <div className="text-center space-y-1">
-                    <p className="text-sm font-medium text-stone-900 tracking-wide">
-                      Creating your concepts...
-                    </p>
-                    <p className="text-xs text-stone-600 leading-relaxed">
-                      Working on some amazing concepts for you! ✨
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <UnifiedLoading 
+                variant="section" 
+                message="Creating your concepts..." 
+                className="max-w-md w-full"
+              />
             </div>
           )}
 

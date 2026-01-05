@@ -45,7 +45,7 @@ export default function ImageGalleryModal({
   const loadMoreRef = useRef<HTMLDivElement>(null)
   const isLoadingRef = useRef(false) // Prevent duplicate requests
   const offsetRef = useRef(0) // Ref to track current offset for loadMore
-  const LIMIT = 100
+  const LIMIT = 30 // Reduced from 100 for faster initial load - users can click "Load More" to access all images
 
   // Memoized loadImages function
   const loadImages = useCallback(async (newOffset: number, isInitial: boolean = false) => {
@@ -249,7 +249,7 @@ export default function ImageGalleryModal({
                       }`}
                     >
                       <img
-                        src={getOptimizedImageUrl(image.image_url, 400, 75) || "/placeholder.svg"}
+                        src={getOptimizedImageUrl(image.image_url, 300, 70) || "/placeholder.svg"}
                         alt={image.prompt || "Gallery image"}
                         className="w-full h-full object-cover"
                         loading="lazy"

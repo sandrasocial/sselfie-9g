@@ -1,100 +1,145 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
 import { neon } from "@neondatabase/serverless"
 
 const sql = neon(process.env.DATABASE_URL!)
 
 /**
- * Update a chat message's content (e.g., to add feed card markers for persistence)
+ * Update an existing message's content
+ * Used for saving feed markers and other metadata to messages
  */
 export async function POST(request: NextRequest) {
   try {
-    const { user: authUser, error: authError } = await getAuthenticatedUser()
+    const { user, error: authError } = await getAuthenticatedUser()
 
-    if (authError || !authUser) {
+    if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { getUserByAuthId } = await import("@/lib/user-mapping")
-    const neonUser = await getUserByAuthId(authUser.id)
+    const neonUser = await getEffectiveNeonUser(user.id)
     if (!neonUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    const { messageId, content, append } = await request.json()
+    const body = await request.json()
+    const { messageId, content, append = false, feedCards } = body
 
-    if (!messageId || !content) {
-      return NextResponse.json({ error: "messageId and content are required" }, { status: 400 })
+    console.log("[update-message] Request received:", {
+      messageId,
+      contentLength: content?.length || 0,
+      hasFeedCards: !!feedCards,
+      feedCardsCount: Array.isArray(feedCards) ? feedCards.length : 0,
+    })
+
+    if (!messageId || content === undefined) {
+      return NextResponse.json(
+        { error: "Missing required fields: messageId and content" },
+        { status: 400 }
+      )
     }
 
-    // Verify message exists and belongs to user (security check)
-    const [existingMessage] = await sql`
-      SELECT m.content, m.chat_id, c.user_id
-      FROM maya_chat_messages m
-      INNER JOIN maya_chats c ON m.chat_id = c.id
-      WHERE m.id = ${messageId}
-      AND c.user_id = ${neonUser.id}
+    // Ensure messageId is a number
+    const messageIdNum = typeof messageId === 'string' ? parseInt(messageId, 10) : messageId
+    if (isNaN(messageIdNum)) {
+      return NextResponse.json(
+        { error: "Invalid messageId format" },
+        { status: 400 }
+      )
+    }
+
+    // Get current message content
+    const [currentMessage] = await sql`
+      SELECT content, chat_id FROM maya_chat_messages
+      WHERE id = ${messageIdNum}
       LIMIT 1
     `
-    
-    if (!existingMessage) {
-      console.error("[UPDATE-MESSAGE] ❌ Message not found or access denied:", { messageId, userId: neonUser.id })
-      return NextResponse.json({ error: "Message not found or access denied" }, { status: 404 })
+
+    if (!currentMessage) {
+      console.error("[update-message] ❌ Message not found:", messageIdNum)
+      return NextResponse.json({ error: "Message not found" }, { status: 404 })
     }
 
-    // If append is true, append to existing content; otherwise replace
-    if (append) {
-      if (existingMessage.content) {
-        // Check if marker already exists to prevent duplicates
-        if (!existingMessage.content.includes(content.trim())) {
-          await sql`
-            UPDATE maya_chat_messages
-            SET content = ${existingMessage.content + '\n\n' + content.trim()}, updated_at = NOW()
-            WHERE id = ${messageId}
-            AND EXISTS (
-              SELECT 1 FROM maya_chats c 
-              WHERE c.id = maya_chat_messages.chat_id 
-              AND c.user_id = ${neonUser.id}
-            )
-          `
-          console.log("[UPDATE-MESSAGE] ✅ Appended content to message:", messageId)
-        } else {
-          console.log("[UPDATE-MESSAGE] ⚠️ Marker already exists in message, skipping duplicate")
-        }
-      } else {
+    // Verify message belongs to user's chat
+    const [chat] = await sql`
+      SELECT user_id FROM maya_chats
+      WHERE id = ${currentMessage.chat_id}
+      LIMIT 1
+    `
+
+    if (!chat || chat.user_id !== neonUser.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
+    }
+
+    // Update content (append or replace)
+    const updatedContent = append
+      ? `${currentMessage.content || ""}\n${content}`
+      : content
+
+    // Update content and feed cards (styling_details column) if provided
+    if (feedCards && Array.isArray(feedCards)) {
+      try {
+        const feedCardsJson = JSON.stringify(feedCards)
+        console.log("[update-message] Updating message with feed cards:", {
+          messageId: messageIdNum,
+          feedCardsCount: feedCards.length,
+          feedCardsJsonLength: feedCardsJson.length,
+          firstFeedCard: feedCards[0] ? Object.keys(feedCards[0]) : null,
+        })
+        
+        // Use same pattern as INSERT - pass JSON string directly, Neon will handle JSONB conversion
         await sql`
           UPDATE maya_chat_messages
-          SET content = ${content.trim()}, updated_at = NOW()
-          WHERE id = ${messageId}
-          AND EXISTS (
-            SELECT 1 FROM maya_chats c 
-            WHERE c.id = maya_chat_messages.chat_id 
-            AND c.user_id = ${neonUser.id}
-          )
+          SET content = ${updatedContent}, styling_details = ${feedCardsJson}, updated_at = NOW()
+          WHERE id = ${messageIdNum}
         `
-        console.log("[UPDATE-MESSAGE] ✅ Set content for message:", messageId)
+        console.log("[update-message] ✅ Updated message with feed cards:", feedCards.length)
+      } catch (dbError: any) {
+        console.error("[update-message] ❌ Database error updating feed cards:", {
+          error: dbError?.message || String(dbError),
+          stack: dbError?.stack,
+          messageId: messageIdNum,
+          feedCardsCount: feedCards.length,
+          feedCardsJson: feedCardsJson?.substring(0, 200), // First 200 chars for debugging
+        })
+        throw dbError
       }
     } else {
       await sql`
         UPDATE maya_chat_messages
-        SET content = ${content}, updated_at = NOW()
-        WHERE id = ${messageId}
-        AND EXISTS (
-          SELECT 1 FROM maya_chats c 
-          WHERE c.id = maya_chat_messages.chat_id 
-          AND c.user_id = ${neonUser.id}
-        )
+        SET content = ${updatedContent}, updated_at = NOW()
+        WHERE id = ${messageIdNum}
       `
-      console.log("[UPDATE-MESSAGE] ✅ Replaced content for message:", messageId)
+    }
+
+    // Invalidate cache
+    try {
+      const { getRedisClient, CacheKeys } = await import("@/lib/redis")
+      const redis = getRedisClient()
+      const cacheKey = CacheKeys.mayaChatMessages(currentMessage.chat_id)
+      if (typeof cacheKey === "string" && cacheKey.length > 0) {
+        await redis.del(cacheKey)
+      }
+    } catch (cacheError) {
+      // Non-critical - cache invalidation failure
+      console.warn("[update-message] Cache invalidation failed:", cacheError)
     }
 
     return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error("[UPDATE-MESSAGE] ❌ Error updating message:", error)
+  } catch (error: any) {
+    const errorMessage = error?.message || String(error)
+    const errorStack = error?.stack || ""
+    console.error("[update-message] ❌ Error:", {
+      message: errorMessage,
+      stack: errorStack,
+      errorType: error?.constructor?.name,
+    })
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to update message" },
+      { 
+        error: "Failed to update message",
+        details: process.env.NODE_ENV === "development" ? errorMessage : undefined
+      },
       { status: 500 }
     )
   }
 }
-

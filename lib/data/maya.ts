@@ -23,6 +23,7 @@ export interface MayaChatMessage {
   role: "user" | "assistant" | "system"
   content: string
   concept_cards: any[] | null
+  styling_details: any | null // Used for feed cards (similar to concept_cards)
   created_at: Date
 }
 
@@ -208,6 +209,7 @@ export async function saveChatMessage(
   role: "user" | "assistant" | "system",
   content: string,
   conceptCards?: any[],
+  feedCards?: any[],
 ): Promise<MayaChatMessage> {
   console.log("[v0] 💾 saveChatMessage called:", {
     chatId,
@@ -215,15 +217,19 @@ export async function saveChatMessage(
     contentLength: content?.length || 0,
     hasConceptCards: !!conceptCards,
     conceptCardsCount: conceptCards?.length || 0,
+    hasFeedCards: !!feedCards,
+    feedCardsCount: feedCards?.length || 0,
   })
 
   const safeContent = content || ""
 
   try {
     const message = await retryDatabaseOperation(async () => {
+      // Use styling_details column for feed cards (similar to concept_cards)
+      const feedCardsJson = feedCards && feedCards.length > 0 ? JSON.stringify(feedCards) : null
       return await sql`
-        INSERT INTO maya_chat_messages (chat_id, role, content, concept_cards)
-        VALUES (${chatId}, ${role}, ${safeContent}, ${conceptCards ? JSON.stringify(conceptCards) : null})
+        INSERT INTO maya_chat_messages (chat_id, role, content, concept_cards, styling_details)
+        VALUES (${chatId}, ${role}, ${safeContent}, ${conceptCards ? JSON.stringify(conceptCards) : null}, ${feedCardsJson})
         RETURNING *
       `
     })

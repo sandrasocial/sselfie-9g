@@ -94,7 +94,30 @@ export async function GET(request: NextRequest) {
           },
         })
         
-        // CRITICAL: Check for UNSAVED feed strategy in messages with concept cards
+        // CRITICAL: Check for feed cards in styling_details column (message can have both concept cards and feed cards)
+        if (msg.styling_details && Array.isArray(msg.styling_details) && msg.styling_details.length > 0) {
+          console.log("[v0] ✅ Found feed cards in styling_details column for message", msg.id, "count:", msg.styling_details.length)
+          msg.styling_details.forEach((feedCard: any) => {
+            // Check if feed card part already exists (avoid duplicates)
+            const hasExistingFeedCard = parts.some((p: any) => 
+              p.type === 'tool-generateFeed' && 
+              (p.output?.feedId === feedCard.feedId || (!feedCard.feedId && !p.output?.feedId))
+            )
+            
+            if (!hasExistingFeedCard) {
+              parts.push({
+                type: "tool-generateFeed",
+                toolCallId: `tool_feed_${msg.id}_${feedCard.feedId || 'unsaved'}`,
+                state: "ready",
+                input: {},
+                output: feedCard,
+              })
+              console.log("[v0] ✅ Restored feed card from styling_details:", feedCard.feedId || "unsaved")
+            }
+          })
+        }
+        
+        // CRITICAL: Check for UNSAVED feed strategy in messages with concept cards (backward compatibility)
         const createFeedStrategyMatch = textContent.match(/\[CREATE_FEED_STRATEGY:\s*(\{[\s\S]*?\})\]/i)
         if (createFeedStrategyMatch) {
           try {
@@ -187,7 +210,7 @@ export async function GET(request: NextRequest) {
                 parts.push({
                   type: 'tool-generateFeed',
                   output: {
-                    feedId: feedId,
+                    feedId: feedId, // CRITICAL: Ensure feedId is always included
                     title: feedData.feed_title || 'Instagram Feed',
                     description: feedData.feed_description || '',
                     posts: posts,
@@ -196,6 +219,8 @@ export async function GET(request: NextRequest) {
                       visualRhythm: feedData.color_palette || '',
                     },
                     isSaved: true,
+                    // CRITICAL: Store feedId in output for UI rendering
+                    // This ensures FeedPreviewCard can correctly identify the feed
                   },
                 })
               } else {
@@ -272,6 +297,7 @@ export async function GET(request: NextRequest) {
             type: 'tool-generateFeed',
             output: {
               // No feedId - indicates unsaved state
+              feedId: undefined, // Explicitly undefined for unsaved feeds
               strategy: strategy,
               title: strategy.feedTitle || strategy.title || 'Instagram Feed',
               description: strategy.overallVibe || strategy.colorPalette || '',

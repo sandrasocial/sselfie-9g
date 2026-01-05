@@ -129,8 +129,17 @@ export default function MayaFeedTab({
         console.log("[FEED] Storing feed strategy in message (not saving to DB yet)")
 
         // Update messages with feed card (unsaved state - no feedId yet)
+        // CRITICAL: Use functional update to ensure we're working with the latest messages
+        // The AI SDK might update messages during streaming, so we need to merge, not replace
+        let messageIdToSave: string | null = null
+        let messageContentToSave: string | null = null
+        
         setMessages((prevMessages: any[]) => {
-          const updatedMessages = [...prevMessages]
+          // CRITICAL: Create a deep copy to avoid mutating the original array
+          const updatedMessages = prevMessages.map(msg => ({
+            ...msg,
+            parts: msg.parts ? [...msg.parts] : undefined,
+          }))
 
           // Find the last assistant message (iterate backwards)
           for (let i = updatedMessages.length - 1; i >= 0; i--) {
@@ -147,9 +156,13 @@ export default function MayaFeedTab({
                 break
               }
 
+              // CRITICAL: Preserve existing parts and add feed card
+              // This ensures we don't lose parts added by the AI SDK
+              const existingParts = lastAssistant.parts ? [...lastAssistant.parts] : []
+              
               // Store strategy data in message part (not saved to DB yet)
               const updatedParts = [
-                ...(lastAssistant.parts || []),
+                ...existingParts,
                 {
                   type: "tool-generateFeed",
                   output: {
@@ -174,12 +187,27 @@ export default function MayaFeedTab({
                 parts: updatedParts,
               }
 
+              // CRITICAL: Save message ID and content for database persistence
+              messageIdToSave = lastAssistant.id
+              messageContentToSave = lastAssistant.content || ""
+
+              // CRITICAL: Log posts structure to verify prompts and captions are present
+              const firstPost = strategy.posts?.[0]
               console.log("[FEED] ✅ Feed card part added to message:", {
                 messageId: lastAssistant.id,
                 partsCount: updatedParts.length,
                 feedCardPart: updatedParts.find((p: any) => p.type === "tool-generateFeed"),
                 hasStrategy: !!strategy,
                 postsCount: strategy.posts?.length || 0,
+                firstPostStructure: firstPost ? {
+                  position: firstPost.position,
+                  hasVisualDirection: !!firstPost.visualDirection,
+                  hasPrompt: !!(firstPost as any).prompt,
+                  hasCaption: !!firstPost.caption,
+                  postType: firstPost.postType,
+                  visualDirection: firstPost.visualDirection?.substring(0, 50) + '...',
+                  caption: firstPost.caption?.substring(0, 50) + '...',
+                } : null,
               })
               
               // CRITICAL: Log to verify parts are actually in the message
@@ -217,6 +245,64 @@ export default function MayaFeedTab({
           return updatedMessagesFinal
         })
 
+        // CRITICAL: Save feed card to styling_details column in database for persistence
+        // This ensures feed cards survive page refreshes and component remounts
+        if (messageIdToSave && chatId) {
+          // Prepare feed card data for database storage
+          const feedCardData = {
+            strategy: strategy,
+            title: strategy.feedTitle || strategy.title || "Instagram Feed",
+            description: strategy.overallVibe || strategy.colorPalette || "",
+            posts: strategy.posts || [],
+            isSaved: false, // Flag to indicate unsaved state
+            // Store settings for saving later
+            proMode,
+            styleStrength,
+            promptAccuracy,
+            aspectRatio,
+            realismStrength,
+          }
+          
+          // Update message in database with feed card in styling_details column
+          fetch('/api/maya/update-message', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              messageId: messageIdToSave,
+              content: messageContentToSave || "", // Preserve existing content
+              feedCards: [feedCardData], // Save to styling_details column
+              append: false,
+            }),
+          })
+            .then(async response => {
+              if (response.ok) {
+                console.log("[FEED] ✅ Saved feed card to styling_details column for persistence")
+              } else {
+                const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+                console.error("[FEED] ⚠️ Failed to save feed card to database:", {
+                  status: response.status,
+                  error: errorData.error,
+                  details: errorData.details,
+                  messageId: messageIdToSave,
+                })
+              }
+            })
+            .catch(error => {
+              console.error("[FEED] ⚠️ Error saving feed card to database:", {
+                error: error.message || String(error),
+                messageId: messageIdToSave,
+              })
+              // Non-critical error - feed card will still work, just won't persist on refresh
+            })
+        } else {
+          console.warn("[FEED] ⚠️ Cannot save feed card - missing messageId or chatId:", {
+            messageId: messageIdToSave,
+            chatId,
+          })
+        }
+
         // Notify parent callback (for any additional state management)
         await onCreateFeed(strategy)
       } catch (error) {
@@ -250,11 +336,11 @@ export default function MayaFeedTab({
     // Allow processing when ready OR when messages change (to catch newly saved messages)
     if (messages.length === 0) return
     
-    // 🔴 CRITICAL: Don't process while actively streaming OR creating feed
-    // Once status is NOT "streaming" or "submitted", the message is complete and safe to process
-    // Also skip if isCreatingFeed is true to prevent race conditions
-    if (status === "streaming" || status === "submitted" || isCreatingFeed) {
-      console.log("[FEED] ⏳ Skipping trigger detection - status:", status, "isCreatingFeed:", isCreatingFeed)
+    // 🔴 CRITICAL: Allow trigger detection DURING streaming to set loading state immediately
+    // Only skip if we're already processing a feed (to prevent race conditions)
+    // During streaming, we can detect partial triggers to show the loader early
+    if (isCreatingFeed) {
+      console.log("[FEED] ⏳ Skipping trigger detection - already creating feed")
       return
     }
 
@@ -338,7 +424,46 @@ export default function MayaFeedTab({
       environment: typeof window !== 'undefined' ? window.location.hostname : 'server',
     })
     
-    const feedStrategyMatch = textContent.match(/\[CREATE_FEED_STRATEGY:\s*(\{[\s\S]*\})\]/i)
+    // Try multiple patterns to catch different JSON formats
+    // Pattern 1: [CREATE_FEED_STRATEGY: {...}]
+    let feedStrategyMatch = textContent.match(/\[CREATE_FEED_STRATEGY:\s*(\{[\s\S]*\})\]/i)
+    
+    // Pattern 2: [CREATE_FEED_STRATEGY] followed by JSON block (```json or plain JSON)
+    if (!feedStrategyMatch && textContent.includes("[CREATE_FEED_STRATEGY]")) {
+      // Look for JSON after the trigger (could be in code block or plain)
+      const jsonBlockMatch = textContent.match(/\[CREATE_FEED_STRATEGY\][\s\S]*?(```json\s*(\{[\s\S]*?\})\s*```|\{[\s\S]*?"feedStrategy"[\s\S]*?\})/i)
+      if (jsonBlockMatch) {
+        // Extract JSON from code block or plain format
+        const jsonStr = jsonBlockMatch[2] || jsonBlockMatch[1]
+        if (jsonStr) {
+          feedStrategyMatch = [null, jsonStr] // Create match array in same format
+        }
+      }
+    }
+    
+    // Pattern 3: Look for standalone JSON with "feedStrategy" key anywhere in text
+    if (!feedStrategyMatch) {
+      const standaloneJsonMatch = textContent.match(/\{\s*"feedStrategy"[\s\S]*?\}/i)
+      if (standaloneJsonMatch) {
+        feedStrategyMatch = [null, standaloneJsonMatch[0]]
+      }
+    }
+
+    // Pattern 4: Check for partial trigger during streaming (just the trigger text, JSON might be incomplete)
+    // This allows us to show the loader immediately when Maya starts creating a feed
+    const hasPartialTrigger = textContent.includes("[CREATE_FEED_STRATEGY") || 
+                             textContent.includes('"feedStrategy"') ||
+                             textContent.includes("Aesthetic Choice:") ||
+                             textContent.includes("Overall Vibe:") ||
+                             textContent.includes("Grid Layout:")
+
+    // If we detect a partial trigger during streaming, set loading state immediately
+    // This ensures the loader shows right away, even before JSON is complete
+    if (hasPartialTrigger && status === "streaming" && !isCreatingFeed) {
+      console.log("[FEED] 🚀 Detected partial feed trigger during streaming - setting loading state immediately")
+      setIsCreatingFeed(true)
+      // Don't return - continue to check for complete trigger below
+    }
 
     if (feedStrategyMatch) {
       // CRITICAL: Check if message already has feed card FIRST (prevent duplicate creation on page refresh)
@@ -362,7 +487,15 @@ export default function MayaFeedTab({
 
       processedFeedMessagesRef.current.add(messageKey)
 
-      const strategyJson = feedStrategyMatch[1]
+      // Extract JSON from match array (handle both patterns)
+      const strategyJson = Array.isArray(feedStrategyMatch) ? feedStrategyMatch[1] : feedStrategyMatch
+      if (!strategyJson) {
+        console.error("[FEED] ❌ No JSON found in feed strategy match")
+        processedFeedMessagesRef.current.delete(messageKey)
+        setIsCreatingFeed(false)
+        return
+      }
+      
       console.log("[FEED] ✅ Detected feed creation trigger:", {
         messageKey,
         messageId: messageId || "streaming (no ID yet)",
@@ -377,11 +510,39 @@ export default function MayaFeedTab({
       // Create async function to handle feed creation (useEffect callbacks can't be async)
       const processFeedCreation = async () => {
         try {
-          const strategy = JSON.parse(strategyJson) as FeedStrategy
+          const parsed = JSON.parse(strategyJson) as any
+          
+          // CRITICAL FIX: Maya might output JSON wrapped in "feedStrategy" object
+          // Unwrap it if needed: { feedStrategy: { posts: [...] } } -> { posts: [...] }
+          let strategy: FeedStrategy
+          if (parsed.feedStrategy && typeof parsed.feedStrategy === 'object') {
+            // Nested structure: unwrap it
+            strategy = parsed.feedStrategy as FeedStrategy
+            console.log("[FEED] 🔄 Unwrapped feedStrategy from nested structure")
+          } else {
+            // Direct structure: use as-is
+            strategy = parsed as FeedStrategy
+          }
+          
+          // CRITICAL: Log strategy structure for debugging
+          console.log("[FEED] 📋 Parsed strategy structure:", {
+            hasPosts: !!strategy.posts,
+            postsCount: strategy.posts?.length || 0,
+            firstPost: strategy.posts?.[0] ? {
+              position: strategy.posts[0].position,
+              hasVisualDirection: !!strategy.posts[0].visualDirection,
+              hasPrompt: !!(strategy.posts[0] as any).prompt,
+              hasCaption: !!strategy.posts[0].caption,
+              postType: strategy.posts[0].postType,
+            } : null,
+            strategyKeys: Object.keys(strategy),
+          })
+          
           // handleCreateFeed will be called, which will eventually set isCreatingFeed(false) in its finally block
           await handleCreateFeed(strategy)
         } catch (error) {
           console.error("[FEED] ❌ Failed to parse strategy JSON:", error)
+          console.error("[FEED] ❌ JSON that failed to parse:", strategyJson.substring(0, 500))
           processedFeedMessagesRef.current.delete(messageKey)
           // Reset loading state on error
           setIsCreatingFeed(false)
