@@ -1,6 +1,7 @@
 "use client"
 
 import { X } from "lucide-react"
+import { createPortal } from "react-dom"
 import { toast } from "@/hooks/use-toast"
 import FeedPostCard from "./feed-post-card"
 import { FeedGallerySelector } from "./feed-gallery-selector"
@@ -34,10 +35,14 @@ export default function FeedModals({
 }: FeedModalsProps) {
   return (
     <>
-      {selectedPost && (
+      {selectedPost && typeof window !== 'undefined' && createPortal(
         <div
-          className="fixed inset-0 z-[80] bg-black/90 flex items-center justify-center p-4 overflow-y-auto"
+          className="fixed inset-0 z-[110] bg-black/90 flex items-center justify-center p-4 overflow-y-auto"
           onClick={onClosePost}
+          style={{
+            paddingTop: "calc(1rem + env(safe-area-inset-top))",
+            paddingBottom: "calc(1rem + env(safe-area-inset-bottom))",
+          }}
         >
           <div
             className="relative w-full max-w-[470px] my-8"
@@ -89,7 +94,8 @@ export default function FeedModals({
               onNavigateToMaya={onNavigateToMaya}
             />
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {showGallery && feedData?.feed?.id && (

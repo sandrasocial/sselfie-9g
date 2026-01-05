@@ -384,8 +384,8 @@ export default function SselfieApp({
 
       <main className="relative h-full mx-1 sm:mx-2 md:mx-3 pb-2 sm:pb-3 md:pb-4">
         <div className={`h-full ${DesignClasses.container} ${activeTab === "maya" ? "overflow-visible" : "overflow-hidden"}`}>
-          {/* Hide header when in Maya or Feed Planner tab - they have their own unified headers */}
-          {activeTab !== "maya" && activeTab !== "feed-planner" && (
+          {/* Hide header when in Maya tab - it has its own header */}
+          {activeTab !== "maya" && (
             <header className={`sticky top-0 z-10 bg-white/70 ${DesignClasses.blur.md} border-b ${DesignClasses.border.stone} ${DesignClasses.spacing.paddingX.sm} py-3 pt-safe`}>
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 shrink-0">

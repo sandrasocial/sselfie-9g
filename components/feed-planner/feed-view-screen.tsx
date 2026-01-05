@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import useSWR from "swr"
 import InstagramFeedView from "./instagram-feed-view"
-import { ArrowLeft, ImageIcon, MoreVertical, X, LogOut } from "lucide-react"
+import { ArrowLeft, ImageIcon } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import UnifiedLoading from "@/components/sselfie/unified-loading"
 
@@ -31,15 +31,6 @@ export default function FeedViewScreen({ feedId: feedIdProp }: FeedViewScreenPro
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isCreatingManual, setIsCreatingManual] = useState(false)
-  const [showNavMenu, setShowNavMenu] = useState(false)
-  const [isLoggingOut, setIsLoggingOut] = useState(false)
-  
-  // Fetch credits for header display
-  const { data: creditsData } = useSWR('/api/user/credits', fetcher, {
-    revalidateOnFocus: false,
-    dedupingInterval: 60000,
-  })
-  const credits = creditsData?.credits ?? undefined
   
   // Get feedId from prop, query param, or null
   const feedIdFromQuery = feedIdProp ?? (searchParams.get('feedId') ? parseInt(searchParams.get('feedId')!, 10) : null)
@@ -97,32 +88,6 @@ export default function FeedViewScreen({ feedId: feedIdProp }: FeedViewScreenPro
     }
   }
 
-  const handleNavigation = (tab: string) => {
-    if (typeof window !== "undefined") {
-      window.location.hash = tab
-      setShowNavMenu(false)
-    }
-  }
-
-  const handleLogout = async () => {
-    setIsLoggingOut(true)
-    try {
-      const response = await fetch("/api/auth/logout", {
-        method: "POST",
-        credentials: "include",
-      })
-
-      if (response.ok) {
-        router.push("/auth/login")
-      } else {
-        console.error("[v0] Logout failed")
-        setIsLoggingOut(false)
-      }
-    } catch (error) {
-      console.error("[v0] Error during logout:", error)
-      setIsLoggingOut(false)
-    }
-  }
 
   const handleCreateFeed = () => {
     // Navigate to Maya Feed tab to create a feed
@@ -184,87 +149,6 @@ export default function FeedViewScreen({ feedId: feedIdProp }: FeedViewScreenPro
   if (feedError || (feedData?.error && feedData.exists !== false)) {
     return (
       <div className="flex flex-col flex-1 overflow-hidden min-h-0">
-        {/* Unified Header */}
-        <div className="flex items-center justify-between w-full px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 md:py-4 bg-white/80 backdrop-blur-xl relative z-[100] border-b border-stone-200/50">
-          <div className="flex items-center shrink-0 min-h-[44px]">
-            <h1 className="text-base sm:text-lg md:text-xl font-serif font-normal text-stone-950 uppercase tracking-wide">
-              SSELFIE
-            </h1>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-3 md:gap-4 shrink-0">
-            {credits !== undefined && (
-              <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded border border-stone-200 bg-stone-50/50 min-h-[36px] sm:min-h-[40px]">
-                <span className="text-[9px] sm:text-[10px] md:text-xs font-light text-stone-500 uppercase tracking-wider">
-                  Credits
-                </span>
-                <span className="text-xs sm:text-sm md:text-base font-semibold text-stone-950 tabular-nums">
-                  {credits.toFixed(1)}
-                </span>
-              </div>
-            )}
-            <button
-              onClick={() => setShowNavMenu(!showNavMenu)}
-              className="touch-manipulation active:scale-95 flex items-center justify-center shrink-0 min-w-[44px] min-h-[44px] rounded-lg hover:bg-stone-100/50 transition-colors"
-              aria-label="Navigation menu"
-            >
-              <MoreVertical size={18} strokeWidth={2} className="text-stone-950" />
-            </button>
-          </div>
-        </div>
-        
-        {/* Navigation Menu Slide-in */}
-        {showNavMenu && (
-          <>
-            <div
-              className="fixed inset-0 bg-stone-950/20 backdrop-blur-sm z-[90] animate-in fade-in duration-200"
-              onClick={() => setShowNavMenu(false)}
-              style={{ height: '100vh' }}
-            />
-            <div
-              className="fixed top-0 right-0 bottom-0 w-80 bg-white/95 backdrop-blur-3xl border-l border-stone-200 shadow-2xl z-[100] animate-in slide-in-from-right duration-300 flex flex-col"
-              style={{ height: '100vh', maxHeight: '100vh' }}
-            >
-              <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-stone-200">
-                <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-950">Menu</h3>
-                <button
-                  onClick={() => setShowNavMenu(false)}
-                  className="touch-manipulation active:scale-95 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 transition-colors"
-                  aria-label="Close menu"
-                >
-                  <X size={18} className="text-stone-600" strokeWidth={2} />
-                </button>
-              </div>
-              {credits !== undefined && (
-                <div className="shrink-0 px-6 py-6 border-b border-stone-200">
-                  <div className="text-[10px] tracking-[0.15em] uppercase font-light text-stone-500 mb-2">Your Credits</div>
-                  <div className="text-3xl font-serif font-extralight text-stone-950 tabular-nums">{credits.toFixed(1)}</div>
-                </div>
-              )}
-              <div className="flex-1 overflow-y-auto min-h-0" style={{ WebkitOverflowScrolling: 'touch' }}>
-                <div className="py-2">
-                  <button onClick={() => handleNavigation("studio")} className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-stone-50">Studio</button>
-                  <button onClick={() => { window.dispatchEvent(new CustomEvent('open-onboarding')); setShowNavMenu(false); }} className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-stone-50">Training</button>
-                  <button onClick={() => handleNavigation("maya")} className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-stone-50">Maya</button>
-                  <button onClick={() => handleNavigation("gallery")} className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-stone-50">Gallery</button>
-                  <button onClick={() => handleNavigation("feed-planner")} className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors bg-stone-100/50 border-l-2 border-stone-950">Feed</button>
-                  <button onClick={() => handleNavigation("academy")} className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-stone-50">Academy</button>
-                  <button onClick={() => handleNavigation("account")} className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-stone-50">Account</button>
-                </div>
-              </div>
-              <div className="shrink-0 px-6 py-4 border-t border-stone-200 bg-white/95">
-                <button
-                  onClick={handleLogout}
-                  disabled={isLoggingOut}
-                  className="touch-manipulation active:scale-95 disabled:active:scale-100 w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-stone-200 hover:bg-stone-50"
-                >
-                  <LogOut size={16} strokeWidth={2} className="text-red-600" />
-                  <span className="text-sm font-medium text-red-600">{isLoggingOut ? "Signing Out..." : "Sign Out"}</span>
-                </button>
-              </div>
-            </div>
-          </>
-        )}
-        
         <div className="flex items-center justify-center min-h-[400px] p-4">
           <div className="text-center space-y-4">
             <p className="text-sm text-stone-600">Failed to load feed. Please try again.</p>
@@ -278,87 +162,6 @@ export default function FeedViewScreen({ feedId: feedIdProp }: FeedViewScreenPro
   if (!feedExists || (!feedIdFromQuery && feedData?.exists === false)) {
     return (
       <div className="flex flex-col flex-1 overflow-hidden min-h-0">
-        {/* Unified Header */}
-        <div className="flex items-center justify-between w-full px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 md:py-4 bg-white/80 backdrop-blur-xl relative z-[100] border-b border-stone-200/50">
-          <div className="flex items-center shrink-0 min-h-[44px]">
-            <h1 className="text-base sm:text-lg md:text-xl font-serif font-normal text-stone-950 uppercase tracking-wide">
-              SSELFIE
-            </h1>
-          </div>
-          <div className="flex items-center gap-2 sm:gap-3 md:gap-4 shrink-0">
-            {credits !== undefined && (
-              <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded border border-stone-200 bg-stone-50/50 min-h-[36px] sm:min-h-[40px]">
-                <span className="text-[9px] sm:text-[10px] md:text-xs font-light text-stone-500 uppercase tracking-wider">
-                  Credits
-                </span>
-                <span className="text-xs sm:text-sm md:text-base font-semibold text-stone-950 tabular-nums">
-                  {credits.toFixed(1)}
-                </span>
-              </div>
-            )}
-            <button
-              onClick={() => setShowNavMenu(!showNavMenu)}
-              className="touch-manipulation active:scale-95 flex items-center justify-center shrink-0 min-w-[44px] min-h-[44px] rounded-lg hover:bg-stone-100/50 transition-colors"
-              aria-label="Navigation menu"
-            >
-              <MoreVertical size={18} strokeWidth={2} className="text-stone-950" />
-            </button>
-          </div>
-        </div>
-
-        {/* Navigation Menu Slide-in */}
-        {showNavMenu && (
-          <>
-            <div
-              className="fixed inset-0 bg-stone-950/20 backdrop-blur-sm z-[90] animate-in fade-in duration-200"
-              onClick={() => setShowNavMenu(false)}
-              style={{ height: '100vh' }}
-            />
-            <div
-              className="fixed top-0 right-0 bottom-0 w-80 bg-white/95 backdrop-blur-3xl border-l border-stone-200 shadow-2xl z-[100] animate-in slide-in-from-right duration-300 flex flex-col"
-              style={{ height: '100vh', maxHeight: '100vh' }}
-            >
-              <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-stone-200">
-                <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-950">Menu</h3>
-                <button
-                  onClick={() => setShowNavMenu(false)}
-                  className="touch-manipulation active:scale-95 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 transition-colors"
-                  aria-label="Close menu"
-                >
-                  <X size={18} className="text-stone-600" strokeWidth={2} />
-                </button>
-              </div>
-              {credits !== undefined && (
-                <div className="shrink-0 px-6 py-6 border-b border-stone-200">
-                  <div className="text-[10px] tracking-[0.15em] uppercase font-light text-stone-500 mb-2">Your Credits</div>
-                  <div className="text-3xl font-serif font-extralight text-stone-950 tabular-nums">{credits.toFixed(1)}</div>
-                </div>
-              )}
-              <div className="flex-1 overflow-y-auto min-h-0" style={{ WebkitOverflowScrolling: 'touch' }}>
-                <div className="py-2">
-                  <button onClick={() => handleNavigation("studio")} className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-stone-50">Studio</button>
-                  <button onClick={() => { window.dispatchEvent(new CustomEvent('open-onboarding')); setShowNavMenu(false); }} className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-stone-50">Training</button>
-                  <button onClick={() => handleNavigation("maya")} className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-stone-50">Maya</button>
-                  <button onClick={() => handleNavigation("gallery")} className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-stone-50">Gallery</button>
-                  <button onClick={() => handleNavigation("feed-planner")} className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors bg-stone-100/50 border-l-2 border-stone-950">Feed</button>
-                  <button onClick={() => handleNavigation("academy")} className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-stone-50">Academy</button>
-                  <button onClick={() => handleNavigation("account")} className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-stone-50">Account</button>
-                </div>
-              </div>
-              <div className="shrink-0 px-6 py-4 border-t border-stone-200 bg-white/95">
-                <button
-                  onClick={handleLogout}
-                  disabled={isLoggingOut}
-                  className="touch-manipulation active:scale-95 disabled:active:scale-100 w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-stone-200 hover:bg-stone-50"
-                >
-                  <LogOut size={16} strokeWidth={2} className="text-red-600" />
-                  <span className="text-sm font-medium text-red-600">{isLoggingOut ? "Signing Out..." : "Sign Out"}</span>
-                </button>
-              </div>
-            </div>
-          </>
-        )}
-
         {/* Placeholder State */}
         <div className="flex-1 overflow-y-auto min-h-0 flex items-center justify-center p-4 sm:p-6 md:p-12">
           <div className="max-w-md w-full text-center space-y-6">
@@ -448,147 +251,6 @@ export default function FeedViewScreen({ feedId: feedIdProp }: FeedViewScreenPro
 
   return (
     <div className="flex flex-col flex-1 overflow-hidden min-h-0">
-      {/* Unified Header - SSELFIE logo and menu */}
-      <div className="flex items-center justify-between w-full px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 md:py-4 bg-white/80 backdrop-blur-xl relative z-[100] border-b border-stone-200/50">
-        {/* Left: SSELFIE logo */}
-        <div className="flex items-center shrink-0 min-h-[44px]">
-          <h1 className="text-base sm:text-lg md:text-xl font-serif font-normal text-stone-950 uppercase tracking-wide">
-            SSELFIE
-          </h1>
-        </div>
-
-        {/* Right: Credits and Menu */}
-        <div className="flex items-center gap-2 sm:gap-3 md:gap-4 shrink-0">
-          {/* Credits Display */}
-          {credits !== undefined && (
-            <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded border border-stone-200 bg-stone-50/50 min-h-[36px] sm:min-h-[40px]">
-              <span className="text-[9px] sm:text-[10px] md:text-xs font-light text-stone-500 uppercase tracking-wider">
-                Credits
-              </span>
-              <span className="text-xs sm:text-sm md:text-base font-semibold text-stone-950 tabular-nums">
-                {credits.toFixed(1)}
-              </span>
-            </div>
-          )}
-
-          {/* Menu Button - 3 dots on mobile */}
-          <button
-            onClick={() => setShowNavMenu(!showNavMenu)}
-            className="touch-manipulation active:scale-95 flex items-center justify-center shrink-0 min-w-[44px] min-h-[44px] rounded-lg hover:bg-stone-100/50 transition-colors"
-            aria-label="Navigation menu"
-            aria-expanded={showNavMenu}
-          >
-            <MoreVertical size={18} strokeWidth={2} className="text-stone-950" />
-          </button>
-        </div>
-      </div>
-
-      {/* Navigation Menu Slide-in */}
-      {showNavMenu && (
-        <>
-          {/* Overlay */}
-          <div
-            className="fixed inset-0 bg-stone-950/20 backdrop-blur-sm z-[90] animate-in fade-in duration-200"
-            onClick={() => setShowNavMenu(false)}
-            style={{ height: '100vh' }}
-          />
-
-          {/* Sliding menu from right */}
-          <div
-            className="fixed top-0 right-0 bottom-0 w-80 bg-white/95 backdrop-blur-3xl border-l border-stone-200 shadow-2xl z-[100] animate-in slide-in-from-right duration-300 flex flex-col"
-            style={{ height: '100vh', maxHeight: '100vh' }}
-          >
-            {/* Header with close button */}
-            <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-stone-200">
-              <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-950">
-                Menu
-              </h3>
-              <button
-                onClick={() => setShowNavMenu(false)}
-                className="touch-manipulation active:scale-95 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 transition-colors"
-                aria-label="Close menu"
-              >
-                <X size={18} className="text-stone-600" strokeWidth={2} />
-              </button>
-            </div>
-
-            {/* Credits display */}
-            {credits !== undefined && (
-              <div className="shrink-0 px-6 py-6 border-b border-stone-200">
-                <div className="text-[10px] tracking-[0.15em] uppercase font-light text-stone-500 mb-2">Your Credits</div>
-                <div className="text-3xl font-serif font-extralight text-stone-950 tabular-nums">
-                  {credits.toFixed(1)}
-                </div>
-              </div>
-            )}
-
-            {/* Scrollable content area */}
-            <div className="flex-1 overflow-y-auto min-h-0" style={{ WebkitOverflowScrolling: 'touch' }}>
-              <div className="py-2">
-                {/* Navigation links */}
-                <button
-                  onClick={() => handleNavigation("studio")}
-                  className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-stone-50"
-                >
-                  Studio
-                </button>
-                <button
-                  onClick={() => {
-                    window.dispatchEvent(new CustomEvent('open-onboarding'))
-                    setShowNavMenu(false)
-                  }}
-                  className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-stone-50"
-                >
-                  Training
-                </button>
-                <button
-                  onClick={() => handleNavigation("maya")}
-                  className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-stone-50"
-                >
-                  Maya
-                </button>
-                <button
-                  onClick={() => handleNavigation("gallery")}
-                  className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-stone-50"
-                >
-                  Gallery
-                </button>
-                <button
-                  onClick={() => handleNavigation("feed-planner")}
-                  className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors bg-stone-100/50 border-l-2 border-stone-950"
-                >
-                  Feed
-                </button>
-                <button
-                  onClick={() => handleNavigation("academy")}
-                  className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-stone-50"
-                >
-                  Academy
-                </button>
-                <button
-                  onClick={() => handleNavigation("account")}
-                  className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-stone-50"
-                >
-                  Account
-                </button>
-              </div>
-            </div>
-
-            {/* Sign out button - fixed at bottom */}
-            <div className="shrink-0 px-6 py-4 border-t border-stone-200 bg-white/95">
-              <button
-                onClick={handleLogout}
-                disabled={isLoggingOut}
-                className="touch-manipulation active:scale-95 disabled:active:scale-100 w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed border border-stone-200 hover:bg-stone-50"
-              >
-                <LogOut size={16} strokeWidth={2} className="text-red-600" />
-                <span className="text-sm font-medium text-red-600">{isLoggingOut ? "Signing Out..." : "Sign Out"}</span>
-              </button>
-            </div>
-          </div>
-        </>
-      )}
-
       {/* Feed View - FeedHeader component inside InstagramFeedView handles header with feed selector */}
       <div className="flex-1 overflow-y-auto min-h-0">
         <InstagramFeedView
