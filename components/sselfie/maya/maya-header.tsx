@@ -237,6 +237,155 @@ export default function MayaHeaderUnified({
 
         {/* Right: Credits and Mode Toggle - Simple, clean layout */}
         <div className="flex items-center gap-2 sm:gap-3 md:gap-4 shrink-0">
+          {/* Pro Mode: Guide Controls Dropdown (Admin only) */}
+          {proMode && isAdmin && (
+            <DropdownMenu open={isGuideMenuOpen} onOpenChange={setIsGuideMenuOpen}>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="touch-manipulation active:scale-95 flex items-center gap-1.5 px-2.5 py-1.5 rounded transition-colors"
+                  style={{
+                    fontFamily: Typography.ui.fontFamily,
+                    fontSize: 'clamp(11px, 2vw, 13px)',
+                    fontWeight: Typography.ui.weights.medium,
+                    color: Colors.textSecondary,
+                    backgroundColor: 'transparent',
+                    border: `1px solid ${Colors.border}`,
+                    minHeight: '36px',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = Colors.hover
+                    e.currentTarget.style.borderColor = Colors.primary
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent'
+                    e.currentTarget.style.borderColor = Colors.border
+                  }}
+                >
+                  <FolderOpen size={14} />
+                  <span className="hidden sm:inline">
+                    {selectedGuideId 
+                      ? guides.find(g => g.id === selectedGuideId)?.title || 'Guide'
+                      : 'Guide'}
+                  </span>
+                  <ChevronDown
+                    size={12}
+                    style={{
+                      color: Colors.textSecondary,
+                      transition: 'transform 0.2s ease',
+                      transform: isGuideMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                    }}
+                  />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="z-[200]"
+                style={{
+                  backgroundColor: Colors.surface,
+                  borderColor: Colors.border,
+                  borderRadius: BorderRadius.cardSm,
+                  minWidth: '280px',
+                  padding: '12px',
+                  zIndex: 200,
+                }}
+              >
+                <div className="space-y-3">
+                  <div>
+                    <label
+                      style={{
+                        fontFamily: Typography.ui.fontFamily,
+                        fontSize: Typography.ui.sizes.xs,
+                        fontWeight: Typography.ui.weights.medium,
+                        color: Colors.textSecondary,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        marginBottom: '8px',
+                        display: 'block',
+                      }}
+                    >
+                      Active Guide
+                    </label>
+                    {isMounted ? (
+                      <Select
+                        value={selectedGuideId?.toString() || "none"}
+                        onValueChange={(value) => {
+                          if (onGuideChange) {
+                            if (value === "none") {
+                              onGuideChange(null, null)
+                            } else {
+                              const guide = guides.find(g => g.id.toString() === value)
+                              if (guide) {
+                                onGuideChange(guide.id, guide.category)
+                              }
+                            }
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="w-full" style={{ minHeight: '36px' }}>
+                          <SelectValue placeholder="Select a guide..." />
+                        </SelectTrigger>
+                        <SelectContent className="z-[200]" style={{ zIndex: 200 }}>
+                          <SelectItem value="none">No guide selected</SelectItem>
+                          {guides.map((guide) => (
+                            <SelectItem key={guide.id} value={guide.id.toString()}>
+                              {guide.title} ({guide.category})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <div className="w-full h-9 rounded-md border border-stone-200 bg-white flex items-center px-3 text-sm text-stone-500">
+                        Loading...
+                      </div>
+                    )}
+                  </div>
+
+                  {selectedGuideId && (
+                    <div className="text-xs text-stone-500 pt-1 border-t" style={{ borderColor: Colors.border }}>
+                      Prompts will be saved to: <span className="font-medium text-stone-900">
+                        {guides.find(g => g.id === selectedGuideId)?.title}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 pt-2 border-t" style={{ borderColor: Colors.border }}>
+                    <button
+                      onClick={handleCreateNewGuide}
+                      className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded transition-colors hover:bg-stone-100"
+                      style={{
+                        fontFamily: Typography.ui.fontFamily,
+                        fontSize: Typography.ui.sizes.sm,
+                        fontWeight: Typography.ui.weights.medium,
+                        color: Colors.textPrimary,
+                        border: `1px solid ${Colors.border}`,
+                      }}
+                    >
+                      <Plus size={14} />
+                      New Guide
+                    </button>
+                    {selectedGuideId && (
+                      <button
+                        onClick={handlePreviewGuide}
+                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded transition-colors hover:bg-stone-100"
+                        style={{
+                          fontFamily: Typography.ui.fontFamily,
+                          fontSize: Typography.ui.sizes.sm,
+                          fontWeight: Typography.ui.weights.medium,
+                          color: Colors.textPrimary,
+                          border: `1px solid ${Colors.border}`,
+                        }}
+                      >
+                        <Eye size={14} />
+                        Preview
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
           {/* Credits Display - Always show when available */}
           {credits !== undefined && (
             <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded border border-stone-200 bg-stone-50/50 min-h-[36px] sm:min-h-[40px]">
