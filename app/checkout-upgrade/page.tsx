@@ -13,7 +13,6 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 function CheckoutUpgradeContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const tier = searchParams.get("tier") || "creator"
   const promoCode = searchParams.get("promo")
   
   const [error, setError] = useState<string | null>(null)
@@ -26,7 +25,7 @@ function CheckoutUpgradeContent() {
       trackCheckoutStart("sselfie_studio_membership")
       
       // Call server action to create checkout session
-      const clientSecret = await createUpgradeCheckoutSession(tier, promoCode)
+      const clientSecret = await createUpgradeCheckoutSession(promoCode)
       
       if (!clientSecret) {
         throw new Error("Failed to create checkout session")

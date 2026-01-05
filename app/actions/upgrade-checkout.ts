@@ -8,7 +8,6 @@ import { neon } from "@neondatabase/serverless"
 import type Stripe from "stripe"
 
 export async function createUpgradeCheckoutSession(
-  tier: string,
   promoCode?: string | null
 ) {
   const supabase = await createServerClient()
@@ -25,7 +24,7 @@ export async function createUpgradeCheckoutSession(
     throw new Error("User not found")
   }
 
-  // Map tier to product ID - only Creator Studio available now
+  // Only Creator Studio membership is available for upgrades
   const productId = "sselfie_studio_membership"
 
   // Get product details (EXACT same pattern as landing-checkout.ts)
