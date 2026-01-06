@@ -290,9 +290,29 @@ async function checkCronSanity(e2eRunId: string): Promise<FlowResult> {
     const isProduction = process.env.VERCEL_ENV === "production" || process.env.NODE_ENV === "production"
 
     // Log for debugging (will appear in server logs)
+    // Also log to console for immediate visibility
+    console.log("[v0] [E2E-HEALTH] Cron sanity check details:", {
+      e2eRunId,
+      hasCronSecret,
+      cronSecretExists: cronSecret !== undefined,
+      cronSecretIsNull: cronSecret === null,
+      cronSecretIsEmpty: cronSecret === "",
+      cronSecretLength: cronSecret?.length || 0,
+      cronSecretPreview: cronSecret ? `${cronSecret.substring(0, 3)}...` : "N/A",
+      isVercel,
+      isDevelopment,
+      isProduction,
+      environment: process.env.NODE_ENV || "unknown",
+      vercelEnv: process.env.VERCEL_ENV || "not-set",
+      allEnvKeysWithCron: Object.keys(process.env).filter((key) => key.includes("CRON") || key.includes("cron")),
+    })
+
     logger.info("E2E health check - Cron sanity check", {
       e2eRunId,
       hasCronSecret,
+      cronSecretExists: cronSecret !== undefined,
+      cronSecretIsNull: cronSecret === null,
+      cronSecretIsEmpty: cronSecret === "",
       cronSecretLength: cronSecret?.length || 0,
       isVercel,
       isDevelopment,
@@ -301,23 +321,36 @@ async function checkCronSanity(e2eRunId: string): Promise<FlowResult> {
       vercelEnv: process.env.VERCEL_ENV || "not-set",
     })
 
-    if (!hasCronSecret) {
+    // More detailed check - maybe it's an empty string or undefined
+    const cronSecretValue = process.env.CRON_SECRET
+    const cronSecretExists = cronSecretValue !== undefined
+    const cronSecretNotEmpty = cronSecretValue !== "" && cronSecretValue !== null
+
+    if (!cronSecretExists || !cronSecretNotEmpty) {
       // In development, this might be expected if not in .env.local
       // In production/Vercel, this is a problem
+      const diagnosticMessage = isDevelopment
+        ? "Cron secret not found in development (check .env.local if running locally)"
+        : cronSecretExists && !cronSecretNotEmpty
+          ? "Cron secret exists but is empty in Vercel (check environment variable value)"
+          : "Cron secret not configured in production (cron jobs may not authenticate)"
+
       return {
         status: isDevelopment ? "degraded" : "failed",
-        message: isDevelopment
-          ? "Cron secret not found in development (check .env.local if running locally)"
-          : "Cron secret not configured in production (cron jobs may not authenticate)",
+        message: diagnosticMessage,
         duration: Date.now() - startTime,
         details: {
           cronSecretConfigured: false,
+          cronSecretExists: cronSecretExists,
+          cronSecretNotEmpty: cronSecretNotEmpty,
+          cronSecretValueType: typeof cronSecretValue,
+          cronSecretLength: cronSecretValue?.length || 0,
           isVercel: isVercel,
           isDevelopment: isDevelopment,
           isProduction: isProduction,
           environment: process.env.NODE_ENV || "unknown",
           vercelEnv: process.env.VERCEL_ENV || "not-set",
-          note: "If CRON_SECRET is set in Vercel, ensure it's available to API routes",
+          note: "If CRON_SECRET is set in Vercel, ensure it's available to API routes and not empty",
         },
       }
     }
