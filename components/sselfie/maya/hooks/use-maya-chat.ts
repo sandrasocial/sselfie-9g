@@ -120,6 +120,8 @@ export function useMayaChat({
   const savedMessageIds = useRef(new Set<string>())
   const lastModeRef = useRef<string | null>(null)
   const hasClearedStateRef = useRef(false)
+  // CRITICAL FIX: Track saved feed cards to prevent duplicate saves
+  const savedFeedCardMessagesRef = useRef(new Set<string>())
 
   // Helper function to get the correct chatType based on activeTab
   // Feed tab uses "feed-planner", otherwise use getModeString() result
@@ -201,6 +203,16 @@ export function useMayaChat({
           }
         }
         
+        // CRITICAL FIX: Prevent duplicate saves - check if we've already saved this message
+        const messageKey = message.id ? `feed-${message.id}` : `feed-temp-${Date.now()}`
+        if (savedFeedCardMessagesRef.current.has(messageKey)) {
+          console.log("[useMayaChat] ⚠️ Message already saved, skipping duplicate save:", messageKey)
+          return
+        }
+        
+        // Mark as saved BEFORE async operation to prevent race conditions
+        savedFeedCardMessagesRef.current.add(messageKey)
+        
         // Save message to database (non-blocking)
         fetch('/api/maya/save-message', {
           method: 'POST',
@@ -221,13 +233,22 @@ export function useMayaChat({
                 hasFeedCards: !!feedCards,
                 feedCardsCount: feedCards?.length || 0,
               })
+              // Update messageKey with real ID if we got one
+              if (result.message?.id && messageKey.startsWith('feed-temp-')) {
+                savedFeedCardMessagesRef.current.delete(messageKey)
+                savedFeedCardMessagesRef.current.add(`feed-${result.message.id}`)
+              }
             } else {
               const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
               console.error("[useMayaChat] ⚠️ Failed to save assistant message:", response.status, errorData)
+              // Remove from saved set so we can retry
+              savedFeedCardMessagesRef.current.delete(messageKey)
             }
           })
           .catch((error) => {
             console.error("[useMayaChat] ⚠️ Error saving assistant message:", error.message || String(error))
+            // Remove from saved set so we can retry
+            savedFeedCardMessagesRef.current.delete(messageKey)
             // Non-critical - message will still work in UI, just won't persist
           })
       }
@@ -280,14 +301,22 @@ export function useMayaChat({
   const loadChat = useCallback(
     async (specificChatId?: number, explicitChatType?: string) => {
       try {
+        // CRITICAL FIX: Set loading state BEFORE any state changes
+        // This ensures isEmpty check in UI sees isLoadingChat=true
         setIsLoadingChat(true)
+        
+        // CRITICAL FIX: Don't clear messages immediately - preserve them until new ones arrive
+        // This prevents welcome screen from showing during load
+        // Messages will be replaced when new ones arrive from API
 
         // Build URL - either load specific chat or default maya chat
         // Use explicitChatType if provided, otherwise use getChatType() to correctly handle Feed tab (feed-planner) vs Photos tab (maya/pro)
         // CRITICAL: Use explicitChatType to avoid closure issues when activeTab changes
+        // CRITICAL: Always include chatType in URL, even when loading specific chatId
+        // This ensures the load-chat route knows which tab we're in and filters correctly
         const chatType = explicitChatType || getChatType()
         const url = specificChatId
-          ? `/api/maya/load-chat?chatId=${specificChatId}`
+          ? `/api/maya/load-chat?chatId=${specificChatId}&chatType=${chatType}`
           : `/api/maya/load-chat?chatType=${chatType}`
 
         console.log("[useMayaChat] Loading chat from URL:", url, "chatType:", chatType, "activeTab:", activeTab, "proMode:", proMode, "explicitChatType:", explicitChatType)
@@ -394,6 +423,15 @@ export function useMayaChat({
             const bTime = getTime(b)
             return aTime - bTime // Ascending order (oldest first)
           })
+          
+          // CRITICAL FIX: Only update messages if we actually got new messages
+          // This preserves existing messages if API returns empty array (shouldn't happen, but safety)
+          if (uniqueMessages.length === 0 && messages.length > 0) {
+            console.warn("[useMayaChat] ⚠️ API returned empty messages but we have existing messages - preserving existing")
+            setIsLoadingChat(false)
+            hasLoadedChatRef.current = true
+            return
+          }
 
           // CRITICAL: Populate refs BEFORE setting messages to prevent trigger detection
           uniqueMessages.forEach((msg: any) => {
@@ -421,6 +459,15 @@ export function useMayaChat({
             "conceptCardsFound:",
             conceptCardsFound,
           )
+
+          // CRITICAL FIX: Only update messages if we actually got new messages
+          // This preserves existing messages if API returns empty array (shouldn't happen, but safety)
+          if (uniqueMessages.length === 0 && messages.length > 0) {
+            console.warn("[useMayaChat] ⚠️ API returned empty messages but we have existing messages - preserving existing")
+            setIsLoadingChat(false)
+            hasLoadedChatRef.current = true
+            return
+          }
 
           // CRITICAL FIX: Set sorted and deduplicated messages
           // This ensures messages are in correct chronological order and have no duplicates
@@ -588,6 +635,7 @@ export function useMayaChat({
       // CRITICAL: Clear messages immediately when chatType changes to prevent showing wrong messages
       setMessages([])
       savedMessageIds.current.clear()
+      savedFeedCardMessagesRef.current.clear() // Clear feed card tracking
       setChatId(null)
       setChatTitle("Chat with Maya")
       hasLoadedChatRef.current = false
@@ -714,6 +762,7 @@ export function useMayaChat({
       // This is necessary because useChat might maintain internal state
       setMessages([])
       savedMessageIds.current.clear()
+      savedFeedCardMessagesRef.current.clear() // Clear feed card tracking
       
       // Reset flag in next tick to allow useEffect to run normally
       setTimeout(() => {
@@ -727,6 +776,7 @@ export function useMayaChat({
       // On error, ensure messages are still cleared and reset flag
       setMessages([])
       savedMessageIds.current.clear()
+      savedFeedCardMessagesRef.current.clear() // Clear feed card tracking
       isCreatingNewChatRef.current = false
     }
   }, [getChatType, activeTab, setMessages])

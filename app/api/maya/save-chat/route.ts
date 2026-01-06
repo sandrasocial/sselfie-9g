@@ -18,11 +18,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { messages, concepts } = await req.json()
+    const { messages, concepts, chatType } = await req.json()
 
+    // CRITICAL FIX: Set chat_type when creating chat (default to "maya" for backward compatibility)
+    // This ensures chats are properly typed and can be filtered correctly
+    const finalChatType = chatType || "maya"
+    
     const [chat] = await sql`
-      INSERT INTO maya_chats (user_id, created_at, updated_at)
-      VALUES (${user.id}, NOW(), NOW())
+      INSERT INTO maya_chats (user_id, chat_type, created_at, updated_at)
+      VALUES (${user.id}, ${finalChatType}, NOW(), NOW())
       RETURNING id
     `
 

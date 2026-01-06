@@ -1,3 +1,17 @@
+-- ⚠️ DEPRECATED: This schema was NEVER APPLIED to the database
+-- 
+-- The actual database uses SERIAL (INTEGER) for IDs and TEXT for user_id.
+-- See scripts/00-create-all-tables.sql for the ACTUAL schema.
+-- 
+-- DO NOT USE THIS FILE - It uses UUID types that don't match the database.
+-- This file is kept for reference only.
+-- 
+-- Key differences:
+-- - generated_images.id is SERIAL (INTEGER), NOT UUID
+-- - generated_images.user_id is TEXT, NOT UUID
+-- - generated_images does NOT have concept_card_id column
+-- - generated_images has image_urls (TEXT[]) and selected_url (TEXT), NOT image_url
+
 -- Photo Generation & Gallery Tables
 
 -- Generated images

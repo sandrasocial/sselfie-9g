@@ -56,18 +56,60 @@ export async function POST(
       )
     }
 
-    // Update feed description with strategy (store in description field)
-    // Note: We're storing the strategy in the description field since it's the most appropriate field
-    // for storing a strategy document. If there's a dedicated strategy field, we can update this.
-    await sql`
-      UPDATE feed_layouts
-      SET description = ${strategy},
-          updated_at = NOW()
+    // CRITICAL: Store strategy document in feed_strategy table, NOT in feed_layouts.description
+    // Strategy documents should only appear in Feed Planner, not in chat feed cards
+    // Check if strategy already exists for this feed
+    const [existingStrategy] = await sql`
+      SELECT id FROM feed_strategy
+      WHERE feed_layout_id = ${feedIdInt}
+      AND user_id = ${neonUser.id}
+      LIMIT 1
+    `
+    
+    if (existingStrategy) {
+      // Update existing strategy
+      await sql`
+        UPDATE feed_strategy
+        SET strategy_document = ${strategy},
+            updated_at = NOW(),
+            is_active = true
+        WHERE feed_layout_id = ${feedIdInt}
+        AND user_id = ${neonUser.id}
+      `
+    } else {
+      // Insert new strategy
+      await sql`
+        INSERT INTO feed_strategy (user_id, feed_layout_id, strategy_document, is_active)
+        VALUES (${neonUser.id}, ${feedIdInt}, ${strategy}, true)
+      `
+    }
+
+    // CRITICAL: Clear description field if it contains a strategy document
+    // This prevents strategy documents from showing in chat feed cards
+    // Check if description is a strategy document (has markdown headers and is long)
+    const [currentFeed] = await sql`
+      SELECT description
+      FROM feed_layouts
       WHERE id = ${feedIdInt}
       AND user_id = ${neonUser.id}
     `
+    
+    if (currentFeed?.description) {
+      const isStrategyDoc = /^#{1,3}\s/m.test(currentFeed.description) && currentFeed.description.length > 500
+      if (isStrategyDoc) {
+        // Clear description field since strategy is now in feed_strategy table
+        await sql`
+          UPDATE feed_layouts
+          SET description = NULL,
+              updated_at = NOW()
+          WHERE id = ${feedIdInt}
+          AND user_id = ${neonUser.id}
+        `
+        console.log("[ADD-STRATEGY] ✅ Cleared strategy document from description field")
+      }
+    }
 
-    console.log("[ADD-STRATEGY] ✅ Strategy added to feed:", feedIdInt)
+    console.log("[ADD-STRATEGY] ✅ Strategy added to feed_strategy table for feed:", feedIdInt)
 
     return NextResponse.json({
       success: true,

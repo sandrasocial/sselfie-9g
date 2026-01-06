@@ -36,6 +36,417 @@ function getFeedCardDescription(feedDescription: string | null | undefined, fall
   return feedDescription
 }
 
+/**
+ * Fetch generated images for concept cards
+ * Queries generated_images and ai_images tables to find images linked to concepts
+ * 
+ * @param concepts - Array of concept cards
+ * @param neonUser - User object
+ * @param messageCreatedAt - Message creation timestamp (for time-based matching)
+ * @returns Concepts with generatedImageUrl added
+ */
+/**
+ * Enriches concept cards with generated images from database.
+ * 
+ * SIMPLIFIED APPROACH (No time limits - images are permanent):
+ * 1. Check if concept already has generatedImageUrl in JSONB → Use it
+ * 2. Query by concept_card_id (if concept has real UUID) → generated_images table
+ * 3. Query by prediction_id (Pro Mode) → ai_images table
+ * 
+ * NO prompt matching, NO time windows - images stay permanently in cards.
+ */
+async function enrichConceptsWithImages(
+  concepts: any[],
+  neonUser: any
+): Promise<any[]> {
+  if (!concepts || concepts.length === 0) {
+    return concepts
+  }
+
+  console.log("[v0] 🔍 Enriching", concepts.length, "concepts with images for user:", neonUser.id)
+  
+  // Ensure user_id is string for queries
+  const userId = String(neonUser.id)
+
+  const enrichedConcepts = await Promise.all(
+    concepts.map(async (concept, index) => {
+      // Step 1: Skip if already has generatedImageUrl (already in JSONB)
+      if (concept.generatedImageUrl) {
+        console.log("[v0] ⏭️ Concept", index, `"${concept.title || concept.label || 'Untitled'}"` + " already has generatedImageUrl in JSONB")
+        return concept
+      }
+
+      let imageUrl: string | null = null
+      let matchMethod = "none"
+
+      // Step 2: Query by concept_card_id (Classic Mode - if concept has real INTEGER ID)
+      // NOTE: generated_images table uses SERIAL (INTEGER) IDs, not UUID
+      // NOTE: generated_images table does NOT have concept_card_id column
+      // NOTE: generated_images has selected_url (TEXT) or image_urls (TEXT[]), not image_url
+      // For Classic Mode, we can't link by concept_card_id since that column doesn't exist
+      // Images are linked via prediction_id stored in ai_images table instead
+
+      // Step 3: Query by prediction_id (Pro Mode)
+      // ai_images table uses TEXT for user_id (not UUID)
+      if (!imageUrl && concept.predictionId) {
+        try {
+          const [aiImage] = await sql`
+            SELECT image_url 
+            FROM ai_images 
+            WHERE prediction_id = ${concept.predictionId}
+              AND user_id::text = ${userId}
+            ORDER BY created_at DESC
+            LIMIT 1
+          `
+          if (aiImage?.image_url) {
+            imageUrl = aiImage.image_url
+            matchMethod = "prediction_id"
+            console.log("[v0] ✅ Found image for concept", index, `"${concept.title || concept.label || 'Untitled'}"` + " by prediction_id:", concept.predictionId)
+          }
+        } catch (error: any) {
+          console.error("[v0] ❌ Error querying ai_images by prediction_id:", error?.message || error)
+        }
+      }
+
+      // Add generatedImageUrl to concept if found
+      if (imageUrl) {
+        console.log("[v0] ✅ Enriched concept", index, `"${concept.title || concept.label || 'Untitled'}"` + " with image (method:", matchMethod + ")")
+        return {
+          ...concept,
+          generatedImageUrl: imageUrl,
+        }
+      } else {
+        console.log("[v0] ⚠️ No image found for concept", index, `"${concept.title || concept.label || 'Untitled'}"` + " (no concept_card_id or prediction_id)")
+      }
+
+      return concept
+    })
+  )
+
+  const enrichedCount = enrichedConcepts.filter(c => c.generatedImageUrl).length
+  console.log("[v0] ✅ Enrichment complete:", enrichedCount, "of", concepts.length, "concepts have images")
+
+  return enrichedConcepts
+}
+
+/**
+ * Process feed cards from database and return feed card parts for message
+ * 
+ * REFACTORED: Consolidated all feed card processing logic into single function
+ * - Handles feed cards from feed_cards column or styling_details fallback
+ * - Fetches fresh data from database if feedId exists
+ * - Handles unsaved feeds (no feedId)
+ * - Handles CREATE_FEED_STRATEGY triggers
+ * - Handles [FEED_CARD:feedId] markers
+ * 
+ * @param msg - Message from database
+ * @param parsedFeedCards - Parsed feed cards array (from feed_cards column or styling_details)
+ * @param textContent - Message text content (for trigger detection)
+ * @param neonUser - User object
+ * @param existingParts - Existing message parts (to avoid duplicates)
+ * @returns Array of feed card parts to add to message
+ */
+async function processFeedCards(
+  msg: any,
+  parsedFeedCards: any[] | null,
+  textContent: string,
+  neonUser: any,
+  existingParts: any[] = []
+): Promise<any[]> {
+  const feedCardParts: any[] = []
+  
+  // Helper to check if feed card already exists
+  const hasFeedCard = (feedId: number | undefined) => {
+    return existingParts.some((p: any) => 
+      p.type === 'tool-generateFeed' && 
+      (feedId ? p.output?.feedId === feedId : !p.output?.feedId)
+    )
+  }
+  
+  // Helper to fetch feed data from database
+  const fetchFeedData = async (feedId: number) => {
+    try {
+      const [feedData] = await sql`
+        SELECT 
+          fl.id as feed_id,
+          fl.title as feed_title,
+          fl.description as feed_description,
+          fl.brand_vibe,
+          fl.color_palette,
+          json_agg(
+            json_build_object(
+              'id', fp.id,
+              'position', fp.position,
+              'prompt', fp.prompt,
+              'caption', fp.caption,
+              'content_pillar', fp.content_pillar,
+              'post_type', fp.post_type,
+              'image_url', fp.image_url,
+              'generation_status', fp.generation_status
+            ) ORDER BY fp.position ASC
+          ) as posts
+        FROM feed_layouts fl
+        LEFT JOIN feed_posts fp ON fp.feed_layout_id = fl.id
+        WHERE fl.id = ${feedId} AND fl.user_id = ${neonUser.id}
+        GROUP BY fl.id, fl.title, fl.description, fl.brand_vibe, fl.color_palette
+      `
+      
+      if (feedData) {
+        const posts = feedData.posts === null ? [] : (feedData.posts || [])
+        return {
+          feedId,
+          title: feedData.feed_title || 'Instagram Feed',
+          description: getFeedCardDescription(feedData.feed_description, ''),
+          posts,
+          strategy: {
+            gridPattern: feedData.brand_vibe || '',
+            visualRhythm: feedData.color_palette || '',
+          },
+        }
+      }
+    } catch (error) {
+      console.error("[v0] ❌ Error fetching feed data for feedId:", feedId, ":", error)
+    }
+    return null
+  }
+  
+  // Process feed cards from database (feed_cards column or styling_details)
+  if (parsedFeedCards && Array.isArray(parsedFeedCards) && parsedFeedCards.length > 0) {
+    console.log("[v0] ✅ Found feed cards for message", msg.id, "count:", parsedFeedCards.length)
+    
+    for (const feedCard of parsedFeedCards) {
+      // Skip if already exists
+      if (hasFeedCard(feedCard.feedId)) {
+        continue
+      }
+      
+      // Try to find feedId if missing (backward compatibility)
+      let feedIdToFetch = feedCard.feedId ? Number(feedCard.feedId) : null
+      
+      if (!feedIdToFetch) {
+        try {
+          const [matchingFeed] = await sql`
+            SELECT fl.id
+            FROM feed_layouts fl
+            JOIN feed_posts fp ON fp.feed_layout_id = fl.id
+            WHERE fl.user_id = ${neonUser.id}
+              AND fp.image_url IS NOT NULL
+            GROUP BY fl.id
+            ORDER BY fl.created_at DESC
+            LIMIT 1
+          `
+          if (matchingFeed?.id) {
+            feedIdToFetch = matchingFeed.id
+            console.log("[v0] 🔍 Found feedId by matching feed with images:", feedIdToFetch)
+          }
+        } catch (error) {
+          console.error("[v0] ❌ Error finding feedId:", error)
+        }
+      }
+      
+      // Fetch fresh data if feedId exists
+      if (feedIdToFetch && !isNaN(feedIdToFetch)) {
+        const feedData = await fetchFeedData(feedIdToFetch)
+        if (feedData) {
+          // Update feed_cards with feedId if it was missing (backward compatibility)
+          if (!feedCard.feedId && feedIdToFetch) {
+            try {
+              const updatedFeedCards = parsedFeedCards.map((card: any) => 
+                card === feedCard ? { ...card, feedId: feedIdToFetch } : card
+              )
+              await sql`
+                UPDATE maya_chat_messages
+                SET feed_cards = ${JSON.stringify(updatedFeedCards)}::jsonb
+                WHERE id = ${msg.id}
+              `
+              console.log("[v0] ✅ Updated feed_cards with feedId:", feedIdToFetch, "for message:", msg.id)
+            } catch (updateError) {
+              console.error("[v0] ⚠️ Failed to update feed_cards with feedId:", updateError)
+            }
+          }
+          
+          feedCardParts.push({
+            type: "tool-generateFeed",
+            toolCallId: `tool_feed_${msg.id}_${feedIdToFetch}`,
+            state: "ready",
+            input: {},
+            output: {
+              feedId: feedIdToFetch,
+              title: feedData.title,
+              description: feedData.description,
+              posts: feedData.posts,
+              strategy: feedData.strategy,
+              isSaved: true,
+              proMode: feedCard.proMode,
+              styleStrength: feedCard.styleStrength,
+              promptAccuracy: feedCard.promptAccuracy,
+              aspectRatio: feedCard.aspectRatio,
+              realismStrength: feedCard.realismStrength,
+            },
+          })
+          console.log("[v0] ✅ Restored feed card with fresh data from database for feedId:", feedIdToFetch)
+          continue
+        }
+      }
+      
+      // Use cached data if no feedId or fetch failed
+      // CRITICAL FIX: Even if we can't find feedId, check if cached posts have images
+      // If posts exist but have no images, try to find feedId from posts that might have been generated
+      if (!feedIdToFetch && feedCard.posts && Array.isArray(feedCard.posts) && feedCard.posts.length > 0) {
+        // Check if any posts have image_url - if not, try to find feedId from database
+        const hasAnyImages = feedCard.posts.some((p: any) => p.image_url)
+        if (!hasAnyImages) {
+          // Try to find feedId by matching posts (by prompt or position)
+          try {
+            const firstPost = feedCard.posts[0]
+            if (firstPost?.prompt || firstPost?.position) {
+              const [matchingFeed] = await sql`
+                SELECT DISTINCT fl.id
+                FROM feed_layouts fl
+                JOIN feed_posts fp ON fp.feed_layout_id = fl.id
+                WHERE fl.user_id = ${neonUser.id}
+                  AND (
+                    ${firstPost.prompt ? sql`fp.prompt = ${firstPost.prompt}` : sql`fp.position = ${firstPost.position || 1}`}
+                  )
+                ORDER BY fl.created_at DESC
+                LIMIT 1
+              `
+              if (matchingFeed?.id) {
+                feedIdToFetch = matchingFeed.id
+                console.log("[v0] 🔍 Found feedId by matching post data:", feedIdToFetch)
+                // Retry fetch with found feedId
+                const feedData = await fetchFeedData(feedIdToFetch)
+                if (feedData) {
+                  feedCardParts.push({
+                    type: "tool-generateFeed",
+                    toolCallId: `tool_feed_${msg.id}_${feedIdToFetch}`,
+                    state: "ready",
+                    input: {},
+                    output: {
+                      feedId: feedIdToFetch,
+                      title: feedData.title,
+                      description: feedData.description,
+                      posts: feedData.posts, // Use fresh data with images
+                      strategy: feedData.strategy,
+                      isSaved: true,
+                      proMode: feedCard.proMode,
+                      styleStrength: feedCard.styleStrength,
+                      promptAccuracy: feedCard.promptAccuracy,
+                      aspectRatio: feedCard.aspectRatio,
+                      realismStrength: feedCard.realismStrength,
+                    },
+                  })
+                  console.log("[v0] ✅ Restored feed card with images from database (found feedId by post match):", feedIdToFetch)
+                  continue
+                }
+              }
+            }
+          } catch (error) {
+            console.error("[v0] ⚠️ Error trying to find feedId by post match:", error)
+          }
+        }
+      }
+      
+      // If still no feedId, use cached data (but log warning if posts exist without images)
+      if (!feedIdToFetch) {
+        if (feedCard.posts && Array.isArray(feedCard.posts) && feedCard.posts.length > 0) {
+          const postsWithImages = feedCard.posts.filter((p: any) => p.image_url).length
+          const totalPosts = feedCard.posts.length
+          if (postsWithImages < totalPosts) {
+            console.warn("[v0] ⚠️ Using cached feed card data, but", totalPosts - postsWithImages, "posts are missing images:", {
+              feedCardId: feedCard.feedId || "unsaved",
+              messageId: msg.id,
+              postsWithImages,
+              totalPosts,
+            })
+          }
+        }
+        feedCardParts.push({
+          type: "tool-generateFeed",
+          toolCallId: `tool_feed_${msg.id}_${feedCard.feedId || 'unsaved'}`,
+          state: "ready",
+          input: {},
+          output: feedCard,
+        })
+        console.log("[v0] ✅ Restored feed card from cache (no feedId):", feedCard.feedId || "unsaved")
+      }
+    }
+  }
+  
+  // Check for CREATE_FEED_STRATEGY trigger (unsaved feeds)
+  const createFeedStrategyMatch = textContent.match(/\[CREATE_FEED_STRATEGY:\s*(\{[\s\S]*?\})\]/i)
+  if (createFeedStrategyMatch && !hasFeedCard(undefined)) {
+    try {
+      const strategyJson = createFeedStrategyMatch[1]
+      const strategy = JSON.parse(strategyJson)
+      console.log("[v0] ✅ Found unsaved feed strategy in message:", {
+        hasStrategy: !!strategy,
+        postsCount: strategy.posts?.length || 0,
+      })
+      
+      feedCardParts.push({
+        type: 'tool-generateFeed',
+        output: {
+          feedId: undefined,
+          strategy: strategy,
+          title: strategy.feedTitle || strategy.title || 'Instagram Feed',
+          description: strategy.overallVibe || strategy.colorPalette || '',
+          posts: strategy.posts || [],
+          isSaved: false,
+          studioProMode: strategy.studioProMode || false,
+          styleStrength: strategy.styleStrength || 0.8,
+          promptAccuracy: strategy.promptAccuracy || 0.8,
+          aspectRatio: strategy.aspectRatio || '4:5',
+          realismStrength: strategy.realismStrength || 0.8,
+        },
+      })
+      console.log("[v0] ✅ Added unsaved feed card part from trigger")
+    } catch (error) {
+      console.error("[v0] ❌ Failed to parse CREATE_FEED_STRATEGY JSON:", error)
+    }
+  }
+  
+  // Check for [FEED_CARD:feedId] marker
+  const feedCardMatch = textContent.match(/\[FEED_CARD:(\d+)\]/)
+  if (feedCardMatch) {
+    const feedId = parseInt(feedCardMatch[1], 10)
+    if (!hasFeedCard(feedId)) {
+      console.log("[v0] Found feed card marker for feedId:", feedId)
+      
+      const feedData = await fetchFeedData(feedId)
+      if (feedData) {
+        feedCardParts.push({
+          type: 'tool-generateFeed',
+          output: {
+            feedId: feedId,
+            title: feedData.title,
+            description: feedData.description,
+            posts: feedData.posts,
+            strategy: feedData.strategy,
+            isSaved: true,
+          },
+        })
+        console.log("[v0] ✅ Added feed card part from marker for feedId:", feedId)
+      } else {
+        // Fallback if feed not found
+        feedCardParts.push({
+          type: 'tool-generateFeed',
+          output: {
+            feedId: feedId,
+            title: 'Instagram Feed',
+            description: '',
+            posts: [],
+            _needsRestore: true,
+          },
+        })
+        console.log("[v0] ⚠️ Feed not found for feedId:", feedId, "- using placeholder")
+      }
+    }
+  }
+  
+  return feedCardParts
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { user, error: authError } = await getAuthenticatedUser()
@@ -56,9 +467,33 @@ export async function GET(request: NextRequest) {
 
     let chat
     if (requestedChatId) {
-      chat = await loadChatById(Number.parseInt(requestedChatId), neonUser.id)
+      // CRITICAL FIX: Pass chatType to loadChatById for validation
+      // This ensures the chat's chat_type matches the requested tab
+      chat = await loadChatById(Number.parseInt(requestedChatId), neonUser.id, chatType)
       if (!chat) {
-        return NextResponse.json({ error: "Chat not found" }, { status: 404 })
+        console.warn("[v0] ⚠️ Chat not found or type mismatch:", {
+          requestedChatId,
+          requestedChatType: chatType,
+          message: "Chat either doesn't exist or is wrong type for this tab"
+        })
+        return NextResponse.json({ 
+          error: "Chat not found or not available in this tab",
+          details: `Chat ${requestedChatId} is not available for chat type ${chatType}`
+        }, { status: 404 })
+      }
+      
+      // Double-check: Verify chat_type matches (defensive programming)
+      if (chat.chat_type !== chatType) {
+        console.error("[v0] ❌ CRITICAL: Chat type mismatch after loadChatById:", {
+          chatId: chat.id,
+          requestedChatType: chatType,
+          actualChatType: chat.chat_type,
+          message: "This should never happen - loadChatById should have returned null"
+        })
+        return NextResponse.json({ 
+          error: "Chat type mismatch",
+          details: `Chat ${chat.id} is type ${chat.chat_type}, but ${chatType} was requested`
+        }, { status: 400 })
       }
     } else {
       // This is used on initial page load to show conversation history
@@ -67,20 +502,21 @@ export async function GET(request: NextRequest) {
 
     const messages = await getChatMessages(chat.id)
 
-    // CRITICAL DEBUG: Log styling_details for all messages to diagnose parsing issues
-    console.log("[v0] 🔍 DEBUG: Checking styling_details for all messages:", {
+    // CRITICAL DEBUG: Log feed_cards and styling_details for all messages to diagnose parsing issues
+    console.log("[v0] 🔍 DEBUG: Checking feed_cards and styling_details for all messages:", {
       totalMessages: messages.length,
+      messagesWithFeedCards: messages.filter((m: any) => m.feed_cards !== null && m.feed_cards !== undefined).length,
       messagesWithStylingDetails: messages.filter((m: any) => m.styling_details !== null && m.styling_details !== undefined).length,
-      stylingDetailsTypes: messages
-        .filter((m: any) => m.styling_details !== null && m.styling_details !== undefined)
+      feedCardsTypes: messages
+        .filter((m: any) => m.feed_cards !== null && m.feed_cards !== undefined)
         .map((m: any) => ({
           id: m.id,
-          type: typeof m.styling_details,
-          isArray: Array.isArray(m.styling_details),
-          isString: typeof m.styling_details === 'string',
-          preview: typeof m.styling_details === 'string' 
-            ? m.styling_details.substring(0, 100) 
-            : JSON.stringify(m.styling_details).substring(0, 100),
+          type: typeof m.feed_cards,
+          isArray: Array.isArray(m.feed_cards),
+          isString: typeof m.feed_cards === 'string',
+          preview: typeof m.feed_cards === 'string' 
+            ? m.feed_cards.substring(0, 100) 
+            : JSON.stringify(m.feed_cards).substring(0, 100),
         })),
     })
 
@@ -97,6 +533,17 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // ============================================================================
+    // FORMAT MESSAGES - TAB SEPARATION
+    // ============================================================================
+    // REFACTORED: Feed cards and concept cards are in separate tabs
+    // - Feed Tab (chatType="feed-planner"): Only process feed cards
+    // - Photos Tab (chatType="maya"/"pro"): Only process concept cards
+    // - This ensures proper separation and avoids unnecessary processing
+    // ============================================================================
+    const isFeedTab = chatType === "feed-planner"
+    const isPhotosTab = chatType === "maya" || chatType === "pro"
+    
     const formattedMessages = await Promise.all(messages.map(async (msg) => {
       const baseMessage = {
         id: msg.id.toString(),
@@ -104,22 +551,46 @@ export async function GET(request: NextRequest) {
         createdAt: msg.created_at,
       }
 
-      // CRITICAL FIX: Parse styling_details if it's a string (from Redis cache)
-      // PostgreSQL JSONB returns parsed objects, but Redis cache might store strings
-      let parsedStylingDetails: any = null
-      if (msg.styling_details) {
-        if (typeof msg.styling_details === 'string') {
+      // CRITICAL: Read feed_cards from dedicated column (matches concept_cards pattern)
+      // Fallback to styling_details for backward compatibility
+      let feedCards: any = null
+      
+      // First, try feed_cards column (new dedicated column)
+      if (msg.feed_cards) {
+        if (typeof msg.feed_cards === 'string') {
           try {
-            parsedStylingDetails = JSON.parse(msg.styling_details)
-            console.log("[v0] 🔍 Parsed styling_details from string for message", msg.id)
+            feedCards = JSON.parse(msg.feed_cards)
+            console.log("[v0] 🔍 Parsed feed_cards from string for message", msg.id)
           } catch (parseError) {
-            console.error("[v0] ❌ Failed to parse styling_details string for message", msg.id, ":", parseError)
-            parsedStylingDetails = null
+            console.error("[v0] ❌ Failed to parse feed_cards string for message", msg.id, ":", parseError)
+            feedCards = null
           }
         } else {
-          parsedStylingDetails = msg.styling_details
+          feedCards = msg.feed_cards
         }
       }
+      
+      // Fallback to styling_details for backward compatibility (old data)
+      if (!feedCards && msg.styling_details) {
+        if (typeof msg.styling_details === 'string') {
+          try {
+            const parsedStyling = JSON.parse(msg.styling_details)
+            // Only use if it's an array (feed cards format)
+            if (Array.isArray(parsedStyling)) {
+              feedCards = parsedStyling
+              console.log("[v0] 🔍 Fallback: Using feed_cards from styling_details for message", msg.id)
+            }
+          } catch (parseError) {
+            console.error("[v0] ❌ Failed to parse styling_details string for message", msg.id, ":", parseError)
+          }
+        } else if (Array.isArray(msg.styling_details)) {
+          feedCards = msg.styling_details
+          console.log("[v0] 🔍 Fallback: Using feed_cards from styling_details (array) for message", msg.id)
+        }
+      }
+      
+      // Legacy variable name for backward compatibility in code below
+      const parsedStylingDetails = feedCards
 
       // Extract inspiration image from content if present (backward compatibility)
       const inspirationImageMatch = msg.content?.match(/\[Inspiration Image: (https?:\/\/[^\]]+)\]/)
@@ -128,8 +599,14 @@ export async function GET(request: NextRequest) {
         ? msg.content?.replace(/\[Inspiration Image: https?:\/\/[^\]]+\]/g, "").trim() || ""
         : msg.content || ""
 
-      if (msg.concept_cards && Array.isArray(msg.concept_cards) && msg.concept_cards.length > 0) {
-        console.log("[v0] Formatting message", msg.id, "with", msg.concept_cards.length, "concept cards")
+      // ============================================================================
+      // PROCESS CONCEPT CARDS (Photos Tab Only)
+      // ============================================================================
+      // REFACTORED: Only process concept cards for Photos tab (maya/pro chat types)
+      // Feed tab should never have concept cards (they're in separate tabs)
+      // ============================================================================
+      if (isPhotosTab && msg.concept_cards && Array.isArray(msg.concept_cards) && msg.concept_cards.length > 0) {
+        console.log("[v0] Formatting message", msg.id, "with", msg.concept_cards.length, "concept cards (Photos tab)")
         const parts: any[] = []
         
         if (textContent) {
@@ -147,6 +624,34 @@ export async function GET(request: NextRequest) {
           console.log("[v0] ✅ Restored inspiration image for message", msg.id)
         }
         
+        // CRITICAL FIX: Enrich concept cards with generated images from database
+        // This ensures images persist on page refresh
+        let enrichedConcepts = msg.concept_cards
+        try {
+          console.log("[v0] 🔍 Starting image enrichment for", msg.concept_cards.length, "concepts in message", msg.id)
+          enrichedConcepts = await enrichConceptsWithImages(
+            msg.concept_cards,
+            neonUser
+          )
+          
+          const conceptsWithImages = enrichedConcepts.filter(c => c.generatedImageUrl).length
+          console.log("[v0] ✅ Image enrichment complete:", conceptsWithImages, "of", msg.concept_cards.length, "concepts have images")
+          
+          // Debug: Log which concepts got images
+          enrichedConcepts.forEach((c, i) => {
+            if (c.generatedImageUrl) {
+              console.log("[v0]   → Concept", i, `"${c.title || c.label || 'Untitled'}"` + " has image")
+            } else {
+              console.log("[v0]   → Concept", i, `"${c.title || c.label || 'Untitled'}"` + " NO image found")
+            }
+          })
+        } catch (enrichError: any) {
+          // If enrichment fails, use original concepts (don't break chat loading)
+          console.error("[v0] ❌ Error enriching concepts with images:", enrichError?.message || enrichError)
+          console.log("[v0] ⚠️ Continuing with original concepts (no images enriched)")
+          enrichedConcepts = msg.concept_cards
+        }
+        
         parts.push({
           type: "tool-generateConcepts",
           toolCallId: `tool_${msg.id}`,
@@ -154,304 +659,12 @@ export async function GET(request: NextRequest) {
           input: {},
           output: {
             state: "ready",
-            concepts: msg.concept_cards,
+            concepts: enrichedConcepts, // Use enriched concepts with images
           },
         })
         
-        // CRITICAL: Check for feed cards in styling_details column (message can have both concept cards and feed cards)
-        // Use parsedStylingDetails instead of msg.styling_details
-        if (parsedStylingDetails && Array.isArray(parsedStylingDetails) && parsedStylingDetails.length > 0) {
-          console.log("[v0] ✅ Found feed cards in styling_details column for message", msg.id, "count:", parsedStylingDetails.length)
-          
-          // Process each feed card - if it has feedId, fetch fresh data from database
-          for (const feedCard of parsedStylingDetails) {
-            // Check if feed card part already exists (avoid duplicates)
-            const hasExistingFeedCard = parts.some((p: any) => 
-              p.type === 'tool-generateFeed' && 
-              (p.output?.feedId === feedCard.feedId || (!feedCard.feedId && !p.output?.feedId))
-            )
-            
-            if (hasExistingFeedCard) {
-              continue // Skip if already exists
-            }
-            
-          // CRITICAL: If feed card doesn't have feedId, find user's most recent feed with images
-          // This fixes existing feeds that were created before feedId was saved
-          let feedIdToFetch = feedCard.feedId ? Number(feedCard.feedId) : null
-          
-          if (!feedIdToFetch) {
-            try {
-              // Find most recent feed that has at least one post with an image (likely the one we want)
-              const [matchingFeed] = await sql`
-                SELECT fl.id
-                FROM feed_layouts fl
-                JOIN feed_posts fp ON fp.feed_layout_id = fl.id
-                WHERE fl.user_id = ${neonUser.id}
-                  AND fp.image_url IS NOT NULL
-                GROUP BY fl.id
-                ORDER BY fl.created_at DESC
-                LIMIT 1
-              `
-              if (matchingFeed?.id) {
-                feedIdToFetch = matchingFeed.id
-                console.log("[v0] 🔍 Found feedId by matching feed with images:", feedIdToFetch)
-              }
-            } catch (error) {
-              console.error("[v0] ❌ Error finding feedId:", error)
-            }
-          }
-          
-          if (feedIdToFetch && !isNaN(feedIdToFetch)) {
-              try {
-                console.log("[v0] 🔍 Feed card has feedId, fetching fresh data from database:", feedIdToFetch, "(original type:", typeof feedCard.feedId, ")")
-                const [feedData] = await sql`
-                  SELECT 
-                    fl.id as feed_id,
-                    fl.title as feed_title,
-                    fl.description as feed_description,
-                    fl.brand_vibe,
-                    fl.color_palette,
-                    json_agg(
-                      json_build_object(
-                        'id', fp.id,
-                        'position', fp.position,
-                        'prompt', fp.prompt,
-                        'caption', fp.caption,
-                        'content_pillar', fp.content_pillar,
-                        'post_type', fp.post_type,
-                        'image_url', fp.image_url,
-                        'generation_status', fp.generation_status
-                      ) ORDER BY fp.position ASC
-                    ) as posts
-                  FROM feed_layouts fl
-                  LEFT JOIN feed_posts fp ON fp.feed_layout_id = fl.id
-                  WHERE fl.id = ${feedIdToFetch} AND fl.user_id = ${neonUser.id}
-                  GROUP BY fl.id, fl.title, fl.description, fl.brand_vibe, fl.color_palette
-                `
-                
-                if (feedData) {
-                  const posts = feedData.posts === null ? [] : (feedData.posts || [])
-                  const postsWithImages = posts.filter((p: any) => p.image_url)
-                  console.log("[v0] ✅ Fetched fresh feed data with", posts.length, "posts (", postsWithImages.length, "with images) for feedId:", feedIdToFetch)
-                  
-                  // CRITICAL: Update styling_details with feedId so future loads work correctly
-                  // This fixes feeds that were created before feedId was saved
-                  if (!feedCard.feedId && feedIdToFetch) {
-                    try {
-                      // Parse current styling_details, update the feed card with feedId, then save back
-                      const currentStyling = parsedStylingDetails || []
-                      const updatedStyling = currentStyling.map((card: any, idx: number) => {
-                        // Match by checking if this is the same feed card (same title or same posts count)
-                        if (idx === 0 || (card.title === feedCard.title) || (card.posts?.length === feedCard.posts?.length)) {
-                          return { ...card, feedId: feedIdToFetch }
-                        }
-                        return card
-                      })
-                      
-                      await sql`
-                        UPDATE maya_chat_messages
-                        SET styling_details = ${JSON.stringify(updatedStyling)}::jsonb
-                        WHERE id = ${msg.id}
-                      `
-                      console.log("[v0] ✅ Updated styling_details with feedId:", feedIdToFetch, "for message:", msg.id)
-                    } catch (updateError) {
-                      console.error("[v0] ⚠️ Failed to update styling_details with feedId:", updateError)
-                    }
-                  }
-                  
-                  parts.push({
-                    type: "tool-generateFeed",
-                    toolCallId: `tool_feed_${msg.id}_${feedIdToFetch}`,
-                    state: "ready",
-                    input: {},
-                    output: {
-                      feedId: feedIdToFetch,
-                      title: feedData.feed_title || feedCard.title || 'Instagram Feed',
-                      // CRITICAL: Filter out strategy documents from description
-                      // Strategy documents should only appear in feed planner, not in chat feed cards
-                      description: getFeedCardDescription(feedData.feed_description, feedCard.description || ''),
-                      posts: posts, // Use fresh posts with images from database
-                      strategy: feedCard.strategy || {
-                        gridPattern: feedData.brand_vibe || '',
-                        visualRhythm: feedData.color_palette || '',
-                      },
-                      isSaved: true,
-                      // Preserve settings from cached feedCard if available
-                      proMode: feedCard.proMode,
-                      styleStrength: feedCard.styleStrength,
-                      promptAccuracy: feedCard.promptAccuracy,
-                      aspectRatio: feedCard.aspectRatio,
-                      realismStrength: feedCard.realismStrength,
-                    },
-                  })
-                  console.log("[v0] ✅ Restored feed card with fresh data from database for feedId:", feedIdToFetch, "- posts with images:", postsWithImages.length, "/", posts.length)
-                  continue // Skip to next feed card
-                } else {
-                  console.warn("[v0] ⚠️ Feed not found in database for feedId:", feedIdToFetch, "- using cached data")
-                  // Fall through to use cached data
-                }
-              } catch (error) {
-                console.error("[v0] ❌ Error fetching fresh feed data for feedId:", feedIdToFetch, ":", error)
-                // Fall through to use cached data as fallback
-              }
-            }
-            
-            // Only use cached data if we couldn't find feedId AND couldn't fetch fresh data
-            // This prevents showing stale cached data when feedId exists in database
-            if (!feedIdToFetch) {
-              parts.push({
-                type: "tool-generateFeed",
-                toolCallId: `tool_feed_${msg.id}_${feedCard.feedId || 'unsaved'}`,
-                state: "ready",
-                input: {},
-                output: feedCard,
-              })
-              console.log("[v0] ✅ Restored feed card from styling_details (cached, no feedId found):", feedCard.feedId || "unsaved")
-            } else {
-              console.log("[v0] ⚠️ Found feedId but fetch failed - skipping cached data to prevent duplicates")
-            }
-          }
-        }
-        
-        // CRITICAL: Check for UNSAVED feed strategy in messages with concept cards (backward compatibility)
-        const createFeedStrategyMatch = textContent.match(/\[CREATE_FEED_STRATEGY:\s*(\{[\s\S]*?\})\]/i)
-        if (createFeedStrategyMatch) {
-          try {
-            const strategyJson = createFeedStrategyMatch[1]
-            const strategy = JSON.parse(strategyJson)
-            console.log("[v0] ✅ Found unsaved feed strategy in concept card message:", {
-              hasStrategy: !!strategy,
-              postsCount: strategy.posts?.length || 0,
-            })
-            
-            // Check if feed card part already exists (avoid duplicates)
-            const hasExistingFeedCard = parts.some((p: any) => p.type === 'tool-generateFeed')
-            
-            if (!hasExistingFeedCard) {
-              // Add the feed card part so it renders in the UI
-              parts.push({
-                type: 'tool-generateFeed',
-                output: {
-                  // No feedId - indicates unsaved state
-                  strategy: strategy,
-                  title: strategy.feedTitle || strategy.title || 'Instagram Feed',
-                  description: strategy.overallVibe || strategy.colorPalette || '',
-                  posts: strategy.posts || [],
-                  isSaved: false,
-                  // Settings from strategy (if available)
-                  studioProMode: strategy.studioProMode || false,
-                  styleStrength: strategy.styleStrength || 0.8,
-                  promptAccuracy: strategy.promptAccuracy || 0.8,
-                  aspectRatio: strategy.aspectRatio || '4:5',
-                  realismStrength: strategy.realismStrength || 0.8,
-                },
-              })
-              console.log("[v0] ✅ Added unsaved feed card part to concept card message")
-            }
-          } catch (error) {
-            console.error("[v0] ❌ Failed to parse CREATE_FEED_STRATEGY JSON in concept card message:", error)
-          }
-        }
-        
-        // Check for feed card marker in messages with concept cards too
-        const feedCardMatch = textContent.match(/\[FEED_CARD:(\d+)\]/)
-        if (feedCardMatch) {
-          const feedId = parseInt(feedCardMatch[1], 10)
-          console.log("[v0] Found feed card marker for feedId:", feedId, "in concept card message")
-          
-          // Check if feed card part already exists (avoid duplicates)
-          const hasExistingFeedCard = parts.some((p: any) => 
-            p.type === 'tool-generateFeed' && p.output?.feedId === feedId
-          )
-          
-          if (!hasExistingFeedCard) {
-            // Remove marker from text content
-            const cleanTextContent = textContent.replace(/\[FEED_CARD:\d+\]/g, '').trim()
-            if (parts.length > 0 && parts[0].type === 'text') {
-              parts[0].text = cleanTextContent || ""
-            }
-            
-            // CRITICAL: Fetch full feed data including posts with captions and prompts
-            try {
-              const [feedData] = await sql`
-                SELECT 
-                  fl.id as feed_id,
-                  fl.title as feed_title,
-                  fl.description as feed_description,
-                  fl.brand_vibe,
-                  fl.color_palette,
-                  json_agg(
-                    json_build_object(
-                      'id', fp.id,
-                      'position', fp.position,
-                      'prompt', fp.prompt,
-                      'caption', fp.caption,
-                      'content_pillar', fp.content_pillar,
-                      'post_type', fp.post_type,
-                      'image_url', fp.image_url,
-                      'generation_status', fp.generation_status
-                    ) ORDER BY fp.position ASC
-                  ) as posts
-                FROM feed_layouts fl
-                LEFT JOIN feed_posts fp ON fp.feed_layout_id = fl.id
-                WHERE fl.id = ${feedId} AND fl.user_id = ${neonUser.id}
-                GROUP BY fl.id, fl.title, fl.description, fl.brand_vibe, fl.color_palette
-              `
-              
-              if (feedData) {
-                // CRITICAL: json_agg returns NULL (not []) when LEFT JOIN has zero rows
-                // Convert NULL to empty array to properly handle saved feeds with no posts
-                const posts = feedData.posts === null ? [] : (feedData.posts || [])
-                console.log("[v0] ✅ Loaded feed data with", posts.length, "posts including captions")
-                parts.push({
-                  type: 'tool-generateFeed',
-                  output: {
-                    feedId: feedId, // CRITICAL: Ensure feedId is always included
-                    title: feedData.feed_title || 'Instagram Feed',
-                    // CRITICAL: Filter out strategy documents from description
-                    // Strategy documents should only appear in feed planner, not in chat feed cards
-                    description: getFeedCardDescription(feedData.feed_description, ''),
-                    posts: posts,
-                    strategy: {
-                      gridPattern: feedData.brand_vibe || '',
-                      visualRhythm: feedData.color_palette || '',
-                    },
-                    isSaved: true,
-                    // CRITICAL: Store feedId in output for UI rendering
-                    // This ensures FeedPreviewCard can correctly identify the feed
-                  },
-                })
-              } else {
-                // Fallback if feed not found
-                console.warn("[v0] ⚠️ Feed not found for feedId:", feedId, "- using empty placeholder")
-                parts.push({
-                  type: 'tool-generateFeed',
-                  output: {
-                    feedId: feedId,
-                    title: 'Instagram Feed',
-                    description: '',
-                    posts: [],
-                    _needsRestore: true,
-                  },
-                })
-              }
-            } catch (error) {
-              console.error("[v0] ❌ Error loading feed data:", error)
-              // Fallback on error
-              parts.push({
-                type: 'tool-generateFeed',
-                output: {
-                  feedId: feedId,
-                  title: 'Instagram Feed',
-                  description: '',
-                  posts: [],
-                  _needsRestore: true,
-                },
-              })
-            }
-            console.log("[v0] ✅ Added feed card part for feedId:", feedId, "to concept card message")
-          }
-        }
+        // NOTE: Feed cards are NOT processed here - they're in separate Feed tab
+        // If a message somehow has both, it's a data inconsistency that should be fixed
         
         return {
           ...baseMessage,
@@ -459,7 +672,12 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      // Regular message - include image if present
+      // ============================================================================
+      // PROCESS FEED CARDS (Feed Tab Only)
+      // ============================================================================
+      // REFACTORED: Only process feed cards for Feed tab (feed-planner chat type)
+      // Photos tab should never have feed cards (they're in separate tabs)
+      // ============================================================================
       const parts: any[] = []
       
       if (textContent) {
@@ -477,285 +695,31 @@ export async function GET(request: NextRequest) {
         console.log("[v0] ✅ Restored inspiration image for message", msg.id)
       }
 
-      // CRITICAL: Check for feed cards in styling_details column FIRST (primary source)
-      // This ensures feed cards are restored even for messages without concept cards
-      // Use parsedStylingDetails instead of msg.styling_details
-      if (parsedStylingDetails && Array.isArray(parsedStylingDetails) && parsedStylingDetails.length > 0) {
-        console.log("[v0] ✅ Found feed cards in styling_details column for regular message", msg.id, "count:", parsedStylingDetails.length)
-        
-        // Process each feed card - if it has feedId, fetch fresh data from database
-        for (const feedCard of parsedStylingDetails) {
-          // Check if feed card part already exists (avoid duplicates)
-          const hasExistingFeedCard = parts.some((p: any) => 
-            p.type === 'tool-generateFeed' && 
-            (p.output?.feedId === feedCard.feedId || (!feedCard.feedId && !p.output?.feedId))
-          )
-          
-          if (hasExistingFeedCard) {
-            continue // Skip if already exists
-          }
-          
-          // CRITICAL: If feed card doesn't have feedId, find user's most recent feed with images
-          let feedIdToFetch2 = feedCard.feedId ? Number(feedCard.feedId) : null
-          
-          if (!feedIdToFetch2) {
-            try {
-              const [matchingFeed] = await sql`
-                SELECT fl.id
-                FROM feed_layouts fl
-                JOIN feed_posts fp ON fp.feed_layout_id = fl.id
-                WHERE fl.user_id = ${neonUser.id}
-                  AND fp.image_url IS NOT NULL
-                GROUP BY fl.id
-                ORDER BY fl.created_at DESC
-                LIMIT 1
-              `
-              if (matchingFeed?.id) {
-                feedIdToFetch2 = matchingFeed.id
-                console.log("[v0] 🔍 Found feedId by matching feed with images:", feedIdToFetch2)
-              }
-            } catch (error) {
-              console.error("[v0] ❌ Error finding feedId:", error)
-            }
-          }
-          
-          if (feedIdToFetch2 && !isNaN(feedIdToFetch2)) {
-            try {
-              console.log("[v0] 🔍 Feed card has feedId, fetching fresh data from database:", feedIdToFetch2)
-              const [feedData] = await sql`
-                SELECT 
-                  fl.id as feed_id,
-                  fl.title as feed_title,
-                  fl.description as feed_description,
-                  fl.brand_vibe,
-                  fl.color_palette,
-                  json_agg(
-                    json_build_object(
-                      'id', fp.id,
-                      'position', fp.position,
-                      'prompt', fp.prompt,
-                      'caption', fp.caption,
-                      'content_pillar', fp.content_pillar,
-                      'post_type', fp.post_type,
-                      'image_url', fp.image_url,
-                      'generation_status', fp.generation_status
-                    ) ORDER BY fp.position ASC
-                  ) as posts
-                FROM feed_layouts fl
-                LEFT JOIN feed_posts fp ON fp.feed_layout_id = fl.id
-                WHERE fl.id = ${feedIdToFetch2} AND fl.user_id = ${neonUser.id}
-                GROUP BY fl.id, fl.title, fl.description, fl.brand_vibe, fl.color_palette
-              `
-              
-              if (feedData) {
-                const posts = feedData.posts === null ? [] : (feedData.posts || [])
-                console.log("[v0] ✅ Fetched fresh feed data with", posts.length, "posts including images for feedId:", feedIdToFetch2)
-                parts.push({
-                  type: "tool-generateFeed",
-                  toolCallId: `tool_feed_${msg.id}_${feedIdToFetch2}`,
-                  state: "ready",
-                  input: {},
-                  output: {
-                    feedId: feedIdToFetch2,
-                    title: feedData.feed_title || feedCard.title || 'Instagram Feed',
-                    // CRITICAL: Filter out strategy documents from description
-                    // Strategy documents should only appear in feed planner, not in chat feed cards
-                    description: getFeedCardDescription(feedData.feed_description, feedCard.description || ''),
-                    posts: posts, // Use fresh posts with images from database
-                    strategy: feedCard.strategy || {
-                      gridPattern: feedData.brand_vibe || '',
-                      visualRhythm: feedData.color_palette || '',
-                    },
-                    isSaved: true,
-                    // Preserve settings from cached feedCard if available
-                    proMode: feedCard.proMode,
-                    styleStrength: feedCard.styleStrength,
-                    promptAccuracy: feedCard.promptAccuracy,
-                    aspectRatio: feedCard.aspectRatio,
-                    realismStrength: feedCard.realismStrength,
-                  },
-                })
-                console.log("[v0] ✅ Restored feed card with fresh data from database for feedId:", feedIdToFetch2)
-                continue // Skip to next feed card
-              } else {
-                console.warn("[v0] ⚠️ Feed not found in database for feedId:", feedIdToFetch2, "- using cached data")
-                // Fall through to use cached data
-              }
-            } catch (error) {
-              console.error("[v0] ❌ Error fetching fresh feed data for feedId:", feedIdToFetch2, ":", error)
-              // Fall through to use cached data as fallback
-            }
-          }
-          
-          // Only use cached data if we couldn't find feedId AND couldn't fetch fresh data
-          if (!feedIdToFetch2) {
-            parts.push({
-              type: "tool-generateFeed",
-              toolCallId: `tool_feed_${msg.id}_${feedCard.feedId || 'unsaved'}`,
-              state: "ready",
-              input: {},
-              output: feedCard,
-            })
-            console.log("[v0] ✅ Restored feed card from styling_details (cached, no feedId found):", feedCard.feedId || "unsaved")
-          } else {
-            console.log("[v0] ⚠️ Found feedId but fetch failed - skipping cached data to prevent duplicates")
-          }
-        }
-      }
-
-      // CRITICAL: Check for UNSAVED feed strategy (CREATE_FEED_STRATEGY trigger)
-      // This allows unsaved feeds to persist across page reloads and tab switches
-      const createFeedStrategyMatch = textContent.match(/\[CREATE_FEED_STRATEGY:\s*(\{[\s\S]*?\})\]/i)
-      if (createFeedStrategyMatch) {
-        try {
-          const strategyJson = createFeedStrategyMatch[1]
-          const strategy = JSON.parse(strategyJson)
-          console.log("[v0] ✅ Found unsaved feed strategy in message:", {
-            hasStrategy: !!strategy,
-            postsCount: strategy.posts?.length || 0,
-          })
-          
-          // Keep the trigger in text content (it's still unsaved)
-          // But also add the feed card part so it renders in the UI
-          parts.push({
-            type: 'tool-generateFeed',
-            output: {
-              // No feedId - indicates unsaved state
-              feedId: undefined, // Explicitly undefined for unsaved feeds
-              strategy: strategy,
-              title: strategy.feedTitle || strategy.title || 'Instagram Feed',
-              description: strategy.overallVibe || strategy.colorPalette || '',
-              posts: strategy.posts || [],
-              isSaved: false,
-              // Settings from strategy (if available)
-              studioProMode: strategy.studioProMode || false,
-              styleStrength: strategy.styleStrength || 0.8,
-              promptAccuracy: strategy.promptAccuracy || 0.8,
-              aspectRatio: strategy.aspectRatio || '4:5',
-              realismStrength: strategy.realismStrength || 0.8,
-            },
-          })
-          console.log("[v0] ✅ Added unsaved feed card part to message")
-        } catch (error) {
-          console.error("[v0] ❌ Failed to parse CREATE_FEED_STRATEGY JSON:", error)
-        }
-      }
-      
-      // Check for feed card marker in content (persisted format: [FEED_CARD:feedId])
-      // Remove marker from text content (it's metadata, not visible text)
-      // IMPORTANT: Only add feed card part if it doesn't already exist (prevent duplicates)
-      const feedCardMatch = textContent.match(/\[FEED_CARD:(\d+)\]/)
-      if (feedCardMatch) {
-        const feedId = parseInt(feedCardMatch[1], 10)
-        console.log("[v0] Found feed card marker for feedId:", feedId)
-        
-        // Check if feed card part already exists in parts (avoid duplicates)
-        const hasExistingFeedCard = parts.some((p: any) => 
-          p.type === 'tool-generateFeed' && p.output?.feedId === feedId
+      // Process feed cards ONLY for Feed tab
+      if (isFeedTab) {
+        const feedCardParts = await processFeedCards(
+          msg,
+          parsedStylingDetails,
+          textContent,
+          neonUser,
+          parts
         )
         
-        if (!hasExistingFeedCard) {
-          // Remove marker from text content
-          const cleanTextContent = textContent.replace(/\[FEED_CARD:\d+\]/g, '').trim()
-          if (parts.length > 0 && parts[0].type === 'text') {
-            parts[0].text = cleanTextContent || ""
-          } else if (cleanTextContent) {
-            parts.unshift({
-              type: "text",
-              text: cleanTextContent,
-            })
-          }
-          
-          // CRITICAL: Fetch full feed data including posts with captions and prompts
-          try {
-            const [feedData] = await sql`
-              SELECT 
-                fl.id as feed_id,
-                fl.title as feed_title,
-                fl.description as feed_description,
-                fl.brand_vibe,
-                fl.color_palette,
-                json_agg(
-                  json_build_object(
-                    'id', fp.id,
-                    'position', fp.position,
-                    'prompt', fp.prompt,
-                    'caption', fp.caption,
-                    'content_pillar', fp.content_pillar,
-                    'post_type', fp.post_type,
-                    'image_url', fp.image_url,
-                    'generation_status', fp.generation_status
-                  ) ORDER BY fp.position ASC
-                ) as posts
-              FROM feed_layouts fl
-              LEFT JOIN feed_posts fp ON fp.feed_layout_id = fl.id
-              WHERE fl.id = ${feedId} AND fl.user_id = ${neonUser.id}
-              GROUP BY fl.id, fl.title, fl.description, fl.brand_vibe, fl.color_palette
-            `
-            
-            if (feedData) {
-              // CRITICAL: json_agg returns NULL (not []) when LEFT JOIN has zero rows
-              // Convert NULL to empty array to properly handle saved feeds with no posts
-              const posts = feedData.posts === null ? [] : (feedData.posts || [])
-              console.log("[v0] ✅ Loaded feed data with", posts.length, "posts including captions")
-                parts.push({
-                  type: 'tool-generateFeed',
-                  output: {
-                    feedId: feedId,
-                    title: feedData.feed_title || 'Instagram Feed',
-                    // CRITICAL: Filter out strategy documents from description
-                    // Strategy documents should only appear in feed planner, not in chat feed cards
-                    description: getFeedCardDescription(feedData.feed_description, ''),
-                    posts: posts,
-                    strategy: {
-                      gridPattern: feedData.brand_vibe || '',
-                      visualRhythm: feedData.color_palette || '',
-                    },
-                    isSaved: true,
-                  },
-                })
-            } else {
-              // Fallback if feed not found
-              console.warn("[v0] ⚠️ Feed not found for feedId:", feedId, "- using empty placeholder")
-              parts.push({
-                type: 'tool-generateFeed',
-                output: {
-                  feedId: feedId,
-                  title: 'Instagram Feed',
-                  description: '',
-                  posts: [],
-                  _needsRestore: true,
-                },
-              })
+        // Add feed card parts to message
+        feedCardParts.forEach(part => {
+          // Clean [FEED_CARD:feedId] marker from text content if present
+          if (part.output?.feedId && textContent.includes(`[FEED_CARD:${part.output.feedId}]`)) {
+            const cleanTextContent = textContent.replace(/\[FEED_CARD:\d+\]/g, '').trim()
+            if (parts.length > 0 && parts[0].type === 'text') {
+              parts[0].text = cleanTextContent || ""
+            } else if (cleanTextContent) {
+              parts[0] = { type: "text", text: cleanTextContent }
             }
-          } catch (error) {
-            console.error("[v0] ❌ Error loading feed data:", error)
-            // Fallback on error
-            parts.push({
-              type: 'tool-generateFeed',
-              output: {
-                feedId: feedId,
-                title: 'Instagram Feed',
-                description: '',
-                posts: [],
-                _needsRestore: true,
-              },
-            })
           }
-          console.log("[v0] ✅ Added feed card part for feedId:", feedId)
-        } else {
-          console.log("[v0] ⚠️ Feed card part already exists for feedId:", feedId, "- skipping duplicate")
-          // Still clean the marker from text content
-          const cleanTextContent = textContent.replace(/\[FEED_CARD:\d+\]/g, '').trim()
-          if (parts.length > 0 && parts[0].type === 'text') {
-            parts[0].text = cleanTextContent || ""
-          } else if (cleanTextContent) {
-            parts.unshift({
-              type: "text",
-              text: cleanTextContent,
-            })
-          }
-        }
+          parts.push(part)
+        })
+        
+        console.log("[v0] ✅ Processed", feedCardParts.length, "feed card(s) for Feed tab message", msg.id)
       }
 
       return {

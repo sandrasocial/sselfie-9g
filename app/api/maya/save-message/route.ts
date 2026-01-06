@@ -7,6 +7,7 @@ import {
   updateChatTitle,
   generateChatTitle,
   getChatMessages,
+  loadChatById,
 } from "@/lib/data/maya"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 
@@ -53,6 +54,48 @@ export async function POST(request: NextRequest) {
     if (!chatId || !role) {
       console.log("[v0] ❌ Missing required fields")
       return NextResponse.json({ error: "Missing required fields: chatId and role" }, { status: 400 })
+    }
+
+    // CRITICAL FIX: Validate chat_type before saving cards
+    // Load chat to get its chat_type
+    const chat = await loadChatById(chatId, neonUser.id)
+    if (!chat) {
+      console.log("[v0] ❌ Chat not found:", chatId)
+      return NextResponse.json({ error: "Chat not found" }, { status: 404 })
+    }
+
+    const chatType = chat.chat_type || "maya" // Default to "maya" for legacy chats
+
+    // Validate conceptCards only allowed in Photos tab chats
+    if (conceptCards && Array.isArray(conceptCards) && conceptCards.length > 0) {
+      if (chatType !== "maya" && chatType !== "pro") {
+        console.warn("[v0] ⚠️ Attempted to save concept cards to wrong chat type:", {
+          chatId,
+          chatType,
+          conceptCardsCount: conceptCards.length,
+          message: "Concept cards only allowed in Photos tab chats (maya or pro)"
+        })
+        return NextResponse.json({ 
+          error: "Invalid chat type for concept cards",
+          details: `Concept cards can only be saved to Photos tab chats (maya or pro), but chat is type ${chatType}`
+        }, { status: 400 })
+      }
+    }
+
+    // Validate feedCards only allowed in Feed tab chats
+    if (feedCards && Array.isArray(feedCards) && feedCards.length > 0) {
+      if (chatType !== "feed-planner") {
+        console.warn("[v0] ⚠️ Attempted to save feed cards to wrong chat type:", {
+          chatId,
+          chatType,
+          feedCardsCount: feedCards.length,
+          message: "Feed cards only allowed in Feed tab chats (feed-planner)"
+        })
+        return NextResponse.json({ 
+          error: "Invalid chat type for feed cards",
+          details: `Feed cards can only be saved to Feed tab chats (feed-planner), but chat is type ${chatType}`
+        }, { status: 400 })
+      }
     }
 
     const safeContent = content || ""

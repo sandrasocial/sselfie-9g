@@ -23,7 +23,8 @@ export interface MayaChatMessage {
   role: "user" | "assistant" | "system"
   content: string
   concept_cards: any[] | null
-  styling_details: any | null // Used for feed cards (similar to concept_cards)
+  feed_cards: any[] | null // Feed cards data (similar to concept_cards)
+  styling_details: any | null // Legacy: kept for backward compatibility, feed cards now use feed_cards column
   created_at: Date
 }
 
@@ -73,7 +74,8 @@ export interface UserPersonalBrand {
 }
 
 // Load a specific chat by ID
-export async function loadChatById(chatId: number, userId: string): Promise<MayaChat | null> {
+// CRITICAL FIX: Added chatType validation to prevent wrong chats loading in wrong tabs
+export async function loadChatById(chatId: number, userId: string, chatType?: string): Promise<MayaChat | null> {
   const chat = await sql`
     SELECT * FROM maya_chats
     WHERE id = ${chatId} AND user_id = ${userId}
@@ -82,6 +84,20 @@ export async function loadChatById(chatId: number, userId: string): Promise<Maya
 
   if (chat.length === 0) return null
 
+  const loadedChat = chat[0] as MayaChat
+
+  // CRITICAL: Validate chat_type matches requested chatType
+  // This prevents Feed tab chats from loading in Photos tab and vice versa
+  if (chatType && loadedChat.chat_type !== chatType) {
+    console.warn("[v0] ⚠️ Chat type mismatch:", {
+      chatId,
+      requestedChatType: chatType,
+      actualChatType: loadedChat.chat_type,
+      message: "Chat exists but wrong type - returning null to prevent wrong tab loading"
+    })
+    return null // Chat exists but wrong type
+  }
+
   // Update last_activity when loading a chat
   await sql`
     UPDATE maya_chats
@@ -89,7 +105,7 @@ export async function loadChatById(chatId: number, userId: string): Promise<Maya
     WHERE id = ${chatId}
   `
 
-  return chat[0] as MayaChat
+  return loadedChat
 }
 
 // Get or create active chat for user
@@ -203,6 +219,21 @@ async function retryDatabaseOperation<T>(operation: () => Promise<T>, maxRetries
   throw lastError
 }
 
+/**
+ * Save chat message to database
+ * 
+ * REFACTORING NOTES (Phase 4):
+ * - Now uses feed_cards column instead of styling_details for feed cards
+ * - Matches concept_cards pattern for consistency
+ * - Backward compatible: styling_details still exists for legacy data
+ * 
+ * @param chatId - Chat ID
+ * @param role - Message role (user, assistant, system)
+ * @param content - Message text content
+ * @param conceptCards - Optional concept cards array
+ * @param feedCards - Optional feed cards array (saved to feed_cards column)
+ * @returns Saved message object
+ */
 // Save chat message
 export async function saveChatMessage(
   chatId: number,
@@ -225,10 +256,10 @@ export async function saveChatMessage(
 
   try {
     const message = await retryDatabaseOperation(async () => {
-      // Use styling_details column for feed cards (similar to concept_cards)
+      // Use feed_cards column for feed cards (similar to concept_cards)
       const feedCardsJson = feedCards && feedCards.length > 0 ? JSON.stringify(feedCards) : null
       return await sql`
-        INSERT INTO maya_chat_messages (chat_id, role, content, concept_cards, styling_details)
+        INSERT INTO maya_chat_messages (chat_id, role, content, concept_cards, feed_cards)
         VALUES (${chatId}, ${role}, ${safeContent}, ${conceptCards ? JSON.stringify(conceptCards) : null}, ${feedCardsJson})
         RETURNING *
       `

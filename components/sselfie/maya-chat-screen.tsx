@@ -2390,7 +2390,12 @@ export default function MayaChatScreen({
     return <UnifiedLoading message="Loading chat..." />
   }
 
-  const isEmpty = !messages || messages.length === 0
+  // CRITICAL FIX: isEmpty should only be true if:
+  // 1. No messages AND
+  // 2. Not loading AND
+  // 3. User has no chat history (hasn't used Maya before)
+  // This prevents welcome screen from showing when loading a history chat
+  const isEmpty = (!messages || messages.length === 0) && !isLoadingChat && !hasUsedMayaBefore
 
   // NOTE: Workbench should always be available in Pro mode for manual creation
   // Therefore, we always show the chat UI when in Pro mode, which includes the workbench
@@ -3123,6 +3128,7 @@ export default function MayaChatScreen({
               setCreditBalance={setCreditBalance}
               onImageGenerated={onImageGenerated}
               isAdmin={isAdmin}
+              imageLibrary={imageLibrary}
               selectedGuideId={selectedGuideId}
               selectedGuideCategory={selectedGuideCategory}
               onSaveToGuide={handleSaveToGuide}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import ReactMarkdown from "react-markdown"
 import { toast } from "@/hooks/use-toast"
 
@@ -14,6 +14,38 @@ interface FeedStrategyProps {
 export default function FeedStrategy({ feedData, feedId, onCreateStrategy, onStrategyGenerated }: FeedStrategyProps) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedStrategy, setGeneratedStrategy] = useState<string | null>(null)
+  const [strategyFromDb, setStrategyFromDb] = useState<string | null>(null)
+  const [isLoadingStrategy, setIsLoadingStrategy] = useState(true)
+  
+  // Fetch strategy from feed_strategy table on mount
+  useEffect(() => {
+    const fetchStrategy = async () => {
+      if (!feedId) {
+        setIsLoadingStrategy(false)
+        return
+      }
+      
+      try {
+        const response = await fetch(`/api/feed/${feedId}/strategy`, {
+          method: 'GET',
+          credentials: 'include',
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          if (data.strategy) {
+            setStrategyFromDb(data.strategy)
+          }
+        }
+      } catch (error) {
+        console.error("[FeedStrategy] Error fetching strategy:", error)
+      } finally {
+        setIsLoadingStrategy(false)
+      }
+    }
+    
+    fetchStrategy()
+  }, [feedId])
 
   const handleCreateStrategy = async () => {
     if (!feedId) {
@@ -45,7 +77,7 @@ export default function FeedStrategy({ feedData, feedId, onCreateStrategy, onStr
       if (data.success && data.strategy) {
         setGeneratedStrategy(data.strategy)
         
-        // Auto-save strategy to feed
+        // Auto-save strategy to feed_strategy table
         try {
           const saveResponse = await fetch(`/api/feed/${feedId}/add-strategy`, {
             method: 'POST',
@@ -55,6 +87,10 @@ export default function FeedStrategy({ feedData, feedId, onCreateStrategy, onStr
           })
 
           if (saveResponse.ok) {
+            // Update local state to show saved strategy
+            setStrategyFromDb(data.strategy)
+            setGeneratedStrategy(null) // Clear generated state since it's now saved
+            
             toast({
               title: "Strategy created!",
               description: "Your comprehensive Instagram strategy is ready",
@@ -93,14 +129,18 @@ export default function FeedStrategy({ feedData, feedId, onCreateStrategy, onStr
     return hasHeaders && isLongEnough
   }
 
+  // CRITICAL: Strategy documents are now stored in feed_strategy table, not feed_layouts.description
+  // Check feed_strategy table first, then fallback to description for backward compatibility
   const feedDescription = feedData.feed?.description
   const hasFullStrategy = isFullStrategy(feedDescription)
-  const displayStrategy = generatedStrategy || (hasFullStrategy ? feedDescription : null)
+  
+  // Priority: generatedStrategy (just created) > strategyFromDb (from feed_strategy table) > feedDescription (backward compat)
+  const displayStrategy = generatedStrategy || strategyFromDb || (hasFullStrategy ? feedDescription : null)
 
   return (
     <div className="p-4 md:p-8">
       {/* Create Strategy Button - Show if no full strategy exists */}
-      {!displayStrategy && !hasFullStrategy && (
+      {!displayStrategy && !hasFullStrategy && !isLoadingStrategy && (
         <div className="flex flex-col items-center justify-center py-12 space-y-6">
           {isGenerating ? (
             <div className="flex flex-col items-center space-y-4 max-w-md text-center">

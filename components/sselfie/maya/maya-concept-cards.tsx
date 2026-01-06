@@ -104,7 +104,10 @@ export default function MayaConceptCards({
                   aesthetic: concept.aesthetic,
                   linkedImages: conceptLinkedImages,
                   fullPrompt: concept.fullPrompt || concept.prompt,
+                  generatedImageUrl: (concept as any).generatedImageUrl, // From JSONB
+                  predictionId: (concept as any).predictionId, // From JSONB
                 }}
+                messageId={messageId}
                 isAdmin={isAdmin}
                 selectedGuideId={selectedGuideId}
                 onSaveToGuide={onSaveToGuide}
@@ -211,7 +214,8 @@ export default function MayaConceptCards({
             <ConceptCard 
               key={conceptIndex} 
               concept={concept as any} 
-              chatId={chatId} 
+              chatId={chatId}
+              messageId={messageId}
               onCreditsUpdate={onCreditsUpdate}
               studioProMode={false}
               baseImages={allBaseImages}

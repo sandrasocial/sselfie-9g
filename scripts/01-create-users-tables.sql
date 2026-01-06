@@ -1,3 +1,11 @@
+-- ⚠️ DEPRECATED: This schema was NEVER APPLIED to the database
+-- 
+-- The actual database uses TEXT for users.id (stores Supabase UUID as string).
+-- See scripts/00-create-all-tables.sql for the ACTUAL schema.
+-- 
+-- DO NOT USE THIS FILE - It uses UUID types that don't match the database.
+-- This file is kept for reference only.
+
 -- Core User & Authentication Tables
 
 -- Users table

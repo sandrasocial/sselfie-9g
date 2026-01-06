@@ -1,3 +1,11 @@
+-- ⚠️ DEPRECATED: This schema was NEVER APPLIED to the database
+-- 
+-- The actual database uses SERIAL (INTEGER) for IDs and TEXT for user_id.
+-- See scripts/00-create-all-tables.sql for the ACTUAL schema.
+-- 
+-- DO NOT USE THIS FILE - It uses UUID types that don't match the database.
+-- This file is kept for reference only.
+
 -- Maya AI Chat Tables
 
 -- Maya chat sessions

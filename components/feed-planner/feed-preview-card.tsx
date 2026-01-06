@@ -84,7 +84,24 @@ export default function FeedPreviewCard({
   const [postsData, setPostsData] = useState<FeedPost[]>(posts)
   // State for title and description that can be updated from fetched data
   const [displayTitle, setDisplayTitle] = useState<string>(feedTitle || "Instagram Feed")
-  const [displayDescription, setDisplayDescription] = useState<string>(feedDescription || "")
+  
+  // Helper function to detect if description is a full strategy document
+  // Strategy documents should only appear in feed planner, not in chat feed cards
+  const isStrategyDocument = (text: string | null | undefined): boolean => {
+    if (!text) return false
+    // Strategy documents have markdown headers (# ## ###) and are longer
+    const hasHeaders = /^#{1,3}\s/m.test(text)
+    const isLongEnough = text.length > 500
+    return hasHeaders && isLongEnough
+  }
+  
+  // Filter out strategy documents from description before setting state
+  const getSafeDescription = (desc: string | null | undefined): string => {
+    if (!desc) return ""
+    return isStrategyDocument(desc) ? "" : desc
+  }
+  
+  const [displayDescription, setDisplayDescription] = useState<string>(getSafeDescription(feedDescription))
   // Track feed status to determine if it's saved to planner
   const [feedStatus, setFeedStatus] = useState<string | null>(null) // 'chat', 'saved', 'pending', etc.
   const [isGenerating, setIsGenerating] = useState(() => {
@@ -126,7 +143,8 @@ export default function FeedPreviewCard({
   // This prevents stale props from overriding fresh data fetched from database
   useEffect(() => {
     setDisplayTitle(feedTitle || "Instagram Feed")
-    setDisplayDescription(feedDescription || "")
+    // CRITICAL: Filter out strategy documents from description
+    setDisplayDescription(getSafeDescription(feedDescription))
     // Only set posts from props if feed is unsaved (no feedId) or if we haven't fetched yet
     // For saved feeds, let the fetch effect handle posts data to ensure images are included
     if (!feedId || !needsRestore || hasFetchedRef.current === false) {
@@ -254,14 +272,19 @@ export default function FeedPreviewCard({
           }
           
           // Update description from fetched data (priority: description > feed.description > feed.gridPattern > existing)
+          // CRITICAL: Filter out strategy documents - they should only appear in feed planner, not in chat feed cards
           const fetchedDescription = feedData.description || 
                                     feedData.feed?.description || 
                                     feedData.feed?.gridPattern ||
                                     feedData.feed?.overall_vibe ||
                                     null
-          if (fetchedDescription && fetchedDescription !== displayDescription) {
-            console.log("[FeedPreviewCard] ✅ Updated description from fetched data:", fetchedDescription.substring(0, 50))
-            setDisplayDescription(fetchedDescription)
+          const safeDescription = getSafeDescription(fetchedDescription)
+          if (safeDescription && safeDescription !== displayDescription) {
+            console.log("[FeedPreviewCard] ✅ Updated description from fetched data:", safeDescription.substring(0, 50))
+            setDisplayDescription(safeDescription)
+          } else if (!safeDescription && displayDescription) {
+            // Clear description if it was a strategy document
+            setDisplayDescription("")
           }
           
           // Flag is already set before fetch to prevent duplicate fetches
@@ -710,8 +733,13 @@ export default function FeedPreviewCard({
                                         feedData.feed?.gridPattern ||
                                         feedData.feed?.overall_vibe ||
                                         null
-            if (refreshedDescription && refreshedDescription !== displayDescription) {
-              setDisplayDescription(refreshedDescription)
+            // CRITICAL: Filter out strategy documents - they should only appear in feed planner, not in chat feed cards
+            const safeRefreshedDescription = getSafeDescription(refreshedDescription)
+            if (safeRefreshedDescription && safeRefreshedDescription !== displayDescription) {
+              setDisplayDescription(safeRefreshedDescription)
+            } else if (!safeRefreshedDescription && displayDescription) {
+              // Clear description if it was a strategy document
+              setDisplayDescription("")
             }
             
             // Check if posts are actually generating after queue
@@ -745,8 +773,13 @@ export default function FeedPreviewCard({
                                               recheckData.feed?.gridPattern ||
                                               recheckData.feed?.overall_vibe ||
                                               null
-                    if (recheckDescription && recheckDescription !== displayDescription) {
-                      setDisplayDescription(recheckDescription)
+                    // CRITICAL: Filter out strategy documents - they should only appear in feed planner, not in chat feed cards
+                    const safeRecheckDescription = getSafeDescription(recheckDescription)
+                    if (safeRecheckDescription && safeRecheckDescription !== displayDescription) {
+                      setDisplayDescription(safeRecheckDescription)
+                    } else if (!safeRecheckDescription && displayDescription) {
+                      // Clear description if it was a strategy document
+                      setDisplayDescription("")
                     }
                     
                     const stillGenerating = recheckData.posts.some((p: FeedPost) => 
@@ -840,8 +873,13 @@ export default function FeedPreviewCard({
                                     data.feed?.gridPattern ||
                                     data.feed?.overall_vibe ||
                                     null
-        if (refreshedDescription && refreshedDescription !== displayDescription) {
-          setDisplayDescription(refreshedDescription)
+        // CRITICAL: Filter out strategy documents - they should only appear in feed planner, not in chat feed cards
+        const safeRefreshedDescription = getSafeDescription(refreshedDescription)
+        if (safeRefreshedDescription && safeRefreshedDescription !== displayDescription) {
+          setDisplayDescription(safeRefreshedDescription)
+        } else if (!safeRefreshedDescription && displayDescription) {
+          // Clear description if it was a strategy document
+          setDisplayDescription("")
         }
       }
     } catch (error) {

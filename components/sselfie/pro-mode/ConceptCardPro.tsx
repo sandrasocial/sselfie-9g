@@ -38,6 +38,8 @@ interface ConceptCardProProps {
     brandReferences?: string[]
     stylingDetails?: string
     technicalSpecs?: string
+    generatedImageUrl?: string // Image URL from JSONB (for persistence)
+    predictionId?: string // Prediction ID for Pro Mode (for persistence)
   }
   onGenerate?: () => Promise<{ predictionId?: string; generationId?: string } | void>
   onViewPrompt?: () => void
@@ -48,6 +50,7 @@ interface ConceptCardProProps {
   isAdmin?: boolean // Admin mode - enables save to guide functionality
   selectedGuideId?: number | null // Selected guide ID for saving
   onSaveToGuide?: (concept: any, imageUrl?: string) => void // Save handler from parent
+  messageId?: string // Message ID for updating JSONB when image is generated
 }
 
 export default function ConceptCardPro({
@@ -61,6 +64,7 @@ export default function ConceptCardPro({
   isAdmin = false,
   selectedGuideId = null,
   onSaveToGuide,
+  messageId,
 }: ConceptCardProProps) {
   const { toast } = useToast()
   const [showPromptModal, setShowPromptModal] = useState(false)
@@ -74,7 +78,11 @@ export default function ConceptCardPro({
     }
   }, [concept.fullPrompt, isEditingPrompt])
   const [isGenerated, setIsGenerated] = useState(false)
-  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null)
+  // CRITICAL FIX: Initialize generatedImageUrl from concept prop (for persistence on page refresh)
+  // This allows images loaded from database to be displayed immediately
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(
+    (concept as any).generatedImageUrl || null
+  )
   const [error, setError] = useState<string | null>(null)
   const [predictionId, setPredictionId] = useState<string | null>(null)
   const [generationId, setGenerationId] = useState<string | null>(null)
@@ -106,6 +114,20 @@ export default function ConceptCardPro({
       isGeneratingState,
     })
   }, [isGenerated, generatedImageUrl, predictionId, generationId, isGeneratingState])
+
+  // CRITICAL FIX: Update generatedImageUrl when concept prop changes (for persistence on page refresh)
+  // This ensures images loaded from database are displayed immediately
+  useEffect(() => {
+    const conceptImageUrl = (concept as any).generatedImageUrl
+    if (conceptImageUrl && conceptImageUrl !== generatedImageUrl) {
+      console.log('[ConceptCardPro] ✅ Restoring generatedImageUrl from concept prop:', conceptImageUrl)
+      setGeneratedImageUrl(conceptImageUrl)
+      setIsGenerated(true)
+      // Clear localStorage if we have a fresh image from database (avoids stale cache)
+      const storageKey = `pro-generation-${concept.id}`
+      localStorage.removeItem(storageKey)
+    }
+  }, [concept, generatedImageUrl, concept.id])
 
   // Restore polling state from localStorage on mount (survives remounts)
   // This MUST run first before polling starts
@@ -474,14 +496,68 @@ export default function ConceptCardPro({
             
             console.log('[ConceptCardPro] ✅✅✅ Generation succeeded! Image URL set, polling stopped.')
             
-            // Update localStorage for restoration on remount
-            const storageKey = `pro-generation-${pollConceptId}`
-            localStorage.setItem(storageKey, JSON.stringify({
-              predictionId: null,
-              generationId: null,
-              isGenerated: true,
-              generatedImageUrl: data.imageUrl,
-            }))
+            // CRITICAL FIX: Save generatedImageUrl and predictionId to JSONB for persistence
+            // This ensures images persist on page refresh
+            if (messageId && pollPredictionId) {
+              try {
+                console.log('[ConceptCardPro] 💾 Attempting to save to JSONB:', {
+                  messageId,
+                  conceptId: pollConceptId,
+                  predictionId: pollPredictionId,
+                  hasImageUrl: !!data.imageUrl,
+                })
+                
+                // CRITICAL: Use pollConceptId to ensure ID matches what's in JSONB
+                const updatedConcept = {
+                  ...concept,
+                  id: pollConceptId, // Ensure ID matches (might be different from concept.id if concept was updated)
+                  generatedImageUrl: data.imageUrl,
+                  predictionId: pollPredictionId,
+                }
+                
+                const response = await fetch('/api/maya/update-message', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  credentials: 'include',
+                  body: JSON.stringify({
+                    messageId: messageId,
+                    content: '', // Preserve existing content (API will handle this)
+                    conceptCards: [updatedConcept], // API will merge with existing concepts
+                  }),
+                })
+                
+                if (!response.ok) {
+                  const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+                  throw new Error(`Failed to save: ${response.status} - ${errorData.error || 'Unknown error'}`)
+                }
+                
+                const result = await response.json()
+                console.log('[ConceptCardPro] ✅ Saved image to JSONB:', {
+                  messageId,
+                  conceptId: pollConceptId,
+                  imageUrl: data.imageUrl.substring(0, 50),
+                  success: result.success,
+                })
+              } catch (jsonbError: any) {
+                console.error('[ConceptCardPro] ❌ Error saving to JSONB:', {
+                  messageId,
+                  conceptId: pollConceptId,
+                  error: jsonbError?.message || jsonbError,
+                  stack: jsonbError?.stack,
+                })
+                // Don't fail - image still shows in UI, just won't persist on refresh
+              }
+            } else {
+              console.warn('[ConceptCardPro] ⚠️ Cannot save to JSONB - missing required data:', {
+                hasMessageId: !!messageId,
+                hasPredictionId: !!pollPredictionId,
+                messageId,
+                predictionId: pollPredictionId,
+              })
+            }
+            
+            // NOTE: localStorage removed - JSONB is now the source of truth
+            // Images persist permanently in database JSONB, no need for localStorage backup
             
             if (pollOnImageGenerated) {
               pollOnImageGenerated()

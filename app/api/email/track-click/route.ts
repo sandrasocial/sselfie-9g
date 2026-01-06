@@ -24,10 +24,11 @@ export async function GET(request: NextRequest) {
     `
 
     // Update subscriber tag
+    // NOTE: freebie_subscribers.id is SERIAL (INTEGER), not UUID
     await sql`
       UPDATE freebie_subscribers
       SET tags = COALESCE(tags, '[]'::jsonb) || jsonb_build_array(${`clicked_${clickType}`})
-      WHERE id = ${trackingId}::uuid
+      WHERE id = ${parseInt(trackingId, 10)}
     `
 
     // Redirect to checkout

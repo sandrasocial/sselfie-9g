@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useEffect, useRef, useCallback } from "react"
+import { useEffect, useRef, useCallback, useState } from "react"
 import MayaChatInterface from "./maya-chat-interface"
 import MayaQuickPrompts from "./maya-quick-prompts"
 import {
@@ -33,6 +33,7 @@ interface MayaFeedTabProps {
   setCreditBalance: (balance: number) => void
   onImageGenerated: () => void
   isAdmin: boolean
+  imageLibrary?: any // Pro Mode: Image library for Pro Mode enhancements
   selectedGuideId: string | null
   selectedGuideCategory: string | null
   onSaveToGuide: (guideId: string, category: string, prompt: string, title: string) => Promise<void>
@@ -56,14 +57,29 @@ interface MayaFeedTabProps {
  * Extracted from maya-chat-screen.tsx to work as a separate tab component.
  * Handles feed creation with captions included in strategy.
  * 
+ * **Architecture (Refactored - Phase 1-4):**
+ * - Simple trigger detection: Single pattern `[CREATE_FEED_STRATEGY: {...}]`
+ * - Split detection and processing: Two separate useEffects (like concept cards)
+ * - API validation: Calls `/api/maya/generate-feed` (Classic) or `/api/maya/pro/generate-feed` (Pro)
+ * - Database: Saves to `feed_cards` column (matches `concept_cards` pattern)
+ * 
  * **Features:**
  * - Feed strategy creation via [CREATE_FEED_STRATEGY] trigger (includes captions)
  * - Feed-specific quick prompts
  * - Empty state with feed-specific messaging
+ * - Pro Mode support with imageLibrary
+ * 
+ * **Flow:**
+ * 1. Detection: Monitor messages for `[CREATE_FEED_STRATEGY: {...}]` pattern
+ * 2. Processing: Call API endpoint to validate strategy JSON
+ * 3. Creation: Call handleCreateFeed() with validated strategy
+ * 4. Display: Feed card appears in chat
+ * 5. Persistence: Feed card saved to `feed_cards` column
  * 
  * **Note:**
  * - Captions are included in the feed strategy JSON (no separate generation needed)
  * - Strategy document generation is available in Feed Planner (optional feature)
+ * - Backward compatible: Old feeds in `styling_details` still load correctly
  */
 export default function MayaFeedTab({
   messages,
@@ -87,6 +103,7 @@ export default function MayaFeedTab({
   setCreditBalance,
   onImageGenerated,
   isAdmin,
+  imageLibrary,
   selectedGuideId,
   selectedGuideCategory,
   onSaveToGuide,
@@ -104,9 +121,16 @@ export default function MayaFeedTab({
 }: MayaFeedTabProps) {
   const processedFeedMessagesRef = useRef<Set<string>>(new Set())
   
+  // State for pending feed request (like concept cards use pendingConceptRequest)
+  const [pendingFeedRequest, setPendingFeedRequest] = useState<{
+    strategyJson: string
+    messageId: string
+  } | null>(null)
+  
   // Clear processed messages ref when chatId changes (new chat created)
   useEffect(() => {
     processedFeedMessagesRef.current.clear()
+    setPendingFeedRequest(null) // Clear pending request on chat change
   }, [chatId])
 
   // Feed Tab Quick Prompts
@@ -188,7 +212,9 @@ export default function MayaFeedTab({
               }
 
               // CRITICAL: Save message ID and content for database persistence
-              messageIdToSave = lastAssistant.id
+              // Use message ID if available, otherwise use a temporary key
+              // The message will get an ID when it's saved to the database
+              messageIdToSave = lastAssistant.id || `temp-${Date.now()}`
               messageContentToSave = lastAssistant.content || ""
 
               // CRITICAL: Log posts structure to verify prompts and captions are present
@@ -245,94 +271,11 @@ export default function MayaFeedTab({
           return updatedMessagesFinal
         })
 
-        // CRITICAL: Save feed card to styling_details column in database for persistence
-        // This ensures feed cards survive page refreshes and component remounts
-        if (messageIdToSave && chatId) {
-          // Prepare feed card data for database storage
-          const feedCardData = {
-            strategy: strategy,
-            title: strategy.feedTitle || strategy.title || "Instagram Feed",
-            description: strategy.overallVibe || strategy.colorPalette || "",
-            posts: strategy.posts || [],
-            isSaved: false, // Flag to indicate unsaved state
-            // Store settings for saving later
-            proMode,
-            styleStrength,
-            promptAccuracy,
-            aspectRatio,
-            realismStrength,
-          }
-          
-          // CRITICAL FIX: Save/update message in database with feed card in styling_details column
-          // First try to update existing message, if that fails (message doesn't exist), save it
-          const saveFeedCard = async (retryCount = 0): Promise<void> => {
-            try {
-              const response = await fetch('/api/maya/update-message', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                  messageId: messageIdToSave,
-                  content: messageContentToSave || "", // Preserve existing content
-                  feedCards: [feedCardData], // Save to styling_details column
-                  append: false,
-                }),
-                credentials: 'include', // Ensure cookies are sent for authentication
-              })
-              
-              if (response.ok) {
-                console.log("[FEED] ✅ Saved feed card to styling_details column for persistence")
-                return
-              }
-              
-              const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-              
-              // If message doesn't exist (404) and we haven't retried, save it first
-              if (response.status === 404 && retryCount === 0 && chatId) {
-                console.log("[FEED] ⚠️ Message not found, saving message first, then retrying update")
-                
-                // Save message first with feed cards
-                const saveResponse = await fetch('/api/maya/save-message', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  credentials: 'include',
-                  body: JSON.stringify({
-                    chatId: chatId,
-                    role: 'assistant',
-                    content: messageContentToSave || "",
-                    feedCards: [feedCardData], // Save feed cards with message
-                  }),
-                })
-                
-                if (saveResponse.ok) {
-                  console.log("[FEED] ✅ Saved message with feed cards to database")
-                } else {
-                  console.error("[FEED] ⚠️ Failed to save message:", saveResponse.status)
-                }
-              } else {
-                console.error("[FEED] ⚠️ Failed to save feed card to database:", response.status, errorData)
-              }
-            } catch (error: any) {
-              console.error("[FEED] ⚠️ Network/Request error saving feed card to database:", {
-                error: error.message || String(error),
-                errorName: error.name,
-                errorStack: error.stack,
-                messageId: messageIdToSave,
-                chatId: chatId,
-              })
-              // Non-critical error - feed card will still work, just won't persist on refresh
-            }
-          }
-          
-          // Attempt to save (with automatic retry if message doesn't exist)
-          saveFeedCard()
-        } else {
-          console.warn("[FEED] ⚠️ Cannot save feed card - missing messageId or chatId:", {
-            messageId: messageIdToSave,
-            chatId,
-          })
-        }
+        // CRITICAL: Feed card is now in UI state (in message parts)
+        // The feed card will be saved to database when the message gets an ID
+        // This is handled by the useEffect below that watches for messages with IDs
+        // This approach avoids creating duplicate messages during streaming
+        console.log("[FEED] ✅ Feed card added to message parts - will be saved when message has ID")
 
         // Notify parent callback (for any additional state management)
         await onCreateFeed(strategy)
@@ -355,6 +298,7 @@ export default function MayaFeedTab({
       realismStrength,
     ]
   )
+  
 
   // CRITICAL FIX: Clear isCreatingFeed when feed card is detected in messages
   // This prevents the loader from getting stuck if feed card is created but isCreatingFeed wasn't cleared
@@ -370,234 +314,186 @@ export default function MayaFeedTab({
     }
   }, [messages, isCreatingFeed, setIsCreatingFeed])
 
-  // Detect feed triggers in messages
-  useEffect(() => {
-    console.log("[FEED] 🔍 Trigger detection useEffect fired:", {
-      messagesCount: messages.length,
-      status,
-      isCreatingFeed,
-    })
-    
-    // Allow processing when ready OR when messages change (to catch newly saved messages)
-    if (messages.length === 0) return
-    
-    // 🔴 CRITICAL: Allow trigger detection DURING streaming to set loading state immediately
-    // Only skip if we're already processing a feed (to prevent race conditions)
-    // During streaming, we can detect partial triggers to show the loader early
-    if (isCreatingFeed) {
-      console.log("[FEED] ⏳ Skipping trigger detection - already creating feed")
-      return
-    }
+  // REMOVED: Duplicate feed card save logic
+  // Feed cards are now saved via useMayaChat.onFinish hook (single save path)
+  // This eliminates race conditions and duplicate saves
 
+  // ============================================================================
+  // STEP 1: DETECTION - Simple trigger detection (like concept cards)
+  // ============================================================================
+  // Monitors messages for [CREATE_FEED_STRATEGY: {...}] pattern
+  // Sets pendingFeedRequest state when trigger found
+  // Matches concept card detection pattern for consistency
+  useEffect(() => {
+    if (messages.length === 0) return
+    if (isCreatingFeed) return
+    if (pendingFeedRequest) return // Already have a pending request
+    
+    // CRITICAL: We can detect triggers during streaming, but only process after streaming completes
+    // This allows us to show the loading spinner immediately when trigger is detected
     const lastAssistantMessage = messages
       .filter((m: any) => m.role === "assistant")
       .slice(-1)[0]
 
-    if (!lastAssistantMessage) {
-      console.log("[FEED] ⏸️ No assistant messages found")
-      return
-    }
+    if (!lastAssistantMessage) return
 
     const messageId = lastAssistantMessage.id
     
-    // Create a tracking key: use messageId if available, otherwise use content hash
-    // This allows trigger detection even during streaming when messages don't have IDs yet
+    // Use messageId if available, otherwise use content hash for tracking
+    // This allows detection even during streaming before message has ID
     let messageKey: string
     if (messageId) {
       messageKey = messageId
     } else {
-      // Generate a key from message content for tracking during streaming
-      // Extract text content first (simplified version for key generation)
-      const textContentForKey = lastAssistantMessage.parts?.find((p: any) => p?.type === "text")?.text || lastAssistantMessage.content || ""
-      if (!textContentForKey) {
-        console.log("[FEED] ⏸️ Last assistant message has no ID and no content")
-        return
+      // Generate hash from content for messages without ID yet
+      let textContent = ""
+      if (lastAssistantMessage.parts && Array.isArray(lastAssistantMessage.parts)) {
+        const textParts = lastAssistantMessage.parts.filter((p: any) => p && p.type === "text")
+        textContent = textParts.map((p: any) => p.text || "").join("\n")
+      } else if (typeof lastAssistantMessage.content === "string") {
+        textContent = lastAssistantMessage.content
       }
-      // Use a hash of the content for collision-resistant key generation
-      // Simple hash function: convert string to numeric hash, then to base36 string
+      
+      if (!textContent) return
+      
+      // Simple hash for tracking
       let hash = 0
-      for (let i = 0; i < textContentForKey.length; i++) {
-        const char = textContentForKey.charCodeAt(i)
+      for (let i = 0; i < textContent.length; i++) {
+        const char = textContent.charCodeAt(i)
         hash = ((hash << 5) - hash) + char
-        hash = hash & hash // Convert to 32bit integer
+        hash = hash & hash
       }
-      const contentHash = Math.abs(hash).toString(36)
-      messageKey = `streaming-${contentHash}`
+      messageKey = `streaming-${Math.abs(hash).toString(36)}`
     }
 
-    // Skip if already processed (using messageKey instead of just messageId)
+    // Skip if already processed
     if (processedFeedMessagesRef.current.has(messageKey)) {
-      console.log("[FEED] ⏸️ Message already processed:", messageKey)
       return
     }
 
-    // Extract text content from message
+    // Check if message already has feed card (prevent duplicate on page refresh)
+    const alreadyHasFeedCard = lastAssistantMessage.parts?.some(
+      (p: any) => p.type === "tool-generateFeed"
+    )
+    if (alreadyHasFeedCard) {
+      processedFeedMessagesRef.current.add(messageKey)
+      return
+    }
+
+    // Extract text content
     let textContent = ""
     if (lastAssistantMessage.parts && Array.isArray(lastAssistantMessage.parts)) {
       const textParts = lastAssistantMessage.parts.filter((p: any) => p && p.type === "text")
       textContent = textParts.map((p: any) => p.text || "").join("\n")
-      console.log("[FEED] 🔍 Checking message for trigger (from parts):", {
-        messageId,
-        textLength: textContent.length,
-        hasCreateFeedTrigger: textContent.includes("[CREATE_FEED_STRATEGY"),
-        textPreview: textContent.substring(0, 200),
-      })
     } else if (typeof lastAssistantMessage.content === "string") {
       textContent = lastAssistantMessage.content
-      console.log("[FEED] 🔍 Checking message for trigger (from content):", {
-        messageKey: messageId || "streaming (no ID yet)",
-        textLength: textContent.length,
-        hasCreateFeedTrigger: textContent.includes("[CREATE_FEED_STRATEGY"),
-        textPreview: textContent.substring(0, 200),
-      })
     } else {
-      console.log("[FEED] ⚠️ Message has no text content (parts or content):", {
-        messageKey: messageId || "streaming (no ID yet)",
-        hasParts: !!lastAssistantMessage.parts,
-        hasContent: !!lastAssistantMessage.content,
-      })
       return
     }
 
-    // Check for [CREATE_FEED_STRATEGY] trigger
-    // PRODUCTION DEBUG: Log what we're searching for
-    console.log("[FEED] 🔍 PRODUCTION DEBUG - Checking for feed trigger:", {
-      messageId: lastAssistantMessage?.id,
-      textContentLength: textContent.length,
-      textContentPreview: textContent.substring(0, 200),
-      hasCreateFeedStrategy: textContent.includes("[CREATE_FEED_STRATEGY"),
-      environment: typeof window !== 'undefined' ? window.location.hostname : 'server',
-    })
+    // Simple trigger detection (single pattern)
+    const feedStrategyMatch = textContent.match(/\[CREATE_FEED_STRATEGY:\s*(\{[\s\S]*\})\]/i)
     
-    // Try multiple patterns to catch different JSON formats
-    // Pattern 1: [CREATE_FEED_STRATEGY: {...}]
-    let feedStrategyMatch = textContent.match(/\[CREATE_FEED_STRATEGY:\s*(\{[\s\S]*\})\]/i)
-    
-    // Pattern 2: [CREATE_FEED_STRATEGY] followed by JSON block (```json or plain JSON)
-    if (!feedStrategyMatch && textContent.includes("[CREATE_FEED_STRATEGY]")) {
-      // Look for JSON after the trigger (could be in code block or plain)
-      const jsonBlockMatch = textContent.match(/\[CREATE_FEED_STRATEGY\][\s\S]*?(```json\s*(\{[\s\S]*?\})\s*```|\{[\s\S]*?"feedStrategy"[\s\S]*?\})/i)
-      if (jsonBlockMatch) {
-        // Extract JSON from code block or plain format
-        const jsonStr = jsonBlockMatch[2] || jsonBlockMatch[1]
-        if (jsonStr) {
-          feedStrategyMatch = [null, jsonStr] // Create match array in same format
-        }
-      }
-    }
-    
-    // Pattern 3: Look for standalone JSON with "feedStrategy" key anywhere in text
-    if (!feedStrategyMatch) {
-      const standaloneJsonMatch = textContent.match(/\{\s*"feedStrategy"[\s\S]*?\}/i)
-      if (standaloneJsonMatch) {
-        feedStrategyMatch = [null, standaloneJsonMatch[0]]
-      }
-    }
-
-    // Pattern 4: Check for partial trigger during streaming (just the trigger text, JSON might be incomplete)
-    // This allows us to show the loader immediately when Maya starts creating a feed
-    const hasPartialTrigger = textContent.includes("[CREATE_FEED_STRATEGY") || 
-                             textContent.includes('"feedStrategy"') ||
-                             textContent.includes("Aesthetic Choice:") ||
-                             textContent.includes("Overall Vibe:") ||
-                             textContent.includes("Grid Layout:")
-
-    // If we detect a partial trigger during streaming, set loading state immediately
-    // This ensures the loader shows right away, even before JSON is complete
-    if (hasPartialTrigger && status === "streaming" && !isCreatingFeed) {
-      console.log("[FEED] 🚀 Detected partial feed trigger during streaming - setting loading state immediately")
-      setIsCreatingFeed(true)
-      // Don't return - continue to check for complete trigger below
-    }
-
     if (feedStrategyMatch) {
-      // CRITICAL: Check if message already has feed card FIRST (prevent duplicate creation on page refresh)
-      // This is essential because on page reload, messages are loaded from DB and triggers are re-evaluated
-      const alreadyHasFeedCard = lastAssistantMessage.parts?.some(
-        (p: any) => p.type === "tool-generateFeed"
-      )
-      if (alreadyHasFeedCard) {
-        console.log("[FEED] ⚠️ Message already has feed card, skipping trigger (likely from page refresh):", messageKey)
+      const strategyJson = feedStrategyMatch[1]
+      if (strategyJson) {
+        console.log("[FEED] ✅ Detected feed trigger:", { messageKey, messageId: messageId || "no-id-yet", strategyLength: strategyJson.length })
         processedFeedMessagesRef.current.add(messageKey)
-        return
+        // CRITICAL: Set loading state immediately (like concept cards)
+        setIsCreatingFeed(true)
+        setPendingFeedRequest({ strategyJson, messageId: messageId || messageKey })
       }
-      
-      // Also check if feed marker exists in content (another indicator feed was already created)
-      const hasFeedMarker = lastAssistantMessage.content?.includes('[FEED_CARD:')
-      if (hasFeedMarker) {
-        console.log("[FEED] ⚠️ Message already has feed marker, skipping trigger (likely from page refresh):", messageKey)
-        processedFeedMessagesRef.current.add(messageKey)
-        return
-      }
+    }
+  }, [messages, status, isCreatingFeed, pendingFeedRequest, setIsCreatingFeed])
 
-      processedFeedMessagesRef.current.add(messageKey)
-
-      // Extract JSON from match array (handle both patterns)
-      const strategyJson = Array.isArray(feedStrategyMatch) ? feedStrategyMatch[1] : feedStrategyMatch
-      if (!strategyJson) {
-        console.error("[FEED] ❌ No JSON found in feed strategy match")
-        processedFeedMessagesRef.current.delete(messageKey)
-        setIsCreatingFeed(false)
-        return
-      }
-      
-      console.log("[FEED] ✅ Detected feed creation trigger:", {
-        messageKey,
-        messageId: messageId || "streaming (no ID yet)",
-        strategyLength: strategyJson.length,
-      })
-
-      // CRITICAL: Set loading state IMMEDIATELY when trigger is detected
-      // This shows the loading indicator right away, before parsing JSON
-      setIsCreatingFeed(true)
-      console.log("[FEED] 🚀 Setting isCreatingFeed=true - showing loading indicator")
-
-      // Create async function to handle feed creation (useEffect callbacks can't be async)
-      const processFeedCreation = async () => {
-        try {
-          const parsed = JSON.parse(strategyJson) as any
-          
-          // CRITICAL FIX: Maya might output JSON wrapped in "feedStrategy" object
-          // Unwrap it if needed: { feedStrategy: { posts: [...] } } -> { posts: [...] }
-          let strategy: FeedStrategy
-          if (parsed.feedStrategy && typeof parsed.feedStrategy === 'object') {
-            // Nested structure: unwrap it
-            strategy = parsed.feedStrategy as FeedStrategy
-            console.log("[FEED] 🔄 Unwrapped feedStrategy from nested structure")
-          } else {
-            // Direct structure: use as-is
-            strategy = parsed as FeedStrategy
-          }
-          
-          // CRITICAL: Log strategy structure for debugging
-          console.log("[FEED] 📋 Parsed strategy structure:", {
-            hasPosts: !!strategy.posts,
-            postsCount: strategy.posts?.length || 0,
-            firstPost: strategy.posts?.[0] ? {
-              position: strategy.posts[0].position,
-              hasVisualDirection: !!strategy.posts[0].visualDirection,
-              hasPrompt: !!(strategy.posts[0] as any).prompt,
-              hasCaption: !!strategy.posts[0].caption,
-              postType: strategy.posts[0].postType,
-            } : null,
-            strategyKeys: Object.keys(strategy),
-          })
-          
-          // handleCreateFeed will be called, which will eventually set isCreatingFeed(false) in its finally block
-          await handleCreateFeed(strategy)
-        } catch (error) {
-          console.error("[FEED] ❌ Failed to parse strategy JSON:", error)
-          console.error("[FEED] ❌ JSON that failed to parse:", strategyJson.substring(0, 500))
-          processedFeedMessagesRef.current.delete(messageKey)
-          // Reset loading state on error
-          setIsCreatingFeed(false)
-        }
-      }
-
-      processFeedCreation()
+  // ============================================================================
+  // STEP 2: PROCESSING - Call API and create feed (like concept cards)
+  // ============================================================================
+  // Calls appropriate API endpoint (Classic or Pro Mode)
+  // Validates strategy JSON
+  // Calls handleCreateFeed() with validated strategy
+  useEffect(() => {
+    if (!pendingFeedRequest) return
+    
+    // CRITICAL: Don't process while actively streaming (like concept cards)
+    // Wait for streaming to complete before processing
+    if (status === "streaming" || status === "submitted") {
+      console.log("[FEED] ⏳ Waiting for streaming to complete before processing - status is:", status)
       return
     }
-  }, [messages, status, isCreatingFeed, handleCreateFeed])
+    
+    // If we get here, streaming is complete - safe to process
+    // Note: isCreatingFeed is already set to true in detection step
+
+    const processFeed = async () => {
+      // Ensure isCreatingFeed is set (should already be set in detection, but double-check)
+      if (!isCreatingFeed) {
+        setIsCreatingFeed(true)
+      }
+      try {
+        // Determine API endpoint based on mode
+        const apiEndpoint = proMode 
+          ? '/api/maya/pro/generate-feed'
+          : '/api/maya/generate-feed'
+        
+        // Build request body based on mode
+        const requestBody = proMode
+          ? {
+              strategyJson: pendingFeedRequest.strategyJson,
+              chatId,
+              imageLibrary, // Pro Mode specific
+              conversationContext: undefined, // Can be added later if needed
+            }
+          : {
+              strategyJson: pendingFeedRequest.strategyJson,
+              chatId,
+              conversationContext: undefined, // Can be added later if needed
+            }
+        
+        console.log("[FEED] 📤 Calling generate-feed API:", {
+          endpoint: apiEndpoint,
+          proMode,
+          hasImageLibrary: !!imageLibrary,
+        })
+        
+        // Call API endpoint to validate and process strategy
+        const response = await fetch(apiEndpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(requestBody),
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+          throw new Error(errorData.error || 'Failed to process feed strategy')
+        }
+
+        const data = await response.json()
+        if (!data.success || !data.strategy) {
+          throw new Error('Invalid response from API')
+        }
+
+        const strategy = data.strategy as FeedStrategy
+        console.log("[FEED] ✅ Strategy validated by API:", {
+          title: strategy.feedTitle || strategy.title,
+          postsCount: strategy.posts?.length || 0,
+        })
+
+        // Call handleCreateFeed with validated strategy
+        await handleCreateFeed(strategy)
+      } catch (error) {
+        console.error("[FEED] ❌ Error processing feed:", error)
+        // Reset state on error
+        processedFeedMessagesRef.current.delete(pendingFeedRequest.messageId)
+        setIsCreatingFeed(false)
+      } finally {
+        setPendingFeedRequest(null)
+      }
+    }
+
+    processFeed()
+  }, [pendingFeedRequest, isCreatingFeed, chatId, handleCreateFeed, proMode, imageLibrary, status])
 
   return (
     <>

@@ -62,9 +62,10 @@ export async function DELETE(request: NextRequest) {
     // Delete single or multiple
     if (ids && Array.isArray(ids) && ids.length > 0) {
       // Bulk delete
+      // NOTE: writing_assistant_outputs.id is SERIAL (INTEGER), not UUID
       await sql`
         DELETE FROM writing_assistant_outputs
-        WHERE id = ANY(${ids}::uuid[])
+        WHERE id = ANY(${ids}::integer[])
         AND user_id = ${adminUserId}
       `
       return NextResponse.json({ 

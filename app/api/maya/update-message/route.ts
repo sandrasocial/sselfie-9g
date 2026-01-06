@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
+import { loadChatById } from "@/lib/data/maya"
 import { neon } from "@neondatabase/serverless"
 
 const sql = neon(process.env.DATABASE_URL!)
@@ -23,13 +24,15 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { messageId, content, append = false, feedCards } = body
+    const { messageId, content, append = false, feedCards, conceptCards } = body
 
     console.log("[update-message] Request received:", {
       messageId,
       contentLength: content?.length || 0,
       hasFeedCards: !!feedCards,
       feedCardsCount: Array.isArray(feedCards) ? feedCards.length : 0,
+      hasConceptCards: !!conceptCards,
+      conceptCardsCount: Array.isArray(conceptCards) ? conceptCards.length : 0,
     })
 
     if (!messageId || content === undefined) {
@@ -65,15 +68,34 @@ export async function POST(request: NextRequest) {
       }, { status: 404 })
     }
 
-    // Verify message belongs to user's chat
-    const [chat] = await sql`
-      SELECT user_id FROM maya_chats
-      WHERE id = ${currentMessage.chat_id}
-      LIMIT 1
-    `
+    // Verify message belongs to user's chat and get chat_type
+    const chat = await loadChatById(currentMessage.chat_id, neonUser.id)
+    if (!chat) {
+      return NextResponse.json({ error: "Chat not found" }, { status: 404 })
+    }
 
-    if (!chat || chat.user_id !== neonUser.id) {
+    if (chat.user_id !== neonUser.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
+    }
+
+    // CRITICAL FIX: Validate chat_type before updating feed cards
+    const chatType = chat.chat_type || "maya" // Default to "maya" for legacy chats
+
+    // Validate feedCards only allowed in Feed tab chats
+    if (feedCards && Array.isArray(feedCards) && feedCards.length > 0) {
+      if (chatType !== "feed-planner") {
+        console.warn("[update-message] ⚠️ Attempted to update feed cards in wrong chat type:", {
+          messageId: messageIdNum,
+          chatId: currentMessage.chat_id,
+          chatType,
+          feedCardsCount: feedCards.length,
+          message: "Feed cards only allowed in Feed tab chats (feed-planner)"
+        })
+        return NextResponse.json({ 
+          error: "Invalid chat type for feed cards",
+          details: `Feed cards can only be updated in Feed tab chats (feed-planner), but chat is type ${chatType}`
+        }, { status: 400 })
+      }
     }
 
     // Update content (append or replace)
@@ -81,7 +103,71 @@ export async function POST(request: NextRequest) {
       ? `${currentMessage.content || ""}\n${content}`
       : content
 
-    // Update content and feed cards (styling_details column) if provided
+    // Update concept_cards JSONB if provided
+    if (conceptCards && Array.isArray(conceptCards)) {
+      try {
+        // CRITICAL: Get existing concept_cards and merge with new ones
+        // This allows updating a single concept without replacing all concepts
+        const [currentMessageData] = await sql`
+          SELECT concept_cards FROM maya_chat_messages
+          WHERE id = ${messageIdNum}
+          LIMIT 1
+        `
+        
+        let existingConcepts: any[] = []
+        if (currentMessageData?.concept_cards && Array.isArray(currentMessageData.concept_cards)) {
+          existingConcepts = currentMessageData.concept_cards
+        }
+        
+        // Merge: Update existing concepts or add new ones
+        const mergedConcepts = [...existingConcepts]
+        conceptCards.forEach((updatedConcept: any) => {
+          const existingIndex = mergedConcepts.findIndex((c: any) => {
+            const cId = c.id || `concept-${messageIdNum}-${mergedConcepts.indexOf(c)}`
+            const updatedId = updatedConcept.id || `concept-${messageIdNum}-${conceptCards.indexOf(updatedConcept)}`
+            return cId === updatedId
+          })
+          
+          if (existingIndex >= 0) {
+            // Update existing concept (merge properties)
+            mergedConcepts[existingIndex] = {
+              ...mergedConcepts[existingIndex],
+              ...updatedConcept, // Overwrite with new data (generatedImageUrl, predictionId, etc.)
+            }
+          } else {
+            // Add new concept (shouldn't happen, but safety)
+            mergedConcepts.push(updatedConcept)
+          }
+        })
+        
+        const conceptCardsJson = JSON.stringify(mergedConcepts)
+        console.log("[update-message] Updating message with concept cards:", {
+          messageId: messageIdNum,
+          conceptCardsCount: conceptCards.length,
+          mergedCount: mergedConcepts.length,
+          existingCount: existingConcepts.length,
+          firstConcept: conceptCards[0] ? Object.keys(conceptCards[0]) : null,
+        })
+        
+        // Update concept_cards column with merged concepts
+        await sql`
+          UPDATE maya_chat_messages
+          SET concept_cards = ${conceptCardsJson}
+          WHERE id = ${messageIdNum}
+        `
+        console.log("[update-message] ✅ Updated message with concept cards:", mergedConcepts.length)
+      } catch (dbError: any) {
+        console.error("[update-message] ❌ Database error updating concept cards:", {
+          error: dbError?.message || String(dbError),
+          stack: dbError?.stack,
+          messageId: messageIdNum,
+          conceptCardsCount: conceptCards.length,
+        })
+        throw dbError
+      }
+    }
+
+    // Update content and feed cards (feed_cards column) if provided
     if (feedCards && Array.isArray(feedCards)) {
       let feedCardsJson: string | null = null
       try {
@@ -93,11 +179,11 @@ export async function POST(request: NextRequest) {
           firstFeedCard: feedCards[0] ? Object.keys(feedCards[0]) : null,
         })
         
-        // Use same pattern as INSERT - pass JSON string directly, Neon will handle JSONB conversion
+        // Use feed_cards column (matches concept_cards pattern)
         // NOTE: maya_chat_messages table does not have updated_at column
         await sql`
           UPDATE maya_chat_messages
-          SET content = ${updatedContent}, styling_details = ${feedCardsJson}
+          SET content = ${updatedContent}, feed_cards = ${feedCardsJson}
           WHERE id = ${messageIdNum}
         `
         console.log("[update-message] ✅ Updated message with feed cards:", feedCards.length)
@@ -111,8 +197,16 @@ export async function POST(request: NextRequest) {
         })
         throw dbError
       }
-    } else {
+    } else if (!conceptCards) {
+      // Only update content if neither feedCards nor conceptCards are provided
       // NOTE: maya_chat_messages table does not have updated_at column
+      await sql`
+        UPDATE maya_chat_messages
+        SET content = ${updatedContent}
+        WHERE id = ${messageIdNum}
+      `
+    } else if (conceptCards && !feedCards) {
+      // Update content and concept_cards together
       await sql`
         UPDATE maya_chat_messages
         SET content = ${updatedContent}

@@ -13,6 +13,7 @@ import BuyCreditsModal from "./buy-credits-modal"
 interface ConceptCardProps {
   concept: ConceptData
   chatId?: number
+  messageId?: string // Message ID for updating JSONB when image is generated
   onCreditsUpdate?: (newBalance: number) => void
   studioProMode?: boolean
   baseImages?: string[] // Base images for Studio Pro mode (legacy - will be replaced)
@@ -27,7 +28,8 @@ interface ConceptCardProps {
 
 export default function ConceptCard({ 
   concept, 
-  chatId, 
+  chatId,
+  messageId,
   onCreditsUpdate, 
   studioProMode = false, 
   baseImages = [],
@@ -48,7 +50,11 @@ export default function ConceptCard({
   const isProMode = studioProMode === true
   const [isGenerating, setIsGenerating] = useState(false)
   const [isGenerated, setIsGenerated] = useState(false)
-  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null)
+  // CRITICAL FIX: Initialize generatedImageUrl from concept prop (for persistence on page refresh)
+  // This allows images loaded from database to be displayed immediately
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(
+    (concept as any).generatedImageUrl || null
+  )
   const [error, setError] = useState<string | null>(null)
   const [predictionId, setPredictionId] = useState<string | null>(null)
   const [generationId, setGenerationId] = useState<string | null>(null)
@@ -123,6 +129,17 @@ export default function ConceptCard({
 
   // Track previous baseImages to detect actual changes
   const prevBaseImagesRef = useRef<string[]>(baseImages)
+  
+  // CRITICAL FIX: Update generatedImageUrl when concept prop changes (for persistence on page refresh)
+  // This ensures images loaded from database are displayed immediately
+  useEffect(() => {
+    const conceptImageUrl = (concept as any).generatedImageUrl
+    if (conceptImageUrl && conceptImageUrl !== generatedImageUrl) {
+      console.log("[v0] ✅ ConceptCard: Restoring generatedImageUrl from concept prop:", conceptImageUrl)
+      setGeneratedImageUrl(conceptImageUrl)
+      setIsGenerated(true)
+    }
+  }, [concept, generatedImageUrl])
   
   // Update selectedImages when baseImages prop changes
   // CRITICAL: Always update when baseImages are provided, even if card already has images
@@ -386,6 +403,33 @@ export default function ConceptCard({
           setGeneratedImageUrl(data.imageUrl)
           setIsGenerated(true)
           setIsGenerating(false)
+          
+          // CRITICAL FIX: Save generatedImageUrl to JSONB for persistence
+          if (messageId && data.imageUrl) {
+            try {
+              const updatedConcept = {
+                ...concept,
+                generatedImageUrl: data.imageUrl,
+                generationId: generationId,
+              }
+              
+              await fetch('/api/maya/update-message', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                  messageId: messageId,
+                  content: '', // Preserve existing content
+                  conceptCards: [updatedConcept],
+                }),
+              })
+              console.log('[ConceptCard] ✅ Saved image to JSONB:', { messageId, conceptId: concept.id })
+            } catch (jsonbError: any) {
+              console.error('[ConceptCard] ❌ Error saving to JSONB:', jsonbError?.message || jsonbError)
+              // Don't fail - image still shows in UI
+            }
+          }
+          
           clearInterval(pollInterval)
         } else if (data.status === "failed") {
           setError(data.error || "Generation failed")
@@ -554,6 +598,32 @@ export default function ConceptCard({
                 setGeneratedImageUrl(status.output)
                 setIsGenerated(true)
                 setIsGenerating(false)
+                
+                // CRITICAL FIX: Save generatedImageUrl to JSONB for persistence
+                if (messageId && status.output) {
+                  try {
+                    const updatedConcept = {
+                      ...concept,
+                      generatedImageUrl: status.output,
+                      generationId: generationId,
+                    }
+                    
+                    await fetch('/api/maya/update-message', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      credentials: 'include',
+                      body: JSON.stringify({
+                        messageId: messageId,
+                        content: '', // Preserve existing content
+                        conceptCards: [updatedConcept],
+                      }),
+                    })
+                    console.log('[ConceptCard] ✅ Saved image to JSONB:', { messageId, conceptId: concept.id })
+                  } catch (jsonbError: any) {
+                    console.error('[ConceptCard] ❌ Error saving to JSONB:', jsonbError?.message || jsonbError)
+                    // Don't fail - image still shows in UI
+                  }
+                }
                 
                 // Update credits if callback provided
                 if (onCreditsUpdate) {
