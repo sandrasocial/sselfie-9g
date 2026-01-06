@@ -140,7 +140,7 @@ async function sendEmailWithRetry(
 async function logEmailSend(
   userEmail: string,
   emailType: string,
-  status: "sent" | "delivered" | "failed" | "error",
+  status: "sent" | "delivered" | "failed" | "error" | "skipped_disabled" | "skipped_test_mode",
   resendMessageId?: string,
   errorMessage?: string,
   campaignId?: number,
@@ -177,6 +177,32 @@ export async function sendEmail(
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   const recipient = Array.isArray(options.to) ? options.to[0] : options.to
   const emailType = options.emailType || "general"
+
+  // Check email control flags
+  const { isEmailSendingEnabled, isEmailTestMode, isEmailAllowedInTestMode } = await import("./email-control")
+  const sendingEnabled = await isEmailSendingEnabled()
+  const testMode = await isEmailTestMode()
+
+  // Global kill switch check
+  if (!sendingEnabled) {
+    console.log(`[v0] Email sending disabled (kill switch). Skipping send to ${recipient}`)
+    await logEmailSend(recipient, emailType, "skipped_disabled", undefined, "Email sending disabled", options.campaignId)
+    return {
+      success: false,
+      error: "Email sending is currently disabled",
+    }
+  }
+
+  // Test mode check
+  if (testMode && !(await isEmailAllowedInTestMode(recipient))) {
+    console.log(`[v0] Test mode enabled. Skipping send to ${recipient} (not whitelisted)`)
+    await logEmailSend(recipient, emailType, "skipped_test_mode", undefined, "Test mode: recipient not whitelisted", options.campaignId)
+    return {
+      success: false,
+      error: "Test mode enabled: recipient not in whitelist",
+    }
+  }
+
   const rateLimit = await checkEmailRateLimit(recipient)
 
   if (!rateLimit.success) {

@@ -12,14 +12,19 @@ export interface NurtureSequenceParams {
   campaignId?: number
 }
 
-function getCheckoutLink(type: 'membership' | 'one-time', campaignName: string, campaignId?: number): string {
+/**
+ * Get landing page link for non-account holders (freebie subscribers)
+ * NEVER send to /checkout/ or /studio - they don't have accounts
+ */
+function getLandingPageLink(type: 'membership' | 'one-time', campaignName: string, campaignId?: number): string {
   const campaignSlug = campaignName.toLowerCase().replace(/[^a-z0-9]+/g, '-')
-  const baseUrl = `${SITE_URL}/checkout/${type}`
+  const baseUrl = SITE_URL // Homepage is landing page with pricing
   const params = new URLSearchParams({
     utm_source: 'email',
     utm_medium: 'email',
     utm_campaign: campaignSlug,
     utm_content: 'cta_button',
+    product: type === 'membership' ? 'studio_membership' : 'one_time_session',
   })
   if (campaignId) {
     params.append('campaign_id', campaignId.toString())
@@ -80,17 +85,17 @@ export function generateNurtureDay1(params: NurtureSequenceParams = {}) {
 
               <ul style="margin: 0 0 24px; padding-left: 20px; color: #1c1917; font-size: 16px; line-height: 1.8;">
                 <li style="margin-bottom: 12px;"><strong>100+ professional photos per month</strong> - Never run out of content again</li>
-                <li style="margin-bottom: 12px;"><strong>20 video clips</strong> - Perfect for Reels and Stories</li>
+                <li style="margin-bottom: 12px;"><strong>Video b-roll creation</strong> - Turn photos into animated clips for Reels and Stories</li>
                 <li style="margin-bottom: 12px;"><strong>Feed Designer</strong> - Plan your entire Instagram grid before you post</li>
                 <li style="margin-bottom: 12px;"><strong>Maya, your AI creative director</strong> - She styles your shoots like a best friend</li>
               </ul>
 
               <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #1c1917;">
-                All for $79/month. That's less than most people spend on coffee. And it'll save you 10+ hours per month.
+                All for $97/month. That's less than most people spend on coffee. And it'll save you 10+ hours per month.
               </p>
 
               <div style="margin: 32px 0; text-align: center;">
-                <a href="${getCheckoutLink('membership', campaignName, campaignId)}" style="display: inline-block; padding: 14px 32px; background-color: #1c1917; color: #fafaf9; text-decoration: none; font-weight: 500; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 8px;">
+                <a href="${getLandingPageLink('membership', campaignName, campaignId)}" style="display: inline-block; padding: 14px 32px; background-color: #1c1917; color: #fafaf9; text-decoration: none; font-weight: 500; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 8px;">
                   Join SSELFIE Studio
                 </a>
               </div>
@@ -131,13 +136,13 @@ Real talk: I used to spend HOURS trying to get content ready. Now? SSELFIE helps
 
 Here's what Studio members get:
 - 100+ professional photos per month - Never run out of content again
-- 20 video clips - Perfect for Reels and Stories
+- Video b-roll creation - Turn photos into animated clips for Reels and Stories
 - Feed Designer - Plan your entire Instagram grid before you post
 - Maya, your AI creative director - She styles your shoots like a best friend
 
-All for $79/month. That's less than most people spend on coffee. And it'll save you 10+ hours per month.
+All for $97/month. That's less than most people spend on coffee. And it'll save you 10+ hours per month.
 
-Join SSELFIE Studio: ${getCheckoutLink('membership', campaignName, campaignId)}
+Join SSELFIE Studio: ${getLandingPageLink('membership', campaignName, campaignId)}
 
 P.S. Want to test it first? Try a one-time session for $49. No pressure, just options.
 
@@ -209,7 +214,7 @@ export function generateNurtureDay5(params: NurtureSequenceParams = {}) {
               </p>
 
               <div style="margin: 32px 0; text-align: center;">
-                <a href="${getCheckoutLink('membership', campaignName, campaignId)}" style="display: inline-block; padding: 14px 32px; background-color: #1c1917; color: #fafaf9; text-decoration: none; font-weight: 500; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 8px;">
+                <a href="${getLandingPageLink('membership', campaignName, campaignId)}" style="display: inline-block; padding: 14px 32px; background-color: #1c1917; color: #fafaf9; text-decoration: none; font-weight: 500; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 8px;">
                   See How She Did It
                 </a>
               </div>
@@ -254,7 +259,7 @@ Professional photos did that. Consistent content did that. SSELFIE Studio did th
 
 Here's the thing - you have the same potential. You just need the right tools.
 
-See How She Did It: ${getCheckoutLink('membership', campaignName, campaignId)}
+See How She Did It: ${getLandingPageLink('membership', campaignName, campaignId)}
 
 P.S. Sarah's story isn't unique. I hear versions of this from Studio members every week. The pattern is clear: consistent professional content = more visibility = more clients.
 
@@ -319,7 +324,7 @@ export function generateNurtureDay10(params: NurtureSequenceParams = {}) {
 
               <ul style="margin: 0 0 24px; padding-left: 20px; color: #1c1917; font-size: 16px; line-height: 1.8;">
                 <li style="margin-bottom: 12px;"><strong>Try it once for $49</strong> - Test it out. Create your first professional photoshoot. If you love it, upgrade. If not, you're only out $49.</li>
-                <li style="margin-bottom: 12px;"><strong>Join Studio for $79/month</strong> - Get 100+ photos per month, video clips, Feed Designer, everything. The full system.</li>
+                <li style="margin-bottom: 12px;"><strong>Join Studio for $97/month</strong> - Get 100+ photos per month, video clips, Feed Designer, everything. The full system.</li>
               </ul>
 
               <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #1c1917;">
@@ -327,12 +332,12 @@ export function generateNurtureDay10(params: NurtureSequenceParams = {}) {
               </p>
 
               <div style="margin: 32px 0; text-align: center;">
-                <a href="${getCheckoutLink('one-time', campaignName, campaignId)}" style="display: inline-block; padding: 14px 32px; background-color: #1c1917; color: #fafaf9; text-decoration: none; font-weight: 500; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 8px; margin-bottom: 12px;">
+                <a href="${getLandingPageLink('one-time', campaignName, campaignId)}" style="display: inline-block; padding: 14px 32px; background-color: #1c1917; color: #fafaf9; text-decoration: none; font-weight: 500; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 8px; margin-bottom: 12px;">
                   Try Once - $49
                 </a>
                 <br>
-                <a href="${getCheckoutLink('membership', campaignName, campaignId)}" style="display: inline-block; padding: 14px 32px; background-color: #fafaf9; color: #1c1917; text-decoration: none; font-weight: 500; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 8px; border: 2px solid #1c1917;">
-                  Join Studio - $79/mo
+                <a href="${getLandingPageLink('membership', campaignName, campaignId)}" style="display: inline-block; padding: 14px 32px; background-color: #fafaf9; color: #1c1917; text-decoration: none; font-weight: 500; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 8px; border: 2px solid #1c1917;">
+                  Join Studio - $97/mo
                 </a>
               </div>
 
@@ -372,12 +377,12 @@ Here's what I know: The "right time" is now. Every day you wait is another day y
 
 So I'm making this simple. Two options:
 - Try it once for $49 - Test it out. Create your first professional photoshoot. If you love it, upgrade. If not, you're only out $49.
-- Join Studio for $79/month - Get 100+ photos per month, video clips, Feed Designer, everything. The full system.
+- Join Studio for $97/month - Get 100+ photos per month, video clips, Feed Designer, everything. The full system.
 
 No risk. No commitment. Just results. Pick what works for you.
 
-Try Once - $49: ${getCheckoutLink('one-time', campaignName, campaignId)}
-Join Studio - $79/mo: ${getCheckoutLink('membership', campaignName, campaignId)}
+Try Once - $49: ${getLandingPageLink('one-time', campaignName, campaignId)}
+Join Studio - $97/mo: ${getLandingPageLink('membership', campaignName, campaignId)}
 
 P.S. The members who start now are the ones seeing results in 30 days. Don't wait. Start today.
 

@@ -31,7 +31,7 @@
 import { neon } from "@neondatabase/serverless"
 import { sendEmail } from "./send-email"
 import { checkEmailRateLimit } from "@/lib/rate-limit"
-import { generateLaunchFollowupEmail } from "./templates/launch-followup-email"
+import { generateLaunchFollowupEmail } from "./templates/archived/launch-followup-email-beta"
 import { generateBetaTestimonialEmail } from "./templates/beta-testimonial-request"
 import { generateNurtureDay1Email } from "./templates/nurture-day-1"
 import { generateNurtureDay3Email } from "./templates/nurture-day-3"

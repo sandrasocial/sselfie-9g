@@ -129,9 +129,7 @@ export class CronLogger {
     // Log error to admin_email_errors and link it
     let errorId: number | null = null
     try {
-      const { logAdminError } = await import("@/lib/admin-error-log")
-      // We'll get the error ID from the logAdminError function if possible
-      // For now, we'll insert the error separately to get the ID
+      // Insert error directly to get the ID for linking
       const errorResult = await sql`
         INSERT INTO admin_email_errors (tool_name, error_message, error_stack, context, created_at)
         VALUES (

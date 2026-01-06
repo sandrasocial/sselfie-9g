@@ -10,7 +10,7 @@ interface EmailPreviewCardProps {
   targetSegment: string
   targetCount: number
   campaignId?: number // Optional campaign ID if campaign already exists
-  campaignType?: 'loops_campaign' | 'resend' | 'resend_campaign' // Type of email campaign
+  campaignType?: 'resend' | 'resend_campaign' // Type of email campaign
   onEdit: () => void
   onApprove: () => void
   onSchedule: () => void
@@ -233,13 +233,11 @@ export default function EmailPreviewCard({
   }
 
   const handleApprove = async () => {
-    const platformName = campaignType === 'loops_campaign' ? 'Loops' : 'Resend'
+    const platformName = 'Resend'
     const confirmed = window.confirm(
       `Are you sure you want to send this email to ${targetCount.toLocaleString()} recipients in "${targetSegment}"?\n\n` +
       `Subject: ${subject}\n\n` +
-      `${campaignType === 'loops_campaign' 
-        ? 'This email will be sent via Loops. Make sure to review and send from the Loops dashboard.' 
-        : 'This will create a broadcast in Resend and send immediately.'}`
+      'This will create a broadcast in Resend and send immediately.'
     )
     if (!confirmed) return
     onApprove()

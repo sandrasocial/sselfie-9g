@@ -28,17 +28,34 @@ export function generateWinBackOfferEmail(params: WinBackOfferParams): {
       ? `${offerDiscount}% OFF`
       : ""
   
-  // Use tracked link if campaignId is available, otherwise fall back to regular link
+  // Win-back: Cancelled members may or may not have accounts
+  // Use /checkout/membership which handles both cases (will prompt login if needed)
   let checkoutUrl: string
   if (campaignId && campaignName) {
-    const baseUrl = generateTrackedCheckoutLink(campaignId, campaignName, "win_back_offer", "studio_membership")
-    const url = new URL(baseUrl)
+    const campaignSlug = campaignName.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+    const baseUrl = `${siteUrl}/checkout/membership`
+    const params = new URLSearchParams({
+      utm_source: 'email',
+      utm_medium: 'email',
+      utm_campaign: campaignSlug,
+      utm_content: 'cta_button',
+      campaign_id: campaignId.toString(),
+    })
     if (offerCode) {
-      url.searchParams.set('code', offerCode)
+      params.append('promo', offerCode)
     }
-    checkoutUrl = url.toString()
+    checkoutUrl = `${baseUrl}?${params.toString()}`
   } else {
-    checkoutUrl = `${siteUrl}/studio?checkout=studio_membership${offerCode ? `&code=${offerCode}` : ''}`
+    const params = new URLSearchParams({
+      utm_source: 'email',
+      utm_medium: 'email',
+      utm_campaign: 'win_back_offer',
+      utm_content: 'cta_button',
+    })
+    if (offerCode) {
+      params.append('promo', offerCode)
+    }
+    checkoutUrl = `${siteUrl}/checkout/membership?${params.toString()}`
   }
 
   const html = `
@@ -113,7 +130,7 @@ export function generateWinBackOfferEmail(params: WinBackOfferParams): {
               </p>
               
               <ul style="margin: 0 0 24px 20px; padding: 0; color: #292524; font-size: 15px; font-weight: 300; line-height: 1.8;">
-                <li style="margin-bottom: 12px;">150+ professional photos every month</li>
+                <li style="margin-bottom: 12px;">100+ professional photos every month</li>
                 <li style="margin-bottom: 12px;">Full Academy with video courses and templates</li>
                 <li style="margin-bottom: 12px;">Feed Designer for content planning</li>
                 <li style="margin-bottom: 12px;">Monthly drops with newest strategies</li>
@@ -190,7 +207,7 @@ ${offerExpiry ? `Valid until ${offerExpiry}` : ''}
 ` : ''}
 
 Here's what you'll get with SSELFIE Studio:
-- 150+ professional photos every month
+- 100+ professional photos every month
 - Full Academy with video courses and templates
 - Feed Designer for content planning
 - Monthly drops with newest strategies

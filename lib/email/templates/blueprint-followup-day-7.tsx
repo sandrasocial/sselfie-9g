@@ -88,12 +88,12 @@ export function generateBlueprintFollowupDay7Email(params: BlueprintFollowupDay7
               </p>
               
               <p style="margin: 0 0 24px; color: #292524; font-size: 15px; font-weight: 300; line-height: 1.7;">
-                Ready to start your transformation? Join Studio Membership for $79/month and get unlimited photos, feed planning, and new templates every month.
+                Ready to start your transformation? Join Studio Membership for $97/month and get unlimited photos, feed planning, and new templates every month.
               </p>
               
               <div style="text-align: center; margin: 30px 0;">
                 <a href="${studioUrl}" style="display: inline-block; background-color: #1c1917; color: #fafaf9; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase;">
-                  Start Your Transformation → Join Studio for $79/mo
+                  Start Your Transformation → Join Studio for $97/mo
                 </a>
               </div>
               
@@ -161,9 +161,9 @@ Here's what made the difference:
 
 This isn't about getting lucky. It's about having the right system and using it consistently.
 
-Ready to start your transformation? Join Studio Membership for $79/month and get unlimited photos, feed planning, and new templates every month.
+Ready to start your transformation? Join Studio Membership for $97/month and get unlimited photos, feed planning, and new templates every month.
 
-Start Your Transformation → Join Studio for $79/mo: ${studioUrl}
+Start Your Transformation → Join Studio for $97/mo: ${studioUrl}
 
 What's included in Studio:
 • Unlimited professional photoshoots

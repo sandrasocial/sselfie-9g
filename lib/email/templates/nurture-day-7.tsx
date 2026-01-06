@@ -73,7 +73,7 @@ export function generateNurtureDay7Email(params: NurtureDay7Params): {
               </p>
               
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${siteUrl}/studio" style="display: inline-block; background-color: #1c1917; color: #fafaf9; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase;">
+                <a href="${siteUrl}/?utm_source=email&utm_medium=email&utm_campaign=nurture_day_7&utm_content=cta_button&product=studio_membership" style="display: inline-block; background-color: #1c1917; color: #fafaf9; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase;">
                   Keep Creating
                 </a>
               </div>
@@ -84,7 +84,7 @@ export function generateNurtureDay7Email(params: NurtureDay7Params): {
               
               <div style="background-color: #fafaf9; border-left: 3px solid #292524; padding: 20px; margin: 24px 0; border-radius: 4px;">
                 <p style="margin: 0 0 12px; color: #292524; font-size: 14px; font-weight: 400; line-height: 1.6;">
-                  P.S. If you're loving what you're creating and want unlimited access to fresh photos every month, Studio membership gives you 150+ new images, the full Academy, and direct support from me. Just something to think about when you're ready.
+                  P.S. If you're loving what you're creating and want unlimited access to fresh photos every month, Studio membership gives you 100+ new images, the full Academy, and direct support from me. Just something to think about when you're ready.
                 </p>
                 <p style="margin: 0; color: #57534e; font-size: 13px; font-weight: 300;">
                   <a href="${studioLink}" style="color: #1c1917; text-decoration: underline;">Learn more about Studio →</a>
@@ -128,7 +128,7 @@ Here's what I want you to know: you don't need to be perfect. You just need to k
 
 If you're a Studio member, you're getting fresh credits every month. Use them. Experiment. Try new styles. The more you create, the more confident you'll become.
 
-Keep Creating: ${siteUrl}/studio
+Keep Creating: ${siteUrl}/?utm_source=email&utm_medium=email&utm_campaign=nurture_day_7&utm_content=cta_button&product=studio_membership
 
 I'd love to hear how it's going. What's working? What questions do you have? Just reply and let me know.
 

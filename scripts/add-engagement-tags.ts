@@ -22,13 +22,9 @@ config({ path: '.env.local' })
 const sql = neon(process.env.DATABASE_URL!)
 
 async function addEngagementTags() {
-  console.log('🏷️  Adding engagement tags to Loops contacts...\n')
-  
-  if (!process.env.LOOPS_API_KEY) {
-    console.error('❌ LOOPS_API_KEY not found in environment')
-    console.error('💡 Add LOOPS_API_KEY to your .env.local file')
-    process.exit(1)
-  }
+  console.log('⚠️  This script is disabled - Loops has been removed.')
+  console.log('💡 Use Resend segments for engagement targeting instead.\n')
+  process.exit(0)
 
   if (!process.env.DATABASE_URL) {
     console.error('❌ DATABASE_URL not found in environment')

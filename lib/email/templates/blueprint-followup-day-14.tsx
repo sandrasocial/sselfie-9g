@@ -71,12 +71,12 @@ export function generateBlueprintFollowupDay14Email(params: BlueprintFollowupDay
               </div>
               
               <p style="margin: 24px 0 16px; color: #292524; font-size: 15px; font-weight: 300; line-height: 1.7;">
-                Or, if you're ready to go all-in, start with Studio membership (no discount needed - it's already the best value at $79/month).
+                Or, if you're ready to go all-in, start with Studio membership (no discount needed - it's already the best value at $97/month).
               </p>
               
               <div style="text-align: center; margin: 24px 0;">
                 <a href="${studioUrl}" style="display: inline-block; background-color: #1c1917; color: #fafaf9; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase;">
-                  Start Studio Membership - $79/mo
+                  Start Studio Membership - $97/mo
                 </a>
               </div>
               
@@ -129,9 +129,9 @@ That's $39 instead of $49
 
 Claim Your $10 Off → Try SSELFIE: ${photoshootUrl}
 
-Or, if you're ready to go all-in, start with Studio membership (no discount needed - it's already the best value at $79/month).
+Or, if you're ready to go all-in, start with Studio membership (no discount needed - it's already the best value at $97/month).
 
-Start Studio Membership - $79/mo: ${studioUrl}
+Start Studio Membership - $97/mo: ${studioUrl}
 
 Final note: This is the last email about this. If SSELFIE isn't for you right now, that's totally okay. Keep the blueprint and use it whenever you're ready. 💕
 

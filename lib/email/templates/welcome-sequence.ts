@@ -213,6 +213,10 @@ export function generateWelcomeDay3(params: WelcomeSequenceParams = {}) {
                 Stuck? Just reply to this email. We'll help you troubleshoot.
               </p>
 
+              <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6; color: #1c1917;">
+                <strong>Pro tip:</strong> Check out the Academy in Studio for video courses on personal branding, content strategy, and Instagram growth. Everything I've learned from building my own 150K+ following is there.
+              </p>
+
               <div style="margin: 32px 0; text-align: center;">
                 <a href="${SITE_URL}/studio" style="display: inline-block; padding: 14px 32px; background-color: #1c1917; color: #fafaf9; text-decoration: none; font-weight: 500; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 8px;">
                   Continue Creating
@@ -259,6 +263,8 @@ Here's what I'd do if I were you:
 Members who nail this in week one are creating stunning content by week two. You've got this.
 
 Stuck? Just reply to this email. We'll help you troubleshoot.
+
+Pro tip: Check out the Academy in Studio for video courses on personal branding, content strategy, and Instagram growth. Everything I've learned from building my own 150K+ following is there.
 
 Continue Creating: ${SITE_URL}/studio
 
@@ -321,8 +327,8 @@ export function generateWelcomeDay7(params: WelcomeSequenceParams = {}) {
 
               <ul style="margin: 0 0 24px; padding-left: 20px; color: #1c1917; font-size: 16px; line-height: 1.8;">
                 <li style="margin-bottom: 12px;"><strong>Feed Designer:</strong> Plan your entire Instagram grid before you post. See how photos work together. No more guessing.</li>
-                <li style="margin-bottom: 12px;"><strong>Video Clips:</strong> Create 20 professional video clips per month. Perfect for Reels and Stories. Game changer for engagement.</li>
-                <li style="margin-bottom: 12px;"><strong>Maya's Advanced Mode:</strong> Ask for specific concepts - "coffee shop entrepreneur vibe" or "luxury brand aesthetic." She gets it.</li>
+                <li style="margin-bottom: 12px;"><strong>Video B-Roll:</strong> Turn your photos into animated video clips. Perfect for Reels and Stories. Game changer for engagement.</li>
+                <li style="margin-bottom: 12px;"><strong>Maya's Smart Prompts:</strong> Ask for specific concepts - "coffee shop entrepreneur vibe" or "luxury brand aesthetic." She gets it.</li>
                 <li style="margin-bottom: 12px;"><strong>Pro Mode:</strong> Want editorial-quality photos without training a model? Upload reference images and get luxury influencer content instantly.</li>
               </ul>
 
@@ -374,8 +380,8 @@ Most people give up on new tools after 3 days. But you? You're still here, creat
 
 Now that you've got the basics down, here are some features that'll take your content to the next level:
 - Feed Designer: Plan your entire Instagram grid before you post. See how photos work together. No more guessing.
-- Video Clips: Create 20 professional video clips per month. Perfect for Reels and Stories. Game changer for engagement.
-- Maya's Advanced Mode: Ask for specific concepts - "coffee shop entrepreneur vibe" or "luxury brand aesthetic." She gets it.
+- Video B-Roll: Turn your photos into animated video clips. Perfect for Reels and Stories. Game changer for engagement.
+- Maya's Smart Prompts: Ask for specific concepts - "coffee shop entrepreneur vibe" or "luxury brand aesthetic." She gets it.
 - Pro Mode: Want editorial-quality photos without training a model? Upload reference images and get luxury influencer content instantly.
 
 Here's the thing - the members who use ALL the features are the ones seeing the biggest results. They're not just creating photos. They're building complete brand systems.

@@ -10,7 +10,7 @@ import { createCronLogger } from "@/lib/cron-logger"
  */
 export async function GET(request: Request) {
   const cronLogger = createCronLogger("refresh-segments")
-  cronLogger.start()
+  await cronLogger.start()
 
   try {
     // Verify cron secret
@@ -34,7 +34,7 @@ export async function GET(request: Request) {
 
     console.log(`[v0] [Refresh Segments] Refreshed ${results.length} segments, ${totalMembers} total members`)
 
-    cronLogger.success({
+    await cronLogger.success({
       segmentsRefreshed: results.length,
       totalMembers,
     })
@@ -47,7 +47,7 @@ export async function GET(request: Request) {
     })
   } catch (error: any) {
     console.error("[v0] [Refresh Segments] Error:", error)
-    cronLogger.error(error)
+    await cronLogger.error(error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }

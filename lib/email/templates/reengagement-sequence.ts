@@ -179,7 +179,7 @@ export function generateReengagementDay7(params: ReengagementSequenceParams = {}
               </p>
 
               <ul style="margin: 0 0 24px; padding-left: 20px; color: #1c1917; font-size: 16px; line-height: 1.8;">
-                <li style="margin-bottom: 12px;"><strong>Video Clips:</strong> Create 20 professional video clips per month. Perfect for Reels. Game changer for engagement.</li>
+                <li style="margin-bottom: 12px;"><strong>Video B-Roll:</strong> Turn your photos into animated video clips. Perfect for Reels. Game changer for engagement.</li>
                 <li style="margin-bottom: 12px;"><strong>Smarter Prompts:</strong> Maya understands context better. Ask for "coffee shop entrepreneur vibe" and she gets it instantly.</li>
                 <li style="margin-bottom: 12px;"><strong>Faster Generation:</strong> Photos are ready in minutes, not hours. We've optimized everything.</li>
                 <li style="margin-bottom: 12px;"><strong>Feed Designer:</strong> Plan your entire Instagram grid before you post. See how photos work together.</li>
@@ -231,7 +231,7 @@ export function generateReengagementDay7(params: ReengagementSequenceParams = {}
   const text = `${firstName && firstName !== 'friend' ? `Hey ${firstName},\n\n` : ''}Remember when you first joined Studio? Maya was pretty good. But honestly? She's gotten SO much better since then.
 
 Here's what's new:
-- Video Clips: Create 20 professional video clips per month. Perfect for Reels. Game changer for engagement.
+- Video B-Roll: Turn your photos into animated video clips. Perfect for Reels. Game changer for engagement.
 - Smarter Prompts: Maya understands context better. Ask for "coffee shop entrepreneur vibe" and she gets it instantly.
 - Faster Generation: Photos are ready in minutes, not hours. We've optimized everything.
 - Feed Designer: Plan your entire Instagram grid before you post. See how photos work together.
@@ -293,7 +293,7 @@ export function generateReengagementDay14(params: ReengagementSequenceParams = {
               </p>
 
               <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6; color: #1c1917;">
-                If you're not a member anymore, here's a comeback offer: 50% off your first month. That's $39.50 instead of $79.
+                If you're not a member anymore, here's a comeback offer: 50% off your first month. That's $48.50 instead of $97.
               </p>
 
               <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6; color: #1c1917;">
@@ -306,7 +306,7 @@ export function generateReengagementDay14(params: ReengagementSequenceParams = {
 
               <ul style="margin: 0 0 24px; padding-left: 20px; color: #1c1917; font-size: 16px; line-height: 1.8;">
                 <li style="margin-bottom: 12px;"><strong>100+ professional photos per month</strong> - Never run out of content</li>
-                <li style="margin-bottom: 12px;"><strong>20 video clips</strong> - Perfect for Reels and Stories</li>
+                <li style="margin-bottom: 12px;"><strong>Video b-roll creation</strong> - Turn photos into animated clips for Reels and Stories</li>
                 <li style="margin-bottom: 12px;"><strong>Feed Designer</strong> - Plan your entire Instagram grid</li>
                 <li style="margin-bottom: 12px;"><strong>Maya's latest features</strong> - Smarter, faster, better results</li>
                 <li style="margin-bottom: 12px;"><strong>Pro Mode</strong> - Editorial-quality photos without model training</li>
@@ -352,13 +352,13 @@ export function generateReengagementDay14(params: ReengagementSequenceParams = {
 
   const text = `${firstName && firstName !== 'friend' ? `Hey ${firstName},\n\n` : ''}This is my last email. I don't want to bug you, but I also don't want you to miss out.
 
-If you're not a member anymore, here's a comeback offer: 50% off your first month. That's $39.50 instead of $79.
+If you're not a member anymore, here's a comeback offer: 50% off your first month. That's $48.50 instead of $97.
 
 Why? Because I believe in second chances. Because I know life gets busy. Because I want you to see how much Studio has improved.
 
 Here's what you're missing:
 - 100+ professional photos per month - Never run out of content
-- 20 video clips - Perfect for Reels and Stories
+- Video b-roll creation - Turn photos into animated clips for Reels and Stories
 - Feed Designer - Plan your entire Instagram grid
 - Maya's latest features - Smarter, faster, better results
 - Pro Mode - Editorial-quality photos without model training

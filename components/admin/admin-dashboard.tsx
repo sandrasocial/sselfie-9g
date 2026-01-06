@@ -33,11 +33,30 @@ interface AdminError {
   }>
 }
 
+interface CronJob {
+  jobName: string
+  schedule: string
+  path: string
+  lastRun: {
+    status: string
+    startedAt: string
+    finishedAt: string | null
+    durationMs: number | null
+    summary: Record<string, any>
+  } | null
+  runCount24h: number
+  lastError: {
+    message: string
+    createdAt: string
+  } | null
+}
+
 export function AdminDashboard({ userId, userName }: { userId: string; userName: string }) {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [todaysPriorities, setTodaysPriorities] = useState<MissionControlTask[]>([])
   const [suggestions, setSuggestions] = useState<AlexSuggestion[]>([])
   const [adminErrors, setAdminErrors] = useState<AdminError[]>([])
+  const [cronJobs, setCronJobs] = useState<CronJob[]>([])
   const [loading, setLoading] = useState(true)
   
   useEffect(() => {
@@ -45,6 +64,7 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
     fetchTodaysPriorities()
     fetchSuggestions()
     fetchAdminErrors()
+    fetchCronStatus()
   }, [])
   
   const fetchSuggestions = async () => {
@@ -160,6 +180,18 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
     }
   }
   
+  const fetchCronStatus = async () => {
+    try {
+      const response = await fetch('/api/admin/diagnostics/cron-status?since=24')
+      const data = await response.json()
+      if (data.success && data.jobs) {
+        setCronJobs(data.jobs)
+      }
+    } catch (error) {
+      console.error('Error fetching cron status:', error)
+    }
+  }
+  
   if (loading) {
     return (
       <div className="min-h-screen bg-stone-50">
@@ -253,6 +285,65 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
                     onActUpon={handleActUponSuggestion}
                     onActionClick={handleSuggestionAction}
                   />
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Cron & Email Status (24h) */}
+          {cronJobs.length > 0 && (
+            <div className="mt-8 sm:mt-12 mb-8 sm:mb-12">
+              <div className="flex items-center justify-between mb-4 sm:mb-6">
+                <h2 className="text-lg sm:text-xl font-['Times_New_Roman'] text-stone-950 tracking-[0.1em] uppercase">
+                  Cron & Email Status (24h)
+                </h2>
+                <Link
+                  href="/admin/diagnostics/cron"
+                  className="text-xs sm:text-sm tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-600 hover:text-stone-950 transition-colors"
+                >
+                  View Details →
+                </Link>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                {cronJobs.slice(0, 6).map((job) => (
+                  <div
+                    key={job.jobName}
+                    className="bg-white border border-stone-200 p-4 sm:p-6 rounded-none"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        {job.lastRun?.status === 'ok' ? (
+                          <span className="text-green-600">✅</span>
+                        ) : job.lastRun?.status === 'failed' ? (
+                          <span className="text-red-600">❌</span>
+                        ) : (
+                          <span className="text-stone-400">⏸</span>
+                        )}
+                        <p className="text-xs sm:text-sm font-medium text-stone-950 truncate">
+                          {job.jobName.replace(/-/g, ' ')}
+                        </p>
+                      </div>
+                      <span className="text-xs text-stone-500 bg-stone-100 px-2 py-0.5 flex-shrink-0">
+                        {job.runCount24h}
+                      </span>
+                    </div>
+                    {job.lastRun && (
+                      <p className="text-xs text-stone-600 mb-1">
+                        Last: {new Date(job.lastRun.startedAt).toLocaleTimeString()}
+                      </p>
+                    )}
+                    {job.lastError && (
+                      <p className="text-xs text-red-600 truncate mb-1">
+                        {job.lastError.message}
+                      </p>
+                    )}
+                    {job.lastRun?.summary && Object.keys(job.lastRun.summary).length > 0 && (
+                      <p className="text-[10px] text-stone-400">
+                        {job.lastRun.summary.campaignsProcessed && `${job.lastRun.summary.campaignsProcessed} campaigns`}
+                        {job.lastRun.summary.emailsSent && ` • ${job.lastRun.summary.emailsSent} sent`}
+                      </p>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
@@ -539,6 +630,18 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
               </p>
               <p className="text-[10px] sm:text-xs text-stone-400">
                 View, publish, and manage all prompt guides
+              </p>
+            </Link>
+            
+            <Link 
+              href="/admin/email-control"
+              className="bg-white border border-stone-200 p-4 sm:p-6 hover:border-stone-400 transition-all rounded-none min-h-[100px] sm:min-h-[120px] flex flex-col justify-between touch-manipulation"
+            >
+              <p className="text-xs sm:text-sm tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-950 mb-1">
+                Email Control
+              </p>
+              <p className="text-[10px] sm:text-xs text-stone-400">
+                Control email sending & test safely
               </p>
             </Link>
           </div>

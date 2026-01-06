@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { sendEmail } from "@/lib/email/send-email"
-import { generateLaunchEmail } from "@/lib/email/templates/launch-email"
+import { generateLaunchEmail } from "@/lib/email/templates/archived/launch-email-beta"
 import { createApiLogger } from "@/lib/api-logger"
 
 export async function POST(request: NextRequest) {

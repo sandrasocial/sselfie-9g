@@ -16,9 +16,10 @@ export function generateUpsellDay10Email(params: UpsellDay10Params): {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
   
   // Use tracked link if campaignId is available, otherwise fall back to regular link
-  const checkoutUrl = campaignId && campaignName
-    ? generateTrackedCheckoutLink(campaignId, campaignName, "upsell_day_10", "studio_membership")
-    : `${siteUrl}/studio?checkout=studio_membership`
+  // Freebie/blueprint subscribers don't have accounts - send to landing page, not /studio
+  const landingPageUrl = campaignId && campaignName
+    ? `${siteUrl}/?utm_source=email&utm_medium=email&utm_campaign=${campaignName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}&utm_content=cta_button&campaign_id=${campaignId}&product=studio_membership`
+    : `${siteUrl}/?utm_source=email&utm_medium=email&utm_content=cta_button&product=studio_membership`
 
   const html = `
 <!DOCTYPE html>
@@ -87,7 +88,7 @@ export function generateUpsellDay10Email(params: UpsellDay10Params): {
               </p>
               
               <ul style="margin: 0 0 24px 20px; padding: 0; color: #292524; font-size: 15px; font-weight: 300; line-height: 1.8;">
-                <li style="margin-bottom: 12px;">150+ professional photos every single month</li>
+                <li style="margin-bottom: 12px;">100+ professional photos every single month</li>
                 <li style="margin-bottom: 12px;">Full Academy with video courses and templates</li>
                 <li style="margin-bottom: 12px;">Feed Designer to plan your content</li>
                 <li style="margin-bottom: 12px;">Monthly drops with the newest strategies</li>
@@ -99,7 +100,7 @@ export function generateUpsellDay10Email(params: UpsellDay10Params): {
               </p>
               
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${checkoutUrl}" style="display: inline-block; background-color: #1c1917; color: #fafaf9; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase;">
+                <a href="${landingPageUrl}" style="display: inline-block; background-color: #1c1917; color: #fafaf9; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase;">
                   Join SSELFIE Studio
                 </a>
               </div>
@@ -153,7 +154,7 @@ That's what SSELFIE Studio is really about. It's not just photos-it's freedom. F
 - Maria, Studio Member
 
 With Studio membership, you get:
-- 150+ professional photos every single month
+- 100+ professional photos every single month
 - Full Academy with video courses and templates
 - Feed Designer to plan your content
 - Monthly drops with the newest strategies
@@ -161,7 +162,7 @@ With Studio membership, you get:
 
 This is your photography studio. Your creative team. Your content library. All powered by AI that actually understands YOUR brand.
 
-Join SSELFIE Studio: ${checkoutUrl}
+Join SSELFIE Studio: ${landingPageUrl}
 
 No pressure. Just wanted to make sure you know what's available when you're ready to take your content to the next level.
 

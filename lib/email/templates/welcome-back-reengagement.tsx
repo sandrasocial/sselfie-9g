@@ -73,7 +73,7 @@ export function generateWelcomeBackReengagementEmail(params: WelcomeBackReengage
               </p>
               
               <ul style="margin: 0 0 24px 20px; padding: 0; color: #292524; font-size: 15px; font-weight: 300; line-height: 1.8;">
-                <li style="margin-bottom: 12px;">150+ professional photos every month (not just a few)</li>
+                <li style="margin-bottom: 12px;">100+ professional photos every month (not just a few)</li>
                 <li style="margin-bottom: 12px;">Full Academy with video courses and templates</li>
                 <li style="margin-bottom: 12px;">Feed Designer to plan your content</li>
                 <li style="margin-bottom: 12px;">Monthly drops with the newest strategies</li>
@@ -142,7 +142,7 @@ It's been a while since we connected, and I wanted to reach out because somethin
 Remember when I first started this? I was just a woman with a phone, trying to figure out how to show up online without feeling awkward. Now, we're helping hundreds of women create professional photos that actually feel like them.
 
 Here's what's new:
-- 150+ professional photos every month (not just a few)
+- 100+ professional photos every month (not just a few)
 - Full Academy with video courses and templates
 - Feed Designer to plan your content
 - Monthly drops with the newest strategies

@@ -1,4 +1,4 @@
-import { generateLaunchEmail } from "@/lib/email/templates/launch-email"
+import { generateLaunchEmail } from "@/lib/email/templates/archived/launch-email-beta"
 
 export async function GET() {
   try {

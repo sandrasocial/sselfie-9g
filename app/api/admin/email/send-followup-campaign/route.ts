@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import { Resend } from "resend"
-import { generateLaunchFollowupEmail } from "@/lib/email/templates/launch-followup-email"
+import { generateLaunchFollowupEmail } from "@/lib/email/templates/archived/launch-followup-email-beta"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 
