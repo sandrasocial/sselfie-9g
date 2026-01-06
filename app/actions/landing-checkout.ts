@@ -33,7 +33,9 @@ export async function createLandingCheckoutSession(productId: string, promoCode?
   if (product.type === "one_time_session") {
     stripePriceId = process.env.STRIPE_ONE_TIME_SESSION_PRICE_ID
   } else if (product.type === "sselfie_studio_membership") {
-    stripePriceId = process.env.STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID
+    // CRITICAL: Use correct price ID for Creator Studio membership
+    // Fallback to correct price ID if env var is not set
+    stripePriceId = process.env.STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID || "price_1SmIRaEVJvME7vkwMo5vSLzf"
   }
 
   if (!stripePriceId) {

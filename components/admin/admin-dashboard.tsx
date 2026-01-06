@@ -462,6 +462,18 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
                 Test parameters
               </p>
             </Link>
+            
+            <Link 
+              href="/admin/prompt-guides"
+              className="bg-white border border-stone-200 p-4 sm:p-6 hover:border-stone-400 transition-all rounded-none min-h-[100px] sm:min-h-[120px] flex flex-col justify-between touch-manipulation"
+            >
+              <p className="text-xs sm:text-sm tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-950 mb-1">
+                Prompt Guides
+              </p>
+              <p className="text-[10px] sm:text-xs text-stone-400">
+                View, publish, and manage all prompt guides
+              </p>
+            </Link>
           </div>
         </div>
         

@@ -1812,13 +1812,15 @@ export default function MayaChatScreen({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           guideId: selectedGuideId,
-          promptText: concept.fullPrompt || concept.prompt || concept.description,
-          conceptTitle: concept.title || concept.label,
-          conceptDescription: concept.description,
+          // CRITICAL: Extract prompt text from all possible fields
+          // Concepts may have: fullPrompt, prompt, description, or prompt_text
+          promptText: concept.fullPrompt || concept.prompt || concept.prompt_text || concept.description || '',
+          conceptTitle: concept.title || concept.label || concept.concept_title || 'Untitled Concept',
+          conceptDescription: concept.description || concept.concept_description || concept.conceptDescription || '',
           category: concept.category || selectedGuideCategory || "General",
-          imageUrl: imageUrl || null,
-          replicatePredictionId: null,
-          generationSettings: {},
+          imageUrl: imageUrl || concept.image_url || concept.imageUrl || null,
+          replicatePredictionId: concept.replicate_prediction_id || concept.replicatePredictionId || null,
+          generationSettings: concept.generation_settings || concept.generationSettings || {},
         }),
       })
 
@@ -1836,9 +1838,11 @@ export default function MayaChatScreen({
       // Handle success (200-299)
       if (response.ok) {
         const data = await response.json()
+        // Use same fallback chain as API call to ensure consistent concept name display
+        const conceptName = concept.title || concept.label || concept.concept_title || 'Untitled Concept'
         toast({
           title: "Saved to guide! ✨",
-          description: `Added "${concept.title || concept.label}" ${imageUrl ? 'with image' : ''} to your guide`,
+          description: `Added "${conceptName}" ${imageUrl ? 'with image' : ''} to your guide`,
         })
         return // Exit early on success
       }
