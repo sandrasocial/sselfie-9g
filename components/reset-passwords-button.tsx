@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { resetAllUserPasswords } from "@/app/actions/reset-passwords"
+import LoadingSpinner from "@/components/sselfie/loading-spinner"
 
 export function ResetPasswordsButton() {
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle")
@@ -35,7 +36,14 @@ export function ResetPasswordsButton() {
   return (
     <div className="space-y-4">
       <Button onClick={handleReset} disabled={status === "loading"} size="lg" className="w-full">
-        {status === "loading" ? "Resetting Passwords..." : "Reset All Passwords"}
+        {status === "loading" ? (
+          <>
+            <LoadingSpinner size="sm" className="mr-2" />
+            Resetting Passwords...
+          </>
+        ) : (
+          "Reset All Passwords"
+        )}
       </Button>
 
       {message && (

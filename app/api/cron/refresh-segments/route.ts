@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { refreshAllSegments } from "@/lib/email/segmentation"
+import { createCronLogger } from "@/lib/cron-logger"
 
 /**
  * Cron Job: Refresh Email Segments
@@ -8,6 +9,9 @@ import { refreshAllSegments } from "@/lib/email/segmentation"
  * Runs at 3 AM UTC
  */
 export async function GET(request: Request) {
+  const cronLogger = createCronLogger("refresh-segments")
+  cronLogger.start()
+
   try {
     // Verify cron secret
     const authHeader = request.headers.get("authorization")
@@ -30,6 +34,11 @@ export async function GET(request: Request) {
 
     console.log(`[v0] [Refresh Segments] Refreshed ${results.length} segments, ${totalMembers} total members`)
 
+    cronLogger.success({
+      segmentsRefreshed: results.length,
+      totalMembers,
+    })
+
     return NextResponse.json({
       success: true,
       segmentsRefreshed: results.length,
@@ -38,6 +47,7 @@ export async function GET(request: Request) {
     })
   } catch (error: any) {
     console.error("[v0] [Refresh Segments] Error:", error)
+    cronLogger.error(error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }

@@ -110,10 +110,26 @@ export function FeedbackModal({ open, onOpenChange, userId, userEmail, userName 
 
     setIsSubmitting(true)
 
+    // Generate requestId for end-to-end tracing
+    const requestId = `req_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+
+    // Log user action started (client-side)
+    console.log("[v0] User action started", {
+      requestId,
+      userId,
+      action: "submit_feedback",
+      feedbackType: selectedType,
+      hasImages: uploadedImages.length > 0,
+      imageCount: uploadedImages.length,
+    })
+
     try {
       const response = await fetch("/api/feedback", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-Request-ID": requestId, // Pass requestId for tracing
+        },
         body: JSON.stringify({
           userId,
           userEmail,
@@ -213,12 +229,13 @@ export function FeedbackModal({ open, onOpenChange, userId, userEmail, userName 
                           alt={`Upload ${index + 1}`}
                           className="w-full h-32 object-cover rounded-lg border border-stone-200"
                         />
-                        <button
+                        <Button
                           onClick={() => removeImage(index)}
-                          className="absolute top-2 right-2 w-6 h-6 bg-stone-950 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                          variant="ghost"
+                          className="absolute top-2 right-2 w-6 h-6 p-0 bg-stone-950 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-stone-800"
                         >
                           <X className="w-4 h-4" strokeWidth={2} />
-                        </button>
+                        </Button>
                       </div>
                     ))}
                   </div>

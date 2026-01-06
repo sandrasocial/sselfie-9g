@@ -1,8 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { sendEmail } from "@/lib/email/send-email"
 import { generateLaunchEmail } from "@/lib/email/templates/launch-email"
+import { createApiLogger } from "@/lib/api-logger"
 
 export async function POST(request: NextRequest) {
+  const apiLogger = createApiLogger(request)
+  apiLogger.start()
+
   try {
     const { testEmail } = await request.json()
 
@@ -28,16 +32,20 @@ export async function POST(request: NextRequest) {
     })
 
     if (!result.success) {
+      apiLogger.error(new Error(result.error || "Email send failed"), 500)
       return NextResponse.json({ error: result.error }, { status: 500 })
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       messageId: result.messageId,
       message: `Test email sent to ${adminEmail}`,
     })
+    apiLogger.success(200, { messageId: result.messageId })
+    return response
   } catch (error) {
     console.error("[v0] Error sending test launch email:", error)
+    apiLogger.error(error, 500)
     return NextResponse.json({ error: "Failed to send test email" }, { status: 500 })
   }
 }

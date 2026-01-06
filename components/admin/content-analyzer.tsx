@@ -1,8 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { Upload, LinkIcon, Video, Loader2, CheckCircle, XCircle } from 'lucide-react'
+import { Upload, LinkIcon, Video, CheckCircle, XCircle } from 'lucide-react'
 import { useToast } from "@/hooks/use-toast"
+import { Button } from "@/components/ui/button"
+import LoadingSpinner from "@/components/sselfie/loading-spinner"
 
 interface ContentAnalyzerProps {
   onAnalyzed: (analysis: string) => void
@@ -302,7 +304,7 @@ Please recreate this content matching my brand voice, audience, and storytelling
       )}
 
       {/* Analyze Button */}
-      <button
+      <Button
         onClick={handleAnalyze}
         disabled={isAnalyzing || (inputType === "url" && !url) || (inputType === "upload" && !file)}
         className="w-full px-6 py-3 bg-stone-950 text-white rounded-lg text-sm uppercase font-medium hover:bg-stone-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -310,7 +312,7 @@ Please recreate this content matching my brand voice, audience, and storytelling
       >
         {isAnalyzing ? (
           <>
-            <Loader2 className="w-4 h-4 inline-block mr-2 animate-spin" />
+            <LoadingSpinner size="sm" className="mr-2" />
             Analyzing...
           </>
         ) : (
@@ -319,7 +321,7 @@ Please recreate this content matching my brand voice, audience, and storytelling
             Analyze Content
           </>
         )}
-      </button>
+      </Button>
 
       {/* Analysis Result Preview */}
       {analysis && (

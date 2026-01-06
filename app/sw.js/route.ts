@@ -35,8 +35,27 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(STATIC_CACHE).then((cache) => {
       console.log("[SW] Caching static assets")
-      return cache.addAll(STATIC_ASSETS).catch((err) => {
-        console.error("[SW] Failed to cache assets:", err)
+      // CRITICAL FIX: Cache each asset individually to prevent one failure from blocking all
+      // Promise.allSettled ensures service worker installs even if some assets fail
+      return Promise.allSettled(
+        STATIC_ASSETS.map((asset) => {
+          return cache.add(asset).catch((err) => {
+            // Log which asset failed but don't block installation
+            console.warn("[SW] Failed to cache asset:", asset, err.message || String(err))
+            throw err // Re-throw so allSettled tracks it as rejected
+          })
+        })
+      ).then((results) => {
+        const successful = results.filter((r) => r.status === "fulfilled").length;
+        const failed = results.filter((r) => r.status === "rejected").length;
+        const total = STATIC_ASSETS.length;
+        if (failed > 0) {
+          const msg = "[SW] Caching: " + successful + "/" + total + " succeeded, " + failed + " failed (service worker will still work)";
+          console.warn(msg);
+        } else {
+          const msg = "[SW] Caching: all " + successful + " assets cached successfully";
+          console.log(msg);
+        }
       })
     })
   )

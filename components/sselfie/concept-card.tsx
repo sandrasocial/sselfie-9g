@@ -11,15 +11,18 @@ import type { GalleryImage } from "@/lib/data/images"
 import BuyCreditsModal from "./buy-credits-modal"
 
 interface ConceptCardProps {
-  concept: ConceptData
+  concept: ConceptData & { id?: string; customSettings?: any }
   chatId?: number
   messageId?: string // Message ID for updating JSONB when image is generated
   onCreditsUpdate?: (newBalance: number) => void
   studioProMode?: boolean
-  baseImages?: string[] // Base images for Studio Pro mode (legacy - will be replaced)
+  baseImages?: string[] // Base images for Studio Pro mode (actively used)
   selfies?: string[] // Selfie images from upload module
   products?: string[] // Product images from upload module
   styleRefs?: string[] // Style reference images from upload module
+  isFirstCard?: boolean
+  sharedImages?: (string | null)[]
+  onSharedImagesChange?: (images: (string | null)[]) => void
   isAdmin?: boolean // Admin mode - enables save to guide functionality
   selectedGuideId?: number | null // Selected guide ID for saving
   adminUserId?: string // User ID for saving to guide (admin mode)
@@ -112,7 +115,7 @@ export default function ConceptCard({
       return [...baseImages]
     }
     // For non-first cards, use shared images if available
-    if (!isFirstCard && sharedImages.some(img => img !== null)) {
+    if (!isFirstCard && sharedImages && sharedImages.some((img: string | null) => img !== null)) {
       return [...sharedImages]
     }
     return [null, null, null] // Start with 3 empty slots for UI, but can expand
@@ -195,8 +198,8 @@ export default function ConceptCard({
   
   // Sync with shared images for non-first cards (unless user has overridden)
   useEffect(() => {
-    if (!isFirstCard && !hasOverriddenImages) {
-      const sharedHasImages = sharedImages.some(img => img !== null)
+    if (!isFirstCard && !hasOverriddenImages && sharedImages) {
+      const sharedHasImages = sharedImages.some((img: string | null) => img !== null)
       const hasImages = selectedImages.some(img => img !== null)
       const sharedChanged = JSON.stringify(prevSharedImagesRef.current) !== JSON.stringify(sharedImages)
       
@@ -404,13 +407,14 @@ export default function ConceptCard({
           setIsGenerated(true)
           setIsGenerating(false)
           
-          // CRITICAL FIX: Save generatedImageUrl to JSONB for persistence
+          // CRITICAL FIX: Save generatedImageUrl AND predictionId to JSONB for persistence
           if (messageId && data.imageUrl) {
             try {
               const updatedConcept = {
                 ...concept,
                 generatedImageUrl: data.imageUrl,
                 generationId: generationId,
+                predictionId: predictionId, // CRITICAL: Save predictionId so images can be found on refresh
               }
               
               await fetch('/api/maya/update-message', {
@@ -421,9 +425,9 @@ export default function ConceptCard({
                   messageId: messageId,
                   content: '', // Preserve existing content
                   conceptCards: [updatedConcept],
-                }),
-              })
-              console.log('[ConceptCard] ✅ Saved image to JSONB:', { messageId, conceptId: concept.id })
+                  }),
+                })
+              console.log('[ConceptCard] ✅ Saved image and predictionId to JSONB:', { messageId, conceptId: (concept as any).id, predictionId })
             } catch (jsonbError: any) {
               console.error('[ConceptCard] ❌ Error saving to JSONB:', jsonbError?.message || jsonbError)
               // Don't fail - image still shows in UI
@@ -539,11 +543,11 @@ export default function ConceptCard({
               styleRefs: finalStyleRefs.map(url => ({ url, type: 'style-reference' }))
             },
             resolution: "2K",
-            aspectRatio: concept.customSettings?.aspectRatio || "1:1"
+            aspectRatio: (concept as any).customSettings?.aspectRatio || "1:1"
           }),
         })
 
-        let data
+        let data: any
         try {
           const text = await response.text()
           try {
@@ -590,22 +594,23 @@ export default function ConceptCard({
           const checkStatus = async () => {
             try {
               const statusResponse = await fetch(
-                `/api/maya/check-studio-pro?predictionId=${data.predictionId}`
+                `/api/maya/check-studio-pro?predictionId=${(data as any).predictionId}`
               )
-              const status = await statusResponse.json()
+              const status: any = await statusResponse.json()
 
               if (status.status === 'succeeded') {
                 setGeneratedImageUrl(status.output)
                 setIsGenerated(true)
                 setIsGenerating(false)
                 
-                // CRITICAL FIX: Save generatedImageUrl to JSONB for persistence
+                // CRITICAL FIX: Save generatedImageUrl AND predictionId to JSONB for persistence
                 if (messageId && status.output) {
                   try {
                     const updatedConcept = {
                       ...concept,
                       generatedImageUrl: status.output,
                       generationId: generationId,
+                      predictionId: predictionId, // CRITICAL: Save predictionId so images can be found on refresh
                     }
                     
                     await fetch('/api/maya/update-message', {
@@ -618,7 +623,7 @@ export default function ConceptCard({
                         conceptCards: [updatedConcept],
                       }),
                     })
-                    console.log('[ConceptCard] ✅ Saved image to JSONB:', { messageId, conceptId: concept.id })
+                    console.log('[ConceptCard] ✅ Saved image and predictionId to JSONB:', { messageId, conceptId: (concept as any).id, predictionId })
                   } catch (jsonbError: any) {
                     console.error('[ConceptCard] ❌ Error saving to JSONB:', jsonbError?.message || jsonbError)
                     // Don't fail - image still shows in UI
@@ -687,10 +692,10 @@ export default function ConceptCard({
       // Merge order: concept defaults first, then user settings override
       const finalSettings = customSettings
         ? {
-            ...(concept.customSettings || {}), // Concept defaults first
+            ...((concept as any).customSettings || {}), // Concept defaults first
             ...customSettings, // User's manual settings override concept defaults ✅
           }
-        : concept.customSettings
+        : (concept as any).customSettings
 
       // CRITICAL: Get Enhanced Authenticity toggle from localStorage
       const enhancedAuthenticity = localStorage.getItem('mayaEnhancedAuthenticity') === 'true'
@@ -1129,7 +1134,7 @@ export default function ConceptCard({
 
   const pollBatches = async (batches: any[]) => {
     console.log(`[v0] 📊 [Legacy] Redirecting to new pollPredictions system`)
-    await pollPredictions(batches, userId)
+    await pollPredictions(batches, userId || undefined)
   }
 
   return (

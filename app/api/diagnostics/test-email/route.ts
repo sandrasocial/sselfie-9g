@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server"
 import { sendEmail } from "@/lib/email/send-email"
 import { generateWelcomeEmail } from "@/lib/email/templates/welcome-email"
+import { createApiLogger } from "@/lib/api-logger"
 
-export async function GET() {
+export async function GET(request: Request) {
+  const apiLogger = createApiLogger(request)
+  apiLogger.start()
+
   try {
     console.log("[v0] Testing email sending...")
 
@@ -39,14 +43,17 @@ export async function GET() {
 
     console.log("[v0] Email sent successfully:", result)
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       message: "Test email sent successfully",
       recipient: process.env.ADMIN_EMAIL || "test@example.com",
       messageId: result.id,
     })
+    apiLogger.success(200, { messageId: result.id })
+    return response
   } catch (error: any) {
     console.error("[v0] Email test failed:", error)
+    apiLogger.error(error, 500)
     return NextResponse.json(
       {
         success: false,

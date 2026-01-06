@@ -2,12 +2,16 @@ import { type NextRequest, NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import { sendEmail } from "@/lib/email/send-email"
 import { generateFeedbackAdminNotification } from "@/lib/email/templates/feedback-admin-notification"
+import { createApiLogger } from "@/lib/api-logger"
 
 const sql = neon(process.env.DATABASE_URL!)
 
 const ADMIN_EMAILS = ["ssa@ssasocial.com", "hello@sselfie.ai"]
 
 export async function POST(request: NextRequest) {
+  const apiLogger = createApiLogger(request)
+  apiLogger.start()
+
   try {
     const body = await request.json()
     const { userId, userEmail, userName, type, subject, message, images } = body
@@ -54,18 +58,24 @@ export async function POST(request: NextRequest) {
       // Don't fail the request if email fails
     }
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       feedbackId: result[0].id,
       message: "Thank you for your feedback!",
     })
+    apiLogger.success(200, { feedbackId: result[0].id })
+    return response
   } catch (error) {
     console.error("[v0] Error submitting feedback:", error)
+    apiLogger.error(error, 500)
     return NextResponse.json({ error: "Failed to submit feedback" }, { status: 500 })
   }
 }
 
 export async function GET(request: NextRequest) {
+  const apiLogger = createApiLogger(request)
+  apiLogger.start()
+
   try {
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get("userId")
@@ -83,9 +93,12 @@ export async function GET(request: NextRequest) {
       LIMIT 20
     `
 
-    return NextResponse.json({ feedback })
+    const response = NextResponse.json({ feedback })
+    apiLogger.success(200, { feedbackCount: feedback.length })
+    return response
   } catch (error) {
     console.error("[v0] Error fetching feedback:", error)
+    apiLogger.error(error, 500)
     return NextResponse.json({ error: "Failed to fetch feedback" }, { status: 500 })
   }
 }

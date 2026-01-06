@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { runScheduledCampaigns } from "@/lib/email/run-scheduled-campaigns"
+import { createCronLogger } from "@/lib/cron-logger"
 
 /**
  * Cron Job: Send Scheduled Campaigns
@@ -10,6 +11,9 @@ import { runScheduledCampaigns } from "@/lib/email/run-scheduled-campaigns"
  * Schedule: every 15 minutes (cron pattern: star-slash-15 star star star star)
  */
 export async function GET(request: Request) {
+  const cronLogger = createCronLogger("send-scheduled-campaigns")
+  cronLogger.start()
+
   try {
     // Verify cron secret
     const authHeader = request.headers.get("authorization")
@@ -30,6 +34,10 @@ export async function GET(request: Request) {
 
     console.log(`[v0] [Scheduled Campaigns] Completed: ${result.length} campaign(s) processed`)
 
+    cronLogger.success({
+      campaignsProcessed: result.length,
+    })
+
     return NextResponse.json({
       success: true,
       campaignsProcessed: result.length,
@@ -37,6 +45,7 @@ export async function GET(request: Request) {
     })
   } catch (error: any) {
     console.error("[v0] [Scheduled Campaigns] Error:", error)
+    cronLogger.error(error)
     return NextResponse.json(
       { 
         success: false, 

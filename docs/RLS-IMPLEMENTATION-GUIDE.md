@@ -27,6 +27,17 @@ The Neon serverless driver (`@neondatabase/serverless`) **does not fully support
 - Session variables (`SET LOCAL app.current_user_id`) **cannot be set** with the serverless driver
 - Security currently relies on **application-level authorization** in API routes
 
+### Current RLS Enforcement Status
+
+**Status:** RLS policies are **defined** but **not actively enforced** due to Neon serverless driver limitations.
+
+**What this means:**
+- Policies exist in database as a safety net
+- Application-level filtering is primary security mechanism
+- RLS would activate if session variables could be set (future enhancement)
+
+**Action Required:** None - current approach is correct and secure. All API routes explicitly filter by `user_id` for authorization.
+
 ## Security Approach
 
 ### Phase 1: Application-Level Authorization (CURRENT)

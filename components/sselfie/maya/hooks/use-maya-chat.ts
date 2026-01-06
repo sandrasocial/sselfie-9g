@@ -112,7 +112,7 @@ export function useMayaChat({
   // Chat state
   const [chatId, setChatId] = useState<number | null>(initialChatId || null)
   const [chatTitle, setChatTitle] = useState<string>("Chat with Maya")
-  const [isLoadingChat, setIsLoadingChat] = useState(true)
+  const [isLoadingChat, setIsLoadingChat] = useState(false)
   const [hasUsedMayaBefore, setHasUsedMayaBefore] = useState<boolean>(false)
 
   // Refs for tracking state
@@ -122,6 +122,13 @@ export function useMayaChat({
   const hasClearedStateRef = useRef(false)
   // CRITICAL FIX: Track saved feed cards to prevent duplicate saves
   const savedFeedCardMessagesRef = useRef(new Set<string>())
+  // CRITICAL FIX: Track history checks to prevent infinite loops
+  const checkedHistoryForChatTypeRef = useRef<string | null>(null)
+  const isCheckingHistoryRef = useRef(false)
+  // CRITICAL FIX: Track loading start time for timeout detection
+  const loadingStartTimeRef = useRef<number | null>(null)
+  // CRITICAL FIX: Store pending messages to set after useChat resets
+  const pendingMessagesRef = useRef<any[] | null>(null)
 
   // Helper function to get the correct chatType based on activeTab
   // Feed tab uses "feed-planner", otherwise use getModeString() result
@@ -174,7 +181,7 @@ export function useMayaChat({
       console.log("[useMayaChat] 🔍 AI SDK onFinish called:", {
         messageId: message.id,
         role: message.role,
-        hasContent: !!message.content,
+        hasContent: !!(message as any).content,
         hasParts: !!message.parts,
         partsCount: message.parts?.length || 0,
         partsTypes: message.parts?.map((p: any) => p.type) || [],
@@ -186,8 +193,9 @@ export function useMayaChat({
       if (message.role === "assistant" && chatId) {
         // Extract text content from message
         let textContent = ""
-        if (message.content && typeof message.content === "string") {
-          textContent = message.content
+        const messageAny = message as any
+        if (messageAny.content && typeof messageAny.content === "string") {
+          textContent = messageAny.content
         } else if (message.parts && Array.isArray(message.parts)) {
           const textParts = message.parts.filter((p: any) => p && p.type === "text")
           textContent = textParts.map((p: any) => p.text || "").join(" ")
@@ -299,7 +307,7 @@ export function useMayaChat({
 
   // Load chat function
   const loadChat = useCallback(
-    async (specificChatId?: number, explicitChatType?: string) => {
+    async (specificChatId?: number, explicitChatType?: string): Promise<void> => {
       try {
         // CRITICAL FIX: Set loading state BEFORE any state changes
         // This ensures isEmpty check in UI sees isLoadingChat=true
@@ -334,7 +342,7 @@ export function useMayaChat({
               saveChatIdToStorage(null, chatType)
               loadChatRetryRef.current = true // Prevent infinite recursion
               // Create new chat by calling loadChat again without specificChatId
-              const result = await loadChat(undefined, explicitChatType)
+              const result: void = await loadChat(undefined, explicitChatType)
               loadChatRetryRef.current = false // Reset after retry
               return result
             } else {
@@ -347,6 +355,9 @@ export function useMayaChat({
               setChatId(null)
               setChatTitle("Chat with Maya")
               setMessages([])
+              // CRITICAL FIX: Mark as loaded even when no chat exists to prevent infinite loop
+              hasLoadedChatRef.current = true
+              console.log("[useMayaChat] ✅ No chat found (404), marked as loaded to prevent infinite loop")
               return
             }
           }
@@ -364,6 +375,9 @@ export function useMayaChat({
         } catch (jsonError) {
           console.error("[useMayaChat] Error parsing chat response JSON")
           setIsLoadingChat(false)
+          // CRITICAL FIX: Mark as loaded even on parse error to prevent infinite loop
+          hasLoadedChatRef.current = true
+          console.log("[useMayaChat] ✅ JSON parse error, marked as loaded to prevent infinite loop")
           return
         }
 
@@ -371,11 +385,16 @@ export function useMayaChat({
         if (!data || typeof data !== "object") {
           console.error("[useMayaChat] Invalid chat data received - data is not an object")
           setIsLoadingChat(false)
+          // CRITICAL FIX: Mark as loaded even on invalid data to prevent infinite loop
+          hasLoadedChatRef.current = true
+          console.log("[useMayaChat] ✅ Invalid data, marked as loaded to prevent infinite loop")
           return
         }
 
         console.log("[useMayaChat] Loaded chat ID:", data.chatId, "Messages:", data.messages?.length, "Title:", data.chatTitle)
 
+        // CRITICAL FIX: Set chatId FIRST before setting messages
+        // This ensures useChat resets BEFORE we set messages, preventing them from being cleared
         if (data.chatId) {
           setChatId(data.chatId)
         }
@@ -469,9 +488,11 @@ export function useMayaChat({
             return
           }
 
-          // CRITICAL FIX: Set sorted and deduplicated messages
-          // This ensures messages are in correct chronological order and have no duplicates
-          setMessages(uniqueMessages)
+          // CRITICAL FIX: Store messages in ref to set after useChat resets
+          // useChat resets when chatId changes (via chatSessionId), clearing messages
+          // We store messages here, then set them in useEffect after useChat resets
+          console.log("[useMayaChat] 📝 Storing messages in ref:", uniqueMessages.length, "messages (will set after useChat reset)")
+          pendingMessagesRef.current = uniqueMessages
           
           // CRITICAL DEBUG: Check if loaded messages have feed cards
           const loadedFeedCardMessages = data.messages.filter((m: any) => 
@@ -479,6 +500,7 @@ export function useMayaChat({
           )
           console.log("[useMayaChat] 🔍 LOADED MESSAGES from DB:", {
             totalMessages: data.messages.length,
+            uniqueMessagesCount: uniqueMessages.length,
             messagesWithFeedCards: loadedFeedCardMessages.length,
             feedCardMessageIds: loadedFeedCardMessages.map((m: any) => ({ 
               id: m.id, 
@@ -487,13 +509,16 @@ export function useMayaChat({
             })),
           })
         } else {
-          setMessages([])
+          // No messages - store empty array in ref
+          pendingMessagesRef.current = []
         }
 
         setIsLoadingChat(false)
         // CRITICAL: Mark chat as loaded ONLY after successful load
         // This ensures hasLoadedChatRef accurately reflects whether chat is actually loaded
         hasLoadedChatRef.current = true
+        // Reset loading timeout tracker
+        loadingStartTimeRef.current = null
         console.log("[useMayaChat] ✅ Chat loaded successfully, hasLoadedChatRef set to true")
       } catch (error) {
         console.error("[useMayaChat] Error loading chat:", error)
@@ -510,32 +535,89 @@ export function useMayaChat({
         setIsLoadingChat(false)
         // CRITICAL: Reset hasLoadedChatRef on error so we can retry
         hasLoadedChatRef.current = false
+        // Reset loading timeout tracker
+        loadingStartTimeRef.current = null
+        // Clear pending messages on error
+        pendingMessagesRef.current = null
         console.log("[useMayaChat] ❌ Chat load failed, hasLoadedChatRef reset to false")
       }
     },
     [getChatType, activeTab, proMode, setMessages],
   )
 
+  // Ref to track the last checked combination to prevent re-checking
+  const lastCheckedKeyRef = useRef<string | null>(null)
+  // Ref to track previous dependencies to detect unnecessary re-runs
+  const prevDepsRef = useRef<{ userId: string | undefined; proMode: boolean; activeTab: string | undefined } | null>(null)
+
   // Check if user has chat history
   useEffect(() => {
+    // Track current dependencies
+    const currentDeps = {
+      userId: user?.id,
+      proMode,
+      activeTab,
+    }
+
+    // Check if dependencies actually changed
+    const prevDeps = prevDepsRef.current
+    if (prevDeps && 
+        prevDeps.userId === currentDeps.userId &&
+        prevDeps.proMode === currentDeps.proMode &&
+        prevDeps.activeTab === currentDeps.activeTab) {
+      console.log("[useMayaChat] ⏭️ SKIP - Dependencies unchanged:", currentDeps)
+      return
+    }
+
+    // Update prev deps
+    prevDepsRef.current = currentDeps
+    // CRITICAL FIX: Check guards at useEffect level BEFORE defining async function
+    // This prevents multiple async functions from being created
+    if (typeof window === "undefined" || !user?.id) {
+      console.log("[useMayaChat] ⏭️ SKIP - No user or not in browser")
+      setHasUsedMayaBefore(false)
+      return
+    }
+
+    // Calculate chat type directly from activeTab and proMode to avoid function reference issues
+    const chatType = activeTab === "feed" ? "feed-planner" : (proMode ? "pro" : "maya")
+
+    // Validate chatType before making request
+    if (!chatType || typeof chatType !== "string") {
+      console.warn("[useMayaChat] Invalid chatType, skipping history check:", chatType)
+      setHasUsedMayaBefore(false)
+      return
+    }
+
+    // CRITICAL FIX: Create a unique key for this check combination
+    // Use String() to ensure stable string representation
+    const userId = String(user.id)
+    const checkKey = `${userId}-${chatType}`
+    
+    // CRITICAL FIX: Check if we've already checked this exact combination
+    // Do this at useEffect level to prevent async function from being created
+    const lastChecked = lastCheckedKeyRef.current
+    if (lastChecked === checkKey) {
+      console.log("[useMayaChat] ⏭️ SKIP - Already checked this combination:", checkKey, "lastChecked:", lastChecked)
+      return
+    }
+
+    // CRITICAL FIX: Prevent infinite loop - check refs FIRST before any async operations
+    if (isCheckingHistoryRef.current) {
+      console.log("[useMayaChat] ⏭️ SKIP - Request in flight for chatType:", chatType, "checkKey:", checkKey)
+      return
+    }
+
+    // CRITICAL: Set refs IMMEDIATELY (synchronously) before any async operations
+    // This prevents race conditions where multiple calls happen before the first completes
+    isCheckingHistoryRef.current = true
+    checkedHistoryForChatTypeRef.current = chatType
+    lastCheckedKeyRef.current = checkKey // Mark this combination as checked
+    console.log("[useMayaChat] 🔍 STARTING history check for chatType:", chatType, "user?.id:", user?.id, "proMode:", proMode, "activeTab:", activeTab, "checkKey:", checkKey, "lastCheckedKeyRef was:", lastChecked)
+
     async function checkChatHistory() {
-      // Ensure we're in the browser and user is available
-      if (typeof window === "undefined" || !user) {
-        setHasUsedMayaBefore(false)
-        return
-      }
 
       try {
-        // Calculate chat type directly from activeTab and proMode to avoid function reference issues
-        const chatType = activeTab === "feed" ? "feed-planner" : (proMode ? "pro" : "maya")
-
-        // Validate chatType before making request
-        if (!chatType || typeof chatType !== "string") {
-          console.warn("[useMayaChat] Invalid chatType, skipping history check:", chatType)
-          setHasUsedMayaBefore(false)
-          return
-        }
-
         const response = await fetch(`/api/maya/chats?chatType=${encodeURIComponent(chatType)}`, {
           credentials: "include",
         })
@@ -543,7 +625,15 @@ export function useMayaChat({
         if (response.ok) {
           const data = await response.json()
           const hasChats = data.chats && Array.isArray(data.chats) && data.chats.length > 0
-          setHasUsedMayaBefore(hasChats)
+          // CRITICAL FIX: Only update state if it actually changed to prevent unnecessary re-renders
+          setHasUsedMayaBefore((prev) => {
+            if (prev === hasChats) {
+              console.log("[useMayaChat] ⏭️ hasUsedMayaBefore unchanged:", hasChats, "- skipping state update")
+              return prev
+            }
+            console.log("[useMayaChat] ✅ Updating hasUsedMayaBefore:", prev, "→", hasChats)
+            return hasChats
+          })
           console.log("[useMayaChat] Chat history check:", {
             hasChats,
             chatCount: data.chats?.length || 0,
@@ -552,7 +642,10 @@ export function useMayaChat({
           })
         } else {
           console.warn("[useMayaChat] Chat history check failed with status:", response.status)
-          setHasUsedMayaBefore(false)
+          setHasUsedMayaBefore((prev) => {
+            if (prev === false) return prev // Already false, no need to update
+            return false
+          })
         }
       } catch (error) {
         // More specific error logging
@@ -561,12 +654,30 @@ export function useMayaChat({
         } else {
           console.error("[useMayaChat] Error checking chat history:", error)
         }
-        setHasUsedMayaBefore(false)
+        setHasUsedMayaBefore((prev) => {
+          if (prev === false) return prev // Already false, no need to update
+          return false
+        })
+      } finally {
+        // Reset checking flag after request completes
+        isCheckingHistoryRef.current = false
+        console.log("[useMayaChat] ✅ History check complete for chatType:", chatType, "checkKey:", checkKey)
       }
     }
 
     checkChatHistory()
-  }, [user, proMode, activeTab])
+
+    // Cleanup function - no action needed, refs persist across renders
+    // This is intentional - we want to remember what we checked to prevent re-checking
+    return () => {
+      // Component unmounted - but don't reset refs
+      // This allows us to skip re-checking if component remounts with same props
+    }
+    // CRITICAL FIX: Use stable dependencies - user.id instead of user object
+    // NOTE: hasUsedMayaBefore is NOT in dependencies to prevent infinite loops
+    // The guard (lastCheckedKeyRef) prevents re-checking the same combination
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, proMode, activeTab])
 
   // Load chat when user or mode changes
   useEffect(() => {
@@ -610,6 +721,34 @@ export function useMayaChat({
     // Reset cleared state ref when user becomes available
     hasClearedStateRef.current = false
 
+    // CRITICAL FIX: Add timeout to prevent stuck loading states
+    // If loading takes more than 10 seconds, reset and retry
+    const LOAD_TIMEOUT = 10000 // 10 seconds
+    
+    if (isLoadingChat && !hasLoadedChatRef.current) {
+      // Track when loading started
+      if (!loadingStartTimeRef.current) {
+        loadingStartTimeRef.current = Date.now()
+        console.log("[useMayaChat] ⏳ Loading started, will timeout after", LOAD_TIMEOUT, "ms")
+      } else {
+        // Check if timeout exceeded
+        const elapsed = Date.now() - loadingStartTimeRef.current
+        if (elapsed > LOAD_TIMEOUT) {
+          console.warn("[useMayaChat] ⚠️ Load timeout exceeded (", elapsed, "ms), resetting state")
+          setIsLoadingChat(false)
+          hasLoadedChatRef.current = false
+          loadingStartTimeRef.current = null
+          // Continue to load logic below
+        } else {
+          console.log("[useMayaChat] ⏭️ SKIP - Already loading chat (", elapsed, "ms elapsed), waiting for current load to complete")
+          return
+        }
+      }
+    } else {
+      // Reset timeout tracker when not loading
+      loadingStartTimeRef.current = null
+    }
+
     console.log("[useMayaChat] 🚀 Loading chat for user:", user?.email || user?.id || "unknown", "proMode:", proMode, "activeTab:", activeTab, "hasLoadedChatRef:", hasLoadedChatRef.current)
 
     // Check if mode/chatType changed (using chatType instead of mode to handle Feed tab)
@@ -620,27 +759,33 @@ export function useMayaChat({
     console.log("[useMayaChat] Current chatType:", currentChatType, "lastModeRef:", lastModeRef.current, "chatTypeChanged:", chatTypeChanged, "chatId:", chatId, "messagesCount:", messages.length)
 
     if (chatTypeChanged) {
-      console.log("[useMayaChat] ChatType changed from", lastModeRef.current, "to", currentChatType, "- clearing messages and resetting chat load state")
+      console.log("[useMayaChat] ChatType changed from", lastModeRef.current, "to", currentChatType, "- loading new chat for this type")
       
-      // CRITICAL DEBUG: Log messages state before clearing
+      // CRITICAL FIX: Don't clear messages immediately - show loading state instead
+      // Messages will be replaced when new chat loads, preventing blank screen
+      // Set loading state to show loading indicator during transition
+      setIsLoadingChat(true)
+      
+      // CRITICAL DEBUG: Log messages state before transition
       const feedCardMessages = messages.filter((m: any) => 
         m.role === "assistant" && m.parts?.some((p: any) => p.type === "tool-generateFeed")
       )
-      console.log("[useMayaChat] 🔍 TAB SWITCH: Messages before clear:", {
-        totalMessages: messages.length,
+      console.log("[useMayaChat] 🔍 TAB SWITCH: Transitioning from", lastModeRef.current, "to", currentChatType, {
+        currentMessages: messages.length,
         messagesWithFeedCards: feedCardMessages.length,
-        feedCardMessageIds: feedCardMessages.map((m: any) => ({ id: m.id, parts: m.parts?.map((p: any) => p.type) })),
       })
       
-      // CRITICAL: Clear messages immediately when chatType changes to prevent showing wrong messages
-      setMessages([])
+      // Clear tracking refs but keep messages visible until new ones load
       savedMessageIds.current.clear()
       savedFeedCardMessagesRef.current.clear() // Clear feed card tracking
-      setChatId(null)
+      setChatId(null) // Will be set when new chat loads
       setChatTitle("Chat with Maya")
       hasLoadedChatRef.current = false
+      // CRITICAL FIX: Reset history check refs when chatType changes so we check history for new type
+      checkedHistoryForChatTypeRef.current = null
+      lastCheckedKeyRef.current = null // Reset so we can check the new chatType
       
-      console.log("[useMayaChat] 🔍 TAB SWITCH: Messages cleared, will reload from DB")
+      console.log("[useMayaChat] 🔍 TAB SWITCH: Loading new chat for type:", currentChatType)
     }
 
     lastModeRef.current = currentChatType
@@ -649,20 +794,27 @@ export function useMayaChat({
     // We need to load if:
     // 1. hasLoadedChatRef is false (first time loading)
     // 2. chatType changed (switched tabs, need to load new chatType)
-    // 3. hasLoadedChatRef is true but we have no chatId and no messages (chat never actually loaded)
-    // 4. hasLoadedChatRef is true but chatId doesn't match saved chatId for this chatType (wrong chat loaded)
+    // 3. hasLoadedChatRef is true but chatId doesn't match saved chatId for this chatType (wrong chat loaded)
     const savedChatIdForThisType = loadChatIdFromStorage(currentChatType)
     const hasWrongChatId = chatId !== null && savedChatIdForThisType !== null && chatId !== savedChatIdForThisType
     
-    // CRITICAL FIX: Prevent infinite loop by checking if we're already loading
-    // BUT: Allow loading if hasLoadedChatRef is false (initial state) even if isLoadingChat is true
-    // This is because isLoadingChat starts as true, but we still need to trigger the first load
-    const isCurrentlyLoading = isLoadingChat && hasLoadedChatRef.current
-    
-    // CRITICAL FIX: Only consider needsLoad if we're not already loading
-    // This prevents the infinite loop where the effect keeps triggering loadChat
-    // BUT: Allow initial load even if isLoadingChat is true (it starts as true)
-    const needsLoad = !isCurrentlyLoading && (!hasLoadedChatRef.current || chatTypeChanged || (!chatId && messages.length === 0) || hasWrongChatId)
+    // CRITICAL FIX: Simplified loading condition to prevent infinite loops
+    // Only load if:
+    // - Not currently loading AND
+    // - (Chat not loaded OR chatType changed OR wrong chat loaded)
+    const needsLoad = 
+      !isLoadingChat && // Not currently loading
+      (!hasLoadedChatRef.current || chatTypeChanged || hasWrongChatId) // Need to load
+
+    // CRITICAL DEBUG: Log the condition breakdown
+    console.log("[useMayaChat] 🔍 Loading condition check:", {
+      isLoadingChat,
+      hasLoadedChatRef: hasLoadedChatRef.current,
+      chatTypeChanged,
+      hasWrongChatId,
+      needsLoad,
+      savedChatIdForThisType,
+    })
 
     if (needsLoad) {
       if (!hasLoadedChatRef.current) {
@@ -683,7 +835,7 @@ export function useMayaChat({
       if (savedChatIdForThisType) {
         console.log("[useMayaChat] Found saved chatId in localStorage for", currentChatType, ":", savedChatIdForThisType)
         // Load specific chat - pass chatType explicitly for consistency (though not strictly needed when chatId is provided)
-        loadChat(savedChatIdForThisType, currentChatType).catch((error) => {
+        loadChat(savedChatIdForThisType, currentChatType).catch((error: unknown) => {
           console.error("[useMayaChat] ❌ Error loading saved chat:", error)
           setIsLoadingChat(false)
           hasLoadedChatRef.current = false // Reset so we can retry
@@ -694,7 +846,7 @@ export function useMayaChat({
         // CRITICAL: Pass currentChatType explicitly to avoid closure issues
         // This ensures we load the correct chatType even if activeTab changes during the call
         console.log("[useMayaChat] No saved chatId for", currentChatType, "- loading most recent chat for this type")
-        loadChat(undefined, currentChatType).catch((error) => {
+        loadChat(undefined, currentChatType).catch((error: unknown) => {
           console.error("[useMayaChat] ❌ Error loading most recent chat:", error)
           setIsLoadingChat(false)
           hasLoadedChatRef.current = false // Reset so we can retry
@@ -708,6 +860,17 @@ export function useMayaChat({
     // loadChat is NOT in dependencies to avoid infinite loops, but we pass currentChatType explicitly
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, proMode, activeTab])
+
+  // CRITICAL FIX: Set messages after useChat resets when chatId changes
+  // useChat resets when chatSessionId (based on chatId) changes, clearing messages
+  // We store messages in pendingMessagesRef during loadChat, then set them here after useChat resets
+  useEffect(() => {
+    if (pendingMessagesRef.current && chatId !== null) {
+      console.log("[useMayaChat] 📝 Setting pending messages after useChat reset:", pendingMessagesRef.current.length)
+      setMessages(pendingMessagesRef.current)
+      pendingMessagesRef.current = null // Clear after setting
+    }
+  }, [chatId, setMessages])
 
   // Save chatId to localStorage when it changes (chat-type-specific)
   // BUT: Skip saving if we're in the middle of creating a new chat (to prevent reload)
@@ -787,23 +950,28 @@ export function useMayaChat({
       const chatType = getChatType()
       console.log("[useMayaChat] Selecting chat:", selectedChatId, "for chatType:", chatType)
       
-      // Save to localStorage first
-      saveChatIdToStorage(selectedChatId, chatType)
+      // CRITICAL FIX: Clear messages and set loading state FIRST
+      // This prevents welcome screen from showing during load
+      setMessages([])
+      setIsLoadingChat(true)
       
-      // Set ref to true FIRST to prevent useEffect from interfering
-      // This prevents the useEffect from loading the old chatId from storage
-      hasLoadedChatRef.current = true
+      // CRITICAL FIX: Set ref to false to allow loadChat to manage it
+      // This ensures loadChat sets it to true only after successful load
+      hasLoadedChatRef.current = false
+      
+      // Save to localStorage
+      saveChatIdToStorage(selectedChatId, chatType)
       
       // Update title
       if (selectedChatTitle) {
         setChatTitle(selectedChatTitle)
       }
       
-      // Load the chat (this will set chatId and hasLoadedChatRef appropriately)
+      // Load the chat (will set hasLoadedChatRef.current = true on success)
       // Pass chatType explicitly to ensure correct type is used
       await loadChat(selectedChatId, chatType)
     },
-    [loadChat, getChatType, saveChatIdToStorage],
+    [loadChat, getChatType, saveChatIdToStorage, setMessages, setIsLoadingChat],
   )
 
   // Handle delete chat

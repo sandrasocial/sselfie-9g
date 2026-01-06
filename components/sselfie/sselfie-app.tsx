@@ -17,7 +17,7 @@ import LoadingScreen from "./loading-screen"
 import OnboardingWizard from "./onboarding-wizard"
 import MayaChatScreen from "./maya-chat-screen"
 import GalleryScreen from "./gallery-screen"
-// B-Roll functionality moved to Maya Videos tab
+// Note: B-Roll functionality is accessible via Maya Videos tab (b-roll-screen.tsx kept for reference)
 import AcademyScreen from "./academy-screen"
 import AccountScreen from "./account-screen"
 import { FeedViewScreen as FeedPlannerScreen } from "../feed-planner" // Using FeedViewScreen (backward compatible export)

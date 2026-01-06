@@ -46,7 +46,7 @@ import MayaVideosTab from "./maya/maya-videos-tab"
 import MayaPromptsTab from "./maya/maya-prompts-tab"
 import MayaTrainingTab from "./maya/maya-training-tab"
 import { useRouter } from "next/navigation"
-// SessionUser type removed - not exported from next-auth
+// Note: User type comes from Supabase auth (not next-auth)
 import { PromptSuggestionCard as NewPromptSuggestionCard } from "./prompt-suggestion-card"
 import type { PromptSuggestion } from "@/lib/maya/prompt-generator"
 import ImageUploadFlow from "./pro-mode/ImageUploadFlow"
@@ -249,6 +249,8 @@ export default function MayaChatScreen({
   const [isGeneratingPro, setIsGeneratingPro] = useState(false)
   const promptGenerationTriggeredRef = useRef<Set<string>>(new Set()) // Track messages that have already triggered prompt generation
   // processedFeedMessagesRef moved to MayaFeedTab component (feed trigger detection is now handled in FeedTab)
+  // CRITICAL FIX: Track processed concept messages to prevent duplication on page refresh
+  const processedConceptMessagesRef = useRef<Set<string>>(new Set())
   
   // Pro features onboarding state
   const [showStudioProOnboarding, setShowStudioProOnboarding] = useState(false)
@@ -317,7 +319,13 @@ export default function MayaChatScreen({
     console.log("[FEED] Feed creation completed via FeedTab:", strategy?.posts?.length || 0, "posts")
   }, [])
 
-
+  // CRITICAL FIX: Clear processed concept messages ref when chatId changes (new chat created)
+  // This prevents re-processing messages when switching chats or creating new chats
+  useEffect(() => {
+    processedConceptMessagesRef.current.clear()
+    setPendingConceptRequest(null) // Clear pending request on chat change
+    console.log("[v0] ✅ Cleared processedConceptMessagesRef for new chat:", chatId)
+  }, [chatId])
 
   // Detect [GENERATE_CONCEPTS] trigger in messages
   useEffect(() => {
@@ -338,15 +346,42 @@ export default function MayaChatScreen({
 
     const messageId = lastAssistantMessage.id?.toString() || `msg-${Date.now()}`
     
+    // Extract text content early (needed for both messageKey generation and trigger detection)
+    const textContent = getMessageText(lastAssistantMessage)
+    if (!textContent) return
+    
+    // CRITICAL FIX: Use messageId if available, otherwise use content hash for tracking
+    // This allows detection even during streaming before message has ID
+    let messageKey: string
+    if (messageId && messageId !== `msg-${Date.now()}`) {
+      messageKey = messageId
+    } else {
+      // Generate hash from content for messages without ID yet
+      // Simple hash for tracking
+      let hash = 0
+      for (let i = 0; i < textContent.length; i++) {
+        const char = textContent.charCodeAt(i)
+        hash = ((hash << 5) - hash) + char
+        hash = hash & hash
+      }
+      messageKey = `streaming-${Math.abs(hash).toString(36)}`
+    }
+
+    // CRITICAL FIX: Skip if already processed (prevents duplication on page refresh)
+    if (processedConceptMessagesRef.current.has(messageKey)) {
+      console.log("[v0] Message already processed, skipping:", messageKey)
+      return
+    }
+    
     const alreadyHasConceptCards = lastAssistantMessage.parts?.some(
       (p: any) => p.type === "tool-generateConcepts" && p.output?.concepts?.length > 0,
     )
     if (alreadyHasConceptCards) {
-      console.log("[v0] Message already has concepts, skipping:", messageId)
+      // CRITICAL FIX: Mark as processed if concept cards already exist (loaded from DB)
+      processedConceptMessagesRef.current.add(messageKey)
+      console.log("[v0] Message already has concepts (loaded from DB), marking as processed:", messageKey)
       return
     }
-
-    const textContent = getMessageText(lastAssistantMessage)
 
     // 🔴 CRITICAL: Since status is NOT "streaming", the message is complete
     // Process the trigger immediately - the status check above ensures we only get here when streaming is done
@@ -395,10 +430,13 @@ export default function MayaChatScreen({
       console.log("[v0] ✅ Detected concept generation trigger:", {
         conceptRequest,
         fullText: textContent.substring(0, 200),
+        messageKey,
         messageId,
         proMode
       })
       
+      // CRITICAL FIX: Mark as processed immediately to prevent duplicate processing
+      processedConceptMessagesRef.current.add(messageKey)
       setPendingConceptRequest(conceptRequest || 'concept generation')
       return // Don't check other triggers for concept generation
     } else if (proMode && textContent.toLowerCase().includes('concept') && !isGeneratingConcepts && !pendingConceptRequest) {
@@ -2386,16 +2424,22 @@ export default function MayaChatScreen({
     )
   }
 
-  if (isLoadingChat) {
-    return <UnifiedLoading message="Loading chat..." />
-  }
+  // CRITICAL FIX: Don't return early on loading - show loading indicator but still render UI
+  // This prevents blank screen if loading gets stuck
+  // Instead, show loading indicator within the UI structure
 
   // CRITICAL FIX: isEmpty should only be true if:
-  // 1. No messages AND
-  // 2. Not loading AND
-  // 3. User has no chat history (hasn't used Maya before)
+  // 1. Not currently loading AND
+  // 2. No chat selected (no chatId) AND
+  // 3. No messages AND
+  // 4. User has no chat history
   // This prevents welcome screen from showing when loading a history chat
-  const isEmpty = (!messages || messages.length === 0) && !isLoadingChat && !hasUsedMayaBefore
+  const isEmpty = 
+    !isLoadingChat && // Don't show welcome screen while loading
+    !chatId && // Don't show welcome screen if chat is selected
+    (!messages || messages.length === 0) && // No messages
+    hasLoadedChatRef.current && // Only show empty if we've actually loaded (prevents showing during initial load)
+    !hasUsedMayaBefore // No history
 
   // NOTE: Workbench should always be available in Pro mode for manual creation
   // Therefore, we always show the chat UI when in Pro mode, which includes the workbench
@@ -2738,6 +2782,12 @@ export default function MayaChatScreen({
       {/* Add padding-top to account for fixed header + tabs, padding-bottom for fixed input */}
       {activeMayaTab === "photos" && (
         <>
+          {/* CRITICAL FIX: Show loading indicator during chat load, but don't block UI */}
+          {isLoadingChat && messages.length === 0 && (
+            <div className="flex-1 flex items-center justify-center min-h-[400px]">
+              <UnifiedLoading message="Loading chat..." variant="section" />
+            </div>
+          )}
           <div 
             className="flex-1 min-h-0 flex flex-col"
             style={{
@@ -3051,6 +3101,12 @@ export default function MayaChatScreen({
             paddingBottom: '20px', // Space for content
           }}
         >
+          {/* CRITICAL FIX: Show loading indicator during chat load */}
+          {isLoadingChat && messages.length === 0 && (
+            <div className="flex items-center justify-center min-h-[400px]">
+              <UnifiedLoading message="Loading videos..." variant="section" />
+            </div>
+          )}
           <MayaVideosTab
             user={user}
             creditBalance={creditBalance}
@@ -3075,6 +3131,12 @@ export default function MayaChatScreen({
             paddingBottom: '20px', // Space for content
           }}
         >
+          {/* CRITICAL FIX: Show loading indicator during chat load */}
+          {isLoadingChat && messages.length === 0 && (
+            <div className="flex items-center justify-center min-h-[400px]">
+              <UnifiedLoading message="Loading prompts..." variant="section" />
+            </div>
+          )}
           <MayaPromptsTab
             onSelectPrompt={(prompt, title) => {
               // Switch to Photos tab and send the prompt
@@ -3106,7 +3168,14 @@ export default function MayaChatScreen({
 
       {/* Tab Content - Feed Tab */}
       {activeMayaTab === "feed" && (
-        <MayaFeedTab
+        <>
+          {/* CRITICAL FIX: Show loading indicator during chat load, but don't block UI */}
+          {isLoadingChat && messages.length === 0 && (
+            <div className="flex-1 flex items-center justify-center min-h-[400px]">
+              <UnifiedLoading message="Loading feed..." variant="section" />
+            </div>
+          )}
+          <MayaFeedTab
               messages={messages}
               filteredMessages={filteredMessages}
               setMessages={setMessages}
@@ -3144,6 +3213,7 @@ export default function MayaChatScreen({
           handleSendMessage={handleSendMessage}
                   isEmpty={isEmpty}
                 />
+        </>
       )}
 
       {/* Tab Content - Training Tab */}
