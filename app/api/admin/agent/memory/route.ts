@@ -6,6 +6,28 @@ import { neon } from "@neondatabase/serverless"
 const sql = neon(process.env.DATABASE_URL!)
 const ADMIN_EMAIL = "ssa@ssasocial.com"
 
+const REQUIRED_TABLES = ["admin_memory", "admin_business_insights", "admin_content_performance"]
+
+/**
+ * Check if required tables exist
+ */
+async function checkTablesExist(): Promise<{ allExist: boolean; missing: string[] }> {
+  try {
+    const existing = await sql`
+      SELECT table_name
+      FROM information_schema.tables
+      WHERE table_schema = 'public'
+        AND table_name = ANY(${REQUIRED_TABLES})
+    `
+    const existingNames = existing.map((row: any) => row.table_name)
+    const missing = REQUIRED_TABLES.filter((name) => !existingNames.includes(name))
+    return { allExist: missing.length === 0, missing }
+  } catch (error) {
+    console.error("[ADMIN-SCHEMA] Error checking tables:", error)
+    return { allExist: false, missing: REQUIRED_TABLES }
+  }
+}
+
 export async function GET(request: Request) {
   try {
     const supabase = await createServerClient()
@@ -20,6 +42,23 @@ export async function GET(request: Request) {
     const user = await getUserByAuthId(authUser.id)
     if (!user || user.email !== ADMIN_EMAIL) {
       return NextResponse.json({ error: "Admin access required" }, { status: 403 })
+    }
+
+    // Check if required tables exist
+    const tableCheck = await checkTablesExist()
+    if (!tableCheck.allExist) {
+      console.warn("[ADMIN-SCHEMA] Missing required tables:", {
+        route: "/api/admin/agent/memory",
+        missingTables: tableCheck.missing,
+      })
+      return NextResponse.json(
+        {
+          error: "Missing required table(s)",
+          missingTables: tableCheck.missing,
+          route: "/api/admin/agent/memory",
+        },
+        { status: 424 }, // 424 Failed Dependency
+      )
     }
 
     const { searchParams } = new URL(request.url)

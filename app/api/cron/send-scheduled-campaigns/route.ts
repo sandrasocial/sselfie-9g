@@ -46,6 +46,19 @@ export async function GET(request: Request) {
   } catch (error: any) {
     console.error("[v0] [Scheduled Campaigns] Error:", error)
     cronLogger.error(error)
+    
+    // Log to admin error radar
+    const { logAdminError } = await import("@/lib/admin-error-log")
+    await logAdminError({
+      toolName: "cron:send-scheduled-campaigns",
+      error: error instanceof Error ? error : new Error(String(error)),
+      context: {
+        cronJob: "send-scheduled-campaigns",
+      },
+    }).catch(() => {
+      // Ignore logging errors
+    })
+    
     return NextResponse.json(
       { 
         success: false, 

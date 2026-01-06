@@ -455,6 +455,20 @@ async function executeCampaign(
       result.errors.push(`${recipientEmail}: ${errorMsg}`)
       await logEmailSend(recipientEmail, `campaign-${campaign.id}`, "failed", undefined, errorMsg, campaign.id)
       console.error(`[v0] Exception sending to ${recipientEmail}:`, error)
+      
+      // Log to admin error radar
+      const { logAdminError } = await import("@/lib/admin-error-log")
+      await logAdminError({
+        toolName: "campaign-executor",
+        error: error instanceof Error ? error : new Error(errorMsg),
+        context: {
+          campaignId: campaign.id,
+          campaignName: campaign.campaign_name,
+          recipientEmail,
+        },
+      }).catch(() => {
+        // Ignore logging errors
+      })
     }
   }
 

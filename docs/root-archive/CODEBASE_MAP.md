@@ -777,7 +777,7 @@ try {
 #### 1. **Old Dashboard**
 ```typescript
 // components/admin/admin-dashboard-old.tsx
-// DEPRECATED: Use admin-dashboard-new.tsx instead
+// DEPRECATED: Use admin-dashboard.tsx instead
 ```
 
 #### 2. **Legacy Maya Headers**
@@ -929,9 +929,8 @@ backup-before-cleanup/
 - `alex-suggestion-card.tsx` - Proactive suggestions
 
 #### Admin Dashboard
-- `admin-dashboard-new.tsx` - New dashboard (current)
+- `admin-dashboard.tsx` - Main admin dashboard (current, used in app/admin/page.tsx)
 - `admin-dashboard-old.tsx` - Old dashboard (deprecated)
-- `admin-dashboard.tsx` - Dashboard wrapper
 - `admin-nav.tsx` - Admin navigation
 - `admin-notifications.tsx` - Notification center
 - `admin-analytics-panel.tsx` - Analytics widget

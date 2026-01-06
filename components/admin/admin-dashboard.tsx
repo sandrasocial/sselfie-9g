@@ -22,16 +22,29 @@ interface MissionControlTask {
   completed: boolean
 }
 
+interface AdminError {
+  toolName: string
+  count: number
+  lastSeen: string
+  recentErrors: Array<{
+    id: number
+    error_message: string
+    created_at: string
+  }>
+}
+
 export function AdminDashboard({ userId, userName }: { userId: string; userName: string }) {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [todaysPriorities, setTodaysPriorities] = useState<MissionControlTask[]>([])
   const [suggestions, setSuggestions] = useState<AlexSuggestion[]>([])
+  const [adminErrors, setAdminErrors] = useState<AdminError[]>([])
   const [loading, setLoading] = useState(true)
   
   useEffect(() => {
     fetchDashboardData()
     fetchTodaysPriorities()
     fetchSuggestions()
+    fetchAdminErrors()
   }, [])
   
   const fetchSuggestions = async () => {
@@ -135,6 +148,18 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
     }
   }
   
+  const fetchAdminErrors = async () => {
+    try {
+      const response = await fetch('/api/admin/diagnostics/errors?since=24&limit=5')
+      const data = await response.json()
+      if (data.success && data.tools) {
+        setAdminErrors(data.tools)
+      }
+    } catch (error) {
+      console.error('Error fetching admin errors:', error)
+    }
+  }
+  
   if (loading) {
     return (
       <div className="min-h-screen bg-stone-50">
@@ -228,6 +253,48 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
                     onActUpon={handleActUponSuggestion}
                     onActionClick={handleSuggestionAction}
                   />
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {/* Recent Admin Errors (24h) */}
+          {adminErrors.length > 0 && (
+            <div className="mt-8 sm:mt-12 mb-8 sm:mb-12">
+              <div className="flex items-center justify-between mb-4 sm:mb-6">
+                <h2 className="text-lg sm:text-xl font-['Times_New_Roman'] text-stone-950 tracking-[0.1em] uppercase">
+                  Recent Admin Errors (24h)
+                </h2>
+                <Link
+                  href="/admin/diagnostics/errors"
+                  className="text-xs sm:text-sm tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-600 hover:text-stone-950 transition-colors"
+                >
+                  View All →
+                </Link>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                {adminErrors.slice(0, 3).map((error) => (
+                  <div
+                    key={error.toolName}
+                    className="bg-white border border-stone-200 p-4 sm:p-6 rounded-none"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs sm:text-sm font-medium text-stone-950 truncate">
+                        {error.toolName}
+                      </p>
+                      <span className="text-xs text-stone-500 bg-stone-100 px-2 py-0.5 flex-shrink-0">
+                        {error.count}
+                      </span>
+                    </div>
+                    {error.recentErrors.length > 0 && (
+                      <p className="text-xs text-stone-600 truncate mb-2">
+                        {error.recentErrors[0].error_message}
+                      </p>
+                    )}
+                    <p className="text-[10px] text-stone-400">
+                      {new Date(error.lastSeen).toLocaleTimeString()}
+                    </p>
+                  </div>
                 ))}
               </div>
             </div>

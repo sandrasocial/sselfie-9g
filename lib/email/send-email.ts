@@ -109,6 +109,24 @@ async function sendEmailWithRetry(
     }
   }
 
+  // Log error to admin error radar
+  if (lastError) {
+    const { logAdminError } = await import("@/lib/admin-error-log")
+    await logAdminError({
+      toolName: "email-send",
+      error: new Error(lastError),
+      context: {
+        to: options.to,
+        subject: options.subject,
+        emailType: options.emailType,
+        campaignId: options.campaignId,
+        attempts: maxRetries,
+      },
+    }).catch(() => {
+      // Ignore logging errors
+    })
+  }
+
   return {
     success: false,
     error: lastError || "Failed to send email after retries",
