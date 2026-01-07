@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
-import { CheckCircle2, Loader2, XCircle, Grid3x3 } from "lucide-react"
+import { Loader2 } from "lucide-react"
 
 interface ProPhotoshootPanelProps {
   originalImageId: number | null
@@ -205,12 +205,18 @@ export default function ProPhotoshootPanel({ originalImageId, userId }: ProPhoto
               >
                 <div className="text-sm font-medium">Grid {gridNumber}</div>
                 <div className="flex items-center gap-2">
-                  {status === "completed" && <CheckCircle2 className="w-5 h-5 text-green-600" />}
-                  {status === "generating" && (
-                    <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+                  {status === "completed" && (
+                    <span className="text-xs font-light text-stone-600">Complete</span>
                   )}
-                  {status === "failed" && <XCircle className="w-5 h-5 text-red-600" />}
-                  {status === "pending" && <Grid3x3 className="w-5 h-5 text-stone-400" />}
+                  {status === "generating" && (
+                    <Loader2 className="w-5 h-5 text-stone-400 animate-spin" />
+                  )}
+                  {status === "failed" && (
+                    <span className="text-xs font-light text-stone-500">Failed</span>
+                  )}
+                  {status === "pending" && (
+                    <span className="text-xs font-light text-stone-400">Pending</span>
+                  )}
                 </div>
                 {status === "pending" && (
                   <Button
@@ -231,7 +237,7 @@ export default function ProPhotoshootPanel({ originalImageId, userId }: ProPhoto
                     href={grid.grid_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs text-blue-600 hover:underline"
+                    className="text-xs text-stone-600 hover:text-stone-900 hover:underline"
                   >
                     View Grid
                   </a>

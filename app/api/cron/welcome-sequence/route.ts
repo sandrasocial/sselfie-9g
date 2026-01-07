@@ -238,5 +238,21 @@ export async function GET(request: Request) {
       { status: 500 }
     )
   }
+  } catch (error: any) {
+    console.error("[Welcome Sequence] Outer error:", error)
+    await cronLogger.error(error, {})
+    await logAdminError({
+      toolName: "cron:welcome-sequence",
+      error: error instanceof Error ? error : new Error(String(error)),
+      context: {},
+    }).catch(() => {})
+    return NextResponse.json(
+      {
+        success: false,
+        error: error.message || "Failed to process welcome sequence",
+      },
+      { status: 500 }
+    )
+  }
 }
 

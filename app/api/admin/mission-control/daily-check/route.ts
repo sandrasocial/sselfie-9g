@@ -338,18 +338,49 @@ async function checkRevenueHealth(today: string) {
   const metrics: Record<string, any> = {}
   
   try {
-    // Get current MRR and active subscriptions
-    const mrrData = await sql`
+    // Get actual subscription prices from products config (matches dashboard)
+    const { PRICING_PRODUCTS } = await import("@/lib/products")
+    
+    // Get active subscriptions by product type
+    const subscriptionsResult = await sql`
       SELECT 
-        COUNT(CASE WHEN status = 'active' THEN 1 END)::int as active_subs
+        product_type,
+        COUNT(*)::int as count
       FROM subscriptions
-      WHERE (is_test_mode = FALSE OR is_test_mode IS NULL)
+      WHERE status = 'active'
+        AND (is_test_mode = FALSE OR is_test_mode IS NULL)
+      GROUP BY product_type
     `
     
-    const activeSubs = mrrData[0]?.active_subs || 0
-    const mrr = activeSubs * 29 // Assuming $29/month subscription
+    // Calculate MRR using correct prices (matches dashboard logic)
+    let mrr = 0
+    let activeSubs = 0
     
-    metrics['MRR'] = `$${mrr}`
+    subscriptionsResult.forEach((sub: any) => {
+      // Handle legacy brand_studio_membership (no longer in PRICING_PRODUCTS)
+      let priceCents: number
+      if (sub.product_type === "brand_studio_membership") {
+        // Legacy Brand Studio: $149/month (14900 cents)
+        priceCents = 14900
+      } else {
+        const product = PRICING_PRODUCTS.find((p) => p.type === sub.product_type)
+        priceCents = product?.priceInCents || 0
+      }
+      
+      if (priceCents > 0) {
+        const priceDollars = priceCents / 100
+        
+        // MRR only includes recurring subscriptions (not one-time sessions)
+        if (sub.product_type === "sselfie_studio_membership" || sub.product_type === "brand_studio_membership") {
+          const revenue = Number(sub.count) * priceDollars
+          mrr += revenue
+        }
+        
+        activeSubs += Number(sub.count)
+      }
+    })
+    
+    metrics['MRR'] = `$${mrr.toFixed(2)}`
     metrics['Active Subs'] = activeSubs
     
     // Check for recent cancellations (last 24h)

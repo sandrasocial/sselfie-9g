@@ -98,14 +98,15 @@ export async function GET(request: NextRequest) {
       const frameBuffers = await splitGridIntoFrames(gridBuffer)
       console.log("[ProPhotoshoot] ✂️ Split into", frameBuffers.length, "frames")
 
-      // Get grid info
+      // Get grid info (including prediction_id for tracking)
       const [gridInfo] = await sql`
-        SELECT session_id, grid_number FROM pro_photoshoot_grids
+        SELECT session_id, grid_number, prediction_id FROM pro_photoshoot_grids
         WHERE id = ${parseInt(gridId)}
       `
 
       // Upload each frame and save to gallery
       const frameUrls: string[] = []
+      const galleryImageIds: number[] = []
       for (let i = 0; i < frameBuffers.length; i++) {
         const frameNumber = i + 1
         const frameBuffer = frameBuffers[i]
@@ -123,29 +124,51 @@ export async function GET(request: NextRequest) {
 
         frameUrls.push(frameBlob.url)
 
-        // Save to ai_images gallery
-        const [galleryImage] = await sql`
-          INSERT INTO ai_images (
-            user_id,
-            image_url,
-            prompt,
-            source,
-            category,
-            saved,
-            created_at
-          ) VALUES (
-            ${adminCheck.userId},
-            ${frameBlob.url},
-            ${`Pro Photoshoot Grid ${gridInfo.grid_number} - Frame ${frameNumber}`},
-            'maya_pro',
-            'pro_photoshoot',
-            true,
-            NOW()
-          )
-          RETURNING id
+        // CRITICAL FIX: Check for existing frame by URL to prevent duplicates
+        const [existingGalleryImage] = await sql`
+          SELECT id FROM ai_images
+          WHERE image_url = ${frameBlob.url}
+          LIMIT 1
         `
 
-        // Save frame record
+        let galleryImageId: number
+
+        if (existingGalleryImage) {
+          // Frame already exists in gallery (duplicate prevention)
+          console.log(`[ProPhotoshoot] ⏭️ Frame ${frameNumber} already exists in gallery (ID: ${existingGalleryImage.id}), skipping insert`)
+          galleryImageId = existingGalleryImage.id
+        } else {
+          // Save to ai_images gallery (standardized source: 'pro_photoshoot')
+          const [galleryImage] = await sql`
+            INSERT INTO ai_images (
+              user_id,
+              image_url,
+              prompt,
+              prediction_id,
+              source,
+              category,
+              saved,
+              created_at
+            ) VALUES (
+              ${adminCheck.userId},
+              ${frameBlob.url},
+              ${`Pro Photoshoot Grid ${gridInfo.grid_number} - Frame ${frameNumber}`},
+              ${gridInfo.prediction_id || null},
+              'pro_photoshoot',
+              'pro_photoshoot',
+              true,
+              NOW()
+            )
+            RETURNING id
+          `
+          galleryImageId = galleryImage.id
+          console.log(`[ProPhotoshoot] ✅ Frame ${frameNumber} saved to gallery (ID: ${galleryImageId})`)
+        }
+
+        // Track gallery image ID for response
+        galleryImageIds.push(galleryImageId)
+
+        // Save/update frame record (ON CONFLICT handles duplicates)
         await sql`
           INSERT INTO pro_photoshoot_frames (
             grid_id,
@@ -156,14 +179,14 @@ export async function GET(request: NextRequest) {
             ${parseInt(gridId)},
             ${frameNumber},
             ${frameBlob.url},
-            ${galleryImage.id}
+            ${galleryImageId}
           )
           ON CONFLICT (grid_id, frame_number) DO UPDATE SET
             frame_url = ${frameBlob.url},
-            gallery_image_id = ${galleryImage.id}
+            gallery_image_id = ${galleryImageId}
         `
 
-        console.log(`[ProPhotoshoot] ✅ Frame ${frameNumber} saved (gallery ID: ${galleryImage.id})`)
+        console.log(`[ProPhotoshoot] ✅ Frame ${frameNumber} record saved/updated`)
       }
 
       // Update grid record
@@ -205,6 +228,7 @@ export async function GET(request: NextRequest) {
         status: "completed",
         gridUrl: gridBlob.url,
         frameUrls,
+        galleryImageIds, // Include gallery IDs for carousel creation
         framesCount: frameUrls.length,
       })
     } else if (prediction.status === "failed") {

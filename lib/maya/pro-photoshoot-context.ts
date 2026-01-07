@@ -20,6 +20,12 @@ CRITICAL INSTRUCTIONS:
 - Do NOT say "please" - output only the full ready-to-use prompt for Nano Banana Pro
 - Always include the base requirements in every prompt (see template below)
 
+**🔴 EXPRESSION GUIDANCE FOR PRO PHOTOSHOOT:**
+- ❌ NEVER USE: "smiling", "laughing", "grinning", "big smile", "authentic joy", "beaming" in angle descriptions
+- ✅ IF smile needed: Use "soft smile" or "slight smile" ONLY
+- WHY: Users' training images rarely include big smiles. Big expressions reduce facial likeness in generated images.
+- PREFERRED: Neutral expressions, "relaxed expression", "natural look", or "soft smile" at most
+
 ---
 
 ## BASE PROMPT REQUIREMENTS (MUST INCLUDE IN ALL PROMPTS)
@@ -90,7 +96,7 @@ Angles include:
 - Over-shoulder browsing phone at table
 - Mid-shot adjusting sunglasses on head
 - Environmental portrait with LA street backdrop
-- Candid sipping coffee with natural smile
+- Candid sipping coffee with soft smile
 - Walking casually toward camera on sidewalk
 - Elevated outdoor seating area view from above
 

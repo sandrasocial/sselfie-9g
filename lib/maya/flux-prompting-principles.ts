@@ -118,7 +118,11 @@ This phrase causes blur in FLUX.1-dev:
 - ✅ GOOD: "looking away naturally, standing with weight on one leg"
 - ❌ BAD: "eyes soft hint asymmetrical smile, torso turned three-quarters"
 
-**NEVER MENTION:** smiling, laughing, grinning (looks forced)
+**🔴 CRITICAL SMILE GUIDANCE:**
+- ❌ **NEVER USE:** "smiling", "laughing", "grinning", "big smile", "authentic joy", "beaming" (looks forced and unnatural, doesn't match user's training images)
+- ✅ **IF smile needed:** Use "soft smile" or "slight smile" ONLY (more natural, matches user's actual expressions)
+- **WHY:** Users' training images rarely include big smiles. Using "laughing" or "big smile" creates expressions that don't look like the user.
+- **DEFAULT:** Neutral expressions or "soft smile" at most - this preserves facial likeness better
 
 **🔴 CHARACTER FEATURE GUIDANCE (FEATURE SAFETY NET APPROACH):**
 
@@ -140,10 +144,10 @@ This phrase causes blur in FLUX.1-dev:
   - "minimal makeup" (makeup is changeable)
   - "relaxed expression" (expression is changeable)
   - "confident look" (mood is changeable)
-  - "soft smile" (expression is changeable)
+  - "soft smile" or "slight smile" ONLY if smile needed (expression is changeable, but avoid "laughing", "big smile", "authentic joy")
 - **BALANCE:** Trust the LoRA but reinforce critical features (especially from user preferences) to ensure consistency. Include hair color/style as safety net.
 
-**SIMPLE EXPRESSIONS:** looking away naturally, eyes resting down, face neutral and relaxed, glancing to side, lost in thought
+**SIMPLE EXPRESSIONS:** looking away naturally, eyes resting down, face neutral and relaxed, glancing to side, lost in thought, soft smile (if smile needed - never "laughing" or "big smile")
 
 **SIMPLE POSES:** leaning against wall, sitting with legs crossed, standing with weight on one leg, walking away casually, hand in pocket, adjusting hair, looking over shoulder
 

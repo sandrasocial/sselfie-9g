@@ -68,7 +68,7 @@ export default function MayaModeToggle({
           }`}
           aria-label="Switch to Classic Mode - Basic chat interface with simple image generation"
           title="Switch to Classic Mode - Basic chat interface with simple image generation"
-          disabled={isProMode ? false : true}
+          disabled={!isProMode}
         >
           <span className="text-[10px] sm:text-xs md:text-sm font-serif font-extralight tracking-[0.2em] uppercase whitespace-nowrap">
             Classic
@@ -88,7 +88,7 @@ export default function MayaModeToggle({
           }`}
           aria-label="Switch to Pro Mode - Image library, advanced options, and enhanced concept generation"
           title="Switch to Pro Mode - Image library, advanced options, and enhanced concept generation"
-          disabled={isProMode ? true : false}
+          disabled={isProMode}
         >
           <span className="text-[10px] sm:text-xs md:text-sm font-serif font-extralight tracking-[0.2em] uppercase whitespace-nowrap">
             Pro

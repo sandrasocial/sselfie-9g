@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import { Loader2, Grid3x3, Sparkles, Check, X } from "lucide-react"
+import { Loader2 } from "lucide-react"
 
 interface ProPhotoshootGrid {
   id?: number
@@ -90,18 +90,12 @@ export default function ProPhotoshootPanel({
             <button
               onClick={handleGenerateMore}
               disabled={isGenerating}
-              className="px-4 py-2 bg-gradient-to-r from-purple-600 via-purple-700 to-purple-600 hover:from-purple-700 hover:via-purple-800 hover:to-purple-700 text-white rounded-lg font-medium text-sm transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="px-4 py-2 bg-gradient-to-r from-stone-800 via-stone-900 to-stone-800 hover:from-stone-900 hover:via-stone-950 hover:to-stone-900 text-white rounded-lg font-medium text-sm transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isGenerating ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" />
-                  <span>Generating...</span>
-                </>
+                <span>Generating...</span>
               ) : (
-                <>
-                  <Sparkles size={16} />
-                  <span>Generate {gridsToGenerate} More Grid{gridsToGenerate > 1 ? "s" : ""}</span>
-                </>
+                <span>Generate {gridsToGenerate} More Grid{gridsToGenerate > 1 ? "s" : ""}</span>
               )}
             </button>
           )}
@@ -125,9 +119,6 @@ export default function ProPhotoshootPanel({
                 />
                 <div className="absolute inset-0 bg-stone-900/0 group-hover:bg-stone-900/50 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
                   <div className="text-center space-y-2">
-                    <div className="w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-2">
-                      <Check size={16} className="text-stone-900" strokeWidth={2} />
-                    </div>
                     <p className="text-xs text-white font-light tracking-wider">Grid {grid.gridNumber}</p>
                     {onCreateCarousel && grid.id && (
                       <button
@@ -164,9 +155,8 @@ export default function ProPhotoshootPanel({
                 </div>
               </div>
             ) : grid.status === "failed" ? (
-              <div className="w-full h-full flex flex-col items-center justify-center bg-red-50">
-                <X size={24} className="text-red-400 mb-2" strokeWidth={1.5} />
-                <p className="text-xs text-red-500 font-light tracking-wider">Failed</p>
+              <div className="w-full h-full flex flex-col items-center justify-center bg-stone-50">
+                <p className="text-xs text-stone-500 font-light tracking-wider">Failed</p>
                 <div className="absolute top-2 left-2 w-6 h-6 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm">
                   <span className="text-[10px] font-light text-stone-900">{grid.gridNumber}</span>
                 </div>
@@ -186,11 +176,6 @@ export default function ProPhotoshootPanel({
 
                 {/* Content */}
                 <div className="relative z-10 flex flex-col items-center">
-                  {/* Grid Icon */}
-                  <div className="mb-2 w-12 h-12 rounded-full bg-white/60 backdrop-blur-sm border border-stone-200 flex items-center justify-center shadow-sm">
-                    <Grid3x3 size={20} className="text-stone-400" strokeWidth={1.5} />
-                  </div>
-
                   {/* Grid Number */}
                   <span className="text-xs font-medium text-stone-700 tracking-wider">Grid {grid.gridNumber}</span>
                   <span className="text-[9px] text-stone-500 font-light mt-1">Pending</span>

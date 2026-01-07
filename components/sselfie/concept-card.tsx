@@ -94,12 +94,13 @@ export default function ConceptCard({
   const [proPhotoshootOriginalImageId, setProPhotoshootOriginalImageId] = useState<number | null>(null)
   
   // Pro Photoshoot Carousel state
+  // CRITICAL: Initialize from concept prop for persistence (like generatedImageUrl)
   const [proPhotoshootCarousel, setProPhotoshootCarousel] = useState<{
     gridId: number
     gridNumber: number
     frames: string[]
     galleryImageIds: number[]
-  } | null>(null)
+  } | null>((concept as any).proPhotoshootCarousel || null)
   const [isCreatingCarousel, setIsCreatingCarousel] = useState(false)
   const [creatingCarouselForGridId, setCreatingCarouselForGridId] = useState<number | null>(null)
 
@@ -168,7 +169,24 @@ export default function ConceptCard({
       setGeneratedImageUrl(conceptImageUrl)
       setIsGenerated(true)
     }
-  }, [concept, generatedImageUrl])
+    
+    // CRITICAL: Restore photoshoot carousel from concept prop (for persistence on page refresh)
+    const conceptCarousel = (concept as any).proPhotoshootCarousel
+    if (conceptCarousel && conceptCarousel.frames && conceptCarousel.frames.length > 0) {
+      if (!proPhotoshootCarousel || proPhotoshootCarousel.gridId !== conceptCarousel.gridId) {
+        console.log("[v0] ✅ ConceptCard: Restoring photoshoot carousel from concept prop:", {
+          gridId: conceptCarousel.gridId,
+          gridNumber: conceptCarousel.gridNumber,
+          framesCount: conceptCarousel.frames?.length || 0
+        })
+        setProPhotoshootCarousel(conceptCarousel)
+      }
+    } else if (conceptCarousel === null && proPhotoshootCarousel !== null) {
+      // Clear carousel if concept prop explicitly has null (user cleared it)
+      console.log("[v0] ConceptCard: Clearing photoshoot carousel (concept prop has null)")
+      setProPhotoshootCarousel(null)
+    }
+  }, [concept, generatedImageUrl, proPhotoshootCarousel])
   
   // Update selectedImages when baseImages prop changes
   // CRITICAL: Always update when baseImages are provided, even if card already has images
@@ -364,6 +382,32 @@ export default function ConceptCard({
 
     loadPhotoshootData()
   }, [photoshootId, concept.title, concept.description, userId])
+
+  // CRITICAL: Clear photoshoot state when concept ID changes (different concept card)
+  // This ensures images don't persist when switching between different concepts
+  const conceptIdRef = useRef<string | undefined>((concept as any).id)
+  useEffect(() => {
+    const currentConceptId = (concept as any).id
+    const previousConceptId = conceptIdRef.current
+    
+    // If concept ID changed, clear all photoshoot-related state
+    if (previousConceptId && currentConceptId !== previousConceptId) {
+      console.log("[v0] ConceptCard: Concept ID changed, clearing photoshoot state:", {
+        previous: previousConceptId,
+        current: currentConceptId
+      })
+      setPhotoshootGenerations([])
+      setPhotoshootId(null)
+      setIsCreatingPhotoshoot(false)
+      setPhotoshootError(null)
+      // Only clear Pro Photoshoot carousel if concept prop doesn't have it
+      if (!(concept as any).proPhotoshootCarousel) {
+        setProPhotoshootCarousel(null)
+      }
+    }
+    
+    conceptIdRef.current = currentConceptId
+  }, [(concept as any).id, concept])
 
   const handleImageSelect = (boxIndex: number) => {
     currentBoxIndexRef.current = boxIndex
@@ -1423,13 +1467,53 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
 
       console.log(`[ProPhotoshoot] ✅ Carousel created for Grid ${gridNumber}:`, data.framesCount, "frames")
 
+      // CRITICAL FIX: Validate galleryImageIds match frames count
+      const frames = data.frames || []
+      const galleryImageIds = data.galleryImageIds || []
+      
+      if (frames.length !== galleryImageIds.length) {
+        console.error(`[ProPhotoshoot] ❌ Gallery ID mismatch: ${frames.length} frames but ${galleryImageIds.length} gallery IDs`)
+        throw new Error(`Gallery data incomplete: ${frames.length} frames but ${galleryImageIds.length} gallery IDs. Please try again.`)
+      }
+
+      if (frames.length !== 9) {
+        console.error(`[ProPhotoshoot] ❌ Expected 9 frames, got ${frames.length}`)
+        throw new Error(`Invalid carousel data: expected 9 frames, got ${frames.length}. Please try again.`)
+      }
+
       // Store carousel data
-      setProPhotoshootCarousel({
+      const carouselData = {
         gridId: data.gridId,
         gridNumber: data.gridNumber || gridNumber,
-        frames: data.frames || [],
-        galleryImageIds: data.galleryImageIds || [],
-      })
+        frames: frames,
+        galleryImageIds: galleryImageIds, // Validated to match frames
+      }
+      setProPhotoshootCarousel(carouselData)
+
+      // CRITICAL: Save photoshoot carousel to JSONB for persistence (like concept cards)
+      if (messageId) {
+        try {
+          const updatedConcept = {
+            ...concept,
+            proPhotoshootCarousel: carouselData, // Save carousel data to concept
+          }
+          
+          await fetch('/api/maya/update-message', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+              messageId: messageId,
+              content: '', // Preserve existing content
+              conceptCards: [updatedConcept],
+            }),
+          })
+          console.log('[ConceptCard] ✅ Saved photoshoot carousel to JSONB:', { messageId, conceptId: (concept as any).id, gridId: data.gridId })
+        } catch (jsonbError: any) {
+          console.error('[ConceptCard] ❌ Error saving carousel to JSONB:', jsonbError?.message || jsonbError)
+          // Don't fail - carousel still shows in UI
+        }
+      }
 
       // Frames are already created and saved by the API, no polling needed
       // The carousel is ready to display immediately

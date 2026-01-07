@@ -1,46 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getDbClient } from "@/lib/db-singleton"
 import { requireAdmin, isProPhotoshootEnabled } from "@/lib/admin-feature-flags"
-import { put } from "@vercel/blob"
-import sharp from "sharp"
 
 const sql = getDbClient()
 
-/**
- * Split 3x3 grid into 9 individual frames using Sharp
- */
-async function splitGridIntoFrames(gridBuffer: Buffer): Promise<Buffer[]> {
-  const metadata = await sharp(gridBuffer).metadata()
-  if (!metadata.width || !metadata.height) {
-    throw new Error("Invalid grid image dimensions")
-  }
-
-  const frameWidth = Math.floor(metadata.width / 3)
-  const frameHeight = Math.floor(metadata.height / 3)
-
-  const frames: Buffer[] = []
-
-  for (let row = 0; row < 3; row++) {
-    for (let col = 0; col < 3; col++) {
-      const left = col * frameWidth
-      const top = row * frameHeight
-
-      const frame = await sharp(gridBuffer)
-        .extract({
-          left,
-          top,
-          width: frameWidth,
-          height: frameHeight,
-        })
-        .png()
-        .toBuffer()
-
-      frames.push(frame)
-    }
-  }
-
-  return frames
-}
+// CRITICAL FIX: Removed splitGridIntoFrames function
+// create-carousel no longer creates frames - it only reads existing ones
+// Frames are created by check-grid when grid completes
 
 export async function POST(request: NextRequest) {
   try {
@@ -100,7 +66,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if frames already exist (carousel might already be created)
+    // CRITICAL FIX: create-carousel ONLY reads existing frames, never creates them
+    // Frames are created by check-grid when grid completes
+    // This prevents duplicate frame creation and ensures consistent source field
     const existingFrames = await sql`
       SELECT id, frame_number, frame_url, gallery_image_id
       FROM pro_photoshoot_frames
@@ -108,89 +76,52 @@ export async function POST(request: NextRequest) {
       ORDER BY frame_number
     `
 
-    let frameUrls: string[] = []
-    let galleryImageIds: number[] = []
+    if (existingFrames.length !== 9) {
+      // Frames don't exist yet - this should not happen if grid is completed
+      // But if it does, return error instead of creating duplicates
+      console.error(`[ProPhotoshoot] ❌ Expected 9 frames, found ${existingFrames.length}. Frames must be created by check-grid first.`)
+      return NextResponse.json(
+        { 
+          error: `Frames not ready. Expected 9 frames, found ${existingFrames.length}. Please wait for grid processing to complete.`,
+          framesFound: existingFrames.length
+        },
+        { status: 400 }
+      )
+    }
 
-    if (existingFrames.length === 9) {
-      // Frames already exist, use them
-      console.log("[ProPhotoshoot] ✅ Using existing frames for carousel")
-      frameUrls = existingFrames.map((f: any) => f.frame_url)
-      galleryImageIds = existingFrames.map((f: any) => f.gallery_image_id).filter((id: any) => id !== null)
-    } else {
-      // Download grid image
-      console.log("[ProPhotoshoot] 📥 Downloading grid image...")
-      const gridResponse = await fetch(grid.grid_url)
-      if (!gridResponse.ok) {
-        throw new Error(`Failed to download grid: ${gridResponse.statusText}`)
-      }
-      const gridBuffer = Buffer.from(await gridResponse.arrayBuffer())
-
-      // Split grid into 9 frames
-      console.log("[ProPhotoshoot] ✂️ Splitting grid into 9 frames...")
-      const frameBuffers = await splitGridIntoFrames(gridBuffer)
-
-      // Upload each frame and save to gallery
-      for (let i = 0; i < frameBuffers.length; i++) {
-        const frameNumber = i + 1
-        const frameBuffer = frameBuffers[i]
-
-        // Upload frame to Blob
-        const frameBlob = await put(
-          `pro-photoshoot/carousel/${gridId}-${frameNumber}.png`,
-          frameBuffer,
-          {
-            access: "public",
-            contentType: "image/png",
-            addRandomSuffix: true,
-          }
-        )
-
-        frameUrls.push(frameBlob.url)
-
-        // Save to ai_images gallery (with carousel source)
+    // Frames exist, use them (validate gallery_image_id exists)
+    console.log("[ProPhotoshoot] ✅ Using existing frames for carousel (created by check-grid)")
+    
+    const frameUrls: string[] = []
+    const galleryImageIds: number[] = []
+    
+    for (const frame of existingFrames) {
+      frameUrls.push(frame.frame_url)
+      if (frame.gallery_image_id) {
+        // Validate gallery_image_id exists in ai_images
         const [galleryImage] = await sql`
-          INSERT INTO ai_images (
-            user_id,
-            image_url,
-            prompt,
-            source,
-            category,
-            saved,
-            created_at
-          ) VALUES (
-            ${adminCheck.userId},
-            ${frameBlob.url},
-            ${`Pro Photoshoot Grid ${grid.grid_number} - Frame ${frameNumber}`},
-            'carousel',
-            'pro_photoshoot',
-            true,
-            NOW()
-          )
-          RETURNING id
+          SELECT id FROM ai_images
+          WHERE id = ${frame.gallery_image_id}
+          LIMIT 1
         `
-
-        galleryImageIds.push(galleryImage.id)
-
-        // Save frame record
-        await sql`
-          INSERT INTO pro_photoshoot_frames (
-            grid_id,
-            frame_number,
-            frame_url,
-            gallery_image_id
-          ) VALUES (
-            ${parseInt(gridId)},
-            ${frameNumber},
-            ${frameBlob.url},
-            ${galleryImage.id}
-          )
-          ON CONFLICT (grid_id, frame_number) DO UPDATE SET
-            frame_url = ${frameBlob.url},
-            gallery_image_id = ${galleryImage.id}
-        `
-
-        console.log(`[ProPhotoshoot] ✅ Frame ${frameNumber} saved (gallery ID: ${galleryImage.id})`)
+        if (galleryImage) {
+          galleryImageIds.push(frame.gallery_image_id)
+        } else {
+          console.warn(`[ProPhotoshoot] ⚠️ Gallery image ID ${frame.gallery_image_id} not found in ai_images for frame ${frame.frame_number}`)
+        }
       }
+    }
+
+    // Ensure we have 9 gallery IDs (critical for frontend)
+    if (galleryImageIds.length !== 9) {
+      console.error(`[ProPhotoshoot] ❌ Expected 9 gallery image IDs, found ${galleryImageIds.length}`)
+      return NextResponse.json(
+        { 
+          error: `Gallery image IDs incomplete. Expected 9, found ${galleryImageIds.length}. Please regenerate grid.`,
+          galleryIdsFound: galleryImageIds.length
+        },
+        { status: 500 }
+      )
     }
 
     console.log(`[ProPhotoshoot] 🎠 Carousel created for Grid ${grid.grid_number} with ${frameUrls.length} frames`)

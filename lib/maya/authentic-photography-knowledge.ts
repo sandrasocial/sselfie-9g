@@ -152,6 +152,11 @@ Instead of "smiling" or "looking confident", describe SPECIFIC authentic express
 - "${getRandomElement(AUTHENTIC_PHOTOGRAPHY_KNOWLEDGE.EXPRESSIONS.SUBTLE_EMOTION)}"
 - "${getRandomElement(AUTHENTIC_PHOTOGRAPHY_KNOWLEDGE.EXPRESSIONS.CANDID_MOMENTS)}"
 
+**🔴 CRITICAL SMILE GUIDANCE:**
+- ❌ NEVER USE: "smiling", "laughing", "grinning", "big smile", "authentic joy", "beaming"
+- ✅ IF smile needed: Use "soft smile" or "slight smile" ONLY
+- WHY: Users' training images rarely include big smiles. Big expressions don't match the user's actual face and reduce likeness.
+
 **FILM & COLOR CRAFT (why images feel expensive):**
 - ${getRandomElement(AUTHENTIC_PHOTOGRAPHY_KNOWLEDGE.PHOTOGRAPHY_CRAFT.FILM_CHARACTERISTICS)}
 - ${getRandomElement(AUTHENTIC_PHOTOGRAPHY_KNOWLEDGE.PHOTOGRAPHY_CRAFT.COLOR_SCIENCE)}
@@ -169,6 +174,7 @@ Instead of "smiling" or "looking confident", describe SPECIFIC authentic express
 **NEVER USE:**
 - Generic terms: "beautiful", "stunning", "perfect", "amazing"
 - Posed instructions: "hand on hip", "looking at camera and smiling"
+- Expression terms: "smiling", "laughing", "grinning", "big smile", "authentic joy" (use "soft smile" or "slight smile" if needed)
 - Vague lighting: "good lighting", "nice light"
 - Template phrases that could apply to any image
 `

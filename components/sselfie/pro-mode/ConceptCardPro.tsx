@@ -104,12 +104,13 @@ export default function ConceptCardPro({
   }>>([])
   const [isGeneratingGrids, setIsGeneratingGrids] = useState(false)
   const [proPhotoshootOriginalImageId, setProPhotoshootOriginalImageId] = useState<number | null>(null)
+  // CRITICAL: Initialize from concept prop for persistence (like generatedImageUrl)
   const [proPhotoshootCarousel, setProPhotoshootCarousel] = useState<{
     gridId: number
     gridNumber: number
     frames: string[]
     galleryImageIds: number[]
-  } | null>(null)
+  } | null>((concept as any).proPhotoshootCarousel || null)
   const [isCreatingCarousel, setIsCreatingCarousel] = useState(false)
   const [creatingCarouselForGridId, setCreatingCarouselForGridId] = useState<number | null>(null)
   
@@ -152,7 +153,24 @@ export default function ConceptCardPro({
       const storageKey = `pro-generation-${concept.id}`
       localStorage.removeItem(storageKey)
     }
-  }, [concept, generatedImageUrl, concept.id])
+    
+    // CRITICAL: Restore photoshoot carousel from concept prop (for persistence on page refresh)
+    const conceptCarousel = (concept as any).proPhotoshootCarousel
+    if (conceptCarousel && conceptCarousel.frames && conceptCarousel.frames.length > 0) {
+      if (!proPhotoshootCarousel || proPhotoshootCarousel.gridId !== conceptCarousel.gridId) {
+        console.log("[ConceptCardPro] ✅ Restoring photoshoot carousel from concept prop:", {
+          gridId: conceptCarousel.gridId,
+          gridNumber: conceptCarousel.gridNumber,
+          framesCount: conceptCarousel.frames?.length || 0
+        })
+        setProPhotoshootCarousel(conceptCarousel)
+      }
+    } else if (conceptCarousel === null && proPhotoshootCarousel !== null) {
+      // Clear carousel if concept prop explicitly has null (user cleared it)
+      console.log("[ConceptCardPro] Clearing photoshoot carousel (concept prop has null)")
+      setProPhotoshootCarousel(null)
+    }
+  }, [concept, generatedImageUrl, concept.id, proPhotoshootCarousel])
 
   // Restore polling state from localStorage on mount (survives remounts)
   // This MUST run first before polling starts
@@ -726,12 +744,53 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
 
       console.log(`[ProPhotoshoot] ✅ Carousel created for Grid ${gridNumber}:`, data.framesCount, "frames")
 
-      setProPhotoshootCarousel({
+      // CRITICAL FIX: Validate galleryImageIds match frames count
+      const frames = data.frames || []
+      const galleryImageIds = data.galleryImageIds || []
+      
+      if (frames.length !== galleryImageIds.length) {
+        console.error(`[ProPhotoshoot] ❌ Gallery ID mismatch: ${frames.length} frames but ${galleryImageIds.length} gallery IDs`)
+        throw new Error(`Gallery data incomplete: ${frames.length} frames but ${galleryImageIds.length} gallery IDs. Please try again.`)
+      }
+
+      if (frames.length !== 9) {
+        console.error(`[ProPhotoshoot] ❌ Expected 9 frames, got ${frames.length}`)
+        throw new Error(`Invalid carousel data: expected 9 frames, got ${frames.length}. Please try again.`)
+      }
+
+      // Store carousel data
+      const carouselData = {
         gridId: data.gridId,
         gridNumber: data.gridNumber || gridNumber,
-        frames: data.frames || [],
-        galleryImageIds: data.galleryImageIds || [],
-      })
+        frames: frames,
+        galleryImageIds: galleryImageIds, // Validated to match frames
+      }
+      setProPhotoshootCarousel(carouselData)
+
+      // CRITICAL: Save photoshoot carousel to JSONB for persistence (like concept cards)
+      if (messageId) {
+        try {
+          const updatedConcept = {
+            ...concept,
+            proPhotoshootCarousel: carouselData, // Save carousel data to concept
+          }
+          
+          await fetch('/api/maya/update-message', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+              messageId: messageId,
+              content: '', // Preserve existing content
+              conceptCards: [updatedConcept],
+            }),
+          })
+          console.log('[ConceptCardPro] ✅ Saved photoshoot carousel to JSONB:', { messageId, conceptId: (concept as any).id, gridId: data.gridId })
+        } catch (jsonbError: any) {
+          console.error('[ConceptCardPro] ❌ Error saving carousel to JSONB:', jsonbError?.message || jsonbError)
+          // Don't fail - carousel still shows in UI
+        }
+      }
     } catch (error) {
       console.error("[ProPhotoshoot] ❌ Error creating carousel:", error)
       setProPhotoshootError(error instanceof Error ? error.message : "Failed to create carousel")
@@ -807,7 +866,8 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
     // Store interval reference so poll function can clear it
     let pollIntervalRef: NodeJS.Timeout | null = null
     let pollAttempts = 0
-    const MAX_POLL_ATTEMPTS = 120 // 10 minutes max (120 * 5 seconds)
+    const POLL_INTERVAL_MS = 5000 // 5 seconds between polls
+    const MAX_POLL_ATTEMPTS = 180 // 15 minutes max (180 * 5 seconds = 900 seconds)
     
     // Poll function that can be called immediately or via interval
     const poll = async () => {
@@ -815,8 +875,13 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
       
       // Stop polling after max attempts
       if (pollAttempts > MAX_POLL_ATTEMPTS) {
-        console.error('[ConceptCardPro] ❌ Max polling attempts reached, stopping')
-        setError('Generation is taking longer than expected. Please try again.')
+        console.error('[ConceptCardPro] ❌ Max polling attempts reached, stopping', {
+          attempts: pollAttempts,
+          maxAttempts: MAX_POLL_ATTEMPTS,
+          totalTime: `${(pollAttempts * POLL_INTERVAL_MS) / 1000 / 60} minutes`,
+          predictionId: pollPredictionId
+        })
+        setError('Generation is taking longer than expected. The image may still be processing. Please refresh the page in a few minutes.')
         setIsGeneratingState(false)
         if (pollIntervalRef) {
           clearInterval(pollIntervalRef)
@@ -841,10 +906,31 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
             console.warn('[ConceptCardPro] ⚠️ Client closed request (499), continuing to poll...')
             return // Continue polling - this is a timeout/connection issue, not a failure
           }
-          console.error('[ConceptCardPro] ❌ Polling response not OK:', response.status, response.statusText)
+          // Handle 500 errors - might be temporary, continue polling but log
+          if (response.status === 500) {
+            console.warn('[ConceptCardPro] ⚠️ Server error (500), continuing to poll...', {
+              attempt: pollAttempts,
+              maxAttempts: MAX_POLL_ATTEMPTS
+            })
+            return // Continue polling - server might recover
+          }
+          console.error('[ConceptCardPro] ❌ Polling response not OK:', response.status, response.statusText, {
+            attempt: pollAttempts,
+            maxAttempts: MAX_POLL_ATTEMPTS
+          })
           const errorText = await response.text().catch(() => 'Unknown error')
           console.error('[ConceptCardPro] Error response:', errorText.substring(0, 200))
-          return // Continue polling on error
+          // Only stop on 4xx errors (client errors), continue on 5xx (server errors)
+          if (response.status >= 400 && response.status < 500 && response.status !== 499) {
+            setError(`Failed to check generation status: ${response.statusText}`)
+            setIsGeneratingState(false)
+            if (pollIntervalRef) {
+              clearInterval(pollIntervalRef)
+              pollIntervalRef = null
+            }
+            return
+          }
+          return // Continue polling on server errors
         }
 
         const data = await response.json()
@@ -878,6 +964,20 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
             }
             
             console.log('[ConceptCardPro] ✅✅✅ Generation succeeded! Image URL set, polling stopped.')
+            
+            // CRITICAL FIX: Dispatch event for admin panel Pro Photoshoot feature
+            // This allows the admin panel to automatically select the generated image
+            if (data.imageId && typeof window !== 'undefined') {
+              try {
+                const event = new CustomEvent('pro-photoshoot:image-generated', {
+                  detail: { imageId: data.imageId }
+                })
+                window.dispatchEvent(event)
+                console.log('[ConceptCardPro] 📢 Dispatched pro-photoshoot:image-generated event:', data.imageId)
+              } catch (eventError) {
+                console.error('[ConceptCardPro] ❌ Error dispatching event:', eventError)
+              }
+            }
             
             // CRITICAL FIX: Save generatedImageUrl and predictionId to JSONB for persistence
             // This ensures images persist on page refresh
@@ -988,7 +1088,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
     }
     
     // Create interval FIRST so pollIntervalRef is available if poll completes immediately
-    pollIntervalRef = setInterval(poll, 3000)
+    pollIntervalRef = setInterval(poll, POLL_INTERVAL_MS)
     
     // Then start polling immediately (don't wait 3 seconds for first poll)
     // pollIntervalRef is now set, so if generation completes during this call,

@@ -25,22 +25,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "originalImageId is required" }, { status: 400 })
     }
 
-    // Validate avatar images (REQUIRED)
-    if (!avatarImages || !Array.isArray(avatarImages) || avatarImages.length === 0) {
-      return NextResponse.json(
-        { error: "avatarImages array is required (from concept card)" },
-        { status: 400 }
-      )
-    }
-
     // Validate original image belongs to admin user
     const [imageCheck] = await sql`
-      SELECT id, user_id FROM ai_images
+      SELECT id, user_id, image_url FROM ai_images
       WHERE id = ${originalImageId} AND user_id = ${adminCheck.userId}
     `
 
     if (!imageCheck) {
       return NextResponse.json({ error: "Image not found or access denied" }, { status: 404 })
+    }
+
+    // CRITICAL FIX: Auto-derive avatarImages from originalImageId if missing (admin panel fallback)
+    // Admin panel doesn't have concept card context, so we use the original image as avatar
+    let finalAvatarImages: string[] = []
+    if (avatarImages && Array.isArray(avatarImages) && avatarImages.length > 0) {
+      // Use provided avatar images (from concept card)
+      finalAvatarImages = avatarImages
+    } else {
+      // Fallback: Use original image as avatar (admin panel use case)
+      if (imageCheck.image_url) {
+        finalAvatarImages = [imageCheck.image_url]
+        console.log("[ProPhotoshoot] ⚠️ avatarImages not provided, using original image as avatar:", imageCheck.image_url.substring(0, 60))
+      } else {
+        return NextResponse.json(
+          { error: "Original image has no image_url and avatarImages not provided" },
+          { status: 400 }
+        )
+      }
     }
 
     // Check for existing active session
@@ -63,15 +74,16 @@ export async function POST(request: NextRequest) {
         ORDER BY grid_number
       `
 
-      // Get stored avatar images from session (if stored in metadata)
-      // For now, return the provided avatarImages
+      // Return existing session
+      // Use provided avatarImages or fallback to original image
+      const sessionAvatarImages = finalAvatarImages.length > 0 ? finalAvatarImages : [imageCheck.image_url]
       return NextResponse.json({
         success: true,
         sessionId: existingSession.id,
         totalGrids: existingSession.total_grids,
         status: existingSession.session_status,
         grids: grids || [],
-        avatarImages, // Return avatar images for reference
+        avatarImages: sessionAvatarImages, // Return avatar images for reference
       })
     }
 
@@ -93,7 +105,7 @@ export async function POST(request: NextRequest) {
       RETURNING id, total_grids, session_status, created_at
     `
 
-    console.log("[ProPhotoshoot] ✅ Session created:", newSession.id, "with", avatarImages.length, "avatar images")
+    console.log("[ProPhotoshoot] ✅ Session created:", newSession.id, "with", finalAvatarImages.length, "avatar images")
 
     return NextResponse.json({
       success: true,
@@ -101,7 +113,7 @@ export async function POST(request: NextRequest) {
       totalGrids: newSession.total_grids,
       status: newSession.session_status,
       grids: [],
-      avatarImages, // Return avatar images for reference
+      avatarImages: finalAvatarImages, // Return avatar images for reference
     })
   } catch (error) {
     console.error("[ProPhotoshoot] ❌ Error starting session:", error)

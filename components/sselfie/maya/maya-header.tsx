@@ -451,11 +451,13 @@ export default function MayaHeaderUnified({
               aria-label="Navigation menu"
               aria-expanded={showNavMenu}
             >
-              {proMode ? (
-                <MoreVertical size={18} strokeWidth={2} />
-              ) : (
-                <span className="text-xs sm:text-sm font-serif tracking-[0.2em] text-stone-950 uppercase">MENU</span>
-              )}
+              <div suppressHydrationWarning>
+                {proMode ? (
+                  <MoreVertical size={18} strokeWidth={2} />
+                ) : (
+                  <span className="text-xs sm:text-sm font-serif tracking-[0.2em] text-stone-950 uppercase">MENU</span>
+                )}
+              </div>
             </button>
           ) : (
             // Classic Mode: Simple menu button (fallback)

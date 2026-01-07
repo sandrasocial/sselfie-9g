@@ -41,14 +41,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate avatar images (REQUIRED)
-    if (!avatarImages || !Array.isArray(avatarImages) || avatarImages.length === 0) {
-      return NextResponse.json(
-        { error: "avatarImages array is required (from concept card)" },
-        { status: 400 }
-      )
-    }
-
     // Verify session belongs to admin
     const [session] = await sql`
       SELECT id, user_id, original_image_id, total_grids
@@ -58,6 +50,29 @@ export async function POST(request: NextRequest) {
 
     if (!session) {
       return NextResponse.json({ error: "Session not found" }, { status: 404 })
+    }
+
+    // CRITICAL FIX: Auto-derive avatarImages from originalImageId if missing (admin panel fallback)
+    // Admin panel doesn't have concept card context, so we use the original image as avatar
+    let finalAvatarImages: string[] = []
+    if (avatarImages && Array.isArray(avatarImages) && avatarImages.length > 0) {
+      // Use provided avatar images (from concept card)
+      finalAvatarImages = avatarImages
+    } else {
+      // Fallback: Fetch original image URL and use as avatar (admin panel use case)
+      const [originalImage] = await sql`
+        SELECT image_url FROM ai_images
+        WHERE id = ${originalImageId} AND user_id = ${adminCheck.userId}
+      `
+      if (originalImage && originalImage.image_url) {
+        finalAvatarImages = [originalImage.image_url]
+        console.log("[ProPhotoshoot] ⚠️ avatarImages not provided, using original image as avatar:", originalImage.image_url.substring(0, 60))
+      } else {
+        return NextResponse.json(
+          { error: "Original image not found or has no image_url, and avatarImages not provided" },
+          { status: 400 }
+        )
+      }
     }
 
     // Check if grid already exists
@@ -103,11 +118,15 @@ export async function POST(request: NextRequest) {
     const imageInput: string[] = []
     
     // Step 1: Add avatar images (ALWAYS first, for facial consistency)
-    avatarImages.forEach((url: string) => {
+    finalAvatarImages.forEach((url: string) => {
       if (url && typeof url === 'string' && url.startsWith('http')) {
         imageInput.push(url)
       }
     })
+    
+    // CRITICAL FIX: Track actual avatar count (valid URLs only)
+    // Some URLs might be invalid and filtered out, so we need the actual count added
+    const actualAvatarCount = imageInput.length
 
     // Step 2: Add ALL previous grids (REQUIRED for style/outfit/colorgrade consistency)
     previousGrids.forEach((grid: any) => {
@@ -119,8 +138,7 @@ export async function POST(request: NextRequest) {
     // Step 3: Handle 14 image limit (Nano Banana Pro max)
     // If exceeded: Keep all avatars + newest grids (exclude oldest grids)
     if (imageInput.length > 14) {
-      const avatarCount = avatarImages.length
-      const maxGrids = 14 - avatarCount
+      const maxGrids = 14 - actualAvatarCount
       
       if (maxGrids > 0) {
         // Keep newest grids only
@@ -128,7 +146,7 @@ export async function POST(request: NextRequest) {
         imageInput.length = 0 // Reset array
         
         // Rebuild: avatars first, then newest grids
-        avatarImages.forEach((url: string) => {
+        finalAvatarImages.forEach((url: string) => {
           if (url && typeof url === 'string' && url.startsWith('http')) {
             imageInput.push(url)
           }
@@ -139,20 +157,20 @@ export async function POST(request: NextRequest) {
           }
         })
         
-        console.log(`[ProPhotoshoot] ⚠️ Image limit exceeded (${previousGrids.length} grids). Keeping ${avatarCount} avatars + ${newestGrids.length} newest grids (excluded ${previousGrids.length - newestGrids.length} oldest)`)
+        console.log(`[ProPhotoshoot] ⚠️ Image limit exceeded (${previousGrids.length} grids). Keeping ${actualAvatarCount} avatars + ${newestGrids.length} newest grids (excluded ${previousGrids.length - newestGrids.length} oldest)`)
       } else {
         // Edge case: too many avatars, keep only avatars
         imageInput.length = 0
-        avatarImages.slice(0, 14).forEach((url: string) => {
+        finalAvatarImages.slice(0, 14).forEach((url: string) => {
           if (url && typeof url === 'string' && url.startsWith('http')) {
             imageInput.push(url)
           }
         })
-        console.log(`[ProPhotoshoot] ⚠️ Too many avatar images (${avatarImages.length}). Using first 14 only.`)
+        console.log(`[ProPhotoshoot] ⚠️ Too many avatar images (${finalAvatarImages.length}). Using first 14 only.`)
       }
     }
 
-    console.log(`[ProPhotoshoot] Image input: ${imageInput.length} images (${avatarImages.length} avatars + ${previousGrids.length} previous grids)`)
+    console.log(`[ProPhotoshoot] Image input: ${imageInput.length} images (${actualAvatarCount} valid avatars + ${previousGrids.length} previous grids)`)
 
     // Get prompt for grid
     let prompt: string

@@ -55,6 +55,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({
         status: "succeeded",
         imageUrl: existingGeneration.image_url,
+        imageId: existingGeneration.id, // Include imageId for admin panel event dispatch
       })
     }
 
@@ -84,6 +85,63 @@ export async function GET(req: NextRequest) {
       outputType: Array.isArray(status.output) ? 'array' : typeof status.output,
       error: status.error || null,
     })
+
+    // CRITICAL FIX: Handle "succeeded" status even if output is missing (check database)
+    if (status.status === "succeeded" && !status.output) {
+      console.log("[v0] [PRO MODE] ⚠️ Status is 'succeeded' but output is missing, checking database...", {
+        predictionId,
+        statusObject: JSON.stringify(status),
+      })
+      
+      // Try to find the image URL in database (might have been saved in a previous poll)
+      const [dbRecord] = await sql`
+        SELECT id, image_url, generation_status
+        FROM ai_images
+        WHERE prediction_id = ${predictionId}
+        AND image_url IS NOT NULL
+        ORDER BY created_at DESC
+        LIMIT 1
+      `
+      
+      if (dbRecord && dbRecord.image_url) {
+        console.log("[v0] [PRO MODE] ✅ Found image URL in database:", dbRecord.image_url.substring(0, 100))
+        return NextResponse.json({
+          status: "succeeded",
+          imageUrl: dbRecord.image_url,
+          imageId: dbRecord.id, // Include imageId for admin panel event dispatch
+        })
+      }
+      
+      // Check if there's ANY record for this prediction (even without image_url)
+      const [anyRecord] = await sql`
+        SELECT id, generation_status, created_at
+        FROM ai_images
+        WHERE prediction_id = ${predictionId}
+        ORDER BY created_at DESC
+        LIMIT 1
+      `
+      
+      if (anyRecord) {
+        console.log("[v0] [PRO MODE] ⚠️ Found record but no image_url yet, status:", anyRecord.generation_status)
+        // Record exists but image_url is null - might be processing, return processing status
+        return NextResponse.json({
+          status: "processing", // Continue polling - image might be processing
+        })
+      }
+      
+      // No record found at all - this is unusual but not necessarily an error
+      // Log detailed info and return processing status to allow more time
+      console.warn("[v0] [PRO MODE] ⚠️ Generation succeeded but no output and no database record found", {
+        predictionId,
+        statusObject: JSON.stringify(status),
+      })
+      
+      // Return processing status instead of error - allows polling to continue
+      // The image might still be processing or the record might be created soon
+      return NextResponse.json({
+        status: "processing", // Continue polling
+      })
+    }
 
     // If generation completed, download and save image (matches Classic Mode logic)
     if (status.status === "succeeded" && status.output) {
@@ -188,15 +246,17 @@ export async function GET(req: NextRequest) {
           }
         }
 
-        // Return the blob URL (matches Classic Mode - always return blob.url, not raw output)
+        // Return the blob URL and imageId (matches Classic Mode - always return blob.url, not raw output)
         const response = {
           status: "succeeded",
           imageUrl: blob.url, // Always return the Blob URL, not the raw Replicate URL
+          imageId: generation?.id || null, // Include imageId for admin panel event dispatch
         }
         console.log("[v0] [PRO MODE] ✅✅✅ Returning success response:", {
           status: "succeeded",
           imageUrl: blob.url.substring(0, 100),
           imageUrlLength: blob.url.length,
+          imageId: generation?.id || null,
         })
         return NextResponse.json(response)
       } catch (error: any) {
@@ -224,11 +284,29 @@ export async function GET(req: NextRequest) {
       status: status.status,
     })
   } catch (error: any) {
-    console.error("[v0] [PRO MODE] Check generation status error:", error)
+    console.error("[v0] [PRO MODE] ❌ Check generation status error:", {
+      message: error.message,
+      stack: error instanceof Error ? error.stack : undefined,
+      predictionId: req.nextUrl.searchParams.get("predictionId"),
+      errorType: error.constructor?.name || typeof error,
+    })
+    
+    // For known errors, return appropriate status codes
+    if (error.message?.includes("timeout") || error.message?.includes("Timeout")) {
+      return NextResponse.json({
+        status: "processing", // Continue polling on timeout
+      })
+    }
+    
+    // For other errors, return 500 but with sanitized error message
     return NextResponse.json(
       {
+        status: "failed",
         error: error.message || "Internal server error",
-        details: error instanceof Error ? error.stack : String(error),
+        // Only include stack in development
+        ...(process.env.NODE_ENV === "development" && {
+          details: error instanceof Error ? error.stack : String(error),
+        }),
       },
       { status: 500 }
     )

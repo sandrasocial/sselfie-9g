@@ -128,6 +128,12 @@ export function ensureGenderInPrompt(
   
   if (!hasGender) {
     // Gender not found - insert it after trigger word
+    // Handle empty afterTrigger (prompt equals just trigger word)
+    if (!cleanedAfterTrigger || cleanedAfterTrigger.length === 0) {
+      // Prompt is just trigger word: "sarah" -> "sarah, woman"
+      return `${triggerWord}, ${genderTerm}`
+    }
+    
     // Use cleanedAfterTrigger to avoid duplicating content that comes after comma
     if (afterTrigger.startsWith(',')) {
       // Already has comma: "sarah, ..." -> "sarah, woman, ..."
