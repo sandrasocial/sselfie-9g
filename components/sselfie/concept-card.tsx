@@ -6,6 +6,7 @@ import InstagramPhotoCard from "./instagram-photo-card"
 import InstagramReelCard from "./instagram-reel-card"
 import InstagramCarouselCard from "./instagram-carousel-card"
 import ImageGalleryModal from "./image-gallery-modal"
+import ProPhotoshootPanel from "./pro-photoshoot-panel"
 import type { ConceptData } from "./types"
 import type { GalleryImage } from "@/lib/data/images"
 import BuyCreditsModal from "./buy-credits-modal"
@@ -75,7 +76,32 @@ export default function ConceptCard({
   const [showPhotoshootConfirm, setShowPhotoshootConfirm] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const [photoshootError, setPhotoshootError] = useState<string | null>(null)
+  const [photoshootId, setPhotoshootId] = useState<number | null>(null)
   const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false)
+  
+  // Pro Photoshoot state
+  const [isCreatingProPhotoshoot, setIsCreatingProPhotoshoot] = useState(false)
+  const [proPhotoshootSessionId, setProPhotoshootSessionId] = useState<number | null>(null)
+  const [proPhotoshootError, setProPhotoshootError] = useState<string | null>(null)
+  const [proPhotoshootGrids, setProPhotoshootGrids] = useState<Array<{
+    id?: number
+    gridNumber: number
+    status: "pending" | "generating" | "completed" | "failed"
+    gridUrl?: string
+    predictionId?: string
+  }>>([])
+  const [isGeneratingGrids, setIsGeneratingGrids] = useState(false)
+  const [proPhotoshootOriginalImageId, setProPhotoshootOriginalImageId] = useState<number | null>(null)
+  
+  // Pro Photoshoot Carousel state
+  const [proPhotoshootCarousel, setProPhotoshootCarousel] = useState<{
+    gridId: number
+    gridNumber: number
+    frames: string[]
+    galleryImageIds: number[]
+  } | null>(null)
+  const [isCreatingCarousel, setIsCreatingCarousel] = useState(false)
+  const [creatingCarouselForGridId, setCreatingCarouselForGridId] = useState<number | null>(null)
 
   // Prompt editing state
   const [showPromptEditor, setShowPromptEditor] = useState(false)
@@ -272,6 +298,72 @@ export default function ConceptCard({
       return () => document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [showMenu])
+
+  // Load photoshoot data on mount if photoshootId exists or from localStorage
+  useEffect(() => {
+    const loadPhotoshootData = async () => {
+      // Check localStorage for photoshoot ID associated with this concept
+      let storedId = photoshootId
+      
+      if (!storedId) {
+        try {
+          const stored = localStorage.getItem(`photoshoot_${concept.title}`)
+          if (stored) {
+            const parsed = JSON.parse(stored)
+            if (parsed.photoshootId) {
+              storedId = parsed.photoshootId
+              setPhotoshootId(parsed.photoshootId)
+            }
+          }
+        } catch (e) {
+          // Ignore parse errors
+        }
+      }
+
+      // If we have a photoshootId, load the photoshoot data
+      if (storedId) {
+        try {
+          console.log("[v0] 📸 Loading photoshoot data for ID:", storedId)
+          const response = await fetch(`/api/maya/get-photoshoot?id=${storedId}`)
+          
+          if (response.ok) {
+            const data = await response.json()
+            
+            if (data.success && data.images) {
+              console.log("[v0] ✅ Photoshoot loaded:", data.completedCount, "/", data.totalCount, "images")
+              
+              // Restore photoshootGenerations from loaded data
+              setPhotoshootGenerations(
+                data.images.map((img: any) => ({
+                  id: img.id,
+                  generationId: img.predictionId,
+                  index: img.id,
+                  url: img.url || img.imageUrl,
+                  imageUrl: img.url || img.imageUrl,
+                  action: img.action || img.title,
+                  status: img.status || (img.url ? "ready" : "processing"),
+                  error: null,
+                }))
+              )
+
+              // If not all images are complete, we'll let the existing polling continue
+              // The check-photoshoot-prediction endpoint will update the database
+              // and the frontend will pick up changes on next poll
+              if (data.status !== "completed" && data.completedCount < data.totalCount) {
+                console.log("[v0] 📸 Photoshoot incomplete:", data.completedCount, "/", data.totalCount, "- images will continue loading")
+              }
+            }
+          } else {
+            console.log("[v0] ⚠️ Failed to load photoshoot:", response.status)
+          }
+        } catch (error) {
+          console.error("[v0] ❌ Error loading photoshoot:", error)
+        }
+      }
+    }
+
+    loadPhotoshootData()
+  }, [photoshootId, concept.title, concept.description, userId])
 
   const handleImageSelect = (boxIndex: number) => {
     currentBoxIndexRef.current = boxIndex
@@ -919,6 +1011,19 @@ export default function ConceptCard({
         creditsDeducted: data.creditsDeducted,
       })
 
+      // Store photoshootId for later retrieval
+      if (data.photoshootId) {
+        setPhotoshootId(data.photoshootId)
+        // Store in localStorage for persistence across page refreshes
+        // Use concept title as key to retrieve photoshootId later
+        localStorage.setItem(`photoshoot_${concept.title}`, JSON.stringify({
+          photoshootId: data.photoshootId,
+          conceptTitle: concept.title,
+          conceptDescription: concept.description,
+          createdAt: new Date().toISOString(),
+        }))
+      }
+
       if (data.predictions && data.predictions.length > 0) {
         console.log("[v0] 📸 Starting prediction polling for", data.predictions.length, "images")
 
@@ -952,6 +1057,388 @@ export default function ConceptCard({
       setPhotoshootError(err instanceof Error ? err.message : "Failed to create photoshoot")
       setIsCreatingPhotoshoot(false)
       setPhotoshootGenerations([])
+    }
+  }
+
+  const handleCreateProPhotoshoot = async () => {
+    if (!generatedImageUrl || !isProMode) {
+      console.error("[ProPhotoshoot] Missing generatedImageUrl or not in Pro Mode")
+      return
+    }
+
+    setIsCreatingProPhotoshoot(true)
+    setProPhotoshootError(null)
+
+    try {
+      // Get avatar images from props (baseImages or selfies)
+      const avatarImages = baseImages.length > 0 ? baseImages : selfies
+      
+      if (avatarImages.length === 0) {
+        throw new Error("Avatar images are required for Pro Photoshoot. Please upload images first.")
+      }
+
+      // Get originalImageId - look up ai_images by prediction_id or image_url
+      let originalImageId: number | null = null
+
+      // Try to get image ID from prediction_id (most reliable)
+      if (predictionId) {
+        try {
+          const lookupResponse = await fetch(`/api/maya/pro/photoshoot/lookup-image?predictionId=${predictionId}`)
+          if (lookupResponse.ok) {
+            const lookupData = await lookupResponse.json()
+            originalImageId = lookupData.imageId
+          }
+        } catch (lookupError) {
+          console.warn("[ProPhotoshoot] Could not lookup by predictionId:", lookupError)
+        }
+      }
+
+      // Fallback: Try by image URL
+      if (!originalImageId && generatedImageUrl) {
+        try {
+          const lookupResponse = await fetch(`/api/maya/pro/photoshoot/lookup-image?imageUrl=${encodeURIComponent(generatedImageUrl)}`)
+          if (lookupResponse.ok) {
+            const lookupData = await lookupResponse.json()
+            originalImageId = lookupData.imageId
+          }
+        } catch (lookupError) {
+          console.warn("[ProPhotoshoot] Could not lookup by imageUrl:", lookupError)
+        }
+      }
+
+      if (!originalImageId) {
+        throw new Error("Could not find image ID. The image may not be saved to gallery yet.")
+      }
+
+      // Start Pro Photoshoot session
+      const sessionResponse = await fetch("/api/maya/pro/photoshoot/start-session", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          originalImageId,
+          totalGrids: 8,
+          avatarImages, // Pass avatar images to session
+        }),
+      })
+
+      const sessionData = await sessionResponse.json()
+
+      if (!sessionResponse.ok) {
+        throw new Error(sessionData.error || "Failed to start Pro Photoshoot session")
+      }
+
+      console.log("[ProPhotoshoot] ✅ Session started:", sessionData.sessionId)
+      setProPhotoshootSessionId(sessionData.sessionId)
+      setProPhotoshootOriginalImageId(originalImageId) // Store for future grid generations
+
+      // Get Maya-generated prompt for Grid 1
+      let mayaGeneratedPrompt: string | null = null
+      try {
+        console.log("[ProPhotoshoot] 🎨 Asking Maya to generate prompt for Grid 1...")
+        
+        const mayaPromptResponse = await fetch("/api/maya/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-chat-type": "pro-photoshoot", // Trigger Pro Photoshoot context
+            "x-pro-photoshoot": "true", // Ensure context is loaded
+            "x-studio-pro-mode": "true", // Ensure Maya uses Pro Mode config
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            chatId: chatId || undefined, // Use existing chat ID if available
+            messages: [
+              {
+                role: "user",
+                content: `Create a prompt for a 3x3 Pro Photoshoot grid based on this concept: "${concept.description || concept.title}". 
+
+Concept details:
+- Title: ${concept.title}
+- Description: ${concept.description || "No description"}
+- Category: ${concept.category || "General"}
+- Outfit/Style: ${concept.description || concept.title}
+
+Focus on the outfit, location, and color grade. Output only the full ready-to-use prompt for Nano Banana Pro. Do not include any explanations or additional text - just the prompt.`,
+              },
+            ],
+          }),
+        })
+
+        const mayaPromptData = await mayaPromptResponse.json()
+        
+        if (mayaPromptResponse.ok && mayaPromptData.response) {
+          mayaGeneratedPrompt = mayaPromptData.response.trim()
+          console.log("[ProPhotoshoot] ✅ Maya generated prompt for Grid 1:", mayaGeneratedPrompt.substring(0, 100) + "...")
+        } else {
+          console.warn("[ProPhotoshoot] ⚠️ Maya prompt generation failed, will use fallback:", mayaPromptData.error)
+        }
+      } catch (mayaError) {
+        console.error("[ProPhotoshoot] ❌ Error getting prompt from Maya:", mayaError)
+        // Continue with fallback if Maya fails
+      }
+
+      // Auto-generate Grid 1
+      const gridResponse = await fetch("/api/maya/pro/photoshoot/generate-grid", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          originalImageId,
+          gridNumber: 1,
+          sessionId: sessionData.sessionId,
+          avatarImages, // Pass avatar images for generation
+          customPromptData: {
+            // Use Maya-generated prompt if available, otherwise use concept data
+            mayaGeneratedPrompt: mayaGeneratedPrompt || undefined,
+            outfit: concept.description || concept.title,
+            location: concept.category || "modern setting",
+            colorGrade: "natural tones",
+          },
+        }),
+      })
+
+      const gridData = await gridResponse.json()
+
+      if (!gridResponse.ok) {
+        throw new Error(gridData.error || "Failed to generate Grid 1")
+      }
+
+      console.log("[ProPhotoshoot] ✅ Grid 1 generation started:", gridData.predictionId)
+
+      // Update credits if callback provided
+      if (onCreditsUpdate && gridData.newBalance !== undefined) {
+        onCreditsUpdate(gridData.newBalance)
+      }
+
+      // Initialize grid state
+      setProPhotoshootGrids([
+        {
+          id: gridData.gridId,
+          gridNumber: 1,
+          status: "generating",
+          predictionId: gridData.predictionId,
+        },
+      ])
+
+      // Start polling for Grid 1 completion
+      pollGridStatus(gridData.gridId, gridData.predictionId, 1)
+
+      setIsCreatingProPhotoshoot(false)
+    } catch (err) {
+      console.error("[ProPhotoshoot] ❌ Error creating Pro Photoshoot:", err)
+      setProPhotoshootError(err instanceof Error ? err.message : "Failed to create Pro Photoshoot")
+      setIsCreatingProPhotoshoot(false)
+    }
+  }
+
+  // Poll grid status until completion
+  const pollGridStatus = async (gridId: number, predictionId: string, gridNumber: number) => {
+    const maxAttempts = 120 // 10 minutes max (5s intervals)
+    let attempts = 0
+
+    const poll = async () => {
+      try {
+        const response = await fetch(
+          `/api/maya/pro/photoshoot/check-grid?predictionId=${predictionId}&gridId=${gridId}`
+        )
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to check grid status")
+        }
+
+        if (data.status === "completed") {
+          console.log(`[ProPhotoshoot] ✅ Grid ${gridNumber} completed`)
+          
+          // Update grid state
+          setProPhotoshootGrids((prev) =>
+            prev.map((g) =>
+              g.gridNumber === gridNumber
+                ? {
+                    ...g,
+                    status: "completed" as const,
+                    gridUrl: data.gridUrl,
+                  }
+                : g
+            )
+          )
+
+          return
+        } else if (data.status === "failed") {
+          console.error(`[ProPhotoshoot] ❌ Grid ${gridNumber} failed`)
+          
+          // Update grid state
+          setProPhotoshootGrids((prev) =>
+            prev.map((g) =>
+              g.gridNumber === gridNumber
+                ? {
+                    ...g,
+                    status: "failed" as const,
+                  }
+                : g
+            )
+          )
+
+          return
+        }
+
+        // Still processing
+        attempts++
+        if (attempts < maxAttempts) {
+          setTimeout(poll, 5000) // Poll every 5 seconds
+        } else {
+          console.error(`[ProPhotoshoot] ⏱️ Grid ${gridNumber} polling timed out`)
+          setProPhotoshootGrids((prev) =>
+            prev.map((g) =>
+              g.gridNumber === gridNumber
+                ? {
+                    ...g,
+                    status: "failed" as const,
+                  }
+                : g
+            )
+          )
+        }
+      } catch (err) {
+        console.error(`[ProPhotoshoot] ❌ Error polling grid ${gridNumber}:`, err)
+        setProPhotoshootGrids((prev) =>
+          prev.map((g) =>
+            g.gridNumber === gridNumber
+              ? {
+                  ...g,
+                  status: "failed" as const,
+                }
+              : g
+          )
+        )
+      }
+    }
+
+    poll()
+  }
+
+  // Generate a single grid
+  const generateGrid = async (gridNumber: number, avatarImages: string[], sessionId: number) => {
+    try {
+      // Use stored originalImageId
+      if (!proPhotoshootOriginalImageId) {
+        throw new Error("Original image ID not found. Please restart Pro Photoshoot.")
+      }
+
+      const response = await fetch("/api/maya/pro/photoshoot/generate-grid", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          originalImageId: proPhotoshootOriginalImageId,
+          gridNumber,
+          sessionId,
+          avatarImages,
+          // Grids 2-8 use universal prompt (no customPromptData)
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to generate grid")
+      }
+
+      // Add grid to state
+      setProPhotoshootGrids((prev) => [
+        ...prev,
+        {
+          id: data.gridId,
+          gridNumber,
+          status: "generating" as const,
+          predictionId: data.predictionId,
+        },
+      ])
+
+      // Start polling
+      pollGridStatus(data.gridId, data.predictionId, gridNumber)
+
+      // Update credits
+      if (onCreditsUpdate && data.newBalance !== undefined) {
+        onCreditsUpdate(data.newBalance)
+      }
+
+      return data
+    } catch (error) {
+      console.error(`[ProPhotoshoot] ❌ Error generating grid ${gridNumber}:`, error)
+      throw error
+    }
+  }
+
+  // Generate multiple grids (max 3 at once)
+  const generateGrids = async (count: number) => {
+    if (!proPhotoshootSessionId) {
+      throw new Error("No active Pro Photoshoot session")
+    }
+
+    setIsGeneratingGrids(true)
+
+    try {
+      const avatarImages = baseImages.length > 0 ? baseImages : selfies
+      if (avatarImages.length === 0) {
+        throw new Error("Avatar images required")
+      }
+
+      const gridsToGenerate = Math.min(count, 3) // Max 3 at once
+      const nextGridNumber = proPhotoshootGrids.length + 1
+
+      // Generate in parallel (up to 3)
+      const promises = Array.from({ length: gridsToGenerate }, (_, i) =>
+        generateGrid(nextGridNumber + i, avatarImages, proPhotoshootSessionId)
+      )
+
+      await Promise.all(promises)
+    } catch (error) {
+      console.error("[ProPhotoshoot] ❌ Error generating grids:", error)
+      setProPhotoshootError(error instanceof Error ? error.message : "Failed to generate grids")
+    } finally {
+      setIsGeneratingGrids(false)
+    }
+  }
+
+  // Create carousel from grid
+  const handleCreateCarousel = async (gridId: number, gridNumber: number) => {
+    setIsCreatingCarousel(true)
+    setCreatingCarouselForGridId(gridId)
+
+    try {
+      const response = await fetch("/api/maya/pro/photoshoot/create-carousel", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ gridId }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to create carousel")
+      }
+
+      console.log(`[ProPhotoshoot] ✅ Carousel created for Grid ${gridNumber}:`, data.framesCount, "frames")
+
+      // Store carousel data
+      setProPhotoshootCarousel({
+        gridId: data.gridId,
+        gridNumber: data.gridNumber || gridNumber,
+        frames: data.frames || [],
+        galleryImageIds: data.galleryImageIds || [],
+      })
+
+      // Frames are already created and saved by the API, no polling needed
+      // The carousel is ready to display immediately
+    } catch (error) {
+      console.error("[ProPhotoshoot] ❌ Error creating carousel:", error)
+      setProPhotoshootError(error instanceof Error ? error.message : "Failed to create carousel")
+    } finally {
+      setIsCreatingCarousel(false)
+      setCreatingCarouselForGridId(null)
     }
   }
 
@@ -1365,7 +1852,55 @@ export default function ConceptCard({
                     ? () => setShowPhotoshootConfirm(true)
                     : undefined
                 }
+                onCreateProPhotoshoot={
+                  isProMode && !isCreatingProPhotoshoot && generatedImageUrl
+                    ? handleCreateProPhotoshoot
+                    : undefined
+                }
+                studioProMode={isProMode}
               />
+            )}
+
+            {/* Pro Photoshoot Panel */}
+            {isProMode && proPhotoshootSessionId && !proPhotoshootCarousel && (
+              <div className="mt-4">
+                {proPhotoshootError && (
+                  <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-xs text-red-600">{proPhotoshootError}</p>
+                  </div>
+                )}
+                <ProPhotoshootPanel
+                  sessionId={proPhotoshootSessionId}
+                  grids={proPhotoshootGrids}
+                  onGenerateMore={generateGrids}
+                  onCreateCarousel={handleCreateCarousel}
+                  maxGrids={8}
+                  isGenerating={isGeneratingGrids}
+                  creditCost={3}
+                  creatingCarouselForGridId={creatingCarouselForGridId}
+                />
+              </div>
+            )}
+
+            {/* Pro Photoshoot Carousel */}
+            {isProMode && proPhotoshootCarousel && (
+              <div className="mt-4">
+                <InstagramCarouselCard
+                  images={proPhotoshootCarousel.frames.map((url, i) => ({
+                    url,
+                    id: proPhotoshootCarousel.galleryImageIds[i] || i,
+                    action: `Frame ${i + 1}`,
+                  }))}
+                  title={concept.title}
+                  description={`Pro Photoshoot Grid ${proPhotoshootCarousel.gridNumber} - ${proPhotoshootCarousel.frames.length} frames`}
+                  category={concept.category}
+                  onFavoriteToggle={handleFavoriteToggle}
+                  onDelete={() => {
+                    setProPhotoshootCarousel(null)
+                  }}
+                  isFavorite={isFavorite}
+                />
+              </div>
             )}
 
             {showPhotoshootConfirm && (

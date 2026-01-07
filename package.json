@@ -109,6 +109,7 @@
     "require-in-the-middle": "^8.0.1",
     "resend": "latest",
     "server-only": "latest",
+    "sharp": "^0.34.5",
     "sonner": "latest",
     "stripe": "latest",
     "swr": "latest",

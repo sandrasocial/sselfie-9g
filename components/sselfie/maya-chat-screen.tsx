@@ -2430,16 +2430,16 @@ export default function MayaChatScreen({
 
   // CRITICAL FIX: isEmpty should only be true if:
   // 1. Not currently loading AND
-  // 2. No chat selected (no chatId) AND
-  // 3. No messages AND
-  // 4. User has no chat history
-  // This prevents welcome screen from showing when loading a history chat
+  // 2. No messages (new chat = no messages) AND
+  // 3. Chat has been loaded (prevents showing during initial load)
+  // NOTE: Welcome screen should show for NEW chats regardless of:
+  // - Whether user has used Maya before (hasUsedMayaBefore)
+  // - Whether chatId exists (new chats get chatId immediately but have no messages)
+  // The key indicator of a "new chat" is: no messages
   const isEmpty = 
     !isLoadingChat && // Don't show welcome screen while loading
-    !chatId && // Don't show welcome screen if chat is selected
-    (!messages || messages.length === 0) && // No messages
-    hasLoadedChatRef.current && // Only show empty if we've actually loaded (prevents showing during initial load)
-    !hasUsedMayaBefore // No history
+    (!messages || messages.length === 0) && // No messages = new/empty chat
+    hasLoadedChatRef.current // Only show empty if we've actually loaded (prevents showing during initial load)
 
   // NOTE: Workbench should always be available in Pro mode for manual creation
   // Therefore, we always show the chat UI when in Pro mode, which includes the workbench

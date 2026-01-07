@@ -18,6 +18,9 @@ interface InstagramPhotoCardProps {
   onCaptionUpdate?: (newCaption: string) => void
   showAnimateOverlay?: boolean
   onCreatePhotoshoot?: () => void
+  onCreateProPhotoshoot?: () => void
+  studioProMode?: boolean
+  isCreatingProPhotoshoot?: boolean
   generationStatus?: string // e.g., "Analyzing motion..." or "Generating Video..."
   generationProgress?: number // 0-100
 }
@@ -34,6 +37,9 @@ export default function InstagramPhotoCard({
   onCaptionUpdate,
   showAnimateOverlay = false,
   onCreatePhotoshoot,
+  onCreateProPhotoshoot,
+  studioProMode = false,
+  isCreatingProPhotoshoot = false,
   generationStatus,
   generationProgress,
 }: InstagramPhotoCardProps) {
@@ -43,6 +49,7 @@ export default function InstagramPhotoCard({
   const [isEditingCaption, setIsEditingCaption] = useState(false)
   const [captionValue, setCaptionValue] = useState(concept.description)
   const [isCreatingPhotoshoot, setIsCreatingPhotoshoot] = useState(false)
+  // Note: isCreatingProPhotoshoot comes from props, no local state needed
 
   // Sync liked state with isFavorite prop
   useEffect(() => {
@@ -84,6 +91,13 @@ export default function InstagramPhotoCard({
     } finally {
       setIsCreatingPhotoshoot(false)
     }
+  }
+
+  const handleCreateProPhotoshoot = async () => {
+    if (!onCreateProPhotoshoot) return
+    setShowMenu(false)
+    // Note: isCreatingProPhotoshoot state is managed by parent component via prop
+    await onCreateProPhotoshoot()
   }
 
   const handleAnimate = async () => {
@@ -302,26 +316,44 @@ export default function InstagramPhotoCard({
             <p className="text-xs text-stone-400 uppercase tracking-wide">Just now</p>
           </div>
 
-          {/* Create Photoshoot Button */}
-          {onCreatePhotoshoot && (
-            <button
-              onClick={handleCreatePhotoshoot}
-              disabled={isCreatingPhotoshoot}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-stone-800 via-stone-900 to-stone-800 hover:from-stone-900 hover:via-stone-950 hover:to-stone-900 text-white rounded-lg font-medium text-sm transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isCreatingPhotoshoot ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Creating Photoshoot...</span>
-                </>
-              ) : (
-                <>
-                  <Camera size={18} strokeWidth={2} />
-                  <span>Create Photoshoot in This Style</span>
-                </>
-              )}
-            </button>
-          )}
+          {/* Create Photoshoot Buttons */}
+          <div className="flex flex-col gap-2">
+            {onCreatePhotoshoot && (
+              <button
+                onClick={handleCreatePhotoshoot}
+                disabled={isCreatingPhotoshoot || isCreatingProPhotoshoot}
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-stone-800 via-stone-900 to-stone-800 hover:from-stone-900 hover:via-stone-950 hover:to-stone-900 text-white rounded-lg font-medium text-sm transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isCreatingPhotoshoot ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Creating Photoshoot...</span>
+                  </>
+                ) : (
+                  <>
+                    <Camera size={18} strokeWidth={2} />
+                    <span>Create Photoshoot in This Style</span>
+                  </>
+                )}
+              </button>
+            )}
+            {onCreateProPhotoshoot && studioProMode && (
+              <button
+                onClick={handleCreateProPhotoshoot}
+                disabled={isCreatingPhotoshoot || isCreatingProPhotoshoot}
+                className="w-full flex items-center justify-center px-4 py-2.5 bg-gradient-to-r from-stone-800 via-stone-900 to-stone-800 hover:from-stone-900 hover:via-stone-950 hover:to-stone-900 text-white rounded-lg font-medium text-sm transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isCreatingProPhotoshoot ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <span>Creating Pro Photoshoot...</span>
+                  </>
+                ) : (
+                  <span>Create Pro Photoshoot</span>
+                )}
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

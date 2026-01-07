@@ -238,7 +238,9 @@ export default function MayaHeaderUnified({
         {/* Right: Credits and Mode Toggle - Simple, clean layout */}
         <div className="flex items-center gap-2 sm:gap-3 md:gap-4 shrink-0">
           {/* Pro Mode: Guide Controls Dropdown (Admin only) */}
-          {proMode && isAdmin && (
+          {/* Use suppressHydrationWarning to prevent mismatch from isMounted check */}
+          <div suppressHydrationWarning>
+            {isMounted && proMode && isAdmin && (
             <DropdownMenu open={isGuideMenuOpen} onOpenChange={setIsGuideMenuOpen}>
               <DropdownMenuTrigger asChild>
                 <button
@@ -306,39 +308,41 @@ export default function MayaHeaderUnified({
                     >
                       Active Guide
                     </label>
-                    {isMounted ? (
-                      <Select
-                        value={selectedGuideId?.toString() || "none"}
-                        onValueChange={(value) => {
-                          if (onGuideChange) {
-                            if (value === "none") {
-                              onGuideChange(null, null)
-                            } else {
-                              const guide = guides.find(g => g.id.toString() === value)
-                              if (guide) {
-                                onGuideChange(guide.id, guide.category)
+                    <div className="w-full" suppressHydrationWarning>
+                      {isMounted ? (
+                        <Select
+                          value={selectedGuideId?.toString() || "none"}
+                          onValueChange={(value) => {
+                            if (onGuideChange) {
+                              if (value === "none") {
+                                onGuideChange(null, null)
+                              } else {
+                                const guide = guides.find(g => g.id.toString() === value)
+                                if (guide) {
+                                  onGuideChange(guide.id, guide.category)
+                                }
                               }
                             }
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="w-full" style={{ minHeight: '36px' }}>
-                          <SelectValue placeholder="Select a guide..." />
-                        </SelectTrigger>
-                        <SelectContent className="z-[200]" style={{ zIndex: 200 }}>
-                          <SelectItem value="none">No guide selected</SelectItem>
-                          {guides.map((guide) => (
-                            <SelectItem key={guide.id} value={guide.id.toString()}>
-                              {guide.title} ({guide.category})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <div className="w-full h-9 rounded-md border border-stone-200 bg-white flex items-center px-3 text-sm text-stone-500">
-                        Loading...
-                      </div>
-                    )}
+                          }}
+                        >
+                          <SelectTrigger className="w-full" style={{ minHeight: '36px' }}>
+                            <SelectValue placeholder="Select a guide..." />
+                          </SelectTrigger>
+                          <SelectContent className="z-[200]" style={{ zIndex: 200 }}>
+                            <SelectItem value="none">No guide selected</SelectItem>
+                            {guides.map((guide) => (
+                              <SelectItem key={guide.id} value={guide.id.toString()}>
+                                {guide.title} ({guide.category})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <div className="w-full h-9 rounded-md border border-stone-200 bg-white flex items-center px-3 text-sm text-stone-500">
+                          Loading...
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {selectedGuideId && (
@@ -384,7 +388,8 @@ export default function MayaHeaderUnified({
                 </div>
               </DropdownMenuContent>
             </DropdownMenu>
-          )}
+            )}
+          </div>
 
           {/* Credits Display - Always show when available */}
           {credits !== undefined && (

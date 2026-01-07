@@ -154,6 +154,86 @@ export async function GET(request: NextRequest) {
 
       console.log(`[v0] 🎉 Migration complete: ${permanentUrls.length}/${temporaryImageUrls.length} images`)
 
+      // CRITICAL: Update generated_images record with final image URLs
+      // Find the photoshoot record that contains this prediction
+      try {
+        console.log(`[v0] 🔍 Finding photoshoot record for prediction ${predictionId}...`)
+        
+        const photoshootRecords = await sql`
+          SELECT id, image_urls, user_id
+          FROM generated_images
+          WHERE user_id = ${numericUserId}
+            AND image_urls::text LIKE ${`%${predictionId}%`}
+            AND image_urls::text LIKE '%photoshoot_single_predictions%'
+          ORDER BY created_at DESC
+          LIMIT 1
+        `
+
+        if (photoshootRecords.length > 0) {
+          const record = photoshootRecords[0]
+          const imageUrlsData = typeof record.image_urls === 'string' 
+            ? JSON.parse(record.image_urls) 
+            : record.image_urls
+
+          console.log(`[v0] ✅ Found photoshoot record ID: ${record.id}`)
+
+          // Update the predictions array with final URLs
+          if (imageUrlsData.predictions && Array.isArray(imageUrlsData.predictions)) {
+            const updatedPredictions = imageUrlsData.predictions.map((pred: any) => {
+              if (pred.predictionId === predictionId) {
+                return {
+                  ...pred,
+                  imageUrls: permanentUrls,
+                  status: "completed",
+                  completedAt: new Date().toISOString(),
+                }
+              }
+              return pred
+            })
+
+            // Check if all predictions are complete
+            const allComplete = updatedPredictions.every((p: any) => p.status === "completed")
+            
+            // Collect all final image URLs from completed predictions
+            const allImageUrls: string[] = []
+            updatedPredictions.forEach((pred: any) => {
+              if (pred.imageUrls && Array.isArray(pred.imageUrls)) {
+                allImageUrls.push(...pred.imageUrls)
+              }
+            })
+
+            const updatedImageUrls = {
+              ...imageUrlsData,
+              predictions: updatedPredictions,
+              status: allComplete ? "completed" : "processing",
+              finalImageUrls: allImageUrls.length > 0 ? allImageUrls : undefined,
+              completedCount: updatedPredictions.filter((p: any) => p.status === "completed").length,
+              totalCount: updatedPredictions.length,
+            }
+
+            // Update the record
+            await sql`
+              UPDATE generated_images
+              SET 
+                image_urls = ${JSON.stringify(updatedImageUrls)}::jsonb,
+                updated_at = NOW()
+              WHERE id = ${record.id}
+            `
+
+            console.log(`[v0] ✅ Updated photoshoot record ${record.id}: ${updatedImageUrls.completedCount}/${updatedImageUrls.totalCount} images complete`)
+            
+            if (allComplete) {
+              console.log(`[v0] 🎉 Photoshoot ${record.id} fully complete with ${allImageUrls.length} images!`)
+            }
+          }
+        } else {
+          console.log(`[v0] ⚠️ No photoshoot record found for prediction ${predictionId} - images saved to gallery only`)
+        }
+      } catch (updateError: any) {
+        console.error(`[v0] ❌ Failed to update photoshoot record:`, updateError?.message)
+        // Don't fail the request - images are still saved to gallery
+      }
+
       return NextResponse.json({
         status: "succeeded",
         output: permanentUrls,

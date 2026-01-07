@@ -723,6 +723,25 @@ export async function POST(req: Request) {
                  userSelectedMode === "classic" ? "User selected Classic Mode - all posts will be Classic" :
                  "Auto-detect mode per post (default - using Classic Mode config)"
       })
+    } else if (chatType === "pro-photoshoot" || req.headers.get("x-pro-photoshoot") === "true") {
+      // Pro Photoshoot Context: Add instructions for creating Pro Photoshoot prompts
+      // This context helps Maya create custom prompts for Grid 1 (base prompt)
+      // Grids 2-8 use universal prompts (not created by Maya)
+      const { getProPhotoshootContextAddon } = await import("@/lib/maya/pro-photoshoot-context")
+      
+      // Use Pro Mode config (Pro Photoshoot is Pro Mode only)
+      const config = MAYA_PRO_CONFIG
+      const unifiedSystemPrompt = getMayaSystemPrompt(config)
+      
+      // Combine Pro Photoshoot context with unified system
+      systemPrompt = getProPhotoshootContextAddon() + unifiedSystemPrompt
+      console.log("[Maya Chat] ✅✅✅ PRO PHOTOSHOOT CONTEXT LOADED ✅✅✅", {
+        chatType,
+        hasHeader: req.headers.get("x-pro-photoshoot") === "true",
+        systemPromptLength: systemPrompt.length,
+        contextLength: getProPhotoshootContextAddon().length,
+        unifiedSystemLength: unifiedSystemPrompt.length,
+      })
     } else {
       // Use unified Maya system with mode-specific adapters
       // Note: getMayaSystemPrompt() includes MAYA_VOICE, MAYA_CORE_INTELLIGENCE,

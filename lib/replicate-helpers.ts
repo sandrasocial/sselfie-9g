@@ -111,21 +111,32 @@ export function ensureGenderInPrompt(
   
   // Extract the part after trigger word
   const afterTrigger = prompt.slice(triggerWord.length).trim()
-  const afterTriggerLower = afterTrigger.toLowerCase()
+  
+  // Remove leading comma and whitespace if present (e.g., ", woman" -> "woman")
+  const cleanedAfterTrigger = afterTrigger.replace(/^,\s*/, '').trim()
+  const cleanedAfterTriggerLower = cleanedAfterTrigger.toLowerCase()
   
   // Check if gender is already present after trigger word
   // Look for gender terms: "woman", "man", "person", or ethnicity + gender
   const hasGender = 
-    afterTriggerLower.startsWith(genderLower + ",") ||
-    afterTriggerLower.startsWith(genderLower + " ") ||
-    afterTriggerLower.startsWith(genderTermLower + ",") ||
-    afterTriggerLower.startsWith(genderTermLower + " ") ||
-    // Also check for common variations
-    /\b(woman|man|person)\b/i.test(afterTrigger.split(',')[0]?.trim() || '')
+    cleanedAfterTriggerLower.startsWith(genderLower + ",") ||
+    cleanedAfterTriggerLower.startsWith(genderLower + " ") ||
+    cleanedAfterTriggerLower.startsWith(genderTermLower + ",") ||
+    cleanedAfterTriggerLower.startsWith(genderTermLower + " ") ||
+    // Also check for common variations in the first segment (after removing leading comma)
+    /\b(woman|man|person)\b/i.test(cleanedAfterTrigger.split(',')[0]?.trim() || '')
   
   if (!hasGender) {
     // Gender not found - insert it after trigger word
-    return `${triggerWord}, ${genderTerm}, ${afterTrigger}`
+    // Use cleanedAfterTrigger to avoid duplicating content that comes after comma
+    if (afterTrigger.startsWith(',')) {
+      // Already has comma: "sarah, ..." -> "sarah, woman, ..."
+      // Use cleanedAfterTrigger to avoid duplicating the comma
+      return `${triggerWord}, ${genderTerm}, ${cleanedAfterTrigger}`
+    } else {
+      // No comma: "sarah ..." -> "sarah, woman, ..."
+      return `${triggerWord}, ${genderTerm}, ${afterTrigger}`
+    }
   }
   
   return prompt
