@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import { sendEmail } from "@/lib/email/send-email"
+import { createCronLogger } from "@/lib/cron-logger"
+import { logAdminError } from "@/lib/admin-error-log"
 import { generateWelcomeDay0, generateWelcomeDay3, generateWelcomeDay7 } from "@/lib/email/templates/welcome-sequence"
 
 const sql = neon(process.env.DATABASE_URL!)
@@ -8,25 +10,30 @@ const sql = neon(process.env.DATABASE_URL!)
 /**
  * Welcome Sequence Cron Job
  * Sends emails to new paid members on Day 0, Day 3, and Day 7
- * Runs daily at 10 AM EST
+ * Runs daily at 10 AM UTC
  */
 export async function GET(request: Request) {
-  // Verify cron secret for security
-  const authHeader = request.headers.get("authorization")
-  const cronSecret = process.env.CRON_SECRET
+  const cronLogger = createCronLogger("welcome-sequence")
+  await cronLogger.start()
 
-  const isProduction = process.env.VERCEL_ENV === "production" || process.env.NODE_ENV === "production"
+  try {
+    // Verify cron secret for security
+    const authHeader = request.headers.get("authorization")
+    const cronSecret = process.env.CRON_SECRET
 
-  if (isProduction && cronSecret) {
-    if (authHeader !== `Bearer ${cronSecret}`) {
-      console.error("[Welcome Sequence] Unauthorized: Invalid or missing CRON_SECRET")
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    const isProduction = process.env.VERCEL_ENV === "production" || process.env.NODE_ENV === "production"
+
+    if (isProduction && cronSecret) {
+      if (authHeader !== `Bearer ${cronSecret}`) {
+        console.error("[Welcome Sequence] Unauthorized: Invalid or missing CRON_SECRET")
+        await cronLogger.error(new Error("Unauthorized"), { reason: "Invalid CRON_SECRET" })
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      }
+    } else if (!cronSecret && isProduction) {
+      console.warn("[Welcome Sequence] WARNING: CRON_SECRET not set in production!")
     }
-  } else if (!cronSecret && isProduction) {
-    console.warn("[Welcome Sequence] WARNING: CRON_SECRET not set in production!")
-  }
 
-  console.log("[Welcome Sequence] Starting daily check...")
+    console.log("[Welcome Sequence] Starting daily check...")
 
   const results = {
     day0: { sent: 0, failed: 0 },
@@ -193,16 +200,36 @@ export async function GET(request: Request) {
 
     console.log("[Welcome Sequence] Results:", results)
 
+    const totalSent = results.day0.sent + results.day3.sent + results.day7.sent
+    const totalFailed = results.day0.failed + results.day3.failed + results.day7.failed
+
+    await cronLogger.success({
+      day0Sent: results.day0.sent,
+      day0Failed: results.day0.failed,
+      day3Sent: results.day3.sent,
+      day3Failed: results.day3.failed,
+      day7Sent: results.day7.sent,
+      day7Failed: results.day7.failed,
+      totalSent,
+      totalFailed,
+    })
+
     return NextResponse.json({
       success: true,
       results,
       summary: {
-        totalSent: results.day0.sent + results.day3.sent + results.day7.sent,
-        totalFailed: results.day0.failed + results.day3.failed + results.day7.failed,
+        totalSent,
+        totalFailed,
       },
     })
   } catch (error: any) {
     console.error("[Welcome Sequence] Error:", error)
+    await cronLogger.error(error, {})
+    await logAdminError({
+      toolName: "cron:welcome-sequence",
+      error: error instanceof Error ? error : new Error(String(error)),
+      context: {},
+    }).catch(() => {})
     return NextResponse.json(
       {
         success: false,
