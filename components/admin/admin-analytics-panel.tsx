@@ -23,12 +23,28 @@ interface PlatformAnalytics {
     sselfieStudioMembers: number
     proUsers: number
     activeSubscriptions: number
+    mrr?: number
+    totalRevenue?: number
+    creditPurchaseRevenue?: number
     totalModels: number
     completedModels: number
     modelsInTraining: number
     totalFeeds: number
     completedFeeds: number
     usersWithFeeds: number
+    stripeLive?: {
+      activeSubscriptions: number
+      totalSubscriptions: number
+      canceledSubscriptions30d: number
+      mrr: number
+      totalRevenue: number
+      oneTimeRevenue: number
+      creditPurchaseRevenue: number
+      newSubscribers30d: number
+      newOneTimeBuyers30d: number
+      timestamp: string
+      cached: boolean
+    } | null
   }
   topCategories: Array<{
     category: string
@@ -246,34 +262,70 @@ export function AdminAnalyticsPanel({ userId }: AdminAnalyticsPanelProps) {
           </div>
         </div>
 
-        {/* Revenue Stats */}
+        {/* Revenue Stats - Real-time from Stripe */}
         <div className="p-6 bg-stone-50 border border-stone-200 rounded-lg">
           <h3
             className="text-lg font-light uppercase mb-4 text-stone-900"
             style={{ fontFamily: "'Times New Roman', serif", letterSpacing: "0.2em" }}
           >
             Revenue & Subscriptions
+            {platformStats.stripeLive && (
+              <span className="ml-2 text-xs font-normal text-stone-400">
+                (Live from Stripe{platformStats.stripeLive.cached ? " - cached" : ""})
+              </span>
+            )}
           </h3>
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div>
+              <p className="text-2xl font-light text-stone-900">
+                ${(platformStats.stripeLive?.mrr || platformStats.mrr || 0).toLocaleString()}
+              </p>
+              <p className="text-xs uppercase text-stone-500" style={{ letterSpacing: "0.15em" }}>
+                MRR
+              </p>
+            </div>
+            <div>
+              <p className="text-2xl font-light text-stone-900">
+                ${(platformStats.stripeLive?.totalRevenue || platformStats.totalRevenue || 0).toLocaleString()}
+              </p>
+              <p className="text-xs uppercase text-stone-500" style={{ letterSpacing: "0.15em" }}>
+                Total Revenue
+              </p>
+            </div>
+          </div>
           <div className="grid grid-cols-3 gap-4">
             <div>
-              <p className="text-2xl font-light text-stone-900">{platformStats.sselfieStudioMembers}</p>
-              <p className="text-xs uppercase text-stone-500" style={{ letterSpacing: "0.15em" }}>
-                Studio Members
+              <p className="text-2xl font-light text-stone-900">
+                {platformStats.stripeLive?.activeSubscriptions || platformStats.activeSubscriptions || 0}
               </p>
-            </div>
-            <div>
-              <p className="text-2xl font-light text-stone-900">{platformStats.proUsers}</p>
-              <p className="text-xs uppercase text-stone-500" style={{ letterSpacing: "0.15em" }}>
-                Pro Users
-              </p>
-            </div>
-            <div>
-              <p className="text-2xl font-light text-stone-900">{platformStats.activeSubscriptions}</p>
               <p className="text-xs uppercase text-stone-500" style={{ letterSpacing: "0.15em" }}>
                 Active Subs
               </p>
             </div>
+            <div>
+              <p className="text-2xl font-light text-stone-900">
+                {platformStats.stripeLive?.newSubscribers30d || 0}
+              </p>
+              <p className="text-xs uppercase text-stone-500" style={{ letterSpacing: "0.15em" }}>
+                New (30d)
+              </p>
+            </div>
+            <div>
+              <p className="text-2xl font-light text-stone-900">
+                {platformStats.stripeLive?.canceledSubscriptions30d || 0}
+              </p>
+              <p className="text-xs uppercase text-stone-500" style={{ letterSpacing: "0.15em" }}>
+                Canceled (30d)
+              </p>
+            </div>
           </div>
+          {(platformStats.stripeLive?.creditPurchaseRevenue || platformStats.creditPurchaseRevenue) && (
+            <div className="mt-4 pt-4 border-t border-stone-200">
+              <p className="text-sm text-stone-600">
+                Credit Purchases: ${(platformStats.stripeLive?.creditPurchaseRevenue || platformStats.creditPurchaseRevenue || 0).toLocaleString()}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Top Categories */}

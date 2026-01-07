@@ -11,6 +11,24 @@ interface DashboardStats {
   mrr: number
   totalRevenue: number
   conversionRate: number
+  stripeLive?: {
+    activeSubscriptions: number
+    totalSubscriptions: number
+    canceledSubscriptions30d: number
+    totalRevenue: number
+    mrr: number
+    oneTimeRevenue: number
+    creditPurchaseRevenue: number
+    newSubscribers30d: number
+    newOneTimeBuyers30d: number
+    timestamp: string
+    cached: boolean
+  } | null
+  dbValues?: {
+    mrr: number
+    activeSubscriptions: number
+    totalRevenue: number
+  }
 }
 
 interface MissionControlTask {
@@ -209,10 +227,10 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         
-        {/* Hero Section - Today's Focus */}
+        {/* Hero Section - Revenue Metrics */}
         <div className="mb-12 sm:mb-16">
           <h1 className="font-['Times_New_Roman'] text-3xl sm:text-4xl lg:text-5xl font-extralight tracking-[0.2em] sm:tracking-[0.3em] uppercase text-stone-950 mb-3 sm:mb-4">
-            TODAY'S FOCUS
+            REVENUE OVERVIEW
           </h1>
           <p className="text-xs sm:text-sm text-stone-500 tracking-[0.1em] uppercase mb-8 sm:mb-12">
             {new Date().toLocaleDateString('en-US', { 
@@ -222,6 +240,136 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
               day: 'numeric' 
             })}
           </p>
+          
+          {/* Key Metrics - 4 Column Grid */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8 sm:mb-12">
+            <div className="bg-stone-950 text-white p-4 sm:p-6 lg:p-8 rounded-none">
+              <p className="text-2xl sm:text-3xl lg:text-4xl font-['Times_New_Roman'] font-extralight mb-1 sm:mb-2">
+                ${(stats?.stripeLive?.mrr || stats?.mrr || 0).toLocaleString()}
+              </p>
+              <p className="text-[8px] sm:text-[10px] tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-300">
+                Monthly Recurring Revenue
+              </p>
+              {stats?.stripeLive ? (
+                <p className="text-[8px] text-stone-400 mt-1">Live from Stripe</p>
+              ) : (
+                <p className="text-[8px] text-stone-400 mt-1">Estimated from DB</p>
+              )}
+            </div>
+            
+            <div className="bg-white border border-stone-200 p-4 sm:p-6 lg:p-8 rounded-none">
+              <p className="text-2xl sm:text-3xl lg:text-4xl font-['Times_New_Roman'] font-extralight text-stone-950 mb-1 sm:mb-2">
+                {stats?.stripeLive?.activeSubscriptions || stats?.activeSubscriptions || 0}
+              </p>
+              <p className="text-[8px] sm:text-[10px] tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-400">
+                Active Subscriptions
+              </p>
+            </div>
+            
+            <div className="bg-white border border-stone-200 p-4 sm:p-6 lg:p-8 rounded-none">
+              <p className="text-2xl sm:text-3xl lg:text-4xl font-['Times_New_Roman'] font-extralight text-stone-950 mb-1 sm:mb-2">
+                {stats?.totalUsers || 0}
+              </p>
+              <p className="text-[8px] sm:text-[10px] tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-400">
+                Total Users
+              </p>
+            </div>
+            
+            <div className="bg-white border border-stone-200 p-4 sm:p-6 lg:p-8 rounded-none">
+              <p className="text-2xl sm:text-3xl lg:text-4xl font-['Times_New_Roman'] font-extralight text-stone-950 mb-1 sm:mb-2">
+                {stats?.conversionRate || 0}%
+              </p>
+              <p className="text-[8px] sm:text-[10px] tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-400">
+                Conversion Rate
+              </p>
+            </div>
+          </div>
+
+          {/* Additional Stripe Metrics */}
+          {stats?.stripeLive && (
+            <div className="mb-8 sm:mb-12">
+              <h2 className="text-lg sm:text-xl font-['Times_New_Roman'] text-stone-950 mb-4 sm:mb-6 tracking-[0.1em] uppercase">
+                Revenue Details
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
+                <div className="bg-white border border-stone-200 p-4 sm:p-6 rounded-none">
+                  <p className="text-xl sm:text-2xl lg:text-3xl font-['Times_New_Roman'] font-extralight text-stone-950 mb-1 sm:mb-2">
+                    ${(stats.stripeLive.oneTimeRevenue || 0).toLocaleString()}
+                  </p>
+                  <p className="text-[8px] sm:text-[10px] tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-400">
+                    One-Time Revenue
+                  </p>
+                </div>
+                
+                <div className="bg-white border border-stone-200 p-4 sm:p-6 rounded-none">
+                  <p className="text-xl sm:text-2xl lg:text-3xl font-['Times_New_Roman'] font-extralight text-stone-950 mb-1 sm:mb-2">
+                    {stats.stripeLive.newSubscribers30d || 0}
+                  </p>
+                  <p className="text-[8px] sm:text-[10px] tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-400">
+                    New Subscribers (30d)
+                  </p>
+                </div>
+                
+                <div className="bg-white border border-stone-200 p-4 sm:p-6 rounded-none">
+                  <p className="text-xl sm:text-2xl lg:text-3xl font-['Times_New_Roman'] font-extralight text-stone-950 mb-1 sm:mb-2">
+                    ${(stats.stripeLive.totalRevenue || 0).toLocaleString()}
+                  </p>
+                  <p className="text-[8px] sm:text-[10px] tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-400">
+                    Total Revenue (All Time)
+                  </p>
+                </div>
+              </div>
+              
+              {/* Second Row: Credit Purchases, Total Subscriptions, Canceled */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
+                <div className="bg-white border border-stone-200 p-4 sm:p-6 rounded-none">
+                  <p className="text-xl sm:text-2xl lg:text-3xl font-['Times_New_Roman'] font-extralight text-stone-950 mb-1 sm:mb-2">
+                    ${(stats.stripeLive.creditPurchaseRevenue || 0).toLocaleString()}
+                  </p>
+                  <p className="text-[8px] sm:text-[10px] tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-400">
+                    Credit Purchases
+                  </p>
+                </div>
+                
+                <div className="bg-white border border-stone-200 p-4 sm:p-6 rounded-none">
+                  <p className="text-xl sm:text-2xl lg:text-3xl font-['Times_New_Roman'] font-extralight text-stone-950 mb-1 sm:mb-2">
+                    {stats.stripeLive.totalSubscriptions || 0}
+                  </p>
+                  <p className="text-[8px] sm:text-[10px] tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-400">
+                    Total Subscriptions
+                  </p>
+                </div>
+                
+                <div className="bg-white border border-stone-200 p-4 sm:p-6 rounded-none">
+                  <p className="text-xl sm:text-2xl lg:text-3xl font-['Times_New_Roman'] font-extralight text-stone-950 mb-1 sm:mb-2">
+                    {stats.stripeLive.canceledSubscriptions30d || 0}
+                  </p>
+                  <p className="text-[8px] sm:text-[10px] tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-400">
+                    Canceled (30d)
+                  </p>
+                </div>
+              </div>
+              
+              {/* New One-Time Buyers - Smaller Card */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div className="bg-stone-50 border border-stone-200 p-3 sm:p-4 rounded-none">
+                  <p className="text-lg sm:text-xl lg:text-2xl font-['Times_New_Roman'] font-extralight text-stone-950 mb-1">
+                    {stats.stripeLive.newOneTimeBuyers30d || 0}
+                  </p>
+                  <p className="text-[8px] sm:text-[10px] tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-500">
+                    New One-Time Buyers (30d)
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+        
+        {/* Today's Focus Section */}
+        <div className="mb-12 sm:mb-16">
+          <h2 className="font-['Times_New_Roman'] text-2xl sm:text-3xl lg:text-4xl font-extralight tracking-[0.2em] sm:tracking-[0.3em] uppercase text-stone-950 mb-3 sm:mb-4">
+            TODAY'S FOCUS
+          </h2>
           
           {/* Today's Priorities */}
           {todaysPriorities.length > 0 ? (
@@ -390,45 +538,6 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
               </div>
             </div>
           )}
-          
-          {/* Key Metrics - 4 Column Grid */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            <div className="bg-stone-950 text-white p-4 sm:p-6 lg:p-8 rounded-none">
-              <p className="text-2xl sm:text-3xl lg:text-4xl font-['Times_New_Roman'] font-extralight mb-1 sm:mb-2">
-                ${(stats?.mrr || 0).toLocaleString()}
-              </p>
-              <p className="text-[8px] sm:text-[10px] tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-300">
-                Monthly Recurring Revenue
-              </p>
-            </div>
-            
-            <div className="bg-white border border-stone-200 p-4 sm:p-6 lg:p-8 rounded-none">
-              <p className="text-2xl sm:text-3xl lg:text-4xl font-['Times_New_Roman'] font-extralight text-stone-950 mb-1 sm:mb-2">
-                {stats?.activeSubscriptions || 0}
-              </p>
-              <p className="text-[8px] sm:text-[10px] tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-400">
-                Active Subscriptions
-              </p>
-            </div>
-            
-            <div className="bg-white border border-stone-200 p-4 sm:p-6 lg:p-8 rounded-none">
-              <p className="text-2xl sm:text-3xl lg:text-4xl font-['Times_New_Roman'] font-extralight text-stone-950 mb-1 sm:mb-2">
-                {stats?.totalUsers || 0}
-              </p>
-              <p className="text-[8px] sm:text-[10px] tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-400">
-                Total Users
-              </p>
-            </div>
-            
-            <div className="bg-white border border-stone-200 p-4 sm:p-6 lg:p-8 rounded-none">
-              <p className="text-2xl sm:text-3xl lg:text-4xl font-['Times_New_Roman'] font-extralight text-stone-950 mb-1 sm:mb-2">
-                {stats?.conversionRate || 0}%
-              </p>
-              <p className="text-[8px] sm:text-[10px] tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-400">
-                Conversion Rate
-              </p>
-            </div>
-          </div>
         </div>
         
         {/* Quick Access - Pinterest Grid */}

@@ -698,18 +698,90 @@ export async function POST(request: NextRequest) {
             
             const isTestMode = !event.livemode
             
+            // Get actual payment amount from Stripe (for revenue tracking)
+            let paymentAmountCents: number | null = null
+            let customerId: string | null = null
+            if (paymentIntentId) {
+              try {
+                const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
+                paymentAmountCents = paymentIntent.amount
+                customerId = typeof paymentIntent.customer === 'string' ? paymentIntent.customer : paymentIntent.customer?.id || null
+                console.log(`[v0] Retrieved payment amount: $${(paymentAmountCents / 100).toFixed(2)}`)
+              } catch (piError: any) {
+                console.error(`[v0] Error retrieving payment intent for amount:`, piError.message)
+                // Fallback to session amount if available
+                if (session.amount_total) {
+                  paymentAmountCents = session.amount_total
+                }
+                customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id || null
+              }
+            } else if (session.amount_total) {
+              paymentAmountCents = session.amount_total
+              customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id || null
+            }
+            
+            // Store payment in stripe_payments table (comprehensive revenue tracking)
+            if (paymentIntentId && paymentAmountCents && customerId) {
+              try {
+                await sql`
+                  INSERT INTO stripe_payments (
+                    stripe_payment_id,
+                    stripe_customer_id,
+                    user_id,
+                    amount_cents,
+                    currency,
+                    status,
+                    payment_type,
+                    product_type,
+                    description,
+                    metadata,
+                    payment_date,
+                    is_test_mode,
+                    created_at,
+                    updated_at
+                  )
+                  VALUES (
+                    ${paymentIntentId},
+                    ${customerId},
+                    ${userId},
+                    ${paymentAmountCents},
+                    'usd',
+                    ${isPaymentPaid ? 'succeeded' : 'pending'},
+                    'one_time_session',
+                    'one_time_session',
+                    ${`One-time session purchase`},
+                    ${JSON.stringify(session.metadata || {})},
+                    NOW(),
+                    ${isTestMode},
+                    NOW(),
+                    NOW()
+                  )
+                  ON CONFLICT (stripe_payment_id) 
+                  DO UPDATE SET
+                    status = ${isPaymentPaid ? 'succeeded' : 'pending'},
+                    updated_at = NOW()
+                `
+                console.log(`[v0] ✅ Stored payment in stripe_payments table`)
+              } catch (paymentError: any) {
+                console.error(`[v0] Error storing payment in stripe_payments:`, paymentError.message)
+                // Don't fail webhook if payment storage fails
+              }
+            }
+            
             // Pass payment ID to track the purchase
             await grantOneTimeSessionCredits(userId, paymentIntentId, isTestMode)
             console.log(`[v0] ✅ Granted one-time session credits with payment ID: ${paymentIntentId}`)
             
-            // Update the credit_transaction record to store product_type
+            // Update the credit_transaction record to store product_type and payment amount
             if (paymentIntentId) {
               await sql`
                 UPDATE credit_transactions
-                SET product_type = 'one_time_session'
+                SET 
+                  product_type = 'one_time_session',
+                  payment_amount_cents = ${paymentAmountCents}
                 WHERE user_id = ${userId}
                   AND stripe_payment_id = ${paymentIntentId}
-                  AND product_type IS NULL
+                  AND (product_type IS NULL OR payment_amount_cents IS NULL)
               `
             }
 
@@ -755,6 +827,76 @@ export async function POST(request: NextRequest) {
               console.error('[v0] ⚠️ No payment intent ID found for credit top-up')
             }
             
+            // Get actual payment amount from Stripe (for revenue tracking)
+            let paymentAmountCents: number | null = null
+            let customerId: string | null = null
+            if (paymentIntentId) {
+              try {
+                const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
+                paymentAmountCents = paymentIntent.amount
+                customerId = typeof paymentIntent.customer === 'string' ? paymentIntent.customer : paymentIntent.customer?.id || null
+                console.log(`[v0] Retrieved payment amount: $${(paymentAmountCents / 100).toFixed(2)}`)
+              } catch (piError: any) {
+                console.error(`[v0] Error retrieving payment intent for amount:`, piError.message)
+                // Fallback to session amount if available
+                if (session.amount_total) {
+                  paymentAmountCents = session.amount_total
+                }
+                customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id || null
+              }
+            } else if (session.amount_total) {
+              paymentAmountCents = session.amount_total
+              customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id || null
+            }
+            
+            // Store payment in stripe_payments table (comprehensive revenue tracking)
+            if (paymentIntentId && paymentAmountCents && customerId) {
+              try {
+                await sql`
+                  INSERT INTO stripe_payments (
+                    stripe_payment_id,
+                    stripe_customer_id,
+                    user_id,
+                    amount_cents,
+                    currency,
+                    status,
+                    payment_type,
+                    product_type,
+                    description,
+                    metadata,
+                    payment_date,
+                    is_test_mode,
+                    created_at,
+                    updated_at
+                  )
+                  VALUES (
+                    ${paymentIntentId},
+                    ${customerId},
+                    ${userId},
+                    ${paymentAmountCents},
+                    'usd',
+                    ${isPaymentPaid ? 'succeeded' : 'pending'},
+                    'credit_topup',
+                    'credit_topup',
+                    ${`Credit top-up purchase (${credits} credits)`},
+                    ${JSON.stringify(session.metadata || {})},
+                    NOW(),
+                    ${isTestMode},
+                    NOW(),
+                    NOW()
+                  )
+                  ON CONFLICT (stripe_payment_id) 
+                  DO UPDATE SET
+                    status = ${isPaymentPaid ? 'succeeded' : 'pending'},
+                    updated_at = NOW()
+                `
+                console.log(`[v0] ✅ Stored payment in stripe_payments table`)
+              } catch (paymentError: any) {
+                console.error(`[v0] Error storing payment in stripe_payments:`, paymentError.message)
+                // Don't fail webhook if payment storage fails
+              }
+            }
+            
             // Pass payment ID to track the purchase
             await addCredits(
               userId,
@@ -766,14 +908,16 @@ export async function POST(request: NextRequest) {
             )
             console.log(`[v0] ✅ Granted top-up credits with payment ID: ${paymentIntentId}`)
             
-            // Update to store product_type
+            // Update to store product_type and payment amount
             if (paymentIntentId) {
               await sql`
                 UPDATE credit_transactions
-                SET product_type = 'credit_topup'
+                SET 
+                  product_type = 'credit_topup',
+                  payment_amount_cents = ${paymentAmountCents}
                 WHERE user_id = ${userId}
                   AND stripe_payment_id = ${paymentIntentId}
-                  AND product_type IS NULL
+                  AND (product_type IS NULL OR payment_amount_cents IS NULL)
               `
             }
           }
@@ -1411,6 +1555,67 @@ export async function POST(request: NextRequest) {
         console.log(`[v0] Invoice amount: ${invoice.amount_paid / 100} ${invoice.currency?.toUpperCase()}`)
         console.log(`[v0] Payment status: ${invoice.status}`)
         console.log(`[v0] Event livemode: ${event.livemode ? "PRODUCTION" : "TEST MODE"}`)
+        
+        // Store subscription payment in stripe_payments table (comprehensive revenue tracking)
+        const isTestMode = !event.livemode
+        const customerId = typeof invoice.customer === 'string' ? invoice.customer : invoice.customer?.id || null
+        const chargeId = typeof invoice.charge === 'string' ? invoice.charge : invoice.charge?.id || null
+        const paymentIntentId = invoice.payment_intent ? (typeof invoice.payment_intent === 'string' ? invoice.payment_intent : invoice.payment_intent?.id) : null
+        
+        // Use charge ID or payment intent ID as the payment identifier
+        const paymentId = chargeId || paymentIntentId || invoice.id
+        
+        if (paymentId && customerId && invoice.amount_paid > 0) {
+          try {
+            await sql`
+              INSERT INTO stripe_payments (
+                stripe_payment_id,
+                stripe_invoice_id,
+                stripe_subscription_id,
+                stripe_customer_id,
+                user_id,
+                amount_cents,
+                currency,
+                status,
+                payment_type,
+                product_type,
+                description,
+                metadata,
+                payment_date,
+                is_test_mode,
+                created_at,
+                updated_at
+              )
+              VALUES (
+                ${paymentId},
+                ${invoice.id},
+                ${subscriptionId},
+                ${customerId},
+                ${sub.user_id},
+                ${invoice.amount_paid},
+                ${invoice.currency || 'usd'},
+                ${invoice.status || 'succeeded'},
+                'subscription',
+                ${sub.product_type},
+                ${invoice.description || `Subscription payment - ${sub.product_type}`},
+                ${JSON.stringify(invoice.metadata || {})},
+                to_timestamp(${invoice.created}),
+                ${isTestMode},
+                NOW(),
+                NOW()
+              )
+              ON CONFLICT (stripe_payment_id) 
+              DO UPDATE SET
+                status = ${invoice.status || 'succeeded'},
+                amount_cents = ${invoice.amount_paid},
+                updated_at = NOW()
+            `
+            console.log(`[v0] ✅ Stored subscription payment in stripe_payments table: $${(invoice.amount_paid / 100).toFixed(2)}`)
+          } catch (paymentError: any) {
+            console.error(`[v0] Error storing subscription payment in stripe_payments:`, paymentError.message)
+            // Don't fail webhook if payment storage fails
+          }
+        }
         
         // ⚠️ CRITICAL: Only grant credits if invoice payment was actually successful
         if (invoice.status !== "paid") {
