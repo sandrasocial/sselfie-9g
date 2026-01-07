@@ -48,6 +48,23 @@ const nextConfig = {
         ],
       },
       {
+        source: '/gpt-actions-openapi.yaml',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'application/yaml; charset=utf-8',
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=3600, must-revalidate',
+          },
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*',
+          },
+        ],
+      },
+      {
         source: '/api/:path*',
         headers: [
           {

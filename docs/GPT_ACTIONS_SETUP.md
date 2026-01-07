@@ -93,16 +93,24 @@ If you use GitHub Actions for CI/CD, you can also store it there:
 
 In your ChatGPT Codex Connector settings:
 
-1. **Add the Header:**
-   - Header name: `x-gpt-actions-key`
-   - Header value: Your generated `GPT_ACTIONS_API_KEY`
+1. **Import OpenAPI Schema (RECOMMENDED: Use URL):**
+   
+   **✅ Best Option: Import from URL**
+   - Schema URL: `https://sselfie.ai/gpt-actions-openapi.yaml`
+   - This automatically updates when you deploy changes
+   - No need to re-upload after schema changes
+   
+   **Alternative: Upload file**
+   - Upload `public/gpt-actions-openapi.yaml` or `docs/gpt-actions-openapi.yaml`
+   - You'll need to re-upload after each schema update
 
-2. **Set the API Endpoint:**
-   - Base URL: `https://your-domain.com/api/gpt-actions`
-   - Or for local testing: `http://localhost:3000/api/gpt-actions`
+2. **Configure Authentication:**
+   - Authentication Type: API Key
+   - Header name: `x-gpt-actions-key`
+   - Header value: Your generated `GPT_ACTIONS_API_KEY` (same value from environment)
 
 3. **Available Tools:**
-   - `read_file` - Read file contents
+   - `read_file` - Read file contents (max 200 KB)
    - `list_files` - List directory contents
    - `file_stat` - Get file metadata
 
@@ -166,7 +174,9 @@ You should get a JSON response with the file contents if everything is configure
 2. **Store Locally:** Add to `.env.local` for development
 3. **Store in Vercel:** Add to Vercel dashboard for production
 4. **Store in GitHub:** (Optional) Add to GitHub Secrets for CI/CD
-5. **Configure ChatGPT:** Add the key as `x-gpt-actions-key` header in Codex Connector
+5. **Configure ChatGPT:** 
+   - Import schema from: `https://sselfie.ai/gpt-actions-openapi.yaml` ✅
+   - Add the key as `x-gpt-actions-key` header in Codex Connector
 
 ---
 
