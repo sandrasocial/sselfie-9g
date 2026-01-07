@@ -50,7 +50,6 @@ export async function POST(
         fp.post_type,
         fp.content_pillar,
         fp.prompt,
-        fp.description,
         fl.user_id,
         fl.brand_vibe,
         fl.business_type,
@@ -114,7 +113,7 @@ export async function POST(
     const captionResult = await generateInstagramCaption({
       postPosition: post.position,
       shotType: post.post_type || 'portrait',
-      purpose: post.content_pillar || post.description || 'general',
+      purpose: post.content_pillar || 'general',
       emotionalTone: 'warm',
       brandProfile: brandProfile || {
         business_type: post.business_type || 'Personal Brand',

@@ -22,17 +22,67 @@ interface CronJob {
   } | null
 }
 
+interface EmailTypeStatus {
+  emailType: string
+  sent: number
+  delivered: number
+  opened: number
+  clicked: number
+  failed: number
+  bounced: number
+  complained: number
+  skippedDisabled: number
+  skippedTestMode: number
+  total: number
+  openRate: string
+  clickRate: string
+  lastSentAt: string | null
+  firstSentAt: string | null
+}
+
+interface EmailStatus {
+  totals: {
+    sent: number
+    delivered: number
+    opened: number
+    clicked: number
+    failed: number
+    bounced: number
+    complained: number
+    skippedDisabled: number
+    skippedTestMode: number
+    total: number
+    overallOpenRate: string
+    overallClickRate: string
+  }
+  emailTypes: EmailTypeStatus[]
+  recentSends: Array<{
+    id: number
+    userEmail: string
+    emailType: string
+    status: string
+    sentAt: string
+    resendMessageId: string | null
+    errorMessage: string | null
+    opened: boolean
+    openedAt: string | null
+    clicked: boolean
+    clickedAt: string | null
+  }>
+}
+
 export default function CronDiagnosticsPage() {
   const [cronJobs, setCronJobs] = useState<CronJob[]>([])
+  const [emailStatus, setEmailStatus] = useState<EmailStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [sinceHours, setSinceHours] = useState(24)
 
   useEffect(() => {
     fetchCronStatus()
+    fetchEmailStatus()
   }, [sinceHours])
 
   const fetchCronStatus = async () => {
-    setLoading(true)
     try {
       const response = await fetch(`/api/admin/diagnostics/cron-status?since=${sinceHours}`)
       const data = await response.json()
@@ -41,6 +91,19 @@ export default function CronDiagnosticsPage() {
       }
     } catch (error) {
       console.error("Error fetching cron status:", error)
+    }
+  }
+
+  const fetchEmailStatus = async () => {
+    setLoading(true)
+    try {
+      const response = await fetch(`/api/admin/diagnostics/email-status?since=${sinceHours}`)
+      const data = await response.json()
+      if (data.success) {
+        setEmailStatus(data)
+      }
+    } catch (error) {
+      console.error("Error fetching email status:", error)
     } finally {
       setLoading(false)
     }
@@ -57,7 +120,7 @@ export default function CronDiagnosticsPage() {
                 Cron & Email Status
               </h1>
               <p className="text-xs sm:text-sm text-stone-600">
-                Monitor scheduled jobs and email campaign execution
+                Monitor scheduled jobs and ALL email sends (cron + manual)
               </p>
             </div>
             <Link
@@ -85,14 +148,113 @@ export default function CronDiagnosticsPage() {
 
         {loading ? (
           <div className="bg-white border border-stone-200 p-12 text-center rounded-none">
-            <p className="text-sm text-stone-500">Loading cron status...</p>
-          </div>
-        ) : cronJobs.length === 0 ? (
-          <div className="bg-white border border-stone-200 p-12 text-center rounded-none">
-            <p className="text-sm text-stone-500">No cron jobs found</p>
+            <p className="text-sm text-stone-500">Loading status...</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-8">
+            {/* Email Status Summary */}
+            {emailStatus && (
+              <div className="bg-white border border-stone-200 p-6 sm:p-8 rounded-none">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg sm:text-xl font-['Times_New_Roman'] text-stone-950 tracking-[0.1em] uppercase">
+                    All Email Status ({sinceHours}h)
+                  </h2>
+                  <p className="text-[10px] text-stone-400">
+                    📡 Engagement data from Resend webhooks
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+                  <div>
+                    <p className="text-[10px] sm:text-xs text-stone-500 uppercase tracking-[0.1em] mb-1">Total Sent</p>
+                    <p className="text-xl sm:text-2xl font-light text-green-600">{emailStatus.totals.sent}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] sm:text-xs text-stone-500 uppercase tracking-[0.1em] mb-1">Delivered</p>
+                    <p className="text-xl sm:text-2xl font-light text-blue-600">{emailStatus.totals.delivered}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] sm:text-xs text-stone-500 uppercase tracking-[0.1em] mb-1">Opened</p>
+                    <p className="text-xl sm:text-2xl font-light text-purple-600">{emailStatus.totals.opened}</p>
+                    <p className="text-[10px] text-stone-400 mt-0.5">{emailStatus.totals.overallOpenRate}%</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] sm:text-xs text-stone-500 uppercase tracking-[0.1em] mb-1">Clicked</p>
+                    <p className="text-xl sm:text-2xl font-light text-indigo-600">{emailStatus.totals.clicked}</p>
+                    <p className="text-[10px] text-stone-400 mt-0.5">{emailStatus.totals.overallClickRate}%</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] sm:text-xs text-stone-500 uppercase tracking-[0.1em] mb-1">Failed</p>
+                    <p className="text-xl sm:text-2xl font-light text-red-600">{emailStatus.totals.failed}</p>
+                    {emailStatus.totals.bounced > 0 && (
+                      <p className="text-[10px] text-orange-600 mt-0.5">+{emailStatus.totals.bounced} bounced</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Email Types Breakdown */}
+                <div className="mt-6">
+                  <h3 className="text-sm sm:text-base font-['Times_New_Roman'] text-stone-950 tracking-[0.1em] uppercase mb-3">
+                    By Email Type
+                  </h3>
+                  <div className="space-y-2">
+                    {emailStatus.emailTypes.length === 0 ? (
+                      <p className="text-xs text-stone-500">No emails sent in this period</p>
+                    ) : (
+                      emailStatus.emailTypes.map((type) => (
+                        <div
+                          key={type.emailType}
+                          className="flex items-center justify-between p-3 bg-stone-50 border border-stone-200 rounded-none"
+                        >
+                          <div className="flex-1">
+                            <p className="text-xs sm:text-sm font-medium text-stone-950">{type.emailType}</p>
+                            {type.lastSentAt && (
+                              <p className="text-[10px] text-stone-500 mt-0.5">
+                                Last: {new Date(type.lastSentAt).toLocaleString()}
+                              </p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-3 text-xs flex-wrap">
+                            <span className="text-green-600">✓ {type.sent}</span>
+                            {type.delivered > 0 && <span className="text-blue-600">📬 {type.delivered}</span>}
+                            {type.opened > 0 && (
+                              <span className="text-purple-600" title={`${type.openRate}% open rate`}>
+                                👁️ {type.opened} ({type.openRate}%)
+                              </span>
+                            )}
+                            {type.clicked > 0 && (
+                              <span className="text-indigo-600" title={`${type.clickRate}% click rate`}>
+                                🖱️ {type.clicked} ({type.clickRate}%)
+                              </span>
+                            )}
+                            {type.failed > 0 && <span className="text-red-600">✗ {type.failed}</span>}
+                            {type.bounced > 0 && <span className="text-orange-600">⚠️ {type.bounced}</span>}
+                            {type.complained > 0 && <span className="text-red-800">🚫 {type.complained}</span>}
+                            {type.skippedDisabled > 0 && (
+                              <span className="text-stone-400">⏸ {type.skippedDisabled}</span>
+                            )}
+                            {type.skippedTestMode > 0 && (
+                              <span className="text-stone-400">🧪 {type.skippedTestMode}</span>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Cron Jobs */}
+            <div>
+              <h2 className="text-lg sm:text-xl font-['Times_New_Roman'] text-stone-950 tracking-[0.1em] uppercase mb-4">
+                Cron Jobs
+              </h2>
+              {cronJobs.length === 0 ? (
+                <div className="bg-white border border-stone-200 p-12 text-center rounded-none">
+                  <p className="text-sm text-stone-500">No cron jobs found</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
             {cronJobs.map((job) => (
               <div
                 key={job.jobName}
@@ -189,10 +351,14 @@ export default function CronDiagnosticsPage() {
                 )}
               </div>
             ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
     </div>
   )
 }
+
 

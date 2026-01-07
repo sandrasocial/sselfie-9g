@@ -30,7 +30,6 @@ export async function GET(request: Request) {
         fp.id,
         fp.image_url,
         fp.caption as prompt,
-        fp.description,
         fp.post_type as category,
         fp.created_at,
         fp.feed_layout_id,
@@ -60,8 +59,8 @@ export async function GET(request: Request) {
     const images: GalleryImage[] = feedPosts.map((post: any) => ({
       id: `feed-${post.id}`,
       image_url: post.image_url,
-      prompt: post.prompt || post.description || `Feed post from ${post.feed_title || 'Feed'}`,
-      description: post.description,
+      prompt: post.prompt || `Feed post from ${post.feed_title || 'Feed'}`,
+      description: null, // feed_posts table doesn't have description column
       category: post.category || 'feed',
       source: 'feed',
       is_favorite: false, // Feed images don't have favorites yet
@@ -80,6 +79,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Failed to fetch feed images" }, { status: 500 })
   }
 }
+
 
 
 

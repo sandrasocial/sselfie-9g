@@ -14,10 +14,11 @@ const CRON_JOBS: Record<string, { schedule: string; path: string }> = {
   "refresh-segments": { schedule: "0 3 * * *", path: "/api/cron/refresh-segments" },
   "send-blueprint-followups": { schedule: "0 10 * * *", path: "/api/cron/send-blueprint-followups" },
   "blueprint-email-sequence": { schedule: "0 10 * * *", path: "/api/cron/blueprint-email-sequence" },
+  "welcome-sequence": { schedule: "0 10 * * *", path: "/api/cron/welcome-sequence" },
+  "nurture-sequence": { schedule: "0 11 * * *", path: "/api/cron/nurture-sequence" },
   "welcome-back-sequence": { schedule: "0 11 * * *", path: "/api/cron/welcome-back-sequence" },
   "reengagement-campaigns": { schedule: "0 12 * * *", path: "/api/cron/reengagement-campaigns" },
   "send-scheduled-campaigns": { schedule: "*/15 * * * *", path: "/api/cron/send-scheduled-campaigns" },
-  "welcome-sequence": { schedule: "0 10 * * *", path: "/api/cron/welcome-sequence" },
   "health-e2e": { schedule: "0 6 * * *", path: "/api/health/e2e" },
 }
 
@@ -120,4 +121,5 @@ export async function GET(request: Request) {
     )
   }
 }
+
 

@@ -21,3 +21,4 @@ ON CONFLICT (key) DO NOTHING;
 
 COMMENT ON TABLE admin_feature_flags IS 'Feature flags for controlling system behavior';
 
+

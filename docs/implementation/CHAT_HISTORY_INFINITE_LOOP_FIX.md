@@ -94,3 +94,4 @@ checkedHistoryForChatTypeRef.current = null
    - Changed dependency from `user` to `user?.id`
    - Reset history check on tab switch
 
+

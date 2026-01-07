@@ -129,7 +129,7 @@ export async function POST(req: NextRequest) {
               <h2>🚀 READY TO LEVEL UP?</h2>
               <p>SSELFIE Studio makes implementing this strategy effortless. Get AI-powered selfies that look like you, automated content planning, and Maya's personalized coaching.</p>
               <p style="text-align: center;">
-                <a href="${process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"}/checkout/one-time" class="cta">Get Started - $24.50</a>
+                <a href="${process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"}/checkout/one-time" class="cta">Get Started - $49</a>
               </p>
               
               <p style="margin-top: 40px; font-size: 12px; color: #a8a29e; text-align: center;">

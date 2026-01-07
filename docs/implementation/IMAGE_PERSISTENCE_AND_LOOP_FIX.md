@@ -67,3 +67,4 @@
 - **Workaround:** Users need to regenerate images for old concept cards
 - **Future Fix:** Could add fallback query method (prompt matching) for old cards
 
+

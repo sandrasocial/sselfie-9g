@@ -193,3 +193,4 @@ const needsLoad =
 - [ ] No duplicate loading calls
 - [ ] Welcome screen only shows when truly empty (no chat, no history, not loading)
 
+

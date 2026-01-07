@@ -106,3 +106,4 @@ const needsLoad =
 2. **Monitor Logs:** Verify no infinite loops or duplicate loading calls
 3. **Edge Cases:** Test switching between tabs while a chat is loading
 
+

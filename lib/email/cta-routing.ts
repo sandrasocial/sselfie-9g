@@ -173,3 +173,4 @@ export function getUserTypeFromSequence(sequenceType: string): 'has_account' | '
   return 'no_account'
 }
 
+
