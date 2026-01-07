@@ -280,7 +280,7 @@ async function handleFileStat(request: NextRequest): Promise<NextResponse> {
 // Main route handler
 export async function POST(
   request: NextRequest,
-  { params }: { params: { tool: string } }
+  { params }: { params: Promise<{ tool: string }> | { tool: string } }
 ) {
   // Verify API key
   if (!verifyApiKey(request)) {
@@ -290,7 +290,9 @@ export async function POST(
     )
   }
 
-  const { tool } = params
+  // Resolve params (Next.js 15+ makes params a Promise)
+  const resolvedParams = await Promise.resolve(params)
+  const { tool } = resolvedParams
 
   // Route to appropriate tool handler
   switch (tool) {
@@ -314,14 +316,4 @@ export async function POST(
   }
 }
 
-// GET handler for health check
-export async function GET() {
-  return NextResponse.json({
-    service: "GPT Actions API",
-    status: "healthy",
-    availableTools: ["read_file", "list_files", "file_stat"],
-    maxFileSize: `${MAX_FILE_SIZE} bytes (200 KB)`,
-    deniedPaths: DENIED_PATHS,
-  })
-}
 
