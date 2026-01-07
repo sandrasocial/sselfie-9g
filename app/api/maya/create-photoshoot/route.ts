@@ -14,6 +14,7 @@ async function generatePhotoshootPoseVariations({
   baseSeed,
   triggerWord,
   numImages,
+  userGender,
   ethnicity,
   physicalPreferences,
 }: {
@@ -21,12 +22,15 @@ async function generatePhotoshootPoseVariations({
   baseSeed: number
   triggerWord: string
   numImages: number
+  userGender: string
   ethnicity?: string | null
   physicalPreferences?: string | null
 }) {
   console.log("[v0] 📸 Generating authentic lifestyle variations with Claude Sonnet 4.5...")
   console.log("[v0] Base prompt:", basePrompt)
   console.log("[v0] Base seed:", baseSeed)
+  console.log("[v0] User gender:", userGender)
+  console.log("[v0] Trigger word:", triggerWord)
   console.log("[v0] Ethnicity:", ethnicity || "not specified")
   console.log("[v0] Physical preferences:", physicalPreferences || "not specified")
 
@@ -113,7 +117,7 @@ ${characterContext}
    
 3. **ONLY VARY: Pose, Angle, Micro-Location**
    - Same outfit ✅
-   - Same character${characterDescriptor ? ` (${characterDescriptor})` : ""} ✅
+   - Same character (${userGender}${characterDescriptor ? `, ${characterDescriptor}` : ""}) ✅
    - Same general location ✅
    - Different pose/action ✅
    - Different camera angle ✅
@@ -144,7 +148,7 @@ Think like a real photographer shooting ${numImages} frames in ONE session:
 **CRITICAL: USE EXACT SAME OUTFIT DESCRIPTION IN EVERY PROMPT**
 
 **PROMPT STRUCTURE (25-35 words):**
-"${triggerWord}, ${characterDescriptor ? characterDescriptor + ", " : ""}[exact_outfit_from_original], [simple_action], [micro_location], [lighting], shot on iPhone 15 Pro, [lens], natural skin texture"
+"${triggerWord}, ${userGender}${characterDescriptor ? ", " + characterDescriptor : ""}, [exact_outfit_from_original], [simple_action], [micro_location], [lighting], shot on iPhone 15 Pro, [lens], natural skin texture"
 
 **CAPTION EXAMPLES:**
 ✅ "Cozy fall vibes in my favorite sweater"
@@ -176,7 +180,7 @@ Think like a real photographer shooting ${numImages} frames in ONE session:
       "action": "simple activity (2-4 words)",
       "cameraAngle": "straight" | "side" | "above" | "over shoulder",
       "lensChoice": "35mm" | "50mm" | "85mm",
-      "prompt": "${triggerWord}, ${characterDescriptor ? characterDescriptor + ", " : ""}[exact_outfit], [action], [micro_location], [lighting], shot on iPhone 15 Pro, [lens], natural skin texture"
+      "prompt": "${triggerWord}, ${userGender}${characterDescriptor ? ", " + characterDescriptor : ""}, [exact_outfit], [action], [micro_location], [lighting], shot on iPhone 15 Pro, [lens], natural skin texture"
     }
   ]
 }
@@ -394,6 +398,7 @@ export async function POST(request: NextRequest) {
       baseSeed: consistencySeed,
       triggerWord,
       numImages: NUM_IMAGES,
+      userGender,
       ethnicity,
       physicalPreferences,
     })

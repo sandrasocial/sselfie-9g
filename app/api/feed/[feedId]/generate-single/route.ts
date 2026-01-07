@@ -6,7 +6,7 @@ import { getReplicateClient } from "@/lib/replicate-client"
 import { MAYA_QUALITY_PRESETS } from "@/lib/maya/quality-settings"
 import { checkGenerationRateLimit } from "@/lib/rate-limit"
 import { checkCredits, deductCredits, CREDIT_COSTS } from "@/lib/credits"
-import { extractReplicateVersionId, ensureTriggerWordPrefix, buildClassicModeReplicateInput } from "@/lib/replicate-helpers"
+import { extractReplicateVersionId, ensureTriggerWordPrefix, ensureGenderInPrompt, buildClassicModeReplicateInput } from "@/lib/replicate-helpers"
 import { generateWithNanoBanana, getStudioProCreditCost } from "@/lib/nano-banana-client"
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ feedId: string }> | { feedId: string } }) {
@@ -159,12 +159,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
     let model: any = null
     if (generationMode === 'classic') {
       const [modelResult] = await sql`
-        SELECT trigger_word, replicate_version_id, lora_scale, lora_weights_url
-        FROM user_models
-        WHERE user_id = ${user.id}
-        AND training_status = 'completed'
-        AND (is_test = false OR is_test IS NULL)
-        ORDER BY created_at DESC
+        SELECT 
+          um.trigger_word, 
+          um.replicate_version_id, 
+          um.lora_scale, 
+          um.lora_weights_url,
+          u.gender,
+          u.ethnicity
+        FROM user_models um
+        JOIN users u ON u.id = um.user_id
+        WHERE um.user_id = ${user.id}
+        AND um.training_status = 'completed'
+        AND (um.is_test = false OR um.is_test IS NULL)
+        ORDER BY um.created_at DESC
         LIMIT 1
       `
       model = modelResult
@@ -418,8 +425,23 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
 
       console.log("[v0] [GENERATE-SINGLE] ✅ Maya generated enhanced prompt (cleaned):", finalPrompt?.substring(0, 150))
 
-      // Double-check trigger word is present (backup validation)
+      // Double-check trigger word and gender are present (backup validation)
       finalPrompt = ensureTriggerWordPrefix(finalPrompt, model.trigger_word)
+      
+      // Build user gender term (same format as concept cards)
+      let userGender = "person"
+      if (model.gender) {
+        const dbGender = model.gender.toLowerCase().trim()
+        if (dbGender === "woman" || dbGender === "female") {
+          userGender = "woman"
+        } else if (dbGender === "man" || dbGender === "male") {
+          userGender = "man"
+        }
+      }
+      
+      // CRITICAL: Ensure gender is present after trigger word (fixes missing gender issue)
+      finalPrompt = ensureGenderInPrompt(finalPrompt, model.trigger_word, userGender, model.ethnicity)
+      
       if (finalPrompt.toLowerCase().startsWith(model.trigger_word.toLowerCase())) {
         console.log("[v0] [GENERATE-SINGLE] ✅ Trigger word confirmed at start of prompt")
       } else {

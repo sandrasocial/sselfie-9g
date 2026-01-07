@@ -71,6 +71,67 @@ export function ensureTriggerWordPrefix(prompt: string, triggerWord: string): st
 }
 
 /**
+ * Ensure gender is present in prompt after trigger word
+ * 
+ * Validates that the prompt includes the gender term after the trigger word.
+ * If not found, inserts it after the trigger word.
+ * 
+ * Format: "${triggerWord}, ${gender}, ..."
+ * 
+ * @param prompt - The prompt to validate (should already have trigger word)
+ * @param triggerWord - The trigger word that prefixes the prompt
+ * @param userGender - The gender term (e.g., "woman", "man", "person")
+ * @param ethnicity - Optional ethnicity to include before gender
+ * @returns Prompt with gender ensured after trigger word
+ */
+export function ensureGenderInPrompt(
+  prompt: string, 
+  triggerWord: string, 
+  userGender: string,
+  ethnicity?: string | null
+): string {
+  if (!prompt || !triggerWord || !userGender) return prompt
+  
+  const promptLower = prompt.toLowerCase().trim()
+  const triggerLower = triggerWord.toLowerCase()
+  const genderLower = userGender.toLowerCase()
+  
+  // Build the expected gender term (with ethnicity if provided)
+  const genderTerm = ethnicity && ethnicity !== "Other" 
+    ? `${ethnicity} ${userGender}`
+    : userGender
+  
+  const genderTermLower = genderTerm.toLowerCase()
+  
+  // Check if prompt starts with trigger word
+  if (!promptLower.startsWith(triggerLower)) {
+    // Trigger word not at start - add both trigger word and gender
+    return `${triggerWord}, ${genderTerm}, ${prompt}`
+  }
+  
+  // Extract the part after trigger word
+  const afterTrigger = prompt.slice(triggerWord.length).trim()
+  const afterTriggerLower = afterTrigger.toLowerCase()
+  
+  // Check if gender is already present after trigger word
+  // Look for gender terms: "woman", "man", "person", or ethnicity + gender
+  const hasGender = 
+    afterTriggerLower.startsWith(genderLower + ",") ||
+    afterTriggerLower.startsWith(genderLower + " ") ||
+    afterTriggerLower.startsWith(genderTermLower + ",") ||
+    afterTriggerLower.startsWith(genderTermLower + " ") ||
+    // Also check for common variations
+    /\b(woman|man|person)\b/i.test(afterTrigger.split(',')[0]?.trim() || '')
+  
+  if (!hasGender) {
+    // Gender not found - insert it after trigger word
+    return `${triggerWord}, ${genderTerm}, ${afterTrigger}`
+  }
+  
+  return prompt
+}
+
+/**
  * Parameters for building Classic Mode Replicate input
  */
 export interface ClassicModeInputParams {

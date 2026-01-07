@@ -10,7 +10,7 @@ import { checkCredits, deductCredits, getUserCredits, CREDIT_COSTS } from "@/lib
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { rateLimit } from "@/lib/rate-limit-api"
 import { guardClassicModeRoute } from "@/lib/maya/type-guards"
-import { extractReplicateVersionId, ensureTriggerWordPrefix, buildClassicModeReplicateInput } from "@/lib/replicate-helpers"
+import { extractReplicateVersionId, ensureTriggerWordPrefix, ensureGenderInPrompt, buildClassicModeReplicateInput } from "@/lib/replicate-helpers"
 
 const sql = getDbClient()
 
@@ -131,28 +131,29 @@ export async function POST(request: NextRequest) {
     const userLoraScale = userData.lora_scale
     const loraWeightsUrl = userData.lora_weights_url
 
-    let genderEthnicityTerm = "person"
-
-    // Build base gender term
-    const genderTerm =
-      gender === "woman" || gender === "female" ? "woman" : gender === "man" || gender === "male" ? "man" : "person"
-
-    // Add ethnicity if provided for accurate representation
-    if (ethnicity && ethnicity !== "Other") {
-      genderEthnicityTerm = `${ethnicity} ${genderTerm}`
-    } else {
-      genderEthnicityTerm = genderTerm
+    // Build user gender term (same format as concept cards)
+    let userGender = "person"
+    if (gender) {
+      const dbGender = gender.toLowerCase().trim()
+      if (dbGender === "woman" || dbGender === "female") {
+        userGender = "woman"
+      } else if (dbGender === "man" || dbGender === "male") {
+        userGender = "man"
+      }
     }
 
     // =============================================================================
-    // USE MAYA'S PROMPT DIRECTLY
+    // USE MAYA'S PROMPT DIRECTLY WITH GENDER VALIDATION
     // =============================================================================
-    // Trust Maya's generated prompt - she knows what she's doing!
+    // Trust Maya's generated prompt, but ensure trigger word and gender are present
     
     let finalPrompt = conceptPrompt.trim()
     
     // Ensure trigger word is first using shared helper
     finalPrompt = ensureTriggerWordPrefix(finalPrompt, triggerWord)
+    
+    // CRITICAL: Ensure gender is present after trigger word (fixes missing gender issue)
+    finalPrompt = ensureGenderInPrompt(finalPrompt, triggerWord, userGender, ethnicity)
     
     console.log("[v0] Using Maya's prompt directly:", {
       promptLength: finalPrompt.length,

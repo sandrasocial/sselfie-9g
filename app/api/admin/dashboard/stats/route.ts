@@ -137,10 +137,11 @@ export async function GET() {
 
     // Get Stripe live metrics (cached, 5-min TTL)
     // Use Promise.race with timeout to prevent hanging
+    // Increased timeout since we optimized to use database for revenue (faster)
     let stripeMetrics
     try {
       const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Stripe metrics timeout")), 20000) // 20 second timeout
+        setTimeout(() => reject(new Error("Stripe metrics timeout")), 30000) // 30 second timeout (optimized queries)
       )
       stripeMetrics = await Promise.race([getStripeLiveMetrics(), timeoutPromise])
     } catch (error: any) {
