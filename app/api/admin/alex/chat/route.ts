@@ -1031,9 +1031,21 @@ IMPORTANT: When user asks to edit this email:
             })
 
             if (!response.ok) {
-              const error = await response.text()
-              console.error('[Alex] ❌ API error:', error)
-              throw new Error(`API error: ${response.status}`)
+              const errorText = await response.text()
+              console.error('[Alex] ❌ API error:', errorText)
+              // Try to parse error message from Anthropic API response
+              let errorMessage = `API error: ${response.status}`
+              try {
+                const errorJson = JSON.parse(errorText)
+                if (errorJson.error?.message) {
+                  errorMessage = errorJson.error.message
+                } else if (errorJson.message) {
+                  errorMessage = errorJson.message
+                }
+              } catch (e) {
+                // Use default error message if parsing fails
+              }
+              throw new Error(errorMessage)
             }
 
             // Process SSE stream
@@ -1337,14 +1349,9 @@ IMPORTANT: When user asks to edit this email:
           }
         } catch (error: any) {
           console.error('[Alex] ❌ Stream error:', error)
-          if (!isClosed) {
-            const errorMessage = {
-              type: 'error',
-              id: messageId,
-              errorText: error.message || 'Stream error'
-            }
-            safeEnqueue(encoder.encode(`data: ${JSON.stringify(errorMessage)}\n\n`))
-          }
+          // Don't send invalid SSE error messages - just close the stream
+          // The useChat hook's onError callback will handle the error
+          // when the stream closes unexpectedly
         } finally {
           safeClose()
           }
