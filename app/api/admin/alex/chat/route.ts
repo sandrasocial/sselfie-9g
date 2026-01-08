@@ -964,10 +964,12 @@ IMPORTANT: When user asks to edit this email:
     const encoder = new TextEncoder()
     const messageId = `msg-${Date.now()}`
     let hasSentTextStart = false
+    let hasSentTextEnd = false
     
     const stream = new ReadableStream({
       async start(controller) {
         let isClosed = false
+        let streamError: Error | null = null
 
         const safeEnqueue = (data: string | Uint8Array) => {
           try {
@@ -986,11 +988,46 @@ IMPORTANT: When user asks to edit this email:
 
         const safeClose = () => {
           if (!isClosed) {
-            isClosed = true
             try {
+              // Bug 1 Fix: Always send text-end if text-start was sent but text-end wasn't, even if there's an error
+              // This ensures complete message sequences even when errors occur mid-stream
+              if (hasSentTextStart && !hasSentTextEnd) {
+                const endMessage = {
+                  type: 'text-end',
+                  id: messageId
+                }
+                safeEnqueue(encoder.encode(`data: ${JSON.stringify(endMessage)}\n\n`))
+                hasSentTextEnd = true
+              }
+              
+              // If there was an error and we haven't sent any text yet, send an error text message
+              // This ensures the frontend receives the error message
+              if (streamError && !hasSentTextStart) {
+                const errorMessage = {
+                  type: 'text-start',
+                  id: messageId
+                }
+                safeEnqueue(encoder.encode(`data: ${JSON.stringify(errorMessage)}\n\n`))
+                
+                const errorText = {
+                  type: 'text-delta',
+                  id: messageId,
+                  delta: `Error: ${streamError.message}`
+                }
+                safeEnqueue(encoder.encode(`data: ${JSON.stringify(errorText)}\n\n`))
+                
+                const errorEnd = {
+                  type: 'text-end',
+                  id: messageId
+                }
+                safeEnqueue(encoder.encode(`data: ${JSON.stringify(errorEnd)}\n\n`))
+                hasSentTextEnd = true
+              }
               controller.close()
             } catch (error) {
               console.error('[Alex] ❌ Error closing stream:', error)
+            } finally {
+              isClosed = true
             }
           }
         }
@@ -1314,6 +1351,16 @@ IMPORTANT: When user asks to edit this email:
           // Log if we hit the iteration limit
           if (iteration >= MAX_ITERATIONS) {
             console.warn('[Alex] ⚠️ Hit MAX_ITERATIONS limit:', MAX_ITERATIONS, '- response may be incomplete')
+            // Bug 2 Fix: Ensure text-start is sent before text-delta warning
+            // hasSentTextStart may have been reset to false when tool calls were found
+            if (!hasSentTextStart) {
+              const startMessage = {
+                type: 'text-start',
+                id: messageId
+              }
+              safeEnqueue(encoder.encode(`data: ${JSON.stringify(startMessage)}\n\n`))
+              hasSentTextStart = true
+            }
             // Send a warning to the frontend
             const warningMessage = {
               type: 'text-delta',
@@ -1323,13 +1370,14 @@ IMPORTANT: When user asks to edit this email:
             safeEnqueue(encoder.encode(`data: ${JSON.stringify(warningMessage)}\n\n`))
           }
 
-          // Send text-end event if we sent text-start
-          if (hasSentTextStart) {
+          // Send text-end event if we sent text-start (and haven't already sent it)
+          if (hasSentTextStart && !hasSentTextEnd) {
             const endMessage = {
               type: 'text-end',
               id: messageId
             }
             safeEnqueue(encoder.encode(`data: ${JSON.stringify(endMessage)}\n\n`))
+            hasSentTextEnd = true
           }
 
           // Save accumulated message to database
@@ -1349,9 +1397,9 @@ IMPORTANT: When user asks to edit this email:
           }
         } catch (error: any) {
           console.error('[Alex] ❌ Stream error:', error)
-          // Don't send invalid SSE error messages - just close the stream
-          // The useChat hook's onError callback will handle the error
-          // when the stream closes unexpectedly
+          // Store the error so we can send it when closing the stream
+          streamError = error instanceof Error ? error : new Error(error?.message || String(error))
+          // The error will be sent via safeClose if no text was sent yet
         } finally {
           safeClose()
           }

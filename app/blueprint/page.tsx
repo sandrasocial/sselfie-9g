@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Sparkles, Copy, Check } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
@@ -33,7 +33,7 @@ export default function BrandBlueprintPage() {
   const [selectedFeedStyle, setSelectedFeedStyle] = useState("")
   const [accessToken, setAccessToken] = useState<string | null>(null)
 
-  const [concepts, setConcepts] = useState<any[]>([])
+  const [concepts, setConcepts] = useState<Array<{ title: string; prompt: string; category: string; id?: number; image?: string }>>([])
   const [isLoadingConcepts, setIsLoadingConcepts] = useState(false)
   const [generatedConceptImages, setGeneratedConceptImages] = useState<{ [key: number]: string }>({})
   const [savedFrameUrls, setSavedFrameUrls] = useState<string[]>([])
@@ -102,7 +102,7 @@ export default function BrandBlueprintPage() {
             setSelfieImages(blueprint.selfieImages)
           }
 
-          console.log("[Blueprint] Loaded saved blueprint for email:", savedEmail)
+          // console.log("[Blueprint] Loaded saved blueprint for email:", savedEmail)
         }
       } catch (error) {
         console.error("[Blueprint] Error loading saved blueprint:", error)
@@ -113,7 +113,7 @@ export default function BrandBlueprintPage() {
     loadSavedBlueprint()
   }, [savedEmail])
 
-  const calculateScore = () => {
+  const calculateScore = useCallback(() => {
     let score = 0
     if (formData.lightingKnowledge === "expert") score += 20
     else if (formData.lightingKnowledge === "good") score += 15
@@ -137,7 +137,7 @@ export default function BrandBlueprintPage() {
     else score += 8
 
     return score
-  }
+  }, [formData.lightingKnowledge, formData.angleAwareness, formData.editingStyle, formData.consistencyLevel, formData.currentSelfieHabits])
 
   useEffect(() => {
     if (step === 4) {
@@ -156,7 +156,7 @@ export default function BrandBlueprintPage() {
       }, 30)
       return () => clearInterval(timer)
     }
-  }, [step])
+  }, [step, calculateScore])
 
   const copyToClipboard = (text: string, id: number) => {
     navigator.clipboard.writeText(text)
@@ -164,7 +164,7 @@ export default function BrandBlueprintPage() {
     setTimeout(() => setCopiedCaption(null), 2000)
   }
 
-  const getIndustryExample = () => {
+  const _getIndustryExample = () => {
     const examples: Record<string, string> = {
       coach: "life coaches and wellness experts",
       "life coach": "life coaches and wellness experts",
@@ -402,11 +402,11 @@ export default function BrandBlueprintPage() {
         contentCalendar: getContentCalendar(),
       }
 
-      console.log("[v0] Sending email with full blueprint:", {
-        email: savedEmail,
-        name: savedName,
-        conceptCount: conceptsWithImages.length,
-      })
+      // console.log("[v0] Sending email with full blueprint:", {
+      //   email: savedEmail,
+      //   name: savedName,
+      //   conceptCount: conceptsWithImages.length,
+      // })
 
       const response = await fetch("/api/blueprint/email-concepts", {
         method: "POST",
@@ -437,7 +437,7 @@ export default function BrandBlueprintPage() {
         throw new Error(errorMessage)
       }
 
-      console.log("[v0] Email sent successfully:", data)
+      // console.log("[v0] Email sent successfully:", data)
       alert("✓ Blueprint sent to your email! Check your inbox (and spam folder just in case).")
     } catch (error) {
       console.error("[v0] Error emailing concepts:", error)
@@ -507,7 +507,6 @@ export default function BrandBlueprintPage() {
           <div
             className="min-h-[calc(100vh-80px)] sm:min-h-[calc(100vh-96px)] relative flex items-center justify-center px-4 sm:px-6"
             style={{
-              minHeight: "100vh",
               minHeight: "100dvh",
               position: "relative",
               overflow: "hidden",
@@ -584,7 +583,7 @@ export default function BrandBlueprintPage() {
                 </button>
               </div>
               <p className="mt-4 text-xs sm:text-sm font-light text-white/90" style={{ textShadow: "0 1px 5px rgba(0,0,0,0.3)", fontSize: "14px", marginTop: "16px" }}>
-                Join 2,700+ creators who've done this
+                Join 2,700+ creators who&apos;ve done this
               </p>
             </div>
           </div>
@@ -597,7 +596,7 @@ export default function BrandBlueprintPage() {
                 style={{ fontFamily: "'Times New Roman', serif" }}
                 className="text-2xl sm:text-3xl md:text-5xl font-extralight tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-3 sm:mb-4 text-stone-950"
               >
-                Let's build your brand
+                Let&apos;s build your brand
               </h2>
               <p className="text-xs sm:text-sm font-light text-stone-600 mb-6 sm:mb-8 leading-relaxed">
                 Answer a few questions so we can create your personalized blueprint.
@@ -632,7 +631,7 @@ export default function BrandBlueprintPage() {
 
                 <div>
                   <label className="block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-stone-700 mb-2 sm:mb-3">
-                    What's your vibe?
+                    What&apos;s your vibe?
                   </label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
                     {["Luxury", "Minimal", "Beige", "Warm", "Edgy", "Professional"].map((vibe) => (
@@ -681,13 +680,13 @@ export default function BrandBlueprintPage() {
                 Your content skills
               </h2>
               <p className="text-xs sm:text-sm font-light text-stone-600 mb-6 sm:mb-8 leading-relaxed">
-                Let's understand where you're at so we can give you personalized guidance.
+                Let&apos;s understand where you&apos;re at so we can give you personalized guidance.
               </p>
 
               <div className="space-y-6 sm:space-y-8">
                 <div>
                   <label className="block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-stone-700 mb-2 sm:mb-3">
-                    How's your lighting knowledge?
+                    How&apos;s your lighting knowledge?
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                     {[
@@ -853,7 +852,7 @@ export default function BrandBlueprintPage() {
                   style={{ fontFamily: "'Times New Roman', serif" }}
                   className="text-2xl sm:text-3xl md:text-4xl font-light text-center mb-8 sm:mb-12 text-stone-950"
                 >
-                  Here's how creators who show up consistently structure their feeds
+                  Here&apos;s how creators who show up consistently structure their feeds
                 </h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-12">
@@ -968,7 +967,7 @@ export default function BrandBlueprintPage() {
               Choose your feed aesthetic
             </h2>
             <p className="text-xs sm:text-sm font-light text-stone-600 mb-8 sm:mb-12 leading-relaxed text-center px-4">
-              Pick a vibe that feels like you. Don't worry, you can always switch things up later!
+              Pick a vibe that feels like you. Don&apos;t worry, you can always switch things up later!
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
@@ -1083,7 +1082,7 @@ export default function BrandBlueprintPage() {
                   Create your feed
                 </h2>
                 <p className="text-xs sm:text-sm font-light text-stone-600 leading-relaxed max-w-2xl mx-auto px-4">
-                  Based on your {selectedFeedStyle} vibe, generate your personalized 3x3 photo grid. Click "Generate Grid"
+                  Based on your {selectedFeedStyle} vibe, generate your personalized 3x3 photo grid. Click &quot;Generate Grid&quot;
                   to create your brand photos, then use them to build your consistent feed.
                 </p>
               </div>
@@ -1192,20 +1191,20 @@ export default function BrandBlueprintPage() {
                   {animatedScore >= 80 && (
                     <div className="bg-stone-100 p-4 sm:p-6 rounded-lg">
                       <h3 className="text-base sm:text-lg font-medium tracking-wider uppercase text-stone-950 mb-2">
-                        You're doing great
+                        You&apos;re doing great
                       </h3>
                       <p className="text-xs sm:text-sm font-light text-stone-700 leading-relaxed">
-                        You've got the basics down. Now let's help you show up consistently with content that builds your brand.
+                        You&apos;ve got the basics down. Now let&apos;s help you show up consistently with content that builds your brand.
                       </p>
                     </div>
                   )}
                   {animatedScore >= 50 && animatedScore < 80 && (
                     <div className="bg-stone-100 p-4 sm:p-6 rounded-lg">
                       <h3 className="text-base sm:text-lg font-medium tracking-wider uppercase text-stone-950 mb-2">
-                        You're on the right track
+                        You&apos;re on the right track
                       </h3>
                       <p className="text-xs sm:text-sm font-light text-stone-700 leading-relaxed">
-                        You're doing better than most. A few small tweaks to your lighting and posting rhythm, and you'll start seeing real results.
+                        You&apos;re doing better than most. A few small tweaks to your lighting and posting rhythm, and you&apos;ll start seeing real results.
                       </p>
                     </div>
                   )}
@@ -1215,14 +1214,14 @@ export default function BrandBlueprintPage() {
                         Perfect timing
                       </h3>
                       <p className="text-xs sm:text-sm font-light text-stone-700 leading-relaxed">
-                        This is actually exciting. You're about to learn exactly how to use selfies strategically. Your blueprint will walk you through every step.
+                        This is actually exciting. You&apos;re about to learn exactly how to use selfies strategically. Your blueprint will walk you through every step.
                       </p>
                     </div>
                   )}
 
                   <div className="bg-stone-950 text-stone-50 p-4 sm:p-6 rounded-lg">
                     <h3 className="text-xs sm:text-sm font-medium tracking-wider uppercase mb-2">
-                      Here's what to focus on first
+                      Here&apos;s what to focus on first
                     </h3>
                     <p className="text-xs sm:text-sm font-light leading-relaxed">
                       {formData.consistencyLevel === "sporadic" || formData.consistencyLevel === "monthly"
@@ -1256,7 +1255,7 @@ export default function BrandBlueprintPage() {
                   Your 30-day content plan
                 </h2>
                 <p className="text-xs sm:text-sm font-light text-stone-600 leading-relaxed max-w-2xl mx-auto px-4">
-                  No more "what should I post today?" moments. Here's your whole month planned out—just show up and
+                  No more &quot;what should I post today?&quot; moments. Here&apos;s your whole month planned out—just show up and
                   create!
                 </p>
               </div>
@@ -1333,14 +1332,14 @@ export default function BrandBlueprintPage() {
                   Your caption templates
                 </h2>
                 <p className="text-xs sm:text-sm font-light text-stone-600 leading-relaxed max-w-2xl mx-auto mb-6 sm:mb-8 px-4">
-                  Struggling with what to say? We've got you. Just copy these, fill in the blanks, and you're good to
+                  Struggling with what to say? We&apos;ve got you. Just copy these, fill in the blanks, and you&apos;re good to
                   go!
                 </p>
 
                 {!accessToken && (
                   <div className="bg-stone-100 p-4 sm:p-6 rounded-lg max-w-2xl mx-auto mb-8 sm:mb-12">
                     <p className="text-xs sm:text-sm font-light text-stone-700 mb-3 sm:mb-4">
-                      Want these templates in your inbox? Save your blueprint and we'll email everything to you.
+                      Want these templates in your inbox? Save your blueprint and we&apos;ll email everything to you.
                     </p>
                     <button
                       onClick={() => setShowEmailCapture(true)}
@@ -1518,7 +1517,7 @@ export default function BrandBlueprintPage() {
                 {/* Soft Close */}
                 <div className="text-center mb-6 sm:mb-8">
                   <p className="text-sm sm:text-base font-light text-stone-600 max-w-2xl mx-auto leading-relaxed px-4">
-                    Not ready yet? That's totally okay. You'll get your full blueprint and 30-day calendar via email in 2 minutes. We're here when you're ready.
+                    Not ready yet? That&apos;s totally okay. You&apos;ll get your full blueprint and 30-day calendar via email in 2 minutes. We&apos;re here when you&apos;re ready.
                   </p>
                 </div>
 

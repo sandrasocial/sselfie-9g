@@ -41,10 +41,44 @@ export async function POST(req: NextRequest) {
 
     const imageUrls: string[] = []
 
+    // Helper function to sanitize filename for Vercel Blob storage
+    // Vercel Blob requires alphanumeric characters, hyphens, underscores, dots, and slashes only
+    const sanitizeFilename = (filename: string): string => {
+      // Get file extension (including the dot)
+      const lastDotIndex = filename.lastIndexOf('.')
+      const hasExtension = lastDotIndex > 0 && lastDotIndex < filename.length - 1
+      const extension = hasExtension ? filename.substring(lastDotIndex) : '.jpg'
+      const baseName = hasExtension ? filename.substring(0, lastDotIndex) : filename
+      
+      // Remove all special characters except alphanumeric, hyphens, and underscores
+      // Replace spaces and special chars with hyphens
+      const sanitized = baseName
+        .replace(/[^a-zA-Z0-9_-]/g, '-')
+        .replace(/-+/g, '-') // Replace multiple hyphens with single
+        .replace(/^-|-$/g, '') // Remove leading/trailing hyphens
+        .substring(0, 100) // Limit length
+      
+      // Ensure we always have a valid filename
+      const finalName = sanitized || 'image'
+      return `${finalName}${extension}`
+    }
+
     for (const file of files) {
       // Validate file type
       if (!file.type.startsWith("image/")) {
         return NextResponse.json({ error: `Invalid file type: ${file.name}. Only images are allowed.` }, { status: 400 })
+      }
+
+      // Check for HEIC/HEIF files (not supported by web browsers)
+      const isHEIC = file.type === "image/heic" || 
+                     file.type === "image/heif" ||
+                     file.name.toLowerCase().endsWith(".heic") ||
+                     file.name.toLowerCase().endsWith(".heif")
+      
+      if (isHEIC) {
+        return NextResponse.json({ 
+          error: `${file.name} is in HEIC format which is not supported. Please convert to JPG or PNG first.` 
+        }, { status: 400 })
       }
 
       // Validate file size (10MB max)
@@ -52,8 +86,12 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: `File too large: ${file.name}. Maximum 10MB per image.` }, { status: 400 })
       }
 
-      // Upload to Vercel Blob
-      const blob = await put(`blueprint-selfies/${Date.now()}-${file.name}`, file, {
+      // Sanitize filename to prevent pattern mismatch errors
+      const sanitizedFilename = sanitizeFilename(file.name)
+      const blobPath = `blueprint-selfies/${Date.now()}-${sanitizedFilename}`
+
+      // Upload to Vercel Blob with sanitized filename
+      const blob = await put(blobPath, file, {
         access: "public",
         contentType: file.type,
         addRandomSuffix: true,
