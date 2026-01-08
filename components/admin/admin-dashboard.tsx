@@ -285,6 +285,33 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
             </div>
           </div>
 
+          {/* Growth Dashboard Link */}
+          <div className="mb-8 sm:mb-12">
+            <Link
+              href="/admin/growth-dashboard"
+              className="block bg-white border border-stone-200 p-4 sm:p-6 rounded-none hover:bg-stone-50 transition-colors"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-base sm:text-lg font-['Times_New_Roman'] text-stone-950 mb-1 tracking-[0.1em] uppercase">
+                    Growth Dashboard
+                  </h3>
+                  <p className="text-[10px] sm:text-xs text-stone-400 tracking-[0.1em] uppercase">
+                    Revenue, credit costs, referral ROI, and gross margin metrics
+                  </p>
+                </div>
+                <svg
+                  className="w-4 h-4 sm:w-5 sm:h-5 text-stone-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </div>
+            </Link>
+          </div>
+
           {/* Additional Stripe Metrics */}
           {stats?.stripeLive && (
             <div className="mb-8 sm:mb-12">

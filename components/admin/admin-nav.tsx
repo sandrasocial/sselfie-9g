@@ -10,6 +10,7 @@ export function AdminNav() {
   
   const navItems = [
     { label: 'DASHBOARD', href: '/admin' },
+    { label: 'GROWTH', href: '/admin/growth-dashboard' },
     { label: 'MISSION CONTROL', href: '/admin/mission-control' },
     { label: 'HEALTH', href: '/admin/health' },
     { label: 'JOURNAL', href: '/admin/journal' },
