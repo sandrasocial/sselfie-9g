@@ -63,11 +63,11 @@ export async function GET(request: Request) {
     })
     const scriptDuration = ((Date.now() - scriptStartTime) / 1000).toFixed(2)
 
-    // Parse output to extract stats
-    const indexedMatch = stdout.match(/Files indexed: (\d+)/)
-    const skippedMatch = stdout.match(/Files skipped: (\d+)/)
-    const errorsMatch = stdout.match(/Errors: (\d+)/)
-    const durationMatch = stdout.match(/Duration: ([\d.]+)s/)
+    // Parse output to extract stats (accounting for [Index] prefix)
+    const indexedMatch = stdout.match(/\[Index\] Files indexed: (\d+)/)
+    const skippedMatch = stdout.match(/\[Index\] Files skipped: (\d+)/)
+    const errorsMatch = stdout.match(/\[Index\] Errors: (\d+)/)
+    const durationMatch = stdout.match(/\[Index\] Duration: ([\d.]+)s/)
 
     const stats = {
       filesIndexed: indexedMatch ? parseInt(indexedMatch[1], 10) : 0,
