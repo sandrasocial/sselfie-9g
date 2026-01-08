@@ -78,14 +78,14 @@ function CheckoutContent() {
       <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
         <div className="max-w-md text-center">
           <div className="font-serif text-2xl sm:text-3xl font-extralight tracking-[0.3em] uppercase text-stone-900 mb-4">
-            OOPS
+            Something went wrong
           </div>
-          <p className="text-sm text-stone-600 font-light mb-6">{error}</p>
+          <p className="text-sm text-stone-600 font-light mb-6">We couldn't find your checkout session.</p>
           <button
             onClick={() => router.push("/")}
             className="bg-stone-950 text-stone-50 px-6 py-3 rounded-lg text-xs font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200"
           >
-            Return Home
+            Go back to Home
           </button>
         </div>
       </div>
@@ -122,9 +122,9 @@ function CheckoutContent() {
 
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
           <div className="font-serif text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extralight tracking-[0.3em] uppercase text-white mb-3">
-            S S E L F I E
+            Complete your SSELFIE Studio order
           </div>
-          <p className="text-sm sm:text-base text-white/90 font-light">Complete your order</p>
+          <p className="text-sm sm:text-base text-white/90 font-light">Join the Visibility Studio and start showing up with confidence.</p>
         </div>
       </div>
 
@@ -135,7 +135,7 @@ function CheckoutContent() {
             SECURE CHECKOUT
           </h1>
           <p className="text-xs sm:text-sm text-stone-600 font-light leading-relaxed max-w-xl mx-auto">
-            Your payment information is encrypted and secure
+            Your payment is encrypted and protected with Stripe.
           </p>
         </div>
 
@@ -155,6 +155,9 @@ function CheckoutContent() {
           <p className="text-[10px] sm:text-xs text-stone-500 font-light leading-relaxed">
             Protected by Stripe · SSL Encrypted · PCI Compliant
           </p>
+          <p className="text-[10px] sm:text-xs text-stone-500 font-light leading-relaxed mt-2">
+            Cancel anytime. 30-day refund if you're not happy.
+          </p>
         </div>
       </div>
     </div>
@@ -168,8 +171,9 @@ export default function CheckoutPage() {
         <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
           <div className="text-center">
             <div className="font-serif text-xl sm:text-2xl font-extralight tracking-[0.3em] uppercase text-stone-900 mb-4">
-              LOADING
+              Loading your checkout
             </div>
+            <p className="text-sm text-stone-600 font-light">Please wait a moment...</p>
           </div>
         </div>
       }
