@@ -73,8 +73,6 @@ export async function POST() {
       SELECT DISTINCT
         u.id as user_id,
         u.email,
-        u.first_name,
-        u.last_name,
         u.display_name,
         ct.created_at as purchase_date
       FROM users u

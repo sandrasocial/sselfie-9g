@@ -8,12 +8,12 @@ async function fixUserLoraScales() {
   try {
     // Find users by email
     const users = await sql`
-      SELECT u.id, u.email, u.first_name, u.last_name, u.display_name,
+      SELECT u.id, u.email, u.display_name,
              um.id as model_id, um.lora_scale, um.trigger_word
       FROM users u
       LEFT JOIN user_models um ON um.user_id = u.id
       WHERE LOWER(u.email) IN ('bjarki@example.com', 'mcegill@hotmail.com')
-         OR LOWER(u.first_name) LIKE '%bjarki%'
+         OR LOWER(u.display_name) LIKE '%bjarki%'
          OR LOWER(u.email) LIKE '%bjarki%'
          OR u.email = 'mcegill@hotmail.com'
       ORDER BY u.email
@@ -24,7 +24,7 @@ async function fixUserLoraScales() {
       console.log("\nSearching for all users with models...")
 
       const allUsers = await sql`
-        SELECT u.id, u.email, u.first_name, u.last_name,
+        SELECT u.id, u.email, u.display_name,
                um.lora_scale, um.trigger_word
         FROM users u
         INNER JOIN user_models um ON um.user_id = u.id
@@ -36,7 +36,7 @@ async function fixUserLoraScales() {
       console.log(`\nFound ${allUsers.length} users with LoRA models:`)
       allUsers.forEach((user) => {
         console.log(
-          `  - ${user.email} (${user.first_name || "N/A"} ${user.last_name || "N/A"}) - LoRA: ${user.lora_scale}`,
+          `  - ${user.email} (${user.display_name || "N/A"}) - LoRA: ${user.lora_scale}`,
         )
       })
 
@@ -47,8 +47,7 @@ async function fixUserLoraScales() {
 
     for (const user of users) {
       console.log(`📧 Email: ${user.email}`)
-      console.log(`   Name: ${user.first_name || ""} ${user.last_name || ""}`)
-      console.log(`   Display Name: ${user.display_name || "N/A"}`)
+      console.log(`   Name: ${user.display_name || "N/A"}`)
       console.log(`   User ID: ${user.id}`)
 
       if (!user.model_id) {

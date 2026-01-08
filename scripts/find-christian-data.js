@@ -8,10 +8,9 @@ async function findChristianData() {
   // Search for users with "christian" in name or "levelpartner" in email
   console.log("👤 Searching for Christian in users table:")
   const users = await sql`
-    SELECT id, email, first_name, last_name, created_at
+    SELECT id, email, display_name, created_at
     FROM users
-    WHERE LOWER(first_name) LIKE '%christian%'
-       OR LOWER(last_name) LIKE '%christian%'
+    WHERE LOWER(display_name) LIKE '%christian%'
        OR LOWER(email) LIKE '%christian%'
        OR LOWER(email) LIKE '%levelpartner%'
     ORDER BY created_at DESC
@@ -21,7 +20,7 @@ async function findChristianData() {
     users.forEach((user) => {
       console.log(`  User ID: ${user.id}`)
       console.log(`  Email: ${user.email}`)
-      console.log(`  Name: ${user.first_name || ""} ${user.last_name || ""}`)
+      console.log(`  Name: ${user.display_name || ""}`)
       console.log(`  Created: ${new Date(user.created_at).toLocaleString()}\n`)
     })
   } else {
@@ -33,7 +32,7 @@ async function findChristianData() {
   const models = await sql`
     SELECT um.id, um.user_id, um.model_name, um.replicate_model_id, 
            um.training_status, um.created_at,
-           u.email, u.first_name, u.last_name
+           u.email, u.display_name
     FROM user_models um
     LEFT JOIN users u ON um.user_id = u.id
     WHERE LOWER(um.model_name) LIKE '%christian%'
@@ -45,7 +44,7 @@ async function findChristianData() {
     models.forEach((model) => {
       console.log(`  Model ID: ${model.id}`)
       console.log(`  Model Name: ${model.model_name}`)
-      console.log(`  User: ${model.email} (${model.first_name || ""} ${model.last_name || ""})`)
+      console.log(`  User: ${model.email} (${model.display_name || ""})`)
       console.log(`  User ID: ${model.user_id}`)
       console.log(`  Status: ${model.training_status}`)
       console.log(`  Replicate Model: ${model.replicate_model_id}`)
@@ -59,7 +58,7 @@ async function findChristianData() {
   console.log('📸 Searching for images with "christian":')
   const images = await sql`
     SELECT ai.id, ai.user_id, ai.prompt, ai.created_at,
-           u.email, u.first_name, u.last_name
+           u.email, u.display_name
     FROM ai_images ai
     LEFT JOIN users u ON ai.user_id = u.id
     WHERE LOWER(ai.prompt) LIKE '%christian%'
@@ -70,7 +69,7 @@ async function findChristianData() {
   if (images.length > 0) {
     images.forEach((img) => {
       console.log(`  Image ID: ${img.id}`)
-      console.log(`  User: ${img.email} (${img.first_name || ""} ${img.last_name || ""})`)
+      console.log(`  User: ${img.email} (${img.display_name || ""})`)
       console.log(`  User ID: ${img.user_id}`)
       console.log(`  Prompt: ${img.prompt?.substring(0, 100)}...`)
       console.log(`  Created: ${new Date(img.created_at).toLocaleString()}\n`)
@@ -83,7 +82,7 @@ async function findChristianData() {
   console.log("🤖 ALL Trained Models in database:")
   const allModels = await sql`
     SELECT um.id, um.user_id, um.model_name, um.training_status, um.created_at,
-           u.email, u.first_name, u.last_name
+           u.email, u.display_name
     FROM user_models um
     LEFT JOIN users u ON um.user_id = u.id
     ORDER BY um.created_at DESC
@@ -92,7 +91,7 @@ async function findChristianData() {
   if (allModels.length > 0) {
     allModels.forEach((model) => {
       console.log(`  Model: ${model.model_name}`)
-      console.log(`  User: ${model.email} (${model.first_name || ""} ${model.last_name || ""})`)
+      console.log(`  User: ${model.email} (${model.display_name || ""})`)
       console.log(`  User ID: ${model.user_id}`)
       console.log(`  Status: ${model.training_status}`)
       console.log(`  Created: ${new Date(model.created_at).toLocaleString()}\n`)

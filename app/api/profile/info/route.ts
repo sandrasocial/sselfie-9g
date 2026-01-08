@@ -38,8 +38,6 @@ export async function GET() {
       SELECT 
         u.id,
         u.email,
-        u.first_name,
-        u.last_name,
         u.display_name,
         u.profile_image_url,
         u.created_at,
@@ -64,7 +62,7 @@ export async function GET() {
     const response = {
       id: profile.id,
       email: profile.email,
-      name: profile.display_name || `${profile.first_name || ""} ${profile.last_name || ""}`.trim() || "User",
+      name: profile.display_name || "User",
       avatar: profile.profile_image_url || null,
       bio: profile.bio || null,
       instagram: profile.instagram_handle || null,

@@ -32,8 +32,6 @@ export async function POST(request: Request) {
       SELECT DISTINCT
         u.id as user_id,
         u.email,
-        u.first_name,
-        u.last_name,
         u.display_name,
         ct.created_at as purchase_date
       FROM users u
@@ -69,7 +67,7 @@ export async function POST(request: Request) {
         }
 
         // First, ensure contact exists in Resend audience
-        const firstName = buyer.display_name || buyer.first_name || buyer.email.split('@')[0]
+        const firstName = buyer.display_name || buyer.email.split('@')[0]
         const contactResult = await addOrUpdateResendContact(buyer.email, firstName, {
           source: 'stripe-purchase',
           status: "customer",

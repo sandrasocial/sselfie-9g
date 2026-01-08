@@ -16,8 +16,6 @@ export async function POST() {
     const dbCustomers = await sql`
       SELECT DISTINCT
         u.email,
-        u.first_name,
-        u.last_name,
         u.display_name,
         'membership' as purchase_type,
         s.product_type,
@@ -32,8 +30,6 @@ export async function POST() {
       
       SELECT DISTINCT
         u.email,
-        u.first_name,
-        u.last_name,
         u.display_name,
         'credit_purchase' as purchase_type,
         'one_time_session' as product_type,
@@ -98,7 +94,7 @@ export async function POST() {
 
     for (const customer of dbCustomers) {
       try {
-        const firstName = customer.display_name || customer.first_name || customer.email.split('@')[0]
+        const firstName = customer.display_name || customer.email.split('@')[0]
 
         let productTag = "unknown"
         if (customer.product_type === "one_time_session" || customer.purchase_type === "credit_purchase") {

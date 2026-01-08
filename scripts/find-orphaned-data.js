@@ -9,10 +9,9 @@ async function findOrphanedData() {
     // 1. Find all users with similar names or emails
     console.log("👥 Searching for users matching 'christian' or 'levelpartner'...\n")
     const potentialUsers = await sql`
-      SELECT id, email, first_name, last_name, stack_auth_id, supabase_user_id, created_at
+      SELECT id, email, display_name, stack_auth_id, supabase_user_id, created_at
       FROM users
-      WHERE LOWER(first_name) LIKE '%christian%' 
-         OR LOWER(last_name) LIKE '%christian%'
+      WHERE LOWER(display_name) LIKE '%christian%'
          OR LOWER(email) LIKE '%levelpartner%'
          OR LOWER(email) LIKE '%co@%'
       ORDER BY created_at DESC
@@ -22,7 +21,7 @@ async function findOrphanedData() {
     potentialUsers.forEach((u) => {
       console.log(`  User ID: ${u.id}`)
       console.log(`  Email: ${u.email}`)
-      console.log(`  Name: ${u.first_name} ${u.last_name}`)
+      console.log(`  Name: ${u.display_name || ""}`)
       console.log(`  Created: ${new Date(u.created_at).toLocaleString()}`)
       console.log(`  Stack Auth ID: ${u.stack_auth_id || "Not set"}`)
       console.log(`  Supabase ID: ${u.supabase_user_id || "Not set"}`)
@@ -40,8 +39,7 @@ async function findOrphanedData() {
         m.replicate_model_id,
         m.created_at,
         u.email,
-        u.first_name,
-        u.last_name
+        u.display_name
       FROM user_models m
       LEFT JOIN users u ON m.user_id = u.id
       ORDER BY m.created_at DESC
@@ -53,7 +51,7 @@ async function findOrphanedData() {
       console.log(`  Status: ${model.training_status}`)
       console.log(`  User ID: ${model.user_id}`)
       console.log(`  User Email: ${model.email || "NO USER LINKED"}`)
-      console.log(`  User Name: ${model.first_name || ""} ${model.last_name || ""}`)
+      console.log(`  User Name: ${model.display_name || ""}`)
       console.log(`  Replicate ID: ${model.replicate_model_id || "N/A"}`)
       console.log(`  Created: ${new Date(model.created_at).toLocaleString()}`)
       console.log("")
@@ -65,19 +63,18 @@ async function findOrphanedData() {
       SELECT 
         i.user_id,
         u.email,
-        u.first_name,
-        u.last_name,
+        u.display_name,
         COUNT(*) as image_count
       FROM ai_images i
       LEFT JOIN users u ON i.user_id = u.id
-      GROUP BY i.user_id, u.email, u.first_name, u.last_name
+      GROUP BY i.user_id, u.email, u.display_name
       ORDER BY image_count DESC
     `
 
     imageCounts.forEach((row) => {
       console.log(`  User ID: ${row.user_id}`)
       console.log(`  Email: ${row.email || "NO USER LINKED"}`)
-      console.log(`  Name: ${row.first_name || ""} ${row.last_name || ""}`)
+      console.log(`  Name: ${row.display_name || ""}`)
       console.log(`  Images: ${row.image_count}`)
       console.log("")
     })
