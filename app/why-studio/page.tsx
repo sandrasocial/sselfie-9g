@@ -61,20 +61,20 @@ export default function WhyStudioPage() {
                 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-light mb-4 sm:mb-6 leading-[1.1] tracking-tight"
                 style={{ fontFamily: "'Times New Roman', Times, serif" }}
               >
-                UNLIMITED ACCESS TO YOUR BRAND
+                Stop hiding. Start showing up beautifully.
               </h1>
               <p className="text-base sm:text-lg md:text-xl leading-relaxed mb-2 sm:mb-3 max-w-xl font-light">
-                150+ professional photos every month.
+                SSELFIE Studio helps you create your own brand photos, plan your social feed, and stay visible, all in one simple system.
               </p>
               <p className="text-base sm:text-lg md:text-xl leading-relaxed mb-6 sm:mb-8 max-w-xl font-light text-white/90">
-                The full Academy. Feed Designer. Monthly strategy. All yours.
+                No photographers. No stress. No more overthinking what to post.
               </p>
               <a
                 href="#pricing"
                 onClick={scrollToPricing}
                 className="inline-flex px-8 sm:px-10 py-3.5 sm:py-4 bg-white text-black text-sm sm:text-base uppercase tracking-wider transition-all duration-300 hover:bg-black hover:text-white border border-white min-h-[48px] items-center justify-center font-light"
               >
-                SEE WHAT'S INCLUDED
+                Join The Visibility Studio →
               </a>
             </div>
           </div>
@@ -84,6 +84,12 @@ export default function WhyStudioPage() {
       {/* Transformational Quote Section */}
       <section className="py-16 sm:py-20 md:py-24 bg-stone-950">
         <div className="max-w-4xl mx-auto px-6 sm:px-8 md:px-12 text-center">
+          <h2
+            className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-light leading-[1.3] text-stone-50 mb-6 sm:mb-8"
+            style={{ fontFamily: "'Times New Roman', Times, serif" }}
+          >
+            Visibility changes everything.
+          </h2>
           <blockquote
             className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-light leading-[1.3] text-stone-50 mb-6 sm:mb-8"
             style={{ fontFamily: "'Times New Roman', Times, serif" }}
@@ -91,7 +97,7 @@ export default function WhyStudioPage() {
             "I used to hide behind my logo. Now I'm the face of my brand, and it's changed everything."
           </blockquote>
           <p className="text-sm sm:text-sm md:text-base leading-relaxed mb-4 sm:mb-6 max-w-2xl mx-auto px-4 font-light tracking-wider uppercase text-stone-400">
-            — SARAH - STUDIO MEMBER
+            — Sarah, Studio Member
           </p>
         </div>
       </section>
@@ -107,117 +113,124 @@ export default function WhyStudioPage() {
               className="text-2xl sm:text-3xl md:text-4xl font-light tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-8 sm:mb-10 text-stone-900"
               style={{ fontFamily: "'Times New Roman', Times, serif" }}
             >
-              Everything You Need to Build Your Brand
+              You don't need another AI app. You need a visibility system.
             </h2>
             <p className="text-lg sm:text-xl font-light text-stone-700 px-4 max-w-3xl mx-auto">
-              If you're loving what you're creating and want unlimited access to fresh photos every month, Studio membership gives you everything you need to build a brand that actually represents you.
+              Most people struggle to stay consistent online. SSELFIE Studio makes it easy to keep showing up with confidence.
             </p>
           </div>
 
+          <div className="text-center mb-12 sm:mb-16">
+            <h2
+              className="text-2xl sm:text-3xl md:text-4xl font-light tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-8 sm:mb-10 text-stone-900"
+              style={{ fontFamily: "'Times New Roman', Times, serif" }}
+            >
+              Everything you need to stay visible
+            </h2>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12 md:gap-16 max-w-6xl mx-auto">
-            {/* Benefit 1: 150+ Photos */}
+            {/* Benefit 1: Brand Photos */}
             <div className="space-y-6">
               <div className="relative aspect-4/3 rounded-2xl overflow-hidden bg-stone-200">
                 <Image
                   src="/images/618-tvcuzvg8v6r2bput7px8v06bchrxgx.png"
                   fill
-                  alt="150+ Professional Photos Every Month"
+                  alt="Brand photos that actually look like you"
                   className="object-cover"
                 />
                 <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
                 <div className="absolute bottom-6 left-6 right-6">
                   <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg">
-                    <p className="text-xs font-light tracking-[0.2em] uppercase text-stone-900">150+ Photos Monthly</p>
+                    <p className="text-xs font-light tracking-[0.2em] uppercase text-stone-900">Brand Photos</p>
                   </div>
                 </div>
               </div>
               <div>
                 <h3 className="text-2xl sm:text-3xl font-light text-stone-900 mb-4" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
-                  150+ Professional Photos Every Month
+                  Brand photos that actually look like you, no filters or weird edits.
                 </h3>
-                <p className="text-base sm:text-lg font-light text-stone-600 leading-relaxed">
-                  Not just a one-time batch. You get fresh, professional photos every single month. Never run out of content again.
-                </p>
               </div>
             </div>
 
-            {/* Benefit 2: Full Academy */}
-            <div className="space-y-6">
-              <div className="relative aspect-4/3 rounded-2xl overflow-hidden bg-stone-200">
-                <Image
-                  src="/images/616-nnepryg0hs2y745w8znu8twvfrgude.png"
-                  fill
-                  alt="Full Academy with Video Courses"
-                  className="object-cover"
-                />
-                <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
-                <div className="absolute bottom-6 left-6 right-6">
-                  <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg">
-                    <p className="text-xs font-light tracking-[0.2em] uppercase text-stone-900">Complete Academy</p>
-                  </div>
-                </div>
-              </div>
-              <div>
-                <h3 className="text-2xl sm:text-3xl font-light text-stone-900 mb-4" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
-                  Full Academy with Video Courses & Templates
-                </h3>
-                <p className="text-base sm:text-lg font-light text-stone-600 leading-relaxed">
-                  Learn the SSELFIE method - the same strategy Sandra used to build her business. Real strategies, not fluff.
-                </p>
-              </div>
-            </div>
-
-            {/* Benefit 3: Feed Designer */}
+            {/* Benefit 2: Feed Planner */}
             <div className="space-y-6">
               <div className="relative aspect-4/3 rounded-2xl overflow-hidden bg-stone-200">
                 <Image
                   src="/images/641-yz6rwohjtemwagcwy5xqjtsczx9lfh.png"
                   fill
-                  alt="Feed Designer to Plan Your Content"
+                  alt="Feed Planner to design your Instagram grid"
                   className="object-cover"
                 />
                 <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
                 <div className="absolute bottom-6 left-6 right-6">
                   <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg">
-                    <p className="text-xs font-light tracking-[0.2em] uppercase text-stone-900">Feed Designer</p>
+                    <p className="text-xs font-light tracking-[0.2em] uppercase text-stone-900">Feed Planner</p>
                   </div>
                 </div>
               </div>
               <div>
                 <h3 className="text-2xl sm:text-3xl font-light text-stone-900 mb-4" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
-                  Feed Designer to Plan Your Content
+                  Feed Planner to design your Instagram grid and keep it consistent.
                 </h3>
-                <p className="text-base sm:text-lg font-light text-stone-600 leading-relaxed">
-                  Visualize and plan your Instagram feed before you post. See how everything looks together. Post with confidence.
-                </p>
               </div>
             </div>
 
-            {/* Benefit 4: Monthly Strategy */}
+            {/* Benefit 3: Learning Hub */}
+            <div className="space-y-6">
+              <div className="relative aspect-4/3 rounded-2xl overflow-hidden bg-stone-200">
+                <Image
+                  src="/images/616-nnepryg0hs2y745w8znu8twvfrgude.png"
+                  fill
+                  alt="Learning Hub with bite-sized lessons"
+                  className="object-cover"
+                />
+                <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
+                <div className="absolute bottom-6 left-6 right-6">
+                  <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg">
+                    <p className="text-xs font-light tracking-[0.2em] uppercase text-stone-900">Learning Hub</p>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h3 className="text-2xl sm:text-3xl font-light text-stone-900 mb-4" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
+                  Learning Hub with bite-sized lessons to grow your visibility.
+                </h3>
+              </div>
+            </div>
+
+            {/* Benefit 4: Monthly Content Ideas */}
             <div className="space-y-6">
               <div className="relative aspect-4/3 rounded-2xl overflow-hidden bg-stone-200">
                 <Image
                   src="/images/380-iihccjipjsnt0xfvpt7urkd4bzhtyr.png"
                   fill
-                  alt="Monthly Drops with Newest Strategies"
+                  alt="Monthly content ideas and style drops"
                   className="object-cover"
                 />
                 <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
                 <div className="absolute bottom-6 left-6 right-6">
                   <div className="bg-white/90 backdrop-blur-sm px-4 py-2 rounded-lg">
-                    <p className="text-xs font-light tracking-[0.2em] uppercase text-stone-900">Monthly Strategy</p>
+                    <p className="text-xs font-light tracking-[0.2em] uppercase text-stone-900">Monthly Ideas</p>
                   </div>
                 </div>
               </div>
               <div>
                 <h3 className="text-2xl sm:text-3xl font-light text-stone-900 mb-4" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
-                  Monthly Drops with Newest Strategies
+                  Monthly content ideas and style drops to keep things fresh.
                 </h3>
-                <p className="text-base sm:text-lg font-light text-stone-600 leading-relaxed">
-                  Stay ahead with the latest content strategies, trends, and tips delivered monthly. Always fresh, always relevant.
-                </p>
               </div>
             </div>
+          </div>
+
+          <div className="text-center mt-16 sm:mt-20">
+            <a
+              href="#pricing"
+              onClick={scrollToPricing}
+              className="inline-flex px-8 sm:px-10 py-3.5 sm:py-4 bg-stone-950 text-stone-50 text-sm sm:text-base uppercase tracking-wider transition-all duration-300 hover:bg-stone-800 border border-stone-950 min-h-[48px] items-center justify-center font-light"
+            >
+              Join now →
+            </a>
           </div>
 
           {/* Additional Benefits */}
@@ -277,18 +290,21 @@ export default function WhyStudioPage() {
               THE DIFFERENCE
             </p>
             <h2
-              className="text-2xl sm:text-3xl md:text-4xl font-light tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-8 sm:mb-10 text-stone-900"
+              className="text-2xl sm:text-3xl md:text-4xl font-light tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-4 sm:mb-6 text-stone-900"
               style={{ fontFamily: "'Times New Roman', Times, serif" }}
             >
-              One-Time vs. Studio Membership
+              Choose your visibility plan
             </h2>
+            <p className="text-lg sm:text-xl font-light text-stone-700 px-4 mb-8 sm:mb-10">
+              Whether you want to try the Studio or go all in, we've made it simple.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12 max-w-5xl mx-auto">
             {/* One-Time */}
             <div className="bg-stone-50 rounded-2xl p-8 border border-stone-200">
               <h3 className="text-xl sm:text-2xl font-light text-stone-900 mb-6" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
-                One-Time Session
+                Starter Plan — Try your first Studio session
               </h3>
               <ul className="space-y-4 mb-8">
                 <li className="flex items-start gap-3">
@@ -318,7 +334,7 @@ export default function WhyStudioPage() {
                 </p>
               </div>
               <h3 className="text-xl sm:text-2xl font-light text-stone-50 mb-6 mt-2" style={{ fontFamily: "'Times New Roman', Times, serif" }}>
-                Studio Membership
+                Full Membership — Join the Visibility System
               </h3>
               <ul className="space-y-4 mb-8">
                 <li className="flex items-start gap-3">
@@ -363,11 +379,14 @@ export default function WhyStudioPage() {
               REAL RESULTS
             </p>
             <h2
-              className="text-2xl sm:text-3xl md:text-4xl font-light tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-8 sm:mb-10 text-stone-900"
+              className="text-2xl sm:text-3xl md:text-4xl font-light tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-4 sm:mb-6 text-stone-900"
               style={{ fontFamily: "'Times New Roman', Times, serif" }}
             >
-              What Studio Members Say
+              What members are saying
             </h2>
+            <p className="text-lg sm:text-xl font-light text-stone-700 px-4 mb-8 sm:mb-10">
+              Real stories from creators and coaches using SSELFIE to grow their brands.
+            </p>
           </div>
           <TestimonialGrid />
         </div>
@@ -384,10 +403,10 @@ export default function WhyStudioPage() {
               className="text-2xl sm:text-3xl md:text-4xl font-light tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-4 sm:mb-6 text-stone-900"
               style={{ fontFamily: "'Times New Roman', Times, serif" }}
             >
-              Choose Your Path
+              Join The Visibility Studio
             </h2>
-            <p className="text-lg sm:text-xl font-light text-stone-700 px-4">
-              Start building your brand today
+            <p className="text-lg sm:text-xl font-light text-stone-700 px-4 mb-8 sm:mb-10">
+              One membership. All the tools you need to stay visible and confident.
             </p>
           </div>
 
@@ -419,7 +438,7 @@ export default function WhyStudioPage() {
                 disabled={checkoutLoading === "one_time_session"}
                 className="w-full bg-stone-950 text-stone-50 px-6 py-3 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
               >
-                {checkoutLoading === "one_time_session" ? "LOADING..." : "TRY ONCE"}
+                {checkoutLoading === "one_time_session" ? "LOADING..." : "Start now →"}
               </button>
             </div>
 
@@ -445,47 +464,62 @@ export default function WhyStudioPage() {
               </div>
               <div className="space-y-3 sm:space-y-4 mb-8 sm:mb-10">
                 <p className="text-base sm:text-lg font-light text-stone-100">
-                  Trained model that looks exactly like you
+                  Monthly photo credits
                 </p>
-                <p className="text-base sm:text-lg font-light text-stone-100">Full Maya AI assistant access</p>
-                <p className="text-base sm:text-lg font-light text-stone-100">Complete Brand Academy</p>
-                <p className="text-base sm:text-lg font-light text-stone-100">Instagram feed designer</p>
-                <p className="text-base sm:text-lg font-light text-stone-100">Monthly content strategy</p>
+                <p className="text-base sm:text-lg font-light text-stone-100">Feed planning tools</p>
+                <p className="text-base sm:text-lg font-light text-stone-100">Full Academy access</p>
+                <p className="text-base sm:text-lg font-light text-stone-100">New content ideas every month</p>
               </div>
               <button
                 onClick={() => handleStartCheckout("sselfie_studio_membership")}
                 disabled={checkoutLoading === "sselfie_studio_membership"}
                 className="w-full bg-stone-50 text-stone-950 px-6 py-3 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-100 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
               >
-                {checkoutLoading === "sselfie_studio_membership" ? "LOADING..." : "JOIN STUDIO"}
+                {checkoutLoading === "sselfie_studio_membership" ? "LOADING..." : "Join the Studio →"}
               </button>
             </div>
           </div>
 
           <div className="text-center mt-10 sm:mt-12 space-y-4">
-            <p className="text-base sm:text-lg font-light text-stone-900">
-              <strong className="font-medium">30-Day Money-Back Guarantee</strong>
+            <p className="text-base sm:text-lg font-light text-stone-900 px-4">
+              Cancel anytime. 30-day refund policy.
             </p>
-            <p className="text-sm sm:text-base font-light text-stone-600 px-4">Cancel anytime • Add credits anytime</p>
           </div>
         </div>
       </section>
 
-      {/* Soft Close Section */}
+      {/* Founder Story Section */}
       <section className="py-24 sm:py-32 md:py-40 bg-stone-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
-          <p className="text-xl sm:text-2xl md:text-3xl font-light leading-relaxed text-stone-900 mb-6 sm:mb-8">
-            Just something to think about when you're ready.
-          </p>
-          <p className="text-lg sm:text-xl font-light leading-relaxed text-stone-700 mb-8 sm:mb-10">
-            No pressure. If Studio membership isn't right for you right now, that's totally okay. You can always upgrade later.
-          </p>
-          <Link
-            href="/"
-            className="inline-block text-stone-600 hover:text-stone-900 underline font-light transition-colors"
+          <h2
+            className="text-2xl sm:text-3xl md:text-4xl font-light leading-relaxed text-stone-900 mb-6 sm:mb-8"
+            style={{ fontFamily: "'Times New Roman', Times, serif" }}
           >
-            Learn more about SSELFIE
-          </Link>
+            "I built this because showing up online used to feel impossible."
+          </h2>
+          <p className="text-lg sm:text-xl font-light leading-relaxed text-stone-700 mb-8 sm:mb-10">
+            I was tired of hiding behind my logo and filters. I wanted something that made visibility simple, not scary. That's how SSELFIE Studio was born.
+          </p>
+          <p className="text-sm sm:text-base font-light text-stone-600">— Sandra</p>
+        </div>
+      </section>
+
+      {/* Closing Section */}
+      <section className="py-24 sm:py-32 md:py-40 bg-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
+          <h2
+            className="text-2xl sm:text-3xl md:text-4xl font-light leading-relaxed text-stone-900 mb-8 sm:mb-10"
+            style={{ fontFamily: "'Times New Roman', Times, serif" }}
+          >
+            You don't need perfect photos. You just need to show up.
+          </h2>
+          <a
+            href="#pricing"
+            onClick={scrollToPricing}
+            className="inline-flex px-8 sm:px-10 py-3.5 sm:py-4 bg-stone-950 text-stone-50 text-sm sm:text-base uppercase tracking-wider transition-all duration-300 hover:bg-stone-800 border border-stone-950 min-h-[48px] items-center justify-center font-light"
+          >
+            Join The Studio Today →
+          </a>
         </div>
       </section>
 

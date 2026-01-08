@@ -197,27 +197,27 @@ export default function LandingPageNew() {
                 fontFamily: "'Times New Roman', serif",
               }}
             >
-              Photos that actually<br />
-              <span style={{ fontFamily: "'Times New Roman', serif", fontStyle: "italic", color: "#f5f5f4" }}>
-                look like you.
-              </span>
+              The easiest way to create content that looks and feels like you.
             </h1>
             <p className="description fade-up mx-auto max-w-sm" style={{ textShadow: "0 1px 5px rgba(0,0,0,0.3)" }}>
-              Never worry about content again. Get professional photos of yourself without leaving home.
+              SSELFIE Studio helps you make beautiful, on-brand photos and plan your social feed, even if you don't have time, confidence, or a big team.
             </p>
             <div className="fade-up" style={{ transitionDelay: "0.2s", marginTop: "10px" }}>
               <a
                 href="#membership"
                 onClick={(e) => {
                   e.preventDefault()
-                  trackCTAClick("hero", "Start Creating", "#membership")
+                  trackCTAClick("hero", "Try SSELFIE Studio", "#membership")
                   scrollToPricing()
                 }}
                 className="btn shadow-xl"
               >
-                Start Creating
+                Try SSELFIE Studio →
               </a>
             </div>
+            <p className="description fade-up mx-auto max-w-sm mt-4" style={{ textShadow: "0 1px 5px rgba(0,0,0,0.3)", fontSize: "14px", marginTop: "16px" }}>
+              Create photos. Plan your feed. Build your brand, all in one place.
+            </p>
           </div>
         </section>
 
@@ -353,16 +353,31 @@ export default function LandingPageNew() {
                   fontWeight: "normal",
                 }}
               >
-                Upload once.<br />Create forever.
+                How it works
               </h2>
-              <p className="description fade-up text-sm md:text-base" style={{ color: "#d6d3d1" }}>
-                Our AI learns what you look like from your selfies. It then creates a digital model of you that can pose in any lighting, location, or style you imagine.
-              </p>
+              <div className="description fade-up text-sm md:text-base space-y-3" style={{ color: "#d6d3d1" }}>
+                <p><strong>Step 1:</strong> Upload a few selfies (or your favorite photos).</p>
+                <p><strong>Step 2:</strong> SSELFIE creates a library of brand-ready images that look like you.</p>
+                <p><strong>Step 3:</strong> Use the feed planner to design your Instagram grid and stay consistent.</p>
+              </div>
+              <div className="fade-up mt-6">
+                <a
+                  href="#membership"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    trackCTAClick("how-it-works", "Start your first studio session", "#membership")
+                    scrollToPricing()
+                  }}
+                  className="btn"
+                >
+                  Start your first studio session →
+                </a>
+              </div>
             </div>
           </div>
         </section>
 
-        {/* SCENE 3: MAYA MODES */}
+        {/* SCENE 3: WHY CREATORS LOVE SSELFIE */}
         <section
           ref={(el) => (scenesRef.current[2] = el)}
           className="scene"
@@ -412,10 +427,10 @@ export default function LandingPageNew() {
               </div>
               <div className="relative z-10 h-full flex flex-col justify-end items-center text-center p-8 pb-12 md:pb-16">
                 <h3 className="text-2xl md:text-3xl mb-3 text-white" style={{ fontFamily: "'Times New Roman', serif" }}>
-                  Classic Mode
+                  Realistic photos
                 </h3>
                 <p className="text-stone-300 text-xs md:text-sm max-w-xs font-light leading-relaxed mb-4">
-                  Uses your trained model, perfect for portraits and closeups
+                  Realistic photos that actually look like you, no filters, no weirdness.
                 </p>
               </div>
             </div>
@@ -432,7 +447,7 @@ export default function LandingPageNew() {
               <div className="absolute inset-0">
                 <img
                   src="https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/maya-pro-generations/6sb8n7v1g9rmr0cvhyjr95kg5g-5IoNZKlXP8Umw6U040gkJeTer43jLY.png"
-                  alt="Maya Pro Mode"
+                  alt="Feed Planning"
                   className="w-full h-full object-cover"
                   loading="lazy"
                   style={{ opacity: 0.7, display: "block" }}
@@ -446,16 +461,16 @@ export default function LandingPageNew() {
               </div>
               <div className="relative z-10 h-full flex flex-col justify-end items-center text-center p-8 pb-12 md:pb-16">
                 <h3 className="text-2xl md:text-3xl mb-3 text-white" style={{ fontFamily: "'Times New Roman', serif" }}>
-                  Pro Mode
+                  Easy feed planning
                 </h3>
                 <p className="text-stone-300 text-xs md:text-sm max-w-xs font-light leading-relaxed mb-4">
-                  Uses your selfies or your images from classic to create ultra realistic and detailed brand photos
+                  Drag, drop, and preview your next 30 days.
                 </p>
               </div>
             </div>
           </div>
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 bg-black border border-white/20 px-4 py-1.5 rounded-full shadow-xl">
-            <span className="text-[9px] uppercase tracking-widest text-white whitespace-nowrap">Your Choice</span>
+            <span className="text-[9px] uppercase tracking-widest text-white whitespace-nowrap">Why creators love SSELFIE</span>
           </div>
         </section>
 
@@ -482,12 +497,15 @@ export default function LandingPageNew() {
             }}
           />
           <div className="content" style={{ position: "relative", zIndex: 10 }}>
-            <span className="label fade-up" style={{ color: "rgba(255, 255, 255, 0.8)" }}>Feed Planner</span>
+            <span className="label fade-up" style={{ color: "rgba(255, 255, 255, 0.8)" }}>See It In Action</span>
             <h2 className="hero-title fade-up" style={{ fontSize: "32px", fontFamily: "'Times New Roman', serif", color: "#fafaf9" }}>
-              Plan your perfect grid.
+              From selfie to studio-ready content
             </h2>
             <div className="description fade-up" style={{ color: "rgba(250, 250, 249, 0.9)" }}>
-              <p>See how your new photos look on your profile before you post them. Drag, drop, and curate your story effortlessly.</p>
+              <p>Upload. Create. Plan. Post. It's that simple.</p>
+            </div>
+            <div className="description fade-up mt-4" style={{ color: "rgba(250, 250, 249, 0.9)" }}>
+              <p>Tools and lessons that teach you how to grow your visibility with confidence.</p>
             </div>
           </div>
         </section>
@@ -548,7 +566,7 @@ export default function LandingPageNew() {
             >
               <div className="border-l border-white/30 pl-6 fade-up">
                 <span className="label" style={{ color: "rgba(255,255,255,0.6)", marginBottom: "8px" }}>
-                  The Academy
+                  Who It's For
                 </span>
                 <h2
                   className="hero-title"
@@ -559,19 +577,16 @@ export default function LandingPageNew() {
                     color: "white",
                   }}
                 >
-                  We help you grow.
+                  Made for creators, coaches, and entrepreneurs who want to:
                 </h2>
-                <p className="description text-white/90 text-sm md:text-base mb-6">
-                  Your membership includes access to our Academy. Get tips on personal branding, Instagram growth, and exclusive resources every month.
+                <div className="description text-white/90 text-sm md:text-base mb-4 space-y-2">
+                  <p>• Show up online without the stress</p>
+                  <p>• Have consistent, high-quality visuals</p>
+                  <p>• Feel confident being seen and building their brand</p>
+                </div>
+                <p className="description text-white/80 text-sm md:text-base mb-6 italic">
+                  If you're tired of overthinking every post, SSELFIE gives you a clear, simple system.
                 </p>
-                <a
-                  href="/blueprint"
-                  onClick={() => trackCTAClick("academy", "Free Brand Blueprint", "/blueprint")}
-                  className="btn border border-white/30 bg-transparent text-white hover:bg-white/10"
-                  style={{ marginTop: "16px" }}
-                >
-                  Get Your Free Brand Blueprint
-                </a>
               </div>
             </div>
           </div>
@@ -602,10 +617,13 @@ export default function LandingPageNew() {
           />
           <div className="h-full w-full overflow-y-auto relative z-10">
             <div className="content h-full justify-center min-h-[100dvh]">
-              <span className="label text-center w-full fade-up mt-8 md:mt-0">Join SSELFIE</span>
-              <h2 className="hero-title text-center mb-8 fade-up" style={{ fontSize: "32px", fontFamily: "'Times New Roman', serif" }}>
-                Start Creating Today
+              <span className="label text-center w-full fade-up mt-8 md:mt-0">Join SSELFIE Studio</span>
+              <h2 className="hero-title text-center mb-4 fade-up" style={{ fontSize: "32px", fontFamily: "'Times New Roman', serif" }}>
+                Join SSELFIE Studio
               </h2>
+              <p className="description text-center mb-8 fade-up" style={{ color: "rgba(250, 250, 249, 0.9)" }}>
+                Everything you need to stay visible, in one membership.
+              </p>
 
               <div
                 style={{
@@ -657,17 +675,17 @@ export default function LandingPageNew() {
                     </div>
                   </div>
                   <div className="space-y-2 text-xs text-stone-300 font-light mb-6">
-                    <p>• 200 brand photos every month</p>
-                    <p>• Plan your perfect Instagram feed</p>
-                    <p>• Video b-roll creation</p>
-                    <p>• Full academy access</p>
+                    <p>• Fresh brand photos every month</p>
+                    <p>• Feed planner</p>
+                    <p>• Learning hub with short tutorials</p>
+                    <p>• Monthly ideas and strategy drops</p>
                   </div>
                   <button
                     onClick={() => handleStartCheckout("sselfie_studio_membership")}
                     disabled={checkoutLoading === "sselfie_studio_membership"}
                     className="btn w-full text-[10px] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {checkoutLoading === "sselfie_studio_membership" ? "Loading..." : "Join the Studio"}
+                    {checkoutLoading === "sselfie_studio_membership" ? "Loading..." : "See Inside →"}
                   </button>
                 </div>
               </div>
@@ -685,8 +703,7 @@ export default function LandingPageNew() {
               </div>
 
               <p className="text-center text-[9px] text-stone-400 mt-2 fade-up pb-8 md:pb-0 font-light">
-                Secure payment via Stripe. Cancel anytime.<br />
-                Includes our quality guarantee.
+                Cancel anytime. No tech skills needed.
               </p>
             </div>
           </div>
@@ -738,9 +755,9 @@ export default function LandingPageNew() {
         >
           <div className="content h-full justify-center">
             <div className="fade-up">
-              <span className="label mb-4">The Story</span>
+              <span className="label mb-4">Founder Message</span>
               <h2 className="hero-title mb-6" style={{ fontSize: "36px", fontFamily: "'Times New Roman', serif" }}>
-                Built from Nothing.<br />Built from Selfies.
+                "I built SSELFIE because showing up online used to feel impossible."
               </h2>
               <div className="relative aspect-[3/4] max-w-[280px] mx-auto mb-6 rounded-lg overflow-hidden">
                 <img
@@ -758,12 +775,9 @@ export default function LandingPageNew() {
                 />
               </div>
               <p className="description text-stone-300 mb-4">
-                Single mom of three. Divorced, broke, overwhelmed. I started by teaching women how to take better selfies on Instagram, then shared my own story.
+                I was tired of hiding behind my logo and filters. I wanted something that helped me, and other women, feel confident and consistent online. That's what SSELFIE Studio is.
               </p>
-              <p className="description text-stone-300 mb-4">
-                That's how SSELFIE was born. Helping women who feel invisible get the professional photos they need to build their brands. No photoshoot needed.
-              </p>
-              <p className="text-xs text-stone-400 mt-6">— Sandra</p>
+              <p className="text-xs text-stone-400 mt-6">- Sandra</p>
             </div>
           </div>
         </section>
@@ -774,6 +788,22 @@ export default function LandingPageNew() {
           className="scene bg-black text-white/60 relative h-auto min-h-[50dvh] py-16"
         >
           <div className="container mx-auto px-6 max-w-4xl h-full flex flex-col justify-center">
+            <div className="text-center mb-12 fade-up">
+              <h2 className="hero-title mb-6" style={{ fontSize: "36px", fontFamily: "'Times New Roman', serif", color: "#fafaf9" }}>
+                You don't need perfect photos. You just need to show up.
+              </h2>
+              <a
+                href="#membership"
+                onClick={(e) => {
+                  e.preventDefault()
+                  trackCTAClick("closing", "Join the Studio Today", "#membership")
+                  scrollToPricing()
+                }}
+                className="btn"
+              >
+                Join the Studio Today →
+              </a>
+            </div>
             <div className="grid gap-8 mb-12 border-b border-white/10 pb-12">
               <div>
                 <h4 className="text-white font-serif text-lg mb-4">Common Questions</h4>

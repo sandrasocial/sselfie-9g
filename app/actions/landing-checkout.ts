@@ -50,6 +50,53 @@ export async function createLandingCheckoutSession(productId: string, promoCode?
 
   console.log("[v0] Using Stripe Price ID:", stripePriceId)
 
+  // Validate that the price ID exists and is active
+  try {
+    const priceObj = await stripe.prices.retrieve(stripePriceId)
+    if (!priceObj.active) {
+      console.error("[v0] Price ID is inactive:", stripePriceId)
+      
+      // Try to find an active price for the same Stripe product
+      const stripeProduct = await stripe.products.retrieve(priceObj.product as string)
+      const activePrices = await stripe.prices.list({
+        product: stripeProduct.id,
+        active: true,
+        limit: 10,
+      })
+      
+      if (activePrices.data.length > 0) {
+        const activePrice = activePrices.data.find(
+          (p) => 
+            (isSubscription && p.recurring) || 
+            (!isSubscription && !p.recurring)
+        ) || activePrices.data[0]
+        
+        console.log("[v0] Found active price, using:", activePrice.id)
+        stripePriceId = activePrice.id
+      } else {
+        throw new Error(
+          `Price ID ${stripePriceId} is inactive and no active price found for Stripe product ${stripeProduct.id}. ` +
+          `Please update STRIPE_${product.type === "one_time_session" ? "ONE_TIME_SESSION" : "SSELFIE_STUDIO_MEMBERSHIP"}_PRICE_ID ` +
+          `environment variable with an active price ID.`
+        )
+      }
+    }
+  } catch (error: any) {
+    if (error.message && error.message.includes("inactive")) {
+      throw error
+    }
+    // If price doesn't exist, throw helpful error
+    if (error.code === "resource_missing") {
+      throw new Error(
+        `Price ID ${stripePriceId} not found in Stripe. ` +
+        `Please check your STRIPE_${product.type === "one_time_session" ? "ONE_TIME_SESSION" : "SSELFIE_STUDIO_MEMBERSHIP"}_PRICE_ID ` +
+        `environment variable.`
+      )
+    }
+    // Re-throw other errors
+    throw error
+  }
+
   // Validate and apply promo code if provided
   let validatedPromoCode: string | null = null
   let validatedCoupon: string | null = null
