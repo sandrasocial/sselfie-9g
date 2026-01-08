@@ -1,16 +1,13 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { X, Sparkles, Copy, Check } from "lucide-react"
+import { Sparkles, Copy, Check } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 import { BlueprintEmailCapture } from "@/components/blueprint/blueprint-email-capture"
 import { BlueprintConceptCard } from "@/components/blueprint/blueprint-concept-card"
-import { BeforeAfterSlider } from "@/components/blueprint/before-after-slider"
-import { EmbeddedCheckout, EmbeddedCheckoutProvider } from "@stripe/react-stripe-js"
-import { loadStripe } from "@stripe/stripe-js"
+import { BlueprintSelfieUpload } from "@/components/blueprint/blueprint-selfie-upload"
 import { startEmbeddedCheckout } from "@/lib/start-embedded-checkout"
-
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
 export default function BrandBlueprintPage() {
   const [step, setStep] = useState(0)
@@ -40,19 +37,77 @@ export default function BrandBlueprintPage() {
   const [isLoadingConcepts, setIsLoadingConcepts] = useState(false)
   const [generatedConceptImages, setGeneratedConceptImages] = useState<{ [key: number]: string }>({})
   const [isEmailingConcepts, setIsEmailingConcepts] = useState(false)
-  const [showCheckout, setShowCheckout] = useState(false)
-  const [checkoutClientSecret, setCheckoutClientSecret] = useState<string | null>(null)
+  const [selfieImages, setSelfieImages] = useState<string[]>([])
 
+  // Restore formData from localStorage on mount
   useEffect(() => {
-    if (showCheckout) {
-      document.body.style.overflow = "hidden"
-    } else {
-      document.body.style.overflow = "unset"
+    try {
+      const savedFormData = localStorage.getItem("blueprint-form-data")
+      if (savedFormData) {
+        const parsed = JSON.parse(savedFormData)
+        setFormData(parsed)
+      }
+    } catch (error) {
+      console.error("[v0] Error restoring form data from localStorage:", error)
     }
-    return () => {
-      document.body.style.overflow = "unset"
+  }, [])
+
+  // Save formData to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem("blueprint-form-data", JSON.stringify(formData))
+    } catch (error) {
+      console.error("[v0] Error saving form data to localStorage:", error)
     }
-  }, [showCheckout])
+  }, [formData])
+
+  // Load saved blueprint when email is available
+  useEffect(() => {
+    const loadSavedBlueprint = async () => {
+      if (!savedEmail) return
+
+      try {
+        const response = await fetch(`/api/blueprint/get-blueprint?email=${encodeURIComponent(savedEmail)}`)
+        if (!response.ok) {
+          // Email not found or no blueprint yet - this is OK
+          return
+        }
+
+        const data = await response.json()
+        if (data.success && data.blueprint) {
+          const blueprint = data.blueprint
+
+          // Load saved form data if available
+          if (blueprint.formData && Object.keys(blueprint.formData).length > 0) {
+            setFormData(blueprint.formData)
+          }
+
+          // Load saved strategy if generated
+          if (blueprint.strategy.generated && blueprint.strategy.data) {
+            setConcepts([blueprint.strategy.data])
+          }
+
+          // Load saved grid if generated
+          if (blueprint.grid.generated && blueprint.grid.frameUrls) {
+            setGeneratedConceptImages({ 0: blueprint.grid.gridUrl || "" })
+            // Note: The concept card will need to handle loading saved grid
+          }
+
+          // Load saved selfie images
+          if (blueprint.selfieImages && blueprint.selfieImages.length > 0) {
+            setSelfieImages(blueprint.selfieImages)
+          }
+
+          console.log("[Blueprint] Loaded saved blueprint for email:", savedEmail)
+        }
+      } catch (error) {
+        console.error("[Blueprint] Error loading saved blueprint:", error)
+        // Don't show error to user - just continue without saved data
+      }
+    }
+
+    loadSavedBlueprint()
+  }, [savedEmail])
 
   const calculateScore = () => {
     let score = 0
@@ -283,6 +338,11 @@ export default function BrandBlueprintPage() {
   }
 
   const generateConcepts = async () => {
+    if (!savedEmail) {
+      setShowEmailCapture(true)
+      return
+    }
+
     setIsLoadingConcepts(true)
     try {
       const response = await fetch("/api/blueprint/generate-concepts", {
@@ -291,6 +351,7 @@ export default function BrandBlueprintPage() {
         body: JSON.stringify({
           formData,
           selectedFeedStyle,
+          email: savedEmail,
         }),
       })
 
@@ -299,7 +360,8 @@ export default function BrandBlueprintPage() {
 
       setConcepts(data.concepts)
     } catch (error) {
-      console.error("[v0] Error generating concepts:", error)
+      console.error("[Blueprint] Error generating concepts:", error)
+      alert(error instanceof Error ? error.message : "Failed to generate strategy")
     } finally {
       setIsLoadingConcepts(false)
     }
@@ -354,8 +416,19 @@ export default function BrandBlueprintPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        console.error("[v0] Email error response:", data)
-        throw new Error(data.error || "Failed to send email")
+        console.error("[Blueprint] Email error response:", data)
+        
+        // Show user-friendly error message
+        const errorMessage = data.error || "Failed to send email"
+        
+        // Special handling for test mode
+        if (data.testMode) {
+          alert("⚠️ Email sending is currently in test mode. Your email address needs to be whitelisted. Please contact support or try again later.")
+        } else {
+          alert(`❌ ${errorMessage}`)
+        }
+        
+        throw new Error(errorMessage)
       }
 
       console.log("[v0] Email sent successfully:", data)
@@ -370,13 +443,11 @@ export default function BrandBlueprintPage() {
 
   const handleStartCheckout = async (productId: string = "one_time_session") => {
     try {
-      setShowCheckout(true)
       const clientSecret = await startEmbeddedCheckout(productId)
-      setCheckoutClientSecret(clientSecret)
+      window.location.href = `/checkout?client_secret=${clientSecret}`
     } catch (error) {
       console.error("[v0] Checkout error:", error)
       alert("Failed to start checkout. Please try again.")
-      setShowCheckout(false)
     }
   }
 
@@ -407,12 +478,12 @@ export default function BrandBlueprintPage() {
           >
             SSELFIE
           </Link>
-          <Link
-            href="/auth/sign-up"
+          <button
+            onClick={() => handleStartCheckout("one_time_session")}
             className="bg-stone-950 text-stone-50 px-3 py-1.5 sm:px-6 sm:py-2 text-[10px] sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200"
           >
-            GET STARTED
-          </Link>
+            Get started
+          </button>
         </div>
       </nav>
 
@@ -427,51 +498,86 @@ export default function BrandBlueprintPage() {
       <div className="pt-20 sm:pt-24 relative z-10">
         {/* Step 0: Landing */}
         {step === 0 && (
-          <div className="min-h-[calc(100vh-80px)] sm:min-h-[calc(100vh-96px)] flex items-center justify-center px-4 sm:px-6">
-            <div className="max-w-4xl mx-auto text-center">
+          <div
+            className="min-h-[calc(100vh-80px)] sm:min-h-[calc(100vh-96px)] relative flex items-center justify-center px-4 sm:px-6"
+            style={{
+              minHeight: "100vh",
+              minHeight: "100dvh",
+              position: "relative",
+              overflow: "hidden",
+            }}
+          >
+            {/* Background Image */}
+            <div
+              className="absolute inset-0 bg-cover bg-center"
+              style={{
+                backgroundImage: "url('https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/maya-pro-generations/x7d928rnjsrmr0cvknvss5q6xm-B9fjSTkpQhQHUq3pBPExL4Pjcm5jNU.png')",
+                backgroundPosition: "50% 25%",
+              }}
+            />
+            {/* Dark Overlay for Better Text Readability */}
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundColor: "rgba(0, 0, 0, 0.4)",
+              }}
+            />
+            {/* Gradient Overlay - same as homepage */}
+            <div
+              className="absolute inset-0"
+              style={{
+                background: "radial-gradient(circle at center, rgba(0,0,0,0) 40%, rgba(0,0,0,0.3) 100%)",
+              }}
+            />
+            
+            {/* Content - centered like homepage */}
+            <div className="relative z-10 max-w-4xl mx-auto text-center w-full h-full flex flex-col justify-center">
+              <span className="block mb-4 text-sm sm:text-base font-light tracking-[0.2em] uppercase text-white" style={{ color: "#ffffff", textShadow: "0 2px 10px rgba(0,0,0,0.3)" }}>
+                Your Blueprint
+              </span>
               <h1
-                style={{ fontFamily: "'Times New Roman', serif" }}
-                className="text-2xl sm:text-4xl md:text-6xl font-extralight tracking-widest sm:tracking-[0.2em] uppercase mb-2 sm:mb-3 text-stone-950 text-balance leading-tight"
+                style={{
+                  fontFamily: "'Times New Roman', serif",
+                  fontStyle: "normal",
+                  fontWeight: 300,
+                  textShadow: "0 2px 20px rgba(0,0,0,0.3)",
+                }}
+                className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-light mb-4 sm:mb-6 text-white leading-[1.1] tracking-tight"
               >
-                The AI Photo System That Got 2,700+ Creators Their Best Content Ever
+                Get your free custom blueprint
               </h1>
-              <h2
-                style={{ fontFamily: "'Times New Roman', serif" }}
-                className="text-xl sm:text-3xl md:text-5xl font-extralight tracking-widest sm:tracking-[0.2em] uppercase mb-4 sm:mb-6 text-stone-950 text-balance leading-tight"
-              >
-                Get Your Free Custom Blueprint
-              </h2>
-              <p className="text-sm sm:text-base md:text-lg font-light leading-relaxed text-stone-700 mb-4 sm:mb-6 max-w-2xl mx-auto text-pretty px-4">
-                Answer 3 quick questions and get your personalized 30-day content calendar, selfie strategy guide, and 30
-                caption templates - all tailored to YOUR brand.
+              <p className="text-base sm:text-lg md:text-xl leading-relaxed mb-6 sm:mb-8 max-w-xl mx-auto text-white" style={{ textShadow: "0 1px 5px rgba(0,0,0,0.3)" }}>
+                Answer 3 quick questions and get your personalized 30-day content calendar, selfie strategy guide, and 30 caption templates - all tailored to your brand.
               </p>
-              <div className="mb-6 sm:mb-8 max-w-xl mx-auto px-4">
-                <ul className="text-left space-y-2 sm:space-y-3 text-sm sm:text-base font-light text-stone-700">
+              <div className="mb-6 sm:mb-8 max-w-xl mx-auto">
+                <ul className="text-left space-y-2 sm:space-y-3 text-sm sm:text-base font-light text-white" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.3)" }}>
                   <li className="flex items-start gap-2 sm:gap-3">
-                    <span className="text-stone-950 mt-0.5 shrink-0">✓</span>
+                    <span className="text-white mt-0.5 shrink-0">✓</span>
                     <span>Discover your unique content vibe</span>
                   </li>
                   <li className="flex items-start gap-2 sm:gap-3">
-                    <span className="text-stone-950 mt-0.5 shrink-0">✓</span>
+                    <span className="text-white mt-0.5 shrink-0">✓</span>
                     <span>Get 30 days of post ideas (done for you)</span>
                   </li>
                   <li className="flex items-start gap-2 sm:gap-3">
-                    <span className="text-stone-950 mt-0.5 shrink-0">✓</span>
-                    <span>Learn which photos work best for YOUR audience</span>
+                    <span className="text-white mt-0.5 shrink-0">✓</span>
+                    <span>Learn which photos work best for your audience</span>
                   </li>
                   <li className="flex items-start gap-2 sm:gap-3">
-                    <span className="text-stone-950 mt-0.5 shrink-0">✓</span>
+                    <span className="text-white mt-0.5 shrink-0">✓</span>
                     <span>100% free • No credit card • Takes 10 minutes</span>
                   </li>
                 </ul>
               </div>
-              <button
-                onClick={() => setStep(1)}
-                className="bg-stone-950 text-stone-50 px-6 sm:px-8 md:px-12 py-3 sm:py-4 text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200"
-              >
-                START YOUR BLUEPRINT
-              </button>
-              <p className="mt-3 sm:mt-4 text-[10px] sm:text-xs font-light tracking-wider uppercase text-stone-500">
+              <div style={{ transitionDelay: "0.2s", marginTop: "10px" }}>
+                <button
+                  onClick={() => setStep(1)}
+                  className="bg-white text-black px-8 sm:px-10 py-3.5 sm:py-4 text-sm sm:text-base uppercase tracking-wider transition-all duration-300 hover:bg-black hover:text-white border border-white min-h-[48px] items-center justify-center font-light shadow-xl"
+                >
+                  Start your blueprint →
+                </button>
+              </div>
+              <p className="mt-4 text-xs sm:text-sm font-light text-white/90" style={{ textShadow: "0 1px 5px rgba(0,0,0,0.3)", fontSize: "14px", marginTop: "16px" }}>
                 Join 2,700+ creators who've done this
               </p>
             </div>
@@ -485,10 +591,10 @@ export default function BrandBlueprintPage() {
                 style={{ fontFamily: "'Times New Roman', serif" }}
                 className="text-2xl sm:text-3xl md:text-5xl font-extralight tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-3 sm:mb-4 text-stone-950"
               >
-                LET'S BUILD YOUR BRAND
+                Let's build your brand
               </h2>
               <p className="text-xs sm:text-sm font-light text-stone-600 mb-6 sm:mb-8 leading-relaxed">
-                Answer a few questions so we can create your custom blueprint.
+                Answer a few questions so we can create your personalized blueprint.
               </p>
 
               <div className="space-y-6 sm:space-y-8">
@@ -545,14 +651,14 @@ export default function BrandBlueprintPage() {
                   onClick={() => setShowEmailCapture(true)}
                   className="w-full sm:flex-1 py-3 sm:py-4 border border-stone-300 text-stone-600 text-xs tracking-[0.2em] sm:tracking-[0.3em] uppercase font-light hover:border-stone-950 hover:text-stone-950 transition-all duration-300"
                 >
-                  SAVE PROGRESS
+                  Save progress
                 </button>
                 <button
                   onClick={() => setStep(2)}
                   disabled={!formData.business || !formData.dreamClient || !formData.vibe}
                   className="w-full sm:flex-1 py-3 sm:py-4 bg-stone-950 text-stone-50 text-xs tracking-[0.2em] sm:tracking-[0.3em] uppercase font-light hover:bg-stone-800 transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed"
                 >
-                  CONTINUE
+                  Continue →
                 </button>
               </div>
             </div>
@@ -566,10 +672,10 @@ export default function BrandBlueprintPage() {
                 style={{ fontFamily: "'Times New Roman', serif" }}
                 className="text-2xl sm:text-3xl md:text-5xl font-extralight tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-3 sm:mb-4 text-stone-950"
               >
-                YOUR SELFIE SKILLS
+                Your content skills
               </h2>
               <p className="text-xs sm:text-sm font-light text-stone-600 mb-6 sm:mb-8 leading-relaxed">
-                Let's assess your current selfie game so we can give you personalized tips.
+                Let's understand where you're at so we can give you personalized guidance.
               </p>
 
               <div className="space-y-6 sm:space-y-8">
@@ -707,7 +813,7 @@ export default function BrandBlueprintPage() {
                   onClick={() => setStep(1)}
                   className="w-full sm:flex-1 py-3 sm:py-4 border border-stone-300 text-stone-600 text-xs tracking-[0.2em] sm:tracking-[0.3em] uppercase font-light hover:border-stone-950 hover:text-stone-950 transition-all duration-300"
                 >
-                  BACK
+                  Back
                 </button>
                 <button
                   onClick={() => {
@@ -726,7 +832,7 @@ export default function BrandBlueprintPage() {
                   }
                   className="w-full sm:flex-1 py-3 sm:py-4 bg-stone-950 text-stone-50 text-xs tracking-[0.2em] sm:tracking-[0.3em] uppercase font-light hover:bg-stone-800 transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed"
                 >
-                  {savedEmail ? "CONTINUE" : "SEE MY FEED STYLE"}
+                  {savedEmail ? "Continue →" : "See my feed style →"}
                 </button>
               </div>
             </div>
@@ -741,7 +847,7 @@ export default function BrandBlueprintPage() {
                   style={{ fontFamily: "'Times New Roman', serif" }}
                   className="text-2xl sm:text-3xl md:text-4xl font-light text-center mb-8 sm:mb-12 text-stone-950"
                 >
-                  Here's how top personal brands structure their feeds for maximum impact and aesthetic appeal
+                  Here's how creators who show up consistently structure their feeds
                 </h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto mb-12">
@@ -753,7 +859,7 @@ export default function BrandBlueprintPage() {
                     >
                       80%
                     </div>
-                    <h3 className="text-sm tracking-wider uppercase text-stone-700 mb-4">YOU</h3>
+                    <h3 className="text-sm tracking-wider uppercase text-stone-700 mb-4">You</h3>
                     <p className="text-sm font-light leading-relaxed text-stone-600">
                       Selfies and personal brand photos that showcase your face, your story, your authority. This is
                       where connection happens.
@@ -768,7 +874,7 @@ export default function BrandBlueprintPage() {
                     >
                       20%
                     </div>
-                    <h3 className="text-sm tracking-wider uppercase text-stone-700 mb-4">FLATLAYS</h3>
+                    <h3 className="text-sm tracking-wider uppercase text-stone-700 mb-4">Flatlays</h3>
                     <p className="text-sm font-light leading-relaxed text-stone-600">
                       Products, lifestyle shots, aesthetic imagery that adds visual variety while maintaining your brand
                       aesthetic.
@@ -776,55 +882,74 @@ export default function BrandBlueprintPage() {
                   </div>
                 </div>
 
-                <div className="mb-12">
-                  <div className="text-center mb-6">
-                    <span className="inline-block px-6 py-2 bg-stone-100 text-stone-700 text-xs tracking-wider uppercase font-medium rounded-full mb-4">
-                      DRAG TO REVEAL THE TRANSFORMATION
-                    </span>
-                    <h3 className="text-lg font-medium text-stone-950 mb-2">From Impersonal to Personal Branding</h3>
-                    <p className="text-sm font-light text-stone-600 max-w-2xl mx-auto">
-                      Slide to see how showing your face creates instant recognition and connection versus generic text
-                      graphics that blend into the feed.
-                    </p>
-                  </div>
-                  <div className="max-w-md mx-auto">
-                    <BeforeAfterSlider
-                      beforeImage="/images/skjermbilde-202025-11-13-20kl.png"
-                      afterImage="/images/diza-20demo-20ig-20grid-202.jpeg"
-                      beforeLabel="❌ GENERIC"
-                      afterLabel="✓ PERSONAL"
-                    />
-                  </div>
-                </div>
-
-                {/* Additional After Example */}
+                {/* Grid Examples */}
                 <div className="mt-12">
-                  <div className="text-center mb-6">
-                    <h3 className="text-lg font-medium text-stone-950 mb-2">Same Strategy, Different Aesthetic</h3>
+                  <div className="text-center mb-8">
+                    <h3 className="text-lg font-medium text-stone-950 mb-2">See It In Action</h3>
                     <p className="text-sm font-light text-stone-600 max-w-2xl mx-auto mb-8">
-                      Whether you prefer light & bright or dark & moody, the key is showing YOUR face consistently.
-                      Here's the same personal branding approach in a luxury aesthetic:
+                      Here are 3 grid examples showing the same personal branding strategy across different aesthetics.
+                      Notice how each grid maintains consistent visibility while expressing a completely different style.
                     </p>
                   </div>
-                  <div className="max-w-md mx-auto">
-                    <img
-                      src="/images/img-8335.jpg"
-                      alt="Dark moody luxury aesthetic with consistent personal branding"
-                      className="w-full rounded-lg border-2 border-stone-300"
-                    />
-                    <div className="mt-3 text-center">
-                      <span className="inline-block px-4 py-1 bg-stone-950 text-stone-50 text-xs tracking-wider uppercase font-medium rounded-full">
-                        Dark & Moody Luxury
-                      </span>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+                    {/* Dark & Moody */}
+                    <div className="space-y-3">
+                      <div className="aspect-square rounded-lg border-2 border-stone-300 overflow-hidden relative">
+                        <Image
+                          src="https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/darkandmoody.png"
+                          alt="Dark and moody aesthetic grid example"
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                      <div className="text-center">
+                        <span className="inline-block px-4 py-1 bg-stone-950 text-stone-50 text-xs tracking-wider uppercase font-medium rounded-full">
+                          Dark & Moody
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Light & Minimalistic */}
+                    <div className="space-y-3">
+                      <div className="aspect-square rounded-lg border-2 border-stone-300 overflow-hidden relative">
+                        <Image
+                          src="https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/Light%20%26%20Minimalistic.png"
+                          alt="Light and minimalistic aesthetic grid example"
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                      <div className="text-center">
+                        <span className="inline-block px-4 py-1 bg-stone-950 text-stone-50 text-xs tracking-wider uppercase font-medium rounded-full">
+                          Light & Minimalistic
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Beige Aesthetic */}
+                    <div className="space-y-3">
+                      <div className="aspect-square rounded-lg border-2 border-stone-300 overflow-hidden relative">
+                        <Image
+                          src="https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/Beige%20Aesthetic.png"
+                          alt="Beige aesthetic grid example"
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                      <div className="text-center">
+                        <span className="inline-block px-4 py-1 bg-stone-950 text-stone-50 text-xs tracking-wider uppercase font-medium rounded-full">
+                          Beige Aesthetic
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 <div className="mt-8 bg-stone-100 p-6 rounded-lg max-w-3xl mx-auto">
                   <p className="text-sm font-light leading-relaxed text-stone-700 text-center">
-                    <strong>Notice the difference?</strong> Both "after" feeds use completely different aesthetics (one
-                    light, one dark) but they BOTH show the person's face consistently. That's what builds your personal
-                    brand. Our Feed Designer helps you create this cohesive look based on YOUR unique style.
+                    <strong>See the pattern?</strong> Each grid uses a completely different aesthetic (light, dark, beige) but
+                    they all maintain consistent visibility. That&apos;s what builds your personal brand. Your blueprint
+                    will help you create this cohesive look based on YOUR unique style.
                   </p>
                 </div>
               </div>
@@ -834,7 +959,7 @@ export default function BrandBlueprintPage() {
               style={{ fontFamily: "'Times New Roman', serif" }}
               className="text-2xl sm:text-3xl md:text-5xl font-extralight tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-3 sm:mb-4 text-stone-950 text-center"
             >
-              CHOOSE YOUR FEED AESTHETIC
+              Choose your feed aesthetic
             </h2>
             <p className="text-xs sm:text-sm font-light text-stone-600 mb-8 sm:mb-12 leading-relaxed text-center px-4">
               Pick a vibe that feels like you. Don't worry, you can always switch things up later!
@@ -885,22 +1010,43 @@ export default function BrandBlueprintPage() {
               ))}
             </div>
 
+            {/* Selfie Upload Section */}
+            <div className="mt-8 sm:mt-12 mb-8 sm:mb-12">
+              <div className="bg-white border border-stone-200 rounded-lg p-6 sm:p-8">
+                <h3
+                  style={{ fontFamily: "'Times New Roman', serif" }}
+                  className="text-xl sm:text-2xl font-light mb-2 text-stone-950"
+                >
+                  Upload your selfies
+                </h3>
+                <p className="text-sm font-light text-stone-600 mb-6">
+                  Upload 1-3 selfies to generate your personalized photo grid. These will be used as reference images.
+                </p>
+                <BlueprintSelfieUpload
+                  onUploadComplete={(imageUrls) => setSelfieImages(imageUrls)}
+                  maxImages={3}
+                  initialImages={selfieImages}
+                  email={savedEmail}
+                />
+              </div>
+            </div>
+
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-8 sm:mt-12">
               <button
                 onClick={() => setStep(2)}
                 className="w-full sm:flex-1 py-3 sm:py-4 border border-stone-300 text-stone-600 text-xs tracking-[0.2em] sm:tracking-[0.3em] uppercase font-light hover:border-stone-950 hover:text-stone-950 transition-all duration-300"
               >
-                BACK
+                Back
               </button>
               <button
                 onClick={() => {
                   generateConcepts()
                   setStep(3.5)
                 }}
-                disabled={!selectedFeedStyle}
+                disabled={!selectedFeedStyle || selfieImages.length === 0}
                 className="w-full sm:flex-1 py-3 sm:py-4 bg-stone-950 text-stone-50 text-xs tracking-[0.2em] sm:tracking-[0.3em] uppercase font-light hover:bg-stone-800 transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed"
               >
-                SEE MY CONCEPTS
+                Create my feed →
               </button>
             </div>
           </div>
@@ -914,11 +1060,11 @@ export default function BrandBlueprintPage() {
                   style={{ fontFamily: "'Times New Roman', serif" }}
                   className="text-2xl sm:text-3xl md:text-5xl font-extralight tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-3 sm:mb-4 text-stone-950"
                 >
-                  YOUR BRAND PHOTO IDEAS
+                  Create your feed
                 </h2>
                 <p className="text-xs sm:text-sm font-light text-stone-600 leading-relaxed max-w-2xl mx-auto px-4">
-                  Based on your {selectedFeedStyle} vibe, here are 2 photo ideas you can create today. Click "Generate"
-                  to see what they could look like, then save them for inspiration!
+                  Based on your {selectedFeedStyle} vibe, generate your personalized 3x3 photo grid. Click "Generate Grid"
+                  to create your brand photos, then use them to build your consistent feed.
                 </p>
               </div>
 
@@ -935,26 +1081,30 @@ export default function BrandBlueprintPage() {
                       style={{ animationDelay: "0.4s" }}
                     ></div>
                   </div>
-                  <p className="text-sm text-stone-600 font-light">Creating your personalized concepts...</p>
+                  <p className="text-sm text-stone-600 font-light">Creating your feed...</p>
                 </div>
               ) : (
                 <>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    {concepts.map((concept, idx) => (
+                  <div className="max-w-md mx-auto mb-8">
+                    {concepts.length > 0 && (
                       <BlueprintConceptCard
-                        key={idx}
-                        concept={concept}
+                        concept={concepts[0]}
+                        index={0}
+                        selfieImages={selfieImages}
+                        selectedFeedStyle={selectedFeedStyle}
+                        category={formData.vibe}
+                        email={savedEmail}
                         onImageGenerated={(imageUrl) => {
-                          setGeneratedConceptImages((prev) => ({ ...prev, [idx]: imageUrl }))
+                          setGeneratedConceptImages((prev) => ({ ...prev, [0]: imageUrl }))
                         }}
                       />
-                    ))}
+                    )}
                   </div>
 
                   <div className="text-center bg-stone-100 p-6 rounded-lg max-w-2xl mx-auto">
                     <p className="text-sm font-light leading-relaxed text-stone-700 mb-4">
-                      💡 <strong>Pro tip:</strong> These concept images are just for inspiration. Use them to guide your
-                      own photoshoots! Maya created these prompts based on your unique brand answers.
+                      💡 <strong>Pro tip:</strong> This grid is your personalized brand photoshoot. Generate it to see your
+                      consistent feed style, then use it to build your Instagram presence with confidence.
                     </p>
                   </div>
 
@@ -963,13 +1113,13 @@ export default function BrandBlueprintPage() {
                       onClick={() => setStep(3)}
                       className="w-full sm:flex-1 py-3 sm:py-4 border border-stone-300 text-stone-600 text-xs tracking-[0.2em] sm:tracking-[0.3em] uppercase font-light hover:border-stone-950 hover:text-stone-950 transition-all duration-300"
                     >
-                      BACK
+                      Back
                     </button>
                     <button
                       onClick={() => setStep(4)}
                       className="w-full sm:flex-1 py-3 sm:py-4 bg-stone-950 text-stone-50 text-xs tracking-[0.2em] sm:tracking-[0.3em] uppercase font-light hover:bg-stone-800 transition-all duration-300"
                     >
-                      SEE MY SCORE
+                      See my score →
                     </button>
                   </div>
                 </>
@@ -1005,7 +1155,7 @@ export default function BrandBlueprintPage() {
                 style={{ fontFamily: "'Times New Roman', serif" }}
                 className="text-2xl sm:text-3xl md:text-5xl font-extralight tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-3 sm:mb-4 text-stone-950"
               >
-                YOUR BRAND SCORE
+                Your visibility score
               </h2>
 
               <div className="mb-8 sm:mb-12">
@@ -1020,40 +1170,37 @@ export default function BrandBlueprintPage() {
                   {animatedScore >= 80 && (
                     <div className="bg-stone-100 p-4 sm:p-6 rounded-lg">
                       <h3 className="text-base sm:text-lg font-medium tracking-wider uppercase text-stone-950 mb-2">
-                        YOU'RE CRUSHING IT! 🌟
+                        You're doing great
                       </h3>
                       <p className="text-xs sm:text-sm font-light text-stone-700 leading-relaxed">
-                        Seriously impressive! You've got the selfie basics down. Now let's take it to the next level
-                        with content that turns followers into paying clients.
+                        You've got the basics down. Now let's help you show up consistently with content that builds your brand.
                       </p>
                     </div>
                   )}
                   {animatedScore >= 50 && animatedScore < 80 && (
                     <div className="bg-stone-100 p-4 sm:p-6 rounded-lg">
                       <h3 className="text-base sm:text-lg font-medium tracking-wider uppercase text-stone-950 mb-2">
-                        YOU'RE ON THE RIGHT TRACK! ✨
+                        You're on the right track
                       </h3>
                       <p className="text-xs sm:text-sm font-light text-stone-700 leading-relaxed">
-                        Honestly? You're doing better than most! A few small tweaks to your lighting and posting rhythm,
-                        and you'll start seeing real results.
+                        You're doing better than most. A few small tweaks to your lighting and posting rhythm, and you'll start seeing real results.
                       </p>
                     </div>
                   )}
                   {animatedScore < 50 && (
                     <div className="bg-stone-100 p-4 sm:p-6 rounded-lg">
                       <h3 className="text-base sm:text-lg font-medium tracking-wider uppercase text-stone-950 mb-2">
-                        PERFECT TIMING! 💫
+                        Perfect timing
                       </h3>
                       <p className="text-xs sm:text-sm font-light text-stone-700 leading-relaxed">
-                        This is actually exciting! You're about to learn exactly how to use selfies strategically. Your
-                        blueprint will walk you through every step.
+                        This is actually exciting. You're about to learn exactly how to use selfies strategically. Your blueprint will walk you through every step.
                       </p>
                     </div>
                   )}
 
                   <div className="bg-stone-950 text-stone-50 p-4 sm:p-6 rounded-lg">
                     <h3 className="text-xs sm:text-sm font-medium tracking-wider uppercase mb-2">
-                      HERE'S WHAT TO FOCUS ON FIRST:
+                      Here's what to focus on first
                     </h3>
                     <p className="text-xs sm:text-sm font-light leading-relaxed">
                       {formData.consistencyLevel === "sporadic" || formData.consistencyLevel === "monthly"
@@ -1070,7 +1217,7 @@ export default function BrandBlueprintPage() {
                 onClick={() => setStep(5)}
                 className="mt-8 sm:mt-12 bg-stone-950 text-stone-50 px-8 sm:px-12 py-3 sm:py-4 text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200"
               >
-                SHOW ME MY CALENDAR
+                Show me my calendar →
               </button>
             </div>
           </div>
@@ -1084,7 +1231,7 @@ export default function BrandBlueprintPage() {
                   style={{ fontFamily: "'Times New Roman', serif" }}
                   className="text-2xl sm:text-3xl md:text-5xl font-extralight tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-3 sm:mb-4 text-stone-950"
                 >
-                  YOUR 30-DAY CONTENT PLAN
+                  Your 30-day content plan
                 </h2>
                 <p className="text-xs sm:text-sm font-light text-stone-600 leading-relaxed max-w-2xl mx-auto px-4">
                   No more "what should I post today?" moments. Here's your whole month planned out—just show up and
@@ -1140,13 +1287,13 @@ export default function BrandBlueprintPage() {
                   onClick={() => setStep(4)}
                   className="w-full sm:flex-1 py-3 sm:py-4 border border-stone-300 text-stone-600 text-xs tracking-[0.2em] sm:tracking-[0.3em] uppercase font-light hover:border-stone-950 hover:text-stone-950 transition-all duration-300"
                 >
-                  BACK
+                  Back
                 </button>
                 <button
                   onClick={() => setStep(6)}
                   className="w-full sm:flex-1 py-3 sm:py-4 bg-stone-950 text-stone-50 text-xs tracking-[0.2em] sm:tracking-[0.3em] uppercase font-light hover:bg-stone-800 transition-all duration-300"
                 >
-                  GET CAPTION TEMPLATES
+                  Get caption templates →
                 </button>
               </div>
             </div>
@@ -1161,7 +1308,7 @@ export default function BrandBlueprintPage() {
                   style={{ fontFamily: "'Times New Roman', serif" }}
                   className="text-2xl sm:text-3xl md:text-5xl font-extralight tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-3 sm:mb-4 text-stone-950"
                 >
-                  YOUR CAPTION TEMPLATES
+                  Your caption templates
                 </h2>
                 <p className="text-xs sm:text-sm font-light text-stone-600 leading-relaxed max-w-2xl mx-auto mb-6 sm:mb-8 px-4">
                   Struggling with what to say? We've got you. Just copy these, fill in the blanks, and you're good to
@@ -1171,13 +1318,13 @@ export default function BrandBlueprintPage() {
                 {!accessToken && (
                   <div className="bg-stone-100 p-4 sm:p-6 rounded-lg max-w-2xl mx-auto mb-8 sm:mb-12">
                     <p className="text-xs sm:text-sm font-light text-stone-700 mb-3 sm:mb-4">
-                      💾 Want these templates in your inbox? Save your blueprint and we'll email everything to you!
+                      Want these templates in your inbox? Save your blueprint and we'll email everything to you.
                     </p>
                     <button
                       onClick={() => setShowEmailCapture(true)}
                       className="bg-stone-950 text-stone-50 px-6 sm:px-8 py-2 sm:py-3 text-xs tracking-[0.2em] sm:tracking-[0.3em] uppercase font-light hover:bg-stone-800 transition-all duration-300"
                     >
-                      YES, EMAIL ME!
+                      Yes, email me →
                     </button>
                   </div>
                 )}
@@ -1225,10 +1372,10 @@ export default function BrandBlueprintPage() {
                     style={{ fontFamily: "'Times New Roman', serif" }}
                     className="text-2xl sm:text-3xl md:text-4xl font-extralight tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-3 sm:mb-4 text-stone-950"
                   >
-                    Love Your Blueprint? Take It Further
+                    Join SSELFIE Studio
                   </h3>
                   <p className="text-sm sm:text-base font-light text-stone-600 max-w-2xl mx-auto">
-                    See your content strategy come to life
+                    Everything you need to stay visible, in one membership.
                   </p>
                 </div>
 
@@ -1279,7 +1426,7 @@ export default function BrandBlueprintPage() {
                       onClick={() => handleStartCheckout("one_time_session")}
                       className="w-full bg-stone-950 text-stone-50 px-6 py-3 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 min-h-[44px]"
                     >
-                      Create My First Photoshoot
+                      Get Started
                     </button>
                   </div>
 
@@ -1287,7 +1434,7 @@ export default function BrandBlueprintPage() {
                   <div className="bg-stone-950 text-stone-50 rounded-2xl p-6 sm:p-8 border-2 border-stone-950 relative hover:shadow-lg transition-all duration-300">
                     <div className="absolute -top-3 right-4 bg-stone-950 text-stone-50 px-3 py-1.5 rounded-sm border border-stone-50/20">
                       <p className="text-[9px] sm:text-[10px] font-light tracking-[0.2em] uppercase whitespace-nowrap">
-                        MOST POPULAR
+                        Most popular
                       </p>
                     </div>
                     <h4
@@ -1341,7 +1488,7 @@ export default function BrandBlueprintPage() {
                       onClick={() => handleStartCheckout("sselfie_studio_membership")}
                       className="w-full bg-stone-50 text-stone-950 px-6 py-3 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-100 transition-all duration-200 min-h-[44px]"
                     >
-                      Start Studio Membership
+                      See Inside →
                     </button>
                   </div>
                 </div>
@@ -1349,8 +1496,7 @@ export default function BrandBlueprintPage() {
                 {/* Soft Close */}
                 <div className="text-center mb-6 sm:mb-8">
                   <p className="text-sm sm:text-base font-light text-stone-600 max-w-2xl mx-auto leading-relaxed px-4">
-                    Not ready yet? That's totally okay! You'll get your full blueprint + 30-day calendar via email in 2
-                    minutes. We're here when you're ready. 💕
+                    Not ready yet? That's totally okay. You'll get your full blueprint and 30-day calendar via email in 2 minutes. We're here when you're ready.
                   </p>
                 </div>
 
@@ -1361,7 +1507,7 @@ export default function BrandBlueprintPage() {
                     disabled={isEmailingConcepts || Object.keys(generatedConceptImages).length === 0}
                     className="bg-stone-950 text-stone-50 px-6 sm:px-8 py-3 sm:py-4 text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed"
                   >
-                    {isEmailingConcepts ? "SENDING..." : "EMAIL MY BLUEPRINT"}
+                    {isEmailingConcepts ? "Sending..." : "Email my blueprint →"}
                   </button>
                 </div>
               </div>
@@ -1370,71 +1516,13 @@ export default function BrandBlueprintPage() {
                 onClick={() => setStep(5)}
                 className="mt-6 sm:mt-8 w-full py-3 sm:py-4 border border-stone-300 text-stone-600 text-xs tracking-[0.2em] sm:tracking-[0.3em] uppercase font-light hover:border-stone-950 hover:text-stone-950 transition-all duration-300"
               >
-                BACK TO CALENDAR
+                Back to calendar
               </button>
             </div>
           </div>
         )}
       </div>
 
-      {showCheckout && (
-        <div
-          className="fixed inset-0 bg-black/50 z-9999 flex items-end sm:items-center justify-center p-0 sm:p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowCheckout(false)
-              setCheckoutClientSecret(null)
-            }
-          }}
-        >
-          <div
-            className="bg-white w-full h-screen sm:h-auto sm:max-h-[90vh] sm:max-w-2xl sm:rounded-lg flex flex-col shadow-2xl overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Sticky Header */}
-            <div className="shrink-0 bg-white z-20 px-4 sm:px-6 py-4 border-b border-stone-200 flex items-center justify-between sticky top-0">
-              <h3 className="text-sm sm:text-base font-medium tracking-wider uppercase text-stone-950">
-                Complete Purchase
-              </h3>
-              <button
-                onClick={() => {
-                  setShowCheckout(false)
-                  setCheckoutClientSecret(null)
-                }}
-                className="p-2 hover:bg-stone-100 rounded-full transition-colors shrink-0"
-                aria-label="Close checkout"
-              >
-                <X className="w-5 h-5 sm:w-6 sm:h-6" />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain -webkit-overflow-scrolling-touch">
-              <div className="p-4 sm:p-6 min-h-full">
-                {checkoutClientSecret ? (
-                  <EmbeddedCheckoutProvider stripe={stripePromise} options={{ clientSecret: checkoutClientSecret }}>
-                    <EmbeddedCheckout />
-                  </EmbeddedCheckoutProvider>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-12 sm:py-20 space-y-4">
-                    <div className="flex gap-2">
-                      <div className="w-3 h-3 rounded-full bg-stone-950 animate-bounce"></div>
-                      <div
-                        className="w-3 h-3 rounded-full bg-stone-950 animate-bounce"
-                        style={{ animationDelay: "0.2s" }}
-                      ></div>
-                      <div
-                        className="w-3 h-3 rounded-full bg-stone-950 animate-bounce"
-                        style={{ animationDelay: "0.4s" }}
-                      ></div>
-                    </div>
-                    <p className="text-sm text-stone-600 font-light">Loading checkout...</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       <style jsx>{`
         @keyframes fall {

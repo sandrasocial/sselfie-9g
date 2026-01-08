@@ -1,9 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { generateText } from "ai"
-import { neon } from "@neondatabase/serverless"
 import { FLUX_PROMPTING_PRINCIPLES } from "@/lib/maya/flux-prompting-principles"
-
-const sql = neon(process.env.DATABASE_URL!)
 
 const FEED_STYLE_TO_AESTHETIC = {
   luxury: "dark-moody",
@@ -226,47 +223,12 @@ function getBusinessSpecificProps(businessType: string): string {
 
 export async function POST(req: NextRequest) {
   try {
-    const { formData, selectedFeedStyle, email } = await req.json()
-
-    // Validate email is provided
-    if (!email || typeof email !== "string") {
-      return NextResponse.json(
-        { error: "Email is required. Please complete email capture first." },
-        { status: 400 },
-      )
-    }
-
-    // Check if email exists in blueprint_subscribers
-    const subscriber = await sql`
-      SELECT id, strategy_generated, strategy_data
-      FROM blueprint_subscribers
-      WHERE email = ${email}
-      LIMIT 1
-    `
-
-    if (subscriber.length === 0) {
-      return NextResponse.json(
-        { error: "Email not found. Please complete email capture first." },
-        { status: 404 },
-      )
-    }
-
-    const subscriberData = subscriber[0]
-
-    // If strategy already generated, return saved strategy
-    if (subscriberData.strategy_generated && subscriberData.strategy_data) {
-      console.log("[Blueprint] Returning saved strategy for email:", email)
-      return NextResponse.json({
-        success: true,
-        concepts: [subscriberData.strategy_data],
-        fromCache: true,
-      })
-    }
+    const { formData, selectedFeedStyle } = await req.json()
 
     const aestheticStyle =
       FEED_STYLE_TO_AESTHETIC[selectedFeedStyle as keyof typeof FEED_STYLE_TO_AESTHETIC] || "dark-moody"
 
-    console.log("[Blueprint] Generating new strategy for email:", email, { selectedFeedStyle, aestheticStyle })
+    console.log("[v0] Generating blueprint concept cards:", { formData, selectedFeedStyle, aestheticStyle })
 
     const businessProps = getBusinessSpecificProps(formData.business)
 
@@ -365,30 +327,12 @@ Return ONLY valid JSON (no markdown):
 
     const concepts = JSON.parse(cleanedText)
 
-    // Save strategy to database (only the first concept)
-    const strategyData = concepts.concepts[0]
-    if (strategyData) {
-      try {
-        await sql`
-          UPDATE blueprint_subscribers
-          SET strategy_generated = TRUE,
-              strategy_generated_at = NOW(),
-              strategy_data = ${JSON.stringify(strategyData)}
-          WHERE email = ${email}
-        `
-        console.log("[Blueprint] Strategy saved to database for email:", email)
-      } catch (dbError) {
-        console.error("[Blueprint] Error saving strategy to database:", dbError)
-        // Continue even if save fails - user still gets the strategy
-      }
-    }
-
     return NextResponse.json({
       success: true,
       concepts: concepts.concepts,
     })
   } catch (error) {
-    console.error("[Blueprint] Error generating concepts:", error)
+    console.error("[v0] Error generating concepts:", error)
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to generate concepts" },
       { status: 500 },

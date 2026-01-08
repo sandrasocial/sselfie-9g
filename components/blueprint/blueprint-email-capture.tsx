@@ -12,6 +12,37 @@ interface BlueprintEmailCaptureProps {
   currentStep?: number
 }
 
+// Email validation regex
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+// Friendly error message mapping
+const getErrorMessage = (error: string): string => {
+  const errorLower = error.toLowerCase()
+  
+  if (errorLower.includes("already exists") || errorLower.includes("duplicate")) {
+    return "This email is already registered. Try logging in or use a different email."
+  }
+  
+  if (errorLower.includes("network") || errorLower.includes("fetch") || errorLower.includes("failed to fetch")) {
+    return "Connection error. Please check your internet connection and try again."
+  }
+  
+  if (errorLower.includes("invalid email") || errorLower.includes("email format")) {
+    return "Please enter a valid email address."
+  }
+  
+  if (errorLower.includes("required") || errorLower.includes("missing")) {
+    return "Please fill in all required fields."
+  }
+  
+  if (errorLower.includes("timeout") || errorLower.includes("timed out")) {
+    return "Request timed out. Please try again."
+  }
+  
+  // Default friendly message
+  return "Something went wrong. Please try again or contact support if the problem persists."
+}
+
 export function BlueprintEmailCapture({ onSuccess, formData, currentStep }: BlueprintEmailCaptureProps) {
   const [email, setEmail] = useState("")
   const [name, setName] = useState("")
@@ -21,6 +52,19 @@ export function BlueprintEmailCapture({ onSuccess, formData, currentStep }: Blue
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
+
+    // Client-side email validation
+    if (!emailRegex.test(email)) {
+      setError("Please enter a valid email address.")
+      return
+    }
+
+    // Name validation (at least 2 characters)
+    if (name.trim().length < 2) {
+      setError("Please enter your full name.")
+      return
+    }
+
     setIsSubmitting(true)
 
     // Track email signup
@@ -51,17 +95,16 @@ export function BlueprintEmailCapture({ onSuccess, formData, currentStep }: Blue
       console.log("[v0] Response data:", data)
 
       if (!response.ok) {
-        if (data.details) {
-          throw new Error(`${data.error}: ${data.details}`)
-        }
-        throw new Error(data.error || "Something went wrong")
+        const errorMessage = data.error || "Something went wrong"
+        throw new Error(errorMessage)
       }
 
       console.log("[v0] Successfully saved blueprint progress")
       onSuccess(email, name, data.accessToken)
     } catch (err) {
       console.error("[v0] Blueprint subscribe error:", err)
-      setError(err instanceof Error ? err.message : "Failed to save. Please try again.")
+      const errorMessage = err instanceof Error ? err.message : "Failed to save. Please try again."
+      setError(getErrorMessage(errorMessage))
     } finally {
       setIsSubmitting(false)
     }
@@ -79,6 +122,26 @@ export function BlueprintEmailCapture({ onSuccess, formData, currentStep }: Blue
         />
         <div className="absolute inset-0 bg-black/60" />
       </div>
+
+      {/* Full-screen loading overlay */}
+      {isSubmitting && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+          <div className="text-center space-y-4">
+            <div className="flex gap-2 justify-center">
+              <div className="w-3 h-3 rounded-full bg-white animate-bounce"></div>
+              <div
+                className="w-3 h-3 rounded-full bg-white animate-bounce"
+                style={{ animationDelay: "0.2s" }}
+              ></div>
+              <div
+                className="w-3 h-3 rounded-full bg-white animate-bounce"
+                style={{ animationDelay: "0.4s" }}
+              ></div>
+            </div>
+            <p className="text-sm font-light text-white">Saving your progress...</p>
+          </div>
+        </div>
+      )}
 
       <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 py-12 sm:py-16">
         <div className="w-full max-w-2xl text-center">

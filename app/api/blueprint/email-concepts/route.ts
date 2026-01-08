@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
             <div class="container">
               <h1>YOUR BRAND BLUEPRINT</h1>
               <p>Hi ${name || "there"}! 👋</p>
-              <p>Your personalized brand blueprint is ready! Everything you need to build a magnetic personal brand is right here.</p>
+              <p>Your personalized brand blueprint is ready! Everything you need to stay visible and build your brand is right here.</p>
               
               ${
                 blueprint?.score
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
                   : ""
               }
               
-              <h2>📸 YOUR CONCEPT CARDS</h2>
+              <h2>YOUR CONCEPT CARDS</h2>
               <p>Use these as inspiration for your next content photoshoot!</p>
               ${concepts
                 .map(
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
                 )
                 .join("")}
               
-              <h2>✍️ CAPTION TEMPLATES</h2>
+              <h2>CAPTION TEMPLATES</h2>
               <p>Copy, paste, and personalize these proven templates:</p>
               
               ${
@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
                   : ""
               }
               
-              <h2>📅 YOUR 30-DAY CONTENT CALENDAR</h2>
+              <h2>YOUR 30-DAY CONTENT CALENDAR</h2>
               <p>No more "what should I post today?" moments. Here's your whole month planned out!</p>
               
               ${
@@ -126,10 +126,10 @@ export async function POST(req: NextRequest) {
                   : ""
               }
               
-              <h2>🚀 READY TO LEVEL UP?</h2>
-              <p>SSELFIE Studio makes implementing this strategy effortless. Get AI-powered selfies that look like you, automated content planning, and Maya's personalized coaching.</p>
+              <h2>READY TO SHOW UP?</h2>
+              <p>SSELFIE Studio makes implementing this strategy effortless. Get photos that look like you, automated content planning, and Maya's personalized coaching.</p>
               <p style="text-align: center;">
-                <a href="${process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"}/checkout/one-time" class="cta">Get Started - $49</a>
+                <a href="${process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"}/checkout/one-time" class="cta">Join SSELFIE Studio →</a>
               </p>
               
               <p style="margin-top: 40px; font-size: 12px; color: #a8a29e; text-align: center;">
@@ -140,7 +140,7 @@ export async function POST(req: NextRequest) {
         </html>
       `
 
-    const emailText = `Hi ${name || "there"}! 👋\n\nYour personalized brand blueprint is ready! Everything you need to build a magnetic personal brand is right here.\n\nView your blueprint online to see all your concept cards, caption templates, and 30-day content calendar.`
+    const emailText = `Hi ${name || "there"}! 👋\n\nYour personalized brand blueprint is ready! Everything you need to stay visible and build your brand is right here.\n\nView your blueprint online to see all your concept cards, caption templates, and 30-day content calendar.`
 
     const result = await sendEmail({
       from: "SSELFIE <hello@sselfie.ai>",
@@ -153,6 +153,18 @@ export async function POST(req: NextRequest) {
 
     if (!result.success) {
       console.error("[v0] Failed to send blueprint email:", result.error)
+      
+      // Handle test mode error with user-friendly message
+      if (result.error?.includes("Test mode") || result.error?.includes("whitelist")) {
+        return NextResponse.json(
+          { 
+            error: "Email sending is in test mode. Your email address needs to be whitelisted. Please contact support or try again later.",
+            testMode: true,
+          },
+          { status: 403 },
+        )
+      }
+      
       return NextResponse.json(
         { error: result.error || "Failed to email blueprint" },
         { status: 500 },

@@ -775,7 +775,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
             proPhotoshootCarousel: carouselData, // Save carousel data to concept
           }
           
-          await fetch('/api/maya/update-message', {
+          const response = await fetch('/api/maya/update-message', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             credentials: 'include',
@@ -785,9 +785,44 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
               conceptCards: [updatedConcept],
             }),
           })
+          
+          if (!response.ok) {
+            let errorData: any = { error: 'Unknown error' }
+            try {
+              const text = await response.text()
+              errorData = text ? JSON.parse(text) : { error: `HTTP ${response.status}: ${response.statusText}` }
+            } catch (parseError) {
+              errorData = { error: `HTTP ${response.status}: ${response.statusText}` }
+            }
+            throw new Error(`Failed to save carousel: ${response.status} - ${errorData.error || errorData.details || 'Unknown error'}`)
+          }
+          
           console.log('[ConceptCardPro] ✅ Saved photoshoot carousel to JSONB:', { messageId, conceptId: (concept as any).id, gridId: data.gridId })
         } catch (jsonbError: any) {
-          console.error('[ConceptCardPro] ❌ Error saving carousel to JSONB:', jsonbError?.message || jsonbError)
+          // Extract meaningful error information from various error types
+          let errorMessage = 'Unknown error'
+          let errorDetails: any = {}
+          
+          if (jsonbError instanceof Error) {
+            errorMessage = jsonbError.message
+            errorDetails = {
+              name: jsonbError.name,
+              stack: jsonbError.stack,
+            }
+          } else if (typeof jsonbError === 'string') {
+            errorMessage = jsonbError
+          } else if (jsonbError && typeof jsonbError === 'object') {
+            errorMessage = jsonbError.message || jsonbError.error || jsonbError.details || JSON.stringify(jsonbError)
+            errorDetails = { ...jsonbError }
+          }
+          
+          console.error('[ConceptCardPro] ❌ Error saving carousel to JSONB:', {
+            messageId,
+            conceptId: (concept as any).id,
+            gridId: data.gridId,
+            error: errorMessage,
+            errorDetails,
+          })
           // Don't fail - carousel still shows in UI
         }
       }
@@ -1010,8 +1045,14 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                 })
                 
                 if (!response.ok) {
-                  const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-                  throw new Error(`Failed to save: ${response.status} - ${errorData.error || 'Unknown error'}`)
+                  let errorData: any = { error: 'Unknown error' }
+                  try {
+                    const text = await response.text()
+                    errorData = text ? JSON.parse(text) : { error: `HTTP ${response.status}: ${response.statusText}` }
+                  } catch (parseError) {
+                    errorData = { error: `HTTP ${response.status}: ${response.statusText}` }
+                  }
+                  throw new Error(`Failed to save: ${response.status} - ${errorData.error || errorData.details || 'Unknown error'}`)
                 }
                 
                 const result = await response.json()
@@ -1022,11 +1063,29 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                   success: result.success,
                 })
               } catch (jsonbError: any) {
+                // Extract meaningful error information from various error types
+                let errorMessage = 'Unknown error'
+                let errorDetails: any = {}
+                
+                if (jsonbError instanceof Error) {
+                  errorMessage = jsonbError.message
+                  errorDetails = {
+                    name: jsonbError.name,
+                    stack: jsonbError.stack,
+                  }
+                } else if (typeof jsonbError === 'string') {
+                  errorMessage = jsonbError
+                } else if (jsonbError && typeof jsonbError === 'object') {
+                  errorMessage = jsonbError.message || jsonbError.error || jsonbError.details || JSON.stringify(jsonbError)
+                  errorDetails = { ...jsonbError }
+                }
+                
                 console.error('[ConceptCardPro] ❌ Error saving to JSONB:', {
                   messageId,
                   conceptId: pollConceptId,
-                  error: jsonbError?.message || jsonbError,
-                  stack: jsonbError?.stack,
+                  predictionId: pollPredictionId,
+                  error: errorMessage,
+                  errorDetails,
                 })
                 // Don't fail - image still shows in UI, just won't persist on refresh
               }

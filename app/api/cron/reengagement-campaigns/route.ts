@@ -46,14 +46,14 @@ export async function GET(request: Request) {
 
     // Day 0: Find users who haven't been active in 30+ days and haven't received Day 0 email
     const day0Users = await sql`
-      SELECT DISTINCT u.email, u.first_name, u.id
+      SELECT DISTINCT u.email, u.display_name as first_name, u.id
       FROM users u
       INNER JOIN subscriptions s ON u.id = s.user_id::varchar
       LEFT JOIN email_logs el_day0 ON el_day0.user_email = u.email AND el_day0.email_type = 'reengagement-day-0'
       WHERE s.status = 'active'
       AND s.product_type IN ('sselfie_studio_membership', 'brand_studio_membership')
       AND s.is_test_mode = false
-      AND u.last_activity_at < NOW() - INTERVAL '30 days'
+      AND (u.last_login_at < NOW() - INTERVAL '30 days' OR u.last_login_at IS NULL)
       AND el_day0.id IS NULL
       LIMIT 100
     `
@@ -113,7 +113,7 @@ export async function GET(request: Request) {
 
     // Day 7: Find users who received Day 0 email 7 days ago
     const day7Users = await sql`
-      SELECT DISTINCT u.email, u.first_name, u.id, el_day0.sent_at as day0_sent_at
+      SELECT DISTINCT u.email, u.display_name as first_name, u.id, el_day0.sent_at as day0_sent_at
       FROM users u
       INNER JOIN subscriptions s ON u.id = s.user_id::varchar
       INNER JOIN email_logs el_day0 ON el_day0.user_email = u.email AND el_day0.email_type = 'reengagement-day-0'
@@ -169,7 +169,7 @@ export async function GET(request: Request) {
 
     // Day 14: Find users who received Day 0 email 14 days ago
     const day14Users = await sql`
-      SELECT DISTINCT u.email, u.first_name, u.id, el_day0.sent_at as day0_sent_at
+      SELECT DISTINCT u.email, u.display_name as first_name, u.id, el_day0.sent_at as day0_sent_at
       FROM users u
       INNER JOIN subscriptions s ON u.id = s.user_id::varchar
       INNER JOIN email_logs el_day0 ON el_day0.user_email = u.email AND el_day0.email_type = 'reengagement-day-0'
