@@ -83,7 +83,7 @@ export function generateReengagementDay0(params: ReengagementSequenceParams = {}
 
               <div style="margin: 32px 0; text-align: center;">
                 <a href="${SITE_URL}/studio" style="display: inline-block; padding: 14px 32px; background-color: #1c1917; color: #fafaf9; text-decoration: none; font-weight: 500; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 8px;">
-                  See What's New
+                  Join SSELFIE Studio →
                 </a>
               </div>
 
@@ -123,7 +123,7 @@ No pressure, no hard sell. Just genuinely curious if you're ready to come back a
 
 Your account is waiting. Everything is exactly as you left it.
 
-See What's New: ${SITE_URL}/studio
+Join SSELFIE Studio →: ${SITE_URL}/studio
 
 P.S. If you need anything or have questions, just reply. We're here to help.
 
@@ -196,7 +196,7 @@ export function generateReengagementDay7(params: ReengagementSequenceParams = {}
 
               <div style="margin: 32px 0; text-align: center;">
                 <a href="${SITE_URL}/studio" style="display: inline-block; padding: 14px 32px; background-color: #1c1917; color: #fafaf9; text-decoration: none; font-weight: 500; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 8px;">
-                  Try New Features
+                  Join SSELFIE Studio →
                 </a>
               </div>
 
@@ -241,7 +241,7 @@ Members who came back are creating content faster than ever. One member told me 
 
 Your account is waiting. Come see what's new.
 
-Try New Features: ${SITE_URL}/studio
+Join SSELFIE Studio →: ${SITE_URL}/studio
 
 P.S. If you're not a member anymore, I've got a special comeback offer for you. Just reply and ask.
 
@@ -318,7 +318,7 @@ export function generateReengagementDay14(params: ReengagementSequenceParams = {
 
               <div style="margin: 32px 0; text-align: center;">
                 <a href="${getCheckoutLink('membership', campaignName, campaignId, 'COMEBACK50')}" style="display: inline-block; padding: 14px 32px; background-color: #1c1917; color: #fafaf9; text-decoration: none; font-weight: 500; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 8px;">
-                  Claim Your Comeback Offer
+                  Join SSELFIE Studio →
                 </a>
               </div>
 
@@ -365,7 +365,7 @@ Here's what you're missing:
 
 This offer expires in 48 hours. After that, it's gone forever.
 
-Claim Your Comeback Offer: ${getCheckoutLink('membership', campaignName, campaignId, 'COMEBACK50')}
+Join SSELFIE Studio →: ${getCheckoutLink('membership', campaignName, campaignId, 'COMEBACK50')}
 
 P.S. If you're not interested, just reply and say "unsubscribe." No hard feelings. But if you are, don't wait. This offer won't return.
 

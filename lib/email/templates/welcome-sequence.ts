@@ -74,7 +74,7 @@ export function generateWelcomeDay0(params: WelcomeSequenceParams = {}) {
               </p>
 
               <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6; color: #1c1917;">
-                You? You just got access to 100+ professional photos every month. No photographer. No studio. Just you, your selfies, and Maya's AI magic.
+                You? You just got access to 100+ professional photos that look like you every month. No photographer. No studio. Just you, your selfies, and Maya.
               </p>
 
               <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #1c1917;">
@@ -89,12 +89,12 @@ export function generateWelcomeDay0(params: WelcomeSequenceParams = {}) {
               </ul>
 
               <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #1c1917;">
-                Honestly? This is the fastest way to build a professional brand presence. Members are creating content in minutes that used to take hours.
+                Honestly? This is the fastest way to stay visible and show up consistently. Members are creating content in minutes that used to take hours.
               </p>
 
               <div style="margin: 32px 0; text-align: center;">
-                <a href="${getCheckoutLink('membership', campaignName, campaignId)}" style="display: inline-block; padding: 14px 32px; background-color: #1c1917; color: #fafaf9; text-decoration: none; font-weight: 500; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 8px;">
-                  Create Your First Photos
+                <a href="${SITE_URL}/studio" style="display: inline-block; padding: 14px 32px; background-color: #1c1917; color: #fafaf9; text-decoration: none; font-weight: 500; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 8px;">
+                  Join SSELFIE Studio →
                 </a>
               </div>
 
@@ -130,7 +130,7 @@ export function generateWelcomeDay0(params: WelcomeSequenceParams = {}) {
 
 Here's the thing - most people struggle with content because they're trying to do it the old way. Hours of photoshoots. Expensive photographers. The same 5 photos on rotation.
 
-You? You just got access to 100+ professional photos every month. No photographer. No studio. Just you, your selfies, and Maya's AI magic.
+You? You just got access to 100+ professional photos that look like you every month. No photographer. No studio. Just you, your selfies, and Maya.
 
 Here's what happens next:
 - Upload 10-20 selfies - Mix of angles, expressions, outfits. More variety = better results.
@@ -138,9 +138,9 @@ Here's what happens next:
 - Start generating - Chat with Maya, create concepts, build your brand library.
 - Show up consistently - Never scramble for content again.
 
-Honestly? This is the fastest way to build a professional brand presence. Members are creating content in minutes that used to take hours.
+Honestly? This is the fastest way to stay visible and show up consistently. Members are creating content in minutes that used to take hours.
 
-Create Your First Photos: ${getCheckoutLink('membership', campaignName, campaignId)}
+Join SSELFIE Studio →: ${SITE_URL}/studio
 
 P.S. If you need anything, just hit reply. Sandra reads every message personally.
 
@@ -219,7 +219,7 @@ export function generateWelcomeDay3(params: WelcomeSequenceParams = {}) {
 
               <div style="margin: 32px 0; text-align: center;">
                 <a href="${SITE_URL}/studio" style="display: inline-block; padding: 14px 32px; background-color: #1c1917; color: #fafaf9; text-decoration: none; font-weight: 500; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 8px;">
-                  Continue Creating
+                  Join SSELFIE Studio →
                 </a>
               </div>
 
@@ -266,7 +266,7 @@ Stuck? Just reply to this email. We'll help you troubleshoot.
 
 Pro tip: Check out the Academy in Studio for video courses on personal branding, content strategy, and Instagram growth. Everything I've learned from building my own 150K+ following is there.
 
-Continue Creating: ${SITE_URL}/studio
+Join SSELFIE Studio →: ${SITE_URL}/studio
 
 P.S. The best content comes from experimentation. Don't be afraid to try different prompts and see what works for your brand.
 
@@ -342,7 +342,7 @@ export function generateWelcomeDay7(params: WelcomeSequenceParams = {}) {
 
               <div style="margin: 32px 0; text-align: center;">
                 <a href="${SITE_URL}/studio" style="display: inline-block; padding: 14px 32px; background-color: #1c1917; color: #fafaf9; text-decoration: none; font-weight: 500; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 8px;">
-                  Explore Advanced Features
+                  Join SSELFIE Studio →
                 </a>
               </div>
 
@@ -388,7 +388,7 @@ Here's the thing - the members who use ALL the features are the ones seeing the 
 
 You've got everything you need to show up consistently and confidently. Time to scale.
 
-Explore Advanced Features: ${SITE_URL}/studio
+Join SSELFIE Studio →: ${SITE_URL}/studio
 
 P.S. We're always adding new features. Keep an eye on your inbox - you'll be the first to know when something drops.
 

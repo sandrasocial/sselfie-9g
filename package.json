@@ -23,7 +23,8 @@
     "backfill-payment-ids": "npx tsx scripts/backfill-payment-ids.ts",
     "migrate-015": "npx tsx scripts/run-migration-015.ts",
     "test:feed-planner": "npx tsx scripts/test-feed-planner-issues.ts",
-    "index-codebase": "npx tsx scripts/index-codebase.ts"
+    "index-codebase": "npx tsx scripts/index-codebase.ts",
+    "validate-columns": "npx tsx scripts/validate-column-names.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "latest",

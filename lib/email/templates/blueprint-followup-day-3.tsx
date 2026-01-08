@@ -67,10 +67,10 @@ export function generateBlueprintFollowupDay3Email(params: BlueprintFollowupDay3
                 </p>
                 
                 <h3 style="margin: 0 0 12px; color: #1c1917; font-size: 18px; font-weight: 400; font-family: Georgia, serif;">
-                  3. Plan Your Selfie Photoshoot (Or Skip It With AI)
+                  3. Plan Your Selfie Photoshoot (Or Skip the Stress)
                 </h3>
                 <p style="margin: 0 0 24px; color: #57534e; font-size: 14px; font-weight: 300; line-height: 1.7;">
-                  You need photos to go with those captions. You can either plan a traditional photoshoot (time, money, stress) or get 50 professional AI photos in 2 hours for $49.
+                  You need photos to go with those captions. You can either plan a traditional photoshoot (time, money, stress) or get 50 professional photos that look like you in 2 hours for $49.
                 </p>
               </div>
               
@@ -82,7 +82,7 @@ export function generateBlueprintFollowupDay3Email(params: BlueprintFollowupDay3
               
               <div style="text-align: center; margin: 30px 0;">
                 <a href="${photoshootUrl}" style="display: inline-block; background-color: #1c1917; color: #fafaf9; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase;">
-                  Skip the Selfie Stress → Try AI Photos for $49
+                  Try Once - $49
                 </a>
               </div>
               
@@ -129,12 +129,12 @@ Don't overthink it. Just pick 3 templates from your blueprint, fill in the blank
 2. Schedule Your Posts for the Week
 Use your 30-day calendar to plan what you're posting this week. Pick 3-5 days and commit to posting on those days. Consistency beats perfection.
 
-3. Plan Your Selfie Photoshoot (Or Skip It With AI)
-You need photos to go with those captions. You can either plan a traditional photoshoot (time, money, stress) or get 50 professional AI photos in 2 hours for $49.
+3. Plan Your Selfie Photoshoot (Or Skip the Stress)
+You need photos to go with those captions. You can either plan a traditional photoshoot (time, money, stress) or get 50 professional photos that look like you in 2 hours for $49.
 
 Real talk: The blueprint is only valuable if you USE it. Don't let it sit in your inbox. Take action this week.
 
-Skip the Selfie Stress → Try AI Photos for $49: ${photoshootUrl}
+Try Once - $49: ${photoshootUrl}
 
 P.S. Stuck on something? Just reply to this email - I read every message.
 

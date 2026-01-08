@@ -76,7 +76,7 @@ export function generateNurtureDay1(params: NurtureSequenceParams = {}) {
               </p>
 
               <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6; color: #1c1917;">
-                Real talk: I used to spend HOURS trying to get content ready. Now? SSELFIE helps me show up confidently in minutes. That's the difference.
+                Real talk: I used to spend HOURS trying to get content ready. Now? SSELFIE helps me stay visible and show up confidently in minutes. That's the difference.
               </p>
 
               <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6; color: #1c1917;">
@@ -132,7 +132,7 @@ export function generateNurtureDay1(params: NurtureSequenceParams = {}) {
 
 The Blueprint shows you WHAT to post. SSELFIE Studio shows you HOW to actually create that content - without hiring a photographer, without spending hours on shoots, without the stress.
 
-Real talk: I used to spend HOURS trying to get content ready. Now? SSELFIE helps me show up confidently in minutes. That's the difference.
+Real talk: I used to spend HOURS trying to get content ready. Now? SSELFIE helps me stay visible and show up confidently in minutes. That's the difference.
 
 Here's what Studio members get:
 - 100+ professional photos per month - Never run out of content again
@@ -215,7 +215,7 @@ export function generateNurtureDay5(params: NurtureSequenceParams = {}) {
 
               <div style="margin: 32px 0; text-align: center;">
                 <a href="${getLandingPageLink('membership', campaignName, campaignId)}" style="display: inline-block; padding: 14px 32px; background-color: #1c1917; color: #fafaf9; text-decoration: none; font-weight: 500; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 8px;">
-                  See How She Did It
+                  Join SSELFIE Studio →
                 </a>
               </div>
 
@@ -259,7 +259,7 @@ Professional photos did that. Consistent content did that. SSELFIE Studio did th
 
 Here's the thing - you have the same potential. You just need the right tools.
 
-See How She Did It: ${getLandingPageLink('membership', campaignName, campaignId)}
+Join SSELFIE Studio →: ${getLandingPageLink('membership', campaignName, campaignId)}
 
 P.S. Sarah's story isn't unique. I hear versions of this from Studio members every week. The pattern is clear: consistent professional content = more visibility = more clients.
 
@@ -324,7 +324,7 @@ export function generateNurtureDay10(params: NurtureSequenceParams = {}) {
 
               <ul style="margin: 0 0 24px; padding-left: 20px; color: #1c1917; font-size: 16px; line-height: 1.8;">
                 <li style="margin-bottom: 12px;"><strong>Try it once for $49</strong> - Test it out. Create your first professional photoshoot. If you love it, upgrade. If not, you're only out $49.</li>
-                <li style="margin-bottom: 12px;"><strong>Join Studio for $97/month</strong> - Get 100+ photos per month, video clips, Feed Designer, everything. The full system.</li>
+                <li style="margin-bottom: 12px;"><strong>Join SSELFIE Studio for $97/month</strong> - Get 100+ photos per month, video clips, Feed Designer, everything. The full system.</li>
               </ul>
 
               <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #1c1917;">
@@ -337,7 +337,7 @@ export function generateNurtureDay10(params: NurtureSequenceParams = {}) {
                 </a>
                 <br>
                 <a href="${getLandingPageLink('membership', campaignName, campaignId)}" style="display: inline-block; padding: 14px 32px; background-color: #fafaf9; color: #1c1917; text-decoration: none; font-weight: 500; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 8px; border: 2px solid #1c1917;">
-                  Join Studio - $97/mo
+                  Join SSELFIE Studio →
                 </a>
               </div>
 
@@ -377,12 +377,12 @@ Here's what I know: The "right time" is now. Every day you wait is another day y
 
 So I'm making this simple. Two options:
 - Try it once for $49 - Test it out. Create your first professional photoshoot. If you love it, upgrade. If not, you're only out $49.
-- Join Studio for $97/month - Get 100+ photos per month, video clips, Feed Designer, everything. The full system.
+- Join SSELFIE Studio for $97/month - Get 100+ photos per month, video clips, Feed Designer, everything. The full system.
 
 No risk. No commitment. Just results. Pick what works for you.
 
 Try Once - $49: ${getLandingPageLink('one-time', campaignName, campaignId)}
-Join Studio - $97/mo: ${getLandingPageLink('membership', campaignName, campaignId)}
+Join SSELFIE Studio →: ${getLandingPageLink('membership', campaignName, campaignId)}
 
 P.S. The members who start now are the ones seeing results in 30 days. Don't wait. Start today.
 
