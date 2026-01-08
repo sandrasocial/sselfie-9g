@@ -62,6 +62,7 @@ export async function POST(req: NextRequest) {
     console.log(`[Blueprint] Prediction status: ${status.status}`)
 
     // If generation completed, process the grid
+    // Note: Replicate/Nano Banana returns "succeeded" when complete, we return "completed" to client
     if (status.status === "succeeded" && status.output) {
       console.log("[Blueprint] Grid generation completed, processing...")
 
@@ -118,7 +119,7 @@ export async function POST(req: NextRequest) {
             SET grid_generated = TRUE,
                 grid_generated_at = NOW(),
                 grid_url = ${gridBlob.url},
-                grid_frame_urls = ${JSON.stringify(frameUrls)},
+                grid_frame_urls = ${frameUrls},
                 grid_prediction_id = ${predictionId}
             WHERE email = ${email}
           `
@@ -128,13 +129,15 @@ export async function POST(req: NextRequest) {
           // Continue even if save fails - user still gets the grid
         }
 
-        return NextResponse.json({
+        const response = {
           success: true,
-          status: "completed",
+          status: "completed" as const,
           gridUrl: gridBlob.url,
           frameUrls,
           framesCount: frameUrls.length,
-        })
+        }
+        console.log(`[Blueprint] ✅ Returning completed status with gridUrl: ${gridBlob.url}`)
+        return NextResponse.json(response)
       } catch (error) {
         console.error("[Blueprint] Error processing completed grid:", error)
         return NextResponse.json(

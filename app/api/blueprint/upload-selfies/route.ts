@@ -64,14 +64,31 @@ export async function POST(req: NextRequest) {
 
     console.log(`[Blueprint] Uploaded ${imageUrls.length} selfie(s) to Blob`)
 
-    // Save selfie URLs to database
+    // Save selfie URLs to database (merge with existing URLs)
     try {
+      // Get existing URLs first
+      const existing = await sql`
+        SELECT selfie_image_urls FROM blueprint_subscribers WHERE email = ${email} LIMIT 1
+      `
+      
+      // JSONB columns are already parsed by the database driver
+      const existingUrls = existing.length > 0 && existing[0].selfie_image_urls 
+        ? (Array.isArray(existing[0].selfie_image_urls) 
+            ? existing[0].selfie_image_urls 
+            : [])
+        : []
+      
+      // Merge new URLs with existing ones, avoiding duplicates
+      const allUrls = [...existingUrls, ...imageUrls].filter((url, index, self) => 
+        self.indexOf(url) === index
+      )
+      
       await sql`
         UPDATE blueprint_subscribers
-        SET selfie_image_urls = ${JSON.stringify(imageUrls)}
+        SET selfie_image_urls = ${allUrls}
         WHERE email = ${email}
       `
-      console.log("[Blueprint] Selfie URLs saved to database for email:", email)
+      console.log("[Blueprint] Selfie URLs saved to database for email:", email, `(${allUrls.length} total)`)
     } catch (dbError) {
       console.error("[Blueprint] Error saving selfie URLs:", dbError)
       // Continue even if save fails - user still gets the URLs

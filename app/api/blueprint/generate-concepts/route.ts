@@ -373,7 +373,7 @@ Return ONLY valid JSON (no markdown):
           UPDATE blueprint_subscribers
           SET strategy_generated = TRUE,
               strategy_generated_at = NOW(),
-              strategy_data = ${JSON.stringify(strategyData)}
+              strategy_data = ${strategyData}
           WHERE email = ${email}
         `
         console.log("[Blueprint] Strategy saved to database for email:", email)

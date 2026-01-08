@@ -16,6 +16,8 @@ interface BlueprintConceptCardProps {
   category?: string // Category from formData.vibe: "luxury", "minimal", "beige", "warm", "edgy", "professional"
   email?: string // Email for generation limits
   onImageGenerated?: (imageUrl: string) => void
+  initialGridUrl?: string // For loading saved grids
+  initialFrameUrls?: string[] // For loading saved frame URLs
 }
 
 export function BlueprintConceptCard({
@@ -26,11 +28,13 @@ export function BlueprintConceptCard({
   category,
   email,
   onImageGenerated,
+  initialGridUrl,
+  initialFrameUrls,
 }: BlueprintConceptCardProps) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [imageUrl, setImageUrl] = useState<string | null>(null)
-  const [gridUrl, setGridUrl] = useState<string | null>(null)
-  const [frameUrls, setFrameUrls] = useState<string[]>([])
+  const [gridUrl, setGridUrl] = useState<string | null>(initialGridUrl || null)
+  const [frameUrls, setFrameUrls] = useState<string[]>(initialFrameUrls || [])
   const [error, setError] = useState<string | null>(null)
   const [predictionId, setPredictionId] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -133,7 +137,7 @@ export function BlueprintConceptCard({
       <div className="bg-white border-2 border-stone-200 rounded-lg overflow-hidden transition-all duration-300 hover:border-stone-300 hover:shadow-lg">
         {/* Image Area - Show 3x3 grid if available, otherwise placeholder */}
         <div className="aspect-square bg-stone-100 relative">
-          {gridUrl && frameUrls.length === 9 ? (
+          {gridUrl && frameUrls && frameUrls.length === 9 ? (
             <button
               onClick={() => setIsModalOpen(true)}
               className="w-full h-full focus:outline-none focus:ring-2 focus:ring-stone-400 group active:scale-95 transition-transform"

@@ -65,8 +65,7 @@ export async function POST(req: NextRequest) {
                 <div class="concept">
                   <img src="${concept.imageUrl}" alt="${concept.title}" />
                   <h3>${concept.title}</h3>
-                  <p>${concept.description}</p>
-                  <p><strong>Prompt:</strong> ${concept.prompt}</p>
+                  <p>${concept.prompt}</p>
                 </div>
               `,
                 )

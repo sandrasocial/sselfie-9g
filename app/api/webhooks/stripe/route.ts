@@ -1684,6 +1684,38 @@ export async function POST(request: NextRequest) {
                   console.log(
                     `[v0] ✅ Monthly credits granted to user ${sub.user_id}. New balance: ${result.newBalance}`,
                   )
+                  
+                  // Send credit renewal notification email
+                  try {
+                    const userRecord = await sql`
+                      SELECT email, display_name FROM users WHERE id = ${sub.user_id} LIMIT 1
+                    `
+                    if (userRecord.length > 0 && userRecord[0].email) {
+                      const { generateCreditRenewalEmail } = await import("@/lib/email/templates/credit-renewal")
+                      const emailContent = generateCreditRenewalEmail({
+                        firstName: userRecord[0].display_name?.split(" ")[0] || undefined,
+                        creditsGranted: 200,
+                      })
+                      
+                      const emailResult = await sendEmail({
+                        to: userRecord[0].email,
+                        subject: emailContent.subject,
+                        html: emailContent.html,
+                        text: emailContent.text,
+                        from: "Sandra from SSELFIE <hello@sselfie.ai>",
+                        emailType: "credit-renewal",
+                      })
+                      
+                      if (emailResult.success) {
+                        console.log(`[v0] ✅ Credit renewal email sent to ${userRecord[0].email}`)
+                      } else {
+                        console.error(`[v0] ⚠️ Failed to send credit renewal email: ${emailResult.error}`)
+                      }
+                    }
+                  } catch (emailError: any) {
+                    console.error(`[v0] ⚠️ Error sending credit renewal email (non-critical):`, emailError.message)
+                    // Don't fail webhook if email send fails
+                  }
                 } else {
                   console.error(
                     `[v0] ❌ Failed to grant monthly credits to user ${sub.user_id}: ${result.error}`,
@@ -1787,11 +1819,11 @@ export async function POST(request: NextRequest) {
 
         await sql`
           UPDATE subscriptions
-          SET status = 'cancelled', updated_at = NOW()
+          SET status = 'canceled', updated_at = NOW()
           WHERE stripe_subscription_id = ${subscription.id}
         `
 
-        console.log(`[v0] ✅ Subscription ${subscription.id} marked as cancelled`)
+        console.log(`[v0] ✅ Subscription ${subscription.id} marked as canceled`)
 
         // Tag customer as cancelled in Flodesk
         if (customerEmail) {

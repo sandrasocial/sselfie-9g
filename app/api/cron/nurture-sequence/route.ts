@@ -1,23 +1,38 @@
+// Freebie Nurture Automation
 import { NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import { sendEmail } from "@/lib/email/send-email"
 import { createCronLogger } from "@/lib/cron-logger"
-import { generateNurtureDay1, generateNurtureDay5, generateNurtureDay10 } from "@/lib/email/templates/nurture-sequence"
+import { generateNurtureDay1Email } from "@/lib/email/templates/nurture-day-1"
+import { generateNurtureDay3Email } from "@/lib/email/templates/nurture-day-3"
+import { generateNurtureDay7Email } from "@/lib/email/templates/nurture-day-7"
+import { generateUpsellDay10Email } from "@/lib/email/templates/upsell-day-10"
 import { logAdminError } from "@/lib/admin-error-log"
 
 const sql = neon(process.env.DATABASE_URL!)
 
 /**
- * Nurture Sequence Cron Job
- * Sends emails to freebie subscribers on Day 1, Day 5, and Day 10
- * Runs daily at 11 AM UTC
+ * Freebie Nurture Sequence - Resend Direct Sends
+ * 
+ * Sends nurture sequence emails to freebie subscribers directly via Resend API.
+ * 
+ * GET /api/cron/nurture-sequence
+ * 
+ * Protected by CRON_SECRET environment variable
+ * Runs daily at 10 AM UTC (same as blueprint followups)
+ * 
+ * Email templates:
+ * - Day 1: "Your First Day with SSELFIE"
+ * - Day 3: "How's It Going?"
+ * - Day 7: "One Week In"
+ * - Day 10: "Ready for the Next Level?"
  */
 export async function GET(request: Request) {
   const cronLogger = createCronLogger("nurture-sequence")
   await cronLogger.start()
 
   try {
-    // Verify cron secret for security
+    // Freebie Nurture Automation - Verify cron secret for security
     const authHeader = request.headers.get("authorization")
     const cronSecret = process.env.CRON_SECRET
 
@@ -25,61 +40,83 @@ export async function GET(request: Request) {
 
     if (isProduction && cronSecret) {
       if (authHeader !== `Bearer ${cronSecret}`) {
-        console.error("[Nurture Sequence] Unauthorized: Invalid or missing CRON_SECRET")
+        console.error("[v0] [CRON] Unauthorized: Invalid or missing CRON_SECRET")
         await cronLogger.error(new Error("Unauthorized"), { reason: "Invalid CRON_SECRET" })
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
       }
     } else if (!cronSecret && isProduction) {
-      console.warn("[Nurture Sequence] WARNING: CRON_SECRET not set in production!")
+      console.warn("[v0] [CRON] WARNING: CRON_SECRET not set in production!")
     }
 
-    console.log("[Nurture Sequence] Starting daily check...")
+    console.log("[v0] [CRON] Starting freebie nurture email sequence...")
 
     const results = {
-      day1: { sent: 0, failed: 0, skipped: 0 },
-      day5: { sent: 0, failed: 0, skipped: 0 },
-      day10: { sent: 0, failed: 0, skipped: 0 },
+      day1: { found: 0, sent: 0, failed: 0, skipped: 0 },
+      day3: { found: 0, sent: 0, failed: 0, skipped: 0 },
+      day7: { found: 0, sent: 0, failed: 0, skipped: 0 },
+      day10: { found: 0, sent: 0, failed: 0, skipped: 0 },
+      errors: [] as Array<{ email: string; day: number; error: string }>,
     }
 
-    // Get freebie subscribers who need Day 1 email (signed up 1 day ago)
+    // Freebie Nurture Automation - Day 1 emails: 1 day after created_at, not yet sent, skip converted users
     const day1Subscribers = await sql`
       SELECT fs.id, fs.email, fs.name, fs.created_at
       FROM freebie_subscribers fs
       LEFT JOIN email_logs el ON el.user_email = fs.email AND el.email_type = 'nurture-day-1'
-      WHERE fs.created_at >= NOW() - INTERVAL '1 day 2 hours'
-      AND fs.created_at < NOW() - INTERVAL '1 day'
-      AND el.id IS NULL
+      WHERE fs.converted_to_user = FALSE
+        AND fs.created_at < NOW() - INTERVAL '1 day'
+        AND fs.created_at >= NOW() - INTERVAL '2 days'
+        AND el.id IS NULL
       ORDER BY fs.created_at ASC
     `
 
-    console.log(`[Nurture Sequence] Found ${day1Subscribers.length} subscribers for Day 1 email`)
+    results.day1.found = day1Subscribers.length
+    console.log(`[v0] [CRON] Found ${day1Subscribers.length} subscribers for Day 1 email`)
 
     for (const subscriber of day1Subscribers) {
       try {
+        // Freebie Nurture Automation - Check if already sent (dedupe check)
+        const existingLog = await sql`
+          SELECT id FROM email_logs
+          WHERE user_email = ${subscriber.email}
+          AND email_type = 'nurture-day-1'
+          LIMIT 1
+        `
+        if (existingLog.length > 0) {
+          results.day1.skipped++
+          continue
+        }
+
         const firstName = subscriber.name?.split(" ")[0] || undefined
-        const emailContent = generateNurtureDay1({
+        const emailContent = generateNurtureDay1Email({
           firstName,
+          recipientEmail: subscriber.email,
         })
 
-        const result = await sendEmail({
+        const sendResult = await sendEmail({
           to: subscriber.email,
-          subject: emailContent.subject || "Your First Day with SSELFIE",
+          subject: "Your First Day with SSELFIE",
           html: emailContent.html,
           text: emailContent.text,
           from: "Sandra from SSELFIE <hello@sselfie.ai>",
           emailType: "nurture-day-1",
         })
 
-        if (result.success) {
-          // Email is already logged by sendEmail function via email_logs
+        if (sendResult.success) {
+          // Email is already logged by sendEmail via email_logs
           results.day1.sent++
+          console.log(`[v0] [CRON] ✅ Sent Day 1 email to ${subscriber.email}`)
         } else {
-          results.day1.failed++
-          throw new Error(result.error || "Failed to send email")
+          throw new Error(sendResult.error || 'Failed to send email')
         }
       } catch (error: any) {
-        console.error(`Failed to send Day 1 to ${subscriber.email}:`, error)
         results.day1.failed++
+        results.errors.push({
+          email: subscriber.email,
+          day: 1,
+          error: error.message || "Unknown error",
+        })
+        console.error(`[v0] [CRON] ❌ Failed to send Day 1 email to ${subscriber.email}:`, error)
         await logAdminError({
           toolName: "cron:nurture-sequence:day-1",
           error: error instanceof Error ? error : new Error(error.message || "Unknown error"),
@@ -88,92 +125,199 @@ export async function GET(request: Request) {
       }
     }
 
-    // Get freebie subscribers who need Day 5 email (signed up 5 days ago)
-    const day5Subscribers = await sql`
+    // Freebie Nurture Automation - Day 3 emails: 3 days after created_at, not yet sent, skip converted users
+    const day3Subscribers = await sql`
       SELECT fs.id, fs.email, fs.name, fs.created_at
       FROM freebie_subscribers fs
-      LEFT JOIN email_logs el ON el.user_email = fs.email AND el.email_type = 'nurture-day-5'
-      WHERE fs.created_at >= NOW() - INTERVAL '5 days 2 hours'
-      AND fs.created_at < NOW() - INTERVAL '5 days'
-      AND el.id IS NULL
+      LEFT JOIN email_logs el ON el.user_email = fs.email AND el.email_type = 'nurture-day-3'
+      WHERE fs.converted_to_user = FALSE
+        AND fs.created_at < NOW() - INTERVAL '3 days'
+        AND fs.created_at >= NOW() - INTERVAL '4 days'
+        AND el.id IS NULL
       ORDER BY fs.created_at ASC
     `
 
-    console.log(`[Nurture Sequence] Found ${day5Subscribers.length} subscribers for Day 5 email`)
+    results.day3.found = day3Subscribers.length
+    console.log(`[v0] [CRON] Found ${day3Subscribers.length} subscribers for Day 3 email`)
 
-    for (const subscriber of day5Subscribers) {
+    for (const subscriber of day3Subscribers) {
       try {
+        // Freebie Nurture Automation - Check if already sent (dedupe check)
+        const existingLog = await sql`
+          SELECT id FROM email_logs
+          WHERE user_email = ${subscriber.email}
+          AND email_type = 'nurture-day-3'
+          LIMIT 1
+        `
+        if (existingLog.length > 0) {
+          results.day3.skipped++
+          continue
+        }
+
         const firstName = subscriber.name?.split(" ")[0] || undefined
-        const emailContent = generateNurtureDay5({
+        const emailContent = generateNurtureDay3Email({
           firstName,
+          recipientEmail: subscriber.email,
         })
 
-        const result = await sendEmail({
+        const sendResult = await sendEmail({
           to: subscriber.email,
-          subject: emailContent.subject || "How's It Going?",
+          subject: "How's It Going?",
           html: emailContent.html,
           text: emailContent.text,
           from: "Sandra from SSELFIE <hello@sselfie.ai>",
-          emailType: "nurture-day-5",
+          emailType: "nurture-day-3",
         })
 
-        if (result.success) {
-          // Email is already logged by sendEmail function via email_logs
-          results.day5.sent++
+        if (sendResult.success) {
+          // Email is already logged by sendEmail via email_logs
+          results.day3.sent++
+          console.log(`[v0] [CRON] ✅ Sent Day 3 email to ${subscriber.email}`)
         } else {
-          results.day5.failed++
-          throw new Error(result.error || "Failed to send email")
+          throw new Error(sendResult.error || 'Failed to send email')
         }
       } catch (error: any) {
-        console.error(`Failed to send Day 5 to ${subscriber.email}:`, error)
-        results.day5.failed++
+        results.day3.failed++
+        results.errors.push({
+          email: subscriber.email,
+          day: 3,
+          error: error.message || "Unknown error",
+        })
+        console.error(`[v0] [CRON] ❌ Failed to send Day 3 email to ${subscriber.email}:`, error)
         await logAdminError({
-          toolName: "cron:nurture-sequence:day-5",
+          toolName: "cron:nurture-sequence:day-3",
           error: error instanceof Error ? error : new Error(error.message || "Unknown error"),
           context: { subscriberEmail: subscriber.email, subscriberId: subscriber.id },
         }).catch(() => {})
       }
     }
 
-    // Get freebie subscribers who need Day 10 email (signed up 10 days ago)
+    // Freebie Nurture Automation - Day 7 emails: 7 days after created_at, not yet sent, skip converted users
+    const day7Subscribers = await sql`
+      SELECT fs.id, fs.email, fs.name, fs.created_at
+      FROM freebie_subscribers fs
+      LEFT JOIN email_logs el ON el.user_email = fs.email AND el.email_type = 'nurture-day-7'
+      WHERE fs.converted_to_user = FALSE
+        AND fs.created_at < NOW() - INTERVAL '7 days'
+        AND fs.created_at >= NOW() - INTERVAL '8 days'
+        AND el.id IS NULL
+      ORDER BY fs.created_at ASC
+    `
+
+    results.day7.found = day7Subscribers.length
+    console.log(`[v0] [CRON] Found ${day7Subscribers.length} subscribers for Day 7 email`)
+
+    for (const subscriber of day7Subscribers) {
+      try {
+        // Freebie Nurture Automation - Check if already sent (dedupe check)
+        const existingLog = await sql`
+          SELECT id FROM email_logs
+          WHERE user_email = ${subscriber.email}
+          AND email_type = 'nurture-day-7'
+          LIMIT 1
+        `
+        if (existingLog.length > 0) {
+          results.day7.skipped++
+          continue
+        }
+
+        const firstName = subscriber.name?.split(" ")[0] || undefined
+        const emailContent = generateNurtureDay7Email({
+          firstName,
+          recipientEmail: subscriber.email,
+        })
+
+        const sendResult = await sendEmail({
+          to: subscriber.email,
+          subject: "One Week In",
+          html: emailContent.html,
+          text: emailContent.text,
+          from: "Sandra from SSELFIE <hello@sselfie.ai>",
+          emailType: "nurture-day-7",
+        })
+
+        if (sendResult.success) {
+          // Email is already logged by sendEmail via email_logs
+          results.day7.sent++
+          console.log(`[v0] [CRON] ✅ Sent Day 7 email to ${subscriber.email}`)
+        } else {
+          throw new Error(sendResult.error || 'Failed to send email')
+        }
+      } catch (error: any) {
+        results.day7.failed++
+        results.errors.push({
+          email: subscriber.email,
+          day: 7,
+          error: error.message || "Unknown error",
+        })
+        console.error(`[v0] [CRON] ❌ Failed to send Day 7 email to ${subscriber.email}:`, error)
+        await logAdminError({
+          toolName: "cron:nurture-sequence:day-7",
+          error: error instanceof Error ? error : new Error(error.message || "Unknown error"),
+          context: { subscriberEmail: subscriber.email, subscriberId: subscriber.id },
+        }).catch(() => {})
+      }
+    }
+
+    // Freebie Nurture Automation - Day 10 emails: 10 days after created_at, not yet sent, skip converted users
     const day10Subscribers = await sql`
       SELECT fs.id, fs.email, fs.name, fs.created_at
       FROM freebie_subscribers fs
       LEFT JOIN email_logs el ON el.user_email = fs.email AND el.email_type = 'nurture-day-10'
-      WHERE fs.created_at >= NOW() - INTERVAL '10 days 2 hours'
-      AND fs.created_at < NOW() - INTERVAL '10 days'
-      AND el.id IS NULL
+      WHERE fs.converted_to_user = FALSE
+        AND fs.created_at < NOW() - INTERVAL '10 days'
+        AND fs.created_at >= NOW() - INTERVAL '11 days'
+        AND el.id IS NULL
       ORDER BY fs.created_at ASC
     `
 
-    console.log(`[Nurture Sequence] Found ${day10Subscribers.length} subscribers for Day 10 email`)
+    results.day10.found = day10Subscribers.length
+    console.log(`[v0] [CRON] Found ${day10Subscribers.length} subscribers for Day 10 email`)
 
     for (const subscriber of day10Subscribers) {
       try {
+        // Freebie Nurture Automation - Check if already sent (dedupe check)
+        const existingLog = await sql`
+          SELECT id FROM email_logs
+          WHERE user_email = ${subscriber.email}
+          AND email_type = 'nurture-day-10'
+          LIMIT 1
+        `
+        if (existingLog.length > 0) {
+          results.day10.skipped++
+          continue
+        }
+
         const firstName = subscriber.name?.split(" ")[0] || undefined
-        const emailContent = generateNurtureDay10({
+        const emailContent = generateUpsellDay10Email({
           firstName,
+          recipientEmail: subscriber.email,
         })
 
-        const result = await sendEmail({
+        const sendResult = await sendEmail({
           to: subscriber.email,
-          subject: emailContent.subject || "Last Chance: Join Studio Today",
+          subject: "Ready for the Next Level?",
           html: emailContent.html,
           text: emailContent.text,
           from: "Sandra from SSELFIE <hello@sselfie.ai>",
           emailType: "nurture-day-10",
         })
 
-        if (result.success) {
-          // Email is already logged by sendEmail function via email_logs
+        if (sendResult.success) {
+          // Email is already logged by sendEmail via email_logs
           results.day10.sent++
+          console.log(`[v0] [CRON] ✅ Sent Day 10 email to ${subscriber.email}`)
         } else {
-          results.day10.failed++
-          throw new Error(result.error || "Failed to send email")
+          throw new Error(sendResult.error || 'Failed to send email')
         }
       } catch (error: any) {
-        console.error(`Failed to send Day 10 to ${subscriber.email}:`, error)
         results.day10.failed++
+        results.errors.push({
+          email: subscriber.email,
+          day: 10,
+          error: error.message || "Unknown error",
+        })
+        console.error(`[v0] [CRON] ❌ Failed to send Day 10 email to ${subscriber.email}:`, error)
         await logAdminError({
           toolName: "cron:nurture-sequence:day-10",
           error: error instanceof Error ? error : new Error(error.message || "Unknown error"),
@@ -182,32 +326,49 @@ export async function GET(request: Request) {
       }
     }
 
-    console.log("[Nurture Sequence] Results:", results)
+    const totalSent = results.day1.sent + results.day3.sent + results.day7.sent + results.day10.sent
+    const totalFailed = results.day1.failed + results.day3.failed + results.day7.failed + results.day10.failed
+    const totalSkipped = results.day1.skipped + results.day3.skipped + results.day7.skipped + results.day10.skipped
 
-    const totalSent = results.day1.sent + results.day5.sent + results.day10.sent
-    const totalFailed = results.day1.failed + results.day5.failed + results.day10.failed
+    console.log(
+      `[v0] [CRON] Freebie nurture sequence completed: ${totalSent} sent, ${totalFailed} failed, ${totalSkipped} skipped`,
+    )
 
     await cronLogger.success({
       day1Sent: results.day1.sent,
       day1Failed: results.day1.failed,
-      day5Sent: results.day5.sent,
-      day5Failed: results.day5.failed,
+      day1Skipped: results.day1.skipped,
+      day3Sent: results.day3.sent,
+      day3Failed: results.day3.failed,
+      day3Skipped: results.day3.skipped,
+      day7Sent: results.day7.sent,
+      day7Failed: results.day7.failed,
+      day7Skipped: results.day7.skipped,
       day10Sent: results.day10.sent,
       day10Failed: results.day10.failed,
+      day10Skipped: results.day10.skipped,
       totalSent,
       totalFailed,
+      totalSkipped,
     })
 
     return NextResponse.json({
       success: true,
-      results,
+      message: `Freebie nurture sequence sent: ${totalSent} successful, ${totalFailed} failed, ${totalSkipped} skipped`,
       summary: {
+        day1: results.day1,
+        day3: results.day3,
+        day7: results.day7,
+        day10: results.day10,
         totalSent,
         totalFailed,
+        totalSkipped,
       },
+      errors: results.errors.slice(0, 10), // Limit errors in response
+      totalErrors: results.errors.length,
     })
   } catch (error: any) {
-    console.error("[Nurture Sequence] Error:", error)
+    console.error("[v0] [CRON] Error in freebie nurture sequence cron:", error)
     await cronLogger.error(error, {})
     await logAdminError({
       toolName: "cron:nurture-sequence",
@@ -217,9 +378,10 @@ export async function GET(request: Request) {
     return NextResponse.json(
       {
         success: false,
-        error: error.message || "Failed to process nurture sequence",
+        error: "Failed to run freebie nurture sequence cron",
+        details: error.message || "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     )
   }
 }

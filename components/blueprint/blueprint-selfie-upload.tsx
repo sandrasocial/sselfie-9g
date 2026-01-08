@@ -31,13 +31,14 @@ export function BlueprintSelfieUpload({
       return
     }
 
-    setUploading(true)
-    setError(null)
-
+    // Validate email before setting uploading state
     if (!email) {
       setError("Please complete email capture first")
       return
     }
+
+    setUploading(true)
+    setError(null)
 
     try {
       const formData = new FormData()

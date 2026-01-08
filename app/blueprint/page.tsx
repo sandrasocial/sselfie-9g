@@ -36,6 +36,7 @@ export default function BrandBlueprintPage() {
   const [concepts, setConcepts] = useState<any[]>([])
   const [isLoadingConcepts, setIsLoadingConcepts] = useState(false)
   const [generatedConceptImages, setGeneratedConceptImages] = useState<{ [key: number]: string }>({})
+  const [savedFrameUrls, setSavedFrameUrls] = useState<string[]>([])
   const [isEmailingConcepts, setIsEmailingConcepts] = useState(false)
   const [selfieImages, setSelfieImages] = useState<string[]>([])
 
@@ -88,9 +89,12 @@ export default function BrandBlueprintPage() {
           }
 
           // Load saved grid if generated
-          if (blueprint.grid.generated && blueprint.grid.frameUrls) {
-            setGeneratedConceptImages({ 0: blueprint.grid.gridUrl || "" })
-            // Note: The concept card will need to handle loading saved grid
+          if (blueprint.grid.generated && blueprint.grid.gridUrl) {
+            setGeneratedConceptImages({ 0: blueprint.grid.gridUrl })
+            // Store frameUrls for the concept card
+            if (blueprint.grid.frameUrls && Array.isArray(blueprint.grid.frameUrls) && blueprint.grid.frameUrls.length === 9) {
+              setSavedFrameUrls(blueprint.grid.frameUrls)
+            }
           }
 
           // Load saved selfie images
@@ -337,10 +341,10 @@ export default function BrandBlueprintPage() {
     }
   }
 
-  const generateConcepts = async () => {
+  const generateConcepts = async (): Promise<boolean> => {
     if (!savedEmail) {
       setShowEmailCapture(true)
-      return
+      return false
     }
 
     setIsLoadingConcepts(true)
@@ -359,9 +363,11 @@ export default function BrandBlueprintPage() {
       if (!response.ok) throw new Error(data.error)
 
       setConcepts(data.concepts)
+      return true
     } catch (error) {
       console.error("[Blueprint] Error generating concepts:", error)
       alert(error instanceof Error ? error.message : "Failed to generate strategy")
+      return false
     } finally {
       setIsLoadingConcepts(false)
     }
@@ -1038,16 +1044,30 @@ export default function BrandBlueprintPage() {
               >
                 Back
               </button>
-              <button
-                onClick={() => {
-                  generateConcepts()
-                  setStep(3.5)
-                }}
-                disabled={!selectedFeedStyle || selfieImages.length === 0}
-                className="w-full sm:flex-1 py-3 sm:py-4 bg-stone-950 text-stone-50 text-xs tracking-[0.2em] sm:tracking-[0.3em] uppercase font-light hover:bg-stone-800 transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed"
-              >
-                Create my feed →
-              </button>
+              <div className="w-full sm:flex-1 flex flex-col gap-2">
+                {!savedEmail && (
+                  <p className="text-xs text-stone-500 text-center mb-1">
+                    Please complete email capture to continue
+                  </p>
+                )}
+                <button
+                  onClick={async () => {
+                    if (!savedEmail) {
+                      setShowEmailCapture(true)
+                      return
+                    }
+                    const success = await generateConcepts()
+                    // Only advance step if concepts were successfully generated
+                    if (success) {
+                      setStep(3.5)
+                    }
+                  }}
+                  disabled={!selectedFeedStyle || selfieImages.length === 0 || !savedEmail}
+                  className="w-full py-3 sm:py-4 bg-stone-950 text-stone-50 text-xs tracking-[0.2em] sm:tracking-[0.3em] uppercase font-light hover:bg-stone-800 transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  Create my feed →
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -1094,6 +1114,8 @@ export default function BrandBlueprintPage() {
                         selectedFeedStyle={selectedFeedStyle}
                         category={formData.vibe}
                         email={savedEmail}
+                        initialGridUrl={generatedConceptImages[0] || undefined}
+                        initialFrameUrls={savedFrameUrls.length === 9 ? savedFrameUrls : undefined}
                         onImageGenerated={(imageUrl) => {
                           setGeneratedConceptImages((prev) => ({ ...prev, [0]: imageUrl }))
                         }}

@@ -1,7 +1,7 @@
 import { sql } from "@/lib/neon"
 
 export type ProductType = "sselfie_studio_membership"
-export type SubscriptionStatus = "active" | "cancelled" | "expired"
+export type SubscriptionStatus = "active" | "canceled" | "expired"
 
 /**
  * Get user's active product/subscription

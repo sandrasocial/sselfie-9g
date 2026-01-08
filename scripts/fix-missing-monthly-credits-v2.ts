@@ -55,7 +55,7 @@ async function fixMissingMonthlyCredits() {
     WHERE s.product_type = 'sselfie_studio_membership'
     AND (
       s.status = 'active'
-      OR (s.status = 'cancelled' AND s.current_period_end > NOW())
+      OR (s.status = 'canceled' AND s.current_period_end > NOW())
     )
     ORDER BY s.status DESC, s.user_id
   `

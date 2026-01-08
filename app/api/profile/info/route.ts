@@ -41,6 +41,7 @@ export async function GET() {
         u.display_name,
         u.profile_image_url,
         u.created_at,
+        u.last_login_at,
         up.bio,
         up.instagram_handle,
         up.location
@@ -70,6 +71,7 @@ export async function GET() {
       product_type: subscription?.product_type || null,
       plan: subscription?.product_type || "free", // Keep for backwards compatibility
       memberSince: profile.created_at,
+      last_login_at: profile.last_login_at || null,
     }
 
     console.log("[v0] Profile info: Returning response")

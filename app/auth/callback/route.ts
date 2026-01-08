@@ -35,6 +35,23 @@ export async function GET(request: Request) {
       console.log("[v0] 👤 Regular auth, syncing user with Neon")
       const neonUser = await syncUserWithNeon(data.user.id, data.user.email!, data.user.user_metadata?.name)
 
+      // Update last login timestamp for retention tracking
+      if (neonUser?.id) {
+        try {
+          const { neon } = await import("@neondatabase/serverless")
+          const sql = neon(process.env.DATABASE_URL!)
+          await sql`
+            UPDATE users 
+            SET last_login_at = NOW() 
+            WHERE id = ${neonUser.id}
+          `
+          console.log(`[v0] ✅ Updated last_login_at for user ${neonUser.id}`)
+        } catch (loginUpdateError) {
+          console.error(`[v0] ⚠️ Failed to update last_login_at:`, loginUpdateError)
+          // Don't fail auth if login tracking fails
+        }
+      }
+
       // Let the studio page handle access control based on credits
       return NextResponse.redirect(`${origin}/studio`)
     } else {

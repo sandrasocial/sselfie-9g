@@ -27,6 +27,8 @@ import { ServiceWorkerProvider } from "./service-worker-provider"
 import BuyCreditsModal from "./buy-credits-modal"
 import { LowCreditModal } from "@/components/credits/low-credit-modal"
 import { ZeroCreditsUpgradeModal } from "@/components/credits/zero-credits-upgrade-modal"
+import { CreditRenewalBanner } from "@/components/credits/credit-renewal-banner"
+import { WelcomeBackBanner } from "@/components/engagement/welcome-back-banner"
 import { FeedbackButton } from "@/components/feedback/feedback-button"
 import { UpgradeOrCredits } from "@/components/UpgradeOrCredits"
 import type { User as UserType } from "./types"
@@ -481,6 +483,10 @@ export default function SselfieApp({
           </p>
         </div>
       )}
+
+      {/* Engagement Banners */}
+      <CreditRenewalBanner />
+      <WelcomeBackBanner />
 
       <main className="relative h-full mx-1 sm:mx-2 md:mx-3 pb-2 sm:pb-3 md:pb-4">
         <div className={`h-full ${DesignClasses.container} ${activeTab === "maya" ? "overflow-visible" : "overflow-hidden"}`}>
