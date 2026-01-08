@@ -36,6 +36,7 @@ import UnifiedLoading from "./unified-loading"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { DesignClasses } from "@/lib/design-tokens"
+import { ReferralDashboard } from "@/components/referrals/referral-dashboard"
 
 interface AccountScreenProps {
   user: UserType
@@ -491,6 +492,11 @@ export default function AccountScreen({ user, creditBalance }: AccountScreenProp
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Referral Dashboard */}
+          <div className={DesignClasses.spacing.paddingX.md}>
+            <ReferralDashboard />
           </div>
 
           <button

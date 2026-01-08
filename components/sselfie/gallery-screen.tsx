@@ -28,6 +28,7 @@ import { GalleryHeader } from "./gallery/components/gallery-header"
 import { GalleryFilters } from "./gallery/components/gallery-filters"
 import { GalleryImageGrid } from "./gallery/components/gallery-image-grid"
 import { GallerySelectionBar } from "./gallery/components/gallery-selection-bar"
+import { InviteFriendsCTA } from "@/components/referrals/invite-friends-cta"
 
 interface GalleryScreenProps {
   user: any
@@ -457,6 +458,13 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
         contentFilter={contentFilter}
         onContentFilterChange={setContentFilter}
       />
+
+      {/* Invite Friends CTA - Show after user has some images */}
+      {!selectionMode && contentFilter === "photos" && allImages && allImages.length > 0 && (
+        <div className={DesignClasses.spacing.paddingX.md}>
+          <InviteFriendsCTA />
+        </div>
+      )}
 
       {(displayImages?.length ?? 0) > 0 || (displayVideos?.length ?? 0) > 0 ? (
         <GalleryImageGrid

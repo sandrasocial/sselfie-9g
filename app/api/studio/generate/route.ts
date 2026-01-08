@@ -149,6 +149,16 @@ export async function POST(request: NextRequest) {
       RETURNING id
     `
 
+    // Trigger referral email after 3rd generation (non-blocking)
+    try {
+      const { triggerReferralEmailIfNeeded } = await import("@/lib/referrals/trigger-referral-email")
+      triggerReferralEmailIfNeeded(neonUser.id).catch((error) => {
+        console.error(`[v0] Error triggering referral email (non-critical):`, error)
+      })
+    } catch (error) {
+      // Ignore errors - referral trigger is non-critical
+    }
+
     // Wrapped in try/catch to avoid breaking the response if deduction fails
     try {
       await deductCredits(neonUser.id, creditsNeeded, "image", prompt)

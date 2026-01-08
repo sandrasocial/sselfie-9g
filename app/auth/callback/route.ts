@@ -52,6 +52,46 @@ export async function GET(request: Request) {
         }
       }
 
+      // Track referral if referral code is present in URL or stored in session
+      const referralCode = requestUrl.searchParams.get("ref")
+      if (referralCode && neonUser?.id) {
+        try {
+          const { neon } = await import("@neondatabase/serverless")
+          const sql = neon(process.env.DATABASE_URL!)
+          
+          // Check if this is a new user (created in last 5 minutes) to avoid tracking on every login
+          const userCreated = await sql`
+            SELECT created_at FROM users WHERE id = ${neonUser.id} LIMIT 1
+          `
+          
+          if (userCreated.length > 0) {
+            const createdAt = new Date(userCreated[0].created_at)
+            const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000)
+            
+            // Only track if user was just created (within last 5 minutes)
+            if (createdAt > fiveMinutesAgo) {
+              const trackResponse = await fetch(`${origin}/api/referrals/track`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  referralCode,
+                  referredUserId: neonUser.id,
+                }),
+              })
+              
+              if (trackResponse.ok) {
+                console.log(`[v0] ✅ Referral tracked for new user ${neonUser.id} with code ${referralCode}`)
+              } else {
+                console.log(`[v0] ⚠️ Failed to track referral (non-critical):`, await trackResponse.text())
+              }
+            }
+          }
+        } catch (referralError) {
+          console.error(`[v0] ⚠️ Error tracking referral (non-critical):`, referralError)
+          // Don't fail auth if referral tracking fails
+        }
+      }
+
       // Let the studio page handle access control based on credits
       return NextResponse.redirect(`${origin}/studio`)
     } else {

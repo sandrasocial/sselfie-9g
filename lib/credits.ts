@@ -13,10 +13,13 @@ const getDatabase = () => {
 const sql = getDatabase()
 
 export const CREDIT_COSTS = {
-  TRAINING: 25, // $5 / $0.20 per credit
-  IMAGE: 1, // $0.20
-  ANIMATION: 3, // Video/B-roll generation
+  TRAINING: 20, // $3.00 / $0.15 per credit (actual API cost)
+  IMAGE: 1, // $0.15 per credit (actual API cost)
+  ANIMATION: 3, // Video/B-roll generation (cost TBD)
 } as const
+
+// NOTE: Credits are priced at cost ($0.15/credit). Profit comes from subscription pricing, not credit markup.
+// See docs/CREDIT-COST-AUDIT.md for detailed cost analysis.
 
 export const SUBSCRIPTION_CREDITS = {
   sselfie_studio_membership: 200, // Creator Studio: 200 credits/month (~100 Pro photos OR ~200 Classic photos, fair use: ~4 photoshoots/month)
