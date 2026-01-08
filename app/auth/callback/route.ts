@@ -52,6 +52,45 @@ export async function GET(request: Request) {
         }
       }
 
+      // Grant reactivation bonus credits if user signed up via coldreactivation campaign
+      const utmSource = requestUrl.searchParams.get("utm_source")
+      if (utmSource === "coldreactivation" && neonUser?.id) {
+        try {
+          const { neon } = await import("@neondatabase/serverless")
+          const sql = neon(process.env.DATABASE_URL!)
+          
+          // Check if this is a new user (created in last 5 minutes) to avoid granting on every login
+          const userCreated = await sql`
+            SELECT created_at FROM users WHERE id = ${neonUser.id} LIMIT 1
+          `
+          
+          if (userCreated.length > 0) {
+            const createdAt = new Date(userCreated[0].created_at)
+            const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000)
+            
+            // Only grant if user was just created (within last 5 minutes)
+            if (createdAt > fiveMinutesAgo) {
+              const { addCredits } = await import("@/lib/credits")
+              const creditResult = await addCredits(
+                neonUser.id,
+                25,
+                "bonus",
+                "Reactivation signup bonus (Day 14 campaign)",
+              )
+              
+              if (creditResult.success) {
+                console.log(`[v0] ✅ Reactivation bonus credits (25) granted to user ${neonUser.id}`)
+              } else {
+                console.error(`[v0] ⚠️ Failed to grant reactivation bonus credits: ${creditResult.error}`)
+              }
+            }
+          }
+        } catch (reactivationError) {
+          console.error(`[v0] ⚠️ Error granting reactivation bonus credits (non-critical):`, reactivationError)
+          // Don't fail auth if credit grant fails
+        }
+      }
+
       // Track referral if referral code is present in URL or stored in session
       const referralCode = requestUrl.searchParams.get("ref")
       if (referralCode && neonUser?.id) {
