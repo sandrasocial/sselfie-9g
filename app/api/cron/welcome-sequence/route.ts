@@ -44,7 +44,7 @@ export async function GET(request: Request) {
   try {
     // Get users who need Day 0 email (signed up in last 2 hours and have active subscription)
     const day0Users = await sql`
-      SELECT DISTINCT u.email, u.first_name, u.id, u.created_at
+      SELECT DISTINCT u.email, u.display_name as first_name, u.id, u.created_at
       FROM users u
       INNER JOIN subscriptions s ON u.id = s.user_id::varchar
       LEFT JOIN email_logs el ON el.user_email = u.email AND el.email_type = 'welcome-day-0'
@@ -58,7 +58,7 @@ export async function GET(request: Request) {
 
     // Get users who need Day 3 email (signed up 3 days ago)
     const day3Users = await sql`
-      SELECT DISTINCT u.email, u.first_name, u.id, u.created_at
+      SELECT DISTINCT u.email, u.display_name as first_name, u.id, u.created_at
       FROM users u
       INNER JOIN subscriptions s ON u.id = s.user_id::varchar
       LEFT JOIN email_logs el ON el.user_email = u.email AND el.email_type = 'welcome-day-3'
@@ -72,7 +72,7 @@ export async function GET(request: Request) {
 
     // Get users who need Day 7 email (signed up 7 days ago)
     const day7Users = await sql`
-      SELECT DISTINCT u.email, u.first_name, u.id, u.created_at
+      SELECT DISTINCT u.email, u.display_name as first_name, u.id, u.created_at
       FROM users u
       INNER JOIN subscriptions s ON u.id = s.user_id::varchar
       LEFT JOIN email_logs el ON el.user_email = u.email AND el.email_type = 'welcome-day-7'
