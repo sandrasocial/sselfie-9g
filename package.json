@@ -22,7 +22,8 @@
     "audit-revenue": "npx tsx scripts/audit-revenue-sources.ts",
     "backfill-payment-ids": "npx tsx scripts/backfill-payment-ids.ts",
     "migrate-015": "npx tsx scripts/run-migration-015.ts",
-    "test:feed-planner": "npx tsx scripts/test-feed-planner-issues.ts"
+    "test:feed-planner": "npx tsx scripts/test-feed-planner-issues.ts",
+    "index-codebase": "npx tsx scripts/index-codebase.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "latest",
@@ -96,6 +97,7 @@
     "next-themes": "latest",
     "node-fetch": "latest",
     "nodemailer": "latest",
+    "openai": "^6.15.0",
     "path": "0.12.7",
     "prettier": "^3.7.3",
     "react": "19.2.0",

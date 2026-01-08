@@ -221,6 +221,9 @@ importers:
       nodemailer:
         specifier: latest
         version: 7.0.11
+      openai:
+        specifier: ^6.15.0
+        version: 6.15.0(ws@8.18.3(bufferutil@4.0.9))(zod@3.25.76)
       path:
         specifier: 0.12.7
         version: 0.12.7
@@ -5653,6 +5656,18 @@ packages:
   onetime@6.0.0:
     resolution: {integrity: sha512-1FlR+gjXK7X+AsAHso35MnyN5KqGwJRi/31ft6x0M194ht7S+rWAvd7PHss9xSKMzE0asv1pyIHaJYq+BbacAQ==}
     engines: {node: '>=12'}
+
+  openai@6.15.0:
+    resolution: {integrity: sha512-F1Lvs5BoVvmZtzkUEVyh8mDQPPFolq4F+xdsx/DO8Hee8YF3IGAlZqUIsF+DVGhqf4aU0a3bTghsxB6OIsRy1g==}
+    hasBin: true
+    peerDependencies:
+      ws: ^8.18.0
+      zod: ^3.25 || ^4.0
+    peerDependenciesMeta:
+      ws:
+        optional: true
+      zod:
+        optional: true
 
   openid-client@5.7.1:
     resolution: {integrity: sha512-jDBPgSVfTnkIh71Hg9pRvtJc6wTwqjRkN88+gCFtYWrlP4Yx2Dsrow8uPi3qLr/aeymPF3o2+dS+wOpglK04ew==}
@@ -12986,6 +13001,11 @@ snapshots:
   onetime@6.0.0:
     dependencies:
       mimic-fn: 4.0.0
+
+  openai@6.15.0(ws@8.18.3(bufferutil@4.0.9))(zod@3.25.76):
+    optionalDependencies:
+      ws: 8.18.3(bufferutil@4.0.9)
+      zod: 3.25.76
 
   openid-client@5.7.1:
     dependencies:

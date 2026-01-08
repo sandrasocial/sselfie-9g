@@ -24,6 +24,7 @@ export const VectorNamespaces = {
   userCampaigns: "user:campaigns",
   contentIdeas: "content:ideas",
   emailTemplates: "email:templates",
+  codebase: "codebase:file", // For codebase embeddings
 }
 
 // Helper to generate embedding ID

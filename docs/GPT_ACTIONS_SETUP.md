@@ -182,3 +182,18 @@ You should get a JSON response with the file contents if everything is configure
 
 **Remember:** This is YOUR custom API key - generate it yourself and keep it secret! 🔐
 
+---
+
+## Development Setup
+
+Want to give ChatGPT access to your **local development environment** too?
+
+👉 **See:** [`docs/GPT_ACTIONS_DEV_SETUP.md`](./GPT_ACTIONS_DEV_SETUP.md)
+
+This allows you to:
+- Get help with development tasks
+- Test changes before deploying
+- Debug local issues
+- Use ChatGPT for both production AND development
+
+**Quick setup:** Install ngrok, start tunnel, create second ChatGPT Action pointing to your local server via ngrok.

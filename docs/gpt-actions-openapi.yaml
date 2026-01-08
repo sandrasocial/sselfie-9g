@@ -14,8 +14,10 @@ info:
 servers:
   - url: https://sselfie.ai
     description: Production server
+  - url: https://sidesplitting-irrefutably-arcelia.ngrok-free.dev
+    description: Development server (ngrok tunnel to localhost:3000)
   - url: http://localhost:3000
-    description: Local development server
+    description: Local development server (direct access)
 
 components:
   securitySchemes:
