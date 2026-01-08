@@ -13,6 +13,8 @@ export async function GET() {
       to: process.env.ADMIN_EMAIL || "test@example.com",
       subject: "Resend Test Email",
       html: "<p>This is a test email from SSelfie. If you receive this, Resend is configured correctly!</p>",
+      tracking_opens: false,
+      tracking_clicks: false,
     })
 
     if (error) {

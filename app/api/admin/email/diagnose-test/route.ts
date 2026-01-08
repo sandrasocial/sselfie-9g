@@ -90,6 +90,8 @@ export async function GET(request: Request) {
             <p>Timestamp: ${new Date().toISOString()}</p>
           `,
           text: "Email System Diagnostic Test - If you received this, your email system is working!",
+          tracking_opens: false,
+          tracking_clicks: false,
         })
 
         if (error) {

@@ -31,6 +31,7 @@
 import { neon } from "@neondatabase/serverless"
 import { sendEmail } from "./send-email"
 import { checkEmailRateLimit } from "@/lib/rate-limit"
+import { isEmailTestMode, isEmailSendingEnabled } from "./email-control"
 import { generateLaunchFollowupEmail } from "./templates/archived/launch-followup-email-beta"
 import { generateBetaTestimonialEmail } from "./templates/beta-testimonial-request"
 import { generateNurtureDay1Email } from "./templates/nurture-day-1"
@@ -499,11 +500,28 @@ async function executeCampaign(
 
 /**
  * Main function to run scheduled campaigns
+ * 
+ * Automatically respects global email test mode setting - if global test mode is enabled,
+ * forces mode to "test" regardless of config parameter
  */
 export async function runScheduledCampaigns(
   config: RunScheduledCampaignsConfig,
 ): Promise<CampaignExecutionResult[]> {
-  const { mode, campaignId } = config
+  let { mode, campaignId } = config
+
+  // Check global email test mode setting - if enabled, force test mode
+  const globalTestMode = await isEmailTestMode()
+  if (globalTestMode && mode === "live") {
+    console.log(`[v0] ⚠️ Global email test mode is enabled - forcing test mode (was: ${mode})`)
+    mode = "test"
+  }
+
+  // Also check if email sending is disabled
+  const sendingEnabled = await isEmailSendingEnabled()
+  if (!sendingEnabled) {
+    console.log(`[v0] ⚠️ Email sending is disabled globally - skipping campaign execution`)
+    return []
+  }
 
   console.log(`[v0] Running scheduled campaigns in ${mode} mode${campaignId ? ` (campaign ${campaignId})` : ""}`)
 

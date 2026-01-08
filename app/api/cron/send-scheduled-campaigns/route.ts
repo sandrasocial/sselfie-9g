@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { runScheduledCampaigns } from "@/lib/email/run-scheduled-campaigns"
 import { createCronLogger } from "@/lib/cron-logger"
+import { isEmailTestMode } from "@/lib/email/email-control"
 
 /**
  * Cron Job: Send Scheduled Campaigns
@@ -9,6 +10,8 @@ import { createCronLogger } from "@/lib/cron-logger"
  * Runs every 15 minutes to check for campaigns that are due to be sent.
  * 
  * Schedule: every 15 minutes (cron pattern: star-slash-15 star star star star)
+ * 
+ * Respects global email test mode setting - if test mode is enabled, runs in test mode
  */
 export async function GET(request: Request) {
   const cronLogger = createCronLogger("send-scheduled-campaigns")
@@ -28,9 +31,19 @@ export async function GET(request: Request) {
       }
     }
 
+    // Check global email test mode setting
+    const testModeEnabled = await isEmailTestMode()
+    const mode = testModeEnabled ? "test" : "live"
+
+    if (testModeEnabled) {
+      console.log("[v0] [Scheduled Campaigns] ⚠️ Global test mode is enabled - running in test mode")
+    } else {
+      console.log("[v0] [Scheduled Campaigns] Running in live mode")
+    }
+
     console.log("[v0] [Scheduled Campaigns] Starting scheduled campaign check...")
 
-    const result = await runScheduledCampaigns({ mode: "live" })
+    const result = await runScheduledCampaigns({ mode })
 
     console.log(`[v0] [Scheduled Campaigns] Completed: ${result.length} campaign(s) processed`)
 

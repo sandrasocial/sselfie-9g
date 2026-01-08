@@ -69,6 +69,11 @@ async function sendEmailWithRetry(
         text: options.text,
         reply_to: options.replyTo,
         tags: options.tags?.map((tag) => ({ name: tag, value: tag })),
+        // Disable click and open tracking to improve deliverability
+        // Click tracking modifies links which can trigger spam filters
+        // Open tracking requires external resources which can also hurt deliverability
+        tracking_opens: false,
+        tracking_clicks: false,
       })
 
       if (error) {

@@ -58,6 +58,8 @@ export async function POST(request: NextRequest) {
           subject: "The beta window is closing... ⏰",
           html: emailContent.html,
           text: emailContent.text,
+          tracking_opens: false,
+          tracking_clicks: false,
         })
 
         // Tag as followup sent

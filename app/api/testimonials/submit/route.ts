@@ -52,6 +52,8 @@ export async function POST(req: NextRequest) {
       from: "SSELFIE <hello@sselfie.ai>",
       to: process.env.ADMIN_EMAIL || "hello@sselfie.ai",
       subject: `New Testimonial from ${name}`,
+      tracking_opens: false,
+      tracking_clicks: false,
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <h2 style="color: #1c1917; margin-bottom: 20px;">New Testimonial Submission</h2>

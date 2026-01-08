@@ -67,6 +67,8 @@ export async function POST(request: NextRequest) {
               html: emailContent.html,
               text: emailContent.text,
               tags: [{ name: "freebie-guide", value: "resend" }],
+              tracking_opens: false,
+              tracking_clicks: false,
             })
 
             emailSent = true

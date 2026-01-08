@@ -4,6 +4,11 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { AdminNav } from "@/components/admin/admin-nav"
 
+interface EmailSettings {
+  emailSendingEnabled: boolean
+  emailTestMode: boolean
+}
+
 interface CronJob {
   jobName: string
   schedule: string
@@ -76,10 +81,16 @@ export default function CronDiagnosticsPage() {
   const [emailStatus, setEmailStatus] = useState<EmailStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [sinceHours, setSinceHours] = useState(24)
+  const [settings, setSettings] = useState<EmailSettings>({
+    emailSendingEnabled: false,
+    emailTestMode: false,
+  })
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     fetchCronStatus()
     fetchEmailStatus()
+    fetchSettings()
   }, [sinceHours])
 
   const fetchCronStatus = async () => {
@@ -106,6 +117,41 @@ export default function CronDiagnosticsPage() {
       console.error("Error fetching email status:", error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchSettings = async () => {
+    try {
+      const response = await fetch("/api/admin/email-control/settings")
+      const data = await response.json()
+      if (data.success) {
+        setSettings(data.settings)
+      }
+    } catch (error) {
+      console.error("Error fetching settings:", error)
+    }
+  }
+
+  const updateSetting = async (key: keyof EmailSettings, value: boolean) => {
+    setSaving(true)
+    try {
+      const response = await fetch("/api/admin/email-control/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [key]: value }),
+      })
+      const data = await response.json()
+      if (data.success) {
+        setSettings(data.settings)
+        // Refresh stats after changing settings
+        setTimeout(() => {
+          fetchEmailStatus()
+        }, 1000)
+      }
+    } catch (error) {
+      console.error("Error updating setting:", error)
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -143,6 +189,85 @@ export default function CronDiagnosticsPage() {
               <option value={24}>Last 24 Hours</option>
               <option value={168}>Last 7 Days</option>
             </select>
+          </div>
+
+          {/* Email Control Toggles */}
+          <div className="bg-white border border-stone-200 p-6 sm:p-8 rounded-none mb-6">
+            <h2 className="text-lg sm:text-xl font-['Times_New_Roman'] text-stone-950 tracking-[0.1em] uppercase mb-6">
+              Email Controls
+            </h2>
+
+            <div className="space-y-6">
+              {/* Email Sending Enabled */}
+              <div className="flex items-center justify-between">
+                <div className="flex-1 pr-4">
+                  <h3 className="text-sm sm:text-base font-medium text-stone-950 mb-1">
+                    Email Sending Enabled
+                  </h3>
+                  <p className="text-xs text-stone-500">
+                    {settings.emailSendingEnabled
+                      ? "Emails will be sent to recipients"
+                      : "All email sending is disabled (kill switch)"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    if (!saving) {
+                      updateSetting("emailSendingEnabled", !settings.emailSendingEnabled)
+                    }
+                  }}
+                  disabled={saving}
+                  className={`relative inline-flex h-7 w-12 flex-shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-stone-400 focus:ring-offset-2 ${
+                    settings.emailSendingEnabled ? "bg-stone-950" : "bg-stone-300"
+                  } ${saving ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                  aria-label={settings.emailSendingEnabled ? "Disable email sending" : "Enable email sending"}
+                >
+                  <span
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform ${
+                      settings.emailSendingEnabled ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Test Mode */}
+              <div className="flex items-center justify-between">
+                <div className="flex-1 pr-4">
+                  <h3 className="text-sm sm:text-base font-medium text-stone-950 mb-1">
+                    Test Mode
+                  </h3>
+                  <p className="text-xs text-stone-500">
+                    {settings.emailTestMode
+                      ? "Emails only send to admin email or whitelisted addresses"
+                      : "Normal mode: emails send to all recipients"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    if (!saving) {
+                      updateSetting("emailTestMode", !settings.emailTestMode)
+                    }
+                  }}
+                  disabled={saving}
+                  className={`relative inline-flex h-7 w-12 flex-shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-stone-400 focus:ring-offset-2 ${
+                    settings.emailTestMode ? "bg-stone-950" : "bg-stone-300"
+                  } ${saving ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                  aria-label={settings.emailTestMode ? "Disable test mode" : "Enable test mode"}
+                >
+                  <span
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform ${
+                      settings.emailTestMode ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 

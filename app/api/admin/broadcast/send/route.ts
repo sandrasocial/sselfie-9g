@@ -66,7 +66,9 @@ export async function POST(request: Request) {
           tags: [
             { name: 'type', value: 'test' },
             { name: 'environment', value: process.env.NODE_ENV || 'unknown' }
-          ]
+          ],
+          tracking_opens: false,
+          tracking_clicks: false,
         })
         console.log('✅ Test email sent to Sandra')
       } catch (testError: any) {
