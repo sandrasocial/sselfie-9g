@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
               h3 { font-size: 18px; font-weight: 500; margin-bottom: 12px; }
               p { font-size: 14px; line-height: 1.6; color: #57534e; margin-bottom: 16px; }
               .concept { margin-bottom: 40px; border: 1px solid #e7e5e4; padding: 20px; border-radius: 8px; }
+              .concept img { width: 100%; max-width: 600px; border-radius: 8px; margin-bottom: 16px; display: block; margin-left: auto; margin-right: auto; }
               .concept h3 { font-size: 18px; font-weight: 500; margin-bottom: 8px; }
               .concept p { font-size: 13px; color: #78716c; line-height: 1.6; }
               .caption-template { background: #fafaf9; padding: 16px; border-radius: 8px; margin-bottom: 16px; border-left: 4px solid #292524; }
@@ -52,6 +53,27 @@ export async function POST(req: NextRequest) {
                 <div class="score">${blueprint.score}</div>
                 <div style="font-size: 12px; margin-top: 10px;">OUT OF 100</div>
               </div>
+              `
+                  : ""
+              }
+              
+              ${
+                concepts.some((c: any) => c.imageUrl)
+                  ? `
+              <h2>YOUR INSTAGRAM GRID PREVIEW</h2>
+              <p>Here's your personalized 3x3 grid preview!</p>
+              ${concepts
+                .filter((c: any) => c.imageUrl)
+                .map(
+                  (concept: any) => `
+                <div class="concept" style="text-align: center;">
+                  <img src="${concept.imageUrl}" alt="${concept.title || "Instagram Grid"}" style="width: 100%; max-width: 600px; border-radius: 8px; margin-bottom: 16px;" />
+                  ${concept.title ? `<h3>${concept.title}</h3>` : ""}
+                  ${concept.prompt || concept.description ? `<p>${concept.prompt || concept.description || ""}</p>` : ""}
+                </div>
+              `,
+                )
+                .join("")}
               `
                   : ""
               }
