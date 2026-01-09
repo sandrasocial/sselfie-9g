@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     console.log("[v0] Request body:", body)
 
-    const { email, name, formData, step, source, utm_source, utm_medium, utm_campaign, referrer, user_agent } = body
+    const { email, name, formData, selectedFeedStyle, step, source, utm_source, utm_medium, utm_campaign, referrer, user_agent } = body
 
     if (!email || !name) {
       console.log("[v0] Missing email or name")
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
               dream_client = ${formData.dreamClient || null},
               struggle = ${formData.struggle || null},
               selfie_skill_level = ${formData.lightingKnowledge || null},
-              feed_style = ${formData.vibe || null},
+              feed_style = ${selectedFeedStyle || null},
               post_frequency = ${formData.postFrequency || null},
               updated_at = NOW()
           WHERE id = ${subscriber.id}
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
         ${formData?.dreamClient || null},
         ${formData?.struggle || null},
         ${formData?.lightingKnowledge || null},
-        ${formData?.vibe || null},
+        ${selectedFeedStyle || null},
         ${formData?.postFrequency || null},
         NOW(),
         NOW(),

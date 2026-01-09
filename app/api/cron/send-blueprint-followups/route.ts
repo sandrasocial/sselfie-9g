@@ -5,6 +5,9 @@ import { createCronLogger } from "@/lib/cron-logger"
 import { generateBlueprintFollowupDay3Email } from "@/lib/email/templates/blueprint-followup-day-3"
 import { generateBlueprintFollowupDay7Email } from "@/lib/email/templates/blueprint-followup-day-7"
 import { generateBlueprintFollowupDay14Email } from "@/lib/email/templates/blueprint-followup-day-14"
+import { generatePaidBlueprintDay1Email, PAID_BLUEPRINT_DAY1_SUBJECT } from "@/lib/email/templates/paid-blueprint-day-1"
+import { generatePaidBlueprintDay3Email, PAID_BLUEPRINT_DAY3_SUBJECT } from "@/lib/email/templates/paid-blueprint-day-3"
+import { generatePaidBlueprintDay7Email, PAID_BLUEPRINT_DAY7_SUBJECT } from "@/lib/email/templates/paid-blueprint-day-7"
 import { logAdminError } from "@/lib/admin-error-log"
 
 const sql = neon(process.env.DATABASE_URL!)
@@ -51,6 +54,9 @@ export async function GET(request: Request) {
       day3: { found: 0, sent: 0, failed: 0, skipped: 0 },
       day7: { found: 0, sent: 0, failed: 0, skipped: 0 },
       day14: { found: 0, sent: 0, failed: 0, skipped: 0 },
+      paidDay1: { found: 0, sent: 0, failed: 0, skipped: 0 },
+      paidDay3: { found: 0, sent: 0, failed: 0, skipped: 0 },
+      paidDay7: { found: 0, sent: 0, failed: 0, skipped: 0 },
       errors: [] as Array<{ email: string; day: number; error: string }>,
     }
 

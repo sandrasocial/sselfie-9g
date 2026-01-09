@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin"
 import { getOrCreateNeonUser } from "@/lib/user-mapping"
 import { sendEmail } from "@/lib/email/send-email"
 import { generateWelcomeEmail } from "@/lib/email/templates/welcome-email"
+import { generatePaidBlueprintDeliveryEmail, PAID_BLUEPRINT_DELIVERY_SUBJECT } from "@/lib/email/templates/paid-blueprint-delivery"
 import { checkWebhookRateLimit } from "@/lib/rate-limit"
 import { logWebhookError, alertWebhookError, isCriticalError } from "@/lib/webhook-monitoring"
 import {
@@ -1038,6 +1039,79 @@ export async function POST(request: NextRequest) {
                   `
                   console.log(`[v0] ✅ Updated blueprint_subscribers with paid blueprint purchase for ${customerEmail}`)
                   console.log(`[v0] ✅ Marked as converted (stops freebie nurture emails, matches system semantics)`)
+                  
+                  // PR-3: Send paid blueprint delivery email
+                  try {
+                    // Check if email already sent (dedupe)
+                    const existingEmail = await sql`
+                      SELECT id FROM email_logs
+                      WHERE user_email = ${customerEmail}
+                      AND email_type = 'paid-blueprint-delivery'
+                      LIMIT 1
+                    `
+                    
+                    if (existingEmail.length > 0) {
+                      console.log(`[v0] Skipping duplicate paid-blueprint-delivery email for ${customerEmail}`)
+                    } else {
+                      // Fetch subscriber data for email
+                      const subscriber = await sql`
+                        SELECT 
+                          name,
+                          access_token,
+                          paid_blueprint_photo_urls
+                        FROM blueprint_subscribers
+                        WHERE email = ${customerEmail}
+                        LIMIT 1
+                      `
+                      
+                      if (subscriber.length > 0 && subscriber[0].access_token) {
+                        const subscriberData = subscriber[0]
+                        const firstName = subscriberData.name?.split(" ")[0] || undefined
+                        const accessToken = subscriberData.access_token
+                        
+                        // Extract photo preview URLs if available (up to 4)
+                        let photoPreviewUrls: string[] | undefined = undefined
+                        if (subscriberData.paid_blueprint_photo_urls && Array.isArray(subscriberData.paid_blueprint_photo_urls)) {
+                          const validUrls = subscriberData.paid_blueprint_photo_urls
+                            .filter((url: any) => typeof url === "string" && url.startsWith("http"))
+                            .slice(0, 4)
+                          if (validUrls.length > 0) {
+                            photoPreviewUrls = validUrls
+                          }
+                        }
+                        
+                        // Generate email
+                        const emailContent = generatePaidBlueprintDeliveryEmail({
+                          firstName,
+                          email: customerEmail,
+                          accessToken,
+                          photoPreviewUrls,
+                        })
+                        
+                        // Send email
+                        const emailResult = await sendEmail({
+                          to: customerEmail,
+                          subject: PAID_BLUEPRINT_DELIVERY_SUBJECT,
+                          html: emailContent.html,
+                          text: emailContent.text,
+                          emailType: "paid-blueprint-delivery",
+                          tags: ["paid-blueprint", "delivery"],
+                        })
+                        
+                        if (emailResult.success) {
+                          console.log(`[v0] ✅ Sent paid blueprint delivery email to ${customerEmail}`)
+                        } else {
+                          console.error(`[v0] ⚠️ Failed to send paid blueprint delivery email: ${emailResult.error}`)
+                          // Don't fail webhook - email send failure is non-critical
+                        }
+                      } else {
+                        console.log(`[v0] ⚠️ Subscriber data incomplete (missing access_token) - skipping delivery email for ${customerEmail}`)
+                      }
+                    }
+                  } catch (emailError: any) {
+                    console.error(`[v0] ⚠️ Error sending paid blueprint delivery email (non-critical):`, emailError.message)
+                    // Don't fail webhook if email send fails
+                  }
                 } else {
                   console.log(`[v0] ⚠️ Email ${customerEmail} not found in blueprint_subscribers (purchase logged in stripe_payments)`)
                 }

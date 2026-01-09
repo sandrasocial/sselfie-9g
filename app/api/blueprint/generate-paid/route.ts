@@ -1,21 +1,49 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
-import { getReplicateClient } from "@/lib/replicate-client"
+import { generateWithNanoBanana } from "@/lib/nano-banana-client"
+import { getBlueprintPhotoshootPrompt, type BlueprintCategory, type BlueprintMood } from "@/lib/maya/blueprint-photoshoot-templates"
+import { createServerClient } from "@/lib/supabase/server"
+import { getUserByAuthId } from "@/lib/user-mapping"
 
 const sql = neon(process.env.DATABASE_URL!)
+const ADMIN_EMAIL = "ssa@ssasocial.com"
+
+/**
+ * Check if current user is admin
+ */
+async function isAdmin(): Promise<boolean> {
+  try {
+    const supabase = await createServerClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return false
+    }
+
+    const neonUser = await getUserByAuthId(user.id)
+    return neonUser?.email === ADMIN_EMAIL
+  } catch {
+    return false
+  }
+}
 
 /**
  * POST /api/blueprint/generate-paid
  * 
- * Generate 30 photos for paid blueprint purchase
- * Body: { accessToken: string }
+ * Generate ONE grid at a time for paid blueprint (incremental pattern)
+ * Uses Nano Banana Pro (same as free blueprint) with user's selfies
  * 
- * IMPORTANT: Idempotent - safe to retry
+ * Body: { accessToken: string, gridNumber: number }
+ * 
+ * IMPORTANT: Idempotent - safe to retry. Client must poll /check-paid-grid for completion.
  */
 export async function POST(req: NextRequest) {
   try {
-    const { accessToken } = await req.json()
+    const { accessToken, gridNumber } = await req.json()
 
+    // Validate inputs
     if (!accessToken || typeof accessToken !== "string") {
       return NextResponse.json(
         { error: "Access token is required" },
@@ -23,7 +51,16 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    console.log("[v0][paid-blueprint] Generation request for token:", accessToken.substring(0, 8) + "...")
+    if (!gridNumber || typeof gridNumber !== "number" || gridNumber < 1 || gridNumber > 30) {
+      return NextResponse.json(
+        { error: "gridNumber must be between 1 and 30" },
+        { status: 400 }
+      )
+    }
+
+    console.log(`[v0][paid-blueprint] Generate Grid ${gridNumber}/30 request for token:`, accessToken.substring(0, 8) + "...")
+
+    const userIsAdmin = await isAdmin()
 
     // Lookup subscriber by access_token
     const subscriber = await sql`
@@ -33,13 +70,28 @@ export async function POST(req: NextRequest) {
         paid_blueprint_purchased,
         paid_blueprint_generated,
         paid_blueprint_photo_urls,
-        strategy_data
+        selfie_image_urls,
+        form_data,
+        feed_style
       FROM blueprint_subscribers
       WHERE access_token = ${accessToken}
       LIMIT 1
     `
 
     if (subscriber.length === 0) {
+      // Admin can still proceed (for testing)
+      if (userIsAdmin) {
+        console.log("[v0][paid-blueprint] Admin override - invalid token, but allowing admin access")
+        return NextResponse.json(
+          { 
+            error: "Invalid access token",
+            admin: true,
+            message: "Admin override: Token not found, but admin access granted. Cannot generate without valid subscriber."
+          },
+          { status: 404 },
+        )
+      }
+
       console.log("[v0][paid-blueprint] Invalid access token")
       return NextResponse.json(
         { error: "Invalid access token" },
@@ -50,236 +102,112 @@ export async function POST(req: NextRequest) {
     const data = subscriber[0]
     const email = data.email
 
-    // Guardrail: Must have purchased
-    if (!data.paid_blueprint_purchased) {
+    // Guard 1: Must have purchased (admin can bypass)
+    if (!data.paid_blueprint_purchased && !userIsAdmin) {
       console.log("[v0][paid-blueprint] Not purchased:", email.substring(0, 3) + "***")
       return NextResponse.json(
-        { error: "Paid blueprint not purchased. Please purchase first." },
+        { 
+          error: "Paid blueprint not purchased. Please purchase first.",
+          requiresAction: "purchase"
+        },
         { status: 403 },
       )
     }
 
-    // Idempotency: If already generated, return existing photos
-    if (data.paid_blueprint_generated) {
-      const photoUrls = data.paid_blueprint_photo_urls || []
-      console.log("[v0][paid-blueprint] Already generated:", email.substring(0, 3) + "***", photoUrls.length, "photos")
-      return NextResponse.json({
-        success: true,
-        alreadyGenerated: true,
-        totalPhotos: photoUrls.length,
-        photoUrls,
-      })
+    // Admin override: Allow generation even if not purchased (for testing)
+    if (!data.paid_blueprint_purchased && userIsAdmin) {
+      console.log("[v0][paid-blueprint] Admin override - allowing generation for unpurchased blueprint")
     }
 
-    // Check existing photo count
-    const existingPhotoUrls = Array.isArray(data.paid_blueprint_photo_urls) ? data.paid_blueprint_photo_urls : []
-    const existingCount = existingPhotoUrls.length
-
-    console.log("[v0][paid-blueprint] Existing photos:", existingCount, "/30")
-
-    // If already have 30+ photos, mark as generated
-    if (existingCount >= 30) {
-      console.log("[v0][paid-blueprint] Already have 30+ photos, marking as generated")
-      await sql`
-        UPDATE blueprint_subscribers
-        SET paid_blueprint_generated = TRUE,
-            paid_blueprint_generated_at = NOW(),
-            updated_at = NOW()
-        WHERE email = ${email}
-        AND paid_blueprint_generated = FALSE
-      `
-      return NextResponse.json({
-        success: true,
-        alreadyGenerated: false,
-        totalPhotos: existingCount,
-        photoUrls: existingPhotoUrls,
-      })
-    }
-
-    // Get strategy data for prompts
-    const strategyData = data.strategy_data
-    if (!strategyData || !strategyData.prompt) {
-      console.log("[v0][paid-blueprint] Missing strategy_data:", email.substring(0, 3) + "***")
+    // Guard 2: Must have selfies (1-3 images)
+    const selfieUrls = Array.isArray(data.selfie_image_urls) ? data.selfie_image_urls : []
+    const validSelfieUrls = selfieUrls.filter((url: any) => 
+      typeof url === "string" && url.startsWith("http")
+    )
+    
+    if (validSelfieUrls.length === 0) {
+      console.log("[v0][paid-blueprint] No selfies found:", email.substring(0, 3) + "***")
       return NextResponse.json(
-        { error: "Blueprint strategy not found. Please complete the free blueprint first." },
+        { 
+          error: "Selfies required. Please complete the free Blueprint first to upload selfies.",
+          requiresAction: "complete_free_blueprint"
+        },
         { status: 400 },
       )
     }
 
-    console.log("[v0][paid-blueprint] Starting generation:", email.substring(0, 3) + "***", "Strategy:", strategyData.title)
-
-    // Generate remaining photos until we reach 30
-    const targetCount = 30
-    const remainingCount = targetCount - existingCount
-    const replicate = getReplicateClient()
-
-    let currentPhotoUrls = [...existingPhotoUrls]
-    const batchSize = 5 // Generate 5 at a time (safe, tested pattern)
-    let generatedInThisSession = 0
-
-    console.log("[v0][paid-blueprint] Need to generate:", remainingCount, "photos in batches of", batchSize)
-
-    // Generate in batches
-    for (let i = 0; i < remainingCount; i += batchSize) {
-      const photosInBatch = Math.min(batchSize, remainingCount - i)
-      console.log("[v0][paid-blueprint] Batch", Math.floor(i / batchSize) + 1, "- generating", photosInBatch, "photos")
-
-      // Generate photos in this batch (parallel predictions)
-      const batchPredictions = []
-      for (let j = 0; j < photosInBatch; j++) {
-        const photoNumber = existingCount + i + j + 1
-        // Vary prompts slightly for diversity
-        const variedPrompt = varyPrompt(strategyData.prompt, photoNumber)
-        
-        try {
-          const prediction = await replicate.predictions.create({
-            model: "black-forest-labs/flux-dev",
-            input: {
-              prompt: variedPrompt,
-              aspect_ratio: "1:1",
-              num_outputs: 1,
-              guidance: 3.5,
-              num_inference_steps: 28,
-              output_format: "png",
-              output_quality: 100,
-            },
-          })
-          batchPredictions.push({ predictionId: prediction.id, photoNumber })
-          console.log("[v0][paid-blueprint] Created prediction", photoNumber, "/30:", prediction.id)
-        } catch (error) {
-          console.error("[v0][paid-blueprint] Error creating prediction:", error)
-          // Continue with other predictions
-        }
-      }
-
-      // Wait for all predictions in this batch to complete
-      const batchUrls = []
-      for (const { predictionId, photoNumber } of batchPredictions) {
-        try {
-          const imageUrl = await waitForPrediction(replicate, predictionId, photoNumber)
-          if (imageUrl) {
-            batchUrls.push(imageUrl)
-            generatedInThisSession++
-          }
-        } catch (error) {
-          console.error("[v0][paid-blueprint] Error waiting for prediction:", predictionId, error)
-          // Continue with other predictions
-        }
-      }
-
-      // Save progress after each batch
-      if (batchUrls.length > 0) {
-        currentPhotoUrls = [...currentPhotoUrls, ...batchUrls]
-        
-        await sql`
-          UPDATE blueprint_subscribers
-          SET paid_blueprint_photo_urls = ${JSON.stringify(currentPhotoUrls)}::jsonb,
-              updated_at = NOW()
-          WHERE email = ${email}
-        `
-        
-        console.log("[v0][paid-blueprint] Progress saved:", currentPhotoUrls.length, "/30")
-      }
-
-      // If we've reached 30, stop
-      if (currentPhotoUrls.length >= 30) {
-        break
-      }
+    if (validSelfieUrls.length > 3) {
+      console.log("[v0][paid-blueprint] Too many selfies (taking first 3):", validSelfieUrls.length)
+      validSelfieUrls.splice(3) // Keep only first 3
     }
 
-    // Mark as generated when we reach 30
-    const finalCount = currentPhotoUrls.length
-    if (finalCount >= 30) {
-      await sql`
-        UPDATE blueprint_subscribers
-        SET paid_blueprint_generated = TRUE,
-            paid_blueprint_generated_at = NOW(),
-            updated_at = NOW()
-        WHERE email = ${email}
-      `
-      console.log("[v0][paid-blueprint] ✅ Generation complete:", email.substring(0, 3) + "***", finalCount, "photos")
-      
+    // Guard 3: Must have form data for category/mood
+    const formData = data.form_data || {}
+    const category = (formData.vibe || "professional") as BlueprintCategory
+    const mood = (data.feed_style || formData.feed_style || "minimal") as BlueprintMood
+
+    console.log(`[v0][paid-blueprint] Using category: ${category}, mood: ${mood}`)
+
+    // Get existing photo URLs
+    const existingPhotoUrls = Array.isArray(data.paid_blueprint_photo_urls) ? data.paid_blueprint_photo_urls : []
+    const targetIndex = gridNumber - 1
+
+    // Idempotency: Check if this specific grid already generated
+    if (existingPhotoUrls[targetIndex]) {
+      console.log(`[v0][paid-blueprint] Grid ${gridNumber} already exists:`, existingPhotoUrls[targetIndex])
       return NextResponse.json({
         success: true,
-        alreadyGenerated: false,
-        totalPhotos: finalCount,
-        photoUrls: currentPhotoUrls,
-      })
-    } else {
-      // Partial generation (can retry to continue)
-      console.log("[v0][paid-blueprint] Partial generation:", email.substring(0, 3) + "***", finalCount, "/30 photos")
-      
-      return NextResponse.json({
-        success: true,
-        partial: true,
-        totalPhotos: finalCount,
-        photoUrls: currentPhotoUrls,
-        message: `Generated ${generatedInThisSession} photos. Total: ${finalCount}/30. You can retry to continue.`,
+        gridNumber,
+        status: "completed",
+        gridUrl: existingPhotoUrls[targetIndex],
+        message: `Grid ${gridNumber} already generated`,
       })
     }
+
+    console.log(`[v0][paid-blueprint] Generating Grid ${gridNumber}/30 for ${email.substring(0, 3)}*** (${validSelfieUrls.length} selfies)`)
+
+    // Get prompt from template library (same as free blueprint)
+    let templatePrompt: string
+    try {
+      templatePrompt = getBlueprintPhotoshootPrompt(category, mood)
+      console.log(`[v0][paid-blueprint] Prompt template: ${category}_${mood}`)
+    } catch (error) {
+      console.error("[v0][paid-blueprint] Template error:", error)
+      return NextResponse.json(
+        {
+          error: error instanceof Error
+            ? error.message
+            : "Prompt template not available. Please contact support.",
+        },
+        { status: 500 },
+      )
+    }
+
+    // Generate ONE grid with Nano Banana Pro (same as free blueprint)
+    const result = await generateWithNanoBanana({
+      prompt: templatePrompt,
+      image_input: validSelfieUrls,
+      aspect_ratio: "1:1",
+      resolution: "2K",  // Match free blueprint
+      output_format: "png",
+      safety_filter_level: "block_only_high",
+    })
+
+    console.log(`[v0][paid-blueprint] Grid ${gridNumber} generation started: ${result.predictionId}`)
+
+    // Return immediately with predictionId (client will poll /check-paid-grid)
+    return NextResponse.json({
+      success: true,
+      gridNumber,
+      predictionId: result.predictionId,
+      status: result.status,  // "starting"
+      message: `Grid ${gridNumber}/30 generation started`,
+    })
   } catch (error) {
-    console.error("[v0][paid-blueprint] Error generating photos:", error)
+    console.error("[v0][paid-blueprint] Error:", error)
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to generate photos" },
+      { error: error instanceof Error ? error.message : "Failed to start generation" },
       { status: 500 },
     )
   }
-}
-
-/**
- * Vary the prompt slightly for each photo to create diversity
- */
-function varyPrompt(basePrompt: string, photoNumber: number): string {
-  const variations = [
-    "close-up portrait",
-    "medium shot",
-    "full body shot",
-    "side profile",
-    "looking away",
-    "laughing naturally",
-    "serious expression",
-    "environmental portrait",
-    "detail shot",
-    "candid moment",
-  ]
-  
-  // Cycle through variations
-  const variation = variations[photoNumber % variations.length]
-  
-  // Add variation hint to the end of the prompt
-  return `${basePrompt}, ${variation}, maintaining consistent subject and setting`
-}
-
-/**
- * Wait for a Replicate prediction to complete and return the image URL
- */
-async function waitForPrediction(replicate: any, predictionId: string, photoNumber: number): Promise<string | null> {
-  const maxAttempts = 60 // 5 minutes max (5 seconds per attempt)
-  const delayMs = 5000 // 5 seconds between polls
-
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    try {
-      const prediction = await replicate.predictions.get(predictionId)
-      
-      if (prediction.status === "succeeded" && prediction.output) {
-        const imageUrl = Array.isArray(prediction.output) ? prediction.output[0] : prediction.output
-        console.log("[v0][paid-blueprint] Photo", photoNumber, "completed:", prediction.id)
-        return imageUrl
-      } else if (prediction.status === "failed") {
-        console.error("[v0][paid-blueprint] Photo", photoNumber, "failed:", prediction.error || "Unknown error")
-        return null
-      }
-
-      // Still processing, wait and retry
-      if (attempt < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, delayMs))
-      }
-    } catch (error) {
-      console.error("[v0][paid-blueprint] Error polling prediction:", predictionId, error)
-      return null
-    }
-  }
-
-  console.error("[v0][paid-blueprint] Photo", photoNumber, "timed out after", maxAttempts, "attempts")
-  return null
 }
