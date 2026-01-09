@@ -36,6 +36,8 @@ export async function createLandingCheckoutSession(productId: string, promoCode?
     // CRITICAL: Use correct price ID for Creator Studio membership
     // Fallback to correct price ID if env var is not set
     stripePriceId = process.env.STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID || "price_1SmIRaEVJvME7vkwMo5vSLzf"
+  } else if (product.type === "paid_blueprint") {
+    stripePriceId = process.env.STRIPE_PAID_BLUEPRINT_PRICE_ID
   }
 
   if (!stripePriceId) {
@@ -43,7 +45,9 @@ export async function createLandingCheckoutSession(productId: string, promoCode?
     const envVarName =
       product.type === "one_time_session"
         ? "STRIPE_ONE_TIME_SESSION_PRICE_ID"
-        : "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID"
+        : product.type === "paid_blueprint"
+          ? "STRIPE_PAID_BLUEPRINT_PRICE_ID"
+          : "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID"
     console.error("[v0] Environment variable needed:", envVarName)
     throw new Error(`Stripe Price ID not configured for ${productId}`)
   }
@@ -74,9 +78,15 @@ export async function createLandingCheckoutSession(productId: string, promoCode?
         console.log("[v0] Found active price, using:", activePrice.id)
         stripePriceId = activePrice.id
       } else {
+        const envVarSuffix = 
+          product.type === "one_time_session" 
+            ? "ONE_TIME_SESSION" 
+            : product.type === "paid_blueprint"
+              ? "PAID_BLUEPRINT"
+              : "SSELFIE_STUDIO_MEMBERSHIP"
         throw new Error(
           `Price ID ${stripePriceId} is inactive and no active price found for Stripe product ${stripeProduct.id}. ` +
-          `Please update STRIPE_${product.type === "one_time_session" ? "ONE_TIME_SESSION" : "SSELFIE_STUDIO_MEMBERSHIP"}_PRICE_ID ` +
+          `Please update STRIPE_${envVarSuffix}_PRICE_ID ` +
           `environment variable with an active price ID.`
         )
       }
@@ -87,9 +97,15 @@ export async function createLandingCheckoutSession(productId: string, promoCode?
     }
     // If price doesn't exist, throw helpful error
     if (error.code === "resource_missing") {
+      const envVarSuffix = 
+        product.type === "one_time_session" 
+          ? "ONE_TIME_SESSION" 
+          : product.type === "paid_blueprint"
+            ? "PAID_BLUEPRINT"
+            : "SSELFIE_STUDIO_MEMBERSHIP"
       throw new Error(
         `Price ID ${stripePriceId} not found in Stripe. ` +
-        `Please check your STRIPE_${product.type === "one_time_session" ? "ONE_TIME_SESSION" : "SSELFIE_STUDIO_MEMBERSHIP"}_PRICE_ID ` +
+        `Please check your STRIPE_${envVarSuffix}_PRICE_ID ` +
         `environment variable.`
       )
     }

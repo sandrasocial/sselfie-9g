@@ -142,6 +142,8 @@ export async function POST(request: NextRequest) {
               productTag = "content-creator-studio"
             } else if (productType === "credit_topup") {
               productTag = "credit-topup"
+            } else if (productType === "paid_blueprint") {
+              productTag = "paid-blueprint"
             }
 
             // Track conversion attribution if campaign_id is present
@@ -919,6 +921,130 @@ export async function POST(request: NextRequest) {
                   AND stripe_payment_id = ${paymentIntentId}
                   AND (product_type IS NULL OR payment_amount_cents IS NULL)
               `
+            }
+          } else if (productType === "paid_blueprint") {
+            // ✨ PAID BLUEPRINT: Log payment, tag contact, NO credits granted
+            // ⚠️ CRITICAL: Only process if payment is confirmed (paid)
+            if (!isPaymentPaid) {
+              console.log(`[v0] ⚠️ Paid Blueprint checkout completed but payment not confirmed (status: '${session.payment_status}'). Skipping processing until payment succeeds.`)
+            } else {
+              console.log(`[v0] 💎 Paid Blueprint purchase from ${customerEmail} - Payment confirmed`)
+              
+              const isTestMode = !event.livemode
+              const paymentIntentId = typeof session.payment_intent === 'string'
+                ? session.payment_intent
+                : session.payment_intent?.id
+              
+              if (!paymentIntentId) {
+                console.error('[v0] ⚠️ No payment intent ID found for paid blueprint')
+              }
+              
+              // Get actual payment amount from Stripe (for revenue tracking)
+              let paymentAmountCents: number | null = null
+              let customerId: string | null = null
+              if (paymentIntentId) {
+                try {
+                  const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
+                  paymentAmountCents = paymentIntent.amount
+                  customerId = typeof paymentIntent.customer === 'string' ? paymentIntent.customer : paymentIntent.customer?.id || null
+                  console.log(`[v0] Retrieved payment amount: $${(paymentAmountCents / 100).toFixed(2)}`)
+                } catch (piError: any) {
+                  console.error(`[v0] Error retrieving payment intent for amount:`, piError.message)
+                  // Fallback to session amount if available
+                  if (session.amount_total) {
+                    paymentAmountCents = session.amount_total
+                  }
+                  customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id || null
+                }
+              } else if (session.amount_total) {
+                paymentAmountCents = session.amount_total
+                customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id || null
+              }
+              
+              // Store payment in stripe_payments table (comprehensive revenue tracking)
+              if (paymentIntentId && paymentAmountCents && customerId) {
+                try {
+                  await sql`
+                    INSERT INTO stripe_payments (
+                      stripe_payment_id,
+                      stripe_customer_id,
+                      user_id,
+                      amount_cents,
+                      currency,
+                      status,
+                      payment_type,
+                      product_type,
+                      description,
+                      metadata,
+                      payment_date,
+                      is_test_mode,
+                      created_at,
+                      updated_at
+                    )
+                    VALUES (
+                      ${paymentIntentId},
+                      ${customerId},
+                      NULL,
+                      ${paymentAmountCents},
+                      'usd',
+                      'succeeded',
+                      'paid_blueprint',
+                      'paid_blueprint',
+                      ${'SSELFIE Brand Blueprint - 30 Custom Photos'},
+                      ${JSON.stringify({
+                        ...session.metadata,
+                        customer_email: customerEmail,
+                        session_id: session.id,
+                      })},
+                      NOW(),
+                      ${isTestMode},
+                      NOW(),
+                      NOW()
+                    )
+                    ON CONFLICT (stripe_payment_id) 
+                    DO UPDATE SET
+                      status = 'succeeded',
+                      updated_at = NOW()
+                  `
+                  console.log(`[v0] ✅ Stored paid blueprint payment in stripe_payments table`)
+                } catch (paymentError: any) {
+                  console.error(`[v0] Error storing paid blueprint payment:`, paymentError.message)
+                  // Don't fail webhook if payment storage fails
+                }
+              }
+              
+              // ⚠️ IMPORTANT: Do NOT grant credits for paid blueprint
+              // Photos will be stored directly in blueprint_subscribers (PR-3)
+              console.log(`[v0] ℹ️ Paid blueprint: NO credits granted (photos stored directly)`)
+              
+              // PR-3.1: Update blueprint_subscribers with paid_blueprint columns
+              // Set converted_to_user to match existing system semantics (ANY purchase = converted)
+              try {
+                const blueprintCheck = await sql`
+                  SELECT id FROM blueprint_subscribers WHERE email = ${customerEmail} LIMIT 1
+                `
+                
+                if (blueprintCheck.length > 0) {
+                  await sql`
+                    UPDATE blueprint_subscribers
+                    SET 
+                      paid_blueprint_purchased = TRUE,
+                      paid_blueprint_purchased_at = NOW(),
+                      paid_blueprint_stripe_payment_id = ${paymentIntentId || null},
+                      converted_to_user = TRUE,
+                      converted_at = NOW(),
+                      updated_at = NOW()
+                    WHERE email = ${customerEmail}
+                  `
+                  console.log(`[v0] ✅ Updated blueprint_subscribers with paid blueprint purchase for ${customerEmail}`)
+                  console.log(`[v0] ✅ Marked as converted (stops freebie nurture emails, matches system semantics)`)
+                } else {
+                  console.log(`[v0] ⚠️ Email ${customerEmail} not found in blueprint_subscribers (purchase logged in stripe_payments)`)
+                }
+              } catch (blueprintError: any) {
+                console.error(`[v0] Error updating blueprint_subscribers with paid purchase:`, blueprintError.message)
+                // Don't fail webhook if blueprint update fails - payment is already logged
+              }
             }
           }
         } else if (session.mode === "subscription") {

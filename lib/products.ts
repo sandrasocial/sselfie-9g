@@ -19,7 +19,7 @@ export interface PricingProduct {
   displayName: string
   description: string
   priceInCents: number
-  type: "one_time_session" | "sselfie_studio_membership" | "credit_topup"
+  type: "one_time_session" | "sselfie_studio_membership" | "credit_topup" | "paid_blueprint"
   features?: string[]
   credits?: number
   stripePriceId?: string
@@ -69,6 +69,15 @@ export const PRICING_PRODUCTS: PricingProduct[] = [
     type: "sselfie_studio_membership",
     credits: 200, // ~100 Pro photos OR ~200 Classic photos per month
     popular: true,
+  },
+  {
+    id: "paid_blueprint",
+    name: "Brand Blueprint - Paid",
+    displayName: "SSELFIE Brand Blueprint",
+    description: "30 custom photos based on your brand strategy",
+    priceInCents: 4700, // $47 one-time
+    type: "paid_blueprint",
+    credits: 0, // No credits granted - photos stored directly
   },
 ]
 
