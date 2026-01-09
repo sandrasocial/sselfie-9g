@@ -208,22 +208,30 @@ export default function LandingPageNew() {
                 href="#membership"
                 onClick={(e) => {
                   e.preventDefault()
-                  trackCTAClick("hero", "Try SSELFIE Studio", "#membership")
+                  trackCTAClick("hero", "Join SSELFIE Studio", "#membership")
                   scrollToPricing()
                 }}
                 className="btn shadow-xl"
               >
-                Try SSELFIE Studio →
+                Join SSELFIE Studio →
               </a>
               <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "center" }}>
-                <Link
+                <a
                   href="/blueprint"
-                  onClick={() => trackCTAClick("hero", "Try it free", "/blueprint")}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    trackCTAClick("hero", "Try it for free", "/blueprint")
+                    window.location.href = "/blueprint"
+                  }}
                   className="btn shadow-xl"
-                  style={{ background: "transparent", border: "1px solid rgba(250, 250, 249, 0.8)", color: "#fafaf9" }}
+                  style={{ 
+                    background: "transparent",
+                    border: "1px solid rgba(250, 250, 249, 0.8)",
+                    color: "#fafaf9"
+                  }}
                 >
-                  Try it free
-                </Link>
+                  Try it for free
+                </a>
                 {isPaidBlueprintEnabled && (
                   <Link
                     href="/paid-blueprint"
@@ -1007,6 +1015,25 @@ export default function LandingPageNew() {
           cursor: pointer;
           border: 1px solid #fafaf9;
           width: fit-content;
+        }
+        a.btn,
+        .btn,
+        a.btn[class*="btn"],
+        .btn[class*="btn"] {
+          border-radius: 100px !important;
+          -webkit-border-radius: 100px !important;
+          -moz-border-radius: 100px !important;
+          font-size: 11px !important;
+          font-weight: 600 !important;
+          letter-spacing: 0.15em !important;
+          text-transform: uppercase !important;
+          font-family: inherit !important;
+        }
+        @media (min-width: 768px) {
+          a.btn,
+          .btn {
+            font-size: 12px !important;
+          }
         }
         .btn:active {
           transform: scale(0.96);

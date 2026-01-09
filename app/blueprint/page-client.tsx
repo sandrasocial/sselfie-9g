@@ -572,12 +572,21 @@ export default function BrandBlueprintPageClient({
           >
             SSELFIE
           </Link>
-          <button
-            onClick={() => handleStartCheckout("one_time_session")}
-            className="bg-stone-950 text-stone-50 px-3 py-1.5 sm:px-6 sm:py-2 text-[10px] sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200"
-          >
-            Get started
-          </button>
+          {isPaidBlueprintEnabled ? (
+            <Link
+              href={savedEmail ? `/checkout/blueprint?email=${encodeURIComponent(savedEmail)}` : "/checkout/blueprint"}
+              className="bg-stone-950 text-stone-50 px-3 py-1.5 sm:px-6 sm:py-2 text-[10px] sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200"
+            >
+              Get 30 Photos
+            </Link>
+          ) : (
+            <button
+              onClick={() => handleStartCheckout("one_time_session")}
+              className="bg-stone-950 text-stone-50 px-3 py-1.5 sm:px-6 sm:py-2 text-[10px] sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200"
+            >
+              Join Studio
+            </button>
+          )}
         </div>
       </nav>
 
@@ -593,11 +602,9 @@ export default function BrandBlueprintPageClient({
         {/* Step 0: Landing */}
         {step === 0 && (
           <div
-            className="min-h-[calc(100vh-80px)] sm:min-h-[calc(100vh-96px)] relative flex items-center justify-center px-4 sm:px-6"
+            className="relative min-h-screen flex items-end justify-center overflow-hidden"
             style={{
               minHeight: "100dvh",
-              position: "relative",
-              overflow: "hidden",
             }}
           >
             {/* Background Image */}
@@ -623,9 +630,12 @@ export default function BrandBlueprintPageClient({
               }}
             />
             
-            {/* Content - centered like homepage */}
-            <div className="relative z-10 max-w-4xl mx-auto text-center w-full h-full flex flex-col justify-center">
-              <span className="block mb-4 text-sm sm:text-base font-light tracking-[0.2em] uppercase text-white" style={{ color: "#ffffff", textShadow: "0 2px 10px rgba(0,0,0,0.3)" }}>
+            {/* Hero Content - positioned at bottom (matching Paid Blueprint) */}
+            <div className="relative z-10 max-w-4xl mx-auto text-center px-4 sm:px-6 pb-8 sm:pb-20 pt-8 sm:pt-20">
+              <span
+                className="block mb-2 sm:mb-4 text-xs sm:text-base font-light tracking-[0.2em] uppercase text-white"
+                style={{ textShadow: "0 2px 10px rgba(0,0,0,0.3)" }}
+              >
                 Your Blueprint
               </span>
               <h1
@@ -635,12 +645,15 @@ export default function BrandBlueprintPageClient({
                   fontWeight: 300,
                   textShadow: "0 2px 20px rgba(0,0,0,0.3)",
                 }}
-                className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-light mb-4 sm:mb-6 text-white leading-[1.1] tracking-tight"
+                className="text-2xl sm:text-5xl md:text-6xl lg:text-7xl font-light mb-2 sm:mb-6 text-white leading-[1.1] tracking-tight"
               >
                 Get your free custom blueprint
               </h1>
-              <p className="text-base sm:text-lg md:text-xl leading-relaxed mb-6 sm:mb-8 max-w-xl mx-auto text-white" style={{ textShadow: "0 1px 5px rgba(0,0,0,0.3)" }}>
-                Answer 3 quick questions and get your personalized 30-day content calendar, selfie strategy guide, and 30 caption templates - all tailored to your brand.
+              <p
+                className="text-sm sm:text-lg md:text-xl leading-relaxed mb-4 sm:mb-8 max-w-xl mx-auto text-white"
+                style={{ textShadow: "0 1px 5px rgba(0,0,0,0.3)" }}
+              >
+                Get your free 30-day content calendar, caption templates, brand strategy guide, and generate your free Instagram grid with your selfies.
               </p>
               <div className="mb-6 sm:mb-8 max-w-xl mx-auto">
                 <ul className="text-left space-y-2 sm:space-y-3 text-sm sm:text-base font-light text-white" style={{ textShadow: "0 1px 3px rgba(0,0,0,0.3)" }}>
@@ -662,7 +675,7 @@ export default function BrandBlueprintPageClient({
                   </li>
                 </ul>
               </div>
-              <div style={{ transitionDelay: "0.2s", marginTop: "10px" }}>
+              <div style={{ transitionDelay: "0.2s", marginTop: "8px" }}>
                 <button
                   onClick={() => {
                     // PR-8: Email capture upfront - if no email, show capture, otherwise proceed
@@ -672,7 +685,7 @@ export default function BrandBlueprintPageClient({
                       setStep(1)
                     }
                   }}
-                  className="bg-white text-black px-8 sm:px-10 py-3.5 sm:py-4 text-sm sm:text-base uppercase tracking-wider transition-all duration-300 hover:bg-black hover:text-white border border-white min-h-[48px] items-center justify-center font-light shadow-xl"
+                  className="bg-white text-black px-4 sm:px-8 py-2.5 sm:py-3.5 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-100 transition-all duration-200 min-h-[40px] sm:min-h-[44px] flex items-center justify-center whitespace-nowrap"
                 >
                   Start your blueprint →
                 </button>

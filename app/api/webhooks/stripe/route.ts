@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { randomUUID } from "crypto"
 import { stripe } from "@/lib/stripe"
 import { addCredits, grantOneTimeSessionCredits, grantMonthlyCredits } from "@/lib/credits"
 import { neon } from "@/lib/db"
@@ -114,7 +115,8 @@ export async function POST(request: NextRequest) {
         console.log("[v0] Mode:", session.mode)
         console.log("[v0] Payment status:", session.payment_status)
         console.log("[v0] Customer email:", session.customer_details?.email || session.customer_email)
-        console.log("[v0] Metadata:", session.metadata)
+        console.log("[v0] Metadata:", JSON.stringify(session.metadata, null, 2))
+        console.log("[v0] Product type from metadata:", session.metadata?.product_type)
         console.log("[v0] Test mode:", !event.livemode ? "YES (TEST)" : "NO (PRODUCTION)")
 
         // ⚠️ IMPORTANT: Only grant credits if payment was successful
@@ -345,7 +347,15 @@ export async function POST(request: NextRequest) {
           const customerEmail = session.customer_details?.email || session.customer_email
           const source = session.metadata.source
 
+          console.log(`[v0] 💳 Payment mode detected`)
           console.log(`[v0] Payment completed - Product type: ${productType}, Credits: ${credits}, Source: ${source}`)
+          console.log(`[v0] Customer email: ${customerEmail}`)
+          console.log(`[v0] Full metadata:`, JSON.stringify(session.metadata, null, 2))
+          
+          if (!productType) {
+            console.error(`[v0] ⚠️ WARNING: product_type is missing from session metadata!`)
+            console.error(`[v0] Available metadata keys:`, Object.keys(session.metadata || {}))
+          }
 
           if (!userId && customerEmail) {
             console.log(`[v0] No user_id in metadata, looking up user by email: ${customerEmail}`)
@@ -402,7 +412,8 @@ export async function POST(request: NextRequest) {
                 } else {
                   console.error(`[v0] Failed to send credit top-up confirmation email: ${emailResult.error}`)
                 }
-              } else if (source === "landing_page") {
+              } else if (source === "landing_page" && productType !== "paid_blueprint") {
+                // ⚠️ Skip welcome email for paid_blueprint - delivery email is sent separately
                 console.log(`[v0] Sending purchase confirmation email to existing user ${customerEmail}`)
 
                 const productName = productType === "one_time_session" ? "ONE-TIME SESSION" : "CREDIT PACKAGE"
@@ -446,8 +457,10 @@ export async function POST(request: NextRequest) {
                 } else {
                   console.error(`[v0] Failed to send purchase confirmation email: ${emailResult.error}`)
                 }
+              } else if (source === "landing_page" && productType === "paid_blueprint") {
+                console.log(`[v0] ⚠️ Skipping welcome email for paid_blueprint - delivery email will be sent separately`)
               }
-            } else if (source === "landing_page") {
+            } else if (source === "landing_page" && productType !== "paid_blueprint") {
               console.log(`[v0] Creating new account for landing page purchase: ${customerEmail}`)
 
               try {
@@ -540,72 +553,77 @@ export async function POST(request: NextRequest) {
 
                   console.log(`[v0] Step 7: Generated password setup link`)
 
-                  const productName = productType === "one_time_session" ? "ONE-TIME SESSION" : "CREDIT PACKAGE"
-
-                  console.log(`[v0] Step 8: Generating welcome email...`)
-                  const emailContent = generateWelcomeEmail({
-                    customerName: customerEmail.split("@")[0],
-                    customerEmail: customerEmail,
-                    creditsGranted: credits,
-                    packageName: productName,
-                    productType: productType as "one_time_session" | "credit_topup",
-                    passwordSetupUrl: passwordSetupLink,
-                  })
-
-                  console.log("[v0] Email content generated:", {
-                    hasHtml: !!emailContent.html,
-                    hasText: !!emailContent.text,
-                    htmlLength: emailContent.html?.length || 0,
-                    textLength: emailContent.text?.length || 0,
-                  })
-
-                  console.log(`[v0] Step 9: Sending welcome email via Resend...`)
-                  const emailResult = await sendEmail({
-                    to: customerEmail,
-                    subject: "Welcome to SSelfie! Set up your account",
-                    html: emailContent.html,
-                    text: emailContent.text,
-                    tags: ["welcome", "account-setup", "one-time-purchase"],
-                  })
-
-                  if (emailResult.success) {
-                    console.log(`[v0] Step 10: Welcome email sent successfully, message ID: ${emailResult.messageId}`)
-
-                    await sql`
-                      INSERT INTO email_logs (
-                        user_email,
-                        email_type,
-                        resend_message_id,
-                        status,
-                        sent_at
-                      )
-                      VALUES (
-                        ${customerEmail},
-                        'welcome',
-                        ${emailResult.messageId},
-                        'sent',
-                        NOW()
-                      )
-                    `
+                  // ⚠️ Skip welcome email for paid_blueprint - delivery email is sent separately
+                  if (productType === "paid_blueprint") {
+                    console.log(`[v0] ⚠️ Skipping welcome email for paid_blueprint - delivery email will be sent separately`)
                   } else {
-                    console.error(`[v0] Failed to send welcome email: ${emailResult.error}`)
+                    const productName = productType === "one_time_session" ? "ONE-TIME SESSION" : "CREDIT PACKAGE"
 
-                    await sql`
-                      INSERT INTO email_logs (
-                        user_email,
-                        email_type,
-                        status,
-                        error_message,
-                        sent_at
-                      )
-                      VALUES (
-                        ${customerEmail},
-                        'welcome',
-                        'failed',
-                        ${emailResult.error},
-                        NOW()
-                      )
-                    `
+                    console.log(`[v0] Step 8: Generating welcome email...`)
+                    const emailContent = generateWelcomeEmail({
+                      customerName: customerEmail.split("@")[0],
+                      customerEmail: customerEmail,
+                      creditsGranted: credits,
+                      packageName: productName,
+                      productType: productType as "one_time_session" | "credit_topup",
+                      passwordSetupUrl: passwordSetupLink,
+                    })
+
+                    console.log("[v0] Email content generated:", {
+                      hasHtml: !!emailContent.html,
+                      hasText: !!emailContent.text,
+                      htmlLength: emailContent.html?.length || 0,
+                      textLength: emailContent.text?.length || 0,
+                    })
+
+                    console.log(`[v0] Step 9: Sending welcome email via Resend...`)
+                    const emailResult = await sendEmail({
+                      to: customerEmail,
+                      subject: "Welcome to SSelfie! Set up your account",
+                      html: emailContent.html,
+                      text: emailContent.text,
+                      tags: ["welcome", "account-setup", "one-time-purchase"],
+                    })
+
+                    if (emailResult.success) {
+                      console.log(`[v0] Step 10: Welcome email sent successfully, message ID: ${emailResult.messageId}`)
+
+                      await sql`
+                        INSERT INTO email_logs (
+                          user_email,
+                          email_type,
+                          resend_message_id,
+                          status,
+                          sent_at
+                        )
+                        VALUES (
+                          ${customerEmail},
+                          'welcome',
+                          ${emailResult.messageId},
+                          'sent',
+                          NOW()
+                        )
+                      `
+                    } else {
+                      console.error(`[v0] Failed to send welcome email: ${emailResult.error}`)
+
+                      await sql`
+                        INSERT INTO email_logs (
+                          user_email,
+                          email_type,
+                          status,
+                          error_message,
+                          sent_at
+                        )
+                        VALUES (
+                          ${customerEmail},
+                          'welcome',
+                          'failed',
+                          ${emailResult.error},
+                          NOW()
+                        )
+                      `
+                    }
                   }
                 }
 
@@ -926,10 +944,14 @@ export async function POST(request: NextRequest) {
           } else if (productType === "paid_blueprint") {
             // ✨ PAID BLUEPRINT: Log payment, tag contact, NO credits granted
             // ⚠️ CRITICAL: Only process if payment is confirmed (paid)
+            console.log(`[v0] 💎 PAID BLUEPRINT DETECTED - Product type: ${productType}`)
+            console.log(`[v0] Payment status: ${session.payment_status}, isPaymentPaid: ${isPaymentPaid}`)
+            
             if (!isPaymentPaid) {
               console.log(`[v0] ⚠️ Paid Blueprint checkout completed but payment not confirmed (status: '${session.payment_status}'). Skipping processing until payment succeeds.`)
             } else {
               console.log(`[v0] 💎 Paid Blueprint purchase from ${customerEmail} - Payment confirmed`)
+              console.log(`[v0] 💎 Processing paid blueprint purchase for email: ${customerEmail}`)
               
               const isTestMode = !event.livemode
               const paymentIntentId = typeof session.payment_intent === 'string'
@@ -1020,12 +1042,30 @@ export async function POST(request: NextRequest) {
               
               // PR-3.1: Update blueprint_subscribers with paid_blueprint columns
               // Set converted_to_user to match existing system semantics (ANY purchase = converted)
+              // ⚠️ CRITICAL: Create record if it doesn't exist (for direct paid blueprint purchases)
               try {
+                console.log(`[v0] 🔍 Checking for existing blueprint_subscriber with email: ${customerEmail}`)
+                // Use LOWER() for case-insensitive email matching
                 const blueprintCheck = await sql`
-                  SELECT id FROM blueprint_subscribers WHERE email = ${customerEmail} LIMIT 1
+                  SELECT id, access_token, email, paid_blueprint_purchased 
+                  FROM blueprint_subscribers 
+                  WHERE LOWER(email) = LOWER(${customerEmail}) 
+                  LIMIT 1
                 `
                 
+                console.log(`[v0] 🔍 Blueprint check result:`, {
+                  found: blueprintCheck.length > 0,
+                  hasAccessToken: blueprintCheck.length > 0 && !!blueprintCheck[0].access_token,
+                  alreadyPurchased: blueprintCheck.length > 0 && blueprintCheck[0].paid_blueprint_purchased,
+                })
+                
+                let accessToken: string
+                
                 if (blueprintCheck.length > 0) {
+                  // Existing subscriber - use existing access token or generate if missing
+                  accessToken = blueprintCheck[0].access_token || randomUUID()
+                  console.log(`[v0] 🔑 Using ${blueprintCheck[0].access_token ? 'existing' : 'newly generated'} access token`)
+                  
                   await sql`
                     UPDATE blueprint_subscribers
                     SET 
@@ -1034,90 +1074,147 @@ export async function POST(request: NextRequest) {
                       paid_blueprint_stripe_payment_id = ${paymentIntentId || null},
                       converted_to_user = TRUE,
                       converted_at = NOW(),
+                      access_token = ${accessToken},
                       updated_at = NOW()
-                    WHERE email = ${customerEmail}
+                    WHERE LOWER(email) = LOWER(${customerEmail})
                   `
                   console.log(`[v0] ✅ Updated blueprint_subscribers with paid blueprint purchase for ${customerEmail}`)
-                  console.log(`[v0] ✅ Marked as converted (stops freebie nurture emails, matches system semantics)`)
+                } else {
+                  // New subscriber - create record with access token
+                  accessToken = randomUUID()
+                  const customerName = session.customer_details?.name || customerEmail.split("@")[0]
+                  console.log(`[v0] 🔑 Generating new access token for new subscriber: ${customerEmail}`)
                   
-                  // PR-3: Send paid blueprint delivery email
-                  try {
-                    // Check if email already sent (dedupe)
-                    const existingEmail = await sql`
-                      SELECT id FROM email_logs
-                      WHERE user_email = ${customerEmail}
-                      AND email_type = 'paid-blueprint-delivery'
+                  await sql`
+                    INSERT INTO blueprint_subscribers (
+                      email,
+                      name,
+                      access_token,
+                      paid_blueprint_purchased,
+                      paid_blueprint_purchased_at,
+                      paid_blueprint_stripe_payment_id,
+                      converted_to_user,
+                      converted_at,
+                      created_at,
+                      updated_at
+                    )
+                    VALUES (
+                      ${customerEmail},
+                      ${customerName},
+                      ${accessToken},
+                      TRUE,
+                      NOW(),
+                      ${paymentIntentId || null},
+                      TRUE,
+                      NOW(),
+                      NOW(),
+                      NOW()
+                    )
+                  `
+                  console.log(`[v0] ✅ Created blueprint_subscribers record for paid blueprint purchase: ${customerEmail} with access_token: ${accessToken}`)
+                }
+                
+                console.log(`[v0] ✅ Marked as converted (stops freebie nurture emails, matches system semantics)`)
+                
+                // Verify the record was created/updated correctly
+                const verifyCheck = await sql`
+                  SELECT id, access_token, paid_blueprint_purchased, email
+                  FROM blueprint_subscribers 
+                  WHERE LOWER(email) = LOWER(${customerEmail})
+                  LIMIT 1
+                `
+                if (verifyCheck.length > 0) {
+                  console.log(`[v0] ✅ VERIFICATION: Record exists with paid_blueprint_purchased=${verifyCheck[0].paid_blueprint_purchased}, access_token=${verifyCheck[0].access_token ? 'SET' : 'MISSING'}`)
+                } else {
+                  console.error(`[v0] ❌ VERIFICATION FAILED: Record not found after insert/update!`)
+                }
+                
+                // PR-3: Send paid blueprint delivery email
+                try {
+                  // Check if email already sent (dedupe)
+                  const existingEmail = await sql`
+                    SELECT id FROM email_logs
+                    WHERE LOWER(user_email) = LOWER(${customerEmail})
+                    AND email_type = 'paid-blueprint-delivery'
+                    LIMIT 1
+                  `
+                  
+                  if (existingEmail.length > 0) {
+                    console.log(`[v0] Skipping duplicate paid-blueprint-delivery email for ${customerEmail}`)
+                  } else {
+                    // Fetch subscriber data for email (use the accessToken we just set)
+                    console.log(`[v0] 🔍 Fetching subscriber data for email delivery: ${customerEmail}`)
+                    const subscriber = await sql`
+                      SELECT 
+                        name,
+                        access_token,
+                        paid_blueprint_photo_urls
+                      FROM blueprint_subscribers
+                      WHERE LOWER(email) = LOWER(${customerEmail})
                       LIMIT 1
                     `
                     
-                    if (existingEmail.length > 0) {
-                      console.log(`[v0] Skipping duplicate paid-blueprint-delivery email for ${customerEmail}`)
-                    } else {
-                      // Fetch subscriber data for email
-                      const subscriber = await sql`
-                        SELECT 
-                          name,
-                          access_token,
-                          paid_blueprint_photo_urls
-                        FROM blueprint_subscribers
-                        WHERE email = ${customerEmail}
-                        LIMIT 1
-                      `
+                    console.log(`[v0] 🔍 Subscriber data for email:`, {
+                      found: subscriber.length > 0,
+                      hasAccessToken: subscriber.length > 0 && !!subscriber[0].access_token,
+                      accessTokenValue: subscriber.length > 0 ? (subscriber[0].access_token ? 'SET' : 'MISSING') : 'NOT_FOUND',
+                    })
+                    
+                    if (subscriber.length > 0 && subscriber[0].access_token) {
+                      const subscriberData = subscriber[0]
+                      const firstName = subscriberData.name?.split(" ")[0] || undefined
+                      const finalAccessToken = subscriberData.access_token
                       
-                      if (subscriber.length > 0 && subscriber[0].access_token) {
-                        const subscriberData = subscriber[0]
-                        const firstName = subscriberData.name?.split(" ")[0] || undefined
-                        const accessToken = subscriberData.access_token
-                        
-                        // Extract photo preview URLs if available (up to 4)
-                        let photoPreviewUrls: string[] | undefined = undefined
-                        if (subscriberData.paid_blueprint_photo_urls && Array.isArray(subscriberData.paid_blueprint_photo_urls)) {
-                          const validUrls = subscriberData.paid_blueprint_photo_urls
-                            .filter((url: any) => typeof url === "string" && url.startsWith("http"))
-                            .slice(0, 4)
-                          if (validUrls.length > 0) {
-                            photoPreviewUrls = validUrls
-                          }
+                      // Extract photo preview URLs if available (up to 4)
+                      let photoPreviewUrls: string[] | undefined = undefined
+                      if (subscriberData.paid_blueprint_photo_urls && Array.isArray(subscriberData.paid_blueprint_photo_urls)) {
+                        const validUrls = subscriberData.paid_blueprint_photo_urls
+                          .filter((url: any) => typeof url === "string" && url.startsWith("http"))
+                          .slice(0, 4)
+                        if (validUrls.length > 0) {
+                          photoPreviewUrls = validUrls
                         }
-                        
-                        // Generate email
-                        const emailContent = generatePaidBlueprintDeliveryEmail({
-                          firstName,
-                          email: customerEmail,
-                          accessToken,
-                          photoPreviewUrls,
-                        })
-                        
-                        // Send email
-                        const emailResult = await sendEmail({
-                          to: customerEmail,
-                          subject: PAID_BLUEPRINT_DELIVERY_SUBJECT,
-                          html: emailContent.html,
-                          text: emailContent.text,
-                          emailType: "paid-blueprint-delivery",
-                          tags: ["paid-blueprint", "delivery"],
-                        })
-                        
-                        if (emailResult.success) {
-                          console.log(`[v0] ✅ Sent paid blueprint delivery email to ${customerEmail}`)
-                        } else {
-                          console.error(`[v0] ⚠️ Failed to send paid blueprint delivery email: ${emailResult.error}`)
-                          // Don't fail webhook - email send failure is non-critical
-                        }
-                      } else {
-                        console.log(`[v0] ⚠️ Subscriber data incomplete (missing access_token) - skipping delivery email for ${customerEmail}`)
                       }
+                      
+                      // Generate email
+                      const emailContent = generatePaidBlueprintDeliveryEmail({
+                        firstName,
+                        email: customerEmail,
+                        accessToken: finalAccessToken,
+                        photoPreviewUrls,
+                      })
+                      
+                      // Send email
+                      const emailResult = await sendEmail({
+                        to: customerEmail,
+                        subject: PAID_BLUEPRINT_DELIVERY_SUBJECT,
+                        html: emailContent.html,
+                        text: emailContent.text,
+                        emailType: "paid-blueprint-delivery",
+                        tags: ["paid-blueprint", "delivery"],
+                      })
+                      
+                      if (emailResult.success) {
+                        console.log(`[v0] ✅ Sent paid blueprint delivery email to ${customerEmail}`)
+                      } else {
+                        console.error(`[v0] ⚠️ Failed to send paid blueprint delivery email: ${emailResult.error}`)
+                        // Don't fail webhook - email send failure is non-critical
+                      }
+                    } else {
+                      console.log(`[v0] ⚠️ Subscriber data incomplete (missing access_token) - skipping delivery email for ${customerEmail}`)
                     }
-                  } catch (emailError: any) {
-                    console.error(`[v0] ⚠️ Error sending paid blueprint delivery email (non-critical):`, emailError.message)
-                    // Don't fail webhook if email send fails
                   }
-                } else {
-                  console.log(`[v0] ⚠️ Email ${customerEmail} not found in blueprint_subscribers (purchase logged in stripe_payments)`)
+                } catch (emailError: any) {
+                  console.error(`[v0] ⚠️ Error sending paid blueprint delivery email (non-critical):`, emailError.message)
+                  // Don't fail webhook if email send fails
                 }
               } catch (blueprintError: any) {
-                console.error(`[v0] Error updating blueprint_subscribers with paid purchase:`, blueprintError.message)
+                console.error(`[v0] ❌ ERROR updating blueprint_subscribers with paid purchase:`)
+                console.error(`[v0] Error message:`, blueprintError.message)
+                console.error(`[v0] Error stack:`, blueprintError.stack)
+                console.error(`[v0] Full error:`, JSON.stringify(blueprintError, Object.getOwnPropertyNames(blueprintError)))
                 // Don't fail webhook if blueprint update fails - payment is already logged
+                // But log it prominently so we can debug
               }
             }
           }

@@ -2,7 +2,6 @@
 
 import type React from "react"
 import { useState } from "react"
-import { Input } from "@/components/ui/input"
 import Image from "next/image"
 import { trackEmailSignup } from "@/lib/analytics"
 
@@ -111,17 +110,32 @@ export function BlueprintEmailCapture({ onSuccess, formData, currentStep }: Blue
   }
 
   return (
-    <div className="relative min-h-screen w-full overflow-hidden bg-stone-950">
+    <div className="relative min-h-screen w-full overflow-hidden bg-stone-950 flex items-end justify-center">
+      {/* Background Image */}
       <div className="absolute inset-0">
         <Image
           src="/images/380-iihccjipjsnt0xfvpt7urkd4bzhtyr.png"
           alt="SSELFIE Brand"
           fill
           className="object-cover"
+          style={{ objectPosition: "50% 25%" }}
           priority
         />
-        <div className="absolute inset-0 bg-black/60" />
       </div>
+      {/* Dark Overlay */}
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundColor: "rgba(0, 0, 0, 0.4)",
+        }}
+      />
+      {/* Gradient Overlay */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: "radial-gradient(circle at center, rgba(0,0,0,0) 40%, rgba(0,0,0,0.3) 100%)",
+        }}
+      />
 
       {/* Full-screen loading overlay */}
       {isSubmitting && (
@@ -143,78 +157,71 @@ export function BlueprintEmailCapture({ onSuccess, formData, currentStep }: Blue
         </div>
       )}
 
-      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-4 py-12 sm:py-16">
-        <div className="w-full max-w-2xl text-center">
-          <div className="mb-8 sm:mb-12">
-            <Image
-              src="https://i.postimg.cc/65NtYqMK/Black-transperent-logo.png"
-              alt="SSELFIE"
-              width={140}
-              height={46}
-              className="mx-auto brightness-0 invert"
-              priority
-            />
-          </div>
+      {/* Hero Content - positioned at bottom (matching Paid Blueprint) */}
+      <div className="relative z-10 max-w-4xl mx-auto text-center px-4 sm:px-6 pb-8 sm:pb-20 pt-8 sm:pt-20">
+        <span
+          className="block mb-2 sm:mb-4 text-xs sm:text-base font-light tracking-[0.2em] uppercase text-white"
+          style={{ textShadow: "0 2px 10px rgba(0,0,0,0.3)" }}
+        >
+          {currentStep === 2 ? "UNLOCK YOUR RESULTS" : "GET STARTED"}
+        </span>
 
-          <p className="text-xs font-light tracking-[0.3em] uppercase text-white/70 mb-4">
-            {currentStep === 2 ? "UNLOCK YOUR RESULTS" : "SAVE YOUR PROGRESS"}
-          </p>
+        <h1
+          style={{
+            fontFamily: "'Times New Roman', serif",
+            fontStyle: "normal",
+            fontWeight: 300,
+            textShadow: "0 2px 20px rgba(0,0,0,0.3)",
+          }}
+          className="text-2xl sm:text-5xl md:text-6xl lg:text-7xl font-light mb-2 sm:mb-6 text-white leading-[1.1] tracking-tight"
+        >
+          {currentStep === 2 ? "See Your Personalized Feed Strategy" : "Get Your Brand Blueprint"}
+        </h1>
 
-          <h1
-            className="mb-6 text-4xl sm:text-5xl md:text-6xl font-extralight leading-tight tracking-tight text-white"
-            style={{ fontFamily: "'Times New Roman', serif" }}
-          >
-            {currentStep === 2 ? "See Your Personalized Feed Strategy" : "Get Your Brand Blueprint"}
-          </h1>
+        <p
+          className="text-sm sm:text-lg md:text-xl leading-relaxed mb-4 sm:mb-8 max-w-xl mx-auto text-white"
+          style={{ textShadow: "0 1px 5px rgba(0,0,0,0.3)" }}
+        >
+          {currentStep === 2
+            ? "We'll send your personalized content plan straight to your inbox."
+            : "Get your free 30-day content calendar, caption templates, brand strategy guide, and generate your free Instagram grid with your selfies."}
+        </p>
 
-          <p className="mb-12 text-base sm:text-lg font-light leading-relaxed text-white/80 max-w-xl mx-auto px-4">
-            {currentStep === 2
-              ? "Enter your email to unlock your personalized feed aesthetic, selfie score, 30-day content calendar, and caption templates."
-              : "Save your progress and get your personalized 30-day content calendar, caption templates, and brand strategy guide sent to your email."}
-          </p>
-
-          <form onSubmit={handleSubmit} className="mx-auto max-w-md space-y-4 px-4">
-            <Input
+        {/* Email Capture Form - matching Paid Blueprint style */}
+        <form onSubmit={handleSubmit} className="max-w-md mx-auto mb-4 sm:mb-6 w-full">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <input
               type="text"
-              placeholder="YOUR NAME"
+              placeholder="Your name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
               disabled={isSubmitting}
-              className="h-14 rounded-lg border-white/20 bg-white/10 backdrop-blur-sm text-white placeholder:text-white/50 placeholder:text-xs placeholder:tracking-wider placeholder:uppercase focus:outline-none focus:border-white/40 focus:bg-white/15 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3.5 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 text-white placeholder:text-white/50 placeholder:text-xs sm:placeholder:text-sm text-xs sm:text-sm focus:outline-none focus:border-white/40 focus:bg-white/15 disabled:opacity-50 disabled:cursor-not-allowed"
             />
-            <Input
+            <input
               type="email"
-              placeholder="YOUR EMAIL"
+              placeholder="Enter your email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
               disabled={isSubmitting}
-              className="h-14 rounded-lg border-white/20 bg-white/10 backdrop-blur-sm text-white placeholder:text-white/50 placeholder:text-xs placeholder:tracking-wider placeholder:uppercase focus:outline-none focus:border-white/40 focus:bg-white/15 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3.5 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 text-white placeholder:text-white/50 placeholder:text-xs sm:placeholder:text-sm text-xs sm:text-sm focus:outline-none focus:border-white/40 focus:bg-white/15 disabled:opacity-50 disabled:cursor-not-allowed"
             />
+          </div>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full bg-white text-black px-4 sm:px-8 py-2.5 sm:py-3.5 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-100 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed min-h-[40px] sm:min-h-[44px] flex items-center justify-center whitespace-nowrap mt-2 sm:mt-3"
+          >
+            {isSubmitting ? "Loading..." : "SAVE & CONTINUE"}
+          </button>
+          {error && <p className="text-xs sm:text-sm text-red-400 mt-2 text-left">{error}</p>}
+        </form>
 
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-white text-stone-950 px-8 py-3.5 rounded-lg text-sm font-medium uppercase tracking-wider hover:bg-stone-100 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] flex items-center justify-center gap-2"
-            >
-              {isSubmitting ? (
-                <>
-                  <span className="w-4 h-4 border-2 border-stone-950 border-t-transparent rounded-full animate-spin"></span>
-                  <span>SAVING...</span>
-                </>
-              ) : (
-                "SAVE & CONTINUE"
-              )}
-            </button>
-
-            {error && <p className="text-sm font-light text-red-400 mt-2">{error}</p>}
-          </form>
-
-          <p className="mt-8 text-xs sm:text-sm font-light text-white/60">
-            Instant access • No spam • Unsubscribe anytime
-          </p>
-        </div>
+        <p className="text-xs font-light text-white/60">
+          Instant access • No spam • Unsubscribe anytime
+        </p>
       </div>
     </div>
   )

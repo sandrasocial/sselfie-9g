@@ -21,17 +21,24 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 })
     }
 
-    // Get most recent paid blueprint purchase for this email
+    // Get most recent paid blueprint purchase for this email (case-insensitive)
     const result = await sql`
       SELECT 
         access_token,
-        paid_blueprint_purchased_at
+        paid_blueprint_purchased_at,
+        email
       FROM blueprint_subscribers
-      WHERE email = ${email}
+      WHERE LOWER(email) = LOWER(${email})
         AND paid_blueprint_purchased = TRUE
       ORDER BY paid_blueprint_purchased_at DESC
       LIMIT 1
     `
+    
+    console.log(`[v0] 🔍 Access token lookup for ${email}:`, {
+      found: result.length > 0,
+      hasAccessToken: result.length > 0 && !!result[0].access_token,
+      purchasedAt: result.length > 0 ? result[0].paid_blueprint_purchased_at : null,
+    })
 
     if (result.length === 0) {
       return NextResponse.json(

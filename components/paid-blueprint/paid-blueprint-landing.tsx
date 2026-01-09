@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
+import { BlueprintEmailCapture } from "@/components/blueprint/blueprint-email-capture"
 
 /**
  * Paid Blueprint Landing Page Component
@@ -12,37 +13,14 @@ import { useSearchParams } from "next/navigation"
  * - Homepage hero styling (Times New Roman, stone colors, gradient overlays)
  * - Images from free blueprint page (grid examples, background)
  * - Same feature flag logic as checkout page
+ * - Pricing card style from main landing page
+ * - Email capture component from free blueprint
  * 
- * Routes email capture to: /checkout/blueprint?email=...&promo=...
+ * Flow: Button → Email Capture Modal → Checkout
  */
 export default function PaidBlueprintLanding() {
-  const [email, setEmail] = useState("")
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState("")
-  const searchParams = useSearchParams()
-  const promoCode = searchParams?.get("promo") || undefined
-
-  // Email validation regex
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setError("")
-
-    // Client-side email validation
-    if (!emailRegex.test(email)) {
-      setError("Please enter a valid email address.")
-      return
-    }
-
-    setIsSubmitting(true)
-
-    // Build checkout URL with email and promo (if present)
-    const checkoutUrl = `/checkout/blueprint?email=${encodeURIComponent(email)}${promoCode ? `&promo=${encodeURIComponent(promoCode)}` : ""}`
-    
-    // Navigate to checkout
-    window.location.href = checkoutUrl
-  }
+  const router = useRouter()
+  const [showEmailModal, setShowEmailModal] = useState(false)
 
   // Scroll to section handler
   const scrollToSection = (sectionId: string) => {
@@ -50,6 +28,13 @@ export default function PaidBlueprintLanding() {
     if (element) {
       element.scrollIntoView({ behavior: "smooth", block: "start" })
     }
+  }
+
+  // Handle email capture success - route to checkout
+  const handleEmailSuccess = (email: string, name: string, accessToken: string) => {
+    setShowEmailModal(false)
+    // Route to checkout with email
+    router.push(`/checkout/blueprint?email=${encodeURIComponent(email)}`)
   }
 
   return (
@@ -100,9 +85,9 @@ export default function PaidBlueprintLanding() {
         />
 
         {/* Hero Content - positioned at bottom */}
-        <div className="relative z-10 max-w-4xl mx-auto text-center px-4 sm:px-6 pb-16 sm:pb-20 pt-20">
+        <div className="relative z-10 max-w-4xl mx-auto text-center px-4 sm:px-6 pb-8 sm:pb-20 pt-8 sm:pt-20">
           <span
-            className="block mb-4 text-sm sm:text-base font-light tracking-[0.2em] uppercase text-white"
+            className="block mb-2 sm:mb-4 text-xs sm:text-base font-light tracking-[0.2em] uppercase text-white"
             style={{ textShadow: "0 2px 10px rgba(0,0,0,0.3)" }}
           >
             Your Blueprint
@@ -114,43 +99,30 @@ export default function PaidBlueprintLanding() {
               fontWeight: 300,
               textShadow: "0 2px 20px rgba(0,0,0,0.3)",
             }}
-            className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-light mb-4 sm:mb-6 text-white leading-[1.1] tracking-tight"
+            className="text-2xl sm:text-5xl md:text-6xl lg:text-7xl font-light mb-2 sm:mb-6 text-white leading-[1.1] tracking-tight"
           >
-            Turn your brand blueprint into 30 ready-to-post photos
+            Get 30 custom photos that look like you
           </h1>
           <p
-            className="text-base sm:text-lg md:text-xl leading-relaxed mb-6 sm:mb-8 max-w-xl mx-auto text-white"
+            className="text-sm sm:text-lg md:text-xl leading-relaxed mb-4 sm:mb-8 max-w-xl mx-auto text-white"
             style={{ textShadow: "0 1px 5px rgba(0,0,0,0.3)" }}
           >
-            You've got your strategy. Now bring it to life with 30 custom photos that match your brand aesthetic, ready to download and use right away, even if you don't have time or confidence to create them yourself.
+            Get 30 custom photos made just for your brand. Download and post them today.
           </p>
 
-          {/* Email Capture Form */}
-          <form onSubmit={handleSubmit} className="max-w-md mx-auto mb-6">
-            <div className="flex flex-col sm:flex-row gap-3">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={isSubmitting}
-                className="flex-1 px-4 py-3 sm:py-3.5 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 text-white placeholder:text-white/50 placeholder:text-sm focus:outline-none focus:border-white/40 focus:bg-white/15 disabled:opacity-50 disabled:cursor-not-allowed"
-              />
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="bg-white text-black px-6 sm:px-8 py-3 sm:py-3.5 rounded-lg text-sm font-medium uppercase tracking-wider hover:bg-stone-100 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] flex items-center justify-center whitespace-nowrap"
-              >
-                {isSubmitting ? "Loading..." : "Get my 30 photos"}
-              </button>
-            </div>
-            {error && <p className="text-sm text-red-400 mt-2 text-left">{error}</p>}
-          </form>
+          {/* Direct CTA Button */}
+          <div className="mb-4 sm:mb-6">
+            <button
+              onClick={() => setShowEmailModal(true)}
+              className="bg-white text-black px-6 sm:px-8 py-3 sm:py-3.5 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-100 transition-all duration-200 inline-block min-h-[40px] sm:min-h-[44px] flex items-center justify-center whitespace-nowrap"
+            >
+              Get My 30 Photos →
+            </button>
+          </div>
 
           <button
             onClick={() => scrollToSection("what-you-get")}
-            className="text-sm text-white/80 hover:text-white transition-colors underline"
+            className="text-xs sm:text-sm text-white/80 hover:text-white transition-colors underline"
           >
             See what's inside ↓
           </button>
@@ -190,6 +162,38 @@ export default function PaidBlueprintLanding() {
               <p className="text-sm sm:text-base font-light text-stone-300 leading-relaxed">
                 Photos match the mood you chose in your free blueprint: luxury, minimal, or beige. All you.
               </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Card Section */}
+      <section className="py-16 sm:py-24 bg-black">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+          <div className="max-w-md mx-auto">
+            <div className="pricing-card fade-up relative overflow-hidden group">
+              <div className="flex justify-between items-center mb-4">
+                <div>
+                  <h3 className="text-lg font-serif text-white">Paid Blueprint</h3>
+                  <p className="text-stone-400 text-[10px] uppercase tracking-wider">One-Time Purchase</p>
+                </div>
+                <div className="text-right">
+                  <span className="text-xl font-serif">$47</span>
+                  <span className="text-[9px] uppercase text-stone-500 block">one-time</span>
+                </div>
+              </div>
+              <div className="space-y-2 text-xs text-stone-300 font-light mb-6">
+                <p>• 30 custom brand photos</p>
+                <p>• Matches your blueprint aesthetic</p>
+                <p>• Ready to download instantly</p>
+                <p>• No subscription required</p>
+              </div>
+              <button
+                onClick={() => setShowEmailModal(true)}
+                className="btn w-full text-[10px] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Get My 30 Photos →
+              </button>
             </div>
           </div>
         </div>
@@ -359,30 +363,17 @@ export default function PaidBlueprintLanding() {
             Get 30 custom photos that look like you, based on your brand strategy. $47 one-time. Ready to download and use right away.
           </p>
 
-          {/* Email Capture Form */}
-          <form onSubmit={handleSubmit} className="max-w-md mx-auto">
-            <div className="flex flex-col sm:flex-row gap-3 mb-3">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={isSubmitting}
-                className="flex-1 px-4 py-3 sm:py-3.5 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20 text-white placeholder:text-white/50 placeholder:text-sm focus:outline-none focus:border-white/40 focus:bg-white/15 disabled:opacity-50 disabled:cursor-not-allowed"
-              />
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="bg-white text-black px-6 sm:px-8 py-3 sm:py-3.5 rounded-lg text-sm font-medium uppercase tracking-wider hover:bg-stone-100 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] flex items-center justify-center whitespace-nowrap"
-              >
-                {isSubmitting ? "Loading..." : "Get my 30 photos"}
-              </button>
-            </div>
-            {error && <p className="text-sm text-red-400 mt-2">{error}</p>}
-          </form>
+          {/* Direct CTA Button */}
+          <div className="mb-6">
+            <button
+              onClick={() => setShowEmailModal(true)}
+              className="bg-white text-black px-6 sm:px-8 py-3 sm:py-3.5 rounded-lg text-sm font-medium uppercase tracking-wider hover:bg-stone-100 transition-all duration-200 inline-block min-h-[44px] flex items-center justify-center whitespace-nowrap"
+            >
+              Get My 30 Photos →
+            </button>
+          </div>
 
-          <p className="text-xs sm:text-sm font-light text-stone-400 mt-6">
+          <p className="text-xs sm:text-sm font-light text-stone-400">
             One-time payment • Instant access • No subscription
           </p>
         </div>
@@ -409,6 +400,91 @@ export default function PaidBlueprintLanding() {
           </div>
         </div>
       </footer>
+
+      {/* Email Capture Modal */}
+      {showEmailModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="relative w-full max-w-[600px] max-h-[90vh] overflow-auto rounded-lg">
+            <button
+              onClick={() => setShowEmailModal(false)}
+              className="absolute top-4 right-4 z-10 text-white hover:text-stone-300 transition-colors"
+              aria-label="Close"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <div style={{ minHeight: "500px" }}>
+              <BlueprintEmailCapture 
+                onSuccess={handleEmailSuccess}
+                formData={{}}
+                currentStep={0}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pricing Card Styles - matching main landing page */}
+      <style jsx>{`
+        .pricing-card {
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          backdrop-filter: blur(10px);
+          padding: 24px;
+          margin-bottom: 12px;
+          border-radius: 16px;
+          transition: all 0.3s ease;
+        }
+        @media (min-width: 768px) {
+          .pricing-card {
+            padding: 32px;
+            margin-bottom: 16px;
+          }
+        }
+        .pricing-card:hover {
+          background: rgba(255, 255, 255, 0.05);
+          border-color: rgba(255, 255, 255, 0.2);
+        }
+        .fade-up {
+          opacity: 0;
+          transform: translateY(20px);
+          animation: fadeUp 0.6s ease forwards;
+        }
+        @keyframes fadeUp {
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .btn {
+          background: white;
+          color: black;
+          padding: 12px 24px;
+          border-radius: 100px;
+          font-size: 10px;
+          font-weight: 600;
+          letter-spacing: 0.15em;
+          text-transform: uppercase;
+          text-decoration: none;
+          display: inline-block;
+          transition: all 0.2s ease;
+          border: none;
+          cursor: pointer;
+          text-align: center;
+        }
+        .btn:hover {
+          background: #f5f5f4;
+          transform: translateY(-1px);
+        }
+        .btn:active {
+          transform: scale(0.96);
+          opacity: 0.9;
+        }
+        .btn.w-full {
+          width: 100%;
+        }
+      `}</style>
     </div>
   )
 }

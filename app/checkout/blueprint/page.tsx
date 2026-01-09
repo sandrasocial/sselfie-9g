@@ -47,27 +47,31 @@ export default async function BlueprintCheckoutPage({
   const email = params?.email
   const promoCode = params?.promo
 
-  // Validate email is provided
-  if (!email) {
-    console.log("[Blueprint Checkout] No email provided, redirecting to blueprint")
-    redirect("/blueprint?message=complete_free_first")
-  }
+  // Email is now optional - Stripe checkout can capture it
+  // If email is provided, it will be pre-filled in checkout
+  console.log("[Blueprint Checkout] Creating session", email ? `for email: ${email}` : "without email (will be captured in checkout)", promoCode ? `with promo: ${promoCode}` : "")
 
   try {
     // Create checkout session
-    console.log("[Blueprint Checkout] Creating session for email:", email, promoCode ? `with promo: ${promoCode}` : "")
+    // Note: createLandingCheckoutSession doesn't require email, Stripe will capture it
     const clientSecret = await createLandingCheckoutSession("paid_blueprint", promoCode)
 
     if (clientSecret) {
       // Redirect to the universal checkout page with client secret
-      console.log("[Blueprint Checkout] Session created, redirecting to checkout")
+      // Note: redirect() throws NEXT_REDIRECT internally - this is expected behavior
       redirect(`/checkout?client_secret=${clientSecret}&product_type=paid_blueprint`)
     } else {
       // Fallback if session creation fails
       console.error("[Blueprint Checkout] No client secret returned")
       redirect("/blueprint?message=checkout_error")
     }
-  } catch (error) {
+  } catch (error: any) {
+    // Check if this is a Next.js redirect (expected behavior)
+    if (error?.digest?.startsWith("NEXT_REDIRECT")) {
+      // Re-throw redirect errors - they should not be caught
+      throw error
+    }
+    
     console.error("[Blueprint Checkout] Error creating checkout session:", error)
     // If it's a Stripe error about missing price ID, show helpful message
     if (error instanceof Error && error.message.includes("STRIPE_PAID_BLUEPRINT_PRICE_ID")) {
