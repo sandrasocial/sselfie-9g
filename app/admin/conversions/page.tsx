@@ -11,7 +11,6 @@ import {
   Users,
   Download,
   RefreshCw,
-  Loader2,
   ArrowLeft,
   Instagram,
   ShoppingCart,
@@ -33,6 +32,7 @@ import {
   ComposedChart,
 } from "recharts"
 import Link from "next/link"
+import { AdminLoadingState, AdminErrorState } from "@/components/admin/shared"
 
 interface ConversionData {
   emailFunnel: {
@@ -145,29 +145,21 @@ export default function ConversionsPage() {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-stone-600 mx-auto mb-4" />
-          <p className="text-stone-600">Loading conversion metrics...</p>
-        </div>
-      </div>
-    )
+    return <AdminLoadingState message="Loading conversion metrics..." />
   }
 
   if (error || !data) {
     return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
-        <div className="text-center">
-          <p className="text-stone-600 mb-4">{error || "Failed to load conversion data"}</p>
-          <button
-            onClick={fetchData}
-            className="px-4 py-2 bg-stone-950 text-white rounded-lg hover:bg-stone-800"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
+      <AdminErrorState
+        title="Conversion Data Unavailable"
+        message={error || "Failed to load conversion data"}
+        onRetry={fetchData}
+        suggestions={[
+          "Check your internet connection",
+          "Verify the API endpoint is responding",
+          "Try refreshing the page",
+        ]}
+      />
     )
   }
 
@@ -183,8 +175,9 @@ export default function ConversionsPage() {
               <Link
                 href="/admin"
                 className="text-stone-600 hover:text-stone-950 transition-colors"
+                aria-label="Go back to admin dashboard"
               >
-                <ArrowLeft className="w-5 h-5" />
+                <ArrowLeft className="w-5 h-5" aria-hidden="true" />
               </Link>
               <h1 className="text-3xl font-serif font-light tracking-wide text-stone-950">
                 Conversion Dashboard
@@ -195,15 +188,17 @@ export default function ConversionsPage() {
                 onClick={fetchData}
                 disabled={refreshing}
                 className="px-4 py-2 bg-white border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors text-sm flex items-center gap-2 disabled:opacity-50"
+                aria-label={refreshing ? "Refreshing data" : "Refresh conversion data"}
               >
-                <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+                <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} aria-hidden="true" />
                 Refresh
               </button>
               <button
                 onClick={exportToCSV}
                 className="px-4 py-2 bg-stone-950 text-white rounded-lg hover:bg-stone-800 transition-colors text-sm flex items-center gap-2"
+                aria-label="Export conversion metrics to CSV file"
               >
-                <Download className="w-4 h-4" />
+                <Download className="w-4 h-4" aria-hidden="true" />
                 Export CSV
               </button>
             </div>

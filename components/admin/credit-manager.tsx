@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Search, Plus, Loader2, CheckCircle2, XCircle, ArrowLeft } from "lucide-react"
 import Link from "next/link"
+import { formatCurrency } from "@/lib/admin/format-utils"
 
 interface User {
   id: string
@@ -113,14 +114,22 @@ export function CreditManager() {
     <div className="min-h-screen bg-stone-50">
       {/* Header */}
       <div className="relative h-[20vh] overflow-hidden">
-        <img src="/images/641-yz6rwohjtemwagcwy5xqjtsczx9lfh.png" alt="Admin" className="w-full h-full object-cover" />
+        <img 
+          src="/images/641-yz6rwohjtemwagcwy5xqjtsczx9lfh.png" 
+          alt="Credit management header with professional desk setup" 
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            e.currentTarget.src = '/minimalist-desk-setup-with-pendant-light-neutral-a.jpg'
+          }}
+        />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-stone-50/50 to-stone-50" />
         <div className="absolute top-6 left-6">
           <Link
             href="/admin"
             className="flex items-center gap-2 text-sm tracking-[0.2em] uppercase text-stone-950 hover:text-stone-600 transition-colors"
+            aria-label="Go back to admin dashboard"
           >
-            <ArrowLeft size={16} />
+            <ArrowLeft size={16} aria-hidden="true" />
             Dashboard
           </Link>
         </div>
@@ -153,8 +162,9 @@ export function CreditManager() {
               onClick={searchUsers}
               disabled={loading || !searchQuery.trim()}
               className="px-8 py-4 bg-stone-950 text-white rounded-xl hover:bg-stone-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm tracking-[0.2em] uppercase"
+              aria-label={loading ? "Searching users..." : "Search for users"}
             >
-              {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Search"}
+              {loading ? <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" /> : "Search"}
             </button>
           </div>
 
@@ -170,6 +180,7 @@ export function CreditManager() {
                       ? "bg-stone-950 text-white border-stone-950"
                       : "bg-stone-50 border-stone-200 hover:border-stone-300"
                   }`}
+                  aria-label={`Select ${user.email} - Current balance: ${user.credits} credits`}
                 >
                   <div className="flex items-center justify-between">
                     <div>
@@ -253,15 +264,16 @@ export function CreditManager() {
                 onClick={addCredits}
                 disabled={loading || !creditAmount || !reason}
                 className="w-full px-8 py-4 bg-stone-950 text-white rounded-xl hover:bg-stone-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm tracking-[0.2em] uppercase flex items-center justify-center gap-2"
+                aria-label={loading ? "Adding credits..." : "Add credits to selected user"}
               >
                 {loading ? (
                   <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
                     Adding...
                   </>
                 ) : (
                   <>
-                    <Plus size={20} />
+                    <Plus size={20} aria-hidden="true" />
                     Add Credits
                   </>
                 )}

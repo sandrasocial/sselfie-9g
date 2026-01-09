@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { AdminNav } from './admin-nav'
 import { AlexSuggestionCard, AlexSuggestion } from './alex-suggestion-card'
+import { AdminMetricCard, AdminLoadingState } from './shared'
+import { formatCurrency, formatAdminDate } from '@/lib/admin/format-utils'
+import { Users, DollarSign, TrendingUp, Percent } from 'lucide-react'
 
 interface DashboardStats {
   totalUsers: number
@@ -214,9 +217,7 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
     return (
       <div className="min-h-screen bg-stone-50">
         <AdminNav />
-        <div className="flex items-center justify-center h-96">
-          <p className="text-sm tracking-[0.2em] uppercase text-stone-400">Loading...</p>
-        </div>
+        <AdminLoadingState message="Loading dashboard..." fullScreen={false} />
       </div>
     )
   }
@@ -233,56 +234,36 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
             REVENUE OVERVIEW
           </h1>
           <p className="text-xs sm:text-sm text-stone-500 tracking-[0.1em] uppercase mb-8 sm:mb-12">
-            {new Date().toLocaleDateString('en-US', { 
-              weekday: 'long', 
-              year: 'numeric', 
-              month: 'long', 
-              day: 'numeric' 
-            })}
+            {formatAdminDate(new Date(), 'full')}
           </p>
           
           {/* Key Metrics - 4 Column Grid */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8 sm:mb-12">
-            <div className="bg-stone-950 text-white p-4 sm:p-6 lg:p-8 rounded-none">
-              <p className="text-2xl sm:text-3xl lg:text-4xl font-['Times_New_Roman'] font-extralight mb-1 sm:mb-2">
-                ${(stats?.stripeLive?.mrr || stats?.mrr || 0).toLocaleString()}
-              </p>
-              <p className="text-[8px] sm:text-[10px] tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-300">
-                Monthly Recurring Revenue
-              </p>
-              {stats?.stripeLive ? (
-                <p className="text-[8px] text-stone-400 mt-1">Live from Stripe</p>
-              ) : (
-                <p className="text-[8px] text-stone-400 mt-1">Estimated from DB</p>
-              )}
-            </div>
+            <AdminMetricCard
+              label="Monthly Recurring Revenue"
+              value={formatCurrency(stats?.stripeLive?.mrr || stats?.mrr || 0)}
+              icon={<DollarSign className="w-5 h-5" />}
+              variant="primary"
+              subtitle={stats?.stripeLive ? 'Live from Stripe' : 'Estimated from DB'}
+            />
             
-            <div className="bg-white border border-stone-200 p-4 sm:p-6 lg:p-8 rounded-none">
-              <p className="text-2xl sm:text-3xl lg:text-4xl font-['Times_New_Roman'] font-extralight text-stone-950 mb-1 sm:mb-2">
-                {stats?.stripeLive?.activeSubscriptions || stats?.activeSubscriptions || 0}
-              </p>
-              <p className="text-[8px] sm:text-[10px] tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-400">
-                Active Subscriptions
-              </p>
-            </div>
+            <AdminMetricCard
+              label="Active Subscriptions"
+              value={stats?.stripeLive?.activeSubscriptions || stats?.activeSubscriptions || 0}
+              icon={<Users className="w-5 h-5" />}
+            />
             
-            <div className="bg-white border border-stone-200 p-4 sm:p-6 lg:p-8 rounded-none">
-              <p className="text-2xl sm:text-3xl lg:text-4xl font-['Times_New_Roman'] font-extralight text-stone-950 mb-1 sm:mb-2">
-                {stats?.totalUsers || 0}
-              </p>
-              <p className="text-[8px] sm:text-[10px] tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-400">
-                Total Users
-              </p>
-            </div>
+            <AdminMetricCard
+              label="Total Users"
+              value={stats?.totalUsers || 0}
+              icon={<Users className="w-5 h-5" />}
+            />
             
-            <div className="bg-white border border-stone-200 p-4 sm:p-6 lg:p-8 rounded-none">
-              <p className="text-2xl sm:text-3xl lg:text-4xl font-['Times_New_Roman'] font-extralight text-stone-950 mb-1 sm:mb-2">
-                {stats?.conversionRate || 0}%
-              </p>
-              <p className="text-[8px] sm:text-[10px] tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-400">
-                Conversion Rate
-              </p>
-            </div>
+            <AdminMetricCard
+              label="Conversion Rate"
+              value={`${stats?.conversionRate || 0}%`}
+              icon={<Percent className="w-5 h-5" />}
+            />
           </div>
 
           {/* Growth Dashboard Link */}
@@ -576,12 +557,15 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             
             {/* Alex */}
-            <Link href="/admin/alex" className="group">
+            <Link href="/admin/alex" className="group" aria-label="Go to Alex AI marketing partner">
               <div className="relative overflow-hidden aspect-[4/5] bg-stone-200 rounded-none">
                 <img
                   src="/friendly-ai-assistant-avatar-maya.jpg"
-                  alt="Alex"
+                  alt="Alex AI marketing partner assistant interface"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  onError={(e) => {
+                    e.currentTarget.src = '/minimalist-desk-setup-with-pendant-light-neutral-a.jpg'
+                  }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-stone-950/20 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 lg:p-8">
@@ -596,12 +580,15 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
             </Link>
             
             {/* Mission Control */}
-            <Link href="/admin/mission-control" className="group">
+            <Link href="/admin/mission-control" className="group" aria-label="Go to Mission Control dashboard">
               <div className="relative overflow-hidden aspect-[4/5] bg-stone-200 rounded-none">
                 <img
                   src="/minimalist-desk-setup-with-pendant-light-neutral-a.jpg"
-                  alt="Mission Control"
+                  alt="Mission Control AI team intelligence dashboard"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  onError={(e) => {
+                    e.currentTarget.src = '/minimalist-phone-with-instagram-aesthetic-white-ba.jpg'
+                  }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-stone-950/20 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 lg:p-8">
@@ -616,12 +603,15 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
             </Link>
             
             {/* Weekly Journal */}
-            <Link href="/admin/journal" className="group">
+            <Link href="/admin/journal" className="group" aria-label="Go to Weekly Journal">
               <div className="relative overflow-hidden aspect-[4/5] bg-stone-200 rounded-none">
                 <img
                   src="/black-productivity-planner-with-iced-coffee-minima.jpg"
-                  alt="Journal"
+                  alt="Weekly Journal for updates and business stories"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  onError={(e) => {
+                    e.currentTarget.src = '/minimalist-desk-setup-with-pendant-light-neutral-a.jpg'
+                  }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-stone-950/20 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 lg:p-8">
@@ -636,12 +626,15 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
             </Link>
             
             {/* Maya Studio */}
-            <Link href="/admin/maya-studio" className="group">
+            <Link href="/admin/maya-studio" className="group" aria-label="Go to Maya Studio">
               <div className="relative overflow-hidden aspect-[4/5] bg-stone-200 rounded-none">
                 <img
                   src="/minimalist-phone-with-instagram-aesthetic-white-ba.jpg"
-                  alt="Studio"
+                  alt="Maya Studio for creating professional brand photos"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  onError={(e) => {
+                    e.currentTarget.src = '/minimalist-desk-setup-with-pendant-light-neutral-a.jpg'
+                  }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-stone-950/20 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 lg:p-8">
@@ -656,14 +649,13 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
             </Link>
             
             {/* Credits */}
-            <Link href="/admin/credits" className="group">
+            <Link href="/admin/credits" className="group" aria-label="Go to Credits Manager">
               <div className="relative overflow-hidden aspect-[4/5] bg-stone-200 rounded-none">
                 <img
                   src="/images/641-yz6rwohjtemwagcwy5xqjtsczx9lfh.png"
-                  alt="Credits"
+                  alt="Credits management system for user credits"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   onError={(e) => {
-                    // Fallback if image doesn't exist
                     e.currentTarget.src = '/minimalist-desk-setup-with-pendant-light-neutral-a.jpg'
                   }}
                 />
@@ -680,12 +672,15 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
             </Link>
             
             {/* Analytics */}
-            <Link href="/admin/conversions" className="group">
+            <Link href="/admin/conversions" className="group" aria-label="Go to Analytics Dashboard">
               <div className="relative overflow-hidden aspect-[4/5] bg-stone-200 rounded-none">
                 <img
                   src="/minimalist-desk-setup-with-pendant-light-neutral-a.jpg"
-                  alt="Analytics"
+                  alt="Analytics dashboard showing revenue and conversion metrics"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                  onError={(e) => {
+                    e.currentTarget.src = '/black-productivity-planner-with-iced-coffee-minima.jpg'
+                  }}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-stone-950/20 to-transparent" />
                 <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 lg:p-8">
@@ -712,6 +707,7 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
             <Link 
               href="/admin/testimonials"
               className="bg-white border border-stone-200 p-4 sm:p-6 hover:border-stone-400 transition-all rounded-none min-h-[100px] sm:min-h-[120px] flex flex-col justify-between touch-manipulation"
+              aria-label="Go to Testimonials manager"
             >
               <p className="text-xs sm:text-sm tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-950 mb-1">
                 Testimonials
@@ -724,6 +720,7 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
             <Link 
               href="/admin/feedback"
               className="bg-white border border-stone-200 p-4 sm:p-6 hover:border-stone-400 transition-all rounded-none min-h-[100px] sm:min-h-[120px] flex flex-col justify-between touch-manipulation"
+              aria-label="Go to Feedback manager"
             >
               <p className="text-xs sm:text-sm tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-950 mb-1">
                 Feedback
@@ -736,6 +733,7 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
             <Link 
               href="/admin/login-as-user"
               className="bg-white border border-stone-200 p-4 sm:p-6 hover:border-stone-400 transition-all rounded-none min-h-[100px] sm:min-h-[120px] flex flex-col justify-between touch-manipulation"
+              aria-label="Go to Login As User tool"
             >
               <p className="text-xs sm:text-sm tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-950 mb-1">
                 Login As User
@@ -748,6 +746,7 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
             <Link 
               href="/admin/maya-testing"
               className="bg-white border border-stone-200 p-4 sm:p-6 hover:border-stone-400 transition-all rounded-none min-h-[100px] sm:min-h-[120px] flex flex-col justify-between touch-manipulation"
+              aria-label="Go to Maya Testing tool"
             >
               <p className="text-xs sm:text-sm tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-950 mb-1">
                 Maya Testing
@@ -760,6 +759,7 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
             <Link 
               href="/admin/prompt-guides"
               className="bg-white border border-stone-200 p-4 sm:p-6 hover:border-stone-400 transition-all rounded-none min-h-[100px] sm:min-h-[120px] flex flex-col justify-between touch-manipulation"
+              aria-label="Go to Prompt Guides manager"
             >
               <p className="text-xs sm:text-sm tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-950 mb-1">
                 Prompt Guides
@@ -772,6 +772,7 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
             <Link 
               href="/admin/email-control"
               className="bg-white border border-stone-200 p-4 sm:p-6 hover:border-stone-400 transition-all rounded-none min-h-[100px] sm:min-h-[120px] flex flex-col justify-between touch-manipulation"
+              aria-label="Go to Email Control panel"
             >
               <p className="text-xs sm:text-sm tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-950 mb-1">
                 Email Control

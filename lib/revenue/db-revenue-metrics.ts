@@ -42,7 +42,7 @@ export async function getDBRevenueMetrics(): Promise<DBRevenueMetrics> {
         SELECT COALESCE(SUM(amount_cents), 0)::int as total_cents
         FROM stripe_payments
         WHERE payment_type = 'credit_topup'
-          AND status = 'succeeded'
+          AND status IN ('paid', 'succeeded')
           AND (is_test_mode = FALSE OR is_test_mode IS NULL)
       `
 
@@ -51,7 +51,7 @@ export async function getDBRevenueMetrics(): Promise<DBRevenueMetrics> {
         SELECT COALESCE(SUM(amount_cents), 0)::int as total_cents
         FROM stripe_payments
         WHERE payment_type = 'one_time_session'
-          AND status = 'succeeded'
+          AND status IN ('paid', 'succeeded')
           AND (is_test_mode = FALSE OR is_test_mode IS NULL)
       `
 
@@ -60,7 +60,7 @@ export async function getDBRevenueMetrics(): Promise<DBRevenueMetrics> {
         SELECT COALESCE(SUM(amount_cents), 0)::int as total_cents
         FROM stripe_payments
         WHERE payment_type = 'subscription'
-          AND status = 'succeeded'
+          AND status IN ('paid', 'succeeded')
           AND (is_test_mode = FALSE OR is_test_mode IS NULL)
       `
 
@@ -68,7 +68,7 @@ export async function getDBRevenueMetrics(): Promise<DBRevenueMetrics> {
       const [totalRevenue] = await sql`
         SELECT COALESCE(SUM(amount_cents), 0)::int as total_cents
         FROM stripe_payments
-        WHERE status = 'succeeded'
+        WHERE status IN ('paid', 'succeeded')
           AND (is_test_mode = FALSE OR is_test_mode IS NULL)
       `
 
@@ -77,11 +77,15 @@ export async function getDBRevenueMetrics(): Promise<DBRevenueMetrics> {
       const subscriptionRevenueAmount = (subscriptionRevenue?.total_cents || 0) / 100
       const totalRevenueAmount = (totalRevenue?.total_cents || 0) / 100
 
-      console.log(`[DBRevenueMetrics] Using stripe_payments table:`)
+      console.log(`[DBRevenueMetrics] Using stripe_payments table (status: paid + succeeded):`)
       console.log(`  - Credit purchases: $${creditPurchaseRevenue.toLocaleString()}`)
       console.log(`  - One-time revenue: $${oneTimeRevenueAmount.toLocaleString()}`)
       console.log(`  - Subscription revenue: $${subscriptionRevenueAmount.toLocaleString()}`)
       console.log(`  - Total revenue: $${totalRevenueAmount.toLocaleString()}`)
+      
+      if (creditPurchaseRevenue === 0 && oneTimeRevenueAmount === 0) {
+        console.log(`  ⚠️  Note: Credit/one-time purchases may exist in credit_transactions without payment amounts`)
+      }
 
       return {
         creditPurchaseRevenue,
