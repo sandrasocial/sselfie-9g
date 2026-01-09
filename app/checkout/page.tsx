@@ -52,12 +52,16 @@ function CheckoutContent() {
         const sessionData = await response.json()
         console.log("[v0] Session data:", JSON.stringify(sessionData, null, 2))
 
+        // Get product_type from query params or session metadata
+        const productTypeFromQuery = searchParams.get("product_type")
+        const productTypeFromSession = sessionData.product_type || productTypeFromQuery
+        
         if (sessionData.email) {
-          const redirectUrl = `/checkout/success?session_id=${sessionId}&email=${encodeURIComponent(sessionData.email)}`
+          const redirectUrl = `/checkout/success?session_id=${sessionId}&email=${encodeURIComponent(sessionData.email)}${productTypeFromSession ? `&type=${encodeURIComponent(productTypeFromSession)}` : ""}`
           console.log("[v0] Redirecting to success page with email:", redirectUrl)
           router.push(redirectUrl)
         } else {
-          const redirectUrl = `/checkout/success?session_id=${sessionId}`
+          const redirectUrl = `/checkout/success?session_id=${sessionId}${productTypeFromSession ? `&type=${encodeURIComponent(productTypeFromSession)}` : ""}`
           console.log("[v0] No email found, redirecting with session_id only:", redirectUrl)
           router.push(redirectUrl)
         }

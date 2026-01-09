@@ -21,6 +21,8 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
   const [confirmPassword, setConfirmPassword] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
+  const [paidBlueprintAccessToken, setPaidBlueprintAccessToken] = useState<string | null>(null)
+  const [paidBlueprintLoading, setPaidBlueprintLoading] = useState(false)
 
   useEffect(() => {
     if (initialEmail) {
@@ -85,6 +87,31 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
     }
     checkAuth()
   }, [purchaseType, router])
+
+  // Fetch access token for paid blueprint purchases
+  useEffect(() => {
+    if (purchaseType === "paid_blueprint" && initialEmail && !paidBlueprintAccessToken && !paidBlueprintLoading) {
+      setPaidBlueprintLoading(true)
+      const fetchAccessToken = async () => {
+        try {
+          const response = await fetch(`/api/blueprint/get-access-token?email=${encodeURIComponent(initialEmail)}`)
+          if (response.ok) {
+            const data = await response.json()
+            if (data.accessToken) {
+              setPaidBlueprintAccessToken(data.accessToken)
+            }
+          } else {
+            console.log("[v0] Could not fetch access token (may need to wait for webhook):", response.status)
+          }
+        } catch (error) {
+          console.error("[v0] Error fetching access token:", error)
+        } finally {
+          setPaidBlueprintLoading(false)
+        }
+      }
+      fetchAccessToken()
+    }
+  }, [purchaseType, initialEmail, paidBlueprintAccessToken, paidBlueprintLoading])
 
   const handleCompleteAccount = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -180,6 +207,81 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
             >
               Back to Studio
             </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (purchaseType === "paid_blueprint") {
+    const blueprintUrl = paidBlueprintAccessToken
+      ? `/blueprint/paid?access=${paidBlueprintAccessToken}`
+      : null
+
+    return (
+      <div className="min-h-screen bg-stone-50">
+        <div className="relative h-[40vh] sm:h-[50vh] overflow-hidden">
+          <Image
+            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2842%29-7c6UXso773x523qKCiuawGNpuzsx8n.jpeg"
+            fill
+            alt="Your Blueprint is Ready"
+            className="object-cover object-center"
+            priority
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-stone-50" />
+
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+            <div className="font-serif text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extralight tracking-[0.3em] sm:tracking-[0.2em] uppercase text-white mb-3 sm:mb-4">
+              YOUR BLUEPRINT IS READY
+            </div>
+            <p className="text-sm sm:text-base md:text-lg text-white/90 font-light max-w-md">
+              Your 30-photo library is ready to view
+            </p>
+          </div>
+        </div>
+
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12 md:py-16">
+          <div className="text-center mb-8 sm:mb-12">
+            <h1 className="font-serif text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extralight tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-900 mb-3 sm:mb-4 px-2">
+              YOUR BLUEPRINT IS READY ✨
+            </h1>
+            <p className="text-sm sm:text-base text-stone-600 font-light leading-relaxed max-w-xl mx-auto px-4">
+              Your 30-photo library is ready to view. Click below to access your photos and start using them right away.
+            </p>
+          </div>
+
+          <div className="text-center space-y-4">
+            {blueprintUrl ? (
+              <button
+                onClick={() => router.push(blueprintUrl)}
+                className="bg-stone-950 text-stone-50 px-8 sm:px-12 py-3 sm:py-4 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 min-h-[44px]"
+              >
+                View My Blueprint →
+              </button>
+            ) : (
+              <>
+                {paidBlueprintLoading ? (
+                  <div className="text-sm text-stone-600 font-light">
+                    Preparing your access...
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-sm text-stone-600 font-light mb-4">
+                      Your purchase is being processed. Check your email for access instructions.
+                    </p>
+                    <button
+                      onClick={() => router.push("/blueprint/paid")}
+                      className="bg-stone-950 text-stone-50 px-8 sm:px-12 py-3 sm:py-4 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 min-h-[44px]"
+                    >
+                      View My Blueprint →
+                    </button>
+                  </>
+                )}
+              </>
+            )}
+            <p className="text-[10px] sm:text-xs text-stone-500 font-light mt-4 sm:mt-6">
+              A confirmation email has been sent to {initialEmail || "your email"}
+            </p>
           </div>
         </div>
       </div>

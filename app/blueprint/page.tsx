@@ -39,6 +39,42 @@ export default function BrandBlueprintPage() {
   const [savedFrameUrls, setSavedFrameUrls] = useState<string[]>([])
   const [isEmailingConcepts, setIsEmailingConcepts] = useState(false)
   const [selfieImages, setSelfieImages] = useState<string[]>([])
+  const [isPaidBlueprintEnabled, setIsPaidBlueprintEnabled] = useState(false)
+
+  // Check if paid blueprint feature is enabled (client-side)
+  // Uses API endpoint to ensure same source of truth as checkout page
+  // Priority: NEXT_PUBLIC override (for local dev) > API endpoint (production)
+  useEffect(() => {
+    const checkFeatureFlag = async () => {
+      try {
+        // First, check if NEXT_PUBLIC override is set (for local dev/testing)
+        // This allows quick local testing without API call
+        const publicOverride = process.env.NEXT_PUBLIC_FEATURE_PAID_BLUEPRINT_ENABLED
+        if (publicOverride !== undefined) {
+          const enabled = publicOverride === "true" || publicOverride === "1"
+          setIsPaidBlueprintEnabled(enabled)
+          return
+        }
+
+        // Otherwise, fetch from API endpoint (same logic as checkout page)
+        const response = await fetch("/api/feature-flags/paid-blueprint")
+        if (response.ok) {
+          const data = await response.json()
+          setIsPaidBlueprintEnabled(data.enabled === true)
+        } else {
+          // If API fails, default to false (safe)
+          console.error("[v0] Failed to fetch feature flag, defaulting to disabled")
+          setIsPaidBlueprintEnabled(false)
+        }
+      } catch (error) {
+        // If fetch fails, default to false (safe)
+        console.error("[v0] Error checking feature flag:", error)
+        setIsPaidBlueprintEnabled(false)
+      }
+    }
+
+    checkFeatureFlag()
+  }, [])
 
   // Restore formData from localStorage on mount
   useEffect(() => {
@@ -1143,6 +1179,26 @@ export default function BrandBlueprintPage() {
                       See my score →
                     </button>
                   </div>
+
+                  {/* Paid Blueprint CTA - Step 3.5 */}
+                  {isPaidBlueprintEnabled && savedEmail && (
+                    <div className="mt-8 sm:mt-12 bg-stone-50 border border-stone-200 rounded-lg p-6 sm:p-8 max-w-2xl mx-auto">
+                      <h3 className="text-lg sm:text-xl font-medium tracking-wider uppercase text-stone-950 mb-2 text-center">
+                        Bring your Blueprint to life
+                      </h3>
+                      <p className="text-sm sm:text-base text-stone-600 font-light leading-relaxed text-center mb-6">
+                        Get 30 custom photos based on your strategy.
+                      </p>
+                      <div className="text-center">
+                        <Link
+                          href={`/checkout/blueprint?email=${encodeURIComponent(savedEmail)}`}
+                          className="inline-block bg-stone-950 text-stone-50 px-8 sm:px-12 py-3 sm:py-4 text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 rounded-lg"
+                        >
+                          Get my 30 photos
+                        </Link>
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -1240,6 +1296,26 @@ export default function BrandBlueprintPage() {
               >
                 Show me my calendar →
               </button>
+
+              {/* Paid Blueprint CTA - Step 4 */}
+              {isPaidBlueprintEnabled && savedEmail && (
+                <div className="mt-8 sm:mt-12 bg-stone-50 border border-stone-200 rounded-lg p-6 sm:p-8 max-w-2xl mx-auto">
+                  <h3 className="text-lg sm:text-xl font-medium tracking-wider uppercase text-stone-950 mb-2 text-center">
+                    Bring your Blueprint to life
+                  </h3>
+                  <p className="text-sm sm:text-base text-stone-600 font-light leading-relaxed text-center mb-6">
+                    Get 30 custom photos based on your strategy.
+                  </p>
+                  <div className="text-center">
+                    <Link
+                      href={`/checkout/blueprint?email=${encodeURIComponent(savedEmail)}`}
+                      className="inline-block bg-stone-950 text-stone-50 px-8 sm:px-12 py-3 sm:py-4 text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 rounded-lg"
+                    >
+                      Get my 30 photos
+                    </Link>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
