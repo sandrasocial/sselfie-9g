@@ -11,6 +11,7 @@ export default function LandingPageNew() {
   const [activeScene, setActiveScene] = useState(0)
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null)
   const [showStickyFooter, setShowStickyFooter] = useState(false)
+  const [isPaidBlueprintEnabled, setIsPaidBlueprintEnabled] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const scenesRef = useRef<(HTMLDivElement | null)[]>([])
 
@@ -202,7 +203,7 @@ export default function LandingPageNew() {
             <p className="description fade-up mx-auto max-w-sm" style={{ textShadow: "0 1px 5px rgba(0,0,0,0.3)" }}>
               SSELFIE Studio helps you make beautiful, on-brand photos and plan your social feed, even if you don't have time, confidence, or a big team.
             </p>
-            <div className="fade-up" style={{ transitionDelay: "0.2s", marginTop: "10px" }}>
+            <div className="fade-up" style={{ transitionDelay: "0.2s", marginTop: "10px", display: "flex", flexDirection: "column", gap: "12px", alignItems: "center" }}>
               <a
                 href="#membership"
                 onClick={(e) => {
@@ -214,6 +215,26 @@ export default function LandingPageNew() {
               >
                 Try SSELFIE Studio →
               </a>
+              <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "center" }}>
+                <Link
+                  href="/blueprint"
+                  onClick={() => trackCTAClick("hero", "Try it free", "/blueprint")}
+                  className="btn shadow-xl"
+                  style={{ background: "transparent", border: "1px solid rgba(250, 250, 249, 0.8)", color: "#fafaf9" }}
+                >
+                  Try it free
+                </Link>
+                {isPaidBlueprintEnabled && (
+                  <Link
+                    href="/paid-blueprint"
+                    onClick={() => trackCTAClick("hero", "Get 30 Photos", "/paid-blueprint")}
+                    className="btn shadow-xl"
+                    style={{ background: "transparent", border: "1px solid rgba(250, 250, 249, 0.8)", color: "#fafaf9" }}
+                  >
+                    Get 30 Photos
+                  </Link>
+                )}
+              </div>
             </div>
             <p className="description fade-up mx-auto max-w-sm mt-4" style={{ textShadow: "0 1px 5px rgba(0,0,0,0.3)", fontSize: "14px", marginTop: "16px" }}>
               Create photos. Plan your feed. Build your brand, all in one place.

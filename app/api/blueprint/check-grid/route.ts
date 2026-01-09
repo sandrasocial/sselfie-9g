@@ -120,7 +120,9 @@ export async function POST(req: NextRequest) {
                 grid_generated_at = NOW(),
                 grid_url = ${gridBlob.url},
                 grid_frame_urls = ${frameUrls},
-                grid_prediction_id = ${predictionId}
+                grid_prediction_id = ${predictionId},
+                blueprint_completed = TRUE,
+                blueprint_completed_at = NOW()
             WHERE email = ${email}
           `
           console.log("[Blueprint] Grid data saved to database for email:", email)

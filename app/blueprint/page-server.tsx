@@ -1,0 +1,164 @@
+import { redirect } from "next/navigation"
+import { neon } from "@neondatabase/serverless"
+import BrandBlueprintPageClient from "./page-client"
+
+const sql = neon(process.env.DATABASE_URL!)
+
+/**
+ * Server component wrapper for Free Blueprint page
+ * 
+ * Responsibilities:
+ * - Check URL params (?email=... or ?token=...)
+ * - Query database for subscriber state
+ * - Determine completion state (new/partial/completed/paid)
+ * - Pass structured props to client component
+ * - Handle redirects for paid users
+ */
+export default async function BrandBlueprintPageServer({
+  searchParams,
+}: {
+  searchParams: Promise<{ email?: string; token?: string; message?: string }>
+}) {
+  const params = await searchParams
+  const emailParam = params?.email
+  const tokenParam = params?.token
+
+  // If no email or token, pass null props (new user flow)
+  if (!emailParam && !tokenParam) {
+    return (
+      <BrandBlueprintPageClient
+        initialEmail={null}
+        initialAccessToken={null}
+        initialResumeStep={0}
+        initialHasStrategy={false}
+        initialHasGrid={false}
+        initialIsCompleted={false}
+        initialIsPaid={false}
+        initialFormData={null}
+        initialSelectedFeedStyle={null}
+        initialSelfieImages={null}
+      />
+    )
+  }
+
+  // Query database for subscriber
+  let subscriber = null
+  try {
+    if (emailParam) {
+      const result = await sql`
+        SELECT 
+          email,
+          access_token,
+          form_data,
+          strategy_generated,
+          grid_generated,
+          grid_url,
+          grid_frame_urls,
+          selfie_image_urls,
+          feed_style,
+          paid_blueprint_purchased,
+          paid_blueprint_photo_urls
+        FROM blueprint_subscribers
+        WHERE email = ${emailParam}
+        LIMIT 1
+      `
+      subscriber = result.length > 0 ? result[0] : null
+    } else if (tokenParam) {
+      const result = await sql`
+        SELECT 
+          email,
+          access_token,
+          form_data,
+          strategy_generated,
+          grid_generated,
+          grid_url,
+          grid_frame_urls,
+          selfie_image_urls,
+          feed_style,
+          paid_blueprint_purchased,
+          paid_blueprint_photo_urls
+        FROM blueprint_subscribers
+        WHERE access_token = ${tokenParam}
+        LIMIT 1
+      `
+      subscriber = result.length > 0 ? result[0] : null
+    }
+  } catch (error) {
+    console.error("[Blueprint Server] Error querying subscriber:", error)
+    // Continue with null subscriber (new user flow)
+  }
+
+  // If subscriber not found, treat as new user
+  if (!subscriber) {
+    return (
+      <BrandBlueprintPageClient
+        initialEmail={emailParam || null}
+        initialAccessToken={null}
+        initialResumeStep={0}
+        initialHasStrategy={false}
+        initialHasGrid={false}
+        initialIsCompleted={false}
+        initialIsPaid={false}
+        initialFormData={null}
+        initialSelectedFeedStyle={null}
+        initialSelfieImages={null}
+      />
+    )
+  }
+
+  // Check if paid user - redirect to paid blueprint page
+  if (subscriber.paid_blueprint_purchased && subscriber.access_token) {
+    redirect(`/blueprint/paid?access=${subscriber.access_token}`)
+  }
+
+  // Determine state
+  const hasStrategy = subscriber.strategy_generated === true
+  const hasGrid = subscriber.grid_generated === true && subscriber.grid_url
+  const isCompleted = hasStrategy && hasGrid
+
+  // Determine resume step
+  let resumeStep = 0
+  if (isCompleted) {
+    // Completed - show upgrade view (step 7 = upgrade/results view)
+    resumeStep = 7
+  } else if (hasGrid) {
+    // Has grid but not completed (shouldn't happen, but handle it)
+    resumeStep = 6 // Caption templates
+  } else if (hasStrategy) {
+    // Has strategy, needs grid
+    resumeStep = 3.5 // Grid generation step
+  } else if (subscriber.form_data && typeof subscriber.form_data === "object" && Object.keys(subscriber.form_data).length > 0) {
+    // Has form data, needs strategy
+    resumeStep = 3 // Feed style selection (before strategy generation)
+  } else {
+    // Has email but no form data - start at questions
+    resumeStep = 1
+  }
+
+  // Parse form data
+  let formData = null
+  if (subscriber.form_data && typeof subscriber.form_data === "object") {
+    formData = subscriber.form_data
+  }
+
+  // Parse selfie images
+  let selfieImages: string[] | null = null
+  if (subscriber.selfie_image_urls && Array.isArray(subscriber.selfie_image_urls)) {
+    selfieImages = subscriber.selfie_image_urls.filter((url: any) => typeof url === "string" && url.startsWith("http"))
+  }
+
+  return (
+    <BrandBlueprintPageClient
+      initialEmail={subscriber.email}
+      initialAccessToken={subscriber.access_token}
+      initialResumeStep={resumeStep}
+      initialHasStrategy={hasStrategy}
+      initialHasGrid={hasGrid}
+      initialIsCompleted={isCompleted}
+      initialIsPaid={false}
+      initialFormData={formData}
+      initialSelectedFeedStyle={subscriber.feed_style || null}
+      initialSelfieImages={selfieImages}
+    />
+  )
+}

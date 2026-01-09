@@ -42,14 +42,15 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // If grid already generated, return saved grid
+    // PR-8: If grid already generated, return saved grid (never regenerate)
     if (subscriberData.grid_generated && subscriberData.grid_url && subscriberData.grid_frame_urls) {
-      console.log("[Blueprint] Returning saved grid for email:", email)
+      console.log("[Blueprint] Grid already exists, returning saved grid for email:", email)
       return NextResponse.json({
         success: true,
         gridUrl: subscriberData.grid_url,
         frameUrls: subscriberData.grid_frame_urls,
         fromCache: true,
+        message: "Grid already generated - returning saved grid",
       })
     }
 
