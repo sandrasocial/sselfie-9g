@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 })
     }
 
-    // Get subscriber data
+    // PR-8: Get subscriber data including completion status
     const subscriber = await sql`
       SELECT 
         id,
@@ -32,7 +32,11 @@ export async function GET(req: NextRequest) {
         grid_generated_at,
         grid_url,
         grid_frame_urls,
-        selfie_image_urls
+        selfie_image_urls,
+        blueprint_completed,
+        blueprint_completed_at,
+        paid_blueprint_purchased,
+        feed_style
       FROM blueprint_subscribers
       WHERE email = ${email}
       LIMIT 1
@@ -47,10 +51,14 @@ export async function GET(req: NextRequest) {
 
     const data = subscriber[0]
 
+    // PR-8: Calculate canonical completion (strategy + grid)
+    const isCompleted = (data.strategy_generated === true) && (data.grid_generated === true && data.grid_url)
+    
     return NextResponse.json({
       success: true,
       blueprint: {
         formData: data.form_data || {},
+        feedStyle: data.feed_style || null,
         strategy: {
           generated: data.strategy_generated || false,
           generatedAt: data.strategy_generated_at || null,
@@ -63,6 +71,9 @@ export async function GET(req: NextRequest) {
           frameUrls: data.grid_frame_urls || null,
         },
         selfieImages: data.selfie_image_urls || [],
+        completed: isCompleted,
+        completedAt: isCompleted ? (data.blueprint_completed_at || data.grid_generated_at) : null,
+        paidBlueprintPurchased: data.paid_blueprint_purchased || false,
       },
     })
   } catch (error) {

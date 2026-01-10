@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { randomUUID } from "crypto"
 import { stripe } from "@/lib/stripe"
-import { addCredits, grantOneTimeSessionCredits, grantMonthlyCredits } from "@/lib/credits"
+import { addCredits, grantOneTimeSessionCredits, grantMonthlyCredits, grantPaidBlueprintCredits } from "@/lib/credits"
 import { neon } from "@/lib/db"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { getOrCreateNeonUser } from "@/lib/user-mapping"
@@ -1036,9 +1036,89 @@ export async function POST(request: NextRequest) {
                 }
               }
               
-              // ⚠️ IMPORTANT: Do NOT grant credits for paid blueprint
-              // Photos will be stored directly in blueprint_subscribers (PR-3)
-              console.log(`[v0] ℹ️ Paid blueprint: NO credits granted (photos stored directly)`)
+              // Decision 1: Grant 60 credits for paid blueprint purchase (30 grids × 2 credits)
+              // First, get or create user from email (if user is authenticated, get user_id from session.metadata)
+              let userId: string | null = session.metadata?.user_id || null
+              
+              if (!userId && customerEmail) {
+                // Try to find user by email
+                try {
+                  const userByEmail = await sql`
+                    SELECT id FROM users WHERE email = ${customerEmail} LIMIT 1
+                  `
+                  if (userByEmail.length > 0) {
+                    userId = userByEmail[0].id
+                    console.log(`[v0] Found user ${userId} by email for paid blueprint purchase`)
+                  }
+                } catch (userLookupError: any) {
+                  console.error(`[v0] Error looking up user by email:`, userLookupError.message)
+                  // Continue without user_id - credits can't be granted without user
+                }
+              }
+              
+              // Grant credits if user_id found
+              if (userId && isPaymentPaid) {
+                try {
+                  const creditResult = await grantPaidBlueprintCredits(userId, paymentIntentId || undefined, isTestMode)
+                  if (creditResult.success) {
+                    console.log(`[v0] ✅ Granted 60 credits for paid blueprint purchase to user ${userId}`)
+                  } else {
+                    console.error(`[v0] ⚠️ Failed to grant paid blueprint credits: ${creditResult.error}`)
+                  }
+                } catch (creditError: any) {
+                  console.error(`[v0] ⚠️ Error granting paid blueprint credits (non-critical):`, creditError.message)
+                  // Don't fail webhook if credit grant fails
+                }
+              } else if (!userId) {
+                console.log(`[v0] ⚠️ No user_id found for paid blueprint purchase - credits will be granted when user signs up`)
+                // Credits will be granted when user signs up and links their email to their account
+                // Or we can grant credits when user_id is linked later (via migration or manual process)
+              } else {
+                console.log(`[v0] ⏭️ Skipping credit grant - payment not confirmed yet`)
+              }
+              
+              // Create subscription entry for paid blueprint (for entitlement tracking)
+              if (userId && isPaymentPaid) {
+                try {
+                  // Check if subscription already exists
+                  const existingSubscription = await sql`
+                    SELECT id FROM subscriptions
+                    WHERE user_id = ${userId}
+                    AND product_type = 'paid_blueprint'
+                    AND status = 'active'
+                    LIMIT 1
+                  `
+                  
+                  if (existingSubscription.length === 0) {
+                    // Create subscription entry for paid blueprint
+                    await sql`
+                      INSERT INTO subscriptions (
+                        user_id,
+                        product_type,
+                        status,
+                        stripe_customer_id,
+                        created_at,
+                        updated_at
+                      )
+                      VALUES (
+                        ${userId},
+                        'paid_blueprint',
+                        'active',
+                        ${customerId || null},
+                        NOW(),
+                        NOW()
+                      )
+                      ON CONFLICT DO NOTHING
+                    `
+                    console.log(`[v0] ✅ Created paid_blueprint subscription entry for user ${userId}`)
+                  } else {
+                    console.log(`[v0] ⏭️ Subscription already exists for user ${userId}`)
+                  }
+                } catch (subscriptionError: any) {
+                  console.error(`[v0] ⚠️ Error creating subscription entry (non-critical):`, subscriptionError.message)
+                  // Don't fail webhook if subscription creation fails
+                }
+              }
               
               // PR-3.1: Update blueprint_subscribers with paid_blueprint columns
               // Set converted_to_user to match existing system semantics (ANY purchase = converted)

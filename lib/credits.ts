@@ -371,3 +371,51 @@ export async function grantOneTimeSessionCredits(
 
   return await addCredits(userId, credits, "purchase", "One-Time SSELFIE Session purchase", stripePaymentId, isTestMode)
 }
+
+/**
+ * Grant free user credits (2 credits for blueprint access)
+ * Decision 1: Credit System for All Users
+ * Called on signup for free users
+ */
+export async function grantFreeUserCredits(userId: string): Promise<{ success: boolean; newBalance: number; error?: string }> {
+  const credits = 2 // Free users get 2 credits (enough for 1 grid = 2 images × 1 credit)
+
+  console.log("[Credits] Granting free user credits:", { userId, credits })
+
+  return await addCredits(
+    userId,
+    credits,
+    "bonus",
+    "Free blueprint credits (welcome bonus)",
+    undefined,
+    false,
+  )
+}
+
+/**
+ * Grant paid blueprint credits (60 credits for 30 grids)
+ * Decision 1: Credit System for All Users
+ * Called from Stripe webhook on paid blueprint purchase
+ */
+export async function grantPaidBlueprintCredits(
+  userId: string,
+  stripePaymentId?: string,
+  isTestMode = false
+): Promise<{ success: boolean; newBalance: number; error?: string }> {
+  const credits = 60 // Paid blueprint users get 60 credits (30 grids × 2 credits per grid)
+
+  if (!stripePaymentId) {
+    console.warn('[Credits] ⚠️ grantPaidBlueprintCredits called without stripe_payment_id')
+  }
+
+  console.log("[Credits] Granting paid blueprint credits:", { userId, credits, stripePaymentId, isTestMode })
+
+  return await addCredits(
+    userId,
+    credits,
+    "purchase",
+    "Paid Blueprint purchase (60 credits)",
+    stripePaymentId,
+    isTestMode,
+  )
+}

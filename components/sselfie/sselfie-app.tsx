@@ -12,15 +12,18 @@ import {
   MoreVertical,
   LogOut,
   LayoutGrid,
+  Sparkles,
 } from "lucide-react"
 import LoadingScreen from "./loading-screen"
 import OnboardingWizard from "./onboarding-wizard"
+import BlueprintWelcomeWizard from "./blueprint-welcome-wizard"
 import MayaChatScreen from "./maya-chat-screen"
 import GalleryScreen from "./gallery-screen"
 // Note: B-Roll functionality is accessible via Maya Videos tab (b-roll-screen.tsx kept for reference)
 import AcademyScreen from "./academy-screen"
 import AccountScreen from "./account-screen"
 import { FeedViewScreen as FeedPlannerScreen } from "../feed-planner" // Using FeedViewScreen (backward compatible export)
+import BlueprintScreen from "./blueprint-screen"
 import { InstallPrompt } from "./install-prompt"
 import { InstallButton } from "./install-button"
 import { ServiceWorkerProvider } from "./service-worker-provider"
@@ -83,9 +86,16 @@ export default function SselfieApp({
         "maya",
         "gallery",
         "feed-planner",
+        "blueprint",
         "academy",
         "account",
       ]
+      // Check URL search params for tab override (e.g., ?tab=blueprint from auth redirect)
+      const searchParams = new URLSearchParams(window.location.search)
+      const tabParam = searchParams.get("tab")
+      if (tabParam && validTabs.includes(tabParam)) {
+        return tabParam
+      }
       return validTabs.includes(hash) ? hash : "maya"
     }
     return "maya"
@@ -97,6 +107,8 @@ export default function SselfieApp({
   const [hasTrainedModel, setHasTrainedModel] = useState(false)
   const [isLoadingTrainingStatus, setIsLoadingTrainingStatus] = useState(true)
   const [showOnboarding, setShowOnboarding] = useState(false)
+  const [showBlueprintWelcome, setShowBlueprintWelcome] = useState(false)
+  const [blueprintWelcomeEnabled, setBlueprintWelcomeEnabled] = useState(true)
   const [creditBalance, setCreditBalance] = useState<number>(0)
   const [isLoadingCredits, setIsLoadingCredits] = useState(true)
   
@@ -380,6 +392,7 @@ export default function SselfieApp({
     { id: "maya", label: "Maya", icon: MessageCircle },
     { id: "gallery", label: "Gallery", icon: ImageIcon },
     { id: "feed-planner", label: "Feed", icon: LayoutGrid },
+    { id: "blueprint", label: "Blueprint", icon: Sparkles },
     { id: "academy", label: "Academy", icon: Grid },
     { id: "account", label: "Account", icon: User },
   ]
@@ -767,6 +780,7 @@ export default function SselfieApp({
                 )}
                 {activeTab === "gallery" && <GalleryScreen user={user} userId={userId} />}
                 {activeTab === "feed-planner" && <FeedPlannerScreen />}
+                {activeTab === "blueprint" && <BlueprintScreen userId={userId} />}
                 {activeTab === "academy" && <AcademyScreen />}
                   {activeTab === "account" && <AccountScreen user={user} creditBalance={creditBalance} />}
                 </motion.div>
@@ -866,6 +880,18 @@ export default function SselfieApp({
         onDismiss={() => setShowOnboarding(false)}
         hasTrainedModel={hasTrainedModel}
         userId={userId}
+        userName={userName}
+      />
+
+      {/* Blueprint Welcome Wizard */}
+      <BlueprintWelcomeWizard
+        isOpen={showBlueprintWelcome && blueprintWelcomeEnabled}
+        onComplete={() => {
+          setShowBlueprintWelcome(false)
+          // Optionally open Blueprint tab
+          setActiveTab("blueprint")
+        }}
+        onDismiss={() => setShowBlueprintWelcome(false)}
         userName={userName}
       />
       </div>

@@ -2,6 +2,8 @@ import { type NextRequest, NextResponse } from "next/server"
 import { generateText } from "ai"
 import { neon } from "@neondatabase/serverless"
 import { FLUX_PROMPTING_PRINCIPLES } from "@/lib/maya/flux-prompting-principles"
+import { createServerClient } from "@/lib/supabase/server"
+import { getUserByAuthId } from "@/lib/user-mapping"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -228,34 +230,66 @@ export async function POST(req: NextRequest) {
   try {
     const { formData, selectedFeedStyle, email } = await req.json()
 
-    // Validate email is provided
-    if (!email || typeof email !== "string") {
-      return NextResponse.json(
-        { error: "Email is required. Please complete email capture first." },
-        { status: 400 },
-      )
+    // Phase 1: Support both user_id (authenticated) and email (backward compatibility)
+    let userId: string | null = null
+    let subscriberQuery = null
+
+    // Try to get user_id from auth session (Studio flow)
+    try {
+      const supabase = await createServerClient()
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser()
+
+      if (authUser) {
+        const neonUser = await getUserByAuthId(authUser.id)
+        if (neonUser) {
+          userId = neonUser.id
+          console.log("[Blueprint] Using user_id from auth session:", userId)
+        }
+      }
+    } catch (authError) {
+      // Not authenticated - fall back to email-based lookup
+      console.log("[Blueprint] Not authenticated, using email-based lookup")
     }
 
-    // Check if email exists in blueprint_subscribers
-    const subscriber = await sql`
-      SELECT id, strategy_generated, strategy_data
-      FROM blueprint_subscribers
-      WHERE email = ${email}
-      LIMIT 1
-    `
+    // Query by user_id if authenticated, otherwise by email
+    if (userId) {
+      subscriberQuery = await sql`
+        SELECT id, strategy_generated, strategy_data
+        FROM blueprint_subscribers
+        WHERE user_id = ${userId}
+        LIMIT 1
+      `
+    } else {
+      // Backward compatibility: email-based lookup
+      if (!email || typeof email !== "string") {
+        return NextResponse.json(
+          { error: "Email is required. Please complete email capture first." },
+          { status: 400 },
+        )
+      }
 
-    if (subscriber.length === 0) {
+      subscriberQuery = await sql`
+        SELECT id, strategy_generated, strategy_data
+        FROM blueprint_subscribers
+        WHERE email = ${email}
+        LIMIT 1
+      `
+    }
+
+    if (subscriberQuery.length === 0) {
       return NextResponse.json(
-        { error: "Email not found. Please complete email capture first." },
+        { error: userId ? "Blueprint state not found. Please start your blueprint first." : "Email not found. Please complete email capture first." },
         { status: 404 },
       )
     }
 
-    const subscriberData = subscriber[0]
+    const subscriberData = subscriberQuery[0]
 
     // If strategy already generated, return saved strategy
     if (subscriberData.strategy_generated && subscriberData.strategy_data) {
-      console.log("[Blueprint] Returning saved strategy for email:", email)
+      console.log("[Blueprint] Returning saved strategy for", userId ? `user_id: ${userId}` : `email: ${email}`)
       return NextResponse.json({
         success: true,
         concepts: [subscriberData.strategy_data],
@@ -266,7 +300,7 @@ export async function POST(req: NextRequest) {
     const aestheticStyle =
       FEED_STYLE_TO_AESTHETIC[selectedFeedStyle as keyof typeof FEED_STYLE_TO_AESTHETIC] || "dark-moody"
 
-    console.log("[Blueprint] Generating new strategy for email:", email, { selectedFeedStyle, aestheticStyle })
+    console.log("[Blueprint] Generating new strategy for", userId ? `user_id: ${userId}` : `email: ${email}`, { selectedFeedStyle, aestheticStyle })
 
     const businessProps = getBusinessSpecificProps(formData.business)
 
@@ -369,14 +403,25 @@ Return ONLY valid JSON (no markdown):
     const strategyData = concepts.concepts[0]
     if (strategyData) {
       try {
-        await sql`
-          UPDATE blueprint_subscribers
-          SET strategy_generated = TRUE,
-              strategy_generated_at = NOW(),
-              strategy_data = ${strategyData}
-          WHERE email = ${email}
-        `
-        console.log("[Blueprint] Strategy saved to database for email:", email)
+        if (userId) {
+          await sql`
+            UPDATE blueprint_subscribers
+            SET strategy_generated = TRUE,
+                strategy_generated_at = NOW(),
+                strategy_data = ${JSON.stringify(strategyData)}
+            WHERE user_id = ${userId}
+          `
+          console.log("[Blueprint] Strategy saved to database for user_id:", userId)
+        } else {
+          await sql`
+            UPDATE blueprint_subscribers
+            SET strategy_generated = TRUE,
+                strategy_generated_at = NOW(),
+                strategy_data = ${JSON.stringify(strategyData)}
+            WHERE email = ${email}
+          `
+          console.log("[Blueprint] Strategy saved to database for email:", email)
+        }
       } catch (dbError) {
         console.error("[Blueprint] Error saving strategy to database:", dbError)
         // Continue even if save fails - user still gets the strategy

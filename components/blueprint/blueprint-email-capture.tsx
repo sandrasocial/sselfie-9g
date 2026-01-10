@@ -99,6 +99,17 @@ export function BlueprintEmailCapture({ onSuccess, formData, currentStep }: Blue
       }
 
       console.log("[v0] Successfully saved blueprint progress")
+      
+      // PR-8: Save email to localStorage for resume capability
+      try {
+        localStorage.setItem("blueprint-email", email)
+        localStorage.setItem("blueprint-name", name)
+        localStorage.setItem("blueprint-access-token", data.accessToken || "")
+      } catch (storageError) {
+        console.error("[v0] Error saving to localStorage:", storageError)
+        // Continue even if localStorage fails (graceful degradation)
+      }
+      
       onSuccess(email, name, data.accessToken)
     } catch (err) {
       console.error("[v0] Blueprint subscribe error:", err)

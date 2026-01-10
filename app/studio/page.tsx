@@ -75,6 +75,69 @@ export default async function StudioPage({
     redirect("/auth/login?returnTo=/studio")
   }
 
+  console.log("[v0] [STUDIO PAGE] Starting credit grant check for user:", neonUser.email, neonUser.id)
+
+  // Decision 1: Grant free user credits to ALL free users who haven't received them yet
+  // This ensures credits are granted for all signups, regardless of when they signed up
+  // or whether they used the old blueprint system
+  console.log(`[Studio] 🔍🔍🔍 CHECKING CREDIT GRANT for user ${neonUser.id} (email: ${neonUser.email})`)
+  try {
+    const { neon } = await import("@neondatabase/serverless")
+    const sql = neon(process.env.DATABASE_URL!)
+    
+    console.log(`[Studio] ✅✅✅ Database connection established`)
+    
+    // Check if user has active subscription (only free users get welcome credits)
+    const hasSubscription = await sql`
+      SELECT COUNT(*) as count
+      FROM subscriptions
+      WHERE user_id = ${neonUser.id} AND status = 'active'
+    `
+    
+    const subscriptionCount = Number(hasSubscription[0]?.count || 0)
+    console.log(`[Studio] 📊📊📊 Subscription check: user ${neonUser.id} has ${subscriptionCount} active subscription(s) (raw: ${hasSubscription[0]?.count}, type: ${typeof hasSubscription[0]?.count})`)
+    
+    if (subscriptionCount === 0) {
+      console.log(`[Studio] ✅ User ${neonUser.id} is FREE user - checking for welcome bonus`)
+      
+      // Check if welcome bonus transaction already exists (prevent duplicates)
+      const existingTransaction = await sql`
+        SELECT id FROM credit_transactions 
+        WHERE user_id = ${neonUser.id} 
+        AND transaction_type = 'bonus' 
+        AND description = 'Free blueprint credits (welcome bonus)'
+        LIMIT 1
+      `
+      
+      console.log(`[Studio] 🔍🔍🔍 Bonus transaction check: found ${existingTransaction.length} existing bonus transaction(s) for user ${neonUser.id}`)
+      
+      if (existingTransaction.length === 0) {
+        console.log(`[Studio] 💰💰💰 GRANTING 2 CREDITS to user ${neonUser.id} (NO existing bonus transaction found)`)
+        
+        // Grant 2 credits to all free users who haven't received welcome bonus yet
+        const { grantFreeUserCredits } = await import("@/lib/credits")
+        const creditResult = await grantFreeUserCredits(neonUser.id)
+        
+        if (creditResult.success) {
+          console.log(`[Studio] ✅✅✅✅✅ SUCCESS: Free user credits (2) granted to user ${neonUser.id} (email: ${neonUser.email}) - New balance: ${creditResult.newBalance}`)
+        } else {
+          console.error(`[Studio] ❌❌❌❌❌ FAILED: Failed to grant free user credits to ${neonUser.id}: ${creditResult.error}`)
+        }
+      } else {
+        console.log(`[Studio] ⏭️⏭️⏭️ User ${neonUser.id} already received welcome bonus (transaction ID: ${existingTransaction[0].id}) - SKIPPING`)
+      }
+    } else {
+      console.log(`[Studio] ⏭️⏭️⏭️ User ${neonUser.id} has active subscription - SKIPPING free credits`)
+    }
+  } catch (creditError) {
+    console.error(`[Studio] ❌❌❌❌❌ EXCEPTION granting free user credits for ${neonUser.id}:`, creditError)
+    if (creditError instanceof Error) {
+      console.error(`[Studio] ❌ Error message:`, creditError.message)
+      console.error(`[Studio] ❌ Error stack:`, creditError.stack)
+    }
+    // Don't fail Studio load if credit grant fails
+  }
+
   const subscription = await getUserSubscription(neonUser.id)
 
   console.log("[v0] [STUDIO PAGE] User:", neonUser.email)

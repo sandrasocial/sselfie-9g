@@ -111,27 +111,43 @@ export default async function BrandBlueprintPageServer({
     redirect(`/blueprint/paid?access=${subscriber.access_token}`)
   }
 
-  // Determine state
+  // PR-8: Determine state using canonical definition (strategy + grid = completed)
   const hasStrategy = subscriber.strategy_generated === true
   const hasGrid = subscriber.grid_generated === true && subscriber.grid_url
+  // Canonical completion: strategy_generated AND grid_generated
   const isCompleted = hasStrategy && hasGrid
+  
+  // PR-8: Also check blueprint_completed flag for consistency
+  const dbMarkedCompleted = subscriber.blueprint_completed === true
+  
+  // Use canonical definition, but log if DB flag differs
+  if (isCompleted !== dbMarkedCompleted) {
+    console.warn(`[Blueprint Server] Completion mismatch for ${subscriber.email}: canonical=${isCompleted}, db_flag=${dbMarkedCompleted}`)
+  }
 
-  // Determine resume step
+  // PR-8: Determine resume step based on state
   let resumeStep = 0
   if (isCompleted) {
-    // Completed - show upgrade view (step 7 = upgrade/results view)
+    // Completed (strategy + grid) - show upgrade view (step 7 = upgrade/results view)
     resumeStep = 7
-  } else if (hasGrid) {
-    // Has grid but not completed (shouldn't happen, but handle it)
-    resumeStep = 6 // Caption templates
-  } else if (hasStrategy) {
-    // Has strategy, needs grid
+  } else if (hasGrid && !hasStrategy) {
+    // Has grid but no strategy (edge case - shouldn't happen normally)
+    // Still allow viewing grid, but prompt for strategy
+    resumeStep = 3.5 // Grid generation step (will show existing grid)
+  } else if (hasStrategy && !hasGrid) {
+    // Has strategy, needs grid generation
     resumeStep = 3.5 // Grid generation step
   } else if (subscriber.form_data && typeof subscriber.form_data === "object" && Object.keys(subscriber.form_data).length > 0) {
-    // Has form data, needs strategy
-    resumeStep = 3 // Feed style selection (before strategy generation)
+    // Has form data, needs strategy generation
+    // Check if feed style is selected (determines if ready for strategy)
+    if (subscriber.feed_style) {
+      resumeStep = 3.5 // Ready for grid generation (after strategy)
+    } else {
+      resumeStep = 3 // Feed style selection (before strategy generation)
+    }
   } else {
-    // Has email but no form data - start at questions
+    // Has email but no form data - start at questions (step 1)
+    // Email capture already done (we're here because subscriber exists)
     resumeStep = 1
   }
 

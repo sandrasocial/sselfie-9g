@@ -35,6 +35,52 @@ export async function GET(request: Request) {
       console.log("[v0] 👤 Regular auth, syncing user with Neon")
       const neonUser = await syncUserWithNeon(data.user.id, data.user.email!, data.user.user_metadata?.name)
 
+      // Decision 1: Grant free user credits to ALL free users who haven't received them yet
+      // This ensures credits are granted for all signups via callback route
+      if (neonUser?.id) {
+        try {
+          const { neon } = await import("@neondatabase/serverless")
+          const sql = neon(process.env.DATABASE_URL!)
+          
+          // Check if user has active subscription (only free users get welcome credits)
+          const hasSubscription = await sql`
+            SELECT COUNT(*) as count
+            FROM subscriptions
+            WHERE user_id = ${neonUser.id} AND status = 'active'
+          `
+          
+          if (hasSubscription[0].count === 0) {
+            // Check if welcome bonus transaction already exists (prevent duplicates)
+            const existingTransaction = await sql`
+              SELECT id FROM credit_transactions 
+              WHERE user_id = ${neonUser.id} 
+              AND transaction_type = 'bonus' 
+              AND description = 'Free blueprint credits (welcome bonus)'
+              LIMIT 1
+            `
+            
+            if (existingTransaction.length === 0) {
+              // Grant 2 credits to all free users who haven't received welcome bonus yet
+              const { grantFreeUserCredits } = await import("@/lib/credits")
+              const creditResult = await grantFreeUserCredits(neonUser.id)
+              
+              if (creditResult.success) {
+                console.log(`[v0] ✅ Free user credits (2) granted to user ${neonUser.id} via callback`)
+              } else {
+                console.error(`[v0] ❌ Failed to grant free user credits: ${creditResult.error}`)
+              }
+            } else {
+              console.log(`[v0] ⏭️ User ${neonUser.id} already received welcome bonus - skipping`)
+            }
+          } else {
+            console.log(`[v0] ⏭️ User ${neonUser.id} has active subscription - skipping free credits`)
+          }
+        } catch (creditError) {
+          console.error(`[v0] ❌ Error granting free user credits (non-critical):`, creditError)
+          // Don't fail auth if credit grant fails
+        }
+      }
+
       // Update last login timestamp for retention tracking
       if (neonUser?.id) {
         try {

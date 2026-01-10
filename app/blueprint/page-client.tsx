@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { Sparkles, Copy, Check } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
@@ -34,12 +35,36 @@ export default function BrandBlueprintPageClient({
   initialSelectedFeedStyle,
   initialSelfieImages,
 }: BrandBlueprintPageClientProps) {
+  const router = useRouter()
+  const urlUpdateRef = useRef(false) // Guard against infinite loops for URL update
+
+  // PR-8: Load email from localStorage if not provided by server
+  const loadEmailFromStorage = (): string => {
+    if (initialEmail) return initialEmail
+    try {
+      const storedEmail = localStorage.getItem("blueprint-email")
+      if (storedEmail && typeof storedEmail === "string" && storedEmail.includes("@")) {
+        return storedEmail
+      }
+    } catch (error) {
+      console.error("[Blueprint] Error reading localStorage:", error)
+    }
+    return ""
+  }
+
   // Initialize step from server props (resume logic)
   const [step, setStep] = useState(initialResumeStep)
-  // Email capture shown upfront if no email (step 0.5)
-  const [showEmailCapture, setShowEmailCapture] = useState(!initialEmail && initialResumeStep === 0)
-  const [savedEmail, setSavedEmail] = useState(initialEmail || "")
-  const [savedName, setSavedName] = useState("")
+  // PR-8: Email capture shown upfront if no email (REQUIRED before questions)
+  const storedEmail = loadEmailFromStorage()
+  const [showEmailCapture, setShowEmailCapture] = useState(!storedEmail && !initialEmail && initialResumeStep === 0)
+  const [savedEmail, setSavedEmail] = useState(initialEmail || storedEmail)
+  const [savedName, setSavedName] = useState(() => {
+    try {
+      return localStorage.getItem("blueprint-name") || ""
+    } catch {
+      return ""
+    }
+  })
   const [copiedCaption, setCopiedCaption] = useState<number | null>(null)
   const [selectedCalendarWeek, setSelectedCalendarWeek] = useState(1)
   const [formData, setFormData] = useState(
@@ -113,23 +138,198 @@ export default function BrandBlueprintPageClient({
     checkFeatureFlag()
   }, [])
 
-  // Initialize from server props on mount
+  // PR-8 Hydration Fix: URL update for localStorage-only users (must run first)
   useEffect(() => {
-    // Load saved strategy if exists
+    // Check if URL has email param, if not and localStorage has email, update URL and refresh
+    // This enables server-side hydration for localStorage-only users
+    if (urlUpdateRef.current) return // Guard against infinite loops
+    if (typeof window === "undefined") return // SSR guard
+
+    const urlParams = new URLSearchParams(window.location.search)
+    const urlEmail = urlParams.get("email")
+    const storedEmail = localStorage.getItem("blueprint-email")
+
+    // If no email param in URL but localStorage has email, update URL
+    if (!urlEmail && storedEmail && storedEmail.includes("@") && !initialEmail) {
+      urlUpdateRef.current = true // Mark as updated to prevent loop
+      router.replace(`/blueprint?email=${encodeURIComponent(storedEmail)}`)
+      router.refresh()
+      return // Exit early - refresh will re-render with server props
+    }
+  }, []) // Run once on mount
+
+  // PR-8 Hydration Fix: Unified hydration function
+  const hydrateBlueprintState = useCallback(async () => {
+    if (!savedEmail || !savedEmail.includes("@")) return
+    if (urlUpdateRef.current) return // Don't hydrate if URL was updated (refresh will provide server props)
+
+    try {
+      const response = await fetch(`/api/blueprint/get-blueprint?email=${encodeURIComponent(savedEmail)}`)
+      if (!response.ok) {
+        console.error("[Blueprint] Hydration failed:", response.status)
+        return
+      }
+
+      const data = await response.json()
+      if (!data.success || !data.blueprint) {
+        console.error("[Blueprint] Hydration failed: invalid response")
+        return
+      }
+
+      const blueprint = data.blueprint
+
+      // Hydrate form data if server didn't provide it
+      if (!initialFormData || (typeof initialFormData === "object" && Object.keys(initialFormData).length === 0)) {
+        if (blueprint.formData && typeof blueprint.formData === "object" && Object.keys(blueprint.formData).length > 0) {
+          setFormData(blueprint.formData)
+        }
+      }
+
+      // Hydrate feed style if server didn't provide it
+      if (!initialSelectedFeedStyle && blueprint.feedStyle) {
+        setSelectedFeedStyle(blueprint.feedStyle)
+      }
+
+      // Hydrate strategy if exists and server didn't indicate it
+      if (!initialHasStrategy && blueprint.strategy?.generated && blueprint.strategy?.data) {
+        setConcepts([blueprint.strategy.data])
+        setHasStrategy(true)
+      }
+
+      // Hydrate grid if exists and server didn't indicate it
+      if (!initialHasGrid && blueprint.grid?.generated && blueprint.grid?.gridUrl) {
+        setGeneratedConceptImages({ 0: blueprint.grid.gridUrl })
+        if (blueprint.grid.frameUrls && Array.isArray(blueprint.grid.frameUrls) && blueprint.grid.frameUrls.length === 9) {
+          setSavedFrameUrls(blueprint.grid.frameUrls)
+        }
+        setHasGrid(true)
+      }
+
+      // Hydrate selfie images if server didn't provide them
+      if ((!initialSelfieImages || initialSelfieImages.length === 0) && blueprint.selfieImages && Array.isArray(blueprint.selfieImages) && blueprint.selfieImages.length > 0) {
+        setSelfieImages(blueprint.selfieImages)
+      }
+
+      // Hydrate completion status if server didn't indicate it
+      if (!initialIsCompleted && blueprint.completed) {
+        setIsCompleted(true)
+        setHasGrid(true) // If completed, grid must exist
+        setStep((currentStep) => currentStep !== 7 ? 7 : currentStep) // Show completed view if not already at step 7
+      }
+    } catch (error) {
+      console.error("[Blueprint] Error hydrating blueprint state:", error)
+    }
+  }, [savedEmail, initialFormData, initialSelectedFeedStyle, initialHasStrategy, initialHasGrid, initialSelfieImages, initialIsCompleted])
+
+  // Initialize from server props on mount, then hydrate if needed
+  useEffect(() => {
+    // If completed, ensure we're showing upgrade view (server props win - set step to 7)
+    if (initialIsCompleted && step !== 7) {
+      setStep(7)
+      return // Don't hydrate if server says completed
+    }
+
+    // Load saved strategy if server indicated it exists (legacy path - server props win)
     if (initialHasStrategy && savedEmail) {
       loadSavedStrategy()
     }
     
-    // Load saved grid if exists
+    // Load saved grid if server indicated it exists (legacy path - server props win)
     if (initialHasGrid && savedEmail) {
       loadSavedGrid()
     }
+
+    // PR-8 Hydration Fix: If server didn't provide props (localStorage-only user), hydrate from DB
+    // Only hydrate if server didn't indicate any state exists AND URL update didn't happen
+    // URL update will trigger refresh with server props, so no need to hydrate client-side
+    const hasNoServerState = !initialHasStrategy && !initialHasGrid && !initialIsCompleted && !initialFormData
+    if (hasNoServerState && savedEmail && savedEmail.includes("@") && !urlUpdateRef.current) {
+      // Only hydrate if URL update didn't happen (URL update will trigger refresh with server props)
+      // Small delay to ensure URL update effect has completed
+      setTimeout(() => {
+        if (!urlUpdateRef.current) {
+          hydrateBlueprintState()
+        }
+      }, 100)
+    }
+  }, [hydrateBlueprintState]) // Include hydrateBlueprintState in deps (memoized with useCallback)
+
+  // PR-8 Hotfix: Load form data from localStorage if not provided by server
+  useEffect(() => {
+    // Only load from localStorage if server did not provide form data
+    // Check if initialFormData is null, undefined, or empty object
+    const hasServerFormData = initialFormData && typeof initialFormData === "object" && Object.keys(initialFormData).length > 0
     
-    // If completed, ensure we're showing upgrade view
-    if (initialIsCompleted && step !== 7) {
-      setStep(7)
+    if (!hasServerFormData) {
+      try {
+        const storedFormData = localStorage.getItem("blueprint-form-data")
+        if (storedFormData) {
+          const parsed = JSON.parse(storedFormData)
+          // Validate: must be plain object with keys
+          if (parsed && typeof parsed === "object" && !Array.isArray(parsed) && Object.keys(parsed).length > 0) {
+            setFormData(parsed)
+          }
+        }
+      } catch (error) {
+        console.error("[Blueprint] Error loading form data from localStorage:", error)
+        // Continue execution - form data remains in default empty state
+      }
     }
   }, []) // Run once on mount
+
+  // PR-8 Hotfix Issue 2: Restore step from localStorage on mount (only if server did not provide resume step)
+  // This runs after completion check useEffect above (order matters - server props must win)
+  useEffect(() => {
+    // Server props MUST win: Only restore if server provided initialResumeStep === 0
+    // Guard conditions ensure server props always take precedence:
+    // 1. initialResumeStep === 0: Server did not provide resume step (if > 0, server wins)
+    // 2. !initialIsCompleted: Not completed (if true, server sets step to 7 via first useEffect)
+    // 3. savedEmail exists: Email captured (user has progressed past landing)
+    // 4. !showEmailCapture: Not showing email capture modal (email capture already completed)
+    const shouldRestoreStep = 
+      initialResumeStep === 0 && // Server did not provide resume step (server props win if > 0)
+      !initialIsCompleted && // Not completed (completion check useEffect sets step to 7 if true)
+      savedEmail && // Email exists (user has progressed past landing)
+      savedEmail.length > 0 && // Email is not empty string
+      !showEmailCapture // Not showing email capture modal (user has completed email capture)
+
+    if (shouldRestoreStep) {
+      try {
+        const storedStep = localStorage.getItem("blueprint-last-step")
+        if (storedStep) {
+          const parsedStep = parseFloat(storedStep)
+          // Validate: must be finite number, >= 1 (never restore to 0), and within allowed values
+          // Allowed steps: 1, 2, 3, 3.5, 4, 5, 6, 7 (from existing implementation)
+          // Step 0 = landing page (never restore to this - user must go through email capture)
+          const allowedSteps = [1, 2, 3, 3.5, 4, 5, 6, 7]
+          if (
+            Number.isFinite(parsedStep) &&
+            parsedStep >= 1 &&
+            allowedSteps.includes(parsedStep)
+          ) {
+            setStep(parsedStep)
+          }
+        }
+      } catch (error) {
+        console.error("[Blueprint] Error loading step from localStorage:", error)
+        // Continue execution - step remains at initialResumeStep (0)
+      }
+    }
+  }, []) // Run once on mount
+
+  // PR-8 Hotfix Issue 2: Persist step to localStorage whenever it changes
+  useEffect(() => {
+    // Only persist if step is valid (not 0) and email exists (user has progressed past landing)
+    // Do not persist step 0 (landing page) as it's the default state
+    if (step > 0 && savedEmail && savedEmail.length > 0) {
+      try {
+        localStorage.setItem("blueprint-last-step", step.toString())
+      } catch (error) {
+        console.error("[Blueprint] Error saving step to localStorage:", error)
+        // Continue execution - step still works, just not persisted
+      }
+    }
+  }, [step, savedEmail])
 
   // Load saved strategy from API
   const loadSavedStrategy = async () => {
@@ -180,13 +380,26 @@ export default function BrandBlueprintPageClient({
     }
   }, [formData])
 
-  // Update URL with email when it's captured (for resume capability)
+  // PR-8: Update URL with email when it's captured (for resume capability)
+  // Also sync localStorage with URL if email comes from URL param
   useEffect(() => {
-    if (savedEmail && !initialEmail) {
-      // Update URL without reload
+    if (savedEmail) {
+      // Update URL without reload if email not already in URL
       const url = new URL(window.location.href)
-      url.searchParams.set("email", savedEmail)
-      window.history.replaceState({}, "", url.toString())
+      if (!url.searchParams.has("email") && !url.searchParams.has("token")) {
+        url.searchParams.set("email", savedEmail)
+        window.history.replaceState({}, "", url.toString())
+      }
+      
+      // Ensure localStorage is synced
+      try {
+        const storedEmail = localStorage.getItem("blueprint-email")
+        if (storedEmail !== savedEmail) {
+          localStorage.setItem("blueprint-email", savedEmail)
+        }
+      } catch (error) {
+        console.error("[Blueprint] Error syncing localStorage:", error)
+      }
     }
   }, [savedEmail, initialEmail])
 
@@ -410,8 +623,24 @@ export default function BrandBlueprintPageClient({
     setSavedName(name)
     setAccessToken(accessToken)
     setShowEmailCapture(false)
-    if (step === 2) {
-      setStep(3) // Move to Feed Style selection
+    
+    // PR-8: Save to localStorage for resume capability
+    try {
+      localStorage.setItem("blueprint-email", email)
+      localStorage.setItem("blueprint-name", name)
+      if (accessToken) {
+        localStorage.setItem("blueprint-access-token", accessToken)
+      }
+    } catch (error) {
+      console.error("[Blueprint] Error saving to localStorage:", error)
+      // Continue even if localStorage fails
+    }
+    
+    // PR-8: After email capture, proceed to step 1 (questions) if we're at step 0
+    if (step === 0) {
+      setStep(1)
+    } else if (step === 2) {
+      setStep(3) // Move to Feed Style selection (legacy path)
     } else if (step === 6) {
       // If coming from step 6 (caption templates) and email capture is triggered
       emailConcepts()
@@ -419,8 +648,11 @@ export default function BrandBlueprintPageClient({
   }
 
   const generateConcepts = async (): Promise<boolean> => {
+    // PR-8: Email is required - should never reach here without email, but safety check
     if (!savedEmail) {
+      console.error("[Blueprint] Attempted to generate concepts without email - this should not happen")
       setShowEmailCapture(true)
+      setStep(0) // Force back to email capture
       return false
     }
 
@@ -462,8 +694,11 @@ export default function BrandBlueprintPageClient({
   }
 
   const emailConcepts = async () => {
+    // PR-8: Email is required - should never reach here without email, but safety check
     if (!savedEmail) {
+      console.error("[Blueprint] Attempted to email concepts without email - this should not happen")
       setShowEmailCapture(true)
+      setStep(0) // Force back to email capture
       return
     }
 
@@ -678,16 +913,19 @@ export default function BrandBlueprintPageClient({
               <div style={{ transitionDelay: "0.2s", marginTop: "8px" }}>
                 <button
                   onClick={() => {
-                    // PR-8: Email capture upfront - if no email, show capture, otherwise proceed
+                    // PR-8: Email capture REQUIRED before proceeding to questions
                     if (!savedEmail) {
                       setShowEmailCapture(true)
-                    } else {
-                      setStep(1)
+                      // Prevent proceeding without email
+                      return
                     }
+                    // If email exists, proceed to questions (step 1)
+                    setStep(1)
                   }}
-                  className="bg-white text-black px-4 sm:px-8 py-2.5 sm:py-3.5 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-100 transition-all duration-200 min-h-[40px] sm:min-h-[44px] flex items-center justify-center whitespace-nowrap"
+                  disabled={!savedEmail}
+                  className="bg-white text-black px-4 sm:px-8 py-2.5 sm:py-3.5 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-100 transition-all duration-200 min-h-[40px] sm:min-h-[44px] flex items-center justify-center whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Start your blueprint →
+                  {savedEmail ? "Start your blueprint →" : "Get started →"}
                 </button>
               </div>
               <p className="mt-4 text-xs sm:text-sm font-light text-white/90" style={{ textShadow: "0 1px 5px rgba(0,0,0,0.3)", fontSize: "14px", marginTop: "16px" }}>
@@ -930,22 +1168,26 @@ export default function BrandBlueprintPageClient({
                 </button>
                 <button
                   onClick={() => {
+                    // PR-8: Email is required upfront, but safety check in case of edge cases
                     if (!savedEmail) {
+                      console.error("[Blueprint] Email missing at step 2 - forcing email capture")
                       setShowEmailCapture(true)
-                    } else {
-                      setStep(3)
+                      setStep(0) // Force back to beginning
+                      return
                     }
+                    setStep(3)
                   }}
                   disabled={
                     !formData.lightingKnowledge ||
                     !formData.angleAwareness ||
                     !formData.editingStyle ||
                     !formData.consistencyLevel ||
-                    !formData.currentSelfieHabits
+                    !formData.currentSelfieHabits ||
+                    !savedEmail
                   }
                   className="w-full sm:flex-1 py-3 sm:py-4 bg-stone-950 text-stone-50 text-xs tracking-[0.2em] sm:tracking-[0.3em] uppercase font-light hover:bg-stone-800 transition-all duration-300 disabled:opacity-30 disabled:cursor-not-allowed"
                 >
-                  {savedEmail ? "Continue →" : "See my feed style →"}
+                  Continue →
                 </button>
               </div>
             </div>
@@ -1152,15 +1394,19 @@ export default function BrandBlueprintPageClient({
                 Back
               </button>
               <div className="w-full sm:flex-1 flex flex-col gap-2">
+                {/* PR-8: Email is required upfront - this is a safety check only */}
                 {!savedEmail && (
-                  <p className="text-xs text-stone-500 text-center mb-1">
-                    Please complete email capture to continue
+                  <p className="text-xs text-red-500 text-center mb-1">
+                    Email required - returning to start
                   </p>
                 )}
                 <button
                   onClick={async () => {
+                    // PR-8: Email is required upfront, but safety check
                     if (!savedEmail) {
+                      console.error("[Blueprint] Email missing at step 3 - forcing email capture")
                       setShowEmailCapture(true)
+                      setStep(0) // Force back to beginning
                       return
                     }
                     const success = await generateConcepts()
@@ -1484,16 +1730,34 @@ export default function BrandBlueprintPageClient({
                   go!
                 </p>
 
-                {!accessToken && (
-                  <div className="bg-stone-100 p-4 sm:p-6 rounded-lg max-w-2xl mx-auto mb-8 sm:mb-12">
-                    <p className="text-xs sm:text-sm font-light text-stone-700 mb-3 sm:mb-4">
-                      Want these templates in your inbox? Save your blueprint and we&apos;ll email everything to you.
+                {/* PR-8: Email is required upfront - if missing at step 6, something went wrong */}
+                {!savedEmail && (
+                  <div className="bg-yellow-100 border border-yellow-300 p-4 sm:p-6 rounded-lg max-w-2xl mx-auto mb-8 sm:mb-12">
+                    <p className="text-xs sm:text-sm font-light text-yellow-800 mb-3 sm:mb-4">
+                      Email is required to continue. Please complete email capture first.
                     </p>
                     <button
-                      onClick={() => setShowEmailCapture(true)}
+                      onClick={() => {
+                        setShowEmailCapture(true)
+                        setStep(0) // Return to email capture
+                      }}
                       className="bg-stone-950 text-stone-50 px-6 sm:px-8 py-2 sm:py-3 text-xs tracking-[0.2em] sm:tracking-[0.3em] uppercase font-light hover:bg-stone-800 transition-all duration-300"
                     >
-                      Yes, email me →
+                      Enter email →
+                    </button>
+                  </div>
+                )}
+                {savedEmail && !accessToken && (
+                  <div className="bg-stone-100 p-4 sm:p-6 rounded-lg max-w-2xl mx-auto mb-8 sm:mb-12">
+                    <p className="text-xs sm:text-sm font-light text-stone-700 mb-3 sm:mb-4">
+                      Want these templates in your inbox? We&apos;ll email everything to {savedEmail}.
+                    </p>
+                    <button
+                      onClick={emailConcepts}
+                      disabled={isEmailingConcepts}
+                      className="bg-stone-950 text-stone-50 px-6 sm:px-8 py-2 sm:py-3 text-xs tracking-[0.2em] sm:tracking-[0.3em] uppercase font-light hover:bg-stone-800 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isEmailingConcepts ? "Sending..." : "Email me →"}
                     </button>
                   </div>
                 )}

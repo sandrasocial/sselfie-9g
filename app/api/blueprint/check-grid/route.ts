@@ -3,6 +3,8 @@ import { neon } from "@neondatabase/serverless"
 import { checkNanoBananaPrediction } from "@/lib/nano-banana-client"
 import { put } from "@vercel/blob"
 import sharp from "sharp"
+import { createServerClient } from "@/lib/supabase/server"
+import { getUserByAuthId } from "@/lib/user-mapping"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -50,11 +52,34 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "predictionId is required" }, { status: 400 })
     }
 
-    if (!email || typeof email !== "string") {
+    // Phase 1: Support both user_id (authenticated) and email (backward compatibility)
+    let userId: string | null = null
+
+    // Try to get user_id from auth session (Studio flow)
+    try {
+      const supabase = await createServerClient()
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser()
+
+      if (authUser) {
+        const neonUser = await getUserByAuthId(authUser.id)
+        if (neonUser) {
+          userId = neonUser.id
+          console.log("[Blueprint] Using user_id from auth session:", userId)
+        }
+      }
+    } catch (authError) {
+      // Not authenticated - fall back to email-based lookup
+      console.log("[Blueprint] Not authenticated, using email-based lookup")
+    }
+
+    // If not authenticated, email is required
+    if (!userId && (!email || typeof email !== "string")) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 })
     }
 
-    console.log(`[Blueprint] Checking grid status: ${predictionId}`)
+    console.log(`[Blueprint] Checking grid status: ${predictionId} for`, userId ? `user_id: ${userId}` : `email: ${email}`)
 
     // Check prediction status with Replicate
     const status = await checkNanoBananaPrediction(predictionId)
@@ -113,19 +138,90 @@ export async function POST(req: NextRequest) {
         }
 
         // Save grid data to database
+        // PR-8: Only mark as completed if strategy was also generated (canonical definition)
         try {
-          await sql`
-            UPDATE blueprint_subscribers
-            SET grid_generated = TRUE,
-                grid_generated_at = NOW(),
-                grid_url = ${gridBlob.url},
-                grid_frame_urls = ${frameUrls},
-                grid_prediction_id = ${predictionId},
-                blueprint_completed = TRUE,
-                blueprint_completed_at = NOW()
-            WHERE email = ${email}
-          `
-          console.log("[Blueprint] Grid data saved to database for email:", email)
+          // First, check if strategy exists
+          let strategyCheck = null
+          if (userId) {
+            strategyCheck = await sql`
+              SELECT strategy_generated
+              FROM blueprint_subscribers
+              WHERE user_id = ${userId}
+              LIMIT 1
+            `
+          } else {
+            strategyCheck = await sql`
+              SELECT strategy_generated
+              FROM blueprint_subscribers
+              WHERE email = ${email}
+              LIMIT 1
+            `
+          }
+          
+          const hasStrategy = strategyCheck.length > 0 && strategyCheck[0].strategy_generated === true
+          
+          // Decision 1: Update grid and completion status
+          // Note: Credits already deducted in generate-grid API when generation started
+          // No need to increment quota or deduct credits here
+          
+          // Update grid and completion status
+          if (hasStrategy) {
+            // Both strategy and grid exist - mark as completed
+            if (userId) {
+              // Decision 1: Just update grid status (credits already deducted in generate-grid)
+              await sql`
+                UPDATE blueprint_subscribers
+                SET grid_generated = TRUE,
+                    grid_generated_at = NOW(),
+                    grid_url = ${gridBlob.url},
+                    grid_frame_urls = ${JSON.stringify(frameUrls)},
+                    grid_prediction_id = ${predictionId},
+                    blueprint_completed = TRUE,
+                    blueprint_completed_at = NOW()
+                WHERE user_id = ${userId}
+              `
+              console.log("[Blueprint] Grid + Strategy complete - marked as completed for user_id:", userId)
+            } else {
+              await sql`
+                UPDATE blueprint_subscribers
+                SET grid_generated = TRUE,
+                    grid_generated_at = NOW(),
+                    grid_url = ${gridBlob.url},
+                    grid_frame_urls = ${JSON.stringify(frameUrls)},
+                    grid_prediction_id = ${predictionId},
+                    blueprint_completed = TRUE,
+                    blueprint_completed_at = NOW()
+                WHERE email = ${email}
+              `
+              console.log("[Blueprint] Grid + Strategy complete - marked as completed for email:", email)
+            }
+          } else {
+            // Grid exists but no strategy yet - don't mark as completed
+            if (userId) {
+              // Decision 1: Just update grid status (credits already deducted in generate-grid)
+              await sql`
+                UPDATE blueprint_subscribers
+                SET grid_generated = TRUE,
+                    grid_generated_at = NOW(),
+                    grid_url = ${gridBlob.url},
+                    grid_frame_urls = ${JSON.stringify(frameUrls)},
+                    grid_prediction_id = ${predictionId}
+                WHERE user_id = ${userId}
+              `
+              console.log("[Blueprint] Grid generated (strategy missing) - grid status updated for user_id:", userId)
+            } else {
+              await sql`
+                UPDATE blueprint_subscribers
+                SET grid_generated = TRUE,
+                    grid_generated_at = NOW(),
+                    grid_url = ${gridBlob.url},
+                    grid_frame_urls = ${JSON.stringify(frameUrls)},
+                    grid_prediction_id = ${predictionId}
+                WHERE email = ${email}
+              `
+              console.log("[Blueprint] Grid generated but strategy missing - not marked as completed for email:", email)
+            }
+          }
         } catch (dbError) {
           console.error("[Blueprint] Error saving grid to database:", dbError)
           // Continue even if save fails - user still gets the grid

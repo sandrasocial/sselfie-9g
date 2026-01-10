@@ -86,11 +86,12 @@ You must NOT touch any 🔴 CRITICAL files unless explicitly approved.
 - `middleware.ts`
 - `lib/db.ts`
 - `lib/auth-helper.ts`
-- `scripts/**`
 - `vercel.json`
 - `next.config.mjs`
 
 If a fix requires touching any of these, STOP and explain why before doing anything.
+
+**Note:** `scripts/**` is NOT in the critical list - migrations in `scripts/migrations/**` should be run automatically (see MIGRATION RULES below).
 
 ### OPERATING MODE
 
@@ -192,3 +193,101 @@ A task is complete ONLY when:
 - All tools pass
 - No new issues introduced
 - I understand what happened without reading code
+
+---
+
+## DATABASE MIGRATION RULES (AUTOMATIC EXECUTION)
+
+### MANDATORY MIGRATION EXECUTION
+
+When creating or modifying database schema (tables, columns, indexes, constraints):
+
+1. **ALWAYS create migration scripts** in `scripts/migrations/` following the pattern:
+   - SQL file: `scripts/migrations/{migration-name}.sql`
+   - Runner: `scripts/migrations/run-{migration-name}-migration.ts`
+   - Verifier: `scripts/migrations/verify-{migration-name}-migration.ts`
+
+2. **AUTOMATICALLY RUN migrations** after creating them:
+   - Run the TypeScript migration runner: `npx tsx scripts/migrations/run-{migration-name}-migration.ts`
+   - DO NOT ask the user to run migrations manually
+   - DO NOT skip running migrations
+
+3. **VERIFY migrations** after execution:
+   - Run the verification script: `npx tsx scripts/migrations/verify-{migration-name}-migration.ts`
+   - Confirm all tables/columns/indexes were created successfully
+   - Report verification results in plain language
+
+### MIGRATION SCRIPT REQUIREMENTS
+
+**SQL Migration File (`*.sql`):**
+- Must be idempotent (use `IF NOT EXISTS`, `ON CONFLICT DO NOTHING`)
+- Must record migration in `schema_migrations` table
+- Must use `BEGIN;` / `COMMIT;` transactions
+- Must include rollback instructions in comments
+
+**TypeScript Runner (`run-*-migration.ts`):**
+- Must check `schema_migrations` table before running
+- Must load environment variables from `.env.local`
+- Must use `@neondatabase/serverless` for database connection
+- Must handle errors gracefully with clear error messages
+- Must output progress logs in plain language
+
+**Verification Script (`verify-*-migration.ts`):**
+- Must check for all tables/columns/indexes created
+- Must verify data types and constraints
+- Must report pass/fail status clearly
+- Must output verification results in plain language
+
+### MIGRATION EXECUTION WORKFLOW
+
+When a task involves database changes:
+
+1. **CREATE** migration files (SQL + runner + verifier)
+2. **RUN** migration automatically: `npx tsx scripts/migrations/run-{name}-migration.ts`
+3. **VERIFY** migration: `npx tsx scripts/migrations/verify-{name}-migration.ts`
+4. **REPORT** results:
+   - Migration status (✅ completed / ❌ failed)
+   - Tables/columns/indexes created
+   - Verification status
+   - Any issues or warnings
+
+**NEVER:**
+- ❌ Create migrations without running them
+- ❌ Ask user to run migrations manually
+- ❌ Skip verification step
+- ❌ Proceed with code changes if migration fails
+
+### EXAMPLE MIGRATION WORKFLOW
+
+```bash
+# Step 1: Create migration files
+# - scripts/migrations/add-user-id-to-blueprint-subscribers.sql
+# - scripts/migrations/run-user-id-blueprint-migration.ts
+# - scripts/migrations/verify-user-id-blueprint-migration.ts
+
+# Step 2: Run migration (AUTOMATIC)
+npx tsx scripts/migrations/run-user-id-blueprint-migration.ts
+
+# Step 3: Verify migration (AUTOMATIC)
+npx tsx scripts/migrations/verify-user-id-blueprint-migration.ts
+
+# Step 4: Report results to user
+✅ Migration completed: Added user_id column to blueprint_subscribers
+✅ Verification passed: Column exists, type TEXT, nullable, indexed
+```
+
+### MIGRATION CHECKLIST
+
+Before completing any task with database changes:
+
+- [ ] Migration SQL file created in `scripts/migrations/`
+- [ ] Migration runner TypeScript file created
+- [ ] Verification script created
+- [ ] Migration executed automatically
+- [ ] Verification passed
+- [ ] Results reported to user in plain language
+
+**If any step fails:**
+- Stop and report the issue
+- DO NOT proceed with code changes
+- Fix migration issues first
