@@ -1037,18 +1037,23 @@ export async function POST(request: NextRequest) {
               }
               
               // Decision 1: Grant 60 credits for paid blueprint purchase (30 grids × 2 credits)
-              // First, get or create user from email (if user is authenticated, get user_id from session.metadata)
+              // Decision 2: Prioritize user_id from session.metadata (authenticated checkout)
+              // Fallback to email lookup only for guest checkout
               let userId: string | null = session.metadata?.user_id || null
               
-              if (!userId && customerEmail) {
-                // Try to find user by email
+              if (userId) {
+                console.log(`[v0] Using user_id from session.metadata (authenticated checkout): ${userId}`)
+              } else if (customerEmail) {
+                // Fallback: Try to find user by email (guest checkout)
                 try {
                   const userByEmail = await sql`
                     SELECT id FROM users WHERE email = ${customerEmail} LIMIT 1
                   `
                   if (userByEmail.length > 0) {
                     userId = userByEmail[0].id
-                    console.log(`[v0] Found user ${userId} by email for paid blueprint purchase`)
+                    console.log(`[v0] Found user ${userId} by email for paid blueprint purchase (guest checkout)`)
+                  } else {
+                    console.log(`[v0] No user found by email - will create blueprint_subscribers record for later migration`)
                   }
                 } catch (userLookupError: any) {
                   console.error(`[v0] Error looking up user by email:`, userLookupError.message)
@@ -1120,93 +1125,127 @@ export async function POST(request: NextRequest) {
                 }
               }
               
-              // PR-3.1: Update blueprint_subscribers with paid_blueprint columns
-              // Set converted_to_user to match existing system semantics (ANY purchase = converted)
-              // ⚠️ CRITICAL: Create record if it doesn't exist (for direct paid blueprint purchases)
+              // Decision 2: Update blueprint_subscribers with paid_blueprint columns
+              // Prioritize linking to user_id if authenticated, otherwise use email (guest checkout)
+              // ⚠️ CRITICAL: Link to user_id if authenticated (consistent with other flows)
               try {
-                console.log(`[v0] 🔍 Checking for existing blueprint_subscriber with email: ${customerEmail}`)
-                // Use LOWER() for case-insensitive email matching
-                const blueprintCheck = await sql`
-                  SELECT id, access_token, email, paid_blueprint_purchased 
-                  FROM blueprint_subscribers 
-                  WHERE LOWER(email) = LOWER(${customerEmail}) 
-                  LIMIT 1
-                `
-                
-                console.log(`[v0] 🔍 Blueprint check result:`, {
-                  found: blueprintCheck.length > 0,
-                  hasAccessToken: blueprintCheck.length > 0 && !!blueprintCheck[0].access_token,
-                  alreadyPurchased: blueprintCheck.length > 0 && blueprintCheck[0].paid_blueprint_purchased,
-                })
-                
-                let accessToken: string
-                
-                if (blueprintCheck.length > 0) {
-                  // Existing subscriber - use existing access token or generate if missing
-                  accessToken = blueprintCheck[0].access_token || randomUUID()
-                  console.log(`[v0] 🔑 Using ${blueprintCheck[0].access_token ? 'existing' : 'newly generated'} access token`)
+                if (userId) {
+                  // Authenticated user: Link to user_id (consistent with other payment flows)
+                  console.log(`[v0] 🔍 Linking paid blueprint purchase to authenticated user: ${userId}`)
                   
-                  await sql`
-                    UPDATE blueprint_subscribers
-                    SET 
-                      paid_blueprint_purchased = TRUE,
-                      paid_blueprint_purchased_at = NOW(),
-                      paid_blueprint_stripe_payment_id = ${paymentIntentId || null},
-                      converted_to_user = TRUE,
-                      converted_at = NOW(),
-                      access_token = ${accessToken},
-                      updated_at = NOW()
+                  const blueprintCheck = await sql`
+                    SELECT id, paid_blueprint_purchased, user_id
+                    FROM blueprint_subscribers 
+                    WHERE user_id = ${userId}
+                    LIMIT 1
+                  `
+                  
+                  if (blueprintCheck.length > 0) {
+                    // Existing blueprint_subscribers record - update with paid purchase
+                    await sql`
+                      UPDATE blueprint_subscribers
+                      SET 
+                        paid_blueprint_purchased = TRUE,
+                        paid_blueprint_purchased_at = NOW(),
+                        paid_blueprint_stripe_payment_id = ${paymentIntentId || null},
+                        converted_to_user = TRUE,
+                        converted_at = NOW(),
+                        updated_at = NOW()
+                      WHERE user_id = ${userId}
+                    `
+                    console.log(`[v0] ✅ Updated blueprint_subscribers with paid blueprint purchase for user ${userId}`)
+                  } else {
+                    // No blueprint_subscribers record - create one linked to user_id
+                    const customerName = session.customer_details?.name || customerEmail?.split("@")[0] || "User"
+                    await sql`
+                      INSERT INTO blueprint_subscribers (
+                        user_id,
+                        email,
+                        name,
+                        access_token,
+                        paid_blueprint_purchased,
+                        paid_blueprint_purchased_at,
+                        paid_blueprint_stripe_payment_id,
+                        converted_to_user,
+                        converted_at,
+                        created_at,
+                        updated_at
+                      )
+                      VALUES (
+                        ${userId},
+                        ${customerEmail || null},
+                        ${customerName},
+                        ${randomUUID()},
+                        TRUE,
+                        NOW(),
+                        ${paymentIntentId || null},
+                        TRUE,
+                        NOW(),
+                        NOW(),
+                        NOW()
+                      )
+                    `
+                    console.log(`[v0] ✅ Created blueprint_subscribers record linked to user ${userId}`)
+                  }
+                } else if (customerEmail) {
+                  // Guest checkout: Use email-based lookup (for later migration)
+                  console.log(`[v0] 🔍 Guest checkout - checking for existing blueprint_subscriber with email: ${customerEmail}`)
+                  
+                  const blueprintCheck = await sql`
+                    SELECT id, access_token, email, paid_blueprint_purchased, user_id
+                    FROM blueprint_subscribers 
                     WHERE LOWER(email) = LOWER(${customerEmail})
+                    LIMIT 1
                   `
-                  console.log(`[v0] ✅ Updated blueprint_subscribers with paid blueprint purchase for ${customerEmail}`)
-                } else {
-                  // New subscriber - create record with access token
-                  accessToken = randomUUID()
-                  const customerName = session.customer_details?.name || customerEmail.split("@")[0]
-                  console.log(`[v0] 🔑 Generating new access token for new subscriber: ${customerEmail}`)
                   
-                  await sql`
-                    INSERT INTO blueprint_subscribers (
-                      email,
-                      name,
-                      access_token,
-                      paid_blueprint_purchased,
-                      paid_blueprint_purchased_at,
-                      paid_blueprint_stripe_payment_id,
-                      converted_to_user,
-                      converted_at,
-                      created_at,
-                      updated_at
-                    )
-                    VALUES (
-                      ${customerEmail},
-                      ${customerName},
-                      ${accessToken},
-                      TRUE,
-                      NOW(),
-                      ${paymentIntentId || null},
-                      TRUE,
-                      NOW(),
-                      NOW(),
-                      NOW()
-                    )
-                  `
-                  console.log(`[v0] ✅ Created blueprint_subscribers record for paid blueprint purchase: ${customerEmail} with access_token: ${accessToken}`)
-                }
-                
-                console.log(`[v0] ✅ Marked as converted (stops freebie nurture emails, matches system semantics)`)
-                
-                // Verify the record was created/updated correctly
-                const verifyCheck = await sql`
-                  SELECT id, access_token, paid_blueprint_purchased, email
-                  FROM blueprint_subscribers 
-                  WHERE LOWER(email) = LOWER(${customerEmail})
-                  LIMIT 1
-                `
-                if (verifyCheck.length > 0) {
-                  console.log(`[v0] ✅ VERIFICATION: Record exists with paid_blueprint_purchased=${verifyCheck[0].paid_blueprint_purchased}, access_token=${verifyCheck[0].access_token ? 'SET' : 'MISSING'}`)
-                } else {
-                  console.error(`[v0] ❌ VERIFICATION FAILED: Record not found after insert/update!`)
+                  if (blueprintCheck.length > 0) {
+                    // Existing subscriber - update with paid purchase
+                    const accessToken = blueprintCheck[0].access_token || randomUUID()
+                    await sql`
+                      UPDATE blueprint_subscribers
+                      SET 
+                        paid_blueprint_purchased = TRUE,
+                        paid_blueprint_purchased_at = NOW(),
+                        paid_blueprint_stripe_payment_id = ${paymentIntentId || null},
+                        converted_to_user = TRUE,
+                        converted_at = NOW(),
+                        access_token = ${accessToken},
+                        updated_at = NOW()
+                      WHERE LOWER(email) = LOWER(${customerEmail})
+                    `
+                    console.log(`[v0] ✅ Updated blueprint_subscribers with paid blueprint purchase for ${customerEmail} (guest checkout)`)
+                  } else {
+                    // New subscriber - create record (will be linked to user_id when user signs up)
+                    const accessToken = randomUUID()
+                    const customerName = session.customer_details?.name || customerEmail.split("@")[0]
+                    await sql`
+                      INSERT INTO blueprint_subscribers (
+                        email,
+                        name,
+                        access_token,
+                        paid_blueprint_purchased,
+                        paid_blueprint_purchased_at,
+                        paid_blueprint_stripe_payment_id,
+                        converted_to_user,
+                        converted_at,
+                        created_at,
+                        updated_at
+                      )
+                      VALUES (
+                        ${customerEmail},
+                        ${customerName},
+                        ${accessToken},
+                        TRUE,
+                        NOW(),
+                        ${paymentIntentId || null},
+                        TRUE,
+                        NOW(),
+                        NOW(),
+                        NOW()
+                      )
+                    `
+                    console.log(`[v0] ✅ Created blueprint_subscribers record for guest checkout: ${customerEmail} (will be linked to user_id on signup)`)
+                  }
                 }
                 
                 // PR-3: Send paid blueprint delivery email

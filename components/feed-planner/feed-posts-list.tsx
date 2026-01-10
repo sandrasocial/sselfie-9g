@@ -17,6 +17,7 @@ interface FeedPostsListProps {
   onEnhanceCaption: (postId: number, caption: string) => void
   onAddImage?: (postId: number) => void // Open gallery selector (upload + gallery)
   onRefresh?: () => void // Callback to refresh feed data after caption generation
+  mode?: "feed-planner" | "blueprint" // Decision 2: Mode prop to hide caption generation
 }
 
 export default function FeedPostsList({
@@ -31,6 +32,7 @@ export default function FeedPostsList({
   onEnhanceCaption,
   onAddImage,
   onRefresh,
+  mode = "feed-planner",
 }: FeedPostsListProps) {
   const [isGeneratingCaptions, setIsGeneratingCaptions] = useState(false)
 
@@ -85,10 +87,13 @@ export default function FeedPostsList({
     }
   }
 
+  // Decision 2: Hide caption generation in blueprint mode
+  const showCaptionGeneration = mode !== "blueprint"
+
   return (
     <div className="space-y-6 md:space-y-8">
-      {/* Create Captions Button - Show if no captions exist */}
-      {posts.length > 0 && posts.every((p: any) => !p.caption || p.caption.trim() === "") && (
+      {/* Decision 2: Create Captions Button - Hide in blueprint mode */}
+      {showCaptionGeneration && posts.length > 0 && posts.every((p: any) => !p.caption || p.caption.trim() === "") && (
         <div className="flex justify-center pb-4">
           <button
             onClick={handleCreateCaptions}
@@ -205,18 +210,21 @@ export default function FeedPostsList({
                         <Copy size={18} className="text-stone-600" />
                       )}
                     </button>
-                    <button
-                      onClick={() => onEnhanceCaption(post.id, post.caption)}
-                      disabled={enhancingCaptions.has(post.id)}
-                      className="p-2 hover:bg-stone-100 rounded-lg transition-colors border border-stone-200 hover:border-stone-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                      title="Enhance with Maya"
-                    >
-                      {enhancingCaptions.has(post.id) ? (
-                        <Loader2 size={18} className="text-stone-600 animate-spin" />
-                      ) : (
-                        <Sparkles size={18} className="text-stone-600" />
-                      )}
-                    </button>
+                    {/* Decision 2: Hide enhance caption button in blueprint mode */}
+                    {showCaptionGeneration && (
+                      <button
+                        onClick={() => onEnhanceCaption(post.id, post.caption)}
+                        disabled={enhancingCaptions.has(post.id)}
+                        className="p-2 hover:bg-stone-100 rounded-lg transition-colors border border-stone-200 hover:border-stone-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Enhance with Maya"
+                      >
+                        {enhancingCaptions.has(post.id) ? (
+                          <Loader2 size={18} className="text-stone-600 animate-spin" />
+                        ) : (
+                          <Sparkles size={18} className="text-stone-600" />
+                        )}
+                      </button>
+                    )}
                   </div>
                 </div>
                 <p className="text-xs text-stone-400 uppercase tracking-wide">Just now</p>

@@ -21,9 +21,10 @@ import FeedHighlightsModal from "./feed-highlights-modal"
 interface InstagramFeedViewProps {
   feedId: number
   onBack?: () => void
+  mode?: "feed-planner" | "blueprint" // Decision 2: Mode prop for feature flags
 }
 
-export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewProps) {
+export default function InstagramFeedView({ feedId, onBack, mode = "feed-planner" }: InstagramFeedViewProps) {
   // Use custom hooks for all complex logic
   const { feedData, feedError, mutate, isLoading: isFeedLoading, isValidating } = useFeedPolling(feedId)
   const { selectedPost, setSelectedPost, showGallery, setShowGallery, showProfileGallery, setShowProfileGallery } = useFeedModals()
@@ -479,6 +480,7 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
       <FeedTabs
         activeTab={activeTab}
         onTabChange={setActiveTab}
+        mode={mode} // Decision 2: Pass mode to hide strategy tab in blueprint mode
       />
 
 
@@ -522,10 +524,12 @@ export default function InstagramFeedView({ feedId, onBack }: InstagramFeedViewP
             onEnhanceCaption={actions.handleEnhanceCaption}
             onAddImage={setShowGallery}
             onRefresh={mutate}
+            mode={mode} // Decision 2: Pass mode to hide caption generation in blueprint mode
           />
         )}
 
-        {activeTab === "strategy" && (
+        {/* Decision 2: Hide strategy tab content in blueprint mode */}
+        {activeTab === "strategy" && mode !== "blueprint" && (
           <FeedStrategy
             feedData={feedData}
             feedId={feedId}

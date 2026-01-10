@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import useSWR from "swr"
+import FeedViewScreen from "@/components/feed-planner/feed-view-screen"
 
 interface BlueprintScreenProps {
   userId: string
@@ -98,6 +99,17 @@ export default function BlueprintScreen({ userId }: BlueprintScreenProps) {
   const blueprint = blueprintData?.blueprint
   const entitlement = blueprintData?.entitlement
   const creditBalance = entitlement?.creditBalance ?? 0
+  const isPaidBlueprint = entitlement?.type === "paid" || entitlement?.type === "studio"
+  const hasStrategy = blueprint?.strategy?.generated && blueprint?.strategy?.data
+
+  // Decision 2: For paid blueprint users with strategy, show FeedViewScreen (Feed Planner UI)
+  if (isPaidBlueprint && hasStrategy) {
+    return (
+      <div className="flex flex-col flex-1 overflow-hidden min-h-0">
+        <FeedViewScreen feedId={null} mode="blueprint" />
+      </div>
+    )
+  }
 
   // If no blueprint state exists, show welcome/start screen
   if (!blueprint) {

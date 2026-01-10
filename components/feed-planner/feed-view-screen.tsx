@@ -12,6 +12,7 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 interface FeedViewScreenProps {
   feedId?: number | null
+  mode?: "feed-planner" | "blueprint" // Decision 2: Mode prop for feature flags
 }
 
 /**
@@ -27,7 +28,7 @@ interface FeedViewScreenProps {
  * When no feedId is provided, automatically fetches the latest feed.
  * Shows placeholder state if no feed exists.
  */
-export default function FeedViewScreen({ feedId: feedIdProp }: FeedViewScreenProps = {}) {
+export default function FeedViewScreen({ feedId: feedIdProp, mode = "feed-planner" }: FeedViewScreenProps = {}) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isCreatingManual, setIsCreatingManual] = useState(false)
@@ -35,11 +36,14 @@ export default function FeedViewScreen({ feedId: feedIdProp }: FeedViewScreenPro
   // Get feedId from prop, query param, or null
   const feedIdFromQuery = feedIdProp ?? (searchParams.get('feedId') ? parseInt(searchParams.get('feedId')!, 10) : null)
 
-  // Determine which endpoint to use: specific feedId or latest feed
-  // Use /api/feed/latest which routes to [feedId] with feedId="latest"
-  const swrKey = feedIdFromQuery 
-    ? `/api/feed/${feedIdFromQuery}` 
-    : '/api/feed/latest'
+  // Decision 2: Determine which endpoint to use based on mode
+  // For blueprint mode, use /api/feed/blueprint
+  // Otherwise use specific feedId or latest feed
+  const swrKey = mode === "blueprint"
+    ? '/api/feed/blueprint'
+    : feedIdFromQuery 
+      ? `/api/feed/${feedIdFromQuery}` 
+      : '/api/feed/latest'
 
   // Fetch feed data (handles both specific feed and latest feed)
   const { data: feedData, error: feedError, isLoading } = useSWR(
@@ -256,6 +260,7 @@ export default function FeedViewScreen({ feedId: feedIdProp }: FeedViewScreenPro
         <InstagramFeedView
           feedId={effectiveFeedId}
           onBack={handleBackToMaya}
+          mode={mode} // Decision 2: Pass mode to InstagramFeedView
         />
       </div>
     </div>

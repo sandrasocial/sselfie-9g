@@ -21,14 +21,11 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
   const [confirmPassword, setConfirmPassword] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
-  const [paidBlueprintAccessToken, setPaidBlueprintAccessToken] = useState<string | null>(null)
-  const [paidBlueprintLoading, setPaidBlueprintLoading] = useState(false)
+  // Decision 2: Removed access token state - no longer needed for authenticated users
 
   useEffect(() => {
-    // Skip userInfo polling for paid_blueprint - we only need access token
-    if (purchaseType === "paid_blueprint") {
-      return
-    }
+    // Decision 2: Paid blueprint now uses same flow as other products
+    // User info polling is only needed for unauthenticated users (account creation)
 
     if (initialEmail) {
       let attempts = 0
@@ -84,77 +81,21 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
       } = await supabase.auth.getUser()
       setIsAuthenticated(!!user)
 
-      if (purchaseType === "credit_topup" && user) {
+      // Decision 2: Auto-redirect authenticated users to Studio
+      if (user && (purchaseType === "credit_topup" || purchaseType === "paid_blueprint")) {
+        const redirectPath = purchaseType === "paid_blueprint"
+          ? "/studio?tab=blueprint&purchase=success"
+          : "/studio"
         setTimeout(() => {
-          router.push("/studio")
+          router.push(redirectPath)
         }, 2000)
       }
     }
     checkAuth()
   }, [purchaseType, router])
 
-  // Fetch access token for paid blueprint purchases and auto-redirect
-  useEffect(() => {
-    if (purchaseType === "paid_blueprint" && initialEmail && !paidBlueprintAccessToken && !paidBlueprintLoading) {
-      setPaidBlueprintLoading(true)
-      let attempts = 0
-      const MAX_ATTEMPTS = 30 // 60 seconds total
-
-      const fetchAccessToken = async () => {
-        try {
-          const response = await fetch(`/api/blueprint/get-access-token?email=${encodeURIComponent(initialEmail)}`)
-          
-          if (response.ok) {
-            const data = await response.json()
-            if (data.accessToken) {
-              setPaidBlueprintAccessToken(data.accessToken)
-              setPaidBlueprintLoading(false)
-              // Auto-redirect when token is ready
-              setTimeout(() => {
-                router.push(`/blueprint/paid?access=${data.accessToken}`)
-              }, 1000) // Small delay for smooth transition
-              return
-            }
-          } else if (response.status === 404) {
-            // 404 is expected while webhook is processing - don't log as error
-            const data = await response.json().catch(() => ({}))
-            if (data.error?.includes("No paid blueprint purchase found")) {
-              // Webhook still processing - retry silently
-              attempts++
-              if (attempts < MAX_ATTEMPTS) {
-                setTimeout(fetchAccessToken, 2000) // Retry every 2 seconds
-              } else {
-                setPaidBlueprintLoading(false)
-                console.log("[v0] Webhook still processing - access token will be available soon. Check your email for access instructions.")
-              }
-              return
-            }
-          }
-          
-          // If no token yet, retry (webhook may still be processing)
-          attempts++
-          if (attempts < MAX_ATTEMPTS) {
-            setTimeout(fetchAccessToken, 2000) // Retry every 2 seconds
-          } else {
-            setPaidBlueprintLoading(false)
-            console.log("[v0] Max attempts reached, access token not available yet")
-          }
-        } catch (error) {
-          // Only log unexpected errors (network issues, etc.)
-          if (error instanceof TypeError && error.message.includes("fetch")) {
-            console.error("[v0] Network error fetching access token:", error)
-          }
-          attempts++
-          if (attempts < MAX_ATTEMPTS) {
-            setTimeout(fetchAccessToken, 2000) // Retry on error
-          } else {
-            setPaidBlueprintLoading(false)
-          }
-        }
-      }
-      fetchAccessToken()
-    }
-  }, [purchaseType, initialEmail, paidBlueprintAccessToken, paidBlueprintLoading, router])
+  // Decision 2: Removed access token polling - authenticated users redirect via checkAuth
+  // Unauthenticated users will see account creation form (same as one-time session)
 
   const handleCompleteAccount = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -256,74 +197,9 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
     )
   }
 
-  if (purchaseType === "paid_blueprint") {
-    const blueprintUrl = paidBlueprintAccessToken
-      ? `/blueprint/paid?access=${paidBlueprintAccessToken}`
-      : null
-
-    return (
-      <div className="min-h-screen bg-stone-50">
-        <div className="relative h-[40vh] sm:h-[50vh] overflow-hidden">
-          <Image
-            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2842%29-7c6UXso773x523qKCiuawGNpuzsx8n.jpeg"
-            fill
-            alt="Your Blueprint is Ready"
-            className="object-cover object-center"
-            priority
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-stone-50" />
-
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-            <div className="font-serif text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extralight tracking-[0.3em] sm:tracking-[0.2em] uppercase text-white mb-3 sm:mb-4">
-              PAYMENT CONFIRMED
-            </div>
-            <p className="text-sm sm:text-base md:text-lg text-white/90 font-light max-w-md">
-              Your paid blueprint is ready
-            </p>
-          </div>
-        </div>
-
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12 md:py-16">
-          <div className="text-center mb-8 sm:mb-12">
-            <h1 className="font-serif text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extralight tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-900 mb-3 sm:mb-4 px-2">
-              {paidBlueprintLoading ? "PREPARING YOUR ACCESS..." : "YOUR PAID BLUEPRINT IS READY ✨"}
-            </h1>
-            <p className="text-sm sm:text-base text-stone-600 font-light leading-relaxed max-w-xl mx-auto px-4">
-              {paidBlueprintLoading 
-                ? "Setting up your access. You'll be redirected automatically..."
-                : "Upload your selfies and we'll create 30 custom photos that look like you. Ready to get started?"}
-            </p>
-          </div>
-
-          <div className="text-center space-y-4">
-            {paidBlueprintLoading ? (
-              <div className="text-sm text-stone-600 font-light">
-                <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-stone-950 mr-2"></div>
-                Preparing your access...
-              </div>
-            ) : blueprintUrl ? (
-              <button
-                onClick={() => router.push(blueprintUrl)}
-                className="bg-stone-950 text-stone-50 px-8 sm:px-12 py-3 sm:py-4 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 min-h-[44px]"
-              >
-                Get Started →
-              </button>
-            ) : (
-              <button
-                onClick={() => router.push("/blueprint/paid")}
-                className="bg-stone-950 text-stone-50 px-8 sm:px-12 py-3 sm:py-4 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 min-h-[44px]"
-              >
-                Get Started →
-              </button>
-            )}
-            <p className="text-[10px] sm:text-xs text-stone-500 font-light mt-4 sm:mt-6">
-              A confirmation email has been sent to {initialEmail || "your email"}
-            </p>
-          </div>
-        </div>
-      </div>
-    )
-  }
+  // Decision 2: Paid blueprint now uses same flow as other products
+  // Authenticated users auto-redirect to Studio (via checkAuth useEffect)
+  // Unauthenticated users see account creation form below
 
   if (!userInfo && initialEmail) {
     return (

@@ -69,6 +69,8 @@ interface SselfieAppProps {
   isWelcome?: boolean
   shouldShowCheckout?: boolean
   subscriptionStatus?: string | null
+  purchaseSuccess?: boolean // Decision 2: Purchase success flag
+  initialTab?: string // Decision 2: Initial tab from URL param
 }
 
 export default function SselfieApp({
@@ -78,8 +80,18 @@ export default function SselfieApp({
   isWelcome = false,
   shouldShowCheckout = false,
   subscriptionStatus = null,
+  purchaseSuccess = false,
+  initialTab,
 }: SselfieAppProps) {
   const getInitialTab = () => {
+    // Decision 2: Use initialTab prop if provided (from URL param)
+    if (initialTab) {
+      const validTabs = ["maya", "gallery", "feed-planner", "blueprint", "academy", "account"]
+      if (validTabs.includes(initialTab)) {
+        return initialTab
+      }
+    }
+    
     if (typeof window !== "undefined") {
       const hash = window.location.hash.slice(1) // Remove the # symbol
       const validTabs = [
@@ -102,6 +114,7 @@ export default function SselfieApp({
   }
 
   const [activeTab, setActiveTab] = useState(getInitialTab)
+  const [showPurchaseSuccess, setShowPurchaseSuccess] = useState(purchaseSuccess)
   const [isLoading, setIsLoading] = useState(true)
   const [currentTime, setCurrentTime] = useState(new Date())
   const [hasTrainedModel, setHasTrainedModel] = useState(false)
@@ -412,6 +425,25 @@ export default function SselfieApp({
   const handleCreditsPurchased = () => {
     refreshCredits()
   }
+
+  // Decision 2: Handle purchase success - refresh credits and show success message
+  useEffect(() => {
+    if (purchaseSuccess && activeTab === "blueprint") {
+      // Refresh credits to show updated balance (60 credits for paid blueprint)
+      refreshCredits()
+      
+      // Remove purchase=success from URL after a delay (allows user to see success)
+      setTimeout(() => {
+        if (typeof window !== "undefined") {
+          const url = new URL(window.location.href)
+          url.searchParams.delete("purchase")
+          // Keep tab=blueprint param
+          window.history.replaceState({}, "", url.toString())
+          setShowPurchaseSuccess(false)
+        }
+      }, 3000) // Remove after 3 seconds
+    }
+  }, [purchaseSuccess, activeTab, refreshCredits])
 
   const handleLogout = async () => {
     try {

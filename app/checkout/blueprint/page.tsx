@@ -1,4 +1,5 @@
 import { redirect, notFound } from "next/navigation"
+import { createServerClient } from "@/lib/supabase/server"
 import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
 import { neon } from "@neondatabase/serverless"
 
@@ -47,14 +48,25 @@ export default async function BlueprintCheckoutPage({
   const email = params?.email
   const promoCode = params?.promo
 
-  // Email is now optional - Stripe checkout can capture it
-  // If email is provided, it will be pre-filled in checkout
-  console.log("[Blueprint Checkout] Creating session", email ? `for email: ${email}` : "without email (will be captured in checkout)", promoCode ? `with promo: ${promoCode}` : "")
+  // Decision 2: Check if user is authenticated - use authenticated checkout flow if logged in
+  const supabase = await createServerClient()
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser()
+
+  let clientSecret: string | null = null
 
   try {
-    // Create checkout session
-    // Note: createLandingCheckoutSession doesn't require email, Stripe will capture it
-    const clientSecret = await createLandingCheckoutSession("paid_blueprint", promoCode)
+    if (authUser) {
+      // Authenticated user: Use startProductCheckoutSession (includes user_id in metadata)
+      console.log("[Blueprint Checkout] Authenticated user, using product checkout session")
+      const { startProductCheckoutSession } = await import("@/app/actions/stripe")
+      clientSecret = await startProductCheckoutSession("paid_blueprint")
+    } else {
+      // Unauthenticated user: Use landing checkout session (guest checkout)
+      console.log("[Blueprint Checkout] Unauthenticated user, using landing checkout session", email ? `for email: ${email}` : "without email (will be captured in checkout)", promoCode ? `with promo: ${promoCode}` : "")
+      clientSecret = await createLandingCheckoutSession("paid_blueprint", promoCode)
+    }
 
     if (clientSecret) {
       // Redirect to the universal checkout page with client secret
