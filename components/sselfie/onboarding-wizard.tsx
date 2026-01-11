@@ -446,7 +446,7 @@ export default function OnboardingWizard({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-stone-950/60 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-stone-950/60 backdrop-blur-sm z-[100]"
             onClick={onDismiss}
           />
 
@@ -455,7 +455,8 @@ export default function OnboardingWizard({
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 pb-24 sm:pb-28 md:pb-32"
+            style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 6rem)" }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className={`w-full max-w-2xl max-h-[90vh] overflow-y-auto ${currentStep === "welcome" ? "bg-stone-950/95 backdrop-blur-xl" : ComponentClasses.card} ${DesignClasses.spacing.padding.lg} relative ${currentStep === "welcome" ? "border border-stone-800" : ""}`}>

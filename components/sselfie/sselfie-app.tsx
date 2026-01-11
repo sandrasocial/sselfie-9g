@@ -17,6 +17,7 @@ import {
 import LoadingScreen from "./loading-screen"
 import OnboardingWizard from "./onboarding-wizard"
 import BlueprintWelcomeWizard from "./blueprint-welcome-wizard"
+import BlueprintOnboardingWizard from "@/components/onboarding/blueprint-onboarding-wizard"
 import MayaChatScreen from "./maya-chat-screen"
 import GalleryScreen from "./gallery-screen"
 // Note: B-Roll functionality is accessible via Maya Videos tab (b-roll-screen.tsx kept for reference)
@@ -121,7 +122,18 @@ export default function SselfieApp({
   const [isLoadingTrainingStatus, setIsLoadingTrainingStatus] = useState(true)
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [showBlueprintWelcome, setShowBlueprintWelcome] = useState(false)
-  const [blueprintWelcomeEnabled, setBlueprintWelcomeEnabled] = useState(true)
+  const [showBlueprintOnboarding, setShowBlueprintOnboarding] = useState(false)
+  const [existingBlueprintData, setExistingBlueprintData] = useState<{
+    business?: string
+    dreamClient?: string
+    vibe?: string
+    lightingKnowledge?: string
+    angleAwareness?: string
+    editingStyle?: string
+    consistencyLevel?: string
+    currentSelfieHabits?: string
+    feedStyle?: string
+  } | null>(null)
   const [creditBalance, setCreditBalance] = useState<number>(0)
   const [isLoadingCredits, setIsLoadingCredits] = useState(true)
   
@@ -351,35 +363,169 @@ export default function SselfieApp({
     }
   }
 
+  // Decision 3: Fetch onboarding status and determine initial tab on mount and refresh
   useEffect(() => {
+    let mounted = true
+    
     const fetchTrainingStatus = async () => {
       try {
-        const response = await fetch("/api/training/status")
-        const data = await response.json()
-        console.log("[v0] Training status data:", data)
-        const hasModel = data.hasTrainedModel || false
-        setHasTrainedModel(hasModel)
+        setIsLoadingTrainingStatus(true)
         
-        // Show onboarding for first-time users without trained model
-        if (!hasModel && !isLoadingTrainingStatus) {
-          setShowOnboarding(true)
-        } else {
+        // Fetch training status, onboarding status, and blueprint entitlement
+        const [trainingResponse, onboardingResponse, blueprintResponse] = await Promise.all([
+          fetch("/api/training/status"),
+          fetch("/api/user/onboarding-status"),
+          fetch("/api/blueprint/state"),
+        ])
+
+        if (!mounted) return // Prevent state updates if component unmounted
+
+        const trainingData = await trainingResponse.json()
+        const onboardingData = onboardingResponse.ok
+          ? await onboardingResponse.json() 
+          : { 
+              onboarding_completed: false, 
+              blueprint_welcome_shown_at: null, 
+              hasBlueprintState: false,
+              hasBaseWizardData: false,
+              hasExtensionData: false
+            }
+        const blueprintData = blueprintResponse.ok ? await blueprintResponse.json() : null
+
+        console.log("[v0] Training status data:", trainingData)
+        console.log("[v0] Onboarding status data:", onboardingData)
+        console.log("[v0] Blueprint entitlement data:", blueprintData?.entitlement)
+
+        const hasModel = trainingData.hasTrainedModel || false
+        const onboardingCompleted = onboardingData.onboarding_completed || false
+        const blueprintWelcomeShown = !!onboardingData.blueprint_welcome_shown_at
+        const hasBlueprintState = onboardingData.hasBlueprintState || false
+        const hasBaseWizardData = onboardingData.hasBaseWizardData || false
+
+        setHasTrainedModel(hasModel)
+
+        // Decision 3: Route new blueprint users to blueprint tab if they're not already there
+        // Note: Sign-up already redirects to /studio?tab=blueprint, so initialTab should be set
+        // This is a fallback for direct navigation or refresh scenarios
+        const isBlueprintUser = blueprintData?.entitlement?.type === "free" || blueprintData?.entitlement?.type === "paid"
+        
+        console.log("[Wizard Debug] 📊 Onboarding State:", {
+          onboardingCompleted,
+          blueprintWelcomeShown,
+          hasBlueprintState,
+          hasBaseWizardData,
+          hasModel,
+          isBlueprintUser,
+          entitlementType: blueprintData?.entitlement?.type,
+        })
+        
+        if (isBlueprintUser && !onboardingCompleted && mounted) {
+          const currentUrlTab = typeof window !== "undefined" 
+            ? new URLSearchParams(window.location.search).get("tab") || window.location.hash.slice(1) || null
+            : null
+          
+          // Only route if URL doesn't already specify blueprint tab and we're on default maya
+          if (!currentUrlTab || (currentUrlTab === "maya" && !initialTab)) {
+            console.log("[Routing] 🔵 Routing blueprint user to blueprint tab (fallback routing)")
+            setActiveTab("blueprint")
+            if (typeof window !== "undefined") {
+              const url = new URL(window.location.href)
+              url.searchParams.set("tab", "blueprint")
+              window.history.replaceState({}, "", url.toString())
+            }
+          }
+        }
+
+        // Decision 3: Progressive onboarding flow
+        // 1. Blueprint Welcome (first time, no state)
+        // 2. Base Wizard (after welcome, base data missing)
+        // 3. Blueprint Extension (after base, extension data missing for blueprint users)
+        // 4. Complete (onboarding_completed = true)
+
+        // Unified wizard saves dreamClient and feedStyle (struggle is not collected)
+        // Check for extension data from API response
+        const hasExtensionData = onboardingData.hasExtensionData || (
+          blueprintData?.blueprint?.formData?.dreamClient && 
+          blueprintData?.blueprint?.feedStyle
+        )
+
+        console.log("[Wizard Debug] 🔍 Extension Data Check:", {
+          hasExtensionData,
+          hasExtensionDataFromAPI: onboardingData.hasExtensionData,
+          dreamClient: blueprintData?.blueprint?.formData?.dreamClient,
+          feedStyle: blueprintData?.blueprint?.feedStyle,
+        })
+
+        // For blueprint users, check if onboarding is actually complete (has all required data)
+        // If onboarding_completed flag is true but data is missing, treat as incomplete
+        const isActuallyCompleted = onboardingCompleted && (
+          !isBlueprintUser || // Studio users can complete without blueprint extension
+          (hasBaseWizardData && hasExtensionData) // Blueprint users need base + extension
+        )
+
+        console.log("[Wizard Debug] ✅ Is Actually Completed:", {
+          isActuallyCompleted,
+          onboardingCompleted,
+          isBlueprintUser,
+          hasBaseWizardData,
+          hasExtensionData,
+        })
+
+        if (!isActuallyCompleted && mounted) {
+          // Step 1: Show Blueprint Welcome if not shown and no state exists
+          if (!blueprintWelcomeShown && !hasBlueprintState && !hasBaseWizardData) {
+            console.log("[Blueprint Welcome] 👋 Showing blueprint welcome wizard (new user, no state)")
+            setShowBlueprintWelcome(true)
+            setShowBlueprintOnboarding(false)
+            setShowOnboarding(false)
+          }
+          // Step 2: Show Unified Blueprint Onboarding Wizard if welcome shown but onboarding data missing
+          else if (blueprintWelcomeShown && (!hasBaseWizardData || !hasExtensionData)) {
+            console.log("[Blueprint Onboarding] 📝 Showing unified blueprint onboarding wizard (welcome shown, onboarding data missing)")
+            setShowBlueprintWelcome(false)
+            setShowBlueprintOnboarding(true)
+            setShowOnboarding(false)
+          }
+          // Step 3: Show Training Wizard if all onboarding done but no trained model
+          else if ((blueprintWelcomeShown || hasBlueprintState || hasBaseWizardData) && !hasModel) {
+            console.log("[Onboarding] 🎓 Showing training onboarding wizard (onboarding done, no model)")
+            setShowBlueprintWelcome(false)
+            setShowBlueprintOnboarding(false)
+            setShowOnboarding(true)
+          }
+          // No wizards to show
+          else {
+            console.log("[Wizard Debug] ⚠️ No wizard conditions matched - hiding all wizards")
+            setShowBlueprintWelcome(false)
+            setShowBlueprintOnboarding(false)
+            setShowOnboarding(false)
+          }
+        } else if (mounted) {
+          // Onboarding actually completed - no wizards
+          console.log("[Wizard Debug] ✅ Onboarding actually complete - hiding all wizards")
+          setShowBlueprintWelcome(false)
+          setShowBlueprintOnboarding(false)
           setShowOnboarding(false)
         }
       } catch (error) {
-        console.error("[v0] Error fetching training status:", error)
-        setHasTrainedModel(false)
-        // Show onboarding if we can't determine status (likely first-time user)
-        if (!isLoadingTrainingStatus) {
-          setShowOnboarding(true)
+        console.error("[v0] Error fetching training/onboarding status:", error)
+        if (mounted) {
+          setHasTrainedModel(false)
         }
+        // Don't show onboarding on error - let user proceed to app
       } finally {
-        setIsLoadingTrainingStatus(false)
+        if (mounted) {
+          setIsLoadingTrainingStatus(false)
+        }
       }
     }
 
     fetchTrainingStatus()
-  }, [isLoadingTrainingStatus])
+    
+    return () => {
+      mounted = false
+    }
+  }, []) // Run once on mount - check onboarding status on every page load/refresh
 
   useEffect(() => {
     const timer = setTimeout(() => setIsLoading(false), 2500)
@@ -812,7 +958,10 @@ export default function SselfieApp({
                 )}
                 {activeTab === "gallery" && <GalleryScreen user={user} userId={userId} />}
                 {activeTab === "feed-planner" && <FeedPlannerScreen />}
-                {activeTab === "blueprint" && <BlueprintScreen userId={userId} />}
+                {/* Decision 3: Only show BlueprintScreen if onboarding is complete or if no wizard is showing */}
+                {activeTab === "blueprint" && !showBlueprintWelcome && !showBlueprintOnboarding && (
+                  <BlueprintScreen userId={userId} />
+                )}
                 {activeTab === "academy" && <AcademyScreen />}
                   {activeTab === "account" && <AccountScreen user={user} creditBalance={creditBalance} />}
                 </motion.div>
@@ -894,17 +1043,19 @@ export default function SselfieApp({
         onClose={() => setShowUpgradeModal(false)}
       />
 
+      {/* LowCreditModal: Only show for paid users (not free users) - handled inside component */}
       <LowCreditModal credits={creditBalance} threshold={30} />
       <ZeroCreditsUpgradeModal credits={creditBalance} />
 
-      {/* Hide feedback button when on maya chat screen or feed planner */}
-      {activeTab !== "maya" && activeTab !== "feed-planner" && (
+      {/* Hide feedback button when on maya chat screen, feed planner, or blueprint */}
+      {activeTab !== "maya" && activeTab !== "feed-planner" && activeTab !== "blueprint" && (
         <FeedbackButton userId={userId} userEmail={userEmail} userName={userName} />
       )}
 
       {/* Onboarding Wizard */}
+      {/* Decision 3: Only show training wizard if blueprint welcome is NOT showing */}
       <OnboardingWizard
-        isOpen={showOnboarding && !hasTrainedModel}
+        isOpen={showOnboarding && !hasTrainedModel && !showBlueprintWelcome}
         onComplete={() => {
           setShowOnboarding(false)
           setHasTrainedModel(true)
@@ -917,14 +1068,84 @@ export default function SselfieApp({
 
       {/* Blueprint Welcome Wizard */}
       <BlueprintWelcomeWizard
-        isOpen={showBlueprintWelcome && blueprintWelcomeEnabled}
-        onComplete={() => {
+        isOpen={showBlueprintWelcome}
+        onComplete={async () => {
+          try {
+            // Decision 3: Mark blueprint welcome as shown (does NOT set onboarding_completed yet)
+            const response = await fetch("/api/onboarding/complete-blueprint-welcome", {
+              method: "POST",
+              credentials: "include",
+            })
+
+            if (!response.ok) {
+              console.error("[Blueprint Welcome] Failed to mark welcome as completed")
+            } else {
+              console.log("[Blueprint Welcome] ✅ Welcome wizard completed, blueprint_welcome_shown_at set")
+            }
+
+            // Decision 3: Fetch existing blueprint data for pre-filling unified wizard
+            try {
+              const blueprintResponse = await fetch("/api/blueprint/state", {
+                credentials: "include",
+              })
+              if (blueprintResponse.ok) {
+                const blueprintData = await blueprintResponse.json()
+                if (blueprintData.blueprint?.formData) {
+                  const formData = blueprintData.blueprint.formData
+                  setExistingBlueprintData({
+                    business: formData.business || undefined,
+                    dreamClient: formData.dreamClient || undefined,
+                    vibe: formData.vibe || undefined,
+                    lightingKnowledge: formData.lightingKnowledge || undefined,
+                    angleAwareness: formData.angleAwareness || undefined,
+                    editingStyle: formData.editingStyle || undefined,
+                    consistencyLevel: formData.consistencyLevel || undefined,
+                    currentSelfieHabits: formData.currentSelfieHabits || undefined,
+                    feedStyle: blueprintData.blueprint.feedStyle || undefined,
+                  })
+                  console.log("[Blueprint Onboarding] ✅ Pre-filled existing blueprint data for unified wizard")
+                }
+              }
+            } catch (error) {
+              console.error("[Blueprint Onboarding] Error fetching blueprint data for pre-fill:", error)
+            }
+          } catch (error) {
+            console.error("[Blueprint Welcome] Error completing welcome wizard:", error)
+          }
+
+          // Decision 3: Show unified blueprint onboarding wizard after welcome
           setShowBlueprintWelcome(false)
-          // Optionally open Blueprint tab
-          setActiveTab("blueprint")
+          setShowBlueprintOnboarding(true)
         }}
         onDismiss={() => setShowBlueprintWelcome(false)}
         userName={userName}
+      />
+
+      {/* Unified Blueprint Onboarding Wizard */}
+      <BlueprintOnboardingWizard
+        isOpen={showBlueprintOnboarding}
+        onComplete={async (data) => {
+          console.log("[Blueprint Onboarding] ✅ Unified wizard completed with data:", data)
+          setShowBlueprintOnboarding(false)
+          
+          // Redirect to Blueprint tab - user will upload selfies next
+          setActiveTab("blueprint")
+          
+          // Refresh blueprint state to show updated content
+          try {
+            const blueprintResponse = await fetch("/api/blueprint/state", {
+              credentials: "include",
+            })
+            if (blueprintResponse.ok) {
+              console.log("[Blueprint Onboarding] ✅ Blueprint state refreshed")
+            }
+          } catch (error) {
+            console.error("[Blueprint Onboarding] Error refreshing blueprint state:", error)
+          }
+        }}
+        onDismiss={() => setShowBlueprintOnboarding(false)}
+        userName={userName}
+        existingData={existingBlueprintData || undefined}
       />
       </div>
   )

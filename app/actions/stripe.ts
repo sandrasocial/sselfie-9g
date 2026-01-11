@@ -102,6 +102,28 @@ export async function startProductCheckoutSession(productId: string) {
   }
 
   const isSubscription = product.type === "sselfie_studio_membership"
+  
+  // Determine which Stripe Price ID to use based on product type (same as createLandingCheckoutSession)
+  let stripePriceId: string | undefined
+  if (product.type === "one_time_session") {
+    stripePriceId = process.env.STRIPE_ONE_TIME_SESSION_PRICE_ID
+  } else if (product.type === "sselfie_studio_membership") {
+    stripePriceId = process.env.STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID || "price_1SmIRaEVJvME7vkwMo5vSLzf"
+  } else if (product.type === "paid_blueprint") {
+    stripePriceId = process.env.STRIPE_PAID_BLUEPRINT_PRICE_ID
+  }
+
+  if (!stripePriceId) {
+    const envVarName =
+      product.type === "one_time_session"
+        ? "STRIPE_ONE_TIME_SESSION_PRICE_ID"
+        : product.type === "paid_blueprint"
+          ? "STRIPE_PAID_BLUEPRINT_PRICE_ID"
+          : "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID"
+    console.error("[v0] Environment variable needed:", envVarName)
+    throw new Error(`Stripe Price ID not configured for ${productId}`)
+  }
+
   let customerId: string | undefined
 
   const { neon } = await import("@/lib/db")
@@ -155,23 +177,22 @@ export async function startProductCheckoutSession(productId: string) {
     customer: customerId,
     line_items: [
       {
-        price_data: {
-          currency: "usd",
-          product_data: {
-            name: product.name,
-            description: product.description,
-          },
-          unit_amount: product.priceInCents,
-          ...(isSubscription && {
-            recurring: {
-              interval: "month",
-            },
-          }),
-        },
+        price: stripePriceId,
         quantity: 1,
       },
     ],
     mode: isSubscription ? "subscription" : "payment",
+    allow_promotion_codes: true,
+    ...(isSubscription && {
+      subscription_data: {
+        metadata: {
+          product_id: productId,
+          product_type: product.type,
+          credits: product.credits?.toString() || "0",
+          source: "app",
+        },
+      },
+    }),
     metadata: {
       user_id: user.id,
       product_id: productId,

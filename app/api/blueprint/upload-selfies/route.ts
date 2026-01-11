@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import { put } from "@vercel/blob"
+import { createServerClient } from "@/lib/supabase/server"
+import { getUserByAuthId } from "@/lib/user-mapping"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -10,22 +12,51 @@ export async function POST(req: NextRequest) {
     const email = formData.get("email") as string | null
     const files = formData.getAll("files") as File[]
 
-    // Validate email
-    if (!email || typeof email !== "string") {
+    // Phase 1: Support both user_id (authenticated) and email (backward compatibility)
+    let userId: string | null = null
+
+    // Try to get user_id from auth session (Studio flow)
+    try {
+      const supabase = await createServerClient()
+      const {
+        data: { user: authUser },
+      } = await supabase.auth.getUser()
+
+      if (authUser) {
+        const neonUser = await getUserByAuthId(authUser.id)
+        if (neonUser) {
+          userId = neonUser.id
+          console.log("[Blueprint] Using user_id from auth session for upload:", userId)
+        }
+      }
+    } catch (authError) {
+      // Not authenticated - fall back to email-based lookup
+      console.log("[Blueprint] Not authenticated, using email-based lookup for upload")
+    }
+
+    // If not authenticated, email is required
+    if (!userId && (!email || typeof email !== "string")) {
       return NextResponse.json(
         { error: "Email is required. Please complete email capture first." },
         { status: 400 },
       )
     }
 
-    // Check if email exists in blueprint_subscribers
-    const subscriber = await sql`
-      SELECT id FROM blueprint_subscribers WHERE email = ${email} LIMIT 1
-    `
+    // Check if blueprint_subscribers record exists
+    let subscriber = null
+    if (userId) {
+      subscriber = await sql`
+        SELECT id FROM blueprint_subscribers WHERE user_id = ${userId} LIMIT 1
+      `
+    } else {
+      subscriber = await sql`
+        SELECT id FROM blueprint_subscribers WHERE email = ${email} LIMIT 1
+      `
+    }
 
     if (subscriber.length === 0) {
       return NextResponse.json(
-        { error: "Email not found. Please complete email capture first." },
+        { error: userId ? "Blueprint state not found. Please start your blueprint first." : "Email not found. Please complete email capture first." },
         { status: 404 },
       )
     }
@@ -105,9 +136,16 @@ export async function POST(req: NextRequest) {
     // Save selfie URLs to database (merge with existing URLs)
     try {
       // Get existing URLs first
-      const existing = await sql`
-        SELECT selfie_image_urls FROM blueprint_subscribers WHERE email = ${email} LIMIT 1
-      `
+      let existing = null
+      if (userId) {
+        existing = await sql`
+          SELECT selfie_image_urls FROM blueprint_subscribers WHERE user_id = ${userId} LIMIT 1
+        `
+      } else {
+        existing = await sql`
+          SELECT selfie_image_urls FROM blueprint_subscribers WHERE email = ${email} LIMIT 1
+        `
+      }
       
       // JSONB columns are already parsed by the database driver
       const existingUrls = existing.length > 0 && existing[0].selfie_image_urls 
@@ -121,12 +159,21 @@ export async function POST(req: NextRequest) {
         self.indexOf(url) === index
       )
       
-      await sql`
-        UPDATE blueprint_subscribers
-        SET selfie_image_urls = ${allUrls}
-        WHERE email = ${email}
-      `
-      console.log("[Blueprint] Selfie URLs saved to database for email:", email, `(${allUrls.length} total)`)
+      if (userId) {
+        await sql`
+          UPDATE blueprint_subscribers
+          SET selfie_image_urls = ${JSON.stringify(allUrls)}::jsonb
+          WHERE user_id = ${userId}
+        `
+        console.log("[Blueprint] Selfie URLs saved to database for user_id:", userId, `(${allUrls.length} total)`)
+      } else {
+        await sql`
+          UPDATE blueprint_subscribers
+          SET selfie_image_urls = ${JSON.stringify(allUrls)}::jsonb
+          WHERE email = ${email}
+        `
+        console.log("[Blueprint] Selfie URLs saved to database for email:", email, `(${allUrls.length} total)`)
+      }
     } catch (dbError) {
       console.error("[Blueprint] Error saving selfie URLs:", dbError)
       // Continue even if save fails - user still gets the URLs

@@ -192,16 +192,21 @@ export function BlueprintSelfieUpload({
         throw new Error(errorMessage)
       }
 
-      if (data.imageUrls) {
+      if (data.imageUrls && data.imageUrls.length > 0) {
         const newUrls = [...uploadedImages, ...data.imageUrls]
         setUploadedImages(newUrls)
         onUploadComplete(newUrls)
         setError(null)
+      } else {
+        // No image URLs returned - upload failed silently
+        throw new Error("Upload failed: No image URLs returned")
       }
     } catch (err) {
-      // console.error("[Blueprint] Upload error:", err)
+      console.error("[Blueprint] Upload error:", err)
       const errorMessage = err instanceof Error ? err.message : "Upload failed. Please try again."
       setError(errorMessage)
+      // Don't update state or call onUploadComplete if upload failed
+      // This keeps the upload UI visible so user can try again
     } finally {
       setUploading(false)
       // Reset input to allow re-selecting same file

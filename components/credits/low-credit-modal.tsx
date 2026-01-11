@@ -2,29 +2,43 @@
 
 import { useState, useEffect } from "react"
 import { BuyCreditsDialog } from "./buy-credits-dialog"
+import useSWR from "swr"
 
 interface LowCreditModalProps {
   credits: number
   threshold?: number
 }
 
+const fetcher = (url: string) => fetch(url).then((res) => res.json())
+
 export function LowCreditModal({ credits, threshold = 30 }: LowCreditModalProps) {
   const [showWarning, setShowWarning] = useState(false)
   const [showBuyDialog, setShowBuyDialog] = useState(false)
   const [dismissed, setDismissed] = useState(false)
 
+  // Check if user has paid subscription (paid_blueprint or studio_membership)
+  // Only show low credit modal for paid users, not free users
+  const { data: blueprintData } = useSWR("/api/blueprint/state", fetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 60000, // Cache for 1 minute
+  })
+
+  const entitlementType = blueprintData?.entitlement?.type
+  const isPaidUser = entitlementType === "paid" || entitlementType === "studio"
+
   useEffect(() => {
-    const shouldShow = credits < threshold && credits >= 0 && !dismissed
+    // Only show for paid users (not free users)
+    const shouldShow = isPaidUser && credits < threshold && credits >= 0 && !dismissed
 
     if (shouldShow && !showWarning) {
       setShowWarning(true)
     }
 
-    if (credits >= threshold) {
+    if (credits >= threshold || !isPaidUser) {
       setDismissed(false)
       setShowWarning(false)
     }
-  }, [credits, threshold, dismissed, showWarning])
+  }, [credits, threshold, dismissed, showWarning, isPaidUser])
 
   const handleDismiss = () => {
     setDismissed(true)
@@ -36,6 +50,9 @@ export function LowCreditModal({ credits, threshold = 30 }: LowCreditModalProps)
     setShowBuyDialog(true)
   }
 
+  // Don't show for free users
+  if (!isPaidUser) return null
+  
   if (!showWarning && !showBuyDialog) return null
 
   return (

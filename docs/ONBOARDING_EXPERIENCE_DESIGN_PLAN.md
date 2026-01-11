@@ -26,58 +26,72 @@
    - **Entitlement check:** Query `subscriptions` for `product_type` (none = free)
    - **Training status:** Query `/api/training/status` (checks `training_runs` table)
    - **Blueprint state:** Query `/api/blueprint/state` (checks `blueprint_subscribers` table)
-5. **Welcome Decision Logic:**
-   - If first visit AND no blueprint state → Show **Blueprint Welcome Wizard**
-   - If blueprint welcome completed OR blueprint state exists → Check training status
-   - If no trained model → Show **Onboarding Wizard** (training flow)
-   - If trained model exists → Show Studio (no wizards)
-6. **Wizard Completion:**
-   - Blueprint Welcome → Sets `users.onboarding_completed = true`, `blueprint_welcome_shown_at = NOW()`
-   - Onboarding Wizard → Sets `users.onboarding_completed = true` (if not already), persists training status
-7. **Subsequent Visits:** Onboarding wizards never shown again (persisted in `users.onboarding_completed`)
+5. **Welcome Decision Logic (CORRECTED ORDER):**
+   - If first visit AND no blueprint state → Show **Blueprint Welcome Wizard** (FIRST)
+   - After Blueprint Welcome completion → Show **Base Wizard** (6 steps: Intro + 5 data steps)
+   - After Base Wizard completion → Check entitlement:
+     - **Free/Paid Blueprint users** → Show **Blueprint Extension** (3 steps: Dream Client, Struggle, Feed Style)
+     - **Studio members** → Show **Studio Extension** (7 steps: Transformation Story through Brand Inspiration)
+   - After Extension completion → Set `users.onboarding_completed = true`, redirect to product (Blueprint tab or Studio)
+   - **Training Wizard:** Only shows if `onboarding_completed = true` AND no trained model (separate from progressive onboarding)
+7. **Wizard Completion:**
+   - Blueprint Welcome → Sets `blueprint_welcome_shown_at = NOW()` (does NOT set `onboarding_completed`)
+   - Base Wizard → Saves to `user_personal_brand` table
+   - Extension Wizard → Saves to appropriate table, then sets `users.onboarding_completed = true`
+   - Onboarding Wizard (training) → Sets training status, does NOT affect `onboarding_completed` (separate flow)
+8. **Subsequent Visits:** If `onboarding_completed = true` → No progressive onboarding wizards shown (only training wizard if needed)
 
 **APPROVED DECISION 3 - Progressive Onboarding Flow:**
 
-**Base Wizard (ALL USERS - 5 steps):**
-1. Name
-2. Business Type
-3. Color Theme
-4. Visual Aesthetic
-5. Current Situation
+**Base Wizard (ALL USERS - 6 steps including intro):**
+1. Intro (Maya welcome message - provides context, reduces friction)
+2. Name
+3. Business Type
+4. Color Theme
+5. Visual Aesthetic
+6. Current Situation
 
 **After Base Completion → Route Based on Product:**
 
 **Free Users → Blueprint Extension (3 steps):**
-6. Dream Client
-7. Struggle
-8. Feed Style
-→ Then show Blueprint Welcome Wizard → Blueprint tab
+7. Dream Client
+8. Struggle
+9. Feed Style
+→ Then redirect to Blueprint tab (Blueprint Welcome already shown)
 
 **Paid Blueprint Users → Blueprint Extension (3 steps):**
-6. Dream Client
-7. Struggle
-8. Feed Style
-→ Then show Blueprint Welcome Wizard → Paid Blueprint screen (Feed Planner UI)
+7. Dream Client
+8. Struggle
+9. Feed Style
+→ Then redirect to Paid Blueprint screen (Feed Planner UI) - Blueprint Welcome already shown
 
 **Studio Membership Users → Studio Extension (7 steps):**
-6. Transformation Story
-7. Future Vision
-8. Ideal Audience
-9. Communication Voice
-10. Photo Goals
-11. Content Pillars
-12. Brand Inspiration
+7. Transformation Story
+8. Future Vision
+9. Ideal Audience
+10. Communication Voice
+11. Photo Goals
+12. Content Pillars
+13. Brand Inspiration
 → Then show Studio (Maya chat)
 
 **Storage:**
 - Base data → `user_personal_brand` table (structured columns)
-- Blueprint extensions → `blueprint_subscribers.form_data` (JSONB)
+- Blueprint extensions → `blueprint_subscribers.form_data` (JSONB) - stores: `dreamClient`, `struggle`, `feed_style`
 - Studio extensions → `user_personal_brand` table (structured columns)
 
+**Component Reuse (APPROVED):**
+- Base wizard → Extract steps 1-6 from `BrandProfileWizard` component (NOT `OnboardingWizard`)
+- Studio extension → Extract steps 7-12 from `BrandProfileWizard` component
+- Blueprint extension → Reuse blueprint form UI patterns from existing blueprint flow
+
 **Edge Cases:**
-- User refreshes during wizard → Wizard state persists, can resume
-- User dismisses wizard → Marked as "dismissed" in DB, won't show again
+- User refreshes during wizard → Wizard state persists in database, can resume
+- User dismisses wizard → Marked as `onboarding_completed = false` but wizard dismissed (won't re-show on next visit)
 - API fails (training status, blueprint state) → Show Studio without wizards (graceful degradation)
+- Existing BrandProfileWizard users → Mark as `onboarding_completed = true`, skip progressive onboarding (approved)
+- Existing blueprint users → Pre-fill base wizard fields with defaults (Name = email, Color Theme = default, Visual Aesthetic = ask user to re-select), allow user to update (approved)
+- Blueprint form `vibe` field → Ask user to re-select Visual Aesthetic during base wizard (don't auto-map, ensures consistency) (approved)
 
 ---
 
@@ -171,7 +185,7 @@
    - **Entitlement check:** Has `paid_blueprint` subscription (60 credits granted)
    - **Blueprint state:** Query `/api/blueprint/state` (may not exist yet)
 8. **Welcome Decision Logic:**
-   - If first visit → Show **Blueprint Welcome Wizard** (emphasizes "60 credits = 30 grids" benefit)
+   - If first visit → Show **Blueprint Welcome Wizard** (emphasizes "60 credits = 30 grids" benefit) → **Base Wizard** (6 steps) → **Blueprint Extension** (3 steps) → Blueprint tab
    - If blueprint welcome completed → Show Blueprint tab (no wizards)
 9. **Post-Purchase Flow:**
    - After checkout success → Redirect to `/studio?tab=blueprint&purchase=success`
@@ -210,9 +224,10 @@
    - `getUserSubscription()`, `hasStudioMembership()`, `hasPaidBlueprint()` remain primary access checks
 
 3. **Existing Wizard Components:**
-   - `OnboardingWizard` component remains (training model flow)
+   - `OnboardingWizard` component remains (training model flow - separate from progressive onboarding)
    - `BlueprintWelcomeWizard` component remains (reused, not rebuilt)
-   - Both wizards keep existing UI/UX (no redesign)
+   - `BrandProfileWizard` component used as source for extraction (base wizard steps 1-6, studio extension steps 7-12)
+   - All wizards keep existing UI/UX (no redesign, only extraction/reuse)
 
 4. **Existing State Management:**
    - `blueprint_subscribers` table remains (blueprint state)
@@ -465,23 +480,29 @@ WHERE blueprint_welcome_shown_at IS NOT NULL;
    );
    ```
 
-3. **Update existing users (optional):**
-   - **Action:** If user has `blueprint_subscribers` row with `user_id` → Set `blueprint_welcome_shown_at = created_at` (assume shown)
-   - **Purpose:** Prevent showing wizard to users who already used Blueprint
+3. **Mark existing BrandProfileWizard users as onboarding_completed (APPROVED):**
+   - **Action:** Users who already completed full BrandProfileWizard (12 steps) should NOT see progressive onboarding
+   - **Purpose:** Prevent showing base wizard to users who already completed full wizard
    - **SQL:** 
    ```sql
-   UPDATE users 
-   SET blueprint_welcome_shown_at = (
-     SELECT MIN(created_at) 
-     FROM blueprint_subscribers 
-     WHERE blueprint_subscribers.user_id = users.id
+   UPDATE users
+   SET onboarding_completed = TRUE,
+       blueprint_welcome_shown_at = COALESCE(blueprint_welcome_shown_at, NOW())
+   WHERE EXISTS (
+     SELECT 1 FROM user_personal_brand
+     WHERE user_personal_brand.user_id = users.id
+     AND user_personal_brand.is_completed = TRUE
    )
-   WHERE blueprint_welcome_shown_at IS NULL
-   AND EXISTS (
-     SELECT 1 FROM blueprint_subscribers 
-     WHERE blueprint_subscribers.user_id = users.id
-   );
+   AND onboarding_completed = FALSE;
    ```
+
+4. **Pre-fill base wizard fields for existing blueprint users (APPROVED):**
+   - **Action:** For users with existing `blueprint_subscribers.form_data`:
+     - Pre-fill `businessType` from `form_data.business`
+     - Pre-fill `dreamClient` and `struggle` (will go to extension)
+     - Set defaults for Name (user's display_name or email), Color Theme (default), Visual Aesthetic (ask user to re-select)
+   - **Purpose:** Allow existing blueprint users to complete base wizard without losing existing data
+   - **Note:** Visual Aesthetic will be asked to re-select (don't auto-map `vibe` field, ensures consistency)
 
 ---
 
@@ -930,10 +951,12 @@ export async function getBlueprintEntitlement(userId: string): Promise<{
 - [ ] **APPROVED DECISION 2:** Embed Feed Planner UI for paid blueprint screen (with feature flags)
 - [ ] **APPROVED DECISION 2:** Map blueprint strategy → feed posts format for Feed Planner
 - [ ] **APPROVED DECISION 3:** Implement progressive onboarding (base wizard + extensions)
-- [ ] **APPROVED DECISION 3:** Create base wizard component (5 steps)
-- [ ] **APPROVED DECISION 3:** Create blueprint extension component (3 steps)
-- [ ] **APPROVED DECISION 3:** Create studio extension component (7 steps)
-- [ ] **APPROVED DECISION 3:** Update routing logic to show appropriate extension based on product
+- [ ] **APPROVED DECISION 3:** Create base wizard component (6 steps: Intro + 5 data steps)
+- [ ] **APPROVED DECISION 3:** Create blueprint extension component (3 steps: Dream Client, Struggle, Feed Style)
+- [ ] **APPROVED DECISION 3:** Create studio extension component (7 steps: Transformation Story through Brand Inspiration)
+- [ ] **APPROVED DECISION 3:** Update routing logic (Blueprint Welcome → Base → Extension → Product)
+- [ ] **APPROVED DECISION 3:** Handle existing BrandProfileWizard users (skip progressive onboarding)
+- [ ] **APPROVED DECISION 3:** Handle existing blueprint users (pre-fill base wizard with defaults)
 
 ### Testing
 
@@ -1084,44 +1107,72 @@ export async function getBlueprintEntitlement(userId: string): Promise<{
 
 ---
 
-### ⏳ Decision 3: Progressive Onboarding (PENDING)
+### ⏳ Decision 3: Progressive Onboarding (APPROVED - READY TO IMPLEMENT)
 
-**Status:** ⏳ **PENDING** - Ready to implement after Decision 2
+**Status:** ⏳ **READY TO IMPLEMENT** - Plan updated with approved recommendations
+
+**Approved Decisions (2026-01-09):**
+1. ✅ **Include intro step in base wizard** (6 steps total: Intro + 5 data steps)
+2. ✅ **Pre-fill base wizard fields for existing blueprint users** (with defaults, user can update)
+3. ✅ **Skip progressive onboarding for existing BrandProfileWizard users** (mark as `onboarding_completed = true`)
+4. ✅ **Ask user to re-select Visual Aesthetic** (don't auto-map `vibe` field, ensures consistency)
+5. ✅ **Reuse `BrandProfileWizard` patterns** (NOT `OnboardingWizard` - correct component reference)
+6. ✅ **Correct routing order:** Blueprint Welcome → Base Wizard → Extension → Product
 
 **Implementation Steps:**
 1. **Create base wizard component (`components/onboarding/base-wizard.tsx`):**
-   - 5 steps: Name, Business Type, Color Theme, Visual Aesthetic, Current Situation
-   - Reuse UI patterns from existing `OnboardingWizard` component
+   - **6 steps (APPROVED):** Intro (Maya welcome message), Name, Business Type, Color Theme, Visual Aesthetic, Current Situation
+   - **Reuse UI patterns from `BrandProfileWizard` component (NOT `OnboardingWizard`)** - Extract steps 1-6
    - Stores data in `user_personal_brand` table (structured columns)
-   - Completes after step 5
+   - Handles pre-filling for existing blueprint users (approved):
+     - Name: user's `display_name` or email
+     - Business Type: from `blueprint_subscribers.form_data.business`
+     - Color Theme: default value
+     - Visual Aesthetic: ask user to re-select (don't auto-map `vibe` field)
+     - Current Situation: default/empty
+   - Completes after step 6
    - Calls completion handler: `onBaseComplete()`
 
 2. **Create blueprint extension component (`components/onboarding/blueprint-extension.tsx`):**
    - 3 steps: Dream Client, Struggle, Feed Style
-   - Stores data in `blueprint_subscribers.form_data` (JSONB)
-   - Shows after base wizard completion (if user has blueprint entitlement)
+   - Reuse blueprint form UI patterns from existing blueprint flow (`app/blueprint/page-client.tsx`)
+   - Stores data in `blueprint_subscribers.form_data` (JSONB): `{ dreamClient, struggle, feed_style }`
+   - Pre-fills existing data if available from `blueprint_subscribers.form_data`
+   - Shows after base wizard completion (if user has blueprint entitlement - free or paid)
    - Can be shown for both free and paid blueprint users
+   - After completion → Sets `users.onboarding_completed = true`, redirects to Blueprint tab
    - Calls completion handler: `onBlueprintExtensionComplete()`
 
 3. **Create studio extension component (`components/onboarding/studio-extension.tsx`):**
    - 7 steps: Transformation Story, Future Vision, Ideal Audience, Communication Voice, Photo Goals, Content Pillars, Brand Inspiration
+   - **Reuse UI patterns from `BrandProfileWizard` component** - Extract steps 7-12 (step 6 = Transformation Story in BrandProfileWizard)
    - Stores data in `user_personal_brand` table (structured columns)
-   - Shows after base wizard completion (if user has studio membership)
+   - Shows after base wizard completion (if user has Studio membership)
+   - After completion → Sets `users.onboarding_completed = true`, redirects to Studio (Maya chat)
    - Calls completion handler: `onStudioExtensionComplete()`
 
 4. **Update routing logic (`components/sselfie/sselfie-app.tsx`):**
-   - After base wizard completion → Check entitlement via `getBlueprintEntitlement()`
-   - Free users → Show blueprint extension → Blueprint welcome wizard → Blueprint tab
-   - Paid blueprint → Show blueprint extension → Blueprint welcome wizard → Paid blueprint screen (FeedViewScreen)
-   - Studio membership → Show studio extension → Studio (Maya chat)
-   - Set `users.onboarding_completed = true` after final extension completes
+   - **CORRECTED ORDER (APPROVED):**
+     1. New user signs up → Show **Blueprint Welcome Wizard** (FIRST)
+     2. After Blueprint Welcome completion → Show **Base Wizard** (6 steps)
+     3. After Base Wizard completion → Check entitlement via `getBlueprintEntitlement()`:
+        - **Free/Paid Blueprint users** → Show **Blueprint Extension** (3 steps)
+        - **Studio members** → Show **Studio Extension** (7 steps)
+     4. After Extension completion → Set `users.onboarding_completed = true`, redirect to product:
+        - Free/Paid Blueprint → Blueprint tab (FeedViewScreen for paid)
+        - Studio → Studio (Maya chat)
+   - **Existing users:** If `onboarding_completed = true` OR `user_personal_brand.is_completed = true` → Skip all progressive onboarding wizards
 
 5. **Migration: Map existing blueprint form data → base + extension:**
    - **File:** `scripts/migrations/map-blueprint-to-progressive-onboarding.sql`
-   - Extract base fields (Name, Business Type, Color Theme, Visual Aesthetic, Current Situation) → `user_personal_brand`
-   - Extract blueprint extensions (Dream Client, Struggle, Feed Style) → `blueprint_subscribers.form_data`
-   - Handle users who already completed blueprint (set `onboarding_completed = true`)
-   - Handle edge cases (missing data, different formats)
+   - **Migration Strategy (APPROVED):**
+     1. **Existing BrandProfileWizard users:** Mark as `onboarding_completed = TRUE` (skip progressive onboarding)
+     2. **Existing blueprint users with form_data:**
+        - Pre-fill `user_personal_brand.businessType` from `blueprint_subscribers.form_data.business`
+        - Keep `blueprint_subscribers.form_data.dreamClient`, `struggle`, `feed_style` (for extension)
+        - Set defaults: `name` = user's `display_name` or email, `colorTheme` = default, `visualAesthetic` = NULL (ask user to re-select)
+     3. **Existing blueprint users with completed blueprint:** Set `blueprint_welcome_shown_at = blueprint_subscribers.created_at`
+   - Handle edge cases (missing data, different formats, NULL values)
 
 6. **API endpoints (if needed):**
    - `app/api/onboarding/base-complete/route.ts` (NEW) - Save base wizard data
@@ -1145,22 +1196,35 @@ export async function getBlueprintEntitlement(userId: string): Promise<{
 - `app/studio/page.tsx` - Fetch onboarding state
 - `components/sselfie/blueprint-welcome-wizard.tsx` - Integrate with progressive flow
 
-**Testing Requirements:**
-- ✅ New free user → Base wizard → Blueprint extension → Welcome wizard → Blueprint tab
-- ✅ New paid blueprint user → Base wizard → Blueprint extension → Welcome wizard → Paid blueprint screen
-- ✅ New studio user → Base wizard → Studio extension → Studio (Maya)
-- ✅ Existing blueprint users → Migration maps data correctly
-- ✅ Onboarding state persists (no duplicate wizards)
-- ✅ Data stored in correct tables (base → user_personal_brand, extensions → appropriate tables)
+**Testing Requirements (UPDATED with Approved Decisions):**
+- ✅ New free user → **Blueprint Welcome** → Base wizard (6 steps) → Blueprint extension (3 steps) → Blueprint tab
+- ✅ New paid blueprint user → **Blueprint Welcome** → Base wizard (6 steps) → Blueprint extension (3 steps) → Paid blueprint screen (FeedViewScreen)
+- ✅ New studio user → **Blueprint Welcome** → Base wizard (6 steps) → Studio extension (7 steps) → Studio (Maya)
+- ✅ Existing BrandProfileWizard users → Skip progressive onboarding (marked as `onboarding_completed = true`)
+- ✅ Existing blueprint users → Base wizard pre-fills with defaults, user can update → Blueprint extension pre-fills existing data
+- ✅ Onboarding state persists (no duplicate wizards shown)
+- ✅ Data stored in correct tables:
+   - Base wizard → `user_personal_brand` (structured columns)
+   - Blueprint extension → `blueprint_subscribers.form_data` (JSONB: `dreamClient`, `struggle`, `feed_style`)
+   - Studio extension → `user_personal_brand` (structured columns)
+- ✅ Visual Aesthetic re-selected (not auto-mapped from `vibe` field, ensures consistency)
 
 **Benefits:**
-- Balanced (fast for free users, full context for paid)
-- Single source for core data (`user_personal_brand`)
-- Flexible (easy to add new extensions)
-- Better AI context (Maya gets base context for all users)
+- Balanced (fast for free users with base + 3 extension steps, full context for paid with base + 7 extension steps)
+- Single source for core data (`user_personal_brand` for base and studio, `blueprint_subscribers.form_data` for blueprint)
+- Flexible (easy to add new extensions or modify steps)
+- Better AI context (Maya gets base context for all users, product-specific context via extensions)
+- Consistent UX (all users see same base wizard, then product-specific extension)
 
-**Estimated Complexity:** High
-**Estimated Time:** 6-8 hours
+**Implementation Phases:**
+- **Phase 3A:** Base Wizard (2-3 hours)
+- **Phase 3B:** Blueprint Extension (1-2 hours)
+- **Phase 3C:** Studio Extension (2-3 hours)
+- **Phase 3D:** Routing & Integration (1 hour)
+- **Phase 3E:** Migration & Testing (1 hour)
+
+**Estimated Complexity:** High (but broken into manageable phases)
+**Estimated Time:** 6-8 hours (total across all phases)
 
 ---
 
@@ -1221,21 +1285,46 @@ export async function getBlueprintEntitlement(userId: string): Promise<{
 #### Phase 3: Implement Decision 3 (After Decision 2)
 **Goal:** Progressive onboarding flow
 
-**Approach:**
-1. Start with base wizard (5 steps) - reuse existing OnboardingWizard patterns
-2. Create blueprint extension (3 steps) - simplest extension
-3. Create studio extension (7 steps) - most complex extension
-4. Update routing logic in SselfieApp
-5. Create migration to map existing data
-6. Test all user flows
+**Approach (UPDATED with Approved Decisions):**
 
-**Estimated Time:** 6-8 hours
+**Phase 3A: Base Wizard (2-3 hours)**
+1. Extract base wizard from `BrandProfileWizard` (steps 1-6: Intro + 5 data steps)
+2. Create `components/onboarding/base-wizard.tsx`
+3. Handle pre-filling for existing blueprint users (approved)
+4. Save to `user_personal_brand` table
+5. Test base wizard independently
+
+**Phase 3B: Blueprint Extension (1-2 hours)**
+1. Extract blueprint form UI patterns from existing blueprint flow
+2. Create `components/onboarding/blueprint-extension.tsx` (3 steps)
+3. Pre-fill existing data from `blueprint_subscribers.form_data`
+4. Save to `blueprint_subscribers.form_data`
+5. Test blueprint extension independently
+
+**Phase 3C: Studio Extension (2-3 hours)**
+1. Extract studio extension from `BrandProfileWizard` (steps 7-12)
+2. Create `components/onboarding/studio-extension.tsx`
+3. Save to `user_personal_brand` table
+4. Test studio extension independently
+
+**Phase 3D: Routing & Integration (1 hour)**
+1. Update `SselfieApp` routing logic (corrected order: Blueprint Welcome → Base → Extension → Product)
+2. Handle existing BrandProfileWizard users (skip progressive onboarding)
+3. Integrate all wizards in correct sequence
+
+**Phase 3E: Migration & Testing (1 hour)**
+1. Create migration script (handle existing users)
+2. Test all user flows (new free, new paid blueprint, new studio, existing users)
+3. Fix edge cases
+
+**Estimated Time:** 6-8 hours (unchanged, but broken into clearer phases)
 
 **Files Priority:**
-1. `components/onboarding/base-wizard.tsx` (NEW - start here)
-2. `components/onboarding/blueprint-extension.tsx` (NEW)
-3. `components/onboarding/studio-extension.tsx` (NEW)
-4. `components/sselfie/sselfie-app.tsx` (update routing)
+1. `components/onboarding/base-wizard.tsx` (NEW - Phase 3A)
+2. `components/onboarding/blueprint-extension.tsx` (NEW - Phase 3B)
+3. `components/onboarding/studio-extension.tsx` (NEW - Phase 3C)
+4. `components/sselfie/sselfie-app.tsx` (update routing - Phase 3D)
+5. Migration scripts (Phase 3E)
 
 ---
 

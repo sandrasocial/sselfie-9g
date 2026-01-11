@@ -167,24 +167,56 @@ export async function POST(req: NextRequest) {
 
     if (existing.length > 0) {
       // Update existing blueprint state
-      await sql`
-        UPDATE blueprint_subscribers
-        SET
-          form_data = ${formData ? JSON.stringify(formData) : formData},
-          feed_style = ${feedStyle || selectedFeedStyle || null},
-          selfie_image_urls = ${selfieImages ? JSON.stringify(selfieImages) : selfieImages},
-          strategy_generated = ${strategy?.generated || false},
-          strategy_generated_at = ${strategy?.generated ? new Date() : null},
-          strategy_data = ${strategy?.data ? JSON.stringify(strategy.data) : null},
-          grid_generated = ${grid?.generated || false},
-          grid_generated_at = ${grid?.generated ? new Date() : null},
-          grid_url = ${grid?.gridUrl || null},
-          grid_frame_urls = ${grid?.frameUrls ? JSON.stringify(grid.frameUrls) : null},
-          blueprint_completed = ${grid?.generated && strategy?.generated || false},
-          blueprint_completed_at = ${grid?.generated && strategy?.generated ? new Date() : null},
-          updated_at = NOW()
-        WHERE user_id = ${neonUser.id}
-      `
+      // Use COALESCE to only update fields that are provided (preserve existing values if not provided)
+      const updateFields: string[] = []
+      const updateValues: any[] = []
+      
+      if (formData !== undefined) {
+        updateFields.push(`form_data = $${updateValues.length + 1}::jsonb`)
+        updateValues.push(JSON.stringify(formData))
+      }
+      
+      if (feedStyle !== undefined || selectedFeedStyle !== undefined) {
+        updateFields.push(`feed_style = $${updateValues.length + 1}`)
+        updateValues.push(feedStyle || selectedFeedStyle || null)
+      }
+      
+      if (selfieImages !== undefined) {
+        updateFields.push(`selfie_image_urls = $${updateValues.length + 1}::jsonb`)
+        updateValues.push(JSON.stringify(selfieImages))
+      }
+      
+      if (strategy !== undefined) {
+        updateFields.push(`strategy_generated = $${updateValues.length + 1}`)
+        updateValues.push(strategy?.generated || false)
+        updateFields.push(`strategy_generated_at = $${updateValues.length + 1}`)
+        updateValues.push(strategy?.generated ? new Date() : null)
+        updateFields.push(`strategy_data = $${updateValues.length + 1}::jsonb`)
+        updateValues.push(strategy?.data ? JSON.stringify(strategy.data) : null)
+      }
+      
+      if (grid !== undefined) {
+        updateFields.push(`grid_generated = $${updateValues.length + 1}`)
+        updateValues.push(grid?.generated || false)
+        updateFields.push(`grid_generated_at = $${updateValues.length + 1}`)
+        updateValues.push(grid?.generated ? new Date() : null)
+        updateFields.push(`grid_url = $${updateValues.length + 1}`)
+        updateValues.push(grid?.gridUrl || null)
+        updateFields.push(`grid_frame_urls = $${updateValues.length + 1}::jsonb`)
+        updateValues.push(grid?.frameUrls ? JSON.stringify(grid.frameUrls) : null)
+        updateFields.push(`blueprint_completed = $${updateValues.length + 1}`)
+        updateValues.push(grid?.generated && strategy?.generated || false)
+        updateFields.push(`blueprint_completed_at = $${updateValues.length + 1}`)
+        updateValues.push(grid?.generated && strategy?.generated ? new Date() : null)
+      }
+      
+      if (updateFields.length > 0) {
+        updateFields.push(`updated_at = NOW()`)
+        updateValues.push(neonUser.id)
+        
+        const query = `UPDATE blueprint_subscribers SET ${updateFields.join(', ')} WHERE user_id = $${updateValues.length}`
+        await sql.unsafe(query, updateValues)
+      }
     } else {
       // Create new blueprint state for user
       // Use user's email and name from users table

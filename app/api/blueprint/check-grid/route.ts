@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 })
     }
 
-    console.log(`[Blueprint] Checking grid status: ${predictionId} for`, userId ? `user_id: ${userId}` : `email: ${email}`)
+    console.log(`[Blueprint] Checking grid status: ${predictionId} for`, userId ? `user_id: ${userId}` : `email: ${email || "N/A"}`)
 
     // Check prediction status with Replicate
     const status = await checkNanoBananaPrediction(predictionId)

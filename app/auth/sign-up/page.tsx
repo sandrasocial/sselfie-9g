@@ -79,9 +79,9 @@ export default function SignUpPage() {
         throw new Error("Login failed: No user session created")
       }
 
-      // Success! Redirect to Studio (or next param if present)
+      // Success! Redirect to Studio with blueprint tab for new users
       const urlParams = new URLSearchParams(window.location.search)
-      const nextParam = urlParams.get("next") || "/studio"
+      const nextParam = urlParams.get("next") || "/studio?tab=blueprint"
       router.push(nextParam)
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred")
@@ -141,10 +141,10 @@ export default function SignUpPage() {
         })
 
         if (!signInError && signInData.session) {
-          // Success! Redirect to Studio (or next param if present)
+          // Success! Redirect to Studio with blueprint tab for new users
           // Credits will be granted on Studio page load via middleware/API check
           const urlParams = new URLSearchParams(window.location.search)
-          const nextParam = urlParams.get("next") || "/studio"
+          const nextParam = urlParams.get("next") || "/studio?tab=blueprint"
           console.log("[Sign Up] ✅ Signed in successfully, redirecting to:", nextParam)
           router.push(nextParam)
           return
