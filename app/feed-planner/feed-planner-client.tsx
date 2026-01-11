@@ -10,7 +10,7 @@ import UnifiedLoading from "@/components/sselfie/unified-loading"
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 interface FeedPlannerClientProps {
-  access: FeedPlannerAccess
+  access?: FeedPlannerAccess // Optional - will be fetched if not provided (for use in SselfieApp)
   userId: string
   userName?: string | null
 }
@@ -23,9 +23,22 @@ interface FeedPlannerClientProps {
  * - Paid first-time users: Show wizard (skip free example)
  * - Paid returning users: Skip wizard
  */
-export default function FeedPlannerClient({ access, userId, userName }: FeedPlannerClientProps) {
+export default function FeedPlannerClient({ access: accessProp, userId, userName }: FeedPlannerClientProps) {
   const [showWizard, setShowWizard] = useState(false)
   const [isCheckingWizard, setIsCheckingWizard] = useState(true)
+
+  // Fetch access control if not provided (for use in SselfieApp)
+  const { data: accessData } = useSWR<FeedPlannerAccess>(
+    accessProp ? null : "/api/feed-planner/access",
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 60000, // Cache for 1 minute
+    }
+  )
+
+  // Use provided access or fetched access
+  const access = accessProp || accessData
 
   // Fetch onboarding status to determine if wizard is needed
   const { data: onboardingStatus, isLoading: isLoadingOnboarding } = useSWR(
@@ -70,6 +83,12 @@ export default function FeedPlannerClient({ access, userId, userName }: FeedPlan
     const hasExtensionData = onboardingStatus.hasExtensionData || false
     const onboardingCompleted = onboardingStatus.onboarding_completed || false
 
+    // Wait for access to be loaded before determining wizard
+    if (!access) {
+      setIsCheckingWizard(true)
+      return
+    }
+
     // Free users: Show wizard if not completed (missing base or extension data)
     if (access.isFree) {
       const needsWizard = !hasBaseWizardData || !hasExtensionData || !onboardingCompleted
@@ -92,7 +111,7 @@ export default function FeedPlannerClient({ access, userId, userName }: FeedPlan
     // One-time and membership users: Skip wizard (not needed)
     setShowWizard(false)
     setIsCheckingWizard(false)
-  }, [onboardingStatus, isLoadingOnboarding, access.isFree, access.isPaidBlueprint])
+  }, [onboardingStatus, isLoadingOnboarding, access?.isFree, access?.isPaidBlueprint, access])
 
   // Handle wizard completion
   const handleWizardComplete = async (data: {

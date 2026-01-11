@@ -1,6 +1,7 @@
 // Main components
 export { default as FeedViewScreen } from './feed-view-screen'
 export { default as InstagramFeedView } from './instagram-feed-view'
+export { default as FeedPlannerClient } from '../../app/feed-planner/feed-planner-client'
 
 // Sub-components
 export { default as FeedHeader } from './feed-header'

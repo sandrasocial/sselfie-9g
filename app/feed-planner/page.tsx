@@ -1,11 +1,16 @@
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId, getOrCreateNeonUser } from "@/lib/user-mapping"
+import { getUserSubscription } from "@/lib/subscription"
 import { redirect } from 'next/navigation'
-import FeedPlannerClient from "./feed-planner-client"
-import { getFeedPlannerAccess } from "@/lib/feed-planner/access-control"
-import { sql } from "@/lib/neon"
+import SselfieApp from "@/components/sselfie/sselfie-app"
 
-export default async function FeedPlannerPage() {
+export const dynamic = "force-dynamic"
+
+export default async function FeedPlannerPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ purchase?: string; tab?: string }>
+}) {
   const supabase = await createServerClient()
   const {
     data: { user },
@@ -34,17 +39,21 @@ export default async function FeedPlannerPage() {
     redirect("/auth/login?returnTo=/feed-planner")
   }
 
-  // Phase 1.2: Check access control
-  const access = await getFeedPlannerAccess(neonUser.id.toString())
+  const subscription = await getUserSubscription(neonUser.id)
+  const params = await searchParams
+  const purchaseSuccess = params.purchase === "success"
+  const initialTab = params.tab || "feed-planner" // Default to feed-planner tab
 
-  // Phase 3: Get user name for wizard
-  const userResult = await sql`
-    SELECT display_name, email
-    FROM users
-    WHERE id = ${neonUser.id}
-    LIMIT 1
-  `
-  const userName = userResult.length > 0 ? userResult[0].display_name : null
-
-  return <FeedPlannerClient access={access} userId={neonUser.id.toString()} userName={userName} />
+  return (
+    <SselfieApp
+      userId={neonUser.id}
+      userName={neonUser.display_name}
+      userEmail={neonUser.email}
+      isWelcome={false}
+      shouldShowCheckout={false}
+      subscriptionStatus={subscription?.status ?? null}
+      purchaseSuccess={purchaseSuccess}
+      initialTab={initialTab}
+    />
+  )
 }

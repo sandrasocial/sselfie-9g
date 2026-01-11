@@ -23,7 +23,7 @@ import GalleryScreen from "./gallery-screen"
 // Note: B-Roll functionality is accessible via Maya Videos tab (b-roll-screen.tsx kept for reference)
 import AcademyScreen from "./academy-screen"
 import AccountScreen from "./account-screen"
-import { FeedViewScreen as FeedPlannerScreen } from "../feed-planner" // Using FeedViewScreen (backward compatible export)
+import { FeedPlannerClient } from "../feed-planner" // Use FeedPlannerClient to include wizard logic
 import { InstallPrompt } from "./install-prompt"
 import { InstallButton } from "./install-button"
 import { ServiceWorkerProvider } from "./service-worker-provider"
@@ -954,7 +954,7 @@ export default function SselfieApp({
                   />
                 )}
                 {activeTab === "gallery" && <GalleryScreen user={user} userId={userId} />}
-                {activeTab === "feed-planner" && <FeedPlannerScreen />}
+                {activeTab === "feed-planner" && <FeedPlannerClient userId={userId.toString()} userName={userName} />}
                 {activeTab === "academy" && <AcademyScreen />}
                   {activeTab === "account" && <AccountScreen user={user} creditBalance={creditBalance} />}
                 </motion.div>

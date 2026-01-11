@@ -11,8 +11,6 @@ import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
-import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
-
 interface FeedViewScreenProps {
   feedId?: number | null
   access?: FeedPlannerAccess // Phase 1.2: Access control object (required)
@@ -31,11 +29,28 @@ interface FeedViewScreenProps {
  * When no feedId is provided, automatically fetches the latest feed.
  * Shows placeholder state if no feed exists.
  */
-export default function FeedViewScreen({ feedId: feedIdProp, access }: FeedViewScreenProps = {}) {
+export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp }: FeedViewScreenProps = {}) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isCreatingManual, setIsCreatingManual] = useState(false)
   const [isCreatingFreeExample, setIsCreatingFreeExample] = useState(false)
+  
+  // Fetch access control if not provided (for use in SselfieApp)
+  const { data: accessData } = useSWR<FeedPlannerAccess>(
+    accessProp ? null : "/api/feed-planner/access",
+    async (url) => {
+      const res = await fetch(url)
+      if (!res.ok) throw new Error("Failed to fetch access control")
+      return res.json()
+    },
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 60000, // Cache for 1 minute
+    }
+  )
+  
+  // Use provided access or fetched access
+  const access = accessProp || accessData
   
   // Get feedId from prop, query param, or null
   const feedIdFromQuery = feedIdProp ?? (searchParams.get('feedId') ? parseInt(searchParams.get('feedId')!, 10) : null)
