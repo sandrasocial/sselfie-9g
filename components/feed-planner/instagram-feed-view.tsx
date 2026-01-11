@@ -4,21 +4,26 @@ import { useState, useMemo, useEffect } from "react"
 import type React from "react"
 import { Loader2 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
+import useSWR from "swr"
 import { useFeedPolling } from "./hooks/use-feed-polling"
 import { useFeedModals } from "./hooks/use-feed-modals"
 import { useFeedDragDrop } from "./hooks/use-feed-drag-drop"
 import { useFeedActions } from "./hooks/use-feed-actions"
 import { useFeedConfetti } from "./hooks/use-feed-confetti"
 import FeedHeader from "./feed-header"
-import FeedTabs from "./feed-tabs"
+import FeedTabs, { type FeedTab } from "./feed-tabs"
 import FeedGrid from "./feed-grid"
 import FeedPostsList from "./feed-posts-list"
 import FeedStrategy from "./feed-strategy"
+import FeedCaptionTemplates from "./feed-caption-templates"
+import FeedContentCalendar from "./feed-content-calendar"
 import FeedModals from "./feed-modals"
 import FeedLoadingOverlay from "./feed-loading-overlay"
 import FeedHighlightsModal from "./feed-highlights-modal"
 import FeedSinglePlaceholder from "./feed-single-placeholder"
 import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 interface InstagramFeedViewProps {
   feedId: number
@@ -40,8 +45,26 @@ export default function InstagramFeedView({ feedId, onBack, access, onOpenWizard
   console.log("[v0] feedData.feed.id:", feedData?.feed?.id)
   console.log("[v0] feedData.error:", feedData?.error)
 
-  const [activeTab, setActiveTab] = useState<"grid" | "posts" | "strategy">("grid")
+  const [activeTab, setActiveTab] = useState<FeedTab>("grid")
+  const [businessType, setBusinessType] = useState<string | undefined>(undefined)
   const [showBioModal, setShowBioModal] = useState(false)
+  
+  // Fetch business type from blueprint_subscribers for free users (caption templates)
+  const { data: blueprintState } = useSWR(
+    access?.isFree ? "/api/blueprint/state" : null,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 60000, // Cache for 1 minute
+    }
+  )
+
+  // Extract business type from blueprint state
+  useEffect(() => {
+    if (blueprintState?.blueprint?.formData?.business) {
+      setBusinessType(blueprintState.blueprint.formData.business)
+    }
+  }, [blueprintState])
   const [bioText, setBioText] = useState("")
   const [isSavingBio, setIsSavingBio] = useState(false)
   const [showHighlightsModal, setShowHighlightsModal] = useState(false)
@@ -416,10 +439,11 @@ export default function InstagramFeedView({ feedId, onBack, access, onOpenWizard
                           feedData?.feed?.status === 'queueing' ||
                           feedData?.feed?.status === 'generating'
   
-  // NEVER show loading overlay for manual feeds
-  // Only show for Maya feeds that are actively generating
+  // NEVER show loading overlay for manual feeds or free users (single placeholder)
+  // Only show for Maya feeds that are actively generating (full grid, paid users)
   // Must have feed data (not just loading) to determine if it's generating
   const shouldShowLoadingOverlay = !isManualFeed && 
+                                   access?.placeholderType !== "single" && // Never show for free users (single placeholder)
                                    !isFeedComplete && 
                                    feedData?.feed && // Must have feed data
                                    (hasGeneratingPosts || isMayaProcessing)
@@ -452,10 +476,11 @@ export default function InstagramFeedView({ feedId, onBack, access, onOpenWizard
   // Use reorderedPosts from drag-drop hook
   const displayPosts = dragDrop.reorderedPosts
 
-  // Show loading overlay ONLY for Maya feeds that are actively generating
+  // Show loading overlay ONLY for Maya feeds that are actively generating (paid users, full grid)
   // NEVER show for manual feeds - they should always show the grid
+  // NEVER show for free users (single placeholder) - they should see placeholder with inline generation
   // Also don't show if we don't have feed data yet (let it load in background)
-  if (shouldShowLoadingOverlay && feedData?.feed && !isManualFeed) {
+  if (shouldShowLoadingOverlay && feedData?.feed && !isManualFeed && access?.placeholderType !== "single") {
     return (
       <FeedLoadingOverlay
         feedId={feedId}
@@ -530,7 +555,12 @@ export default function InstagramFeedView({ feedId, onBack, access, onOpenWizard
           </>
         )}
 
-        {activeTab === "posts" && (
+        {/* For free users: Show Captions tab, for paid/membership: Show Posts tab */}
+        {activeTab === "captions" && access?.isFree && (
+          <FeedCaptionTemplates businessType={businessType} />
+        )}
+        
+        {activeTab === "posts" && !access?.isFree && (
           <FeedPostsList
             posts={posts}
             expandedCaptions={actions.expandedCaptions}
@@ -547,13 +577,19 @@ export default function InstagramFeedView({ feedId, onBack, access, onOpenWizard
           />
         )}
 
-        {/* Phase 4.2: Hide strategy tab content based on access control */}
+        {/* Strategy tab: Show Content Calendar for free users, FeedStrategy for paid/membership */}
         {activeTab === "strategy" && access?.canGenerateStrategy && (
-          <FeedStrategy
-            feedData={feedData}
-            feedId={feedId}
-            onStrategyGenerated={mutate}
-          />
+          <>
+            {access.isFree ? (
+              <FeedContentCalendar />
+            ) : (
+              <FeedStrategy
+                feedData={feedData}
+                feedId={feedId}
+                onStrategyGenerated={mutate}
+              />
+            )}
+          </>
         )}
       </div>
 

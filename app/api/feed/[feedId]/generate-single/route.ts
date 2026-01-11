@@ -341,10 +341,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       }
       
       // Generate with Nano Banana Pro
+      // Free users use 9:16 aspect ratio, paid users use 4:5
+      const aspectRatio = access.isFree ? '9:16' : '4:5'
       const generation = await generateWithNanoBanana({
         prompt: finalPrompt,
         image_input: baseImages.map(img => img.url),
-        aspect_ratio: '4:5', // Instagram portrait format
+        aspect_ratio: aspectRatio,
         resolution: '2K',
         output_format: 'png',
         safety_filter_level: 'block_only_high',

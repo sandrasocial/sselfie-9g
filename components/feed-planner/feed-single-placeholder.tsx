@@ -79,40 +79,27 @@ export default function FeedSinglePlaceholder({
 
   return (
     <div className="px-4 md:px-8 py-12">
-      <div className="w-full">
-        {/* 3x3 Grid Mockup Placeholder - matches header width */}
+      <div className="w-full max-w-md mx-auto">
+        {/* Single Image Placeholder - ONE placeholder for ONE image */}
         {hasImage ? (
-          // Show generated image in grid layout
-          <div className="grid grid-cols-3 gap-[2px] md:gap-1">
-            <div className="aspect-square bg-white relative overflow-hidden rounded-sm">
+          // Show generated image
+          <div className="relative">
+            <div className="aspect-[9/16] bg-white border border-stone-200 rounded-lg overflow-hidden">
               <img
                 src={post.image_url}
                 alt="Generated post"
                 className="w-full h-full object-cover"
               />
             </div>
-            {/* Empty grid cells */}
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="aspect-square bg-stone-100"></div>
-            ))}
           </div>
         ) : (
-          // Show 3x3 grid lines mockup
+          // Show single placeholder
           <div className="relative">
-            {/* Grid container with border - matches FeedGrid styling */}
-            <div className="grid grid-cols-3 gap-[2px] md:gap-1 border border-stone-300 rounded-lg p-[2px] md:p-1 bg-stone-100">
-              {/* Grid lines visualization - 9 empty cells */}
-              {Array.from({ length: 9 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="aspect-square bg-white"
-                />
-              ))}
-            </div>
+            <div className="aspect-[9/16] bg-white border-2 border-dashed border-stone-300 rounded-lg"></div>
 
             {/* Generation button overlay */}
             {!isGenerating && (
-              <div className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm rounded-lg">
+              <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center space-y-4 px-4">
                   <Button
                     onClick={(e) => {
