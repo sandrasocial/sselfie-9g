@@ -1037,8 +1037,7 @@ export async function POST(request: NextRequest) {
               }
               
               // Decision 1: Grant 60 credits for paid blueprint purchase (30 grids × 2 credits)
-              // Decision 2: Prioritize user_id from session.metadata (authenticated checkout)
-              // Fallback to email lookup only for guest checkout
+              // Fix #2: Resolve user_id (priority: session metadata, then email lookup)
               let userId: string | null = session.metadata?.user_id || null
               
               if (userId) {
@@ -1051,33 +1050,71 @@ export async function POST(request: NextRequest) {
                   `
                   if (userByEmail.length > 0) {
                     userId = userByEmail[0].id
-                    console.log(`[v0] Found user ${userId} by email for paid blueprint purchase (guest checkout)`)
-                  } else {
-                    console.log(`[v0] No user found by email - will create blueprint_subscribers record for later migration`)
+                    console.log(`[v0] Resolved user_id from email: ${userId}`)
                   }
                 } catch (userLookupError: any) {
                   console.error(`[v0] Error looking up user by email:`, userLookupError.message)
-                  // Continue without user_id - credits can't be granted without user
+                  // Continue to error handling below
                 }
               }
               
-              // Grant credits if user_id found
+              // Fix #2: If userId still not resolved, log error and exit (don't pretend success)
+              if (!userId && isPaymentPaid) {
+                console.error(`[v0] ❌ CRITICAL: Cannot resolve user_id for paid blueprint purchase`, {
+                  customerEmail,
+                  sessionId: session.id,
+                  paymentIntentId,
+                  metadata: session.metadata,
+                })
+                // Don't fail webhook - payment succeeded, but log prominently for manual review
+                // Return success but log error for monitoring
+                return NextResponse.json({ 
+                  received: true, 
+                  error: "user_id_unresolved",
+                  message: "Payment succeeded but user_id could not be resolved" 
+                }, { status: 200 })
+              }
+              
+              // Fix #3: Grant credits if user_id found AND payment confirmed (with idempotency check)
               if (userId && isPaymentPaid) {
                 try {
-                  const creditResult = await grantPaidBlueprintCredits(userId, paymentIntentId || undefined, isTestMode)
-                  if (creditResult.success) {
-                    console.log(`[v0] ✅ Granted 60 credits for paid blueprint purchase to user ${userId}`)
+                  // Fix #3: Check if credits already granted for this payment (idempotency)
+                  if (paymentIntentId) {
+                    const existingCredit = await sql`
+                      SELECT id FROM credit_transactions
+                      WHERE user_id = ${userId}
+                      AND stripe_payment_id = ${paymentIntentId}
+                      AND transaction_type = 'purchase'
+                      LIMIT 1
+                    `
+                    
+                    if (existingCredit.length > 0) {
+                      console.log(`[v0] ⏭️ Credits already granted for payment ${paymentIntentId} - skipping (idempotency)`)
+                    } else {
+                      // Grant credits (not already granted)
+                      const creditResult = await grantPaidBlueprintCredits(userId, paymentIntentId || undefined, isTestMode)
+                      if (creditResult.success) {
+                        console.log(`[v0] ✅ Granted 60 credits for paid blueprint purchase to user ${userId}`)
+                      } else {
+                        console.error(`[v0] ⚠️ Failed to grant paid blueprint credits: ${creditResult.error}`)
+                      }
+                    }
                   } else {
-                    console.error(`[v0] ⚠️ Failed to grant paid blueprint credits: ${creditResult.error}`)
+                    // No paymentIntentId - grant credits anyway (legacy support)
+                    console.warn(`[v0] ⚠️ No paymentIntentId for credit grant (idempotency check skipped)`)
+                    const creditResult = await grantPaidBlueprintCredits(userId, undefined, isTestMode)
+                    if (creditResult.success) {
+                      console.log(`[v0] ✅ Granted 60 credits for paid blueprint purchase to user ${userId}`)
+                    } else {
+                      console.error(`[v0] ⚠️ Failed to grant paid blueprint credits: ${creditResult.error}`)
+                    }
                   }
                 } catch (creditError: any) {
                   console.error(`[v0] ⚠️ Error granting paid blueprint credits (non-critical):`, creditError.message)
                   // Don't fail webhook if credit grant fails
                 }
               } else if (!userId) {
-                console.log(`[v0] ⚠️ No user_id found for paid blueprint purchase - credits will be granted when user signs up`)
-                // Credits will be granted when user signs up and links their email to their account
-                // Or we can grant credits when user_id is linked later (via migration or manual process)
+                // userId not resolved - already handled above
               } else {
                 console.log(`[v0] ⏭️ Skipping credit grant - payment not confirmed yet`)
               }
@@ -1117,7 +1154,7 @@ export async function POST(request: NextRequest) {
                     `
                     console.log(`[v0] ✅ Created paid_blueprint subscription entry for user ${userId}`)
                   } else {
-                    console.log(`[v0] ⏭️ Subscription already exists for user ${userId}`)
+                    console.log(`[v0] ⏭️ Subscription already exists for user ${userId} - skipping (idempotency)`)
                   }
                 } catch (subscriptionError: any) {
                   console.error(`[v0] ⚠️ Error creating subscription entry (non-critical):`, subscriptionError.message)
@@ -1133,13 +1170,13 @@ export async function POST(request: NextRequest) {
                   // Authenticated user: Link to user_id (consistent with other payment flows)
                   console.log(`[v0] 🔍 Linking paid blueprint purchase to authenticated user: ${userId}`)
                   
-                  const blueprintCheck = await sql`
+                const blueprintCheck = await sql`
                     SELECT id, paid_blueprint_purchased, user_id
-                    FROM blueprint_subscribers 
+                  FROM blueprint_subscribers 
                     WHERE user_id = ${userId}
-                    LIMIT 1
-                  `
-                  
+                  LIMIT 1
+                `
+                
                   if (blueprintCheck.length > 0) {
                     // Existing blueprint_subscribers record - update with paid purchase
                     await sql`
@@ -1197,53 +1234,53 @@ export async function POST(request: NextRequest) {
                     WHERE LOWER(email) = LOWER(${customerEmail})
                     LIMIT 1
                   `
-                  
-                  if (blueprintCheck.length > 0) {
+                
+                if (blueprintCheck.length > 0) {
                     // Existing subscriber - update with paid purchase
                     const accessToken = blueprintCheck[0].access_token || randomUUID()
-                    await sql`
-                      UPDATE blueprint_subscribers
-                      SET 
-                        paid_blueprint_purchased = TRUE,
-                        paid_blueprint_purchased_at = NOW(),
-                        paid_blueprint_stripe_payment_id = ${paymentIntentId || null},
-                        converted_to_user = TRUE,
-                        converted_at = NOW(),
-                        access_token = ${accessToken},
-                        updated_at = NOW()
-                      WHERE LOWER(email) = LOWER(${customerEmail})
-                    `
+                  await sql`
+                    UPDATE blueprint_subscribers
+                    SET 
+                      paid_blueprint_purchased = TRUE,
+                      paid_blueprint_purchased_at = NOW(),
+                      paid_blueprint_stripe_payment_id = ${paymentIntentId || null},
+                      converted_to_user = TRUE,
+                      converted_at = NOW(),
+                      access_token = ${accessToken},
+                      updated_at = NOW()
+                    WHERE LOWER(email) = LOWER(${customerEmail})
+                  `
                     console.log(`[v0] ✅ Updated blueprint_subscribers with paid blueprint purchase for ${customerEmail} (guest checkout)`)
-                  } else {
+                } else {
                     // New subscriber - create record (will be linked to user_id when user signs up)
                     const accessToken = randomUUID()
-                    const customerName = session.customer_details?.name || customerEmail.split("@")[0]
-                    await sql`
-                      INSERT INTO blueprint_subscribers (
-                        email,
-                        name,
-                        access_token,
-                        paid_blueprint_purchased,
-                        paid_blueprint_purchased_at,
-                        paid_blueprint_stripe_payment_id,
-                        converted_to_user,
-                        converted_at,
-                        created_at,
-                        updated_at
-                      )
-                      VALUES (
-                        ${customerEmail},
-                        ${customerName},
-                        ${accessToken},
-                        TRUE,
-                        NOW(),
-                        ${paymentIntentId || null},
-                        TRUE,
-                        NOW(),
-                        NOW(),
-                        NOW()
-                      )
-                    `
+                  const customerName = session.customer_details?.name || customerEmail.split("@")[0]
+                  await sql`
+                    INSERT INTO blueprint_subscribers (
+                      email,
+                      name,
+                      access_token,
+                      paid_blueprint_purchased,
+                      paid_blueprint_purchased_at,
+                      paid_blueprint_stripe_payment_id,
+                      converted_to_user,
+                      converted_at,
+                      created_at,
+                      updated_at
+                    )
+                    VALUES (
+                      ${customerEmail},
+                      ${customerName},
+                      ${accessToken},
+                      TRUE,
+                      NOW(),
+                      ${paymentIntentId || null},
+                      TRUE,
+                      NOW(),
+                      NOW(),
+                      NOW()
+                    )
+                  `
                     console.log(`[v0] ✅ Created blueprint_subscribers record for guest checkout: ${customerEmail} (will be linked to user_id on signup)`)
                   }
                 }

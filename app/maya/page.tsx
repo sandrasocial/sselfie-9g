@@ -47,6 +47,16 @@ export default async function MayaPage() {
     redirect("/auth/login?returnTo=/maya")
   }
 
+  // Fix #4: Check if user has paid_blueprint subscription (block Maya access)
+  const { hasPaidBlueprint } = await import("@/lib/subscription")
+  const isPaidBlueprint = await hasPaidBlueprint(neonUser.id)
+  
+  if (isPaidBlueprint) {
+    // Block Maya access - redirect to Blueprint
+    console.log(`[Maya Page] Blocking access for paid_blueprint user ${neonUser.id}, redirecting to /blueprint`)
+    redirect("/blueprint")
+  }
+
   const subscription = await getUserSubscription(neonUser.id)
 
   console.log("[v0] [MAYA PAGE] User:", neonUser.email)

@@ -1,14 +1,18 @@
 import { redirect } from "next/navigation"
 import { neon } from "@neondatabase/serverless"
+import { createServerClient } from "@/lib/supabase/server"
 import BrandBlueprintPageClient from "./page-client"
+import AuthenticatedBlueprintWrapper from "./authenticated-blueprint-wrapper"
 
 const sql = neon(process.env.DATABASE_URL!)
 
 /**
- * Server component wrapper for Free Blueprint page
+ * Server component wrapper for Blueprint page
  * 
  * Responsibilities:
- * - Check URL params (?email=... or ?token=...)
+ * - Check if user is authenticated (prioritize authenticated flow)
+ * - For authenticated users: render authenticated Blueprint experience
+ * - For guest users: Check URL params (?email=... or ?token=...)
  * - Query database for subscriber state
  * - Determine completion state (new/partial/completed/paid)
  * - Pass structured props to client component
@@ -17,12 +21,39 @@ const sql = neon(process.env.DATABASE_URL!)
 export default async function BrandBlueprintPageServer({
   searchParams,
 }: {
-  searchParams: Promise<{ email?: string; token?: string; message?: string }>
+  searchParams: Promise<{ email?: string; token?: string; message?: string; purchase?: string }>
 }) {
   const params = await searchParams
   const emailParam = params?.email
   const tokenParam = params?.token
+  const purchaseParam = params?.purchase
 
+  // Fix #5: Check if user is authenticated (prioritize authenticated flow)
+  try {
+    const supabase = await createServerClient()
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+
+    if (authUser) {
+      // Authenticated user flow
+      const { getUserByAuthId } = await import("@/lib/user-mapping")
+      const neonUser = await getUserByAuthId(authUser.id)
+
+      if (neonUser) {
+        // Render authenticated Blueprint experience
+        return (
+          <AuthenticatedBlueprintWrapper 
+            userId={neonUser.id} 
+            purchaseSuccess={purchaseParam === "success"}
+          />
+        )
+      }
+    }
+  } catch (authError) {
+    // Auth check failed - fall through to guest flow
+    console.log("[Blueprint Server] Auth check failed, falling back to guest flow:", authError)
+  }
+
+  // Guest flow (email/token params) - existing logic below
   // If no email or token, pass null props (new user flow)
   if (!emailParam && !tokenParam) {
     return (

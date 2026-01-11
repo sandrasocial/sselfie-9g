@@ -81,11 +81,11 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
       } = await supabase.auth.getUser()
       setIsAuthenticated(!!user)
 
-      // Decision 2: Auto-redirect authenticated users to Studio
+      // Fix #1: Auto-redirect authenticated users (Studio removed, Maya is default)
       if (user && (purchaseType === "credit_topup" || purchaseType === "paid_blueprint")) {
         const redirectPath = purchaseType === "paid_blueprint"
-          ? "/studio?tab=blueprint&purchase=success"
-          : "/studio"
+          ? "/blueprint?purchase=success"
+          : "/maya"
         setTimeout(() => {
           router.push(redirectPath)
         }, 2000)
@@ -144,7 +144,7 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
         return
       }
 
-      window.location.href = "/studio"
+      window.location.href = "/maya"
     } catch (err) {
       setError("Something went wrong. Please try again.")
       setIsSubmitting(false)
@@ -197,8 +197,8 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
     )
   }
 
-  // Decision 2: Paid blueprint now uses same flow as other products
-  // Authenticated users auto-redirect to Studio (via checkAuth useEffect)
+  // Fix #1: Paid blueprint now uses same flow as other products
+  // Authenticated users auto-redirect (via checkAuth useEffect)
   // Unauthenticated users see account creation form below
 
   if (!userInfo && initialEmail) {
@@ -557,10 +557,10 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
 
             <div className="text-center">
               <button
-                onClick={() => router.push("/studio")}
+                onClick={() => router.push("/maya")}
                 className="bg-stone-950 text-stone-50 px-8 sm:px-12 py-3 sm:py-4 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 min-h-[44px]"
               >
-                Go to Studio
+                Continue
               </button>
               <p className="text-[10px] sm:text-xs text-stone-500 font-light mt-4 sm:mt-6">
                 A confirmation email has been sent to {userInfo.email || initialEmail}
