@@ -5,6 +5,7 @@ import { createPortal } from "react-dom"
 import { toast } from "@/hooks/use-toast"
 import FeedPostCard from "./feed-post-card"
 import { FeedGallerySelector } from "./feed-gallery-selector"
+import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 
 interface FeedModalsProps {
   selectedPost: any | null
@@ -12,6 +13,7 @@ interface FeedModalsProps {
   showProfileGallery: boolean
   feedId: number
   feedData: any
+  access?: FeedPlannerAccess // Phase 8.1: Access control for gallery access
   onClosePost: () => void
   onCloseGallery: () => void
   onCloseProfileGallery: () => void
@@ -26,6 +28,7 @@ export default function FeedModals({
   showProfileGallery,
   feedId,
   feedData,
+  access, // Phase 8.1: Access control for gallery access
   onClosePost,
   onCloseGallery,
   onCloseProfileGallery,
@@ -98,7 +101,8 @@ export default function FeedModals({
         document.body
       )}
 
-      {showGallery && feedData?.feed?.id && (
+      {/* Phase 8.1: Show gallery only if user has gallery access */}
+      {showGallery && feedData?.feed?.id && access?.hasGalleryAccess && (
         <FeedGallerySelector
           type="post"
           postId={showGallery}
@@ -117,7 +121,8 @@ export default function FeedModals({
         />
       )}
 
-      {showProfileGallery && feedData?.feed?.id && (
+      {/* Phase 8.1: Show profile gallery only if user has gallery access */}
+      {showProfileGallery && feedData?.feed?.id && access?.hasGalleryAccess && (
         <FeedGallerySelector
           type="profile"
           feedId={feedData.feed.id}

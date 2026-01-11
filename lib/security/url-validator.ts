@@ -13,7 +13,6 @@ const ALLOWED_REDIRECT_PATHS = [
   "/feed-planner",
   "/maya",
   "/profile",
-  "/blueprint",
 ]
 
 /**

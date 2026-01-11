@@ -8,6 +8,7 @@ import { checkGenerationRateLimit } from "@/lib/rate-limit"
 import { checkCredits, deductCredits, CREDIT_COSTS } from "@/lib/credits"
 import { extractReplicateVersionId, ensureTriggerWordPrefix, ensureGenderInPrompt, buildClassicModeReplicateInput } from "@/lib/replicate-helpers"
 import { generateWithNanoBanana, getStudioProCreditCost } from "@/lib/nano-banana-client"
+import { getFeedPlannerAccess } from "@/lib/feed-planner/access-control"
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ feedId: string }> | { feedId: string } }) {
   try {
@@ -76,6 +77,32 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
     }
 
     console.log("[v0] [GENERATE-SINGLE] ✅ Neon user found:", user.id)
+
+    // Phase 7.3: Check access control for image generation
+    // Free users can generate ONE image (they have 2 credits), others can generate unlimited
+    const access = await getFeedPlannerAccess(user.id.toString())
+    const { getUserCredits } = await import("@/lib/credits")
+    const creditBalance = await getUserCredits(user.id.toString())
+    
+    // Allow generation if:
+    // 1. User has canGenerateImages access (paid/membership), OR
+    // 2. User is free AND has credits (free users with credits can generate one image)
+    const hasGenerationAccess = access.canGenerateImages || (access.isFree && creditBalance > 0)
+    
+    if (!hasGenerationAccess) {
+      console.error("[v0] [GENERATE-SINGLE] User does not have generation access", {
+        canGenerateImages: access.canGenerateImages,
+        isFree: access.isFree,
+        creditBalance,
+      })
+      return Response.json(
+        {
+          error: "Generation access required",
+          details: "You need credits to generate images. Free users can generate one image with their welcome credits.",
+        },
+        { status: 403 },
+      )
+    }
 
     const rateLimit = await checkGenerationRateLimit(user.id.toString())
     if (!rateLimit.success) {

@@ -17,14 +17,15 @@ import FeedStrategy from "./feed-strategy"
 import FeedModals from "./feed-modals"
 import FeedLoadingOverlay from "./feed-loading-overlay"
 import FeedHighlightsModal from "./feed-highlights-modal"
+import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 
 interface InstagramFeedViewProps {
   feedId: number
   onBack?: () => void
-  mode?: "feed-planner" | "blueprint" // Decision 2: Mode prop for feature flags
+  access?: FeedPlannerAccess // Phase 4.2: Access control object (replaces mode prop)
 }
 
-export default function InstagramFeedView({ feedId, onBack, mode = "feed-planner" }: InstagramFeedViewProps) {
+export default function InstagramFeedView({ feedId, onBack, access }: InstagramFeedViewProps) {
   // Use custom hooks for all complex logic
   const { feedData, feedError, mutate, isLoading: isFeedLoading, isValidating } = useFeedPolling(feedId)
   const { selectedPost, setSelectedPost, showGallery, setShowGallery, showProfileGallery, setShowProfileGallery } = useFeedModals()
@@ -480,7 +481,7 @@ export default function InstagramFeedView({ feedId, onBack, mode = "feed-planner
       <FeedTabs
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        mode={mode} // Decision 2: Pass mode to hide strategy tab in blueprint mode
+        access={access} // Phase 4.2: Pass access control instead of mode
       />
 
 
@@ -488,25 +489,40 @@ export default function InstagramFeedView({ feedId, onBack, mode = "feed-planner
       <div className="pb-20">
         {activeTab === "grid" && (
           <>
-            <FeedGrid
-              posts={displayPosts}
-              postStatuses={postStatuses}
-              draggedIndex={dragDrop.draggedIndex}
-              isSavingOrder={dragDrop.isSavingOrder}
-              isManualFeed={isManualFeed}
-              onPostClick={setSelectedPost}
-              onAddImage={setShowGallery}
-              onDragStart={dragDrop.handleDragStart}
-              onDragOver={dragDrop.handleDragOver}
-              onDragEnd={dragDrop.handleDragEnd}
-            />
-            {/* Helpful hint for empty posts */}
-            {displayPosts.some((p: any) => !p.image_url) && (
-              <div className="mt-6 px-4 text-center">
-                <p className="text-xs text-stone-500 font-light">
-                  Click any empty post to upload an image or select from your gallery
-                </p>
-              </div>
+            {/* Phase 4.5: Show single placeholder for free users, full grid for paid users */}
+            {access?.placeholderType === "single" ? (
+              <FeedSinglePlaceholder
+                feedId={feedId}
+                post={displayPosts?.[0] || null}
+                onAddImage={() => setShowGallery(0)} // Open gallery for free users
+                onGenerateImage={() => mutate()} // Refresh feed data after generation
+              />
+            ) : (
+              <>
+                <FeedGrid
+                  posts={displayPosts}
+                  postStatuses={postStatuses}
+                  draggedIndex={dragDrop.draggedIndex}
+                  isSavingOrder={dragDrop.isSavingOrder}
+                  isManualFeed={isManualFeed}
+                  feedId={feedId}
+                  access={access} // Phase 5.1: Pass access control for image generation
+                  onPostClick={setSelectedPost}
+                  onAddImage={setShowGallery}
+                  onGenerateImage={mutate} // Phase 5.1: Refresh feed data after generation
+                  onDragStart={dragDrop.handleDragStart}
+                  onDragOver={dragDrop.handleDragOver}
+                  onDragEnd={dragDrop.handleDragEnd}
+                />
+                {/* Helpful hint for empty posts */}
+                {displayPosts.some((p: any) => !p.image_url) && (
+                  <div className="mt-6 px-4 text-center">
+                    <p className="text-xs text-stone-500 font-light">
+                      Click any empty post to upload an image or select from your gallery
+                    </p>
+                  </div>
+                )}
+              </>
             )}
           </>
         )}
@@ -524,12 +540,12 @@ export default function InstagramFeedView({ feedId, onBack, mode = "feed-planner
             onEnhanceCaption={actions.handleEnhanceCaption}
             onAddImage={setShowGallery}
             onRefresh={mutate}
-            mode={mode} // Decision 2: Pass mode to hide caption generation in blueprint mode
+            access={access} // Phase 4.2: Pass access control instead of mode
           />
         )}
 
-        {/* Decision 2: Hide strategy tab content in blueprint mode */}
-        {activeTab === "strategy" && mode !== "blueprint" && (
+        {/* Phase 4.2: Hide strategy tab content based on access control */}
+        {activeTab === "strategy" && access?.canGenerateStrategy && (
           <FeedStrategy
             feedData={feedData}
             feedId={feedId}
@@ -544,6 +560,7 @@ export default function InstagramFeedView({ feedId, onBack, mode = "feed-planner
         showProfileGallery={showProfileGallery}
         feedId={feedId}
         feedData={feedData}
+        access={access} // Phase 8.1: Pass access control for gallery access
         onClosePost={() => setSelectedPost(null)}
         onCloseGallery={() => setShowGallery(null)}
         onCloseProfileGallery={() => setShowProfileGallery(false)}

@@ -75,7 +75,7 @@ export default async function BlueprintCheckoutPage({
     } else {
       // Fallback if session creation fails
       console.error("[Blueprint Checkout] No client secret returned")
-      redirect("/blueprint?message=checkout_error")
+      redirect("/feed-planner?message=checkout_error")
     }
   } catch (error: any) {
     // Check if this is a Next.js redirect (expected behavior)
@@ -89,6 +89,6 @@ export default async function BlueprintCheckoutPage({
     if (error instanceof Error && error.message.includes("STRIPE_PAID_BLUEPRINT_PRICE_ID")) {
       throw error // Let Next.js error boundary show the detailed error in dev
     }
-    redirect("/blueprint?message=checkout_error")
+    redirect("/feed-planner?message=checkout_error")
   }
 }

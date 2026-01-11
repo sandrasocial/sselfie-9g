@@ -107,12 +107,9 @@ export function BlueprintSelfieUpload({
       return
     }
 
-    // Validate email before setting uploading state
-    if (!email) {
-      setError("Please complete email capture first")
-      e.target.value = ""
-      return
-    }
+    // Email is optional for authenticated users (handled by API)
+    // Only show error if this is required by the parent component
+    // (The API endpoint will handle authentication and email-based lookup)
 
     // Validate files before upload
     const invalidFiles: string[] = []
@@ -168,7 +165,10 @@ export function BlueprintSelfieUpload({
       )
 
       const formData = new FormData()
-      formData.append("email", email)
+      // Email is optional - API will use auth session if available
+      if (email) {
+        formData.append("email", email)
+      }
       processedFiles.forEach((file) => {
         formData.append("files", file)
       })

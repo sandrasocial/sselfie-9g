@@ -84,7 +84,7 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
       // Fix #1: Auto-redirect authenticated users (Studio removed, Maya is default)
       if (user && (purchaseType === "credit_topup" || purchaseType === "paid_blueprint")) {
         const redirectPath = purchaseType === "paid_blueprint"
-          ? "/blueprint?purchase=success"
+          ? "/feed-planner?purchase=success"
           : "/maya"
         setTimeout(() => {
           router.push(redirectPath)

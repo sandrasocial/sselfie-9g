@@ -145,6 +145,9 @@ export async function POST(req: NextRequest) {
       `
     }
 
+    // Note: Credits are already granted on signup via app/auth/callback/route.ts
+    // No need to grant credits here - users already have 2 credits available before onboarding
+    
     // Note: onboarding_completed will be set to true after grid generation
     // (per Decision 3 plan: onboarding complete only after grid is generated)
     // Just update timestamp for now

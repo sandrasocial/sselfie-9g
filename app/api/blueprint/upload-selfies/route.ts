@@ -165,14 +165,71 @@ export async function POST(req: NextRequest) {
           SET selfie_image_urls = ${JSON.stringify(allUrls)}::jsonb
           WHERE user_id = ${userId}
         `
-        console.log("[Blueprint] Selfie URLs saved to database for user_id:", userId, `(${allUrls.length} total)`)
+        console.log("[Blueprint] Selfie URLs saved to blueprint_subscribers for user_id:", userId, `(${allUrls.length} total)`)
       } else {
         await sql`
           UPDATE blueprint_subscribers
           SET selfie_image_urls = ${JSON.stringify(allUrls)}::jsonb
           WHERE email = ${email}
         `
-        console.log("[Blueprint] Selfie URLs saved to database for email:", email, `(${allUrls.length} total)`)
+        console.log("[Blueprint] Selfie URLs saved to blueprint_subscribers for email:", email, `(${allUrls.length} total)`)
+      }
+
+      // Phase 5.3.4: Also save to user_avatar_images for Pro Mode image generation
+      // Only save if we have userId (authenticated users)
+      if (userId) {
+        try {
+          // Get current max display_order for this user
+          const maxOrderResult = await sql`
+            SELECT COALESCE(MAX(display_order), 0) as max_order
+            FROM user_avatar_images
+            WHERE user_id = ${userId}
+          `
+          const maxOrder = maxOrderResult[0]?.max_order || 0
+
+          // Insert each new image URL into user_avatar_images
+          for (let i = 0; i < imageUrls.length; i++) {
+            const imageUrl = imageUrls[i]
+            
+            // Check if this URL already exists for this user
+            const existingAvatar = await sql`
+              SELECT id FROM user_avatar_images
+              WHERE user_id = ${userId} AND image_url = ${imageUrl}
+              LIMIT 1
+            `
+
+            if (existingAvatar.length === 0) {
+              // Insert new avatar image
+              await sql`
+                INSERT INTO user_avatar_images (
+                  user_id,
+                  image_url,
+                  display_order,
+                  is_active,
+                  uploaded_at,
+                  created_at
+                )
+                VALUES (
+                  ${userId},
+                  ${imageUrl},
+                  ${maxOrder + i + 1},
+                  true,
+                  NOW(),
+                  NOW()
+                )
+              `
+              console.log("[Blueprint] Saved selfie to user_avatar_images:", imageUrl)
+            } else {
+              console.log("[Blueprint] Selfie already exists in user_avatar_images, skipping:", imageUrl)
+            }
+          }
+          console.log("[Blueprint] ✅ All selfies saved to user_avatar_images for Pro Mode")
+        } catch (avatarError) {
+          console.error("[Blueprint] Error saving to user_avatar_images:", avatarError)
+          // Continue even if this fails - blueprint_subscribers save was successful
+        }
+      } else {
+        console.log("[Blueprint] Skipping user_avatar_images save - no userId (email-only flow)")
       }
     } catch (dbError) {
       console.error("[Blueprint] Error saving selfie URLs:", dbError)

@@ -1,7 +1,10 @@
 "use client"
 
+import { useState } from "react"
 import Image from "next/image"
-import { ImageIcon } from "lucide-react"
+import { ImageIcon, Loader2 } from "lucide-react"
+import { toast } from "@/hooks/use-toast"
+import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 
 interface FeedGridProps {
   posts: any[]
@@ -9,8 +12,11 @@ interface FeedGridProps {
   draggedIndex: number | null
   isSavingOrder: boolean
   isManualFeed?: boolean // Flag to identify manual feeds
+  feedId: number // Feed ID for image generation
+  access?: FeedPlannerAccess // Phase 5.1: Access control for image generation
   onPostClick: (post: any) => void
   onAddImage?: (postId: number) => void // Open gallery selector (upload + gallery)
+  onGenerateImage?: (postId: number) => Promise<void> // Phase 5.1: Callback after image generation
   onDragStart: (index: number) => void
   onDragOver: (e: React.DragEvent<HTMLDivElement>, index: number) => void
   onDragEnd: () => void
@@ -22,12 +28,65 @@ export default function FeedGrid({
   draggedIndex,
   isSavingOrder,
   isManualFeed = false,
+  feedId,
+  access,
   onPostClick,
   onAddImage,
+  onGenerateImage,
   onDragStart,
   onDragOver,
   onDragEnd,
 }: FeedGridProps) {
+  const [generatingPostId, setGeneratingPostId] = useState<number | null>(null)
+
+  // Phase 5.1: Handle direct image generation for paid users
+  const handleGenerateImage = async (postId: number) => {
+    if (!access?.canGenerateImages) {
+      toast({
+        title: "Access restricted",
+        description: "Image generation is only available for paid users.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setGeneratingPostId(postId)
+
+    try {
+      const response = await fetch(`/api/feed/${feedId}/generate-single`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ postId }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: "Failed to generate" }))
+        throw new Error(errorData.error || "Failed to generate")
+      }
+
+      toast({
+        title: "Generating photo",
+        description: "This takes about 30 seconds",
+      })
+
+      // Call refresh callback if provided
+      if (onGenerateImage) {
+        await onGenerateImage(postId)
+      }
+    } catch (error) {
+      console.error("[Feed Grid] Generate error:", error)
+      toast({
+        title: "Generation failed",
+        description: error instanceof Error ? error.message : "Please try again",
+        variant: "destructive",
+      })
+    } finally {
+      setGeneratingPostId(null)
+    }
+  }
+
+  // Phase 5.1: Determine if generation button should be shown
+  const showGenerateButton = access?.canGenerateImages ?? false
   return (
     <div className="grid grid-cols-3 gap-[2px] md:gap-1">
       {posts.map((post: any, index: number) => {
@@ -61,28 +120,46 @@ export default function FeedGrid({
                 sizes="(max-width: 768px) 33vw, 311px"
                 onClick={() => onPostClick(post)}
               />
-            ) : isGenerating ? (
+            ) : isGenerating || generatingPostId === post.id ? (
               <div className="absolute inset-0 bg-stone-50 flex flex-col items-center justify-center">
+                <Loader2 size={20} className="text-stone-400 animate-spin mb-2" strokeWidth={1.5} />
                 <div className="text-[10px] font-light text-stone-500 text-center">
                   Creating...
                 </div>
               </div>
             ) : (
-              <div
-                className="absolute inset-0 bg-white flex flex-col items-center justify-center p-3 cursor-pointer hover:bg-stone-50 transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  // Always open gallery selector (upload + gallery) for all feeds
-                  if (onAddImage) {
-                    onAddImage(post.id)
-                  }
-                }}
-              >
-                <ImageIcon className="w-10 h-10 text-stone-300 mb-2" strokeWidth={1.5} />
-                <div className="text-[10px] font-light text-stone-500 text-center">
-                  Click to add image
+              // Phase 5.1: Show generation button for paid users, gallery selector for others
+              showGenerateButton ? (
+                <button
+                  className="absolute inset-0 bg-white flex flex-col items-center justify-center p-3 cursor-pointer hover:bg-stone-50 transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleGenerateImage(post.id)
+                  }}
+                  disabled={generatingPostId !== null}
+                >
+                  <ImageIcon className="w-10 h-10 text-stone-400 mb-2" strokeWidth={1.5} />
+                  <div className="text-[10px] font-light text-stone-600 text-center">
+                    Generate image
+                  </div>
+                </button>
+              ) : (
+                <div
+                  className="absolute inset-0 bg-white flex flex-col items-center justify-center p-3 cursor-pointer hover:bg-stone-50 transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    // Open gallery selector for free users
+                    if (onAddImage) {
+                      onAddImage(post.id)
+                    }
+                  }}
+                >
+                  <ImageIcon className="w-10 h-10 text-stone-300 mb-2" strokeWidth={1.5} />
+                  <div className="text-[10px] font-light text-stone-500 text-center">
+                    Click to add image
+                  </div>
                 </div>
-              </div>
+              )
             )}
           </div>
         )

@@ -1,8 +1,9 @@
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId, getOrCreateNeonUser } from "@/lib/user-mapping"
 import { redirect } from 'next/navigation'
-import FeedViewScreen from "@/components/feed-planner/feed-view-screen"
+import FeedPlannerClient from "./feed-planner-client"
 import { getFeedPlannerAccess } from "@/lib/feed-planner/access-control"
+import { sql } from "@/lib/neon"
 
 export default async function FeedPlannerPage() {
   const supabase = await createServerClient()
@@ -36,5 +37,14 @@ export default async function FeedPlannerPage() {
   // Phase 1.2: Check access control
   const access = await getFeedPlannerAccess(neonUser.id.toString())
 
-  return <FeedViewScreen access={access} />
+  // Phase 3: Get user name for wizard
+  const userResult = await sql`
+    SELECT display_name, email
+    FROM users
+    WHERE id = ${neonUser.id}
+    LIMIT 1
+  `
+  const userName = userResult.length > 0 ? userResult[0].display_name : null
+
+  return <FeedPlannerClient access={access} userId={neonUser.id.toString()} userName={userName} />
 }

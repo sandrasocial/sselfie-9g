@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { X } from "lucide-react"
 import { DesignClasses, ComponentClasses } from "@/lib/design-tokens"
 import Image from "next/image"
+import { BlueprintSelfieUpload } from "@/components/blueprint/blueprint-selfie-upload"
 
 interface BlueprintOnboardingWizardProps {
   isOpen: boolean
@@ -21,6 +22,7 @@ interface BlueprintOnboardingWizardProps {
     consistencyLevel: string
     currentSelfieHabits: string
     feedStyle: string
+    selfieImages?: string[]
   }) => void
   onDismiss?: () => void
   userName?: string | null
@@ -34,7 +36,9 @@ interface BlueprintOnboardingWizardProps {
     consistencyLevel?: string
     currentSelfieHabits?: string
     feedStyle?: string
+    selfieImages?: string[]
   }
+  userEmail?: string | null
 }
 
 // Feed style examples (from old blueprint form)
@@ -62,20 +66,26 @@ const WIZARD_STEPS = [
   {
     id: "step1",
     title: "Tell me about your brand",
-    subtitle: "Step 1 of 3",
+    subtitle: "Step 1 of 4",
     fields: ["business", "dreamClient", "vibe"],
   },
   {
     id: "step2",
     title: "Your content skills",
-    subtitle: "Step 2 of 3",
+    subtitle: "Step 2 of 4",
     fields: ["lightingKnowledge", "angleAwareness", "editingStyle", "consistencyLevel", "currentSelfieHabits"],
   },
   {
     id: "step3",
     title: "Choose your feed aesthetic",
-    subtitle: "Step 3 of 3",
+    subtitle: "Step 3 of 4",
     fields: ["feedStyle"],
+  },
+  {
+    id: "step4",
+    title: "Upload your selfies",
+    subtitle: "Step 4 of 4",
+    fields: ["selfieImages"],
   },
 ]
 
@@ -85,6 +95,7 @@ export default function BlueprintOnboardingWizard({
   onDismiss,
   userName,
   existingData,
+  userEmail,
 }: BlueprintOnboardingWizardProps) {
   const [currentStep, setCurrentStep] = useState(0)
   const [formData, setFormData] = useState({
@@ -97,6 +108,7 @@ export default function BlueprintOnboardingWizard({
     consistencyLevel: existingData?.consistencyLevel || "",
     currentSelfieHabits: existingData?.currentSelfieHabits || "",
     feedStyle: existingData?.feedStyle || "",
+    selfieImages: existingData?.selfieImages || [],
   })
   const [isSaving, setIsSaving] = useState(false)
 
@@ -105,8 +117,16 @@ export default function BlueprintOnboardingWizard({
   const step = WIZARD_STEPS[currentStep]
 
   const canProceed = () => {
+    // For selfie upload step, check if at least 1 image is uploaded
+    if (step.id === "step4") {
+      return Array.isArray(formData.selfieImages) && formData.selfieImages.length > 0
+    }
+    
     return step.fields.every((field) => {
       const value = formData[field as keyof typeof formData]
+      if (Array.isArray(value)) {
+        return value.length > 0
+      }
       return value && value.toString().trim().length > 0
     })
   }
@@ -122,12 +142,17 @@ export default function BlueprintOnboardingWizard({
   const handleComplete = async () => {
     setIsSaving(true)
     try {
-      // Save data via API endpoint (will be created)
+      // Save data via API endpoint
+      // Note: selfieImages are already uploaded and saved to user_avatar_images via upload-selfies endpoint
       const response = await fetch("/api/onboarding/blueprint-onboarding-complete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          // selfieImages are already saved, just pass them for reference
+          selfieImages: formData.selfieImages,
+        }),
       })
 
       if (!response.ok) {
@@ -447,6 +472,29 @@ export default function BlueprintOnboardingWizard({
                         </div>
                       ))}
                     </div>
+                  </div>
+                )}
+
+                {/* Step 4: Selfie Upload */}
+                {currentStep === 3 && (
+                  <div className="space-y-6">
+                    <div>
+                      <p className="text-sm font-light text-stone-600 mb-2">
+                        Upload 1-3 selfies to use as reference images for generating your feed.
+                      </p>
+                      <p className="text-xs font-light text-stone-500 mb-6">
+                        These will help AI generate images that match your style and aesthetic.
+                      </p>
+                    </div>
+
+                    <BlueprintSelfieUpload
+                      onUploadComplete={(imageUrls) => {
+                        setFormData({ ...formData, selfieImages: imageUrls })
+                      }}
+                      maxImages={3}
+                      initialImages={Array.isArray(formData.selfieImages) ? formData.selfieImages : []}
+                      email={userEmail || undefined}
+                    />
                   </div>
                 )}
 

@@ -2,18 +2,19 @@
 
 import { useEffect } from "react"
 import { Grid3x3, LayoutGrid, List } from "lucide-react"
+import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 
 interface FeedTabsProps {
   activeTab: "grid" | "posts" | "strategy"
   onTabChange: (tab: "grid" | "posts" | "strategy") => void
-  mode?: "feed-planner" | "blueprint" // Decision 2: Mode prop to hide strategy tab
+  access?: FeedPlannerAccess // Phase 4.3: Access control object (replaces mode prop)
 }
 
-export default function FeedTabs({ activeTab, onTabChange, mode = "feed-planner" }: FeedTabsProps) {
-  // Decision 2: Hide strategy tab in blueprint mode
-  const showStrategyTab = mode !== "blueprint"
+export default function FeedTabs({ activeTab, onTabChange, access }: FeedTabsProps) {
+  // Phase 4.3: Hide strategy tab based on access control
+  const showStrategyTab = access?.canGenerateStrategy ?? true // Default to true if access not provided
 
-  // Decision 2: If strategy tab is hidden and activeTab is strategy, switch to grid
+  // Phase 4.3: If strategy tab is hidden and activeTab is strategy, switch to grid
   useEffect(() => {
     if (!showStrategyTab && activeTab === "strategy") {
       onTabChange("grid")

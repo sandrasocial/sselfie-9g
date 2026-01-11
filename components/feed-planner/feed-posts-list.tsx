@@ -4,6 +4,7 @@ import { useState } from "react"
 import Image from "next/image"
 import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Loader2, Copy, Check, Wand2 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
+import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 
 interface FeedPostsListProps {
   posts: any[]
@@ -17,7 +18,7 @@ interface FeedPostsListProps {
   onEnhanceCaption: (postId: number, caption: string) => void
   onAddImage?: (postId: number) => void // Open gallery selector (upload + gallery)
   onRefresh?: () => void // Callback to refresh feed data after caption generation
-  mode?: "feed-planner" | "blueprint" // Decision 2: Mode prop to hide caption generation
+  access?: FeedPlannerAccess // Phase 4.4: Access control object (replaces mode prop)
 }
 
 export default function FeedPostsList({
@@ -32,7 +33,7 @@ export default function FeedPostsList({
   onEnhanceCaption,
   onAddImage,
   onRefresh,
-  mode = "feed-planner",
+  access,
 }: FeedPostsListProps) {
   const [isGeneratingCaptions, setIsGeneratingCaptions] = useState(false)
 
@@ -87,12 +88,12 @@ export default function FeedPostsList({
     }
   }
 
-  // Decision 2: Hide caption generation in blueprint mode
-  const showCaptionGeneration = mode !== "blueprint"
+  // Phase 4.4: Hide caption generation based on access control
+  const showCaptionGeneration = access?.canGenerateCaptions ?? true // Default to true if access not provided
 
   return (
     <div className="space-y-6 md:space-y-8">
-      {/* Decision 2: Create Captions Button - Hide in blueprint mode */}
+      {/* Phase 4.4: Create Captions Button - Hide based on access control */}
       {showCaptionGeneration && posts.length > 0 && posts.every((p: any) => !p.caption || p.caption.trim() === "") && (
         <div className="flex justify-center pb-4">
           <button

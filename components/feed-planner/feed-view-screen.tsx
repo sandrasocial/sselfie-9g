@@ -7,6 +7,7 @@ import InstagramFeedView from "./instagram-feed-view"
 import { ArrowLeft, ImageIcon } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import UnifiedLoading from "@/components/sselfie/unified-loading"
+import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -14,8 +15,7 @@ import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 
 interface FeedViewScreenProps {
   feedId?: number | null
-  mode?: "feed-planner" | "blueprint" // Decision 2: Mode prop for feature flags (deprecated - use access instead)
-  access?: FeedPlannerAccess // Phase 1.2: Access control object
+  access?: FeedPlannerAccess // Phase 1.2: Access control object (required)
 }
 
 /**
@@ -31,22 +31,20 @@ interface FeedViewScreenProps {
  * When no feedId is provided, automatically fetches the latest feed.
  * Shows placeholder state if no feed exists.
  */
-export default function FeedViewScreen({ feedId: feedIdProp, mode = "feed-planner", access }: FeedViewScreenProps = {}) {
+export default function FeedViewScreen({ feedId: feedIdProp, access }: FeedViewScreenProps = {}) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isCreatingManual, setIsCreatingManual] = useState(false)
+  const [isCreatingFreeExample, setIsCreatingFreeExample] = useState(false)
   
   // Get feedId from prop, query param, or null
   const feedIdFromQuery = feedIdProp ?? (searchParams.get('feedId') ? parseInt(searchParams.get('feedId')!, 10) : null)
 
-  // Decision 2: Determine which endpoint to use based on mode
-  // For blueprint mode, use /api/feed/blueprint
-  // Otherwise use specific feedId or latest feed
-  const swrKey = mode === "blueprint"
-    ? '/api/feed/blueprint'
-    : feedIdFromQuery 
-      ? `/api/feed/${feedIdFromQuery}` 
-      : '/api/feed/latest'
+  // Phase 4.1: Use standard feed endpoints (removed blueprint endpoint)
+  // Use specific feedId or latest feed
+  const swrKey = feedIdFromQuery 
+    ? `/api/feed/${feedIdFromQuery}` 
+    : '/api/feed/latest'
 
   // Fetch feed data (handles both specific feed and latest feed)
   const { data: feedData, error: feedError, isLoading } = useSWR(
@@ -86,6 +84,49 @@ export default function FeedViewScreen({ feedId: feedIdProp, mode = "feed-planne
 
   const feeds = feedListData?.feeds || []
   const hasMultipleFeeds = feeds.length > 1
+
+  // Phase 5.3.2: Auto-create feed for free users when no feed exists
+  useEffect(() => {
+    const autoCreateFreeExample = async () => {
+      // Only auto-create for free users when no feed exists
+      if (
+        !feedExists &&
+        !feedIdFromQuery &&
+        feedData?.exists === false &&
+        access?.isFree &&
+        !isCreatingFreeExample
+      ) {
+        setIsCreatingFreeExample(true)
+        try {
+          const response = await fetch('/api/feed/create-free-example', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+          })
+
+          if (!response.ok) {
+            console.error('[Feed Planner] Failed to create free example feed')
+            setIsCreatingFreeExample(false)
+            return
+          }
+
+          const data = await response.json()
+          console.log('[Feed Planner] ✅ Free example feed created:', data.feedId)
+          
+          // Refresh feed data to show the new feed
+          router.push(`/feed-planner?feedId=${data.feedId}`)
+        } catch (error) {
+          console.error('[Feed Planner] Error creating free example feed:', error)
+          setIsCreatingFreeExample(false)
+        }
+      }
+    }
+
+    // Only run if we've confirmed no feed exists (not during initial load)
+    if (!isLoading && feedData) {
+      autoCreateFreeExample()
+    }
+  }, [feedExists, feedIdFromQuery, feedData, access?.isFree, isLoading, router, isCreatingFreeExample])
 
   const handleBackToMaya = () => {
     // Route to Maya Feed tab using hash navigation
@@ -166,7 +207,18 @@ export default function FeedViewScreen({ feedId: feedIdProp, mode = "feed-planne
   }
 
   // Placeholder state: No feed exists (exists: false from /api/feed/latest)
+  // For free users, we auto-create the feed (handled in useEffect above)
+  // For paid users, show the create feed options
   if (!feedExists || (!feedIdFromQuery && feedData?.exists === false)) {
+    // Free users: Show loading while auto-creating feed
+    if (access?.isFree && isCreatingFreeExample) {
+      return (
+        <div className="flex flex-col flex-1 overflow-hidden min-h-0">
+          <UnifiedLoading variant="screen" message="Setting up your feed" />
+        </div>
+      )
+    }
+
     return (
       <div className="flex flex-col flex-1 overflow-hidden min-h-0">
         {/* Placeholder State */}
@@ -263,7 +315,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, mode = "feed-planne
         <InstagramFeedView
           feedId={effectiveFeedId}
           onBack={handleBackToMaya}
-          mode={mode} // Decision 2: Pass mode to InstagramFeedView
+          access={access} // Phase 4.1: Pass access control to InstagramFeedView
         />
       </div>
     </div>

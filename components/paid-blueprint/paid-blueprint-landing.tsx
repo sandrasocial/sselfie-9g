@@ -47,7 +47,7 @@ export default function PaidBlueprintLanding() {
           </Link>
         </div>
         <Link
-          href="/blueprint"
+          href="/feed-planner"
           className="pointer-events-auto text-[10px] uppercase tracking-[0.2em] text-white opacity-90 hover:opacity-100 transition-opacity py-2"
         >
           Free Blueprint
