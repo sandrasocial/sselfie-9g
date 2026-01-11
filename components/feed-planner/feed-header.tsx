@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { ChevronLeft, MoreHorizontal, Plus } from "lucide-react"
+import { ChevronLeft, MoreHorizontal, Plus, Settings } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 
 interface FeedHeaderProps {
@@ -13,6 +13,7 @@ interface FeedHeaderProps {
   onProfileImageClick: () => void
   onWriteBio: () => void
   onCreateHighlights?: () => void
+  onOpenWizard?: () => void // Callback to open wizard
 }
 
 export default function FeedHeader({
@@ -22,6 +23,7 @@ export default function FeedHeader({
   onProfileImageClick,
   onWriteBio,
   onCreateHighlights,
+  onOpenWizard,
 }: FeedHeaderProps) {
   const router = useRouter()
   const [isCreatingFeed, setIsCreatingFeed] = useState(false)
@@ -103,9 +105,20 @@ export default function FeedHeader({
             <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
           </svg>
         </div>
-        <button className="p-2 -mr-2 hover:bg-stone-50 rounded-full transition-colors">
-          <MoreHorizontal size={24} className="text-stone-900" strokeWidth={2} />
-        </button>
+        <div className="flex items-center gap-1">
+          {onOpenWizard && (
+            <button
+              onClick={onOpenWizard}
+              className="p-2 hover:bg-stone-50 rounded-full transition-colors"
+              title="Edit wizard answers"
+            >
+              <Settings size={20} className="text-stone-600" strokeWidth={2} />
+            </button>
+          )}
+          <button className="p-2 -mr-2 hover:bg-stone-50 rounded-full transition-colors">
+            <MoreHorizontal size={24} className="text-stone-900" strokeWidth={2} />
+          </button>
+        </div>
       </div>
 
       <div className="px-4 md:px-8 pb-4">

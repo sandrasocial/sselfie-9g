@@ -118,6 +118,39 @@ export async function POST(req: NextRequest) {
     const feedLayout = feedResult[0]
     const feedId = feedLayout.id
 
+    // Get wizard context from blueprint_subscribers (same as old blueprint)
+    // Use template-based prompts from grid library based on user's answers
+    let templatePrompt = null
+    try {
+      const blueprintSubscriber = await sql`
+        SELECT form_data, feed_style
+        FROM blueprint_subscribers
+        WHERE user_id = ${user.id}
+        LIMIT 1
+      ` as any[]
+      
+      if (blueprintSubscriber.length > 0) {
+        const formData = blueprintSubscriber[0].form_data || {}
+        const feedStyle = blueprintSubscriber[0].feed_style || null
+        
+        // Get category from form_data.vibe (same as old blueprint)
+        const category = (formData.vibe || "professional") as "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"
+        // Get mood from feed_style (same as old blueprint)
+        // Map: luxury=dark_moody, minimal=light_minimalistic, beige=beige_aesthetic
+        const mood = (feedStyle || "minimal") as "luxury" | "minimal" | "beige"
+        
+        // Get template prompt from grid library (same as old blueprint)
+        const { getBlueprintPhotoshootPrompt } = await import("@/lib/maya/blueprint-photoshoot-templates")
+        templatePrompt = getBlueprintPhotoshootPrompt(category, mood)
+        console.log(`[v0] Using template prompt for free example feed: ${category}_${mood} (${templatePrompt.split(/\s+/).length} words)`)
+      } else {
+        console.log(`[v0] No blueprint_subscribers record found for user ${user.id} - prompt will be generated on first generation`)
+      }
+    } catch (error) {
+      console.error("[v0] Error getting template prompt for free example:", error)
+      // Continue without prompt - it will be generated on first generation
+    }
+
     // Phase 5.3.2: Create ONE empty post (position 1) for free users
     const postResult = await sql`
       INSERT INTO feed_posts (
@@ -141,13 +174,13 @@ export async function POST(req: NextRequest) {
         NULL,
         'pending',
         NULL,
-        NULL,
+        ${templatePrompt},  -- Template prompt from grid library based on wizard context (or NULL if no wizard data yet)
         'pro'  -- Use Pro Mode (Nano Banana Pro) for free example
       )
       RETURNING *
     ` as any[]
 
-    console.log(`[v0] Created free example feed ${feedId} with 1 post for user ${user.id}`)
+    console.log(`[v0] Created free example feed ${feedId} with 1 post for user ${user.id} (Pro Mode, prompt: ${templatePrompt ? 'template' : 'pending'})`)
 
     return NextResponse.json({
       feedId,

@@ -89,6 +89,8 @@ const WIZARD_STEPS = [
   },
 ]
 
+const WIZARD_STORAGE_KEY = "blueprint_onboarding_wizard_state"
+
 export default function BlueprintOnboardingWizard({
   isOpen,
   onComplete,
@@ -97,20 +99,100 @@ export default function BlueprintOnboardingWizard({
   existingData,
   userEmail,
 }: BlueprintOnboardingWizardProps) {
-  const [currentStep, setCurrentStep] = useState(0)
-  const [formData, setFormData] = useState({
-    business: existingData?.business || "",
-    dreamClient: existingData?.dreamClient || "",
-    vibe: existingData?.vibe || "",
-    lightingKnowledge: existingData?.lightingKnowledge || "",
-    angleAwareness: existingData?.angleAwareness || "",
-    editingStyle: existingData?.editingStyle || "",
-    consistencyLevel: existingData?.consistencyLevel || "",
-    currentSelfieHabits: existingData?.currentSelfieHabits || "",
-    feedStyle: existingData?.feedStyle || "",
-    selfieImages: existingData?.selfieImages || [],
-  })
+  // Load saved state from localStorage or use existing data
+  const loadSavedState = () => {
+    if (typeof window === "undefined") {
+      return {
+        currentStep: 0,
+        formData: {
+          business: existingData?.business || "",
+          dreamClient: existingData?.dreamClient || "",
+          vibe: existingData?.vibe || "",
+          lightingKnowledge: existingData?.lightingKnowledge || "",
+          angleAwareness: existingData?.angleAwareness || "",
+          editingStyle: existingData?.editingStyle || "",
+          consistencyLevel: existingData?.consistencyLevel || "",
+          currentSelfieHabits: existingData?.currentSelfieHabits || "",
+          feedStyle: existingData?.feedStyle || "",
+          selfieImages: existingData?.selfieImages || [],
+        },
+      }
+    }
+
+    try {
+      const saved = localStorage.getItem(WIZARD_STORAGE_KEY)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        // Merge with existing data (existing data takes precedence)
+        return {
+          currentStep: parsed.currentStep || 0,
+          formData: {
+            business: existingData?.business || parsed.formData?.business || "",
+            dreamClient: existingData?.dreamClient || parsed.formData?.dreamClient || "",
+            vibe: existingData?.vibe || parsed.formData?.vibe || "",
+            lightingKnowledge: existingData?.lightingKnowledge || parsed.formData?.lightingKnowledge || "",
+            angleAwareness: existingData?.angleAwareness || parsed.formData?.angleAwareness || "",
+            editingStyle: existingData?.editingStyle || parsed.formData?.editingStyle || "",
+            consistencyLevel: existingData?.consistencyLevel || parsed.formData?.consistencyLevel || "",
+            currentSelfieHabits: existingData?.currentSelfieHabits || parsed.formData?.currentSelfieHabits || "",
+            feedStyle: existingData?.feedStyle || parsed.formData?.feedStyle || "",
+            selfieImages: existingData?.selfieImages || parsed.formData?.selfieImages || [],
+          },
+        }
+      }
+    } catch (error) {
+      console.error("[Blueprint Wizard] Error loading saved state:", error)
+    }
+
+    return {
+      currentStep: 0,
+      formData: {
+        business: existingData?.business || "",
+        dreamClient: existingData?.dreamClient || "",
+        vibe: existingData?.vibe || "",
+        lightingKnowledge: existingData?.lightingKnowledge || "",
+        angleAwareness: existingData?.angleAwareness || "",
+        editingStyle: existingData?.editingStyle || "",
+        consistencyLevel: existingData?.consistencyLevel || "",
+        currentSelfieHabits: existingData?.currentSelfieHabits || "",
+        feedStyle: existingData?.feedStyle || "",
+        selfieImages: existingData?.selfieImages || [],
+      },
+    }
+  }
+
+  const savedState = loadSavedState()
+  const [currentStep, setCurrentStep] = useState(savedState.currentStep)
+  const [formData, setFormData] = useState(savedState.formData)
   const [isSaving, setIsSaving] = useState(false)
+
+  // Save state to localStorage whenever formData or currentStep changes
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(
+          WIZARD_STORAGE_KEY,
+          JSON.stringify({
+            currentStep,
+            formData,
+          })
+        )
+      } catch (error) {
+        console.error("[Blueprint Wizard] Error saving state:", error)
+      }
+    }
+  }, [currentStep, formData])
+
+  // Clear saved state when wizard completes
+  const clearSavedState = () => {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem(WIZARD_STORAGE_KEY)
+      } catch (error) {
+        console.error("[Blueprint Wizard] Error clearing saved state:", error)
+      }
+    }
+  }
 
   const totalSteps = WIZARD_STEPS.length
   const progress = ((currentStep + 1) / totalSteps) * 100
@@ -140,26 +222,54 @@ export default function BlueprintOnboardingWizard({
   }
 
   const handleComplete = async () => {
+    // Verify selfies are uploaded before proceeding
+    const hasSelfies = Array.isArray(formData.selfieImages) && formData.selfieImages.length > 0
+    if (!hasSelfies) {
+      alert("Please upload at least one selfie before completing the wizard")
+      return
+    }
+
+    console.log("[Blueprint Wizard] Completing wizard with data:", {
+      hasBusiness: !!formData.business,
+      hasDreamClient: !!formData.dreamClient,
+      hasVibe: !!formData.vibe,
+      hasFeedStyle: !!formData.feedStyle,
+      selfieCount: formData.selfieImages?.length || 0,
+      selfies: formData.selfieImages,
+    })
+
     setIsSaving(true)
     try {
       // Save data via API endpoint
       // Note: selfieImages are already uploaded and saved to user_avatar_images via upload-selfies endpoint
+      const payload = {
+        ...formData,
+        // Ensure selfieImages is passed correctly
+        selfieImages: Array.isArray(formData.selfieImages) ? formData.selfieImages : [],
+      }
+
+      console.log("[Blueprint Wizard] Sending completion request with payload:", {
+        ...payload,
+        selfieImages: payload.selfieImages, // Explicitly log selfies
+      })
+
       const response = await fetch("/api/onboarding/blueprint-onboarding-complete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({
-          ...formData,
-          // selfieImages are already saved, just pass them for reference
-          selfieImages: formData.selfieImages,
-        }),
+        body: JSON.stringify(payload),
       })
 
       if (!response.ok) {
         const errorData = await response.json()
+        console.error("[Blueprint Wizard] ❌ Completion failed:", errorData)
         throw new Error(errorData.error || "Failed to save blueprint data")
       }
 
+      console.log("[Blueprint Wizard] ✅ Completion successful")
+      
+      // Clear saved state on successful completion
+      clearSavedState()
       onComplete(formData)
     } catch (error) {
       console.error("[Blueprint Onboarding] Error saving data:", error)

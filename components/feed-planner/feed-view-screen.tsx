@@ -29,7 +29,7 @@ interface FeedViewScreenProps {
  * When no feedId is provided, automatically fetches the latest feed.
  * Shows placeholder state if no feed exists.
  */
-export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp }: FeedViewScreenProps = {}) {
+export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp, onOpenWizard }: FeedViewScreenProps = {}) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isCreatingManual, setIsCreatingManual] = useState(false)
@@ -200,7 +200,8 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp 
   }
 
   // Loading state - show unified loader during initial load
-  if (isLoading) {
+  // But don't block if we're creating a free example (that has its own loading state)
+  if (isLoading && !isCreatingFreeExample) {
     return (
       <div className="flex flex-col flex-1 overflow-hidden min-h-0">
         <UnifiedLoading variant="screen" message="Loading Feed Planner" />
@@ -331,6 +332,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp 
           feedId={effectiveFeedId}
           onBack={handleBackToMaya}
           access={access} // Phase 4.1: Pass access control to InstagramFeedView
+          onOpenWizard={onOpenWizard} // Pass wizard handler for header button
         />
       </div>
     </div>

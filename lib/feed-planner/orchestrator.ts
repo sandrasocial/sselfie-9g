@@ -390,6 +390,42 @@ Return ONLY valid JSON, no markdown:
             })
           : null
 
+        // If Pro Mode, use template prompt from grid library (same as old blueprint)
+        // Otherwise use Flux prompt for Classic Mode
+        let finalPrompt = fluxPrompt
+        if (generationMode === 'pro') {
+          try {
+            // Get wizard context from blueprint_subscribers (same as old blueprint)
+            const blueprintSubscriber = await sql`
+              SELECT form_data, feed_style
+              FROM blueprint_subscribers
+              WHERE user_id = ${userId}
+              LIMIT 1
+            ` as any[]
+            
+            if (blueprintSubscriber.length > 0) {
+              const formData = blueprintSubscriber[0].form_data || {}
+              const feedStyle = blueprintSubscriber[0].feed_style || null
+              
+              // Get category from form_data.vibe (same as old blueprint)
+              const category = (formData.vibe || "professional") as "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"
+              // Get mood from feed_style (same as old blueprint)
+              const mood = (feedStyle || "minimal") as "luxury" | "minimal" | "beige"
+              
+              // Get template prompt from grid library (same as old blueprint)
+              const { getBlueprintPhotoshootPrompt } = await import("@/lib/maya/blueprint-photoshoot-templates")
+              finalPrompt = getBlueprintPhotoshootPrompt(category, mood)
+              console.log(`[v0] Feed Planner: Using template prompt from grid library for Pro Mode post ${postLayout.position}: ${category}_${mood} (${finalPrompt.split(/\s+/).length} words)`)
+            } else {
+              console.warn(`[v0] Feed Planner: Pro Mode post ${postLayout.position} requires blueprint_subscribers data but none found. Using Flux prompt as fallback.`)
+              // Keep Flux prompt as fallback - will be regenerated on first generation
+            }
+          } catch (promptError) {
+            console.error(`[v0] Feed Planner: Error getting template prompt for post ${postLayout.position}:`, promptError)
+            // Keep Flux prompt as fallback
+          }
+        }
+
         await sql`
           INSERT INTO feed_posts (
             feed_layout_id,
@@ -408,7 +444,7 @@ Return ONLY valid JSON, no markdown:
             ${userId},
             ${postLayout.position},
             ${postType},
-            ${truncateString(fluxPrompt, 2000)},
+            ${truncateString(finalPrompt, 2000)},  -- Nano Banana prompt for Pro Mode, Flux prompt for Classic Mode
             ${truncateString(caption, 5000)},
             ${postLayout.purpose},
             ${"pending"},

@@ -43,13 +43,15 @@ export async function getFeedPlannerAccess(userId: string): Promise<FeedPlannerA
     const hasPaid = await hasPaidBlueprint(userId)
     const hasMembership = await hasStudioMembership(userId)
     const credits = await getUserCredits(userId)
-    const hasCredits = credits > 0
 
-    // Determine access level (order matters: membership > paid blueprint > one-time > free)
+    // Determine access level (order matters: membership > paid blueprint > free)
+    // Note: Free users get 2 credits for testing feed planner, but are still "free" users
+    // One-time sessions are deprecated - we only have free, paid blueprint, and membership now
     const isMembership = hasMembership
     const isPaidBlueprint = hasPaid && !hasMembership
-    const isOneTime = !hasMembership && !hasPaid && hasCredits
-    const isFree = !hasMembership && !hasPaid && !hasCredits
+    const isFree = !hasMembership && !hasPaid
+    // One-time is deprecated - treat as free
+    const isOneTime = false
 
     console.log(`[Feed Planner Access] Access level determined:`, {
       userId,

@@ -15,14 +15,9 @@ export function getAccessState({
     }
   }
 
-  if (credits > 0) {
-    return {
-      isMember: false,
-      canUseGenerators: true,
-      showUpgradeUI: false,
-    }
-  }
-
+  // Free users (no subscription) should NOT have access to generators
+  // Even if they have credits (2 credits are for testing feed planner only)
+  // Only members/paid users can use generators
   return {
     isMember: false,
     canUseGenerators: false,

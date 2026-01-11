@@ -29,6 +29,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
+    // Get user's display name or name for blueprint_subscribers.name (required field)
+    // Try display_name first, then name, then email prefix, then "User" as fallback
+    const userName = neonUser.display_name || neonUser.name || authUser.email?.split("@")[0] || "User"
+
+    // Generate access_token (required field for blueprint_subscribers)
+    // Since we only use authenticated users now, generate a token for consistency
+    const accessToken = crypto.randomUUID()
+
     // Parse request body
     const {
       business,
@@ -40,7 +48,47 @@ export async function POST(req: NextRequest) {
       consistencyLevel,
       currentSelfieHabits,
       feedStyle,
+      selfieImages, // Include selfie images (already uploaded, just for reference)
     } = await req.json()
+    
+    // Verify selfies are uploaded (required for wizard completion)
+    // Primary check: Use client-side state (formData.selfieImages) as source of truth
+    // The selfies are uploaded via /api/blueprint/upload-selfies which saves to user_avatar_images
+    // If client has selfie URLs, they should be in the DB
+    const hasClientSelfies = Array.isArray(selfieImages) && selfieImages.length > 0
+    
+    // Secondary check: Verify in database (for validation, not blocking)
+    const avatarImages = await sql`
+      SELECT image_url FROM user_avatar_images
+      WHERE user_id = ${neonUser.id} AND is_active = true
+      LIMIT 1
+    `
+    
+    console.log("[Blueprint Onboarding] Checking for selfies:", {
+      userId: neonUser.id,
+      userEmail: authUser.email,
+      hasClientSelfies,
+      hasDbSelfies: avatarImages.length > 0,
+      clientSelfieCount: selfieImages?.length || 0,
+      dbSelfieCount: avatarImages.length,
+      clientSelfies: selfieImages,
+    })
+    
+    // Require selfies for wizard completion (needed for image generation)
+    if (!hasClientSelfies && avatarImages.length === 0) {
+      console.error("[Blueprint Onboarding] ❌ No selfies found - client:", hasClientSelfies, "DB:", avatarImages.length)
+      return NextResponse.json(
+        { error: "Please upload at least one selfie before completing the wizard" },
+        { status: 400 }
+      )
+    }
+    
+    // If client has selfies but DB doesn't, log warning but allow completion
+    // (This shouldn't happen, but if upload succeeded, we trust the client state)
+    if (hasClientSelfies && avatarImages.length === 0) {
+      console.warn("[Blueprint Onboarding] ⚠️ Client has selfies but DB check failed - selfies may need to be re-uploaded")
+      // Don't block completion, but log for investigation
+    }
 
     // Build form data object (all fields) for blueprint_subscribers
     const formData = {
@@ -99,11 +147,20 @@ export async function POST(req: NextRequest) {
     }
 
     // Step 2: Save extension data to blueprint_subscribers
+    // Also save selfie image URLs to blueprint_subscribers.selfie_image_urls for backward compatibility
     const existingBlueprint = await sql`
       SELECT id FROM blueprint_subscribers
       WHERE user_id = ${neonUser.id}
       LIMIT 1
     `
+    
+    // Get selfie URLs from user_avatar_images (already uploaded)
+    const selfieUrls = await sql`
+      SELECT image_url FROM user_avatar_images
+      WHERE user_id = ${neonUser.id} AND is_active = true
+      ORDER BY display_order ASC, uploaded_at ASC
+    `
+    const selfieImageUrls = selfieUrls.map((row: any) => row.image_url)
 
     if (existingBlueprint.length > 0) {
       // Update existing blueprint_subscribers record
@@ -114,6 +171,7 @@ export async function POST(req: NextRequest) {
           business = ${business || null},
           dream_client = ${dreamClient || null},
           feed_style = ${feedStyle || null},
+          selfie_image_urls = ${JSON.stringify(selfieImageUrls)}::jsonb,
           updated_at = NOW()
         WHERE user_id = ${neonUser.id}
       `
@@ -124,21 +182,25 @@ export async function POST(req: NextRequest) {
           user_id,
           email,
           name,
+          access_token,
           form_data,
           business,
           dream_client,
           feed_style,
+          selfie_image_urls,
           created_at,
           updated_at
         )
         VALUES (
           ${neonUser.id},
           ${authUser.email || null},
-          ${neonUser.name || null},
+          ${userName},
+          ${accessToken},
           ${JSON.stringify(formData)}::jsonb,
           ${business || null},
           ${dreamClient || null},
           ${feedStyle || null},
+          ${JSON.stringify(selfieImageUrls)}::jsonb,
           NOW(),
           NOW()
         )
@@ -148,12 +210,13 @@ export async function POST(req: NextRequest) {
     // Note: Credits are already granted on signup via app/auth/callback/route.ts
     // No need to grant credits here - users already have 2 credits available before onboarding
     
-    // Note: onboarding_completed will be set to true after grid generation
-    // (per Decision 3 plan: onboarding complete only after grid is generated)
-    // Just update timestamp for now
+    // Set onboarding_completed to true when wizard completes (all steps including selfies)
+    // This allows the wizard to properly close and not reopen on page reload
     await sql`
       UPDATE users
-      SET updated_at = NOW()
+      SET 
+        onboarding_completed = true,
+        updated_at = NOW()
       WHERE id = ${neonUser.id}
     `
 

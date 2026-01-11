@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import useSWR from "swr"
+import useSWR, { useSWRConfig } from "swr"
 import FeedViewScreen from "@/components/feed-planner/feed-view-screen"
 import BlueprintOnboardingWizard from "@/components/onboarding/blueprint-onboarding-wizard"
 import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
@@ -26,9 +26,15 @@ interface FeedPlannerClientProps {
 export default function FeedPlannerClient({ access: accessProp, userId, userName }: FeedPlannerClientProps) {
   const [showWizard, setShowWizard] = useState(false)
   const [isCheckingWizard, setIsCheckingWizard] = useState(true)
+  const { mutate } = useSWRConfig()
+
+  // Handler to open wizard from header button
+  const handleOpenWizard = () => {
+    setShowWizard(true)
+  }
 
   // Fetch access control if not provided (for use in SselfieApp)
-  const { data: accessData } = useSWR<FeedPlannerAccess>(
+  const { data: accessData, isLoading: isLoadingAccess } = useSWR<FeedPlannerAccess>(
     accessProp ? null : "/api/feed-planner/access",
     fetcher,
     {
@@ -67,8 +73,10 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
   )
 
   // Determine if wizard is needed
+  // React to access and onboardingStatus changes, but only close wizard if user explicitly completes it
   useEffect(() => {
-    if (isLoadingOnboarding) {
+    // Wait for both access and onboarding status to load
+    if (isLoadingOnboarding || (!accessProp && isLoadingAccess)) {
       setIsCheckingWizard(true)
       return
     }
@@ -79,18 +87,24 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
       return
     }
 
-    const hasBaseWizardData = onboardingStatus.hasBaseWizardData || false
-    const hasExtensionData = onboardingStatus.hasExtensionData || false
-    const onboardingCompleted = onboardingStatus.onboarding_completed || false
-
     // Wait for access to be loaded before determining wizard
     if (!access) {
       setIsCheckingWizard(true)
       return
     }
 
-    // Free users: Show wizard if not completed (missing base or extension data)
+    const hasBaseWizardData = onboardingStatus.hasBaseWizardData || false
+    const hasExtensionData = onboardingStatus.hasExtensionData || false
+    const onboardingCompleted = onboardingStatus.onboarding_completed || false
+
+    // Free users: Show wizard if not completed (missing base or extension data OR onboarding not marked complete)
     if (access.isFree) {
+      // Wizard should show if:
+      // 1. Missing base wizard data, OR
+      // 2. Missing extension data, OR
+      // 3. Onboarding not marked complete
+      // Note: We check onboarding_completed as the final gate (set when wizard completes)
+      // Don't check hasSelfies here - that's handled in the wizard itself (step 4 validation)
       const needsWizard = !hasBaseWizardData || !hasExtensionData || !onboardingCompleted
       setShowWizard(needsWizard)
       setIsCheckingWizard(false)
@@ -111,7 +125,7 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
     // One-time and membership users: Skip wizard (not needed)
     setShowWizard(false)
     setIsCheckingWizard(false)
-  }, [onboardingStatus, isLoadingOnboarding, access?.isFree, access?.isPaidBlueprint, access])
+  }, [isLoadingOnboarding, isLoadingAccess, onboardingStatus, access]) // React to access and onboardingStatus changes
 
   // Handle wizard completion
   const handleWizardComplete = async (data: {
@@ -126,11 +140,20 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
     feedStyle: string
   }) => {
     console.log("[Feed Planner Wizard] ✅ Wizard completed with data:", data)
+    
+    // Close wizard immediately (API endpoint sets onboarding_completed = true)
     setShowWizard(false)
-
-    // Wizard completion is handled by the API endpoint
-    // Just refresh the page to show FeedViewScreen
-    window.location.reload()
+    
+    // Invalidate SWR cache to refresh data without full page reload
+    // This prevents losing wizard data and allows smooth transition
+    await Promise.all([
+      mutate("/api/user/onboarding-status"),
+      mutate("/api/feed-planner/access"),
+      mutate("/api/feed/latest"),
+      mutate("/api/blueprint/state"),
+    ])
+    
+    console.log("[Feed Planner Wizard] ✅ Cache invalidated, feed planner should refresh")
   }
 
   // Show loading while checking wizard status
@@ -159,5 +182,6 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
   }
 
   // Show Feed Planner
-  return <FeedViewScreen access={access} />
+  // Always pass onOpenWizard so wizard button is visible in header (for free users to check/edit their answers)
+  return <FeedViewScreen access={access} onOpenWizard={handleOpenWizard} />
 }

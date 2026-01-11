@@ -42,23 +42,27 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Check if blueprint_subscribers record exists
+    // Check if blueprint_subscribers record exists (for email-only flow or if record already exists)
+    // For authenticated users: We don't need to create blueprint_subscribers here
+    // - Selfies are saved to user_avatar_images (used by Pro Mode)
+    // - blueprint_subscribers will be created when wizard completes (with proper schema)
     let subscriber = null
     if (userId) {
+      // For authenticated users, check if record exists (but don't create it)
       subscriber = await sql`
         SELECT id FROM blueprint_subscribers WHERE user_id = ${userId} LIMIT 1
       `
     } else {
+      // For email-only flow, require existing record
       subscriber = await sql`
         SELECT id FROM blueprint_subscribers WHERE email = ${email} LIMIT 1
       `
-    }
-
-    if (subscriber.length === 0) {
-      return NextResponse.json(
-        { error: userId ? "Blueprint state not found. Please start your blueprint first." : "Email not found. Please complete email capture first." },
-        { status: 404 },
-      )
+      if (subscriber.length === 0) {
+        return NextResponse.json(
+          { error: "Email not found. Please complete email capture first." },
+          { status: 404 },
+        )
+      }
     }
 
     if (files.length === 0) {
@@ -134,45 +138,54 @@ export async function POST(req: NextRequest) {
     console.log(`[Blueprint] Uploaded ${imageUrls.length} selfie(s) to Blob`)
 
     // Save selfie URLs to database (merge with existing URLs)
+    // Only save to blueprint_subscribers if record exists
+    // For authenticated users without record, selfies are saved to user_avatar_images (below)
     try {
-      // Get existing URLs first
-      let existing = null
-      if (userId) {
-        existing = await sql`
-          SELECT selfie_image_urls FROM blueprint_subscribers WHERE user_id = ${userId} LIMIT 1
-        `
-      } else {
-        existing = await sql`
-          SELECT selfie_image_urls FROM blueprint_subscribers WHERE email = ${email} LIMIT 1
-        `
-      }
-      
-      // JSONB columns are already parsed by the database driver
-      const existingUrls = existing.length > 0 && existing[0].selfie_image_urls 
-        ? (Array.isArray(existing[0].selfie_image_urls) 
-            ? existing[0].selfie_image_urls 
-            : [])
-        : []
-      
-      // Merge new URLs with existing ones, avoiding duplicates
-      const allUrls = [...existingUrls, ...imageUrls].filter((url, index, self) => 
-        self.indexOf(url) === index
-      )
-      
-      if (userId) {
-        await sql`
-          UPDATE blueprint_subscribers
-          SET selfie_image_urls = ${JSON.stringify(allUrls)}::jsonb
-          WHERE user_id = ${userId}
-        `
-        console.log("[Blueprint] Selfie URLs saved to blueprint_subscribers for user_id:", userId, `(${allUrls.length} total)`)
-      } else {
-        await sql`
-          UPDATE blueprint_subscribers
-          SET selfie_image_urls = ${JSON.stringify(allUrls)}::jsonb
-          WHERE email = ${email}
-        `
-        console.log("[Blueprint] Selfie URLs saved to blueprint_subscribers for email:", email, `(${allUrls.length} total)`)
+      if (subscriber.length > 0) {
+        // Get existing URLs first
+        let existing = null
+        if (userId) {
+          existing = await sql`
+            SELECT selfie_image_urls FROM blueprint_subscribers WHERE user_id = ${userId} LIMIT 1
+          `
+        } else {
+          existing = await sql`
+            SELECT selfie_image_urls FROM blueprint_subscribers WHERE email = ${email} LIMIT 1
+          `
+        }
+        
+        // JSONB columns are already parsed by the database driver
+        const existingUrls = existing.length > 0 && existing[0].selfie_image_urls 
+          ? (Array.isArray(existing[0].selfie_image_urls) 
+              ? existing[0].selfie_image_urls 
+              : [])
+          : []
+        
+        // Merge new URLs with existing ones, avoiding duplicates
+        const allUrls = [...existingUrls, ...imageUrls].filter((url, index, self) => 
+          self.indexOf(url) === index
+        )
+        
+        if (userId) {
+          await sql`
+            UPDATE blueprint_subscribers
+            SET selfie_image_urls = ${JSON.stringify(allUrls)}::jsonb
+            WHERE user_id = ${userId}
+          `
+          console.log("[Blueprint] Selfie URLs saved to blueprint_subscribers for user_id:", userId, `(${allUrls.length} total)`)
+        } else {
+          await sql`
+            UPDATE blueprint_subscribers
+            SET selfie_image_urls = ${JSON.stringify(allUrls)}::jsonb
+            WHERE email = ${email}
+          `
+          console.log("[Blueprint] Selfie URLs saved to blueprint_subscribers for email:", email, `(${allUrls.length} total)`)
+        }
+      } else if (userId) {
+        // No blueprint_subscribers record yet, but user is authenticated
+        // Selfies will be saved to user_avatar_images below (for Pro Mode)
+        // The blueprint_subscribers record will be created when wizard completes
+        console.log("[Blueprint] No blueprint_subscribers record yet - skipping selfie_image_urls save (will be created on wizard completion)")
       }
 
       // Phase 5.3.4: Also save to user_avatar_images for Pro Mode image generation
@@ -200,21 +213,22 @@ export async function POST(req: NextRequest) {
 
             if (existingAvatar.length === 0) {
               // Insert new avatar image
+              // Note: user_avatar_images table has image_type (required), not created_at
               await sql`
                 INSERT INTO user_avatar_images (
                   user_id,
                   image_url,
+                  image_type,
                   display_order,
                   is_active,
-                  uploaded_at,
-                  created_at
+                  uploaded_at
                 )
                 VALUES (
                   ${userId},
                   ${imageUrl},
+                  'selfie',
                   ${maxOrder + i + 1},
                   true,
-                  NOW(),
                   NOW()
                 )
               `

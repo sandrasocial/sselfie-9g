@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { ImageIcon, Loader2, Wand2, ArrowRight } from "lucide-react"
+import { Loader2, ArrowRight } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
@@ -78,62 +78,67 @@ export default function FeedSinglePlaceholder({
   const hasImage = post?.image_url
 
   return (
-    <div className="flex flex-col items-center justify-center py-12 px-4">
-      <div className="w-full max-w-[300px]">
-        {/* Single 9:16 placeholder */}
-        <div
-          className={`aspect-[9/16] bg-white border-2 ${
-            hasImage ? "border-stone-200" : "border-dashed border-stone-300"
-          } rounded-xl flex flex-col items-center justify-center p-6 ${
-            !hasImage ? "cursor-pointer hover:border-stone-400 hover:bg-stone-50 transition-colors" : ""
-          } relative overflow-hidden`}
-          onClick={!hasImage ? onAddImage : undefined}
-        >
-          {hasImage ? (
-            // Show generated image
-            <img
-              src={post.image_url}
-              alt="Generated post"
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            // Show placeholder
-            <>
-              <ImageIcon className="w-12 h-12 text-stone-300 mb-4" strokeWidth={1.5} />
-              <div className="text-sm font-light text-stone-500 text-center space-y-2">
-                <div className="font-medium text-stone-700">Upload a selfie</div>
-                <div className="text-xs">Click to add your reference image</div>
-              </div>
-            </>
-          )}
-
-          {/* Phase 5.3.3: Generation button (show when no image) */}
-          {!hasImage && !isGenerating && (
-            <div className="absolute bottom-4 left-0 right-0 px-4">
-              <Button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleGenerateImage()
-                }}
-                className="w-full bg-stone-900 hover:bg-stone-800 text-white"
-                size="sm"
-              >
-                <Wand2 className="w-4 h-4 mr-2" />
-                Generate Image
-              </Button>
+    <div className="px-4 md:px-8 py-12">
+      <div className="w-full">
+        {/* 3x3 Grid Mockup Placeholder - matches header width */}
+        {hasImage ? (
+          // Show generated image in grid layout
+          <div className="grid grid-cols-3 gap-[2px] md:gap-1">
+            <div className="aspect-square bg-white relative overflow-hidden rounded-sm">
+              <img
+                src={post.image_url}
+                alt="Generated post"
+                className="w-full h-full object-cover"
+              />
             </div>
-          )}
-
-          {/* Loading state */}
-          {isGenerating && (
-            <div className="absolute inset-0 bg-white/90 flex items-center justify-center">
-              <div className="text-center space-y-3">
-                <Loader2 className="w-8 h-8 text-stone-600 animate-spin mx-auto" />
-                <div className="text-sm font-light text-stone-600">Generating...</div>
-              </div>
+            {/* Empty grid cells */}
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="aspect-square bg-stone-100"></div>
+            ))}
+          </div>
+        ) : (
+          // Show 3x3 grid lines mockup
+          <div className="relative">
+            {/* Grid container with border - matches FeedGrid styling */}
+            <div className="grid grid-cols-3 gap-[2px] md:gap-1 border border-stone-300 rounded-lg p-[2px] md:p-1 bg-stone-100">
+              {/* Grid lines visualization - 9 empty cells */}
+              {Array.from({ length: 9 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="aspect-square bg-white"
+                />
+              ))}
             </div>
-          )}
-        </div>
+
+            {/* Generation button overlay */}
+            {!isGenerating && (
+              <div className="absolute inset-0 flex items-center justify-center bg-white/80 backdrop-blur-sm rounded-lg">
+                <div className="text-center space-y-4 px-4">
+                  <Button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleGenerateImage()
+                    }}
+                    className="bg-stone-900 hover:bg-stone-800 text-white"
+                    size="default"
+                  >
+                    Generate Image
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Loading state */}
+            {isGenerating && (
+              <div className="absolute inset-0 bg-white/90 backdrop-blur-sm flex items-center justify-center rounded-lg">
+                <div className="text-center space-y-3">
+                  <Loader2 className="w-8 h-8 text-stone-600 animate-spin mx-auto" />
+                  <div className="text-sm font-light text-stone-600">Generating...</div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Helper text and Upsell CTA */}
         <div className="mt-6 text-center space-y-4">

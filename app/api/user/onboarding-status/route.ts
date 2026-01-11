@@ -72,7 +72,9 @@ export async function GET(request: NextRequest) {
 
     // Check if user has extension data (Decision 3: checks if blueprint extension completed)
     // Unified wizard saves dreamClient, feedStyle to blueprint_subscribers
+    // Also check if selfies are uploaded (required for image generation)
     let hasExtensionData = false
+    let hasSelfies = false
     if (hasBlueprintState) {
       const blueprintRecord = await sql`
         SELECT form_data, dream_client, feed_style
@@ -91,6 +93,14 @@ export async function GET(request: NextRequest) {
           record.feed_style
         )
       }
+      
+      // Check if user has uploaded selfies (required for Pro Mode image generation)
+      const avatarImages = await sql`
+        SELECT id FROM user_avatar_images
+        WHERE user_id = ${neonUser.id} AND is_active = true
+        LIMIT 1
+      `
+      hasSelfies = avatarImages.length > 0
     }
 
     return NextResponse.json({
@@ -99,6 +109,7 @@ export async function GET(request: NextRequest) {
       hasBlueprintState: hasBlueprintState,
       hasBaseWizardData: hasBaseWizardData,
       hasExtensionData: hasExtensionData,
+      hasSelfies: hasSelfies, // Check if selfies are uploaded (required for image generation)
     })
   } catch (error) {
     console.error("[Onboarding Status] Error fetching onboarding status:", error)

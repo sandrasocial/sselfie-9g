@@ -17,15 +17,17 @@ import FeedStrategy from "./feed-strategy"
 import FeedModals from "./feed-modals"
 import FeedLoadingOverlay from "./feed-loading-overlay"
 import FeedHighlightsModal from "./feed-highlights-modal"
+import FeedSinglePlaceholder from "./feed-single-placeholder"
 import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 
 interface InstagramFeedViewProps {
   feedId: number
   onBack?: () => void
   access?: FeedPlannerAccess // Phase 4.2: Access control object (replaces mode prop)
+  onOpenWizard?: () => void // Callback to open wizard
 }
 
-export default function InstagramFeedView({ feedId, onBack, access }: InstagramFeedViewProps) {
+export default function InstagramFeedView({ feedId, onBack, access, onOpenWizard }: InstagramFeedViewProps) {
   // Use custom hooks for all complex logic
   const { feedData, feedError, mutate, isLoading: isFeedLoading, isValidating } = useFeedPolling(feedId)
   const { selectedPost, setSelectedPost, showGallery, setShowGallery, showProfileGallery, setShowProfileGallery } = useFeedModals()
@@ -476,6 +478,7 @@ export default function InstagramFeedView({ feedId, onBack, access }: InstagramF
         onWriteBio={handleWriteBio}
         onFeedChange={handleFeedChange}
         onCreateHighlights={() => setShowHighlightsModal(true)}
+        onOpenWizard={onOpenWizard}
       />
       
       <FeedTabs

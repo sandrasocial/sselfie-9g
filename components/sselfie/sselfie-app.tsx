@@ -107,9 +107,10 @@ export default function SselfieApp({
       if (tabParam && validTabs.includes(tabParam)) {
         return tabParam
       }
-      return validTabs.includes(hash) ? hash : "maya"
+      // Default to feed-planner for free users (will be overridden if user has subscription)
+      return validTabs.includes(hash) ? hash : "feed-planner"
     }
-    return "maya"
+    return "feed-planner"
   }
 
   const [activeTab, setActiveTab] = useState(getInitialTab)
@@ -470,16 +471,21 @@ export default function SselfieApp({
         })
 
         if (!isActuallyCompleted && mounted) {
-          // Step 1: Show Blueprint Welcome if not shown and no state exists
-          if (!blueprintWelcomeShown && !hasBlueprintState && !hasBaseWizardData) {
-            console.log("[Blueprint Welcome] 👋 Showing blueprint welcome wizard (new user, no state)")
+          // Check if user is a member (has subscription) - welcome screen is only for members
+          const isMember = subscriptionStatus === "active" || subscriptionStatus === "trialing"
+          
+          // Step 1: Show Blueprint Welcome ONLY for members (not free users)
+          // Free users skip welcome and go straight to onboarding wizard
+          if (isMember && !blueprintWelcomeShown && !hasBlueprintState && !hasBaseWizardData) {
+            console.log("[Blueprint Welcome] 👋 Showing blueprint welcome wizard (member, no state)")
             setShowBlueprintWelcome(true)
             setShowBlueprintOnboarding(false)
             setShowOnboarding(false)
           }
-          // Step 2: Show Unified Blueprint Onboarding Wizard if welcome shown but onboarding data missing
-          else if (blueprintWelcomeShown && (!hasBaseWizardData || !hasExtensionData)) {
-            console.log("[Blueprint Onboarding] 📝 Showing unified blueprint onboarding wizard (welcome shown, onboarding data missing)")
+          // Step 2: Show Unified Blueprint Onboarding Wizard if welcome shown (members) OR directly for free users
+          else if ((isMember && blueprintWelcomeShown && (!hasBaseWizardData || !hasExtensionData)) ||
+                   (!isMember && (!hasBaseWizardData || !hasExtensionData))) {
+            console.log("[Blueprint Onboarding] 📝 Showing unified blueprint onboarding wizard (onboarding data missing)")
             setShowBlueprintWelcome(false)
             setShowBlueprintOnboarding(true)
             setShowOnboarding(false)
@@ -953,9 +959,21 @@ export default function SselfieApp({
                     hasTrainedModel={hasTrainedModel}
                   />
                 )}
-                {activeTab === "gallery" && <GalleryScreen user={user} userId={userId} />}
+                {activeTab === "gallery" && (
+                  !access.canUseGenerators ? (
+                    <UpgradeOrCredits feature="Gallery" />
+                  ) : (
+                    <GalleryScreen user={user} userId={userId} />
+                  )
+                )}
                 {activeTab === "feed-planner" && <FeedPlannerClient userId={userId.toString()} userName={userName} />}
-                {activeTab === "academy" && <AcademyScreen />}
+                {activeTab === "academy" && (
+                  !access.canUseGenerators ? (
+                    <UpgradeOrCredits feature="Academy" />
+                  ) : (
+                    <AcademyScreen />
+                  )
+                )}
                   {activeTab === "account" && <AccountScreen user={user} creditBalance={creditBalance} />}
                 </motion.div>
             )}

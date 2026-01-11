@@ -80,6 +80,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
 
     // Phase 7.3: Check access control for image generation
     // Free users can generate ONE image (they have 2 credits), others can generate unlimited
+    // Also used later to determine default generation mode
     const access = await getFeedPlannerAccess(user.id.toString())
     const { getUserCredits } = await import("@/lib/credits")
     const creditBalance = await getUserCredits(user.id.toString())
@@ -159,9 +160,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
     }
 
     // Check generation mode (Pro Mode vs Classic Mode)
-    const generationMode = post.generation_mode || 'classic'
+    // Free users should always use Pro Mode (Nano Banana Pro) - no trained model required
+    // Default to 'pro' if not set (for free users)
+    // Access was already fetched above, reuse it
+    const generationMode = post.generation_mode || (access.isFree ? 'pro' : 'classic')
     const proModeType = post.pro_mode_type || null
-    console.log("[v0] [GENERATE-SINGLE] Post generation mode:", { generationMode, proModeType })
+    console.log("[v0] [GENERATE-SINGLE] Post generation mode:", { generationMode, proModeType, isFree: access.isFree, postGenerationMode: post.generation_mode })
 
     // Check credits based on generation mode (Pro Mode = 2 credits, Classic = 1 credit)
     const creditsNeeded = generationMode === 'pro' ? getStudioProCreditCost('2K') : CREDIT_COSTS.IMAGE
@@ -266,17 +270,74 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
         LIMIT 1
       `
       
-      // Use stored prompt from feed creation (should already be a Nano Banana prompt)
-      // Prompt is generated during feed creation using buildNanoBananaPrompt (same as Maya Chat Pro Mode)
+      // Use stored prompt from feed creation (should already be a template prompt from grid library)
+      // Template prompts are generated during feed creation using getBlueprintPhotoshootPrompt (same as old blueprint)
       let finalPrompt = post.prompt
       
       if (!finalPrompt || finalPrompt.trim().length < 20) {
-        // This shouldn't happen - prompts should be generated during feed creation
-        // But if it does, use content_pillar as minimal fallback
-        console.error(`[v0] [GENERATE-SINGLE] ⚠️ Pro Mode post ${post.position} missing prompt! This should have been generated during feed creation. Using fallback.`)
-        finalPrompt = post.content_pillar || `Feed post ${post.position}`
+        // Prompt missing - get it from blueprint_subscribers using template library (same as old blueprint)
+        console.log(`[v0] [GENERATE-SINGLE] ⚠️ Pro Mode post ${post.position} missing prompt. Getting from template library...`)
+        
+        try {
+          // Get wizard context from blueprint_subscribers (same as old blueprint)
+          const blueprintSubscriber = await sql`
+            SELECT form_data, feed_style
+            FROM blueprint_subscribers
+            WHERE user_id = ${user.id}
+            LIMIT 1
+          ` as any[]
+          
+          if (blueprintSubscriber.length > 0) {
+            const formData = blueprintSubscriber[0].form_data || {}
+            const feedStyle = blueprintSubscriber[0].feed_style || null
+            
+            // Get category from form_data.vibe (same as old blueprint)
+            const category = (formData.vibe || "professional") as "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"
+            // Get mood from feed_style (same as old blueprint)
+            const mood = (feedStyle || "minimal") as "luxury" | "minimal" | "beige"
+            
+            // Get template prompt from grid library (same as old blueprint)
+            const { getBlueprintPhotoshootPrompt } = await import("@/lib/maya/blueprint-photoshoot-templates")
+            finalPrompt = getBlueprintPhotoshootPrompt(category, mood)
+            console.log(`[v0] [GENERATE-SINGLE] ✅ Using template prompt from grid library: ${category}_${mood} (${finalPrompt.split(/\s+/).length} words)`)
+            
+            // Save the template prompt to the database for future use
+            await sql`
+              UPDATE feed_posts
+              SET prompt = ${finalPrompt}
+              WHERE id = ${postId}
+            `
+          } else {
+            // No blueprint_subscribers data - fall back to Nano Banana builder (for backward compatibility)
+            console.log(`[v0] [GENERATE-SINGLE] ⚠️ No blueprint_subscribers data found. Falling back to Nano Banana builder...`)
+            const { buildNanoBananaPrompt } = await import("@/lib/maya/nano-banana-prompt-builder")
+            
+            const promptResult = await buildNanoBananaPrompt({
+              userId: user.id.toString(),
+              mode: 'brand-scene',
+              userRequest: post.content_pillar || `Feed post ${post.position} - authentic Instagram-style selfie with natural lighting`,
+              inputImages: {
+                baseImages: baseImages,
+              },
+            })
+            
+            finalPrompt = promptResult.optimizedPrompt
+            console.log(`[v0] [GENERATE-SINGLE] ✅ Generated Nano Banana prompt as fallback (${finalPrompt.split(/\s+/).length} words)`)
+            
+            // Save the generated prompt to the database for future use
+            await sql`
+              UPDATE feed_posts
+              SET prompt = ${finalPrompt}
+              WHERE id = ${postId}
+            `
+          }
+        } catch (promptError) {
+          console.error(`[v0] [GENERATE-SINGLE] Error getting template prompt:`, promptError)
+          // Fallback to simple prompt
+          finalPrompt = post.content_pillar || `Feed post ${post.position}`
+        }
       } else {
-        console.log(`[v0] [GENERATE-SINGLE] ✅ Using pre-generated Nano Banana prompt from feed creation (${finalPrompt.split(/\s+/).length} words)`)
+        console.log(`[v0] [GENERATE-SINGLE] ✅ Using pre-generated template prompt from feed creation (${finalPrompt.split(/\s+/).length} words)`)
       }
       
       // Generate with Nano Banana Pro
