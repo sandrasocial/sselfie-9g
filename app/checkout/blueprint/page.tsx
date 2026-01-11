@@ -59,9 +59,9 @@ export default async function BlueprintCheckoutPage({
   try {
     if (authUser) {
       // Authenticated user: Use startProductCheckoutSession (includes user_id in metadata)
-      console.log("[Blueprint Checkout] Authenticated user, using product checkout session")
+      console.log("[Blueprint Checkout] Authenticated user, using product checkout session", promoCode ? `with promo: ${promoCode}` : "")
       const { startProductCheckoutSession } = await import("@/app/actions/stripe")
-      clientSecret = await startProductCheckoutSession("paid_blueprint")
+      clientSecret = await startProductCheckoutSession("paid_blueprint", promoCode)
     } else {
       // Unauthenticated user: Use landing checkout session (guest checkout)
       console.log("[Blueprint Checkout] Unauthenticated user, using landing checkout session", email ? `for email: ${email}` : "without email (will be captured in checkout)", promoCode ? `with promo: ${promoCode}` : "")

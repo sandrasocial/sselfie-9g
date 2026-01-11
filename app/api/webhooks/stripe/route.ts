@@ -122,7 +122,9 @@ export async function POST(request: NextRequest) {
         // ⚠️ IMPORTANT: Only grant credits if payment was successful
         // For subscriptions, credits should be granted via invoice.payment_succeeded instead
         // to ensure payment is confirmed before granting credits
-        const isPaymentPaid = session.payment_status === "paid"
+        // Fix: Handle $0 payments (discount codes) - Stripe sets payment_status to 'no_payment_required'
+        const isPaymentPaid = session.payment_status === "paid" || 
+          (session.payment_status === "no_payment_required" && session.amount_total === 0)
         
         if (!isPaymentPaid && session.mode === "subscription") {
           console.log(`[v0] ⚠️ Subscription checkout completed but payment status is '${session.payment_status}'. Credits will be granted when invoice.payment_succeeded fires.`)
@@ -985,7 +987,12 @@ export async function POST(request: NextRequest) {
               }
               
               // Store payment in stripe_payments table (comprehensive revenue tracking)
-              if (paymentIntentId && paymentAmountCents && customerId) {
+              // Fix: Handle $0 payments (discount codes) - allow processing even if paymentIntentId is null
+              const isZeroAmountPayment = session.amount_total === 0 || paymentAmountCents === 0
+              const paymentIdForStorage = paymentIntentId || session.id // Use session.id for $0 payments (no payment intent)
+              const amountForStorage = paymentAmountCents || 0 // Use 0 for $0 payments
+              
+              if (customerId && (paymentIntentId || isZeroAmountPayment)) {
                 try {
                   await sql`
                     INSERT INTO stripe_payments (
@@ -1005,10 +1012,10 @@ export async function POST(request: NextRequest) {
                       updated_at
                     )
                     VALUES (
-                      ${paymentIntentId},
+                      ${paymentIdForStorage},
                       ${customerId},
                       NULL,
-                      ${paymentAmountCents},
+                      ${amountForStorage},
                       'usd',
                       'succeeded',
                       'paid_blueprint',
@@ -1029,7 +1036,7 @@ export async function POST(request: NextRequest) {
                       status = 'succeeded',
                       updated_at = NOW()
                   `
-                  console.log(`[v0] ✅ Stored paid blueprint payment in stripe_payments table`)
+                  console.log(`[v0] ✅ Stored paid blueprint payment in stripe_payments table (amount: $${(amountForStorage / 100).toFixed(2)}, payment_id: ${paymentIdForStorage})`)
                 } catch (paymentError: any) {
                   console.error(`[v0] Error storing paid blueprint payment:`, paymentError.message)
                   // Don't fail webhook if payment storage fails
@@ -1078,21 +1085,24 @@ export async function POST(request: NextRequest) {
               // Fix #3: Grant credits if user_id found AND payment confirmed (with idempotency check)
               if (userId && isPaymentPaid) {
                 try {
+                  // Fix: Use session.id for $0 payments (no payment intent)
+                  const paymentIdForCredits = paymentIntentId || (isZeroAmountPayment ? session.id : undefined)
+                  
                   // Fix #3: Check if credits already granted for this payment (idempotency)
-                  if (paymentIntentId) {
+                  if (paymentIdForCredits) {
                     const existingCredit = await sql`
                       SELECT id FROM credit_transactions
                       WHERE user_id = ${userId}
-                      AND stripe_payment_id = ${paymentIntentId}
+                      AND stripe_payment_id = ${paymentIdForCredits}
                       AND transaction_type = 'purchase'
                       LIMIT 1
                     `
                     
                     if (existingCredit.length > 0) {
-                      console.log(`[v0] ⏭️ Credits already granted for payment ${paymentIntentId} - skipping (idempotency)`)
+                      console.log(`[v0] ⏭️ Credits already granted for payment ${paymentIdForCredits} - skipping (idempotency)`)
                     } else {
                       // Grant credits (not already granted)
-                      const creditResult = await grantPaidBlueprintCredits(userId, paymentIntentId || undefined, isTestMode)
+                      const creditResult = await grantPaidBlueprintCredits(userId, paymentIdForCredits, isTestMode)
                       if (creditResult.success) {
                         console.log(`[v0] ✅ Granted 60 credits for paid blueprint purchase to user ${userId}`)
                       } else {
@@ -1100,8 +1110,8 @@ export async function POST(request: NextRequest) {
                       }
                     }
                   } else {
-                    // No paymentIntentId - grant credits anyway (legacy support)
-                    console.warn(`[v0] ⚠️ No paymentIntentId for credit grant (idempotency check skipped)`)
+                    // No payment ID - grant credits anyway (legacy support)
+                    console.warn(`[v0] ⚠️ No payment ID for credit grant (idempotency check skipped)`)
                     const creditResult = await grantPaidBlueprintCredits(userId, undefined, isTestMode)
                     if (creditResult.success) {
                       console.log(`[v0] ✅ Granted 60 credits for paid blueprint purchase to user ${userId}`)
