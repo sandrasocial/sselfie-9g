@@ -1,3 +1,11 @@
-import BrandBlueprintPageServer from "./page-server"
+import { redirect } from "next/navigation"
 
-export default BrandBlueprintPageServer
+/**
+ * Phase 2.2: Redirect Blueprint Routes to Feed Planner
+ * 
+ * All blueprint routes now redirect to /feed-planner
+ * This consolidates blueprint functionality into the Feed Planner
+ */
+export default function BlueprintPage() {
+  redirect("/feed-planner")
+}

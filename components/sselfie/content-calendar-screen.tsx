@@ -3,7 +3,7 @@
 import { useState } from "react"
 import useSWR from "swr"
 import { Button } from "@/components/ui/button"
-import { Calendar, ChevronLeft, ChevronRight, Clock, MoreHorizontal, Plus, Sparkles } from "lucide-react"
+import { Calendar, ChevronLeft, ChevronRight, Clock, MoreHorizontal, Plus, ImageIcon } from "lucide-react"
 import UnifiedLoading from "./unified-loading"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
@@ -198,7 +198,7 @@ export default function ContentCalendarScreen({ onNavigateToFeed, userId }: Cont
                         {dayPosts.length === 0 ? (
                           <div className="h-full flex items-center justify-center">
                             <div className="text-center opacity-20">
-                              <Sparkles className="w-6 h-6 mx-auto mb-1 text-stone-300" />
+                              <ImageIcon className="w-6 h-6 mx-auto mb-1 text-stone-300" />
                               <p className="text-[10px] text-stone-400">No posts</p>
                             </div>
                           </div>
@@ -219,7 +219,7 @@ export default function ContentCalendarScreen({ onNavigateToFeed, userId }: Cont
                                 </div>
                               ) : (
                                 <div className="aspect-square bg-stone-100 flex items-center justify-center">
-                                  <Sparkles className="w-6 h-6 text-stone-300" />
+                                  <ImageIcon className="w-6 h-6 text-stone-300" />
                                 </div>
                               )}
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { Sparkles, ArrowRight, Check } from "lucide-react"
+import { ArrowRight, Check } from "lucide-react"
 import { getProductById } from "@/lib/products"
 
 type TierId = "one_time_session" | "sselfie_studio_membership"
@@ -74,9 +74,6 @@ export function UpgradeComparisonCard({
   return (
     <div className="bg-white/70 backdrop-blur-2xl border border-stone-200/70 shadow-xl shadow-stone-900/10 rounded-2xl p-5 sm:p-6 space-y-4">
       <div className="flex items-start gap-3">
-        <div className="p-3 rounded-xl bg-stone-900 text-white shadow-lg shadow-stone-900/20">
-          <Sparkles size={18} />
-        </div>
         <div className="flex-1 space-y-1">
           <p className="text-xs tracking-[0.15em] uppercase text-stone-500">Upgrade available</p>
           <h3 className="text-lg sm:text-xl font-serif font-extralight tracking-[0.25em] text-stone-900 uppercase">

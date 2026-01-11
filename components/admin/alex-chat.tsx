@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import { useChat } from '@ai-sdk/react'
 import { DefaultChatTransport } from 'ai'
-import { Sparkles, Mail, Instagram, BarChart3, Calendar, Send, Image as ImageIcon, X } from 'lucide-react'
+import { Mail, Instagram, BarChart3, Calendar, Send, Image as ImageIcon, X, MessageCircle } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import Image from 'next/image'
 import { AlexSuggestionCard, AlexSuggestion } from './alex-suggestion-card'
@@ -357,7 +357,7 @@ export default function AlexChat({ userId, userName, userEmail }: AlexChatProps)
               view === 'chat' ? 'bg-stone-900 text-white' : 'hover:bg-stone-100 text-stone-700'
             }`}
           >
-            <Sparkles className="w-4 h-4" />
+            <MessageCircle className="w-4 h-4" />
             <span className="text-sm">Chat with Alex</span>
           </button>
           
@@ -475,7 +475,7 @@ export default function AlexChat({ userId, userName, userEmail }: AlexChatProps)
                     disabled={isLoading}
                     className="px-4 py-3 bg-white border border-stone-200 hover:bg-stone-50 text-stone-900 rounded-lg text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
-                    <Sparkles className="w-4 h-4" />
+                    <Mail className="w-4 h-4" />
                     Newsletter
                   </button>
                   <button

@@ -18,7 +18,6 @@ import {
   Sliders,
   Plus,
   Clock,
-  Sparkles,
   Image,
   Menu,
   ChevronRight,

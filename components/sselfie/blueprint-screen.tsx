@@ -8,7 +8,7 @@ import BlueprintOnboardingWizard from "@/components/onboarding/blueprint-onboard
 import { BlueprintSelfieUpload } from "@/components/blueprint/blueprint-selfie-upload"
 import { BlueprintConceptCard } from "@/components/blueprint/blueprint-concept-card"
 import { Button } from "@/components/ui/button"
-import { Sparkles, Copy, Check } from "lucide-react"
+import { Copy, Check, Edit } from "lucide-react"
 
 interface BlueprintScreenProps {
   userId: string
@@ -614,7 +614,7 @@ export default function BlueprintScreen({ userId }: BlueprintScreenProps) {
               onClick={() => setShowEditWizard(true)}
               className="bg-white border border-stone-300 hover:bg-stone-50 text-stone-950 text-xs uppercase tracking-wider gap-2"
             >
-              <Sparkles size={14} />
+              <Edit size={14} />
               Edit Answers
             </Button>
           )}

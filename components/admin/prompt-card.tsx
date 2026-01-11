@@ -1,7 +1,7 @@
 "use client"
 
 import { Card } from "@/components/ui/card"
-import { Copy, Check, Trash2, Sparkles, Tag } from "lucide-react"
+import { Copy, Check, Trash2, Tag } from "lucide-react"
 import { useState } from "react"
 
 interface PromptCardProps {
@@ -47,7 +47,7 @@ export default function PromptCard({ prompt, onDelete }: PromptCardProps) {
       <div className="p-5 border-b border-stone-100">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-stone-600" />
+            <Tag className="w-4 h-4 text-stone-600" />
             <span className="text-xs font-medium uppercase tracking-wider text-stone-600">
               Maya Prompt
             </span>

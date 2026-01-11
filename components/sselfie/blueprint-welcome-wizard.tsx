@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Sparkles, ChevronRight, X } from "lucide-react"
+import { FileText, ChevronRight, X } from "lucide-react"
 import Image from "next/image"
 import { DesignClasses, ComponentClasses } from "@/lib/design-tokens"
 
@@ -65,7 +65,7 @@ export default function BlueprintWelcomeWizard({
               >
                 {/* Logo/Icon */}
                 <div className="w-20 h-20 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full flex items-center justify-center mx-auto shadow-2xl">
-                  <Sparkles className="w-12 h-12 text-white" strokeWidth={2} />
+                  <FileText className="w-12 h-12 text-white" strokeWidth={2} />
                 </div>
 
                 {/* Welcome Message */}

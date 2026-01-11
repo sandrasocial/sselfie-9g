@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent } from "@/components/ui/card"
-import { Upload, X, Star, Sparkles, Check } from 'lucide-react'
+import { Upload, X, Star, Check, Loader2 } from 'lucide-react'
 
 export function TestimonialSubmissionForm() {
   const [formData, setFormData] = useState({
@@ -216,7 +216,7 @@ export function TestimonialSubmissionForm() {
                   disabled={uploading}
                 />
                 {uploading ? (
-                  <Sparkles className="h-8 w-8 text-stone-400 animate-spin mb-3" />
+                  <Loader2 className="h-8 w-8 text-stone-400 animate-spin mb-3" />
                 ) : (
                   <Upload className="h-8 w-8 text-stone-400 mb-3" />
                 )}

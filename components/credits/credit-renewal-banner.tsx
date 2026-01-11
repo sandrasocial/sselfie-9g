@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import useSWR from "swr"
-import { X, Sparkles } from "lucide-react"
+import { X, Gift } from "lucide-react"
 import { DesignClasses } from "@/lib/design-tokens"
 import { useRouter } from "next/navigation"
 
@@ -74,7 +74,7 @@ export function CreditRenewalBanner() {
       <div className={`${DesignClasses.container} flex items-center justify-between gap-4`}>
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <div className="flex-shrink-0 w-10 h-10 bg-stone-800 rounded-xl flex items-center justify-center">
-            <Sparkles size={20} className="text-stone-200" />
+            <Gift size={20} className="text-stone-200" />
           </div>
           <div className="flex-1 min-w-0">
             <p className={`${DesignClasses.typography.body.medium} text-stone-50`}>

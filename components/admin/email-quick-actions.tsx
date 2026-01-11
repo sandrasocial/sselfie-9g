@@ -1,6 +1,6 @@
 "use client"
 
-import { Mail, TrendingUp, Users, Calendar, BarChart3, Sparkles } from 'lucide-react'
+import { Mail, TrendingUp, Users, Calendar, BarChart3 } from 'lucide-react'
 
 interface EmailQuickActionsProps {
   onAction: (action: string, prompt: string) => void
@@ -17,7 +17,7 @@ export default function EmailQuickActions({ onAction, disabled }: EmailQuickActi
     },
     {
       label: "Newsletter",
-      icon: Sparkles,
+      icon: Mail,
       prompt: "Create a newsletter with updates and tips",
       category: "create"
     },

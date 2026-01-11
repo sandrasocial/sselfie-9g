@@ -9,13 +9,14 @@ import {
   ChevronRight,
   X,
   Share2,
-  Sparkles,
+  ImageIcon,
   Grid3x3,
   User,
   Heart,
   MessageCircle,
   Send,
   Bookmark,
+  Lightbulb,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import SchedulePostModal from "./schedule-post-modal"
@@ -272,7 +273,7 @@ export default function FeedPublishingHub({
                     <div className="w-[77px] h-[77px] rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 p-[2px]">
                       <div className="w-full h-full rounded-full bg-white p-[3px]">
                         <div className="w-full h-full rounded-full bg-gradient-to-br from-stone-200 to-stone-300 flex items-center justify-center group-hover:opacity-80 transition-opacity">
-                          <Sparkles size={24} className="text-stone-600" />
+                          <ImageIcon size={24} className="text-stone-600" />
                         </div>
                       </div>
                     </div>
@@ -329,7 +330,7 @@ export default function FeedPublishingHub({
                 </>
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center p-4 bg-stone-50">
-                  <Sparkles size={24} className="text-stone-400 mb-2" />
+                  <ImageIcon size={24} className="text-stone-400 mb-2" />
                   <span className="text-xs text-stone-500 text-center">{post.title}</span>
                 </div>
               )}
@@ -371,7 +372,7 @@ export default function FeedPublishingHub({
                 <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 p-[2px]">
                   <div className="w-full h-full rounded-full bg-white p-[2px]">
                     <div className="w-full h-full rounded-full bg-stone-950 flex items-center justify-center">
-                      <Sparkles size={16} className="text-white" />
+                      <User size={16} className="text-white" />
                     </div>
                   </div>
                 </div>
@@ -416,7 +417,7 @@ export default function FeedPublishingHub({
                 />
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center p-8">
-                  <Sparkles size={48} className="text-stone-400 mb-4" />
+                  <ImageIcon size={48} className="text-stone-400 mb-4" />
                   <h3 className="text-xl font-medium text-stone-950 mb-2">{selectedPost.title}</h3>
                   <p className="text-sm text-stone-600 text-center">{selectedPost.description}</p>
                 </div>
@@ -485,7 +486,7 @@ export default function FeedPublishingHub({
               <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-200">
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full flex items-center justify-center flex-shrink-0">
-                    <Sparkles size={16} className="text-white" />
+                    <Lightbulb size={16} className="text-white" />
                   </div>
                   <div className="flex-1">
                     <h4 className="text-sm font-semibold text-stone-950 mb-1">Maya's Instagram Tips</h4>

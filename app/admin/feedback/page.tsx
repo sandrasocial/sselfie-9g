@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Loader2, Filter, CheckCircle, Clock, AlertCircle, Camera, Reply, Sparkles, AlertTriangle } from 'lucide-react'
+import { Loader2, Filter, CheckCircle, Clock, AlertCircle, Camera, Reply, Wand2, AlertTriangle } from 'lucide-react'
 import Link from "next/link"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
@@ -329,7 +329,7 @@ export default function AdminFeedbackPage() {
                       {analysis && (
                         <div className="mt-4 p-4 bg-stone-50 border border-stone-200 rounded-lg">
                           <p className="text-xs text-stone-600 font-medium mb-1 tracking-wide flex items-center gap-2">
-                            <Sparkles className="w-3 h-3" /> AI Analysis:
+                            <Wand2 className="w-3 h-3" /> AI Analysis:
                           </p>
                           <p className="text-sm text-stone-700 font-light mb-2">{analysis.likelyCause}</p>
                           {analysis.suggestedFiles.length > 0 && (
@@ -380,7 +380,7 @@ export default function AdminFeedbackPage() {
                                 </>
                               ) : (
                                 <>
-                                  <Sparkles className="w-3 h-3 mr-2" />
+                                  <Wand2 className="w-3 h-3 mr-2" />
                                   Generate AI Response Draft
                                 </>
                               )}
@@ -390,7 +390,7 @@ export default function AdminFeedbackPage() {
                           {replyText && showMayaChat === item.id && (
                             <div className="p-4 bg-stone-50 border border-stone-200 rounded-lg space-y-3">
                               <p className="text-xs text-stone-600 font-medium flex items-center gap-2">
-                                <Sparkles className="w-3 h-3" />
+                                <Wand2 className="w-3 h-3" />
                                 Ask Maya to adjust the response:
                               </p>
                               <Textarea
@@ -424,7 +424,7 @@ export default function AdminFeedbackPage() {
                                     </>
                                   ) : (
                                     <>
-                                      <Sparkles className="w-3 h-3 mr-2" />
+                                      <Wand2 className="w-3 h-3 mr-2" />
                                       Refine Response
                                     </>
                                   )}
@@ -449,7 +449,7 @@ export default function AdminFeedbackPage() {
                                 size="sm"
                                 className="border-stone-300 hover:bg-stone-100"
                               >
-                                <Sparkles className="w-3 h-3 mr-2" />
+                                <Wand2 className="w-3 h-3 mr-2" />
                                 Ask Maya to Revise
                               </Button>
                             )}
@@ -501,7 +501,7 @@ export default function AdminFeedbackPage() {
                             </>
                           ) : (
                             <>
-                              <Sparkles className="w-3 h-3" />
+                              <Wand2 className="w-3 h-3" />
                               Generate AI Response
                             </>
                           )}

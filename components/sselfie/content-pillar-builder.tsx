@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Aperture, Sparkles, Check } from "lucide-react"
+import { Aperture, Check, MessageCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 
@@ -95,12 +95,12 @@ export default function ContentPillarBuilder({ userAnswers, onComplete, onSkip }
           >
             {isGenerating ? (
               <>
-                <Sparkles size={16} className="mr-2 animate-pulse" />
+                <MessageCircle size={16} className="mr-2 animate-pulse" />
                 Maya is thinking...
               </>
             ) : (
               <>
-                <Sparkles size={16} className="mr-2" />
+                <MessageCircle size={16} className="mr-2" />
                 Help me create content pillars
               </>
             )}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { Sparkles, Copy, Check } from "lucide-react"
+import { FileText, Copy, Check } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { BlueprintEmailCapture } from "@/components/blueprint/blueprint-email-capture"
@@ -1545,7 +1545,7 @@ export default function BrandBlueprintPageClient({
             )}
 
             <div className="max-w-3xl w-full text-center">
-              <Sparkles className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-4 sm:mb-6 text-stone-950" />
+              <FileText className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-4 sm:mb-6 text-stone-950" />
               <h2
                 style={{ fontFamily: "'Times New Roman', serif" }}
                 className="text-2xl sm:text-3xl md:text-5xl font-extralight tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-3 sm:mb-4 text-stone-950"
@@ -1959,7 +1959,7 @@ export default function BrandBlueprintPageClient({
         {step === 7 && (
           <div className="min-h-[calc(100vh-80px)] sm:min-h-[calc(100vh-96px)] flex items-center justify-center px-4 sm:px-6 py-8 sm:py-12">
             <div className="max-w-3xl w-full text-center">
-              <Sparkles className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-4 sm:mb-6 text-stone-950" />
+              <FileText className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-4 sm:mb-6 text-stone-950" />
               <h2
                 style={{ fontFamily: "'Times New Roman', serif" }}
                 className="text-2xl sm:text-3xl md:text-5xl font-extralight tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-3 sm:mb-4 text-stone-950"

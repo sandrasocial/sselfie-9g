@@ -12,7 +12,7 @@ import {
   MoreVertical,
   LogOut,
   LayoutGrid,
-  Sparkles,
+  FileText,
 } from "lucide-react"
 import LoadingScreen from "./loading-screen"
 import OnboardingWizard from "./onboarding-wizard"
@@ -24,7 +24,6 @@ import GalleryScreen from "./gallery-screen"
 import AcademyScreen from "./academy-screen"
 import AccountScreen from "./account-screen"
 import { FeedViewScreen as FeedPlannerScreen } from "../feed-planner" // Using FeedViewScreen (backward compatible export)
-import BlueprintScreen from "./blueprint-screen"
 import { InstallPrompt } from "./install-prompt"
 import { InstallButton } from "./install-button"
 import { ServiceWorkerProvider } from "./service-worker-provider"
@@ -87,7 +86,7 @@ export default function SselfieApp({
   const getInitialTab = () => {
     // Decision 2: Use initialTab prop if provided (from URL param)
     if (initialTab) {
-      const validTabs = ["maya", "gallery", "feed-planner", "blueprint", "academy", "account"]
+      const validTabs = ["maya", "gallery", "feed-planner", "academy", "account"]
       if (validTabs.includes(initialTab)) {
         return initialTab
       }
@@ -99,7 +98,6 @@ export default function SselfieApp({
         "maya",
         "gallery",
         "feed-planner",
-        "blueprint",
         "academy",
         "account",
       ]
@@ -426,11 +424,11 @@ export default function SselfieApp({
           
           // Only route if URL doesn't already specify blueprint tab and we're on default maya
           if (!currentUrlTab || (currentUrlTab === "maya" && !initialTab)) {
-            console.log("[Routing] 🔵 Routing blueprint user to blueprint tab (fallback routing)")
-            setActiveTab("blueprint")
+            console.log("[Routing] 🔵 Routing blueprint user to feed planner (fallback routing)")
+            setActiveTab("feed-planner")
             if (typeof window !== "undefined") {
               const url = new URL(window.location.href)
-              url.searchParams.set("tab", "blueprint")
+              url.searchParams.set("tab", "feed-planner")
               window.history.replaceState({}, "", url.toString())
             }
           }
@@ -551,7 +549,6 @@ export default function SselfieApp({
     { id: "maya", label: "Maya", icon: MessageCircle },
     { id: "gallery", label: "Gallery", icon: ImageIcon },
     { id: "feed-planner", label: "Feed", icon: LayoutGrid },
-    { id: "blueprint", label: "Blueprint", icon: Sparkles },
     { id: "academy", label: "Academy", icon: Grid },
     { id: "account", label: "Account", icon: User },
   ]
@@ -574,7 +571,7 @@ export default function SselfieApp({
 
   // Decision 2: Handle purchase success - refresh credits and show success message
   useEffect(() => {
-    if (purchaseSuccess && activeTab === "blueprint") {
+    if (purchaseSuccess && activeTab === "feed-planner") {
       // Refresh credits to show updated balance (60 credits for paid blueprint)
       refreshCredits()
       
@@ -583,7 +580,7 @@ export default function SselfieApp({
         if (typeof window !== "undefined") {
           const url = new URL(window.location.href)
           url.searchParams.delete("purchase")
-          // Keep tab=blueprint param
+          // Keep tab=feed-planner param
           window.history.replaceState({}, "", url.toString())
           setShowPurchaseSuccess(false)
         }
@@ -958,10 +955,6 @@ export default function SselfieApp({
                 )}
                 {activeTab === "gallery" && <GalleryScreen user={user} userId={userId} />}
                 {activeTab === "feed-planner" && <FeedPlannerScreen />}
-                {/* Decision 3: Only show BlueprintScreen if onboarding is complete or if no wizard is showing */}
-                {activeTab === "blueprint" && !showBlueprintWelcome && !showBlueprintOnboarding && (
-                  <BlueprintScreen userId={userId} />
-                )}
                 {activeTab === "academy" && <AcademyScreen />}
                   {activeTab === "account" && <AccountScreen user={user} creditBalance={creditBalance} />}
                 </motion.div>
@@ -1047,8 +1040,8 @@ export default function SselfieApp({
       <LowCreditModal credits={creditBalance} threshold={30} />
       <ZeroCreditsUpgradeModal credits={creditBalance} />
 
-      {/* Hide feedback button when on maya chat screen, feed planner, or blueprint */}
-      {activeTab !== "maya" && activeTab !== "feed-planner" && activeTab !== "blueprint" && (
+      {/* Hide feedback button when on maya chat screen or feed planner */}
+      {activeTab !== "maya" && activeTab !== "feed-planner" && (
         <FeedbackButton userId={userId} userEmail={userEmail} userName={userName} />
       )}
 
@@ -1128,8 +1121,8 @@ export default function SselfieApp({
           console.log("[Blueprint Onboarding] ✅ Unified wizard completed with data:", data)
           setShowBlueprintOnboarding(false)
           
-          // Redirect to Blueprint tab - user will upload selfies next
-          setActiveTab("blueprint")
+          // Redirect to Feed Planner - user will upload selfies next
+          setActiveTab("feed-planner")
           
           // Refresh blueprint state to show updated content
           try {

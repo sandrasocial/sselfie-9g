@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react'
-import { X, Sparkles } from 'lucide-react'
+import { X, Check } from 'lucide-react'
 
 export interface AlexSuggestion {
   id?: number
@@ -137,7 +137,7 @@ export function AlexSuggestionCard({
               disabled={isActingUpon || isDismissing}
               className="px-4 py-2 bg-stone-900 text-white rounded-lg hover:bg-stone-800 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
-              <Sparkles className="w-4 h-4" />
+              <Check className="w-4 h-4" />
               {isActingUpon ? 'Acting...' : suggestion.action}
             </button>
           )}

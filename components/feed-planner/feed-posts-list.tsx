@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Loader2, Copy, Check, Sparkles } from "lucide-react"
+import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Loader2, Copy, Check, Wand2 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 
 interface FeedPostsListProps {
@@ -221,7 +221,7 @@ export default function FeedPostsList({
                         {enhancingCaptions.has(post.id) ? (
                           <Loader2 size={18} className="text-stone-600 animate-spin" />
                         ) : (
-                          <Sparkles size={18} className="text-stone-600" />
+                          <Wand2 size={18} className="text-stone-600" />
                         )}
                       </button>
                     )}

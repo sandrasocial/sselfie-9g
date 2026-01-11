@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
-import { Sparkles, Dumbbell, Plane, Coffee, Heart, Camera, LayoutGrid, List, Plus, ArrowLeft, ChevronDown, ChevronUp } from "lucide-react"
+import { Dumbbell, Plane, Coffee, Heart, Camera, LayoutGrid, List, Plus, ArrowLeft, ChevronDown, ChevronUp, FileText } from "lucide-react"
 import { Typography, Colors, Spacing, BorderRadius } from '@/lib/maya/pro/design-system'
 import Link from 'next/link'
 import {
@@ -38,7 +38,7 @@ interface PromptGuideBuilderClientProps {
 const CATEGORY_INFO = [
   {
     name: 'Chanel Luxury',
-    icon: Sparkles,
+    icon: FileText,
     description: 'Iconic Parisian elegance with tweed, quilted bags, and timeless sophistication',
     color: 'from-stone-900 to-stone-700',
     imageUrl: '/categories/chanel-luxury.jpg',
@@ -86,7 +86,7 @@ const CATEGORY_INFO = [
   },
   {
     name: 'Seasonal Christmas',
-    icon: Sparkles,
+    icon: FileText,
     description: 'Holiday elegance, festive moments, and winter luxury aesthetics',
     color: 'from-red-600 to-red-400',
     imageUrl: '/categories/christmas.jpg',

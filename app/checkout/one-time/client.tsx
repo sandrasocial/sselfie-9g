@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { EmbeddedCheckoutProvider, EmbeddedCheckout } from "@stripe/react-stripe-js"
 import { loadStripe } from "@stripe/stripe-js"
-import { ArrowLeft, Sparkles } from "lucide-react"
+import { ArrowLeft, CreditCard } from "lucide-react"
 import { startEmbeddedCheckout } from "@/lib/start-embedded-checkout"
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
@@ -65,7 +65,7 @@ export default function OneTimeCheckoutClient({
 
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-stone-100 rounded-full mb-4">
-            <Sparkles className="w-8 h-8 text-stone-900" />
+            <CreditCard className="w-8 h-8 text-stone-900" />
           </div>
           <h1 className="text-3xl md:text-4xl font-serif font-light mb-4">One-Time SSELFIE Session</h1>
           <p className="text-stone-600 text-lg mb-2">Professional AI Photoshoot</p>

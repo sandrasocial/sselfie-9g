@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { Sparkles, CreditCard, ArrowRight } from "lucide-react"
+import { CreditCard, ArrowRight } from "lucide-react"
 import { useState } from "react"
 import BuyCreditsModal from "@/components/sselfie/buy-credits-modal"
 
@@ -42,7 +42,6 @@ export function UpgradeOrCredits({ feature = "Studio" }: UpgradeOrCreditsProps) 
               onClick={handleUpgrade}
               className="w-full bg-stone-900 hover:bg-stone-800 text-white rounded-xl py-6 text-sm font-medium tracking-wider uppercase flex items-center justify-center gap-2"
             >
-              <Sparkles size={18} />
               UPGRADE TO MEMBERSHIP
               <ArrowRight size={16} />
             </Button>

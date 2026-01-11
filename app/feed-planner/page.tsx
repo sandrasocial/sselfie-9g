@@ -2,6 +2,7 @@ import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId, getOrCreateNeonUser } from "@/lib/user-mapping"
 import { redirect } from 'next/navigation'
 import FeedViewScreen from "@/components/feed-planner/feed-view-screen"
+import { getFeedPlannerAccess } from "@/lib/feed-planner/access-control"
 
 export default async function FeedPlannerPage() {
   const supabase = await createServerClient()
@@ -32,6 +33,8 @@ export default async function FeedPlannerPage() {
     redirect("/auth/login?returnTo=/feed-planner")
   }
 
-  return <FeedViewScreen />
-  // </CHANGE>
+  // Phase 1.2: Check access control
+  const access = await getFeedPlannerAccess(neonUser.id.toString())
+
+  return <FeedViewScreen access={access} />
 }

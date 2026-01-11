@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef, useMemo } from "react"
-import { Sparkles, Loader2, Settings, X, ChevronLeft, ChevronRight, Search, ArrowUpDown, Heart, Clock, TrendingUp } from "lucide-react"
+import { Loader2, Settings, X, ChevronLeft, ChevronRight, Search, ArrowUpDown, Heart, Clock, TrendingUp, ImageIcon } from "lucide-react"
 import Image from "next/image"
 import FullscreenImageModal from "../fullscreen-image-modal"
 
@@ -1315,7 +1315,7 @@ export default function MayaPromptsTab({
           {/* Prompts Grid */}
           {filteredAndSortedPrompts.length === 0 ? (
             <div className="text-center py-24">
-              <Sparkles size={48} className="mx-auto mb-4 text-stone-400" strokeWidth={1.5} />
+              <ImageIcon size={48} className="mx-auto mb-4 text-stone-400" strokeWidth={1.5} />
               <h3 className="text-lg font-serif font-light tracking-[0.2em] uppercase text-stone-950 mb-2">
                 No Prompts Available
               </h3>

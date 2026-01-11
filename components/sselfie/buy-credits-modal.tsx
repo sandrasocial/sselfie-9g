@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { EmbeddedCheckout, EmbeddedCheckoutProvider } from "@stripe/react-stripe-js"
 import { loadStripe } from "@stripe/stripe-js"
 import { CREDIT_PACKAGES } from "@/lib/products"
-import { Check, Sparkles } from 'lucide-react'
+import { Check } from 'lucide-react'
 import { startCreditCheckoutSession } from "@/app/actions/stripe"
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
@@ -62,8 +62,7 @@ export default function BuyCreditsModal({ open, onOpenChange, onSuccess }: BuyCr
                 onClick={() => handlePackageSelect(pkg.id)}
               >
                 {pkg.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-stone-900 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1">
-                    <Sparkles size={12} />
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-stone-900 text-white px-3 py-1 rounded-full text-xs font-medium">
                     Most Popular
                   </div>
                 )}

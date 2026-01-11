@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Loader2, ImageIcon, Copy, Check, Sparkles, Wand2, Edit2, X, Save, Hash } from 'lucide-react'
+import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Loader2, ImageIcon, Copy, Check, Wand2, Edit2, X, Save, Hash } from 'lucide-react'
 import { toast } from "@/hooks/use-toast"
 
 interface FeedPostCardProps {
@@ -520,7 +520,7 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
                   {isEnhancing ? (
                     <Loader2 size={18} className="text-stone-600 animate-spin" />
                   ) : (
-                    <Sparkles size={18} className="text-stone-600" />
+                    <Wand2 size={18} className="text-stone-600" />
                   )}
                 </button>
               </div>

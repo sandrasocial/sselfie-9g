@@ -10,9 +10,12 @@ import UnifiedLoading from "@/components/sselfie/unified-loading"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
+import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
+
 interface FeedViewScreenProps {
   feedId?: number | null
-  mode?: "feed-planner" | "blueprint" // Decision 2: Mode prop for feature flags
+  mode?: "feed-planner" | "blueprint" // Decision 2: Mode prop for feature flags (deprecated - use access instead)
+  access?: FeedPlannerAccess // Phase 1.2: Access control object
 }
 
 /**
@@ -28,7 +31,7 @@ interface FeedViewScreenProps {
  * When no feedId is provided, automatically fetches the latest feed.
  * Shows placeholder state if no feed exists.
  */
-export default function FeedViewScreen({ feedId: feedIdProp, mode = "feed-planner" }: FeedViewScreenProps = {}) {
+export default function FeedViewScreen({ feedId: feedIdProp, mode = "feed-planner", access }: FeedViewScreenProps = {}) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isCreatingManual, setIsCreatingManual] = useState(false)

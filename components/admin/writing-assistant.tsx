@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Send, Copy, Check, Calendar, Loader2, Sparkles, History, Download } from "lucide-react"
+import { Send, Copy, Check, Calendar, Loader2, FileText, History, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
@@ -281,7 +281,7 @@ ${generatedContent.hashtags.map(tag => `#${tag}`).join(' ')}
       <div className="bg-white border-b border-stone-200 p-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-stone-700" />
+            <FileText className="w-5 h-5 text-stone-700" />
             <h2 className="text-xl font-semibold text-stone-900">Writing Assistant</h2>
           </div>
           
@@ -339,7 +339,7 @@ ${generatedContent.hashtags.map(tag => `#${tag}`).join(' ')}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {!generatedContent && !isGenerating && (
           <div className="text-center text-stone-500 py-12">
-            <Sparkles className="w-12 h-12 mx-auto mb-4 text-stone-300" />
+            <FileText className="w-12 h-12 mx-auto mb-4 text-stone-300" />
             <p className="text-sm">
               Describe what you need and I'll write it in Sandra's voice
             </p>

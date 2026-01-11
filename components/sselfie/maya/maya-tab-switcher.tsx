@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useEffect, useRef } from "react"
-import { ImageIcon, Film, Sparkles, GraduationCap } from "lucide-react"
+import { ImageIcon, Film, GraduationCap } from "lucide-react"
 
 interface MayaTabSwitcherProps {
   activeTab: "photos" | "videos" | "prompts" | "training" | "feed"
