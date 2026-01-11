@@ -118,10 +118,23 @@ export async function hasAcademyAccess(userId: string): Promise<boolean> {
 /**
  * Check if user has paid blueprint entitlement
  * Paid blueprint is a one-time purchase (not a subscription)
+ * Admin users automatically have paid blueprint access
  */
 export async function hasPaidBlueprint(userId: string): Promise<boolean> {
   try {
     console.log(`[v0] [hasPaidBlueprint] Checking paid blueprint for user: ${userId}`)
+    
+    // Check if user is admin first (admins automatically have paid blueprint access)
+    const adminCheck = await sql`
+      SELECT role FROM users WHERE id = ${userId} LIMIT 1
+    `
+    const isAdmin = adminCheck.length > 0 && adminCheck[0].role === "admin"
+    
+    if (isAdmin) {
+      console.log(`[v0] [hasPaidBlueprint] User is admin - has paid blueprint access`)
+      return true
+    }
+    
     const subscription = await getUserSubscription(userId)
     const hasAccess = subscription?.product_type === "paid_blueprint" && subscription?.status === "active"
     console.log(`[v0] [hasPaidBlueprint] Result: ${hasAccess}`)
@@ -145,6 +158,7 @@ export async function hasFreeBlueprintAccess(userId: string): Promise<boolean> {
 /**
  * Get blueprint entitlement details for a user
  * Returns entitlement type, usage status, and remaining quotas
+ * Admin users automatically get paid blueprint access
  */
 export async function getBlueprintEntitlement(userId: string): Promise<{
   type: "free" | "paid" | "studio"
@@ -153,6 +167,30 @@ export async function getBlueprintEntitlement(userId: string): Promise<{
 }> {
   try {
     console.log(`[v0] [getBlueprintEntitlement] Getting entitlement for user: ${userId}`)
+
+    // Check if user is admin first (admins get automatic paid blueprint access)
+    const adminCheck = await sql`
+      SELECT role FROM users WHERE id = ${userId} LIMIT 1
+    `
+    const isAdmin = adminCheck.length > 0 && adminCheck[0].role === "admin"
+    
+    if (isAdmin) {
+      console.log(`[v0] [getBlueprintEntitlement] User is admin - granting paid blueprint access`)
+      const blueprintState = await sql`
+        SELECT paid_grids_generated 
+        FROM blueprint_subscribers 
+        WHERE user_id = ${userId} 
+        LIMIT 1
+      `
+      const paidGridsGenerated = blueprintState.length > 0 ? (blueprintState[0].paid_grids_generated || 0) : 0
+      const paidGridsRemaining = Math.max(0, 30 - paidGridsGenerated)
+      
+      return {
+        type: "paid",
+        freeGridUsed: false, // Admin users don't use free quota
+        paidGridsRemaining: paidGridsRemaining,
+      }
+    }
 
     // Check for Studio Membership (highest tier)
     const hasStudio = await hasStudioMembership(userId)
