@@ -39,11 +39,27 @@ export default function FeedBrandPillars({ businessType }: FeedBrandPillarsProps
   )
 
   // Extract content pillars from personal brand data
-  const contentPillars: ContentPillar[] = personalBrandData?.exists && personalBrandData?.data?.content_pillars
-    ? (typeof personalBrandData.data.content_pillars === "string"
-        ? JSON.parse(personalBrandData.data.content_pillars)
-        : personalBrandData.data.content_pillars)
+  // API returns camelCase (contentPillars), not snake_case (content_pillars)
+  const contentPillars: ContentPillar[] = personalBrandData?.exists && personalBrandData?.data?.contentPillars
+    ? (typeof personalBrandData.data.contentPillars === "string"
+        ? JSON.parse(personalBrandData.data.contentPillars)
+        : personalBrandData.data.contentPillars)
     : []
+
+  // Debug logging to help diagnose issues
+  useEffect(() => {
+    if (personalBrandData) {
+      console.log("[Feed Brand Pillars] Personal brand data:", {
+        exists: personalBrandData.exists,
+        hasData: !!personalBrandData.data,
+        hasContentPillars: !!personalBrandData.data?.contentPillars,
+        contentPillarsType: typeof personalBrandData.data?.contentPillars,
+        contentPillarsValue: personalBrandData.data?.contentPillars,
+        parsedPillars: contentPillars,
+        pillarsCount: contentPillars.length,
+      })
+    }
+  }, [personalBrandData, contentPillars])
 
   const copyToClipboard = (text: string, pillarName: string) => {
     navigator.clipboard.writeText(text)
@@ -59,24 +75,25 @@ export default function FeedBrandPillars({ businessType }: FeedBrandPillarsProps
     setIsGenerating(true)
     try {
       // Prepare user answers for Maya
+      // API returns camelCase field names, not snake_case
       const userAnswers = {
-        businessType: personalBrandData?.data?.business_type || businessType || "",
-        idealAudience: personalBrandData?.data?.ideal_audience || "",
-        audienceChallenge: personalBrandData?.data?.audience_challenge || "",
-        audienceTransformation: personalBrandData?.data?.audience_transformation || "",
-        transformationStory: personalBrandData?.data?.transformation_story || "",
-        visualAesthetic: personalBrandData?.data?.visual_aesthetic
-          ? (typeof personalBrandData.data.visual_aesthetic === "string"
-              ? JSON.parse(personalBrandData.data.visual_aesthetic).join(", ")
-              : Array.isArray(personalBrandData.data.visual_aesthetic)
-              ? personalBrandData.data.visual_aesthetic.join(", ")
+        businessType: personalBrandData?.data?.businessType || businessType || "",
+        idealAudience: personalBrandData?.data?.idealAudience || "",
+        audienceChallenge: personalBrandData?.data?.audienceChallenge || "",
+        audienceTransformation: personalBrandData?.data?.audienceTransformation || "",
+        transformationStory: personalBrandData?.data?.transformationStory || "",
+        visualAesthetic: personalBrandData?.data?.visualAesthetic
+          ? (typeof personalBrandData.data.visualAesthetic === "string"
+              ? JSON.parse(personalBrandData.data.visualAesthetic).join(", ")
+              : Array.isArray(personalBrandData.data.visualAesthetic)
+              ? personalBrandData.data.visualAesthetic.join(", ")
               : "")
           : "",
-        feedStyle: personalBrandData?.data?.settings_preference
-          ? (typeof personalBrandData.data.settings_preference === "string"
-              ? JSON.parse(personalBrandData.data.settings_preference)[0] || ""
-              : Array.isArray(personalBrandData.data.settings_preference)
-              ? personalBrandData.data.settings_preference[0] || ""
+        feedStyle: personalBrandData?.data?.settingsPreference
+          ? (typeof personalBrandData.data.settingsPreference === "string"
+              ? JSON.parse(personalBrandData.data.settingsPreference)[0] || ""
+              : Array.isArray(personalBrandData.data.settingsPreference)
+              ? personalBrandData.data.settingsPreference[0] || ""
               : "")
           : "",
       }
