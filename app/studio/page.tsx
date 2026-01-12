@@ -168,6 +168,7 @@ export default async function StudioPage({
         isWelcome={isWelcome}
         shouldShowCheckout={shouldShowCheckout}
         subscriptionStatus={subscription?.status ?? null}
+        productType={subscription?.product_type ?? null}
         purchaseSuccess={purchaseSuccess}
         initialTab={initialTab}
       />

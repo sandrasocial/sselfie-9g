@@ -62,11 +62,12 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
     : '/api/feed/latest'
 
   // Fetch feed data (handles both specific feed and latest feed)
+  // Note: Polling is handled by InstagramFeedView's useFeedPolling hook, not here
   const { data: feedData, error: feedError, isLoading } = useSWR(
     swrKey,
     fetcher,
     {
-      refreshInterval: 3000, // Poll every 3 seconds for real-time updates
+      refreshInterval: 0, // No polling here - InstagramFeedView handles it
       revalidateOnFocus: true,
       revalidateOnReconnect: true,
     }

@@ -393,16 +393,17 @@ export async function grantFreeUserCredits(userId: string): Promise<{ success: b
 }
 
 /**
- * Grant paid blueprint credits (60 credits for 30 grids)
+ * Grant paid blueprint credits (60 credits for 30 images)
  * Decision 1: Credit System for All Users
  * Called from Stripe webhook on paid blueprint purchase
+ * Paid Blueprint Package: 3 feed planners, 30 images total (2 credits per image)
  */
 export async function grantPaidBlueprintCredits(
   userId: string,
   stripePaymentId?: string,
   isTestMode = false
 ): Promise<{ success: boolean; newBalance: number; error?: string }> {
-  const credits = 60 // Paid blueprint users get 60 credits (30 grids × 2 credits per grid)
+  const credits = 60 // Paid blueprint users get 60 credits (30 images × 2 credits per image)
 
   if (!stripePaymentId) {
     console.warn('[Credits] ⚠️ grantPaidBlueprintCredits called without stripe_payment_id')
@@ -414,7 +415,7 @@ export async function grantPaidBlueprintCredits(
     userId,
     credits,
     "purchase",
-    "Paid Blueprint purchase (60 credits)",
+    "Paid Blueprint purchase (60 credits - 30 images)",
     stripePaymentId,
     isTestMode,
   )

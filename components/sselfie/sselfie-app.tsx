@@ -36,6 +36,7 @@ import { FeedbackButton } from "@/components/feedback/feedback-button"
 import { UpgradeOrCredits } from "@/components/UpgradeOrCredits"
 import type { User as UserType } from "./types"
 import { getAccessState } from "./access"
+import { useToast } from "@/hooks/use-toast"
 import { SmartUpgradeBanner } from "@/components/upgrade/smart-upgrade-banner"
 import { UpgradeModal } from "@/components/upgrade/upgrade-modal"
 import type { UpgradeOpportunity } from "@/lib/upgrade-detection"
@@ -69,6 +70,7 @@ interface SselfieAppProps {
   isWelcome?: boolean
   shouldShowCheckout?: boolean
   subscriptionStatus?: string | null
+  productType?: string | null // NEW: "paid_blueprint" | "sselfie_studio_membership" | null
   purchaseSuccess?: boolean // Decision 2: Purchase success flag
   initialTab?: string // Decision 2: Initial tab from URL param
 }
@@ -80,6 +82,7 @@ export default function SselfieApp({
   isWelcome = false,
   shouldShowCheckout = false,
   subscriptionStatus = null,
+  productType = null,
   purchaseSuccess = false,
   initialTab,
 }: SselfieAppProps) {
@@ -320,7 +323,24 @@ export default function SselfieApp({
     }
   }, [userId])
 
+  // Calculate access state early (needed for handleTabChange)
+  const access = getAccessState({
+    credits: creditBalance,
+    subscriptionStatus,
+    productType,
+  })
+
   const handleTabChange = (tabId: string) => {
+    // Prevent paid blueprint users from accessing Maya
+    if (tabId === "maya" && access.isPaidBlueprintOnly) {
+      toast({
+        title: "Upgrade Required",
+        description: "Maya is available with Studio Membership. Upgrade to unlock all features.",
+        variant: "default",
+      })
+      return // Don't change tab
+    }
+    
     setActiveTab(tabId)
     // Update URL without triggering a page reload
     window.history.pushState(null, "", `#${tabId}`)
@@ -612,11 +632,6 @@ export default function SselfieApp({
       setIsLoggingOut(false)
     }
   }
-
-  const access = getAccessState({
-    credits: creditBalance,
-    subscriptionStatus,
-  })
 
   const activeUpgrade = upgradeOpportunities.find((op) => !dismissedUpgradeTypes.has(op.type))
   const shouldShowUpgradeBanner =
@@ -930,7 +945,7 @@ export default function SselfieApp({
 
             <AnimatePresence mode="wait">
               {activeTab === "maya" &&
-            !access.canUseGenerators ? (
+            (!access.canUseGenerators || access.isPaidBlueprintOnly) ? (
                 <motion.div
                   key="upgrade-or-credits"
                   initial={{ opacity: 0 }}
@@ -940,6 +955,7 @@ export default function SselfieApp({
                 >
               <UpgradeOrCredits
                     feature={activeTab === "maya" ? "Maya" : "Training"}
+                    isPaidBlueprintUser={access.isPaidBlueprintOnly}
               />
                 </motion.div>
               ) : (
@@ -968,8 +984,8 @@ export default function SselfieApp({
                 )}
                 {activeTab === "feed-planner" && <FeedPlannerClient userId={userId.toString()} userName={userName} />}
                 {activeTab === "academy" && (
-                  !access.canUseGenerators ? (
-                    <UpgradeOrCredits feature="Academy" />
+                  (!access.canUseGenerators || access.isPaidBlueprintOnly) ? (
+                    <UpgradeOrCredits feature="Academy" isPaidBlueprintUser={access.isPaidBlueprintOnly} />
                   ) : (
                     <AcademyScreen />
                   )

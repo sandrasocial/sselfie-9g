@@ -7,9 +7,13 @@ import BuyCreditsModal from "@/components/sselfie/buy-credits-modal"
 
 interface UpgradeOrCreditsProps {
   feature?: string
+  isPaidBlueprintUser?: boolean
 }
 
-export function UpgradeOrCredits({ feature = "Studio" }: UpgradeOrCreditsProps) {
+export function UpgradeOrCredits({ 
+  feature = "Studio",
+  isPaidBlueprintUser = false,
+}: UpgradeOrCreditsProps) {
   const [showBuyCredits, setShowBuyCredits] = useState(false)
 
   const handleUpgrade = () => {
@@ -19,6 +23,15 @@ export function UpgradeOrCredits({ feature = "Studio" }: UpgradeOrCreditsProps) 
   const handleBuyCredits = () => {
     setShowBuyCredits(true)
   }
+
+  // Update title/message based on user type
+  const title = isPaidBlueprintUser 
+    ? "UPGRADE TO MEMBERSHIP" 
+    : "OUT OF CREDITS"
+  
+  const message = isPaidBlueprintUser
+    ? `You have access to Feed Planner. Upgrade to Studio Membership to unlock ${feature} and all features.`
+    : `You need credits to use ${feature}. Choose an option below to continue creating.`
 
   return (
     <>
@@ -30,10 +43,10 @@ export function UpgradeOrCredits({ feature = "Studio" }: UpgradeOrCreditsProps) 
 
           <div className="space-y-2">
             <h2 className="font-serif text-3xl font-extralight tracking-[0.2em] uppercase text-stone-900">
-              OUT OF CREDITS
+              {title}
             </h2>
             <p className="text-stone-600 font-light text-sm leading-relaxed">
-              You need credits to use {feature}. Choose an option below to continue creating.
+              {message}
             </p>
           </div>
 

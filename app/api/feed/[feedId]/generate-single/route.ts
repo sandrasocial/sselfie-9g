@@ -160,12 +160,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
     }
 
     // Check generation mode (Pro Mode vs Classic Mode)
-    // Free users should always use Pro Mode (Nano Banana Pro) - no trained model required
-    // Default to 'pro' if not set (for free users)
+    // Free users and paid blueprint users should ALWAYS use Pro Mode (Nano Banana Pro) - no trained model required
+    // Membership users use Classic Mode (custom flux trained models)
+    // Force Pro Mode for free and paid blueprint users, regardless of post.generation_mode
     // Access was already fetched above, reuse it
-    const generationMode = post.generation_mode || (access.isFree ? 'pro' : 'classic')
+    const generationMode = (access.isFree || access.isPaidBlueprint) ? 'pro' : (post.generation_mode || 'classic')
     const proModeType = post.pro_mode_type || null
-    console.log("[v0] [GENERATE-SINGLE] Post generation mode:", { generationMode, proModeType, isFree: access.isFree, postGenerationMode: post.generation_mode })
+    console.log("[v0] [GENERATE-SINGLE] Post generation mode:", { generationMode, proModeType, isFree: access.isFree, isPaidBlueprint: access.isPaidBlueprint, postGenerationMode: post.generation_mode })
 
     // Check credits based on generation mode (Pro Mode = 2 credits, Classic = 1 credit)
     const creditsNeeded = generationMode === 'pro' ? getStudioProCreditCost('2K') : CREDIT_COSTS.IMAGE
@@ -270,59 +271,83 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
         LIMIT 1
       `
       
-      // Use stored prompt from feed creation (should already be a template prompt from grid library)
-      // Template prompts are generated during feed creation using getBlueprintPhotoshootPrompt (same as old blueprint)
+      // Use stored prompt if available
+      // For free users: template prompts from blueprint library
+      // For paid blueprint users: Maya prompt builder (same as membership Pro Mode)
       let finalPrompt = post.prompt
       
       if (!finalPrompt || finalPrompt.trim().length < 20) {
-        // Prompt missing - get it from blueprint_subscribers using template library (same as old blueprint)
-        console.log(`[v0] [GENERATE-SINGLE] ⚠️ Pro Mode post ${post.position} missing prompt. Getting from template library...`)
+        // Prompt missing - generate based on user type
+        console.log(`[v0] [GENERATE-SINGLE] ⚠️ Pro Mode post ${post.position} missing prompt. Generating based on user type...`)
         
         try {
-          // Get wizard context from blueprint_subscribers (same as old blueprint)
-          const blueprintSubscriber = await sql`
-            SELECT form_data, feed_style
-            FROM blueprint_subscribers
-            WHERE user_id = ${user.id}
-            LIMIT 1
-          ` as any[]
-          
-          if (blueprintSubscriber.length > 0) {
-            const formData = blueprintSubscriber[0].form_data || {}
-            const feedStyle = blueprintSubscriber[0].feed_style || null
+          if (access.isFree) {
+            // Free users: Use blueprint templates (same as old blueprint)
+            console.log(`[v0] [GENERATE-SINGLE] Free user - using blueprint template library...`)
             
-            // Get category from form_data.vibe (same as old blueprint)
-            const category = (formData.vibe || "professional") as "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"
-            // Get mood from feed_style (same as old blueprint)
-            const mood = (feedStyle || "minimal") as "luxury" | "minimal" | "beige"
+            const blueprintSubscriber = await sql`
+              SELECT form_data, feed_style
+              FROM blueprint_subscribers
+              WHERE user_id = ${user.id}
+              LIMIT 1
+            ` as any[]
             
-            // Get template prompt from grid library (same as old blueprint)
-            const { getBlueprintPhotoshootPrompt } = await import("@/lib/maya/blueprint-photoshoot-templates")
-            finalPrompt = getBlueprintPhotoshootPrompt(category, mood)
-            console.log(`[v0] [GENERATE-SINGLE] ✅ Using template prompt from grid library: ${category}_${mood} (${finalPrompt.split(/\s+/).length} words)`)
-            
-            // Save the template prompt to the database for future use
-            await sql`
-              UPDATE feed_posts
-              SET prompt = ${finalPrompt}
-              WHERE id = ${postId}
-            `
+            if (blueprintSubscriber.length > 0) {
+              const formData = blueprintSubscriber[0].form_data || {}
+              const feedStyle = blueprintSubscriber[0].feed_style || null
+              
+              // Get category from form_data.vibe (same as old blueprint)
+              const category = (formData.vibe || "professional") as "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"
+              // Get mood from feed_style (same as old blueprint)
+              const mood = (feedStyle || "minimal") as "luxury" | "minimal" | "beige"
+              
+              // Get template prompt from grid library (same as old blueprint)
+              const { getBlueprintPhotoshootPrompt } = await import("@/lib/maya/blueprint-photoshoot-templates")
+              finalPrompt = getBlueprintPhotoshootPrompt(category, mood)
+              console.log(`[v0] [GENERATE-SINGLE] ✅ Using blueprint template prompt: ${category}_${mood} (${finalPrompt.split(/\s+/).length} words)`)
+              
+              // Save the template prompt to the database for future use
+              await sql`
+                UPDATE feed_posts
+                SET prompt = ${finalPrompt}
+                WHERE id = ${postId}
+              `
+            } else {
+              // No blueprint_subscribers data - fallback to simple prompt
+              console.log(`[v0] [GENERATE-SINGLE] ⚠️ No blueprint_subscribers data found. Using simple prompt...`)
+              finalPrompt = post.content_pillar || `Feed post ${post.position}`
+            }
           } else {
-            // No blueprint_subscribers data - fall back to Nano Banana builder (for backward compatibility)
-            console.log(`[v0] [GENERATE-SINGLE] ⚠️ No blueprint_subscribers data found. Falling back to Nano Banana builder...`)
+            // Paid blueprint users: Use Maya prompt builder (same as membership Pro Mode)
+            console.log(`[v0] [GENERATE-SINGLE] Paid blueprint user - using Maya prompt builder (Nano Banana)...`)
             const { buildNanoBananaPrompt } = await import("@/lib/maya/nano-banana-prompt-builder")
             
             const promptResult = await buildNanoBananaPrompt({
               userId: user.id.toString(),
-              mode: 'brand-scene',
-              userRequest: post.content_pillar || `Feed post ${post.position} - authentic Instagram-style selfie with natural lighting`,
+              mode: (proModeType as any) || 'brand-scene',
+              userRequest: post.content_pillar || post.caption || `Feed post ${post.position} - authentic Instagram-style content`,
               inputImages: {
                 baseImages: baseImages,
+                productImages: [],
+                textElements: post.post_type === 'quote' ? [{
+                  text: post.caption || '',
+                  style: 'quote' as const,
+                }] : undefined,
               },
+              workflowMeta: {
+                platformFormat: '4:5', // Instagram portrait format
+              },
+              brandKit: brandKit ? {
+                primaryColor: brandKit.primary_color,
+                secondaryColor: brandKit.secondary_color,
+                accentColor: brandKit.accent_color,
+                fontStyle: brandKit.font_style,
+                brandTone: brandKit.brand_tone,
+              } : undefined,
             })
             
             finalPrompt = promptResult.optimizedPrompt
-            console.log(`[v0] [GENERATE-SINGLE] ✅ Generated Nano Banana prompt as fallback (${finalPrompt.split(/\s+/).length} words)`)
+            console.log(`[v0] [GENERATE-SINGLE] ✅ Generated Maya prompt for paid blueprint (${finalPrompt.split(/\s+/).length} words)`)
             
             // Save the generated prompt to the database for future use
             await sql`
@@ -332,12 +357,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
             `
           }
         } catch (promptError) {
-          console.error(`[v0] [GENERATE-SINGLE] Error getting template prompt:`, promptError)
+          console.error(`[v0] [GENERATE-SINGLE] Error generating prompt:`, promptError)
           // Fallback to simple prompt
           finalPrompt = post.content_pillar || `Feed post ${post.position}`
         }
       } else {
-        console.log(`[v0] [GENERATE-SINGLE] ✅ Using pre-generated template prompt from feed creation (${finalPrompt.split(/\s+/).length} words)`)
+        console.log(`[v0] [GENERATE-SINGLE] ✅ Using pre-generated prompt (${finalPrompt.split(/\s+/).length} words)`)
       }
       
       // Generate with Nano Banana Pro

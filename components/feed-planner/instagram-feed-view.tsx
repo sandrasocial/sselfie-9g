@@ -433,20 +433,28 @@ export default function InstagramFeedView({ feedId, onBack, access, onOpenWizard
      ))
   
   // For manual feeds, show grid even if not complete (allow adding images)
-  // For Maya feeds, show loading overlay while actively generating
+  // For Maya feeds, show loading overlay while actively generating (bulk generation only)
   const hasGeneratingPosts = postStatuses.some((p: any) => p.isGenerating)
   const isMayaProcessing = feedData?.feed?.status === 'processing' || 
                           feedData?.feed?.status === 'queueing' ||
                           feedData?.feed?.status === 'generating'
   
-  // NEVER show loading overlay for manual feeds or free users (single placeholder)
-  // Only show for Maya feeds that are actively generating (full grid, paid users)
-  // Must have feed data (not just loading) to determine if it's generating
+  // Simple rule: Show overlay ONLY for bulk generation (all 9 images at once)
+  // Bulk generation = feed status is 'processing'/'queueing'/'generating' (Maya is setting up the feed)
+  // Single image generation = feed status is NOT processing, only individual posts have prediction_id
+  // NEVER show for:
+  // - Manual feeds (they always show grid)
+  // - Free users (single placeholder)
+  // - Single image generation (show grid with inline loading instead)
+  const generatingPostsCount = postStatuses.filter((p: any) => p.isGenerating).length
+  const isBulkGeneration = isMayaProcessing // Feed is in bulk setup phase
+  const isSingleImageGeneration = hasGeneratingPosts && !isMayaProcessing && generatingPostsCount <= 3 // Few posts generating, not bulk
+  
   const shouldShowLoadingOverlay = !isManualFeed && 
                                    access?.placeholderType !== "single" && // Never show for free users (single placeholder)
-                                   !isFeedComplete && 
                                    feedData?.feed && // Must have feed data
-                                   (hasGeneratingPosts || isMayaProcessing)
+                                   isBulkGeneration && // ONLY show for bulk generation (Maya feed setup)
+                                   !isFeedComplete // Hide when all complete
   
   // Overall progress (combines processing + image generation)
   const overallProgress = isProcessing 
@@ -537,7 +545,7 @@ export default function InstagramFeedView({ feedId, onBack, access, onOpenWizard
                   access={access} // Phase 5.1: Pass access control for image generation
                   onPostClick={setSelectedPost}
                   onAddImage={setShowGallery}
-                  onGenerateImage={mutate} // Phase 5.1: Refresh feed data after generation
+                  onGenerateImage={async (postId: number) => await mutate()} // Phase 5.1: Refresh feed data after generation
                   onDragStart={dragDrop.handleDragStart}
                   onDragOver={dragDrop.handleDragOver}
                   onDragEnd={dragDrop.handleDragEnd}

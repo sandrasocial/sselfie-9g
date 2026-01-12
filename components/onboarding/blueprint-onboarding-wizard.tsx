@@ -9,6 +9,7 @@ import { X } from "lucide-react"
 import { DesignClasses, ComponentClasses } from "@/lib/design-tokens"
 import Image from "next/image"
 import { BlueprintSelfieUpload } from "@/components/blueprint/blueprint-selfie-upload"
+import useSWR from "swr"
 
 interface BlueprintOnboardingWizardProps {
   isOpen: boolean
@@ -165,6 +166,38 @@ export default function BlueprintOnboardingWizard({
   const [currentStep, setCurrentStep] = useState(savedState.currentStep)
   const [formData, setFormData] = useState(savedState.formData)
   const [isSaving, setIsSaving] = useState(false)
+
+  // Fetch images from API on mount (same as Maya chat Pro Mode)
+  // This ensures images persist on page reload, not just localStorage
+  const fetcher = (url: string) => fetch(url).then((res) => res.json())
+  const { data: avatarImagesData } = useSWR("/api/images?type=avatar", fetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 60000,
+  })
+
+  // Load images from API on mount (merge with existing data)
+  // Only run once when avatarImagesData loads
+  useEffect(() => {
+    if (avatarImagesData?.images && Array.isArray(avatarImagesData.images)) {
+      const apiImageUrls = avatarImagesData.images.map((img: any) => img.image_url).filter(Boolean)
+      if (apiImageUrls.length > 0) {
+        setFormData((prev) => {
+          // Merge API images with existing data (API takes precedence)
+          const mergedImages = [...new Set([...apiImageUrls, ...(prev.selfieImages || [])])]
+          // Only update if images changed
+          if (mergedImages.length !== prev.selfieImages?.length || 
+              !mergedImages.every((url, i) => url === prev.selfieImages?.[i])) {
+            return {
+              ...prev,
+              selfieImages: mergedImages,
+            }
+          }
+          return prev
+        })
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [avatarImagesData])
 
   // Save state to localStorage whenever formData or currentStep changes
   useEffect(() => {

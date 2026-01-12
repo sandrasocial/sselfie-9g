@@ -287,7 +287,7 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-lg max-w-[470px] mx-auto">
+    <div className="bg-white rounded-xl border border-stone-200 overflow-hidden shadow-md max-w-[470px] mx-auto">
       {/* Instagram Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-stone-100">
         <div className="flex items-center gap-3">

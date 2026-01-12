@@ -103,7 +103,21 @@ export async function POST(req: NextRequest) {
       currentSelfieHabits,
     }
 
-    // Step 1: Save base wizard data to user_personal_brand (for hasBaseWizardData check)
+    // Build comprehensive context for Maya from blueprint wizard
+    // Combine photo-related fields into photo_goals for Maya context
+    const photoGoalsParts: string[] = []
+    if (lightingKnowledge) photoGoalsParts.push(`Lighting knowledge: ${lightingKnowledge}`)
+    if (angleAwareness) photoGoalsParts.push(`Angle awareness: ${angleAwareness}`)
+    if (currentSelfieHabits) photoGoalsParts.push(`Current selfie habits: ${currentSelfieHabits}`)
+    const photoGoals = photoGoalsParts.length > 0 ? photoGoalsParts.join("; ") : null
+
+    // Combine style-related fields into style_preferences for Maya context
+    const stylePreferencesParts: string[] = []
+    if (editingStyle) stylePreferencesParts.push(`Editing style: ${editingStyle}`)
+    if (consistencyLevel) stylePreferencesParts.push(`Consistency level: ${consistencyLevel}`)
+    const stylePreferences = stylePreferencesParts.length > 0 ? stylePreferencesParts.join("; ") : null
+
+    // Step 1: Save ALL blueprint wizard data to user_personal_brand for Maya context
     const existingBrand = await sql`
       SELECT id FROM user_personal_brand
       WHERE user_id = ${neonUser.id}
@@ -111,19 +125,24 @@ export async function POST(req: NextRequest) {
     `
 
     if (existingBrand.length > 0) {
-      // Update existing user_personal_brand record with base wizard data
+      // Update existing user_personal_brand record with ALL blueprint wizard data
+      // This ensures Maya has access to the complete blueprint wizard context
       await sql`
         UPDATE user_personal_brand
         SET
           business_type = ${business || null},
           target_audience = ${dreamClient || null},
           brand_vibe = ${vibe || null},
-          visual_aesthetic = ${vibe || null},
+          visual_aesthetic = ${vibe ? JSON.stringify([vibe]) : null},
+          settings_preference = ${feedStyle ? JSON.stringify([feedStyle]) : null},
+          photo_goals = ${photoGoals || null},
+          style_preferences = ${stylePreferences || null},
           updated_at = NOW()
         WHERE user_id = ${neonUser.id}
       `
     } else {
-      // Create new user_personal_brand record with base wizard data
+      // Create new user_personal_brand record with ALL blueprint wizard data
+      // This ensures Maya has access to the complete blueprint wizard context
       await sql`
         INSERT INTO user_personal_brand (
           user_id,
@@ -131,6 +150,9 @@ export async function POST(req: NextRequest) {
           target_audience,
           brand_vibe,
           visual_aesthetic,
+          settings_preference,
+          photo_goals,
+          style_preferences,
           created_at,
           updated_at
         )
@@ -139,7 +161,10 @@ export async function POST(req: NextRequest) {
           ${business || null},
           ${dreamClient || null},
           ${vibe || null},
-          ${vibe || null},
+          ${vibe ? JSON.stringify([vibe]) : null},
+          ${feedStyle ? JSON.stringify([feedStyle]) : null},
+          ${photoGoals || null},
+          ${stylePreferences || null},
           NOW(),
           NOW()
         )

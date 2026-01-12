@@ -217,11 +217,11 @@ export default function LandingPageNew() {
               </a>
               <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "center" }}>
                 <a
-                  href="/feed-planner"
+                  href="/auth/sign-up"
                   onClick={(e) => {
                     e.preventDefault()
-                    trackCTAClick("hero", "Try it for free", "/feed-planner")
-                    window.location.href = "/feed-planner"
+                    trackCTAClick("hero", "Try it for free", "/auth/sign-up")
+                    window.location.href = "/auth/sign-up"
                   }}
                   className="btn shadow-xl"
                   style={{ 

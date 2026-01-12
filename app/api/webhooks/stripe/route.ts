@@ -1043,7 +1043,7 @@ export async function POST(request: NextRequest) {
                 }
               }
               
-              // Decision 1: Grant 60 credits for paid blueprint purchase (30 grids × 2 credits)
+              // Decision 1: Grant 60 credits for paid blueprint purchase (30 images × 2 credits per image)
               // Fix #2: Resolve user_id (priority: session metadata, then email lookup)
               let userId: string | null = session.metadata?.user_id || null
               
@@ -1104,7 +1104,7 @@ export async function POST(request: NextRequest) {
                       // Grant credits (not already granted)
                       const creditResult = await grantPaidBlueprintCredits(userId, paymentIdForCredits, isTestMode)
                       if (creditResult.success) {
-                        console.log(`[v0] ✅ Granted 60 credits for paid blueprint purchase to user ${userId}`)
+                        console.log(`[v0] ✅ Granted 60 credits for paid blueprint purchase to user ${userId} (30 images × 2 credits per image)`)
                       } else {
                         console.error(`[v0] ⚠️ Failed to grant paid blueprint credits: ${creditResult.error}`)
                       }
@@ -1143,26 +1143,43 @@ export async function POST(request: NextRequest) {
                   
                   if (existingSubscription.length === 0) {
                     // Create subscription entry for paid blueprint
-                    await sql`
-                      INSERT INTO subscriptions (
-                        user_id,
-                        product_type,
-                        status,
-                        stripe_customer_id,
-                        created_at,
-                        updated_at
-                      )
-                      VALUES (
-                        ${userId},
-                        'paid_blueprint',
-                        'active',
-                        ${customerId || null},
-                        NOW(),
-                        NOW()
-                      )
-                      ON CONFLICT DO NOTHING
-                    `
-                    console.log(`[v0] ✅ Created paid_blueprint subscription entry for user ${userId}`)
+                    try {
+                      await sql`
+                        INSERT INTO subscriptions (
+                          user_id,
+                          product_type,
+                          plan,
+                          status,
+                          stripe_customer_id,
+                          created_at,
+                          updated_at
+                        )
+                        VALUES (
+                          ${userId},
+                          'paid_blueprint',
+                          'paid_blueprint',
+                          'active',
+                          ${customerId || null},
+                          NOW(),
+                          NOW()
+                        )
+                      `
+                      console.log(`[v0] ✅ Created paid_blueprint subscription entry for user ${userId}`)
+                    } catch (insertError: any) {
+                      // Log the full error for debugging
+                      console.error(`[v0] ⚠️ Error inserting subscription for user ${userId}:`, {
+                        code: insertError.code,
+                        message: insertError.message,
+                        detail: insertError.detail,
+                        constraint: insertError.constraint,
+                      })
+                      // If subscription already exists (race condition), that's OK
+                      if (insertError.code === '23505' || insertError.message?.includes('unique constraint')) {
+                        console.log(`[v0] ⏭️ Subscription already exists for user ${userId} (race condition) - skipping`)
+                      } else {
+                        throw insertError // Re-throw other errors to be caught by outer catch
+                      }
+                    }
                   } else {
                     console.log(`[v0] ⏭️ Subscription already exists for user ${userId} - skipping (idempotency)`)
                   }

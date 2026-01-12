@@ -1,17 +1,31 @@
 export function getAccessState({
   credits,
   subscriptionStatus,
+  productType,
 }: {
   credits: number
   subscriptionStatus: string | null
+  productType?: string | null
 }) {
   const isMember = subscriptionStatus === "active" || subscriptionStatus === "trialing"
+  const isPaidBlueprintOnly = isMember && productType === "paid_blueprint"
+  const isMembership = isMember && productType === "sselfie_studio_membership"
 
-  if (isMember) {
+  if (isMembership) {
     return {
       isMember: true,
-      canUseGenerators: true,
+      canUseGenerators: true, // Membership = full access
       showUpgradeUI: false,
+      isPaidBlueprintOnly: false,
+    }
+  }
+
+  if (isPaidBlueprintOnly) {
+    return {
+      isMember: false, // Not a "member" in the traditional sense
+      canUseGenerators: false, // Paid blueprint = Feed Planner only
+      showUpgradeUI: true, // Show upgrade to membership
+      isPaidBlueprintOnly: true,
     }
   }
 
@@ -22,5 +36,6 @@ export function getAccessState({
     isMember: false,
     canUseGenerators: false,
     showUpgradeUI: true,
+    isPaidBlueprintOnly: false,
   }
 }
