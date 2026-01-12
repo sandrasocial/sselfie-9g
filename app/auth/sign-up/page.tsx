@@ -116,45 +116,44 @@ export default function SignUpPage() {
 
       if (signUpError) throw signUpError
 
-      // Auto-confirm email (like paid users) - no email waiting required
-      // Use user ID from signup response if available (more efficient)
+      // Check if user was already confirmed (Supabase may auto-confirm if configured)
       const userId = signUpData.user?.id
-      console.log("[Sign Up] Auto-confirming email for:", email, userId ? `(userId: ${userId})` : "")
-      const confirmResponse = await fetch("/api/auth/auto-confirm", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, userId }),
-      })
+      const isAlreadyConfirmed = signUpData.user?.email_confirmed_at !== null
 
-      if (!confirmResponse.ok) {
-        const confirmError = await confirmResponse.json()
-        console.error("[Sign Up] Auto-confirm error:", confirmError)
-        // Don't throw - user was created, just email not confirmed yet
-        // They can still click email confirmation link if needed
-      } else {
-        console.log("[Sign Up] ✅ Email auto-confirmed, signing in...")
+      if (isAlreadyConfirmed) {
+        console.log("[Sign Up] ✅ User already confirmed, signing in...")
+      } else if (userId) {
+        // Auto-confirm email for free signups - simple server action
+        console.log("[Sign Up] Auto-confirming email for:", email)
+        const { autoConfirmUser } = await import("@/app/actions/auto-confirm-user")
+        const confirmResult = await autoConfirmUser(email, userId)
         
-        // Sign in immediately since email is confirmed
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        })
-
-        if (!signInError && signInData.session) {
-          // Success! Redirect to Studio with feed planner tab for new users
-          // Credits will be granted on Studio page load via middleware/API check
-          const urlParams = new URLSearchParams(window.location.search)
-          const nextParam = urlParams.get("next") || "/studio?tab=feed-planner"
-          console.log("[Sign Up] ✅ Signed in successfully, redirecting to:", nextParam)
-          router.push(nextParam)
-          return
+        if (!confirmResult.success) {
+          console.warn("[Sign Up] Auto-confirm failed:", confirmResult.error)
+          // Don't throw - user was created, they can confirm via email link if needed
         } else {
-          console.error("[Sign Up] Sign in error:", signInError)
-          // Fall through to sign-up-success page
+          console.log("[Sign Up] ✅ Email auto-confirmed")
         }
       }
 
-      // Fallback: Redirect to success page (user can click email confirmation if auto-confirm failed)
+      // Sign in immediately (works if email is confirmed)
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (!signInError && signInData.session) {
+        // Success! Redirect to Studio with feed planner tab for new users
+        const urlParams = new URLSearchParams(window.location.search)
+        const nextParam = urlParams.get("next") || "/studio?tab=feed-planner"
+        console.log("[Sign Up] ✅ Signed in successfully, redirecting to:", nextParam)
+        router.push(nextParam)
+        return
+      }
+
+      // If sign-in failed (email not confirmed), redirect to success page
+      // User can click email confirmation link if needed
+      console.log("[Sign Up] Sign in failed, redirecting to success page:", signInError?.message)
       router.push("/auth/sign-up-success")
     } catch (error: unknown) {
       console.error("[Sign Up] Error:", error)

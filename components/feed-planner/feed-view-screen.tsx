@@ -98,6 +98,61 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
     }
   }, [effectiveFeedId, mutateFeedList])
 
+  // FIX 2: Client-side fallback - Expand feed from 1 post to 9 posts for paid users
+  const [isExpandingFeed, setIsExpandingFeed] = useState(false)
+  useEffect(() => {
+    async function expandFeedIfNeeded() {
+      // Only expand if:
+      // 1. User is paid blueprint
+      // 2. Feed exists and has data
+      // 3. Feed has only 1 post (free tier)
+      // 4. Not already expanding
+      if (
+        access?.isPaidBlueprint &&
+        feedData?.feed &&
+        feedData?.posts &&
+        feedData.posts.length === 1 &&
+        !isExpandingFeed
+      ) {
+        setIsExpandingFeed(true)
+        console.log('[FEED EXPANSION] Paid user has only 1 post, expanding...')
+
+        try {
+          const response = await fetch('/api/feed/expand-for-paid', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              feedId: feedData.feed.id,
+            }),
+          })
+
+          if (response.ok) {
+            const result = await response.json()
+            console.log('[FEED EXPANSION] Created positions:', result.positionsCreated)
+
+            // Refresh feed data to show new posts
+            if (mutateFeedList) {
+              await mutateFeedList()
+            }
+            // Trigger SWR revalidation
+            window.location.reload()
+          } else {
+            console.error('[FEED EXPANSION] Failed to expand feed')
+          }
+        } catch (error) {
+          console.error('[FEED EXPANSION] Error:', error)
+        } finally {
+          setIsExpandingFeed(false)
+        }
+      }
+    }
+
+    // Only run if we have all required data
+    if (access && feedData && !isLoading) {
+      expandFeedIfNeeded()
+    }
+  }, [access?.isPaidBlueprint, feedData?.posts, feedData?.feed, isLoading, isExpandingFeed, mutateFeedList])
+
   const feeds = feedListData?.feeds || []
   const hasMultipleFeeds = feeds.length > 1
 

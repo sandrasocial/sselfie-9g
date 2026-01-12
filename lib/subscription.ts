@@ -119,6 +119,9 @@ export async function hasAcademyAccess(userId: string): Promise<boolean> {
  * Check if user has paid blueprint entitlement
  * Paid blueprint is a one-time purchase (not a subscription)
  * Admin users automatically have paid blueprint access
+ * 
+ * FIX 2: Check blueprint_subscribers.paid_blueprint_purchased (primary source)
+ * Also check subscriptions table for backward compatibility
  */
 export async function hasPaidBlueprint(userId: string): Promise<boolean> {
   try {
@@ -135,10 +138,86 @@ export async function hasPaidBlueprint(userId: string): Promise<boolean> {
       return true
     }
     
+    // PRIMARY SOURCE: Check blueprint_subscribers table (one-time purchase)
+    console.log(`[v0] [hasPaidBlueprint] Querying blueprint_subscribers for user_id: ${userId}`)
+    const blueprintSubscriber = await sql`
+      SELECT paid_blueprint_purchased, user_id, email
+      FROM blueprint_subscribers
+      WHERE user_id = ${userId}
+      LIMIT 1
+    `
+    
+    console.log(`[v0] [hasPaidBlueprint] blueprint_subscribers query result:`, {
+      found: blueprintSubscriber.length > 0,
+      recordCount: blueprintSubscriber.length,
+      paid_blueprint_purchased: blueprintSubscriber.length > 0 ? blueprintSubscriber[0].paid_blueprint_purchased : null,
+      user_id: blueprintSubscriber.length > 0 ? blueprintSubscriber[0].user_id : null,
+      email: blueprintSubscriber.length > 0 ? blueprintSubscriber[0].email : null,
+    })
+    
+    if (blueprintSubscriber.length > 0 && blueprintSubscriber[0].paid_blueprint_purchased === true) {
+      console.log(`[v0] [hasPaidBlueprint] ✅ Found paid blueprint purchase in blueprint_subscribers`)
+      return true
+    }
+    
+    if (blueprintSubscriber.length > 0) {
+      console.log(`[v0] [hasPaidBlueprint] ⚠️ blueprint_subscribers record exists but paid_blueprint_purchased = ${blueprintSubscriber[0].paid_blueprint_purchased}`)
+    } else {
+      console.log(`[v0] [hasPaidBlueprint] ⚠️ No blueprint_subscribers record found for user_id: ${userId}`)
+      
+      // FALLBACK: Try to find by email (in case record was created before user_id was linked)
+      try {
+        const userEmail = await sql`
+          SELECT email FROM users WHERE id = ${userId} LIMIT 1
+        `
+        
+        if (userEmail.length > 0 && userEmail[0].email) {
+          console.log(`[v0] [hasPaidBlueprint] Trying email fallback: ${userEmail[0].email}`)
+          const blueprintByEmail = await sql`
+            SELECT paid_blueprint_purchased, user_id, email
+            FROM blueprint_subscribers
+            WHERE LOWER(email) = LOWER(${userEmail[0].email})
+            AND paid_blueprint_purchased = TRUE
+            LIMIT 1
+          `
+          
+          console.log(`[v0] [hasPaidBlueprint] Email fallback result:`, {
+            found: blueprintByEmail.length > 0,
+            paid_blueprint_purchased: blueprintByEmail.length > 0 ? blueprintByEmail[0].paid_blueprint_purchased : null,
+            user_id: blueprintByEmail.length > 0 ? blueprintByEmail[0].user_id : null,
+          })
+          
+          if (blueprintByEmail.length > 0 && blueprintByEmail[0].paid_blueprint_purchased === true) {
+            // Update the record to link user_id if it's missing
+            if (!blueprintByEmail[0].user_id) {
+              console.log(`[v0] [hasPaidBlueprint] 🔗 Linking blueprint_subscribers record to user_id: ${userId}`)
+              await sql`
+                UPDATE blueprint_subscribers
+                SET user_id = ${userId}, updated_at = NOW()
+                WHERE LOWER(email) = LOWER(${userEmail[0].email})
+                AND paid_blueprint_purchased = TRUE
+              `
+            }
+            console.log(`[v0] [hasPaidBlueprint] ✅ Found paid blueprint purchase by email fallback`)
+            return true
+          }
+        }
+      } catch (emailError: any) {
+        console.error(`[v0] [hasPaidBlueprint] Error in email fallback:`, emailError.message)
+      }
+    }
+    
+    // FALLBACK: Check subscriptions table (for backward compatibility)
     const subscription = await getUserSubscription(userId)
     const hasAccess = subscription?.product_type === "paid_blueprint" && subscription?.status === "active"
-    console.log(`[v0] [hasPaidBlueprint] Result: ${hasAccess}`)
-    return hasAccess
+    
+    if (hasAccess) {
+      console.log(`[v0] [hasPaidBlueprint] ✅ Found paid blueprint in subscriptions table (legacy)`)
+      return true
+    }
+    
+    console.log(`[v0] [hasPaidBlueprint] ❌ No paid blueprint found`)
+    return false
   } catch (error) {
     console.error("[v0] [hasPaidBlueprint] Error checking paid blueprint:", error)
     return false

@@ -1218,6 +1218,77 @@ export async function POST(request: NextRequest) {
                       WHERE user_id = ${userId}
                     `
                     console.log(`[v0] ✅ Updated blueprint_subscribers with paid blueprint purchase for user ${userId}`)
+                    
+                    // FIX 2: Expand user's feed from 1 post to 9 posts (free → paid upgrade)
+                    try {
+                      console.log(`[v0] [FEED EXPANSION] Expanding feed for paid user ${userId}...`)
+                      
+                      // Get user's latest feed
+                      const userFeed = await sql`
+                        SELECT id, user_id
+                        FROM feed_layouts
+                        WHERE user_id = ${userId}
+                        ORDER BY created_at DESC
+                        LIMIT 1
+                      `
+                      
+                      if (userFeed && userFeed.length > 0) {
+                        const feedId = userFeed[0].id
+                        
+                        // Check current post count
+                        const existingPosts = await sql`
+                          SELECT position
+                          FROM feed_posts
+                          WHERE feed_layout_id = ${feedId}
+                          ORDER BY position ASC
+                        `
+                        
+                        const existingPositions = existingPosts.map((p: any) => p.position)
+                        console.log(`[v0] [FEED EXPANSION] Feed ${feedId} has posts at positions:`, existingPositions)
+                        
+                        // Create posts for missing positions 2-9
+                        const positionsToCreate = [2, 3, 4, 5, 6, 7, 8, 9].filter(
+                          (pos) => !existingPositions.includes(pos)
+                        )
+                        
+                        if (positionsToCreate.length > 0) {
+                          console.log(`[v0] [FEED EXPANSION] Creating posts for positions:`, positionsToCreate)
+                          
+                          for (const position of positionsToCreate) {
+                            await sql`
+                              INSERT INTO feed_posts (
+                                feed_layout_id,
+                                user_id,
+                                position,
+                                post_type,
+                                generation_status,
+                                generation_mode,
+                                created_at,
+                                updated_at
+                              ) VALUES (
+                                ${feedId},
+                                ${userId},
+                                ${position},
+                                'photo',
+                                'pending',
+                                'pro',
+                                NOW(),
+                                NOW()
+                              )
+                            `
+                          }
+                          
+                          console.log(`[v0] [FEED EXPANSION] ✅ Created ${positionsToCreate.length} new posts for paid user`)
+                        } else {
+                          console.log(`[v0] [FEED EXPANSION] Feed already has all 9 positions`)
+                        }
+                      } else {
+                        console.log(`[v0] [FEED EXPANSION] No feed found for user ${userId} (will be created on first access)`)
+                      }
+                    } catch (error) {
+                      console.error('[v0] [FEED EXPANSION] ❌ Error expanding feed:', error)
+                      // Don't fail webhook if expansion fails - user can still access feed
+                    }
                   } else {
                     // No blueprint_subscribers record - create one linked to user_id
                     const customerName = session.customer_details?.name || customerEmail?.split("@")[0] || "User"
@@ -1250,6 +1321,77 @@ export async function POST(request: NextRequest) {
                       )
                     `
                     console.log(`[v0] ✅ Created blueprint_subscribers record linked to user ${userId}`)
+                  }
+                  
+                  // FIX 2: Expand user's feed from 1 post to 9 posts (free → paid upgrade)
+                  try {
+                    console.log(`[v0] [FEED EXPANSION] Expanding feed for paid user ${userId}...`)
+                    
+                    // Get user's latest feed
+                    const userFeed = await sql`
+                      SELECT id, user_id
+                      FROM feed_layouts
+                      WHERE user_id = ${userId}
+                      ORDER BY created_at DESC
+                      LIMIT 1
+                    `
+                    
+                    if (userFeed && userFeed.length > 0) {
+                      const feedId = userFeed[0].id
+                      
+                      // Check current post count
+                      const existingPosts = await sql`
+                        SELECT position
+                        FROM feed_posts
+                        WHERE feed_layout_id = ${feedId}
+                        ORDER BY position ASC
+                      `
+                      
+                      const existingPositions = existingPosts.map((p: any) => p.position)
+                      console.log(`[v0] [FEED EXPANSION] Feed ${feedId} has posts at positions:`, existingPositions)
+                      
+                      // Create posts for missing positions 2-9
+                      const positionsToCreate = [2, 3, 4, 5, 6, 7, 8, 9].filter(
+                        (pos) => !existingPositions.includes(pos)
+                      )
+                      
+                      if (positionsToCreate.length > 0) {
+                        console.log(`[v0] [FEED EXPANSION] Creating posts for positions:`, positionsToCreate)
+                        
+                        for (const position of positionsToCreate) {
+                          await sql`
+                            INSERT INTO feed_posts (
+                              feed_layout_id,
+                              user_id,
+                              position,
+                              post_type,
+                              generation_status,
+                              generation_mode,
+                              created_at,
+                              updated_at
+                            ) VALUES (
+                              ${feedId},
+                              ${userId},
+                              ${position},
+                              'photo',
+                              'pending',
+                              'pro',
+                              NOW(),
+                              NOW()
+                            )
+                          `
+                        }
+                        
+                        console.log(`[v0] [FEED EXPANSION] ✅ Created ${positionsToCreate.length} new posts for paid user`)
+                      } else {
+                        console.log(`[v0] [FEED EXPANSION] Feed already has all 9 positions`)
+                      }
+                    } else {
+                      console.log(`[v0] [FEED EXPANSION] No feed found for user ${userId} (will be created on first access)`)
+                    }
+                  } catch (error) {
+                    console.error('[v0] [FEED EXPANSION] ❌ Error expanding feed:', error)
+                    // Don't fail webhook if expansion fails - user can still access feed
                   }
                 } else if (customerEmail) {
                   // Guest checkout: Use email-based lookup (for later migration)

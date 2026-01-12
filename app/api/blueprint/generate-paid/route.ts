@@ -67,6 +67,7 @@ export async function POST(req: NextRequest) {
       SELECT 
         id,
         email,
+        user_id,
         paid_blueprint_purchased,
         paid_blueprint_generated,
         paid_blueprint_photo_urls,
@@ -120,10 +121,45 @@ export async function POST(req: NextRequest) {
     }
 
     // Guard 2: Must have selfies (1-3 images)
-    const selfieUrls = Array.isArray(data.selfie_image_urls) ? data.selfie_image_urls : []
-    const validSelfieUrls = selfieUrls.filter((url: any) => 
-      typeof url === "string" && url.startsWith("http")
-    )
+    // FIX: Fetch selfies from user_avatar_images table (not blueprint_subscribers.selfie_image_urls)
+    let validSelfieUrls: string[] = []
+    
+    // Try to get user_id from blueprint_subscribers, or look up by email
+    let userId: string | null = data.user_id || null
+    
+    if (!userId) {
+      // Fallback: Look up user by email
+      const userByEmail = await sql`
+        SELECT id FROM users WHERE email = ${email} LIMIT 1
+      `
+      userId = userByEmail.length > 0 ? userByEmail[0].id : null
+    }
+    
+    if (userId) {
+      // Fetch selfies from user_avatar_images table
+      const avatarImages = await sql`
+        SELECT image_url
+        FROM user_avatar_images
+        WHERE user_id = ${userId}
+          AND image_type = 'selfie'
+          AND is_active = true
+        ORDER BY display_order ASC, uploaded_at ASC
+        LIMIT 3
+      `
+      validSelfieUrls = avatarImages.map((img: any) => img.image_url).filter((url: string) => 
+        typeof url === "string" && url.startsWith("http")
+      )
+      console.log(`[v0][paid-blueprint] Found ${validSelfieUrls.length} selfies from user_avatar_images for user_id: ${userId}`)
+    } else {
+      // Fallback: Check legacy selfie_image_urls field (for backward compatibility)
+      const legacySelfieUrls = Array.isArray(data.selfie_image_urls) ? data.selfie_image_urls : []
+      validSelfieUrls = legacySelfieUrls.filter((url: any) => 
+        typeof url === "string" && url.startsWith("http")
+      )
+      if (validSelfieUrls.length > 0) {
+        console.log(`[v0][paid-blueprint] Using legacy selfie_image_urls (${validSelfieUrls.length} selfies)`)
+      }
+    }
     
     if (validSelfieUrls.length === 0) {
       console.log("[v0][paid-blueprint] No selfies found:", email.substring(0, 3) + "***")
@@ -138,7 +174,7 @@ export async function POST(req: NextRequest) {
 
     if (validSelfieUrls.length > 3) {
       console.log("[v0][paid-blueprint] Too many selfies (taking first 3):", validSelfieUrls.length)
-      validSelfieUrls.splice(3) // Keep only first 3
+      validSelfieUrls = validSelfieUrls.slice(0, 3) // Keep only first 3
     }
 
     // Guard 3: Must have form data for category/mood

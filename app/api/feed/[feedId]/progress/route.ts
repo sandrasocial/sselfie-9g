@@ -34,14 +34,23 @@ export async function GET(request: Request, { params }: { params: { feedId: stri
     let completedCount = 0
     let failedCount = 0
 
+    console.log(`[v0] [PROGRESS] Checking ${posts.length} posts for feed ${feedId}`)
+
     for (const post of posts) {
       if (post.generation_status === "completed") {
         completedCount++
         continue
       }
 
-      if (post.prediction_id && post.generation_status === "generating") {
-        const prediction = await replicate.predictions.get(post.prediction_id)
+      // Check any post with prediction_id that doesn't have image_url yet
+      // This catches posts that are generating, pending, or stuck
+      if (post.prediction_id && !post.image_url) {
+        console.log(`[v0] [PROGRESS] Checking post ${post.id} (position ${post.position}) with prediction_id: ${post.prediction_id.substring(0, 20)}...`)
+        
+        try {
+          const prediction = await replicate.predictions.get(post.prediction_id)
+          
+          console.log(`[v0] [PROGRESS] Post ${post.id} prediction status: ${prediction.status}`)
 
         if (prediction.status === "succeeded" && prediction.output) {
           const imageUrl = Array.isArray(prediction.output) ? prediction.output[0] : prediction.output
@@ -139,6 +148,7 @@ export async function GET(request: Request, { params }: { params: { feedId: stri
           }
 
           completedCount++
+          console.log(`[v0] [PROGRESS] ✅ Post ${post.id} completed, image_url saved`)
         } else if (prediction.status === "failed") {
           await sql`
             UPDATE feed_posts
@@ -148,9 +158,29 @@ export async function GET(request: Request, { params }: { params: { feedId: stri
             WHERE id = ${post.id}
           `
           failedCount++
+          console.log(`[v0] [PROGRESS] ❌ Post ${post.id} failed`)
+        } else {
+          console.log(`[v0] [PROGRESS] ⏳ Post ${post.id} still processing (status: ${prediction.status})`)
+        }
+        } catch (error: any) {
+          console.error(`[v0] [PROGRESS] ❌ Error checking prediction for post ${post.id}:`, error?.message || error)
+          // Continue checking other posts even if one fails
+        }
+      } else if (post.prediction_id && post.image_url) {
+        // Post has prediction_id and image_url - should be completed
+        if (post.generation_status !== "completed") {
+          console.log(`[v0] [PROGRESS] ⚠️ Post ${post.id} has image_url but status is ${post.generation_status}, fixing...`)
+          await sql`
+            UPDATE feed_posts
+            SET generation_status = 'completed', updated_at = NOW()
+            WHERE id = ${post.id}
+          `
+          completedCount++
         }
       }
     }
+
+    console.log(`[v0] [PROGRESS] Summary: ${completedCount} completed, ${failedCount} failed, ${posts.length - completedCount - failedCount} still processing`)
 
     return NextResponse.json({
       total: posts.length,

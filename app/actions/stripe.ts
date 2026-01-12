@@ -103,52 +103,9 @@ export async function startProductCheckoutSession(productId: string, promoCode?:
 
   const isSubscription = product.type === "sselfie_studio_membership"
   
-  // Validate and apply promo code if provided (same logic as createLandingCheckoutSession)
-  let validatedPromoCode: string | null = null
-  let validatedCoupon: string | null = null
-  
-  if (promoCode) {
-    const codeUpper = promoCode.toUpperCase()
-    console.log(`[v0] Validating promo code for product checkout: ${codeUpper}`)
-    
-    try {
-      // First, try to find it as a promotion code (customer-facing code)
-      const promotionCodes = await stripe.promotionCodes.list({
-        code: codeUpper,
-        active: true,
-        limit: 1,
-      })
-      
-      if (promotionCodes.data.length > 0) {
-        const promoCodeObj = promotionCodes.data[0]
-        if (promoCodeObj.active && (!promoCodeObj.max_redemptions || promoCodeObj.times_redeemed < promoCodeObj.max_redemptions)) {
-          validatedPromoCode = promoCodeObj.id
-          console.log(`[v0] ✅ Valid promotion code found: ${codeUpper} -> ${promoCodeObj.id}`)
-        }
-      }
-    } catch (error: any) {
-      console.log(`[v0] Promotion code lookup failed: ${error.message}`)
-    }
-    
-    // If not found as promotion code, try as coupon ID
-    if (!validatedPromoCode) {
-      try {
-        const coupon = await stripe.coupons.retrieve(codeUpper)
-        if (coupon.valid) {
-          const now = Math.floor(Date.now() / 1000)
-          const isExpired = coupon.redeem_by && coupon.redeem_by < now
-          const maxReached = coupon.max_redemptions && coupon.times_redeemed >= coupon.max_redemptions
-          
-          if (!isExpired && !maxReached) {
-            validatedCoupon = coupon.id
-            console.log(`[v0] ✅ Valid coupon found: ${codeUpper}`)
-          }
-        }
-      } catch (error: any) {
-        console.log(`[v0] Coupon lookup failed: ${error.message}`)
-      }
-    }
-  }
+  // Let Stripe handle promo code validation - just allow users to enter codes in UI
+  // If promo code is provided in URL, we could pre-apply it, but Stripe handles it better
+  console.log(`[v0] ℹ️ [${productId}] Allowing promotion codes in Stripe UI (Stripe will handle validation)`)
   
   // Determine which Stripe Price ID to use based on product type (same as createLandingCheckoutSession)
   let stripePriceId: string | undefined
@@ -193,35 +150,54 @@ export async function startProductCheckoutSession(productId: string, promoCode?:
       customerId = existingUser[0].stripe_customer_id
     } else {
       // Create new Stripe customer
-      const customer = await stripe.customers.create({
-        email: user.email,
-        metadata: {
-          user_id: user.id,
-        },
-      })
-      customerId = customer.id
-      
-      // Save to users table immediately for one-time purchases
-      // (Subscriptions will save it via webhook to subscriptions table)
-      if (!isSubscription) {
-        try {
-          await sql`
-            UPDATE users 
-            SET stripe_customer_id = ${customerId}
-            WHERE id = ${user.id}
-          `
-        } catch (error) {
-          console.error("[v0] Error saving customer ID to users table:", error)
-          // Non-critical - webhook will save it
+      try {
+        const customer = await stripe.customers.create({
+          email: user.email,
+          metadata: {
+            user_id: user.id,
+          },
+        })
+        customerId = customer.id
+        console.log(`[v0] ✅ Created new Stripe customer: ${customerId}`)
+        
+        // Save to users table immediately for one-time purchases
+        // (Subscriptions will save it via webhook to subscriptions table)
+        if (!isSubscription) {
+          try {
+            await sql`
+              UPDATE users 
+              SET stripe_customer_id = ${customerId}
+              WHERE id = ${user.id}
+            `
+            console.log(`[v0] ✅ Saved customer ID to users table`)
+          } catch (error) {
+            console.error("[v0] ❌ Error saving customer ID to users table:", error)
+            // Non-critical - webhook will save it
+          }
         }
+      } catch (customerError: any) {
+        console.error(`[v0] ❌ Error creating Stripe customer:`, customerError.message)
+        // For one-time payments, we can use customer_email instead
+        // This will prevent payment_methods API errors
+        // For subscriptions, customer ID is required - fail if we can't create one
+        if (isSubscription) {
+          throw new Error(`Failed to create Stripe customer for subscription: ${customerError.message}`)
+        }
+        customerId = undefined
       }
     }
   }
 
-  const session = await stripe.checkout.sessions.create({
+  // FIX BUG 2: For subscriptions, customer ID is required - fail early if missing
+  if (isSubscription && !customerId) {
+    throw new Error("Stripe customer ID is required for subscriptions but was not found or created")
+  }
+
+  // For embedded checkout, use customer_email for one-time payments if customer doesn't exist
+  // This prevents Stripe from trying to fetch payment methods for non-existent customers
+  const sessionConfig: any = {
     ui_mode: "embedded",
     redirect_on_completion: "never",
-    customer: customerId,
     line_items: [
       {
         price: stripePriceId,
@@ -229,17 +205,8 @@ export async function startProductCheckoutSession(productId: string, promoCode?:
       },
     ],
     mode: isSubscription ? "subscription" : "payment",
-    // Apply discount if we found a valid promotion code or coupon
-    ...(validatedPromoCode && {
-      discounts: [{ promotion_code: validatedPromoCode }],
-    }),
-    ...(validatedCoupon && {
-      discounts: [{ coupon: validatedCoupon }],
-    }),
-    // Only allow promotion codes if no discount is pre-applied
-    ...(!validatedPromoCode && !validatedCoupon && {
-      allow_promotion_codes: true,
-    }),
+    // Always allow promotion codes - Stripe will handle validation
+    allow_promotion_codes: true,
     ...(isSubscription && {
       subscription_data: {
         metadata: {
@@ -259,7 +226,22 @@ export async function startProductCheckoutSession(productId: string, promoCode?:
       source: "app",
       ...(promoCode && { promo_code: promoCode }),
     },
-  })
+  }
+
+  // For one-time payments: use customer_email if customer doesn't exist yet
+  // For subscriptions: always use customer ID (required) - already validated above
+  if (isSubscription) {
+    sessionConfig.customer = customerId
+  } else {
+    // One-time payment: prefer customer_email to avoid payment_methods API errors
+    if (customerId) {
+      sessionConfig.customer = customerId
+    } else {
+      sessionConfig.customer_email = user.email
+    }
+  }
+
+  const session = await stripe.checkout.sessions.create(sessionConfig)
 
   return session.client_secret
 }

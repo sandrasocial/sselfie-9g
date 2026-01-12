@@ -408,7 +408,7 @@ Return ONLY valid JSON (no markdown):
             UPDATE blueprint_subscribers
             SET strategy_generated = TRUE,
                 strategy_generated_at = NOW(),
-                strategy_data = ${JSON.stringify(strategyData)}
+                strategy_data = ${JSON.stringify(strategyData)}::jsonb
             WHERE user_id = ${userId}
           `
           console.log("[Blueprint] Strategy saved to database for user_id:", userId)
@@ -417,7 +417,7 @@ Return ONLY valid JSON (no markdown):
             UPDATE blueprint_subscribers
             SET strategy_generated = TRUE,
                 strategy_generated_at = NOW(),
-                strategy_data = ${JSON.stringify(strategyData)}
+                strategy_data = ${JSON.stringify(strategyData)}::jsonb
             WHERE email = ${email}
           `
           console.log("[Blueprint] Strategy saved to database for email:", email)

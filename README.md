@@ -189,6 +189,10 @@ STRIPE_SECRET_KEY=your_stripe_secret_key
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
 STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret
 
+# Authentication (Email Auto-Confirm)
+AUTO_CONFIRM_SECRET=your_auto_confirm_secret
+NEXT_PUBLIC_AUTO_CONFIRM_SECRET=your_auto_confirm_secret
+
 # Upstash (Redis & Search)
 UPSTASH_KV_REST_API_URL=your_upstash_url
 UPSTASH_KV_REST_API_TOKEN=your_upstash_token

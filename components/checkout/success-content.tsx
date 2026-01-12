@@ -73,6 +73,11 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
     }
   }, [initialEmail, purchaseType])
 
+  // FIX 3: Poll access status before redirecting (wait for webhook to complete)
+  const [isPollingAccess, setIsPollingAccess] = useState(false)
+  const [pollAttempts, setPollAttempts] = useState(0)
+  const MAX_POLL_ATTEMPTS = 30 // 30 attempts × 2s = 60s timeout
+
   useEffect(() => {
     const checkAuth = async () => {
       const supabase = createClient()
@@ -81,18 +86,80 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
       } = await supabase.auth.getUser()
       setIsAuthenticated(!!user)
 
-      // Fix #1: Auto-redirect authenticated users (Studio removed, Maya is default)
-      if (user && (purchaseType === "credit_topup" || purchaseType === "paid_blueprint")) {
-        const redirectPath = purchaseType === "paid_blueprint"
-          ? "/feed-planner?purchase=success"
-          : "/maya"
+      // For credit topup, redirect immediately (no webhook dependency)
+      if (user && purchaseType === "credit_topup") {
         setTimeout(() => {
-          router.push(redirectPath)
+          router.push("/maya")
         }, 2000)
+        return
+      }
+
+      // For paid blueprint, poll access status until webhook completes
+      if (user && purchaseType === "paid_blueprint") {
+        setIsPollingAccess(true)
+        setPollAttempts(0)
       }
     }
     checkAuth()
   }, [purchaseType, router])
+
+  // Poll access status for paid blueprint purchases
+  useEffect(() => {
+    if (!isPollingAccess || !isAuthenticated || purchaseType !== "paid_blueprint") {
+      return
+    }
+
+    const pollAccessStatus = async () => {
+      try {
+        const response = await fetch('/api/feed-planner/access')
+        const data = await response.json()
+
+        console.log('[SUCCESS PAGE] Polling access:', {
+          attempt: pollAttempts + 1,
+          isPaidBlueprint: data.isPaidBlueprint,
+        })
+
+        if (data.isPaidBlueprint) {
+          // Webhook completed! Redirect now
+          console.log('[SUCCESS PAGE] Paid access confirmed, redirecting...')
+          setIsPollingAccess(false)
+          setTimeout(() => {
+            router.push('/feed-planner?purchase=success')
+          }, 500)
+        } else {
+          // Webhook not done yet, continue polling
+          setPollAttempts((prev) => prev + 1)
+
+          if (pollAttempts >= MAX_POLL_ATTEMPTS) {
+            // Timeout - redirect anyway, user can refresh
+            console.log('[SUCCESS PAGE] Polling timeout, redirecting anyway...')
+            setIsPollingAccess(false)
+            setTimeout(() => {
+              router.push('/feed-planner?purchase=success&refresh=needed')
+            }, 500)
+          }
+        }
+      } catch (error) {
+        console.error('[SUCCESS PAGE] Polling error:', error)
+        setPollAttempts((prev) => prev + 1)
+
+        if (pollAttempts >= MAX_POLL_ATTEMPTS) {
+          setIsPollingAccess(false)
+          setTimeout(() => {
+            router.push('/feed-planner?purchase=success&refresh=needed')
+          }, 500)
+        }
+      }
+    }
+
+    // Poll every 2 seconds
+    const interval = setInterval(pollAccessStatus, 2000)
+
+    // Initial poll immediately
+    pollAccessStatus()
+
+    return () => clearInterval(interval)
+  }, [isPollingAccess, isAuthenticated, purchaseType, pollAttempts, router])
 
   // Decision 2: Removed access token polling - authenticated users redirect via checkAuth
   // Unauthenticated users will see account creation form (same as one-time session)
@@ -511,7 +578,9 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
                 {isAuthenticated ? "YOU'RE ALL SET" : "ORDER CONFIRMED"}
               </h1>
               <p className="text-sm sm:text-base text-stone-600 font-light leading-relaxed max-w-xl mx-auto px-4">
-                {isAuthenticated
+                {isPollingAccess
+                  ? `Setting up your paid access... (${pollAttempts + 1}/${MAX_POLL_ATTEMPTS})`
+                  : isAuthenticated
                   ? "Your purchase is complete. Time to create something amazing."
                   : "Check your email for next steps."}
               </p>

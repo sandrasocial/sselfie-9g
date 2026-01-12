@@ -192,16 +192,45 @@ export async function POST(req: NextRequest) {
     `
     console.log("[Unified Onboarding] ✅ Set onboarding_completed = true")
 
-    // Also create/update blueprint_subscribers record for purchase tracking (if needed)
-    // This is only for tracking paid blueprint purchases, not for storing wizard data
+    // FIX 5: Also create/update blueprint_subscribers record for backward compatibility
+    // Write wizard data to BOTH tables so old and new code paths work
     const existingBlueprint = await sql`
-      SELECT id FROM blueprint_subscribers
+      SELECT id, form_data, feed_style FROM blueprint_subscribers
       WHERE user_id = ${neonUser.id}
       LIMIT 1
     `
 
-    if (existingBlueprint.length === 0) {
-      // Create minimal blueprint_subscribers record for tracking (if user purchases paid blueprint later)
+    // Construct form_data in legacy format for blueprint_subscribers
+    const formDataForLegacy = {
+      businessType: businessType || null,
+      idealAudience: idealAudience || null,
+      vibe: Array.isArray(visualAesthetic) && visualAesthetic.length > 0 
+        ? visualAesthetic[0] 
+        : "professional", // Map first visual_aesthetic to vibe
+      visualAesthetic: visualAesthetic || [],
+      fashionStyle: fashionStyle || [],
+      brandInspiration: brandInspiration || null,
+      inspirationLinks: inspirationLinks || null,
+    }
+
+    // Extract feed style from settings_preference (first item) or use default
+    const feedStyleForLegacy = feedStyle || (Array.isArray(settingsPreferenceArray) && settingsPreferenceArray.length > 0
+      ? settingsPreferenceArray[0]
+      : "minimal")
+
+    if (existingBlueprint.length > 0) {
+      // UPDATE existing blueprint_subscribers record with wizard data
+      await sql`
+        UPDATE blueprint_subscribers
+        SET 
+          form_data = ${JSON.stringify(formDataForLegacy)}::jsonb,
+          feed_style = ${feedStyleForLegacy},
+          updated_at = NOW()
+        WHERE user_id = ${neonUser.id}
+      `
+      console.log("[Unified Onboarding] ✅ Updated blueprint_subscribers with wizard data for backward compatibility")
+    } else {
+      // INSERT new blueprint_subscribers record with wizard data
       const accessToken = crypto.randomUUID()
       await sql`
         INSERT INTO blueprint_subscribers (
@@ -209,6 +238,8 @@ export async function POST(req: NextRequest) {
           email,
           name,
           access_token,
+          form_data,
+          feed_style,
           created_at,
           updated_at
         )
@@ -217,11 +248,13 @@ export async function POST(req: NextRequest) {
           ${authUser.email || null},
           ${userName},
           ${accessToken},
+          ${JSON.stringify(formDataForLegacy)}::jsonb,
+          ${feedStyleForLegacy},
           NOW(),
           NOW()
         )
       `
-      console.log("[Unified Onboarding] ✅ Created blueprint_subscribers record for tracking")
+      console.log("[Unified Onboarding] ✅ Created blueprint_subscribers record with wizard data for backward compatibility")
     }
 
     return NextResponse.json({

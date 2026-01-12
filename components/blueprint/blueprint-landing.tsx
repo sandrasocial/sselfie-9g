@@ -51,32 +51,43 @@ export default function BlueprintLanding() {
 
       if (signUpError) throw signUpError
 
-      // Auto-confirm email
+      // Check if user was already confirmed (Supabase may auto-confirm if configured)
       const userId = signUpData.user?.id
-      const confirmResponse = await fetch("/api/auth/auto-confirm", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, userId }),
-      })
+      const isAlreadyConfirmed = signUpData.user?.email_confirmed_at !== null
 
-      if (confirmResponse.ok) {
-        // Sign in immediately
-        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        })
-
-        if (!signInError && signInData.session) {
-          // Keep modal open briefly to show success, then redirect
-          setTimeout(() => {
-            setShowSignupModal(false)
-            router.push("/studio?tab=feed-planner")
-          }, 500)
-          return
+      if (isAlreadyConfirmed) {
+        console.log("[Blueprint Landing] ✅ User already confirmed, signing in...")
+      } else if (userId) {
+        // Auto-confirm email for free signups - simple server action
+        console.log("[Blueprint Landing] Auto-confirming email for:", email)
+        const { autoConfirmUser } = await import("@/app/actions/auto-confirm-user")
+        const confirmResult = await autoConfirmUser(email, userId)
+        
+        if (!confirmResult.success) {
+          console.warn("[Blueprint Landing] Auto-confirm failed:", confirmResult.error)
+          // Don't throw - user was created, they can confirm via email link if needed
+        } else {
+          console.log("[Blueprint Landing] ✅ Email auto-confirmed")
         }
       }
 
-      // Fallback: Redirect to success page
+      // Sign in immediately (works if email is confirmed)
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (!signInError && signInData.session) {
+        // Keep modal open briefly to show success, then redirect
+        setTimeout(() => {
+          setShowSignupModal(false)
+          router.push("/studio?tab=feed-planner")
+        }, 500)
+        return
+      }
+
+      // Fallback: Redirect to success page (user can click email confirmation if needed)
+      console.log("[Blueprint Landing] Sign in failed, redirecting to success page:", signInError?.message)
       setTimeout(() => {
         setShowSignupModal(false)
         router.push("/auth/sign-up-success")

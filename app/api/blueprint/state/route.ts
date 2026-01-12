@@ -171,6 +171,19 @@ export async function POST(req: NextRequest) {
       const updateFields: string[] = []
       const updateValues: any[] = []
       
+      // Fetch current strategy_generated from database if grid is being updated but strategy is not
+      // This prevents corrupting blueprint_completed when only grid is updated
+      let currentStrategyGenerated: boolean | null = null
+      if (grid !== undefined && strategy === undefined) {
+        const currentState = await sql`
+          SELECT strategy_generated
+          FROM blueprint_subscribers
+          WHERE user_id = ${neonUser.id}
+          LIMIT 1
+        `
+        currentStrategyGenerated = currentState[0]?.strategy_generated ?? false
+      }
+      
       if (formData !== undefined) {
         updateFields.push(`form_data = $${updateValues.length + 1}::jsonb`)
         updateValues.push(JSON.stringify(formData))
@@ -204,10 +217,16 @@ export async function POST(req: NextRequest) {
         updateValues.push(grid?.gridUrl || null)
         updateFields.push(`grid_frame_urls = $${updateValues.length + 1}::jsonb`)
         updateValues.push(grid?.frameUrls ? JSON.stringify(grid.frameUrls) : null)
+        
+        // FIX BUG 1: Use strategy from request if provided, otherwise use current database value
+        const strategyGenerated = strategy !== undefined 
+          ? (strategy?.generated || false)
+          : (currentStrategyGenerated ?? false)
+        
         updateFields.push(`blueprint_completed = $${updateValues.length + 1}`)
-        updateValues.push(grid?.generated && strategy?.generated || false)
+        updateValues.push(grid?.generated && strategyGenerated)
         updateFields.push(`blueprint_completed_at = $${updateValues.length + 1}`)
-        updateValues.push(grid?.generated && strategy?.generated ? new Date() : null)
+        updateValues.push(grid?.generated && strategyGenerated ? new Date() : null)
       }
       
       if (updateFields.length > 0) {

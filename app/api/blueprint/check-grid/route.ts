@@ -174,7 +174,7 @@ export async function POST(req: NextRequest) {
                 SET grid_generated = TRUE,
                     grid_generated_at = NOW(),
                     grid_url = ${gridBlob.url},
-                    grid_frame_urls = ${JSON.stringify(frameUrls)},
+                    grid_frame_urls = ${JSON.stringify(frameUrls)}::jsonb,
                     grid_prediction_id = ${predictionId},
                     blueprint_completed = TRUE,
                     blueprint_completed_at = NOW()
@@ -187,7 +187,7 @@ export async function POST(req: NextRequest) {
                 SET grid_generated = TRUE,
                     grid_generated_at = NOW(),
                     grid_url = ${gridBlob.url},
-                    grid_frame_urls = ${JSON.stringify(frameUrls)},
+                    grid_frame_urls = ${JSON.stringify(frameUrls)}::jsonb,
                     grid_prediction_id = ${predictionId},
                     blueprint_completed = TRUE,
                     blueprint_completed_at = NOW()
@@ -204,7 +204,7 @@ export async function POST(req: NextRequest) {
                 SET grid_generated = TRUE,
                     grid_generated_at = NOW(),
                     grid_url = ${gridBlob.url},
-                    grid_frame_urls = ${JSON.stringify(frameUrls)},
+                    grid_frame_urls = ${JSON.stringify(frameUrls)}::jsonb,
                     grid_prediction_id = ${predictionId}
                 WHERE user_id = ${userId}
               `
@@ -215,7 +215,7 @@ export async function POST(req: NextRequest) {
                 SET grid_generated = TRUE,
                     grid_generated_at = NOW(),
                     grid_url = ${gridBlob.url},
-                    grid_frame_urls = ${JSON.stringify(frameUrls)},
+                    grid_frame_urls = ${JSON.stringify(frameUrls)}::jsonb,
                     grid_prediction_id = ${predictionId}
                 WHERE email = ${email}
               `

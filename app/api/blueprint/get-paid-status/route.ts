@@ -56,6 +56,7 @@ export async function GET(req: NextRequest) {
               SELECT 
                 id,
                 email,
+                user_id,
                 access_token,
                 paid_blueprint_purchased,
                 paid_blueprint_purchased_at,
@@ -85,8 +86,25 @@ export async function GET(req: NextRequest) {
                   missingGridNumbers.push(i + 1)
                 }
               }
-              const hasSelfies = Array.isArray(data.selfie_image_urls) && 
-                data.selfie_image_urls.some((url: any) => typeof url === "string" && url.startsWith("http"))
+              // FIX: Check selfies from user_avatar_images table (not blueprint_subscribers.selfie_image_urls)
+              let hasSelfies = false
+              let userId: string | null = data.user_id || neonUser.id || null
+              
+              if (userId) {
+                const avatarImages = await sql`
+                  SELECT COUNT(*) as count
+                  FROM user_avatar_images
+                  WHERE user_id = ${userId}
+                    AND image_type = 'selfie'
+                    AND is_active = true
+                  LIMIT 1
+                `
+                hasSelfies = (avatarImages[0]?.count || 0) > 0
+              } else {
+                // Fallback: Check legacy selfie_image_urls field
+                hasSelfies = Array.isArray(data.selfie_image_urls) && 
+                  data.selfie_image_urls.some((url: any) => typeof url === "string" && url.startsWith("http"))
+              }
               const formData = data.form_data || {}
               const hasFormData = !!(formData.vibe || data.feed_style)
 
@@ -137,6 +155,7 @@ export async function GET(req: NextRequest) {
       SELECT 
         id,
         email,
+        user_id,
         paid_blueprint_purchased,
         paid_blueprint_purchased_at,
         paid_blueprint_generated,
@@ -185,8 +204,33 @@ export async function GET(req: NextRequest) {
     }
 
     // Check if has prerequisites
-    const hasSelfies = Array.isArray(data.selfie_image_urls) && 
-      data.selfie_image_urls.some((url: any) => typeof url === "string" && url.startsWith("http"))
+    // FIX: Check selfies from user_avatar_images table (not blueprint_subscribers.selfie_image_urls)
+    let hasSelfies = false
+    let userId: string | null = data.user_id || null
+    
+    if (!userId) {
+      // Fallback: Look up user by email
+      const userByEmail = await sql`
+        SELECT id FROM users WHERE email = ${data.email} LIMIT 1
+      `
+      userId = userByEmail.length > 0 ? userByEmail[0].id : null
+    }
+    
+    if (userId) {
+      const avatarImages = await sql`
+        SELECT COUNT(*) as count
+        FROM user_avatar_images
+        WHERE user_id = ${userId}
+          AND image_type = 'selfie'
+          AND is_active = true
+        LIMIT 1
+      `
+      hasSelfies = (avatarImages[0]?.count || 0) > 0
+    } else {
+      // Fallback: Check legacy selfie_image_urls field (for backward compatibility)
+      hasSelfies = Array.isArray(data.selfie_image_urls) && 
+        data.selfie_image_urls.some((url: any) => typeof url === "string" && url.startsWith("http"))
+    }
     const formData = data.form_data || {}
     const hasFormData = !!(formData.vibe || data.feed_style)
 
