@@ -1,10 +1,10 @@
 "use client"
 
 import { useEffect } from "react"
-import { Grid3x3, LayoutGrid, List, FileText } from "lucide-react"
+import { Grid3x3, LayoutGrid, List, FileText, Columns } from "lucide-react"
 import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 
-export type FeedTab = "grid" | "posts" | "captions" | "strategy"
+export type FeedTab = "grid" | "posts" | "captions" | "strategy" | "pillars"
 
 interface FeedTabsProps {
   activeTab: FeedTab
@@ -78,6 +78,17 @@ export default function FeedTabs({ activeTab, onTabChange, access }: FeedTabsPro
           <span className="text-xs font-medium uppercase tracking-wider">Strategy</span>
         </button>
       )}
+      
+      {/* Brand Pillars tab - show for all users who have completed onboarding */}
+      <button
+        onClick={() => onTabChange("pillars")}
+        className={`flex-1 flex items-center justify-center gap-2 py-3 border-t-2 transition-colors ${
+          activeTab === "pillars" ? "border-stone-900 text-stone-900" : "border-transparent text-stone-400"
+        }`}
+      >
+        <Columns size={20} strokeWidth={activeTab === "pillars" ? 2.5 : 2} />
+        <span className="text-xs font-medium uppercase tracking-wider">Pillars</span>
+      </button>
     </div>
   )
 }

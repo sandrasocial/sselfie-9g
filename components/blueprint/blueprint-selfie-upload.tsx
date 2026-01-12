@@ -7,7 +7,6 @@ interface BlueprintSelfieUploadProps {
   onUploadComplete: (imageUrls: string[]) => void
   maxImages?: number
   initialImages?: string[]
-  email?: string
 }
 
 // Compress image for mobile optimization
@@ -85,7 +84,6 @@ export function BlueprintSelfieUpload({
   onUploadComplete,
   maxImages = 3,
   initialImages = [],
-  email,
 }: BlueprintSelfieUploadProps) {
   const [uploading, setUploading] = useState(false)
   const [uploadedImages, setUploadedImages] = useState<string[]>(initialImages)
@@ -107,9 +105,7 @@ export function BlueprintSelfieUpload({
       return
     }
 
-    // Email is optional for authenticated users (handled by API)
-    // Only show error if this is required by the parent component
-    // (The API endpoint will handle authentication and email-based lookup)
+    // Simplified: Only authenticated users (API handles auth)
 
     // Validate files before upload
     const invalidFiles: string[] = []
@@ -165,10 +161,7 @@ export function BlueprintSelfieUpload({
       )
 
       const formData = new FormData()
-      // Email is optional - API will use auth session if available
-      if (email) {
-        formData.append("email", email)
-      }
+      // Simplified: No email needed - API uses auth session
       processedFiles.forEach((file) => {
         formData.append("files", file)
       })

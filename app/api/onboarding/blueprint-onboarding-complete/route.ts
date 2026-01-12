@@ -172,20 +172,13 @@ export async function POST(req: NextRequest) {
     }
 
     // Step 2: Save extension data to blueprint_subscribers
-    // Also save selfie image URLs to blueprint_subscribers.selfie_image_urls for backward compatibility
+    // Note: selfie images are stored in user_avatar_images (not blueprint_subscribers.selfie_image_urls)
+    // This matches Pro Mode pattern and is the single source of truth
     const existingBlueprint = await sql`
       SELECT id FROM blueprint_subscribers
       WHERE user_id = ${neonUser.id}
       LIMIT 1
     `
-    
-    // Get selfie URLs from user_avatar_images (already uploaded)
-    const selfieUrls = await sql`
-      SELECT image_url FROM user_avatar_images
-      WHERE user_id = ${neonUser.id} AND is_active = true
-      ORDER BY display_order ASC, uploaded_at ASC
-    `
-    const selfieImageUrls = selfieUrls.map((row: any) => row.image_url)
 
     if (existingBlueprint.length > 0) {
       // Update existing blueprint_subscribers record
@@ -196,7 +189,6 @@ export async function POST(req: NextRequest) {
           business = ${business || null},
           dream_client = ${dreamClient || null},
           feed_style = ${feedStyle || null},
-          selfie_image_urls = ${JSON.stringify(selfieImageUrls)}::jsonb,
           updated_at = NOW()
         WHERE user_id = ${neonUser.id}
       `
@@ -212,7 +204,6 @@ export async function POST(req: NextRequest) {
           business,
           dream_client,
           feed_style,
-          selfie_image_urls,
           created_at,
           updated_at
         )
@@ -225,7 +216,6 @@ export async function POST(req: NextRequest) {
           ${business || null},
           ${dreamClient || null},
           ${feedStyle || null},
-          ${JSON.stringify(selfieImageUrls)}::jsonb,
           NOW(),
           NOW()
         )

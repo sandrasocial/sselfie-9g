@@ -166,14 +166,34 @@ export default function PersonalBrandSection({ userId }: PersonalBrandSectionPro
         </div>
       )}
 
-      <BrandProfileWizard
+      <UnifiedOnboardingWizard
         isOpen={showWizard}
-        onClose={() => {
+        onDismiss={() => {
           console.log("[v0] Closing wizard")
           setShowWizard(false)
         }}
-        onComplete={handleWizardComplete}
-        existingData={brandData}
+        onComplete={async (data) => {
+          console.log("[v0] Unified wizard completed")
+          setShowWizard(false)
+          await fetchBrandData()
+        }}
+        existingData={brandData
+          ? {
+              businessType: brandData.businessType || "",
+              idealAudience: (brandData as any).idealAudience || "",
+              audienceChallenge: (brandData as any).audienceChallenge || "",
+              audienceTransformation: (brandData as any).audienceTransformation || "",
+              transformationStory: brandData.transformationStory || "",
+              currentSituation: brandData.currentSituation || "",
+              futureVision: (brandData as any).futureVision || "",
+              visualAesthetic: (brandData as any).visualAesthetic || [],
+              feedStyle: (brandData as any).feedStyle || "",
+              fashionStyle: (brandData as any).fashionStyle || [],
+              brandInspiration: (brandData as any).brandInspiration || "",
+              inspirationLinks: (brandData as any).inspirationLinks || "",
+            }
+          : undefined}
+        userName={null}
       />
     </>
   )

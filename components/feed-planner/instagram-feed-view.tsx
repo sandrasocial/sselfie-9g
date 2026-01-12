@@ -17,6 +17,7 @@ import FeedPostsList from "./feed-posts-list"
 import FeedStrategy from "./feed-strategy"
 import FeedCaptionTemplates from "./feed-caption-templates"
 import FeedContentCalendar from "./feed-content-calendar"
+import FeedBrandPillars from "./feed-brand-pillars"
 import FeedModals from "./feed-modals"
 import FeedLoadingOverlay from "./feed-loading-overlay"
 import FeedHighlightsModal from "./feed-highlights-modal"
@@ -598,6 +599,11 @@ export default function InstagramFeedView({ feedId, onBack, access, onOpenWizard
               />
             )}
           </>
+        )}
+
+        {/* Brand Pillars tab - show for all users */}
+        {activeTab === "pillars" && (
+          <FeedBrandPillars businessType={businessType} />
         )}
       </div>
 

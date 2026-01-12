@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Loader2, ArrowRight } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
@@ -58,10 +58,13 @@ export default function FeedSinglePlaceholder({
         description: "This takes about 30 seconds",
       })
 
-      // Call refresh callback if provided
+      // Call refresh callback if provided to trigger polling
       if (onGenerateImage) {
         await onGenerateImage()
       }
+      
+      // DON'T set isGenerating to false here - let the polling detect when image is ready
+      // The component will check post.generation_status and post.prediction_id to show loading
     } catch (error) {
       console.error("[Feed Single Placeholder] Generate error:", error)
       toast({
@@ -69,10 +72,22 @@ export default function FeedSinglePlaceholder({
         description: error instanceof Error ? error.message : "Please try again",
         variant: "destructive",
       })
-    } finally {
-      setIsGenerating(false)
+      setIsGenerating(false) // Only set to false on error
     }
   }
+
+  // Determine if post is currently generating based on post data (from polling)
+  // This ensures loading state persists even after API call completes
+  const isPostGenerating = post?.generation_status === "generating" || 
+                           (post?.prediction_id && !post?.image_url) ||
+                           isGenerating
+
+  // Reset local isGenerating state when post completes (has image_url)
+  useEffect(() => {
+    if (post?.image_url && isGenerating) {
+      setIsGenerating(false)
+    }
+  }, [post?.image_url, isGenerating])
 
   // Check if post has an image
   const hasImage = post?.image_url
@@ -97,8 +112,8 @@ export default function FeedSinglePlaceholder({
           <div className="relative">
             <div className="aspect-[9/16] bg-white border-2 border-dashed border-stone-300 rounded-lg"></div>
 
-            {/* Generation button overlay */}
-            {!isGenerating && (
+            {/* Generation button overlay - only show if NOT generating */}
+            {!isPostGenerating && (
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center space-y-4 px-4">
                   <Button
@@ -115,8 +130,8 @@ export default function FeedSinglePlaceholder({
               </div>
             )}
 
-            {/* Loading state */}
-            {isGenerating && (
+            {/* Loading state - show when generating (from API call OR from post data) */}
+            {isPostGenerating && (
               <div className="absolute inset-0 bg-white/90 backdrop-blur-sm flex items-center justify-center rounded-lg">
                 <div className="text-center space-y-3">
                   <Loader2 className="w-8 h-8 text-stone-600 animate-spin mx-auto" />

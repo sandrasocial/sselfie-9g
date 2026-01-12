@@ -52,6 +52,19 @@ export async function GET(request: NextRequest) {
 
     const brand = personalBrand[0]
 
+    // Parse JSONB fields that might be strings
+    const parseJsonb = (value: any) => {
+      if (!value) return null
+      if (typeof value === 'string') {
+        try {
+          return JSON.parse(value)
+        } catch {
+          return value
+        }
+      }
+      return value
+    }
+
     return NextResponse.json({
       exists: true,
       completed: brand.is_completed,
@@ -67,14 +80,14 @@ export async function GET(request: NextRequest) {
         brandVibe: brand.brand_vibe,
         colorMood: brand.color_mood,
         colorTheme: brand.color_theme,
-        colorPalette: brand.color_palette,
+        colorPalette: parseJsonb(brand.color_palette),
         futureVision: brand.future_vision,
         contentGoals: brand.content_goals,
         photoGoals: brand.photo_goals,
-        stylePreferences: brand.style_preferences,
-        visualAesthetic: brand.visual_aesthetic,
-        settingsPreference: brand.settings_preference,
-        fashionStyle: brand.fashion_style,
+        stylePreferences: parseJsonb(brand.style_preferences),
+        visualAesthetic: parseJsonb(brand.visual_aesthetic),
+        settingsPreference: parseJsonb(brand.settings_preference),
+        fashionStyle: parseJsonb(brand.fashion_style),
         idealAudience: brand.ideal_audience,
         audienceChallenge: brand.audience_challenge,
         audienceTransformation: brand.audience_transformation,
@@ -82,7 +95,7 @@ export async function GET(request: NextRequest) {
         signaturePhrases: brand.signature_phrases,
         brandInspiration: brand.brand_inspiration,
         inspirationLinks: brand.inspiration_links,
-        contentPillars: brand.content_pillars,
+        contentPillars: parseJsonb(brand.content_pillars),
         // Style profile fields
         colorPreferences: brand.color_preferences,
         clothingPreferences: brand.clothing_preferences,
@@ -157,7 +170,7 @@ export async function POST(request: NextRequest) {
           future_vision = ${body.futureVision || ""},
           content_goals = ${body.contentGoals || ""},
           photo_goals = ${body.photoGoals || ""},
-          content_pillars = ${body.contentPillars || null},
+          content_pillars = ${body.contentPillars ? JSON.stringify(body.contentPillars) : null}::jsonb,
           visual_aesthetic = ${body.visualAesthetic || ""},
           settings_preference = ${body.settingsPreference || ""},
           fashion_style = ${body.fashionStyle || ""},
@@ -226,7 +239,7 @@ export async function POST(request: NextRequest) {
           ${body.futureVision || ""},
           ${body.contentGoals || ""},
           ${body.photoGoals || ""},
-          ${body.contentPillars || null},
+          ${body.contentPillars ? JSON.stringify(body.contentPillars) : null}::jsonb,
           ${body.visualAesthetic || ""},
           ${body.settingsPreference || ""},
           ${body.fashionStyle || ""},

@@ -17,7 +17,7 @@ import {
 import LoadingScreen from "./loading-screen"
 import OnboardingWizard from "./onboarding-wizard"
 import BlueprintWelcomeWizard from "./blueprint-welcome-wizard"
-import BlueprintOnboardingWizard from "@/components/onboarding/blueprint-onboarding-wizard"
+// UnifiedOnboardingWizard is now handled exclusively by feed-planner-client.tsx
 import MayaChatScreen from "./maya-chat-screen"
 import GalleryScreen from "./gallery-screen"
 // Note: B-Roll functionality is accessible via Maya Videos tab (b-roll-screen.tsx kept for reference)
@@ -124,18 +124,7 @@ export default function SselfieApp({
   const [isLoadingTrainingStatus, setIsLoadingTrainingStatus] = useState(true)
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [showBlueprintWelcome, setShowBlueprintWelcome] = useState(false)
-  const [showBlueprintOnboarding, setShowBlueprintOnboarding] = useState(false)
-  const [existingBlueprintData, setExistingBlueprintData] = useState<{
-    business?: string
-    dreamClient?: string
-    vibe?: string
-    lightingKnowledge?: string
-    angleAwareness?: string
-    editingStyle?: string
-    consistencyLevel?: string
-    currentSelfieHabits?: string
-    feedStyle?: string
-  } | null>(null)
+  // showBlueprintOnboarding and existingBlueprintData removed - UnifiedOnboardingWizard is now handled by feed-planner-client.tsx
   const [creditBalance, setCreditBalance] = useState<number>(0)
   const [isLoadingCredits, setIsLoadingCredits] = useState(true)
   
@@ -499,36 +488,36 @@ export default function SselfieApp({
           if (isMember && !blueprintWelcomeShown && !hasBlueprintState && !hasBaseWizardData) {
             console.log("[Blueprint Welcome] 👋 Showing blueprint welcome wizard (member, no state)")
             setShowBlueprintWelcome(true)
-            setShowBlueprintOnboarding(false)
             setShowOnboarding(false)
+            // Note: UnifiedOnboardingWizard is now handled by feed-planner-client.tsx
           }
           // Step 2: Show Unified Blueprint Onboarding Wizard if welcome shown (members) OR directly for free users
           else if ((isMember && blueprintWelcomeShown && (!hasBaseWizardData || !hasExtensionData)) ||
                    (!isMember && (!hasBaseWizardData || !hasExtensionData))) {
-            console.log("[Blueprint Onboarding] 📝 Showing unified blueprint onboarding wizard (onboarding data missing)")
+            console.log("[Blueprint Onboarding] 📝 Onboarding data missing - feed-planner-client.tsx will handle wizard")
             setShowBlueprintWelcome(false)
-            setShowBlueprintOnboarding(true)
             setShowOnboarding(false)
+            // Route to feed planner - feed-planner-client.tsx will show wizard
+            if (activeTab !== "feed-planner") {
+              setActiveTab("feed-planner")
+            }
           }
           // Step 3: Show Training Wizard if all onboarding done but no trained model
           else if ((blueprintWelcomeShown || hasBlueprintState || hasBaseWizardData) && !hasModel) {
             console.log("[Onboarding] 🎓 Showing training onboarding wizard (onboarding done, no model)")
             setShowBlueprintWelcome(false)
-            setShowBlueprintOnboarding(false)
             setShowOnboarding(true)
           }
           // No wizards to show
           else {
             console.log("[Wizard Debug] ⚠️ No wizard conditions matched - hiding all wizards")
             setShowBlueprintWelcome(false)
-            setShowBlueprintOnboarding(false)
             setShowOnboarding(false)
           }
         } else if (mounted) {
           // Onboarding actually completed - no wizards
           console.log("[Wizard Debug] ✅ Onboarding actually complete - hiding all wizards")
           setShowBlueprintWelcome(false)
-          setShowBlueprintOnboarding(false)
           setShowOnboarding(false)
         }
       } catch (error) {
@@ -1110,70 +1099,23 @@ export default function SselfieApp({
               console.log("[Blueprint Welcome] ✅ Welcome wizard completed, blueprint_welcome_shown_at set")
             }
 
-            // Decision 3: Fetch existing blueprint data for pre-filling unified wizard
-            try {
-              const blueprintResponse = await fetch("/api/blueprint/state", {
-                credentials: "include",
-              })
-              if (blueprintResponse.ok) {
-                const blueprintData = await blueprintResponse.json()
-                if (blueprintData.blueprint?.formData) {
-                  const formData = blueprintData.blueprint.formData
-                  setExistingBlueprintData({
-                    business: formData.business || undefined,
-                    dreamClient: formData.dreamClient || undefined,
-                    vibe: formData.vibe || undefined,
-                    lightingKnowledge: formData.lightingKnowledge || undefined,
-                    angleAwareness: formData.angleAwareness || undefined,
-                    editingStyle: formData.editingStyle || undefined,
-                    consistencyLevel: formData.consistencyLevel || undefined,
-                    currentSelfieHabits: formData.currentSelfieHabits || undefined,
-                    feedStyle: blueprintData.blueprint.feedStyle || undefined,
-                  })
-                  console.log("[Blueprint Onboarding] ✅ Pre-filled existing blueprint data for unified wizard")
-                }
-              }
-            } catch (error) {
-              console.error("[Blueprint Onboarding] Error fetching blueprint data for pre-fill:", error)
-            }
+            // Note: feed-planner-client.tsx will fetch and pass existingData to UnifiedOnboardingWizard
+            // No need to fetch blueprint data here anymore
           } catch (error) {
             console.error("[Blueprint Welcome] Error completing welcome wizard:", error)
           }
 
-          // Decision 3: Show unified blueprint onboarding wizard after welcome
+          // Decision 3: Route to feed planner - feed-planner-client.tsx will show unified wizard
           setShowBlueprintWelcome(false)
-          setShowBlueprintOnboarding(true)
+          // Route to feed planner tab - feed-planner-client.tsx will handle showing the wizard
+          setActiveTab("feed-planner")
         }}
         onDismiss={() => setShowBlueprintWelcome(false)}
         userName={userName}
       />
 
-      {/* Unified Blueprint Onboarding Wizard */}
-      <BlueprintOnboardingWizard
-        isOpen={showBlueprintOnboarding}
-        onComplete={async (data) => {
-          console.log("[Blueprint Onboarding] ✅ Unified wizard completed with data:", data)
-          setShowBlueprintOnboarding(false)
-          
-          // Redirect to Feed Planner - user will upload selfies next
-          setActiveTab("feed-planner")
-          
-          // Refresh blueprint state to show updated content
-          try {
-            const blueprintResponse = await fetch("/api/blueprint/state", {
-              credentials: "include",
-            })
-            if (blueprintResponse.ok) {
-              console.log("[Blueprint Onboarding] ✅ Blueprint state refreshed")
-            }
-          } catch (error) {
-            console.error("[Blueprint Onboarding] Error refreshing blueprint state:", error)
-          }
-        }}
-        onDismiss={() => setShowBlueprintOnboarding(false)}
-        userName={userName}
-        existingData={existingBlueprintData || undefined}
-      />
+      {/* Unified Onboarding Wizard is now handled exclusively by feed-planner-client.tsx */}
+      {/* Removed from here to prevent conflicts - feed-planner-client.tsx shows it when needed */}
       </div>
   )
 }

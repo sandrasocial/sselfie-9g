@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import useSWR, { useSWRConfig } from "swr"
 import FeedViewScreen from "@/components/feed-planner/feed-view-screen"
-import BlueprintOnboardingWizard from "@/components/onboarding/blueprint-onboarding-wizard"
+import UnifiedOnboardingWizard from "@/components/onboarding/unified-onboarding-wizard"
 import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 import UnifiedLoading from "@/components/sselfie/unified-loading"
 
@@ -62,18 +62,22 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
     dedupingInterval: 60000,
   })
 
-  // Fetch existing blueprint data if available (for wizard existing data)
-  const { data: blueprintData } = useSWR(
-    showWizard ? "/api/blueprint/state" : null,
+  // Fetch existing personal brand data (always fetch, SWR handles caching)
+  // This is the single source of truth - no localStorage needed
+  const { data: personalBrandData, mutate: mutatePersonalBrand, isLoading: isLoadingPersonalBrand } = useSWR(
+    "/api/profile/personal-brand",
     fetcher,
     {
       revalidateOnFocus: false,
-      dedupingInterval: 5000,
+      dedupingInterval: 60000, // Cache for 1 minute
+      // Prevent excessive re-fetching
+      revalidateOnReconnect: false,
+      revalidateIfStale: false,
     }
   )
 
   // Determine if wizard is needed
-  // React to access and onboardingStatus changes, but only close wizard if user explicitly completes it
+  // React to access and onboardingStatus changes, but respect manual close
   useEffect(() => {
     // Wait for both access and onboarding status to load
     if (isLoadingOnboarding || (!accessProp && isLoadingAccess)) {
@@ -96,6 +100,13 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
     const hasBaseWizardData = onboardingStatus.hasBaseWizardData || false
     const hasExtensionData = onboardingStatus.hasExtensionData || false
     const onboardingCompleted = onboardingStatus.onboarding_completed || false
+
+    // If onboarding is completed, don't show wizard (even if data seems missing - API is source of truth)
+    if (onboardingCompleted) {
+      setShowWizard(false)
+      setIsCheckingWizard(false)
+      return
+    }
 
     // Free users: Show wizard if not completed (missing base or extension data OR onboarding not marked complete)
     if (access.isFree) {
@@ -129,32 +140,102 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
 
   // Handle wizard completion
   const handleWizardComplete = async (data: {
-    business: string
-    dreamClient: string
-    vibe: string
-    lightingKnowledge: string
-    angleAwareness: string
-    editingStyle: string
-    consistencyLevel: string
-    currentSelfieHabits: string
+    businessType: string
+    idealAudience: string
+    audienceChallenge: string
+    audienceTransformation: string
+    transformationStory: string
+    currentSituation?: string
+    futureVision?: string
+    visualAesthetic: string[]
     feedStyle: string
+    selfieImages: string[]
+    fashionStyle?: string[]
+    brandInspiration?: string
+    inspirationLinks?: string
   }) => {
-    console.log("[Feed Planner Wizard] ✅ Wizard completed with data:", data)
+    console.log("[Feed Planner Wizard] ✅ Unified wizard completed with data:", data)
     
-    // Close wizard immediately (API endpoint sets onboarding_completed = true)
+    // Close wizard immediately BEFORE cache invalidation
+    // This prevents the useEffect from re-opening it while cache is refreshing
     setShowWizard(false)
     
     // Invalidate SWR cache to refresh data without full page reload
-    // This prevents losing wizard data and allows smooth transition
+    // CRITICAL: Wait for onboarding-status to refresh first, as it controls wizard visibility
+    await mutate("/api/user/onboarding-status", undefined, { revalidate: true })
+    
+    // Then refresh other caches
     await Promise.all([
-      mutate("/api/user/onboarding-status"),
       mutate("/api/feed-planner/access"),
       mutate("/api/feed/latest"),
       mutate("/api/blueprint/state"),
+      mutate("/api/images?type=avatar"), // Refresh selfie images
+      mutatePersonalBrand(), // Explicitly refresh personal brand data
     ])
     
-    console.log("[Feed Planner Wizard] ✅ Cache invalidated, feed planner should refresh")
+    console.log("[Feed Planner Wizard] ✅ Cache invalidated, wizard closed, feed planner should refresh")
   }
+
+  // Memoize existingData BEFORE any conditional returns (Rules of Hooks)
+  // Use a stable key based on the actual data values to prevent unnecessary recalculations
+  const existingData = useMemo(() => {
+    if (!personalBrandData?.exists || !personalBrandData?.data) {
+      return {}
+    }
+
+    const data = personalBrandData.data
+
+    // Map personal brand data to unified wizard format
+    // API already returns camelCase, so use it directly
+    return {
+      businessType: data.businessType || "",
+      idealAudience: data.idealAudience || "",
+      audienceChallenge: data.audienceChallenge || "",
+      audienceTransformation: data.audienceTransformation || "",
+      transformationStory: data.transformationStory || "",
+      currentSituation: data.currentSituation || "",
+      futureVision: data.futureVision || "",
+      visualAesthetic: data.visualAesthetic
+        ? (typeof data.visualAesthetic === "string"
+            ? JSON.parse(data.visualAesthetic)
+            : data.visualAesthetic)
+        : [],
+      feedStyle: data.settingsPreference
+        ? (typeof data.settingsPreference === "string"
+            ? JSON.parse(data.settingsPreference)[0] || ""
+            : Array.isArray(data.settingsPreference)
+            ? data.settingsPreference[0] || ""
+            : "")
+        : "",
+      fashionStyle: data.fashionStyle
+        ? (typeof data.fashionStyle === "string"
+            ? JSON.parse(data.fashionStyle)
+            : data.fashionStyle)
+        : [],
+      brandInspiration: data.brandInspiration || "",
+      inspirationLinks: data.inspirationLinks || "",
+      contentPillars: data.contentPillars
+        ? (typeof data.contentPillars === "string"
+            ? JSON.parse(data.contentPillars)
+            : data.contentPillars)
+        : [],
+      // Note: selfieImages are loaded separately via /api/images?type=avatar
+      // They're not stored in user_personal_brand, so we don't include them here
+      // The wizard component will fetch them via SWR
+    }
+    // Create a stable key from the actual data values, not the object reference
+    // This prevents recalculation when the object reference changes but data is the same
+  }, [
+    personalBrandData?.exists,
+    personalBrandData?.data?.businessType,
+    personalBrandData?.data?.idealAudience,
+    personalBrandData?.data?.transformationStory,
+    // Use JSON.stringify for arrays/objects to create stable keys
+    personalBrandData?.data?.visualAesthetic ? JSON.stringify(personalBrandData.data.visualAesthetic) : null,
+    personalBrandData?.data?.settingsPreference ? JSON.stringify(personalBrandData.data.settingsPreference) : null,
+    personalBrandData?.data?.fashionStyle ? JSON.stringify(personalBrandData.data.fashionStyle) : null,
+    personalBrandData?.data?.contentPillars ? JSON.stringify(personalBrandData.data.contentPillars) : null,
+  ])
 
   // Show loading while checking wizard status
   if (isCheckingWizard) {
@@ -163,10 +244,10 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
 
   // Show wizard if needed
   if (showWizard) {
-    const existingData = blueprintData?.blueprint?.formData || {}
+    // Removed excessive logging that was causing re-renders
 
     return (
-      <BlueprintOnboardingWizard
+      <UnifiedOnboardingWizard
         isOpen={true}
         onComplete={handleWizardComplete}
         onDismiss={() => {

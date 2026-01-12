@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { X } from "lucide-react"
+import { X, Loader2 } from "lucide-react"
 
 /**
  * Free Blueprint Landing Page Component
@@ -23,11 +23,13 @@ export default function BlueprintLanding() {
   const [name, setName] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
     const supabase = createClient()
     setIsLoading(true)
+    setIsProcessing(true)
     setError(null)
 
     try {
@@ -65,18 +67,24 @@ export default function BlueprintLanding() {
         })
 
         if (!signInError && signInData.session) {
-          setShowSignupModal(false)
-          router.push("/studio?tab=feed-planner")
+          // Keep modal open briefly to show success, then redirect
+          setTimeout(() => {
+            setShowSignupModal(false)
+            router.push("/studio?tab=feed-planner")
+          }, 500)
           return
         }
       }
 
       // Fallback: Redirect to success page
-      setShowSignupModal(false)
-      router.push("/auth/sign-up-success")
+      setTimeout(() => {
+        setShowSignupModal(false)
+        router.push("/auth/sign-up-success")
+      }, 500)
     } catch (error: unknown) {
       console.error("[Blueprint Landing] Sign up error:", error)
       setError(error instanceof Error ? error.message : "An error occurred")
+      setIsProcessing(false)
     } finally {
       setIsLoading(false)
     }
@@ -172,86 +180,116 @@ export default function BlueprintLanding() {
       {showSignupModal && (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
-          onClick={() => setShowSignupModal(false)}
+          onClick={() => !isProcessing && setShowSignupModal(false)}
         >
           <div
             className="bg-zinc-900 border border-zinc-800 rounded-lg w-full max-w-sm p-6 relative"
             onClick={(e) => e.stopPropagation()}
           >
-            <button
-              onClick={() => setShowSignupModal(false)}
-              className="absolute top-4 right-4 text-zinc-400 hover:text-white transition-colors"
-            >
-              <X size={20} />
-            </button>
-
-            <div className="mb-6">
-              <h2 className="text-2xl text-white mb-2">Create Your Free Account</h2>
-              <p className="text-sm text-zinc-400">
-                Start planning your Instagram feed today
-              </p>
-            </div>
-
-            <form onSubmit={handleSignUp} className="space-y-4">
-              <div>
-                <Label htmlFor="name" className="text-zinc-200 text-sm mb-2 block">
-                  Name
-                </Label>
-                <Input
-                  id="name"
-                  type="text"
-                  placeholder="Your name"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="bg-zinc-800 border-zinc-700 text-white"
-                />
-              </div>
-              <div>
-                <Label htmlFor="email" className="text-zinc-200 text-sm mb-2 block">
-                  Email
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="bg-zinc-800 border-zinc-700 text-white"
-                />
-              </div>
-              <div>
-                <Label htmlFor="password" className="text-zinc-200 text-sm mb-2 block">
-                  Password
-                </Label>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="bg-zinc-800 border-zinc-700 text-white"
-                />
-              </div>
-              {error && (
-                <p className="text-sm text-red-400">{error}</p>
-              )}
-              <Button
-                type="submit"
-                className="w-full bg-white text-black hover:bg-zinc-200"
-                disabled={isLoading}
+            {!isProcessing && (
+              <button
+                onClick={() => setShowSignupModal(false)}
+                className="absolute top-4 right-4 text-zinc-400 hover:text-white transition-colors"
               >
-                {isLoading ? "Creating account..." : "Sign Up Free"}
-              </Button>
-            </form>
+                <X size={20} />
+              </button>
+            )}
 
-            <p className="text-xs text-center text-zinc-500 mt-4">
-              Already have an account?{" "}
-              <Link href="/auth/login" className="text-white underline underline-offset-4">
-                Sign in
-              </Link>
-            </p>
+            {isProcessing ? (
+              // Processing State - Show loading indicator
+              <div className="text-center py-8">
+                <div className="flex flex-col items-center justify-center space-y-4">
+                  <Loader2 size={32} className="text-white animate-spin" />
+                  <div className="space-y-2">
+                    <h2 className="text-xl text-white font-medium">Creating your account</h2>
+                    <p className="text-sm text-zinc-400">
+                      This will just take a moment...
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              // Signup Form
+              <>
+                <div className="mb-6">
+                  <h2 className="text-2xl text-white mb-2">Create Your Free Account</h2>
+                  <p className="text-sm text-zinc-400">
+                    Start planning your Instagram feed today
+                  </p>
+                </div>
+
+                <form onSubmit={handleSignUp} className="space-y-4">
+                  <div>
+                    <Label htmlFor="name" className="text-zinc-200 text-sm mb-2 block">
+                      Name
+                    </Label>
+                    <Input
+                      id="name"
+                      type="text"
+                      placeholder="Your name"
+                      required
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      disabled={isLoading}
+                      className="bg-zinc-800 border-zinc-700 text-white"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="email" className="text-zinc-200 text-sm mb-2 block">
+                      Email
+                    </Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="you@example.com"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      disabled={isLoading}
+                      className="bg-zinc-800 border-zinc-700 text-white"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="password" className="text-zinc-200 text-sm mb-2 block">
+                      Password
+                    </Label>
+                    <Input
+                      id="password"
+                      type="password"
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      disabled={isLoading}
+                      className="bg-zinc-800 border-zinc-700 text-white"
+                    />
+                  </div>
+                  {error && (
+                    <p className="text-sm text-red-400">{error}</p>
+                  )}
+                  <Button
+                    type="submit"
+                    className="w-full bg-white text-black hover:bg-zinc-200"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <span className="flex items-center gap-2">
+                        <Loader2 size={16} className="animate-spin" />
+                        Creating account...
+                      </span>
+                    ) : (
+                      "Sign Up Free"
+                    )}
+                  </Button>
+                </form>
+
+                <p className="text-xs text-center text-zinc-500 mt-4">
+                  Already have an account?{" "}
+                  <Link href="/auth/login" className="text-white underline underline-offset-4">
+                    Sign in
+                  </Link>
+                </p>
+              </>
+            )}
           </div>
         </div>
       )}

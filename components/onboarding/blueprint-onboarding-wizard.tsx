@@ -164,50 +164,46 @@ export default function BlueprintOnboardingWizard({
 
   const savedState = loadSavedState()
   const [currentStep, setCurrentStep] = useState(savedState.currentStep)
-  const [formData, setFormData] = useState(savedState.formData)
+  // Initialize formData without selfieImages (they come from API)
+  const [formData, setFormData] = useState({
+    ...savedState.formData,
+    selfieImages: [], // Will be populated from API
+  })
   const [isSaving, setIsSaving] = useState(false)
 
-  // Fetch images from API on mount (same as Maya chat Pro Mode)
-  // This ensures images persist on page reload, not just localStorage
+  // Simplified: Fetch images from API once on mount (single source of truth)
+  // No complex merging - API is the source of truth
   const fetcher = (url: string) => fetch(url).then((res) => res.json())
-  const { data: avatarImagesData } = useSWR("/api/images?type=avatar", fetcher, {
+  const { data: avatarImagesData, mutate: mutateImages } = useSWR("/api/images?type=avatar", fetcher, {
     revalidateOnFocus: false,
     dedupingInterval: 60000,
   })
 
-  // Load images from API on mount (merge with existing data)
-  // Only run once when avatarImagesData loads
+  // Load images from API on mount (replace, don't merge)
   useEffect(() => {
     if (avatarImagesData?.images && Array.isArray(avatarImagesData.images)) {
       const apiImageUrls = avatarImagesData.images.map((img: any) => img.image_url).filter(Boolean)
-      if (apiImageUrls.length > 0) {
-        setFormData((prev) => {
-          // Merge API images with existing data (API takes precedence)
-          const mergedImages = [...new Set([...apiImageUrls, ...(prev.selfieImages || [])])]
-          // Only update if images changed
-          if (mergedImages.length !== prev.selfieImages?.length || 
-              !mergedImages.every((url, i) => url === prev.selfieImages?.[i])) {
-            return {
-              ...prev,
-              selfieImages: mergedImages,
-            }
-          }
-          return prev
-        })
-      }
+      // API is source of truth - replace, don't merge
+      setFormData((prev) => ({
+        ...prev,
+        selfieImages: apiImageUrls,
+      }))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [avatarImagesData])
 
   // Save state to localStorage whenever formData or currentStep changes
+  // Note: selfieImages are NOT saved to localStorage (API is source of truth)
   useEffect(() => {
     if (typeof window !== "undefined") {
       try {
+        // Save form data without selfieImages (they come from API)
+        const { selfieImages, ...formDataWithoutImages } = formData
         localStorage.setItem(
           WIZARD_STORAGE_KEY,
           JSON.stringify({
             currentStep,
-            formData,
+            formData: formDataWithoutImages,
           })
         )
       } catch (error) {
@@ -632,11 +628,13 @@ export default function BlueprintOnboardingWizard({
 
                     <BlueprintSelfieUpload
                       onUploadComplete={(imageUrls) => {
+                        // Update local state for immediate UI feedback
                         setFormData({ ...formData, selfieImages: imageUrls })
+                        // Trigger SWR revalidation to sync with API
+                        mutateImages()
                       }}
                       maxImages={3}
                       initialImages={Array.isArray(formData.selfieImages) ? formData.selfieImages : []}
-                      email={userEmail || undefined}
                     />
                   </div>
                 )}
