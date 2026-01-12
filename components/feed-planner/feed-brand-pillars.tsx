@@ -40,11 +40,38 @@ export default function FeedBrandPillars({ businessType }: FeedBrandPillarsProps
 
   // Extract content pillars from personal brand data
   // API returns camelCase (contentPillars), not snake_case (content_pillars)
-  const contentPillars: ContentPillar[] = personalBrandData?.exists && personalBrandData?.data?.contentPillars
-    ? (typeof personalBrandData.data.contentPillars === "string"
-        ? JSON.parse(personalBrandData.data.contentPillars)
-        : personalBrandData.data.contentPillars)
-    : []
+  // API already parses JSONB, so it should be an array/object, not a string
+  const contentPillars: ContentPillar[] = (() => {
+    if (!personalBrandData?.exists || !personalBrandData?.data?.contentPillars) {
+      return []
+    }
+    
+    const pillarsData = personalBrandData.data.contentPillars
+    
+    // Handle different data formats
+    if (Array.isArray(pillarsData)) {
+      // Already an array - use directly
+      return pillarsData
+    } else if (typeof pillarsData === "string") {
+      // String - try to parse
+      try {
+        const parsed = JSON.parse(pillarsData)
+        return Array.isArray(parsed) ? parsed : []
+      } catch (e) {
+        console.error("[Feed Brand Pillars] Failed to parse contentPillars string:", e)
+        return []
+      }
+    } else if (typeof pillarsData === "object" && pillarsData !== null) {
+      // Object - check if it has a "pillars" property (from Maya API response)
+      if ("pillars" in pillarsData && Array.isArray(pillarsData.pillars)) {
+        return pillarsData.pillars
+      }
+      // Otherwise, try to use as array if it looks like one
+      return Array.isArray(pillarsData) ? pillarsData : []
+    }
+    
+    return []
+  })()
 
   // Debug logging to help diagnose issues
   useEffect(() => {

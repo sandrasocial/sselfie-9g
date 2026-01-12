@@ -25,298 +25,424 @@ const MOOD_MAP: Record<BlueprintMood, string> = {
 
 export const BLUEPRINT_PHOTOSHOOT_TEMPLATES: Record<string, string> = {
   // LUXURY category
-  luxury_dark_moody: `Create a 3x3 grid showcasing 9 distinct photographic angles of the subject from the reference image. Each frame captures a different perspective while maintaining absolute continuity in identity, styling, and environment. The grid layout is clean and symmetrical with subtle separation lines. Each photo is realistically lit and color-graded for a cohesive visual set. The model's identity, outfit, and environment remain consistent across all shots, emphasizing photographic diversity and visual storytelling coherence. High-resolution, photorealistic style. The angle must be different from the reference image. Maintain a strict perfect facial and body consistency.
-Setting: SoHo, New York City at dusk - mix of upscale street corners and luxury hotel lobby, all-black designer outfit (black silk slip dress with black leather jacket or black blazer with black tailored pants), black strappy heels, layered gold jewelry, designer black quilted bag, sleek hair in low bun, natural dusk lighting transitioning to interior warm lighting.
-Angles include:
+  luxury_dark_moody: `Create a 3x3 grid showcasing 9 distinct photographic angles of the subject from the reference image. Each frame captures a different perspective while maintaining absolute continuity in identity, styling, and environment. The grid layout is clean and symmetrical with subtle separation lines emphasizing photographic diversity and visual storytelling coherence. High-resolution, photorealistic style. The angle must be different from the reference image. Maintain strict perfect facial and body consistency.
 
-Close-up portrait outside luxury hotel entrance with city lights behind
-Detail shot - designer bag hardware on marble hotel table with espresso cup
-Full body walking on SoHo cobblestone street at dusk
-Side profile in hotel lobby doorway with glass reflection
-Over-shoulder viewing Manhattan street from hotel window
-Detail shot - layered gold rings holding phone on black marble surface
-Environmental portrait on SoHo street corner with cast iron buildings
-Candid walking moment crossing street with taxi lights
-Elevated perspective from hotel mezzanine looking down at lobby floor
+Vibe: Dark luxury editorial aesthetic. All black outfits with urban edge. Moody city lighting, concrete architecture, professional spaces. iPhone photography style with natural film grain, high contrast shadows, sophisticated and effortless.
 
-Color grade: Dark and moody luxury influencer aesthetic with deep blacks, rich charcoals, natural dusk ambiance, warm city lights bokeh, gold jewelry highlights, desaturated with natural skin warmth, cinematic NYC Instagram grid vibe.`,
+Setting: Urban concrete structures, modern office interiors, city streets at dusk, luxury building lobbies
 
-  luxury_light_minimalistic: `Create a 3x3 grid showcasing 9 distinct photographic angles of the subject from the reference image. Each frame captures a different perspective while maintaining absolute continuity in identity, styling, and environment. The grid layout is clean and symmetrical with subtle separation lines. Each photo is realistically lit and color-graded for a cohesive visual set. The model's identity, outfit, and environment remain consistent across all shots, emphasizing photographic diversity and visual storytelling coherence. High-resolution, photorealistic style. The angle must be different from the reference image. Maintain a strict perfect facial and body consistency.
-Setting: Knightsbridge, London - mix of designer boutique exterior and minimalist café interior, elegant white outfit (white blazer with cream pants or ivory blouse with beige trousers), nude heels, delicate gold jewelry, structured designer bag in cream, sleek hair, bright natural daylight.
-Angles include:
+Outfits: Black oversized blazers, black leather pants, black bodysuits with deep necklines, gray tailored blazers, occasional white tee. Gold chain necklaces, designer black bags, black sunglasses, black heels and boots.
 
-Close-up portrait outside Sloane Street boutique with bright daylight
-Detail shot - iced latte on white marble café table with designer sunglasses
-Full body against white boutique exterior with large windows
-Side profile inside bright minimalist café by window
-Over-shoulder viewing Knightsbridge street through glass
-Detail shot - gold watch and rings on wrist holding phone on white table
-Environmental portrait on clean London sidewalk with luxury storefronts
-Candid checking phone while walking past boutique window displays
-Elevated perspective from café balcony looking down at street
+9 frames:
+1. Sitting on concrete stairs - black blazer, leather pants, beanie, sunglasses, relaxed pose
+2. Coffee and designer YSL bag on dark marble table - overhead flatlay, moody lighting
+3. Full-body against gray wall - black puffer jacket, dynamic pose, urban background
 
-Color grade: Light and minimalistic luxury aesthetic with bright whites, soft creams, natural British daylight, gentle shadows, fresh sophisticated palette, airy elegance, high-end London Instagram grid vibe.`,
+4. Close-up gold chain necklace on black bodysuit - hand touching collarbone, soft shadow
+5. Street sign reading "ICONIC" in bold serif font on textured concrete wall, dramatic moody lighting
+6. Black jacket with rhinestone details - close texture shot on reflective dark surface
 
-  luxury_beige_aesthetic: `Create a 3x3 grid showcasing 9 distinct photographic angles of the subject from the reference image. Each frame captures a different perspective while maintaining absolute continuity in identity, styling, and environment. The grid layout is clean and symmetrical with subtle separation lines. Each photo is realistically lit and color-graded for a cohesive visual set. The model's identity, outfit, and environment remain consistent across all shots, emphasizing photographic diversity and visual storytelling coherence. High-resolution, photorealistic style. The angle must be different from the reference image. Maintain a strict perfect facial and body consistency.
-Setting: Le Marais, Paris - mix of charming cobblestone streets and upscale café terrace, camel cashmere coat over cream knit with beige wide-leg pants, nude heels, gold layered jewelry, tan leather designer bag, polished hair in loose waves, soft Parisian natural lighting.
-Angles include:
+7. Walking naturally on city street - black oversized jacket, chain bag, yellow road markings visible
+8. Working at laptop with coffee - overhead view, hands typing, dark minimalist desk
+9. Mirror selfie - gray blazer over black bralette, phone in hand, modern interior
 
-Close-up portrait at outdoor café table with Parisian buildings behind
-Detail shot - cappuccino on beige stone café table with croissant and fashion magazine
-Full body walking on Le Marais cobblestone street
-Side profile seated at café terrace holding coffee cup
-Over-shoulder viewing charming Parisian street architecture
-Detail shot - tan leather bag on café chair with gold watch visible
-Environmental portrait on narrow Parisian street with boutiques
-Candid moment looking in boutique window with bag over shoulder
-Elevated perspective from apartment balcony looking down at street
+Color grade: Deep blacks, cool grays, concrete tones, warm skin preserved, gold jewelry highlights, dramatic shadows, iPhone grain, moody candid lighting, high contrast.`,
 
-Color grade: Beige luxury influencer aesthetic with rich camels, soft taupes, creamy beiges, natural Parisian daylight, gentle shadows, sophisticated neutral Instagram grid with timeless French elegance.`,
+  luxury_light_minimalistic: `Create a 3x3 grid showcasing 9 distinct photographic angles of the subject from the reference image. Each frame captures a different perspective while maintaining absolute continuity in identity, styling, and environment. The grid layout is clean and symmetrical with subtle separation lines emphasizing photographic diversity and visual storytelling coherence. High-resolution, photorealistic style. The angle must be different from the reference image. Maintain strict perfect facial and body consistency.
+
+Vibe: Bright luxury minimalist aesthetic. White and cream tailored pieces with airy elegance. Bright natural daylight, clean white interiors, sophisticated simplicity. iPhone photography style with soft lighting, minimal shadows, effortless polish.
+
+Setting: Bright white penthouse interiors, luxury hotel lobbies with natural light, clean modern architecture
+
+Outfits: White tailored blazers, cream wide-leg trousers, white silk blouses, ivory cashmere coats, beige knit dresses. Delicate gold jewelry, cream leather bags, nude heels, white sneakers.
+
+9 frames:
+1. Standing in bright white room - cream blazer, white trousers, hand in pocket, natural window light
+2. Latte and delicate gold jewelry on white marble - overhead flatlay, soft natural light
+3. Full-body in doorway - white long coat, cream dress underneath, architectural white background
+
+4. Close-up of delicate gold necklace on white silk blouse - minimal styling, soft focus
+5. Minimalist sign reading "RELAX" in elegant thin serif on white textured wall, soft shadow detail
+6. White cashmere fabric texture - extreme close-up, luxurious material detail
+
+7. Walking in bright hallway - cream trench coat, white bag, natural stride, soft shadows
+8. White desk with laptop and coffee - overhead view, minimal workspace, bright daylight
+9. Mirror selfie - white blazer, cream top, phone in hand, bright clean bathroom
+
+Color grade: Bright whites, soft creams, warm beiges, gentle shadows, natural daylight, minimal grain, airy and clean, soft focus, high-key lighting.`,
+
+  luxury_beige_aesthetic: `Create a 3x3 grid showcasing 9 distinct photographic angles of the subject from the reference image. Each frame captures a different perspective while maintaining absolute continuity in identity, styling, and environment. The grid layout is clean and symmetrical with subtle separation lines emphasizing photographic diversity and visual storytelling coherence. High-resolution, photorealistic style. The angle must be different from the reference image. Maintain strict perfect facial and body consistency.
+
+Vibe: Warm beige luxury aesthetic. Camel, tan, and cream tailored pieces with golden hour elegance. Soft warm lighting, beige interiors, sophisticated warmth. iPhone photography style with warm tones, soft shadows, timeless luxury.
+
+Setting: Beige stone architecture, warm-toned luxury apartments, golden hour city streets, tan leather interiors
+
+Outfits: Camel cashmere coats, tan trousers, cream knit sweaters, beige tailored blazers, chocolate brown leather. Layered gold jewelry, tan leather bags, beige heels, cognac boots.
+
+9 frames:
+1. Leaning against beige stone wall - camel coat, cream sweater, tan bag, relaxed elegant pose
+2. Cappuccino and tan leather bag on wood table - overhead flatlay, warm natural light
+3. Full-body walking - beige trench coat, cream dress, city background, golden hour glow
+
+4. Close-up layered gold necklaces on cream knit - warm skin tones, soft focus, golden light
+5. Vintage street sign reading "PARIS" in classic serif on aged beige stone, warm afternoon light
+6. Tan leather texture close-up - luxury bag detail, buttery soft material, warm lighting
+
+7. Sitting on tan leather chair - chocolate brown blazer, camel pants, crossed legs, sophisticated
+8. Beige workspace with coffee and notebook - overhead view, warm minimal desk, soft shadows
+9. Mirror selfie - camel blazer, cream turtleneck, gold jewelry, warm bathroom lighting
+
+Color grade: Warm beiges, camel tones, cream highlights, golden hour warmth, soft shadows, gentle grain, sophisticated warmth, buttery soft lighting.`,
 
   // MINIMAL category
-  minimal_dark_moody: `Create a 3x3 grid showcasing 9 distinct photographic angles of the subject from the reference image. Each frame captures a different perspective while maintaining absolute continuity in identity, styling, and environment. The grid layout is clean and symmetrical with subtle separation lines. Each photo is realistically lit and color-graded for a cohesive visual set. The model's identity, outfit, and environment remain consistent across all shots, emphasizing photographic diversity and visual storytelling coherence. High-resolution, photorealistic style. The angle must be different from the reference image. Maintain a strict perfect facial and body consistency.
-Setting: Kreuzberg, Berlin - mix of industrial loft interior and concrete urban courtyard, all-black minimal outfit (black turtleneck with black straight pants), black minimal leather shoes, minimal silver jewelry, sleek hair, harsh natural window and courtyard lighting.
-Angles include:
+  minimal_dark_moody: `Create a 3x3 grid showcasing 9 distinct photographic angles of the subject from the reference image. Each frame captures a different perspective while maintaining absolute continuity in identity, styling, and environment. The grid layout is clean and symmetrical with subtle separation lines emphasizing photographic diversity and visual storytelling coherence. High-resolution, photorealistic style. The angle must be different from the reference image. Maintain strict perfect facial and body consistency.
 
-Close-up portrait in concrete courtyard with dramatic side lighting
-Detail shot - black coffee on concrete surface inside loft with geometric shadows
-Full body against raw concrete wall in urban courtyard
-Side profile inside loft by large industrial window
-Over-shoulder viewing Berlin courtyard through loft window
-Detail shot - minimal silver ring on hand against black fabric on concrete
-Environmental portrait in industrial courtyard with exposed brick buildings
-Candid still moment walking through concrete passageway
-Elevated perspective from loft stairs looking down
+Vibe: Dark minimal editorial aesthetic. All black uniform pieces with architectural precision. Harsh geometric shadows, concrete spaces, stripped-back sophistication. iPhone photography style with high contrast, clean lines, modern minimalism.
 
-Color grade: Dark and moody minimal aesthetic with deep blacks, concrete grays, stark natural contrast, geometric shadows, desaturated Berlin palette, editorial minimalism Instagram grid with powerful architectural presence.`,
+Setting: Concrete brutalist architecture, minimal black interiors, geometric urban spaces, modern art galleries
 
-  minimal_light_minimalistic: `Create a 3x3 grid showcasing 9 distinct photographic angles of the subject from the reference image. Each frame captures a different perspective while maintaining absolute continuity in identity, styling, and environment. The grid layout is clean and symmetrical with subtle separation lines. Each photo is realistically lit and color-graded for a cohesive visual set. The model's identity, outfit, and environment remain consistent across all shots, emphasizing photographic diversity and visual storytelling coherence. High-resolution, photorealistic style. The angle must be different from the reference image. Maintain a strict perfect facial and body consistency.
-Setting: Nørrebro, Copenhagen - mix of white gallery space and minimalist outdoor plaza, simple white outfit (white shirt with white linen pants), white minimal shoes, no jewelry, simple natural hair, bright Scandinavian daylight.
-Angles include:
+Outfits: Black turtlenecks, black straight-leg pants, black minimal dresses, black structured blazers. Single silver ring, black leather minimal bag, no other jewelry, black boots.
 
-Close-up portrait outside white building in Copenhagen plaza
-Detail shot - white ceramic cup on white surface inside gallery café
-Full body against pure white gallery exterior wall
-Side profile inside bright gallery space by floor-to-ceiling window
-Over-shoulder viewing Copenhagen street through gallery glass
-Detail shot - clean white fabric hem and minimal white shoe detail
-Environmental portrait in white minimalist plaza with modern architecture
-Candid calm walking moment across white plaza stones
-Elevated perspective from gallery upper level looking down
+9 frames:
+1. Standing against concrete wall - black turtleneck, black pants, arms at sides, geometric shadows
+2. Black coffee cup on concrete surface - overhead flatlay, harsh single light source, minimal composition
+3. Full-body in concrete hallway - black dress, centered composition, architectural symmetry
 
-Color grade: Light and minimalistic aesthetic with pure whites, bright Scandinavian daylight, minimal shadows, clean Nordic simplicity, peaceful serenity, Copenhagen Instagram grid with absolute Nordic purity.`,
+4. Close-up face profile - black turtleneck, single silver ring visible on hand near face, sharp shadows
+5. Modern street sign reading "BERLIN" in bold sans-serif on matte black metal, geometric design
+6. Black fabric texture - extreme close-up, ribbed knit detail, high contrast lighting
 
-  minimal_beige_aesthetic: `Create a 3x3 grid showcasing 9 distinct photographic angles of the subject from the reference image. Each frame captures a different perspective while maintaining absolute continuity in identity, styling, and environment. The grid layout is clean and symmetrical with subtle separation lines. Each photo is realistically lit and color-graded for a cohesive visual set. The model's identity, outfit, and environment remain consistent across all shots, emphasizing photographic diversity and visual storytelling coherence. High-resolution, photorealistic style. The angle must be different from the reference image. Maintain a strict perfect facial and body consistency.
-Setting: Vesterbro, Copenhagen - mix of minimalist home interior and quiet residential street, beige ribbed knit with beige linen pants, nude minimal shoes, no jewelry, natural simple hair, soft Nordic diffused daylight.
-Angles include:
+7. Walking through concrete corridor - black blazer, black pants, straight-on angle, shadow play
+8. Black laptop on black desk - overhead minimal workspace, single black coffee cup, stark composition
+9. Mirror selfie - black turtleneck dress, phone in hand, black minimal bathroom
 
-Close-up portrait on quiet Copenhagen residential street
-Detail shot - beige ceramic mug on natural oak table inside home
-Full body against neutral beige building exterior
-Side profile inside by large window overlooking cobblestone street
-Over-shoulder viewing tree-lined Copenhagen street
-Detail shot - beige knit texture close-up with natural fabric drape
-Environmental portrait on peaceful Vesterbro street with bicycles
-Candid moment walking on sidewalk with hands in pockets
-Elevated perspective from apartment window looking down at street
+Color grade: Deep blacks, charcoal grays, high contrast, harsh geometric shadows, minimal grain, modern stark aesthetic, architectural precision.`,
 
-Color grade: Beige minimal aesthetic with soft beiges, gentle creams, natural Nordic taupes, diffused lighting, monochromatic Scandinavian warmth, hygge Instagram grid with peaceful neutral calm.`,
+  minimal_light_minimalistic: `Create a 3x3 grid showcasing 9 distinct photographic angles of the subject from the reference image. Each frame captures a different perspective while maintaining absolute continuity in identity, styling, and environment. The grid layout is clean and symmetrical with subtle separation lines emphasizing photographic diversity and visual storytelling coherence. High-resolution, photorealistic style. The angle must be different from the reference image. Maintain strict perfect facial and body consistency.
+
+Vibe: Pure white minimal aesthetic. All-white uniform pieces with Scandinavian simplicity. Bright even daylight, white interiors, absolute minimalism. iPhone photography style with soft lighting, no shadows, zen simplicity.
+
+Setting: Pure white gallery spaces, Scandinavian white interiors, bright white studios, minimal architecture
+
+Outfits: White turtlenecks, white linen pants, white minimal dresses, white cotton shirts. No jewelry. White minimal bag, white sneakers.
+
+9 frames:
+1. Standing in white room - white turtleneck, white pants, hands relaxed, even bright light
+2. White coffee cup on white marble - overhead flatlay, soft diffused light, pure minimalism
+3. Full-body centered - white dress, white background, symmetrical composition, clean lines
+
+4. Close-up face straight-on - white turtleneck, no jewelry, soft natural light, serene expression
+5. Clean sign reading "STILL" in thin minimal sans-serif on white wall, subtle embossed texture
+6. White linen fabric - extreme close-up, natural texture, soft even lighting
+
+7. Walking in white hallway - white shirt, white pants, centered angle, bright daylight
+8. White desk minimal - overhead view, white laptop, white cup, absolute simplicity
+9. Mirror reflection - white dress, white phone, white bathroom, soft bright light
+
+Color grade: Pure whites, soft grays, no shadows, bright even lighting, minimal grain, Scandinavian aesthetic, zen simplicity, high-key exposure.`,
+
+  minimal_beige_aesthetic: `Create a 3x3 grid showcasing 9 distinct photographic angles of the subject from the reference image. Each frame captures a different perspective while maintaining absolute continuity in identity, styling, and environment. The grid layout is clean and symmetrical with subtle separation lines emphasizing photographic diversity and visual storytelling coherence. High-resolution, photorealistic style. The angle must be different from the reference image. Maintain strict perfect facial and body consistency.
+
+Vibe: Beige minimal aesthetic. Neutral beige and sand tones with understated elegance. Soft Nordic light, beige interiors, quiet sophistication. iPhone photography style with gentle lighting, minimal styling, calm simplicity.
+
+Setting: Beige minimal apartments, sand-colored interiors, neutral modern spaces, soft natural environments
+
+Outfits: Beige ribbed knits, sand linen pants, oatmeal sweaters, taupe minimal dresses. No jewelry. Beige canvas bag, nude sandals.
+
+9 frames:
+1. Sitting on beige sofa - oatmeal sweater, beige pants, relaxed pose, soft window light
+2. Beige coffee cup on sand-colored surface - overhead flatlay, gentle natural light, minimal styling
+3. Full-body standing - beige dress, beige wall background, centered, soft shadows
+
+4. Close-up hands holding beige cup - ribbed sweater sleeves, no jewelry, warm skin, soft focus
+5. Simple wooden sign reading "COZY" in natural carved letters on beige textured wall, soft light
+6. Beige knit texture - close-up, ribbed pattern, natural fiber detail, soft lighting
+
+7. Walking past beige wall - sand linen outfit, natural stride, gentle side lighting, calm movement
+8. Beige workspace - overhead, laptop, coffee, neutral desk, soft natural light from window
+9. Sitting by window - beige knit, holding cup, soft profile, warm natural light
+
+Color grade: Warm beiges, sand tones, oatmeal neutrals, soft shadows, gentle Nordic light, minimal grain, quiet sophistication, calm aesthetic.`,
 
   // BEIGE category
-  beige_dark_moody: `Create a 3x3 grid showcasing 9 distinct photographic angles of the subject from the reference image. Each frame captures a different perspective while maintaining absolute continuity in identity, styling, and environment. The grid layout is clean and symmetrical with subtle separation lines. Each photo is realistically lit and color-graded for a cohesive visual set. The model's identity, outfit, and environment remain consistent across all shots, emphasizing photographic diversity and visual storytelling coherence. High-resolution, photorealistic style. The angle must be different from the reference image. Maintain a strict perfect facial and body consistency.
-Setting: West Village, New York - mix of cozy brownstone interior and tree-lined evening street, chocolate brown coat over camel turtleneck with dark taupe pants, brown leather accessories, gold jewelry, polished hair, dramatic evening window light and street lamp glow.
-Angles include:
+  beige_dark_moody: `Create a 3x3 grid showcasing 9 distinct photographic angles of the subject from the reference image. Each frame captures a different perspective while maintaining absolute continuity in identity, styling, and environment. The grid layout is clean and symmetrical with subtle separation lines emphasizing photographic diversity and visual storytelling coherence. High-resolution, photorealistic style. The angle must be different from the reference image. Maintain strict perfect facial and body consistency.
 
-Close-up portrait on West Village brownstone steps at dusk
-Detail shot - espresso on dark wood table inside brownstone with gold jewelry
-Full body on cobblestone street with brownstone backdrop at twilight
-Side profile inside by large brownstone window overlooking street
-Over-shoulder viewing tree-lined West Village street with street lamps
-Detail shot - brown leather bag on wrought iron chair with brass hardware
-Environmental portrait on charming Village street with historic buildings
-Candid walking moment under street lamp glow
-Elevated perspective from brownstone stoop looking down at sidewalk
+Vibe: Dark cozy beige aesthetic. Chocolate brown, camel, and taupe with evening warmth. Moody warm lighting, autumn vibes, cozy sophistication. iPhone photography style with warm shadows, rich tones, intimate atmosphere.
 
-Color grade: Dark and moody beige aesthetic with deep chocolates, rich browns, shadowed taupes, natural twilight and warm street lamp light, dramatic contrast, cozy NYC Instagram grid with sophisticated autumn darkness.`,
+Setting: Evening city streets, warm-lit cafes, cozy apartment interiors, autumn urban landscapes
 
-  beige_light_minimalistic: `Create a 3x3 grid showcasing 9 distinct photographic angles of the subject from the reference image. Each frame captures a different perspective while maintaining absolute continuity in identity, styling, and environment. The grid layout is clean and symmetrical with subtle separation lines. Each photo is realistically lit and color-graded for a cohesive visual set. The model's identity, outfit, and environment remain consistent across all shots, emphasizing photographic diversity and visual storytelling coherence. High-resolution, photorealistic style. The angle must be different from the reference image. Maintain a strict perfect facial and body consistency.
-Setting: Byron Bay, Australia - mix of beach café interior and coastal street, cream linen shirt with sand-colored pants, nude minimal sandals, minimal gold jewelry, natural beachy hair, bright Australian coastal daylight.
-Angles include:
+Outfits: Chocolate brown wool coats, camel cashmere sweaters, taupe trousers, brown leather jackets. Gold jewelry, cognac leather bags, brown suede boots.
 
-Close-up portrait outside beach café with coastal buildings behind
-Detail shot - iced coffee on light wood table inside café with ocean view
-Full body on clean white coastal street with palm trees
-Side profile inside bright café by open window with sea breeze
-Over-shoulder viewing Byron Bay beach street and ocean
-Detail shot - natural linen fabric texture with delicate gold anklet
-Environmental portrait on coastal pathway with white buildings
-Candid walking moment on sunny Byron Bay main street
-Elevated perspective from café deck looking down at street
+9 frames:
+1. Sitting on bench - chocolate brown coat, camel sweater, evening street lamps behind, cozy pose
+2. Hot chocolate and brown leather bag - overhead flatlay on wood table, warm cafe lighting
+3. Full-body walking - brown wool coat, autumn street, fallen leaves, evening golden light
 
-Color grade: Light and minimalistic beige aesthetic with bright creams, soft ivories, pale sand tones, natural bright Australian daylight, fresh coastal neutrals, breezy Instagram grid with luminous beach elegance.`,
+4. Close-up gold jewelry on camel knit - warm skin, soft shadow, intimate lighting, cozy feel
+5. Vintage sign reading "AUTUMN" in warm serif font on rustic wood, glowing evening light
+6. Brown leather texture - close-up luxury bag, rich material, warm moody lighting
 
-  beige_beige_aesthetic: `Create a 3x3 grid showcasing 9 distinct photographic angles of the subject from the reference image. Each frame captures a different perspective while maintaining absolute continuity in identity, styling, and environment. The grid layout is clean and symmetrical with subtle separation lines. Each photo is realistically lit and color-graded for a cohesive visual set. The model's identity, outfit, and environment remain consistent across all shots, emphasizing photographic diversity and visual storytelling coherence. High-resolution, photorealistic style. The angle must be different from the reference image. Maintain a strict perfect facial and body consistency.
-Setting: Notting Hill, London - mix of pastel townhouse interior and colorful residential street, camel sweater with beige trousers, tan leather accessories, gold jewelry, natural polished hair, soft London natural lighting.
-Angles include:
+7. Leaning in doorway - taupe blazer, chocolate sweater, warm interior light, relaxed stance
+8. Cozy workspace - overhead, latte, brown notebook, warm desk lamp, evening atmosphere
+9. Mirror selfie - brown coat, camel scarf, phone in hand, warm bathroom light
 
-Close-up portrait on Notting Hill street with pastel houses behind
-Detail shot - cappuccino on beige stone surface inside home with British Vogue
-Full body on charming Notting Hill street with colorful doors
-Side profile inside by bay window overlooking mews street
-Over-shoulder viewing iconic pastel-colored townhouse row
-Detail shot - cashmere texture with gold watch on windowsill with plants
-Environmental portrait on quintessential Notting Hill cobblestone street
-Candid contemplative moment walking past flower shop
-Elevated perspective from townhouse window looking down at street
+Color grade: Chocolate browns, warm camel, taupe shadows, golden evening light, rich warm tones, cozy grain, autumn aesthetic, intimate moody lighting.`,
 
-Color grade: Complete beige aesthetic with warm camels, soft taupes, gentle beiges, natural British daylight, subtle tonal variations, monochromatic London warmth, Pinterest-worthy Instagram grid with perfect British neutral harmony.`,
+  beige_light_minimalistic: `Create a 3x3 grid showcasing 9 distinct photographic angles of the subject from the reference image. Each frame captures a different perspective while maintaining absolute continuity in identity, styling, and environment. The grid layout is clean and symmetrical with subtle separation lines emphasizing photographic diversity and visual storytelling coherence. High-resolution, photorealistic style. The angle must be different from the reference image. Maintain strict perfect facial and body consistency.
+
+Vibe: Bright beige coastal aesthetic. Cream, sand, and ivory with beach elegance. Bright coastal daylight, airy spaces, effortless luxury. iPhone photography style with bright natural light, soft breezy feel, coastal sophistication.
+
+Setting: Bright beach houses, coastal cafes, sandy beach backgrounds, white-washed architecture
+
+Outfits: Cream linen dresses, sand cotton shirts, ivory wide-leg pants, beige knit cardigans. Minimal gold jewelry, woven cream bags, nude sandals.
+
+9 frames:
+1. Standing on beach - cream linen dress, natural wind in hair, bright daylight, ocean background
+2. Iced latte and woven bag on white table - overhead flatlay, bright natural light, coastal vibe
+3. Full-body walking - ivory pants, sand top, beach path, breezy movement, soft shadows
+
+4. Close-up minimal gold necklace on cream linen - sun-kissed skin, soft focus, bright light
+5. Beach sign reading "PARADISE" in weathered white paint on driftwood, bright coastal light
+6. Cream linen fabric - close-up, natural texture blowing in breeze, bright sunlight
+
+7. Sitting on white steps - beige cardigan, cream dress, relaxed pose, coastal architecture
+8. Bright workspace - overhead, iced coffee, minimal desk, beach view visible, natural light
+9. Doorway moment - sand linen outfit, leaning in white doorframe, bright airy interior
+
+Color grade: Bright creams, sand tones, ivory highlights, coastal natural light, soft breezy shadows, gentle grain, beach aesthetic, airy sophistication.`,
+
+  beige_beige_aesthetic: `Create a 3x3 grid showcasing 9 distinct photographic angles of the subject from the reference image. Each frame captures a different perspective while maintaining absolute continuity in identity, styling, and environment. The grid layout is clean and symmetrical with subtle separation lines emphasizing photographic diversity and visual storytelling coherence. High-resolution, photorealistic style. The angle must be different from the reference image. Maintain strict perfect facial and body consistency.
+
+Vibe: Classic beige aesthetic. Camel, tan, and cream with timeless elegance. Soft natural light, neutral spaces, understated luxury. iPhone photography style with warm neutral tones, gentle shadows, editorial sophistication.
+
+Setting: Beige townhouses, neutral modern apartments, classic cafes, European architecture
+
+Outfits: Camel knit sweaters, tan trousers, cream blouses, beige coats. Layered gold jewelry, tan leather bags, nude heels, beige accessories.
+
+9 frames:
+1. Leaning against beige wall - camel sweater, tan pants, gold jewelry, relaxed sophisticated pose
+2. Cappuccino and tan bag on neutral surface - overhead flatlay, soft natural window light
+3. Full-body in neutral hallway - beige coat, cream pants, walking naturally, soft shadows
+
+4. Close-up layered gold necklaces on camel knit - warm tones, soft focus, gentle lighting
+5. Classic sign reading "ELEGANCE" in timeless serif on beige stone wall, soft afternoon light
+6. Tan cashmere texture - close-up, luxury knit detail, soft warm lighting
+
+7. Sitting on beige chair - cream blouse, tan trousers, crossed legs, editorial pose, natural light
+8. Neutral workspace - overhead, coffee, tan notebook, minimal desk, soft daylight
+9. Mirror selfie - camel coat, layered gold jewelry, phone in hand, warm neutral bathroom
+
+Color grade: Warm camels, soft tans, cream highlights, natural neutral light, gentle shadows, subtle grain, timeless aesthetic, editorial sophistication.`,
 
   // WARM category
-  warm_dark_moody: `Create a 3x3 grid showcasing 9 distinct photographic angles of the subject from the reference image. Each frame captures a different perspective while maintaining absolute continuity in identity, styling, and environment. The grid layout is clean and symmetrical with subtle separation lines. Each photo is realistically lit and color-graded for a cohesive visual set. The model's identity, outfit, and environment remain consistent across all shots, emphasizing photographic diversity and visual storytelling coherence. High-resolution, photorealistic style. The angle must be different from the reference image. Maintain a strict perfect facial and body consistency.
-Setting: Trastevere, Rome - mix of rustic trattoria interior and narrow cobblestone alley at evening, rust oversized sweater with chocolate wide-leg pants, brown leather accessories, gold jewelry, natural hair, warm Italian evening light and ambient interior lighting.
-Angles include:
+  warm_dark_moody: `Create a 3x3 grid showcasing 9 distinct photographic angles of the subject from the reference image. Each frame captures a different perspective while maintaining absolute continuity in identity, styling, and environment. The grid layout is clean and symmetrical with subtle separation lines emphasizing photographic diversity and visual storytelling coherence. High-resolution, photorealistic style. The angle must be different from the reference image. Maintain strict perfect facial and body consistency.
 
-Close-up portrait in Trastevere alley with warm stone buildings at dusk
-Detail shot - espresso on rustic wood table inside trattoria with gold rings beside
-Full body on narrow Roman cobblestone street with ivy-covered walls
-Side profile inside trattoria by arched window overlooking alley
-Over-shoulder viewing charming Trastevere street with hanging laundry
-Detail shot - brown leather crossbody bag on wooden chair with brass details
-Environmental portrait on atmospheric Roman alley with warm stone
-Candid walking moment under Trastevere street lamp glow
-Elevated perspective from trattoria balcony looking down at alley
+Vibe: Warm moody aesthetic. Rust, burgundy, and chocolate brown with evening richness. Warm Italian lighting, intimate spaces, romantic atmosphere. iPhone photography style with glowing warm tones, rich shadows, cozy drama.
 
-Color grade: Dark and moody warm aesthetic with deep rusts, rich burgundies, chocolate browns, natural evening Italian light, dramatic shadows, warm terracotta tones, cozy Rome Instagram grid with mysterious Mediterranean warmth.`,
+Setting: Evening Italian streets, warm-lit trattorias, cozy wine bars, sunset architecture
 
-  warm_light_minimalistic: `Create a 3x3 grid showcasing 9 distinct photographic angles of the subject from the reference image. Each frame captures a different perspective while maintaining absolute continuity in identity, styling, and environment. The grid layout is clean and symmetrical with subtle separation lines. Each photo is realistically lit and color-graded for a cohesive visual set. The model's identity, outfit, and environment remain consistent across all shots, emphasizing photographic diversity and visual storytelling coherence. High-resolution, photorealistic style. The angle must be different from the reference image. Maintain a strict perfect facial and body consistency.
-Setting: Omotesando, Tokyo - mix of minimalist café interior and clean modern street, ivory oversized sweater with cream wide-leg pants, nude accessories, minimal gold jewelry, natural hair, bright Tokyo natural daylight.
-Angles include:
+Outfits: Rust knit sweaters, burgundy dresses, chocolate brown coats, terracotta tops. Gold jewelry, brown leather bags, cognac boots.
 
-Close-up portrait on clean Omotesando street with modern architecture
-Detail shot - matcha latte on white ceramic inside minimal café with wooden accents
-Full body on pristine Tokyo sidewalk with zelkova trees
-Side profile inside bright café by floor-to-ceiling window
-Over-shoulder viewing modern Omotesando street with designer stores
-Detail shot - soft knit texture with delicate gold necklace on white surface
-Environmental portrait on architectural Omotesando avenue
-Candid peaceful walking moment crossing clean crosswalk
-Elevated perspective from café terrace looking down at street
+9 frames:
+1. Sitting at cafe table - rust sweater, burgundy scarf, wine glass, warm evening glow
+2. Red wine and leather-bound book on wood table - overhead flatlay, candlelit atmosphere
+3. Full-body walking - chocolate coat, burgundy dress underneath, Italian street, sunset warm light
 
-Color grade: Light and minimalistic warm aesthetic with soft ivories, warm whites, gentle creams, natural Tokyo daylight, fresh minimalist warmth, Japanese aesthetic Instagram grid with luminous peaceful simplicity.`,
+4. Close-up gold jewelry on rust knit - warm intimate lighting, romantic glow, soft shadows
+5. Romantic sign reading "AMORE" in script font on aged terracotta wall, warm evening light
+6. Burgundy velvet texture - close-up, rich fabric detail, warm glowing lighting
 
-  warm_beige_aesthetic: `Create a 3x3 grid showcasing 9 distinct photographic angles of the subject from the reference image. Each frame captures a different perspective while maintaining absolute continuity in identity, styling, and environment. The grid layout is clean and symmetrical with subtle separation lines. Each photo is realistically lit and color-graded for a cohesive visual set. The model's identity, outfit, and environment remain consistent across all shots, emphasizing photographic diversity and visual storytelling coherence. High-resolution, photorealistic style. The angle must be different from the reference image. Maintain a strict perfect facial and body consistency.
-Setting: Gracia, Barcelona - mix of bohemian café interior and tree-lined plaza, caramel ribbed knit with sand linen pants, tan leather accessories, gold jewelry, soft natural hair, warm Barcelona afternoon light.
-Angles include:
+7. Leaning in doorway - terracotta top, brown pants, warm interior light spilling out, romantic stance
+8. Cozy evening setup - overhead, wine, journal, warm candlelight on wood table
+9. Window reflection - rust dress, holding wine glass, golden hour through window, warm glow
 
-Close-up portrait at outdoor café table in Gracia plaza
-Detail shot - cortado on terracotta surface inside café with pan con tomate
-Full body on charming Barcelona square with Modernist buildings
-Side profile inside bohemian café by vintage tiled window
-Over-shoulder viewing Gracia plaza with fountain and palm trees
-Detail shot - textured knit with layered gold necklaces on café table
-Environmental portrait on Barcelona plaza with colorful facades
-Candid relaxed moment browsing market stall
-Elevated perspective from apartment balcony overlooking plaza
+Color grade: Rich rusts, deep burgundy, chocolate browns, golden evening light, warm romantic shadows, cozy grain, Italian aesthetic, intimate atmosphere.`,
 
-Color grade: Warm beige aesthetic with rich toffees, warm caramels, toasted beiges, natural golden Barcelona light, gentle warm shadows, Mediterranean tonal harmony, Spanish lifestyle Instagram grid with embracing afternoon warmth.`,
+  warm_light_minimalistic: `Create a 3x3 grid showcasing 9 distinct photographic angles of the subject from the reference image. Each frame captures a different perspective while maintaining absolute continuity in identity, styling, and environment. The grid layout is clean and symmetrical with subtle separation lines emphasizing photographic diversity and visual storytelling coherence. High-resolution, photorealistic style. The angle must be different from the reference image. Maintain strict perfect facial and body consistency.
+
+Vibe: Bright warm minimal aesthetic. Ivory, cream, and white with warm sunlight. Bright Japanese daylight, clean spaces, zen warmth. iPhone photography style with bright natural light, minimal styling, warm simplicity.
+
+Setting: Bright Tokyo apartments, minimal Japanese interiors, sunny modern spaces, clean architecture
+
+Outfits: Ivory oversized shirts, cream wide-leg pants, white minimal dresses, warm knit cardigans. Minimal gold jewelry, cream canvas bags, white sneakers.
+
+9 frames:
+1. Standing in bright room - ivory oversized shirt, cream pants, natural pose, warm sunlight streaming
+2. Green tea and minimal gold bracelet on white table - overhead flatlay, bright natural light
+3. Full-body centered - cream dress, white background, warm sunlit, clean composition
+
+4. Close-up minimal gold necklace on white shirt - warm skin, soft focus, bright gentle light
+5. Minimal sign with Japanese character "和" (harmony) in simple black on white, soft shadow
+6. Cream fabric texture - close-up, natural cotton, warm bright lighting
+
+7. Walking in bright hallway - ivory outfit, warm sunlight, clean minimal space, peaceful movement
+8. Bright workspace - overhead, matcha tea, minimal desk, warm daylight flooding in
+9. Window seat moment - cream sweater, sitting peacefully, warm natural light, zen atmosphere
+
+Color grade: Warm ivories, soft creams, bright whites, warm natural daylight, minimal shadows, gentle grain, Japanese aesthetic, zen simplicity.`,
+
+  warm_beige_aesthetic: `Create a 3x3 grid showcasing 9 distinct photographic angles of the subject from the reference image. Each frame captures a different perspective while maintaining absolute continuity in identity, styling, and environment. The grid layout is clean and symmetrical with subtle separation lines emphasizing photographic diversity and visual storytelling coherence. High-resolution, photorealistic style. The angle must be different from the reference image. Maintain strict perfect facial and body consistency.
+
+Vibe: Warm beige lifestyle aesthetic. Caramel, sand, and toffee with golden afternoon glow. Warm Barcelona light, cozy cafes, Mediterranean warmth. iPhone photography style with golden tones, soft warmth, lifestyle elegance.
+
+Setting: Barcelona cafes, warm Mediterranean streets, golden hour terraces, sunny architecture
+
+Outfits: Caramel ribbed knits, sand linen pants, toffee sweaters, warm beige dresses. Layered gold jewelry, tan leather bags, nude sandals.
+
+9 frames:
+1. Sitting on terrace - caramel knit, sand pants, coffee cup, golden afternoon Barcelona light
+2. Cortado and gold jewelry on terracotta tiles - overhead flatlay, warm natural light
+3. Full-body walking - toffee dress, Mediterranean street, warm golden hour glow, natural stride
+
+4. Close-up layered gold necklaces on caramel knit - sun-kissed skin, warm focus, golden light
+5. Vintage sign reading "BARCELONA" in warm serif on aged ochre wall, golden afternoon light
+6. Caramel ribbed knit texture - close-up, warm fabric detail, golden lighting
+
+7. Leaning on warm stone wall - sand linen outfit, relaxed pose, Mediterranean architecture, golden glow
+8. Warm cafe workspace - overhead, coffee, notebook, terracotta table, golden afternoon light
+9. Balcony moment - toffee sweater, holding coffee, warm sunset light, Mediterranean view
+
+Color grade: Warm caramels, golden sands, toffee highlights, Mediterranean golden light, warm shadows, gentle grain, Barcelona aesthetic, lifestyle warmth.`,
 
   // EDGY category
-  edgy_dark_moody: `Create a 3x3 grid showcasing 9 distinct photographic angles of the subject from the reference image. Each frame captures a different perspective while maintaining absolute continuity in identity, styling, and environment. The grid layout is clean and symmetrical with subtle separation lines. Each photo is realistically lit and color-graded for a cohesive visual set. The model's identity, outfit, and environment remain consistent across all shots, emphasizing photographic diversity and visual storytelling coherence. High-resolution, photorealistic style. The angle must be different from the reference image. Maintain a strict perfect facial and body consistency.
-Setting: Shoreditch, London - mix of industrial café interior and gritty urban street, black leather jacket over black tee with ripped black jeans, black combat boots, silver chains, messy hair, harsh natural industrial lighting and neon signs.
-Angles include:
+  edgy_dark_moody: `Create a 3x3 grid showcasing 9 distinct photographic angles of the subject from the reference image. Each frame captures a different perspective while maintaining absolute continuity in identity, styling, and environment. The grid layout is clean and symmetrical with subtle separation lines emphasizing photographic diversity and visual storytelling coherence. High-resolution, photorealistic style. The angle must be different from the reference image. Maintain strict perfect facial and body consistency.
 
-Close-up portrait on Shoreditch street with brick wall and graffiti
-Detail shot - black coffee on metal table inside industrial café with cigarette pack
-Full body against raw brick warehouse wall on street
-Side profile inside gritty café by steel-framed window
-Over-shoulder viewing Shoreditch street with neon signs and street art
-Detail shot - silver chain necklace and leather jacket texture with studs
-Environmental portrait on edgy London street with vintage shops
-Candid powerful walking moment under railway bridge
-Elevated perspective from fire escape looking down at alley
+Vibe: Dark edgy urban aesthetic. All black leather, denim, and grunge with industrial edge. Harsh urban lighting, neon accents, underground nightlife. iPhone photography style with high contrast, gritty grain, rebellious attitude.
 
-Color grade: Dark and moody edgy aesthetic with deep blacks, harsh contrasts, industrial tones, dramatic shadows, desaturated with neon accents, gritty urban texture, underground London Instagram grid with rebellious raw presence.`,
+Setting: Industrial London streets, underground venues, graffiti walls, neon-lit alleys, urban nightlife
 
-  edgy_light_minimalistic: `Create a 3x3 grid showcasing 9 distinct photographic angles of the subject from the reference image. Each frame captures a different perspective while maintaining absolute continuity in identity, styling, and environment. The grid layout is clean and symmetrical with subtle separation lines. Each photo is realistically lit and color-graded for a cohesive visual set. The model's identity, outfit, and environment remain consistent across all shots, emphasizing photographic diversity and visual storytelling coherence. High-resolution, photorealistic style. The angle must be different from the reference image. Maintain a strict perfect facial and body consistency.
-Setting: Gangnam, Seoul - mix of white minimalist café and ultra-modern street, white oversized shirt with black leather pants, white platform sneakers, minimal silver jewelry, sleek straight hair, bright Seoul daylight.
-Angles include:
+Outfits: Black leather jackets, distressed black jeans, band t-shirts, combat boots. Silver chains, studded accessories, dark sunglasses, leather bags.
 
-Close-up portrait on clean Gangnam street with glass skyscrapers
-Detail shot - black iced americano on white table inside minimal café
-Full body against pure white modern building exterior
-Side profile inside bright café by geometric window
-Over-shoulder viewing futuristic Seoul street with LED screens
-Detail shot - white platform sneaker sole with black leather pants hem
-Environmental portrait on pristine Gangnam sidewalk with modern architecture
-Candid confident walking moment on zebra crossing
-Elevated perspective from café glass bridge looking down
+9 frames:
+1. Leaning on graffiti wall - leather jacket, band tee, distressed jeans, combat boots, edgy pose
+2. Black coffee and silver chains on metal surface - overhead flatlay, harsh industrial light, neon glow
+3. Full-body in alley - all black outfit, combat boots, walking confidently, urban neon background
 
-Color grade: Light and minimalistic edgy aesthetic with bright whites, clean blacks, stark contrast, sharp natural shadows, modern Korean minimalism, K-fashion Instagram grid with clean bold futuristic edge.`,
+4. Close-up silver chain necklaces on black tee - multiple chains, industrial lighting, gritty detail
+5. Neon sign reading "REBEL" in bold sans-serif with red neon glow on brick wall, nighttime
+6. Black leather jacket texture - close-up, worn leather detail, harsh side lighting
 
-  edgy_beige_aesthetic: `Create a 3x3 grid showcasing 9 distinct photographic angles of the subject from the reference image. Each frame captures a different perspective while maintaining absolute continuity in identity, styling, and environment. The grid layout is clean and symmetrical with subtle separation lines. Each photo is realistically lit and color-graded for a cohesive visual set. The model's identity, outfit, and environment remain consistent across all shots, emphasizing photographic diversity and visual storytelling coherence. High-resolution, photorealistic style. The angle must be different from the reference image. Maintain a strict perfect facial and body consistency.
-Setting: Williamsburg, Brooklyn - mix of raw café interior and industrial street, oversized tan utility jacket with beige cargo pants, tan combat boots, minimal leather accessories, natural undone hair, natural Brooklyn daylight.
-Angles include:
+7. Sitting on industrial steps - leather pants, black hoodie, silver chains, underground venue, moody
+8. Dark workspace - overhead, black coffee, laptop with stickers, industrial desk, harsh light
+9. Mirror selfie in dark bathroom - all black outfit, silver accessories, phone in hand, harsh fluorescent
 
-Close-up portrait on Williamsburg street with converted warehouse behind
-Detail shot - cold brew coffee on reclaimed wood inside raw café
-Full body on Brooklyn industrial street with exposed brick
-Side profile inside café by large factory window
-Over-shoulder viewing Williamsburg street with water towers
-Detail shot - tan combat boot laces and cargo pocket hardware
-Environmental portrait on urban Brooklyn street with graffiti murals
-Candid composed walking moment past vintage shop fronts
-Elevated perspective from rooftop café looking down at street
+Color grade: Deep blacks, cool grays, neon accents (red/blue), harsh contrast, heavy grain, industrial aesthetic, gritty urban, rebellious mood.`,
 
-Color grade: Beige edgy aesthetic with neutral tans, soft beiges, urban earth tones, natural Brooklyn shadows, raw industrial texture, soft grunge aesthetic, Williamsburg Instagram grid with muted cool Brooklyn edge.`,
+  edgy_light_minimalistic: `Create a 3x3 grid showcasing 9 distinct photographic angles of the subject from the reference image. Each frame captures a different perspective while maintaining absolute continuity in identity, styling, and environment. The grid layout is clean and symmetrical with subtle separation lines emphasizing photographic diversity and visual storytelling coherence. High-resolution, photorealistic style. The angle must be different from the reference image. Maintain strict perfect facial and body consistency.
+
+Vibe: Bright edgy modern aesthetic. White-black contrast with streetwear edge. Bright Seoul daylight, clean urban spaces, modern street style. iPhone photography style with bright light, clean contrast, contemporary cool.
+
+Setting: Modern Seoul streets, bright subway stations, contemporary architecture, clean urban spaces
+
+Outfits: White oversized shirts, black leather pants, platform sneakers, black-and-white contrast pieces. Minimal silver jewelry, crossbody bags, modern sunglasses.
+
+9 frames:
+1. Standing in bright subway - white oversized shirt, black leather pants, platforms, clean modern background
+2. Iced americano and silver rings on white concrete - overhead flatlay, bright daylight, minimal styling
+3. Full-body walking - black-white contrast outfit, bright Seoul street, natural stride, contemporary cool
+
+4. Close-up minimal silver jewelry on white shirt - clean styling, bright focus, modern simplicity
+5. Modern sign with Korean text "서울" (Seoul) in bold sans-serif on white wall, bright clean light
+6. White cotton texture - close-up, oversized shirt detail, bright clean lighting
+
+7. Sitting on white urban bench - black leather pants, white tee, platforms, relaxed cool pose
+8. Bright workspace - overhead, iced coffee, white minimal desk, bright daylight, clean aesthetic
+9. Glass reflection - black-white outfit, modern building, bright daylight, contemporary styling
+
+Color grade: Bright whites, deep blacks, clean contrast, bright Seoul daylight, minimal shadows, contemporary grain, modern aesthetic, street style cool.`,
+
+  edgy_beige_aesthetic: `Create a 3x3 grid showcasing 9 distinct photographic angles of the subject from the reference image. Each frame captures a different perspective while maintaining absolute continuity in identity, styling, and environment. The grid layout is clean and symmetrical with subtle separation lines emphasizing photographic diversity and visual storytelling coherence. High-resolution, photorealistic style. The angle must be different from the reference image. Maintain strict perfect facial and body consistency.
+
+Vibe: Urban beige edgy aesthetic. Tan utility wear with street edge. Natural Brooklyn shadows, industrial beige spaces, urban workwear cool. iPhone photography style with natural shadows, neutral tones, street sophistication.
+
+Setting: Brooklyn industrial areas, neutral urban spaces, vintage warehouses, concrete and metal environments
+
+Outfits: Tan utility jackets, cargo pants, combat boots, beige workwear pieces. Minimal leather accessories, canvas bags, neutral caps.
+
+9 frames:
+1. Leaning on concrete wall - tan utility jacket, cargo pants, combat boots, Brooklyn street, casual edge
+2. Black coffee and beige canvas bag on concrete - overhead flatlay, natural urban shadows
+3. Full-body walking - beige workwear outfit, industrial background, natural stride, urban cool
+
+4. Close-up minimal leather bracelet on tan jacket sleeve - neutral tones, natural light, street detail
+5. Vintage sign reading "BK" in industrial stencil font on weathered concrete, natural shadows
+6. Tan canvas texture - close-up, utility jacket detail, natural lighting
+
+7. Sitting on industrial crate - cargo pants, beige tee, relaxed pose, warehouse setting, urban edge
+8. Industrial workspace - overhead, coffee, neutral notebook, metal desk, natural window light
+9. Mirror in warehouse - tan utility outfit, phone in hand, industrial bathroom, natural shadows
+
+Color grade: Neutral tans, concrete grays, warm beiges, natural urban shadows, subtle grain, Brooklyn aesthetic, industrial cool, street sophistication.`,
 
   // PROFESSIONAL category
-  professional_dark_moody: `Create a 3x3 grid showcasing 9 distinct photographic angles of the subject from the reference image. Each frame captures a different perspective while maintaining absolute continuity in identity, styling, and environment. The grid layout is clean and symmetrical with subtle separation lines. Each photo is realistically lit and color-graded for a cohesive visual set. The model's identity, outfit, and environment remain consistent across all shots, emphasizing photographic diversity and visual storytelling coherence. High-resolution, photorealistic style. The angle must be different from the reference image. Maintain a strict perfect facial and body consistency.
-Setting: Financial District, Singapore - mix of corporate office interior and Marina Bay evening street, black power blazer with black tailored pants, black pointed pumps, minimal gold jewelry and watch, sleek professional hair, dramatic evening natural light and city glow.
-Angles include:
+  professional_dark_moody: `Create a 3x3 grid showcasing 9 distinct photographic angles of the subject from the reference image. Each frame captures a different perspective while maintaining absolute continuity in identity, styling, and environment. The grid layout is clean and symmetrical with subtle separation lines emphasizing photographic diversity and visual storytelling coherence. High-resolution, photorealistic style. The angle must be different from the reference image. Maintain strict perfect facial and body consistency.
 
-Close-up portrait on Singapore downtown street at dusk with skyscrapers
-Detail shot - MacBook and black coffee on glass desk inside office with gold watch
-Full body on modern Singapore sidewalk with corporate buildings
-Side profile inside executive office by floor-to-ceiling window
-Over-shoulder viewing Marina Bay skyline and financial towers
-Detail shot - black leather portfolio with gold pen and iPhone on marble
-Environmental portrait on sleek Singapore street with modern architecture
-Candid authoritative walking moment exiting luxury office building
-Elevated perspective from office level looking down at plaza
+Vibe: Dark corporate power aesthetic. All black suiting with executive presence. Dramatic evening city glow, modern offices, CEO energy. iPhone photography style with dramatic lighting, high contrast, sophisticated power.
 
-Color grade: Dark and moody professional aesthetic with deep blacks, corporate glass reflections, natural evening light with city glow, dramatic contrast, polished sophistication, CEO Singapore Instagram grid with commanding presence.`,
+Setting: Singapore financial district at night, luxury offices, corporate towers, modern architecture
 
-  professional_light_minimalistic: `Create a 3x3 grid showcasing 9 distinct photographic angles of the subject from the reference image. Each frame captures a different perspective while maintaining absolute continuity in identity, styling, and environment. The grid layout is clean and symmetrical with subtle separation lines. Each photo is realistically lit and color-graded for a cohesive visual set. The model's identity, outfit, and environment remain consistent across all shots, emphasizing photographic diversity and visual storytelling coherence. High-resolution, photorealistic style. The angle must be different from the reference image. Maintain a strict perfect facial and body consistency.
-Setting: Zurich Financial District, Switzerland - mix of modern office interior and clean city street, white tailored blazer with white pants, nude pumps, minimal gold jewelry, sleek polished hair, bright Swiss natural daylight.
-Angles include:
+Outfits: Black tailored blazers, black trousers, black trench coats, black power suits. Minimal gold jewelry, black leather briefcases, black heels.
 
-Close-up portrait on pristine Zurich street with modern banks behind
-Detail shot - white coffee cup on minimalist desk with gold Apple Watch
-Full body on clean Zurich sidewalk with contemporary architecture
-Side profile inside bright modern office by window
-Over-shoulder viewing Zurich financial district and lake
-Detail shot - gold pen on white notebook with minimal gold jewelry
-Environmental portrait on Swiss street with clean geometric buildings
-Candid composed walking moment crossing spotless crosswalk
-Elevated perspective from office terrace looking down at street
+9 frames:
+1. Standing in glass office - black power suit, arms crossed, city lights behind, executive stance
+2. Espresso and gold watch on black marble - overhead flatlay, dramatic desk lamp, corporate luxury
+3. Full-body walking - black trench coat, black suit underneath, city street, evening city glow
 
-Color grade: Light and minimalistic professional aesthetic with bright whites, clean Swiss neutrals, natural alpine daylight, minimal shadows, fresh precision, modern Swiss sophistication, LinkedIn-worthy Instagram grid with polished European elegance.`,
+4. Close-up minimal gold watch on black blazer sleeve - power detail, dramatic lighting, sophistication
+5. Modern sign reading "CEO" in bold minimalist font on black glass, dramatic city reflection
+6. Black wool suiting fabric - close-up, luxury tailoring detail, dramatic lighting
 
-  professional_beige_aesthetic: `Create a 3x3 grid showcasing 9 distinct photographic angles of the subject from the reference image. Each frame captures a different perspective while maintaining absolute continuity in identity, styling, and environment. The grid layout is clean and symmetrical with subtle separation lines. Each photo is realistically lit and color-graded for a cohesive visual set. The model's identity, outfit, and environment remain consistent across all shots, emphasizing photographic diversity and visual storytelling coherence. High-resolution, photorealistic style. The angle must be different from the reference image. Maintain a strict perfect facial and body consistency.
-Setting: Mayfair, London - mix of sophisticated office interior and elegant city street, camel blazer with cream blouse and beige trousers, nude pumps, gold jewelry and watch, polished professional hair, natural London daylight.
-Angles include:
+7. Leaning on glass railing - black blazer, city skyline behind, evening lights, power pose
+8. Executive desk - overhead, laptop, espresso, black leather journal, desk lamp, evening workspace
+9. Elevator mirror - black suit, holding briefcase, phone reflection, modern interior
 
-Close-up portrait on Mayfair street with Georgian architecture behind
-Detail shot - cappuccino on leather desk pad inside office with Financial Times
-Full body on elegant London street with luxury office buildings
-Side profile inside sophisticated office by tall sash window
-Over-shoulder viewing Mayfair street with black cabs and red buses
-Detail shot - tan leather Mulberry bag with gold Cartier watch on wrist
-Environmental portrait on prestigious Mayfair street with private clubs
-Candid professional walking moment past Savile Row tailors
-Elevated perspective from Georgian townhouse office looking down
+Color grade: Deep blacks, charcoal grays, gold accents, dramatic city lights, high contrast, executive grain, Singapore aesthetic, corporate power.`,
 
-Color grade: Beige professional aesthetic with warm camels, soft beiges, neutral British tans, natural London daylight, gentle shadows, sophisticated British warmth, executive elegance, classic London Instagram grid with refined professional authority.`,
+  professional_light_minimalistic: `Create a 3x3 grid showcasing 9 distinct photographic angles of the subject from the reference image. Each frame captures a different perspective while maintaining absolute continuity in identity, styling, and environment. The grid layout is clean and symmetrical with subtle separation lines emphasizing photographic diversity and visual storytelling coherence. High-resolution, photorealistic style. The angle must be different from the reference image. Maintain strict perfect facial and body consistency.
+
+Vibe: Bright professional elegant aesthetic. White suiting with fresh sophistication. Bright Swiss daylight, modern offices, refined elegance. iPhone photography style with bright natural light, clean professionalism, contemporary polish.
+
+Setting: Zurich modern offices, bright financial district, clean contemporary architecture, natural light spaces
+
+Outfits: White tailored blazers, cream trousers, white button-down shirts, ivory coats. Minimal gold jewelry, cream leather bags, nude heels.
+
+9 frames:
+1. Standing in bright office - white blazer, cream pants, professional stance, floor-to-ceiling windows
+2. Green tea and gold pen on white desk - overhead flatlay, bright natural daylight, minimal elegance
+3. Full-body walking in bright hallway - white suit, confident stride, bright modern space, clean lines
+
+4. Close-up minimal gold necklace on white shirt collar - professional detail, bright focus, refined
+5. Modern sign reading "EXCELLENCE" in elegant thin serif on white wall, soft natural light
+6. White wool blazer texture - close-up, tailored detail, bright natural lighting
+
+7. Sitting in modern chair - cream suit, crossed legs, bright office, professional elegant pose
+8. Bright workspace - overhead, laptop, tea, white desk, bright daylight, contemporary minimal
+9. Glass door reflection - white suit, modern office, bright natural light, professional elegance
+
+Color grade: Bright whites, soft creams, gentle shadows, natural Swiss daylight, minimal grain, professional polish, contemporary elegance, refined aesthetic.`,
+
+  professional_beige_aesthetic: `Create a 3x3 grid showcasing 9 distinct photographic angles of the subject from the reference image. Each frame captures a different perspective while maintaining absolute continuity in identity, styling, and environment. The grid layout is clean and symmetrical with subtle separation lines emphasizing photographic diversity and visual storytelling coherence. High-resolution, photorealistic style. The angle must be different from the reference image. Maintain strict perfect facial and body consistency.
+
+Vibe: Classic professional beige aesthetic. Camel and beige suiting with timeless sophistication. Natural London daylight, traditional offices, established elegance. iPhone photography style with natural warm light, classic professionalism, timeless quality.
+
+Setting: Mayfair London offices, classic architecture, traditional business districts, natural light interiors
+
+Outfits: Camel blazers, beige trousers, cream blouses, tan coats. Gold jewelry, tan leather bags, nude heels, classic accessories.
+
+9 frames:
+1. Standing by window - camel blazer, beige trousers, professional pose, natural London daylight
+2. Coffee and gold jewelry on wood desk - overhead flatlay, warm natural light, classic elegance
+3. Full-body in classic hallway - tan coat, cream blouse underneath, walking naturally, soft shadows
+
+4. Close-up gold watch and rings on camel blazer - professional details, warm light, classic sophistication
+5. Traditional sign reading "MAYFAIR" in classic serif on stone, natural afternoon light
+6. Camel wool blazer texture - close-up, luxury tailoring, warm natural lighting
+
+7. Sitting at traditional desk - beige suit, leather chair, professional working pose, natural light
+8. Classic workspace - overhead, coffee, leather journal, wood desk, warm daylight from window
+9. Traditional mirror - camel coat, gold jewelry, professional styling, warm natural bathroom light
+
+Color grade: Warm camels, classic beiges, cream highlights, natural London daylight, soft shadows, timeless grain, Mayfair aesthetic, established elegance.`,
 }
 
 /**

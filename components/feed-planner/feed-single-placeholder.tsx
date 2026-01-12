@@ -92,6 +92,19 @@ export default function FeedSinglePlaceholder({
   // Check if post has an image
   const hasImage = post?.image_url
 
+  // Debug logging
+  useEffect(() => {
+    console.log("[Feed Single Placeholder] Post state:", {
+      postId: post?.id,
+      hasImage: !!hasImage,
+      imageUrl: post?.image_url,
+      generationStatus: post?.generation_status,
+      predictionId: post?.prediction_id,
+      isPostGenerating,
+      isGenerating,
+    })
+  }, [post, hasImage, isPostGenerating, isGenerating])
+
   return (
     <div className="px-4 md:px-8 py-12">
       <div className="w-full max-w-md mx-auto">
@@ -104,6 +117,13 @@ export default function FeedSinglePlaceholder({
                 src={post.image_url}
                 alt="Generated post"
                 className="w-full h-full object-cover"
+                onError={(e) => {
+                  console.error("[Feed Single Placeholder] Image load error:", post.image_url)
+                  console.error("[Feed Single Placeholder] Error event:", e)
+                }}
+                onLoad={() => {
+                  console.log("[Feed Single Placeholder] ✅ Image loaded successfully:", post.image_url)
+                }}
               />
             </div>
           </div>

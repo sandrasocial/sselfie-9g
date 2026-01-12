@@ -67,6 +67,16 @@ export function useFeedPolling(feedId: number | null) {
         // Update last update time when data changes
         if (data?.posts) {
           const hasNewImages = data.posts.some((p: any) => p.image_url)
+          const generatingPosts = data.posts.filter((p: any) => p.prediction_id && !p.image_url)
+          
+          console.log("[useFeedPolling] Data updated:", {
+            totalPosts: data.posts.length,
+            hasNewImages,
+            generatingPostsCount: generatingPosts.length,
+            generatingPostIds: generatingPosts.map((p: any) => p.id),
+            postsWithImages: data.posts.filter((p: any) => p.image_url).map((p: any) => ({ id: p.id, imageUrl: p.image_url?.substring(0, 50) + "..." })),
+          })
+          
           if (hasNewImages) {
             lastUpdateRef.current = Date.now()
           }

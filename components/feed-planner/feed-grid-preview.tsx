@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import { ImageIcon, Loader2 } from 'lucide-react'
 import { toast } from "@/hooks/use-toast"
@@ -45,7 +45,13 @@ export default function FeedGridPreview({ feedId, posts, onGenerate }: FeedGridP
         description: "This takes about 30 seconds",
       })
 
-      onGenerate()
+      // Call refresh callback to trigger polling
+      if (onGenerate) {
+        await onGenerate()
+      }
+      
+      // DON'T set generatingPostId to null here - let polling detect when image is ready
+      // The component will check post.generation_status and post.prediction_id to show loading
     } catch (error) {
       console.error("[v0] Generate error:", error)
       toast({
@@ -53,14 +59,22 @@ export default function FeedGridPreview({ feedId, posts, onGenerate }: FeedGridP
         description: "Please try again",
         variant: "destructive",
       })
-    } finally {
-      setGeneratingPostId(null)
+      setGeneratingPostId(null) // Only reset on error
     }
   }
 
+  // Reset local generating state when post gets an image (from polling)
+  useEffect(() => {
+    posts.forEach((post) => {
+      if (post.image_url && generatingPostId === post.id) {
+        setGeneratingPostId(null)
+      }
+    })
+  }, [posts, generatingPostId])
+
   const sortedPosts = [...posts].sort((a, b) => a.position - b.position)
   const readyCount = posts.filter(p => p.image_url).length
-  const pendingCount = posts.filter(p => !p.image_url && p.generation_status !== 'generating').length
+  const pendingCount = posts.filter(p => !p.image_url && p.generation_status !== 'generating' && !p.prediction_id).length
 
   return (
     <div className="bg-white/50 backdrop-blur-3xl border border-white/60 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-xl shadow-stone-900/5">
@@ -109,7 +123,9 @@ export default function FeedGridPreview({ feedId, posts, onGenerate }: FeedGridP
                   </div>
                 </div>
               </div>
-            ) : post.generation_status === "generating" || generatingPostId === post.id ? (
+            ) : post.generation_status === "generating" || 
+                 (post.prediction_id && !post.image_url) || 
+                 generatingPostId === post.id ? (
               <div className="w-full h-full flex flex-col items-center justify-center bg-stone-50">
                 <Loader2 size={24} className="text-stone-400 animate-spin mb-2" strokeWidth={1.5} />
                 <p className="text-xs text-stone-500 font-light tracking-wider">Creating...</p>

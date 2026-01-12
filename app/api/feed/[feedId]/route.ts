@@ -133,7 +133,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ feed
       const postsToCheckNow = postsToCheck.slice(0, 5)
       for (const post of postsToCheckNow) {
         try {
+          console.log(`[v0] [FEED API] Checking prediction ${post.prediction_id} for post ${post.position}...`)
           const prediction = await replicate.predictions.get(post.prediction_id)
+          
+          console.log(`[v0] [FEED API] Prediction ${post.prediction_id} status: ${prediction.status}, hasOutput: ${!!prediction.output}, outputType: ${Array.isArray(prediction.output) ? 'array' : typeof prediction.output}`)
           
           if (prediction.status === "succeeded" && prediction.output) {
             const imageUrl = Array.isArray(prediction.output) ? prediction.output[0] : prediction.output
@@ -294,6 +297,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ feed
             }
           } else if (prediction.status === "failed") {
             console.log(`[v0] [FEED API] ❌ Post ${post.position} failed in Replicate`)
+            console.log(`[v0] [FEED API] Error details:`, {
+              predictionId: post.prediction_id,
+              error: prediction.error,
+              logs: prediction.logs,
+            })
             
             // Check for "No images were returned" error specifically
             const errorMessage = prediction.error ? String(prediction.error) : ''
@@ -303,6 +311,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ feed
             if (isNoImagesError) {
               console.log(`[v0] [FEED API] ⚠️ Post ${post.position} failed with "No images were returned" - this should be prevented by prompt prefix`)
             }
+          } else {
+            // Prediction is still processing
+            console.log(`[v0] [FEED API] ⏳ Post ${post.position} still processing (status: ${prediction.status})`)
             
             // Refund credits for failed predictions (user shouldn't pay for errors)
             try {
@@ -347,7 +358,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ feed
             }
           }
         } catch (error) {
-          console.error(`[v0] [FEED API] Error checking post ${post.position}:`, error)
+          console.error(`[v0] [FEED API] ❌ Error checking post ${post.position} (prediction_id: ${post.prediction_id}):`, error)
+          if (error instanceof Error) {
+            console.error(`[v0] [FEED API] Error message: ${error.message}`)
+            console.error(`[v0] [FEED API] Error stack: ${error.stack}`)
+          }
           // Continue checking other posts
         }
       }

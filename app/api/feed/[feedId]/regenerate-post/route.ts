@@ -6,6 +6,7 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 import { extractReplicateVersionId, ensureTriggerWordPrefix, buildClassicModeReplicateInput } from "@/lib/replicate-helpers"
 import { checkCredits, deductCredits, CREDIT_COSTS } from "@/lib/credits"
 import { generateWithNanoBanana, getStudioProCreditCost } from "@/lib/nano-banana-client"
+import { getFeedPlannerAccess } from "@/lib/feed-planner/access-control"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -97,39 +98,114 @@ export async function POST(request: Request, { params }: { params: { feedId: str
         LIMIT 1
       `
       
-      // Use stored prompt (should already be a Nano Banana prompt from feed creation)
+      // Use stored prompt (should already be a template prompt from feed creation)
       let finalPrompt = post.prompt
       
       if (!finalPrompt || finalPrompt.trim().length < 20) {
-        // Regenerate prompt using buildNanoBananaPrompt if missing
-        console.warn(`[v0] [REGENERATE-POST] ⚠️ Pro Mode post ${postId} missing prompt, regenerating...`)
-        const { buildNanoBananaPrompt } = await import("@/lib/maya/nano-banana-prompt-builder")
-        const userRequest = post.content_pillar || post.prompt || `Feed post ${post.position}`
+        // Regenerate prompt using templates if missing
+        console.warn(`[v0] [REGENERATE-POST] ⚠️ Pro Mode post ${postId} missing prompt, using template...`)
         
-        const { optimizedPrompt } = await buildNanoBananaPrompt({
-          userId: neonUser.id,
-          mode: (proModeType as any) || 'brand-scene',
-          userRequest,
-          inputImages: {
-            baseImages,
-            productImages: [],
-            textElements: post.post_type === 'quote' ? [{
-              text: post.caption || '',
-              style: 'quote' as const,
-            }] : undefined,
-          },
-          workflowMeta: {
-            platformFormat: '4:5', // Instagram portrait format
-          },
-          brandKit: brandKit ? {
-            primaryColor: brandKit.primary_color,
-            secondaryColor: brandKit.secondary_color,
-            accentColor: brandKit.accent_color,
-            fontStyle: brandKit.font_style,
-            brandTone: brandKit.brand_tone,
-          } : undefined,
-        })
-        finalPrompt = optimizedPrompt
+        // Check if user is free or paid blueprint (both use templates)
+        const access = await getFeedPlannerAccess(neonUser.id.toString())
+        
+        if (access.isFree || access.isPaidBlueprint) {
+          // Use blueprint templates (same logic as generate-single)
+          let blueprintSubscriber = await sql`
+            SELECT form_data, feed_style
+            FROM blueprint_subscribers
+            WHERE user_id = ${neonUser.id}
+            LIMIT 1
+          ` as any[]
+          
+          let category: "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional" = "professional"
+          let mood: "luxury" | "minimal" | "beige" = "minimal"
+          
+          if (blueprintSubscriber.length > 0) {
+            const formData = blueprintSubscriber[0].form_data || {}
+            const feedStyle = blueprintSubscriber[0].feed_style || null
+            category = (formData.vibe || "professional") as "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"
+            mood = (feedStyle || "minimal") as "luxury" | "minimal" | "beige"
+            console.log(`[v0] [REGENERATE-POST] ✅ Found blueprint_subscribers data: ${category}_${mood}`)
+          } else {
+            // Fallback: Try user_personal_brand
+            console.log(`[v0] [REGENERATE-POST] ⚠️ No blueprint_subscribers data, checking user_personal_brand...`)
+            
+            const [personalBrand] = await sql`
+              SELECT settings_preference, visual_aesthetic
+              FROM user_personal_brand
+              WHERE user_id = ${neonUser.id}
+              ORDER BY created_at DESC
+              LIMIT 1
+            ` as any[]
+            
+            if (personalBrand) {
+              // Extract feedStyle from settings_preference (first element of JSONB array)
+              // feedStyle values: "luxury", "minimal", "beige" (directly map to mood)
+              let feedStyle: string | null = null
+              if (personalBrand.settings_preference) {
+                try {
+                  const settings = typeof personalBrand.settings_preference === 'string'
+                    ? JSON.parse(personalBrand.settings_preference)
+                    : personalBrand.settings_preference
+                  
+                  if (Array.isArray(settings) && settings.length > 0) {
+                    feedStyle = settings[0] // First element is feedStyle
+                  }
+                } catch (e) {
+                  console.warn(`[v0] [REGENERATE-POST] Failed to parse settings_preference:`, e)
+                }
+              }
+              
+              // Map feedStyle to mood (values are already exact: "luxury", "minimal", "beige")
+              if (feedStyle) {
+                const feedStyleLower = feedStyle.toLowerCase().trim()
+                // Direct mapping: feedStyle IDs match mood values exactly
+                if (feedStyleLower === "luxury" || feedStyleLower === "minimal" || feedStyleLower === "beige") {
+                  mood = feedStyleLower as "luxury" | "minimal" | "beige"
+                }
+              }
+              
+              // Extract category from visual_aesthetic (array of IDs)
+              // visualAesthetic values: ["minimal", "luxury", "warm", "edgy", "professional", "beige"]
+              // These IDs directly match category values
+              if (personalBrand.visual_aesthetic) {
+                try {
+                  const aesthetics = typeof personalBrand.visual_aesthetic === 'string'
+                    ? JSON.parse(personalBrand.visual_aesthetic)
+                    : personalBrand.visual_aesthetic
+                  
+                  if (Array.isArray(aesthetics) && aesthetics.length > 0) {
+                    // Use the first selected aesthetic as the primary category
+                    // IDs are already exact category names: "minimal", "luxury", "warm", "edgy", "professional", "beige"
+                    const firstAesthetic = aesthetics[0]?.toLowerCase().trim()
+                    const validCategories: Array<"luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"> = 
+                      ["luxury", "minimal", "beige", "warm", "edgy", "professional"]
+                    
+                    if (firstAesthetic && validCategories.includes(firstAesthetic as any)) {
+                      category = firstAesthetic as "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"
+                    }
+                  }
+                } catch (e) {
+                  console.warn(`[v0] [REGENERATE-POST] Failed to parse visual_aesthetic:`, e)
+                }
+              }
+              
+              console.log(`[v0] [REGENERATE-POST] ✅ Found user_personal_brand data: feedStyle="${feedStyle}", visualAesthetic="${personalBrand.visual_aesthetic}", mapped to ${category}_${mood}`)
+            } else {
+              console.log(`[v0] [REGENERATE-POST] ⚠️ No user_personal_brand data found. Using defaults: professional_minimal`)
+            }
+          }
+          
+          const { getBlueprintPhotoshootPrompt } = await import("@/lib/maya/blueprint-photoshoot-templates")
+          finalPrompt = getBlueprintPhotoshootPrompt(category, mood)
+          console.log(`[v0] [REGENERATE-POST] ✅ Using blueprint template prompt: ${category}_${mood}`)
+        } else {
+          // Membership users: Keep Maya AI (Classic Mode uses Maya, Pro Mode uses templates if needed)
+          // This path should not be hit for Pro Mode regeneration, but keeping for safety
+          console.warn(`[v0] [REGENERATE-POST] ⚠️ Membership user Pro Mode regeneration - using default template`)
+          const { getBlueprintPhotoshootPrompt } = await import("@/lib/maya/blueprint-photoshoot-templates")
+          finalPrompt = getBlueprintPhotoshootPrompt("professional", "minimal")
+        }
       }
       
       // Generate with Nano Banana Pro

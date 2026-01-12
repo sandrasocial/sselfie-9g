@@ -318,38 +318,105 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
               finalPrompt = post.content_pillar || `Feed post ${post.position}`
             }
           } else {
-            // Paid blueprint users: Use Maya prompt builder (same as membership Pro Mode)
-            console.log(`[v0] [GENERATE-SINGLE] Paid blueprint user - using Maya prompt builder (Nano Banana)...`)
-            const { buildNanoBananaPrompt } = await import("@/lib/maya/nano-banana-prompt-builder")
+            // Paid blueprint users: Use blueprint templates (same as free users)
+            console.log(`[v0] [GENERATE-SINGLE] Paid blueprint user - using blueprint template library...`)
             
-            const promptResult = await buildNanoBananaPrompt({
-              userId: user.id.toString(),
-              mode: (proModeType as any) || 'brand-scene',
-              userRequest: post.content_pillar || post.caption || `Feed post ${post.position} - authentic Instagram-style content`,
-              inputImages: {
-                baseImages: baseImages,
-                productImages: [],
-                textElements: post.post_type === 'quote' ? [{
-                  text: post.caption || '',
-                  style: 'quote' as const,
-                }] : undefined,
-              },
-              workflowMeta: {
-                platformFormat: '4:5', // Instagram portrait format
-              },
-              brandKit: brandKit ? {
-                primaryColor: brandKit.primary_color,
-                secondaryColor: brandKit.secondary_color,
-                accentColor: brandKit.accent_color,
-                fontStyle: brandKit.font_style,
-                brandTone: brandKit.brand_tone,
-              } : undefined,
-            })
+            // Try blueprint_subscribers first (same as free users)
+            let blueprintSubscriber = await sql`
+              SELECT form_data, feed_style
+              FROM blueprint_subscribers
+              WHERE user_id = ${user.id}
+              LIMIT 1
+            ` as any[]
             
-            finalPrompt = promptResult.optimizedPrompt
-            console.log(`[v0] [GENERATE-SINGLE] ✅ Generated Maya prompt for paid blueprint (${finalPrompt.split(/\s+/).length} words)`)
+            let category: "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional" = "professional"
+            let mood: "luxury" | "minimal" | "beige" = "minimal"
             
-            // Save the generated prompt to the database for future use
+            if (blueprintSubscriber.length > 0) {
+              // Use blueprint_subscribers data (same as free users)
+              const formData = blueprintSubscriber[0].form_data || {}
+              const feedStyle = blueprintSubscriber[0].feed_style || null
+              
+              category = (formData.vibe || "professional") as "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"
+              mood = (feedStyle || "minimal") as "luxury" | "minimal" | "beige"
+              
+              console.log(`[v0] [GENERATE-SINGLE] ✅ Found blueprint_subscribers data: ${category}_${mood}`)
+            } else {
+              // Fallback: Try user_personal_brand (from unified wizard)
+              console.log(`[v0] [GENERATE-SINGLE] ⚠️ No blueprint_subscribers data, checking user_personal_brand...`)
+              
+              const [personalBrand] = await sql`
+                SELECT settings_preference, visual_aesthetic
+                FROM user_personal_brand
+                WHERE user_id = ${user.id}
+                ORDER BY created_at DESC
+                LIMIT 1
+              ` as any[]
+              
+              if (personalBrand) {
+                // Extract feedStyle from settings_preference (first element of JSONB array)
+                // feedStyle values: "luxury", "minimal", "beige" (directly map to mood)
+                let feedStyle: string | null = null
+                if (personalBrand.settings_preference) {
+                  try {
+                    const settings = typeof personalBrand.settings_preference === 'string'
+                      ? JSON.parse(personalBrand.settings_preference)
+                      : personalBrand.settings_preference
+                    
+                    if (Array.isArray(settings) && settings.length > 0) {
+                      feedStyle = settings[0] // First element is feedStyle
+                    }
+                  } catch (e) {
+                    console.warn(`[v0] [GENERATE-SINGLE] Failed to parse settings_preference:`, e)
+                  }
+                }
+                
+                // Map feedStyle to mood (values are already exact: "luxury", "minimal", "beige")
+                if (feedStyle) {
+                  const feedStyleLower = feedStyle.toLowerCase().trim()
+                  // Direct mapping: feedStyle IDs match mood values exactly
+                  if (feedStyleLower === "luxury" || feedStyleLower === "minimal" || feedStyleLower === "beige") {
+                    mood = feedStyleLower as "luxury" | "minimal" | "beige"
+                  }
+                }
+                
+                // Extract category from visual_aesthetic (array of IDs)
+                // visualAesthetic values: ["minimal", "luxury", "warm", "edgy", "professional", "beige"]
+                // These IDs directly match category values
+                if (personalBrand.visual_aesthetic) {
+                  try {
+                    const aesthetics = typeof personalBrand.visual_aesthetic === 'string'
+                      ? JSON.parse(personalBrand.visual_aesthetic)
+                      : personalBrand.visual_aesthetic
+                    
+                    if (Array.isArray(aesthetics) && aesthetics.length > 0) {
+                      // Use the first selected aesthetic as the primary category
+                      // IDs are already exact category names: "minimal", "luxury", "warm", "edgy", "professional", "beige"
+                      const firstAesthetic = aesthetics[0]?.toLowerCase().trim()
+                      const validCategories: Array<"luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"> = 
+                        ["luxury", "minimal", "beige", "warm", "edgy", "professional"]
+                      
+                      if (firstAesthetic && validCategories.includes(firstAesthetic as any)) {
+                        category = firstAesthetic as "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"
+                      }
+                    }
+                  } catch (e) {
+                    console.warn(`[v0] [GENERATE-SINGLE] Failed to parse visual_aesthetic:`, e)
+                  }
+                }
+                
+                console.log(`[v0] [GENERATE-SINGLE] ✅ Found user_personal_brand data: feedStyle="${feedStyle}", visualAesthetic="${personalBrand.visual_aesthetic}", mapped to ${category}_${mood}`)
+              } else {
+                console.log(`[v0] [GENERATE-SINGLE] ⚠️ No user_personal_brand data found. Using defaults: professional_minimal`)
+              }
+            }
+            
+            // Get template prompt from grid library
+            const { getBlueprintPhotoshootPrompt } = await import("@/lib/maya/blueprint-photoshoot-templates")
+            finalPrompt = getBlueprintPhotoshootPrompt(category, mood)
+            console.log(`[v0] [GENERATE-SINGLE] ✅ Using blueprint template prompt: ${category}_${mood} (${finalPrompt.split(/\s+/).length} words)`)
+            
+            // Save the template prompt to the database for future use
             await sql`
               UPDATE feed_posts
               SET prompt = ${finalPrompt}
@@ -359,7 +426,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
         } catch (promptError) {
           console.error(`[v0] [GENERATE-SINGLE] Error generating prompt:`, promptError)
           // Fallback to simple prompt
-          finalPrompt = post.content_pillar || `Feed post ${post.position}`
+        finalPrompt = post.content_pillar || `Feed post ${post.position}`
         }
       } else {
         console.log(`[v0] [GENERATE-SINGLE] ✅ Using pre-generated prompt (${finalPrompt.split(/\s+/).length} words)`)
