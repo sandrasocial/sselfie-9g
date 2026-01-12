@@ -113,9 +113,22 @@ export async function createLandingCheckoutSession(productId: string, promoCode?
     throw error
   }
 
-  // Let Stripe handle promo code validation - just allow users to enter codes in UI
-  // If promo code is provided in URL, we could pre-apply it, but Stripe handles it better
-  console.log(`[v0] ℹ️ [${product.type}] Allowing promotion codes in Stripe UI (Stripe will handle validation)`)
+  // Validate promo code if provided (consistent with startCreditCheckoutSession)
+  let validatedCoupon = null
+  if (promoCode) {
+    try {
+      const coupon = await stripe.coupons.retrieve(promoCode.toUpperCase())
+      if (coupon.valid) {
+        validatedCoupon = coupon.id
+        console.log(`[v0] ✅ Valid promo code found: ${promoCode.toUpperCase()}, applying discount`)
+      } else {
+        console.log(`[v0] ⚠️ Promo code ${promoCode.toUpperCase()} is not valid`)
+      }
+    } catch (error) {
+      // Invalid coupon code - will allow promotion codes in UI instead
+      console.log(`[v0] ⚠️ Promo code ${promoCode?.toUpperCase()} not found, allowing promotion codes in UI`)
+    }
+  }
 
   const sessionConfig: Stripe.Checkout.SessionCreateParams = {
     ui_mode: "embedded",
@@ -127,8 +140,17 @@ export async function createLandingCheckoutSession(productId: string, promoCode?
         quantity: 1,
       },
     ],
-    // Always allow promotion codes - Stripe will handle validation
-    allow_promotion_codes: true,
+    // Apply validated coupon OR allow promotion codes (mutually exclusive per Stripe API)
+    ...(validatedCoupon && {
+      discounts: [
+        {
+          coupon: validatedCoupon,
+        },
+      ],
+    }),
+    ...(!validatedCoupon && {
+      allow_promotion_codes: true,
+    }),
     ...(isSubscription && {
       subscription_data: {
         metadata: {

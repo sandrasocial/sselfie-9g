@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
-import { neon } from "@neondatabase/serverless"
+import { getDb } from "@/lib/db"
 import { getReplicateClient } from "@/lib/replicate-client"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { put } from "@vercel/blob"
 
-const sql = neon(process.env.DATABASE_URL!)
-
-export async function GET(request: Request, { params }: { params: { feedId: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ feedId: string }> }) {
   try {
     const { user, error: authError } = await getAuthenticatedUser()
 
@@ -20,7 +18,9 @@ export async function GET(request: Request, { params }: { params: { feedId: stri
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    const feedId = params.feedId
+    const { feedId } = await params
+
+    const sql = getDb()
 
     // Get all posts with their prediction IDs
     const posts = await sql`

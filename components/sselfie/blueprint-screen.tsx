@@ -9,6 +9,7 @@ import { BlueprintSelfieUpload } from "@/components/blueprint/blueprint-selfie-u
 import { BlueprintConceptCard } from "@/components/blueprint/blueprint-concept-card"
 import { Button } from "@/components/ui/button"
 import { Copy, Check, Edit } from "lucide-react"
+import BuyBlueprintModal from "@/components/sselfie/buy-blueprint-modal"
 
 interface BlueprintScreenProps {
   userId: string
@@ -758,7 +759,7 @@ export default function BlueprintScreen({ userId }: BlueprintScreenProps) {
                     {/* Upsell for Free Users */}
                     {!isPaidBlueprint && (
                       <BlueprintUpsell onUpgrade={() => {
-                        router.push("/checkout/blueprint")
+                        setShowBlueprintModal(true)
                       }} />
                     )}
                   </div>
@@ -841,7 +842,7 @@ export default function BlueprintScreen({ userId }: BlueprintScreenProps) {
                     {/* Upsell for Free Users */}
                     {!isPaidBlueprint && (
                       <BlueprintUpsell onUpgrade={() => {
-                        router.push("/checkout/blueprint")
+                        setShowBlueprintModal(true)
                       }} />
                     )}
                   </div>
@@ -901,12 +902,18 @@ export default function BlueprintScreen({ userId }: BlueprintScreenProps) {
                     {/* Upsell for Free Users */}
                     {!isPaidBlueprint && (
                       <BlueprintUpsell onUpgrade={() => {
-                        router.push("/checkout/blueprint")
+                        setShowBlueprintModal(true)
                       }} />
                     )}
                   </div>
                 )}
               </div>
+
+              {/* Embedded checkout modal */}
+              <BuyBlueprintModal
+                open={showBlueprintModal}
+                onOpenChange={setShowBlueprintModal}
+              />
             </div>
           )}
         </div>

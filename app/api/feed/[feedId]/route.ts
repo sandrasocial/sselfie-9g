@@ -198,9 +198,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ feed
   }
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { feedId: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ feedId: string }> }) {
   try {
-    const { feedId } = params
+    const { feedId } = await params
     const body = await req.json()
     const { bio } = body
     const sql = getDb()
@@ -238,10 +238,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { feedId: st
   }
 }
 
-export async function DELETE(req: NextRequest, { params }: { params: { feedId: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ feedId: string }> }) {
   try {
-    console.log("[v0] DELETE feed request for feedId:", params.feedId)
-    const { feedId } = params
+    const { feedId } = await params
+    console.log("[v0] DELETE feed request for feedId:", feedId)
     const sql = getDb()
 
     const supabase = await createServerClient()

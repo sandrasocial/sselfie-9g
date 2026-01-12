@@ -10,7 +10,7 @@ import { getFeedPlannerAccess } from "@/lib/feed-planner/access-control"
 
 const sql = neon(process.env.DATABASE_URL!)
 
-export async function POST(request: Request, { params }: { params: { feedId: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ feedId: string }> }) {
   try {
     const { user, error: authError } = await getAuthenticatedUserWithRetry()
 

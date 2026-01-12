@@ -99,13 +99,23 @@ export function useFeedPolling(feedId: number | null) {
           }
         }
         
-        // Poll if:
-        // 1. Posts are generating images (prediction_id but no image_url)
-        // 2. Feed is processing prompts/captions (status: processing/queueing/generating)
-        // IMPORTANT: Also check generation_status to catch posts that are marked as generating
+        // CRITICAL FIX: Simplified polling logic for free blueprint (single post)
+        // For free users, there's only ONE post - stop polling immediately when it has image_url
+        // This matches the working concept card pattern: stop when image is complete
+        
+        // Check if ANY post is generating (prediction_id but no image_url)
+        // CRITICAL: Also check generation_status === 'generating' to catch posts marked as generating
         const hasGeneratingPosts = data?.posts?.some(
-          (p: any) => (p.prediction_id && !p.image_url) || p.generation_status === 'generating'
+          (p: any) => {
+            // Post is generating if:
+            // 1. Has prediction_id but no image_url (classic case)
+            // 2. OR generation_status is 'generating' (even if image_url exists, status might not be updated)
+            const isGenerating = (p.prediction_id && !p.image_url) || p.generation_status === 'generating'
+            return isGenerating
+          }
         )
+        
+        // Check if feed is processing (Maya is setting up the feed)
         const isProcessing = data?.feed?.status === 'processing' || 
                             data?.feed?.status === 'queueing' ||
                             data?.feed?.status === 'generating'
@@ -115,9 +125,20 @@ export function useFeedPolling(feedId: number | null) {
           (p.prediction_id && !p.image_url) || p.generation_status === 'generating'
         ) || []
         
+        // CRITICAL FIX: For free blueprint (single post), check if the post has image_url
+        // If it does, STOP polling immediately (don't wait for grace period)
+        // Note: We check for image_url only (not generation_status) because progress endpoint
+        // might set image_url before updating generation_status, and we want to stop immediately
+        const singlePost = data?.posts?.length === 1 ? data.posts[0] : null
+        const singlePostHasImage = singlePost?.image_url // Simplified: just check if image_url exists
+        
         console.log('[useFeedPolling] 🔍 Polling decision:', {
           hasGeneratingPosts,
           isProcessing,
+          singlePostHasImage,
+          singlePostId: singlePost?.id,
+          singlePostImageUrl: singlePost?.image_url ? 'EXISTS' : 'MISSING',
+          singlePostStatus: singlePost?.generation_status,
           generatingPosts: generatingPosts.map((p: any) => ({
             id: p.id,
             position: p.position,
@@ -128,6 +149,19 @@ export function useFeedPolling(feedId: number | null) {
           }))
         })
         
+        // CRITICAL FIX: For single post (free blueprint), stop immediately if image exists
+        // This matches concept card behavior: stop polling when image is ready
+        // We check image_url only (not generation_status) to handle edge cases where
+        // progress endpoint sets image_url but hasn't updated status yet
+        if (singlePostHasImage) {
+          console.log('[useFeedPolling] ✅ Single post has image, stopping polling immediately')
+          if (pollingStartTimeRef.current !== null) {
+            pollingStartTimeRef.current = null
+            setHasTimedOut(false)
+          }
+          return 0 // Stop polling immediately
+        }
+        
         // Continue polling if generating or processing
         if (hasGeneratingPosts || isProcessing) {
           // Record start time on first poll
@@ -136,8 +170,9 @@ export function useFeedPolling(feedId: number | null) {
             console.log('[useFeedPolling] ✅ Polling started, will timeout after 5 minutes')
           }
           
-          // Call progress endpoint to update database (separate from feed fetch)
-          // This keeps feed endpoint fast and simple (per audit recommendation)
+          // CRITICAL FIX: Always call progress endpoint when there are generating posts
+          // This ensures database is updated even for single posts
+          // Progress endpoint checks Replicate and updates image_url + generation_status
           if (feedId && hasGeneratingPosts) {
             console.log('[useFeedPolling] 🔄 Calling progress endpoint to check Replicate status...')
             fetch(`/api/feed/${feedId}/progress`)
@@ -155,14 +190,34 @@ export function useFeedPolling(feedId: number | null) {
                   progress: progressData.progress
                 })
                 
-                // Always refresh feed data after calling progress endpoint
-                // Even if no posts completed, the database might have been updated
+                // CRITICAL FIX: Always refresh feed data after calling progress endpoint
+                // This ensures UI sees the updated image_url and generation_status
+                // For single posts, this will immediately stop polling (see check above)
                 console.log('[useFeedPolling] ✅ Refreshing feed data after progress check')
                 mutate() // Refresh feed data after progress update
               })
               .catch(err => {
                 console.error('[useFeedPolling] ❌ Error calling progress endpoint:', err)
                 // Don't fail polling if progress endpoint fails, but still try to refresh
+                mutate()
+              })
+          } else if (feedId && singlePost && singlePost.prediction_id && !singlePost.image_url) {
+            // CRITICAL FIX: For single posts, also call progress endpoint even if hasGeneratingPosts is false
+            // This handles edge cases where the post has prediction_id but polling condition didn't catch it
+            console.log('[useFeedPolling] 🔄 Single post has prediction_id but no image_url, calling progress endpoint...')
+            fetch(`/api/feed/${feedId}/progress`)
+              .then(res => {
+                if (!res.ok) {
+                  throw new Error(`Progress endpoint returned ${res.status}`)
+                }
+                return res.json()
+              })
+              .then(progressData => {
+                console.log('[useFeedPolling] 📊 Single post progress response:', progressData)
+                mutate() // Refresh feed data
+              })
+              .catch(err => {
+                console.error('[useFeedPolling] ❌ Error calling progress endpoint for single post:', err)
                 mutate()
               })
           }
@@ -179,25 +234,23 @@ export function useFeedPolling(feedId: number | null) {
           }
         }
         
-        // Grace period: Continue polling for 15s after last update
-        // This ensures UI catches database updates even if timing is slightly off
-        const timeSinceLastUpdate = Date.now() - lastUpdateRef.current
-        const shouldContinuePolling = timeSinceLastUpdate < 15000
+        // CRITICAL FIX: Removed grace period for free blueprint (single post)
+        // Concept cards don't use grace period - they stop immediately when image is ready
+        // Grace period was causing infinite polling for single posts
         
-        console.log('[useFeedPolling] 🔍 Grace period check:', {
-          timeSinceLastUpdate,
-          shouldContinuePolling,
-          willPoll: shouldContinuePolling ? 'YES (3000ms)' : 'NO (0ms)'
-        })
+        // For single post feeds, we already checked above and returned 0 if image exists
+        // For multi-post feeds, only continue if there are actually generating posts
+        // No grace period needed - if posts are complete, stop immediately
+        
+        console.log('[useFeedPolling] ⏹️ No generating posts, stopping polling')
         
         // Reset polling start time when no longer generating
-        if (!shouldContinuePolling && pollingStartTimeRef.current !== null) {
+        if (pollingStartTimeRef.current !== null) {
           pollingStartTimeRef.current = null
           setHasTimedOut(false)
-          console.log('[useFeedPolling] ⏹️ Polling stopped (grace period ended)')
         }
         
-        return shouldContinuePolling ? 3000 : 0
+        return 0 // Stop polling
       },
       refreshWhenHidden: false, // Stop when tab hidden
       revalidateOnFocus: true, // Refresh when tab becomes visible

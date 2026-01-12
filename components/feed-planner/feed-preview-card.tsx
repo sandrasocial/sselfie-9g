@@ -6,8 +6,11 @@ import { ImageIcon, Loader2, X, Wand2, Eye } from 'lucide-react'
 import { useRouter } from "next/navigation"
 import { toast } from "@/hooks/use-toast"
 import { createPortal } from "react-dom"
+import useSWR from "swr"
 import FeedPostCard from "./feed-post-card"
 import { createFeedFromStrategyHandler, type FeedStrategy, type CreateFeedOptions } from "@/lib/maya/feed-generation-handler"
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 // Using shared types from lib/feed/types.ts
 // Note: FeedPost interface is compatible, keeping local type for now due to optional fields
@@ -120,7 +123,80 @@ export default function FeedPreviewCard({
   // Track if we've attempted to fetch to avoid stale closure issues
   // Store fetchKey string to track fetches per feedId/needsRestore combination
   const hasFetchedRef = useRef<string | false>(false)
-  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  
+  // CRITICAL FIX: Use SWR for polling instead of setInterval (single source of truth)
+  // This matches the pattern used in useFeedPolling hook
+  // SWR automatically handles deduplication and caching
+  // Note: We still use the manual fetch for needsRestore, but SWR handles polling
+  const { data: swrFeedData, mutate: mutateFeed } = useSWR(
+    feedId ? `/api/feed/${feedId}` : null,
+    fetcher,
+    {
+      refreshInterval: (data) => {
+        // Only poll if there are generating posts
+        const hasGeneratingPosts = data?.posts?.some(
+          (p: any) => (p.prediction_id && !p.image_url) || p.generation_status === 'generating'
+        )
+        
+        if (hasGeneratingPosts) {
+          // Also call progress endpoint to update database (same as useFeedPolling)
+          if (feedId) {
+            fetch(`/api/feed/${feedId}/progress`)
+              .then(res => res.json())
+              .then(() => mutateFeed()) // Refresh after progress update
+              .catch(() => mutateFeed()) // Still refresh even if progress fails
+          }
+          return 3000 // Poll every 3 seconds
+        }
+        
+        return 0 // Stop polling when no generating posts
+      },
+      refreshWhenHidden: false,
+      revalidateOnFocus: true,
+      onSuccess: (data) => {
+        // Update local state when SWR data changes (only if feedId exists)
+        // This ensures feed cards in chat stay up-to-date
+        if (feedId && data?.posts && Array.isArray(data.posts)) {
+          setPostsData(data.posts)
+          
+          // Update generating state
+          const isAnyGenerating = data.posts.some(
+            (p: any) => (p.prediction_id && !p.image_url) || p.generation_status === 'generating'
+          )
+          setIsGenerating(isAnyGenerating)
+          
+          // Update title/description if changed (use functional updates to avoid stale closures)
+          if (data.feed?.brand_name) {
+            setDisplayTitle(prev => data.feed.brand_name !== prev ? data.feed.brand_name : prev)
+          }
+          if (data.feed?.description) {
+            const safeDesc = getSafeDescription(data.feed.description)
+            setDisplayDescription(prev => safeDesc !== prev ? safeDesc : prev)
+          }
+        }
+      },
+    }
+  )
+  
+  // CRITICAL FIX: Also sync SWR data when it changes (for cases where SWR updates but onSuccess doesn't fire)
+  useEffect(() => {
+    if (feedId && swrFeedData?.posts && Array.isArray(swrFeedData.posts)) {
+      // Only update if data is different (prevent unnecessary re-renders)
+      const currentPostsStr = JSON.stringify(postsData.map(p => ({ id: p.id, image_url: p.image_url, status: p.generation_status })))
+      const swrPostsStr = JSON.stringify(swrFeedData.posts.map((p: any) => ({ id: p.id, image_url: p.image_url, status: p.generation_status })))
+      
+      if (currentPostsStr !== swrPostsStr) {
+        console.log("[FeedPreviewCard] 🔄 Syncing posts from SWR data")
+        setPostsData(swrFeedData.posts)
+        
+        // Update generating state
+        const isAnyGenerating = swrFeedData.posts.some(
+          (p: any) => (p.prediction_id && !p.image_url) || p.generation_status === 'generating'
+        )
+        setIsGenerating(isAnyGenerating)
+      }
+    }
+  }, [feedId, swrFeedData?.posts, postsData])
   
   // Reset fetch flag when feedId changes (new feed card)
   // Only fetch if feed is saved (has feedId)
@@ -336,83 +412,10 @@ export default function FeedPreviewCard({
   const hasImages = effectivePosts.some(p => p.image_url)
   const isAnyGenerating = generatingCount > 0 || isGenerating
 
-  // CRITICAL: Poll for feed updates when images are generating
-  // This ensures feed cards in chat stay up-to-date with image generation progress (like concept cards)
-  // FIX: Remove readyCount and totalPosts from dependencies to avoid stale closure issues
-  useEffect(() => {
-    // Only poll if:
-    // 1. We have a feedId (feed is saved)
-    // 2. There are posts generating (isAnyGenerating is enough to trigger polling)
-    const shouldPoll = feedId && isAnyGenerating
-    
-    if (shouldPoll) {
-      console.log("[FeedPreviewCard] 🔄 Starting polling for feed updates:", {
-        feedId,
-        generatingCount,
-      })
-      
-      // Clear any existing interval
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current)
-      }
-      
-      // Poll every 3 seconds (same as concept cards)
-      pollIntervalRef.current = setInterval(async () => {
-        try {
-          const response = await fetch(`/api/feed/${feedId}`)
-          if (response.ok) {
-            const feedData = await response.json()
-            if (feedData.posts && Array.isArray(feedData.posts)) {
-              const newCompletedCount = feedData.posts.filter((p: any) => p.generation_status === 'completed' && p.image_url).length
-              const newGeneratingCount = feedData.posts.filter((p: any) => p.generation_status === 'generating').length
-              
-              console.log("[FeedPreviewCard] ✅ Polling update - posts refreshed:", {
-                newCompletedCount,
-                newGeneratingCount,
-                totalPosts: feedData.posts.length,
-              })
-              
-              // Update posts data - React will trigger re-render and recalculate readyCount
-              setPostsData(feedData.posts)
-              
-              // CRITICAL FIX (Bug 1): Check if all posts are complete OR failed
-              // Failed posts should also be considered "done" to stop polling
-              // This matches the logic at line 271 where failed posts are not counted as "generating"
-              const allComplete = feedData.posts.every((p: any) => 
-                (p.generation_status === 'completed' && p.image_url) || 
-                p.generation_status === 'failed'
-              )
-              if (allComplete) {
-                console.log("[FeedPreviewCard] ✅ All posts complete or failed - stopping polling")
-                setIsGenerating(false) // CRITICAL: Set generating state to false when complete
-                if (pollIntervalRef.current) {
-                  clearInterval(pollIntervalRef.current)
-                  pollIntervalRef.current = null
-                }
-              }
-            }
-          }
-        } catch (error) {
-          console.error("[FeedPreviewCard] ❌ Error polling feed updates:", error)
-        }
-      }, 3000)
-    } else {
-      // Stop polling if conditions are no longer met
-      if (pollIntervalRef.current) {
-        console.log("[FeedPreviewCard] ⏹️ Stopping polling - conditions no longer met")
-        clearInterval(pollIntervalRef.current)
-        pollIntervalRef.current = null
-      }
-    }
-    
-    // Cleanup on unmount
-    return () => {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current)
-        pollIntervalRef.current = null
-      }
-    }
-  }, [feedId, isAnyGenerating])
+  // CRITICAL FIX: Removed setInterval polling - now using SWR (single source of truth)
+  // SWR handles polling automatically via refreshInterval (see SWR hook above)
+  // This ensures no duplicate polling when feed card is shown in chat AND feed planner is open
+  // SWR automatically deduplicates requests and manages cache
 
   const handleViewFullFeed = () => {
     // Guard against null feedId (race condition during save)

@@ -11,7 +11,7 @@ import { getUserByAuthId } from '@/lib/user-mapping'
  */
 export async function POST(
   request: Request,
-  { params }: { params: { postId: string } }
+  { params }: { params: Promise<{ postId: string }> }
 ) {
   try {
     // Authenticate user
@@ -25,7 +25,8 @@ export async function POST(
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    const postId = parseInt(params.postId)
+    const { postId: postIdStr } = await params
+    const postId = parseInt(postIdStr)
     if (isNaN(postId)) {
       return NextResponse.json({ error: 'Invalid post ID' }, { status: 400 })
     }

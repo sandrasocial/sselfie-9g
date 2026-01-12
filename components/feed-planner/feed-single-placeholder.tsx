@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Loader2, ArrowRight } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
-import Link from "next/link"
+import BuyBlueprintModal from "@/components/sselfie/buy-blueprint-modal"
 
 interface FeedSinglePlaceholderProps {
   feedId: number
@@ -27,6 +27,7 @@ export default function FeedSinglePlaceholder({
   onGenerateImage 
 }: FeedSinglePlaceholderProps) {
   const [isGenerating, setIsGenerating] = useState(false)
+  const [showBlueprintModal, setShowBlueprintModal] = useState(false)
 
   // Phase 5.3.3: Handle image generation for free users
   const handleGenerateImage = async () => {
@@ -173,18 +174,24 @@ export default function FeedSinglePlaceholder({
             </p>
           </div>
           
-          {/* Phase 9: Upsell CTA Button */}
-          <Link href="/checkout/blueprint">
-            <Button
-              className="w-full bg-stone-900 hover:bg-stone-800 text-white font-medium shadow-lg hover:shadow-xl transition-all"
-              size="default"
-            >
-              Unlock Full Feed Planner
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
-          </Link>
+          {/* Phase 9: Upsell CTA Button - Now uses embedded checkout modal */}
+          <Button
+            onClick={() => setShowBlueprintModal(true)}
+            className="w-full bg-stone-900 hover:bg-stone-800 text-white font-medium shadow-lg hover:shadow-xl transition-all"
+            size="default"
+          >
+            Unlock Full Feed Planner
+            <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
         </div>
       </div>
+
+      {/* Embedded checkout modal */}
+      <BuyBlueprintModal
+        open={showBlueprintModal}
+        onOpenChange={setShowBlueprintModal}
+        feedId={feedId}
+      />
     </div>
   )
 }

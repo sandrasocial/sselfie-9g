@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import {
   Camera,
   User,
@@ -361,15 +361,20 @@ export default function SselfieApp({
     fetchCredits()
   }, [])
 
-  const refreshCredits = async () => {
+  const refreshCredits = useCallback(async () => {
     try {
       const response = await fetch("/api/user/credits")
+      if (!response.ok) {
+        console.error("[v0] Credit refresh failed with status:", response.status)
+        return // Don't update balance on error
+      }
       const data = await response.json()
       setCreditBalance(data.balance || 0)
     } catch (error) {
       console.error("[v0] Error refreshing credits:", error)
+      // Don't throw - just log the error
     }
-  }
+  }, [])
 
   // Decision 3: Fetch onboarding status and determine initial tab on mount and refresh
   useEffect(() => {
