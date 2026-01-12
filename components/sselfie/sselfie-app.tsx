@@ -462,11 +462,15 @@ export default function SselfieApp({
           blueprintData?.blueprint?.feedStyle
         )
 
+        // Check if user is a paid blueprint user (doesn't need training wizard)
+        const isPaidBlueprintUser = productType === "paid_blueprint" || blueprintData?.entitlement?.type === "paid"
+
         console.log("[Wizard Debug] 🔍 Extension Data Check:", {
           hasExtensionData,
           hasExtensionDataFromAPI: onboardingData.hasExtensionData,
           dreamClient: blueprintData?.blueprint?.formData?.dreamClient,
           feedStyle: blueprintData?.blueprint?.feedStyle,
+          isPaidBlueprintUser,
         })
 
         // For blueprint users, check if onboarding is actually complete (has all required data)
@@ -482,6 +486,7 @@ export default function SselfieApp({
           isBlueprintUser,
           hasBaseWizardData,
           hasExtensionData,
+          isPaidBlueprintUser,
         })
 
         if (!isActuallyCompleted && mounted) {
@@ -508,14 +513,18 @@ export default function SselfieApp({
             }
           }
           // Step 3: Show Training Wizard if all onboarding done but no trained model
-          else if ((blueprintWelcomeShown || hasBlueprintState || hasBaseWizardData) && !hasModel) {
-            console.log("[Onboarding] 🎓 Showing training onboarding wizard (onboarding done, no model)")
+          // SKIP training wizard for paid blueprint users (they don't need custom Flux LoRA models)
+          else if ((blueprintWelcomeShown || hasBlueprintState || hasBaseWizardData) && !hasModel && !isPaidBlueprintUser) {
+            console.log("[Onboarding] 🎓 Showing training onboarding wizard (onboarding done, no model, not paid blueprint)")
             setShowBlueprintWelcome(false)
             setShowOnboarding(true)
           }
           // No wizards to show
           else {
             console.log("[Wizard Debug] ⚠️ No wizard conditions matched - hiding all wizards")
+            if (isPaidBlueprintUser && !hasModel) {
+              console.log("[Wizard Debug] ℹ️ Paid blueprint user - skipping training wizard (not needed for Feed Planner)")
+            }
             setShowBlueprintWelcome(false)
             setShowOnboarding(false)
           }

@@ -38,6 +38,8 @@ export function useFeedPolling(feedId: number | null) {
   // FIX 4: Track when polling started for timeout detection
   const pollingStartTimeRef = useRef<number | null>(null)
   const [hasTimedOut, setHasTimedOut] = useState(false)
+  // Track last known completed count to detect new completions
+  const lastCompletedCountRef = useRef<number>(0)
   
   // Poll both feed data AND progress endpoint to update database
   const { data: feedData, error: feedError, mutate, isLoading, isValidating } = useSWR(
@@ -190,16 +192,32 @@ export function useFeedPolling(feedId: number | null) {
                   progress: progressData.progress
                 })
                 
-                // CRITICAL FIX: Always refresh feed data after calling progress endpoint
-                // This ensures UI sees the updated image_url and generation_status
-                // For single posts, this will immediately stop polling (see check above)
-                console.log('[useFeedPolling] ✅ Refreshing feed data after progress check')
-                mutate() // Refresh feed data after progress update
+                // CRITICAL FIX: Only update UI when a new post is actually completed
+                // This matches concept card behavior - only update on status change to "succeeded"
+                // Don't refresh on every poll to prevent flashing
+                const newCompletedCount = progressData.completed || 0
+                const hasNewCompletions = newCompletedCount > lastCompletedCountRef.current
+                
+                if (hasNewCompletions) {
+                  const newlyCompleted = newCompletedCount - lastCompletedCountRef.current
+                  console.log(`[useFeedPolling] 🎉 Detected ${newlyCompleted} newly completed post(s)! Updating UI...`)
+                  lastCompletedCountRef.current = newCompletedCount
+                  
+                  // Only refresh when a post actually completes (like concept cards)
+                  // Small delay to ensure DB transaction is committed
+                  setTimeout(() => {
+                    mutate(undefined, { revalidate: true })
+                  }, 100)
+                } else {
+                  // Silently poll without updating UI (prevents flashing)
+                  // This matches concept card behavior - they poll but only update on status change
+                  console.log('[useFeedPolling] ⏳ Still generating, no new completions yet (silent poll)')
+                }
               })
               .catch(err => {
                 console.error('[useFeedPolling] ❌ Error calling progress endpoint:', err)
-                // Don't fail polling if progress endpoint fails, but still try to refresh
-                mutate()
+                // Don't fail polling if progress endpoint fails - just log and continue
+                // Don't refresh on error to prevent flashing
               })
           } else if (feedId && singlePost && singlePost.prediction_id && !singlePost.image_url) {
             // CRITICAL FIX: For single posts, also call progress endpoint even if hasGeneratingPosts is false
@@ -214,11 +232,24 @@ export function useFeedPolling(feedId: number | null) {
               })
               .then(progressData => {
                 console.log('[useFeedPolling] 📊 Single post progress response:', progressData)
-                mutate() // Refresh feed data
+                
+                // Only update if post was just completed (matches concept card behavior)
+                const newCompletedCount = progressData.completed || 0
+                const hasNewCompletions = newCompletedCount > lastCompletedCountRef.current
+                
+                if (hasNewCompletions) {
+                  console.log('[useFeedPolling] 🎉 Single post completed! Updating UI...')
+                  lastCompletedCountRef.current = newCompletedCount
+                  setTimeout(() => {
+                    mutate(undefined, { revalidate: true })
+                  }, 100)
+                } else {
+                  console.log('[useFeedPolling] ⏳ Single post still generating (silent poll)')
+                }
               })
               .catch(err => {
                 console.error('[useFeedPolling] ❌ Error calling progress endpoint for single post:', err)
-                mutate()
+                // Don't refresh on error to prevent flashing
               })
           }
           
@@ -262,6 +293,12 @@ export function useFeedPolling(feedId: number | null) {
             (p.prediction_id && !p.image_url) || p.generation_status === 'generating'
           )
           const completedPosts = data.posts.filter((p: any) => p.image_url)
+          
+          // Initialize or update completed count ref to track progress
+          // Only update if this is the first load or if count increased
+          if (lastCompletedCountRef.current === 0 || completedPosts.length > lastCompletedCountRef.current) {
+            lastCompletedCountRef.current = completedPosts.length
+          }
           
           console.log("[useFeedPolling] ✅ Data updated:", {
             totalPosts: data.posts.length,
