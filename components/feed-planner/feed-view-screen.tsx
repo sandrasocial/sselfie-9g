@@ -10,6 +10,8 @@ import UnifiedLoading from "@/components/sselfie/unified-loading"
 import FeedStyleModal, { type FeedStyle } from "./feed-style-modal"
 import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 
+const fetcher = (url: string) => fetch(url).then((res) => res.json())
+
 interface FeedViewScreenProps {
   feedId?: number | null
   access?: FeedPlannerAccess // Phase 1.2: Access control object (required)
@@ -159,8 +161,13 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
             if (mutateFeedList) {
               await mutateFeedList()
             }
-            // Trigger SWR revalidation
-            window.location.reload()
+            
+            // FIX: Use router.refresh() instead of window.location.reload() to prevent full page refresh
+            // This maintains React state and prevents welcome screen from reappearing
+            router.refresh()
+            
+            // Also trigger SWR revalidation for feed data
+            // The feed data will be refetched automatically via SWR when router.refresh() completes
           } else {
             console.error('[FEED EXPANSION] Failed to expand feed')
           }

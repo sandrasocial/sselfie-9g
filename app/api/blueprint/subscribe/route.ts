@@ -21,6 +21,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Email and name are required" }, { status: 400 })
     }
 
+    // Extract feed_style: prefer selectedFeedStyle, fallback to formData.vibe (backward compatibility)
+    const feedStyle = selectedFeedStyle || formData?.vibe || null
+    console.log("[v0] Feed style extracted:", { selectedFeedStyle, formDataVibe: formData?.vibe, feedStyle })
+
     console.log("[v0] Email and name received:", { email, name })
 
     // Check if email already exists
@@ -45,7 +49,7 @@ export async function POST(request: NextRequest) {
               dream_client = ${formData.dreamClient || null},
               struggle = ${formData.struggle || null},
               selfie_skill_level = ${formData.lightingKnowledge || null},
-              feed_style = ${selectedFeedStyle || null},
+              feed_style = ${feedStyle},
               post_frequency = ${formData.postFrequency || null},
               updated_at = NOW()
           WHERE id = ${subscriber.id}
@@ -89,7 +93,7 @@ export async function POST(request: NextRequest) {
         ${formData?.dreamClient || null},
         ${formData?.struggle || null},
         ${formData?.lightingKnowledge || null},
-        ${selectedFeedStyle || null},
+        ${feedStyle},
         ${formData?.postFrequency || null},
         NOW(),
         NOW(),

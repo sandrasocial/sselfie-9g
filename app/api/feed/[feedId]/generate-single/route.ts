@@ -183,9 +183,30 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       )
     }
 
-    const [feedLayout] = await sql`
-      SELECT color_palette, brand_vibe, photoshoot_enabled, photoshoot_base_seed, feed_style FROM feed_layouts WHERE id = ${feedIdInt}
-    `
+    // Query feed_layouts with feed_style (handle case where column might not exist yet)
+    let feedLayout: any
+    try {
+      const result = await sql`
+        SELECT color_palette, brand_vibe, photoshoot_enabled, photoshoot_base_seed, feed_style 
+        FROM feed_layouts 
+        WHERE id = ${feedIdInt}
+      `
+      feedLayout = result[0]
+    } catch (error: any) {
+      // If feed_style column doesn't exist, query without it
+      if (error?.message?.includes('feed_style') || error?.code === '42703') {
+        console.warn("[v0] [GENERATE-SINGLE] feed_style column not found, querying without it")
+        const result = await sql`
+          SELECT color_palette, brand_vibe, photoshoot_enabled, photoshoot_base_seed
+          FROM feed_layouts 
+          WHERE id = ${feedIdInt}
+        `
+        feedLayout = result[0]
+        feedLayout.feed_style = null // Set to null if column doesn't exist
+      } else {
+        throw error // Re-throw if it's a different error
+      }
+    }
 
     // Only fetch model for Classic Mode (Pro Mode doesn't need custom model)
     let model: any = null
@@ -271,55 +292,56 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
         LIMIT 1
       `
       
-      // Use stored prompt if available
-      // For free users: template prompts from blueprint library
-      // For paid blueprint users: Extract frame from template (position 1) or use Maya
-      let finalPrompt = post.prompt
+      // FIX: For paid blueprint users, ALWAYS extract frame from template (positions 1-9)
+      // Position 1 stores the full template, but we need to extract frame 1 from it
+      // Positions 2-9 extract their respective frames
+      // CRITICAL: Even if post.prompt exists, we must extract the frame (position 1 has full template, not frame 1)
+      let finalPrompt: string | null = null
       
+      // Check if we have a template stored in position 1
+      const [previewPost] = await sql`
+        SELECT prompt FROM feed_posts
+        WHERE feed_layout_id = ${feedIdInt} AND position = 1
+        LIMIT 1
+      `
+      
+      // For paid blueprint users: ALWAYS try to extract frame from template first (positions 1-9)
+      // This applies even if post.prompt exists, because position 1's prompt is the full template, not frame 1
+      if (access.isPaidBlueprint && previewPost?.prompt && previewPost.prompt.length > 100) {
+        console.log('=== SINGLE IMAGE GENERATION ===')
+        console.log(`Feed ID: ${feedIdInt}`)
+        console.log(`Position: ${post.position}`)
+        console.log(`Template found in position 1, extracting frame ${post.position}...`)
+        
+        try {
+          const { buildSingleImagePrompt } = await import('@/lib/feed-planner/build-single-image-prompt')
+          finalPrompt = buildSingleImagePrompt(previewPost.prompt, post.position)
+          
+          console.log(`Prompt built: ${finalPrompt.length} characters`)
+          console.log('First 200 chars:', finalPrompt.substring(0, 200))
+          console.log('=' + '='.repeat(50))
+          
+          // Save the prompt to database
+          await sql`
+            UPDATE feed_posts
+            SET prompt = ${finalPrompt}
+            WHERE id = ${postId}
+          `
+          
+          console.log(`[v0] [GENERATE-SINGLE] ✅ Built prompt from template frame ${post.position}`)
+        } catch (frameError) {
+          console.error(`[v0] [GENERATE-SINGLE] ❌ Error extracting frame from template:`, frameError)
+          // Fall through to free user logic or Maya generation below
+          finalPrompt = null
+        }
+      }
+      
+      // If frame extraction failed or not applicable (free users), continue with original logic
+      // For free users, use stored prompt if available, otherwise generate from template library
       if (!finalPrompt || finalPrompt.trim().length < 20) {
-        // Prompt missing - generate based on user type
         console.log(`[v0] [GENERATE-SINGLE] ⚠️ Pro Mode post ${post.position} missing prompt. Generating based on user type...`)
         
         try {
-          // Check if we have a preview template (position 1) with full template prompt
-          // This is used for paid blueprint users to extract frame descriptions
-          const [previewPost] = await sql`
-            SELECT prompt FROM feed_posts
-            WHERE feed_layout_id = ${feedIdInt} AND position = 1
-            LIMIT 1
-          `
-          
-          // For paid blueprint users: Try to extract frame from template first
-          if (access.isPaidBlueprint && previewPost?.prompt && previewPost.prompt.length > 100) {
-            console.log('=== SINGLE IMAGE GENERATION ===')
-            console.log(`Feed ID: ${feedIdInt}`)
-            console.log(`Position: ${post.position}`)
-            console.log(`Template found in position 1, extracting frame ${post.position}...`)
-            
-            try {
-              const { buildSingleImagePrompt } = await import('@/lib/feed-planner/build-single-image-prompt')
-              finalPrompt = buildSingleImagePrompt(previewPost.prompt, post.position)
-              
-              console.log(`Prompt built: ${finalPrompt.length} characters`)
-              console.log('First 200 chars:', finalPrompt.substring(0, 200))
-              console.log('=' + '='.repeat(50))
-              
-              // Save the prompt to database
-              await sql`
-                UPDATE feed_posts
-                SET prompt = ${finalPrompt}
-                WHERE id = ${postId}
-              `
-              
-              console.log(`[v0] [GENERATE-SINGLE] ✅ Built prompt from template frame ${post.position}`)
-            } catch (frameError) {
-              console.error(`[v0] [GENERATE-SINGLE] ❌ Error extracting frame from template:`, frameError)
-              // Fall through to Maya generation below
-            }
-          }
-          
-          // If frame extraction failed or not applicable, continue with original logic
-          if (!finalPrompt || finalPrompt.trim().length < 20) {
             if (access.isFree) {
             // Free users: Use blueprint templates (same as old blueprint)
             console.log(`[v0] [GENERATE-SINGLE] Free user - using blueprint template library...`)
@@ -448,6 +470,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
               SET prompt = ${finalPrompt}
               WHERE id = ${postId}
             `
+            } // Close if (access.isFree)
           } else if (access.isPaidBlueprint) {
             // Phase 2: Paid blueprint users - ALWAYS use Maya to generate unique prompts
             // Maya will use preview template as reference if available, or generate based on personal brand data
@@ -864,13 +887,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
                 { status: 500 }
               )
             }
-          }
+          } // Close if (access.isPaidBlueprint)
         } catch (promptError) {
           console.error(`[v0] [GENERATE-SINGLE] Error generating prompt:`, promptError)
           // Fallback to simple prompt
-        finalPrompt = post.content_pillar || `Feed post ${post.position}`
+          finalPrompt = post.content_pillar || `Feed post ${post.position}`
         }
-      } else {
+      } else { // Close if (!finalPrompt || finalPrompt.trim().length < 20) at line 341
         console.log(`[v0] [GENERATE-SINGLE] ✅ Using pre-generated prompt (${finalPrompt.split(/\s+/).length} words)`)
       }
       

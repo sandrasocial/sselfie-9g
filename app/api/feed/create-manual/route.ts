@@ -71,30 +71,58 @@ export async function POST(req: NextRequest) {
         RETURNING *
       ` as any[]
     } catch (error: any) {
-      // If created_by field doesn't exist, try without it
-      if (error?.message?.includes('created_by') || error?.code === '42703') {
-        console.log("[v0] created_by field not found, creating feed without it")
-        feedResult = await sql`
-          INSERT INTO feed_layouts (
-            user_id,
-            brand_name,
-            username,
-            description,
-            status,
-            layout_type,
-            feed_style
-          )
-          VALUES (
-            ${user.id},
-            ${title},
-            ${user.name?.toLowerCase().replace(/\s+/g, "") || "yourbrand"},
-            NULL,
-            'saved',
-            'grid_3x3',
-            ${feedStyle}
-          )
-          RETURNING *
-        ` as any[]
+      // If created_by or feed_style field doesn't exist, try without them
+      if (error?.message?.includes('created_by') || error?.message?.includes('feed_style') || error?.code === '42703') {
+        console.log("[v0] created_by or feed_style field not found, creating feed without them")
+        try {
+          feedResult = await sql`
+            INSERT INTO feed_layouts (
+              user_id,
+              brand_name,
+              username,
+              description,
+              status,
+              layout_type,
+              feed_style
+            )
+            VALUES (
+              ${user.id},
+              ${title},
+              ${user.name?.toLowerCase().replace(/\s+/g, "") || "yourbrand"},
+              NULL,
+              'saved',
+              'grid_3x3',
+              ${feedStyle}
+            )
+            RETURNING *
+          ` as any[]
+        } catch (error2: any) {
+          // If feed_style also doesn't exist, try without it
+          if (error2?.message?.includes('feed_style') || error2?.code === '42703') {
+            console.log("[v0] feed_style field not found, creating feed without it")
+            feedResult = await sql`
+              INSERT INTO feed_layouts (
+                user_id,
+                brand_name,
+                username,
+                description,
+                status,
+                layout_type
+              )
+              VALUES (
+                ${user.id},
+                ${title},
+                ${user.name?.toLowerCase().replace(/\s+/g, "") || "yourbrand"},
+                NULL,
+                'saved',
+                'grid_3x3'
+              )
+              RETURNING *
+            ` as any[]
+          } else {
+            throw error2
+          }
+        }
       } else {
         throw error
       }
@@ -175,13 +203,34 @@ export async function POST(req: NextRequest) {
         const templateKey = `${category}_${moodMapped}` as keyof typeof BLUEPRINT_PHOTOSHOOT_TEMPLATES
         const templatePrompt = BLUEPRINT_PHOTOSHOOT_TEMPLATES[templateKey]
         
+        console.log(`[v0] Template selection:`, {
+          feedStyle,
+          category,
+          mood,
+          moodMapped,
+          templateKey,
+          hasTemplate: !!templatePrompt,
+          templateLength: templatePrompt?.length || 0,
+        })
+        
         if (templatePrompt) {
-          await sql`
-            UPDATE feed_posts
-            SET prompt = ${templatePrompt}
-            WHERE feed_layout_id = ${feedId} AND position = 1
-          `
-          console.log(`[v0] ✅ Stored template ${templateKey} in position 1 for feed ${feedId}`)
+          try {
+            await sql`
+              UPDATE feed_posts
+              SET prompt = ${templatePrompt}
+              WHERE feed_layout_id = ${feedId} AND position = 1
+            `
+            console.log(`[v0] ✅ Stored template ${templateKey} in position 1 for feed ${feedId}`)
+          } catch (updateError: any) {
+            console.error(`[v0] ❌ Failed to update feed_posts with template:`, {
+              error: updateError?.message,
+              code: updateError?.code,
+              feedId,
+              templateKey,
+              templateLength: templatePrompt.length,
+            })
+            // Continue - template will be generated on first generation
+          }
         } else {
           console.warn(`[v0] ⚠️ Template ${templateKey} not found - position 1 will generate prompt on first generation`)
         }
@@ -205,15 +254,28 @@ export async function POST(req: NextRequest) {
       code: error?.code,
       name: error?.name,
       details: error?.details,
+      cause: error?.cause,
     })
     
     // Return more specific error message
     const errorMessage = error?.message || "Internal server error"
-    const isDatabaseError = error?.code?.startsWith('42') || error?.code?.startsWith('23')
+    const isDatabaseError = error?.code?.startsWith('42') || error?.code?.startsWith('23') || error?.code?.startsWith('P')
+    
+    // For database errors, provide more context
+    if (isDatabaseError) {
+      return NextResponse.json(
+        { 
+          error: "Database error", 
+          details: errorMessage,
+          code: error?.code,
+        },
+        { status: 500 }
+      )
+    }
     
     return NextResponse.json(
       { 
-        error: isDatabaseError ? "Database error" : "Internal server error", 
+        error: "Internal server error", 
         details: errorMessage 
       },
       { status: 500 }

@@ -147,33 +147,54 @@ export async function GET(req: NextRequest) {
 
         console.log(`[v0][paid-blueprint] Grid ${gridNumber} uploaded:`, gridBlob.url.substring(0, 60) + "...")
 
-        // Update database: store grid URL at correct index
+        // FIX: Use jsonb_set() to atomically update only the specific index
+        // This prevents race conditions when multiple grids complete simultaneously
         const targetIndex = gridNumber - 1
-        const existingPhotoUrls = Array.isArray(data.paid_blueprint_photo_urls) ? data.paid_blueprint_photo_urls : []
-
-        // Build new array with grid at specific index
-        // Ensure array is long enough to hold this index
-        while (existingPhotoUrls.length <= targetIndex) {
-          existingPhotoUrls.push(null)
-        }
-        existingPhotoUrls[targetIndex] = gridBlob.url
-
-        // Atomic update: only if this slot is empty
-        await sql`
+        
+        // Atomic update using jsonb_set() - only updates the specific index
+        // jsonb_set(target, path, new_value, create_missing)
+        // - target: the JSONB column
+        // - path: array index as text array, e.g., ARRAY['0'] for index 0
+        // - new_value: the URL as a JSON string
+        // - create_missing: true to create array/expand if needed
+        // Build the path array as a string literal for the SQL query
+        const pathArray = `ARRAY['${targetIndex}']`
+        const updateResult = await sql.unsafe(`
           UPDATE blueprint_subscribers
-          SET paid_blueprint_photo_urls = ${JSON.stringify(existingPhotoUrls)}::jsonb,
-              updated_at = NOW()
-          WHERE access_token = ${accessToken}
+          SET paid_blueprint_photo_urls = jsonb_set(
+            COALESCE(paid_blueprint_photo_urls, '[]'::jsonb),
+            ${pathArray}::text[],
+            $1::jsonb,
+            true
+          ),
+          updated_at = NOW()
+          WHERE access_token = $2
           AND (
             paid_blueprint_photo_urls IS NULL 
-            OR paid_blueprint_photo_urls->>${targetIndex} IS NULL
+            OR paid_blueprint_photo_urls->>$3 IS NULL
           )
-        `
+          RETURNING paid_blueprint_photo_urls
+        `, [JSON.stringify(gridBlob.url), accessToken, targetIndex.toString()])
 
-        console.log(`[v0][paid-blueprint] Grid ${gridNumber} saved to database`)
+        if (updateResult.length === 0) {
+          // Slot was already filled (race condition - another request got there first)
+          console.log(`[v0][paid-blueprint] Grid ${gridNumber} slot already filled (concurrent update)`)
+          return NextResponse.json({
+            success: true,
+            status: "completed",
+            gridNumber,
+            gridUrl: gridBlob.url,
+            message: "Grid completed but slot was already filled by concurrent request",
+          })
+        }
 
-        // Count total completed grids
-        const completedCount = existingPhotoUrls.filter((url: any) => url !== null && url !== undefined).length
+        console.log(`[v0][paid-blueprint] Grid ${gridNumber} saved to database (atomic update)`)
+
+        // Count total completed grids from the updated array
+        const updatedPhotoUrls = updateResult[0].paid_blueprint_photo_urls
+        const completedCount = Array.isArray(updatedPhotoUrls) 
+          ? updatedPhotoUrls.filter((url: any) => url !== null && url !== undefined && url !== 'null').length
+          : 0
 
         console.log(`[v0][paid-blueprint] Progress: ${completedCount}/30 grids complete`)
 

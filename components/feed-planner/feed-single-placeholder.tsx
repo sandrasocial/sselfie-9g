@@ -6,6 +6,7 @@ import { toast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
 import BuyBlueprintModal from "@/components/sselfie/buy-blueprint-modal"
 import FreeModeUpsellModal from "./free-mode-upsell-modal"
+import { useFeedPostPolling } from "@/lib/hooks/use-feed-post-polling"
 
 interface FeedSinglePlaceholderProps {
   feedId: number
@@ -27,11 +28,63 @@ export default function FeedSinglePlaceholder({
   onAddImage, 
   onGenerateImage 
 }: FeedSinglePlaceholderProps) {
-  const [isGenerating, setIsGenerating] = useState(false)
   const [showBlueprintModal, setShowBlueprintModal] = useState(false)
   const [showUpsellModal, setShowUpsellModal] = useState(false)
   const [creditsUsed, setCreditsUsed] = useState<number | null>(null)
   const [isDownloading, setIsDownloading] = useState(false)
+  // Store predictionId from generate-single response for polling
+  // FIX: Only store predictionId if post doesn't already have an image
+  // If post already has image_url, we don't need to poll
+  const [predictionId, setPredictionId] = useState<string | null>(
+    post?.prediction_id && !post?.image_url ? post.prediction_id : null
+  )
+
+  // FIX: Use per-placeholder polling hook (matches concept card pattern)
+  // This polls the existing /api/feed/[feedId]/check-post endpoint
+  // CRITICAL: Only poll if we have predictionId AND no image_url yet
+  // If post already has image_url, don't poll (enabled = false)
+  const { status: pollingStatus, imageUrl: pollingImageUrl, error: pollingError } = useFeedPostPolling({
+    feedId,
+    postId: post?.id || 0,
+    predictionId,
+    enabled: !!predictionId && !post?.image_url, // Only poll if we have predictionId and no image in DB yet
+    onComplete: (imageUrl) => {
+      console.log("[Feed Single Placeholder] ✅ Generation completed, imageUrl:", imageUrl)
+      // Clear predictionId to stop polling
+      setPredictionId(null)
+      // Call refresh callback to update parent feed data
+      if (onGenerateImage) {
+        onGenerateImage()
+      }
+    },
+    onError: (error) => {
+      console.error("[Feed Single Placeholder] ❌ Generation failed:", error)
+      // Clear predictionId to stop polling
+      setPredictionId(null)
+      toast({
+        title: "Generation failed",
+        description: error.length > 100 ? `${error.substring(0, 100)}...` : error,
+        variant: "destructive",
+      })
+    },
+  })
+
+  // Update predictionId when post data changes (e.g., from parent polling)
+  // FIX: Only update if post doesn't already have an image_url
+  useEffect(() => {
+    // If post already has image_url, clear predictionId (no need to poll)
+    if (post?.image_url) {
+      if (predictionId) {
+        setPredictionId(null)
+      }
+      return
+    }
+    
+    // Only set predictionId if post has one and no image yet
+    if (post?.prediction_id && post.prediction_id !== predictionId) {
+      setPredictionId(post.prediction_id)
+    }
+  }, [post?.prediction_id, post?.image_url, predictionId])
 
   // Phase 5.3.3: Handle image generation for free users
   const handleGenerateImage = async () => {
@@ -44,8 +97,6 @@ export default function FeedSinglePlaceholder({
       return
     }
 
-    setIsGenerating(true)
-
     try {
       const response = await fetch(`/api/feed/${feedId}/generate-single`, {
         method: "POST",
@@ -55,7 +106,18 @@ export default function FeedSinglePlaceholder({
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: "Failed to generate" }))
-        throw new Error(errorData.error || "Failed to generate")
+        const errorMessage = errorData.error || "Failed to generate"
+        const errorDetails = errorData.details || errorData.message || ""
+        const fullErrorMessage = errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage
+        throw new Error(fullErrorMessage)
+      }
+
+      const data = await response.json()
+      
+      // Store predictionId to start polling
+      if (data.predictionId) {
+        setPredictionId(data.predictionId)
+        console.log("[Feed Single Placeholder] ✅ Generation started, predictionId:", data.predictionId)
       }
 
       toast({
@@ -63,46 +125,38 @@ export default function FeedSinglePlaceholder({
         description: "This takes about 30 seconds",
       })
 
-      // Call refresh callback if provided to trigger polling
+      // Call refresh callback if provided (for parent to update feed data)
       if (onGenerateImage) {
         await onGenerateImage()
       }
-      
-      // Credits are deducted immediately when generation starts
-      // The useEffect will re-check credits when generation completes (when image_url is set)
-      
-      // DON'T set isGenerating to false here - let the polling detect when image is ready
-      // The component will check post.generation_status and post.prediction_id to show loading
     } catch (error) {
       console.error("[Feed Single Placeholder] Generate error:", error)
+      const errorMessage = error instanceof Error ? error.message : "Please try again"
+      
       toast({
         title: "Generation failed",
-        description: error instanceof Error ? error.message : "Please try again",
+        description: errorMessage.length > 100 ? `${errorMessage.substring(0, 100)}...` : errorMessage,
         variant: "destructive",
       })
-      setIsGenerating(false) // Only set to false on error
     }
   }
 
-  // Determine if post is currently generating based on post data (from polling)
-  // This ensures loading state persists even after API call completes
-  const isPostGenerating = post?.generation_status === "generating" || 
-                           (post?.prediction_id && !post?.image_url) ||
-                           isGenerating
+  // FIX: Simplified loading state - single source of truth
+  // Use polling status if available, otherwise fall back to post data
+  // CRITICAL: Don't show generating if we already have an image
+  const isPostGenerating = !displayImageUrl && (
+    pollingStatus === "generating" || 
+    (post?.generation_status === "generating" && post?.prediction_id && !post?.image_url) ||
+    (post?.prediction_id && !post?.image_url)
+  )
 
-  // Reset local isGenerating state when post completes (has image_url)
-  useEffect(() => {
-    if (post?.image_url && isGenerating) {
-      setIsGenerating(false)
-    }
-  }, [post?.image_url, isGenerating])
+  // Use image URL from polling if available, otherwise use post data
+  const displayImageUrl = pollingImageUrl || post?.image_url || null
+  const hasImage = !!displayImageUrl
 
-  // Check if post has an image (use stable memoized values)
-  const hasImage = useMemo(() => !!post?.image_url, [post?.image_url])
-  const imageUrl = useMemo(() => post?.image_url || null, [post?.image_url])
+  // Memoized values for useEffect dependencies
   const postId = useMemo(() => post?.id || null, [post?.id])
   const generationStatus = useMemo(() => post?.generation_status || null, [post?.generation_status])
-  const predictionId = useMemo(() => post?.prediction_id || null, [post?.prediction_id])
 
   // Smart upsell modal detection for FREE users only
   // Show FreeModeUpsellModal AFTER image generation completes:
@@ -274,7 +328,7 @@ export default function FeedSinglePlaceholder({
         modalTimerRef.current = null
       }
     }
-  }, [imageUrl, isPostGenerating, showUpsellModal, hasImage])
+  }, [displayImageUrl, isPostGenerating, showUpsellModal, hasImage])
   
   // Clean up recurring timer when component unmounts or modal is manually closed
   useEffect(() => {
@@ -304,16 +358,16 @@ export default function FeedSinglePlaceholder({
     console.log("[Feed Single Placeholder] Post state:", {
       postId,
       hasImage,
-      imageUrl,
+      displayImageUrl: displayImageUrl?.substring(0, 50) + "...",
       generationStatus,
       predictionId,
+      pollingStatus,
       isPostGenerating,
-      isGenerating,
       creditsUsed,
       showUpsellModal,
       generationComplete: hasImage && !isPostGenerating,
     })
-  }, [postId, imageUrl, generationStatus, predictionId, isPostGenerating, isGenerating, creditsUsed, showUpsellModal, hasImage])
+  }, [postId, displayImageUrl, generationStatus, predictionId, pollingStatus, isPostGenerating, creditsUsed, showUpsellModal, hasImage])
 
   return (
     <div className="px-4 md:px-8 py-12">
@@ -324,15 +378,15 @@ export default function FeedSinglePlaceholder({
           <div className="relative group">
             <div className="aspect-[9/16] bg-white border border-stone-200 rounded-lg overflow-hidden">
               <img
-                src={post.image_url}
+                src={displayImageUrl}
                 alt="Generated post"
                 className="w-full h-full object-cover"
                 onError={(e) => {
-                  console.error("[Feed Single Placeholder] Image load error:", post.image_url)
+                  console.error("[Feed Single Placeholder] Image load error:", displayImageUrl)
                   console.error("[Feed Single Placeholder] Error event:", e)
                 }}
                 onLoad={() => {
-                  console.log("[Feed Single Placeholder] ✅ Image loaded successfully:", post.image_url)
+                  console.log("[Feed Single Placeholder] ✅ Image loaded successfully:", displayImageUrl)
                 }}
               />
             </div>
@@ -340,11 +394,11 @@ export default function FeedSinglePlaceholder({
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity md:opacity-100">
               <Button
                 onClick={async () => {
-                  if (!post.image_url) return
+                  if (!displayImageUrl) return
                   
                   setIsDownloading(true)
                   try {
-                    const response = await fetch(post.image_url)
+                    const response = await fetch(displayImageUrl)
                     if (!response.ok) throw new Error("Failed to fetch image")
                     const blob = await response.blob()
                     
