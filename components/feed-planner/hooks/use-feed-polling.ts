@@ -164,10 +164,10 @@ export function useFeedPolling(feedId: number | null) {
                   console.log(`[useFeedPolling] 🎉 ${newlyCompleted} post(s) completed! Updating UI...`)
                   lastCompletedCountRef.current = newCompletedCount
                   
-                  // Only refresh when a post actually completes (like concept cards)
-                  // Use revalidate: false to prevent unnecessary re-fetch, just update cache
-                  // This prevents UI flashing while still showing new images
-                  mutate(undefined, { revalidate: false })
+                  // CRITICAL FIX: Revalidate to fetch updated post data with image_url
+                  // This ensures placeholders see the newly generated images
+                  // Only revalidate when posts actually complete (prevents excessive polling)
+                  mutate()
                 }
                 // Silently poll without updating UI (prevents flashing and excessive re-renders)
               })
@@ -194,8 +194,9 @@ export function useFeedPolling(feedId: number | null) {
                 if (hasNewCompletions) {
                   console.log('[useFeedPolling] 🎉 Single post completed! Updating UI...')
                   lastCompletedCountRef.current = newCompletedCount
-                  // Use revalidate: false to prevent unnecessary re-fetch, just update cache
-                  mutate(undefined, { revalidate: false })
+                  // CRITICAL FIX: Revalidate to fetch updated post data with image_url
+                  // This ensures placeholders see the newly generated images
+                  mutate()
                 }
                 // Silently poll without logging
               })

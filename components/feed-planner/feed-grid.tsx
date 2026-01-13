@@ -47,6 +47,12 @@ export default function FeedGrid({
       return { error: "Access restricted" }
     }
 
+    // Show toast immediately for instant feedback (don't wait for API)
+    toast({
+      title: "Generating photo",
+      description: "This takes about 30 seconds",
+    })
+
     try {
       const response = await fetch(`/api/feed/${feedId}/generate-single`, {
         method: "POST",
@@ -64,14 +70,13 @@ export default function FeedGrid({
 
       const data = await response.json()
 
-      toast({
-        title: "Generating photo",
-        description: "This takes about 30 seconds",
-      })
-
-      // Call refresh callback if provided (for parent to update feed data)
+      // NON-BLOCKING: Call refresh callback without awaiting (don't block UI)
+      // This allows the loading state to show immediately while data refreshes in background
       if (onGenerateImage) {
-        await onGenerateImage(postId)
+        onGenerateImage(postId).catch((err) => {
+          console.error("[Feed Grid] Error refreshing feed data:", err)
+          // Don't show error to user - this is just a background refresh
+        })
       }
 
       // Return predictionId for the grid item to start polling

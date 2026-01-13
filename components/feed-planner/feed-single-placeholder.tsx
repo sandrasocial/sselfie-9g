@@ -97,6 +97,12 @@ export default function FeedSinglePlaceholder({
       return
     }
 
+    // OPTIMISTIC UI: Set temporary predictionId immediately to show loading state
+    // This makes the UI feel instant even though API call takes a few seconds
+    const tempPredictionId = `temp-${Date.now()}`
+    setPredictionId(tempPredictionId)
+    console.log("[Feed Single Placeholder] 🚀 Starting generation (optimistic UI)")
+
     try {
       const response = await fetch(`/api/feed/${feedId}/generate-single`, {
         method: "POST",
@@ -105,6 +111,8 @@ export default function FeedSinglePlaceholder({
       })
 
       if (!response.ok) {
+        // Clear optimistic state on error
+        setPredictionId(null)
         const errorData = await response.json().catch(() => ({ error: "Failed to generate" }))
         const errorMessage = errorData.error || "Failed to generate"
         const errorDetails = errorData.details || errorData.message || ""
@@ -114,10 +122,13 @@ export default function FeedSinglePlaceholder({
 
       const data = await response.json()
       
-      // Store predictionId to start polling
+      // Store actual predictionId to start polling (replaces temp one)
       if (data.predictionId) {
         setPredictionId(data.predictionId)
         console.log("[Feed Single Placeholder] ✅ Generation started, predictionId:", data.predictionId)
+      } else {
+        // If no predictionId, clear optimistic state
+        setPredictionId(null)
       }
 
       toast({
@@ -125,11 +136,17 @@ export default function FeedSinglePlaceholder({
         description: "This takes about 30 seconds",
       })
 
-      // Call refresh callback if provided (for parent to update feed data)
+      // NON-BLOCKING: Call refresh callback without awaiting (don't block UI)
+      // This allows the loading state to show immediately while data refreshes in background
       if (onGenerateImage) {
-        await onGenerateImage()
+        onGenerateImage().catch((err) => {
+          console.error("[Feed Single Placeholder] Error refreshing feed data:", err)
+          // Don't show error to user - this is just a background refresh
+        })
       }
     } catch (error) {
+      // Clear optimistic state on error
+      setPredictionId(null)
       console.error("[Feed Single Placeholder] Generate error:", error)
       const errorMessage = error instanceof Error ? error.message : "Please try again"
       
@@ -141,6 +158,11 @@ export default function FeedSinglePlaceholder({
     }
   }
 
+  // Use image URL from polling if available, otherwise use post data
+  // CRITICAL: Define this FIRST before using it in isPostGenerating
+  const displayImageUrl = pollingImageUrl || post?.image_url || null
+  const hasImage = !!displayImageUrl
+
   // FIX: Simplified loading state - single source of truth
   // Use polling status if available, otherwise fall back to post data
   // CRITICAL: Don't show generating if we already have an image
@@ -149,10 +171,6 @@ export default function FeedSinglePlaceholder({
     (post?.generation_status === "generating" && post?.prediction_id && !post?.image_url) ||
     (post?.prediction_id && !post?.image_url)
   )
-
-  // Use image URL from polling if available, otherwise use post data
-  const displayImageUrl = pollingImageUrl || post?.image_url || null
-  const hasImage = !!displayImageUrl
 
   // Memoized values for useEffect dependencies
   const postId = useMemo(() => post?.id || null, [post?.id])

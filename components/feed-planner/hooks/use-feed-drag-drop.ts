@@ -22,14 +22,22 @@ export function useFeedDragDrop(
 
   // Initialize reorderedPosts when posts change (only if not currently dragging)
   // CRITICAL: reorderedPosts must always be in sync with posts for drag handlers to work correctly
+  // FIX: Always update when posts change (detected by postsKey) to catch image_url updates
   useEffect(() => {
     // Update if posts changed (by comparing IDs, positions, AND image_urls)
     // This ensures we catch image updates, not just position changes
-    if (draggedIndex === null && posts.length > 0 && prevPostsRef.current !== postsKey) {
-      prevPostsRef.current = postsKey
-      setReorderedPosts(posts)
+    // CRITICAL: Only skip update if currently dragging (to preserve drag state)
+    if (draggedIndex === null) {
+      // Always update if postsKey changed (includes image_url changes)
+      if (prevPostsRef.current !== postsKey) {
+        prevPostsRef.current = postsKey
+        setReorderedPosts(posts)
+      } else if (reorderedPosts.length === 0 && posts.length > 0) {
+        // Fallback: Initialize if reorderedPosts is empty but posts exist
+        setReorderedPosts(posts)
+      }
     }
-  }, [posts, draggedIndex, postsKey])
+  }, [posts, draggedIndex, postsKey, reorderedPosts.length])
 
   // Ensure reorderedPosts is always initialized (use posts as fallback for rendering if empty)
   const displayPosts = reorderedPosts.length > 0 ? reorderedPosts : posts

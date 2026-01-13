@@ -169,10 +169,13 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Store template prompt in position 1 for frame extraction (paid blueprint users)
+    // Extract individual scenes from template and store in each position (paid blueprint users)
+    // For paid blueprint: Each position gets its own extracted scene (1-9), NOT the full template
+    // The full template is only for free blueprint preview feed
     if (feedStyle) {
       try {
         const { BLUEPRINT_PHOTOSHOOT_TEMPLATES, MOOD_MAP } = await import("@/lib/maya/blueprint-photoshoot-templates")
+        const { buildSingleImagePrompt } = await import("@/lib/feed-planner/build-single-image-prompt")
         
         // Get category from user_personal_brand or use feedStyle as category
         const personalBrand = await sql`
@@ -201,7 +204,7 @@ export async function POST(req: NextRequest) {
         const mood = feedStyle
         const moodMapped = MOOD_MAP[mood as keyof typeof MOOD_MAP] || "light_minimalistic"
         const templateKey = `${category}_${moodMapped}` as keyof typeof BLUEPRINT_PHOTOSHOOT_TEMPLATES
-        const templatePrompt = BLUEPRINT_PHOTOSHOOT_TEMPLATES[templateKey]
+        const fullTemplate = BLUEPRINT_PHOTOSHOOT_TEMPLATES[templateKey]
         
         console.log(`[v0] Template selection:`, {
           feedStyle,
@@ -209,34 +212,50 @@ export async function POST(req: NextRequest) {
           mood,
           moodMapped,
           templateKey,
-          hasTemplate: !!templatePrompt,
-          templateLength: templatePrompt?.length || 0,
+          hasTemplate: !!fullTemplate,
+          templateLength: fullTemplate?.length || 0,
         })
         
-        if (templatePrompt) {
+        if (fullTemplate) {
           try {
-            await sql`
-              UPDATE feed_posts
-              SET prompt = ${templatePrompt}
-              WHERE feed_layout_id = ${feedId} AND position = 1
-            `
-            console.log(`[v0] ✅ Stored template ${templateKey} in position 1 for feed ${feedId}`)
+            // Extract each scene (1-9) from the template and store in respective positions
+            for (let position = 1; position <= 9; position++) {
+              try {
+                const extractedScene = buildSingleImagePrompt(fullTemplate, position)
+                
+                await sql`
+                  UPDATE feed_posts
+                  SET prompt = ${extractedScene}
+                  WHERE feed_layout_id = ${feedId} AND position = ${position}
+                `
+                
+                console.log(`[v0] ✅ Stored extracted scene ${position} from template ${templateKey} in position ${position}`)
+              } catch (extractError: any) {
+                console.error(`[v0] ❌ Failed to extract scene ${position} from template:`, {
+                  error: extractError?.message,
+                  position,
+                  templateKey,
+                })
+                // Continue with other positions
+              }
+            }
+            
+            console.log(`[v0] ✅ Successfully extracted and stored all 9 scenes from template ${templateKey}`)
           } catch (updateError: any) {
-            console.error(`[v0] ❌ Failed to update feed_posts with template:`, {
+            console.error(`[v0] ❌ Failed to update feed_posts with extracted scenes:`, {
               error: updateError?.message,
               code: updateError?.code,
               feedId,
               templateKey,
-              templateLength: templatePrompt.length,
             })
-            // Continue - template will be generated on first generation
+            // Continue - scenes will be generated on first generation
           }
         } else {
-          console.warn(`[v0] ⚠️ Template ${templateKey} not found - position 1 will generate prompt on first generation`)
+          console.warn(`[v0] ⚠️ Template ${templateKey} not found - scenes will be generated on first generation`)
         }
       } catch (error) {
-        console.error("[v0] Error storing template in position 1:", error)
-        // Continue - template will be generated on first generation
+        console.error("[v0] Error extracting scenes from template:", error)
+        // Continue - scenes will be generated on first generation
       }
     }
 

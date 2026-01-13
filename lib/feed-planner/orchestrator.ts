@@ -395,30 +395,72 @@ Return ONLY valid JSON, no markdown:
         let finalPrompt = fluxPrompt
         if (generationMode === 'pro') {
           try {
-            // Get wizard context from blueprint_subscribers (same as old blueprint)
-            const blueprintSubscriber = await sql`
-              SELECT form_data, feed_style
-              FROM blueprint_subscribers
-              WHERE user_id = ${userId}
+            // CRITICAL FIX: Get feed_style from feed_layouts FIRST (for new feed planner feeds)
+            // Fallback to blueprint_subscribers (for old blueprint flow)
+            const [feedLayoutData] = await sql`
+              SELECT feed_style
+              FROM feed_layouts
+              WHERE id = ${feedLayoutId}
               LIMIT 1
             ` as any[]
             
-            if (blueprintSubscriber.length > 0) {
-              const formData = blueprintSubscriber[0].form_data || {}
-              const feedStyle = blueprintSubscriber[0].feed_style || null
+            let feedStyle: string | null = null
+            let formData: any = {}
+            
+            // Try feed_layouts first (new feed planner)
+            if (feedLayoutData && feedLayoutData.feed_style) {
+              feedStyle = feedLayoutData.feed_style
+              console.log(`[v0] Feed Planner: Found feed_style in feed_layouts: ${feedStyle}`)
               
-              // Get category from form_data.vibe (same as old blueprint)
-              const category = (formData.vibe || "professional") as "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"
-              // Get mood from feed_style (same as old blueprint)
+              // Get category from brand_vibe (fallback to professional)
+              const brandVibe = brandProfile?.brand_vibe || "professional"
+              const category = (brandVibe || "professional") as "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"
+              
+              // Get mood from feed_style
               const mood = (feedStyle || "minimal") as "luxury" | "minimal" | "beige"
               
-              // Get template prompt from grid library (same as old blueprint)
+              // Get template prompt from grid library
               const { getBlueprintPhotoshootPrompt } = await import("@/lib/maya/blueprint-photoshoot-templates")
-              finalPrompt = getBlueprintPhotoshootPrompt(category, mood)
-              console.log(`[v0] Feed Planner: Using template prompt from grid library for Pro Mode post ${postLayout.position}: ${category}_${mood} (${finalPrompt.split(/\s+/).length} words)`)
+              const { buildSingleImagePrompt: extractScene } = await import("@/lib/feed-planner/build-single-image-prompt")
+              
+              // Get full template
+              const fullTemplate = getBlueprintPhotoshootPrompt(category, mood)
+              
+              // CRITICAL: Extract the correct scene for this position (1-9)
+              finalPrompt = extractScene(fullTemplate, postLayout.position)
+              console.log(`[v0] Feed Planner: Using template scene ${postLayout.position} from ${category}_${mood} template (${finalPrompt.split(/\s+/).length} words)`)
             } else {
-              console.warn(`[v0] Feed Planner: Pro Mode post ${postLayout.position} requires blueprint_subscribers data but none found. Using Flux prompt as fallback.`)
-              // Keep Flux prompt as fallback - will be regenerated on first generation
+              // Fallback: Get wizard context from blueprint_subscribers (old blueprint flow)
+              const blueprintSubscriber = await sql`
+                SELECT form_data, feed_style
+                FROM blueprint_subscribers
+                WHERE user_id = ${userId}
+                LIMIT 1
+              ` as any[]
+              
+              if (blueprintSubscriber.length > 0) {
+                formData = blueprintSubscriber[0].form_data || {}
+                feedStyle = blueprintSubscriber[0].feed_style || null
+                
+                // Get category from form_data.vibe (same as old blueprint)
+                const category = (formData.vibe || "professional") as "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"
+                // Get mood from feed_style (same as old blueprint)
+                const mood = (feedStyle || "minimal") as "luxury" | "minimal" | "beige"
+                
+                // Get template prompt from grid library
+                const { getBlueprintPhotoshootPrompt } = await import("@/lib/maya/blueprint-photoshoot-templates")
+                const { buildSingleImagePrompt: extractScene } = await import("@/lib/feed-planner/build-single-image-prompt")
+                
+                // Get full template
+                const fullTemplate = getBlueprintPhotoshootPrompt(category, mood)
+                
+                // CRITICAL: Extract the correct scene for this position (1-9)
+                finalPrompt = extractScene(fullTemplate, postLayout.position)
+                console.log(`[v0] Feed Planner: Using template scene ${postLayout.position} from ${category}_${mood} template (fallback from blueprint_subscribers)`)
+              } else {
+                console.warn(`[v0] Feed Planner: Pro Mode post ${postLayout.position} requires feed_style but none found in feed_layouts or blueprint_subscribers. Using Flux prompt as fallback.`)
+                // Keep Flux prompt as fallback - will be regenerated on first generation
+              }
             }
           } catch (promptError) {
             console.error(`[v0] Feed Planner: Error getting template prompt for post ${postLayout.position}:`, promptError)

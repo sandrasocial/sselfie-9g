@@ -117,14 +117,20 @@ export function useFeedPostPolling({
     // Don't poll if:
     // - Not enabled
     // - No predictionId (generation not started)
+    // - PredictionId is temporary (optimistic UI - starts with "temp-")
     // - No postId
     // - Already completed or failed
-    if (!enabled || !predictionId || !postId || status === "completed" || status === "failed") {
+    const isTempPredictionId = predictionId?.startsWith("temp-")
+    if (!enabled || !predictionId || isTempPredictionId || !postId || status === "completed" || status === "failed") {
       // Clean up any existing polling if conditions are no longer met
       if (pollIntervalRef.current) {
         console.log(`[useFeedPostPolling] Stopping polling for post ${postId} (conditions not met)`)
         clearInterval(pollIntervalRef.current)
         pollIntervalRef.current = null
+      }
+      // Set status to generating for temp predictionIds (optimistic UI)
+      if (isTempPredictionId && status === "idle") {
+        setStatus("generating")
       }
       return
     }

@@ -84,6 +84,10 @@ export default function FeedGridItem({
     }
   }, [post?.prediction_id, post?.image_url, predictionId])
 
+  // Use image URL from polling if available, otherwise use post data
+  // CRITICAL: Define this FIRST before using it in isGenerating
+  const displayImageUrl = pollingImageUrl || post.image_url || null
+
   // FIX: Simplified loading state - use polling status if available
   // CRITICAL: Don't show generating if we already have an image
   const isGenerating = !isManualFeed && !displayImageUrl && (
@@ -92,22 +96,31 @@ export default function FeedGridItem({
     (post.prediction_id && !post.image_url)
   )
 
-  // Use image URL from polling if available, otherwise use post data
-  const displayImageUrl = pollingImageUrl || post.image_url || null
-
   // A post is complete if it has an image_url
   const isComplete = !!displayImageUrl
 
   const handleGenerateClick = async (e: React.MouseEvent) => {
     e.stopPropagation()
+    
+    // OPTIMISTIC UI: Set temporary predictionId immediately to show loading state
+    // This makes the UI feel instant even though API call takes a few seconds
+    const tempPredictionId = `temp-${Date.now()}`
+    setPredictionId(tempPredictionId)
+    console.log("[Feed Grid Item] 🚀 Starting generation (optimistic UI) for post", post.id)
+    
     try {
       const data = await onGenerate(post.id)
-      // Store predictionId from response to start polling
+      // Store actual predictionId from response to start polling (replaces temp one)
       if (data?.predictionId) {
         setPredictionId(data.predictionId)
         console.log("[Feed Grid Item] ✅ Generation started for post", post.id, "predictionId:", data.predictionId)
+      } else {
+        // If no predictionId, clear optimistic state
+        setPredictionId(null)
       }
     } catch (error) {
+      // Clear optimistic state on error
+      setPredictionId(null)
       console.error("[Feed Grid Item] Error starting generation:", error)
     }
   }

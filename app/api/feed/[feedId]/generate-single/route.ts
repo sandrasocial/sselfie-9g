@@ -292,51 +292,81 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
         LIMIT 1
       `
       
-      // FIX: For paid blueprint users, ALWAYS extract frame from template (positions 1-9)
-      // Position 1 stores the full template, but we need to extract frame 1 from it
-      // Positions 2-9 extract their respective frames
-      // CRITICAL: Even if post.prompt exists, we must extract the frame (position 1 has full template, not frame 1)
+      // For paid blueprint users: Each position should already have its extracted scene prompt
+      // If not, extract it from the template using the current feed's feed_style
+      // The full template is NOT stored in position 1 for paid blueprint - each position has its own scene
       let finalPrompt: string | null = null
       
-      // Check if we have a template stored in position 1
-      const [previewPost] = await sql`
-        SELECT prompt FROM feed_posts
-        WHERE feed_layout_id = ${feedIdInt} AND position = 1
-        LIMIT 1
-      `
-      
-      // For paid blueprint users: ALWAYS try to extract frame from template first (positions 1-9)
-      // This applies even if post.prompt exists, because position 1's prompt is the full template, not frame 1
-      if (access.isPaidBlueprint && previewPost?.prompt && previewPost.prompt.length > 100) {
-        console.log('=== SINGLE IMAGE GENERATION ===')
-        console.log(`Feed ID: ${feedIdInt}`)
-        console.log(`Position: ${post.position}`)
-        console.log(`Template found in position 1, extracting frame ${post.position}...`)
+      // Check if current post already has an extracted scene prompt
+      if (post.prompt && post.prompt.length > 50) {
+        // Post already has its scene prompt - use it
+        finalPrompt = post.prompt
+        console.log(`[v0] [GENERATE-SINGLE] ✅ Using existing scene prompt for position ${post.position} (${finalPrompt.length} chars)`)
+      } else if (access.isPaidBlueprint) {
+        // Post doesn't have a scene prompt - extract it from template using feed_style
+        console.log(`[v0] [GENERATE-SINGLE] ⚠️ Position ${post.position} missing scene prompt - extracting from template...`)
         
         try {
+          const { BLUEPRINT_PHOTOSHOOT_TEMPLATES, MOOD_MAP } = await import("@/lib/maya/blueprint-photoshoot-templates")
           const { buildSingleImagePrompt } = await import('@/lib/feed-planner/build-single-image-prompt')
-          finalPrompt = buildSingleImagePrompt(previewPost.prompt, post.position)
           
-          console.log(`Prompt built: ${finalPrompt.length} characters`)
-          console.log('First 200 chars:', finalPrompt.substring(0, 200))
-          console.log('=' + '='.repeat(50))
+          // Get template using current feed's feed_style
+          if (!feedLayout?.feed_style) {
+            throw new Error("Feed style not found in feed_layouts")
+          }
           
-          // Save the prompt to database
-          await sql`
-            UPDATE feed_posts
-            SET prompt = ${finalPrompt}
-            WHERE id = ${postId}
-          `
+          // Get category from user_personal_brand or use feedStyle as category
+          const personalBrand = await sql`
+            SELECT visual_aesthetic
+            FROM user_personal_brand
+            WHERE user_id = ${user.id}
+            ORDER BY created_at DESC
+            LIMIT 1
+          ` as any[]
           
-          console.log(`[v0] [GENERATE-SINGLE] ✅ Built prompt from template frame ${post.position}`)
-        } catch (frameError) {
-          console.error(`[v0] [GENERATE-SINGLE] ❌ Error extracting frame from template:`, frameError)
+          let category: string = feedLayout.feed_style
+          if (personalBrand && personalBrand.length > 0 && personalBrand[0].visual_aesthetic) {
+            try {
+              const aesthetics = typeof personalBrand[0].visual_aesthetic === 'string'
+                ? JSON.parse(personalBrand[0].visual_aesthetic)
+                : personalBrand[0].visual_aesthetic
+              
+              if (Array.isArray(aesthetics) && aesthetics.length > 0) {
+                category = aesthetics[0]?.toLowerCase().trim() || feedLayout.feed_style
+              }
+            } catch (e) {
+              console.warn(`[v0] Failed to parse visual_aesthetic:`, e)
+            }
+          }
+          
+          const mood = feedLayout.feed_style.toLowerCase().trim()
+          const moodMapped = MOOD_MAP[mood as keyof typeof MOOD_MAP] || "light_minimalistic"
+          const templateKey = `${category}_${moodMapped}` as keyof typeof BLUEPRINT_PHOTOSHOOT_TEMPLATES
+          const fullTemplate = BLUEPRINT_PHOTOSHOOT_TEMPLATES[templateKey]
+          
+          if (fullTemplate) {
+            // Extract scene for this position
+            finalPrompt = buildSingleImagePrompt(fullTemplate, post.position)
+            
+            // Save extracted scene to current post
+            await sql`
+              UPDATE feed_posts
+              SET prompt = ${finalPrompt}
+              WHERE id = ${postId}
+            `
+            
+            console.log(`[v0] [GENERATE-SINGLE] ✅ Extracted and saved scene ${post.position} from template ${templateKey}`)
+          } else {
+            throw new Error(`Template ${templateKey} not found`)
+          }
+        } catch (extractError) {
+          console.error(`[v0] [GENERATE-SINGLE] ❌ Error extracting scene from template:`, extractError)
           // Fall through to free user logic or Maya generation below
           finalPrompt = null
         }
       }
       
-      // If frame extraction failed or not applicable (free users), continue with original logic
+      // If scene extraction failed or not applicable (free users), continue with original logic
       // For free users, use stored prompt if available, otherwise generate from template library
       if (!finalPrompt || finalPrompt.trim().length < 20) {
         console.log(`[v0] [GENERATE-SINGLE] ⚠️ Pro Mode post ${post.position} missing prompt. Generating based on user type...`)
@@ -524,15 +554,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
             let currentBrandStyle: { category: string; mood: string } | null = null
             
             // Get current brand profile style
-            // PRIORITY 1: Use feed.feed_style if available (per-feed style selection)
+            // PRIORITY 1: Use feed.feed_style if available (per-feed style selection) - THIS IS THE CURRENT FEED'S STYLE
             // PRIORITY 2: Use user_personal_brand (unified wizard)
             let feedStyle: string | null = null
             let category: string | null = null
             
-            // Check feed.feed_style first (per-feed style)
+            // CRITICAL: Check feed.feed_style FIRST - this is the style selected for THIS feed
+            // If current feed has a different style than preview feed, we should NOT use preview feed
             if (feedLayout?.feed_style) {
               feedStyle = feedLayout.feed_style.toLowerCase().trim()
-              console.log(`[v0] [GENERATE-SINGLE] Using feed's feed_style: ${feedStyle}`)
+              console.log(`[v0] [GENERATE-SINGLE] 🔴 CURRENT FEED's feed_style: ${feedStyle} - this takes priority over preview feed`)
             }
             
             // If feed_style not set, check user_personal_brand
@@ -583,9 +614,32 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
               console.log(`[v0] [GENERATE-SINGLE] Current brand profile style: ${category}_${feedStyle}`)
             }
             
-            // 🔴 CRITICAL: Check if preview template matches current brand style
-            // If user updated their style in wizard, use new style instead of old preview
-            if (previewTemplate && currentBrandStyle) {
+            // 🔴 CRITICAL: Check if preview feed matches CURRENT FEED's style
+            // If current feed has a different style than preview feed, use current feed's style instead
+            // PRIORITY: Current feed's feed_style > user_personal_brand > preview feed
+            if (previewTemplate && feedLayout?.feed_style) {
+              // Get preview feed's style to compare with current feed's style
+              const [previewFeedStyle] = await sql`
+                SELECT feed_style
+                FROM feed_layouts
+                WHERE id = ${previewFeed.id}
+                LIMIT 1
+              ` as any[]
+              
+              const previewFeedStyleValue = previewFeedStyle?.feed_style?.toLowerCase().trim()
+              const currentFeedStyleValue = feedLayout.feed_style.toLowerCase().trim()
+              
+              if (previewFeedStyleValue && currentFeedStyleValue && previewFeedStyleValue !== currentFeedStyleValue) {
+                console.log(`[v0] [GENERATE-SINGLE] 🔴 Preview feed style (${previewFeedStyleValue}) doesn't match CURRENT feed style (${currentFeedStyleValue}) - NOT using preview feed`)
+                shouldUsePreview = false
+                previewTemplate = null // Clear preview template so it won't be used
+              } else if (previewFeedStyleValue === currentFeedStyleValue) {
+                console.log(`[v0] [GENERATE-SINGLE] ✅ Preview feed style matches current feed style - will check template compatibility...`)
+              }
+            }
+            
+            // Check if preview template matches current brand style (only if styles match or no feed_style set)
+            if (previewTemplate && currentBrandStyle && shouldUsePreview !== false) {
               // Get the expected template for current brand style
               let expectedTemplate: string | null = null
               try {
