@@ -2,7 +2,7 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { CreditCard, Sparkles, ArrowRight } from "lucide-react"
+import { ArrowRight } from "lucide-react"
 import BuyBlueprintModal from "@/components/sselfie/buy-blueprint-modal"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
@@ -60,7 +60,6 @@ export default function FreeModeUpsellModal({
               className="w-full justify-start h-auto py-4 px-4 border-2 hover:border-stone-900 transition-all"
             >
               <div className="flex items-center gap-3 w-full">
-                <CreditCard className="w-5 h-5 text-stone-600" />
                 <div className="flex-1 text-left">
                   <div className="font-medium text-stone-900">Buy Credits</div>
                   <div className="text-xs text-stone-500">Generate more preview feeds</div>
@@ -75,7 +74,6 @@ export default function FreeModeUpsellModal({
               className="w-full justify-start h-auto py-4 px-4 bg-stone-900 hover:bg-stone-800 transition-all"
             >
               <div className="flex items-center gap-3 w-full">
-                <Sparkles className="w-5 h-5 text-white" />
                 <div className="flex-1 text-left">
                   <div className="font-medium text-white">Unlock Full Blueprint</div>
                   <div className="text-xs text-stone-300">$47 • 60 Credits • Full Feed Planner</div>

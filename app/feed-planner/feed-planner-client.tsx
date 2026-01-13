@@ -55,6 +55,9 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
     {
       revalidateOnFocus: false,
       dedupingInterval: 5000,
+      // For new users, fetch immediately without deduplication delay
+      revalidateOnMount: true,
+      revalidateOnReconnect: false,
     }
   )
 
@@ -63,6 +66,15 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
     revalidateOnFocus: false,
     dedupingInterval: 60000,
   })
+
+  // Get user's display name (prefer name from userInfo, fallback to userName prop, then email, then "there")
+  const displayName = userInfo?.name && !userInfo.name.includes('@') 
+    ? userInfo.name 
+    : (userName && !userName.includes('@') 
+      ? userName 
+      : (userInfo?.email && !userInfo.email.includes('@') 
+        ? userInfo.email.split('@')[0] 
+        : "there"))
 
   // Fetch existing personal brand data (always fetch, SWR handles caching)
   // This is the single source of truth - no localStorage needed
@@ -91,13 +103,37 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
   // Determine if wizard is needed
   // React to access and onboardingStatus changes, but respect manual close
   useEffect(() => {
+    console.log('[FeedPlannerClient] Wizard check:', {
+      isLoadingOnboarding,
+      isLoadingAccess,
+      hasOnboardingStatus: !!onboardingStatus,
+      hasAccess: !!access,
+      onboardingStatus,
+      access,
+    })
+
     // Wait for both access and onboarding status to load
     if (isLoadingOnboarding || (!accessProp && isLoadingAccess)) {
       setIsCheckingWizard(true)
       return
     }
 
+    // Both APIs have finished loading - now we can make a decision
+    // If onboardingStatus is null/undefined after loading, it means user doesn't exist or API error
+    // In this case, we should still show wizard for new users (default behavior)
     if (!onboardingStatus) {
+      // Data loaded but is null - could be new user or API error
+      // If we have access data, use it to decide
+      if (access) {
+        // For free users without onboarding data, show wizard
+        if (access.isFree) {
+          console.log('[FeedPlannerClient] ✅ Showing wizard for new free user')
+          setShowWizard(true)
+          setIsCheckingWizard(false)
+          return
+        }
+      }
+      // Otherwise, wait for access or don't show wizard
       setIsCheckingWizard(false)
       setShowWizard(false)
       return
@@ -105,6 +141,14 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
 
     // Wait for access to be loaded before determining wizard
     if (!access) {
+      // Access not loaded yet - but we can still check onboarding status
+      // If onboarding is completed, we know to hide wizard
+      if (onboardingStatus.onboarding_completed) {
+        setShowWizard(false)
+        setIsCheckingWizard(false)
+        return
+      }
+      // For new users (not completed), wait for access to load
       setIsCheckingWizard(true)
       return
     }
@@ -129,6 +173,12 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
       // Note: We check onboarding_completed as the final gate (set when wizard completes)
       // Don't check hasSelfies here - that's handled in the wizard itself (step 4 validation)
       const needsWizard = !hasBaseWizardData || !hasExtensionData || !onboardingCompleted
+      console.log('[FeedPlannerClient] Free user wizard check:', {
+        hasBaseWizardData,
+        hasExtensionData,
+        onboardingCompleted,
+        needsWizard,
+      })
       setShowWizard(needsWizard)
       setIsCheckingWizard(false)
       return
@@ -148,7 +198,7 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
     // One-time and membership users: Skip wizard (not needed)
     setShowWizard(false)
     setIsCheckingWizard(false)
-  }, [isLoadingOnboarding, isLoadingAccess, onboardingStatus, access]) // React to access and onboardingStatus changes
+  }, [isLoadingOnboarding, isLoadingAccess, onboardingStatus, access, accessProp]) // React to access and onboardingStatus changes
 
   // Check if welcome wizard should be shown (for paid blueprint users only)
   useEffect(() => {
@@ -285,7 +335,7 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
           // But we can redirect to home if they really want to leave
           window.location.href = "/studio"
         }}
-        userName={userName || userInfo?.name || null}
+        userName={displayName}
         userEmail={userInfo?.email || null}
         existingData={existingData}
       />

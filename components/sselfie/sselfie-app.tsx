@@ -1075,7 +1075,11 @@ export default function SselfieApp({
         onClose={() => setShowUpgradeModal(false)}
       />
 
-      {/* LowCreditModal: Only show for paid users (not free users) - handled inside component */}
+      {/* Smart Upsell Modal Detection:
+          - LowCreditModal: Only for paid users when credits < 30 (handled inside component)
+          - ZeroCreditsUpgradeModal: Only for paid users when credits = 0 (handled inside component)
+          - FreeModeUpsellModal: Only for free users in feed planner when 2+ credits used (handled in feed-single-placeholder.tsx)
+          These modals have built-in detection to prevent conflicts */}
       <LowCreditModal credits={creditBalance} threshold={30} />
       <ZeroCreditsUpgradeModal credits={creditBalance} />
 

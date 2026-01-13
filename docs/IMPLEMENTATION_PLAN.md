@@ -147,41 +147,35 @@ Generate image with Maya's prompt
 
 ---
 
-#### Phase 5: Feed History Organization (4-6 hours)
+#### Phase 5: Feed History Organization (4-6 hours) ✅ COMPLETE
 
-**Current State:**
-- Feed list exists but no organization features
-- No color coding or renaming
+**✅ COMPLETED:**
+- **Preview Feed Distinction:** All preview feeds use `layout_type: 'preview'`
+- **Full Feed Distinction:** All full feeds use `layout_type: 'grid_3x4'`
+- **Preview Feed Creation:** Modified `/api/feed/create-free-example` to allow all users and set `layout_type: 'preview'`
+- **Full Feed Creation:** Modified `/api/feed/create-manual` to set `layout_type: 'grid_3x4'`
+- **Feed List API:** Updated to include `layout_type` and `preview_image_url` (from `feed_posts[0].image_url`)
+- **Grid View Filtering:** Preview feeds excluded from paid feed planner grid view
+- **"New Preview Feed" Button:** Added to feed header for all users
+- **Feed History Display:** Updated to show correct labels and image counts
+- **Color Coding & Renaming:** Already implemented (existing feature - no changes needed)
 
-**Desired State:**
-- Add color coding to feeds
-- Add renaming functionality
-- Save preview feeds to history
-- Display preview feeds in history with same UI
+**Files Created/Modified:**
+- ✅ `app/api/feed/create-free-example/route.ts` (MODIFIED - allows all users, sets `layout_type: 'preview'`)
+- ✅ `app/api/feed/create-manual/route.ts` (MODIFIED - sets `layout_type: 'grid_3x4'`)
+- ✅ `app/api/feed/list/route.ts` (MODIFIED - includes `layout_type` and `preview_image_url`)
+- ✅ `app/api/feed/latest/route.ts` (MODIFIED - filters out preview feeds)
+- ✅ `app/api/feed/[feedId]/route.ts` (MODIFIED - filters out preview feeds when fetching "latest")
+- ✅ `components/feed-planner/feed-header.tsx` (MODIFIED - added "New Preview Feed" button)
+- ✅ `components/sselfie/sselfie-app.tsx` (MODIFIED - updated feed selector display)
 
-**Files to Modify:**
-1. `components/feed-planner/feed-header.tsx`
-   - Add color picker for feeds
-   - Add rename functionality
-   - Add organization UI
+**Key Features:**
+- Preview feeds (`layout_type: 'preview'`): 1 post, 9:16 aspect ratio, NOT in grid view, shown in history
+- Full feeds (`layout_type: 'grid_3x4'`): 12 posts, 4:5 aspect ratio, shown in grid view
+- Color coding and renaming: Already implemented (existing feature)
+- Preview feeds appear in history with "Preview Feed" label
 
-2. `app/api/feed/list/route.ts`
-   - Include preview feeds in list
-   - Return color and name fields
-
-3. `app/api/feed/create-free-example/route.ts`
-   - Mark preview feeds for history storage
-
-**Files to Create:**
-1. Database migration (if needed)
-   - Add `color_code` field to `feed_layouts`
-   - Add `display_name` field to `feed_layouts`
-
-**Implementation Steps:**
-1. Add database fields for color and name
-2. Update feed list API to include preview feeds
-3. Add organization UI to feed header
-4. Test color coding and renaming
+**See:** `docs/PREVIEW_FEED_IMPLEMENTATION_COMPLETE.md` for details
 
 ---
 

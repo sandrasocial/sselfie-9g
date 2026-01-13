@@ -14,6 +14,7 @@ interface FeedHeaderProps {
   onWriteBio: () => void
   onCreateHighlights?: () => void
   onOpenWizard?: () => void // Callback to open wizard
+  access?: { isFree?: boolean } // Access control to hide buttons for free users
 }
 
 export default function FeedHeader({
@@ -24,6 +25,7 @@ export default function FeedHeader({
   onWriteBio,
   onCreateHighlights,
   onOpenWizard,
+  access,
 }: FeedHeaderProps) {
   const router = useRouter()
   const [isCreatingFeed, setIsCreatingFeed] = useState(false)
@@ -215,12 +217,15 @@ export default function FeedHeader({
             </div>
 
             <div className="flex gap-2 flex-wrap">
-              <button
-                onClick={onWriteBio}
-                className="flex-1 md:flex-none md:px-8 bg-stone-100 hover:bg-stone-200 text-stone-900 text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors"
-              >
-                Write Bio
-              </button>
+              {/* Hide Write Bio and Create Highlights for free users */}
+              {!access?.isFree && (
+                <button
+                  onClick={onWriteBio}
+                  className="flex-1 md:flex-none md:px-8 bg-stone-100 hover:bg-stone-200 text-stone-900 text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors"
+                >
+                  Write Bio
+                </button>
+              )}
               <button
                 onClick={handleCreatePreviewFeed}
                 disabled={isCreatingPreviewFeed}
@@ -255,12 +260,14 @@ export default function FeedHeader({
                   </>
                 )}
               </button>
-              <button
-                onClick={onCreateHighlights}
-                className="flex-1 md:flex-none md:px-8 bg-stone-100 hover:bg-stone-200 text-stone-900 text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors"
-              >
-                Create Highlights
-              </button>
+              {!access?.isFree && onCreateHighlights && (
+                <button
+                  onClick={onCreateHighlights}
+                  className="flex-1 md:flex-none md:px-8 bg-stone-100 hover:bg-stone-200 text-stone-900 text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors"
+                >
+                  Create Highlights
+                </button>
+              )}
             </div>
 
             {/* Highlights - below buttons, mobile optimized */}

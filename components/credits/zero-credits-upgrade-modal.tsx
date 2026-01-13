@@ -3,11 +3,14 @@
 import { useState, useEffect } from "react"
 import { startEmbeddedCheckout } from "@/lib/start-embedded-checkout"
 import { BuyCreditsDialog } from "./buy-credits-dialog"
+import useSWR from "swr"
 
 interface ZeroCreditsUpgradeModalProps {
   credits: number
   onClose?: () => void
 }
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 export function ZeroCreditsUpgradeModal({ credits, onClose }: ZeroCreditsUpgradeModalProps) {
   const [showModal, setShowModal] = useState(false)
@@ -15,9 +18,26 @@ export function ZeroCreditsUpgradeModal({ credits, onClose }: ZeroCreditsUpgrade
   const [dismissed, setDismissed] = useState(false)
   const [showBuyDialog, setShowBuyDialog] = useState(false)
 
+  // Check if user is free or paid (only show for paid users)
+  const { data: blueprintData } = useSWR("/api/blueprint/state", fetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 60000, // Cache for 1 minute
+  })
+
+  const entitlementType = blueprintData?.entitlement?.type
+  const isPaidUser = entitlementType === "paid" || entitlementType === "studio"
+  const isFreeUser = entitlementType === "free"
+
   useEffect(() => {
+    // Only show for paid users (not free users)
+    // Free users have their own upsell modal (FreeModeUpsellModal) in feed planner
+    if (!isPaidUser || isFreeUser) {
+      setShowModal(false)
+      return
+    }
+
     // Show modal when credits reach exactly 0 and haven't been dismissed
-    if (credits === 0 && !dismissed && !showModal) {
+    if (credits === 0 && !dismissed && !showModal && isPaidUser) {
       setShowModal(true)
     }
     
@@ -26,7 +46,7 @@ export function ZeroCreditsUpgradeModal({ credits, onClose }: ZeroCreditsUpgrade
       setShowModal(false)
       setDismissed(false) // Reset dismissal when credits are added
     }
-  }, [credits, dismissed, showModal])
+  }, [credits, dismissed, showModal, isPaidUser, isFreeUser])
 
   const handleUpgrade = async () => {
     try {
@@ -51,6 +71,9 @@ export function ZeroCreditsUpgradeModal({ credits, onClose }: ZeroCreditsUpgrade
     onClose?.()
   }
 
+  // Don't show for free users (they have their own upsell modal)
+  if (!isPaidUser || isFreeUser) return null
+  
   if (!showModal || credits > 0) return null
 
   return (

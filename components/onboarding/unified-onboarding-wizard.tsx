@@ -491,7 +491,7 @@ export default function UnifiedOnboardingWizard({
                 {currentStep === 0 && (
                   <div className="space-y-6">
                     <p className="text-base sm:text-lg font-light leading-relaxed text-stone-700">
-                      Hi {userName || "there"}! 👋 Let's create content that actually looks and sounds like you. This will only take a few minutes.
+                      Hi {userName && !userName.includes('@') ? userName : "there"}! 👋 Let's create content that actually looks and sounds like you. This will only take a few minutes.
                     </p>
                     <p className="text-sm font-light text-stone-600">
                       We'll ask you a few questions about your brand, style, and goals. Your answers help us generate personalized content just for you.

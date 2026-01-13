@@ -510,9 +510,9 @@ export default function InstagramFeedView({ feedId, onBack, access, onOpenWizard
         onBack={onBack}
         onProfileImageClick={() => setShowProfileGallery(true)}
         onWriteBio={handleWriteBio}
-        onFeedChange={handleFeedChange}
         onCreateHighlights={() => setShowHighlightsModal(true)}
         onOpenWizard={onOpenWizard}
+        access={access}
       />
       
       <FeedTabs
