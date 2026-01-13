@@ -58,6 +58,7 @@ interface UnifiedOnboardingWizardProps {
     }>
   }
   userEmail?: string | null
+  initialStep?: number // Optional: Start wizard at a specific step (0-based index)
 }
 
 // Visual aesthetics (from brand profile wizard)
@@ -157,6 +158,7 @@ export default function UnifiedOnboardingWizard({
   userName,
   existingData,
   userEmail,
+  initialStep = 0, // Default to step 0 (welcome), but allow starting at any step
 }: UnifiedOnboardingWizardProps) {
   // SIMPLIFIED: Use existingData (from SWR cache) as single source of truth
   // No localStorage needed - SWR handles caching and persistence
@@ -168,7 +170,19 @@ export default function UnifiedOnboardingWizard({
     existingData.transformationStory
   )
   
-  const [currentStep, setCurrentStep] = useState(0) // Always start from step 0 (welcome)
+  // Use initialStep if provided, otherwise default to 0
+  // Clamp initialStep to valid range (0 to totalSteps - 1)
+  const totalSteps = UNIFIED_STEPS.length
+  const safeInitialStep = Math.max(0, Math.min(initialStep, totalSteps - 1))
+  const [currentStep, setCurrentStep] = useState(safeInitialStep)
+  
+  // Reset to initialStep when wizard opens (if initialStep changes)
+  useEffect(() => {
+    if (isOpen) {
+      const safeStep = Math.max(0, Math.min(initialStep || 0, totalSteps - 1))
+      setCurrentStep(safeStep)
+    }
+  }, [isOpen, initialStep, totalSteps])
   
   // Initialize formData from existingData if available (for immediate display)
   // This ensures data shows up on first render if existingData is already loaded
@@ -311,7 +325,7 @@ export default function UnifiedOnboardingWizard({
   // Clear saved state when wizard completes
   // REMOVED: clearSavedState - no localStorage needed
 
-  const totalSteps = UNIFIED_STEPS.length
+  // totalSteps is already defined above (line 175) - reuse it here
   const progress = ((currentStep + 1) / totalSteps) * 100
   const step = UNIFIED_STEPS[currentStep]
 

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import useSWR, { useSWRConfig } from "swr"
 import FeedViewScreen from "@/components/feed-planner/feed-view-screen"
 import UnifiedOnboardingWizard from "@/components/onboarding/unified-onboarding-wizard"
@@ -28,11 +28,22 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
   const [showWizard, setShowWizard] = useState(false)
   const [showWelcomeWizard, setShowWelcomeWizard] = useState(false)
   const [isCheckingWizard, setIsCheckingWizard] = useState(true)
+  // State to track if we should open wizard at step 4 (visual style selection)
+  const [wizardInitialStep, setWizardInitialStep] = useState<number | undefined>(undefined)
   const { mutate } = useSWRConfig()
+  
+  // 🔴 CRITICAL: Track if welcome wizard has been auto-shown in this session
+  // This prevents showing it multiple times on refresh before the API updates
+  const welcomeWizardAutoShownRef = useRef(false)
 
   // Handler to open wizard from header button
   const handleOpenWizard = () => {
     setShowWizard(true)
+  }
+
+  // Handler to open welcome wizard from header button (for paid blueprint users)
+  const handleOpenWelcomeWizard = () => {
+    setShowWelcomeWizard(true)
   }
 
   // Fetch access control if not provided (for use in SselfieApp)
@@ -201,20 +212,51 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
   }, [isLoadingOnboarding, isLoadingAccess, onboardingStatus, access, accessProp]) // React to access and onboardingStatus changes
 
   // Check if welcome wizard should be shown (for paid blueprint users only)
+  // 🔴 CRITICAL: Only show automatically ONCE for first-time users
+  // After that, users can access it via the help button (already implemented)
   useEffect(() => {
     // Only check for paid blueprint users
     if (!access || !access.isPaidBlueprint) {
       return
     }
 
-    // Wait for welcome status to load
-    if (isLoadingWelcome || !welcomeStatus) {
+    // Wait for welcome status to load completely
+    // Don't show wizard if still loading (prevents showing on every refresh)
+    if (isLoadingWelcome) {
       return
     }
 
-    // Show welcome wizard if not shown yet
-    if (!welcomeStatus.welcomeShown) {
+    // 🔴 CRITICAL LOGIC: Only show automatically ONCE for first-time users
+    // - If welcomeStatus is undefined: Don't show (still loading or error)
+    // - If welcomeStatus.welcomeShown is true: Don't show (already shown in database)
+    // - If welcomeStatus.welcomeShown is false AND not already auto-shown: Show (first-time user, once per session)
+    // - If already auto-shown in this session: Don't show again (prevents showing on refresh)
+    
+    // Check if welcome status data exists
+    if (!welcomeStatus || typeof welcomeStatus !== 'object') {
+      // No status data - don't show (could be error or still loading)
+      console.log('[FeedPlannerClient] ⚠️ Welcome status not available - not showing wizard')
+      setShowWelcomeWizard(false)
+      return
+    }
+
+    // Check if welcome wizard has been shown in database
+    const hasBeenShownInDB = welcomeStatus.welcomeShown === true
+
+    if (hasBeenShownInDB) {
+      // Already shown in database - don't show again (this prevents showing on refresh)
+      console.log('[FeedPlannerClient] ✅ Welcome wizard already shown in database - not showing automatically')
+      welcomeWizardAutoShownRef.current = true // Mark as shown
+      setShowWelcomeWizard(false)
+    } else if (!welcomeWizardAutoShownRef.current) {
+      // Not shown yet AND not already auto-shown in this session - show for first-time user (only once)
+      console.log('[FeedPlannerClient] ✅ Showing welcome wizard for first-time paid user (once per session)')
+      welcomeWizardAutoShownRef.current = true // Mark as shown to prevent showing again on refresh
       setShowWelcomeWizard(true)
+    } else {
+      // Already auto-shown in this session - don't show again (prevents showing on refresh before API updates)
+      console.log('[FeedPlannerClient] ✅ Welcome wizard already auto-shown in this session - not showing again')
+      setShowWelcomeWizard(false)
     }
   }, [access, welcomeStatus, isLoadingWelcome])
 
@@ -338,33 +380,76 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
         userName={displayName}
         userEmail={userInfo?.email || null}
         existingData={existingData}
+        initialStep={wizardInitialStep} // Start at step 4 if user chose "Choose New Style"
       />
     )
   }
 
   // Handle welcome wizard completion
   const handleWelcomeWizardComplete = async () => {
-    // Mark welcome wizard as shown
-    await fetch("/api/feed-planner/welcome-status", {
-      method: "POST",
-    })
+    console.log('[FeedPlannerClient] ✅ Welcome wizard completed - marking as shown')
     
-    // Close wizard
+    // Close wizard immediately (optimistic update)
     setShowWelcomeWizard(false)
     
-    // Refresh welcome status
+    // Mark as shown in ref (prevents showing again on refresh before API updates)
+    welcomeWizardAutoShownRef.current = true
+    
+    // Mark welcome wizard as shown in database
+    try {
+      const response = await fetch("/api/feed-planner/welcome-status", {
+        method: "POST",
+      })
+      
+      if (!response.ok) {
+        console.error('[FeedPlannerClient] ⚠️ Failed to mark welcome wizard as shown:', response.status)
+      } else {
+        console.log('[FeedPlannerClient] ✅ Welcome wizard marked as shown in database')
+      }
+    } catch (error) {
+      console.error('[FeedPlannerClient] ⚠️ Error marking welcome wizard as shown:', error)
+    }
+    
+    // Refresh welcome status to update SWR cache
+    // This ensures the useEffect won't show it again on refresh
     await mutate("/api/feed-planner/welcome-status")
+    
+    console.log('[FeedPlannerClient] ✅ Welcome wizard closed and status refreshed')
+  }
+
+  // Handle "Use Preview Style" - create feed with existing data
+  const handleUsePreviewStyle = async () => {
+    console.log("[Welcome Wizard] User chose to use preview style")
+    // The existing onboarding data will be used when creating the feed
+    // We just need to trigger feed creation - this happens automatically
+    // when the user completes onboarding or when they navigate to feed planner
+    // For now, we'll just close the welcome wizard and let the normal flow continue
+  }
+
+  // Handle "Choose New Style" - open onboarding wizard at step 4 (visual style)
+  const handleChooseNewStyle = () => {
+    console.log("[Welcome Wizard] User chose to select new style - opening wizard at step 4")
+    // Step 4 is the visual style selection step (0-indexed: welcome=0, business=1, audience=2, story=3, visual=4)
+    setWizardInitialStep(4)
+    setShowWelcomeWizard(false)
+    setShowWizard(true)
   }
 
   // Show Feed Planner with welcome wizard overlay if needed
   return (
     <>
-      <FeedViewScreen access={access} onOpenWizard={handleOpenWizard} />
+      <FeedViewScreen 
+        access={access} 
+        onOpenWizard={handleOpenWizard}
+        onOpenWelcomeWizard={access?.isPaidBlueprint ? handleOpenWelcomeWizard : undefined}
+      />
       {showWelcomeWizard && (
         <WelcomeWizard
           open={showWelcomeWizard}
           onComplete={handleWelcomeWizardComplete}
           onDismiss={handleWelcomeWizardComplete}
+          onUsePreviewStyle={handleUsePreviewStyle}
+          onChooseNewStyle={handleChooseNewStyle}
         />
       )}
     </>

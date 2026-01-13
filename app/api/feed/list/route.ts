@@ -28,15 +28,34 @@ export async function GET(req: NextRequest) {
 
     const sql = getDb()
     
+    // Check user's access level to determine if preview feeds should be shown
+    const { getFeedPlannerAccess } = await import("@/lib/feed-planner/access-control")
+    const access = await getFeedPlannerAccess(user.id)
+    
     // Use user.id directly (same as other working feed APIs)
     // Get all feeds for user with post counts using a simpler approach
     // First get all feed layouts
-    const feedLayouts = await sql`
-      SELECT * FROM feed_layouts
-      WHERE user_id = ${user.id}
-        AND status IN ('saved', 'completed', 'draft')
-      ORDER BY created_at DESC
-    ` as any[]
+    // ⚠️ CRITICAL: Filter out preview feeds for paid blueprint users
+    // Preview feeds (layout_type: 'preview') should only be shown to free users
+    let feedLayouts: any[]
+    if (access?.isPaidBlueprint) {
+      // Paid users: exclude preview feeds
+      feedLayouts = await sql`
+        SELECT * FROM feed_layouts
+        WHERE user_id = ${user.id}
+          AND status IN ('saved', 'completed', 'draft')
+          AND (layout_type IS NULL OR layout_type != 'preview')
+        ORDER BY created_at DESC
+      ` as any[]
+    } else {
+      // Free users: show all feeds including preview feeds
+      feedLayouts = await sql`
+        SELECT * FROM feed_layouts
+        WHERE user_id = ${user.id}
+          AND status IN ('saved', 'completed', 'draft')
+        ORDER BY created_at DESC
+      ` as any[]
+    }
 
     if (feedLayouts.length === 0) {
       return NextResponse.json({ feeds: [] })

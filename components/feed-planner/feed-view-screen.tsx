@@ -7,13 +7,14 @@ import InstagramFeedView from "./instagram-feed-view"
 import { ArrowLeft, ImageIcon } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import UnifiedLoading from "@/components/sselfie/unified-loading"
+import FeedStyleModal, { type FeedStyle } from "./feed-style-modal"
 import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
-
-const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 interface FeedViewScreenProps {
   feedId?: number | null
   access?: FeedPlannerAccess // Phase 1.2: Access control object (required)
+  onOpenWizard?: () => void // Callback to open onboarding wizard
+  onOpenWelcomeWizard?: () => void // Callback to open welcome wizard (for paid blueprint users)
 }
 
 /**
@@ -29,11 +30,25 @@ interface FeedViewScreenProps {
  * When no feedId is provided, automatically fetches the latest feed.
  * Shows placeholder state if no feed exists.
  */
-export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp, onOpenWizard }: FeedViewScreenProps = {}) {
+export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp, onOpenWizard, onOpenWelcomeWizard }: FeedViewScreenProps = {}) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isCreatingManual, setIsCreatingManual] = useState(false)
   const [isCreatingFreeExample, setIsCreatingFreeExample] = useState(false)
+  const [showFeedStyleModal, setShowFeedStyleModal] = useState(false)
+  
+  // Fetch user's last feed style from personal brand
+  const { data: personalBrandData } = useSWR(
+    showFeedStyleModal ? "/api/profile/personal-brand" : null,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 60000, // Cache for 1 minute
+    }
+  )
+  
+  // Extract last feed style from settings_preference[0]
+  const lastFeedStyle: FeedStyle | null = personalBrandData?.data?.settingsPreference?.[0] || null
   
   // Fetch access control if not provided (for use in SselfieApp)
   const { data: accessData } = useSWR<FeedPlannerAccess>(
@@ -72,6 +87,16 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
       revalidateOnReconnect: true,
     }
   )
+
+  // Handle redirect from preview feed (paid users accessing preview feeds)
+  useEffect(() => {
+    if (feedData?.redirectedFromPreview && feedData?.feed?.id) {
+      const newFeedId = feedData.feed.id
+      console.log('[Feed Planner] ⚠️ Redirected from preview feed to full feed:', newFeedId)
+      // Update URL to reflect the new feedId
+      router.replace(`/feed-planner?feedId=${newFeedId}`, { scroll: false })
+    }
+  }, [feedData?.redirectedFromPreview, feedData?.feed?.id, router])
 
   // Extract effective feedId from response
   // If using latest endpoint, extract feedId from response
@@ -215,13 +240,21 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
     }
   }
 
-  const handleCreateManualFeed = async () => {
+  const handleCreateManualFeedClick = () => {
+    // Show feed style modal first
+    setShowFeedStyleModal(true)
+  }
+
+  const handleFeedStyleConfirm = async (feedStyle: FeedStyle) => {
+    setShowFeedStyleModal(false)
     setIsCreatingManual(true)
+    
     try {
       const response = await fetch('/api/feed/create-manual', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
+        body: JSON.stringify({ feedStyle }),
       })
 
       if (!response.ok) {
@@ -317,7 +350,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 justify-center items-stretch sm:items-center">
               <button
-                onClick={handleCreateManualFeed}
+                onClick={handleCreateManualFeedClick}
                 disabled={isCreatingManual}
                 className="w-full sm:w-auto px-6 py-3 bg-stone-900 hover:bg-stone-800 active:bg-stone-700 text-white text-sm font-light tracking-wider uppercase transition-colors duration-200 border border-stone-900 min-h-[44px] touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
@@ -389,8 +422,18 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
           onBack={handleBackToMaya}
           access={access} // Phase 4.1: Pass access control to InstagramFeedView
           onOpenWizard={onOpenWizard} // Pass wizard handler for header button
+          onOpenWelcomeWizard={onOpenWelcomeWizard} // Pass welcome wizard handler for header button
         />
       </div>
+
+      {/* Feed Style Selection Modal */}
+      <FeedStyleModal
+        open={showFeedStyleModal}
+        onOpenChange={setShowFeedStyleModal}
+        onConfirm={handleFeedStyleConfirm}
+        defaultFeedStyle={lastFeedStyle}
+        isLoading={isCreatingManual}
+      />
     </div>
   )
 }

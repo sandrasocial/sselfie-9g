@@ -17,7 +17,7 @@ export type BlueprintCategory = "luxury" | "minimal" | "beige" | "warm" | "edgy"
 export type BlueprintMood = "luxury" | "minimal" | "beige" // Maps to: dark_moody, light_minimalistic, beige_aesthetic
 
 // Map mood selection to mood name
-const MOOD_MAP: Record<BlueprintMood, string> = {
+export const MOOD_MAP: Record<BlueprintMood, string> = {
   luxury: "dark_moody",
   minimal: "light_minimalistic",
   beige: "beige_aesthetic",

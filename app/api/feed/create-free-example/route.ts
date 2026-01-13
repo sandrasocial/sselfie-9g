@@ -56,6 +56,134 @@ export async function POST(req: NextRequest) {
       })
     }
 
+    // Get wizard context from user_personal_brand (unified wizard) - PRIMARY SOURCE
+    // Use template-based prompts from grid library based on user's current style choices
+    let templatePrompt = null
+    let feedStyleToStore: string | null = null
+    try {
+      // PRIMARY: Try unified wizard (user_personal_brand)
+      const personalBrand = await sql`
+        SELECT settings_preference, visual_aesthetic
+        FROM user_personal_brand
+        WHERE user_id = ${user.id}
+        ORDER BY updated_at DESC
+        LIMIT 1
+      ` as any[]
+      
+      if (personalBrand && personalBrand.length > 0) {
+        let feedStyle: string | null = null
+        let category: "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional" = "professional"
+        let mood: "luxury" | "minimal" | "beige" = "minimal"
+        
+        // Extract feedStyle from settings_preference
+        if (personalBrand[0].settings_preference) {
+          try {
+            const settings = typeof personalBrand[0].settings_preference === 'string'
+              ? JSON.parse(personalBrand[0].settings_preference)
+              : personalBrand[0].settings_preference
+            
+            if (Array.isArray(settings) && settings.length > 0) {
+              feedStyle = settings[0]?.toLowerCase().trim()
+              feedStyleToStore = feedStyle // Store for feed_layouts
+              if (feedStyle === "luxury" || feedStyle === "minimal" || feedStyle === "beige") {
+                mood = feedStyle as "luxury" | "minimal" | "beige"
+              }
+            }
+          } catch (e) {
+            console.warn(`[v0] Failed to parse settings_preference:`, e)
+          }
+        }
+        
+        // Extract category from visual_aesthetic
+        if (personalBrand[0].visual_aesthetic) {
+          try {
+            const aesthetics = typeof personalBrand[0].visual_aesthetic === 'string'
+              ? JSON.parse(personalBrand[0].visual_aesthetic)
+              : personalBrand[0].visual_aesthetic
+            
+            if (Array.isArray(aesthetics) && aesthetics.length > 0) {
+              const firstAesthetic = aesthetics[0]?.toLowerCase().trim()
+              const validCategories: Array<"luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"> = 
+                ["luxury", "minimal", "beige", "warm", "edgy", "professional"]
+              
+              if (firstAesthetic && validCategories.includes(firstAesthetic as any)) {
+                category = firstAesthetic as "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"
+              }
+            }
+          } catch (e) {
+            console.warn(`[v0] Failed to parse visual_aesthetic:`, e)
+          }
+        }
+        
+        // Get template prompt from grid library
+        const { BLUEPRINT_PHOTOSHOOT_TEMPLATES, MOOD_MAP } = await import("@/lib/maya/blueprint-photoshoot-templates")
+        const { validateBlueprintTemplate } = await import("@/lib/feed-planner/extract-aesthetic-from-template")
+        // Map mood correctly using MOOD_MAP
+        const moodMapped = MOOD_MAP[mood as keyof typeof MOOD_MAP] || "light_minimalistic"
+        const templateKey = `${category}_${moodMapped}` as keyof typeof BLUEPRINT_PHOTOSHOOT_TEMPLATES
+        templatePrompt = BLUEPRINT_PHOTOSHOOT_TEMPLATES[templateKey] || null
+        
+        if (templatePrompt) {
+          // Validate template can be properly extracted for NanoBanana structure
+          const validation = validateBlueprintTemplate(templatePrompt)
+          if (!validation.isValid) {
+            console.warn(`[v0] ⚠️ Template ${templateKey} has missing fields:`, validation.missingFields)
+            console.warn(`[v0] ⚠️ Warnings:`, validation.warnings)
+          } else {
+            console.log(`[v0] ✅ Template ${templateKey} validated successfully`)
+          }
+          console.log(`[v0] Using template prompt from unified wizard: ${category}_${moodMapped} (${templatePrompt.split(/\s+/).length} words)`)
+        } else {
+          console.log(`[v0] Template not found for ${category}_${moodMapped} - prompt will be generated on first generation`)
+        }
+      } else {
+        // FALLBACK: Try legacy blueprint_subscribers
+        console.log(`[v0] No user_personal_brand found, checking blueprint_subscribers (legacy)...`)
+        const blueprintSubscriber = await sql`
+          SELECT form_data, feed_style
+          FROM blueprint_subscribers
+          WHERE user_id = ${user.id}
+          LIMIT 1
+        ` as any[]
+        
+        if (blueprintSubscriber.length > 0) {
+          const formData = blueprintSubscriber[0].form_data || {}
+          const feedStyle = blueprintSubscriber[0].feed_style || null
+          feedStyleToStore = feedStyle // Store for feed_layouts
+          
+          // Get category from form_data.vibe (same as old blueprint)
+          const category = (formData.vibe || "professional") as "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"
+          // Get mood from feed_style (same as old blueprint)
+          const mood = (feedStyle || "minimal") as "luxury" | "minimal" | "beige"
+          
+          // Get template prompt from grid library
+          const { BLUEPRINT_PHOTOSHOOT_TEMPLATES, MOOD_MAP } = await import("@/lib/maya/blueprint-photoshoot-templates")
+          const { validateBlueprintTemplate } = await import("@/lib/feed-planner/extract-aesthetic-from-template")
+          // Map mood correctly using MOOD_MAP
+          const moodMapped = MOOD_MAP[mood as keyof typeof MOOD_MAP] || "light_minimalistic"
+          const templateKey = `${category}_${moodMapped}` as keyof typeof BLUEPRINT_PHOTOSHOOT_TEMPLATES
+          templatePrompt = BLUEPRINT_PHOTOSHOOT_TEMPLATES[templateKey] || null
+          
+          if (templatePrompt) {
+            // Validate template can be properly extracted for NanoBanana structure
+            const validation = validateBlueprintTemplate(templatePrompt)
+            if (!validation.isValid) {
+              console.warn(`[v0] ⚠️ Template ${templateKey} has missing fields:`, validation.missingFields)
+              console.warn(`[v0] ⚠️ Warnings:`, validation.warnings)
+            } else {
+              console.log(`[v0] ✅ Template ${templateKey} validated successfully`)
+            }
+            console.log(`[v0] Using template prompt from legacy blueprint: ${category}_${moodMapped} (${templatePrompt.split(/\s+/).length} words)`)
+          }
+        } else {
+          console.log(`[v0] No wizard data found in either source - prompt will be generated on first generation`)
+        }
+      }
+    } catch (error) {
+      console.error("[v0] Error getting template prompt for free example:", error)
+      // Continue without prompt - it will be generated on first generation
+    }
+
     // Create feed layout with layout_type: 'preview'
     const title = `Preview Feed - ${new Date().toLocaleDateString()}`
     let feedResult: any[]
@@ -68,6 +196,7 @@ export async function POST(req: NextRequest) {
           description,
           status,
           layout_type,
+          feed_style,
           created_by
         )
         VALUES (
@@ -77,6 +206,7 @@ export async function POST(req: NextRequest) {
           NULL,
           'saved',
           'preview',
+          ${feedStyleToStore},
           'manual'
         )
         RETURNING *
@@ -92,7 +222,8 @@ export async function POST(req: NextRequest) {
             username,
             description,
             status,
-            layout_type
+            layout_type,
+            feed_style
           )
           VALUES (
             ${user.id},
@@ -100,7 +231,8 @@ export async function POST(req: NextRequest) {
             ${user.name?.toLowerCase().replace(/\s+/g, "") || "yourbrand"},
             NULL,
             'saved',
-            'preview'
+            'preview',
+            ${feedStyleToStore}
           )
           RETURNING *
         ` as any[]
@@ -116,40 +248,8 @@ export async function POST(req: NextRequest) {
     const feedLayout = feedResult[0]
     const feedId = feedLayout.id
 
-    // Get wizard context from blueprint_subscribers (same as old blueprint)
-    // Use template-based prompts from grid library based on user's answers
-    let templatePrompt = null
-    try {
-      const blueprintSubscriber = await sql`
-        SELECT form_data, feed_style
-        FROM blueprint_subscribers
-        WHERE user_id = ${user.id}
-        LIMIT 1
-      ` as any[]
-      
-      if (blueprintSubscriber.length > 0) {
-        const formData = blueprintSubscriber[0].form_data || {}
-        const feedStyle = blueprintSubscriber[0].feed_style || null
-        
-        // Get category from form_data.vibe (same as old blueprint)
-        const category = (formData.vibe || "professional") as "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"
-        // Get mood from feed_style (same as old blueprint)
-        // Map: luxury=dark_moody, minimal=light_minimalistic, beige=beige_aesthetic
-        const mood = (feedStyle || "minimal") as "luxury" | "minimal" | "beige"
-        
-        // Get template prompt from grid library (same as old blueprint)
-        const { getBlueprintPhotoshootPrompt } = await import("@/lib/maya/blueprint-photoshoot-templates")
-        templatePrompt = getBlueprintPhotoshootPrompt(category, mood)
-        console.log(`[v0] Using template prompt for free example feed: ${category}_${mood} (${templatePrompt.split(/\s+/).length} words)`)
-      } else {
-        console.log(`[v0] No blueprint_subscribers record found for user ${user.id} - prompt will be generated on first generation`)
-      }
-    } catch (error) {
-      console.error("[v0] Error getting template prompt for free example:", error)
-      // Continue without prompt - it will be generated on first generation
-    }
-
     // Phase 5.3.2: Create ONE empty post (position 1) for free users
+    // templatePrompt was already determined above (before feed layout creation)
     const postResult = await sql`
       INSERT INTO feed_posts (
         feed_layout_id,

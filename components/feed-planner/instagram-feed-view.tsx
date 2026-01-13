@@ -31,20 +31,15 @@ interface InstagramFeedViewProps {
   onBack?: () => void
   access?: FeedPlannerAccess // Phase 4.2: Access control object (replaces mode prop)
   onOpenWizard?: () => void // Callback to open wizard
+  onOpenWelcomeWizard?: () => void // Callback to open welcome wizard (for paid blueprint users)
 }
 
-export default function InstagramFeedView({ feedId, onBack, access, onOpenWizard }: InstagramFeedViewProps) {
+export default function InstagramFeedView({ feedId, onBack, access, onOpenWizard, onOpenWelcomeWizard }: InstagramFeedViewProps) {
   // Use custom hooks for all complex logic
   const { feedData, feedError, mutate, isLoading: isFeedLoading, isValidating } = useFeedPolling(feedId)
   const { selectedPost, setSelectedPost, showGallery, setShowGallery, showProfileGallery, setShowProfileGallery } = useFeedModals()
   
-  console.log("[v0] ==================== INSTAGRAM FEED VIEW RENDERED ====================")
-  console.log("[v0] feedData:", feedData ? "exists" : "null")
-  console.log("[v0] feedData structure:", feedData ? Object.keys(feedData) : "null")
-  console.log("[v0] feedData.posts count:", feedData?.posts?.length || 0)
-  console.log("[v0] feedData.feed:", feedData?.feed ? "exists" : "undefined")
-  console.log("[v0] feedData.feed.id:", feedData?.feed?.id)
-  console.log("[v0] feedData.error:", feedData?.error)
+  // Removed excessive console.log statements that were causing performance issues during polling
 
   const [activeTab, setActiveTab] = useState<FeedTab>("grid")
   const [businessType, setBusinessType] = useState<string | undefined>(undefined)
@@ -266,7 +261,7 @@ export default function InstagramFeedView({ feedId, onBack, access, onOpenWizard
   const readyPosts = postStatuses.filter((p: any) => p.isComplete).length
   const { showConfetti } = useFeedConfetti(readyPosts)
 
-  // Log post status for debugging (optional - can be removed in production)
+  // Log post status for debugging - only log once per feed load to prevent excessive logging during polling
   useEffect(() => {
     if (!feedData?.posts) return
     
@@ -275,17 +270,22 @@ export default function InstagramFeedView({ feedId, onBack, access, onOpenWizard
     )
     
     if (postsWithoutPrediction.length > 0) {
-      const feedCreatedRecently = feedData.feed?.created_at 
-        ? (Date.now() - new Date(feedData.feed.created_at).getTime()) < 120000 // 2 minutes
-        : false
-      
-      if (feedCreatedRecently) {
-        console.log(`[v0] ⏳ Feed was just created - queue-all-images is processing ${postsWithoutPrediction.length} posts in background. SWR will poll for updates...`)
-      } else {
-        console.log(`[v0] ⚠️ Found ${postsWithoutPrediction.length} posts without prediction_id. If this persists, use the "Generate All" button.`)
+      // Only log once per feed load, not on every render
+      const hasLogged = sessionStorage.getItem(`warned-no-prediction-${feedId}`)
+      if (!hasLogged) {
+        const feedCreatedRecently = feedData.feed?.created_at 
+          ? (Date.now() - new Date(feedData.feed.created_at).getTime()) < 120000 // 2 minutes
+          : false
+        
+        if (feedCreatedRecently) {
+          console.log(`[v0] ⏳ Feed was just created - queue-all-images is processing ${postsWithoutPrediction.length} posts in background. SWR will poll for updates...`)
+        } else {
+          console.log(`[v0] ⚠️ Found ${postsWithoutPrediction.length} posts without prediction_id. If this persists, use the "Generate All" button.`)
+        }
+        sessionStorage.setItem(`warned-no-prediction-${feedId}`, 'true')
       }
     }
-  }, [feedData])
+  }, [feedData?.posts?.length, feedId]) // Only re-run when post count changes, not on every render
 
   const generatingPosts = postStatuses.filter((p: any) => p.isGenerating)
 
@@ -512,6 +512,7 @@ export default function InstagramFeedView({ feedId, onBack, access, onOpenWizard
         onWriteBio={handleWriteBio}
         onCreateHighlights={() => setShowHighlightsModal(true)}
         onOpenWizard={onOpenWizard}
+        onOpenWelcomeWizard={onOpenWelcomeWizard}
         access={access}
       />
       

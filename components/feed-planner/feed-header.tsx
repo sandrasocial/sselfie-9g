@@ -1,10 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { ChevronLeft, MoreHorizontal, Plus, Settings } from "lucide-react"
+import { ChevronLeft, MoreHorizontal, Plus, Settings, HelpCircle } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
+import FeedStyleModal, { type FeedStyle } from "./feed-style-modal"
+import useSWR from "swr"
 
 interface FeedHeaderProps {
   feedData: any
@@ -14,8 +16,11 @@ interface FeedHeaderProps {
   onWriteBio: () => void
   onCreateHighlights?: () => void
   onOpenWizard?: () => void // Callback to open wizard
-  access?: { isFree?: boolean } // Access control to hide buttons for free users
+  onOpenWelcomeWizard?: () => void // Callback to open welcome wizard (for paid blueprint users)
+  access?: { isFree?: boolean; isPaidBlueprint?: boolean } // Access control to hide buttons for free users
 }
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 export default function FeedHeader({
   feedData,
@@ -25,11 +30,26 @@ export default function FeedHeader({
   onWriteBio,
   onCreateHighlights,
   onOpenWizard,
+  onOpenWelcomeWizard,
   access,
 }: FeedHeaderProps) {
   const router = useRouter()
   const [isCreatingFeed, setIsCreatingFeed] = useState(false)
   const [isCreatingPreviewFeed, setIsCreatingPreviewFeed] = useState(false)
+  const [showFeedStyleModal, setShowFeedStyleModal] = useState(false)
+  
+  // Fetch user's last feed style from personal brand
+  const { data: personalBrandData } = useSWR(
+    showFeedStyleModal ? "/api/profile/personal-brand" : null,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 60000, // Cache for 1 minute
+    }
+  )
+  
+  // Extract last feed style from settings_preference[0]
+  const lastFeedStyle: FeedStyle | null = personalBrandData?.data?.settingsPreference?.[0] || null
 
   const handleCreatePreviewFeed = async () => {
     setIsCreatingPreviewFeed(true)
@@ -66,13 +86,21 @@ export default function FeedHeader({
     }
   }
 
-  const handleCreateNewFeed = async () => {
+  const handleCreateNewFeedClick = () => {
+    // Show feed style modal first
+    setShowFeedStyleModal(true)
+  }
+
+  const handleFeedStyleConfirm = async (feedStyle: FeedStyle) => {
+    setShowFeedStyleModal(false)
     setIsCreatingFeed(true)
+    
     try {
       const response = await fetch('/api/feed/create-manual', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
+        body: JSON.stringify({ feedStyle }),
       })
 
       if (!response.ok) {
@@ -151,6 +179,15 @@ export default function FeedHeader({
               title="Edit wizard answers"
             >
               <Settings size={20} className="text-stone-600" strokeWidth={2} />
+            </button>
+          )}
+          {onOpenWelcomeWizard && access?.isPaidBlueprint && (
+            <button
+              onClick={onOpenWelcomeWizard}
+              className="p-2 hover:bg-stone-50 rounded-full transition-colors"
+              title="View welcome guide"
+            >
+              <HelpCircle size={20} className="text-stone-600" strokeWidth={2} />
             </button>
           )}
           <button className="p-2 -mr-2 hover:bg-stone-50 rounded-full transition-colors">
@@ -244,7 +281,7 @@ export default function FeedHeader({
                 )}
               </button>
               <button
-                onClick={handleCreateNewFeed}
+                onClick={handleCreateNewFeedClick}
                 disabled={isCreatingFeed}
                 className="flex-1 md:flex-none md:px-8 bg-stone-900 hover:bg-stone-800 text-white text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
               >
@@ -338,6 +375,15 @@ export default function FeedHeader({
           </div>
         </div>
       </div>
+
+      {/* Feed Style Selection Modal */}
+      <FeedStyleModal
+        open={showFeedStyleModal}
+        onOpenChange={setShowFeedStyleModal}
+        onConfirm={handleFeedStyleConfirm}
+        defaultFeedStyle={lastFeedStyle}
+        isLoading={isCreatingFeed}
+      />
     </div>
   )
 }

@@ -47,24 +47,7 @@ export function useFeedPolling(feedId: number | null) {
     fetcher,
     {
       refreshInterval: (data) => {
-        // Debug: Log data structure
-        if (data) {
-          console.log('[useFeedPolling] 🔍 refreshInterval check:', {
-            hasData: !!data,
-            hasPosts: !!data.posts,
-            postsCount: data.posts?.length || 0,
-            postsStructure: data.posts ? data.posts.map((p: any) => ({
-              id: p.id,
-              position: p.position,
-              hasPredictionId: !!p.prediction_id,
-              hasImageUrl: !!p.image_url,
-              generationStatus: p.generation_status,
-              predictionId: p.prediction_id?.substring(0, 20) + '...' || null
-            })) : 'no posts',
-            feedStatus: data.feed?.status,
-            feedId: data.feed?.id
-          })
-        }
+        // Removed excessive logging that was causing performance issues
         
         // FIX 4: Check if polling has exceeded max duration
         if (pollingStartTimeRef.current !== null) {
@@ -134,22 +117,7 @@ export function useFeedPolling(feedId: number | null) {
         const singlePost = data?.posts?.length === 1 ? data.posts[0] : null
         const singlePostHasImage = singlePost?.image_url // Simplified: just check if image_url exists
         
-        console.log('[useFeedPolling] 🔍 Polling decision:', {
-          hasGeneratingPosts,
-          isProcessing,
-          singlePostHasImage,
-          singlePostId: singlePost?.id,
-          singlePostImageUrl: singlePost?.image_url ? 'EXISTS' : 'MISSING',
-          singlePostStatus: singlePost?.generation_status,
-          generatingPosts: generatingPosts.map((p: any) => ({
-            id: p.id,
-            position: p.position,
-            hasPredictionId: !!p.prediction_id,
-            hasImageUrl: !!p.image_url,
-            generationStatus: p.generation_status,
-            predictionId: p.prediction_id?.substring(0, 20) + '...' || null
-          }))
-        })
+        // Reduced logging - only log when starting/stopping polling or on errors
         
         // CRITICAL FIX: For single post (free blueprint), stop immediately if image exists
         // This matches concept card behavior: stop polling when image is ready
@@ -176,7 +144,7 @@ export function useFeedPolling(feedId: number | null) {
           // This ensures database is updated even for single posts
           // Progress endpoint checks Replicate and updates image_url + generation_status
           if (feedId && hasGeneratingPosts) {
-            console.log('[useFeedPolling] 🔄 Calling progress endpoint to check Replicate status...')
+            // Silently call progress endpoint without logging on every poll
             fetch(`/api/feed/${feedId}/progress`)
               .then(res => {
                 if (!res.ok) {
@@ -185,13 +153,6 @@ export function useFeedPolling(feedId: number | null) {
                 return res.json()
               })
               .then(progressData => {
-                console.log('[useFeedPolling] 📊 Progress endpoint response:', {
-                  completed: progressData.completed,
-                  failed: progressData.failed,
-                  total: progressData.total,
-                  progress: progressData.progress
-                })
-                
                 // CRITICAL FIX: Only update UI when a new post is actually completed
                 // This matches concept card behavior - only update on status change to "succeeded"
                 // Don't refresh on every poll to prevent flashing
@@ -200,7 +161,7 @@ export function useFeedPolling(feedId: number | null) {
                 
                 if (hasNewCompletions) {
                   const newlyCompleted = newCompletedCount - lastCompletedCountRef.current
-                  console.log(`[useFeedPolling] 🎉 Detected ${newlyCompleted} newly completed post(s)! Updating UI...`)
+                  console.log(`[useFeedPolling] 🎉 ${newlyCompleted} post(s) completed! Updating UI...`)
                   lastCompletedCountRef.current = newCompletedCount
                   
                   // Only refresh when a post actually completes (like concept cards)
@@ -208,21 +169,17 @@ export function useFeedPolling(feedId: number | null) {
                   setTimeout(() => {
                     mutate(undefined, { revalidate: true })
                   }, 100)
-                } else {
-                  // Silently poll without updating UI (prevents flashing)
-                  // This matches concept card behavior - they poll but only update on status change
-                  console.log('[useFeedPolling] ⏳ Still generating, no new completions yet (silent poll)')
                 }
+                // Silently poll without updating UI (prevents flashing and excessive re-renders)
               })
               .catch(err => {
+                // Only log errors, not every poll attempt
                 console.error('[useFeedPolling] ❌ Error calling progress endpoint:', err)
                 // Don't fail polling if progress endpoint fails - just log and continue
-                // Don't refresh on error to prevent flashing
               })
           } else if (feedId && singlePost && singlePost.prediction_id && !singlePost.image_url) {
             // CRITICAL FIX: For single posts, also call progress endpoint even if hasGeneratingPosts is false
             // This handles edge cases where the post has prediction_id but polling condition didn't catch it
-            console.log('[useFeedPolling] 🔄 Single post has prediction_id but no image_url, calling progress endpoint...')
             fetch(`/api/feed/${feedId}/progress`)
               .then(res => {
                 if (!res.ok) {
@@ -231,8 +188,6 @@ export function useFeedPolling(feedId: number | null) {
                 return res.json()
               })
               .then(progressData => {
-                console.log('[useFeedPolling] 📊 Single post progress response:', progressData)
-                
                 // Only update if post was just completed (matches concept card behavior)
                 const newCompletedCount = progressData.completed || 0
                 const hasNewCompletions = newCompletedCount > lastCompletedCountRef.current
@@ -243,18 +198,15 @@ export function useFeedPolling(feedId: number | null) {
                   setTimeout(() => {
                     mutate(undefined, { revalidate: true })
                   }, 100)
-                } else {
-                  console.log('[useFeedPolling] ⏳ Single post still generating (silent poll)')
                 }
+                // Silently poll without logging
               })
               .catch(err => {
                 console.error('[useFeedPolling] ❌ Error calling progress endpoint for single post:', err)
-                // Don't refresh on error to prevent flashing
               })
           }
           
           lastUpdateRef.current = Date.now()
-          console.log('[useFeedPolling] ✅ Returning 3000ms (polling active)')
           return 3000 // Poll every 3s (faster for better UX)
         } else {
           // No generating posts - reset polling start time
@@ -272,8 +224,6 @@ export function useFeedPolling(feedId: number | null) {
         // For single post feeds, we already checked above and returned 0 if image exists
         // For multi-post feeds, only continue if there are actually generating posts
         // No grace period needed - if posts are complete, stop immediately
-        
-        console.log('[useFeedPolling] ⏹️ No generating posts, stopping polling')
         
         // Reset polling start time when no longer generating
         if (pollingStartTimeRef.current !== null) {
@@ -300,28 +250,10 @@ export function useFeedPolling(feedId: number | null) {
             lastCompletedCountRef.current = completedPosts.length
           }
           
-          console.log("[useFeedPolling] ✅ Data updated:", {
-            totalPosts: data.posts.length,
-            hasNewImages,
-            generatingPostsCount: generatingPosts.length,
-            completedPostsCount: completedPosts.length,
-            generatingPostIds: generatingPosts.map((p: any) => ({
-              id: p.id,
-              position: p.position,
-              hasPredictionId: !!p.prediction_id,
-              hasImageUrl: !!p.image_url,
-              generationStatus: p.generation_status
-            })),
-            completedPostIds: completedPosts.map((p: any) => ({ 
-              id: p.id, 
-              position: p.position,
-              imageUrl: p.image_url?.substring(0, 50) + "..." 
-            })),
-          })
-          
+          // Reduced logging - only log when there are actual changes
           if (hasNewImages) {
             lastUpdateRef.current = Date.now()
-            console.log("[useFeedPolling] ✅ New images detected, updating lastUpdateRef")
+            console.log(`[useFeedPolling] ✅ ${completedPosts.length}/${data.posts.length} posts completed`)
           }
         }
       },

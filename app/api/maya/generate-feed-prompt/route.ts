@@ -7,8 +7,11 @@ import { getMayaSystemPrompt, MAYA_CLASSIC_CONFIG, MAYA_PRO_CONFIG } from "@/lib
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getFluxPromptingPrinciples } from "@/lib/maya/flux-prompting-principles"
 import { getNanoBananaPromptingPrinciples } from "@/lib/maya/nano-banana-prompt-builder"
+import { extractAestheticFromTemplate, type LockedAesthetic } from "@/lib/feed-planner/extract-aesthetic-from-template"
+import Anthropic from "@anthropic-ai/sdk"
 
 const sql = neon(process.env.DATABASE_URL || "")
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,7 +26,22 @@ export async function POST(request: NextRequest) {
     const hasStudioProHeader = studioProHeader === "true"
 
     const body = await request.json()
-    const { postType, caption, feedPosition, colorTheme, brandVibe, referencePrompt, isRegeneration, category, proMode } = body
+    const { 
+      postType, 
+      caption, 
+      feedPosition, 
+      colorTheme, 
+      brandVibe, 
+      referencePrompt, 
+      isRegeneration, 
+      category, 
+      proMode,
+      // NEW: Mode parameter (defaults to existing chat behavior)
+      mode = 'chat',
+      lockedAesthetic = null
+    } = body
+    
+    console.log("[v0] [FEED-PROMPT] Mode parameter:", mode)
     
     // Determine if Pro Mode is enabled (from header or body)
     const isProMode = hasStudioProHeader || proMode === true
@@ -44,7 +62,31 @@ export async function POST(request: NextRequest) {
       brandVibe,
       hasReferencePrompt: !!referencePrompt,
       referencePromptPreview: referencePrompt?.substring(0, 100),
+      mode,
+      hasLockedAesthetic: !!lockedAesthetic,
     })
+    
+    // 🔴 BRANCH BASED ON MODE
+    // If mode is 'feed-planner-background' and lockedAesthetic is provided, use locked aesthetic logic
+    if (mode === 'feed-planner-background' && lockedAesthetic) {
+      console.log("[v0] [FEED-PROMPT] Using locked aesthetic mode for feed planner background generation")
+      const { getEffectiveNeonUser } = await import("@/lib/simple-impersonation")
+      const neonUser = await getEffectiveNeonUser(user.id)
+      if (!neonUser) {
+        console.error("[v0] [FEED-PROMPT] User not found in database")
+        return NextResponse.json({ error: "User not found in database" }, { status: 404 })
+      }
+      return await generateWithLockedAesthetic({
+        lockedAesthetic,
+        referencePrompt,
+        position: feedPosition,
+        postType,
+        proMode: isProMode,
+      })
+    }
+    
+    // EXISTING PATH: Maya chat (no changes!)
+    console.log("[v0] [FEED-PROMPT] Using chat mode (existing logic)")
 
     const { getEffectiveNeonUser } = await import("@/lib/simple-impersonation")
     const neonUser = await getEffectiveNeonUser(user.id)
@@ -93,32 +135,70 @@ export async function POST(request: NextRequest) {
       console.log("[v0] [FEED-PROMPT] Could not fetch brand colors, continuing without them:", error)
     }
 
-    // Get user's trigger word, gender, ethnicity, and physical preferences (same as concept cards)
-    const userDataResult = await sql`
-      SELECT 
-        u.gender,
-        u.ethnicity,
-        um.trigger_word,
-        upb.physical_preferences
-      FROM users u
-      LEFT JOIN user_models um ON u.id = um.user_id
-      LEFT JOIN user_personal_brand upb ON u.id = upb.user_id
-      WHERE u.id = ${neonUser.id}
-      AND um.training_status = 'completed'
-      ORDER BY um.created_at DESC
-      LIMIT 1
-    `
+    // Get user's trigger word, gender, ethnicity, and physical preferences
+    // 🔴 CRITICAL FIX: Pro Mode (Nano Banana) doesn't require a trained model - uses reference images instead
+    // Classic Mode (FLUX) requires a trained model for trigger word
+    let userDataResult: any[]
+    let triggerWord: string
+    let gender: string | null
+    let ethnicity: string | null
+    let physicalPreferences: string | null
+    
+    if (isProMode) {
+      // Pro Mode: Get user data without requiring trained model
+      const userDataQuery = await sql`
+        SELECT 
+          u.gender,
+          u.ethnicity,
+          upb.physical_preferences
+        FROM users u
+        LEFT JOIN user_personal_brand upb ON u.id = upb.user_id
+        WHERE u.id = ${neonUser.id}
+        LIMIT 1
+      `
+      
+      if (userDataQuery.length === 0) {
+        console.error("[v0] [FEED-PROMPT] User not found:", neonUser.id)
+        return NextResponse.json({ error: "User not found" }, { status: 404 })
+      }
+      
+      userDataResult = userDataQuery
+      triggerWord = `user${neonUser.id}` // Pro Mode doesn't use trigger words, but we set a default
+      gender = userDataResult[0].gender
+      ethnicity = userDataResult[0].ethnicity
+      physicalPreferences = userDataResult[0].physical_preferences
+      
+      console.log("[v0] [FEED-PROMPT] Pro Mode: User data retrieved (no trained model required)")
+    } else {
+      // Classic Mode: Require trained model for trigger word
+      userDataResult = await sql`
+        SELECT 
+          u.gender,
+          u.ethnicity,
+          um.trigger_word,
+          upb.physical_preferences
+        FROM users u
+        LEFT JOIN user_models um ON u.id = um.user_id
+        LEFT JOIN user_personal_brand upb ON u.id = upb.user_id
+        WHERE u.id = ${neonUser.id}
+        AND um.training_status = 'completed'
+        ORDER BY um.created_at DESC
+        LIMIT 1
+      `
 
-    if (userDataResult.length === 0) {
-      console.error("[v0] [FEED-PROMPT] No trained model found for user:", neonUser.id)
-      return NextResponse.json({ error: "No trained model found" }, { status: 400 })
+      if (userDataResult.length === 0) {
+        console.error("[v0] [FEED-PROMPT] No trained model found for user (Classic Mode requires trained model):", neonUser.id)
+        return NextResponse.json({ error: "No trained model found. Classic Mode requires a trained model." }, { status: 400 })
+      }
+
+      const userData = userDataResult[0]
+      triggerWord = userData.trigger_word || `user${neonUser.id}`
+      gender = userData.gender
+      ethnicity = userData.ethnicity
+      physicalPreferences = userData.physical_preferences
+      
+      console.log("[v0] [FEED-PROMPT] Classic Mode: Trained model found, trigger word:", triggerWord)
     }
-
-    const userData = userDataResult[0]
-    const triggerWord = userData.trigger_word || `user${neonUser.id}`
-    const gender = userData.gender
-    const ethnicity = userData.ethnicity
-    const physicalPreferences = userData.physical_preferences
     
     // Determine user gender descriptor (same format as concept cards)
     let userGender = "person"
@@ -982,4 +1062,304 @@ Reference (IGNORE FORMAT - GENERIC AND INCOMPLETE): ${cleanedReferencePrompt.sub
       { status: 500 },
     )
   }
+}
+
+/**
+ * Generate prompt with locked aesthetic (feed planner background mode)
+ * 
+ * This function is used when generating individual images for paid blueprint users.
+ * It maintains the exact aesthetic from the preview template while varying pose/angle/composition.
+ */
+async function generateWithLockedAesthetic(params: {
+  lockedAesthetic: LockedAesthetic
+  referencePrompt: string | null | undefined
+  position: number | null | undefined
+  postType: string | null | undefined
+  proMode: boolean
+}): Promise<NextResponse> {
+  const { lockedAesthetic, referencePrompt, position, postType, proMode } = params
+  
+  console.log("[v0] [FEED-PROMPT] [LOCKED-AESTHETIC] Generating with locked aesthetic:", lockedAesthetic)
+  console.log("[v0] [FEED-PROMPT] [LOCKED-AESTHETIC] Position:", position, "Post Type:", postType, "Pro Mode:", proMode)
+  
+  // For Pro Mode (NanoBanana Pro), generate ONLY creative variation, then assemble three-part prompt
+  if (proMode) {
+    return await generateNanoBananaProPrompt({
+      lockedAesthetic,
+      position,
+      postType,
+    })
+  }
+  
+  // For Classic Mode (FLUX LoRA), use existing logic
+  const systemPrompt = `You are a professional photographer's AI assistant generating prompts for a cohesive Instagram feed.
+
+## CRITICAL: LOCKED AESTHETIC ELEMENTS
+
+The user has already seen and approved a preview with this exact aesthetic. You MUST maintain these elements EXACTLY:
+
+- **Vibe/Mood:** ${lockedAesthetic.vibe}
+- **Color Grade:** ${lockedAesthetic.colorGrade}
+- **Setting/Location:** ${lockedAesthetic.setting}
+- **Outfit/Wardrobe:** ${lockedAesthetic.outfit}
+- **Lighting Quality:** ${lockedAesthetic.lightingQuality}
+
+These are FIXED and CANNOT be changed or modified in any way.
+
+## VARIABLE ELEMENTS (You CAN change):
+
+- Camera angle (eye-level, low, high, over shoulder, etc.)
+- Composition (rule of thirds, centered, etc.)
+- Pose (standing, sitting, leaning, gesturing, etc.)
+- Framing (full body, waist up, close-up, detail, etc.)
+- Camera distance (wide, medium, close-up)
+- Subject positioning
+
+## YOUR TASK:
+
+Generate a prompt for position ${position || 'N/A'} in the grid (${postType || 'portrait'} shot).
+
+Think: "Same photoshoot, same person, same place, same outfit, same lighting - just a different shot angle/pose."
+
+## CLASSIC MODE (FLUX LoRA):
+- Start with trigger word format
+- Use FLUX prompting principles
+- Authentic iPhone style
+
+Output ONLY the prompt text, nothing else.`
+
+  const userPrompt = `Generate prompt for position ${position || 'N/A'}, type: ${postType || 'portrait'}.
+
+Remember: EXACT same vibe, colors, setting, outfit, lighting. ONLY vary the pose/angle/composition.`
+
+  try {
+    const completion = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 500,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userPrompt }],
+    })
+    
+    const generatedPrompt = completion.content[0].type === 'text' 
+      ? completion.content[0].text.trim()
+      : ''
+    
+    // Clean up any markdown or formatting
+    const cleanedPrompt = generatedPrompt
+      .replace(/\*\*/g, '')
+      .replace(/\*/g, '')
+      .replace(/__/g, '')
+      .replace(/_/g, '')
+      .replace(/^.*?PROMPT\s*:?\s*/i, '')
+      .replace(/^[:;\-\s]+/, '')
+      .trim()
+    
+    console.log("[v0] [FEED-PROMPT] [LOCKED-AESTHETIC] Generated prompt:", cleanedPrompt.substring(0, 200))
+    console.log("[v0] [FEED-PROMPT] [LOCKED-AESTHETIC] Locked aesthetic maintained:", {
+      hasVibe: cleanedPrompt.toLowerCase().includes(lockedAesthetic.vibe.toLowerCase().split(' ')[0]),
+      hasSetting: cleanedPrompt.toLowerCase().includes(lockedAesthetic.setting.toLowerCase().split(',')[0]),
+      hasOutfit: cleanedPrompt.toLowerCase().includes(lockedAesthetic.outfit.toLowerCase().split(',')[0]),
+    })
+    
+    return NextResponse.json({
+      success: true,
+      prompt: cleanedPrompt,
+      postType: postType || 'portrait',
+    })
+  } catch (error) {
+    console.error("[v0] [FEED-PROMPT] [LOCKED-AESTHETIC] Error:", error)
+    return NextResponse.json(
+      {
+        error: "Failed to generate prompt with locked aesthetic",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 },
+    )
+  }
+}
+
+/**
+ * Generate NanoBanana Pro prompt with three-part structure:
+ * 1. Base identity preservation (FIXED)
+ * 2. Maya's creative variation (pose, angle, composition)
+ * 3. Technical assembly/quality modifiers (from template)
+ */
+async function generateNanoBananaProPrompt(params: {
+  lockedAesthetic: LockedAesthetic
+  position: number | null | undefined
+  postType: string | null | undefined
+}): Promise<NextResponse> {
+  const { lockedAesthetic, position, postType } = params
+  
+  console.log("[v0] [FEED-PROMPT] [NANOBANANA-PRO] Generating creative variation only...")
+  
+  // Maya generates ONLY the creative variation (pose, angle, composition)
+  const systemPrompt = `You are generating ONLY the creative variation section of a photo prompt for NanoBanana Pro.
+
+## YOUR JOB
+
+Generate ONLY the pose, angle, composition, and framing description.
+
+DO NOT include:
+- Subject description ("a woman in...", "a person wearing...")
+- Quality keywords ("professional photography...", "8k...", "high detail...")
+- Assembly modifiers ("Assembly: luxury_minimal...")
+- Identity preservation text (that's added separately)
+
+## LOCKED AESTHETIC (Use in your variation)
+
+Your variation must match this aesthetic:
+- Setting: ${lockedAesthetic.setting}
+- Outfit: ${lockedAesthetic.outfit}
+- Lighting: ${lockedAesthetic.lightingQuality}
+- Vibe: ${lockedAesthetic.vibe}
+- Color Grade: ${lockedAesthetic.colorGrade}
+
+## OUTPUT FORMAT
+
+Generate a short description (1-2 sentences) of:
+- Pose (standing, sitting, leaning, walking, etc.)
+- Camera angle (eye level, low angle, high angle, over shoulder, etc.)
+- Composition (centered, off-center, rule of thirds, etc.)
+- Framing (full body, 3/4 body, waist up, close-up, detail, etc.)
+- Gesture/action (hands position, gaze direction, etc.)
+- Subject positioning (foreground, against wall, in doorway, etc.)
+
+## EXAMPLE OUTPUT
+
+Good: "Standing against marble wall with one hand touching the surface, captured from a low angle looking up, off-center composition with subject on left third, waist-up framing, gazing thoughtfully into the distance"
+
+Bad: "A woman in a camel coat stands..." (NO! Don't describe the person)
+Bad: "Professional photography, 8k" (NO! That's added separately)
+Bad: "Assembly: luxury_minimal" (NO! That's added separately)
+
+Output ONLY the creative variation. Nothing else.`
+
+  const userPrompt = `Generate creative variation for position ${position || 'N/A'}, type: ${postType || 'portrait'}.
+
+Remember: Setting is ${lockedAesthetic.setting}, outfit is ${lockedAesthetic.outfit}, lighting is ${lockedAesthetic.lightingQuality}.
+
+Generate creative variation ONLY (pose, angle, composition, framing).`
+
+  try {
+    const completion = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 150, // Shorter since we only want variation
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userPrompt }],
+    })
+    
+    const mayaVariation = completion.content[0].type === 'text' 
+      ? completion.content[0].text.trim()
+      : ''
+    
+    // Clean up any markdown or formatting
+    const cleanedVariation = mayaVariation
+      .replace(/\*\*/g, '')
+      .replace(/\*/g, '')
+      .replace(/__/g, '')
+      .replace(/_/g, '')
+      .replace(/^.*?VARIATION\s*:?\s*/i, '')
+      .replace(/^[:;\-\s]+/, '')
+      .trim()
+    
+    console.log("[v0] [FEED-PROMPT] [NANOBANANA-PRO] Maya variation:", cleanedVariation)
+    
+    // Assemble the complete NanoBanana Pro prompt (three-part structure)
+    const finalPrompt = assembleNanoBananaPrompt({
+      baseIdentity: lockedAesthetic.baseIdentityPrompt,
+      variation: cleanedVariation,
+      setting: lockedAesthetic.setting,
+      outfit: lockedAesthetic.outfit,
+      lighting: lockedAesthetic.lightingQuality,
+      colorGrade: lockedAesthetic.colorGrade,
+      assembly: lockedAesthetic.assembly,
+      quality: lockedAesthetic.qualityModifiers,
+    })
+    
+    console.log("[v0] [FEED-PROMPT] [NANOBANANA-PRO] Final assembled prompt:", finalPrompt.substring(0, 300))
+    
+    // Enhanced validation logging for three-part prompt structure
+    console.log("=== NANOBANANA PRO PROMPT STRUCTURE VALIDATION ===")
+    
+    // Validate Part 1: Base Identity
+    const hasBaseIdentity = lockedAesthetic.baseIdentityPrompt && lockedAesthetic.baseIdentityPrompt.length > 0
+    console.log("[1] BASE IDENTITY:", hasBaseIdentity ? "✅ PRESENT" : "❌ MISSING")
+    if (hasBaseIdentity) {
+      console.log("    Content:", lockedAesthetic.baseIdentityPrompt.substring(0, 100) + "...")
+    }
+    
+    // Validate Part 2: Creative Variation
+    const hasVariation = cleanedVariation && cleanedVariation.length > 0
+    console.log("[2] MAYA VARIATION:", hasVariation ? "✅ PRESENT" : "❌ MISSING")
+    if (hasVariation) {
+      console.log("    Content:", cleanedVariation.substring(0, 100) + (cleanedVariation.length > 100 ? "..." : ""))
+      console.log("    Length:", cleanedVariation.length, "characters")
+    }
+    
+    // Validate Part 3: Technical Assembly
+    const hasAssembly = lockedAesthetic.assembly && lockedAesthetic.assembly.length > 0
+    const hasQuality = lockedAesthetic.qualityModifiers && lockedAesthetic.qualityModifiers.length > 0
+    console.log("[3] TECHNICAL ASSEMBLY:")
+    console.log("    Assembly:", hasAssembly ? "✅ PRESENT" : "❌ MISSING", hasAssembly ? `(${lockedAesthetic.assembly})` : "")
+    console.log("    Quality Modifiers:", hasQuality ? "✅ PRESENT" : "❌ MISSING", hasQuality ? `(${lockedAesthetic.qualityModifiers.substring(0, 50)}...)` : "")
+    
+    // Overall validation
+    const isValid = hasBaseIdentity && hasVariation && hasAssembly && hasQuality
+    console.log()
+    console.log("[VALIDATION] Three-part structure:", isValid ? "✅ VALID" : "❌ INVALID")
+    if (!isValid) {
+      console.warn("[VALIDATION] ⚠️ Missing required parts:")
+      if (!hasBaseIdentity) console.warn("  - Base Identity Prompt")
+      if (!hasVariation) console.warn("  - Creative Variation")
+      if (!hasAssembly) console.warn("  - Assembly")
+      if (!hasQuality) console.warn("  - Quality Modifiers")
+    }
+    
+    console.log()
+    console.log("[FINAL] COMPLETE PROMPT:")
+    console.log(finalPrompt)
+    console.log("=".repeat(50))
+    
+    return NextResponse.json({
+      success: true,
+      prompt: finalPrompt,
+      postType: postType || 'portrait',
+    })
+  } catch (error) {
+    console.error("[v0] [FEED-PROMPT] [NANOBANANA-PRO] Error:", error)
+    return NextResponse.json(
+      {
+        error: "Failed to generate NanoBanana Pro prompt",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 },
+    )
+  }
+}
+
+/**
+ * Assemble the complete NanoBanana Pro prompt from parts
+ * Three-part structure:
+ * 1. Base identity preservation (FIXED)
+ * 2. Creative variation + aesthetic context
+ * 3. Technical assembly/quality modifiers
+ */
+function assembleNanoBananaPrompt(parts: {
+  baseIdentity: string
+  variation: string
+  setting: string
+  outfit: string
+  lighting: string
+  colorGrade: string
+  assembly: string
+  quality: string
+}): string {
+  // Three-part structure for NanoBanana Pro
+  return `${parts.baseIdentity}
+
+${parts.variation}, in ${parts.setting}, wearing ${parts.outfit}, ${parts.lighting}, ${parts.colorGrade}.
+
+Assembly: ${parts.assembly}
+${parts.quality}`
 }
