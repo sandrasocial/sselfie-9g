@@ -6,11 +6,11 @@ import { getDb } from "@/lib/db"
 import { getFeedPlannerAccess } from "@/lib/feed-planner/access-control"
 
 /**
- * Create Free Example Feed
+ * Create Preview Feed
  * 
- * Phase 5.3.2: Creates a feed with ONE post for free users
- * Used when free users access Feed Planner for the first time
- * This gives them an example grid to generate one image
+ * Creates a feed with ONE post for preview feed generation (9:16 aspect ratio)
+ * Available to all users (free and paid) - credit check already implemented in generation
+ * Sets layout_type: 'preview' to distinguish from full feeds
  */
 export async function POST(req: NextRequest) {
   try {
@@ -27,14 +27,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    // Check if user is free user
-    const access = await getFeedPlannerAccess(user.id.toString())
-    if (!access.isFree) {
-      return NextResponse.json(
-        { error: "Only free users can create example feeds" },
-        { status: 403 }
-      )
-    }
+    // Removed free-only restriction - all users can create preview feeds
+    // Credit check is already implemented in generate-single endpoint
 
     const sql = getDb()
 
@@ -62,8 +56,8 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // Create feed layout
-    const title = `My Feed - ${new Date().toLocaleDateString()}`
+    // Create feed layout with layout_type: 'preview'
+    const title = `Preview Feed - ${new Date().toLocaleDateString()}`
     let feedResult: any[]
     try {
       feedResult = await sql`
@@ -73,6 +67,7 @@ export async function POST(req: NextRequest) {
           username,
           description,
           status,
+          layout_type,
           created_by
         )
         VALUES (
@@ -81,6 +76,7 @@ export async function POST(req: NextRequest) {
           ${user.name?.toLowerCase().replace(/\s+/g, "") || "yourbrand"},
           NULL,
           'saved',
+          'preview',
           'manual'
         )
         RETURNING *
@@ -95,14 +91,16 @@ export async function POST(req: NextRequest) {
             brand_name,
             username,
             description,
-            status
+            status,
+            layout_type
           )
           VALUES (
             ${user.id},
             ${title},
             ${user.name?.toLowerCase().replace(/\s+/g, "") || "yourbrand"},
             NULL,
-            'saved'
+            'saved',
+            'preview'
           )
           RETURNING *
         ` as any[]
@@ -180,7 +178,7 @@ export async function POST(req: NextRequest) {
       RETURNING *
     ` as any[]
 
-    console.log(`[v0] Created free example feed ${feedId} with 1 post for user ${user.id} (Pro Mode, prompt: ${templatePrompt ? 'template' : 'pending'})`)
+    console.log(`[v0] Created preview feed ${feedId} with 1 post for user ${user.id} (layout_type: preview, Pro Mode, prompt: ${templatePrompt ? 'template' : 'pending'})`)
 
     return NextResponse.json({
       feedId,

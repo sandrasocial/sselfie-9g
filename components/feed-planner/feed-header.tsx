@@ -27,6 +27,42 @@ export default function FeedHeader({
 }: FeedHeaderProps) {
   const router = useRouter()
   const [isCreatingFeed, setIsCreatingFeed] = useState(false)
+  const [isCreatingPreviewFeed, setIsCreatingPreviewFeed] = useState(false)
+
+  const handleCreatePreviewFeed = async () => {
+    setIsCreatingPreviewFeed(true)
+    try {
+      const response = await fetch('/api/feed/create-free-example', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: 'Failed to create preview feed' }))
+        throw new Error(error.error || 'Failed to create preview feed')
+      }
+
+      const data = await response.json()
+      
+      // Navigate to the new preview feed
+      router.push(`/feed-planner?feedId=${data.feedId}`)
+      
+      toast({
+        title: "Preview feed created",
+        description: "Your preview feed is ready. Generate your preview image!",
+      })
+    } catch (error) {
+      console.error("[v0] Error creating preview feed:", error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to create preview feed. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsCreatingPreviewFeed(false)
+    }
+  }
 
   const handleCreateNewFeed = async () => {
     setIsCreatingFeed(true)
@@ -184,6 +220,23 @@ export default function FeedHeader({
                 className="flex-1 md:flex-none md:px-8 bg-stone-100 hover:bg-stone-200 text-stone-900 text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors"
               >
                 Write Bio
+              </button>
+              <button
+                onClick={handleCreatePreviewFeed}
+                disabled={isCreatingPreviewFeed}
+                className="flex-1 md:flex-none md:px-6 bg-stone-100 hover:bg-stone-200 text-stone-900 text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+              >
+                {isCreatingPreviewFeed ? (
+                  <>
+                    <span className="animate-spin">⏳</span>
+                    <span>Creating...</span>
+                  </>
+                ) : (
+                  <>
+                    <Plus size={16} />
+                    <span>New Preview</span>
+                  </>
+                )}
               </button>
               <button
                 onClick={handleCreateNewFeed}

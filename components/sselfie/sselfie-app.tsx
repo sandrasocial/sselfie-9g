@@ -766,9 +766,11 @@ export default function SselfieApp({
                                       </div>
                                       <div className="flex flex-col flex-1 min-w-0">
                                         <span className="text-sm font-medium text-stone-900 truncate">{feed.title || `Feed ${feed.id}`}</span>
-                                        {feed.image_count !== undefined && (
-                                          <span className="text-xs text-stone-500">{feed.image_count}/9 images</span>
-                                        )}
+                                        {feed.layout_type === 'preview' ? (
+                                          <span className="text-xs text-stone-500">Preview Feed</span>
+                                        ) : feed.image_count !== undefined ? (
+                                          <span className="text-xs text-stone-500">{feed.image_count}/{feed.layout_type === 'grid_3x4' ? '12' : '9'} images</span>
+                                        ) : null}
                                       </div>
                                     </div>
                                   </DropdownMenuItem>

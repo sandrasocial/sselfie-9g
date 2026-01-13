@@ -31,6 +31,10 @@ function truncate(str: string | null | undefined, maxLength: number, defaultValu
 function getLayoutType(gridPattern: string | undefined, posts: any[]): string {
   if (!posts || posts.length === 0) return "Mixed Layout"
   
+  // Support both 9 posts (Maya Feed Chat) and 12 posts (Blueprint)
+  if (posts.length === 12) return "grid_3x4"
+  if (posts.length === 9) return "grid_3x3"
+  
   // Count post types
   const portraitCount = posts.filter(p => 
     p.type === 'portrait' || p.postType === 'portrait'
@@ -125,10 +129,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (strategy.posts.length !== 9) {
-      console.error("[FEED-FROM-STRATEGY] Invalid strategy: expected 9 posts, got", strategy.posts.length)
+    // Support both 9 posts (Maya Feed Chat) and 12 posts (Blueprint)
+    if (strategy.posts.length !== 9 && strategy.posts.length !== 12) {
+      console.error("[FEED-FROM-STRATEGY] Invalid strategy: expected 9 or 12 posts, got", strategy.posts.length)
       return NextResponse.json(
-        { error: "Strategy must contain exactly 9 posts" },
+        { error: "Strategy must contain exactly 9 posts (Maya Feed Chat) or 12 posts (Blueprint)" },
         { status: 400 }
       )
     }

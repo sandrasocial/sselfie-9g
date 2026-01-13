@@ -398,120 +398,201 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
               SET prompt = ${finalPrompt}
               WHERE id = ${postId}
             `
-          } else {
-            // Paid blueprint users: Use blueprint templates (same as free users)
-            console.log(`[v0] [GENERATE-SINGLE] Paid blueprint user - using blueprint template library...`)
+          } else if (access.isPaidBlueprint) {
+            // Phase 2: Paid blueprint users - Use Maya to generate unique prompts from preview template
+            console.log(`[v0] [GENERATE-SINGLE] 🎨 Paid blueprint user - using Maya to generate prompt from preview template...`)
             
-            // FIX 1: Check user_personal_brand FIRST (unified wizard), then fall back to blueprint_subscribers (legacy)
-            let category: "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional" = "professional"
-            let mood: "luxury" | "minimal" | "beige" = "minimal"
-            let sourceUsed = "default"
-            
-            // PRIMARY SOURCE: user_personal_brand (unified wizard)
-            const personalBrand = await sql`
-              SELECT settings_preference, visual_aesthetic
-              FROM user_personal_brand
-              WHERE user_id = ${user.id}
-              ORDER BY created_at DESC
+            // Load preview template from the first post (position 1) where preview was generated
+            const [previewPost] = await sql`
+              SELECT prompt
+              FROM feed_posts
+              WHERE feed_layout_id = ${feedIdInt}
+              AND position = 1
+              AND prompt IS NOT NULL
+              AND prompt != ''
+              ORDER BY created_at ASC
               LIMIT 1
             ` as any[]
             
-            if (personalBrand && personalBrand.length > 0) {
-              console.log(`[v0] [GENERATE-SINGLE] [TEMPLATE DEBUG] user_personal_brand found:`, {
-                visual_aesthetic: personalBrand[0].visual_aesthetic,
-                settings_preference: personalBrand[0].settings_preference
-              })
+            const previewTemplate = previewPost?.prompt || null
+            
+            if (previewTemplate) {
+              console.log(`[v0] [GENERATE-SINGLE] ✅ Found preview template (${previewTemplate.split(/\s+/).length} words):`, previewTemplate.substring(0, 150))
               
-              // Extract feedStyle from settings_preference (first element of JSONB array)
-              let feedStyle: string | null = null
-              if (personalBrand[0].settings_preference) {
-                try {
-                  const settings = typeof personalBrand[0].settings_preference === 'string'
-                    ? JSON.parse(personalBrand[0].settings_preference)
-                    : personalBrand[0].settings_preference
+              try {
+                // Call Maya to generate unique prompt using preview template as guideline
+                const url = new URL(`${req.nextUrl.origin}/api/maya/generate-feed-prompt`)
+                const cookieHeader = req.headers.get("cookie") || ""
+                
+                const mayaRequest = new NextRequest(url, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "Cookie": cookieHeader,
+                    "x-studio-pro-mode": "true", // Pro Mode for paid blueprint
+                  },
+                  body: JSON.stringify({
+                    postType: post.post_type || "user",
+                    caption: post.caption,
+                    feedPosition: post.position,
+                    colorTheme: feedLayout?.color_palette,
+                    brandVibe: feedLayout?.brand_vibe,
+                    referencePrompt: previewTemplate, // Pass preview template as guideline
+                    proMode: true, // Pro Mode (Nano Banana)
+                    category: post.category,
+                  }),
+                })
+                
+                const { POST: generateFeedPromptHandler } = await import("@/app/api/maya/generate-feed-prompt/route")
+                const mayaResponse = await generateFeedPromptHandler(mayaRequest)
+                
+                if (mayaResponse.ok) {
+                  const mayaData = await mayaResponse.json()
+                  finalPrompt = mayaData.prompt || mayaData.enhancedPrompt
                   
-                  if (Array.isArray(settings) && settings.length > 0) {
-                    feedStyle = settings[0] // First element is feedStyle
+                  // Clean prompt (remove markdown, prefixes, etc.)
+                  if (finalPrompt) {
+                    finalPrompt = finalPrompt
+                      .replace(/\*\*/g, '')
+                      .replace(/\*/g, '')
+                      .replace(/__/g, '')
+                      .replace(/_/g, '')
+                      .replace(/^.*?FLUX\s+PROMPT\s*\([^)]*\)\s*:?\s*/i, '')
+                      .replace(/^.*?PROMPT\s*:?\s*/i, '')
+                      .replace(/^.*?FLUX\s*:?\s*/i, '')
+                      .replace(/\([^)]*\d+\s+words?[^)]*\)\s*/gi, '')
+                      .replace(/^[:;\-\s]+/, '')
+                      .trim()
                   }
-                } catch (e) {
-                  console.warn(`[v0] [GENERATE-SINGLE] Failed to parse settings_preference:`, e)
-                }
-              }
-              
-              // Map feedStyle to mood (values are already exact: "luxury", "minimal", "beige")
-              if (feedStyle) {
-                const feedStyleLower = feedStyle.toLowerCase().trim()
-                if (feedStyleLower === "luxury" || feedStyleLower === "minimal" || feedStyleLower === "beige") {
-                  mood = feedStyleLower as "luxury" | "minimal" | "beige"
-                }
-              }
-              
-              // Extract category from visual_aesthetic (array of IDs)
-              if (personalBrand[0].visual_aesthetic) {
-                try {
-                  const aesthetics = typeof personalBrand[0].visual_aesthetic === 'string'
-                    ? JSON.parse(personalBrand[0].visual_aesthetic)
-                    : personalBrand[0].visual_aesthetic
                   
-                  if (Array.isArray(aesthetics) && aesthetics.length > 0) {
-                    const firstAesthetic = aesthetics[0]?.toLowerCase().trim()
-                    const validCategories: Array<"luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"> = 
-                      ["luxury", "minimal", "beige", "warm", "edgy", "professional"]
-                    
-                    if (firstAesthetic && validCategories.includes(firstAesthetic as any)) {
-                      category = firstAesthetic as "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"
-                    }
-                  }
-                } catch (e) {
-                  console.warn(`[v0] [GENERATE-SINGLE] Failed to parse visual_aesthetic:`, e)
+                  console.log(`[v0] [GENERATE-SINGLE] ✅ Maya generated unique prompt for position ${post.position} (${finalPrompt.split(/\s+/).length} words):`, finalPrompt.substring(0, 150))
+                } else {
+                  console.error(`[v0] [GENERATE-SINGLE] ⚠️ Maya prompt generation failed (status ${mayaResponse.status}), falling back to preview template`)
+                  // Fallback to preview template if Maya fails
+                  finalPrompt = previewTemplate
                 }
+              } catch (mayaError) {
+                console.error(`[v0] [GENERATE-SINGLE] ⚠️ Error calling Maya:`, mayaError)
+                // Fallback to preview template if Maya fails
+                finalPrompt = previewTemplate
               }
-              
-              sourceUsed = "unified_wizard"
-              console.log(`[v0] [GENERATE-SINGLE] ✅ Found user_personal_brand data: ${category}_${mood}`)
             } else {
-              // FALLBACK: Check blueprint_subscribers (legacy blueprint wizard)
-              console.log(`[v0] [GENERATE-SINGLE] ⚠️ No user_personal_brand data, checking blueprint_subscribers (legacy)...`)
+              // No preview template found - fall back to blueprint templates (same as free users)
+              console.log(`[v0] [GENERATE-SINGLE] ⚠️ No preview template found, falling back to blueprint template library...`)
               
-              const blueprintSubscriber = await sql`
-                SELECT form_data, feed_style
-                FROM blueprint_subscribers
+              // FIX 1: Check user_personal_brand FIRST (unified wizard), then fall back to blueprint_subscribers (legacy)
+              let category: "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional" = "professional"
+              let mood: "luxury" | "minimal" | "beige" = "minimal"
+              let sourceUsed = "default"
+              
+              // PRIMARY SOURCE: user_personal_brand (unified wizard)
+              const personalBrand = await sql`
+                SELECT settings_preference, visual_aesthetic
+                FROM user_personal_brand
                 WHERE user_id = ${user.id}
+                ORDER BY created_at DESC
                 LIMIT 1
               ` as any[]
               
-              console.log(`[v0] [GENERATE-SINGLE] [TEMPLATE DEBUG] blueprint_subscribers:`, {
-                form_data: blueprintSubscriber[0]?.form_data,
-                feed_style: blueprintSubscriber[0]?.feed_style
-              })
-              
-              if (blueprintSubscriber.length > 0) {
-                const formData = blueprintSubscriber[0].form_data || {}
-                const feedStyle = blueprintSubscriber[0].feed_style || null
+              if (personalBrand && personalBrand.length > 0) {
+                console.log(`[v0] [GENERATE-SINGLE] [TEMPLATE DEBUG] user_personal_brand found:`, {
+                  visual_aesthetic: personalBrand[0].visual_aesthetic,
+                  settings_preference: personalBrand[0].settings_preference
+                })
                 
-                category = (formData.vibe || "professional") as "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"
-                mood = (feedStyle || "minimal") as "luxury" | "minimal" | "beige"
+                // Extract feedStyle from settings_preference (first element of JSONB array)
+                let feedStyle: string | null = null
+                if (personalBrand[0].settings_preference) {
+                  try {
+                    const settings = typeof personalBrand[0].settings_preference === 'string'
+                      ? JSON.parse(personalBrand[0].settings_preference)
+                      : personalBrand[0].settings_preference
+                    
+                    if (Array.isArray(settings) && settings.length > 0) {
+                      feedStyle = settings[0] // First element is feedStyle
+                    }
+                  } catch (e) {
+                    console.warn(`[v0] [GENERATE-SINGLE] Failed to parse settings_preference:`, e)
+                  }
+                }
                 
-                sourceUsed = "legacy_blueprint"
-                console.log(`[v0] [GENERATE-SINGLE] ✅ Found blueprint_subscribers data: ${category}_${mood}`)
+                // Map feedStyle to mood (values are already exact: "luxury", "minimal", "beige")
+                if (feedStyle) {
+                  const feedStyleLower = feedStyle.toLowerCase().trim()
+                  if (feedStyleLower === "luxury" || feedStyleLower === "minimal" || feedStyleLower === "beige") {
+                    mood = feedStyleLower as "luxury" | "minimal" | "beige"
+                  }
+                }
+                
+                // Extract category from visual_aesthetic (array of IDs)
+                if (personalBrand[0].visual_aesthetic) {
+                  try {
+                    const aesthetics = typeof personalBrand[0].visual_aesthetic === 'string'
+                      ? JSON.parse(personalBrand[0].visual_aesthetic)
+                      : personalBrand[0].visual_aesthetic
+                    
+                    if (Array.isArray(aesthetics) && aesthetics.length > 0) {
+                      const firstAesthetic = aesthetics[0]?.toLowerCase().trim()
+                      const validCategories: Array<"luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"> = 
+                        ["luxury", "minimal", "beige", "warm", "edgy", "professional"]
+                      
+                      if (firstAesthetic && validCategories.includes(firstAesthetic as any)) {
+                        category = firstAesthetic as "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"
+                      }
+                    }
+                  } catch (e) {
+                    console.warn(`[v0] [GENERATE-SINGLE] Failed to parse visual_aesthetic:`, e)
+                  }
+                }
+                
+                sourceUsed = "unified_wizard"
+                console.log(`[v0] [GENERATE-SINGLE] ✅ Found user_personal_brand data: ${category}_${mood}`)
               } else {
-                sourceUsed = "default"
-                console.log(`[v0] [GENERATE-SINGLE] ⚠️ No wizard data found in either source. Using defaults: professional_minimal`)
+                // FALLBACK: Check blueprint_subscribers (legacy blueprint wizard)
+                console.log(`[v0] [GENERATE-SINGLE] ⚠️ No user_personal_brand data, checking blueprint_subscribers (legacy)...`)
+                
+                const blueprintSubscriber = await sql`
+                  SELECT form_data, feed_style
+                  FROM blueprint_subscribers
+                  WHERE user_id = ${user.id}
+                  LIMIT 1
+                ` as any[]
+                
+                console.log(`[v0] [GENERATE-SINGLE] [TEMPLATE DEBUG] blueprint_subscribers:`, {
+                  form_data: blueprintSubscriber[0]?.form_data,
+                  feed_style: blueprintSubscriber[0]?.feed_style
+                })
+                
+                if (blueprintSubscriber.length > 0) {
+                  const formData = blueprintSubscriber[0].form_data || {}
+                  const feedStyle = blueprintSubscriber[0].feed_style || null
+                  
+                  category = (formData.vibe || "professional") as "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"
+                  mood = (feedStyle || "minimal") as "luxury" | "minimal" | "beige"
+                  
+                  sourceUsed = "legacy_blueprint"
+                  console.log(`[v0] [GENERATE-SINGLE] ✅ Found blueprint_subscribers data: ${category}_${mood}`)
+                } else {
+                  sourceUsed = "default"
+                  console.log(`[v0] [GENERATE-SINGLE] ⚠️ No wizard data found in either source. Using defaults: professional_minimal`)
+                }
               }
+              
+              // Get template prompt from grid library
+              const { getBlueprintPhotoshootPrompt } = await import("@/lib/maya/blueprint-photoshoot-templates")
+              finalPrompt = getBlueprintPhotoshootPrompt(category, mood)
+              console.log(`[v0] [GENERATE-SINGLE] [TEMPLATE DEBUG] Final selection: ${category}_${mood} (source: ${sourceUsed})`)
+              console.log(`[v0] [GENERATE-SINGLE] ✅ Using blueprint template prompt: ${category}_${mood} (${finalPrompt.split(/\s+/).length} words)`)
             }
             
-            // Get template prompt from grid library
-            const { getBlueprintPhotoshootPrompt } = await import("@/lib/maya/blueprint-photoshoot-templates")
-            finalPrompt = getBlueprintPhotoshootPrompt(category, mood)
-            console.log(`[v0] [GENERATE-SINGLE] [TEMPLATE DEBUG] Final selection: ${category}_${mood} (source: ${sourceUsed})`)
-            console.log(`[v0] [GENERATE-SINGLE] ✅ Using blueprint template prompt: ${category}_${mood} (${finalPrompt.split(/\s+/).length} words)`)
-            
-            // Save the template prompt to the database for future use
-            await sql`
-              UPDATE feed_posts
-              SET prompt = ${finalPrompt}
-              WHERE id = ${postId}
-            `
+            // Save the generated prompt to the database for future use
+            if (finalPrompt) {
+              await sql`
+                UPDATE feed_posts
+                SET prompt = ${finalPrompt}
+                WHERE id = ${postId}
+              `
+            }
           }
         } catch (promptError) {
           console.error(`[v0] [GENERATE-SINGLE] Error generating prompt:`, promptError)

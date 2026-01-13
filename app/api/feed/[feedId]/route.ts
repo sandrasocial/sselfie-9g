@@ -32,10 +32,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ feed
 
     if (feedId === "latest") {
       // Reuse the already-authenticated user object (no need to re-authenticate)
-      // Get user's most recent feed layout
+      // Get user's most recent feed layout (exclude preview feeds - only show full feeds in grid view)
       const feedLayouts = await sql`
         SELECT * FROM feed_layouts
         WHERE user_id = ${user.id}
+          AND (layout_type IS NULL OR layout_type != 'preview')
         ORDER BY created_at DESC
         LIMIT 1
       ` as any[]

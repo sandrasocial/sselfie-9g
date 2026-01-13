@@ -98,7 +98,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
     }
   }, [effectiveFeedId, mutateFeedList])
 
-  // FIX 2: Client-side fallback - Expand feed from 1 post to 9 posts for paid users
+  // Phase 4: Client-side fallback - Expand feed from 1 post to 12 posts for paid users (3x4 grid)
   const [isExpandingFeed, setIsExpandingFeed] = useState(false)
   useEffect(() => {
     async function expandFeedIfNeeded() {

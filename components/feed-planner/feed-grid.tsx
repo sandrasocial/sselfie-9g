@@ -87,8 +87,9 @@ export default function FeedGrid({
 
   // Phase 5.1: Determine if generation button should be shown
   const showGenerateButton = access?.canGenerateImages ?? false
+  // Phase 4: Changed from grid-cols-3 (9 posts) to grid-cols-4 (12 posts) for paid blueprint
   return (
-    <div className="grid grid-cols-3 gap-[2px] md:gap-1">
+    <div className="grid grid-cols-3 md:grid-cols-4 gap-[2px] md:gap-1">
       {posts.map((post: any, index: number) => {
         const postStatus = postStatuses.find(p => p.id === post.id)
         // For manual feeds, NEVER show generating state

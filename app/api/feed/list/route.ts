@@ -62,7 +62,27 @@ export async function GET(req: NextRequest) {
       ])
     )
 
-    // Format feeds with counts
+    // Get preview image URLs for preview feeds (feed_posts[0].image_url)
+    const previewFeedIds = feedLayouts
+      .filter((f: any) => f.layout_type === 'preview')
+      .map((f: any) => f.id)
+    
+    let previewImagesMap = new Map()
+    if (previewFeedIds.length > 0) {
+      const previewImages = await sql`
+        SELECT feed_layout_id, image_url
+        FROM feed_posts
+        WHERE feed_layout_id = ANY(${previewFeedIds})
+          AND position = 1
+          AND image_url IS NOT NULL
+      ` as any[]
+      
+      previewImagesMap = new Map(
+        previewImages.map((pi: any) => [pi.feed_layout_id, pi.image_url])
+      )
+    }
+
+    // Format feeds with counts and layout_type
     const feeds = feedLayouts.map((feed: any) => {
       const counts = countsMap.get(feed.id) || { post_count: 0, image_count: 0 }
       const title = feed.title || feed.brand_name || `Feed ${feed.id}`
@@ -72,9 +92,11 @@ export async function GET(req: NextRequest) {
         title,
         created_at: feed.created_at,
         status: feed.status,
+        layout_type: feed.layout_type || 'grid_3x3', // Default to grid_3x3 for backward compatibility
         post_count: counts.post_count,
         image_count: counts.image_count,
         display_color: feed.display_color || null,
+        preview_image_url: feed.layout_type === 'preview' ? (previewImagesMap.get(feed.id) || null) : null,
       }
     })
 

@@ -5,6 +5,7 @@ import { Loader2, ArrowRight } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
 import BuyBlueprintModal from "@/components/sselfie/buy-blueprint-modal"
+import FreeModeUpsellModal from "./free-mode-upsell-modal"
 
 interface FeedSinglePlaceholderProps {
   feedId: number
@@ -28,6 +29,8 @@ export default function FeedSinglePlaceholder({
 }: FeedSinglePlaceholderProps) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [showBlueprintModal, setShowBlueprintModal] = useState(false)
+  const [showUpsellModal, setShowUpsellModal] = useState(false)
+  const [creditsUsed, setCreditsUsed] = useState<number | null>(null)
 
   // Phase 5.3.3: Handle image generation for free users
   const handleGenerateImage = async () => {
@@ -64,6 +67,28 @@ export default function FeedSinglePlaceholder({
         await onGenerateImage()
       }
       
+      // Check credits again after generation (in case user just used their 2nd credit)
+      // This will trigger the upsell modal if they've now used 2+ credits
+      setTimeout(async () => {
+        try {
+          const response = await fetch("/api/credits/balance")
+          if (response.ok) {
+            const data = await response.json()
+            const totalUsed = data.total_used || 0
+            setCreditsUsed(totalUsed)
+            
+            // Show upsell modal if 2+ credits used (after generation completes)
+            if (totalUsed >= 2 && !showUpsellModal) {
+              setTimeout(() => {
+                setShowUpsellModal(true)
+              }, 2000) // Wait a bit after generation starts
+            }
+          }
+        } catch (error) {
+          console.error("[Feed Single Placeholder] Error checking credits after generation:", error)
+        }
+      }, 3000) // Check 3 seconds after generation starts
+      
       // DON'T set isGenerating to false here - let the polling detect when image is ready
       // The component will check post.generation_status and post.prediction_id to show loading
     } catch (error) {
@@ -93,6 +118,39 @@ export default function FeedSinglePlaceholder({
   // Check if post has an image
   const hasImage = post?.image_url
 
+  // Check user's credit usage for upsell modal (only check once on mount)
+  useEffect(() => {
+    const checkCredits = async () => {
+      // Only check if we haven't checked yet
+      if (creditsUsed !== null) return
+      
+      try {
+        const response = await fetch("/api/credits/balance")
+        if (response.ok) {
+          const data = await response.json()
+          const totalUsed = data.total_used || 0
+          // Check total_used from user_credits table
+          setCreditsUsed(totalUsed)
+          
+          // Show upsell modal if 2+ credits used (only show once)
+          if (totalUsed >= 2) {
+            // Small delay to ensure UI is ready
+            setTimeout(() => {
+              setShowUpsellModal(true)
+            }, 1000)
+          }
+        }
+      } catch (error) {
+        console.error("[Feed Single Placeholder] Error checking credits:", error)
+        // Set to 0 on error to prevent infinite retries
+        setCreditsUsed(0)
+      }
+    }
+    
+    checkCredits()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Only run once on mount
+
   // Debug logging
   useEffect(() => {
     console.log("[Feed Single Placeholder] Post state:", {
@@ -103,8 +161,9 @@ export default function FeedSinglePlaceholder({
       predictionId: post?.prediction_id,
       isPostGenerating,
       isGenerating,
+      creditsUsed,
     })
-  }, [post, hasImage, isPostGenerating, isGenerating])
+  }, [post, hasImage, isPostGenerating, isGenerating, creditsUsed])
 
   return (
     <div className="px-4 md:px-8 py-12">
@@ -174,22 +233,40 @@ export default function FeedSinglePlaceholder({
             </p>
           </div>
           
-          {/* Phase 9: Upsell CTA Button - Now uses embedded checkout modal */}
-          <Button
-            onClick={() => setShowBlueprintModal(true)}
-            className="w-full bg-stone-900 hover:bg-stone-800 text-white font-medium shadow-lg hover:shadow-xl transition-all"
-            size="default"
-          >
-            Unlock Full Feed Planner
-            <ArrowRight className="w-4 h-4 ml-2" />
-          </Button>
+          {/* Conditional: Show upsell modal trigger if credits used >= 2, otherwise show generic button */}
+          {creditsUsed !== null && creditsUsed >= 2 ? (
+            <Button
+              onClick={() => setShowUpsellModal(true)}
+              className="w-full bg-stone-900 hover:bg-stone-800 text-white font-medium shadow-lg hover:shadow-xl transition-all"
+              size="default"
+            >
+              Continue Creating
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          ) : (
+            <Button
+              onClick={() => setShowBlueprintModal(true)}
+              className="w-full bg-stone-900 hover:bg-stone-800 text-white font-medium shadow-lg hover:shadow-xl transition-all"
+              size="default"
+            >
+              Unlock Full Feed Planner
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* Embedded checkout modal */}
+      {/* Embedded checkout modal (for users with < 2 credits) */}
       <BuyBlueprintModal
         open={showBlueprintModal}
         onOpenChange={setShowBlueprintModal}
+        feedId={feedId}
+      />
+
+      {/* Credit-based upsell modal (for users with 2+ credits used) */}
+      <FreeModeUpsellModal
+        open={showUpsellModal}
+        onOpenChange={setShowUpsellModal}
         feedId={feedId}
       />
     </div>

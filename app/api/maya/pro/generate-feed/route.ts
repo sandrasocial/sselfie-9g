@@ -113,10 +113,11 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    if (strategy.posts.length !== 9) {
-      console.error(`[generate-feed-pro] ❌ Strategy must have exactly 9 posts, found ${strategy.posts.length}`)
+    // Support both 9 posts (Maya Feed Chat) and 12 posts (Blueprint)
+    if (strategy.posts.length !== 9 && strategy.posts.length !== 12) {
+      console.error(`[generate-feed-pro] ❌ Strategy must have 9 or 12 posts, found ${strategy.posts.length}`)
       return NextResponse.json(
-        { error: `Strategy must contain exactly 9 posts, found ${strategy.posts.length}` },
+        { error: `Strategy must contain exactly 9 posts (Maya Feed Chat) or 12 posts (Blueprint), found ${strategy.posts.length}` },
         { status: 400 }
       )
     }
@@ -124,7 +125,8 @@ export async function POST(req: NextRequest) {
     // Validate each post has required fields
     const invalidPosts: number[] = []
     strategy.posts.forEach((post, index) => {
-      if (!post.position || post.position < 1 || post.position > 9) {
+      // Support positions 1-12 (Blueprint) and 1-9 (Maya Feed Chat)
+      if (!post.position || post.position < 1 || post.position > 12) {
         invalidPosts.push(index + 1)
       }
       if (!post.visualDirection || post.visualDirection.trim() === '') {

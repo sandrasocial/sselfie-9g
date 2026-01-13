@@ -6,7 +6,7 @@ import { sql } from "@/lib/neon"
 /**
  * POST /api/feed/expand-for-paid
  * 
- * FIX 2: Client-side fallback to expand feed from 1 post to 9 posts
+ * Phase 4: Client-side fallback to expand feed from 1 post to 12 posts (3x4 grid)
  * Used when webhook expansion fails or user upgrades before webhook completes
  */
 export async function POST(req: NextRequest) {
@@ -44,8 +44,8 @@ export async function POST(req: NextRequest) {
     const existingPositions = existingPosts.map((p: any) => p.position)
     console.log(`[FEED EXPANSION] Feed ${feedId} has posts at positions:`, existingPositions)
 
-    // Create posts for missing positions 2-9
-    const positionsToCreate = [2, 3, 4, 5, 6, 7, 8, 9].filter(
+    // Phase 4: Create posts for missing positions 2-12 (extended from 2-9 for 3x4 grid)
+    const positionsToCreate = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].filter(
       (pos) => !existingPositions.includes(pos)
     )
 
@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       positionsCreated: [],
-      message: "Feed already has all 9 positions",
+      message: "Feed already has all 12 positions",
     })
   } catch (error) {
     console.error("[FEED EXPANSION] Error:", error)

@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react"
 import useSWR, { useSWRConfig } from "swr"
 import FeedViewScreen from "@/components/feed-planner/feed-view-screen"
 import UnifiedOnboardingWizard from "@/components/onboarding/unified-onboarding-wizard"
+import WelcomeWizard from "@/components/feed-planner/welcome-wizard"
 import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 import UnifiedLoading from "@/components/sselfie/unified-loading"
 
@@ -25,6 +26,7 @@ interface FeedPlannerClientProps {
  */
 export default function FeedPlannerClient({ access: accessProp, userId, userName }: FeedPlannerClientProps) {
   const [showWizard, setShowWizard] = useState(false)
+  const [showWelcomeWizard, setShowWelcomeWizard] = useState(false)
   const [isCheckingWizard, setIsCheckingWizard] = useState(true)
   const { mutate } = useSWRConfig()
 
@@ -73,6 +75,16 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
       // Prevent excessive re-fetching
       revalidateOnReconnect: false,
       revalidateIfStale: false,
+    }
+  )
+
+  // Fetch welcome wizard status (for paid blueprint users)
+  const { data: welcomeStatus, isLoading: isLoadingWelcome } = useSWR(
+    "/api/feed-planner/welcome-status",
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 60000,
     }
   )
 
@@ -137,6 +149,24 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
     setShowWizard(false)
     setIsCheckingWizard(false)
   }, [isLoadingOnboarding, isLoadingAccess, onboardingStatus, access]) // React to access and onboardingStatus changes
+
+  // Check if welcome wizard should be shown (for paid blueprint users only)
+  useEffect(() => {
+    // Only check for paid blueprint users
+    if (!access || !access.isPaidBlueprint) {
+      return
+    }
+
+    // Wait for welcome status to load
+    if (isLoadingWelcome || !welcomeStatus) {
+      return
+    }
+
+    // Show welcome wizard if not shown yet
+    if (!welcomeStatus.welcomeShown) {
+      setShowWelcomeWizard(true)
+    }
+  }, [access, welcomeStatus, isLoadingWelcome])
 
   // Handle wizard completion
   const handleWizardComplete = async (data: {
@@ -262,7 +292,31 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
     )
   }
 
-  // Show Feed Planner
-  // Always pass onOpenWizard so wizard button is visible in header (for free users to check/edit their answers)
-  return <FeedViewScreen access={access} onOpenWizard={handleOpenWizard} />
+  // Handle welcome wizard completion
+  const handleWelcomeWizardComplete = async () => {
+    // Mark welcome wizard as shown
+    await fetch("/api/feed-planner/welcome-status", {
+      method: "POST",
+    })
+    
+    // Close wizard
+    setShowWelcomeWizard(false)
+    
+    // Refresh welcome status
+    await mutate("/api/feed-planner/welcome-status")
+  }
+
+  // Show Feed Planner with welcome wizard overlay if needed
+  return (
+    <>
+      <FeedViewScreen access={access} onOpenWizard={handleOpenWizard} />
+      {showWelcomeWizard && (
+        <WelcomeWizard
+          open={showWelcomeWizard}
+          onComplete={handleWelcomeWizardComplete}
+          onDismiss={handleWelcomeWizardComplete}
+        />
+      )}
+    </>
+  )
 }

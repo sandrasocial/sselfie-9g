@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     }
     const title = body.title || `My Feed - ${new Date().toLocaleDateString()}`
 
-    // Create feed layout
+    // Create feed layout with layout_type: 'grid_3x4' for full feeds
     // Set status to 'saved' so feed appears immediately in Feed Planner
     // Try with created_by field first, fallback if field doesn't exist
     let feedResult: any[]
@@ -52,6 +52,7 @@ export async function POST(req: NextRequest) {
           username,
           description,
           status,
+          layout_type,
           created_by
         )
         VALUES (
@@ -60,6 +61,7 @@ export async function POST(req: NextRequest) {
           ${user.name?.toLowerCase().replace(/\s+/g, "") || "yourbrand"},
           NULL,
           'saved',
+          'grid_3x4',
           'manual'
         )
         RETURNING *
@@ -74,14 +76,16 @@ export async function POST(req: NextRequest) {
             brand_name,
             username,
             description,
-            status
+            status,
+            layout_type
           )
           VALUES (
             ${user.id},
             ${title},
             ${user.name?.toLowerCase().replace(/\s+/g, "") || "yourbrand"},
             NULL,
-            'saved'
+            'saved',
+            'grid_3x4'
           )
           RETURNING *
         ` as any[]
@@ -131,7 +135,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    console.log(`[v0] Created manual feed ${feedId} with ${posts.length} empty posts for user ${user.id}`)
+    console.log(`[v0] Created full feed ${feedId} with ${posts.length} empty posts for user ${user.id} (layout_type: grid_3x4)`)
 
     return NextResponse.json({
       feedId,
