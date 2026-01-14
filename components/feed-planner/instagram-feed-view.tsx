@@ -527,8 +527,9 @@ export default function InstagramFeedView({ feedId, onBack, access, onOpenWizard
       <div className="pb-20">
         {activeTab === "grid" && (
           <>
-            {/* Phase 4.5: Show single placeholder for free users, full grid for paid users */}
-            {access?.placeholderType === "single" ? (
+            {/* Show single placeholder for preview feeds OR free users, full grid for paid users with full feeds */}
+            {/* Preview feeds (layout_type='preview') always show single placeholder regardless of user access */}
+            {feedData?.feed?.layout_type === 'preview' || access?.placeholderType === "single" ? (
               <FeedSinglePlaceholder
                 feedId={feedId}
                 post={displayPosts?.[0] || null}

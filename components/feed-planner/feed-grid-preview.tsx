@@ -42,7 +42,7 @@ export default function FeedGridPreview({ feedId, posts, onGenerate }: FeedGridP
 
       toast({
         title: "Generating photo",
-        description: "This takes about 30 seconds",
+        description: "This usually takes 1-2 minutes",
       })
 
       // Call refresh callback to trigger polling

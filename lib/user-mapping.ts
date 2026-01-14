@@ -96,6 +96,19 @@ export async function getOrCreateNeonUser(
         )
         user.supabase_user_id = supabaseAuthId
       }
+      // Update display_name if null and we have a name from metadata
+      if (!user.display_name && name) {
+        await retryWithBackoff(
+          () => db`
+          UPDATE users 
+          SET display_name = ${name}, updated_at = NOW()
+          WHERE id = ${user.id}
+        `,
+          5,
+          2000,
+        )
+        user.display_name = name
+      }
       return user
     }
 

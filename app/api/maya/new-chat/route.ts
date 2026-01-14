@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
         dbUser = await getOrCreateNeonUser(
           user.id,
           user.email,
-          user.user_metadata?.display_name || user.email.split("@")[0]
+          user.user_metadata?.name || user.user_metadata?.display_name || user.email.split("@")[0]
         )
         console.log("[v0] User created successfully:", { userId: dbUser.id, email: dbUser.email })
       } catch (createError: any) {

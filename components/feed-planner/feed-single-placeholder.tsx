@@ -133,7 +133,7 @@ export default function FeedSinglePlaceholder({
 
       toast({
         title: "Generating photo",
-        description: "This takes about 30 seconds",
+        description: "This usually takes 1-2 minutes",
       })
 
       // NON-BLOCKING: Call refresh callback without awaiting (don't block UI)
@@ -248,7 +248,7 @@ export default function FeedSinglePlaceholder({
   }, [hasImage, isPostGenerating])
 
   // Show upsell modal AUTOMATICALLY after generation completes (image loaded AND not generating)
-  // Modal shows when user has 0 credits OR has used 2+ credits
+  // Modal shows ONLY when user has 0 credits (not when they have credits available)
   // Timing: First time 10 seconds after generation, then every 5 minutes
   const modalTimerRef = useRef<NodeJS.Timeout | null>(null)
   const recurringTimerRef = useRef<NodeJS.Timeout | null>(null)
@@ -263,13 +263,15 @@ export default function FeedSinglePlaceholder({
       
       const creditsData = await creditsResponse.json()
       const currentBalance = creditsData.balance || 0
-      const totalUsed = creditsData.total_used || 0
       
-      // Only show if user has 0 credits OR has used 2+ credits
-      if (currentBalance > 0 && totalUsed < 2) {
-        console.log("[Feed Single Placeholder] User has credits, skipping automatic modal")
+      // Only show if user has 0 credits (not when they have credits available)
+      if (currentBalance > 0) {
+        console.log("[Feed Single Placeholder] User has credits available, skipping automatic modal")
         return false
       }
+      
+      // User has 0 credits - show modal
+      console.log("[Feed Single Placeholder] User has 0 credits - showing upsell modal")
       
       // Double-check user is free before showing modal
       const accessResponse = await fetch("/api/feed-planner/access")
@@ -289,7 +291,7 @@ export default function FeedSinglePlaceholder({
       }
       
       console.log("[Feed Single Placeholder] ✅ All conditions met - showing upsell modal", isFirstTime ? "(first time)" : "(recurring)")
-      console.log("[Feed Single Placeholder] Credits balance:", currentBalance, "Credits used:", totalUsed)
+      console.log("[Feed Single Placeholder] Credits balance:", currentBalance)
       
       setShowUpsellModal(true)
       hasShownFirstModalRef.current = true
@@ -301,6 +303,7 @@ export default function FeedSinglePlaceholder({
   }
   
   // First time modal trigger (10 seconds after generation completes)
+  // Also triggers when credits reach 0 after generation
   useEffect(() => {
     // Clear any existing timer when conditions change
     if (modalTimerRef.current) {
@@ -328,10 +331,12 @@ export default function FeedSinglePlaceholder({
     if (!shouldShowFirstModal) return
     
     // Wait 10 seconds after generation completes, then check and show modal
+    // This will check current balance and only show if credits are 0
     modalTimerRef.current = setTimeout(() => {
       checkAndShowModal(true).then((shown) => {
         if (shown) {
           // After first modal is shown, set up recurring timer (5 minutes)
+          // This will re-check balance every 5 minutes and show modal if credits reach 0
           recurringTimerRef.current = setInterval(() => {
             checkAndShowModal(false)
           }, 5 * 60 * 1000) // 5 minutes = 300,000ms
@@ -527,7 +532,7 @@ export default function FeedSinglePlaceholder({
                 <div className="text-center space-y-3 px-4">
                   <Loader2 className="w-8 h-8 text-stone-600 animate-spin mx-auto" />
                   <div className="text-sm font-medium text-stone-900">Generating your preview feed</div>
-                  <div className="text-xs font-light text-stone-600">This takes about 30 seconds...</div>
+                  <div className="text-xs font-light text-stone-600">This usually takes 1-2 minutes...</div>
                 </div>
               </div>
             )}

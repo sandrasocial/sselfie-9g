@@ -5,8 +5,8 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { ChevronLeft, MoreHorizontal, Plus, Settings, HelpCircle } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
-import FeedStyleModal, { type FeedStyle } from "./feed-style-modal"
-import useSWR from "swr"
+import FeedStyleModal, { type FeedStyle, type FeedStyleModalData } from "./feed-style-modal"
+import useSWR, { mutate } from "swr"
 
 interface FeedHeaderProps {
   feedData: any
@@ -37,6 +37,7 @@ export default function FeedHeader({
   const [isCreatingFeed, setIsCreatingFeed] = useState(false)
   const [isCreatingPreviewFeed, setIsCreatingPreviewFeed] = useState(false)
   const [showFeedStyleModal, setShowFeedStyleModal] = useState(false)
+  const [isPreviewFeedModal, setIsPreviewFeedModal] = useState(false) // Track if modal is for preview or full feed
   
   // Fetch user's last feed style from personal brand
   const { data: personalBrandData } = useSWR(
@@ -51,13 +52,49 @@ export default function FeedHeader({
   // Extract last feed style from settings_preference[0]
   const lastFeedStyle: FeedStyle | null = personalBrandData?.data?.settingsPreference?.[0] || null
 
-  const handleCreatePreviewFeed = async () => {
+  const handleCreatePreviewFeed = () => {
+    // Show feed style modal first (same as new feed)
+    setIsPreviewFeedModal(true)
+    setShowFeedStyleModal(true)
+  }
+
+  const handlePreviewFeedStyleConfirm = async (data: FeedStyleModalData) => {
+    setShowFeedStyleModal(false)
     setIsCreatingPreviewFeed(true)
+    
     try {
+      // First, update personal brand if advanced options were changed
+      if (data.visualAesthetic || data.fashionStyle) {
+        try {
+          const updateResponse = await fetch('/api/profile/personal-brand', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+              visualAesthetic: data.visualAesthetic,
+              fashionStyle: data.fashionStyle,
+            }),
+          })
+          
+          if (updateResponse.ok) {
+            // Revalidate SWR cache to refresh the modal data
+            mutate('/api/profile/personal-brand')
+          }
+        } catch (error) {
+          console.warn('[Feed Header] Failed to update personal brand:', error)
+          // Continue with feed creation even if personal brand update fails
+        }
+      }
+
       const response = await fetch('/api/feed/create-free-example', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
+        body: JSON.stringify({ 
+          feedStyle: data.feedStyle,
+          visualAesthetic: data.visualAesthetic,
+          fashionStyle: data.fashionStyle,
+        }),
       })
 
       if (!response.ok) {
@@ -65,10 +102,10 @@ export default function FeedHeader({
         throw new Error(error.error || 'Failed to create preview feed')
       }
 
-      const data = await response.json()
+      const responseData = await response.json()
       
       // Navigate to the new preview feed
-      router.push(`/feed-planner?feedId=${data.feedId}`)
+      router.push(`/feed-planner?feedId=${responseData.feedId}`)
       
       toast({
         title: "Preview feed created",
@@ -83,24 +120,73 @@ export default function FeedHeader({
       })
     } finally {
       setIsCreatingPreviewFeed(false)
+      setIsPreviewFeedModal(false)
     }
   }
 
   const handleCreateNewFeedClick = () => {
     // Show feed style modal first
+    setIsPreviewFeedModal(false)
     setShowFeedStyleModal(true)
   }
 
-  const handleFeedStyleConfirm = async (feedStyle: FeedStyle) => {
+  const handleFeedStyleConfirm = async (data: FeedStyleModalData) => {
+    // Route to appropriate handler based on modal type
+    if (isPreviewFeedModal) {
+      await handlePreviewFeedStyleConfirm(data)
+    } else {
+      await handleFullFeedStyleConfirm(data)
+    }
+  }
+
+  const handleFullFeedStyleConfirm = async (data: FeedStyleModalData) => {
     setShowFeedStyleModal(false)
     setIsCreatingFeed(true)
     
     try {
+      // First, update personal brand if advanced options were changed
+      if (data.visualAesthetic || data.fashionStyle) {
+        try {
+          console.log('[Feed Header] Updating personal brand:', {
+            visualAesthetic: data.visualAesthetic,
+            fashionStyle: data.fashionStyle,
+          })
+          
+          const updateResponse = await fetch('/api/profile/personal-brand', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({
+              visualAesthetic: data.visualAesthetic,
+              fashionStyle: data.fashionStyle,
+            }),
+          })
+          
+          if (updateResponse.ok) {
+            const updateResult = await updateResponse.json()
+            console.log('[Feed Header] Personal brand updated successfully:', updateResult)
+            // Revalidate SWR cache to refresh the modal data
+            await mutate('/api/profile/personal-brand')
+            console.log('[Feed Header] SWR cache revalidated')
+          } else {
+            const errorData = await updateResponse.json().catch(() => ({}))
+            console.error('[Feed Header] Failed to update personal brand:', updateResponse.status, errorData)
+          }
+        } catch (error) {
+          console.error('[Feed Header] Error updating personal brand:', error)
+          // Continue with feed creation even if personal brand update fails
+        }
+      }
+
       const response = await fetch('/api/feed/create-manual', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ feedStyle }),
+        body: JSON.stringify({ 
+          feedStyle: data.feedStyle,
+          visualAesthetic: data.visualAesthetic,
+          fashionStyle: data.fashionStyle,
+        }),
       })
 
       if (!response.ok) {
@@ -108,10 +194,10 @@ export default function FeedHeader({
         throw new Error(error.error || 'Failed to create feed')
       }
 
-      const data = await response.json()
+      const responseData = await response.json()
       
       // Navigate to the new feed
-      router.push(`/feed-planner?feedId=${data.feedId}`)
+      router.push(`/feed-planner?feedId=${responseData.feedId}`)
       
       toast({
         title: "Feed created",
@@ -280,23 +366,26 @@ export default function FeedHeader({
                   </>
                 )}
               </button>
-              <button
-                onClick={handleCreateNewFeedClick}
-                disabled={isCreatingFeed}
-                className="flex-1 md:flex-none md:px-8 bg-stone-900 hover:bg-stone-800 text-white text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
-              >
-                {isCreatingFeed ? (
-                  <>
-                    <span className="animate-spin">⏳</span>
-                    <span>Creating...</span>
-                  </>
-                ) : (
-                  <>
-                    <Plus size={16} />
-                    <span>New Feed</span>
-                  </>
-                )}
-              </button>
+              {/* Hide "New Feed" button for free users - only show for paid blueprint users */}
+              {access?.isPaidBlueprint && !access?.isFree && (
+                <button
+                  onClick={handleCreateNewFeedClick}
+                  disabled={isCreatingFeed}
+                  className="flex-1 md:flex-none md:px-8 bg-stone-900 hover:bg-stone-800 text-white text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+                >
+                  {isCreatingFeed ? (
+                    <>
+                      <span className="animate-spin">⏳</span>
+                      <span>Creating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus size={16} />
+                      <span>New Feed</span>
+                    </>
+                  )}
+                </button>
+              )}
               {!access?.isFree && onCreateHighlights && (
                 <button
                   onClick={onCreateHighlights}
@@ -379,10 +468,16 @@ export default function FeedHeader({
       {/* Feed Style Selection Modal */}
       <FeedStyleModal
         open={showFeedStyleModal}
-        onOpenChange={setShowFeedStyleModal}
+        onOpenChange={(open) => {
+          setShowFeedStyleModal(open)
+          if (!open) {
+            setIsPreviewFeedModal(false)
+          }
+        }}
         onConfirm={handleFeedStyleConfirm}
         defaultFeedStyle={lastFeedStyle}
-        isLoading={isCreatingFeed}
+        isLoading={isCreatingFeed || isCreatingPreviewFeed}
+        isPreviewFeed={isPreviewFeedModal}
       />
     </div>
   )

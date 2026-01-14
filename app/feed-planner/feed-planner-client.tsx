@@ -78,14 +78,12 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
     dedupingInterval: 60000,
   })
 
-  // Get user's display name (prefer name from userInfo, fallback to userName prop, then email, then "there")
+  // Get user's display name (prefer name from userInfo, fallback to userName prop, then "there")
   const displayName = userInfo?.name && !userInfo.name.includes('@') 
     ? userInfo.name 
     : (userName && !userName.includes('@') 
       ? userName 
-      : (userInfo?.email && !userInfo.email.includes('@') 
-        ? userInfo.email.split('@')[0] 
-        : "there"))
+      : "there")
 
   // Fetch existing personal brand data (always fetch, SWR handles caching)
   // This is the single source of truth - no localStorage needed
@@ -319,27 +317,62 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
       futureVision: data.futureVision || "",
       visualAesthetic: data.visualAesthetic
         ? (typeof data.visualAesthetic === "string"
-            ? JSON.parse(data.visualAesthetic)
-            : data.visualAesthetic)
+            ? (() => {
+                try {
+                  return JSON.parse(data.visualAesthetic)
+                } catch (e) {
+                  console.warn("[Feed Planner Client] Failed to parse visualAesthetic:", e)
+                  return Array.isArray(data.visualAesthetic) ? data.visualAesthetic : []
+                }
+              })()
+            : Array.isArray(data.visualAesthetic)
+            ? data.visualAesthetic
+            : [])
         : [],
       feedStyle: data.settingsPreference
         ? (typeof data.settingsPreference === "string"
-            ? JSON.parse(data.settingsPreference)[0] || ""
+            ? (() => {
+                try {
+                  const parsed = JSON.parse(data.settingsPreference)
+                  return Array.isArray(parsed) ? parsed[0] || "" : parsed || ""
+                } catch (e) {
+                  console.warn("[Feed Planner Client] Failed to parse settingsPreference:", e)
+                  return ""
+                }
+              })()
             : Array.isArray(data.settingsPreference)
             ? data.settingsPreference[0] || ""
             : "")
         : "",
       fashionStyle: data.fashionStyle
         ? (typeof data.fashionStyle === "string"
-            ? JSON.parse(data.fashionStyle)
-            : data.fashionStyle)
+            ? (() => {
+                try {
+                  return JSON.parse(data.fashionStyle)
+                } catch (e) {
+                  console.warn("[Feed Planner Client] Failed to parse fashionStyle:", e)
+                  return Array.isArray(data.fashionStyle) ? data.fashionStyle : []
+                }
+              })()
+            : Array.isArray(data.fashionStyle)
+            ? data.fashionStyle
+            : [])
         : [],
       brandInspiration: data.brandInspiration || "",
       inspirationLinks: data.inspirationLinks || "",
       contentPillars: data.contentPillars
         ? (typeof data.contentPillars === "string"
-            ? JSON.parse(data.contentPillars)
-            : data.contentPillars)
+            ? (() => {
+                try {
+                  return JSON.parse(data.contentPillars)
+                } catch (e) {
+                  console.warn("[Feed Planner Client] Failed to parse contentPillars:", e)
+                  return Array.isArray(data.contentPillars) ? data.contentPillars : []
+                }
+              })()
+            : Array.isArray(data.contentPillars)
+            ? data.contentPillars
+            : [])
         : [],
       // Note: selfieImages are loaded separately via /api/images?type=avatar
       // They're not stored in user_personal_brand, so we don't include them here

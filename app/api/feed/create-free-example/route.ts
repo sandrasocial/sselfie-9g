@@ -11,6 +11,8 @@ import { getFeedPlannerAccess } from "@/lib/feed-planner/access-control"
  * Creates a feed with ONE post for preview feed generation (9:16 aspect ratio)
  * Available to all users (free and paid) - credit check already implemented in generation
  * Sets layout_type: 'preview' to distinguish from full feeds
+ * 
+ * Accepts optional feedStyle in request body to override user's default style
  */
 export async function POST(req: NextRequest) {
   try {
@@ -27,34 +29,49 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
+    // Parse request body for feedStyle, visualAesthetic, and fashionStyle (optional)
+    let requestedFeedStyle: string | null = null
+    let requestedVisualAesthetic: string[] | null = null
+    let requestedFashionStyle: string[] | null = null
+    
+    try {
+      const body = await req.json().catch(() => ({}))
+      
+      // Parse feedStyle
+      if (body.feedStyle && typeof body.feedStyle === 'string') {
+        requestedFeedStyle = body.feedStyle.toLowerCase().trim()
+        // Validate feedStyle
+        const validStyles = ['luxury', 'minimal', 'beige']
+        if (!validStyles.includes(requestedFeedStyle)) {
+          console.warn(`[v0] Invalid feedStyle requested: ${requestedFeedStyle}, using default`)
+          requestedFeedStyle = null
+        }
+      }
+      
+      // Parse visualAesthetic (array)
+      if (body.visualAesthetic && Array.isArray(body.visualAesthetic) && body.visualAesthetic.length > 0) {
+        requestedVisualAesthetic = body.visualAesthetic.map((v: string) => v.toLowerCase().trim())
+        console.log(`[v0] Requested visualAesthetic:`, requestedVisualAesthetic)
+      }
+      
+      // Parse fashionStyle (array)
+      if (body.fashionStyle && Array.isArray(body.fashionStyle) && body.fashionStyle.length > 0) {
+        requestedFashionStyle = body.fashionStyle.map((v: string) => v.toLowerCase().trim())
+        console.log(`[v0] Requested fashionStyle:`, requestedFashionStyle)
+      }
+    } catch (e) {
+      // No body or invalid JSON - continue with default behavior
+      console.log(`[v0] No body in request, using user's default`)
+    }
+
     // Removed free-only restriction - all users can create preview feeds
     // Credit check is already implemented in generate-single endpoint
 
     const sql = getDb()
 
-    // Check if user already has a feed
-    const existingFeeds = await sql`
-      SELECT id FROM feed_layouts
-      WHERE user_id = ${user.id}
-      ORDER BY created_at DESC
-      LIMIT 1
-    ` as any[]
-
-    if (existingFeeds.length > 0) {
-      // User already has a feed, return it
-      const feedId = existingFeeds[0].id
-      const posts = await sql`
-        SELECT * FROM feed_posts
-        WHERE feed_layout_id = ${feedId}
-        ORDER BY position ASC
-      ` as any[]
-
-      return NextResponse.json({
-        feedId,
-        feed: existingFeeds[0],
-        posts,
-      })
-    }
+    // ALWAYS create a NEW preview feed - never reuse existing feeds
+    // Users should be able to create multiple preview feeds with different styles
+    // This allows them to test different feed styles without losing previous work
 
     // Get wizard context from user_personal_brand (unified wizard) - PRIMARY SOURCE
     // Use template-based prompts from grid library based on user's current style choices
@@ -75,8 +92,17 @@ export async function POST(req: NextRequest) {
         let category: "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional" = "professional"
         let mood: "luxury" | "minimal" | "beige" = "minimal"
         
-        // Extract feedStyle from settings_preference
-        if (personalBrand[0].settings_preference) {
+        // Extract feedStyle from settings_preference (unless overridden by request)
+        if (requestedFeedStyle) {
+          // Use requested feedStyle from modal selection
+          feedStyle = requestedFeedStyle
+          feedStyleToStore = feedStyle
+          if (feedStyle === "luxury" || feedStyle === "minimal" || feedStyle === "beige") {
+            mood = feedStyle as "luxury" | "minimal" | "beige"
+          }
+          console.log(`[v0] Using requested feedStyle: ${feedStyle}`)
+        } else if (personalBrand[0].settings_preference) {
+          // Fall back to user's saved preference
           try {
             const settings = typeof personalBrand[0].settings_preference === 'string'
               ? JSON.parse(personalBrand[0].settings_preference)
@@ -94,8 +120,18 @@ export async function POST(req: NextRequest) {
           }
         }
         
-        // Extract category from visual_aesthetic
-        if (personalBrand[0].visual_aesthetic) {
+        // Extract category from visual_aesthetic (use requested if provided, otherwise saved)
+        if (requestedVisualAesthetic && requestedVisualAesthetic.length > 0) {
+          // Use first requested visual aesthetic as category
+          const firstAesthetic = requestedVisualAesthetic[0]
+          const validCategories: Array<"luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"> = 
+            ["luxury", "minimal", "beige", "warm", "edgy", "professional"]
+          if (validCategories.includes(firstAesthetic as any)) {
+            category = firstAesthetic as "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"
+            console.log(`[v0] Using requested visualAesthetic for category: ${category}`)
+          }
+        } else if (personalBrand[0].visual_aesthetic) {
+          // Fall back to saved visual aesthetic
           try {
             const aesthetics = typeof personalBrand[0].visual_aesthetic === 'string'
               ? JSON.parse(personalBrand[0].visual_aesthetic)
@@ -148,13 +184,15 @@ export async function POST(req: NextRequest) {
         
         if (blueprintSubscriber.length > 0) {
           const formData = blueprintSubscriber[0].form_data || {}
-          const feedStyle = blueprintSubscriber[0].feed_style || null
-          feedStyleToStore = feedStyle // Store for feed_layouts
+          // Use requested feedStyle if provided, otherwise use saved feed_style
+          const savedFeedStyle = blueprintSubscriber[0].feed_style || null
+          const finalFeedStyle = requestedFeedStyle || savedFeedStyle
+          feedStyleToStore = finalFeedStyle // Store for feed_layouts
           
           // Get category from form_data.vibe (same as old blueprint)
           const category = (formData.vibe || "professional") as "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"
-          // Get mood from feed_style (same as old blueprint)
-          const mood = (feedStyle || "minimal") as "luxury" | "minimal" | "beige"
+          // Get mood from feed_style (use requested or saved)
+          const mood = (finalFeedStyle || "minimal") as "luxury" | "minimal" | "beige"
           
           // Get template prompt from grid library
           const { BLUEPRINT_PHOTOSHOOT_TEMPLATES, MOOD_MAP } = await import("@/lib/maya/blueprint-photoshoot-templates")

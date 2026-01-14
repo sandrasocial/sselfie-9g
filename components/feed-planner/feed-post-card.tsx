@@ -325,7 +325,7 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
               <Wand2 size={24} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-stone-900" strokeWidth={2} />
             </div>
             <p className="text-sm text-stone-700 font-light tracking-wider">Creating your image...</p>
-            <p className="text-xs text-stone-500 mt-1">This takes about 30 seconds</p>
+            <p className="text-xs text-stone-500 mt-1">This usually takes 1-2 minutes</p>
           </div>
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center p-8 relative">

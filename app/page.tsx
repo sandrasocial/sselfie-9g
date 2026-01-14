@@ -63,7 +63,7 @@ export default async function Home() {
       // If user not found and we have email, try to sync/create
       if (!neonUser && user.email) {
         try {
-          neonUser = await getOrCreateNeonUser(user.id, user.email, user.user_metadata?.display_name)
+          neonUser = await getOrCreateNeonUser(user.id, user.email, user.user_metadata?.name || user.user_metadata?.display_name)
         } catch (error) {
           console.error("[v0] Error syncing user with database:", error)
         }

@@ -96,7 +96,7 @@ export async function GET() {
     return NextResponse.json({
       id: user.id,
       email: user.email,
-      name: user.name || user.email?.split("@")[0],
+      name: user.name || null,
       avatar: user.avatar,
       bio: user.bio,
       instagram: null,

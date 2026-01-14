@@ -50,7 +50,7 @@ export default function FeedGrid({
     // Show toast immediately for instant feedback (don't wait for API)
     toast({
       title: "Generating photo",
-      description: "This takes about 30 seconds",
+      description: "This usually takes 1-2 minutes",
     })
 
     try {

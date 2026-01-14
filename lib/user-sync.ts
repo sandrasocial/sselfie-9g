@@ -47,7 +47,7 @@ export async function getCurrentNeonUser(): Promise<any | null> {
     }
 
     if (authUser.email) {
-      const displayName = authUser.user_metadata?.display_name || authUser.email.split("@")[0]
+      const displayName = authUser.user_metadata?.name || authUser.user_metadata?.display_name || authUser.email.split("@")[0]
       return await getOrCreateNeonUser(authUser.id, authUser.email, displayName)
     }
 

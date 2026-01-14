@@ -345,8 +345,45 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
           const fullTemplate = BLUEPRINT_PHOTOSHOOT_TEMPLATES[templateKey]
           
           if (fullTemplate) {
-            // Extract scene for this position
-            finalPrompt = buildSingleImagePrompt(fullTemplate, post.position)
+            // Get user's fashion style for dynamic injection
+            const personalBrandForStyle = await sql`
+              SELECT fashion_style
+              FROM user_personal_brand
+              WHERE user_id = ${user.id}
+              ORDER BY created_at DESC
+              LIMIT 1
+            ` as any[]
+            
+            // Get user's fashion style and map to vibe library format
+            const { mapFashionStyleToVibeLibrary } = await import("@/lib/feed-planner/fashion-style-mapper")
+            let fashionStyle = 'business' // Default fashion style
+            if (personalBrandForStyle && personalBrandForStyle.length > 0 && personalBrandForStyle[0].fashion_style) {
+              try {
+                const style = typeof personalBrandForStyle[0].fashion_style === 'string'
+                  ? personalBrandForStyle[0].fashion_style
+                  : String(personalBrandForStyle[0].fashion_style)
+                
+                // Map wizard style to vibe library style
+                fashionStyle = mapFashionStyleToVibeLibrary(style)
+              } catch (e) {
+                console.warn(`[v0] [GENERATE-SINGLE] Failed to parse fashion_style:`, e)
+              }
+            }
+            
+            // Build vibe key for dynamic injection (e.g., 'luxury_dark_moody')
+            const vibe = `${category}_${moodMapped}`
+            
+            // Inject dynamic content into template before extracting scene
+            const { injectDynamicContentWithRotation } = await import("@/lib/feed-planner/dynamic-template-injector")
+            const injectedTemplate = await injectDynamicContentWithRotation(
+              fullTemplate,
+              vibe,
+              fashionStyle,
+              user.id.toString()
+            )
+            
+            // Extract scene for this position from injected template
+            finalPrompt = buildSingleImagePrompt(injectedTemplate, post.position)
             
             // Save extracted scene to current post
             await sql`
@@ -355,7 +392,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
               WHERE id = ${postId}
             `
             
-            console.log(`[v0] [GENERATE-SINGLE] ✅ Extracted and saved scene ${post.position} from template ${templateKey}`)
+            console.log(`[v0] [GENERATE-SINGLE] ✅ Extracted and saved scene ${post.position} from injected template ${templateKey} (vibe: ${vibe}, style: ${fashionStyle})`)
           } else {
             throw new Error(`Template ${templateKey} not found`)
           }
@@ -489,12 +526,61 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
             }
             
             // Get template prompt from grid library
-            const { getBlueprintPhotoshootPrompt } = await import("@/lib/maya/blueprint-photoshoot-templates")
-            finalPrompt = getBlueprintPhotoshootPrompt(category, mood)
+            const { getBlueprintPhotoshootPrompt, MOOD_MAP } = await import("@/lib/maya/blueprint-photoshoot-templates")
+            let fullTemplate = getBlueprintPhotoshootPrompt(category, mood)
             console.log(`[v0] [GENERATE-SINGLE] [TEMPLATE DEBUG] Final selection: ${category}_${mood} (source: ${sourceUsed})`)
-            console.log(`[v0] [GENERATE-SINGLE] ✅ Using blueprint template prompt: ${category}_${mood} (${finalPrompt.split(/\s+/).length} words)`)
+            console.log(`[v0] [GENERATE-SINGLE] ✅ Using blueprint template prompt: ${category}_${mood} (${fullTemplate.split(/\s+/).length} words)`)
             
-            // Save the template prompt to the database for future use
+            // Inject dynamic content (outfits, locations, accessories) with rotation
+            // Map mood to vibe library format (e.g., "luxury" -> "dark_moody", "minimal" -> "light_minimalistic")
+            const moodMapped = MOOD_MAP[mood as keyof typeof MOOD_MAP] || "dark_moody"
+            const vibeKey = `${category}_${moodMapped}` // e.g., "luxury_dark_moody", "minimal_light_minimalistic"
+            
+            // Get user's fashion style from personal brand or default to "business"
+            const { mapFashionStyleToVibeLibrary } = await import("@/lib/feed-planner/fashion-style-mapper")
+            let fashionStyle = 'business' // Default fashion style
+            const personalBrandForStyle = await sql`
+              SELECT fashion_style
+              FROM user_personal_brand
+              WHERE user_id = ${user.id}
+              ORDER BY created_at DESC
+              LIMIT 1
+            ` as any[]
+            
+            if (personalBrandForStyle && personalBrandForStyle.length > 0 && personalBrandForStyle[0].fashion_style) {
+              try {
+                const styles = typeof personalBrandForStyle[0].fashion_style === 'string'
+                  ? JSON.parse(personalBrandForStyle[0].fashion_style)
+                  : personalBrandForStyle[0].fashion_style
+                
+                if (Array.isArray(styles) && styles.length > 0) {
+                  fashionStyle = mapFashionStyleToVibeLibrary(styles[0])
+                } else if (typeof personalBrandForStyle[0].fashion_style === 'string') {
+                  fashionStyle = mapFashionStyleToVibeLibrary(personalBrandForStyle[0].fashion_style)
+                }
+              } catch (e) {
+                console.warn(`[v0] [GENERATE-SINGLE] Failed to parse fashion_style:`, e)
+              }
+            }
+            
+            console.log(`[v0] [GENERATE-SINGLE] Using vibe: ${vibeKey}, fashion style: ${fashionStyle}`)
+            
+            // Inject dynamic content into template
+            const { injectDynamicContentWithRotation } = await import("@/lib/feed-planner/dynamic-template-injector")
+            const injectedTemplate = await injectDynamicContentWithRotation(
+              fullTemplate,
+              vibeKey,
+              fashionStyle,
+              user.id.toString()
+            )
+            
+            // Extract scene for this position from injected template
+            const { buildSingleImagePrompt } = await import("@/lib/feed-planner/build-single-image-prompt")
+            finalPrompt = buildSingleImagePrompt(injectedTemplate, post.position)
+            
+            console.log(`[v0] [GENERATE-SINGLE] ✅ Injected dynamic content and extracted frame ${post.position} (${finalPrompt.split(/\s+/).length} words)`)
+            
+            // Save the extracted scene prompt to the database
             await sql`
               UPDATE feed_posts
               SET prompt = ${finalPrompt}

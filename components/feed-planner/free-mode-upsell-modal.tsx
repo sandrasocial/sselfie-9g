@@ -17,9 +17,10 @@ interface FreeModeUpsellModalProps {
  * Free Mode Upsell Modal
  * 
  * Shows after free user has used 2 credits
- * Offers two options:
- * 1. Buy Credits - Link to credit top-up
- * 2. Unlock Full Blueprint - Open checkout modal
+ * Offers three options:
+ * 1. Test More (10 credits) - $9.99 - Low friction entry point
+ * 2. Unlock Full Blueprint - $47 - Best value for serious creators
+ * 3. Get More Credits (100 credits) - $45 - For power users
  */
 export default function FreeModeUpsellModal({
   open,
@@ -29,11 +30,10 @@ export default function FreeModeUpsellModal({
   const router = useRouter()
   const [showBlueprintModal, setShowBlueprintModal] = useState(false)
 
-  const handleBuyCredits = () => {
-    // Close upsell modal and navigate to credits page
-    // Don't show any other modals to prevent duplicates
+  const handleTestMore = () => {
+    // Close upsell modal and navigate to credits checkout page with 10-credit pack highlighted
     onOpenChange(false)
-    router.push("/account?tab=credits")
+    router.push("/checkout/credits")
   }
 
   const handleUnlockBlueprint = () => {
@@ -43,6 +43,12 @@ export default function FreeModeUpsellModal({
     setTimeout(() => {
       setShowBlueprintModal(true)
     }, 100)
+  }
+
+  const handleGetMoreCredits = () => {
+    // Close upsell modal and navigate to credits checkout page
+    onOpenChange(false)
+    router.push("/checkout/credits")
   }
 
   return (
@@ -59,22 +65,22 @@ export default function FreeModeUpsellModal({
           </DialogHeader>
 
           <div className="mt-4 sm:mt-6 space-y-2 sm:space-y-3">
-            {/* Option 1: Buy Credits */}
+            {/* Option 1: Test More (10 credits) - Low friction entry */}
             <Button
-              onClick={handleBuyCredits}
+              onClick={handleTestMore}
               variant="outline"
               className="w-full justify-start h-auto py-3 sm:py-4 px-3 sm:px-4 border-2 hover:border-stone-900 transition-all touch-manipulation"
             >
               <div className="flex items-center gap-2 sm:gap-3 w-full">
                 <div className="flex-1 text-left min-w-0">
-                  <div className="font-medium text-stone-900 text-sm sm:text-base">Buy Credits</div>
-                  <div className="text-xs text-stone-500 mt-0.5 sm:mt-0">Generate more preview feeds</div>
+                  <div className="font-medium text-stone-900 text-sm sm:text-base">Test More</div>
+                  <div className="text-xs text-stone-500 mt-0.5 sm:mt-0">$9.99 • 5 preview feeds</div>
                 </div>
                 <ArrowRight className="w-4 h-4 text-stone-400 flex-shrink-0" />
               </div>
             </Button>
 
-            {/* Option 2: Unlock Full Blueprint */}
+            {/* Option 2: Unlock Full Blueprint - Best value */}
             <Button
               onClick={handleUnlockBlueprint}
               className="w-full justify-start h-auto py-3 sm:py-4 px-3 sm:px-4 bg-stone-900 hover:bg-stone-800 transition-all touch-manipulation"
@@ -85,6 +91,21 @@ export default function FreeModeUpsellModal({
                   <div className="text-xs text-stone-300 mt-0.5 sm:mt-0">$47 • 60 Credits • Full Feed Planner</div>
                 </div>
                 <ArrowRight className="w-4 h-4 text-stone-300 flex-shrink-0" />
+              </div>
+            </Button>
+
+            {/* Option 3: Get More Credits (100 credits) - Power users */}
+            <Button
+              onClick={handleGetMoreCredits}
+              variant="outline"
+              className="w-full justify-start h-auto py-3 sm:py-4 px-3 sm:px-4 border border-stone-200 hover:border-stone-300 transition-all touch-manipulation"
+            >
+              <div className="flex items-center gap-2 sm:gap-3 w-full">
+                <div className="flex-1 text-left min-w-0">
+                  <div className="font-medium text-stone-700 text-sm sm:text-base">Get More Credits</div>
+                  <div className="text-xs text-stone-500 mt-0.5 sm:mt-0">$45 • 100 credits • 50 preview feeds</div>
+                </div>
+                <ArrowRight className="w-4 h-4 text-stone-400 flex-shrink-0" />
               </div>
             </Button>
           </div>

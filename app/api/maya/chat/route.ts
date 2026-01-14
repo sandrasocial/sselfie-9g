@@ -682,7 +682,9 @@ export async function POST(req: Request) {
     if (chatType === "prompt_builder") {
       systemPrompt = PROMPT_BUILDER_SYSTEM
       console.log("[Maya Chat] Using Prompt Builder system prompt")
-    } else if (chatType === "feed-planner" || isFeedTab) {
+    } else if (chatType === "feed-planner" && isFeedTab) {
+      // 🔴 CRITICAL FIX: Only load feed planner context if BOTH conditions are true
+      // This prevents the massive feed planner context (880+ lines) from leaking into regular Maya chat
       // Feed Planner Context: Add visual design guidance for feed creation
       // This context is essential for Maya to understand how to create Instagram feed strategies
       // It provides instructions on post types, visual composition, and feed planning
@@ -709,16 +711,20 @@ export async function POST(req: Request) {
       const config = userSelectedMode === "pro" ? MAYA_PRO_CONFIG : MAYA_CLASSIC_CONFIG
       const unifiedSystemPrompt = getMayaSystemPrompt(config)
       
-      // Combine feed planner context with unified system
-      systemPrompt = getFeedPlannerContextAddon(userSelectedMode) + unifiedSystemPrompt
+      // 🔴 CRITICAL FIX: APPEND feed planner context instead of PREPENDING
+      // This ensures Maya's core personality comes FIRST and isn't overridden
+      // Feed planner context should ADD to Maya's expertise, not replace it
+      systemPrompt = unifiedSystemPrompt + "\n\n" + getFeedPlannerContextAddon(userSelectedMode)
       console.log("[Maya Chat] ✅✅✅ FEED PLANNER AESTHETIC EXPERTISE LOADED ✅✅✅", {
+        chatType,
+        isFeedTab,
         userSelectedMode,
         studioProHeader,
         hasStudioProHeader,
-        isFeedTab,
         systemPromptLength: systemPrompt.length,
         feedContextLength: getFeedPlannerContextAddon(userSelectedMode).length,
         unifiedSystemLength: unifiedSystemPrompt.length,
+        contextOrder: "unified-system-first-then-feed-context",
         message: userSelectedMode === "pro" ? "User selected Pro Mode - all posts will be Pro" :
                  userSelectedMode === "classic" ? "User selected Classic Mode - all posts will be Classic" :
                  "Auto-detect mode per post (default - using Classic Mode config)"
@@ -748,6 +754,18 @@ export async function POST(req: Request) {
       // and MAYA_PROMPT_PHILOSOPHY - no direct import needed
       const config = isStudioProMode ? MAYA_PRO_CONFIG : MAYA_CLASSIC_CONFIG
       systemPrompt = getMayaSystemPrompt(config)
+      
+      // 🔴 CRITICAL: Log when feed planner context is NOT loaded (regular Maya chat)
+      // This helps track if feed planner context is leaking into regular chat
+      console.log("[Maya Chat] ✅ Regular Maya Chat Mode (NO Feed Planner Context)", {
+        chatType,
+        isFeedTab,
+        isStudioProMode,
+        mode: isStudioProMode ? "PRO" : "CLASSIC",
+        systemPromptLength: systemPrompt.length,
+        contextType: "regular-maya-only",
+        warning: isFeedTab && chatType !== "feed-planner" ? "⚠️ isFeedTab=true but chatType is not feed-planner - feed context correctly NOT loaded" : null
+      })
     }
 
     // Add user context to system prompt

@@ -186,11 +186,28 @@ export default function PersonalBrandSection({ userId }: PersonalBrandSectionPro
               transformationStory: brandData.transformationStory || "",
               currentSituation: brandData.currentSituation || "",
               futureVision: (brandData as any).futureVision || "",
-              visualAesthetic: (brandData as any).visualAesthetic || [],
-              feedStyle: (brandData as any).feedStyle || "",
-              fashionStyle: (brandData as any).fashionStyle || [],
+              visualAesthetic: Array.isArray((brandData as any).visualAesthetic)
+                ? (brandData as any).visualAesthetic
+                : typeof (brandData as any).visualAesthetic === "string"
+                  ? JSON.parse((brandData as any).visualAesthetic || "[]")
+                  : [],
+              feedStyle: Array.isArray((brandData as any).settingsPreference) && (brandData as any).settingsPreference.length > 0
+                ? (brandData as any).settingsPreference[0]
+                : typeof (brandData as any).settingsPreference === "string"
+                  ? JSON.parse((brandData as any).settingsPreference || "[]")[0] || ""
+                  : "",
+              fashionStyle: Array.isArray((brandData as any).fashionStyle)
+                ? (brandData as any).fashionStyle
+                : typeof (brandData as any).fashionStyle === "string"
+                  ? JSON.parse((brandData as any).fashionStyle || "[]")
+                  : [],
               brandInspiration: (brandData as any).brandInspiration || "",
               inspirationLinks: (brandData as any).inspirationLinks || "",
+              contentPillars: Array.isArray((brandData as any).contentPillars)
+                ? (brandData as any).contentPillars
+                : typeof (brandData as any).contentPillars === "string"
+                  ? JSON.parse((brandData as any).contentPillars || "[]")
+                  : [],
             }
           : undefined}
         userName={null}

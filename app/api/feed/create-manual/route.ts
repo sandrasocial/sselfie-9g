@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
 
     const sql = getDb()
 
-    // Get optional title and feedStyle from request body
+    // Get optional title, feedStyle, visualAesthetic, and fashionStyle from request body
     let body: any = {}
     try {
       const text = await req.text()
@@ -40,6 +40,17 @@ export async function POST(req: NextRequest) {
     }
     const title = body.title || `My Feed - ${new Date().toLocaleDateString()}`
     const feedStyle = body.feedStyle || null // "luxury", "minimal", or "beige"
+    const visualAesthetic = body.visualAesthetic || null // Array of visual aesthetics
+    const fashionStyle = body.fashionStyle || null // Array of fashion styles
+    
+    // Note: visualAesthetic and fashionStyle are already saved to personal brand by the frontend
+    // We just log them here for reference
+    if (visualAesthetic) {
+      console.log(`[v0] Feed created with visualAesthetic:`, visualAesthetic)
+    }
+    if (fashionStyle) {
+      console.log(`[v0] Feed created with fashionStyle:`, fashionStyle)
+    }
 
     // Create feed layout with layout_type: 'grid_3x3' for full feeds (3x3 grid = 9 posts)
     // Set status to 'saved' so feed appears immediately in Feed Planner
@@ -172,14 +183,17 @@ export async function POST(req: NextRequest) {
     // Extract individual scenes from template and store in each position (paid blueprint users)
     // For paid blueprint: Each position gets its own extracted scene (1-9), NOT the full template
     // The full template is only for free blueprint preview feed
+    // NEW: Uses dynamic injection to inject outfits/locations/accessories from vibe libraries
     if (feedStyle) {
       try {
         const { BLUEPRINT_PHOTOSHOOT_TEMPLATES, MOOD_MAP } = await import("@/lib/maya/blueprint-photoshoot-templates")
         const { buildSingleImagePrompt } = await import("@/lib/feed-planner/build-single-image-prompt")
+        const { injectDynamicContentWithRotation } = await import("@/lib/feed-planner/dynamic-template-injector")
+        const { incrementRotationState } = await import("@/lib/feed-planner/rotation-manager")
         
         // Get category from user_personal_brand or use feedStyle as category
         const personalBrand = await sql`
-          SELECT visual_aesthetic
+          SELECT visual_aesthetic, fashion_style
           FROM user_personal_brand
           WHERE user_id = ${user.id}
           ORDER BY created_at DESC
@@ -201,27 +215,58 @@ export async function POST(req: NextRequest) {
           }
         }
         
+        // Get user's fashion style (defaults to 'business' if not set)
+        const { mapFashionStyleToVibeLibrary } = await import("@/lib/feed-planner/fashion-style-mapper")
+        let fashionStyle = 'business' // Default fashion style
+        if (personalBrand && personalBrand.length > 0 && personalBrand[0].fashion_style) {
+          try {
+            const style = typeof personalBrand[0].fashion_style === 'string'
+              ? personalBrand[0].fashion_style
+              : String(personalBrand[0].fashion_style)
+            
+            // Map wizard style to vibe library style
+            fashionStyle = mapFashionStyleToVibeLibrary(style)
+          } catch (e) {
+            console.warn(`[v0] Failed to parse fashion_style:`, e)
+          }
+        }
+        
         const mood = feedStyle
         const moodMapped = MOOD_MAP[mood as keyof typeof MOOD_MAP] || "light_minimalistic"
         const templateKey = `${category}_${moodMapped}` as keyof typeof BLUEPRINT_PHOTOSHOOT_TEMPLATES
         const fullTemplate = BLUEPRINT_PHOTOSHOOT_TEMPLATES[templateKey]
         
-        console.log(`[v0] Template selection:`, {
+        // Build vibe key for dynamic injection (e.g., 'luxury_dark_moody')
+        const vibe = `${category}_${moodMapped}`
+        
+        console.log(`[v0] Template selection with dynamic injection:`, {
           feedStyle,
           category,
           mood,
           moodMapped,
           templateKey,
+          vibe,
+          fashionStyle,
           hasTemplate: !!fullTemplate,
           templateLength: fullTemplate?.length || 0,
         })
         
         if (fullTemplate) {
           try {
-            // Extract each scene (1-9) from the template and store in respective positions
+            // STEP 1: Inject dynamic content into template (outfits, locations, accessories)
+            const injectedTemplate = await injectDynamicContentWithRotation(
+              fullTemplate,
+              vibe,
+              fashionStyle,
+              user.id.toString()
+            )
+            
+            console.log(`[v0] ✅ Injected dynamic content into template (vibe: ${vibe}, style: ${fashionStyle})`)
+            
+            // STEP 2: Extract each scene (1-9) from the injected template and store in respective positions
             for (let position = 1; position <= 9; position++) {
               try {
-                const extractedScene = buildSingleImagePrompt(fullTemplate, position)
+                const extractedScene = buildSingleImagePrompt(injectedTemplate, position)
                 
                 await sql`
                   UPDATE feed_posts
@@ -229,9 +274,9 @@ export async function POST(req: NextRequest) {
                   WHERE feed_layout_id = ${feedId} AND position = ${position}
                 `
                 
-                console.log(`[v0] ✅ Stored extracted scene ${position} from template ${templateKey} in position ${position}`)
+                console.log(`[v0] ✅ Stored extracted scene ${position} from injected template in position ${position}`)
               } catch (extractError: any) {
-                console.error(`[v0] ❌ Failed to extract scene ${position} from template:`, {
+                console.error(`[v0] ❌ Failed to extract scene ${position} from injected template:`, {
                   error: extractError?.message,
                   position,
                   templateKey,
@@ -240,7 +285,11 @@ export async function POST(req: NextRequest) {
               }
             }
             
-            console.log(`[v0] ✅ Successfully extracted and stored all 9 scenes from template ${templateKey}`)
+            // STEP 3: Increment rotation state after feed creation (ensures next feed gets different content)
+            await incrementRotationState(user.id.toString(), vibe, fashionStyle)
+            console.log(`[v0] ✅ Incremented rotation state for next feed generation (vibe: ${vibe}, style: ${fashionStyle})`)
+            
+            console.log(`[v0] ✅ Successfully extracted and stored all 9 scenes from injected template ${templateKey}`)
           } catch (updateError: any) {
             console.error(`[v0] ❌ Failed to update feed_posts with extracted scenes:`, {
               error: updateError?.message,

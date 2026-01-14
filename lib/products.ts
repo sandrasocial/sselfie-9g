@@ -29,6 +29,14 @@ export interface PricingProduct {
 // Credit top-up packages for existing members
 export const CREDIT_TOPUP_PACKAGES: CreditPackage[] = [
   {
+    id: "credits_topup_10",
+    name: "10 Credits",
+    displayName: "Starter Pack",
+    credits: 10,
+    priceInCents: 999, // $9.99
+    description: "Perfect for testing 5 preview feeds",
+  },
+  {
     id: "credits_topup_100",
     name: "100 Extra Credits",
     displayName: "100 Credits Top-Up",

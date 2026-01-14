@@ -699,7 +699,7 @@ export default function FeedPreviewCard({
       if (data.queuedCount > 0) {
         toast({
           title: "Generating feed images",
-          description: `Started generating ${data.queuedCount} of ${data.totalPosts} images. This takes about 30 seconds per image.`,
+          description: `Started generating ${data.queuedCount} of ${data.totalPosts} images. This usually takes 1-2 minutes per image.`,
         })
       }
       
