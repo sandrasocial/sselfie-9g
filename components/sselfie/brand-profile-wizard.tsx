@@ -90,6 +90,8 @@ const FASHION_STYLES = [
   { id: "business", name: "Business Professional", description: "Polished, corporate, formal" },
   { id: "trendy", name: "Trendy/Fashion-Forward", description: "Current, stylish, bold" },
   { id: "timeless", name: "Timeless Classic", description: "Elegant, enduring, sophisticated" },
+  { id: "bohemian", name: "Bohemian", description: "Free-spirited, artistic, flowing" },
+  { id: "athletic", name: "Athletic/Athleisure", description: "Sporty, comfortable, active" },
 ]
 
 const COMMUNICATION_VOICES = [
@@ -449,7 +451,7 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
           </div>
 
           <div className="space-y-6">
-            <h2 className="font-serif text-3xl md:text-4xl font-extralight tracking-[0.1em] text-stone-950">
+            <h2 className="font-serif text-3xl md:text-4xl font-extralight tracking-widest text-stone-950">
               {step.title}
             </h2>
 
@@ -588,7 +590,7 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                                   <p className="text-xs font-light text-stone-600 mt-1">{setting.description}</p>
                                 </div>
                                 {isSelected && (
-                                  <div className="w-5 h-5 bg-stone-950 rounded-full flex items-center justify-center flex-shrink-0">
+                                  <div className="w-5 h-5 bg-stone-950 rounded-full flex items-center justify-center shrink-0">
                                     <div className="w-2.5 h-2.5 bg-white rounded-sm" />
                                   </div>
                                 )}
@@ -620,7 +622,7 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                                   <p className="text-xs font-light text-stone-600 mt-1">{style.description}</p>
                                 </div>
                                 {isSelected && (
-                                  <div className="w-5 h-5 bg-stone-950 rounded-full flex items-center justify-center flex-shrink-0">
+                                  <div className="w-5 h-5 bg-stone-950 rounded-full flex items-center justify-center shrink-0">
                                     <div className="w-2.5 h-2.5 bg-white rounded-sm" />
                                   </div>
                                 )}
