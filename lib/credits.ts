@@ -245,64 +245,132 @@ export async function deductCredits(
       return { success: true, newBalance: currentBalance }
     }
 
-    // Get current balance
-    const currentBalance = await getUserCredits(userId)
-    console.log("[v0] [CREDITS] Current balance before deduction:", currentBalance)
+    // Atomic credit deduction using UPDATE with WHERE clause
+    // This prevents race conditions without requiring interactive transactions
+    let attempts = 0
+    const maxAttempts = 3
+    let success = false
+    let finalBalance = 0
+    let finalError: string | undefined
 
-    // Check if user has enough credits
-    if (currentBalance < amount) {
-      console.log("[v0] [CREDITS] Insufficient credits:", {
-        currentBalance,
-        required: amount,
-        shortfall: amount - currentBalance,
-      })
-      return {
-        success: false,
-        newBalance: currentBalance,
-        error: `Insufficient credits. You have ${currentBalance} credits but need ${amount}.`,
+    while (attempts < maxAttempts && !success) {
+      try {
+        // Optimistic check (not locked, but helps avoid unnecessary UPDATE attempts)
+        const currentBalance = await getUserCredits(userId)
+        
+        if (currentBalance < amount) {
+          return {
+            success: false,
+            newBalance: currentBalance,
+            error: `Insufficient credits. You have ${currentBalance} credits but need ${amount}.`,
+          }
+        }
+        
+        // Atomic UPDATE: only succeeds if balance >= amount
+        // This prevents race condition - if two requests run concurrently,
+        // only one will succeed (the one that sees balance >= amount)
+        const updateResult = await sql`
+          UPDATE user_credits
+          SET 
+            balance = balance - ${amount},
+            total_used = total_used + ${amount},
+            updated_at = NOW()
+          WHERE user_id = ${userId}
+            AND balance >= ${amount}
+          RETURNING balance
+        `
+        
+        // If UPDATE affected 0 rows, either:
+        // 1. Balance was insufficient (shouldn't happen after check, but possible with race)
+        // 2. Concurrent update changed balance between check and update
+        if (updateResult.length === 0) {
+          attempts++
+          
+          // Re-check balance to determine reason
+          const recheckBalance = await getUserCredits(userId)
+          
+          if (recheckBalance < amount) {
+            // Insufficient credits (race condition: another request deducted first)
+            return {
+              success: false,
+              newBalance: recheckBalance,
+              error: `Insufficient credits. You have ${recheckBalance} credits but need ${amount}.`,
+            }
+          }
+          
+          // Concurrent update detected - retry
+          if (attempts < maxAttempts) {
+            const delayMs = 100 * Math.pow(2, attempts - 1) // 100ms, 200ms, 400ms
+            console.log(`[v0] [CREDITS] ⏳ Concurrent update detected, retrying in ${delayMs}ms...`)
+            await new Promise(resolve => setTimeout(resolve, delayMs))
+            continue // Retry
+          } else {
+            finalError = `Failed to deduct credits after ${maxAttempts} attempts due to concurrent updates`
+            console.error("[v0] [CREDITS] ❌ All retry attempts exhausted")
+            break
+          }
+        }
+        
+        // UPDATE succeeded - get new balance
+        const newBalance = updateResult[0].balance
+        
+        // Record transaction (after successful UPDATE)
+        // ⚠️ RISK: If INSERT fails here, credits are deducted but no ledger record exists
+        // This is rare but possible. Mitigation: Log error prominently, repair tool available
+        try {
+          await sql`
+            INSERT INTO credit_transactions (
+              user_id, amount, transaction_type, description, 
+              reference_id, balance_after
+            )
+            VALUES (
+              ${userId}, ${-amount}, ${type}, ${description},
+              ${referenceId || null}, ${newBalance}
+            )
+          `
+        } catch (insertError: any) {
+          // Credits already deducted, but transaction log failed
+          // Log prominently for manual repair if needed
+          console.error(`[v0] [CREDITS] ❌ CRITICAL: Credits deducted but transaction log failed:`, {
+            userId,
+            amount,
+            newBalance,
+            error: insertError.message,
+            referenceId,
+          })
+          // Continue - credits are deducted, user can use them
+          // Admin can repair transaction log later using repair tool
+        }
+        
+        finalBalance = newBalance
+        success = true
+        
+        console.log("[v0] [CREDITS] ✅ Credits deducted successfully. New balance:", newBalance)
+        
+        const { invalidateCreditCache } = await import("./credits-cached")
+        await invalidateCreditCache(userId)
+        
+      } catch (error: any) {
+        attempts++
+        console.error(`[v0] [CREDITS] ❌ Deduction attempt ${attempts} failed:`, error.message)
+        
+        if (attempts >= maxAttempts) {
+          finalError = `Failed to deduct credits after ${maxAttempts} attempts: ${error.message}`
+          console.error("[v0] [CREDITS] ❌ All retry attempts exhausted")
+        } else {
+          // Exponential backoff: 100ms, 200ms, 400ms
+          const delayMs = 100 * Math.pow(2, attempts - 1)
+          console.log(`[v0] [CREDITS] ⏳ Retrying in ${delayMs}ms...`)
+          await new Promise(resolve => setTimeout(resolve, delayMs))
+        }
       }
     }
 
-    const newBalance = currentBalance - amount
+    if (!success) {
+      return { success: false, newBalance: 0, error: finalError || "Failed to deduct credits" }
+    }
 
-    console.log("[v0] [CREDITS] ⚠️ DEDUCTING CREDITS:", {
-      userId,
-      type,
-      amount,
-      currentBalance,
-      newBalance,
-      description,
-      timestamp: new Date().toISOString(),
-    })
-
-    // Update balance
-    await sql`
-      UPDATE user_credits
-      SET 
-        balance = ${newBalance},
-        total_used = total_used + ${amount},
-        updated_at = NOW()
-      WHERE user_id = ${userId}
-    `
-
-    // Record transaction (negative amount for usage)
-    await sql`
-      INSERT INTO credit_transactions (
-        user_id, amount, transaction_type, description, 
-        reference_id, balance_after
-      )
-      VALUES (
-        ${userId}, ${-amount}, ${type}, ${description},
-        ${referenceId || null}, ${newBalance}
-      )
-    `
-
-    console.log("[v0] [CREDITS] ✅ Credits deducted successfully. New balance:", newBalance)
-
-    const { invalidateCreditCache } = await import("./credits-cached")
-    await invalidateCreditCache(userId)
-
-    return { success: true, newBalance }
+    return { success: true, newBalance: finalBalance }
   } catch (error) {
     console.error("[v0] [CREDITS] ❌ Error deducting credits:", error)
     return { success: false, newBalance: 0, error: "Failed to deduct credits" }

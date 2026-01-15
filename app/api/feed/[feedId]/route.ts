@@ -111,73 +111,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ feed
     const feedLayout = feedLayouts[0]
     console.log("[v0] [FEED API] Feed layout found:", feedLayout.id, "user_id:", feedLayout.user_id, "layout_type:", feedLayout.layout_type)
 
-    // ⚠️ CRITICAL: Prevent preview feeds from being displayed in paid blueprint grid
-    // Preview feeds (layout_type: 'preview') should only be shown in free mode
-    // If a paid user tries to access a preview feed, redirect to their latest full feed
-    if (feedLayout.layout_type === 'preview') {
-      console.log("[v0] [FEED API] ⚠️ Preview feed detected - checking user access level")
-      
-      // Check if user has paid blueprint access
-      const { getFeedPlannerAccess } = await import("@/lib/feed-planner/access-control")
-      const access = await getFeedPlannerAccess(user.id)
-      
-      if (access?.isPaidBlueprint) {
-        console.log("[v0] [FEED API] ⚠️ Paid user trying to access preview feed - redirecting to latest full feed")
-        
-        // Get user's most recent full feed (exclude preview feeds)
-        const fullFeeds = await sql`
-          SELECT * FROM feed_layouts
-          WHERE user_id = ${user.id}
-            AND (layout_type IS NULL OR layout_type != 'preview')
-          ORDER BY created_at DESC
-          LIMIT 1
-        ` as any[]
-        
-        if (fullFeeds.length > 0) {
-          // Return the full feed instead
-          const fullFeed = fullFeeds[0]
-          const fullFeedPosts = await sql`
-            SELECT * FROM feed_posts
-            WHERE feed_layout_id = ${fullFeed.id}
-            ORDER BY position ASC
-          ` as any[]
-          
-          const bios = await sql`
-            SELECT * FROM instagram_bios
-            WHERE feed_layout_id = ${fullFeed.id}
-            LIMIT 1
-          ` as any[]
-          
-          const highlights = await sql`
-            SELECT * FROM instagram_highlights
-            WHERE feed_layout_id = ${fullFeed.id}
-            ORDER BY created_at ASC
-          ` as any[]
-          
-          const userDisplayName = user.display_name || user.name || user.email?.split("@")[0] || "User"
-          
-          console.log("[v0] [FEED API] ✅ Redirected paid user from preview feed to full feed:", fullFeed.id)
-          
-          return Response.json({
-            feed: fullFeed,
-            posts: fullFeedPosts || [],
-            bio: bios && bios.length > 0 ? bios[0] : null,
-            highlights: highlights || [],
-            userDisplayName,
-            redirectedFromPreview: true, // Flag to indicate redirect happened
-          })
-        } else {
-          // No full feed exists - return error or empty state
-          console.log("[v0] [FEED API] ⚠️ Paid user has no full feeds - returning empty state")
-          return Response.json({ 
-            exists: false,
-            error: "Preview feeds are not available in paid mode. Please create a new feed.",
-            requiresNewFeed: true,
-          })
-        }
-      }
-      // If user is free, allow preview feed access (existing behavior)
-    }
+    // Preview feeds (layout_type: 'preview') are available to all users (free and paid)
+    // All users can create and access preview feeds to test different styles
 
     // Get feed posts
     let feedPosts = await sql`

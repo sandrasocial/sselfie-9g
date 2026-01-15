@@ -30,6 +30,9 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
   const [isCheckingWizard, setIsCheckingWizard] = useState(true)
   // State to track if we should open wizard at step 4 (visual style selection)
   const [wizardInitialStep, setWizardInitialStep] = useState<number | undefined>(undefined)
+  // State to track user's choice from preview feed step (must be before conditional returns)
+  const [userChosePreviewStyle, setUserChosePreviewStyle] = useState<boolean | null>(null)
+  const [showFeedStyleModal, setShowFeedStyleModal] = useState(false)
   const { mutate } = useSWRConfig()
   
   // 🔴 CRITICAL: Track if welcome wizard has been auto-shown in this session
@@ -453,19 +456,28 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
   // Handle "Use Preview Style" - create feed with existing data
   const handleUsePreviewStyle = async () => {
     console.log("[Welcome Wizard] User chose to use preview style")
+    setUserChosePreviewStyle(true)
     // The existing onboarding data will be used when creating the feed
-    // We just need to trigger feed creation - this happens automatically
-    // when the user completes onboarding or when they navigate to feed planner
-    // For now, we'll just close the welcome wizard and let the normal flow continue
+    // Continue with tutorial (skip style selection step)
   }
 
-  // Handle "Choose New Style" - open onboarding wizard at step 4 (visual style)
+  // Handle "Choose New Style" - open feed style picker modal (not full wizard)
   const handleChooseNewStyle = () => {
-    console.log("[Welcome Wizard] User chose to select new style - opening wizard at step 4")
-    // Step 4 is the visual style selection step (0-indexed: welcome=0, business=1, audience=2, story=3, visual=4)
-    setWizardInitialStep(4)
+    console.log("[Welcome Wizard] User chose to select new style - opening feed style picker modal")
+    setUserChosePreviewStyle(false)
+    // Close welcome wizard and open feed style modal
     setShowWelcomeWizard(false)
-    setShowWizard(true)
+    setShowFeedStyleModal(true)
+  }
+
+  // Handle feed style selection from modal
+  const handleFeedStyleSelected = async (feedStyle: string) => {
+    console.log("[Welcome Wizard] Feed style selected:", feedStyle)
+    setShowFeedStyleModal(false)
+    // After style selection, continue with tutorial (skip style selection step)
+    // The style is already saved to personal brand via FeedStyleModal
+    // Reopen welcome wizard to continue tutorial
+    setShowWelcomeWizard(true)
   }
 
   // Show Feed Planner with welcome wizard overlay if needed
@@ -475,6 +487,9 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
         access={access} 
         onOpenWizard={handleOpenWizard}
         onOpenWelcomeWizard={access?.isPaidBlueprint ? handleOpenWelcomeWizard : undefined}
+        controlledFeedStyleModal={showFeedStyleModal}
+        onFeedStyleModalChange={setShowFeedStyleModal}
+        onFeedStyleSelected={handleFeedStyleSelected}
       />
       {showWelcomeWizard && (
         <WelcomeWizard
@@ -483,6 +498,7 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
           onDismiss={handleWelcomeWizardComplete}
           onUsePreviewStyle={handleUsePreviewStyle}
           onChooseNewStyle={handleChooseNewStyle}
+          userChosePreviewStyle={userChosePreviewStyle}
         />
       )}
     </>

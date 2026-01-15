@@ -7,7 +7,7 @@ import InstagramFeedView from "./instagram-feed-view"
 import { ArrowLeft, ImageIcon } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import UnifiedLoading from "@/components/sselfie/unified-loading"
-import FeedStyleModal, { type FeedStyle } from "./feed-style-modal"
+import FeedStyleModal, { type FeedStyle, type FeedStyleModalData } from "./feed-style-modal"
 import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
@@ -17,6 +17,9 @@ interface FeedViewScreenProps {
   access?: FeedPlannerAccess // Phase 1.2: Access control object (required)
   onOpenWizard?: () => void // Callback to open onboarding wizard
   onOpenWelcomeWizard?: () => void // Callback to open welcome wizard (for paid blueprint users)
+  controlledFeedStyleModal?: boolean // Controlled modal state (for welcome wizard)
+  onFeedStyleModalChange?: (open: boolean) => void // Callback when modal state changes (for welcome wizard)
+  onFeedStyleSelected?: (feedStyle: string) => void // Callback when feed style is selected (for welcome wizard)
 }
 
 /**
@@ -32,12 +35,25 @@ interface FeedViewScreenProps {
  * When no feedId is provided, automatically fetches the latest feed.
  * Shows placeholder state if no feed exists.
  */
-export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp, onOpenWizard, onOpenWelcomeWizard }: FeedViewScreenProps = {}) {
+export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp, onOpenWizard, onOpenWelcomeWizard, controlledFeedStyleModal, onFeedStyleModalChange, onFeedStyleSelected }: FeedViewScreenProps = {}) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isCreatingManual, setIsCreatingManual] = useState(false)
   const [isCreatingFreeExample, setIsCreatingFreeExample] = useState(false)
-  const [showFeedStyleModal, setShowFeedStyleModal] = useState(false)
+  const [localFeedStyleModal, setLocalFeedStyleModal] = useState(false)
+
+  // Use controlled state if provided, otherwise use local state
+  const showFeedStyleModal = controlledFeedStyleModal !== undefined ? controlledFeedStyleModal : localFeedStyleModal
+  
+  const setShowFeedStyleModal = (open: boolean) => {
+    if (controlledFeedStyleModal !== undefined) {
+      // Parent controls the modal - notify parent
+      onFeedStyleModalChange?.(open)
+    } else {
+      // Local state - update directly
+      setLocalFeedStyleModal(open)
+    }
+  }
   
   // Fetch user's last feed style from personal brand
   const { data: personalBrandData } = useSWR(
@@ -252,8 +268,16 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
     setShowFeedStyleModal(true)
   }
 
-  const handleFeedStyleConfirm = async (feedStyle: FeedStyle) => {
+  const handleFeedStyleConfirm = async (modalData: FeedStyleModalData) => {
     setShowFeedStyleModal(false)
+    
+    // If called from welcome wizard, just notify parent and return
+    if (onFeedStyleSelected) {
+      onFeedStyleSelected(modalData.feedStyle)
+      return
+    }
+    
+    // Otherwise, create a new feed (normal flow)
     setIsCreatingManual(true)
     
     try {
@@ -261,7 +285,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ feedStyle }),
+        body: JSON.stringify({ feedStyle: modalData.feedStyle }),
       })
 
       if (!response.ok) {
@@ -277,7 +301,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
       }
       
       // Navigate to the new feed
-      router.push(`/feed-planner?feedId=${data.feedId}`)
+      router.push(`/feed-planner?feedId=${responseData.feedId}`)
       
       toast({
         title: "Feed created",
@@ -436,7 +460,13 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
       {/* Feed Style Selection Modal */}
       <FeedStyleModal
         open={showFeedStyleModal}
-        onOpenChange={setShowFeedStyleModal}
+        onOpenChange={(open) => {
+          setShowFeedStyleModal(open)
+          // Also notify parent if callback provided
+          if (onOpenFeedStyleModal) {
+            onOpenFeedStyleModal(open)
+          }
+        }}
         onConfirm={handleFeedStyleConfirm}
         defaultFeedStyle={lastFeedStyle}
         isLoading={isCreatingManual}

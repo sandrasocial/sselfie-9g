@@ -43,7 +43,12 @@ test.describe('Debug: Onboarding Wizard', () => {
     await page.fill('input#name', testName)
     await page.fill('input#email', testEmail)
     await page.fill('input#password', testPassword)
-    await page.click('button[type="submit"]:has-text("Sign Up")')
+    
+    // Wait for button to be enabled (user check completes)
+    const submitButton = page.locator('button[type="submit"]')
+    await expect(submitButton).toBeEnabled({ timeout: 10000 })
+    await expect(submitButton).toHaveText('Sign Up', { timeout: 5000 })
+    await submitButton.click()
 
     // Wait for redirect
     await page.waitForURL(/\/studio|\/auth\/sign-up-success|\/feed-planner/, { timeout: 15000 })

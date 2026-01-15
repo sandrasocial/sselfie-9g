@@ -5,6 +5,8 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import Image from "next/image"
+import { Button } from "@/components/ui/button"
+import LoadingSpinner from "@/components/sselfie/loading-spinner"
 
 interface SuccessContentProps {
   initialUserInfo: any
@@ -76,7 +78,10 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
   // FIX 3: Poll access status before redirecting (wait for webhook to complete)
   const [isPollingAccess, setIsPollingAccess] = useState(false)
   const [pollAttempts, setPollAttempts] = useState(0)
-  const MAX_POLL_ATTEMPTS = 30 // 30 attempts × 2s = 60s timeout
+  const MAX_POLL_ATTEMPTS = 60 // 60 attempts × 2s = 120s timeout
+  const [pollingMessage, setPollingMessage] = useState("Processing your payment...")
+  const [timeRemaining, setTimeRemaining] = useState(120)
+  const [showTimeoutActions, setShowTimeoutActions] = useState(false)
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -120,35 +125,85 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
         })
 
         if (data.isPaidBlueprint) {
-          // Webhook completed! Redirect now
-          console.log('[SUCCESS PAGE] Paid access confirmed, redirecting...')
+          // Webhook completed! Get access token and redirect to paid blueprint page
+          console.log('[SUCCESS PAGE] Paid access confirmed, fetching access token...')
           setIsPollingAccess(false)
-          setTimeout(() => {
-            router.push('/feed-planner?purchase=success')
-          }, 500)
-        } else {
-          // Webhook not done yet, continue polling
-          setPollAttempts((prev) => prev + 1)
-
-          if (pollAttempts >= MAX_POLL_ATTEMPTS) {
-            // Timeout - redirect anyway, user can refresh
-            console.log('[SUCCESS PAGE] Polling timeout, redirecting anyway...')
-            setIsPollingAccess(false)
+          setPollingMessage("Access granted! Redirecting...")
+          
+          // Fetch access token from subscriber by email
+          try {
+            const email = userInfo?.email || initialEmail
+            if (email) {
+              const tokenResponse = await fetch(`/api/blueprint/get-access-token?email=${encodeURIComponent(email)}`)
+              const tokenData = await tokenResponse.json()
+              
+              if (tokenData.accessToken) {
+                setTimeout(() => {
+                  router.push(`/blueprint/paid?access=${tokenData.accessToken}&purchase=success`)
+                }, 500)
+              } else {
+                // Fallback: redirect to feed planner
+                setTimeout(() => {
+                  router.push('/feed-planner?purchase=success')
+                }, 500)
+              }
+            } else {
+              setTimeout(() => {
+                router.push('/feed-planner?purchase=success')
+              }, 500)
+            }
+          } catch (err) {
+            console.error('[SUCCESS PAGE] Error fetching access token:', err)
+            // Fallback: redirect to feed planner
             setTimeout(() => {
-              router.push('/feed-planner?purchase=success&refresh=needed')
+              router.push('/feed-planner?purchase=success')
             }, 500)
           }
+        } else {
+          // Webhook not done yet, continue polling
+          setPollAttempts((prev) => {
+            const newAttempts = prev + 1
+            
+            // Update message based on progress (using new attempt count)
+            const remaining = 120 - (newAttempts * 2)
+            setTimeRemaining(Math.max(0, remaining))
+
+            if (newAttempts < 20) {
+              setPollingMessage("Processing your payment...")
+            } else if (newAttempts < 40) {
+              setPollingMessage("Payment confirmed, granting access...")
+            } else {
+              setPollingMessage("Finalizing your access...")
+            }
+
+            if (newAttempts >= MAX_POLL_ATTEMPTS) {
+              // Timeout - show manual actions
+              console.log('[SUCCESS PAGE] Polling timeout after 120 seconds')
+              setIsPollingAccess(false)
+              setShowTimeoutActions(true)
+              setPollingMessage("Payment processing is taking longer than expected.")
+            }
+            
+            return newAttempts
+          })
         }
       } catch (error) {
         console.error('[SUCCESS PAGE] Polling error:', error)
-        setPollAttempts((prev) => prev + 1)
+        setPollAttempts((prev) => {
+          const newAttempts = prev + 1
+          
+          // Update message based on progress
+          const remaining = 120 - (newAttempts * 2)
+          setTimeRemaining(Math.max(0, remaining))
 
-        if (pollAttempts >= MAX_POLL_ATTEMPTS) {
-          setIsPollingAccess(false)
-          setTimeout(() => {
-            router.push('/feed-planner?purchase=success&refresh=needed')
-          }, 500)
-        }
+          if (newAttempts >= MAX_POLL_ATTEMPTS) {
+            setIsPollingAccess(false)
+            setShowTimeoutActions(true)
+            setPollingMessage("Payment processing is taking longer than expected.")
+          }
+          
+          return newAttempts
+        })
       }
     }
 
@@ -159,10 +214,66 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
     pollAccessStatus()
 
     return () => clearInterval(interval)
-  }, [isPollingAccess, isAuthenticated, purchaseType, pollAttempts, router])
+  }, [isPollingAccess, isAuthenticated, purchaseType, pollAttempts, router, initialEmail, userInfo])
 
   // Decision 2: Removed access token polling - authenticated users redirect via checkAuth
   // Unauthenticated users will see account creation form (same as one-time session)
+
+  // Show polling status
+  if (isPollingAccess && purchaseType === "paid_blueprint") {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <LoadingSpinner size="lg" />
+        <p className="text-lg font-medium text-stone-900">{pollingMessage}</p>
+        <p className="text-sm text-stone-600">
+          {timeRemaining > 0 ? `Estimated time remaining: ${timeRemaining}s` : "Please wait..."}
+        </p>
+        <div className="w-64 bg-stone-200 rounded-full h-2">
+          <div 
+            className="bg-stone-900 h-2 rounded-full transition-all duration-1000"
+            style={{ width: `${(pollAttempts / MAX_POLL_ATTEMPTS) * 100}%` }}
+          />
+        </div>
+      </div>
+    )
+  }
+
+  // Show timeout actions
+  if (showTimeoutActions && purchaseType === "paid_blueprint") {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-6 p-6">
+        <div className="text-center space-y-4">
+          <h2 className="text-2xl font-medium text-stone-900">
+            Payment Processing
+          </h2>
+          <p className="text-stone-600 max-w-md">
+            Your payment was successful, but access is still being processed. 
+            This usually completes within a few minutes.
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Button 
+            onClick={() => window.location.reload()}
+            variant="default"
+          >
+            Refresh Status
+          </Button>
+          <Button 
+            onClick={() => router.push('/feed-planner?purchase=success')}
+            variant="outline"
+          >
+            Continue to Feed Planner
+          </Button>
+        </div>
+        <p className="text-sm text-stone-500">
+          If access is not available after 5 minutes, please{" "}
+          <a href="mailto:support@sselfie.ai" className="underline">
+            contact support
+          </a>
+        </p>
+      </div>
+    )
+  }
 
   const handleCompleteAccount = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -615,6 +726,33 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
                   <span className="text-xs sm:text-sm text-stone-500 font-light tracking-wider uppercase">Email</span>
                   <span className="text-sm sm:text-base text-stone-900 font-light">
                     {userInfo.email || initialEmail}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs sm:text-sm text-stone-500 font-light tracking-wider uppercase">Status</span>
+                  <span className="text-sm sm:text-base text-stone-700 font-light">Active</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-center">
+              <button
+                onClick={() => router.push("/maya")}
+                className="bg-stone-950 text-stone-50 px-8 sm:px-12 py-3 sm:py-4 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 min-h-[44px]"
+              >
+                Continue
+              </button>
+              <p className="text-[10px] sm:text-xs text-stone-500 font-light mt-4 sm:mt-6">
+                A confirmation email has been sent to {userInfo.email || initialEmail}
+              </p>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
                   </span>
                 </div>
                 <div className="flex justify-between items-center">

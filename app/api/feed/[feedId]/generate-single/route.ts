@@ -255,6 +255,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
     if (generationMode === 'pro') {
       console.log("[v0] [GENERATE-SINGLE] 🎨 Pro Mode post detected - routing to Nano Banana Pro")
       
+      // CRITICAL FIX: Mark post as generating IMMEDIATELY before any processing
+      // This ensures frontend shows loading state right away, even if template extraction takes time
+      await sql`
+        UPDATE feed_posts
+        SET generation_status = 'generating',
+            updated_at = NOW()
+        WHERE id = ${postId}
+      `
+      console.log(`[v0] [GENERATE-SINGLE] ✅ Marked post ${postId} as generating immediately`)
+      
       // Fetch user's avatar images for Pro Mode
       const avatarImages = await sql`
         SELECT image_url, display_order, uploaded_at
@@ -292,14 +302,23 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
         LIMIT 1
       `
       
+      // 🔴 CRITICAL: Check if this is a preview feed FIRST (before access checks)
+      // Preview feeds use full template (all 9 scenes) for ALL users (free and paid)
+      const isPreviewFeed = feedLayout?.layout_type === 'preview'
+      
       // For paid blueprint users: Each position should already have its extracted scene prompt
       // If not, extract it from the template using the current feed's feed_style
       // The full template is NOT stored in position 1 for paid blueprint - each position has its own scene
+      // EXCEPTION: Preview feeds ALWAYS use full template - ignore any stored prompts
       let finalPrompt: string | null = null
       
-      // Check if current post already has an extracted scene prompt
-      if (post.prompt && post.prompt.length > 50) {
-        // Post already has its scene prompt - use it
+      // 🔴 CRITICAL FIX: For preview feeds, ALWAYS regenerate full template
+      // Don't use stored prompts - they might be single scene prompts from previous attempts
+      if (isPreviewFeed) {
+        console.log(`[v0] [GENERATE-SINGLE] ✅ Preview feed detected - forcing full template generation (ignoring stored prompt)`)
+        finalPrompt = null  // Force regeneration of full template
+      } else if (post.prompt && post.prompt.length > 50) {
+        // Post already has its scene prompt - use it (only for non-preview feeds)
         finalPrompt = post.prompt
         console.log(`[v0] [GENERATE-SINGLE] ✅ Using existing scene prompt for position ${post.position} (${finalPrompt.length} chars)`)
       } else if (access.isPaidBlueprint) {
@@ -359,14 +378,25 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
             let fashionStyle = 'business' // Default fashion style
             if (personalBrandForStyle && personalBrandForStyle.length > 0 && personalBrandForStyle[0].fashion_style) {
               try {
-                const style = typeof personalBrandForStyle[0].fashion_style === 'string'
-                  ? personalBrandForStyle[0].fashion_style
-                  : String(personalBrandForStyle[0].fashion_style)
+                // Handle JSONB array or string format
+                const styles = typeof personalBrandForStyle[0].fashion_style === 'string'
+                  ? JSON.parse(personalBrandForStyle[0].fashion_style)
+                  : personalBrandForStyle[0].fashion_style
                 
-                // Map wizard style to vibe library style
-                fashionStyle = mapFashionStyleToVibeLibrary(style)
+                if (Array.isArray(styles) && styles.length > 0) {
+                  // Use first style from array
+                  fashionStyle = mapFashionStyleToVibeLibrary(styles[0])
+                } else if (typeof styles === 'string') {
+                  fashionStyle = mapFashionStyleToVibeLibrary(styles)
+                }
+                
+                console.log(`[v0] [GENERATE-SINGLE] Mapped fashion style: ${JSON.stringify(styles)} → ${fashionStyle}`)
               } catch (e) {
                 console.warn(`[v0] [GENERATE-SINGLE] Failed to parse fashion_style:`, e)
+                // Try as plain string if JSON parse fails
+                if (typeof personalBrandForStyle[0].fashion_style === 'string') {
+                  fashionStyle = mapFashionStyleToVibeLibrary(personalBrandForStyle[0].fashion_style)
+                }
               }
             }
             
@@ -375,14 +405,30 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
             
             // Inject dynamic content into template before extracting scene
             const { injectDynamicContentWithRotation } = await import("@/lib/feed-planner/dynamic-template-injector")
-            const injectedTemplate = await injectDynamicContentWithRotation(
-              fullTemplate,
-              vibe,
-              fashionStyle,
-              user.id.toString()
-            )
+            let injectedTemplate: string
+            try {
+              injectedTemplate = await injectDynamicContentWithRotation(
+                fullTemplate,
+                vibe,
+                fashionStyle,
+                user.id.toString()
+              )
+              
+              // Validate injection worked - check for remaining placeholders
+              const { extractPlaceholderKeys } = await import("@/lib/feed-planner/template-placeholders")
+              const remainingPlaceholders = extractPlaceholderKeys(injectedTemplate)
+              if (remainingPlaceholders.length > 0) {
+                console.error(`[v0] [GENERATE-SINGLE] ❌ Injection failed - ${remainingPlaceholders.length} placeholders still remain:`, remainingPlaceholders)
+                throw new Error(`Template injection incomplete: ${remainingPlaceholders.length} placeholders not replaced`)
+              }
+              
+              console.log(`[v0] [GENERATE-SINGLE] ✅ Injection successful - all placeholders replaced (${injectedTemplate.split(/\s+/).length} words)`)
+            } catch (injectionError: any) {
+              console.error(`[v0] [GENERATE-SINGLE] ❌ Injection error:`, injectionError)
+              throw new Error(`Failed to inject dynamic content: ${injectionError.message}`)
+            }
             
-            // Extract scene for this position from injected template
+            // Paid blueprint feeds extract individual scenes from the injected template
             finalPrompt = buildSingleImagePrompt(injectedTemplate, post.position)
             
             // Save extracted scene to current post
@@ -392,7 +438,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
               WHERE id = ${postId}
             `
             
-            console.log(`[v0] [GENERATE-SINGLE] ✅ Extracted and saved scene ${post.position} from injected template ${templateKey} (vibe: ${vibe}, style: ${fashionStyle})`)
+            console.log(`[v0] [GENERATE-SINGLE] ✅ Extracted and saved scene ${post.position} from injected template ${templateKey} (vibe: ${vibe}, style: ${fashionStyle}, ${finalPrompt.split(/\s+/).length} words)`)
           } else {
             throw new Error(`Template ${templateKey} not found`)
           }
@@ -403,32 +449,155 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
         }
       }
       
-      // If scene extraction failed or not applicable (free users), continue with original logic
-      // For free users, use stored prompt if available, otherwise generate from template library
+      // If scene extraction failed or not applicable, continue with original logic
+      // For preview feeds, always generate full template (same for free and paid users)
+      // For full feeds, generate based on user type
       if (!finalPrompt || finalPrompt.trim().length < 20) {
-        console.log(`[v0] [GENERATE-SINGLE] ⚠️ Pro Mode post ${post.position} missing prompt. Generating based on user type...`)
+        console.log(`[v0] [GENERATE-SINGLE] ⚠️ Pro Mode post ${post.position} missing prompt. Generating based on feed type and user type...`)
         
         try {
-            if (access.isFree) {
-            // Free users: Use blueprint templates (same as old blueprint)
-            console.log(`[v0] [GENERATE-SINGLE] Free user - using blueprint template library...`)
+          // 🔴 CRITICAL: Handle preview feeds FIRST (same logic for free and paid users)
+          if (isPreviewFeed) {
+            console.log(`[v0] [GENERATE-SINGLE] ✅ Preview feed detected - generating full template for all 9 scenes (applies to all users)`)
             
-            // FIX 1: Check feed.feed_style FIRST (per-feed style), then user_personal_brand, then fall back to blueprint_subscribers (legacy)
+            // Get template using feed's feed_style
             let category: "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional" = "professional"
             let mood: "luxury" | "minimal" | "beige" = "minimal"
-            let sourceUsed = "default"
             
             // PRIMARY SOURCE: feed.feed_style (per-feed style selection from modal)
             if (feedLayout?.feed_style) {
               const feedStyle = feedLayout.feed_style.toLowerCase().trim()
               if (feedStyle === "luxury" || feedStyle === "minimal" || feedStyle === "beige") {
                 mood = feedStyle as "luxury" | "minimal" | "beige"
-                sourceUsed = "feed_style"
                 console.log(`[v0] [GENERATE-SINGLE] ✅ Using feed's feed_style: ${feedStyle}`)
               }
             }
             
-            // SECONDARY SOURCE: user_personal_brand (unified wizard) - only if feed_style not set
+            // Get category from user_personal_brand or use feedStyle as category
+            const personalBrand = await sql`
+              SELECT visual_aesthetic
+              FROM user_personal_brand
+              WHERE user_id = ${user.id}
+              ORDER BY created_at DESC
+              LIMIT 1
+            ` as any[]
+            
+            if (personalBrand && personalBrand.length > 0 && personalBrand[0].visual_aesthetic) {
+              try {
+                const aesthetics = typeof personalBrand[0].visual_aesthetic === 'string'
+                  ? JSON.parse(personalBrand[0].visual_aesthetic)
+                  : personalBrand[0].visual_aesthetic
+                
+                if (Array.isArray(aesthetics) && aesthetics.length > 0) {
+                  const firstAesthetic = aesthetics[0]?.toLowerCase().trim()
+                  const validCategories: Array<"luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"> = 
+                    ["luxury", "minimal", "beige", "warm", "edgy", "professional"]
+                  
+                  if (firstAesthetic && validCategories.includes(firstAesthetic as any)) {
+                    category = firstAesthetic as "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"
+                  }
+                }
+              } catch (e) {
+                console.warn(`[v0] [GENERATE-SINGLE] Failed to parse visual_aesthetic:`, e)
+              }
+            }
+            
+            // Get template prompt from grid library
+            const { getBlueprintPhotoshootPrompt, MOOD_MAP } = await import("@/lib/maya/blueprint-photoshoot-templates")
+            const moodMapped = MOOD_MAP[mood as keyof typeof MOOD_MAP] || "light_minimalistic"
+            const fullTemplate = getBlueprintPhotoshootPrompt(category, mood)
+            console.log(`[v0] [GENERATE-SINGLE] ✅ Using blueprint template for preview feed: ${category}_${mood} (${fullTemplate.split(/\s+/).length} words)`)
+            
+            // Build vibe key for dynamic injection
+            const vibeKey = `${category}_${moodMapped}`
+            
+            // Get user's fashion style for dynamic injection
+            const { mapFashionStyleToVibeLibrary } = await import("@/lib/feed-planner/fashion-style-mapper")
+            let fashionStyle = 'business' // Default fashion style
+            const personalBrandForStyle = await sql`
+              SELECT fashion_style
+              FROM user_personal_brand
+              WHERE user_id = ${user.id}
+              ORDER BY created_at DESC
+              LIMIT 1
+            ` as any[]
+            
+            if (personalBrandForStyle && personalBrandForStyle.length > 0 && personalBrandForStyle[0].fashion_style) {
+              try {
+                const styles = typeof personalBrandForStyle[0].fashion_style === 'string'
+                  ? JSON.parse(personalBrandForStyle[0].fashion_style)
+                  : personalBrandForStyle[0].fashion_style
+                
+                if (Array.isArray(styles) && styles.length > 0) {
+                  fashionStyle = mapFashionStyleToVibeLibrary(styles[0])
+                } else if (typeof personalBrandForStyle[0].fashion_style === 'string') {
+                  fashionStyle = mapFashionStyleToVibeLibrary(personalBrandForStyle[0].fashion_style)
+                }
+              } catch (e) {
+                console.warn(`[v0] [GENERATE-SINGLE] Failed to parse fashion_style:`, e)
+              }
+            }
+            
+            console.log(`[v0] [GENERATE-SINGLE] Using vibe: ${vibeKey}, fashion style: ${fashionStyle}`)
+            
+            // Inject dynamic content into template
+            const { injectDynamicContentWithRotation } = await import("@/lib/feed-planner/dynamic-template-injector")
+            let injectedTemplate: string
+            try {
+              injectedTemplate = await injectDynamicContentWithRotation(
+                fullTemplate,
+                vibeKey,
+                fashionStyle,
+                user.id.toString()
+              )
+              
+              // Validate injection worked - check for remaining placeholders
+              const { extractPlaceholderKeys } = await import("@/lib/feed-planner/template-placeholders")
+              const remainingPlaceholders = extractPlaceholderKeys(injectedTemplate)
+              if (remainingPlaceholders.length > 0) {
+                console.error(`[v0] [GENERATE-SINGLE] ❌ Injection failed - ${remainingPlaceholders.length} placeholders still remain:`, remainingPlaceholders)
+                throw new Error(`Template injection incomplete: ${remainingPlaceholders.length} placeholders not replaced`)
+              }
+              
+              console.log(`[v0] [GENERATE-SINGLE] ✅ Injection successful - all placeholders replaced (${injectedTemplate.split(/\s+/).length} words)`)
+            } catch (injectionError: any) {
+              console.error(`[v0] [GENERATE-SINGLE] ❌ Injection error:`, injectionError)
+              throw new Error(`Failed to inject dynamic content: ${injectionError.message}`)
+            }
+            
+            // Preview feeds use the full injected template (all 9 scenes in one image)
+            finalPrompt = injectedTemplate
+            console.log(`[v0] [GENERATE-SINGLE] ✅ Preview feed - using full injected template with all 9 scenes (${finalPrompt.split(/\s+/).length} words)`)
+            
+            // Save the full template prompt to the database
+            await sql`
+              UPDATE feed_posts
+              SET prompt = ${finalPrompt}
+              WHERE id = ${postId}
+            `
+          } else if (access.isFree) {
+            // Free users: Use blueprint templates (same as old blueprint)
+            console.log(`[v0] [GENERATE-SINGLE] Free user - using blueprint template library...`)
+            
+            // 🔴 CRITICAL: Consistent source priority for mood/feedStyle
+            // PRIORITY: feed_layouts.feed_style > user_personal_brand.settings_preference[0] > user_personal_brand defaults
+            let category: "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional" = "professional"
+            let mood: "luxury" | "minimal" | "beige" = "minimal"
+            let sourceUsed = "default"
+            
+            // PRIMARY SOURCE: feed_layouts.feed_style (per-feed style selection from modal)
+            // This is the most specific and should always take priority
+            if (feedLayout?.feed_style) {
+              const feedStyle = feedLayout.feed_style.toLowerCase().trim()
+              if (feedStyle === "luxury" || feedStyle === "minimal" || feedStyle === "beige") {
+                mood = feedStyle as "luxury" | "minimal" | "beige"
+                sourceUsed = "feed_style"
+                console.log(`[v0] [GENERATE-SINGLE] ✅ Using feed's feed_style (PRIMARY): ${feedStyle}`)
+              }
+            }
+            
+            // SECONDARY SOURCE: user_personal_brand.settings_preference[0] - only if feed_style not set
+            // This is synced from feed style modal selections
             if (sourceUsed === "default") {
             const personalBrand = await sql`
               SELECT settings_preference, visual_aesthetic
@@ -445,6 +614,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
               })
               
               // Extract feedStyle from settings_preference (first element of JSONB array)
+              // This is synced from feed style modal when user selects feed style
               let feedStyle: string | null = null
               if (personalBrand[0].settings_preference) {
                 try {
@@ -453,7 +623,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
                     : personalBrand[0].settings_preference
                   
                   if (Array.isArray(settings) && settings.length > 0) {
-                    feedStyle = settings[0] // First element is feedStyle
+                    feedStyle = settings[0] // First element is feedStyle (synced from feed style modal)
                   }
                 } catch (e) {
                   console.warn(`[v0] [GENERATE-SINGLE] Failed to parse settings_preference:`, e)
@@ -465,6 +635,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
                 const feedStyleLower = feedStyle.toLowerCase().trim()
                 if (feedStyleLower === "luxury" || feedStyleLower === "minimal" || feedStyleLower === "beige") {
                   mood = feedStyleLower as "luxury" | "minimal" | "beige"
+                  sourceUsed = "settings_preference"
+                  console.log(`[v0] [GENERATE-SINGLE] ✅ Using settings_preference[0] (SECONDARY): ${feedStyle}`)
                 }
               }
               
@@ -567,20 +739,36 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
             
             // Inject dynamic content into template
             const { injectDynamicContentWithRotation } = await import("@/lib/feed-planner/dynamic-template-injector")
-            const injectedTemplate = await injectDynamicContentWithRotation(
-              fullTemplate,
-              vibeKey,
-              fashionStyle,
-              user.id.toString()
-            )
+            let injectedTemplate: string
+            try {
+              injectedTemplate = await injectDynamicContentWithRotation(
+                fullTemplate,
+                vibeKey,
+                fashionStyle,
+                user.id.toString()
+              )
+              
+              // Validate injection worked - check for remaining placeholders
+              const { extractPlaceholderKeys } = await import("@/lib/feed-planner/template-placeholders")
+              const remainingPlaceholders = extractPlaceholderKeys(injectedTemplate)
+              if (remainingPlaceholders.length > 0) {
+                console.error(`[v0] [GENERATE-SINGLE] ❌ Injection failed - ${remainingPlaceholders.length} placeholders still remain:`, remainingPlaceholders)
+                throw new Error(`Template injection incomplete: ${remainingPlaceholders.length} placeholders not replaced`)
+              }
+              
+              console.log(`[v0] [GENERATE-SINGLE] ✅ Injection successful - all placeholders replaced (${injectedTemplate.split(/\s+/).length} words)`)
+            } catch (injectionError: any) {
+              console.error(`[v0] [GENERATE-SINGLE] ❌ Injection error:`, injectionError)
+              throw new Error(`Failed to inject dynamic content: ${injectionError.message}`)
+            }
             
-            // Extract scene for this position from injected template
-            const { buildSingleImagePrompt } = await import("@/lib/feed-planner/build-single-image-prompt")
-            finalPrompt = buildSingleImagePrompt(injectedTemplate, post.position)
+            // Free user full feeds extract individual scenes from the injected template
+            // (Preview feeds are already handled above before this access check)
+              const { buildSingleImagePrompt } = await import("@/lib/feed-planner/build-single-image-prompt")
+              finalPrompt = buildSingleImagePrompt(injectedTemplate, post.position)
+              console.log(`[v0] [GENERATE-SINGLE] ✅ Extracted scene ${post.position} from injected template (${finalPrompt.split(/\s+/).length} words)`)
             
-            console.log(`[v0] [GENERATE-SINGLE] ✅ Injected dynamic content and extracted frame ${post.position} (${finalPrompt.split(/\s+/).length} words)`)
-            
-            // Save the extracted scene prompt to the database
+            // Save the prompt to the database
             await sql`
               UPDATE feed_posts
               SET prompt = ${finalPrompt}
@@ -1038,10 +1226,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       }
       
       // Generate with Nano Banana Pro
-      // Free users use 9:16 aspect ratio, paid users use 4:5
-      const aspectRatio = access.isFree ? '9:16' : '4:5'
+      // Preview feeds ALWAYS use 9:16 aspect ratio (all 9 scenes in one image)
+      // Full feeds: Free users use 9:16, paid users use 4:5
+      const aspectRatio = isPreviewFeed ? '9:16' : (access.isFree ? '9:16' : '4:5')
+      
+      // Clean prompt before sending to Replicate - ONLY remove unreplaced placeholders
+      // Preview feeds: Keep full template with grid instructions, only remove {{PLACEHOLDERS}}
+      // Full feeds: Already extracted to single scene via buildSingleImagePrompt(), only remove {{PLACEHOLDERS}} if any remain
+      const { cleanBlueprintPrompt } = await import('@/lib/feed-planner/build-single-image-prompt')
+      const cleanedPrompt = cleanBlueprintPrompt(finalPrompt)
+      
+      if (cleanedPrompt !== finalPrompt) {
+        console.log(`[v0] [GENERATE-SINGLE] Removed unreplaced placeholders: ${finalPrompt.length} → ${cleanedPrompt.length} chars`)
+      }
+      
       const generation = await generateWithNanoBanana({
-        prompt: finalPrompt,
+        prompt: cleanedPrompt,
         image_input: baseImages.map(img => img.url),
         aspect_ratio: aspectRatio,
         resolution: '2K',
@@ -1049,12 +1249,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
         safety_filter_level: 'block_only_high',
       })
       
-      // Update database with prediction ID
+      // Update database with prediction ID and cleaned prompt
       await sql`
         UPDATE feed_posts
         SET generation_status = 'generating',
             prediction_id = ${generation.predictionId},
-            prompt = ${finalPrompt},
+            prompt = ${cleanedPrompt},
             updated_at = NOW()
         WHERE id = ${postId}
       `

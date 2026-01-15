@@ -988,6 +988,17 @@ export async function POST(request: NextRequest) {
               console.log(`[v0] 💎 Paid Blueprint purchase from ${customerEmail} - Payment confirmed`)
               console.log(`[v0] 💎 Processing paid blueprint purchase for email: ${customerEmail}`)
               
+              // Track purchase event (server-side analytics)
+              try {
+                const { trackPurchase } = await import("@/lib/analytics")
+                const purchaseAmount = paymentAmountCents ? paymentAmountCents / 100 : 0
+                trackPurchase(purchaseAmount, "USD", [{ product_type: "paid_blueprint", quantity: 1 }])
+                console.log(`[v0] ✅ Tracked purchase event: $${purchaseAmount.toFixed(2)}`)
+              } catch (analyticsError) {
+                console.error(`[v0] ⚠️ Failed to track purchase analytics:`, analyticsError)
+                // Don't fail webhook if analytics fails
+              }
+              
               const isTestMode = !event.livemode
               const paymentIntentId = typeof session.payment_intent === 'string'
                 ? session.payment_intent
@@ -1106,12 +1117,30 @@ export async function POST(request: NextRequest) {
                   paymentIntentId,
                   metadata: session.metadata,
                 })
-                // Don't fail webhook - payment succeeded, but log prominently for manual review
-                // Return success but log error for monitoring
+                
+                // Store payment as pending resolution (payment already stored above, update status)
+                try {
+                  await sql`
+                    UPDATE stripe_payments
+                    SET 
+                      status = 'pending_resolution',
+                      metadata = jsonb_set(
+                        COALESCE(metadata, '{}'::jsonb),
+                        '{unresolved_at}',
+                        to_jsonb(NOW()::text)
+                      )
+                    WHERE stripe_payment_id = ${paymentIdForStorage}
+                  `
+                  console.log(`[v0] ⚠️ Payment ${paymentIdForStorage} stored as pending_resolution`)
+                } catch (updateError: any) {
+                  console.error(`[v0] Error updating payment status to pending_resolution:`, updateError.message)
+                }
+                
+                // Return 200 OK (Stripe requirement) but do NOT continue processing
                 return NextResponse.json({ 
                   received: true, 
                   error: "user_id_unresolved",
-                  message: "Payment succeeded but user_id could not be resolved" 
+                  message: "Payment succeeded but user_id could not be resolved. Will retry via cron job." 
                 }, { status: 200 })
               }
               

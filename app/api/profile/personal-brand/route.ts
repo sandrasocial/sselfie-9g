@@ -196,8 +196,32 @@ export async function POST(request: NextRequest) {
 
     if (existingBrand.length > 0) {
       console.log("[v0] Updating existing brand profile:", existingBrand[0].id)
+      
+      // Prepare JSONB fields - handle arrays and strings properly
+      const prepareJsonbValue = (value: any): any => {
+        if (!value) return null
+        if (Array.isArray(value)) {
+          return value.length > 0 ? value : null
+        }
+        if (typeof value === 'string') {
+          // If it's already a JSON string, try to parse it
+          try {
+            return JSON.parse(value)
+          } catch {
+            // Not valid JSON, return as array with single value
+            return [value]
+          }
+        }
+        return value
+      }
+      
+      const visualAestheticJson = prepareJsonbValue(body.visualAesthetic)
+      const fashionStyleJson = prepareJsonbValue(body.fashionStyle)
+      const settingsPreferenceJson = prepareJsonbValue(body.settingsPreference)
+      const contentPillarsJson = prepareJsonbValue(body.contentPillars)
+      
       // Use COALESCE to only update fields that are provided (not undefined)
-      // This prevents overwriting existing data with empty strings
+      // For JSONB fields, pass JSON objects directly - Neon handles conversion automatically
       const result = await sql`
         UPDATE user_personal_brand
         SET
@@ -216,10 +240,10 @@ export async function POST(request: NextRequest) {
           future_vision = COALESCE(${body.futureVision ?? null}, future_vision),
           content_goals = COALESCE(${body.contentGoals ?? null}, content_goals),
           photo_goals = COALESCE(${body.photoGoals ?? null}, photo_goals),
-          content_pillars = COALESCE(${body.contentPillars && (Array.isArray(body.contentPillars) ? body.contentPillars.length > 0 : true) ? JSON.stringify(body.contentPillars) : null}::jsonb, content_pillars),
-          visual_aesthetic = COALESCE(${body.visualAesthetic && (Array.isArray(body.visualAesthetic) ? body.visualAesthetic.length > 0 : true) ? JSON.stringify(body.visualAesthetic) : null}::jsonb, visual_aesthetic),
-          settings_preference = COALESCE(${body.settingsPreference && (Array.isArray(body.settingsPreference) ? body.settingsPreference.length > 0 : true) ? JSON.stringify(body.settingsPreference) : null}::jsonb, settings_preference),
-          fashion_style = COALESCE(${body.fashionStyle && (Array.isArray(body.fashionStyle) ? body.fashionStyle.length > 0 : true) ? JSON.stringify(body.fashionStyle) : null}::jsonb, fashion_style),
+          content_pillars = COALESCE(${contentPillarsJson}, content_pillars),
+          visual_aesthetic = COALESCE(${visualAestheticJson}, visual_aesthetic),
+          settings_preference = COALESCE(${settingsPreferenceJson}, settings_preference),
+          fashion_style = COALESCE(${fashionStyleJson}, fashion_style),
           ideal_audience = COALESCE(${body.idealAudience ?? null}, ideal_audience),
           audience_challenge = COALESCE(${body.audienceChallenge ?? null}, audience_challenge),
           audience_transformation = COALESCE(${body.audienceTransformation ?? null}, audience_transformation),
@@ -406,8 +430,17 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] Brand profile save complete!")
     return NextResponse.json({ success: true, brandId })
-  } catch (error) {
+  } catch (error: any) {
     console.error("[v0] Error updating personal brand:", error)
-    return NextResponse.json({ error: "Failed to update personal brand" }, { status: 500 })
+    console.error("[v0] Error details:", {
+      message: error?.message,
+      stack: error?.stack,
+      code: error?.code,
+      detail: error?.detail
+    })
+    return NextResponse.json({ 
+      error: "Failed to update personal brand",
+      details: error?.message || "Unknown error"
+    }, { status: 500 })
   }
 }

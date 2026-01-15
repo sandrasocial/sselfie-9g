@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { flushSync } from "react-dom"
 import Image from "next/image"
 import { ImageIcon, Loader2 } from 'lucide-react'
 import { toast } from "@/hooks/use-toast"
@@ -26,41 +27,49 @@ interface FeedGridPreviewProps {
 export default function FeedGridPreview({ feedId, posts, onGenerate }: FeedGridPreviewProps) {
   const [generatingPostId, setGeneratingPostId] = useState<number | null>(null)
 
-  const handleGeneratePost = async (postId: number) => {
-    setGeneratingPostId(postId)
+  const handleGeneratePost = (postId: number) => {
+    // CRITICAL: Use flushSync to force immediate render of loading state
+    // This ensures users see instant feedback, even if API call takes 5-10 seconds
+    flushSync(() => {
+      setGeneratingPostId(postId)
+    })
 
-    try {
-      const response = await fetch(`/api/feed/${feedId}/generate-single`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ postId }),
+    // Make API call (non-blocking, UI already shows loading state)
+    fetch(`/api/feed/${feedId}/generate-single`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ postId }),
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error("Failed to generate")
+        }
+
+        toast({
+          title: "Generating photo",
+          description: "This usually takes 1-2 minutes",
+        })
+
+        // Call refresh callback to trigger polling (non-blocking)
+        if (onGenerate) {
+          onGenerate().catch((err) => {
+            console.error("[Feed Grid Preview] Error refreshing feed data:", err)
+            // Don't show error to user - this is just a background refresh
+          })
+        }
+        
+        // DON'T set generatingPostId to null here - let polling detect when image is ready
+        // The component will check post.generation_status and post.prediction_id to show loading
       })
-
-      if (!response.ok) {
-        throw new Error("Failed to generate")
-      }
-
-      toast({
-        title: "Generating photo",
-        description: "This usually takes 1-2 minutes",
+      .catch((error) => {
+        console.error("[v0] Generate error:", error)
+        toast({
+          title: "Generation failed",
+          description: "Please try again",
+          variant: "destructive",
+        })
+        setGeneratingPostId(null) // Only reset on error
       })
-
-      // Call refresh callback to trigger polling
-      if (onGenerate) {
-        await onGenerate()
-      }
-      
-      // DON'T set generatingPostId to null here - let polling detect when image is ready
-      // The component will check post.generation_status and post.prediction_id to show loading
-    } catch (error) {
-      console.error("[v0] Generate error:", error)
-      toast({
-        title: "Generation failed",
-        description: "Please try again",
-        variant: "destructive",
-      })
-      setGeneratingPostId(null) // Only reset on error
-    }
   }
 
   // Reset local generating state when post gets an image (from polling)

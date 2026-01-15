@@ -113,9 +113,32 @@ export default function FeedStyleModal({
   useEffect(() => {
     if (open && personalBrandData?.data) {
       console.log('[Feed Style Modal] Loading personal brand data:', {
+        settingsPreference: personalBrandData.data.settingsPreference,
         visualAesthetic: personalBrandData.data.visualAesthetic,
         fashionStyle: personalBrandData.data.fashionStyle,
       })
+      
+      // Load feed style from settings_preference[0] (synced from previous selections)
+      // This ensures the modal shows the user's last selected feed style
+      if (personalBrandData.data.settingsPreference) {
+        try {
+          const settings = Array.isArray(personalBrandData.data.settingsPreference)
+            ? personalBrandData.data.settingsPreference
+            : typeof personalBrandData.data.settingsPreference === 'string'
+            ? JSON.parse(personalBrandData.data.settingsPreference)
+            : []
+          
+          if (Array.isArray(settings) && settings.length > 0) {
+            const feedStyleFromSettings = settings[0]?.toLowerCase().trim()
+            if (feedStyleFromSettings === 'luxury' || feedStyleFromSettings === 'minimal' || feedStyleFromSettings === 'beige') {
+              setSelectedStyle(feedStyleFromSettings as FeedStyle)
+              console.log('[Feed Style Modal] Loaded feed style from settings_preference:', feedStyleFromSettings)
+            }
+          }
+        } catch (e) {
+          console.warn('[Feed Style Modal] Failed to parse settingsPreference for feed style:', e)
+        }
+      }
       
       // Load visual aesthetic - handle both arrays and JSON strings
       let visualAesthetic = personalBrandData.data.visualAesthetic

@@ -40,6 +40,7 @@ interface WelcomeWizardProps {
   onChooseNewStyle?: () => void // Callback when user chooses to select new style
   onFeedStyleSelected?: (feedStyle: FeedStyle) => void // Callback when user selects a feed style
   defaultFeedStyle?: FeedStyle | null // User's last selected feed style
+  userChosePreviewStyle?: boolean | null // Track if user chose to use preview style (skip style selection step)
 }
 
 /**
@@ -60,6 +61,7 @@ export default function WelcomeWizard({
   onChooseNewStyle,
   onFeedStyleSelected,
   defaultFeedStyle,
+  userChosePreviewStyle,
 }: WelcomeWizardProps) {
   const [currentStep, setCurrentStep] = useState(0)
   const [selectedFeedStyle, setSelectedFeedStyle] = useState<FeedStyle>(defaultFeedStyle || "minimal")
@@ -273,31 +275,46 @@ export default function WelcomeWizard({
     )
   }, [isLoadingPreview, hasPreviewFeed, previewImageUrl, onUsePreviewStyle, onChooseNewStyle])
 
-  // Determine step count and order based on whether user has preview feed
-  const totalSteps = hasPreviewFeed ? 5 : 4 // 5 steps if preview exists (preview + style + 3 tutorial), 4 steps otherwise (style + 3 tutorial)
+  // Determine step count and order based on whether user has preview feed and their choice
+  // NEW ORDER: Tutorial first, preview discovery last, skip style selection if user chose preview
+  const shouldSkipStyleSelection = hasPreviewFeed && userChosePreviewStyle === true
+  const totalSteps = hasPreviewFeed 
+    ? (shouldSkipStyleSelection ? 4 : 5) // 4 if skip style, 5 if include style
+    : 4 // 4 steps if no preview (welcome + style + 2 tutorial + completion)
 
   const steps = useMemo(() => {
     const stepList = []
 
-    // Step 0: Preview feed (only if user has preview)
-    if (hasPreviewFeed) {
+    // Step 0: Welcome (if no preview feed)
+    if (!hasPreviewFeed) {
       stepList.push({
         title: "Welcome to your Feed Planner",
         subtitle: `Step 1 of ${totalSteps}`,
-        content: firstStepContent,
+        content: (
+          <div className="space-y-6">
+            <p className="text-base sm:text-lg font-light leading-relaxed text-stone-700">
+              You're all set! Now you can create a complete Instagram feed with 9 beautiful photos.
+            </p>
+            <p className="text-sm font-light text-stone-600">
+              Each photo will match your style and look amazing together. Let's walk through how it works.
+            </p>
+          </div>
+        ),
         icon: Sparkles,
       })
     }
 
-    // Step: Feed Style Selection
-    stepList.push({
-      title: "Choose Your Feed Style",
-      subtitle: `Step ${stepList.length + 1} of ${totalSteps}`,
-      content: feedStyleStepContent,
-      icon: Palette,
-    })
+    // Step: Feed Style Selection (skip if user chose preview style)
+    if (!shouldSkipStyleSelection) {
+      stepList.push({
+        title: "Choose Your Feed Style",
+        subtitle: `Step ${stepList.length + 1} of ${totalSteps}`,
+        content: feedStyleStepContent,
+        icon: Palette,
+      })
+    }
 
-    // Step: Generate photos
+    // Step: Generate photos tutorial
     stepList.push({
       title: "Generate your photos",
       subtitle: `Step ${stepList.length + 1} of ${totalSteps}`,
@@ -307,7 +324,7 @@ export default function WelcomeWizard({
             Click any empty placeholder in your grid to generate a photo.
           </p>
           <p className="text-sm font-light text-stone-600">
-            Each photo will be unique but match your preview style. You can generate them one at a time, or fill up the whole grid.
+            Each photo will be unique but match your style. You can generate them one at a time, or fill up the whole grid.
           </p>
           <div className="bg-stone-50 rounded-xl p-4 border border-stone-200">
             <p className="text-sm font-light text-stone-600">
@@ -319,7 +336,7 @@ export default function WelcomeWizard({
       icon: Grid3x3,
     })
 
-    // Step: Add captions and strategy
+    // Step: Add captions and strategy tutorial
     stepList.push({
       title: "Add captions and strategy",
       subtitle: `Step ${stepList.length + 1} of ${totalSteps}`,
@@ -346,7 +363,17 @@ export default function WelcomeWizard({
       icon: FileText,
     })
 
-    // Step: You're all set
+    // Step: Preview feed discovery (MOVED TO END - only if user has preview)
+    if (hasPreviewFeed) {
+      stepList.push({
+        title: "Great news! We found your preview feed",
+        subtitle: `Step ${stepList.length + 1} of ${totalSteps}`,
+        content: firstStepContent,
+        icon: Sparkles,
+      })
+    }
+
+    // Step: Completion
     stepList.push({
       title: "You're all set!",
       subtitle: `Step ${stepList.length + 1} of ${totalSteps}`,
@@ -369,7 +396,7 @@ export default function WelcomeWizard({
     })
 
     return stepList
-  }, [hasPreviewFeed, totalSteps, firstStepContent, feedStyleStepContent])
+  }, [hasPreviewFeed, totalSteps, firstStepContent, feedStyleStepContent, shouldSkipStyleSelection, userChosePreviewStyle])
 
   const handleNext = () => {
     // If we're on the feed style step, save the selection

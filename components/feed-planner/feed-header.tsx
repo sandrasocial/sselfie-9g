@@ -63,27 +63,49 @@ export default function FeedHeader({
     setIsCreatingPreviewFeed(true)
     
     try {
-      // First, update personal brand if advanced options were changed
-      if (data.visualAesthetic || data.fashionStyle) {
-        try {
-          const updateResponse = await fetch('/api/profile/personal-brand', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({
-              visualAesthetic: data.visualAesthetic,
-              fashionStyle: data.fashionStyle,
-            }),
-          })
-          
-          if (updateResponse.ok) {
-            // Revalidate SWR cache to refresh the modal data
-            mutate('/api/profile/personal-brand')
+      // Always update personal brand to sync feedStyle, visualAesthetic, and fashionStyle
+      // This ensures all style selections are saved to personal brand
+      try {
+        // Fetch current personal brand to preserve existing settings_preference
+        const currentBrandResponse = await fetch('/api/profile/personal-brand', {
+          credentials: 'include',
+        })
+        let currentSettingsPreference: string[] | null = null
+        
+        if (currentBrandResponse.ok) {
+          const currentBrand = await currentBrandResponse.json()
+          if (currentBrand?.data?.settingsPreference) {
+            // Preserve existing settings_preference array
+            currentSettingsPreference = Array.isArray(currentBrand.data.settingsPreference)
+              ? currentBrand.data.settingsPreference
+              : [currentBrand.data.settingsPreference].filter(Boolean)
           }
-        } catch (error) {
-          console.warn('[Feed Header] Failed to update personal brand:', error)
-          // Continue with feed creation even if personal brand update fails
         }
+        
+        // Update settings_preference: set feedStyle as first element, preserve rest
+        const updatedSettingsPreference = currentSettingsPreference 
+          ? [data.feedStyle, ...currentSettingsPreference.filter((s: string) => s !== data.feedStyle)]
+          : [data.feedStyle]
+        
+        const updateResponse = await fetch('/api/profile/personal-brand', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            settingsPreference: updatedSettingsPreference,
+            visualAesthetic: data.visualAesthetic,
+            fashionStyle: data.fashionStyle,
+          }),
+        })
+        
+        if (updateResponse.ok) {
+          console.log('[Feed Header] Personal brand synced with feed style selection')
+          // Revalidate SWR cache to refresh the modal data
+          mutate('/api/profile/personal-brand')
+        }
+      } catch (error) {
+        console.warn('[Feed Header] Failed to update personal brand:', error)
+        // Continue with feed creation even if personal brand update fails
       }
 
       const response = await fetch('/api/feed/create-free-example', {
@@ -144,38 +166,60 @@ export default function FeedHeader({
     setIsCreatingFeed(true)
     
     try {
-      // First, update personal brand if advanced options were changed
-      if (data.visualAesthetic || data.fashionStyle) {
-        try {
-          console.log('[Feed Header] Updating personal brand:', {
+      // Always update personal brand to sync feedStyle, visualAesthetic, and fashionStyle
+      // This ensures all style selections are saved to personal brand
+      try {
+        console.log('[Feed Header] Syncing personal brand with feed style selection:', {
+          feedStyle: data.feedStyle,
+          visualAesthetic: data.visualAesthetic,
+          fashionStyle: data.fashionStyle,
+        })
+        
+        // Fetch current personal brand to preserve existing settings_preference
+        const currentBrandResponse = await fetch('/api/profile/personal-brand', {
+          credentials: 'include',
+        })
+        let currentSettingsPreference: string[] | null = null
+        
+        if (currentBrandResponse.ok) {
+          const currentBrand = await currentBrandResponse.json()
+          if (currentBrand?.data?.settingsPreference) {
+            // Preserve existing settings_preference array
+            currentSettingsPreference = Array.isArray(currentBrand.data.settingsPreference)
+              ? currentBrand.data.settingsPreference
+              : [currentBrand.data.settingsPreference].filter(Boolean)
+          }
+        }
+        
+        // Update settings_preference: set feedStyle as first element, preserve rest
+        const updatedSettingsPreference = currentSettingsPreference 
+          ? [data.feedStyle, ...currentSettingsPreference.filter((s: string) => s !== data.feedStyle)]
+          : [data.feedStyle]
+        
+        const updateResponse = await fetch('/api/profile/personal-brand', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            settingsPreference: updatedSettingsPreference,
             visualAesthetic: data.visualAesthetic,
             fashionStyle: data.fashionStyle,
-          })
-          
-          const updateResponse = await fetch('/api/profile/personal-brand', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({
-              visualAesthetic: data.visualAesthetic,
-              fashionStyle: data.fashionStyle,
-            }),
-          })
-          
-          if (updateResponse.ok) {
-            const updateResult = await updateResponse.json()
-            console.log('[Feed Header] Personal brand updated successfully:', updateResult)
-            // Revalidate SWR cache to refresh the modal data
-            await mutate('/api/profile/personal-brand')
-            console.log('[Feed Header] SWR cache revalidated')
-          } else {
-            const errorData = await updateResponse.json().catch(() => ({}))
-            console.error('[Feed Header] Failed to update personal brand:', updateResponse.status, errorData)
-          }
-        } catch (error) {
-          console.error('[Feed Header] Error updating personal brand:', error)
-          // Continue with feed creation even if personal brand update fails
+          }),
+        })
+        
+        if (updateResponse.ok) {
+          const updateResult = await updateResponse.json()
+          console.log('[Feed Header] Personal brand synced successfully:', updateResult)
+          // Revalidate SWR cache to refresh the modal data
+          await mutate('/api/profile/personal-brand')
+          console.log('[Feed Header] SWR cache revalidated')
+        } else {
+          const errorData = await updateResponse.json().catch(() => ({}))
+          console.error('[Feed Header] Failed to update personal brand:', updateResponse.status, errorData)
         }
+      } catch (error) {
+        console.error('[Feed Header] Error updating personal brand:', error)
+        // Continue with feed creation even if personal brand update fails
       }
 
       const response = await fetch('/api/feed/create-manual', {

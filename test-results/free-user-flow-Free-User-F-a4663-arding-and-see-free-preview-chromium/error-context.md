@@ -1,7 +1,7 @@
 # Page snapshot
 
 ```yaml
-- generic [ref=e1]:
+- generic [active] [ref=e1]:
   - generic [ref=e4]:
     - generic [ref=e5]:
       - generic [ref=e6]: Create Your Account
@@ -17,12 +17,11 @@
           - generic [ref=e15]: Email
           - textbox "Email" [ref=e16]:
             - /placeholder: you@example.com
-            - text: free-test-1768409779165@playwright.test
-          - paragraph [ref=e17]: Checking...
-        - generic [ref=e18]:
-          - generic [ref=e19]: Password
-          - textbox "Password" [active] [ref=e20]: TestPassword123!
-        - button "Checking..." [disabled]
+            - text: free-test-1768410757375@playwright.test
+        - generic [ref=e17]:
+          - generic [ref=e18]: Password
+          - textbox "Password" [ref=e19]: TestPassword123!
+        - button "Sign Up" [ref=e20]
       - generic [ref=e21]:
         - text: Already have an account?
         - link "Sign in" [ref=e22] [cursor=pointer]:

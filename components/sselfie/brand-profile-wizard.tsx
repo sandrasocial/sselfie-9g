@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -260,6 +260,61 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
   const [customColors, setCustomColors] = useState<string[]>(
     existingData?.customColors ? JSON.parse(existingData.customColors) : ["#D4C5B9", "#A89B8E", "#8B7E71", "#6E6154"],
   )
+
+  // 🔴 CRITICAL FIX: Update formData when existingData changes or modal opens
+  // This ensures the wizard always shows the latest personal brand data
+  // Prevents fields from appearing empty when reopening after feed style modal updates
+  useEffect(() => {
+    if (isOpen && existingData) {
+      // Re-initialize formData with latest existingData when modal opens
+      setFormData({
+        name: existingData?.name || "",
+        businessType: existingData?.businessType || "",
+        colorTheme: existingData?.colorTheme || "",
+        visualAesthetic: existingData?.visualAesthetic
+          ? typeof existingData.visualAesthetic === "string"
+            ? JSON.parse(existingData.visualAesthetic)
+            : existingData.visualAesthetic
+          : [],
+        settingsPreference: existingData?.settingsPreference
+          ? typeof existingData.settingsPreference === "string"
+            ? JSON.parse(existingData.settingsPreference)
+            : existingData.settingsPreference
+          : [],
+        fashionStyle: existingData?.fashionStyle
+          ? typeof existingData.fashionStyle === "string"
+            ? JSON.parse(existingData.fashionStyle)
+            : existingData.fashionStyle
+          : [],
+        currentSituation: existingData?.currentSituation || "",
+        transformationStory: existingData?.transformationStory || "",
+        futureVision: existingData?.futureVision || "",
+        idealAudience: existingData?.idealAudience || "",
+        audienceChallenge: existingData?.audienceChallenge || "",
+        audienceTransformation: existingData?.audienceTransformation || "",
+        communicationVoice: existingData?.communicationVoice
+          ? typeof existingData.communicationVoice === "string"
+            ? JSON.parse(existingData.communicationVoice)
+            : existingData.communicationVoice
+          : [],
+        signaturePhrases: existingData?.signaturePhrases || "",
+        photoGoals: existingData?.photoGoals || "",
+        brandInspiration: existingData?.brandInspiration || "",
+        inspirationLinks: existingData?.inspirationLinks || "",
+      })
+      
+      // Update custom colors if they exist
+      if (existingData?.customColors) {
+        try {
+          setCustomColors(JSON.parse(existingData.customColors))
+        } catch (e) {
+          console.warn('[Brand Profile Wizard] Failed to parse customColors:', e)
+        }
+      }
+      
+      console.log('[Brand Profile Wizard] Updated formData from existingData when modal opened')
+    }
+  }, [isOpen, existingData])
 
   const step = STEPS[currentStep]
   const progress = ((currentStep + 1) / STEPS.length) * 100

@@ -198,17 +198,55 @@ export async function GET(req: NextRequest) {
 
         console.log(`[v0][paid-blueprint] Progress: ${completedCount}/30 grids complete`)
 
-        // If all 30 grids complete, mark as generated
+        // If all 30 grids complete, mark as generated and send delivery email
         if (completedCount >= 30) {
-          await sql`
+          const updateResult = await sql`
             UPDATE blueprint_subscribers
             SET paid_blueprint_generated = TRUE,
                 paid_blueprint_generated_at = NOW(),
                 updated_at = NOW()
             WHERE access_token = ${accessToken}
             AND paid_blueprint_generated = FALSE
+            RETURNING email, name, access_token, paid_blueprint_photo_urls
           `
-          console.log(`[v0][paid-blueprint] ✅ All 30 grids complete for ${data.email.substring(0, 3)}***`)
+          
+          if (updateResult.length > 0) {
+            const subscriber = updateResult[0]
+            console.log(`[v0][paid-blueprint] ✅ All 30 grids complete for ${data.email.substring(0, 3)}***`)
+            
+            // Send delivery email
+            try {
+              const { generatePaidBlueprintDeliveryEmail, PAID_BLUEPRINT_DELIVERY_SUBJECT } = await import("@/lib/email/templates/paid-blueprint-delivery")
+              const { sendEmail } = await import("@/lib/email/send-email")
+              
+              const photoUrls = Array.isArray(subscriber.paid_blueprint_photo_urls) 
+                ? subscriber.paid_blueprint_photo_urls.filter((url: any) => url && typeof url === 'string')
+                : []
+              const previewUrls = photoUrls.slice(0, 4) // First 4 for preview
+              
+              const firstName = subscriber.name?.split(' ')[0] || undefined
+              const emailContent = generatePaidBlueprintDeliveryEmail({
+                firstName,
+                email: subscriber.email,
+                accessToken: subscriber.access_token,
+                photoPreviewUrls: previewUrls,
+              })
+              
+              await sendEmail({
+                to: subscriber.email,
+                subject: PAID_BLUEPRINT_DELIVERY_SUBJECT,
+                html: emailContent.html,
+                text: emailContent.text,
+                from: "Sandra from SSELFIE <hello@sselfie.ai>",
+                emailType: "paid-blueprint-delivery",
+              })
+              
+              console.log(`[v0][paid-blueprint] ✅ Delivery email sent to ${subscriber.email.substring(0, 3)}***`)
+            } catch (emailError) {
+              console.error(`[v0][paid-blueprint] ❌ Failed to send delivery email:`, emailError)
+              // Don't fail the request if email fails
+            }
+          }
         }
 
         return NextResponse.json({

@@ -30,6 +30,8 @@ export interface InjectionContext {
   outfitIndex?: number
   locationIndex?: number
   accessoryIndex?: number
+  // Frame type for contextual location formatting
+  frameType?: 'flatlay' | 'closeup' | 'fullbody' | 'midshot'
 }
 
 /**
@@ -51,8 +53,17 @@ export function buildPlaceholders(
   const outfits = getOutfitsByStyle(context.vibe, context.fashionStyle)
   
   if (outfits.length === 0) {
-    throw new Error(`No outfits found for vibe: ${context.vibe}, style: ${context.fashionStyle}`)
+    // Log detailed error for debugging
+    console.error(`[Dynamic Template Injector] No outfits found:`, {
+      vibe: context.vibe,
+      fashionStyle: context.fashionStyle,
+      userId: context.userId,
+      availableStyles: library ? Object.keys(library.fashionStyles) : []
+    })
+    throw new Error(`No outfits found for vibe: ${context.vibe}, style: ${context.fashionStyle}. Available styles: ${library ? Object.keys(library.fashionStyles).join(', ') : 'none'}`)
   }
+  
+  console.log(`[Dynamic Template Injector] Found ${outfits.length} outfits for vibe: ${context.vibe}, style: ${context.fashionStyle}`)
   
   // Use rotation indices with wraparound
   const outfitIndex = context.outfitIndex || 0
@@ -91,6 +102,62 @@ export function buildPlaceholders(
     return location.description
   }
   
+  /**
+   * Extracts surface/material description from location for flatlay scenes
+   * Removes ambient details, furniture, and atmosphere descriptions
+   */
+  function extractSurfaceDescription(location: LocationDescription): string {
+    const desc = location.description
+    
+    // Try to extract just the surface/material (e.g., "dark marble", "wooden table", "concrete surface")
+    // Common patterns: "marble", "wood", "concrete", "stone", "glass", "metal"
+    const surfacePatterns = [
+      /(dark|light|black|white|grey|gray|beige|warm|cool)\s*(marble|granite|stone|concrete|wood|wooden|glass|metal|surface|table|desk|counter)/i,
+      /(marble|granite|stone|concrete|wood|wooden|glass|metal)\s*(surface|table|desk|counter|floor)/i,
+      /(minimal|clean|simple)\s*(surface|table|desk)/i,
+    ]
+    
+    for (const pattern of surfacePatterns) {
+      const match = desc.match(pattern)
+      if (match) {
+        return match[0] + ' surface'
+      }
+    }
+    
+    // Fallback: extract first 2-3 words that describe material/surface
+    const words = desc.split(/[.,;]/)[0].trim().split(/\s+/).slice(0, 3)
+    if (words.length > 0) {
+      return words.join(' ') + ' surface'
+    }
+    
+    // Ultimate fallback: just "surface"
+    return 'surface'
+  }
+  
+  /**
+   * Formats location description based on frame type
+   * - Flatlay: Just surface/material (e.g., "dark marble surface")
+   * - Closeup: Minimal or empty
+   * - Fullbody/Midshot: Full description
+   */
+  function formatLocationForFrameType(
+    location: LocationDescription,
+    frameType: 'flatlay' | 'closeup' | 'fullbody' | 'midshot'
+  ): string {
+    switch (frameType) {
+      case 'flatlay':
+        // For flatlay, extract just the surface/material
+        return extractSurfaceDescription(location)
+      case 'closeup':
+        // For closeup, return minimal context or empty
+        return '' // Closeup scenes don't need location context
+      case 'fullbody':
+      case 'midshot':
+        // For fullbody/midshot, return full description
+        return location.description
+    }
+  }
+  
   // Build accessory descriptions
   function formatAccessories(accessory: AccessorySet): string {
     return accessory.description
@@ -103,33 +170,36 @@ export function buildPlaceholders(
   
   const textureNotes = `Focus on textures: ${library.textures.slice(0, 2).join(', ')}.`
   
-  // Find locations by setting type
-  const outdoorLocations = locations.filter(l => l.setting === 'outdoor')
-  const indoorLocations = locations.filter(l => l.setting === 'indoor')
-  
-  // Return placeholder values
-  return {
-    OUTFIT_FULLBODY_1: formatOutfit(outfit1),
-    OUTFIT_FULLBODY_2: formatOutfit(outfit2),
-    OUTFIT_FULLBODY_3: formatOutfit(outfit3),
-    OUTFIT_FULLBODY_4: formatOutfit(outfit4),
+    // Find locations by setting type
+    const outdoorLocations = locations.filter(l => l.setting === 'outdoor')
+    const indoorLocations = locations.filter(l => l.setting === 'indoor')
     
-    OUTFIT_MIDSHOT_1: formatMidshot(outfit1),
-    OUTFIT_MIDSHOT_2: formatMidshot(outfit2),
+    // Get frame type from context (default to midshot if not provided)
+    const frameType = context.frameType || 'midshot'
     
-    LOCATION_OUTDOOR_1: outdoorLocations.length > 0 
-      ? formatLocation(outdoorLocations[0]) 
-      : formatLocation(location1),
-    LOCATION_INDOOR_1: indoorLocations.length > 0 
-      ? formatLocation(indoorLocations[0]) 
-      : formatLocation(location1),
-    LOCATION_INDOOR_2: indoorLocations.length > 1 
-      ? formatLocation(indoorLocations[1]) 
-      : formatLocation(location2),
-    LOCATION_INDOOR_3: indoorLocations.length > 2 
-      ? formatLocation(indoorLocations[2]) 
-      : formatLocation(location3),
-    LOCATION_ARCHITECTURAL_1: formatLocation(location1),
+    // Return placeholder values with contextual location formatting
+    return {
+      OUTFIT_FULLBODY_1: formatOutfit(outfit1),
+      OUTFIT_FULLBODY_2: formatOutfit(outfit2),
+      OUTFIT_FULLBODY_3: formatOutfit(outfit3),
+      OUTFIT_FULLBODY_4: formatOutfit(outfit4),
+      
+      OUTFIT_MIDSHOT_1: formatMidshot(outfit1),
+      OUTFIT_MIDSHOT_2: formatMidshot(outfit2),
+      
+      LOCATION_OUTDOOR_1: outdoorLocations.length > 0 
+        ? formatLocationForFrameType(outdoorLocations[0], frameType)
+        : formatLocationForFrameType(location1, frameType),
+      LOCATION_INDOOR_1: indoorLocations.length > 0 
+        ? formatLocationForFrameType(indoorLocations[0], frameType)
+        : formatLocationForFrameType(location1, frameType),
+      LOCATION_INDOOR_2: indoorLocations.length > 1 
+        ? formatLocationForFrameType(indoorLocations[1], frameType)
+        : formatLocationForFrameType(location2, frameType),
+      LOCATION_INDOOR_3: indoorLocations.length > 2 
+        ? formatLocationForFrameType(indoorLocations[2], frameType)
+        : formatLocationForFrameType(location3, frameType),
+      LOCATION_ARCHITECTURAL_1: formatLocationForFrameType(location1, frameType),
     
     ACCESSORY_CLOSEUP_1: formatAccessories(accessory1),
     ACCESSORY_FLATLAY_1: formatAccessories(accessory1),
@@ -166,12 +236,14 @@ export function injectDynamicContent(
  * @param vibe - Vibe key (e.g., 'luxury_dark_moody')
  * @param fashionStyle - Fashion style (e.g., 'business')
  * @param userId - User ID
+ * @param frameType - Frame type for contextual location formatting (optional)
  * @returns Placeholder values ready for template replacement
  */
 export async function buildPlaceholdersWithRotation(
   vibe: string,
   fashionStyle: string,
-  userId: string
+  userId: string,
+  frameType?: 'flatlay' | 'closeup' | 'fullbody' | 'midshot'
 ): Promise<Partial<TemplatePlaceholders>> {
   // Get current rotation state from database
   const rotationState = await getRotationState(userId, vibe, fashionStyle)
@@ -183,7 +255,8 @@ export async function buildPlaceholdersWithRotation(
     userId,
     outfitIndex: rotationState.outfitIndex,
     locationIndex: rotationState.locationIndex,
-    accessoryIndex: rotationState.accessoryIndex
+    accessoryIndex: rotationState.accessoryIndex,
+    frameType
   }
   
   return buildPlaceholders(context)
@@ -196,14 +269,16 @@ export async function buildPlaceholdersWithRotation(
  * @param vibe - Vibe key
  * @param fashionStyle - Fashion style
  * @param userId - User ID
+ * @param frameType - Frame type for contextual location formatting (optional)
  * @returns Template with placeholders replaced with dynamic content
  */
 export async function injectDynamicContentWithRotation(
   templatePrompt: string,
   vibe: string,
   fashionStyle: string,
-  userId: string
+  userId: string,
+  frameType?: 'flatlay' | 'closeup' | 'fullbody' | 'midshot'
 ): Promise<string> {
-  const placeholders = await buildPlaceholdersWithRotation(vibe, fashionStyle, userId)
+  const placeholders = await buildPlaceholdersWithRotation(vibe, fashionStyle, userId, frameType)
   return replacePlaceholders(templatePrompt, placeholders)
 }

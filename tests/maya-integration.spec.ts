@@ -29,7 +29,12 @@ test.describe('Maya Integration for Paid Users', () => {
     await page.goto('/auth/login')
     await page.fill('input#email', testEmail)
     await page.fill('input#password', testPassword)
-    await page.click('button[type="submit"]:has-text("Sign In")')
+    
+    // Wait for button to be enabled
+    const submitButton = page.locator('button[type="submit"]')
+    await expect(submitButton).toBeEnabled({ timeout: 5000 })
+    await expect(submitButton).toHaveText('Sign In', { timeout: 5000 })
+    await submitButton.click()
     await page.waitForURL(/\/studio|\/feed-planner|\/maya/, { timeout: 15000 })
     
     // If not on feed planner, navigate there

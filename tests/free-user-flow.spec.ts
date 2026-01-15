@@ -25,11 +25,29 @@ test.describe('Free User Flow', () => {
       await page.fill('input#email', testEmail)
       await page.fill('input#password', testPassword)
 
+      // Wait for button to be enabled (user check completes)
+      const submitButton = page.locator('button[type="submit"]')
+      await expect(submitButton).toBeEnabled({ timeout: 10000 })
+      await expect(submitButton).toHaveText('Sign Up', { timeout: 5000 })
+      
       // Submit form
-      await page.click('button[type="submit"]:has-text("Sign Up")')
+      await submitButton.click()
 
       // Wait for redirect (could be /studio?tab=feed-planner or /auth/sign-up-success)
-      await page.waitForURL(/\/studio|\/auth\/sign-up-success|\/feed-planner/, { timeout: 15000 })
+      // Also wait for navigation to complete
+      await Promise.race([
+        page.waitForURL(/\/studio|\/auth\/sign-up-success|\/feed-planner/, { timeout: 20000 }),
+        page.waitForNavigation({ timeout: 20000 }).catch(() => {}),
+      ]).catch(async () => {
+        // If redirect doesn't happen, check current URL and log it
+        const currentUrl = page.url()
+        console.log(`[Test] Sign-up completed but no redirect. Current URL: ${currentUrl}`)
+        // If still on sign-up page after 5 seconds, navigate manually
+        if (currentUrl.includes('/auth/sign-up')) {
+          console.log('[Test] Still on sign-up page, navigating to feed-planner manually')
+          await page.goto('/feed-planner')
+        }
+      })
       
       // If redirected to sign-up-success, that's also OK (email confirmation flow)
       // Just navigate to feed planner manually

@@ -41,8 +41,13 @@ test.describe('Paid User Flow', () => {
       await page.fill('input#email', testEmail)
       await page.fill('input#password', testPassword)
 
+      // Wait for button to be enabled
+      const submitButton = page.locator('button[type="submit"]')
+      await expect(submitButton).toBeEnabled({ timeout: 5000 })
+      await expect(submitButton).toHaveText('Sign In', { timeout: 5000 })
+      
       // Submit
-      await page.click('button[type="submit"]:has-text("Sign In")')
+      await submitButton.click()
 
       // Wait for redirect (login uses window.location.href, so it's a full navigation)
       await page.waitForURL(/\/studio|\/feed-planner|\/maya/, { timeout: 15000 })

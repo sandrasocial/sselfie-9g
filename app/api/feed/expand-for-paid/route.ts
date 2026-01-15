@@ -44,6 +44,14 @@ export async function POST(req: NextRequest) {
     const existingPositions = existingPosts.map((p: any) => p.position)
     console.log(`[FEED EXPANSION] Feed ${feedId} has posts at positions:`, existingPositions)
 
+    // Get feed_style from feed_layouts to pre-generate prompts
+    const [feedLayout] = await sql`
+      SELECT feed_style
+      FROM feed_layouts
+      WHERE id = ${feedId}
+      LIMIT 1
+    ` as any[]
+
     // Phase 4: Create posts for missing positions 2-9 (3x3 grid)
     const positionsToCreate = [2, 3, 4, 5, 6, 7, 8, 9].filter(
       (pos) => !existingPositions.includes(pos)
@@ -77,6 +85,9 @@ export async function POST(req: NextRequest) {
       }
 
       console.log(`[FEED EXPANSION] ✅ Created ${positionsToCreate.length} new posts`)
+
+      // Prompts will be generated on-demand when user clicks to generate each image
+      // This is simpler and more reliable than pre-generation
 
       return NextResponse.json({
         success: true,
