@@ -52,6 +52,60 @@ export async function GET(request: NextRequest) {
 
     const brand = personalBrand[0]
 
+    // Parse JSONB fields that might be strings
+    // Also converts objects to arrays (for visual_aesthetic and fashion_style)
+    const parseJsonb = (value: any, convertObjectToArray: boolean = false) => {
+      if (!value) return null
+      if (typeof value === 'string') {
+        try {
+          const parsed = JSON.parse(value)
+          // If it's still a string after parsing, parse again (handles double-stringified data)
+          if (typeof parsed === 'string') {
+            try {
+              const doubleParsed = JSON.parse(parsed)
+              // If object and should convert, convert to array
+              if (convertObjectToArray && typeof doubleParsed === 'object' && !Array.isArray(doubleParsed) && doubleParsed !== null) {
+                return Object.keys(doubleParsed)
+              }
+              return doubleParsed
+            } catch (e2) {
+              // If second parse fails, might be malformed like '{"luxury"}'
+              // Try to extract key from string
+              const keyMatch = parsed.match(/"([^"]+)"/)
+              if (keyMatch && convertObjectToArray) {
+                return [keyMatch[1]]
+              }
+              return parsed
+            }
+          }
+          // If object and should convert, convert to array
+          if (convertObjectToArray && typeof parsed === 'object' && !Array.isArray(parsed) && parsed !== null) {
+            return Object.keys(parsed)
+          }
+          return parsed
+        } catch (e) {
+          // If parsing fails, try to extract key from malformed string like '{"luxury"}'
+          if (convertObjectToArray) {
+            const keyMatch = value.match(/"([^"]+)"/)
+            if (keyMatch) {
+              return [keyMatch[1]]
+            }
+          }
+          // If extraction fails, return as-is (might be a plain string)
+          return value
+        }
+      }
+      // If it's already an object and should convert, convert to array
+      if (convertObjectToArray && typeof value === 'object' && !Array.isArray(value) && value !== null) {
+        return Object.keys(value)
+      }
+      // If it's already an array or object, return as-is
+      if (Array.isArray(value) || (typeof value === 'object' && value !== null)) {
+        return value
+      }
+      return value
+    }
+
     return NextResponse.json({
       exists: true,
       completed: brand.is_completed,
@@ -67,14 +121,14 @@ export async function GET(request: NextRequest) {
         brandVibe: brand.brand_vibe,
         colorMood: brand.color_mood,
         colorTheme: brand.color_theme,
-        colorPalette: brand.color_palette,
+        colorPalette: parseJsonb(brand.color_palette),
         futureVision: brand.future_vision,
         contentGoals: brand.content_goals,
         photoGoals: brand.photo_goals,
-        stylePreferences: brand.style_preferences,
-        visualAesthetic: brand.visual_aesthetic,
-        settingsPreference: brand.settings_preference,
-        fashionStyle: brand.fashion_style,
+        stylePreferences: parseJsonb(brand.style_preferences),
+        visualAesthetic: parseJsonb(brand.visual_aesthetic, true), // Convert objects to arrays
+        settingsPreference: parseJsonb(brand.settings_preference),
+        fashionStyle: parseJsonb(brand.fashion_style, true), // Convert objects to arrays
         idealAudience: brand.ideal_audience,
         audienceChallenge: brand.audience_challenge,
         audienceTransformation: brand.audience_transformation,
@@ -82,7 +136,7 @@ export async function GET(request: NextRequest) {
         signaturePhrases: brand.signature_phrases,
         brandInspiration: brand.brand_inspiration,
         inspirationLinks: brand.inspiration_links,
-        contentPillars: brand.content_pillars,
+        contentPillars: parseJsonb(brand.content_pillars),
         // Style profile fields
         colorPreferences: brand.color_preferences,
         clothingPreferences: brand.clothing_preferences,
@@ -117,6 +171,9 @@ export async function POST(request: NextRequest) {
       hasCustomColors: !!body.customColors,
       name: body.name,
       businessType: body.businessType,
+      visualAesthetic: body.visualAesthetic,
+      fashionStyle: body.fashionStyle,
+      settingsPreference: body.settingsPreference,
     })
 
     const sql = neon(process.env.DATABASE_URL!)
@@ -139,36 +196,62 @@ export async function POST(request: NextRequest) {
 
     if (existingBrand.length > 0) {
       console.log("[v0] Updating existing brand profile:", existingBrand[0].id)
+      
+      // Prepare JSONB fields - handle arrays and strings properly
+      const prepareJsonbValue = (value: any): any => {
+        if (!value) return null
+        if (Array.isArray(value)) {
+          return value.length > 0 ? value : null
+        }
+        if (typeof value === 'string') {
+          // If it's already a JSON string, try to parse it
+          try {
+            return JSON.parse(value)
+          } catch {
+            // Not valid JSON, return as array with single value
+            return [value]
+          }
+        }
+        return value
+      }
+      
+      const visualAestheticJson = prepareJsonbValue(body.visualAesthetic)
+      const fashionStyleJson = prepareJsonbValue(body.fashionStyle)
+      const settingsPreferenceJson = prepareJsonbValue(body.settingsPreference)
+      const contentPillarsJson = prepareJsonbValue(body.contentPillars)
+      
+      // Use COALESCE to only update fields that are provided (not undefined)
+      // For JSONB fields, pass JSON objects directly - Neon handles conversion automatically
       const result = await sql`
         UPDATE user_personal_brand
         SET
-          name = ${body.name || ""},
-          business_type = ${body.businessType || ""},
-          current_situation = ${body.currentSituation || ""},
-          transformation_story = ${body.transformationStory || ""},
-          target_audience = ${body.targetAudience || ""},
-          brand_voice = ${body.brandVoice || ""},
-          language_style = ${body.languageStyle || ""},
-          content_themes = ${body.contentThemes || ""},
-          brand_vibe = ${body.brandVibe || ""},
-          color_mood = ${body.colorMood || ""},
-          color_theme = ${body.colorTheme || ""},
-          color_palette = ${body.customColors || null},
-          future_vision = ${body.futureVision || ""},
-          content_goals = ${body.contentGoals || ""},
-          photo_goals = ${body.photoGoals || ""},
-          content_pillars = ${body.contentPillars || null},
-          visual_aesthetic = ${body.visualAesthetic || ""},
-          settings_preference = ${body.settingsPreference || ""},
-          fashion_style = ${body.fashionStyle || ""},
-          ideal_audience = ${body.idealAudience || ""},
-          audience_challenge = ${body.audienceChallenge || ""},
-          audience_transformation = ${body.audienceTransformation || ""},
-          communication_voice = ${body.communicationVoice || ""},
-          signature_phrases = ${body.signaturePhrases || ""},
-          brand_inspiration = ${body.brandInspiration || ""},
-          inspiration_links = ${body.inspirationLinks || ""},
-          is_completed = ${body.isCompleted || false},
+          name = COALESCE(${body.name ?? null}, name),
+          business_type = COALESCE(${body.businessType ?? null}, business_type),
+          current_situation = COALESCE(${body.currentSituation ?? null}, current_situation),
+          transformation_story = COALESCE(${body.transformationStory ?? null}, transformation_story),
+          target_audience = COALESCE(${body.targetAudience ?? null}, target_audience),
+          brand_voice = COALESCE(${body.brandVoice ?? null}, brand_voice),
+          language_style = COALESCE(${body.languageStyle ?? null}, language_style),
+          content_themes = COALESCE(${body.contentThemes ?? null}, content_themes),
+          brand_vibe = COALESCE(${body.brandVibe ?? null}, brand_vibe),
+          color_mood = COALESCE(${body.colorMood ?? null}, color_mood),
+          color_theme = COALESCE(${body.colorTheme ?? null}, color_theme),
+          color_palette = COALESCE(${body.customColors ?? null}, color_palette),
+          future_vision = COALESCE(${body.futureVision ?? null}, future_vision),
+          content_goals = COALESCE(${body.contentGoals ?? null}, content_goals),
+          photo_goals = COALESCE(${body.photoGoals ?? null}, photo_goals),
+          content_pillars = COALESCE(${contentPillarsJson}, content_pillars),
+          visual_aesthetic = COALESCE(${visualAestheticJson}, visual_aesthetic),
+          settings_preference = COALESCE(${settingsPreferenceJson}, settings_preference),
+          fashion_style = COALESCE(${fashionStyleJson}, fashion_style),
+          ideal_audience = COALESCE(${body.idealAudience ?? null}, ideal_audience),
+          audience_challenge = COALESCE(${body.audienceChallenge ?? null}, audience_challenge),
+          audience_transformation = COALESCE(${body.audienceTransformation ?? null}, audience_transformation),
+          communication_voice = COALESCE(${body.communicationVoice ?? null}, communication_voice),
+          signature_phrases = COALESCE(${body.signaturePhrases ?? null}, signature_phrases),
+          brand_inspiration = COALESCE(${body.brandInspiration ?? null}, brand_inspiration),
+          inspiration_links = COALESCE(${body.inspirationLinks ?? null}, inspiration_links),
+          is_completed = COALESCE(${body.isCompleted ?? null}, is_completed),
           updated_at = NOW()
         WHERE user_id = ${neonUser.id}
         RETURNING id
@@ -226,7 +309,7 @@ export async function POST(request: NextRequest) {
           ${body.futureVision || ""},
           ${body.contentGoals || ""},
           ${body.photoGoals || ""},
-          ${body.contentPillars || null},
+          ${body.contentPillars ? JSON.stringify(body.contentPillars) : null}::jsonb,
           ${body.visualAesthetic || ""},
           ${body.settingsPreference || ""},
           ${body.fashionStyle || ""},
@@ -347,8 +430,17 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] Brand profile save complete!")
     return NextResponse.json({ success: true, brandId })
-  } catch (error) {
+  } catch (error: any) {
     console.error("[v0] Error updating personal brand:", error)
-    return NextResponse.json({ error: "Failed to update personal brand" }, { status: 500 })
+    console.error("[v0] Error details:", {
+      message: error?.message,
+      stack: error?.stack,
+      code: error?.code,
+      detail: error?.detail
+    })
+    return NextResponse.json({ 
+      error: "Failed to update personal brand",
+      details: error?.message || "Unknown error"
+    }, { status: 500 })
   }
 }

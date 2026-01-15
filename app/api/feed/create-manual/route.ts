@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
 
     const sql = getDb()
 
-    // Get optional title from request body
+    // Get optional title, feedStyle, visualAesthetic, and fashionStyle from request body
     let body: any = {}
     try {
       const text = await req.text()
@@ -39,9 +39,22 @@ export async function POST(req: NextRequest) {
       console.log("[v0] No body or invalid JSON, using defaults")
     }
     const title = body.title || `My Feed - ${new Date().toLocaleDateString()}`
+    const feedStyle = body.feedStyle || null // "luxury", "minimal", or "beige"
+    const visualAesthetic = body.visualAesthetic || null // Array of visual aesthetics
+    const fashionStyle = body.fashionStyle || null // Array of fashion styles
+    
+    // Note: visualAesthetic and fashionStyle are already saved to personal brand by the frontend
+    // We just log them here for reference
+    if (visualAesthetic) {
+      console.log(`[v0] Feed created with visualAesthetic:`, visualAesthetic)
+    }
+    if (fashionStyle) {
+      console.log(`[v0] Feed created with fashionStyle:`, fashionStyle)
+    }
 
-    // Create feed layout
+    // Create feed layout with layout_type: 'grid_3x3' for full feeds (3x3 grid = 9 posts)
     // Set status to 'saved' so feed appears immediately in Feed Planner
+    // Include feed_style if provided
     // Try with created_by field first, fallback if field doesn't exist
     let feedResult: any[]
     try {
@@ -52,6 +65,8 @@ export async function POST(req: NextRequest) {
           username,
           description,
           status,
+          layout_type,
+          feed_style,
           created_by
         )
         VALUES (
@@ -60,31 +75,65 @@ export async function POST(req: NextRequest) {
           ${user.name?.toLowerCase().replace(/\s+/g, "") || "yourbrand"},
           NULL,
           'saved',
+          'grid_3x3',
+          ${feedStyle},
           'manual'
         )
         RETURNING *
       ` as any[]
     } catch (error: any) {
-      // If created_by field doesn't exist, try without it
-      if (error?.message?.includes('created_by') || error?.code === '42703') {
-        console.log("[v0] created_by field not found, creating feed without it")
-        feedResult = await sql`
-          INSERT INTO feed_layouts (
-            user_id,
-            brand_name,
-            username,
-            description,
-            status
-          )
-          VALUES (
-            ${user.id},
-            ${title},
-            ${user.name?.toLowerCase().replace(/\s+/g, "") || "yourbrand"},
-            NULL,
-            'saved'
-          )
-          RETURNING *
-        ` as any[]
+      // If created_by or feed_style field doesn't exist, try without them
+      if (error?.message?.includes('created_by') || error?.message?.includes('feed_style') || error?.code === '42703') {
+        console.log("[v0] created_by or feed_style field not found, creating feed without them")
+        try {
+          feedResult = await sql`
+            INSERT INTO feed_layouts (
+              user_id,
+              brand_name,
+              username,
+              description,
+              status,
+              layout_type,
+              feed_style
+            )
+            VALUES (
+              ${user.id},
+              ${title},
+              ${user.name?.toLowerCase().replace(/\s+/g, "") || "yourbrand"},
+              NULL,
+              'saved',
+              'grid_3x3',
+              ${feedStyle}
+            )
+            RETURNING *
+          ` as any[]
+        } catch (error2: any) {
+          // If feed_style also doesn't exist, try without it
+          if (error2?.message?.includes('feed_style') || error2?.code === '42703') {
+            console.log("[v0] feed_style field not found, creating feed without it")
+            feedResult = await sql`
+              INSERT INTO feed_layouts (
+                user_id,
+                brand_name,
+                username,
+                description,
+                status,
+                layout_type
+              )
+              VALUES (
+                ${user.id},
+                ${title},
+                ${user.name?.toLowerCase().replace(/\s+/g, "") || "yourbrand"},
+                NULL,
+                'saved',
+                'grid_3x3'
+              )
+              RETURNING *
+            ` as any[]
+          } else {
+            throw error2
+          }
+        }
       } else {
         throw error
       }
@@ -97,7 +146,7 @@ export async function POST(req: NextRequest) {
     const feedLayout = feedResult[0]
     const feedId = feedLayout.id
 
-    // Create 9 empty posts (position 1-9)
+    // Create 9 empty posts (position 1-9) for 3x3 grid
     const posts = []
     for (let position = 1; position <= 9; position++) {
       const postResult = await sql`
@@ -131,7 +180,30 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    console.log(`[v0] Created manual feed ${feedId} with ${posts.length} empty posts for user ${user.id}`)
+    // Pre-generate prompts for all 9 positions (paid blueprint users)
+    // This eliminates the 5-10 second delay when generating position 1
+    // For paid blueprint: Each position gets its own extracted scene (1-9), NOT the full template
+    // The full template is only for free blueprint preview feed
+    if (feedStyle) {
+      try {
+        const { preGenerateAllPrompts } = await import("@/lib/feed-planner/pre-generate-prompts")
+        const result = await preGenerateAllPrompts({
+          feedId,
+          userId: user.id.toString(),
+          feedStyle,
+          sql,
+        })
+        
+        if (!result.success) {
+          console.warn(`[v0] ⚠️ Failed to pre-generate prompts: ${result.error} - scenes will be generated on first generation`)
+        }
+      } catch (error) {
+        console.error("[v0] Error pre-generating prompts:", error)
+        // Continue - scenes will be generated on first generation
+      }
+    }
+
+    console.log(`[v0] Created full feed ${feedId} with ${posts.length} empty posts for user ${user.id} (layout_type: grid_3x3)`)
 
     return NextResponse.json({
       feedId,
@@ -145,15 +217,28 @@ export async function POST(req: NextRequest) {
       code: error?.code,
       name: error?.name,
       details: error?.details,
+      cause: error?.cause,
     })
     
     // Return more specific error message
     const errorMessage = error?.message || "Internal server error"
-    const isDatabaseError = error?.code?.startsWith('42') || error?.code?.startsWith('23')
+    const isDatabaseError = error?.code?.startsWith('42') || error?.code?.startsWith('23') || error?.code?.startsWith('P')
+    
+    // For database errors, provide more context
+    if (isDatabaseError) {
+      return NextResponse.json(
+        { 
+          error: "Database error", 
+          details: errorMessage,
+          code: error?.code,
+        },
+        { status: 500 }
+      )
+    }
     
     return NextResponse.json(
       { 
-        error: isDatabaseError ? "Database error" : "Internal server error", 
+        error: "Internal server error", 
         details: errorMessage 
       },
       { status: 500 }

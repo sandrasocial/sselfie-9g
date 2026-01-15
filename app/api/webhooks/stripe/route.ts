@@ -1,11 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { randomUUID } from "crypto"
 import { stripe } from "@/lib/stripe"
-import { addCredits, grantOneTimeSessionCredits, grantMonthlyCredits } from "@/lib/credits"
+import { addCredits, grantOneTimeSessionCredits, grantMonthlyCredits, grantPaidBlueprintCredits } from "@/lib/credits"
 import { neon } from "@/lib/db"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { getOrCreateNeonUser } from "@/lib/user-mapping"
 import { sendEmail } from "@/lib/email/send-email"
 import { generateWelcomeEmail } from "@/lib/email/templates/welcome-email"
+import { generatePaidBlueprintDeliveryEmail, PAID_BLUEPRINT_DELIVERY_SUBJECT } from "@/lib/email/templates/paid-blueprint-delivery"
 import { checkWebhookRateLimit } from "@/lib/rate-limit"
 import { logWebhookError, alertWebhookError, isCriticalError } from "@/lib/webhook-monitoring"
 import {
@@ -113,18 +115,31 @@ export async function POST(request: NextRequest) {
         console.log("[v0] Mode:", session.mode)
         console.log("[v0] Payment status:", session.payment_status)
         console.log("[v0] Customer email:", session.customer_details?.email || session.customer_email)
-        console.log("[v0] Metadata:", session.metadata)
+        console.log("[v0] Metadata:", JSON.stringify(session.metadata, null, 2))
+        console.log("[v0] Product type from metadata:", session.metadata?.product_type)
         console.log("[v0] Test mode:", !event.livemode ? "YES (TEST)" : "NO (PRODUCTION)")
 
         // ⚠️ IMPORTANT: Only grant credits if payment was successful
         // For subscriptions, credits should be granted via invoice.payment_succeeded instead
         // to ensure payment is confirmed before granting credits
-        const isPaymentPaid = session.payment_status === "paid"
+        // Fix: Handle $0 payments (discount codes) - Stripe sets payment_status to 'no_payment_required'
+        const isPaymentPaid = session.payment_status === "paid" || 
+          (session.payment_status === "no_payment_required" && session.amount_total === 0)
+        
+        // 🔍 ENHANCED DEBUG LOGGING FOR COUPON CODE ISSUES
+        console.log(`[v0] 🔍 PAYMENT STATUS ANALYSIS:`)
+        console.log(`[v0]   payment_status: "${session.payment_status}"`)
+        console.log(`[v0]   amount_total: ${session.amount_total} (${session.amount_total === 0 ? '⚠️ $0 - COUPON DETECTED' : `$${(session.amount_total / 100).toFixed(2)}`})`)
+        console.log(`[v0]   Check 1 (paid): ${session.payment_status === "paid"}`)
+        console.log(`[v0]   Check 2 (no_payment_required && $0): ${session.payment_status === "no_payment_required" && session.amount_total === 0}`)
+        console.log(`[v0]   isPaymentPaid RESULT: ${isPaymentPaid}`)
+        console.log(`[v0]   payment_intent: ${session.payment_intent || 'NULL (expected for $0 payments)'}`)
         
         if (!isPaymentPaid && session.mode === "subscription") {
           console.log(`[v0] ⚠️ Subscription checkout completed but payment status is '${session.payment_status}'. Credits will be granted when invoice.payment_succeeded fires.`)
         } else if (!isPaymentPaid) {
           console.log(`[v0] ⚠️ Payment not confirmed (status: '${session.payment_status}'). Skipping credit grant.`)
+          console.log(`[v0] ⚠️ DEBUG: This means isPaymentPaid=false, which will block processing`)
         }
 
         const customerEmail = session.customer_details?.email || session.customer_email
@@ -142,6 +157,8 @@ export async function POST(request: NextRequest) {
               productTag = "content-creator-studio"
             } else if (productType === "credit_topup") {
               productTag = "credit-topup"
+            } else if (productType === "paid_blueprint") {
+              productTag = "paid-blueprint"
             }
 
             // Track conversion attribution if campaign_id is present
@@ -342,7 +359,24 @@ export async function POST(request: NextRequest) {
           const customerEmail = session.customer_details?.email || session.customer_email
           const source = session.metadata.source
 
+          console.log(`[v0] 💳 Payment mode detected`)
           console.log(`[v0] Payment completed - Product type: ${productType}, Credits: ${credits}, Source: ${source}`)
+          console.log(`[v0] Customer email: ${customerEmail}`)
+          console.log(`[v0] Full metadata:`, JSON.stringify(session.metadata, null, 2))
+          console.log(`[v0] 🔍 CRITICAL DEBUG FOR COUPON ISSUES:`)
+          console.log(`[v0]   Session ID: ${session.id}`)
+          console.log(`[v0]   Payment status: ${session.payment_status}`)
+          console.log(`[v0]   Amount total: ${session.amount_total} (${session.amount_total === 0 ? '⚠️ $0 PAYMENT - COUPON CODE USED' : `$${(session.amount_total / 100).toFixed(2)}`})`)
+          console.log(`[v0]   Payment intent: ${session.payment_intent || 'NULL (may be null for $0 payments)'}`)
+          console.log(`[v0]   User ID from metadata: ${userId || '❌ MISSING - will try email lookup'}`)
+          console.log(`[v0]   Product type from metadata: ${productType || '❌ MISSING - will skip processing!'}`)
+          console.log(`[v0]   Promo code from metadata: ${session.metadata.promo_code || 'none'}`)
+          
+          if (!productType) {
+            console.error(`[v0] ⚠️ WARNING: product_type is missing from session metadata!`)
+            console.error(`[v0] Available metadata keys:`, Object.keys(session.metadata || {}))
+            console.error(`[v0] ❌ This will cause the webhook to skip processing paid_blueprint!`)
+          }
 
           if (!userId && customerEmail) {
             console.log(`[v0] No user_id in metadata, looking up user by email: ${customerEmail}`)
@@ -399,7 +433,8 @@ export async function POST(request: NextRequest) {
                 } else {
                   console.error(`[v0] Failed to send credit top-up confirmation email: ${emailResult.error}`)
                 }
-              } else if (source === "landing_page") {
+              } else if (source === "landing_page" && productType !== "paid_blueprint") {
+                // ⚠️ Skip welcome email for paid_blueprint - delivery email is sent separately
                 console.log(`[v0] Sending purchase confirmation email to existing user ${customerEmail}`)
 
                 const productName = productType === "one_time_session" ? "ONE-TIME SESSION" : "CREDIT PACKAGE"
@@ -443,8 +478,10 @@ export async function POST(request: NextRequest) {
                 } else {
                   console.error(`[v0] Failed to send purchase confirmation email: ${emailResult.error}`)
                 }
+              } else if (source === "landing_page" && productType === "paid_blueprint") {
+                console.log(`[v0] ⚠️ Skipping welcome email for paid_blueprint - delivery email will be sent separately`)
               }
-            } else if (source === "landing_page") {
+            } else if (source === "landing_page" && productType !== "paid_blueprint") {
               console.log(`[v0] Creating new account for landing page purchase: ${customerEmail}`)
 
               try {
@@ -537,72 +574,77 @@ export async function POST(request: NextRequest) {
 
                   console.log(`[v0] Step 7: Generated password setup link`)
 
-                  const productName = productType === "one_time_session" ? "ONE-TIME SESSION" : "CREDIT PACKAGE"
-
-                  console.log(`[v0] Step 8: Generating welcome email...`)
-                  const emailContent = generateWelcomeEmail({
-                    customerName: customerEmail.split("@")[0],
-                    customerEmail: customerEmail,
-                    creditsGranted: credits,
-                    packageName: productName,
-                    productType: productType as "one_time_session" | "credit_topup",
-                    passwordSetupUrl: passwordSetupLink,
-                  })
-
-                  console.log("[v0] Email content generated:", {
-                    hasHtml: !!emailContent.html,
-                    hasText: !!emailContent.text,
-                    htmlLength: emailContent.html?.length || 0,
-                    textLength: emailContent.text?.length || 0,
-                  })
-
-                  console.log(`[v0] Step 9: Sending welcome email via Resend...`)
-                  const emailResult = await sendEmail({
-                    to: customerEmail,
-                    subject: "Welcome to SSelfie! Set up your account",
-                    html: emailContent.html,
-                    text: emailContent.text,
-                    tags: ["welcome", "account-setup", "one-time-purchase"],
-                  })
-
-                  if (emailResult.success) {
-                    console.log(`[v0] Step 10: Welcome email sent successfully, message ID: ${emailResult.messageId}`)
-
-                    await sql`
-                      INSERT INTO email_logs (
-                        user_email,
-                        email_type,
-                        resend_message_id,
-                        status,
-                        sent_at
-                      )
-                      VALUES (
-                        ${customerEmail},
-                        'welcome',
-                        ${emailResult.messageId},
-                        'sent',
-                        NOW()
-                      )
-                    `
+                  // ⚠️ Skip welcome email for paid_blueprint - delivery email is sent separately
+                  if (productType === "paid_blueprint") {
+                    console.log(`[v0] ⚠️ Skipping welcome email for paid_blueprint - delivery email will be sent separately`)
                   } else {
-                    console.error(`[v0] Failed to send welcome email: ${emailResult.error}`)
+                    const productName = productType === "one_time_session" ? "ONE-TIME SESSION" : "CREDIT PACKAGE"
 
-                    await sql`
-                      INSERT INTO email_logs (
-                        user_email,
-                        email_type,
-                        status,
-                        error_message,
-                        sent_at
-                      )
-                      VALUES (
-                        ${customerEmail},
-                        'welcome',
-                        'failed',
-                        ${emailResult.error},
-                        NOW()
-                      )
-                    `
+                    console.log(`[v0] Step 8: Generating welcome email...`)
+                    const emailContent = generateWelcomeEmail({
+                      customerName: customerEmail.split("@")[0],
+                      customerEmail: customerEmail,
+                      creditsGranted: credits,
+                      packageName: productName,
+                      productType: productType as "one_time_session" | "credit_topup",
+                      passwordSetupUrl: passwordSetupLink,
+                    })
+
+                    console.log("[v0] Email content generated:", {
+                      hasHtml: !!emailContent.html,
+                      hasText: !!emailContent.text,
+                      htmlLength: emailContent.html?.length || 0,
+                      textLength: emailContent.text?.length || 0,
+                    })
+
+                    console.log(`[v0] Step 9: Sending welcome email via Resend...`)
+                    const emailResult = await sendEmail({
+                      to: customerEmail,
+                      subject: "Welcome to SSelfie! Set up your account",
+                      html: emailContent.html,
+                      text: emailContent.text,
+                      tags: ["welcome", "account-setup", "one-time-purchase"],
+                    })
+
+                    if (emailResult.success) {
+                      console.log(`[v0] Step 10: Welcome email sent successfully, message ID: ${emailResult.messageId}`)
+
+                      await sql`
+                        INSERT INTO email_logs (
+                          user_email,
+                          email_type,
+                          resend_message_id,
+                          status,
+                          sent_at
+                        )
+                        VALUES (
+                          ${customerEmail},
+                          'welcome',
+                          ${emailResult.messageId},
+                          'sent',
+                          NOW()
+                        )
+                      `
+                    } else {
+                      console.error(`[v0] Failed to send welcome email: ${emailResult.error}`)
+
+                      await sql`
+                        INSERT INTO email_logs (
+                          user_email,
+                          email_type,
+                          status,
+                          error_message,
+                          sent_at
+                        )
+                        VALUES (
+                          ${customerEmail},
+                          'welcome',
+                          'failed',
+                          ${emailResult.error},
+                          NOW()
+                        )
+                      `
+                    }
                   }
                 }
 
@@ -919,6 +961,630 @@ export async function POST(request: NextRequest) {
                   AND stripe_payment_id = ${paymentIntentId}
                   AND (product_type IS NULL OR payment_amount_cents IS NULL)
               `
+            }
+          } else if (productType === "paid_blueprint") {
+            // ✨ PAID BLUEPRINT: Log payment, tag contact, grant credits and subscription
+            // ⚠️ CRITICAL: Process if payment is confirmed OR if $0 payment (coupon code)
+            console.log(`[v0] 💎 PAID BLUEPRINT DETECTED - Product type: ${productType}`)
+            console.log(`[v0] 🔍 DETAILED COUPON DEBUG FOR PAID_BLUEPRINT:`)
+            console.log(`[v0]   Payment status: ${session.payment_status}`)
+            console.log(`[v0]   Amount total: ${session.amount_total} (${session.amount_total === 0 ? '⚠️ $0 - COUPON CODE DETECTED' : `$${(session.amount_total / 100).toFixed(2)}`})`)
+            console.log(`[v0]   isPaymentPaid: ${isPaymentPaid}`)
+            console.log(`[v0]   Payment intent: ${session.payment_intent || 'NULL (expected for $0 payments)'}`)
+            console.log(`[v0]   Promo code: ${session.metadata.promo_code || 'none'}`)
+            console.log(`[v0]   User ID: ${userId || 'MISSING'}`)
+            console.log(`[v0]   Customer email: ${customerEmail}`)
+            console.log(`[v0]   Full metadata:`, JSON.stringify(session.metadata, null, 2))
+            
+            if (!isPaymentPaid) {
+              console.log(`[v0] ⚠️ Paid Blueprint checkout completed but payment not confirmed (status: '${session.payment_status}'). Skipping processing until payment succeeds.`)
+              console.log(`[v0] ⚠️ DEBUG BREAKDOWN:`)
+              console.log(`[v0]     payment_status === "paid": ${session.payment_status === "paid"}`)
+              console.log(`[v0]     (no_payment_required && $0): ${session.payment_status === "no_payment_required" && session.amount_total === 0}`)
+              console.log(`[v0]     Combined result (isPaymentPaid): ${isPaymentPaid}`)
+              console.log(`[v0] ❌ BLOCKED: This is why access is not being granted!`)
+              console.log(`[v0] ❌ User will NOT receive credits or subscription!`)
+            } else {
+              console.log(`[v0] 💎 Paid Blueprint purchase from ${customerEmail} - Payment confirmed`)
+              console.log(`[v0] 💎 Processing paid blueprint purchase for email: ${customerEmail}`)
+              
+              // Track purchase event (server-side analytics)
+              try {
+                const { trackPurchase } = await import("@/lib/analytics")
+                const purchaseAmount = paymentAmountCents ? paymentAmountCents / 100 : 0
+                trackPurchase(purchaseAmount, "USD", [{ product_type: "paid_blueprint", quantity: 1 }])
+                console.log(`[v0] ✅ Tracked purchase event: $${purchaseAmount.toFixed(2)}`)
+              } catch (analyticsError) {
+                console.error(`[v0] ⚠️ Failed to track purchase analytics:`, analyticsError)
+                // Don't fail webhook if analytics fails
+              }
+              
+              const isTestMode = !event.livemode
+              const paymentIntentId = typeof session.payment_intent === 'string'
+                ? session.payment_intent
+                : session.payment_intent?.id
+              
+              if (!paymentIntentId) {
+                console.error('[v0] ⚠️ No payment intent ID found for paid blueprint')
+              }
+              
+              // Get actual payment amount from Stripe (for revenue tracking)
+              let paymentAmountCents: number | null = null
+              let customerId: string | null = null
+              if (paymentIntentId) {
+                try {
+                  const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
+                  paymentAmountCents = paymentIntent.amount
+                  customerId = typeof paymentIntent.customer === 'string' ? paymentIntent.customer : paymentIntent.customer?.id || null
+                  console.log(`[v0] Retrieved payment amount: $${(paymentAmountCents / 100).toFixed(2)}`)
+                } catch (piError: any) {
+                  console.error(`[v0] Error retrieving payment intent for amount:`, piError.message)
+                  // Fallback to session amount if available
+                  if (session.amount_total) {
+                    paymentAmountCents = session.amount_total
+                  }
+                  customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id || null
+                }
+              } else if (session.amount_total) {
+                paymentAmountCents = session.amount_total
+                customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id || null
+              }
+              
+              // Store payment in stripe_payments table (comprehensive revenue tracking)
+              // Fix: Handle $0 payments (discount codes) - allow processing even if paymentIntentId is null
+              const isZeroAmountPayment = session.amount_total === 0 || paymentAmountCents === 0
+              const paymentIdForStorage = paymentIntentId || session.id // Use session.id for $0 payments (no payment intent)
+              const amountForStorage = paymentAmountCents || 0 // Use 0 for $0 payments
+              
+              if (customerId && (paymentIntentId || isZeroAmountPayment)) {
+                try {
+                  await sql`
+                    INSERT INTO stripe_payments (
+                      stripe_payment_id,
+                      stripe_customer_id,
+                      user_id,
+                      amount_cents,
+                      currency,
+                      status,
+                      payment_type,
+                      product_type,
+                      description,
+                      metadata,
+                      payment_date,
+                      is_test_mode,
+                      created_at,
+                      updated_at
+                    )
+                    VALUES (
+                      ${paymentIdForStorage},
+                      ${customerId},
+                      NULL,
+                      ${amountForStorage},
+                      'usd',
+                      'succeeded',
+                      'paid_blueprint',
+                      'paid_blueprint',
+                      ${'SSELFIE Brand Blueprint - 30 Custom Photos'},
+                      ${JSON.stringify({
+                        ...session.metadata,
+                        customer_email: customerEmail,
+                        session_id: session.id,
+                      })},
+                      NOW(),
+                      ${isTestMode},
+                      NOW(),
+                      NOW()
+                    )
+                    ON CONFLICT (stripe_payment_id) 
+                    DO UPDATE SET
+                      status = 'succeeded',
+                      updated_at = NOW()
+                  `
+                  console.log(`[v0] ✅ Stored paid blueprint payment in stripe_payments table (amount: $${(amountForStorage / 100).toFixed(2)}, payment_id: ${paymentIdForStorage})`)
+                } catch (paymentError: any) {
+                  console.error(`[v0] Error storing paid blueprint payment:`, paymentError.message)
+                  // Don't fail webhook if payment storage fails
+                }
+              }
+              
+              // Decision 1: Grant 60 credits for paid blueprint purchase (30 images × 2 credits per image)
+              // Fix #2: Resolve user_id (priority: session metadata, then email lookup)
+              let userId: string | null = session.metadata?.user_id || null
+              
+              if (userId) {
+                console.log(`[v0] Using user_id from session.metadata (authenticated checkout): ${userId}`)
+              } else if (customerEmail) {
+                // Fallback: Try to find user by email (guest checkout)
+                try {
+                  const userByEmail = await sql`
+                    SELECT id FROM users WHERE email = ${customerEmail} LIMIT 1
+                  `
+                  if (userByEmail.length > 0) {
+                    userId = userByEmail[0].id
+                    console.log(`[v0] Resolved user_id from email: ${userId}`)
+                  }
+                } catch (userLookupError: any) {
+                  console.error(`[v0] Error looking up user by email:`, userLookupError.message)
+                  // Continue to error handling below
+                }
+              }
+              
+              // Fix #2: If userId still not resolved, log error and exit (don't pretend success)
+              if (!userId && isPaymentPaid) {
+                console.error(`[v0] ❌ CRITICAL: Cannot resolve user_id for paid blueprint purchase`, {
+                  customerEmail,
+                  sessionId: session.id,
+                  paymentIntentId,
+                  metadata: session.metadata,
+                })
+                // Don't fail webhook - payment succeeded, but log prominently for manual review
+                // Return success but log error for monitoring
+                return NextResponse.json({ 
+                  received: true, 
+                  error: "user_id_unresolved",
+                  message: "Payment succeeded but user_id could not be resolved" 
+                }, { status: 200 })
+              }
+              
+              // Fix #3: Grant credits if user_id found AND payment confirmed (with idempotency check)
+              if (userId && isPaymentPaid) {
+                try {
+                  // Fix: Use session.id for $0 payments (no payment intent)
+                  const paymentIdForCredits = paymentIntentId || (isZeroAmountPayment ? session.id : undefined)
+                  
+                  // Fix #3: Check if credits already granted for this payment (idempotency)
+                  if (paymentIdForCredits) {
+                    const existingCredit = await sql`
+                      SELECT id FROM credit_transactions
+                      WHERE user_id = ${userId}
+                      AND stripe_payment_id = ${paymentIdForCredits}
+                      AND transaction_type = 'purchase'
+                      LIMIT 1
+                    `
+                    
+                    if (existingCredit.length > 0) {
+                      console.log(`[v0] ⏭️ Credits already granted for payment ${paymentIdForCredits} - skipping (idempotency)`)
+                    } else {
+                      // Grant credits (not already granted)
+                      const creditResult = await grantPaidBlueprintCredits(userId, paymentIdForCredits, isTestMode)
+                      if (creditResult.success) {
+                        console.log(`[v0] ✅ Granted 60 credits for paid blueprint purchase to user ${userId} (30 images × 2 credits per image)`)
+                      } else {
+                        console.error(`[v0] ⚠️ Failed to grant paid blueprint credits: ${creditResult.error}`)
+                      }
+                    }
+                  } else {
+                    // No payment ID - grant credits anyway (legacy support)
+                    console.warn(`[v0] ⚠️ No payment ID for credit grant (idempotency check skipped)`)
+                    const creditResult = await grantPaidBlueprintCredits(userId, undefined, isTestMode)
+                    if (creditResult.success) {
+                      console.log(`[v0] ✅ Granted 60 credits for paid blueprint purchase to user ${userId}`)
+                    } else {
+                      console.error(`[v0] ⚠️ Failed to grant paid blueprint credits: ${creditResult.error}`)
+                    }
+                  }
+                } catch (creditError: any) {
+                  console.error(`[v0] ⚠️ Error granting paid blueprint credits (non-critical):`, creditError.message)
+                  // Don't fail webhook if credit grant fails
+                }
+              } else if (!userId) {
+                // userId not resolved - already handled above
+              } else {
+                console.log(`[v0] ⏭️ Skipping credit grant - payment not confirmed yet`)
+              }
+              
+              // Create subscription entry for paid blueprint (for entitlement tracking)
+              if (userId && isPaymentPaid) {
+                try {
+                  // Check if subscription already exists
+                  const existingSubscription = await sql`
+                    SELECT id FROM subscriptions
+                    WHERE user_id = ${userId}
+                    AND product_type = 'paid_blueprint'
+                    AND status = 'active'
+                    LIMIT 1
+                  `
+                  
+                  if (existingSubscription.length === 0) {
+                    // Create subscription entry for paid blueprint
+                    try {
+                      await sql`
+                        INSERT INTO subscriptions (
+                          user_id,
+                          product_type,
+                          plan,
+                          status,
+                          stripe_customer_id,
+                          created_at,
+                          updated_at
+                        )
+                        VALUES (
+                          ${userId},
+                          'paid_blueprint',
+                          'paid_blueprint',
+                          'active',
+                          ${customerId || null},
+                          NOW(),
+                          NOW()
+                        )
+                      `
+                      console.log(`[v0] ✅ Created paid_blueprint subscription entry for user ${userId}`)
+                    } catch (insertError: any) {
+                      // Log the full error for debugging
+                      console.error(`[v0] ⚠️ Error inserting subscription for user ${userId}:`, {
+                        code: insertError.code,
+                        message: insertError.message,
+                        detail: insertError.detail,
+                        constraint: insertError.constraint,
+                      })
+                      // If subscription already exists (race condition), that's OK
+                      if (insertError.code === '23505' || insertError.message?.includes('unique constraint')) {
+                        console.log(`[v0] ⏭️ Subscription already exists for user ${userId} (race condition) - skipping`)
+                      } else {
+                        throw insertError // Re-throw other errors to be caught by outer catch
+                      }
+                    }
+                  } else {
+                    console.log(`[v0] ⏭️ Subscription already exists for user ${userId} - skipping (idempotency)`)
+                  }
+                } catch (subscriptionError: any) {
+                  console.error(`[v0] ⚠️ Error creating subscription entry (non-critical):`, subscriptionError.message)
+                  // Don't fail webhook if subscription creation fails
+                }
+              }
+              
+              // Decision 2: Update blueprint_subscribers with paid_blueprint columns
+              // Prioritize linking to user_id if authenticated, otherwise use email (guest checkout)
+              // ⚠️ CRITICAL: Link to user_id if authenticated (consistent with other flows)
+              try {
+                if (userId) {
+                  // Authenticated user: Link to user_id (consistent with other payment flows)
+                  console.log(`[v0] 🔍 Linking paid blueprint purchase to authenticated user: ${userId}`)
+                  
+                const blueprintCheck = await sql`
+                    SELECT id, paid_blueprint_purchased, user_id
+                  FROM blueprint_subscribers 
+                    WHERE user_id = ${userId}
+                  LIMIT 1
+                `
+                
+                  if (blueprintCheck.length > 0) {
+                    // Existing blueprint_subscribers record - update with paid purchase
+                    await sql`
+                      UPDATE blueprint_subscribers
+                      SET 
+                        paid_blueprint_purchased = TRUE,
+                        paid_blueprint_purchased_at = NOW(),
+                        paid_blueprint_stripe_payment_id = ${paymentIntentId || null},
+                        converted_to_user = TRUE,
+                        converted_at = NOW(),
+                        updated_at = NOW()
+                      WHERE user_id = ${userId}
+                    `
+                    console.log(`[v0] ✅ Updated blueprint_subscribers with paid blueprint purchase for user ${userId}`)
+                    
+                    // FIX 2: Expand user's feed from 1 post to 9 posts (free → paid upgrade)
+                    try {
+                      console.log(`[v0] [FEED EXPANSION] Expanding feed for paid user ${userId}...`)
+                      
+                      // Get user's latest feed
+                      const userFeed = await sql`
+                        SELECT id, user_id
+                        FROM feed_layouts
+                        WHERE user_id = ${userId}
+                        ORDER BY created_at DESC
+                        LIMIT 1
+                      `
+                      
+                      if (userFeed && userFeed.length > 0) {
+                        const feedId = userFeed[0].id
+                        
+                        // Check current post count
+                        const existingPosts = await sql`
+                          SELECT position
+                          FROM feed_posts
+                          WHERE feed_layout_id = ${feedId}
+                          ORDER BY position ASC
+                        `
+                        
+                        const existingPositions = existingPosts.map((p: any) => p.position)
+                        console.log(`[v0] [FEED EXPANSION] Feed ${feedId} has posts at positions:`, existingPositions)
+                        
+                        // Create posts for missing positions 2-9
+                        const positionsToCreate = [2, 3, 4, 5, 6, 7, 8, 9].filter(
+                          (pos) => !existingPositions.includes(pos)
+                        )
+                        
+                        if (positionsToCreate.length > 0) {
+                          console.log(`[v0] [FEED EXPANSION] Creating posts for positions:`, positionsToCreate)
+                          
+                          for (const position of positionsToCreate) {
+                            await sql`
+                              INSERT INTO feed_posts (
+                                feed_layout_id,
+                                user_id,
+                                position,
+                                post_type,
+                                generation_status,
+                                generation_mode,
+                                created_at,
+                                updated_at
+                              ) VALUES (
+                                ${feedId},
+                                ${userId},
+                                ${position},
+                                'photo',
+                                'pending',
+                                'pro',
+                                NOW(),
+                                NOW()
+                              )
+                            `
+                          }
+                          
+                          console.log(`[v0] [FEED EXPANSION] ✅ Created ${positionsToCreate.length} new posts for paid user`)
+                        } else {
+                          console.log(`[v0] [FEED EXPANSION] Feed already has all 9 positions`)
+                        }
+                      } else {
+                        console.log(`[v0] [FEED EXPANSION] No feed found for user ${userId} (will be created on first access)`)
+                      }
+                    } catch (error) {
+                      console.error('[v0] [FEED EXPANSION] ❌ Error expanding feed:', error)
+                      // Don't fail webhook if expansion fails - user can still access feed
+                    }
+                  } else {
+                    // No blueprint_subscribers record - create one linked to user_id
+                    const customerName = session.customer_details?.name || customerEmail?.split("@")[0] || "User"
+                    await sql`
+                      INSERT INTO blueprint_subscribers (
+                        user_id,
+                        email,
+                        name,
+                        access_token,
+                        paid_blueprint_purchased,
+                        paid_blueprint_purchased_at,
+                        paid_blueprint_stripe_payment_id,
+                        converted_to_user,
+                        converted_at,
+                        created_at,
+                        updated_at
+                      )
+                      VALUES (
+                        ${userId},
+                        ${customerEmail || null},
+                        ${customerName},
+                        ${randomUUID()},
+                        TRUE,
+                        NOW(),
+                        ${paymentIntentId || null},
+                        TRUE,
+                        NOW(),
+                        NOW(),
+                        NOW()
+                      )
+                    `
+                    console.log(`[v0] ✅ Created blueprint_subscribers record linked to user ${userId}`)
+                  }
+                  
+                  // FIX 2: Expand user's feed from 1 post to 9 posts (free → paid upgrade)
+                  try {
+                    console.log(`[v0] [FEED EXPANSION] Expanding feed for paid user ${userId}...`)
+                    
+                    // Get user's latest feed
+                    const userFeed = await sql`
+                      SELECT id, user_id
+                      FROM feed_layouts
+                      WHERE user_id = ${userId}
+                      ORDER BY created_at DESC
+                      LIMIT 1
+                    `
+                    
+                    if (userFeed && userFeed.length > 0) {
+                      const feedId = userFeed[0].id
+                      
+                      // Check current post count
+                      const existingPosts = await sql`
+                        SELECT position
+                        FROM feed_posts
+                        WHERE feed_layout_id = ${feedId}
+                        ORDER BY position ASC
+                      `
+                      
+                      const existingPositions = existingPosts.map((p: any) => p.position)
+                      console.log(`[v0] [FEED EXPANSION] Feed ${feedId} has posts at positions:`, existingPositions)
+                      
+                      // Create posts for missing positions 2-9
+                      const positionsToCreate = [2, 3, 4, 5, 6, 7, 8, 9].filter(
+                        (pos) => !existingPositions.includes(pos)
+                      )
+                      
+                      if (positionsToCreate.length > 0) {
+                        console.log(`[v0] [FEED EXPANSION] Creating posts for positions:`, positionsToCreate)
+                        
+                        for (const position of positionsToCreate) {
+                          await sql`
+                            INSERT INTO feed_posts (
+                              feed_layout_id,
+                              user_id,
+                              position,
+                              post_type,
+                              generation_status,
+                              generation_mode,
+                              created_at,
+                              updated_at
+                            ) VALUES (
+                              ${feedId},
+                              ${userId},
+                              ${position},
+                              'photo',
+                              'pending',
+                              'pro',
+                              NOW(),
+                              NOW()
+                            )
+                          `
+                        }
+                        
+                        console.log(`[v0] [FEED EXPANSION] ✅ Created ${positionsToCreate.length} new posts for paid user`)
+                      } else {
+                        console.log(`[v0] [FEED EXPANSION] Feed already has all 9 positions`)
+                      }
+                    } else {
+                      console.log(`[v0] [FEED EXPANSION] No feed found for user ${userId} (will be created on first access)`)
+                    }
+                  } catch (error) {
+                    console.error('[v0] [FEED EXPANSION] ❌ Error expanding feed:', error)
+                    // Don't fail webhook if expansion fails - user can still access feed
+                  }
+                } else if (customerEmail) {
+                  // Guest checkout: Use email-based lookup (for later migration)
+                  console.log(`[v0] 🔍 Guest checkout - checking for existing blueprint_subscriber with email: ${customerEmail}`)
+                  
+                  const blueprintCheck = await sql`
+                    SELECT id, access_token, email, paid_blueprint_purchased, user_id
+                    FROM blueprint_subscribers 
+                    WHERE LOWER(email) = LOWER(${customerEmail})
+                    LIMIT 1
+                  `
+                
+                if (blueprintCheck.length > 0) {
+                    // Existing subscriber - update with paid purchase
+                    const accessToken = blueprintCheck[0].access_token || randomUUID()
+                  await sql`
+                    UPDATE blueprint_subscribers
+                    SET 
+                      paid_blueprint_purchased = TRUE,
+                      paid_blueprint_purchased_at = NOW(),
+                      paid_blueprint_stripe_payment_id = ${paymentIntentId || null},
+                      converted_to_user = TRUE,
+                      converted_at = NOW(),
+                      access_token = ${accessToken},
+                      updated_at = NOW()
+                    WHERE LOWER(email) = LOWER(${customerEmail})
+                  `
+                    console.log(`[v0] ✅ Updated blueprint_subscribers with paid blueprint purchase for ${customerEmail} (guest checkout)`)
+                } else {
+                    // New subscriber - create record (will be linked to user_id when user signs up)
+                    const accessToken = randomUUID()
+                  const customerName = session.customer_details?.name || customerEmail.split("@")[0]
+                  await sql`
+                    INSERT INTO blueprint_subscribers (
+                      email,
+                      name,
+                      access_token,
+                      paid_blueprint_purchased,
+                      paid_blueprint_purchased_at,
+                      paid_blueprint_stripe_payment_id,
+                      converted_to_user,
+                      converted_at,
+                      created_at,
+                      updated_at
+                    )
+                    VALUES (
+                      ${customerEmail},
+                      ${customerName},
+                      ${accessToken},
+                      TRUE,
+                      NOW(),
+                      ${paymentIntentId || null},
+                      TRUE,
+                      NOW(),
+                      NOW(),
+                      NOW()
+                    )
+                  `
+                    console.log(`[v0] ✅ Created blueprint_subscribers record for guest checkout: ${customerEmail} (will be linked to user_id on signup)`)
+                  }
+                }
+                
+                // PR-3: Send paid blueprint delivery email
+                try {
+                  // Check if email already sent (dedupe)
+                  const existingEmail = await sql`
+                    SELECT id FROM email_logs
+                    WHERE LOWER(user_email) = LOWER(${customerEmail})
+                    AND email_type = 'paid-blueprint-delivery'
+                    LIMIT 1
+                  `
+                  
+                  if (existingEmail.length > 0) {
+                    console.log(`[v0] Skipping duplicate paid-blueprint-delivery email for ${customerEmail}`)
+                  } else {
+                    // Fetch subscriber data for email (use the accessToken we just set)
+                    console.log(`[v0] 🔍 Fetching subscriber data for email delivery: ${customerEmail}`)
+                    const subscriber = await sql`
+                      SELECT 
+                        name,
+                        access_token,
+                        paid_blueprint_photo_urls
+                      FROM blueprint_subscribers
+                      WHERE LOWER(email) = LOWER(${customerEmail})
+                      LIMIT 1
+                    `
+                    
+                    console.log(`[v0] 🔍 Subscriber data for email:`, {
+                      found: subscriber.length > 0,
+                      hasAccessToken: subscriber.length > 0 && !!subscriber[0].access_token,
+                      accessTokenValue: subscriber.length > 0 ? (subscriber[0].access_token ? 'SET' : 'MISSING') : 'NOT_FOUND',
+                    })
+                    
+                    if (subscriber.length > 0 && subscriber[0].access_token) {
+                      const subscriberData = subscriber[0]
+                      const firstName = subscriberData.name?.split(" ")[0] || undefined
+                      const finalAccessToken = subscriberData.access_token
+                      
+                      // Extract photo preview URLs if available (up to 4)
+                      let photoPreviewUrls: string[] | undefined = undefined
+                      if (subscriberData.paid_blueprint_photo_urls && Array.isArray(subscriberData.paid_blueprint_photo_urls)) {
+                        const validUrls = subscriberData.paid_blueprint_photo_urls
+                          .filter((url: any) => typeof url === "string" && url.startsWith("http"))
+                          .slice(0, 4)
+                        if (validUrls.length > 0) {
+                          photoPreviewUrls = validUrls
+                        }
+                      }
+                      
+                      // Generate email
+                      const emailContent = generatePaidBlueprintDeliveryEmail({
+                        firstName,
+                        email: customerEmail,
+                        accessToken: finalAccessToken,
+                        photoPreviewUrls,
+                      })
+                      
+                      // Send email
+                      const emailResult = await sendEmail({
+                        to: customerEmail,
+                        subject: PAID_BLUEPRINT_DELIVERY_SUBJECT,
+                        html: emailContent.html,
+                        text: emailContent.text,
+                        emailType: "paid-blueprint-delivery",
+                        tags: ["paid-blueprint", "delivery"],
+                      })
+                      
+                      if (emailResult.success) {
+                        console.log(`[v0] ✅ Sent paid blueprint delivery email to ${customerEmail}`)
+                      } else {
+                        console.error(`[v0] ⚠️ Failed to send paid blueprint delivery email: ${emailResult.error}`)
+                        // Don't fail webhook - email send failure is non-critical
+                      }
+                    } else {
+                      console.log(`[v0] ⚠️ Subscriber data incomplete (missing access_token) - skipping delivery email for ${customerEmail}`)
+                    }
+                  }
+                } catch (emailError: any) {
+                  console.error(`[v0] ⚠️ Error sending paid blueprint delivery email (non-critical):`, emailError.message)
+                  // Don't fail webhook if email send fails
+                }
+              } catch (blueprintError: any) {
+                console.error(`[v0] ❌ ERROR updating blueprint_subscribers with paid purchase:`)
+                console.error(`[v0] Error message:`, blueprintError.message)
+                console.error(`[v0] Error stack:`, blueprintError.stack)
+                console.error(`[v0] Full error:`, JSON.stringify(blueprintError, Object.getOwnPropertyNames(blueprintError)))
+                // Don't fail webhook if blueprint update fails - payment is already logged
+                // But log it prominently so we can debug
+              }
             }
           }
         } else if (session.mode === "subscription") {
