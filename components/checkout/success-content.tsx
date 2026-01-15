@@ -21,8 +21,12 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
   const [confirmPassword, setConfirmPassword] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState("")
+  // Decision 2: Removed access token state - no longer needed for authenticated users
 
   useEffect(() => {
+    // Decision 2: Paid blueprint now uses same flow as other products
+    // User info polling is only needed for unauthenticated users (account creation)
+
     if (initialEmail) {
       let attempts = 0
       const MAX_ATTEMPTS = 40 // Increased to 80 seconds total
@@ -67,7 +71,12 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
         clearInterval(pollInterval)
       }
     }
-  }, [initialEmail])
+  }, [initialEmail, purchaseType])
+
+  // FIX 3: Poll access status before redirecting (wait for webhook to complete)
+  const [isPollingAccess, setIsPollingAccess] = useState(false)
+  const [pollAttempts, setPollAttempts] = useState(0)
+  const MAX_POLL_ATTEMPTS = 30 // 30 attempts × 2s = 60s timeout
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -77,14 +86,110 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
       } = await supabase.auth.getUser()
       setIsAuthenticated(!!user)
 
-      if (purchaseType === "credit_topup" && user) {
+      // For credit topup, redirect immediately (no webhook dependency)
+      if (user && purchaseType === "credit_topup") {
         setTimeout(() => {
-          router.push("/studio")
+          router.push("/maya")
         }, 2000)
+        return
+      }
+
+      // For paid blueprint, poll access status until webhook completes
+      if (user && purchaseType === "paid_blueprint") {
+        setIsPollingAccess(true)
+        setPollAttempts(0)
       }
     }
     checkAuth()
   }, [purchaseType, router])
+
+  // Poll access status for paid blueprint purchases
+  useEffect(() => {
+    if (!isPollingAccess || !isAuthenticated || purchaseType !== "paid_blueprint") {
+      return
+    }
+
+    const pollAccessStatus = async () => {
+      try {
+        const response = await fetch('/api/feed-planner/access')
+        const data = await response.json()
+
+        console.log('[SUCCESS PAGE] Polling access:', {
+          attempt: pollAttempts + 1,
+          isPaidBlueprint: data.isPaidBlueprint,
+        })
+
+        if (data.isPaidBlueprint) {
+          // Webhook completed! Get access token and redirect to paid blueprint page
+          console.log('[SUCCESS PAGE] Paid access confirmed, fetching access token...')
+          setIsPollingAccess(false)
+          
+          // Fetch access token from subscriber by email
+          try {
+            const email = userInfo?.email || initialEmail
+            if (email) {
+              const tokenResponse = await fetch(`/api/blueprint/get-access-token?email=${encodeURIComponent(email)}`)
+              const tokenData = await tokenResponse.json()
+              
+              if (tokenData.accessToken) {
+                setTimeout(() => {
+                  router.push(`/blueprint/paid?access=${tokenData.accessToken}&purchase=success`)
+                }, 500)
+              } else {
+                // Fallback: redirect to feed planner
+                setTimeout(() => {
+                  router.push('/feed-planner?purchase=success')
+                }, 500)
+              }
+            } else {
+              setTimeout(() => {
+                router.push('/feed-planner?purchase=success')
+              }, 500)
+            }
+          } catch (err) {
+            console.error('[SUCCESS PAGE] Error fetching access token:', err)
+            // Fallback: redirect to feed planner
+            setTimeout(() => {
+              router.push('/feed-planner?purchase=success')
+            }, 500)
+          }
+        } else {
+          // Webhook not done yet, continue polling
+          setPollAttempts((prev) => prev + 1)
+
+          if (pollAttempts >= MAX_POLL_ATTEMPTS) {
+            // Timeout - redirect anyway, user can refresh
+            console.log('[SUCCESS PAGE] Polling timeout, redirecting anyway...')
+            setIsPollingAccess(false)
+            setTimeout(() => {
+              router.push('/feed-planner?purchase=success&refresh=needed')
+            }, 500)
+          }
+        }
+      } catch (error) {
+        console.error('[SUCCESS PAGE] Polling error:', error)
+        setPollAttempts((prev) => prev + 1)
+
+        if (pollAttempts >= MAX_POLL_ATTEMPTS) {
+          setIsPollingAccess(false)
+          setTimeout(() => {
+            router.push('/feed-planner?purchase=success&refresh=needed')
+          }, 500)
+        }
+      }
+    }
+
+    // Poll every 2 seconds
+    const interval = setInterval(pollAccessStatus, 2000)
+
+    // Initial poll immediately
+    pollAccessStatus()
+
+    return () => clearInterval(interval)
+  }, [isPollingAccess, isAuthenticated, purchaseType, pollAttempts, router])
+
+  // Decision 2: Removed access token polling - authenticated users redirect via checkAuth
+  // Unauthenticated users will see account creation form (same as one-time session)
 
   const handleCompleteAccount = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -133,7 +238,7 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
         return
       }
 
-      window.location.href = "/studio"
+      window.location.href = "/maya"
     } catch (err) {
       setError("Something went wrong. Please try again.")
       setIsSubmitting(false)
@@ -185,6 +290,10 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
       </div>
     )
   }
+
+  // Fix #1: Paid blueprint now uses same flow as other products
+  // Authenticated users auto-redirect (via checkAuth useEffect)
+  // Unauthenticated users see account creation form below
 
   if (!userInfo && initialEmail) {
     return (
@@ -496,7 +605,9 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
                 {isAuthenticated ? "YOU'RE ALL SET" : "ORDER CONFIRMED"}
               </h1>
               <p className="text-sm sm:text-base text-stone-600 font-light leading-relaxed max-w-xl mx-auto px-4">
-                {isAuthenticated
+                {isPollingAccess
+                  ? `Setting up your paid access... (${pollAttempts + 1}/${MAX_POLL_ATTEMPTS})`
+                  : isAuthenticated
                   ? "Your purchase is complete. Time to create something amazing."
                   : "Check your email for next steps."}
               </p>
@@ -542,10 +653,37 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
 
             <div className="text-center">
               <button
-                onClick={() => router.push("/studio")}
+                onClick={() => router.push("/maya")}
                 className="bg-stone-950 text-stone-50 px-8 sm:px-12 py-3 sm:py-4 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 min-h-[44px]"
               >
-                Go to Studio
+                Continue
+              </button>
+              <p className="text-[10px] sm:text-xs text-stone-500 font-light mt-4 sm:mt-6">
+                A confirmation email has been sent to {userInfo.email || initialEmail}
+              </p>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs sm:text-sm text-stone-500 font-light tracking-wider uppercase">Status</span>
+                  <span className="text-sm sm:text-base text-stone-700 font-light">Active</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-center">
+              <button
+                onClick={() => router.push("/maya")}
+                className="bg-stone-950 text-stone-50 px-8 sm:px-12 py-3 sm:py-4 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 min-h-[44px]"
+              >
+                Continue
               </button>
               <p className="text-[10px] sm:text-xs text-stone-500 font-light mt-4 sm:mt-6">
                 A confirmation email has been sent to {userInfo.email || initialEmail}
