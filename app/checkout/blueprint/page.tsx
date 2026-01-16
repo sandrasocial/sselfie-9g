@@ -78,7 +78,7 @@ export default async function BlueprintCheckoutPage({
     } else {
       // Unauthenticated user: Use landing checkout session (guest checkout)
       console.log("[Blueprint Checkout] 👤 Unauthenticated user, using landing checkout session", email ? `for email: ${email}` : "without email (will be captured in checkout)", promoCode ? `with promo: ${promoCode}` : "without promo code")
-      clientSecret = await createLandingCheckoutSession("paid_blueprint", promoCode)
+      clientSecret = await createLandingCheckoutSession("paid_blueprint", promoCode, email || null)
     }
 
     if (clientSecret) {

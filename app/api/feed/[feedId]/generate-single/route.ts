@@ -959,33 +959,36 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
         )
       }
       
-      // Generate with Nano Banana Pro
-      // Preview feeds ALWAYS use 9:16 aspect ratio (all 9 scenes in one image)
-      // Full feeds: Free users use 9:16, paid users use 4:5
       const aspectRatio = isPreviewFeed ? '9:16' : (access.isFree ? '9:16' : '4:5')
       
-      console.log(`[v0] [GENERATE-SINGLE] 📐 Aspect ratio for NanoBanana Pro: ${aspectRatio} (isPreviewFeed: ${isPreviewFeed}, layout_type: ${feedLayout?.layout_type}, isFree: ${access.isFree})`)
-      
-      // Clean prompt before sending to Replicate - ONLY remove unreplaced placeholders
-      // Preview feeds: Keep full template with grid instructions, only remove {{PLACEHOLDERS}}
-      // Full feeds: Already extracted to single scene via buildSingleImagePrompt(), only remove {{PLACEHOLDERS}} if any remain
       const { cleanBlueprintPrompt } = await import('@/lib/feed-planner/build-single-image-prompt')
       const cleanedPrompt = cleanBlueprintPrompt(finalPrompt)
       
-      if (cleanedPrompt !== finalPrompt) {
-        console.log(`[v0] [GENERATE-SINGLE] Removed unreplaced placeholders: ${finalPrompt.length} → ${cleanedPrompt.length} chars`)
+      let generation
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          generation = await generateWithNanoBanana({
+            prompt: cleanedPrompt,
+            image_input: baseImages.map(img => img.url),
+            aspect_ratio: aspectRatio,
+            resolution: '2K',
+            output_format: 'png',
+            safety_filter_level: 'block_only_high',
+          })
+          break
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error)
+          const retryable = message.includes("502") || message.includes("Bad Gateway")
+          if (attempt === 1 || !retryable) {
+            throw error
+          }
+          await new Promise(resolve => setTimeout(resolve, 1200))
+        }
+      }
+      if (!generation) {
+        throw new Error("Failed to generate image")
       }
       
-      const generation = await generateWithNanoBanana({
-        prompt: cleanedPrompt,
-        image_input: baseImages.map(img => img.url),
-        aspect_ratio: aspectRatio,
-        resolution: '2K',
-        output_format: 'png',
-        safety_filter_level: 'block_only_high',
-      })
-      
-      // Update database with prediction ID and cleaned prompt
       await sql`
         UPDATE feed_posts
         SET generation_status = 'generating',
@@ -995,7 +998,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
         WHERE id = ${postId}
       `
       
-      // Deduct Pro Mode credits (2 credits)
       const deduction = await deductCredits(
         user.id.toString(),
         getStudioProCreditCost('2K'),
@@ -1006,11 +1008,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       
       if (!deduction.success) {
         console.error("[v0] [GENERATE-SINGLE] Failed to deduct credits:", deduction.error)
-      } else {
-        console.log("[v0] [GENERATE-SINGLE] Credits deducted. New balance:", deduction.newBalance)
       }
-      
-      console.log("[v0] [GENERATE-SINGLE] ✅ Pro Mode prediction created successfully:", generation.predictionId)
       
       return Response.json({ 
         predictionId: generation.predictionId,
@@ -1020,12 +1018,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       })
     }
     
-    // Classic Mode path (existing logic)
     console.log("[v0] [GENERATE-SINGLE] Classic Mode post - using trained model")
-    
-    // Always use Maya's expertise to generate/enhance prompts
-    // This ensures trigger word, personal brand styling, and user context are always included
-    console.log("[v0] [GENERATE-SINGLE] Calling Maya to generate enhanced prompt with expertise...")
     console.log("[v0] [GENERATE-SINGLE] Request data:", {
       postType: post.post_type,
       caption: post.caption?.substring(0, 50),

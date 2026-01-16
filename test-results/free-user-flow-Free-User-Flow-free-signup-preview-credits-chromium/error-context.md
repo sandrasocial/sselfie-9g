@@ -1,0 +1,50 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e7] [cursor=pointer]:
+    - img [ref=e8]
+  - alert [ref=e11]
+  - generic [ref=e12]:
+    - main [ref=e16]:
+      - generic [ref=e17]:
+        - generic [ref=e19]:
+          - generic [ref=e21]: SSELFIE
+          - generic [ref=e22]:
+            - button "My Feed" [ref=e23]:
+              - generic [ref=e24]: My Feed
+              - img [ref=e25]
+            - button "Menu" [active] [ref=e27]:
+              - img [ref=e28]
+        - generic [ref=e35]:
+          - button "Close" [ref=e36]:
+            - img [ref=e37]
+          - generic [ref=e40]:
+            - generic [ref=e41]:
+              - generic [ref=e42]:
+                - generic [ref=e43]: Let's get started
+                - generic [ref=e44]: 13%
+              - progressbar [ref=e45]
+            - heading "Welcome" [level=2] [ref=e47]
+            - generic [ref=e48]:
+              - paragraph [ref=e49]: Hi Free Test User! 👋 Let\u0027s create content that actually looks and sounds like you. This will only take a few minutes.
+              - paragraph [ref=e50]: We\u0027ll ask you a few questions about your brand, style, and goals. Your answers help us generate personalized content just for you.
+            - button "Continue →" [ref=e52]
+    - navigation "Main navigation" [ref=e53]:
+      - generic [ref=e56]:
+        - button "Navigate to Maya" [ref=e57]:
+          - img [ref=e59]
+          - generic [ref=e61]: Maya
+        - button "Navigate to Gallery" [ref=e62]:
+          - img [ref=e64]
+          - generic [ref=e68]: Gallery
+        - button "Navigate to Feed" [ref=e69]:
+          - img [ref=e72]
+          - generic [ref=e77]: Feed
+        - button "Navigate to Academy" [ref=e78]:
+          - img [ref=e80]
+          - generic [ref=e82]: Academy
+        - button "Navigate to Account" [ref=e83]:
+          - img [ref=e85]
+          - generic [ref=e88]: Account
+```

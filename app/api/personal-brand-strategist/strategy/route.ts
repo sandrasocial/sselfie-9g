@@ -2,7 +2,7 @@ import { streamText } from "ai"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { PERSONAL_BRAND_STRATEGIST_PROMPT } from "@/lib/personal-brand-strategist/personality"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
-import { hasStudioMembership } from "@/lib/subscription"
+import { hasFullAccess } from "@/lib/subscription"
 
 export const maxDuration = 60
 
@@ -30,8 +30,8 @@ export async function POST(request: Request) {
 
     const featureEnabled = process.env.ENABLE_STRATEGIST_AI === "true"
     if (!featureEnabled) {
-      const isMember = await hasStudioMembership(neonUser.id)
-      if (!isMember) {
+      const hasAccess = await hasFullAccess(neonUser.id)
+      if (!hasAccess) {
         return new Response("Endpoint disabled", { status: 410 })
       }
     }

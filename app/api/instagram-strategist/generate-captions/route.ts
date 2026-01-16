@@ -4,7 +4,7 @@ import { neon } from "@neondatabase/serverless"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { INSTAGRAM_STRATEGIST_SYSTEM_PROMPT } from "@/lib/instagram-strategist/personality"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
-import { hasStudioMembership } from "@/lib/subscription"
+import { hasFullAccess } from "@/lib/subscription"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -34,8 +34,8 @@ export async function POST(request: Request) {
 
     const featureEnabled = process.env.ENABLE_STRATEGIST_AI === "true"
     if (!featureEnabled) {
-      const isMember = await hasStudioMembership(neonUser.id)
-      if (!isMember) {
+      const hasAccess = await hasFullAccess(neonUser.id)
+      if (!hasAccess) {
         return Response.json({ error: "Endpoint disabled" }, { status: 410 })
       }
     }

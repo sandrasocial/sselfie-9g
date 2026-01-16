@@ -94,7 +94,7 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
       // For credit topup, redirect immediately (no webhook dependency)
       if (user && purchaseType === "credit_topup") {
         setTimeout(() => {
-          router.push("/maya")
+          router.push("/studio?tab=feed-planner")
         }, 2000)
         return
       }
@@ -363,7 +363,7 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
 
           <div className="text-center">
             <button
-              onClick={() => router.push("/studio")}
+              onClick={() => router.push("/studio?tab=feed-planner")}
               className="bg-stone-950 text-stone-50 px-8 sm:px-12 py-3 sm:py-4 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 min-h-[44px]"
             >
               Back to Studio

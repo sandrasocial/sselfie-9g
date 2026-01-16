@@ -3,7 +3,7 @@ import { neon } from "@neondatabase/serverless"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { CONTENT_RESEARCH_STRATEGIST_PROMPT } from "@/lib/content-research-strategist/personality"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
-import { hasStudioMembership } from "@/lib/subscription"
+import { hasFullAccess } from "@/lib/subscription"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -22,8 +22,8 @@ export async function POST(request: Request) {
 
     const featureEnabled = process.env.ENABLE_STRATEGIST_AI === "true"
     if (!featureEnabled) {
-      const isMember = await hasStudioMembership(user.id)
-      if (!isMember) {
+      const hasAccess = await hasFullAccess(user.id)
+      if (!hasAccess) {
         return new Response("Endpoint disabled", { status: 410 })
       }
     }

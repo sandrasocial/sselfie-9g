@@ -119,21 +119,7 @@ export async function POST(request: NextRequest) {
         console.log("[v0] Product type from metadata:", session.metadata?.product_type)
         console.log("[v0] Test mode:", !event.livemode ? "YES (TEST)" : "NO (PRODUCTION)")
 
-        // ⚠️ IMPORTANT: Only grant credits if payment was successful
-        // For subscriptions, credits should be granted via invoice.payment_succeeded instead
-        // to ensure payment is confirmed before granting credits
-        // Fix: Handle $0 payments (discount codes) - Stripe sets payment_status to 'no_payment_required'
-        const isPaymentPaid = session.payment_status === "paid" || 
-          (session.payment_status === "no_payment_required" && session.amount_total === 0)
-        
-        // 🔍 ENHANCED DEBUG LOGGING FOR COUPON CODE ISSUES
-        console.log(`[v0] 🔍 PAYMENT STATUS ANALYSIS:`)
-        console.log(`[v0]   payment_status: "${session.payment_status}"`)
-        console.log(`[v0]   amount_total: ${session.amount_total} (${session.amount_total === 0 ? '⚠️ $0 - COUPON DETECTED' : `$${(session.amount_total / 100).toFixed(2)}`})`)
-        console.log(`[v0]   Check 1 (paid): ${session.payment_status === "paid"}`)
-        console.log(`[v0]   Check 2 (no_payment_required && $0): ${session.payment_status === "no_payment_required" && session.amount_total === 0}`)
-        console.log(`[v0]   isPaymentPaid RESULT: ${isPaymentPaid}`)
-        console.log(`[v0]   payment_intent: ${session.payment_intent || 'NULL (expected for $0 payments)'}`)
+        const isPaymentPaid = session.payment_status === "paid" || session.amount_total === 0
         
         if (!isPaymentPaid && session.mode === "subscription") {
           console.log(`[v0] ⚠️ Subscription checkout completed but payment status is '${session.payment_status}'. Credits will be granted when invoice.payment_succeeded fires.`)
@@ -142,7 +128,7 @@ export async function POST(request: NextRequest) {
           console.log(`[v0] ⚠️ DEBUG: This means isPaymentPaid=false, which will block processing`)
         }
 
-        const customerEmail = session.customer_details?.email || session.customer_email
+        const customerEmail = session.customer_details?.email || session.customer_email || session.metadata?.customer_email
         if (customerEmail) {
           try {
             const customerName = session.customer_details?.name || customerEmail.split("@")[0]
@@ -965,17 +951,6 @@ export async function POST(request: NextRequest) {
           } else if (productType === "paid_blueprint") {
             // ✨ PAID BLUEPRINT: Log payment, tag contact, grant credits and subscription
             // ⚠️ CRITICAL: Process if payment is confirmed OR if $0 payment (coupon code)
-            console.log(`[v0] 💎 PAID BLUEPRINT DETECTED - Product type: ${productType}`)
-            console.log(`[v0] 🔍 DETAILED COUPON DEBUG FOR PAID_BLUEPRINT:`)
-            console.log(`[v0]   Payment status: ${session.payment_status}`)
-            console.log(`[v0]   Amount total: ${session.amount_total} (${session.amount_total === 0 ? '⚠️ $0 - COUPON CODE DETECTED' : `$${(session.amount_total / 100).toFixed(2)}`})`)
-            console.log(`[v0]   isPaymentPaid: ${isPaymentPaid}`)
-            console.log(`[v0]   Payment intent: ${session.payment_intent || 'NULL (expected for $0 payments)'}`)
-            console.log(`[v0]   Promo code: ${session.metadata.promo_code || 'none'}`)
-            console.log(`[v0]   User ID: ${userId || 'MISSING'}`)
-            console.log(`[v0]   Customer email: ${customerEmail}`)
-            console.log(`[v0]   Full metadata:`, JSON.stringify(session.metadata, null, 2))
-            
             if (!isPaymentPaid) {
               console.log(`[v0] ⚠️ Paid Blueprint checkout completed but payment not confirmed (status: '${session.payment_status}'). Skipping processing until payment succeeds.`)
               console.log(`[v0] ⚠️ DEBUG BREAKDOWN:`)
@@ -1474,7 +1449,7 @@ export async function POST(request: NextRequest) {
                     SET 
                       paid_blueprint_purchased = TRUE,
                       paid_blueprint_purchased_at = NOW(),
-                      paid_blueprint_stripe_payment_id = ${paymentIntentId || null},
+                        paid_blueprint_stripe_payment_id = ${paymentIntentId || null},
                       converted_to_user = TRUE,
                       converted_at = NOW(),
                       access_token = ${accessToken},

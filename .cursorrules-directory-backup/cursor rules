@@ -8,11 +8,6 @@ Your goal: Optimize costs by 70-85% while maintaining quality.
 
 ## CRITICAL SAFETY RULES
 
-### 1. ALWAYS CREATE BACKUPS BEFORE CHANGES
-- Before modifying any file, create a .backup version
-- Example: route.ts → route.ts.backup-20241230
-- Never skip this step, even for "small" changes
-
 ### 2. NEVER BREAK EXISTING FUNCTIONALITY
 - Run existing tests before and after changes
 - If tests don't exist for a feature, CREATE them first

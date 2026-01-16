@@ -30,7 +30,6 @@ export default function FeedSinglePlaceholder({
 }: FeedSinglePlaceholderProps) {
   const [showBlueprintModal, setShowBlueprintModal] = useState(false)
   const [showUpsellModal, setShowUpsellModal] = useState(false)
-  const [creditsUsed, setCreditsUsed] = useState<number | null>(null)
   const [isDownloading, setIsDownloading] = useState(false)
   // Store predictionId from generate-single response for polling
   // FIX: Only store predictionId if post doesn't already have an image
@@ -49,7 +48,6 @@ export default function FeedSinglePlaceholder({
     predictionId,
     enabled: !!predictionId && !post?.image_url, // Only poll if we have predictionId and no image in DB yet
     onComplete: (imageUrl) => {
-      console.log("[Feed Single Placeholder] ✅ Generation completed, imageUrl:", imageUrl)
       // Clear predictionId to stop polling
       setPredictionId(null)
       // Call refresh callback to update parent feed data
@@ -101,7 +99,6 @@ export default function FeedSinglePlaceholder({
     // This makes the UI feel instant even though API call takes a few seconds
     const tempPredictionId = `temp-${Date.now()}`
     setPredictionId(tempPredictionId)
-    console.log("[Feed Single Placeholder] 🚀 Starting generation (optimistic UI)")
 
     try {
       const response = await fetch(`/api/feed/${feedId}/generate-single`, {
@@ -125,7 +122,6 @@ export default function FeedSinglePlaceholder({
       // Store actual predictionId to start polling (replaces temp one)
       if (data.predictionId) {
         setPredictionId(data.predictionId)
-        console.log("[Feed Single Placeholder] ✅ Generation started, predictionId:", data.predictionId)
       } else {
         // If no predictionId, clear optimistic state
         setPredictionId(null)
@@ -135,6 +131,10 @@ export default function FeedSinglePlaceholder({
         title: "Generating photo",
         description: "This usually takes 1-2 minutes",
       })
+
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("credits-updated"))
+      }
 
       // NON-BLOCKING: Call refresh callback without awaiting (don't block UI)
       // This allows the loading state to show immediately while data refreshes in background
@@ -148,7 +148,11 @@ export default function FeedSinglePlaceholder({
       // Clear optimistic state on error
       setPredictionId(null)
       console.error("[Feed Single Placeholder] Generate error:", error)
-      const errorMessage = error instanceof Error ? error.message : "Please try again"
+      const rawMessage = error instanceof Error ? error.message : "Please try again"
+      const isGatewayError = rawMessage.includes("502") || rawMessage.toLowerCase().includes("bad gateway")
+      const errorMessage = isGatewayError
+        ? "Image generation is down. Please try again in a minute."
+        : rawMessage
       
       toast({
         title: "Generation failed",
@@ -184,69 +188,6 @@ export default function FeedSinglePlaceholder({
   // 4. User hasn't seen the modal in this session (localStorage check)
   // 5. Wait 10 seconds after generation completes before showing modal
   
-  // Check credits when component mounts (initial check)
-  useEffect(() => {
-    const checkCredits = async () => {
-      if (creditsUsed !== null) return // Already checked
-      
-      try {
-        const response = await fetch("/api/credits/balance")
-        if (response.ok) {
-          const data = await response.json()
-          const totalUsed = data.total_used || 0
-          setCreditsUsed(totalUsed)
-          console.log("[Feed Single Placeholder] Initial credits check - Credits used:", totalUsed)
-        }
-      } catch (error) {
-        console.error("[Feed Single Placeholder] Error checking credits:", error)
-        setCreditsUsed(0)
-      }
-    }
-    
-    checkCredits()
-  }, [])
-
-  // Re-check credits when generation completes (credits are deducted when generation starts)
-  // This ensures we have the latest total_used after the generation API deducts credits
-  // Use a ref to track if we've already checked credits for this completion
-  const creditsCheckedForCompletionRef = useRef(false)
-  
-  useEffect(() => {
-    const generationComplete = hasImage && !isPostGenerating
-    
-    if (!generationComplete) {
-      // Reset the ref when generation starts again
-      creditsCheckedForCompletionRef.current = false
-      return
-    }
-    
-    // Only check credits once when generation completes
-    if (creditsCheckedForCompletionRef.current) return
-    creditsCheckedForCompletionRef.current = true
-    
-    // Re-check credits when image completes (in case user just used their 2nd credit)
-    const checkCreditsAfterCompletion = async () => {
-      try {
-        const response = await fetch("/api/credits/balance")
-        if (response.ok) {
-          const data = await response.json()
-          const totalUsed = data.total_used || 0
-          console.log("[Feed Single Placeholder] ✅ Re-checking credits after generation completes - Credits used:", totalUsed)
-          setCreditsUsed(totalUsed)
-        }
-      } catch (error) {
-        console.error("[Feed Single Placeholder] Error re-checking credits:", error)
-      }
-    }
-    
-    // Small delay to ensure credits are updated in DB
-    const timer = setTimeout(() => {
-      checkCreditsAfterCompletion()
-    }, 2000) // 2 second delay to ensure DB is updated after progress endpoint runs
-    
-    return () => clearTimeout(timer)
-  }, [hasImage, isPostGenerating])
-
   // Show upsell modal AUTOMATICALLY after generation completes (image loaded AND not generating)
   // Modal shows ONLY when user has 0 credits (not when they have credits available)
   // Timing: First time 10 seconds after generation, then every 5 minutes
@@ -258,7 +199,7 @@ export default function FeedSinglePlaceholder({
   const checkAndShowModal = async (isFirstTime: boolean) => {
     try {
       // Check current credit balance
-      const creditsResponse = await fetch("/api/credits/balance")
+      const creditsResponse = await fetch("/api/user/credits")
       if (!creditsResponse.ok) return false
       
       const creditsData = await creditsResponse.json()
@@ -320,7 +261,6 @@ export default function FeedSinglePlaceholder({
     
     console.log("[Feed Single Placeholder] First modal check:", {
       generationComplete,
-      creditsUsed,
       hasImage,
       isPostGenerating,
       shouldShowFirstModal,
@@ -386,11 +326,10 @@ export default function FeedSinglePlaceholder({
       predictionId,
       pollingStatus,
       isPostGenerating,
-      creditsUsed,
       showUpsellModal,
       generationComplete: hasImage && !isPostGenerating,
     })
-  }, [postId, displayImageUrl, generationStatus, predictionId, pollingStatus, isPostGenerating, creditsUsed, showUpsellModal, hasImage])
+  }, [postId, displayImageUrl, generationStatus, predictionId, pollingStatus, isPostGenerating, showUpsellModal, hasImage])
 
   return (
     <div className="px-4 md:px-8 py-12">

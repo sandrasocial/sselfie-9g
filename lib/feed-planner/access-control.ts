@@ -5,7 +5,7 @@
  * Based on user's subscription type (free, paid blueprint, one-time session, membership)
  */
 
-import { hasPaidBlueprint, hasStudioMembership } from "@/lib/subscription"
+import { hasPaidBlueprint, hasFullAccess } from "@/lib/subscription"
 import { getUserCredits } from "@/lib/credits"
 
 export interface FeedPlannerAccess {
@@ -41,7 +41,7 @@ export async function getFeedPlannerAccess(userId: string): Promise<FeedPlannerA
 
     // Check subscription types
     const hasPaid = await hasPaidBlueprint(userId)
-    const hasMembership = await hasStudioMembership(userId)
+    const hasMembership = await hasFullAccess(userId)
     const credits = await getUserCredits(userId)
 
     // Determine access level (order matters: membership > paid blueprint > free)

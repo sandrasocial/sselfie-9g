@@ -7,7 +7,7 @@ import type Stripe from "stripe" // Declare the Stripe variable
 
 const ENABLE_BETA_DISCOUNT = false
 
-export async function createLandingCheckoutSession(productId: string, promoCode?: string) {
+export async function createLandingCheckoutSession(productId: string, promoCode?: string, customerEmail?: string | null) {
   console.log("[v0] Creating checkout session for product:", productId, promoCode ? `with promo: ${promoCode}` : "")
 
   const product = getProductById(productId)
@@ -134,6 +134,7 @@ export async function createLandingCheckoutSession(productId: string, promoCode?
     ui_mode: "embedded",
     mode: isSubscription ? "subscription" : "payment",
     redirect_on_completion: "never",
+    ...(customerEmail && { customer_email: customerEmail }),
     line_items: [
       {
         price: stripePriceId,
@@ -166,6 +167,7 @@ export async function createLandingCheckoutSession(productId: string, promoCode?
       product_type: product.type,
       credits: product.credits?.toString() || "0",
       source: "landing_page",
+      ...(customerEmail && { customer_email: customerEmail }),
       ...(promoCode && { promo_code: promoCode }),
     },
   }

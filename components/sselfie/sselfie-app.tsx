@@ -318,6 +318,8 @@ export default function SselfieApp({
     subscriptionStatus,
     productType,
   })
+  const isOneTimeSession = productType === "one_time_session"
+  const academyBlocked = access.isPaidBlueprintOnly || isOneTimeSession
 
   const handleTabChange = (tabId: string) => {
     // Prevent paid blueprint users from accessing Maya
@@ -335,32 +337,6 @@ export default function SselfieApp({
     window.history.pushState(null, "", `#${tabId}`)
   }
 
-  useEffect(() => {
-    const fetchCredits = async () => {
-      try {
-        const response = await fetch("/api/user/credits")
-        if (!response.ok) {
-          console.error("[v0] Credit fetch failed with status:", response.status)
-          setCreditBalance(0)
-          setCreditsFetchFailed(true)
-          return
-        }
-        const data = await response.json()
-        console.log("[v0] Credit balance:", data)
-        setCreditBalance(data.balance || 0)
-        setCreditsFetchFailed(false)
-      } catch (error) {
-        console.error("[v0] Error fetching credits:", error)
-        setCreditBalance(0)
-        setCreditsFetchFailed(true)
-      } finally {
-        setIsLoadingCredits(false)
-      }
-    }
-
-    fetchCredits()
-  }, [])
-
   const refreshCredits = useCallback(async () => {
     try {
       const response = await fetch("/api/user/credits")
@@ -375,6 +351,37 @@ export default function SselfieApp({
       // Don't throw - just log the error
     }
   }, [])
+
+  useEffect(() => {
+    const fetchCredits = async () => {
+      try {
+        const response = await fetch("/api/user/credits")
+        if (!response.ok) {
+          setCreditBalance(0)
+          setCreditsFetchFailed(true)
+          return
+        }
+        const data = await response.json()
+        setCreditBalance(data.balance || 0)
+        setCreditsFetchFailed(false)
+      } catch (error) {
+        setCreditBalance(0)
+        setCreditsFetchFailed(true)
+      } finally {
+        setIsLoadingCredits(false)
+      }
+    }
+
+    fetchCredits()
+  }, [])
+
+  useEffect(() => {
+    const handleCreditsUpdated = () => {
+      refreshCredits()
+    }
+    window.addEventListener("credits-updated", handleCreditsUpdated)
+    return () => window.removeEventListener("credits-updated", handleCreditsUpdated)
+  }, [refreshCredits])
 
   // Decision 3: Fetch onboarding status and determine initial tab on mount and refresh
   useEffect(() => {
@@ -404,10 +411,6 @@ export default function SselfieApp({
               hasExtensionData: false
             }
         const blueprintData = blueprintResponse.ok ? await blueprintResponse.json() : null
-
-        console.log("[v0] Training status data:", trainingData)
-        console.log("[v0] Onboarding status data:", onboardingData)
-        console.log("[v0] Blueprint entitlement data:", blueprintData?.entitlement)
 
         const hasModel = trainingData.hasTrainedModel || false
         const onboardingCompleted = onboardingData.onboarding_completed || false
@@ -479,15 +482,6 @@ export default function SselfieApp({
           !isBlueprintUser || // Studio users can complete without blueprint extension
           (hasBaseWizardData && hasExtensionData) // Blueprint users need base + extension
         )
-
-        console.log("[Wizard Debug] ✅ Is Actually Completed:", {
-          isActuallyCompleted,
-          onboardingCompleted,
-          isBlueprintUser,
-          hasBaseWizardData,
-          hasExtensionData,
-          isPaidBlueprintUser,
-        })
 
         if (!isActuallyCompleted && mounted) {
           // Check if user is a member (has subscription) - welcome screen is only for members
@@ -989,7 +983,7 @@ export default function SselfieApp({
                 )}
                 {activeTab === "feed-planner" && <FeedPlannerClient userId={userId.toString()} userName={userName} />}
                 {activeTab === "academy" && (
-                  (!access.canUseGenerators || access.isPaidBlueprintOnly) ? (
+                  (!access.canUseGenerators || academyBlocked) ? (
                     <UpgradeOrCredits feature="Academy" isPaidBlueprintUser={access.isPaidBlueprintOnly} />
                   ) : (
                     <AcademyScreen />

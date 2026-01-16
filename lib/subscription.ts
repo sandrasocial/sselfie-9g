@@ -1,6 +1,6 @@
 import { sql } from "@/lib/neon"
 
-export type ProductType = "sselfie_studio_membership" | "paid_blueprint" | "free_blueprint"
+export type ProductType = "sselfie_studio_membership" | "brand_studio_membership" | "pro" | "one_time_session" | "paid_blueprint" | "free_blueprint"
 export type SubscriptionStatus = "active" | "canceled" | "expired"
 
 /**
@@ -9,8 +9,6 @@ export type SubscriptionStatus = "active" | "canceled" | "expired"
  */
 export async function getUserSubscription(userId: string) {
   try {
-    console.log(`[v0] [getUserSubscription] Looking up subscription for user: ${userId}`)
-
     const subscriptions = await sql`
       SELECT 
         product_type,
@@ -26,34 +24,10 @@ export async function getUserSubscription(userId: string) {
       LIMIT 1
     `
 
-    console.log(`[v0] [getUserSubscription] Found ${subscriptions.length} active subscription(s)`)
-
     if (subscriptions.length > 0) {
-      console.log(`[v0] [getUserSubscription] Subscription details:`, {
-        product_type: subscriptions[0].product_type,
-        status: subscriptions[0].status,
-        stripe_subscription_id: subscriptions[0].stripe_subscription_id,
-        current_period_start: subscriptions[0].current_period_start,
-        current_period_end: subscriptions[0].current_period_end,
-      })
       return subscriptions[0]
     }
 
-    console.log(`[v0] [getUserSubscription] No active subscription found for user ${userId}`)
-    const allSubscriptions = await sql`
-      SELECT 
-        product_type,
-        status,
-        stripe_subscription_id,
-        created_at
-      FROM subscriptions 
-      WHERE user_id = ${userId}
-      ORDER BY created_at DESC
-    `
-    console.log(
-      `[v0] [getUserSubscription] DEBUG: User has ${allSubscriptions.length} total subscription(s) in database:`,
-      allSubscriptions,
-    )
     return null
   } catch (error) {
     console.error("[v0] [getUserSubscription] Error getting user subscription:", error)
@@ -66,13 +40,21 @@ export async function getUserSubscription(userId: string) {
  */
 export async function hasStudioMembership(userId: string): Promise<boolean> {
   try {
-    console.log(`[v0] [hasStudioMembership] Checking Studio Membership for user: ${userId}`)
     const subscription = await getUserSubscription(userId)
-    const hasAccess = subscription?.product_type === "sselfie_studio_membership" && subscription?.status === "active"
-    console.log(`[v0] [hasStudioMembership] Result: ${hasAccess}`)
+    const hasAccess = ["sselfie_studio_membership", "brand_studio_membership", "pro"].includes(subscription?.product_type || "") && subscription?.status === "active"
     return hasAccess
   } catch (error) {
     console.error("[v0] [hasStudioMembership] Error checking studio membership:", error)
+    return false
+  }
+}
+
+export async function hasFullAccess(userId: string): Promise<boolean> {
+  try {
+    const subscription = await getUserSubscription(userId)
+    return ["sselfie_studio_membership", "brand_studio_membership", "pro", "one_time_session"].includes(subscription?.product_type || "") && subscription?.status === "active"
+  } catch (error) {
+    console.error("[v0] [hasFullAccess] Error checking full access:", error)
     return false
   }
 }

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
 import { getOrCreateTrainingModel } from "@/lib/data/training"
-import { hasStudioMembership } from "@/lib/subscription"
+import { hasFullAccess } from "@/lib/subscription"
 import {
   getReplicateClient,
   FLUX_LORA_TRAINER,
@@ -44,8 +44,8 @@ export async function POST(request: Request) {
 
   const featureEnabled = process.env.ENABLE_TRAINING_AI === "true"
   if (!featureEnabled) {
-    const isMember = await hasStudioMembership(neonUser.id)
-    if (!isMember) {
+    const hasAccess = await hasFullAccess(neonUser.id)
+    if (!hasAccess) {
       return NextResponse.json({ error: "Endpoint disabled" }, { status: 410 })
     }
   }

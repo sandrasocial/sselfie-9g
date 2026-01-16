@@ -379,15 +379,6 @@ export default function UnifiedOnboardingWizard({
       return
     }
 
-    console.log("[Unified Wizard] Completing wizard with data:", {
-      hasBusinessType: !!formData.businessType,
-      hasIdealAudience: !!formData.idealAudience,
-      hasTransformationStory: !!formData.transformationStory,
-      hasVisualAesthetic: formData.visualAesthetic.length > 0,
-      hasFeedStyle: !!formData.feedStyle,
-      selfieCount: formData.selfieImages?.length || 0,
-    })
-
     setIsSaving(true)
     try {
       // Save data via API endpoint
@@ -396,8 +387,6 @@ export default function UnifiedOnboardingWizard({
         selfieImages: Array.isArray(formData.selfieImages) ? formData.selfieImages : [],
         contentPillars: Array.isArray(formData.contentPillars) ? formData.contentPillars : [],
       }
-
-      console.log("[Unified Wizard] Sending completion request with payload:", payload)
 
       // TODO: Update to use unified endpoint in Phase 2
       const response = await fetch("/api/onboarding/unified-onboarding-complete", {
@@ -408,9 +397,9 @@ export default function UnifiedOnboardingWizard({
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        console.error("[Unified Wizard] ❌ Completion failed:", errorData)
-        throw new Error(errorData.error || "Failed to save wizard data")
+        const errorText = await response.text()
+        console.error("[Unified Wizard] ❌ Completion failed:", errorText || response.status)
+        throw new Error(errorText || "Failed to save wizard data")
       }
 
       console.log("[Unified Wizard] ✅ Completion successful")

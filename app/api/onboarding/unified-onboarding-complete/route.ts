@@ -218,8 +218,8 @@ export async function POST(req: NextRequest) {
       ? settingsPreferenceArray[0]
       : "minimal")
 
+    const accessToken = crypto.randomUUID()
     if (existingBlueprint.length > 0) {
-      // UPDATE existing blueprint_subscribers record with wizard data
       await sql`
         UPDATE blueprint_subscribers
         SET 
@@ -228,10 +228,7 @@ export async function POST(req: NextRequest) {
           updated_at = NOW()
         WHERE user_id = ${neonUser.id}
       `
-      console.log("[Unified Onboarding] ✅ Updated blueprint_subscribers with wizard data for backward compatibility")
     } else {
-      // INSERT new blueprint_subscribers record with wizard data
-      const accessToken = crypto.randomUUID()
       await sql`
         INSERT INTO blueprint_subscribers (
           user_id,
@@ -253,8 +250,14 @@ export async function POST(req: NextRequest) {
           NOW(),
           NOW()
         )
+        ON CONFLICT (email) DO UPDATE SET
+          user_id = COALESCE(blueprint_subscribers.user_id, EXCLUDED.user_id),
+          name = COALESCE(blueprint_subscribers.name, EXCLUDED.name),
+          access_token = COALESCE(blueprint_subscribers.access_token, EXCLUDED.access_token),
+          form_data = EXCLUDED.form_data,
+          feed_style = EXCLUDED.feed_style,
+          updated_at = NOW()
       `
-      console.log("[Unified Onboarding] ✅ Created blueprint_subscribers record with wizard data for backward compatibility")
     }
 
     return NextResponse.json({
