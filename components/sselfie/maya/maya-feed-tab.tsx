@@ -545,7 +545,7 @@ export default function MayaFeedTab({
               Welcome
             </h2>
             <p className="text-xs sm:text-sm text-stone-600 tracking-wide text-center mb-4 sm:mb-6 max-w-md leading-relaxed px-4">
-              Hi, I'm Maya. I'll help you create Instagram feeds, captions, and strategies.
+              Hi, I&apos;m Maya. I&apos;ll help you create Instagram feeds, captions, and strategies.
             </p>
             {/* Feed-specific quick prompts */}
             <MayaQuickPrompts

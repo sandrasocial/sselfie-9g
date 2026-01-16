@@ -86,22 +86,12 @@ export default function VideoPlayer({
   const containerRef = useRef<HTMLDivElement>(null)
   const lastSaveTimeRef = useRef(0)
 
-  // Validate video URL
-  if (!videoUrl || videoUrl.trim() === "" || videoUrl === "PLACEHOLDER_VIDEO_URL") {
-    console.warn("[v0] VideoPlayer: Invalid or missing video URL", { videoUrl, lessonId })
-    return (
-      <div className="bg-stone-950 p-8 text-center">
-        <p className="text-stone-50 font-light mb-4">Video URL is not available</p>
-        <p className="text-stone-400 text-sm">Please contact support if this issue persists.</p>
-      </div>
-    )
-  }
-
   const vimeoVideoId = getVimeoVideoId(videoUrl)
   const youtubeVideoId = getYouTubeVideoId(videoUrl)
   const isVimeo = vimeoVideoId !== null
   const isYouTube = youtubeVideoId !== null
   const isEmbedded = isVimeo || isYouTube
+  const isInvalidVideoUrl = !videoUrl || videoUrl.trim() === "" || videoUrl === "PLACEHOLDER_VIDEO_URL"
   
   const vimeoEmbedUrl = isVimeo
     ? `https://player.vimeo.com/video/${vimeoVideoId}?autoplay=0&title=0&byline=0&portrait=0&responsive=1&dnt=1`
@@ -478,6 +468,16 @@ export default function VideoPlayer({
   }
 
   const progressPercentage = duration > 0 ? (currentTime / duration) * 100 : 0
+
+  if (isInvalidVideoUrl) {
+    console.warn("[v0] VideoPlayer: Invalid or missing video URL", { videoUrl, lessonId })
+    return (
+      <div className="bg-stone-950 p-8 text-center">
+        <p className="text-stone-50 font-light mb-4">Video URL is not available</p>
+        <p className="text-stone-400 text-sm">Please contact support if this issue persists.</p>
+      </div>
+    )
+  }
 
   return (
     <div ref={containerRef} className="bg-stone-950 overflow-hidden">

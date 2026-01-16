@@ -500,7 +500,7 @@ export default function OnboardingWizard({
                       Welcome to SSELFIE!
                     </h2>
                     <p className={`${DesignClasses.typography.body.medium} text-white/90 max-w-md mx-auto`}>
-                      Let's train your personal AI model with your selfies. This takes about 5 minutes and you only need to do it once.
+                      Let&apos;s train your personal AI model with your selfies. This takes about 5 minutes and you only need to do it once.
                     </p>
                     <button
                       onClick={() => setCurrentStep("upload")}

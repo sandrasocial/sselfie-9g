@@ -170,36 +170,47 @@ export function buildPlaceholders(
   
   const textureNotes = `Focus on textures: ${library.textures.slice(0, 2).join(', ')}.`
   
-    // Find locations by setting type
-    const outdoorLocations = locations.filter(l => l.setting === 'outdoor')
-    const indoorLocations = locations.filter(l => l.setting === 'indoor')
+  // ✅ FIX: Filter locations by setting type FIRST, then apply rotation
+  // This ensures outdoor/indoor locations rotate correctly across feeds
+  const outdoorLocations = locations.filter(l => l.setting === 'outdoor')
+  const indoorLocations = locations.filter(l => l.setting === 'indoor')
+  
+  // Apply rotation index to filtered arrays (not full array)
+  // This ensures different outdoor/indoor locations are used each feed
+  const outdoorIndex = outdoorLocations.length > 0 
+    ? locationIndex % outdoorLocations.length 
+    : 0
+  const indoorIndex = indoorLocations.length > 0 
+    ? locationIndex % indoorLocations.length 
+    : 0
+  
+  // Get frame type from context (default to midshot if not provided)
+  const frameType = context.frameType || 'midshot'
+  
+  // Return placeholder values with contextual location formatting
+  return {
+    OUTFIT_FULLBODY_1: formatOutfit(outfit1),
+    OUTFIT_FULLBODY_2: formatOutfit(outfit2),
+    OUTFIT_FULLBODY_3: formatOutfit(outfit3),
+    OUTFIT_FULLBODY_4: formatOutfit(outfit4),
     
-    // Get frame type from context (default to midshot if not provided)
-    const frameType = context.frameType || 'midshot'
+    OUTFIT_MIDSHOT_1: formatMidshot(outfit1),
+    OUTFIT_MIDSHOT_2: formatMidshot(outfit2),
     
-    // Return placeholder values with contextual location formatting
-    return {
-      OUTFIT_FULLBODY_1: formatOutfit(outfit1),
-      OUTFIT_FULLBODY_2: formatOutfit(outfit2),
-      OUTFIT_FULLBODY_3: formatOutfit(outfit3),
-      OUTFIT_FULLBODY_4: formatOutfit(outfit4),
-      
-      OUTFIT_MIDSHOT_1: formatMidshot(outfit1),
-      OUTFIT_MIDSHOT_2: formatMidshot(outfit2),
-      
-      LOCATION_OUTDOOR_1: outdoorLocations.length > 0 
-        ? formatLocationForFrameType(outdoorLocations[0], frameType)
-        : formatLocationForFrameType(location1, frameType),
-      LOCATION_INDOOR_1: indoorLocations.length > 0 
-        ? formatLocationForFrameType(indoorLocations[0], frameType)
-        : formatLocationForFrameType(location1, frameType),
-      LOCATION_INDOOR_2: indoorLocations.length > 1 
-        ? formatLocationForFrameType(indoorLocations[1], frameType)
-        : formatLocationForFrameType(location2, frameType),
-      LOCATION_INDOOR_3: indoorLocations.length > 2 
-        ? formatLocationForFrameType(indoorLocations[2], frameType)
-        : formatLocationForFrameType(location3, frameType),
-      LOCATION_ARCHITECTURAL_1: formatLocationForFrameType(location1, frameType),
+    // ✅ FIX: Use rotated indices for outdoor/indoor locations
+    LOCATION_OUTDOOR_1: outdoorLocations.length > 0 
+      ? formatLocationForFrameType(outdoorLocations[outdoorIndex], frameType)
+      : formatLocationForFrameType(location1, frameType),
+    LOCATION_INDOOR_1: indoorLocations.length > 0 
+      ? formatLocationForFrameType(indoorLocations[indoorIndex], frameType)
+      : formatLocationForFrameType(location1, frameType),
+    LOCATION_INDOOR_2: indoorLocations.length > 1 
+      ? formatLocationForFrameType(indoorLocations[(indoorIndex + 1) % indoorLocations.length], frameType)
+      : formatLocationForFrameType(location2, frameType),
+    LOCATION_INDOOR_3: indoorLocations.length > 2 
+      ? formatLocationForFrameType(indoorLocations[(indoorIndex + 2) % indoorLocations.length], frameType)
+      : formatLocationForFrameType(location3, frameType),
+    LOCATION_ARCHITECTURAL_1: formatLocationForFrameType(location1, frameType),
     
     ACCESSORY_CLOSEUP_1: formatAccessories(accessory1),
     ACCESSORY_FLATLAY_1: formatAccessories(accessory1),

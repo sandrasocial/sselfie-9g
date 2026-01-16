@@ -1,16 +1,14 @@
 import { streamText } from "ai"
 import { neon } from "@neondatabase/serverless"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { createServerClient } from "@/lib/supabase/server"
 import { CONTENT_RESEARCH_STRATEGIST_PROMPT } from "@/lib/content-research-strategist/personality"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { hasStudioMembership } from "@/lib/subscription"
 
 const sql = neon(process.env.DATABASE_URL!)
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createServerClient()
-
     const { user: authUser, error: authError } = await getAuthenticatedUser()
 
     if (authError || !authUser) {
@@ -22,11 +20,15 @@ export async function POST(request: Request) {
       return new Response("Unauthorized", { status: 401 })
     }
 
+    const featureEnabled = process.env.ENABLE_STRATEGIST_AI === "true"
+    if (!featureEnabled) {
+      const isMember = await hasStudioMembership(user.id)
+      if (!isMember) {
+        return new Response("Endpoint disabled", { status: 410 })
+      }
+    }
+
     const { niche, brandProfile } = await request.json()
-
-    console.log("[v0] Content Research Strategist: Starting research for niche:", niche)
-
-    // Create research prompt
     const researchPrompt = `Research the Instagram landscape for this niche: ${niche}
 
 Brand Profile Context:

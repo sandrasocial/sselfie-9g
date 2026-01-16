@@ -213,7 +213,7 @@ export default function DiagnosticsPage() {
                 <code className="bg-muted px-2 py-1 rounded">https://sselfie.ai/api/webhooks/stripe</code>
               </li>
               <li>
-                Scroll to <strong>"Recent deliveries"</strong> section
+                Scroll to <strong>&quot;Recent deliveries&quot;</strong> section
               </li>
               <li>
                 Check if there are any webhook attempts:
@@ -237,8 +237,8 @@ export default function DiagnosticsPage() {
 
             <Alert>
               <AlertDescription>
-                <strong>Important:</strong> Make sure you're checking the webhook logs in the same mode (test/live) that
-                you're using for purchases.
+                <strong>Important:</strong> Make sure you&apos;re checking the webhook logs in the same mode (test/live) that
+                you&apos;re using for purchases.
               </AlertDescription>
             </Alert>
           </CardContent>

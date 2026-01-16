@@ -146,7 +146,7 @@ export default function FeedStrategy({ feedData, feedId, onCreateStrategy, onStr
             <div className="flex flex-col items-center space-y-4 max-w-md text-center">
               <div className="w-8 h-8 border-2 border-stone-300 border-t-stone-900 rounded-full animate-spin" />
               <div className="space-y-2">
-                <p className="text-sm font-medium text-stone-900">I'm crafting your comprehensive strategy...</p>
+                <p className="text-sm font-medium text-stone-900">I&apos;m crafting your comprehensive strategy...</p>
                 <p className="text-xs text-stone-500">This includes posting schedules, reel ideas, hashtags, and growth tactics! ✨</p>
               </div>
             </div>

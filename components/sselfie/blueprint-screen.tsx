@@ -637,7 +637,7 @@ export default function BlueprintScreen({ userId }: BlueprintScreenProps) {
                   Upload your selfies
                 </h2>
                 <p className="text-sm text-stone-600 mb-6">
-                  Add 1-3 photos of yourself. We'll use them to create your personalized grid.
+                  Add 1-3 photos of yourself. We&apos;ll use them to create your personalized grid.
                 </p>
                 {userInfo?.email && (
                   <BlueprintSelfieUpload

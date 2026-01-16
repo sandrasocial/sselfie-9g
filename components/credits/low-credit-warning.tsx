@@ -10,8 +10,8 @@ interface LowCreditWarningProps {
 export function LowCreditWarning({ credits, onBuyCredits }: LowCreditWarningProps) {
   const [dismissed, setDismissed] = useState(false)
 
-  // Show warning if credits are below 25 (can't train) or below 10 (running very low)
-  const showWarning = credits < 25 && !dismissed
+  // Show warning if credits are below 20 (can't train) or below 10 (running very low)
+  const showWarning = credits < 20 && !dismissed
 
   useEffect(() => {
     // Reset dismissed state when credits change significantly
@@ -23,7 +23,7 @@ export function LowCreditWarning({ credits, onBuyCredits }: LowCreditWarningProp
   if (!showWarning) return null
 
   const isVeryLow = credits < 10
-  const cannotTrain = credits < 25
+  const cannotTrain = credits < 20
 
   return (
     <div
@@ -46,11 +46,11 @@ export function LowCreditWarning({ credits, onBuyCredits }: LowCreditWarningProp
       <p className="text-sm text-stone-700 font-light mb-4">
         {isVeryLow ? (
           <>
-            You have <strong>{credits} credits</strong> remaining. You need at least 25 credits to train a model.
+            You have <strong>{credits} credits</strong> remaining. You need at least 20 credits to train a model.
           </>
         ) : cannotTrain ? (
           <>
-            You have <strong>{credits} credits</strong> remaining. You need 25 credits to train a model, but you can
+            You have <strong>{credits} credits</strong> remaining. You need 20 credits to train a model, but you can
             still generate images.
           </>
         ) : null}

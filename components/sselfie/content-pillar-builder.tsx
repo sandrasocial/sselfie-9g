@@ -75,12 +75,12 @@ export default function ContentPillarBuilder({ userAnswers, onComplete, onSkip }
           <div className="flex-1">
             <p className="text-xs font-semibold text-stone-950 mb-1">Maya</p>
             <p className="text-sm text-stone-600 leading-relaxed">
-              Now let's figure out what you'll actually post about! Content pillars are the main themes you'll create
+              Now let&apos;s figure out what you&apos;ll actually post about! Content pillars are the main themes you&apos;ll create
               content around. Think of them as your content categories - they keep your feed organized and make it easy
               to come up with post ideas.
             </p>
             <p className="text-sm text-stone-600 leading-relaxed mt-2">
-              Based on everything you've told me about your brand, I can suggest pillars that will work perfectly for
+              Based on everything you&apos;ve told me about your brand, I can suggest pillars that will work perfectly for
               you. Ready?
             </p>
           </div>

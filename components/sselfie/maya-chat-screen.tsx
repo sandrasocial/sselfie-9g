@@ -458,33 +458,24 @@ export default function MayaChatScreen({
 
     const generateConcepts = async () => {
       setIsGeneratingConcepts(true)
-      console.log("[v0] Calling generate-concepts API for:", pendingConceptRequest)
 
       try {
         // Extract reference image from user messages (check all user messages, most recent first)
         let referenceImageUrl: string | undefined = undefined
         const userMessages = messages.filter((m) => m.role === "user").reverse() // Most recent first
-        
-        console.log("[v0] 🔍 Searching for reference image in", userMessages.length, "user messages")
-        console.log("[v0] 📋 Message structure sample:", JSON.stringify(userMessages[0]?.parts?.slice(0, 2) || getMessageText(userMessages[0])?.substring(0, 100), null, 2))
-        
+
         for (const userMessage of userMessages) {
           // Check if message has image in parts
           if (userMessage.parts && Array.isArray(userMessage.parts)) {
-            console.log("[v0] 🔍 Checking message with", userMessage.parts.length, "parts")
-            
             const imagePart = userMessage.parts.find((p: any) => {
               if (!p) return false
-              console.log("[v0]   - Part type:", p.type, "keys:", Object.keys(p))
-              
+
               // Check for image type
               if (p.type === "image") {
-                console.log("[v0]   ✅ Found image part!")
                 return true
               }
               // Check for file type with image mediaType
               if (p.type === "file" && p.mediaType && p.mediaType.startsWith("image/")) {
-                console.log("[v0]   ✅ Found file image part!")
                 return true
               }
               return false
@@ -495,10 +486,7 @@ export default function MayaChatScreen({
               const imagePartAny = imagePart as any
               referenceImageUrl = imagePartAny.image || imagePartAny.url || imagePartAny.src || imagePartAny.data
               if (referenceImageUrl) {
-                console.log("[v0] ✅ Extracted reference image from message parts:", referenceImageUrl.substring(0, 100) + "...")
                 break // Found it, stop searching
-              } else {
-                console.log("[v0] ⚠️ Image part found but no URL property:", Object.keys(imagePart))
               }
             }
           }
@@ -510,19 +498,9 @@ export default function MayaChatScreen({
             const inspirationImageMatch = textContent.match(/\[Inspiration Image: (https?:\/\/[^\]]+)\]/)
             if (inspirationImageMatch) {
               referenceImageUrl = inspirationImageMatch[1]
-              console.log("[v0] ✅ Extracted reference image from text marker:", referenceImageUrl.substring(0, 100) + "...")
               break // Found it, stop searching
             }
           }
-        }
-        
-        if (!referenceImageUrl) {
-          console.log("[v0] ⚠️ No reference image found in any user messages")
-          console.log("[v0] 📋 All user messages:", userMessages.map(m => ({
-            hasParts: !!m.parts,
-            partsCount: m.parts?.length || 0,
-            hasText: !!getMessageText(m),
-          })))
         }
 
         // 🔴 CRITICAL: Detect and extract guide prompt from user messages
@@ -551,7 +529,6 @@ export default function MayaChatScreen({
                   if (prompt && prompt.length > 0) {
                     extractedGuidePrompt = prompt
                     guidePromptActive = true
-                    console.log("[v0] ✅ Detected guide prompt (length:", prompt.length, "chars)")
                     break // Use the most recent guide prompt
                   }
                 }
@@ -565,7 +542,6 @@ export default function MayaChatScreen({
                 const clearGuidePromptKeywords = /different|change|instead|new.*prompt|clear.*guide|stop.*using.*guide/i.test(messageText)
                 if (clearGuidePromptKeywords && extractedGuidePrompt) {
                   guidePromptActive = false
-                  console.log("[v0] 🔄 User requested to clear guide prompt")
                 }
               } catch (clearError) {
                 // Skip clear detection if it fails
@@ -593,7 +569,6 @@ export default function MayaChatScreen({
                   if (parsed && parsed.active && parsed.prompt) {
                     extractedGuidePrompt = parsed.prompt
                     guidePromptActive = true
-                    console.log("[v0] 📋 Loaded guide prompt from localStorage")
                   }
                 }
               }
@@ -622,12 +597,6 @@ export default function MayaChatScreen({
           .filter(Boolean)
           .join("\n")
 
-        console.log("[v0] 📤 Sending generate-concepts request with:", {
-          userRequest: pendingConceptRequest,
-          hasReferenceImage: !!referenceImageUrl,
-          referenceImageUrl: referenceImageUrl ? referenceImageUrl.substring(0, 100) + "..." : undefined,
-        })
-
         // Use reference image if available, or images from library in Pro Mode
         const allImages = referenceImageUrl 
           ? [referenceImageUrl]
@@ -643,8 +612,6 @@ export default function MayaChatScreen({
           const apiEndpoint = currentProMode 
             ? "/api/maya/pro/generate-concepts"
             : "/api/maya/generate-concepts"
-          
-          console.log("[v0] 📤 Calling concept generation API:", apiEndpoint, "proMode:", currentProMode, "pendingRequest:", pendingConceptRequest?.substring(0, 50))
           
           // Pro Mode API expects: userRequest, imageLibrary, category (optional), essenceWords (optional)
           // Classic Mode API expects: userRequest, count, conversationContext, referenceImageUrl, proMode, etc.
@@ -821,34 +788,18 @@ export default function MayaChatScreen({
 
   useEffect(() => {
     // Don't save if we're currently generating concepts - wait for them to be added first
-    console.log(
-      "[v0] Save effect triggered - status:",
-      status,
-      "chatId:",
-      chatId,
-      "messagesLen:",
-      messages.length,
-      "isGeneratingConcepts:",
-      isGeneratingConcepts,
-      "pendingConceptRequest:",
-      !!pendingConceptRequest,
-    )
-
     if (status !== "ready" || !chatId || messages.length === 0 || isGeneratingConcepts || pendingConceptRequest) {
-      console.log("[v0] Save effect early return - conditions not met")
       return
     }
 
     // Find the last assistant message
     const lastAssistantMessage = [...messages].reverse().find((m) => m.role === "assistant")
     if (!lastAssistantMessage) {
-      console.log("[v0] Save effect - no assistant message found")
       return
     }
 
     // Skip if already saved
     if (savedMessageIds.current.has(lastAssistantMessage.id)) {
-      console.log("[v0] Save effect - message already saved:", lastAssistantMessage.id)
       return
     }
 
@@ -861,11 +812,8 @@ export default function MayaChatScreen({
       (p: any) => p.type === "tool-generateConcepts" && p.output?.concepts?.length > 0,
     )
 
-    console.log("[v0] Save effect - hasConceptTrigger:", hasConceptTrigger, "hasConceptCards:", hasConceptCards)
-
     // If there's a trigger but no concepts yet, wait for concept generation
     if (hasConceptTrigger && !hasConceptCards) {
-      console.log("[v0] Message has concept trigger but no concepts yet, waiting for generation...")
       return
     }
 
@@ -878,11 +826,8 @@ export default function MayaChatScreen({
       (p: any) => p.type === "tool-generateFeed",
     )
 
-    console.log("[v0] Save effect - hasFeedTrigger:", hasFeedTrigger, "hasFeedCard:", hasFeedCard)
-
     // If there's a feed trigger but no feed card yet, wait for feed card creation
     if (hasFeedTrigger && !hasFeedCard) {
-      console.log("[v0] Message has feed trigger but no feed card yet, waiting for creation...")
       return
     }
 
@@ -903,15 +848,6 @@ export default function MayaChatScreen({
       saveTextContent = lastAssistantMessage.content
     }
     
-    // Log feed trigger status for debugging
-    if (hasFeedTrigger) {
-      console.log("[v0] Save effect - preserving CREATE_FEED_STRATEGY trigger in text:", {
-        hasFeedCard,
-        textContainsTrigger: saveTextContent.includes("[CREATE_FEED_STRATEGY"),
-        textLength: saveTextContent.length,
-      })
-    }
-
     // CRITICAL: Extract feed cards and add persistence markers
     // Feed cards need [FEED_CARD:feedId] markers to persist across page reloads
     const feedCards: Array<{ feedId: number }> = []
@@ -922,7 +858,6 @@ export default function MayaChatScreen({
           const output = toolPart.output
           if (output && output.feedId) {
             feedCards.push({ feedId: output.feedId })
-            console.log("[v0] Save effect - found feed card with feedId:", output.feedId)
           }
         }
       }
@@ -935,7 +870,6 @@ export default function MayaChatScreen({
       // Unsaved feeds keep the trigger so they can be recreated on reload
       // Saved feeds use [FEED_CARD:feedId] markers instead
       saveTextContent = saveTextContent.replace(/\[CREATE_FEED_STRATEGY:\s*\{[\s\S]*?\}\]/gi, '').trim()
-      console.log("[v0] Save effect - removed CREATE_FEED_STRATEGY trigger for saved feed")
       
       const feedMarkers = feedCards.map(f => `[FEED_CARD:${f.feedId}]`).join(" ")
       saveTextContent = `${saveTextContent}\n${feedMarkers}`.trim()
@@ -964,51 +898,14 @@ export default function MayaChatScreen({
       }
     }
     
-    console.log("[v0] Save effect - extracted concept cards:", {
-      conceptCardsCount: conceptCards.length,
-      hasParts: !!lastAssistantMessage.parts,
-      partsCount: lastAssistantMessage.parts?.length || 0,
-      partsTypes: lastAssistantMessage.parts?.map((p: any) => p.type) || [],
-    })
-
     // Only save if we have something to save
     // CRITICAL: Check for feed cards too, not just concepts!
     if (!saveTextContent && conceptCards.length === 0 && feedCards.length === 0) {
-      console.log("[v0] Save effect - nothing to save (no text, no concepts, no feed cards)")
       return
     }
 
     // Mark as saved immediately to prevent duplicate saves
     savedMessageIds.current.add(lastAssistantMessage.id)
-
-    console.log(
-      "[v0] 📝 Saving assistant message with",
-      conceptCards.length,
-      "concept cards,",
-      feedCards.length,
-      "feed cards, text length:",
-      saveTextContent.length,
-    )
-    
-    // CRITICAL: Log parts before saving to verify feed cards are present
-    console.log("[v0] 🔍 Message parts before save:", {
-      messageId: lastAssistantMessage.id,
-      partsCount: lastAssistantMessage.parts?.length || 0,
-      partsTypes: lastAssistantMessage.parts?.map((p: any) => p.type) || [],
-      hasFeedCard: lastAssistantMessage.parts?.some((p: any) => p.type === "tool-generateFeed"),
-      feedCardsExtracted: feedCards.length,
-    })
-    
-    // CRITICAL DEBUG: Check if messages array still has feed cards
-    const currentMessagesWithFeedCards = messages.filter((m: any) => 
-      m.role === "assistant" && m.parts?.some((p: any) => p.type === "tool-generateFeed")
-    )
-    console.log("[v0] 🔍 Current messages state (before save):", {
-      totalMessages: messages.length,
-      messagesWithFeedCards: currentMessagesWithFeedCards.length,
-      feedCardMessageIds: currentMessagesWithFeedCards.map((m: any) => m.id),
-    })
-    // </CHANGE>
 
     // Save to database
     fetch("/api/maya/save-message", {
@@ -1023,18 +920,7 @@ export default function MayaChatScreen({
     })
       .then((res) => res.json())
       .then((data) => {
-        if (data.success) {
-          console.log("[v0] Assistant message saved successfully with concepts:", conceptCards.length, "feedCards:", feedCards.length)
-          
-          // CRITICAL DEBUG: Check if feed cards still exist AFTER save
-          const messagesAfterSave = messages.filter((m: any) => 
-            m.role === "assistant" && m.parts?.some((p: any) => p.type === "tool-generateFeed")
-          )
-          console.log("[v0] 🔍 Feed cards after save:", {
-            messagesWithFeedCards: messagesAfterSave.length,
-            feedCardMessageIds: messagesAfterSave.map((m: any) => m.id),
-          })
-        } else {
+        if (!data.success) {
           console.error("[v0] Failed to save message:", data.error)
           savedMessageIds.current.delete(lastAssistantMessage.id)
         }
@@ -1045,35 +931,6 @@ export default function MayaChatScreen({
       })
   }, [status, chatId, messages, isGeneratingConcepts, pendingConceptRequest]) // Updated dependency to messages
   
-  // CRITICAL DEBUG: Watchdog to monitor when feed cards disappear from messages
-  useEffect(() => {
-    const feedCardMessages = messages.filter((m: any) => 
-      m.role === "assistant" && m.parts?.some((p: any) => p.type === "tool-generateFeed")
-    )
-    
-    if (feedCardMessages.length > 0) {
-      console.log("[v0] 🔍 WATCHDOG: Feed cards present in messages:", {
-        count: feedCardMessages.length,
-        messageIds: feedCardMessages.map((m: any) => m.id),
-        status,
-        isCreatingFeed,
-        totalMessages: messages.length,
-      })
-    } else if (messages.length > 0) {
-      // Log when there are messages but no feed cards
-      const lastMessage = messages[messages.length - 1]
-      if (lastMessage?.role === "assistant") {
-        console.log("[v0] 🔍 WATCHDOG: NO feed cards found but have messages:", {
-          totalMessages: messages.length,
-          lastMessageId: lastMessage.id,
-          lastMessageParts: lastMessage.parts?.map((p: any) => p.type) || [],
-          status,
-          isCreatingFeed,
-        })
-      }
-    }
-  }, [messages, status, isCreatingFeed])
-  
   // CRITICAL: Handle feed save callback to update database with [FEED_CARD:feedId] marker
   // This ensures saved feeds persist across page reloads and tab switches with their images
   const handleFeedSaved = useCallback(async (messageId: string, feedId: number) => {
@@ -1081,8 +938,6 @@ export default function MayaChatScreen({
       console.warn("[v0] ❌ No chatId available, cannot save feed card")
       return
     }
-    
-    console.log("[v0] 🔄 Feed saved, updating message in database:", { messageId, feedId, chatId })
     
     // Find the message in current state
     const message = messages.find((m: any) => m.id === messageId)
@@ -2959,7 +2814,7 @@ export default function MayaChatScreen({
                         Welcome
                       </h2>
                       <p className="text-xs sm:text-sm text-stone-600 tracking-wide max-w-md leading-relaxed px-4">
-                        Hi, I'm Maya. I'll help you create beautiful photos and videos.
+                        Hi, I&apos;m Maya. I&apos;ll help you create beautiful photos and videos.
                       </p>
                         </div>
 
@@ -2992,7 +2847,7 @@ export default function MayaChatScreen({
                 Welcome
               </h2>
               <p className="text-xs sm:text-sm text-stone-600 tracking-wide text-center mb-4 sm:mb-6 max-w-md leading-relaxed px-4">
-                Hi, I'm Maya. I'll help you create beautiful photos and videos.
+                Hi, I&apos;m Maya. I&apos;ll help you create beautiful photos and videos.
               </p>
               <MayaQuickPrompts
                 prompts={currentPrompts}
@@ -3274,7 +3129,7 @@ export default function MayaChatScreen({
                     </h3>
                   </div>
                   <p className="text-xs text-stone-600 leading-relaxed ml-11">
-                    Describe the content you want to create. Examples: "Alo Yoga style workout photos", "Professional LinkedIn headshot", or "Coffee shop entrepreneur vibes"
+                    Describe the content you want to create. Examples: &quot;Alo Yoga style workout photos&quot;, &quot;Professional LinkedIn headshot&quot;, or &quot;Coffee shop entrepreneur vibes&quot;
                   </p>
                 </div>
                 

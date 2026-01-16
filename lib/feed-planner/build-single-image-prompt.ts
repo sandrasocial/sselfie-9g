@@ -76,8 +76,9 @@ export function parseTemplateFrames(templatePrompt: string): {
 /**
  * Base identity prompt for NanoBanana Pro
  * This is fixed for all generations to maintain identity consistency
+ * Updated to include explicit reference image language per NanoBanana Pro best practices
  */
-const BASE_IDENTITY_PROMPT = "Influencer/pinterest style of a woman maintaining exactly the same physical characteristics of the woman in the attached image (face, body, skin tone, hair, and visual identity), without modifications."
+const BASE_IDENTITY_PROMPT = "Use the uploaded photos as strict identity reference. Influencer/pinterest style of a woman maintaining exactly the same physical characteristics (face, body, skin tone, hair) as the reference images."
 
 /**
  * Detects frame type from frame description
@@ -248,28 +249,35 @@ export function buildSingleImagePrompt(
   const cleanedFrameDescription = cleanFrameDescription(frame.description, frameType)
   
   // Build complete prompt with all context
-  // Structure: Base identity + Vibe + Setting + Frame description (cleaned) + Color grade
-  const promptParts: string[] = [BASE_IDENTITY_PROMPT]
+  // Structure: Base identity (for user photos only) + Vibe + Setting + Frame description (cleaned) + Color grade
+  // Use natural language joining (space separated) for coherent sentence structure
+  const promptParts: string[] = []
   
-  // Add vibe context if available
+  // Only add identity prompt for user photos (not flatlays)
+  if (frameType !== 'flatlay') {
+    promptParts.push(BASE_IDENTITY_PROMPT)
+  }
+  
+  // Add vibe context if available (as natural language, not label)
   if (vibe && vibe.length > 0) {
-    promptParts.push(`Vibe: ${vibe}`)
+    promptParts.push(`with ${vibe} aesthetic`)
   }
   
-  // Add setting context if available
+  // Add setting context if available (as natural language, not label)
   if (setting && setting.length > 0) {
-    promptParts.push(`Setting: ${setting}`)
+    promptParts.push(`in ${setting}`)
   }
   
-  // Add cleaned frame description
+  // Add cleaned frame description (already natural language)
   promptParts.push(cleanedFrameDescription)
   
-  // Add color grade
+  // Add color grade (as natural language, not label)
   if (colorGrade && colorGrade.length > 0) {
-    promptParts.push(`Color grade: ${colorGrade}`)
+    promptParts.push(`with ${colorGrade} color palette`)
   }
   
-  return promptParts.join('\n\n').trim()
+  // Join with spaces for natural language flow (identity anchor is always first)
+  return promptParts.join(' ').trim()
 }
 
 /**

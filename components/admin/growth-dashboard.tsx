@@ -425,7 +425,7 @@ export function GrowthDashboard() {
           </h2>
           <div className="grid grid-cols-2 gap-3 sm:gap-4">
             <StatCard title="Total Email Sends" value={data.email.totalSends.toLocaleString()} />
-            <StatCard title="Upsell Emails" value={data.email.upsellEmails.toLocaleString()} />
+            <StatCard title="Credit Exhaustion Signals (Upsell Emails)" value={data.email.upsellEmails.toLocaleString()} />
           </div>
         </section>
       </div>

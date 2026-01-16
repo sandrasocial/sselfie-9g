@@ -187,7 +187,7 @@ export default function FeedBrandPillars({ businessType }: FeedBrandPillarsProps
             Your Content Pillars
           </h2>
           <p className="text-sm font-light text-stone-600 leading-relaxed max-w-2xl mx-auto mb-8">
-            Content pillars are the main themes you'll create content around. They keep your feed organized and make it easy to come up with post ideas.
+            Content pillars are the main themes you&apos;ll create content around. They keep your feed organized and make it easy to come up with post ideas.
           </p>
           <Button
             onClick={generateNewPillars}
@@ -223,7 +223,7 @@ export default function FeedBrandPillars({ businessType }: FeedBrandPillarsProps
               Your Content Pillars
             </h2>
             <p className="text-xs sm:text-sm font-light text-stone-600 leading-relaxed">
-              These are the main themes you'll create content around. Use them to plan your posts and keep your feed organized.
+              These are the main themes you&apos;ll create content around. Use them to plan your posts and keep your feed organized.
             </p>
           </div>
           <Button

@@ -266,10 +266,10 @@ export default function WelcomeWizard({
     return (
       <div className="space-y-6">
         <p className="text-base sm:text-lg font-light leading-relaxed text-stone-700">
-          You're all set! Now you can create a complete Instagram feed with 12 beautiful photos.
+          You&apos;re all set! Now you can create a complete Instagram feed with 12 beautiful photos.
         </p>
         <p className="text-sm font-light text-stone-600">
-          Each photo will match your style and look amazing together. Let's walk through how it works.
+          Each photo will match your style and look amazing together. Let&apos;s walk through how it works.
         </p>
       </div>
     )
@@ -293,10 +293,10 @@ export default function WelcomeWizard({
         content: (
           <div className="space-y-6">
             <p className="text-base sm:text-lg font-light leading-relaxed text-stone-700">
-              You're all set! Now you can create a complete Instagram feed with 9 beautiful photos.
+              You&apos;re all set! Now you can create a complete Instagram feed with 9 beautiful photos.
             </p>
             <p className="text-sm font-light text-stone-600">
-              Each photo will match your style and look amazing together. Let's walk through how it works.
+              Each photo will match your style and look amazing together. Let&apos;s walk through how it works.
             </p>
           </div>
         ),
@@ -346,7 +346,7 @@ export default function WelcomeWizard({
             Once your photos are ready, you can add captions and get a full strategy guide.
           </p>
           <p className="text-sm font-light text-stone-600">
-            Click the "Post" tab to get AI-generated captions for each photo. Click "Strategy" to get a complete guide for your feed.
+            Click the &quot;Post&quot; tab to get AI-generated captions for each photo. Click &quot;Strategy&quot; to get a complete guide for your feed.
           </p>
           <div className="grid grid-cols-2 gap-3">
             <div className="border border-stone-300 p-4 rounded-lg bg-white">
@@ -375,12 +375,12 @@ export default function WelcomeWizard({
 
     // Step: Completion
     stepList.push({
-      title: "You're all set!",
+      title: "You&apos;re all set!",
       subtitle: `Step ${stepList.length + 1} of ${totalSteps}`,
       content: (
         <div className="space-y-6">
           <p className="text-base sm:text-lg font-light leading-relaxed text-stone-700">
-            That's it! You're ready to create amazing content.
+            That&apos;s it! You&apos;re ready to create amazing content.
           </p>
           <p className="text-sm font-light text-stone-600">
             When you finish your first feed, you can create a new one anytime. All your feeds are saved so you can come back to them later.

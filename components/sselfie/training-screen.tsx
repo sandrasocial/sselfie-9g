@@ -584,7 +584,7 @@ export default function TrainingScreen({ user, userId, setHasTrainedModel, setAc
             </div>
             <h3 className="text-xl sm:text-2xl font-bold text-stone-950 mb-4">Training Your Model</h3>
             <p className="text-sm font-medium text-stone-600 mb-8">
-              Your AI is learning from your photos. This usually takes a couple of minutes. We'll let you know when it's
+              Your AI is learning from your photos. This usually takes a couple of minutes. We&apos;ll let you know when it&apos;s
               ready.
             </p>
           </div>

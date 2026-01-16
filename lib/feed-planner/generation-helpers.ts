@@ -294,20 +294,47 @@ export async function getFashionStyleForPosition(
 
   if (personalBrandForStyle && personalBrandForStyle.length > 0 && personalBrandForStyle[0].fashion_style) {
     try {
-      const styles = typeof personalBrandForStyle[0].fashion_style === 'string'
-        ? JSON.parse(personalBrandForStyle[0].fashion_style)
-        : personalBrandForStyle[0].fashion_style
+      let styles: string[] = []
+      const rawStyle = personalBrandForStyle[0].fashion_style
 
-      if (Array.isArray(styles) && styles.length > 0) {
+      // Handle different storage formats:
+      // 1. Already an array (from PostgreSQL TEXT[] - Neon sometimes returns as JS array)
+      if (Array.isArray(rawStyle)) {
+        styles = rawStyle.filter(s => s && typeof s === 'string')
+      }
+      // 2. PostgreSQL array format string: {value1,value2,value3}
+      else if (typeof rawStyle === 'string' && rawStyle.startsWith('{') && rawStyle.endsWith('}')) {
+        // Parse PostgreSQL array format: {business,casual,athletic}
+        const arrayContent = rawStyle.slice(1, -1) // Remove { and }
+        styles = arrayContent.split(',').map(s => s.trim()).filter(s => s.length > 0)
+      }
+      // 3. JSON string that needs parsing
+      else if (typeof rawStyle === 'string') {
+        // Try to parse as JSON first
+        try {
+          const parsed = JSON.parse(rawStyle)
+          if (Array.isArray(parsed)) {
+            styles = parsed.filter(s => s && typeof s === 'string')
+          } else if (typeof parsed === 'string') {
+            styles = [parsed]
+          }
+        } catch {
+          // Not valid JSON, treat as single string value
+          styles = [rawStyle]
+        }
+      }
+
+      if (styles.length > 0) {
         // Rotate through selected styles based on frame position
         const styleIndex = (position - 1) % styles.length
         fashionStyle = mapFashionStyleToVibeLibrary(styles[styleIndex])
         console.log(`[v0] [GENERATE-SINGLE] Using style ${styleIndex + 1}/${styles.length}: ${fashionStyle} for frame ${position}`)
-      } else if (typeof personalBrandForStyle[0].fashion_style === 'string') {
-        fashionStyle = mapFashionStyleToVibeLibrary(personalBrandForStyle[0].fashion_style)
+      } else {
+        console.warn(`[v0] [GENERATE-SINGLE] No valid fashion styles found, using default: business`)
       }
     } catch (e) {
-      console.warn(`[v0] [GENERATE-SINGLE] Failed to parse fashion_style:`, e)
+      console.error(`[v0] [GENERATE-SINGLE] Failed to parse fashion_style:`, e)
+      console.warn(`[v0] [GENERATE-SINGLE] Using default fashion style: business`)
     }
   }
 

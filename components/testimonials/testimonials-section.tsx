@@ -96,7 +96,7 @@ export function TestimonialsSection() {
                   )}
 
                   <p className="text-stone-700 font-light leading-relaxed mb-6 text-balance">
-                    "{testimonial.testimonial_text}"
+                    &quot;{testimonial.testimonial_text}&quot;
                   </p>
 
                   <div className="pt-4 border-t border-stone-200">

@@ -454,7 +454,7 @@ export default function PromptGuidesManager({ userId }: PromptGuidesManagerProps
           <DialogHeader>
             <DialogTitle>Create New Guide</DialogTitle>
             <DialogDescription>
-              Create a new prompt guide collection. You'll be able to add prompts in the builder.
+              Create a new prompt guide collection. You&apos;ll be able to add prompts in the builder.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -538,7 +538,7 @@ export default function PromptGuidesManager({ userId }: PromptGuidesManagerProps
               <Textarea
                 value={publishWelcomeMessage}
                 onChange={(e) => setPublishWelcomeMessage(e.target.value)}
-                placeholder="Sandra's intro message for visitors..."
+                placeholder="Sandra&apos;s intro message for visitors..."
                 rows={4}
               />
             </div>

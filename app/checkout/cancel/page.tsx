@@ -22,14 +22,14 @@ export default function CheckoutCancelPage() {
         </h1>
 
         <p className="text-lg text-stone-600 font-light leading-relaxed mb-12 max-w-xl mx-auto">
-          No worries. Your payment was not processed. You can return to the pricing page whenever you're ready to join
+          No worries. Your payment was not processed. You can return to the pricing page whenever you&apos;re ready to join
           SSELFIE.
         </p>
 
-        {/* What You're Missing */}
+        {/* What You&apos;re Missing */}
         <div className="bg-white border-2 border-stone-200 rounded-lg p-8 mb-12 text-left max-w-xl mx-auto">
           <h2 className="font-serif text-2xl font-extralight tracking-[0.2em] uppercase text-stone-900 mb-6 text-center">
-            WHAT YOU'RE MISSING
+            WHAT YOU&apos;RE MISSING
           </h2>
           <div className="space-y-4">
             <div className="flex gap-3">

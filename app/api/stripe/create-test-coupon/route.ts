@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import Stripe from "stripe"
 
 export async function POST() {
+  if (process.env.ENABLE_UNUSED_ENDPOINTS !== "true") return NextResponse.json({ error: "Endpoint disabled" }, { status: 410 })
   try {
     const stripeKey = process.env.STRIPE_SECRET_KEY
 
@@ -22,7 +23,6 @@ export async function POST() {
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2024-11-20.acacia" })
 
-    // Create 100% off coupon for testing
     const coupon = await stripe.coupons.create({
       id: "LIVE_TEST_100",
       percent_off: 100,

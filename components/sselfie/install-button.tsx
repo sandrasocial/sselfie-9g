@@ -127,8 +127,8 @@ export function InstallButton({ variant = "default" }: InstallButtonProps) {
                             Tap the <Share className="inline h-4 w-4 mx-1" /> Share button at the bottom of Safari
                           </span>
                         </li>
-                        <li>Scroll down and tap "Add to Home Screen"</li>
-                        <li>Tap "Add" in the top right corner</li>
+                        <li>Scroll down and tap &quot;Add to Home Screen&quot;</li>
+                        <li>Tap &quot;Add&quot; in the top right corner</li>
                       </ol>
                     </div>
                   )}
@@ -142,8 +142,8 @@ export function InstallButton({ variant = "default" }: InstallButtonProps) {
                             Tap the <MoreVertical className="inline h-4 w-4 mx-1" /> menu button in your browser
                           </span>
                         </li>
-                        <li>Select "Add to Home screen" or "Install app"</li>
-                        <li>Tap "Add" or "Install" to confirm</li>
+                        <li>Select &quot;Add to Home screen&quot; or &quot;Install app&quot;</li>
+                        <li>Tap &quot;Add&quot; or &quot;Install&quot; to confirm</li>
                       </ol>
                     </div>
                   )}
@@ -152,9 +152,9 @@ export function InstallButton({ variant = "default" }: InstallButtonProps) {
                     <div className="space-y-3">
                       <p className="text-sm font-medium">For Desktop:</p>
                       <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
-                        <li>Look for the install icon in your browser's address bar</li>
-                        <li>Click it and select "Install"</li>
-                        <li>Or use your browser's menu: Settings → Install SSELFIE</li>
+                        <li>Look for the install icon in your browser&apos;s address bar</li>
+                        <li>Click it and select &quot;Install&quot;</li>
+                        <li>Or use your browser&apos;s menu: Settings → Install SSELFIE</li>
                       </ol>
                     </div>
                   )}
@@ -216,8 +216,8 @@ export function InstallButton({ variant = "default" }: InstallButtonProps) {
                           Tap the <Share className="inline h-4 w-4 mx-1" /> Share button at the bottom of Safari
                         </span>
                       </li>
-                      <li>Scroll down and tap "Add to Home Screen"</li>
-                      <li>Tap "Add" in the top right corner</li>
+                      <li>Scroll down and tap &quot;Add to Home Screen&quot;</li>
+                      <li>Tap &quot;Add&quot; in the top right corner</li>
                     </ol>
                   </div>
                 )}
@@ -231,8 +231,8 @@ export function InstallButton({ variant = "default" }: InstallButtonProps) {
                           Tap the <MoreVertical className="inline h-4 w-4 mx-1" /> menu button in your browser
                         </span>
                       </li>
-                      <li>Select "Add to Home screen" or "Install app"</li>
-                      <li>Tap "Add" or "Install" to confirm</li>
+                      <li>Select &quot;Add to Home screen&quot; or &quot;Install app&quot;</li>
+                      <li>Tap &quot;Add&quot; or &quot;Install&quot; to confirm</li>
                     </ol>
                   </div>
                 )}
@@ -241,9 +241,9 @@ export function InstallButton({ variant = "default" }: InstallButtonProps) {
                   <div className="space-y-3">
                     <p className="text-sm font-medium">For Desktop:</p>
                     <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
-                      <li>Look for the install icon in your browser's address bar</li>
-                      <li>Click it and select "Install"</li>
-                      <li>Or use your browser's menu: Settings → Install SSELFIE</li>
+                      <li>Look for the install icon in your browser&apos;s address bar</li>
+                      <li>Click it and select &quot;Install&quot;</li>
+                      <li>Or use your browser&apos;s menu: Settings → Install SSELFIE</li>
                     </ol>
                   </div>
                 )}

@@ -663,7 +663,7 @@ export default function InstagramFeedView({ feedId, onBack, access, onOpenWizard
               <div className="flex flex-col items-center justify-center py-8 space-y-4">
                 <div className="w-6 h-6 border-2 border-stone-300 border-t-stone-900 rounded-full animate-spin" />
                 <div className="text-center space-y-2">
-                  <p className="text-sm font-medium text-stone-900">I'm crafting your perfect bio...</p>
+                  <p className="text-sm font-medium text-stone-900">I&apos;m crafting your perfect bio...</p>
                   <p className="text-xs text-stone-500">This will just take a moment! ✨</p>
                 </div>
               </div>

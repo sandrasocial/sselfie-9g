@@ -21,28 +21,40 @@ interface FeedLayout {
   photoshoot_enabled?: boolean | null
   photoshoot_base_seed?: number | null
   feed_style?: string | null
+  layout_type?: string | null
 }
 
 interface PersonalBrand {
+  id?: number | string
   visual_aesthetic?: string | unknown[] | null
   fashion_style?: string | unknown[] | null
   settings_preference?: string | unknown[] | null
-}
-
-interface BlueprintSubscriber {
-  aesthetic?: string | null
-  business_type?: string | null
-}
-
-interface FeedPost {
   prompt?: string | null
-  feed_id?: number | null
+  feed_style?: string | null
+}
+
+interface AvatarImage {
+  image_url: string
+  display_order: number | null
+  uploaded_at: Date | string
+}
+
+interface PreviewFeed {
+  id: number | string
+}
+
+interface FeedStyle {
+  feed_style: string | null
 }
 
 interface Model {
   id?: number
   trigger_word?: string
-  ethnicity?: string
+  ethnicity?: string | unknown
+  gender?: string | unknown
+  lora_scale?: number | null
+  replicate_version_id?: string | null
+  lora_weights_url?: string | null
   [key: string]: unknown
 }
 
@@ -219,21 +231,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       )
     }
 
-    // Query feed_layouts with feed_style (handle case where column might not exist yet)
+    // Query feed_layouts with feed_style and layout_type (handle case where column might not exist yet)
     let feedLayout: FeedLayout | undefined
     try {
       const result = await sql`
-        SELECT color_palette, brand_vibe, photoshoot_enabled, photoshoot_base_seed, feed_style 
+        SELECT color_palette, brand_vibe, photoshoot_enabled, photoshoot_base_seed, feed_style, layout_type 
         FROM feed_layouts 
         WHERE id = ${feedIdInt}
       `
       feedLayout = result[0] as FeedLayout | undefined
     } catch (error: unknown) {
       // If feed_style column doesn't exist, query without it
-      if (error?.message?.includes('feed_style') || error?.code === '42703') {
+      const errorObj = error as { message?: string; code?: string }
+      if (errorObj?.message?.includes('feed_style') || errorObj?.code === '42703') {
         console.warn("[v0] [GENERATE-SINGLE] feed_style column not found, querying without it")
         const result = await sql`
-          SELECT color_palette, brand_vibe, photoshoot_enabled, photoshoot_base_seed
+          SELECT color_palette, brand_vibe, photoshoot_enabled, photoshoot_base_seed, layout_type
           FROM feed_layouts 
           WHERE id = ${feedIdInt}
         `
@@ -311,7 +324,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
         LIMIT 5
       `
       
-      if (avatarImages.length === 0) {
+      // Enhanced logging for reference image validation
+      const referenceImageCount = avatarImages.length
+      console.log(`[v0] [GENERATE-SINGLE] 📸 Reference images found: ${referenceImageCount} (max 5, optimal: 3-5)`)
+      
+      if (referenceImageCount === 0) {
         return Response.json(
           {
             error: "Pro Mode requires reference images",
@@ -321,14 +338,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
         )
       }
       
-      if (avatarImages.length < 3) {
-        console.warn(`[v0] [GENERATE-SINGLE] ⚠️ Only ${avatarImages.length} avatar image(s) available. Pro Mode works best with 3+ images.`)
+      // Enhanced warning for low reference image count
+      if (referenceImageCount < 3) {
+        console.warn(`[v0] [GENERATE-SINGLE] ⚠️ Low reference image count (${referenceImageCount}). 3-5 images recommended for best identity preservation.`)
+      } else if (referenceImageCount >= 3 && referenceImageCount <= 5) {
+        console.log(`[v0] [GENERATE-SINGLE] ✅ Optimal reference image count (${referenceImageCount}) for identity preservation`)
       }
       
-      const baseImages = avatarImages.map((img: any) => ({
+      // Map all available images (up to 5) for NanoBanana Pro
+      const baseImages = (avatarImages as AvatarImage[]).map((img) => ({
         url: img.image_url,
         type: 'user-photo' as const,
       }))
+      
+      console.log(`[v0] [GENERATE-SINGLE] 📤 Sending ${baseImages.length} reference image(s) to NanoBanana Pro`)
       
       // Get brand kit if available (currently unused but may be needed in future)
       const [_brandKit] = await sql`
@@ -465,7 +488,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
                 AND layout_type = 'preview'
               ORDER BY created_at DESC
               LIMIT 1
-            ` as PersonalBrand[]
+            ` as PreviewFeed[]
             
             if (previewFeed) {
               // Get preview template from the preview feed's first post
@@ -571,7 +594,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
                 FROM feed_layouts
                 WHERE id = ${previewFeed.id}
                 LIMIT 1
-              ` as PersonalBrand[]
+              ` as FeedStyle[]
               
               const previewFeedStyleValue = previewFeedStyle?.feed_style?.toLowerCase().trim()
               const currentFeedStyleValue = feedLayout.feed_style.toLowerCase().trim()
@@ -743,9 +766,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
                     const { incrementRotationState } = await import("@/lib/feed-planner/rotation-manager")
                     await incrementRotationState(user.id.toString(), vibeKeyForRotation, fashionStyleForRotation)
                     console.log(`[v0] [GENERATE-SINGLE] ✅ Rotation incremented for vibe: ${vibeKeyForRotation}, style: ${fashionStyleForRotation}`)
-                  } catch (rotationError: any) {
+                  } catch (rotationError: unknown) {
                     // Don't fail generation if rotation increment fails
-                    console.warn(`[v0] [GENERATE-SINGLE] ⚠️ Failed to increment rotation:`, rotationError.message)
+                    const error = rotationError as { message?: string }
+                    console.warn(`[v0] [GENERATE-SINGLE] ⚠️ Failed to increment rotation:`, error.message || String(rotationError))
                   }
                 } else if (previewTemplate) {
                   console.log(`[v0] [GENERATE-SINGLE] ⚠️ Rotation not incremented - using preview template (rotation handled during preview generation)`)
@@ -831,9 +855,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
                     const { incrementRotationState } = await import("@/lib/feed-planner/rotation-manager")
                     await incrementRotationState(user.id.toString(), vibeKeyForRotation, fashionStyleForRotation)
                     console.log(`[v0] [GENERATE-SINGLE] ✅ Rotation incremented for vibe: ${vibeKeyForRotation}, style: ${fashionStyleForRotation}`)
-                  } catch (rotationError: any) {
+                  } catch (rotationError: unknown) {
                     // Don't fail generation if rotation increment fails
-                    console.warn(`[v0] [GENERATE-SINGLE] ⚠️ Failed to increment rotation:`, rotationError.message)
+                    const error = rotationError as { message?: string }
+                    console.warn(`[v0] [GENERATE-SINGLE] ⚠️ Failed to increment rotation:`, error.message || String(rotationError))
                   }
                 } else if (previewTemplate) {
                   console.log(`[v0] [GENERATE-SINGLE] ⚠️ Rotation not incremented - using preview template (rotation handled during preview generation)`)
@@ -939,6 +964,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       // Full feeds: Free users use 9:16, paid users use 4:5
       const aspectRatio = isPreviewFeed ? '9:16' : (access.isFree ? '9:16' : '4:5')
       
+      console.log(`[v0] [GENERATE-SINGLE] 📐 Aspect ratio for NanoBanana Pro: ${aspectRatio} (isPreviewFeed: ${isPreviewFeed}, layout_type: ${feedLayout?.layout_type}, isFree: ${access.isFree})`)
+      
       // Clean prompt before sending to Replicate - ONLY remove unreplaced placeholders
       // Preview feeds: Keep full template with grid instructions, only remove {{PLACEHOLDERS}}
       // Full feeds: Already extracted to single scene via buildSingleImagePrompt(), only remove {{PLACEHOLDERS}} if any remain
@@ -1040,11 +1067,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       mayaResponse = await generateFeedPromptHandler(mayaRequest)
       
       console.log("[v0] [GENERATE-SINGLE] Maya response status:", mayaResponse.status)
-    } catch (fetchError: any) {
+    } catch (fetchError: unknown) {
+      const error = fetchError as { message?: string; stack?: string; cause?: unknown }
       console.error("[v0] [GENERATE-SINGLE] Fetch error:", {
-        message: fetchError.message,
-        stack: fetchError.stack,
-        cause: fetchError.cause,
+        message: error.message,
+        stack: error.stack,
+        cause: error.cause,
       })
       return Response.json(
         {
@@ -1122,12 +1150,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       console.log("[v0] [GENERATE-SINGLE] ✅ Maya generated enhanced prompt (cleaned):", finalPrompt?.substring(0, 150))
 
       // Double-check trigger word and gender are present (backup validation)
-      finalPrompt = ensureTriggerWordPrefix(finalPrompt, model.trigger_word)
+      // Guard: model is guaranteed to be non-null in Classic Mode (checked earlier)
+      if (!model) {
+        console.error("[v0] [GENERATE-SINGLE] Model is null in Classic Mode path")
+        return Response.json({ error: "Model configuration error" }, { status: 500 })
+      }
+
+      finalPrompt = ensureTriggerWordPrefix(finalPrompt, model.trigger_word || '')
       
       // Build user gender term (same format as concept cards)
       let userGender = "person"
       if (model.gender) {
-        const dbGender = model.gender.toLowerCase().trim()
+        const genderStr = typeof model.gender === 'string' ? model.gender : String(model.gender)
+        const dbGender = genderStr.toLowerCase().trim()
         if (dbGender === "woman" || dbGender === "female") {
           userGender = "woman"
         } else if (dbGender === "man" || dbGender === "male") {
@@ -1136,9 +1171,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       }
       
       // CRITICAL: Ensure gender is present after trigger word (fixes missing gender issue)
-      finalPrompt = ensureGenderInPrompt(finalPrompt, model.trigger_word, userGender, model.ethnicity)
+      const ethnicityStr = typeof model.ethnicity === 'string' ? model.ethnicity : undefined
+      finalPrompt = ensureGenderInPrompt(finalPrompt, model.trigger_word || '', userGender, ethnicityStr)
       
-      if (finalPrompt.toLowerCase().startsWith(model.trigger_word.toLowerCase())) {
+      if (model.trigger_word && finalPrompt.toLowerCase().startsWith(model.trigger_word.toLowerCase())) {
         console.log("[v0] [GENERATE-SINGLE] ✅ Trigger word confirmed at start of prompt")
       } else {
         console.log("[v0] [GENERATE-SINGLE] ⚠️ Trigger word prepended:", model.trigger_word)
@@ -1157,12 +1193,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
     const qualitySettings =
       MAYA_QUALITY_PRESETS[post.post_type as keyof typeof MAYA_QUALITY_PRESETS] || MAYA_QUALITY_PRESETS.default
 
+    // Guard: model is guaranteed to be non-null in Classic Mode (checked earlier)
+    if (!model) {
+      console.error("[v0] [GENERATE-SINGLE] Model is null in Classic Mode path")
+      return Response.json({ error: "Model configuration error" }, { status: 500 })
+    }
+
     if (model.lora_scale !== null && model.lora_scale !== undefined) {
       qualitySettings.lora_scale = Number(model.lora_scale)
     }
 
     // Extract version ID using shared helper
-    const replicateVersionId = extractReplicateVersionId(model.replicate_version_id)
+    const replicateVersionId = extractReplicateVersionId(model.replicate_version_id || null)
     
     if (!replicateVersionId) {
       console.error("[v0] [GENERATE-SINGLE] Replicate version ID not found after extraction")
@@ -1187,10 +1229,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
     }
 
     // Build Replicate input using shared helper
+    // model.lora_weights_url is guaranteed to be non-null (checked earlier at line 296)
+    const loraWeightsUrl = model.lora_weights_url
+    if (!loraWeightsUrl) {
+      console.error("[v0] [GENERATE-SINGLE] LoRA weights URL is null")
+      return Response.json({ error: "LoRA weights URL not found" }, { status: 400 })
+    }
+
     const generationInput = buildClassicModeReplicateInput({
       prompt: finalPrompt,
       qualitySettings,
-      loraWeightsUrl: model.lora_weights_url,
+      loraWeightsUrl,
       seed,
     })
 
@@ -1243,12 +1292,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       success: true,
       message: "Image generation started",
     })
-  } catch (error: any) {
-    console.error("[v0] [GENERATE-SINGLE] Error generating single post:", error)
+  } catch (error: unknown) {
+    const err = error as { message?: string; stack?: string }
+    console.error("[v0] [GENERATE-SINGLE] Error generating single post:", err.message || String(error))
     return Response.json(
       {
         error: "Failed to generate post",
-        details: error.message,
+        details: err.message || "Unknown error occurred",
         shouldRetry: true,
       },
       { status: 500 },

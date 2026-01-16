@@ -6,6 +6,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 })
 
 export async function GET() {
+  if (process.env.ENABLE_UNUSED_ENDPOINTS !== "true") return NextResponse.json({ error: "Endpoint disabled" }, { status: 410 })
   try {
     const results = {
       environment: "unknown",
@@ -16,7 +17,6 @@ export async function GET() {
       errors: [] as string[],
     }
 
-    // Check if keys are configured
     const secretKey = process.env.STRIPE_SECRET_KEY
     const publishableKey = process.env.STRIPE_PUBLISHABLE_KEY
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET

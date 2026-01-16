@@ -113,17 +113,43 @@ export function cleanStudioProPrompt(prompt: string, userRequest?: string): stri
 }
 
 /**
- * Nano Banana Pro Prompting Principles (kept short; longer guidance should live in docs)
+ * Nano Banana Pro Prompting Principles
+ * Based on community best practices and official guidance for optimal identity preservation
  */
 export function getNanoBananaPromptingPrinciples(): string {
   return `
 ## NANO BANANA PRO PRINCIPLES (STUDIO PRO)
 
+**PROMPT LENGTH:**
+- Target 100-150 words for optimal detail without losing identity focus
+- Clarity and structure matter more than raw length
+- Structured multi-clause prompts perform best
+
+**PROMPT STRUCTURE (MANDATORY ORDER):**
+Follow this structure exactly:
+1. [Identity Anchor] - Always start with identity preservation phrase
+2. [Outfit & Brand Details] - Specific clothing, materials, colors, brand names (if applicable)
+3. [Setting & Mood] - Location, environment, atmosphere
+4. [Style/Technical] - Photographic style, camera specs, lighting
+
+**FORMAT REQUIREMENTS:**
+- Use full, natural language sentences
+- Avoid comma-separated keyword lists or "tag soup"
+- Write like describing to a photographer, not keyword stuffing
+- Each clause should be a complete sentence or natural phrase
+
+**IDENTITY PRESERVATION:**
+- Always start with the identity preservation anchor: "Use the uploaded photos as strict identity reference"
+- This ensures the model uses reference images as the source of truth
+- Never place identity anchor in the middle or end of prompt
+
+**ADDITIONAL GUIDELINES:**
 - Use natural language. No Flux trigger words. No LoRA references.
 - Prefer editing/adapting an existing image over regenerating from scratch.
 - If text is needed, specify EXACT text in quotes and describe font/placement.
 - Be explicit about composition (where elements go) and the goal (carousel, reel cover, etc.).
 - Keep prompts like a photography/graphic design brief: clear, grounded, not "AI keyword soup".
+- Include brand names in outfit details only, not in identity description.
 `.trim()
 }
 

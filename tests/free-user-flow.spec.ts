@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { describe, it } from 'vitest'
 
 /**
  * Free User Flow E2E Test
@@ -9,6 +9,15 @@ import { test, expect } from '@playwright/test'
  * 3. Generate preview feed
  * 4. See upsell modal after 2 credits used
  */
+
+const runPlaywright = process.env.PLAYWRIGHT_TEST === '1'
+
+if (!runPlaywright) {
+  describe.skip('Playwright E2E (set PLAYWRIGHT_TEST=1)', () => {
+    it('skipped in vitest', () => {})
+  })
+} else {
+  const { test, expect } = require('@playwright/test')
 
 test.describe('Free User Flow', () => {
   const testEmail = `free-test-${Date.now()}@playwright.test`
@@ -189,3 +198,4 @@ test.describe('Free User Flow', () => {
     })
   })
 })
+}

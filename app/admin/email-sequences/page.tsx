@@ -1040,13 +1040,13 @@ export default function EmailSequencesPage() {
               <strong>Welcome Sequence:</strong> Automatically sends to new paid members via cron job. Configured to run daily at 10 AM EST.
             </p>
             <p>
-              <strong>Nurture Sequence:</strong> Targets ALL current subscribers (Blueprint + Freebie). Click "Sync All Subscribers" to ensure everyone is in Resend and assigned to the correct segment. This sequence nurtures everyone in your email list who hasn't purchased yet.
+              <strong>Nurture Sequence:</strong> Targets ALL current subscribers (Blueprint + Freebie). Click &quot;Sync All Subscribers&quot; to ensure everyone is in Resend and assigned to the correct segment. This sequence nurtures everyone in your email list who hasn&apos;t purchased yet.
             </p>
             <p>
-              <strong>Re-engagement Sequence:</strong> Targets users who haven't logged in for 30+ days. Segment will be created automatically or use existing inactive user segment.
+              <strong>Re-engagement Sequence:</strong> Targets users who haven&apos;t logged in for 30+ days. Segment will be created automatically or use existing inactive user segment.
             </p>
             <p className="text-[10px] sm:text-xs text-stone-600 mt-4">
-              💡 Tip: Use Alex to create custom sequences or modify these templates. All sequences use Sandra's authentic voice and proper UTM tracking.
+              💡 Tip: Use Alex to create custom sequences or modify these templates. All sequences use Sandra&apos;s authentic voice and proper UTM tracking.
             </p>
           </div>
         </div>

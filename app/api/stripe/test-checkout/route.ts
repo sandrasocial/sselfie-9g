@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { stripe } from "@/lib/stripe"
 
 export async function GET() {
+  if (process.env.ENABLE_UNUSED_ENDPOINTS !== "true") return NextResponse.json({ error: "Endpoint disabled" }, { status: 410 })
   try {
     const results: any = {
       timestamp: new Date().toISOString(),
@@ -11,7 +12,6 @@ export async function GET() {
       couponCheck: {},
     }
 
-    // Check Stripe mode
     const balance = await stripe.balance.retrieve()
     results.stripeMode = process.env.STRIPE_SECRET_KEY?.startsWith("sk_live_") ? "LIVE" : "TEST"
 

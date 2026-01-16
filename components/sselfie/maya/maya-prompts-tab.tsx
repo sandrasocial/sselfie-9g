@@ -966,7 +966,7 @@ export default function MayaPromptsTab({
                 className="text-xs sm:text-sm md:text-[13px] font-serif font-light tracking-[0.25em] uppercase text-stone-950 mb-3 sm:mb-4"
                 style={{ letterSpacing: "0.25em" }}
               >
-                Sandra's Favourites
+                Sandra&apos;s Favourites
               </h2>
               <p className="text-sm sm:text-base md:text-[14px] text-stone-600 font-normal leading-relaxed max-w-[600px]">
                 Proven prompts for effortless, polished photos that feel confident and very you

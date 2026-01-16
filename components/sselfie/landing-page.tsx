@@ -106,8 +106,8 @@ export default function LandingPage() {
 
   useEffect(() => {
     const messages = [
-      "Hi! I'm Maya, your AI photo strategist ✨",
-      "I'll help you create stunning professional photos",
+      "Hi! I\u0027m Maya, your AI photo strategist ✨",
+      "I\u0027ll help you create stunning professional photos",
       "What kind of photos do you need today?",
     ]
 
@@ -188,7 +188,7 @@ export default function LandingPage() {
       const data = await response.json()
 
       if (response.ok) {
-        setWaitlistMessage({ type: "success", text: "You're on the list! We'll be in touch soon." })
+        setWaitlistMessage({ type: "success", text: "You\u0027re on the list! We\u0027ll be in touch soon." })
         setWaitlistEmail("")
       } else {
         setWaitlistMessage({ type: "error", text: data.error || "Something went wrong. Please try again." })
@@ -509,7 +509,7 @@ export default function LandingPage() {
             className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-light leading-[1.3] text-stone-50 mb-6 sm:mb-8"
             style={{ fontFamily: "'Times New Roman', Times, serif" }}
           >
-            "I never imagined an AI photo could make me see myself this way."
+            &quot;I never imagined an AI photo could make me see myself this way.&quot;
           </blockquote>
           <p className="text-sm sm:text-sm md:text-base leading-relaxed mb-4 sm:mb-6 max-w-2xl mx-auto px-4 font-light tracking-wider uppercase text-stone-400">
             — SHANNON - MEMBER
@@ -570,7 +570,7 @@ export default function LandingPage() {
                 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-light leading-relaxed text-stone-900 border-l-2 border-stone-900 pl-6 sm:pl-8 my-8 sm:my-10"
                 style={{ fontFamily: "'Times New Roman', Times, serif" }}
               >
-                "I built my business from nothing but selfies and a story."
+                &quot;I built my business from nothing but selfies and a story.&quot;
               </blockquote>
 
               <div className="space-y-4 sm:space-y-5 text-base sm:text-lg md:text-xl font-light leading-relaxed text-stone-700">
@@ -579,7 +579,7 @@ export default function LandingPage() {
                   selfies on Instagram, then shared my own story.
                 </p>
                 <p>
-                  That's how SSELFIE was born helping women who feel invisible get the professional photos they need to
+                  That&apos;s how SSELFIE was born helping women who feel invisible get the professional photos they need to
                   build their brands. No photoshoot needed.
                 </p>
               </div>
@@ -613,7 +613,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10 sm:gap-12 max-w-6xl mx-auto">
             <div className="space-y-5">
               <p className="text-lg sm:text-xl font-light text-stone-900 leading-relaxed">
-                You're building a personal brand but hate photoshoots
+                You&apos;re building a personal brand but hate photoshoots
               </p>
               <p className="text-base sm:text-lg font-light text-stone-600 leading-relaxed">
                 You know you need professional photos, but the thought of hiring a photographer, planning outfits, and
@@ -623,7 +623,7 @@ export default function LandingPage() {
 
             <div className="space-y-5">
               <p className="text-lg sm:text-xl font-light text-stone-900 leading-relaxed">
-                You're a coach or consultant who needs fresh content
+                You&apos;re a coach or consultant who needs fresh content
               </p>
               <p className="text-base sm:text-lg font-light text-stone-600 leading-relaxed">
                 Your clients expect to see you showing up consistently. You need new photos every month, not the same
@@ -633,10 +633,10 @@ export default function LandingPage() {
 
             <div className="space-y-5">
               <p className="text-lg sm:text-xl font-light text-stone-900 leading-relaxed">
-                You're tired of hiding behind stock photos
+                You&apos;re tired of hiding behind stock photos
               </p>
               <p className="text-base sm:text-lg font-light text-stone-600 leading-relaxed">
-                Generic stock images don't represent you. You want photos that actually look like you and match your
+                Generic stock images don&apos;t represent you. You want photos that actually look like you and match your
                 brand—without the hassle.
               </p>
             </div>
@@ -644,7 +644,7 @@ export default function LandingPage() {
 
           <div className="text-center mt-16 sm:mt-20 max-w-3xl mx-auto space-y-6 sm:space-y-8">
             <p className="text-xl sm:text-2xl md:text-3xl font-light leading-relaxed text-stone-900">
-              Don't let another month go by hiding behind stock photos.
+              Don&apos;t let another month go by hiding behind stock photos.
             </p>
             <p className="text-lg sm:text-xl font-light leading-relaxed text-stone-700">
               Your competitors are already showing up. Are you?
@@ -666,7 +666,7 @@ export default function LandingPage() {
               Not Just Another AI Headshot Tool
             </h2>
             <p className="text-base sm:text-lg md:text-xl font-light leading-relaxed text-stone-700 max-w-3xl mx-auto px-4 mb-12 sm:mb-16">
-              Most AI photo apps give you a one-time set of random portraits. That's it. But your brand needs more than
+              Most AI photo apps give you a one-time set of random portraits. That&apos;s it. But your brand needs more than
               that. You need fresh content every month, photos that match your vibe, and a consistent look across
               everything you post.
             </p>
@@ -693,16 +693,16 @@ export default function LandingPage() {
               </div>
               <div className="space-y-3 px-2">
                 <p className="text-xs sm:text-sm font-light text-stone-600 leading-relaxed">
-                  One-time batch of photos, then you're done
+                  One-time batch of photos, then you&apos;re done
                 </p>
                 <p className="text-xs sm:text-sm font-light text-stone-600 leading-relaxed">
-                  Random styles that don't match your brand
+                  Random styles that don&apos;t match your brand
                 </p>
                 <p className="text-xs sm:text-sm font-light text-stone-600 leading-relaxed">
                   No guidance on what to do with them
                 </p>
                 <p className="text-xs sm:text-sm font-light text-stone-600 leading-relaxed">
-                  You're on your own after purchase
+                  You&apos;re on your own after purchase
                 </p>
               </div>
             </div>
@@ -744,7 +744,7 @@ export default function LandingPage() {
 
           <div className="text-center mt-8 sm:mt-12">
             <p className="text-base sm:text-lg md:text-xl font-light leading-relaxed text-stone-900 max-w-2xl mx-auto px-4">
-              This isn't about getting a fun set of AI portraits. It's about showing up consistently, building your
+              This isn&apos;t about getting a fun set of AI portraits. It&apos;s about showing up consistently, building your
               brand, and having the confidence to be visible—month after month.
             </p>
           </div>

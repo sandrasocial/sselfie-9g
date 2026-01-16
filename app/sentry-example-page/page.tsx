@@ -137,7 +137,7 @@ export default function SentryExamplePage() {
                 Trigger Direct Server Test
               </Button>
               <p className="text-sm text-stone-600">
-                This will trigger a simple server-side error that's explicitly captured.
+                This will trigger a simple server-side error that&apos;s explicitly captured.
               </p>
             </div>
 

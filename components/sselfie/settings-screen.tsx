@@ -766,7 +766,7 @@ export default function SettingsScreen({ onBack, user, creditBalance }: Settings
                 className="w-full px-4 py-3 text-sm rounded-xl border border-stone-300/40 bg-white text-stone-950 focus:outline-none focus:border-stone-400 transition-all resize-none"
               />
               <p className="mt-2 text-xs text-stone-500">
-                Describe how you'd like to appear in your photos. These preferences will be applied to all future image
+                Describe how you&apos;d like to appear in your photos. These preferences will be applied to all future image
                 generations.
               </p>
             </div>

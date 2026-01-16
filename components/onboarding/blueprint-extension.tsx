@@ -53,20 +53,20 @@ const EXTENSION_STEPS = [
     title: "Who is your dream client?",
     subtitle: "Step 1 of 3",
     mayaMessage:
-      "Let's get clear on who you're creating content for. This helps me craft messaging and visuals that resonate with your ideal audience.",
+      "Let\u0027s get clear on who you\u0027re creating content for. This helps me craft messaging and visuals that resonate with your ideal audience.",
     field: "dreamClient",
     placeholder: "e.g., Women entrepreneurs, New moms, Career changers...",
   },
   {
     id: "struggle",
-    title: "What's your biggest struggle right now?",
+    title: "What\u0027s your biggest struggle right now?",
     subtitle: "Step 2 of 3",
     mayaMessage:
       "Understanding your challenges helps me create content that addresses real pain points and positions you as the solution your audience needs.",
     field: "struggle",
     isTextarea: true,
     placeholder:
-      "e.g., I struggle with showing up consistently, I don't know what to post, I feel stuck in my content...",
+      "e.g., I struggle with showing up consistently, I don\u0027t know what to post, I feel stuck in my content...",
   },
   {
     id: "feedStyle",
@@ -239,7 +239,7 @@ export default function BlueprintExtension({
                   {step.isFeedStyleSelector ? (
                     <div className="space-y-6">
                       <p className="text-xs font-light tracking-[0.2em] uppercase text-stone-500 text-center mb-4">
-                        Pick a vibe that feels like you. Don't worry, you can always switch things up later!
+                        Pick a vibe that feels like you. Don&apos;t worry, you can always switch things up later!
                       </p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                         {FEED_STYLES.map((style) => (

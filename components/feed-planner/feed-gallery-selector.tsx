@@ -252,7 +252,7 @@ export function FeedGallerySelector({ type, postId, feedId, onClose, onImageSele
                       <div className="flex-1">
                         <p className="text-sm font-light text-stone-900 mb-1">Image uploaded successfully</p>
                         <p className="text-xs text-stone-600 font-light">
-                          Click "Use This Image" below to save it to this post.
+                          Click &quot;Use This Image&quot; below to save it to this post.
                         </p>
                       </div>
                     </div>

@@ -99,7 +99,7 @@ export default function BioPage() {
                 className="text-3xl sm:text-4xl md:text-5xl font-light mb-4 leading-tight"
                 style={{ fontFamily: "'Times New Roman', serif", fontStyle: "italic" }}
               >
-                Hi, I'm Sandra
+                Hi, I&apos;m Sandra
               </h1>
               
               <p className="text-lg sm:text-xl font-light leading-relaxed mb-8 max-w-md mx-auto text-white/90" style={{ fontFamily: "'Inter', -apple-system, sans-serif" }}>

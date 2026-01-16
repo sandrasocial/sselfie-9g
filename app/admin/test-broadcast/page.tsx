@@ -146,7 +146,7 @@ export default function TestBroadcastPage() {
             placeholder="<html><body><p>Your email content here...</p><p><a href='{{{RESEND_UNSUBSCRIBE_URL}}}'>Unsubscribe</a></p></body></html>"
           />
           <p className="text-xs text-stone-500 mt-2">
-            Don't forget to include the unsubscribe link: <code className="bg-stone-100 px-1 rounded">{'{{{RESEND_UNSUBSCRIBE_URL}}}'}</code>
+            Don&apos;t forget to include the unsubscribe link: <code className="bg-stone-100 px-1 rounded">{'{{{RESEND_UNSUBSCRIBE_URL}}}'}</code>
           </p>
         </div>
 

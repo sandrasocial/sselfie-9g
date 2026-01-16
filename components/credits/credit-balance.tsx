@@ -29,7 +29,6 @@ export default function CreditBalance() {
 
   const balance = data?.balance || 0
   const history = data?.history || []
-
   return (
     <div className="space-y-4">
       <div className="bg-stone-100/50 border border-stone-200/40 rounded-2xl p-6">
@@ -54,7 +53,7 @@ export default function CreditBalance() {
         <div className="grid grid-cols-3 gap-2 text-xs">
           <div className="bg-stone-50 rounded-xl p-3">
             <p className="text-stone-500 mb-1">Training</p>
-            <p className="font-medium text-stone-950">25 credits</p>
+            <p className="font-medium text-stone-950">20 credits</p>
           </div>
           <div className="bg-stone-50 rounded-xl p-3">
             <p className="text-stone-500 mb-1">Image</p>
@@ -66,7 +65,7 @@ export default function CreditBalance() {
           </div>
         </div>
 
-        <button className="w-full mt-4 bg-stone-950 text-stone-50 py-3 rounded-xl text-sm font-medium tracking-[0.15em] uppercase hover:bg-stone-800 transition-all duration-200 flex items-center justify-center gap-2">
+        <button onClick={() => (window.location.href = "/checkout/credits")} className="w-full mt-4 bg-stone-950 text-stone-50 py-3 rounded-xl text-sm font-medium tracking-[0.15em] uppercase hover:bg-stone-800 transition-all duration-200 flex items-center justify-center gap-2">
           <Plus size={16} />
           Buy More Credits
         </button>

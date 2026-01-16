@@ -607,7 +607,7 @@ export default function AcademyScreen() {
       return (
         <div className="flex items-center justify-center min-h-[400px] px-4">
           <div className="text-center space-y-4">
-            <p className="text-sm text-stone-600">We couldn't load the courses right now</p>
+            <p className="text-sm text-stone-600">We couldn&apos;t load the courses right now</p>
             <button
               onClick={() => window.location.reload()}
               className="px-6 py-3 text-sm tracking-wider uppercase bg-stone-950 text-stone-50 rounded-xl hover:bg-stone-800 transition-all"

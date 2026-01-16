@@ -290,7 +290,7 @@ ${cleanedReferencePrompt ? `- Reference Prompt (from strategy - IGNORE THIS FORM
 
 ${isProMode ? `
 **PRO MODE (Nano Banana Pro):**
-- Use natural language prompts (50-80 words)
+- Use natural language prompts (100-150 words)
 - NO trigger words - Nano Banana uses reference images instead
 - Professional photography aesthetic
 - Rich visual storytelling with brand context
@@ -320,11 +320,12 @@ CRITICAL INSTRUCTIONS:
 
 ${isProMode ? `
 **PRO MODE (Nano Banana Pro):**
-1. **Natural Language Description** - Start with a natural scene description (50-80 words)
-2. **NO trigger words** - Use reference images for identity preservation
-3. **Professional photography** - Professional camera specs (e.g., "85mm lens, f/2.0 depth of field")
-4. **Rich styling details** - Specific outfit, location, lighting descriptions
-5. **Brand context** - Include brand mentions when applicable
+1. **Identity Anchor** - Start with "Use the uploaded photos as strict identity reference" (MANDATORY)
+2. **Natural Language Description** - Rich scene description with person, outfit, location (100-150 words total)
+3. **NO trigger words** - Use reference images for identity preservation
+4. **Professional photography** - Professional camera specs (e.g., "85mm lens, f/2.0 depth of field")
+5. **Rich styling details** - Specific outfit, location, lighting descriptions
+6. **Brand context** - Embed brand names naturally in outfit descriptions (e.g., "wearing an Alo Yoga set"), NOT as separate metadata
 ` : `
 1. **Start with EXACT FORMAT** ${postType?.toLowerCase().includes('object') || postType?.toLowerCase().includes('flatlay') || postType?.toLowerCase().includes('scenery') || postType?.toLowerCase().includes('place') ? '(ONLY FOR USER POSTS - SKIP FOR OBJECT/FLATLAY/SCENERY POSTS):' : '(FOR USER POSTS):'} "${postType?.toLowerCase().includes('object') || postType?.toLowerCase().includes('flatlay') || postType?.toLowerCase().includes('scenery') || postType?.toLowerCase().includes('place') ? '[object/scenery/flatlay description]' : `${triggerWord}, ${ethnicity ? ethnicity + " " : ""}${userGender}${physicalPreferences ? `, [converted physical preferences - descriptive only, no instructions]` : ""}`}"
 
@@ -353,17 +354,16 @@ ${isProMode ? `
 **🔴 PROMPT STRUCTURE ARCHITECTURE (FOLLOW THIS ORDER):**
 
 ${isProMode ? `
-**PRO MODE (Nano Banana Pro) - Natural Language (50-80 words):**
-1. **SCENE DESCRIPTION** - Natural language scene description with person, outfit, location
-2. **STYLING DETAILS** - Specific outfit details (material, color, garment type, brand if applicable)
-3. **LOCATION & ENVIRONMENT** - Detailed location description that matches brand aesthetic
-4. **LIGHTING & MOOD** - Professional lighting description (e.g., "soft diffused natural window light")
-5. **CAMERA SPECS** - Professional photography specs (e.g., "85mm lens, f/2.0 depth of field")
-6. **POSE & EXPRESSION** - Natural posing and expression
-7. **BRAND CONTEXT** - Include brand mentions when applicable (e.g., "from Alo", "Alo brand outfit")
+**PRO MODE (Nano Banana Pro) - Natural Language (100-150 words):**
+1. **IDENTITY** - Start with "Use the uploaded photos as strict identity reference" (MANDATORY FIRST)
+2. **OUTFIT & BRAND DETAILS** - Specific outfit details (material, color, garment type). Embed brand names naturally here (e.g., "wearing an Alo Yoga set", "in The Row cashmere sweater"), NOT separately
+3. **SETTING & MOOD** - Detailed location description that matches brand aesthetic, atmosphere, mood
+4. **TECHNICAL/STYLE** - Professional lighting description (e.g., "soft diffused natural window light"), camera specs (e.g., "85mm lens, f/2.0 depth of field"), photographic style
+5. **POSE & EXPRESSION** - Natural posing and expression
 
 **NO trigger words** - Use reference images for identity preservation
-**Natural language** - Write like describing to a photographer, not keyword stuffing
+**Natural language** - Write like describing to a photographer, not keyword stuffing. Use full sentences, not comma-separated keyword lists.
+**Brand Names:** Must be naturally embedded in outfit descriptions. Do not list them as separate metadata or tags.
 ` : `
 ${postType?.toLowerCase().includes('object') || postType?.toLowerCase().includes('flatlay') || postType?.toLowerCase().includes('scenery') || postType?.toLowerCase().includes('place') ? `
 **FOR OBJECT/FLATLAY/SCENERY POSTS (NO USER):**
@@ -405,16 +405,17 @@ ${brandColors ? `**CRITICAL**: Incorporate the user's brand colors (${brandColor
 
 **🔴 CRITICAL: PROMPT QUALITY CHECKLIST - EVERY PROMPT MUST HAVE:**
 ${isProMode ? `
-1. ✅ Natural language description (NO trigger words)
-2. ✅ Specific outfit description (material + color + garment type, brand if applicable)
-3. ✅ Detailed location/environment description
-4. ✅ Professional lighting description
-5. ✅ Professional camera specs (e.g., "85mm lens, f/2.0 depth of field")
-6. ✅ Natural pose/expression
-7. ✅ Brand context (when applicable)
-8. ✅ Total length: 50-80 words (natural language, not keyword stuffing)
+1. ✅ Identity anchor at start ("Use the uploaded photos as strict identity reference")
+2. ✅ Natural language description (NO trigger words)
+3. ✅ Specific outfit description (material + color + garment type, brand names embedded naturally)
+4. ✅ Detailed location/environment description
+5. ✅ Professional lighting description
+6. ✅ Professional camera specs (e.g., "85mm lens, f/2.0 depth of field")
+7. ✅ Natural pose/expression
+8. ✅ Brand names embedded in outfit descriptions (NOT as separate metadata)
+9. ✅ Total length: 100-150 words (natural language, not keyword stuffing)
 
-**Total target: 50-80 words for rich visual storytelling and professional quality**
+**Total target: 100-150 words for rich visual storytelling and professional quality**
 ` : `
 1. ✅ Trigger word + ethnicity + gender (no duplicates, format: "${triggerWord}, ${ethnicity ? ethnicity + ", " : ""}${userGender}")
 2. ✅ Specific outfit description (material + color + garment type - NOT "trendy outfit", stay detailed here)
@@ -433,17 +434,19 @@ ${postType?.toLowerCase().includes('object') || postType?.toLowerCase().includes
 ⚠️ **CRITICAL REMINDER:** This is a ${postType} post - DO NOT include the user, trigger word, or any person in the prompt. Focus only on objects, products, flatlays, or scenery.
 ` : isProMode ? `
 **CRITICAL: Use YOUR fashion expertise to create detailed, specific styling for Pro Mode (Nano Banana).**
-- Generate a 50-80 word natural language prompt (NO trigger words)
-- Start with a natural scene description (e.g., "Woman in...", "Person wearing...")
-- Include SPECIFIC outfit details (material + color + garment type, brand if applicable)
+- Generate a 100-150 word natural language prompt (NO trigger words)
+- ALWAYS start with identity anchor: "Use the uploaded photos as strict identity reference"
+- Follow with natural scene description (e.g., "Woman in...", "Person wearing...")
+- Include SPECIFIC outfit details (material + color + garment type, brand names embedded naturally)
 - Include DETAILED location/environment description
 - Include professional lighting description (e.g., "soft diffused natural window light")
 - Include professional camera specs (e.g., "85mm lens, f/2.0 depth of field")
 - Use natural language - write like describing to a photographer
 - Make it feel like professional photography, not iPhone snaps
+- Embed brand names in outfit descriptions (e.g., "wearing an Alo Yoga set"), NOT as separate tags
 
-**🔴 EXAMPLE OF WHAT YOU MUST CREATE (PRO MODE):**
-"Woman in sage green silk blouse with relaxed fit tucked into high-waisted cream linen trousers, standing with hand on marble bar counter, looking over shoulder naturally, upscale restaurant with marble surfaces and modern minimalist design, soft diffused natural window light creating gentle shadows, professional photography, 85mm lens, f/2.0 depth of field, natural skin texture"
+**🔴 EXAMPLE OF WHAT YOU MUST CREATE (PRO MODE - ~100 words):**
+"Use the uploaded photos as strict identity reference. Woman in sage green silk blouse with relaxed fit tucked into high-waisted cream linen trousers, standing with hand on marble bar counter, looking over shoulder naturally with soft smile, positioned in upscale restaurant with marble surfaces and modern minimalist design, warm natural window light creating gentle shadows across her face and highlighting the texture of the silk fabric, professional photography with 85mm lens and f/2.0 depth of field, natural skin texture with visible pores, authentic moment captured with genuine presence, sophisticated atmosphere with warm beige and cream color palette"
 
 **🔴 EXAMPLE OF WHAT YOU MUST NEVER CREATE:**
 "Woman, confident expression, wearing stylish business casual outfit, urban background with clean lines, edgy-minimalist aesthetic with perfect lighting"
@@ -968,10 +971,10 @@ Reference (IGNORE FORMAT - GENERIC AND INCOMPLETE): ${cleanedReferencePrompt.sub
       
       // Check word count
       const wordCount = generatedPrompt.split(/\s+/).length
-      if (wordCount < 45) {
-        missingRequirements.push(`length (currently ${wordCount} words, need 50-80)`)
-      } else if (wordCount > 85) {
-        console.log(`[v0] [FEED-PROMPT] ⚠️ Prompt is ${wordCount} words (target: 50-80) - may lose focus on character features`)
+      if (wordCount < 80) {
+        missingRequirements.push(`length (currently ${wordCount} words, need 100-150)`)
+      } else if (wordCount > 160) {
+        console.log(`[v0] [FEED-PROMPT] ⚠️ Prompt is ${wordCount} words (target: 100-150) - may lose focus on character features`)
       }
       
       if (missingRequirements.length > 0) {
@@ -1037,7 +1040,7 @@ Reference (IGNORE FORMAT - GENERIC AND INCOMPLETE): ${cleanedReferencePrompt.sub
       
       console.log("[v0] [FEED-PROMPT] Final prompt (with trigger word):", generatedPrompt.substring(0, 150) + "...")
       console.log("[v0] [FEED-PROMPT] Trigger word verification:", generatedPrompt.toLowerCase().startsWith(triggerLower) ? "✅ CORRECT" : "❌ MISSING")
-      console.log("[v0] [FEED-PROMPT] Word count:", finalWordCount, finalWordCount >= 50 && finalWordCount <= 80 ? "✅" : "⚠️")
+      console.log("[v0] [FEED-PROMPT] Word count:", finalWordCount, finalWordCount >= 100 && finalWordCount <= 150 ? "✅" : "⚠️")
       console.log("[v0] [FEED-PROMPT] Expected start:", expectedStart)
       console.log("[v0] [FEED-PROMPT] Actual start:", generatedPrompt.substring(0, Math.min(expectedStart.length + 20, generatedPrompt.length)))
     }

@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { describe, it } from 'vitest'
 import { createTestUser, cleanupTestUser } from './helpers/test-user'
 
 /**
@@ -12,6 +12,15 @@ import { createTestUser, cleanupTestUser } from './helpers/test-user'
  * 5. Generate images
  * 6. Verify welcome wizard does NOT show on second visit
  */
+
+const runPlaywright = process.env.PLAYWRIGHT_TEST === '1'
+
+if (!runPlaywright) {
+  describe.skip('Playwright E2E (set PLAYWRIGHT_TEST=1)', () => {
+    it('skipped in vitest', () => {})
+  })
+} else {
+  const { test, expect } = require('@playwright/test')
 
 test.describe('Paid User Flow', () => {
   const testEmail = `paid-test-${Date.now()}@playwright.test`
@@ -157,3 +166,4 @@ test.describe('Paid User Flow', () => {
     await expect(grid).toBeVisible({ timeout: 5000 })
   })
 })
+}

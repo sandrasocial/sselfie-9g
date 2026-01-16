@@ -539,7 +539,7 @@ export function MayaTestingLab({ userId, userName }: MayaTestingLabProps) {
             <AlertTriangle className="h-4 w-4 text-amber-600" />
             <AlertTitle className="text-amber-900 font-semibold">Test Environment - Your Admin Model is Safe</AlertTitle>
             <AlertDescription className="text-amber-800 text-sm">
-              All tests use a separate test user. Your admin account's production model will NOT be affected. Test trainings create separate models with "test-" prefix.
+              All tests use a separate test user. Your admin account&apos;s production model will NOT be affected. Test trainings create separate models with &quot;test-&quot; prefix.
             </AlertDescription>
           </Alert>
         </div>
@@ -609,8 +609,8 @@ export function MayaTestingLab({ userId, userName }: MayaTestingLabProps) {
                       <label className="text-sm font-medium text-amber-900">Production Mode</label>
                       <p className="text-xs text-amber-700 mt-1">
                         {productionMode 
-                          ? "⚠️ Will update the user's ACTUAL production model (not a test model)"
-                          : "Creating a test model (is_test = true) - won't affect production"}
+                          ? "⚠️ Will update the user&apos;s ACTUAL production model (not a test model)"
+                          : "Creating a test model (is_test = true) - won&apos;t affect production"}
                       </p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">

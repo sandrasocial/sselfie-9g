@@ -1498,7 +1498,7 @@ export default function PromptBuilderChat({
                         lineHeight: Typography.body.lineHeight
                       }}
                     >
-                      Select a guide from the dropdown above to start creating prompts. You can still generate concepts, but you'll need to select a guide to approve and save them.
+                      Select a guide from the dropdown above to start creating prompts. You can still generate concepts, but you&apos;ll need to select a guide to approve and save them.
                     </p>
                   </div>
                 )}

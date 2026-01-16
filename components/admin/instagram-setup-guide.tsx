@@ -29,7 +29,7 @@ export function InstagramSetupGuide() {
                 <ol className="ml-4 space-y-1 text-sm text-muted-foreground list-decimal">
                   <li>Open Instagram app on your phone</li>
                   <li>Go to Settings → Account → Switch to Professional Account</li>
-                  <li>Choose "Business" (or "Creator")</li>
+                  <li>Choose &quot;Business&quot; (or &quot;Creator&quot;)</li>
                   <li>Complete the setup wizard</li>
                 </ol>
               </div>
@@ -46,9 +46,9 @@ export function InstagramSetupGuide() {
                 <h3 className="font-semibold">Create a Facebook Page</h3>
                 <ol className="ml-4 space-y-1 text-sm text-muted-foreground list-decimal">
                   <li>Go to <a href="https://www.facebook.com/pages/create" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">facebook.com/pages/create</a></li>
-                  <li>Click "Create new Page"</li>
-                  <li>Choose "Business or Brand"</li>
-                  <li>Name it the same as your Instagram (e.g., "SSELFIE AI")</li>
+                  <li>Click &quot;Create new Page&quot;</li>
+                  <li>Choose &quot;Business or Brand&quot;</li>
+                  <li>Name it the same as your Instagram (e.g., &quot;SSELFIE AI&quot;)</li>
                   <li>Add a profile picture and category</li>
                 </ol>
               </div>
@@ -66,7 +66,7 @@ export function InstagramSetupGuide() {
                 <ol className="ml-4 space-y-1 text-sm text-muted-foreground list-decimal">
                   <li>Go to your Facebook Page</li>
                   <li>Click Settings → Instagram</li>
-                  <li>Click "Connect Account"</li>
+                  <li>Click &quot;Connect Account&quot;</li>
                   <li>Log in to your Instagram Business account</li>
                   <li>Confirm the connection</li>
                 </ol>
@@ -101,7 +101,7 @@ export function InstagramSetupGuide() {
               <div className="flex-1 space-y-2">
                 <h3 className="font-semibold">Connect in SSELFIE</h3>
                 <p className="text-sm text-muted-foreground">
-                  Once verified, click "Connect Account" above. You'll authorize SSELFIE to access your Instagram insights through your Facebook Page.
+                  Once verified, click &quot;Connect Account&quot; above. You&apos;ll authorize SSELFIE to access your Instagram insights through your Facebook Page.
                 </p>
               </div>
             </div>
@@ -115,7 +115,7 @@ export function InstagramSetupGuide() {
         </CardHeader>
         <CardContent className="text-sm text-yellow-800 space-y-2">
           <p>
-            Instagram Graph API requires a Facebook Page as an intermediary for security and permissions management. This is Meta's standard architecture for business integrations.
+            Instagram Graph API requires a Facebook Page as an intermediary for security and permissions management. This is Meta&apos;s standard architecture for business integrations.
           </p>
           <p className="font-semibold">
             Without a Facebook Page connected to your Instagram Business account, the API cannot access your Instagram data.

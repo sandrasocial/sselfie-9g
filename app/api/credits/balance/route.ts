@@ -2,14 +2,14 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getDb } from "@/lib/db"
-
 /**
  * GET /api/credits/balance
  * 
  * Returns user's credit balance, total_used, and total_purchased
- * Used by free mode upsell modal to check if user has used 2+ credits
+ * Used by free mode upsell modal to check credits
  */
 export async function GET(req: NextRequest) {
+  if (process.env.ENABLE_UNUSED_ENDPOINTS !== "true") return NextResponse.json({ error: "Endpoint disabled" }, { status: 410 })
   try {
     const { user: authUser, error: authError } = await getAuthenticatedUser()
     if (authError || !authUser) {

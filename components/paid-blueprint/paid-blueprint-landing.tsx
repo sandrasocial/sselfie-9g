@@ -124,7 +124,7 @@ export default function PaidBlueprintLanding() {
             onClick={() => scrollToSection("what-you-get")}
             className="text-xs sm:text-sm text-white/80 hover:text-white transition-colors underline"
           >
-            See what's inside ↓
+            See what\u0027s inside ↓
           </button>
         </div>
       </section>
@@ -152,9 +152,9 @@ export default function PaidBlueprintLanding() {
               </p>
             </div>
             <div className="space-y-3">
-              <h3 className="text-xl font-light text-white mb-2">It's That Simple</h3>
+              <h3 className="text-xl font-light text-white mb-2">It\u0027s That Simple</h3>
               <p className="text-sm sm:text-base font-light text-stone-300 leading-relaxed">
-                Upload your selfies. We'll create all 30 photos automatically. No manual work, no stress.
+                Upload your selfies. We\u0027ll create all 30 photos automatically. No manual work, no stress.
               </p>
             </div>
             <div className="space-y-3">
@@ -215,7 +215,7 @@ export default function PaidBlueprintLanding() {
               </div>
               <h3 className="text-lg font-light text-white mb-2">Answer Questions</h3>
               <p className="text-sm font-light text-stone-400 leading-relaxed">
-                Complete your free brand blueprint if you haven't already. It takes just 3 minutes.
+                Complete your free brand blueprint if you haven\u0027t already. It takes just 3 minutes.
               </p>
             </div>
             <div className="text-center">
@@ -233,7 +233,7 @@ export default function PaidBlueprintLanding() {
               </div>
               <h3 className="text-lg font-light text-white mb-2">Get Your Photos</h3>
               <p className="text-sm font-light text-stone-400 leading-relaxed">
-                Upload 1-3 selfies and we'll create 30 custom photos that look like you. It's that simple.
+                Upload 1-3 selfies and we\u0027ll create 30 custom photos that look like you. It\u0027s that simple.
               </p>
             </div>
           </div>
@@ -306,7 +306,7 @@ export default function PaidBlueprintLanding() {
           </div>
           <div className="mt-8 sm:mt-12 bg-white/5 p-6 rounded-lg max-w-3xl mx-auto">
             <p className="text-sm font-light leading-relaxed text-stone-300 text-center">
-              <strong className="text-white">See the pattern?</strong> Each grid uses a completely different aesthetic (light, dark, beige) but they all maintain consistent visibility. That's what builds your personal brand. Your paid blueprint will help you create this cohesive look based on YOUR unique style.
+              <strong className="text-white">See the pattern?</strong> Each grid uses a completely different aesthetic (light, dark, beige) but they all maintain consistent visibility. That\u0027s what builds your personal brand. Your paid blueprint will help you create this cohesive look based on YOUR unique style.
             </p>
           </div>
         </div>
@@ -325,7 +325,7 @@ export default function PaidBlueprintLanding() {
             <div>
               <h3 className="text-lg font-light text-white mb-2">How long does it take?</h3>
               <p className="text-sm sm:text-base font-light text-stone-400 leading-relaxed">
-                Once you upload your selfies, we start creating immediately. All 30 photos are ready in just a few seconds. You'll get an email when they're done.
+                Once you upload your selfies, we start creating immediately. All 30 photos are ready in just a few seconds. You\u0027ll get an email when they\u0027re done.
               </p>
             </div>
             <div>
@@ -337,13 +337,13 @@ export default function PaidBlueprintLanding() {
             <div>
               <h3 className="text-lg font-light text-white mb-2">Are the photos mine?</h3>
               <p className="text-sm sm:text-base font-light text-stone-400 leading-relaxed">
-                Yes, you own everything you create. Download and use them however you'd like: social media, website, anywhere you need professional brand photos.
+                Yes, you own everything you create. Download and use them however you\u0027d like: social media, website, anywhere you need professional brand photos.
               </p>
             </div>
             <div>
-              <h3 className="text-lg font-light text-white mb-2">What if I'm not happy?</h3>
+              <h3 className="text-lg font-light text-white mb-2">What if I\u0027m not happy?</h3>
               <p className="text-sm sm:text-base font-light text-stone-400 leading-relaxed">
-                We want you to love your photos. If something doesn't match your vision, just reach out and we'll work with you to get it right.
+                We want you to love your photos. If something doesn\u0027t match your vision, just reach out and we\u0027ll work with you to get it right.
               </p>
             </div>
           </div>

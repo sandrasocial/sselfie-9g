@@ -98,7 +98,7 @@ export function BetaCountdown({ compact }: { compact?: boolean }) {
           <div>
             <p className="text-sm font-medium text-stone-900 mb-1">Beta Limit Reached!</p>
             <p className="text-xs text-stone-700 leading-relaxed">
-              You've reached 100 beta users. It's time to update pricing to regular rates in{" "}
+              You&apos;ve reached 100 beta users. It&apos;s time to update pricing to regular rates in{" "}
               <code className="bg-stone-200 px-2 py-0.5 rounded text-xs">app/actions/landing-checkout.ts</code>
             </p>
           </div>

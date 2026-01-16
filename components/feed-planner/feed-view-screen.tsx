@@ -374,7 +374,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
                 Create Your First Feed
               </h2>
               <p className="text-sm sm:text-base text-stone-600 font-light">
-                Create a feed manually or generate one with Maya's AI assistance.
+                Create a feed manually or generate one with Maya&apos;s AI assistance.
               </p>
             </div>
 

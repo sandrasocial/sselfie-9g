@@ -174,10 +174,10 @@ export function FeedbackModal({ open, onOpenChange, userId, userEmail, userName 
       <DialogContent className="sm:max-w-[600px] bg-white/95 backdrop-blur-xl border-stone-200 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-serif text-2xl font-extralight tracking-[0.2em] uppercase text-stone-950 text-center">
-            {selectedType ? "Send Message" : "Let's Chat"}
+            {selectedType ? "Send Message" : "Let\u0027s Chat"}
           </DialogTitle>
           <p className="text-sm text-stone-600 text-center leading-relaxed mt-2">
-            Hey there. I'm Sandra, and I'd love to hear from you.
+            Hey there. I&apos;m Sandra, and I&apos;d love to hear from you.
           </p>
         </DialogHeader>
 
@@ -189,7 +189,7 @@ export function FeedbackModal({ open, onOpenChange, userId, userEmail, userName 
             <h3 className="font-serif text-2xl font-extralight text-stone-950 mb-2 tracking-wide">Thank You</h3>
             <p className="text-sm text-stone-600 leading-relaxed max-w-md mx-auto">
               {selectedType === "share_sselfies"
-                ? "Your SSELFIEs are gorgeous. I can't wait to share them on social media and show the world what's possible."
+                ? "Your SSELFIEs are gorgeous. I can\u0027t wait to share them on social media and show the world what\u0027s possible."
                 : "I really appreciate you taking the time to share your thoughts. Your feedback helps make SSELFIE better for everyone."}
             </p>
             <p className="text-xs text-stone-400 mt-4">XoXo Sandra 💋</p>
@@ -270,7 +270,7 @@ export function FeedbackModal({ open, onOpenChange, userId, userEmail, userName 
               </div>
               {selectedType === "share_sselfies" && (
                 <p className="text-xs text-stone-500 mt-2 font-light leading-relaxed">
-                  I may feature your SSELFIEs on Instagram, TikTok, or other social media. By uploading, you're giving
+                  I may feature your SSELFIEs on Instagram, TikTok, or other social media. By uploading, you&apos;re giving
                   me permission to share them.
                 </p>
               )}
@@ -278,14 +278,14 @@ export function FeedbackModal({ open, onOpenChange, userId, userEmail, userName 
 
             <div>
               <label className="text-xs tracking-[0.15em] uppercase text-stone-500 mb-2 block font-light">
-                {selectedType === "share_sselfies" ? "Give it a fun caption" : "What's this about?"}
+                {selectedType === "share_sselfies" ? "Give it a fun caption" : "What\u0027s this about?"}
               </label>
               <Input
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 placeholder={
                   selectedType === "share_sselfies"
-                    ? "Something catchy like 'My glow up' or 'Before & after magic'"
+                    ? "Something catchy like \u0027My glow up\u0027 or \u0027Before & after magic\u0027"
                     : "Give it a quick title..."
                 }
                 className="bg-stone-50 border-stone-200 focus:border-stone-400 focus:ring-stone-400"

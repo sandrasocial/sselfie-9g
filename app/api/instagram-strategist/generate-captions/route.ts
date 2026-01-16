@@ -4,6 +4,7 @@ import { neon } from "@neondatabase/serverless"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { INSTAGRAM_STRATEGIST_SYSTEM_PROMPT } from "@/lib/instagram-strategist/personality"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { hasStudioMembership } from "@/lib/subscription"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -20,8 +21,6 @@ const CaptionSchema = z.object({
 
 export async function POST(request: Request) {
   try {
-    console.log("[v0] Instagram Strategist: Starting caption generation...")
-
     const { user: authUser, error: authError } = await getAuthenticatedUser()
 
     if (authError || !authUser) {
@@ -33,6 +32,14 @@ export async function POST(request: Request) {
       return Response.json({ error: "Not authenticated" }, { status: 401 })
     }
 
+    const featureEnabled = process.env.ENABLE_STRATEGIST_AI === "true"
+    if (!featureEnabled) {
+      const isMember = await hasStudioMembership(neonUser.id)
+      if (!isMember) {
+        return Response.json({ error: "Endpoint disabled" }, { status: 410 })
+      }
+    }
+
     const body = await request.json()
     const { feedId, brandVibe, businessType, colorPalette, feedStory, researchData } = body
 
@@ -41,10 +48,6 @@ export async function POST(request: Request) {
     }
 
     console.log(`[v0] Instagram Strategist: Generating captions for feed ${feedId}...`)
-    if (researchData) {
-      console.log("[v0] Instagram Strategist: Using research data for trending hooks and hashtags")
-    }
-
     const posts = await sql`
       SELECT * FROM feed_posts
       WHERE feed_layout_id = ${feedId}

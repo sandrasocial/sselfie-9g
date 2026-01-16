@@ -164,6 +164,8 @@ export default function ConversionsPage() {
   }
 
   const { emailFunnel, instagramFunnel, topCampaigns, weeklyPerformance, funnelTrends } = data
+  const membershipConversions = weeklyPerformance.newCustomers
+  const topupConversions = Math.max(emailFunnel.purchasesCompleted - membershipConversions, 0)
 
   return (
     <div className="min-h-screen bg-stone-50 p-6">
@@ -213,21 +215,27 @@ export default function ConversionsPage() {
             Email → Purchase Funnel
           </h2>
 
-          {/* Funnel Metrics */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-            {emailFunnel.funnelData.map((stage, index) => (
-              <div key={stage.stage} className="text-center">
-                <div className="text-2xl font-serif font-light text-stone-950 mb-1">
-                  {stage.count.toLocaleString()}
-                </div>
-                <div className="text-xs text-stone-600 uppercase tracking-wide">{stage.stage}</div>
-                {index > 0 && (
-                  <div className="text-xs text-stone-500 mt-1">
-                    {stage.percentage.toFixed(1)}% of previous
-                  </div>
-                )}
-              </div>
-            ))}
+          {/* Key Metrics */}
+          <div className="mb-6">
+            <h3 className="text-sm font-medium text-stone-700 mb-4">Key Metrics</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <MetricCard
+                label="Purchases Completed (7d)"
+                value={emailFunnel.purchasesCompleted.toLocaleString()}
+                icon={<ShoppingCart className="w-5 h-5" />}
+                highlight
+              />
+              <MetricCard
+                label="Membership Conversions (7d)"
+                value={membershipConversions.toLocaleString()}
+                icon={<Users className="w-5 h-5" />}
+              />
+              <MetricCard
+                label="Top-up / One-time Purchases (7d)"
+                value={topupConversions.toLocaleString()}
+                icon={<DollarSign className="w-5 h-5" />}
+              />
+            </div>
           </div>
 
           {/* Funnel Visualization */}
@@ -246,25 +254,6 @@ export default function ConversionsPage() {
             </ResponsiveContainer>
           </div>
 
-          {/* Key Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <MetricCard
-              label="Total Subscribers"
-              value={emailFunnel.totalSubscribers.toLocaleString()}
-              icon={<Users className="w-5 h-5" />}
-            />
-            <MetricCard
-              label="Overall Conversion Rate"
-              value={`${emailFunnel.conversionRate.toFixed(2)}%`}
-              icon={<TrendingUp className="w-5 h-5" />}
-              highlight
-            />
-            <MetricCard
-              label="Emails Sent (Week)"
-              value={emailFunnel.emailsSentThisWeek.toLocaleString()}
-              icon={<Mail className="w-5 h-5" />}
-            />
-          </div>
         </div>
 
         {/* Section 2: Instagram → Email Funnel */}
@@ -276,18 +265,18 @@ export default function ConversionsPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <MetricCard
-              label="Free Guide Downloads"
+              label="Blueprint Completions"
               value={instagramFunnel.freeGuideDownloads.toLocaleString()}
               icon={<Download className="w-5 h-5" />}
             />
             <MetricCard
-              label="Guide → Purchase Rate"
+              label="Blueprint → Paid Conversion Rate"
               value={`${instagramFunnel.guideToPurchaseRate.toFixed(2)}%`}
               icon={<TrendingUp className="w-5 h-5" />}
               highlight
             />
             <MetricCard
-              label="Guide Conversions"
+              label="Blueprint → Paid Purchases"
               value={instagramFunnel.guideConversions.toLocaleString()}
               icon={<CheckCircle className="w-5 h-5" />}
             />
@@ -358,7 +347,7 @@ export default function ConversionsPage() {
         <div className="bg-white rounded-xl p-6 mb-8 shadow-sm border border-stone-200">
           <h2 className="text-xl font-serif font-light mb-6 text-stone-950 flex items-center gap-2">
             <Calendar className="w-5 h-5" />
-            This Week's Performance
+            This Week&apos;s Performance
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

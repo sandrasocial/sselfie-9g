@@ -450,7 +450,7 @@ export default function ProModeChat({
                     marginBottom: Spacing.section,
                   }}
                 >
-                  Describe what you'd like to create, and Maya will generate professional concepts for you.
+                  Describe what you&apos;d like to create, and Maya will generate professional concepts for you.
                 </p>
               </div>
             </div>

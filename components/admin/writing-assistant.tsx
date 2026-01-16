@@ -341,7 +341,7 @@ ${generatedContent.hashtags.map(tag => `#${tag}`).join(' ')}
           <div className="text-center text-stone-500 py-12">
             <FileText className="w-12 h-12 mx-auto mb-4 text-stone-300" />
             <p className="text-sm">
-              Describe what you need and I'll write it in Sandra's voice
+              Describe what you need and I&apos;ll write it in Sandra&apos;s voice
             </p>
           </div>
         )}

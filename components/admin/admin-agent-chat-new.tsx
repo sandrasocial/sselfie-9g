@@ -54,24 +54,10 @@ const getMessageContent = (message: any): string => {
     return ""
   }
   
-  // Debug logging
-  console.log('[Alex] 🔍 getMessageContent called with message:', {
-    id: message.id,
-    role: message.role,
-    hasContent: !!message.content,
-    contentType: typeof message.content,
-    hasParts: !!message.parts,
-    partsLength: message.parts?.length,
-    contentPreview: typeof message.content === 'string' 
-      ? message.content.substring(0, 100) 
-      : 'not a string'
-  })
-  
   // Handle string content
   if (typeof message.content === "string") {
     const content = message.content.trim()
     if (content) {
-      console.log('[Alex] ✅ Returning string content, length:', content.length)
       return content
     }
   }
@@ -84,7 +70,6 @@ const getMessageContent = (message: any): string => {
       .filter((text: any) => text != null && text !== '')
     const result = textParts.join("\n").trim()
     if (result) {
-      console.log('[Alex] ✅ Returning content array, length:', result.length)
       return result
     }
   }
@@ -97,7 +82,6 @@ const getMessageContent = (message: any): string => {
       .filter((text: any) => text != null && text !== '')
     const result = textParts.join("\n").trim()
     if (result) {
-      console.log('[Alex] ✅ Returning parts array, length:', result.length)
       return result
     }
   }
@@ -532,23 +516,11 @@ export default function AdminAgentChatNew({
     transport: transportInstance,
     body: { chatId },
     onToolCall: async (toolCall: any) => {
-      // Log when tool is called
-      console.log('[Alex] 🔧 Tool call started:', toolCall.toolName)
       setExecutingTool(toolCall.toolName)
       setToolLoading(toolCall.toolName)
     },
     onToolResult: async (toolResult: any) => {
       // Handle tool results BEFORE any validation - this prevents "expected text-start, got tool-call" errors
-      // Log when tool result arrives
-      console.log('[Alex] 🎯 Tool result received:', {
-        toolName: toolResult.toolName,
-        hasResult: !!toolResult.result,
-        hasEmailPreview: !!toolResult.result?.email_preview_data,
-        hasCaptionData: !!toolResult.result?.data?.captionText,
-        hasSequenceData: !!toolResult.result?.emails,
-        resultKeys: toolResult.result ? Object.keys(toolResult.result) : []
-      })
-
       // Immediately update messages array with tool result to render preview cards
       // This bypasses validation errors by adding tool results directly to the last assistant message
       setMessages((prev: any[]) => {
@@ -869,13 +841,7 @@ export default function AdminAgentChatNew({
     }
   }, [messages]) // Only depend on messages, not toolResultsVersion
 
-  // Add status logging
   useEffect(() => {
-    console.log('[Alex] 🔄 Status changed to:', status, {
-      messageCount: messages.length,
-      isLoading,
-      chatId
-    })
   }, [status, isLoading, messages.length, chatId])
 
   const loadChats = async () => {
@@ -899,8 +865,6 @@ export default function AdminAgentChatNew({
           ? `${loadChatEndpoint}?chatId=${specificChatId}`
           : loadChatEndpoint
 
-        console.log("[Alex] Loading chat from URL:", url)
-
         const response = await fetch(url)
 
         if (!response.ok) {
@@ -908,8 +872,6 @@ export default function AdminAgentChatNew({
         }
 
         const data = await response.json()
-        console.log("[Alex] Loaded chat ID:", data.chatId, "Messages:", data.messages?.length, "Title:", data.chatTitle)
-
         // Set chatId first
         // Use explicit null/undefined check to handle chatId === 0 correctly
         if (data.chatId !== null && data.chatId !== undefined) {
@@ -951,10 +913,8 @@ export default function AdminAgentChatNew({
             }
             return msg
           })
-          console.log("[Alex] Setting messages:", formattedMessages.length)
           setMessages(formattedMessages)
         } else {
-          console.log("[Alex] No messages to load, setting empty array")
           setMessages([])
         }
 
@@ -3013,7 +2973,7 @@ Please acknowledge you've received the edited HTML and are ready to make further
                                                       </div>
                                                     </div>
                                                     <p className="text-xs text-stone-500 mt-3">
-                                                      💡 Once approved, ask Alex to "create the automation code for this sequence"
+                                                      💡 Once approved, ask Alex to &quot;create the automation code for this sequence&quot;
                                                     </p>
                                                   </div>
                                                 </div>
@@ -3161,7 +3121,7 @@ Please acknowledge you've received the edited HTML and are ready to make further
                                                         </div>
                                                       </div>
                                                       <p className="text-xs text-stone-500 mt-3">
-                                                        💡 Once approved, ask Alex to "create the automation code for this sequence"
+                                                        💡 Once approved, ask Alex to &quot;create the automation code for this sequence&quot;
                                                       </p>
                                                     </div>
                                                   </div>
@@ -3255,6 +3215,7 @@ Please acknowledge you've received the edited HTML and are ready to make further
                                           
                                           return (
                                             <div key={`automation-${automationData.sequenceId}-${message.id}`} className="mt-4">
+                                              {/* bg-gradient-to-r is correct Tailwind class - bg-linear-to-r does not exist (IDE linter false positive) */}
                                               <div className="bg-gradient-to-r from-stone-50 to-stone-100 border border-stone-300 rounded-lg p-6">
                                                 <div className="flex items-start justify-between gap-4">
                                                   <div className="flex-1">
@@ -3309,6 +3270,7 @@ Please acknowledge you've received the edited HTML and are ready to make further
                                           
                                           return (
                                             <div key={`automation-${automationData.sequenceId}-${message.id}`} className="mt-4">
+                                              {/* bg-gradient-to-r is correct Tailwind class - bg-linear-to-r does not exist (IDE linter false positive) */}
                                               <div className="bg-gradient-to-r from-stone-50 to-stone-100 border border-stone-300 rounded-lg p-6">
                                                 <div className="flex items-start justify-between gap-4">
                                                   <div className="flex-1">
@@ -3788,7 +3750,7 @@ Please acknowledge you've received the edited HTML and are ready to make further
                     <p className="text-xs sm:text-sm font-medium text-red-900 mb-1">
                       {toolName === 'general' ? 'Chat Error' : `${toolName} Error`}
                     </p>
-                    <p className="text-xs text-red-700 break-words">{filteredError}</p>
+                    <p className="text-xs text-red-700 wrap-break-word">{filteredError}</p>
                     <button
                       onClick={() => setToolErrors(prev => {
                         const newErrors = { ...prev }

@@ -292,7 +292,7 @@ export function AdminDashboard({ userId, userName }: AdminDashboardProps) {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-lg font-semibold text-stone-950 mb-1">Login as User</h2>
-              <p className="text-sm text-stone-600">Access any user's account with admin password</p>
+              <p className="text-sm text-stone-600">Access any user&apos;s account with admin password</p>
             </div>
             <a
               href="/admin/login-as-user"

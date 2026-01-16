@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
 import { getOrCreateTrainingModel } from "@/lib/data/training"
+import { hasStudioMembership } from "@/lib/subscription"
 import {
   getReplicateClient,
   FLUX_LORA_TRAINER,
@@ -40,14 +41,16 @@ export async function POST(request: Request) {
   if (!neonUser) {
     return NextResponse.json({ error: "User not found" }, { status: 404 })
   }
-  
-  console.log("[v0] [TRAINING] Using effective user for training:", {
-    userId: neonUser.id,
-    email: neonUser.email,
-  })
 
+  const featureEnabled = process.env.ENABLE_TRAINING_AI === "true"
+  if (!featureEnabled) {
+    const isMember = await hasStudioMembership(neonUser.id)
+    if (!isMember) {
+      return NextResponse.json({ error: "Endpoint disabled" }, { status: 410 })
+    }
+  }
+  
   console.log("[v0] Starting training for user:", neonUser.id)
-  console.log("[v0] ZIP URL:", zipUrl)
 
   const triggerWord = `user${neonUser.id.substring(0, 8)}`
   console.log("[v0] Generated trigger word:", triggerWord)

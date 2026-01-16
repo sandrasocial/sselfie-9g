@@ -343,7 +343,7 @@ export default function InstagramFeedCard({
       {overallVibe && (
         <div className="border-t border-stone-200 px-3 sm:px-4 md:px-6 py-3 sm:py-4 bg-white">
           <p className="text-xs sm:text-sm text-stone-700 leading-relaxed font-light italic break-words">
-            "{overallVibe}"
+            &quot;{overallVibe}&quot;
           </p>
           <p className="text-[10px] sm:text-xs text-stone-400 mt-2 uppercase tracking-wider">
             Created {new Date(createdAt).toLocaleDateString('en-US', { 

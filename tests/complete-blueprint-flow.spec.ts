@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { describe, it } from 'vitest'
 import { createTestUser, cleanupTestUser, setUserCredits } from './helpers/test-user'
 import { mockStripeCheckout, simulateStripeWebhook } from './helpers/stripe-mock'
 
@@ -8,6 +8,15 @@ import { mockStripeCheckout, simulateStripeWebhook } from './helpers/stripe-mock
  * Tests the complete user journey from sign up to paid generation
  * This is the master test that covers the entire funnel
  */
+
+const runPlaywright = process.env.PLAYWRIGHT_TEST === '1'
+
+if (!runPlaywright) {
+  describe.skip('Playwright E2E (set PLAYWRIGHT_TEST=1)', () => {
+    it('skipped in vitest', () => {})
+  })
+} else {
+  const { test, expect } = require('@playwright/test')
 
 test.describe('Complete Blueprint Funnel - End to End', () => {
   const testEmail = `e2e-${Date.now()}@playwright.test`
@@ -206,3 +215,4 @@ test.describe('Complete Blueprint Funnel - End to End', () => {
     await cleanupTestUser(testEmail)
   })
 })
+}

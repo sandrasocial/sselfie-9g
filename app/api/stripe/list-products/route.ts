@@ -4,6 +4,7 @@ import Stripe from "stripe"
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 export async function GET() {
+  if (process.env.ENABLE_UNUSED_ENDPOINTS !== "true") return NextResponse.json({ error: "Endpoint disabled" }, { status: 410 })
   try {
     const stripeKey = process.env.STRIPE_SECRET_KEY
 
@@ -14,7 +15,6 @@ export async function GET() {
     const isTestMode = stripeKey.startsWith("sk_test_")
     const stripe = new Stripe(stripeKey, { apiVersion: "2024-11-20.acacia" })
 
-    // List all products
     const products = await stripe.products.list({ limit: 100, active: true })
 
     const productsWithPrices = []

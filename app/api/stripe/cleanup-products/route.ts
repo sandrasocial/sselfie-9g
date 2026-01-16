@@ -5,10 +5,10 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2024-11-20.acacia",
 })
 
-// Helper to add delay between API calls to avoid rate limits
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 export async function POST(request: NextRequest) {
+  if (process.env.ENABLE_UNUSED_ENDPOINTS !== "true") return NextResponse.json({ error: "Endpoint disabled" }, { status: 410 })
   try {
     console.log("[v0] Starting Stripe product cleanup...")
 

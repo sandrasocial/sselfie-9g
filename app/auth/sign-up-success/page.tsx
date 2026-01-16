@@ -14,7 +14,7 @@ export default function SignUpSuccessPage() {
             </div>
             <div className="space-y-2">
               <CardTitle className="text-2xl font-serif text-stone-900">Check Your Email</CardTitle>
-              <CardDescription className="text-stone-600">We've sent you a confirmation link</CardDescription>
+              <CardDescription className="text-stone-600">We&apos;ve sent you a confirmation link</CardDescription>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -22,13 +22,13 @@ export default function SignUpSuccessPage() {
               <div className="flex gap-3 p-4 bg-stone-50 rounded-lg border border-stone-100">
                 <CheckCircle2 className="w-5 h-5 text-stone-600 flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-stone-700 leading-relaxed">
-                  Click the confirmation link in your email to activate your account. Once confirmed, you'll be ready to
+                  Click the confirmation link in your email to activate your account. Once confirmed, you&apos;ll be ready to
                   start creating professional selfies.
                 </p>
               </div>
 
               <div className="pt-2 space-y-3">
-                <p className="text-sm font-medium text-stone-900">What's Next?</p>
+                <p className="text-sm font-medium text-stone-900">What&apos;s Next?</p>
                 <p className="text-sm text-stone-600 leading-relaxed">
                   After confirming your email, you can purchase a One-Time Session ($24.50) to start creating your
                   professional feed with our AI photo generator.

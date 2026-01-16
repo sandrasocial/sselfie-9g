@@ -5,6 +5,7 @@ import { getUserId } from "@/lib/user-mapping"
 const sql = neon(process.env.DATABASE_URL || "")
 
 export async function POST() {
+  if (process.env.ENABLE_UNUSED_ENDPOINTS !== "true") return NextResponse.json({ error: "Endpoint disabled" }, { status: 410 })
   try {
     const userId = await getUserId()
 
@@ -14,7 +15,6 @@ export async function POST() {
 
     console.log("[v0] Decrementing quota for user:", userId)
 
-    // Check if user has unlimited generations
     const usageResult = await sql`
       SELECT monthly_generations_allowed, monthly_generations_used
       FROM user_usage

@@ -84,7 +84,7 @@ function CheckoutContent() {
           <div className="font-serif text-2xl sm:text-3xl font-extralight tracking-[0.3em] uppercase text-stone-900 mb-4">
             Something went wrong
           </div>
-          <p className="text-sm text-stone-600 font-light mb-6">We couldn't find your checkout session.</p>
+          <p className="text-sm text-stone-600 font-light mb-6">We couldn&apos;t find your checkout session.</p>
           <button
             onClick={() => router.push("/")}
             className="bg-stone-950 text-stone-50 px-6 py-3 rounded-lg text-xs font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200"
@@ -160,7 +160,7 @@ function CheckoutContent() {
             Protected by Stripe · SSL Encrypted · PCI Compliant
           </p>
           <p className="text-[10px] sm:text-xs text-stone-500 font-light leading-relaxed mt-2">
-            Cancel anytime. 30-day refund if you're not happy.
+            Cancel anytime. 30-day refund if you&apos;re not happy.
           </p>
         </div>
       </div>

@@ -231,7 +231,7 @@ export default function AutomationPreviewPage() {
         ) : (
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-8">
             <p className="text-sm text-amber-800">
-              📋 Review all emails below. When you're ready, click "Activate Automation" to schedule all emails in Resend.
+              📋 Review all emails below. When you&apos;re ready, click &quot;Activate Automation&quot; to schedule all emails in Resend.
             </p>
           </div>
         )}

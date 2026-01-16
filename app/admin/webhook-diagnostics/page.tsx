@@ -34,7 +34,7 @@ export default function WebhookDiagnosticsPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Webhook Diagnostics</h1>
         <p className="text-muted-foreground">
-          Troubleshoot why Stripe webhooks aren't triggering and emails aren't being sent
+          Troubleshoot why Stripe webhooks aren&apos;t triggering and emails aren&apos;t being sent
         </p>
       </div>
 
@@ -118,7 +118,7 @@ export default function WebhookDiagnosticsPage() {
               </div>
               <div className="flex-1">
                 <p className="font-medium">Add Endpoint</p>
-                <p className="text-sm text-muted-foreground">Click "Add endpoint" button</p>
+                <p className="text-sm text-muted-foreground">Click &quot;Add endpoint&quot; button</p>
               </div>
             </div>
 
@@ -143,7 +143,7 @@ export default function WebhookDiagnosticsPage() {
               </div>
               <div className="flex-1">
                 <p className="font-medium">Select Events</p>
-                <p className="text-sm text-muted-foreground mb-2">Click "Select events" and choose these:</p>
+                <p className="text-sm text-muted-foreground mb-2">Click &quot;Select events&quot; and choose these:</p>
                 <ul className="text-sm space-y-1 ml-4">
                   <li className="flex items-center gap-2">
                     <CheckCircle2 className="h-4 w-4 text-green-600" />
@@ -175,7 +175,7 @@ export default function WebhookDiagnosticsPage() {
               </div>
               <div className="flex-1">
                 <p className="font-medium">Add Endpoint</p>
-                <p className="text-sm text-muted-foreground">Click "Add endpoint" to save</p>
+                <p className="text-sm text-muted-foreground">Click &quot;Add endpoint&quot; to save</p>
               </div>
             </div>
 
@@ -186,7 +186,7 @@ export default function WebhookDiagnosticsPage() {
               <div className="flex-1">
                 <p className="font-medium">Copy Signing Secret</p>
                 <p className="text-sm text-muted-foreground">
-                  Click on the endpoint, then click "Reveal" next to "Signing secret"
+                  Click on the endpoint, then click &quot;Reveal&quot; next to &quot;Signing secret&quot;
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
                   The secret starts with <code className="bg-muted px-1 rounded">whsec_</code>
@@ -259,7 +259,7 @@ export default function WebhookDiagnosticsPage() {
             <div>
               <p className="font-medium">Wrong Mode</p>
               <p className="text-sm text-muted-foreground">
-                Make sure you're using test mode keys with test mode webhook, or live mode keys with live mode webhook
+                Make sure you&apos;re using test mode keys with test mode webhook, or live mode keys with live mode webhook
               </p>
             </div>
           </div>

@@ -1,0 +1,55 @@
+# SYSTEM REALITY
+
+- Authority: `docs/_CANONICAL/` is the only authoritative documentation location.
+- Legacy docs rule: Any documentation outside `docs/_CANONICAL/` is non-authoritative unless explicitly promoted here.
+- Verified system state (from recent execution reports only):
+  - Tests: last recorded run failed (`test-results/.last-run.json` status: failed).
+  - Pricing config verification: automated checks reported as passed (`docs/TEST_EXECUTION_SUMMARY.md`).
+  - Admin tables: all listed admin tables present; no migration needed (`docs/audits/ADMIN_TABLES_EXECUTION_RESULT.md`).
+  - E2E snapshot captured on signup page during failed run (`test-results/**/error-context.md`).
+- Phase B code reality (read-only, verified by code references):
+  - Stripe billing & webhooks:
+    - Checkout creation: `startProductCheckoutSession` (buy blueprint modal), `startCreditCheckoutSession` (buy credits dialog + credits checkout), `createLandingCheckoutSession` (landing checkout route + membership page).
+    - Checkout session lookup: `/api/checkout-session` (checkout success page + buy blueprint modal).
+    - Portal session: `/api/stripe/create-portal-session` (account + settings screens).
+    - Upgrade flow: `/api/subscription/upgrade` (upgrade modal).
+    - Webhook receiver: `/api/webhooks/stripe` (signature verification, idempotency table `webhook_events`, rate limiting).
+    - No in-repo references found: `/api/stripe/create-checkout-session`, `/api/stripe/list-products`, `/api/stripe/create-test-coupon`, `/api/stripe/cleanup-products`, `/api/stripe/verify-setup`, `/api/stripe/test-checkout`.
+  - Credits and quota enforcement:
+    - Credits-only enforcement is authoritative (quota is deprecated).
+    - Credits gating present in generation routes via `checkCredits` and `deductCredits` (e.g. `/api/maya/generate-image`, `/api/maya/pro/generate-image`, `/api/maya/generate-video`, `/api/studio/generate`).
+    - Credit balance API: `/api/user/credits` (credit balance + renewal banner).
+    - Credit APIs with no in-repo references found: `/api/credits/balance`, `/api/credits/grant-free-welcome`.
+    - Quota endpoints are deprecated and non-authoritative: `/api/quota/status`, `/api/quota/decrement`.
+  - AI generation entry points (primary):
+    - Classic image: `/api/maya/generate-image` (concept card, Maya prompts tab, story highlight, admin prompt builder).
+    - Pro image: `/api/maya/pro/generate-image` (Maya prompts tab, Pro mode chat).
+    - Video: `/api/maya/generate-video` (concept card, B-roll screen, Maya videos tab).
+    - No in-repo references found: `/api/studio/generate`.
+  - Onboarding completion paths:
+    - `/api/onboarding/unified-onboarding-complete` (called by unified onboarding wizard).
+    - `/api/onboarding/blueprint-onboarding-complete` (called by blueprint onboarding wizard).
+    - `/api/onboarding/blueprint-extension-complete` (called by blueprint extension).
+    - `/api/onboarding/complete-blueprint-welcome` (called by `sselfie-app`).
+  - Admin and diagnostic routes:
+    - Admin diagnostics: `/api/admin/diagnostics/schema-health`, `/api/admin/diagnostics/create-missing-tables`, `/api/admin/diagnostics/stripe-health`, `/api/admin/diagnostics/errors`, `/api/admin/diagnostics/email-status`, `/api/admin/diagnostics/cron-status`.
+    - Public diagnostics: `/api/diagnostics/webhook-config`, `/api/diagnostics/test-webhook`.
+- Phase C enforcement (gated unless `ENABLE_UNUSED_ENDPOINTS=true`):
+  - `/api/stripe/create-checkout-session`
+  - `/api/stripe/list-products`
+  - `/api/stripe/create-test-coupon`
+  - `/api/stripe/cleanup-products`
+  - `/api/stripe/verify-setup`
+  - `/api/stripe/test-checkout`
+  - `/api/credits/balance`
+  - `/api/credits/grant-free-welcome`
+  - `/api/quota/status`
+  - `/api/quota/decrement`
+  - `/api/studio/generate`
+- Completed phases (reported, not re-audited): Audit, Phase 1, Phase 2.
+- Out of scope unless explicitly authorized:
+  - Application code changes
+  - Schema or database changes
+  - Billing or pricing changes
+  - AI logic changes
+  - Re-auditing legacy documentation

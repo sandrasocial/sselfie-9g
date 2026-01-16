@@ -2,19 +2,13 @@ import { streamText } from "ai"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { PERSONAL_BRAND_STRATEGIST_PROMPT } from "@/lib/personal-brand-strategist/personality"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { hasStudioMembership } from "@/lib/subscription"
 
 export const maxDuration = 60
 
 export async function POST(request: Request) {
   try {
-    console.log("[v0] === BRAND STRATEGIST API START ===")
-
     const { prompt, brandProfile } = await request.json()
-
-    console.log("[v0] Brand Strategist request:", {
-      promptLength: prompt?.length,
-      hasBrandProfile: !!brandProfile,
-    })
 
     const { user: authUser, error: authError } = await getAuthenticatedUser()
 
@@ -32,6 +26,14 @@ export async function POST(request: Request) {
         status: 404,
         headers: { "Content-Type": "application/json" },
       })
+    }
+
+    const featureEnabled = process.env.ENABLE_STRATEGIST_AI === "true"
+    if (!featureEnabled) {
+      const isMember = await hasStudioMembership(neonUser.id)
+      if (!isMember) {
+        return new Response("Endpoint disabled", { status: 410 })
+      }
     }
 
     // Build context from brand profile

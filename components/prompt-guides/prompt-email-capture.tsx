@@ -97,7 +97,7 @@ export default function PromptEmailCapture({
               Check Your Email!
             </h2>
             <p className="text-sm text-stone-600 font-light">
-              We've sent you instant access to this guide. Check your inbox for the link.
+              We\u0027ve sent you instant access to this guide. Check your inbox for the link.
             </p>
           </div>
         </div>
@@ -152,7 +152,7 @@ export default function PromptEmailCapture({
             </div>
 
             <p className="text-xs text-stone-500 font-light text-center">
-              We'll only send you valuable content, never spam.
+              We\u0027ll only send you valuable content, never spam.
             </p>
 
             {error && (

@@ -174,7 +174,7 @@ export default function FeedPublishingHub({
       "Close-Up": "This portrait creates instant connection. Use it to introduce yourself or share a personal story.",
       "Half Body": "Perfect for showing your style and personality. Great for carousel posts with tips or insights.",
       "Full Body":
-        "Showcase your complete look. Tag brands you're wearing to increase reach and potential partnerships.",
+        "Showcase your complete look. Tag brands you&apos;re wearing to increase reach and potential partnerships.",
       Lifestyle: "Behind-the-scenes content performs well. Share your process or daily routine to build authenticity.",
       Object: "Product shots work great with shopping tags. Use this to showcase tools, books, or items you love.",
     }
@@ -489,7 +489,7 @@ export default function FeedPublishingHub({
                     <Lightbulb size={16} className="text-white" />
                   </div>
                   <div className="flex-1">
-                    <h4 className="text-sm font-semibold text-stone-950 mb-1">Maya's Instagram Tips</h4>
+                    <h4 className="text-sm font-semibold text-stone-950 mb-1">Maya&apos;s Instagram Tips</h4>
                     {loadingTips && !dynamicTips[selectedPost.id] ? (
                       <div className="flex items-center gap-2 text-sm text-stone-600">
                         <div className="w-4 h-4 border-2 border-amber-300 border-t-amber-600 rounded-full animate-spin" />

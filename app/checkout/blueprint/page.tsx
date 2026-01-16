@@ -2,48 +2,15 @@ import { redirect, notFound } from "next/navigation"
 import { createServerClient } from "@/lib/supabase/server"
 import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
 import { neon } from "@neondatabase/serverless"
+import { getUserByAuthId } from "@/lib/user-mapping"
 
 const sql = neon(process.env.DATABASE_URL!)
-
-/**
- * Check if paid blueprint feature is enabled
- * Checks env var first, falls back to DB flag
- */
-async function isPaidBlueprintEnabled(): Promise<boolean> {
-  try {
-    // Check env var first (faster, no DB call)
-    const envFlag = process.env.FEATURE_PAID_BLUEPRINT_ENABLED
-    if (envFlag !== undefined) {
-      return envFlag === "true" || envFlag === "1"
-    }
-
-    // Fallback to DB flag
-    const result = await sql`
-      SELECT value FROM admin_feature_flags
-      WHERE key = 'paid_blueprint_enabled'
-    `
-    if (result.length === 0) {
-      return false // Default to false if flag doesn't exist
-    }
-    return result[0].value === true || result[0].value === "true"
-  } catch (error) {
-    console.error("[Blueprint Checkout] Error checking feature flag:", error)
-    return false // Fail safe: default to false
-  }
-}
 
 export default async function BlueprintCheckoutPage({
   searchParams,
 }: {
   searchParams: Promise<{ email?: string; promo?: string; promoCode?: string; code?: string; discount?: string }>
 }) {
-  // Check feature flag first
-  const featureEnabled = await isPaidBlueprintEnabled()
-  if (!featureEnabled) {
-    console.log("[Blueprint Checkout] Feature disabled, returning 404")
-    return notFound()
-  }
-
   const params = await searchParams
   const email = params?.email
   // Support multiple parameter names for promo code
@@ -53,12 +20,6 @@ export default async function BlueprintCheckoutPage({
     email: email || "none",
     promoCode: promoCode || "none",
     hasPromo: !!promoCode,
-    allParams: Object.keys(params || {}),
-    rawParams: params,
-    promoValue: params?.promo,
-    promoCodeValue: params?.promoCode,
-    codeValue: params?.code,
-    discountValue: params?.discount
   })
 
   // Decision 2: Check if user is authenticated - use authenticated checkout flow if logged in
@@ -66,6 +27,45 @@ export default async function BlueprintCheckoutPage({
   const {
     data: { user: authUser },
   } = await supabase.auth.getUser()
+
+  let hasPaidBlueprint = false
+  if (authUser) {
+    const user = await getUserByAuthId(authUser.id)
+    if (user) {
+      const existing = await sql`
+        SELECT id FROM subscriptions
+        WHERE user_id = ${user.id}
+          AND status = 'active'
+          AND product_type = 'paid_blueprint'
+        LIMIT 1
+      `
+      hasPaidBlueprint = existing.length > 0
+    }
+  }
+
+  if (!hasPaidBlueprint) {
+    let featureEnabled = false
+    try {
+      const envFlag = process.env.FEATURE_PAID_BLUEPRINT_ENABLED
+      if (envFlag !== undefined) {
+        featureEnabled = envFlag === "true" || envFlag === "1"
+      } else {
+        const result = await sql`
+          SELECT value FROM admin_feature_flags
+          WHERE key = 'paid_blueprint_enabled'
+        `
+        featureEnabled = result[0]?.value === true || result[0]?.value === "true"
+      }
+    } catch (error) {
+      console.error("[Blueprint Checkout] Error checking feature flag:", error)
+      featureEnabled = false
+    }
+
+    if (!featureEnabled) {
+      console.log("[Blueprint Checkout] Feature disabled, returning 404")
+      return notFound()
+    }
+  }
 
   let clientSecret: string | null = null
 

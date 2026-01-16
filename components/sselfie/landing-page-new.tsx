@@ -201,7 +201,7 @@ export default function LandingPageNew() {
               The easiest way to create content that looks and feels like you.
             </h1>
             <p className="description fade-up mx-auto max-w-sm" style={{ textShadow: "0 1px 5px rgba(0,0,0,0.3)" }}>
-              SSELFIE Studio helps you make beautiful, on-brand photos and plan your social feed, even if you don't have time, confidence, or a big team.
+              SSELFIE Studio helps you make beautiful, on-brand photos and plan your social feed, even if you don&apos;t have time, confidence, or a big team.
             </p>
             <div className="fade-up" style={{ transitionDelay: "0.2s", marginTop: "10px", display: "flex", flexDirection: "column", gap: "12px", alignItems: "center" }}>
               <a
@@ -531,7 +531,7 @@ export default function LandingPageNew() {
               From selfie to studio-ready content
             </h2>
             <div className="description fade-up" style={{ color: "rgba(250, 250, 249, 0.9)" }}>
-              <p>Upload. Create. Plan. Post. It's that simple.</p>
+              <p>Upload. Create. Plan. Post. It&apos;s that simple.</p>
             </div>
             <div className="description fade-up mt-4" style={{ color: "rgba(250, 250, 249, 0.9)" }}>
               <p>Tools and lessons that teach you how to grow your visibility with confidence.</p>
@@ -595,7 +595,7 @@ export default function LandingPageNew() {
             >
               <div className="border-l border-white/30 pl-6 fade-up">
                 <span className="label" style={{ color: "rgba(255,255,255,0.6)", marginBottom: "8px" }}>
-                  Who It's For
+                  Who It&apos;s For
                 </span>
                 <h2
                   className="hero-title"
@@ -614,7 +614,7 @@ export default function LandingPageNew() {
                   <p>• Feel confident being seen and building their brand</p>
                 </div>
                 <p className="description text-white/80 text-sm md:text-base mb-6 italic">
-                  If you're tired of overthinking every post, SSELFIE gives you a clear, simple system.
+                  If you&apos;re tired of overthinking every post, SSELFIE gives you a clear, simple system.
                 </p>
               </div>
             </div>
@@ -786,7 +786,7 @@ export default function LandingPageNew() {
             <div className="fade-up">
               <span className="label mb-4">Founder Message</span>
               <h2 className="hero-title mb-6" style={{ fontSize: "36px", fontFamily: "'Times New Roman', serif" }}>
-                "I built SSELFIE because showing up online used to feel impossible."
+                &quot;I built SSELFIE because showing up online used to feel impossible.&quot;
               </h2>
               <div className="relative aspect-[3/4] max-w-[280px] mx-auto mb-6 rounded-lg overflow-hidden">
                 <img
@@ -804,7 +804,7 @@ export default function LandingPageNew() {
                 />
               </div>
               <p className="description text-stone-300 mb-4">
-                I was tired of hiding behind my logo and filters. I wanted something that helped me, and other women, feel confident and consistent online. That's what SSELFIE Studio is.
+                I was tired of hiding behind my logo and filters. I wanted something that helped me, and other women, feel confident and consistent online. That&apos;s what SSELFIE Studio is.
               </p>
               <p className="text-xs text-stone-400 mt-6">- Sandra</p>
             </div>
@@ -819,7 +819,7 @@ export default function LandingPageNew() {
           <div className="container mx-auto px-6 max-w-4xl h-full flex flex-col justify-center">
             <div className="text-center mb-12 fade-up">
               <h2 className="hero-title mb-6" style={{ fontSize: "36px", fontFamily: "'Times New Roman', serif", color: "#fafaf9" }}>
-                You don't need perfect photos. You just need to show up.
+                You don&apos;t need perfect photos. You just need to show up.
               </h2>
               <a
                 href="#membership"

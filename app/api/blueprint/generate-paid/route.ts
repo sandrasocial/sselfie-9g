@@ -104,7 +104,12 @@ export async function POST(req: NextRequest) {
     const data = subscriber[0]
     const email = data.email
 
-    // Guard 1: Must have purchased (admin can bypass)
+    const featureEnabled = process.env.ENABLE_BLUEPRINT_PAID === "true"
+    if (!featureEnabled && !data.paid_blueprint_purchased && !userIsAdmin) {
+      return NextResponse.json({ error: "Endpoint disabled" }, { status: 410 })
+    }
+
+    // Must have purchased (admin can bypass)
     if (!data.paid_blueprint_purchased && !userIsAdmin) {
       console.log("[v0][paid-blueprint] Not purchased:", email.substring(0, 3) + "***")
       return NextResponse.json(
@@ -116,12 +121,10 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Admin override: Allow generation even if not purchased (for testing)
     if (!data.paid_blueprint_purchased && userIsAdmin) {
       console.log("[v0][paid-blueprint] Admin override - allowing generation for unpurchased blueprint")
     }
 
-    // Guard 2: Must have selfies (1-3 images)
     // FIX: Fetch selfies from user_avatar_images table (not blueprint_subscribers.selfie_image_urls)
     let validSelfieUrls: string[] = []
     

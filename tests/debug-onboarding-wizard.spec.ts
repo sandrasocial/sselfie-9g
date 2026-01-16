@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { describe, it } from 'vitest'
 
 /**
  * Debug Test: Onboarding Wizard Not Appearing
@@ -6,6 +6,15 @@ import { test, expect } from '@playwright/test'
  * This test is designed to debug why the onboarding wizard doesn't appear
  * for new users. It logs API responses and page state.
  */
+
+const runPlaywright = process.env.PLAYWRIGHT_TEST === '1'
+
+if (!runPlaywright) {
+  describe.skip('Playwright E2E (set PLAYWRIGHT_TEST=1)', () => {
+    it('skipped in vitest', () => {})
+  })
+} else {
+  const { test, expect } = require('@playwright/test')
 
 test.describe('Debug: Onboarding Wizard', () => {
   test('debug - check API responses and wizard state', async ({ page }) => {
@@ -169,3 +178,4 @@ test.describe('Debug: Onboarding Wizard', () => {
     // We'll analyze the output to find the root cause
   })
 })
+}

@@ -148,7 +148,7 @@ export function BetaProgramManager() {
               <div className="flex-1">
                 <h3 className="text-lg font-medium text-red-900 mb-2">Beta Limit Reached!</h3>
                 <p className="text-sm text-red-800 leading-relaxed mb-4">
-                  You've reached the 100 beta user limit. It's time to disable the beta discount and switch to regular
+                  You&apos;ve reached the 100 beta user limit. It&apos;s time to disable the beta discount and switch to regular
                   pricing.
                 </p>
                 <div className="bg-white/60 rounded-xl p-4 border border-red-200">

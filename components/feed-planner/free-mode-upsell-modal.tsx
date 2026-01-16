@@ -57,10 +57,10 @@ export default function FreeModeUpsellModal({
         <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-md mx-4 sm:mx-auto p-4 sm:p-6">
           <DialogHeader className="text-center sm:text-left px-0 sm:px-0">
             <DialogTitle className="text-xl sm:text-2xl font-serif font-light text-stone-900 leading-tight">
-              You've Used Your Free Credits
+              You&apos;ve Used Your Free Credits
             </DialogTitle>
             <DialogDescription className="text-sm sm:text-base text-stone-600 mt-2 sm:mt-1">
-              Choose how you'd like to continue creating content
+              Choose how you&apos;d like to continue creating content
             </DialogDescription>
           </DialogHeader>
 

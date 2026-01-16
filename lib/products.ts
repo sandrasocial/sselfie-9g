@@ -85,7 +85,7 @@ export const PRICING_PRODUCTS: PricingProduct[] = [
     description: "30 custom photos based on your brand strategy",
     priceInCents: 4700, // $47 one-time
     type: "paid_blueprint",
-    credits: 0, // No credits granted - photos stored directly
+    credits: 60, // 30 images × 2 credits per image
   },
 ]
 

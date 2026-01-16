@@ -535,7 +535,7 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
                 No Results Found
               </h3>
               <p className="text-sm font-light text-stone-600 mb-6 max-w-md mx-auto">
-                No images match "{searchQuery}". Try a different search term or clear the search to see all images.
+                No images match &quot;{searchQuery}&quot;. Try a different search term or clear the search to see all images.
               </p>
               <button
                 onClick={() => setSearchQuery("")}

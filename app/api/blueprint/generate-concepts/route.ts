@@ -228,7 +228,11 @@ function getBusinessSpecificProps(businessType: string): string {
 
 export async function POST(req: NextRequest) {
   try {
-    const { formData, selectedFeedStyle, email } = await req.json()
+    if (process.env.ENABLE_BLUEPRINT_GUEST !== "true") {
+      return NextResponse.json({ error: "Endpoint disabled" }, { status: 410 })
+    }
+
+    const { formData, selectedFeedStyle, email, accessToken } = await req.json()
 
     // Phase 1: Support both user_id (authenticated) and email (backward compatibility)
     let userId: string | null = null
@@ -263,19 +267,33 @@ export async function POST(req: NextRequest) {
       `
     } else {
       // Backward compatibility: email-based lookup
-      if (!email || typeof email !== "string") {
+      if (!email && !accessToken) {
+        return NextResponse.json(
+          { error: "Email or access token is required. Please complete email capture first." },
+          { status: 400 },
+        )
+      }
+
+      if (accessToken) {
+        subscriberQuery = await sql`
+          SELECT id, strategy_generated, strategy_data
+          FROM blueprint_subscribers
+          WHERE access_token = ${accessToken}
+          LIMIT 1
+        `
+      } else if (typeof email === "string") {
+        subscriberQuery = await sql`
+          SELECT id, strategy_generated, strategy_data
+          FROM blueprint_subscribers
+          WHERE email = ${email}
+          LIMIT 1
+        `
+      } else {
         return NextResponse.json(
           { error: "Email is required. Please complete email capture first." },
           { status: 400 },
         )
       }
-
-      subscriberQuery = await sql`
-        SELECT id, strategy_generated, strategy_data
-        FROM blueprint_subscribers
-        WHERE email = ${email}
-        LIMIT 1
-      `
     }
 
     if (subscriberQuery.length === 0) {

@@ -107,9 +107,9 @@ const STEPS = [
   {
     id: "intro",
     title: "Welcome",
-    subtitle: "Let's create your personal brand together",
+    subtitle: "Let\u0027s create your personal brand together",
     mayaMessage:
-      "I'm Maya, and I'm here to help you create content that actually looks and sounds like YOU. To do that, I need to understand your unique style, voice, and vision. This will only take a few minutes, and trust me - it's worth it!",
+      "I\u0027m Maya, and I\u0027m here to help you create content that actually looks and sounds like YOU. To do that, I need to understand your unique style, voice, and vision. This will only take a few minutes, and trust me - it\u0027s worth it!",
   },
   {
     id: "name",
@@ -132,7 +132,7 @@ const STEPS = [
   },
   {
     id: "colorTheme",
-    title: "What's your color aesthetic?",
+    title: "What\u0027s your color aesthetic?",
     subtitle: "Step 3 of 12",
     mayaMessage:
       "Your color palette sets the mood for everything we create together. Choose the aesthetic that feels most like YOU.",
@@ -140,10 +140,10 @@ const STEPS = [
   },
   {
     id: "visualAesthetic",
-    title: "What's your visual style?",
+    title: "What\u0027s your visual style?",
     subtitle: "Step 4 of 12",
     mayaMessage:
-      "Beyond colors, what's the overall vibe of your brand? This helps me understand the mood and feeling of your content.",
+      "Beyond colors, what\u0027s the overall vibe of your brand? This helps me understand the mood and feeling of your content.",
     isVisualAestheticSelector: true,
   },
   {
@@ -158,7 +158,7 @@ const STEPS = [
   },
   {
     id: "transformationStory",
-    title: "What's your story?",
+    title: "What\u0027s your story?",
     subtitle: "Step 6 of 12",
     mayaMessage:
       "Everyone has a story. What brought you here? What transformation are you going through or have you been through? Your story makes your brand authentic and relatable.",
@@ -652,7 +652,7 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
 
                 <div className="space-y-2">
                   <label className="text-xs font-light tracking-[0.2em] uppercase text-stone-500">
-                    WHAT'S THEIR BIGGEST CHALLENGE?
+                    WHAT&apos;S THEIR BIGGEST CHALLENGE?
                   </label>
                   <Textarea
                     value={formData.audienceChallenge}
@@ -712,7 +712,7 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                     <Input
                       value={formData.signaturePhrases}
                       onChange={(e) => handleInputChange("signaturePhrases", e.target.value)}
-                      placeholder="e.g., Let's make it happen, Your time is now, etc."
+                      placeholder="e.g., Let\u0027s make it happen, Your time is now, etc."
                       className="border-stone-200 focus:border-stone-400 text-base"
                     />
                   </div>
@@ -775,7 +775,7 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                   disabled={!canProceed()}
                   className="bg-stone-950 hover:bg-stone-800 text-white text-sm font-medium tracking-wider uppercase px-8 py-6 rounded-lg transition-all duration-200"
                 >
-                  {isIntroStep ? "LET'S START" : step.isOptional ? "SKIP" : "NEXT"}
+                  {isIntroStep ? "LET\u0027S START" : step.isOptional ? "SKIP" : "NEXT"}
                 </Button>
               )}
             </div>

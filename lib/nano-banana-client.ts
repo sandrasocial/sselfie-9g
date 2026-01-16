@@ -71,8 +71,14 @@ export async function generateWithNanoBanana(
   try {
     // CRITICAL: Add "Generate an image of..." prefix to prevent "No images were returned" errors
     // Nano Banana Pro sometimes gets confused if the prompt doesn't explicitly request image generation
+    // IMPORTANT: Preserve identity anchor if present (it should always be first)
     let finalPrompt = input.prompt.trim()
     const promptLower = finalPrompt.toLowerCase()
+    
+    // Check if prompt already contains identity reference anchor
+    const hasIdentityAnchor = promptLower.includes('use the uploaded photos') || 
+                              promptLower.includes('identity reference') ||
+                              promptLower.startsWith('use the uploaded photos')
     
     // Only add prefix if prompt doesn't already start with generation-related phrases
     if (!promptLower.startsWith('generate an image') && 
@@ -81,8 +87,26 @@ export async function generateWithNanoBanana(
         !promptLower.startsWith('create a') &&
         !promptLower.startsWith('make an image') &&
         !promptLower.startsWith('produce an image')) {
-      finalPrompt = `Generate an image of ${finalPrompt}`
-      console.log("[NANO-BANANA] Added 'Generate an image of...' prefix to prevent 'No images were returned' error")
+      
+      if (hasIdentityAnchor) {
+        // Identity anchor exists - preserve it at the start, add generation prefix after
+        // Structure: [Identity Anchor]. Generate an image of [Rest of Prompt]
+        const identityMatch = finalPrompt.match(/^(Use the uploaded photos[^.]*\.)/i)
+        if (identityMatch) {
+          const identityAnchor = identityMatch[1]
+          const restOfPrompt = finalPrompt.substring(identityMatch[0].length).trim()
+          finalPrompt = `${identityAnchor} Generate an image of ${restOfPrompt}`
+          console.log("[NANO-BANANA] Preserved identity anchor at start, added 'Generate an image of...' after identity reference")
+        } else {
+          // Identity anchor exists but not at start - move it to start
+          finalPrompt = `Generate an image of ${finalPrompt}`
+          console.log("[NANO-BANANA] Added 'Generate an image of...' prefix (identity anchor detected but not at start)")
+        }
+      } else {
+        // No identity anchor - use standard prefix
+        finalPrompt = `Generate an image of ${finalPrompt}`
+        console.log("[NANO-BANANA] Added 'Generate an image of...' prefix to prevent 'No images were returned' error")
+      }
     }
     
     const replicateInput = {

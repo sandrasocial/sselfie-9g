@@ -74,7 +74,7 @@ export default function BlueprintWelcomeWizard({
                     Welcome{userName ? `, ${userName}` : ""}!
                   </h2>
                   <p className={`${DesignClasses.typography.body.medium} text-white/90 max-w-md mx-auto`}>
-                    Let's create your Brand Blueprint. Answer a few questions to get your custom brand strategy, content calendar, and a free Instagram grid.
+                    Let&apos;s create your Brand Blueprint. Answer a few questions to get your custom brand strategy, content calendar, and a free Instagram grid.
                   </p>
                 </div>
 

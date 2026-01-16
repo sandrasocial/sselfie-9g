@@ -61,20 +61,20 @@ export default function WhatsNewPage() {
                 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-light mb-4 sm:mb-6 leading-[1.1] tracking-tight"
                 style={{ fontFamily: "'Times New Roman', Times, serif" }}
               >
-                HERE'S WHAT'S NEW
+                HERE&apos;S WHAT&apos;S NEW
               </h1>
               <p className="text-base sm:text-lg md:text-xl leading-relaxed mb-2 sm:mb-3 max-w-xl font-light">
-                SSELFIE Studio has grown into something we're really proud of.
+                SSELFIE Studio has grown into something we&apos;re really proud of.
               </p>
               <p className="text-base sm:text-lg md:text-xl leading-relaxed mb-6 sm:mb-8 max-w-xl font-light text-white/90">
-                And we think you'd love what we've built.
+                And we think you&apos;d love what we&apos;ve built.
               </p>
               <a
                 href="#pricing"
                 onClick={scrollToPricing}
                 className="inline-flex px-8 sm:px-10 py-3.5 sm:py-4 bg-white text-black text-sm sm:text-base uppercase tracking-wider transition-all duration-300 hover:bg-black hover:text-white border border-white min-h-[48px] items-center justify-center font-light"
               >
-                SEE WHAT'S NEW
+                SEE WHAT&apos;S NEW
               </a>
             </div>
           </div>
@@ -88,7 +88,7 @@ export default function WhatsNewPage() {
             className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-light leading-[1.3] text-stone-50 mb-6 sm:mb-8"
             style={{ fontFamily: "'Times New Roman', Times, serif" }}
           >
-            "I used to hide behind my logo. Now I'm the face of my brand, and it's changed everything."
+            &quot;I used to hide behind my logo. Now I&apos;m the face of my brand, and it&apos;s changed everything.&quot;
           </blockquote>
           <p className="text-sm sm:text-sm md:text-base leading-relaxed mb-4 sm:mb-6 max-w-2xl mx-auto px-4 font-light tracking-wider uppercase text-stone-400">
             — SARAH - STUDIO MEMBER
@@ -101,16 +101,16 @@ export default function WhatsNewPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-16 sm:mb-20">
             <p className="text-xs sm:text-sm md:text-sm font-light tracking-[0.25em] sm:tracking-[0.3em] uppercase text-stone-500 mb-4 sm:mb-6">
-              WHAT'S NEW
+              WHAT&apos;S NEW
             </p>
             <h2
               className="text-2xl sm:text-3xl md:text-4xl font-light tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-8 sm:mb-10 text-stone-900"
               style={{ fontFamily: "'Times New Roman', Times, serif" }}
             >
-              We've Been Building
+              We&apos;ve Been Building
             </h2>
             <p className="text-lg sm:text-xl font-light text-stone-700 px-4 max-w-3xl mx-auto">
-              It's been a while since we connected, and we wanted to reach out because something's changed. SSELFIE Studio has grown into something we're really proud of - and we think you'd love what we've built.
+              It&apos;s been a while since we connected, and we wanted to reach out because something&apos;s changed. SSELFIE Studio has grown into something we&apos;re really proud of - and we think you&apos;d love what we&apos;ve built.
             </p>
           </div>
 
@@ -222,10 +222,10 @@ export default function WhatsNewPage() {
 
           <div className="text-center mt-16 sm:mt-20 max-w-3xl mx-auto space-y-6 sm:space-y-8">
             <p className="text-xl sm:text-2xl md:text-3xl font-light leading-relaxed text-stone-900">
-              But honestly? The best part isn't the features.
+              But honestly? The best part isn&apos;t the features.
             </p>
             <p className="text-lg sm:text-xl font-light leading-relaxed text-stone-700">
-              It's watching women finally feel confident showing their face online. That's what gets us up every morning.
+              It&apos;s watching women finally feel confident showing their face online. That&apos;s what gets us up every morning.
             </p>
           </div>
         </div>
@@ -294,7 +294,7 @@ export default function WhatsNewPage() {
                 <p className="text-sm sm:text-base font-light text-stone-600 mt-2">one-time</p>
               </div>
               <p className="text-base sm:text-lg font-light text-stone-700 mb-6 sm:mb-8 leading-relaxed">
-                Get 50 magazine-quality images that actually look like you - for less than dinner out.
+              Get 50 magazine-quality images that actually look like you - for less than dinner out.
               </p>
               <div className="space-y-3 sm:space-y-4 mb-8 sm:mb-10">
                 <p className="text-sm sm:text-base font-light text-stone-700 flex items-start gap-2">
@@ -410,13 +410,13 @@ export default function WhatsNewPage() {
       <section className="py-24 sm:py-32 md:py-40 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
           <p className="text-xl sm:text-2xl md:text-3xl font-light leading-relaxed text-stone-900 mb-6 sm:mb-8">
-            I'm not here to sell you anything.
+            I&apos;m not here to sell you anything.
           </p>
           <p className="text-lg sm:text-xl font-light leading-relaxed text-stone-700 mb-8 sm:mb-10">
-            I just wanted you to know what's possible now. If you're ready to show up online in a way that feels authentic and powerful, we're here.
+            I just wanted you to know what&apos;s possible now. If you&apos;re ready to show up online in a way that feels authentic and powerful, we&apos;re here.
           </p>
           <p className="text-base sm:text-lg font-light text-stone-600 mb-8">
-            No pressure. Just wanted to reconnect and see how you're doing.
+            No pressure. Just wanted to reconnect and see how you&apos;re doing.
           </p>
           <Link
             href="/"

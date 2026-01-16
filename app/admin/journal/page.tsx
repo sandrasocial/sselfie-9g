@@ -183,7 +183,7 @@ export default function WeeklyJournalPage() {
             <p className="text-xs sm:text-sm text-stone-500 mt-2">Auto-saving...</p>
           )}
           {published && (
-            <p className="text-xs sm:text-sm text-green-600 mt-2">Published to Alex's knowledge!</p>
+            <p className="text-xs sm:text-sm text-green-600 mt-2">Published to Alex&apos;s knowledge!</p>
           )}
         </div>
         
@@ -231,7 +231,7 @@ export default function WeeklyJournalPage() {
         
         {/* Struggles */}
         <Card className="p-4 sm:p-6 mb-4 sm:mb-6 rounded-none">
-          <h2 className="text-lg sm:text-xl font-['Times_New_Roman'] font-extralight mb-2 sm:mb-3 tracking-[0.2em] uppercase">THIS WEEK'S STRUGGLES</h2>
+          <h2 className="text-lg sm:text-xl font-['Times_New_Roman'] font-extralight mb-2 sm:mb-3 tracking-[0.2em] uppercase">THIS WEEK&apos;S STRUGGLES</h2>
           <Textarea
             value={journal.struggles}
             onChange={(e) => setJournal({...journal, struggles: e.target.value})}
@@ -249,7 +249,7 @@ export default function WeeklyJournalPage() {
         
         {/* Wins */}
         <Card className="p-4 sm:p-6 mb-4 sm:mb-6 rounded-none">
-          <h2 className="text-lg sm:text-xl font-['Times_New_Roman'] font-extralight mb-2 sm:mb-3 tracking-[0.2em] uppercase">THIS WEEK'S WINS</h2>
+          <h2 className="text-lg sm:text-xl font-['Times_New_Roman'] font-extralight mb-2 sm:mb-3 tracking-[0.2em] uppercase">THIS WEEK&apos;S WINS</h2>
           <Textarea
             value={journal.wins}
             onChange={(e) => setJournal({...journal, wins: e.target.value})}
@@ -321,7 +321,7 @@ export default function WeeklyJournalPage() {
               variant="default"
               className="w-full sm:flex-1 min-h-[48px] text-sm sm:text-base touch-manipulation"
             >
-              Publish to Alex's Knowledge
+              Publish to Alex&apos;s Knowledge
             </Button>
           )}
         </div>

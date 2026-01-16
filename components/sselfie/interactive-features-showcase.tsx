@@ -190,7 +190,7 @@ function MayaChatMockup() {
           <div className="w-8 h-8 rounded-full bg-stone-950 flex-shrink-0" />
           <div className="bg-white rounded-2xl rounded-tl-none px-4 py-2 max-w-[80%]">
             <p className="text-sm font-light text-stone-800">
-              I've analyzed your brand profile. Let's create some photos for your upcoming launch! 📸
+              I&apos;ve analyzed your brand profile. Let&apos;s create some photos for your upcoming launch! 📸
             </p>
           </div>
         </div>
@@ -204,7 +204,7 @@ function MayaChatMockup() {
         </div>
         <div className="flex gap-2 justify-end">
           <div className="bg-stone-950 text-white rounded-2xl rounded-tr-none px-4 py-2 max-w-[80%]">
-            <p className="text-sm font-light">Perfect! Let's do it ✨</p>
+            <p className="text-sm font-light">Perfect! Let&apos;s do it ✨</p>
           </div>
         </div>
       </div>

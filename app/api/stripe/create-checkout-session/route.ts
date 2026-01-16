@@ -4,6 +4,7 @@ import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 
 export async function POST(request: Request) {
+  if (process.env.ENABLE_UNUSED_ENDPOINTS !== "true") return Response.json({ error: "Endpoint disabled" }, { status: 410 })
   try {
     const supabase = await createServerClient()
     const {
@@ -49,7 +50,6 @@ export async function POST(request: Request) {
         },
       ],
       mode: "payment",
-      // return_url removed - not needed for embedded checkout
       metadata: {
         user_id: neonUser.id,
         package_id: creditPackage.id,

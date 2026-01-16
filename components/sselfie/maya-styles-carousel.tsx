@@ -130,7 +130,7 @@ export default function MayaStylesCarousel() {
       <div className="max-w-7xl mx-auto px-6">
         {/* Section Header */}
         <div className="text-center mb-16">
-          <p className="text-xs font-light tracking-[0.3em] uppercase text-stone-500 mb-4">MAYA'S SIGNATURE STYLES</p>
+          <p className="text-xs font-light tracking-[0.3em] uppercase text-stone-500 mb-4">MAYA&apos;S SIGNATURE STYLES</p>
           <h2
             className="text-xl sm:text-2xl md:text-3xl font-light tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-6 text-stone-900"
             style={{ fontFamily: "'Times New Roman', serif" }}

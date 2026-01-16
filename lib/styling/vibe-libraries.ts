@@ -34,6 +34,7 @@ export interface AccessorySet {
   name: string
   items: string[]
   vibe: string
+  description?: string
 }
 
 export interface VibeLibrary {
@@ -164,6 +165,14 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['black kimono cardigan', 'black slip dress', 'layered gold jewelry', 'black sandals'],
           occasion: 'creative gathering, evening event',
           brands: ['Free People', 'Anthropologie']
+        },
+        {
+          id: 'lux_dark_boh_003',
+          name: 'Charcoal Flowy',
+          description: 'Charcoal midi dress with flowy sleeves, layered gold necklaces, black ankle boots',
+          pieces: ['charcoal flowy midi dress', 'layered gold necklaces', 'gold cuffs', 'black ankle boots'],
+          occasion: 'art gallery, brunch, creative event',
+          brands: ['Free People', 'Anthropologie', 'The Row']
         }
       ],
       classic: [
@@ -182,6 +191,14 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['black wool coat', 'cream cashmere sweater', 'black trousers', 'black leather boots'],
           occasion: 'classic elegance, refined setting',
           brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'lux_dark_cla_003',
+          name: 'Elegant Suit',
+          description: 'Black tailored suit, white silk blouse, black pumps, gold jewelry',
+          pieces: ['black tailored suit', 'white silk blouse', 'black pumps', 'gold jewelry'],
+          occasion: 'professional, timeless elegance',
+          brands: ['The Row', 'Toteme', 'Khaite']
         }
       ],
       trendy: [
@@ -200,6 +217,14 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['black puffer jacket', 'black cashmere turtleneck', 'black jeans', 'designer sneakers'],
           occasion: 'urban trendy, modern setting',
           brands: ['The Row', 'Khaite', 'Celine']
+        },
+        {
+          id: 'lux_dark_tre_003',
+          name: 'Cropped Statement',
+          description: 'Cropped black jacket, high-waisted black trousers, platform boots, silver chains',
+          pieces: ['cropped black jacket', 'high-waisted black trousers', 'platform boots', 'silver chains'],
+          occasion: 'trendy casual, modern setting',
+          brands: ['The Row', 'Khaite']
         }
       ],
       athletic: [
@@ -210,6 +235,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['black athletic set', 'oversized black blazer', 'designer sneakers'],
           occasion: 'athleisure, active lifestyle',
           brands: ['Alo', 'Lululemon', 'The Row']
+        },
+        {
+          id: 'lux_dark_ath_002',
+          name: 'Dark Active Luxe',
+          description: 'Black leggings, charcoal ribbed top, oversized black cashmere hoodie, gold jewelry',
+          pieces: ['black high-waisted leggings', 'charcoal ribbed sports bra', 'oversized black cashmere hoodie', 'black designer sneakers', 'gold jewelry'],
+          occasion: 'post-workout luxury, active lifestyle',
+          brands: ['Alo', 'The Row', 'Outdoor Voices']
+        },
+        {
+          id: 'lux_dark_ath_003',
+          name: 'Black Athletic Dress',
+          description: 'Black athletic dress, charcoal bomber jacket, black sneakers, black leather gym bag',
+          pieces: ['black athletic dress', 'charcoal bomber jacket', 'black designer sneakers', 'black leather gym bag'],
+          occasion: 'athleisure lifestyle, luxury active',
+          brands: ['Alo', 'The Row', 'Lululemon']
         }
       ]
     },
@@ -330,6 +371,14 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['ivory tailored blazer', 'cream wide-leg trousers', 'white button-down shirt', 'nude pumps'],
           occasion: 'luxury business setting, refined meeting',
           brands: ['The Row', 'Khaite']
+        },
+        {
+          id: 'lux_light_biz_004',
+          name: 'White Double-Breasted Suit',
+          description: 'White double-breasted blazer, matching trousers, cream silk blouse, nude pumps',
+          pieces: ['white double-breasted blazer', 'matching white trousers', 'cream silk blouse', 'nude pointed-toe pumps', 'gold jewelry'],
+          occasion: 'boardroom, high-stakes meeting',
+          brands: ['The Row', 'Khaite', 'Toteme']
         }
       ],
       casual: [
@@ -356,6 +405,14 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['white oversized blazer', 'cream ribbed tank', 'white wide-leg trousers', 'minimal sandals'],
           occasion: 'casual day out, luxury setting',
           brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'lux_light_cas_004',
+          name: 'Ivory Relaxed',
+          description: 'Ivory cashmere cardigan, white tee, cream trousers, nude sandals',
+          pieces: ['ivory cashmere cardigan', 'white ribbed tank', 'cream wide-leg trousers', 'nude sandals', 'cream tote bag'],
+          occasion: 'evening casual, dinner, drinks',
+          brands: ['The Row', 'Khaite', 'Toteme']
         }
       ],
       bohemian: [
@@ -365,6 +422,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           description: 'White maxi dress with minimal details, gold jewelry',
           pieces: ['white flowy maxi dress', 'delicate gold necklaces', 'gold cuffs', 'white sandals'],
           occasion: 'luxury casual, art gallery',
+          brands: ['Free People', 'Anthropologie']
+        },
+        {
+          id: 'lux_light_boh_002',
+          name: 'Cream Midi Dress',
+          description: 'Cream midi dress with flowy sleeves, layered gold necklaces, white sandals',
+          pieces: ['cream midi dress', 'layered gold necklaces', 'gold cuffs', 'white sandals'],
+          occasion: 'brunch, casual event, gallery',
+          brands: ['Free People', 'Anthropologie', 'The Row']
+        },
+        {
+          id: 'lux_light_boh_003',
+          name: 'Ivory Layered Look',
+          description: 'Ivory kimono cardigan, white slip dress, gold jewelry, beige sandals',
+          pieces: ['ivory kimono cardigan', 'white slip dress', 'layered gold jewelry', 'beige sandals'],
+          occasion: 'evening casual, creative gathering',
           brands: ['Free People', 'Anthropologie']
         }
       ],
@@ -376,6 +449,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['classic white blazer', 'cream silk blouse', 'white tailored trousers', 'nude pumps'],
           occasion: 'timeless elegance, luxury setting',
           brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'lux_light_cla_002',
+          name: 'Cream Coat Classic',
+          description: 'Cream wool coat, white sweater, beige trousers, tan boots',
+          pieces: ['cream wool coat', 'white cashmere sweater', 'beige trousers', 'tan leather boots'],
+          occasion: 'classic elegance, refined setting',
+          brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'lux_light_cla_003',
+          name: 'Sophisticated Suit',
+          description: 'Ivory suit, cream blouse, nude heels, gold jewelry',
+          pieces: ['ivory tailored suit', 'cream silk blouse', 'nude heels', 'gold jewelry'],
+          occasion: 'professional, timeless elegance',
+          brands: ['The Row', 'Toteme', 'Khaite']
         }
       ],
       trendy: [
@@ -386,6 +475,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['white oversized blazer', 'white bodysuit', 'cream wide-leg trousers', 'white platform boots'],
           occasion: 'trendy luxury, fashion-forward',
           brands: ['The Row', 'Khaite']
+        },
+        {
+          id: 'lux_light_tre_002',
+          name: 'Cropped Statement',
+          description: 'Cropped white jacket, high-waisted cream trousers, white sneakers, minimal gold jewelry',
+          pieces: ['cropped white jacket', 'high-waisted cream trousers', 'white designer sneakers', 'minimal gold jewelry'],
+          occasion: 'trendy casual, modern setting',
+          brands: ['The Row', 'Khaite']
+        },
+        {
+          id: 'lux_light_tre_003',
+          name: 'Oversized Chic',
+          description: 'Oversized cream coat, white tee, white jeans, nude boots',
+          pieces: ['oversized cream coat', 'white ribbed tank', 'white straight-leg jeans', 'nude ankle boots'],
+          occasion: 'trendy day out, modern casual',
+          brands: ['The Row', 'Toteme', 'Celine']
         }
       ],
       athletic: [
@@ -396,6 +501,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['white athletic set', 'cream cashmere cardigan', 'white designer sneakers'],
           occasion: 'luxury athleisure, active lifestyle',
           brands: ['Alo', 'Lululemon', 'The Row']
+        },
+        {
+          id: 'lux_light_ath_002',
+          name: 'Bright Active Luxury',
+          description: 'Cream leggings, white ribbed top, oversized white cashmere hoodie, gold jewelry',
+          pieces: ['cream high-waisted leggings', 'white ribbed sports bra', 'oversized white cashmere hoodie', 'nude designer sneakers', 'gold jewelry'],
+          occasion: 'post-workout luxury, active lifestyle',
+          brands: ['Alo', 'The Row', 'Outdoor Voices']
+        },
+        {
+          id: 'lux_light_ath_003',
+          name: 'Ivory Athletic Dress',
+          description: 'Ivory athletic dress, cream bomber jacket, white sneakers, tan leather gym bag',
+          pieces: ['ivory athletic dress', 'cream bomber jacket', 'white designer sneakers', 'tan leather gym bag'],
+          occasion: 'athleisure lifestyle, luxury active',
+          brands: ['Alo', 'The Row', 'Lululemon']
         }
       ]
     },
@@ -507,6 +628,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['beige wool blazer', 'tan tailored trousers', 'cream blouse', 'gold jewelry', 'nude heels'],
           occasion: 'executive setting, luxury event',
           brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'lux_beige_biz_003',
+          name: 'Tan Sophistication',
+          description: 'Tan tailored blazer, beige trousers, cream silk blouse, tan pumps',
+          pieces: ['tan tailored blazer', 'beige wide-leg trousers', 'cream silk blouse', 'tan pointed-toe pumps', 'gold jewelry'],
+          occasion: 'luxury business setting, refined meeting',
+          brands: ['The Row', 'Khaite']
+        },
+        {
+          id: 'lux_beige_biz_004',
+          name: 'Camel Double-Breasted Suit',
+          description: 'Camel double-breasted blazer, matching trousers, cream blouse, nude pumps',
+          pieces: ['camel double-breasted blazer', 'matching camel trousers', 'cream silk blouse', 'nude pointed-toe pumps', 'gold jewelry'],
+          occasion: 'boardroom, high-stakes meeting',
+          brands: ['The Row', 'Khaite', 'Toteme']
         }
       ],
       casual: [
@@ -525,6 +662,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['beige linen shirt', 'camel straight-leg pants', 'tan sandals', 'cream bag'],
           occasion: 'casual luxury, relaxed setting',
           brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'lux_beige_cas_003',
+          name: 'Tan Relaxed',
+          description: 'Tan cashmere cardigan, beige tee, camel trousers, tan sandals',
+          pieces: ['tan cashmere cardigan', 'beige ribbed tank', 'camel wide-leg trousers', 'tan sandals', 'camel tote bag'],
+          occasion: 'evening casual, dinner, drinks',
+          brands: ['The Row', 'Khaite', 'Toteme']
+        },
+        {
+          id: 'lux_beige_cas_004',
+          name: 'Camel Oversized',
+          description: 'Oversized camel blazer, beige tank, tan jeans, nude boots',
+          pieces: ['oversized camel blazer', 'beige ribbed tank', 'tan straight-leg jeans', 'nude ankle boots', 'camel bag'],
+          occasion: 'casual day out, luxury setting',
+          brands: ['The Row', 'Toteme']
         }
       ],
       bohemian: [
@@ -534,6 +687,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           description: 'Beige maxi dress, gold jewelry, tan sandals',
           pieces: ['beige flowy maxi dress', 'layered gold necklaces', 'tan sandals'],
           occasion: 'luxury bohemian, art gallery',
+          brands: ['Free People', 'Anthropologie']
+        },
+        {
+          id: 'lux_beige_boh_002',
+          name: 'Camel Midi Dress',
+          description: 'Camel midi dress with flowy sleeves, layered gold necklaces, tan sandals',
+          pieces: ['camel midi dress', 'layered gold necklaces', 'gold cuffs', 'tan sandals'],
+          occasion: 'brunch, casual event, gallery',
+          brands: ['Free People', 'Anthropologie', 'The Row']
+        },
+        {
+          id: 'lux_beige_boh_003',
+          name: 'Tan Layered Look',
+          description: 'Tan kimono cardigan, beige slip dress, gold jewelry, tan sandals',
+          pieces: ['tan kimono cardigan', 'beige slip dress', 'layered gold jewelry', 'tan sandals'],
+          occasion: 'evening casual, creative gathering',
           brands: ['Free People', 'Anthropologie']
         }
       ],
@@ -545,6 +714,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['camel wool coat', 'cream cashmere sweater', 'beige trousers', 'tan boots'],
           occasion: 'timeless elegance, luxury setting',
           brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'lux_beige_cla_002',
+          name: 'Beige Suit Classic',
+          description: 'Beige tailored suit, cream blouse, tan heels, gold jewelry',
+          pieces: ['beige tailored suit', 'cream silk blouse', 'tan heels', 'gold jewelry'],
+          occasion: 'professional, timeless elegance',
+          brands: ['The Row', 'Toteme', 'Khaite']
+        },
+        {
+          id: 'lux_beige_cla_003',
+          name: 'Camel Blazer Classic',
+          description: 'Camel blazer, beige blouse, cream trousers, nude pumps',
+          pieces: ['camel blazer', 'beige silk blouse', 'cream trousers', 'nude pumps'],
+          occasion: 'classic elegance, refined setting',
+          brands: ['The Row', 'Toteme']
         }
       ],
       trendy: [
@@ -555,6 +740,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['beige oversized blazer', 'camel bodysuit', 'tan wide-leg trousers', 'tan platform boots'],
           occasion: 'trendy luxury, fashion-forward',
           brands: ['The Row', 'Khaite']
+        },
+        {
+          id: 'lux_beige_tre_002',
+          name: 'Cropped Statement',
+          description: 'Cropped beige jacket, high-waisted tan trousers, tan sneakers, minimal gold jewelry',
+          pieces: ['cropped beige jacket', 'high-waisted tan trousers', 'tan designer sneakers', 'minimal gold jewelry'],
+          occasion: 'trendy casual, modern setting',
+          brands: ['The Row', 'Khaite']
+        },
+        {
+          id: 'lux_beige_tre_003',
+          name: 'Oversized Chic',
+          description: 'Oversized tan coat, beige tee, camel jeans, tan boots',
+          pieces: ['oversized tan coat', 'beige ribbed tank', 'camel straight-leg jeans', 'tan ankle boots'],
+          occasion: 'trendy day out, modern casual',
+          brands: ['The Row', 'Toteme', 'Celine']
         }
       ],
       athletic: [
@@ -565,6 +766,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['beige athletic set', 'camel cashmere cardigan', 'tan designer sneakers'],
           occasion: 'luxury athleisure',
           brands: ['Alo', 'Lululemon', 'The Row']
+        },
+        {
+          id: 'lux_beige_ath_002',
+          name: 'Camel Active Luxe',
+          description: 'Camel leggings, beige ribbed top, oversized tan hoodie, gold watch',
+          pieces: ['camel high-waisted leggings', 'beige ribbed sports bra', 'oversized tan cashmere hoodie', 'nude athletic sneakers', 'gold minimalist watch'],
+          occasion: 'post-workout luxury, active lifestyle',
+          brands: ['Alo', 'The Row', 'Outdoor Voices']
+        },
+        {
+          id: 'lux_beige_ath_003',
+          name: 'Sand Athletic Dress',
+          description: 'Sand athletic dress, camel bomber jacket, beige sneakers, tan leather gym bag',
+          pieces: ['sand athletic dress', 'camel bomber jacket', 'beige designer sneakers', 'tan leather gym bag'],
+          occasion: 'athleisure lifestyle, luxury active',
+          brands: ['Alo', 'The Row', 'Lululemon']
         }
       ]
     },
@@ -668,6 +885,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['charcoal wool blazer', 'black trousers', 'white tee', 'minimal jewelry', 'black boots'],
           occasion: 'minimal business, clean aesthetic',
           brands: ['Toteme', 'COS']
+        },
+        {
+          id: 'min_dark_biz_003',
+          name: 'Black Tailored Suit',
+          description: 'Black tailored suit, white silk blouse, black pumps, minimal jewelry',
+          pieces: ['black tailored suit', 'white silk blouse', 'black pumps', 'minimal jewelry'],
+          occasion: 'minimal office, clean setting',
+          brands: ['Toteme', 'Arket', 'COS']
+        },
+        {
+          id: 'min_dark_biz_004',
+          name: 'Charcoal Double-Breasted',
+          description: 'Charcoal double-breasted blazer, matching trousers, white button-down, black boots',
+          pieces: ['charcoal double-breasted blazer', 'matching charcoal trousers', 'white button-down', 'black boots', 'minimal accessories'],
+          occasion: 'boardroom, high-stakes meeting',
+          brands: ['Toteme', 'COS', 'Arket']
         }
       ],
       casual: [
@@ -686,6 +919,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['charcoal cardigan', 'black tee', 'black trousers', 'minimal sneakers'],
           occasion: 'minimal casual, relaxed',
           brands: ['Toteme', 'COS']
+        },
+        {
+          id: 'min_dark_cas_003',
+          name: 'Black Oversized',
+          description: 'Black oversized blazer, white tee, black jeans, white sneakers',
+          pieces: ['black oversized blazer', 'white ribbed tank', 'black straight-leg jeans', 'white sneakers', 'black tote'],
+          occasion: 'evening casual, dinner, drinks',
+          brands: ['Toteme', 'Arket', 'COS']
+        },
+        {
+          id: 'min_dark_cas_004',
+          name: 'Charcoal Minimalist',
+          description: 'Charcoal sweater, black trousers, minimal sneakers, simple bag',
+          pieces: ['charcoal cashmere sweater', 'black wide-leg trousers', 'minimal sneakers', 'simple black bag'],
+          occasion: 'casual day out, minimal setting',
+          brands: ['Toteme', 'COS']
         }
       ],
       bohemian: [
@@ -695,6 +944,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           description: 'Black maxi dress, minimal jewelry, black sandals',
           pieces: ['black flowy maxi dress', 'minimal gold jewelry', 'black sandals'],
           occasion: 'minimal bohemian, clean aesthetic',
+          brands: ['Free People', 'Arket']
+        },
+        {
+          id: 'min_dark_boh_002',
+          name: 'Charcoal Midi Dress',
+          description: 'Charcoal midi dress with flowy sleeves, minimal gold necklaces, black sandals',
+          pieces: ['charcoal midi dress', 'minimal gold necklaces', 'black sandals'],
+          occasion: 'brunch, casual event, gallery',
+          brands: ['Free People', 'Arket', 'COS']
+        },
+        {
+          id: 'min_dark_boh_003',
+          name: 'Black Layered Look',
+          description: 'Black kimono cardigan, charcoal slip dress, minimal gold jewelry, black sandals',
+          pieces: ['black kimono cardigan', 'charcoal slip dress', 'minimal gold jewelry', 'black sandals'],
+          occasion: 'evening casual, creative gathering',
           brands: ['Free People', 'Arket']
         }
       ],
@@ -706,6 +971,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['black blazer', 'white blouse', 'black trousers', 'black pumps'],
           occasion: 'timeless minimal, clean',
           brands: ['Toteme', 'COS']
+        },
+        {
+          id: 'min_dark_cla_002',
+          name: 'Charcoal Coat Classic',
+          description: 'Charcoal wool coat, black sweater, charcoal trousers, black boots',
+          pieces: ['charcoal wool coat', 'black cashmere sweater', 'charcoal trousers', 'black leather boots'],
+          occasion: 'classic elegance, refined setting',
+          brands: ['Toteme', 'COS', 'Arket']
+        },
+        {
+          id: 'min_dark_cla_003',
+          name: 'Black Suit Classic',
+          description: 'Black tailored suit, white blouse, black pumps, minimal jewelry',
+          pieces: ['black tailored suit', 'white silk blouse', 'black pumps', 'minimal jewelry'],
+          occasion: 'professional, timeless elegance',
+          brands: ['Toteme', 'COS', 'Arket']
         }
       ],
       trendy: [
@@ -716,6 +997,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['black oversized blazer', 'black bodysuit', 'black wide-leg trousers', 'black boots'],
           occasion: 'trendy minimal, modern',
           brands: ['Toteme', 'COS']
+        },
+        {
+          id: 'min_dark_tre_002',
+          name: 'Cropped Statement',
+          description: 'Cropped black jacket, high-waisted black trousers, black sneakers, minimal accessories',
+          pieces: ['cropped black jacket', 'high-waisted black trousers', 'black sneakers', 'minimal accessories'],
+          occasion: 'trendy casual, modern setting',
+          brands: ['Toteme', 'COS']
+        },
+        {
+          id: 'min_dark_tre_003',
+          name: 'Oversized Chic',
+          description: 'Oversized charcoal coat, black tee, black jeans, black boots',
+          pieces: ['oversized charcoal coat', 'black ribbed tank', 'black straight-leg jeans', 'black ankle boots'],
+          occasion: 'trendy day out, modern casual',
+          brands: ['Toteme', 'COS', 'Arket']
         }
       ],
       athletic: [
@@ -726,6 +1023,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['black athletic set', 'black cardigan', 'white sneakers'],
           occasion: 'minimal athleisure',
           brands: ['Alo', 'Lululemon', 'Toteme']
+        },
+        {
+          id: 'min_dark_ath_002',
+          name: 'Clean Dark Active',
+          description: 'Charcoal leggings, black ribbed top, oversized black hoodie, minimal accessories',
+          pieces: ['charcoal high-waisted leggings', 'black ribbed sports bra', 'oversized black hoodie', 'white sneakers', 'minimal accessories'],
+          occasion: 'post-workout minimal, active lifestyle',
+          brands: ['Alo', 'Toteme', 'Outdoor Voices']
+        },
+        {
+          id: 'min_dark_ath_003',
+          name: 'Black Athletic Dress',
+          description: 'Black athletic dress, charcoal bomber jacket, white sneakers, simple tote bag',
+          pieces: ['black athletic dress', 'charcoal bomber jacket', 'white sneakers', 'simple tote bag'],
+          occasion: 'athleisure lifestyle, minimal active',
+          brands: ['Alo', 'Toteme', 'Lululemon']
         }
       ]
     },
@@ -827,6 +1140,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['cream wool blazer', 'white trousers', 'white tee', 'minimal jewelry', 'nude heels'],
           occasion: 'minimal business, clean aesthetic',
           brands: ['Toteme', 'COS']
+        },
+        {
+          id: 'min_light_biz_003',
+          name: 'White Tailored Suit',
+          description: 'White tailored suit, cream silk blouse, nude pumps, minimal jewelry',
+          pieces: ['white tailored suit', 'cream silk blouse', 'nude pumps', 'minimal jewelry'],
+          occasion: 'minimal office, bright setting',
+          brands: ['Toteme', 'Arket', 'COS']
+        },
+        {
+          id: 'min_light_biz_004',
+          name: 'Cream Double-Breasted',
+          description: 'Cream double-breasted blazer, matching trousers, white button-down, nude boots',
+          pieces: ['cream double-breasted blazer', 'matching cream trousers', 'white button-down', 'nude boots', 'minimal accessories'],
+          occasion: 'boardroom, high-stakes meeting',
+          brands: ['Toteme', 'COS', 'Arket']
         }
       ],
       casual: [
@@ -845,6 +1174,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['cream cardigan', 'white tee', 'cream trousers', 'white sneakers'],
           occasion: 'minimal casual, relaxed',
           brands: ['Toteme', 'COS']
+        },
+        {
+          id: 'min_light_cas_003',
+          name: 'White Oversized',
+          description: 'White oversized blazer, cream tee, white jeans, white sneakers',
+          pieces: ['white oversized blazer', 'cream ribbed tank', 'white straight-leg jeans', 'white sneakers', 'white tote'],
+          occasion: 'evening casual, dinner, drinks',
+          brands: ['Toteme', 'Arket', 'COS']
+        },
+        {
+          id: 'min_light_cas_004',
+          name: 'Cream Minimalist',
+          description: 'Cream sweater, white trousers, minimal sneakers, simple bag',
+          pieces: ['cream cashmere sweater', 'white wide-leg trousers', 'minimal sneakers', 'simple white bag'],
+          occasion: 'casual day out, minimal setting',
+          brands: ['Toteme', 'COS']
         }
       ],
       bohemian: [
@@ -854,6 +1199,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           description: 'White maxi dress, minimal jewelry, white sandals',
           pieces: ['white flowy maxi dress', 'minimal gold jewelry', 'white sandals'],
           occasion: 'minimal bohemian, clean aesthetic',
+          brands: ['Free People', 'Arket']
+        },
+        {
+          id: 'min_light_boh_002',
+          name: 'Cream Midi Dress',
+          description: 'Cream midi dress with flowy sleeves, minimal gold necklaces, white sandals',
+          pieces: ['cream midi dress', 'minimal gold necklaces', 'white sandals'],
+          occasion: 'brunch, casual event, gallery',
+          brands: ['Free People', 'Arket', 'COS']
+        },
+        {
+          id: 'min_light_boh_003',
+          name: 'White Layered Look',
+          description: 'White kimono cardigan, cream slip dress, minimal gold jewelry, beige sandals',
+          pieces: ['white kimono cardigan', 'cream slip dress', 'minimal gold jewelry', 'beige sandals'],
+          occasion: 'evening casual, creative gathering',
           brands: ['Free People', 'Arket']
         }
       ],
@@ -865,6 +1226,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['white blazer', 'white blouse', 'white trousers', 'nude pumps'],
           occasion: 'timeless minimal, clean',
           brands: ['Toteme', 'COS']
+        },
+        {
+          id: 'min_light_cla_002',
+          name: 'Cream Coat Classic',
+          description: 'Cream wool coat, white sweater, cream trousers, tan boots',
+          pieces: ['cream wool coat', 'white cashmere sweater', 'cream trousers', 'tan leather boots'],
+          occasion: 'classic elegance, refined setting',
+          brands: ['Toteme', 'COS', 'Arket']
+        },
+        {
+          id: 'min_light_cla_003',
+          name: 'White Suit Classic',
+          description: 'White tailored suit, cream blouse, nude heels, minimal jewelry',
+          pieces: ['white tailored suit', 'cream silk blouse', 'nude heels', 'minimal jewelry'],
+          occasion: 'professional, timeless elegance',
+          brands: ['Toteme', 'COS', 'Arket']
         }
       ],
       trendy: [
@@ -875,6 +1252,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['white oversized blazer', 'white bodysuit', 'cream wide-leg trousers', 'white boots'],
           occasion: 'trendy minimal, modern',
           brands: ['Toteme', 'COS']
+        },
+        {
+          id: 'min_light_tre_002',
+          name: 'Cropped Statement',
+          description: 'Cropped white jacket, high-waisted cream trousers, white sneakers, minimal accessories',
+          pieces: ['cropped white jacket', 'high-waisted cream trousers', 'white sneakers', 'minimal accessories'],
+          occasion: 'trendy casual, modern setting',
+          brands: ['Toteme', 'COS']
+        },
+        {
+          id: 'min_light_tre_003',
+          name: 'Oversized Chic',
+          description: 'Oversized cream coat, white tee, white jeans, beige boots',
+          pieces: ['oversized cream coat', 'white ribbed tank', 'white straight-leg jeans', 'beige ankle boots'],
+          occasion: 'trendy day out, modern casual',
+          brands: ['Toteme', 'COS', 'Arket']
         }
       ],
       athletic: [
@@ -885,6 +1278,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['white athletic set', 'cream cardigan', 'white sneakers'],
           occasion: 'minimal athleisure',
           brands: ['Alo', 'Lululemon', 'Toteme']
+        },
+        {
+          id: 'min_light_ath_002',
+          name: 'Clean Active Minimal',
+          description: 'Cream leggings, white ribbed top, oversized white hoodie, minimal watch',
+          pieces: ['cream high-waisted leggings', 'white ribbed sports bra', 'oversized white hoodie', 'white sneakers', 'minimal watch'],
+          occasion: 'post-workout minimal, active lifestyle',
+          brands: ['Alo', 'Toteme', 'Outdoor Voices']
+        },
+        {
+          id: 'min_light_ath_003',
+          name: 'White Athletic Dress',
+          description: 'White athletic dress, cream bomber jacket, white sneakers, simple tote bag',
+          pieces: ['white athletic dress', 'cream bomber jacket', 'white sneakers', 'simple tote bag'],
+          occasion: 'athleisure lifestyle, minimal active',
+          brands: ['Alo', 'Toteme', 'Lululemon']
         }
       ]
     },
@@ -978,6 +1387,30 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['beige tailored blazer', 'beige trousers', 'cream button-down', 'nude pumps'],
           occasion: 'minimal office, warm setting',
           brands: ['Toteme', 'Arket', 'COS']
+        },
+        {
+          id: 'min_beige_biz_002',
+          name: 'Sand Minimal',
+          description: 'Sand blazer, beige trousers, cream tee, minimal accessories',
+          pieces: ['sand wool blazer', 'beige trousers', 'cream tee', 'minimal jewelry', 'nude heels'],
+          occasion: 'minimal business, clean aesthetic',
+          brands: ['Toteme', 'COS']
+        },
+        {
+          id: 'min_beige_biz_003',
+          name: 'Beige Tailored Suit',
+          description: 'Beige tailored suit, cream silk blouse, nude pumps, minimal jewelry',
+          pieces: ['beige tailored suit', 'cream silk blouse', 'nude pumps', 'minimal jewelry'],
+          occasion: 'minimal office, warm setting',
+          brands: ['Toteme', 'Arket', 'COS']
+        },
+        {
+          id: 'min_beige_biz_004',
+          name: 'Sand Double-Breasted',
+          description: 'Sand double-breasted blazer, matching trousers, cream button-down, tan boots',
+          pieces: ['sand double-breasted blazer', 'matching sand trousers', 'cream button-down', 'tan boots', 'minimal accessories'],
+          occasion: 'boardroom, high-stakes meeting',
+          brands: ['Toteme', 'COS', 'Arket']
         }
       ],
       casual: [
@@ -996,6 +1429,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['sand cardigan', 'cream tee', 'beige trousers', 'tan sneakers'],
           occasion: 'minimal casual, relaxed',
           brands: ['Toteme', 'COS']
+        },
+        {
+          id: 'min_beige_cas_003',
+          name: 'Beige Oversized',
+          description: 'Beige oversized blazer, sand tee, tan jeans, tan sneakers',
+          pieces: ['beige oversized blazer', 'sand ribbed tank', 'tan straight-leg jeans', 'tan sneakers', 'beige tote'],
+          occasion: 'evening casual, dinner, drinks',
+          brands: ['Toteme', 'Arket', 'COS']
+        },
+        {
+          id: 'min_beige_cas_004',
+          name: 'Sand Minimalist',
+          description: 'Sand sweater, beige trousers, minimal sneakers, simple bag',
+          pieces: ['sand cashmere sweater', 'beige wide-leg trousers', 'minimal sneakers', 'simple beige bag'],
+          occasion: 'casual day out, minimal setting',
+          brands: ['Toteme', 'COS']
         }
       ],
       bohemian: [
@@ -1005,6 +1454,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           description: 'Beige maxi dress, minimal jewelry, tan sandals',
           pieces: ['beige flowy maxi dress', 'minimal gold jewelry', 'tan sandals'],
           occasion: 'minimal bohemian, clean aesthetic',
+          brands: ['Free People', 'Arket']
+        },
+        {
+          id: 'min_beige_boh_002',
+          name: 'Sand Midi Dress',
+          description: 'Sand midi dress with flowy sleeves, minimal gold necklaces, tan sandals',
+          pieces: ['sand midi dress', 'minimal gold necklaces', 'tan sandals'],
+          occasion: 'brunch, casual event, gallery',
+          brands: ['Free People', 'Arket', 'COS']
+        },
+        {
+          id: 'min_beige_boh_003',
+          name: 'Beige Layered Look',
+          description: 'Beige kimono cardigan, sand slip dress, minimal gold jewelry, tan sandals',
+          pieces: ['beige kimono cardigan', 'sand slip dress', 'minimal gold jewelry', 'tan sandals'],
+          occasion: 'evening casual, creative gathering',
           brands: ['Free People', 'Arket']
         }
       ],
@@ -1016,6 +1481,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['beige blazer', 'cream blouse', 'beige trousers', 'nude pumps'],
           occasion: 'timeless minimal, clean',
           brands: ['Toteme', 'COS']
+        },
+        {
+          id: 'min_beige_cla_002',
+          name: 'Sand Coat Classic',
+          description: 'Sand wool coat, beige sweater, sand trousers, tan boots',
+          pieces: ['sand wool coat', 'beige cashmere sweater', 'sand trousers', 'tan leather boots'],
+          occasion: 'classic elegance, refined setting',
+          brands: ['Toteme', 'COS', 'Arket']
+        },
+        {
+          id: 'min_beige_cla_003',
+          name: 'Beige Suit Classic',
+          description: 'Beige tailored suit, cream blouse, nude heels, minimal jewelry',
+          pieces: ['beige tailored suit', 'cream silk blouse', 'nude heels', 'minimal jewelry'],
+          occasion: 'professional, timeless elegance',
+          brands: ['Toteme', 'COS', 'Arket']
         }
       ],
       trendy: [
@@ -1026,6 +1507,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['beige oversized blazer', 'cream bodysuit', 'sand wide-leg trousers', 'tan boots'],
           occasion: 'trendy minimal, modern',
           brands: ['Toteme', 'COS']
+        },
+        {
+          id: 'min_beige_tre_002',
+          name: 'Cropped Statement',
+          description: 'Cropped beige jacket, high-waisted sand trousers, tan sneakers, minimal accessories',
+          pieces: ['cropped beige jacket', 'high-waisted sand trousers', 'tan sneakers', 'minimal accessories'],
+          occasion: 'trendy casual, modern setting',
+          brands: ['Toteme', 'COS']
+        },
+        {
+          id: 'min_beige_tre_003',
+          name: 'Oversized Chic',
+          description: 'Oversized sand coat, beige tee, tan jeans, tan boots',
+          pieces: ['oversized sand coat', 'beige ribbed tank', 'tan straight-leg jeans', 'tan ankle boots'],
+          occasion: 'trendy day out, modern casual',
+          brands: ['Toteme', 'COS', 'Arket']
         }
       ],
       athletic: [
@@ -1036,6 +1533,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['beige athletic set', 'sand cardigan', 'tan sneakers'],
           occasion: 'minimal athleisure',
           brands: ['Alo', 'Lululemon', 'Toteme']
+        },
+        {
+          id: 'min_beige_ath_002',
+          name: 'Sand Active Minimal',
+          description: 'Sand leggings, beige ribbed top, oversized tan hoodie, minimal accessories',
+          pieces: ['sand high-waisted leggings', 'beige ribbed sports bra', 'oversized tan hoodie', 'tan sneakers', 'minimal accessories'],
+          occasion: 'post-workout minimal, active lifestyle',
+          brands: ['Alo', 'Toteme', 'Outdoor Voices']
+        },
+        {
+          id: 'min_beige_ath_003',
+          name: 'Beige Athletic Dress',
+          description: 'Beige athletic dress, sand bomber jacket, tan sneakers, simple tote bag',
+          pieces: ['beige athletic dress', 'sand bomber jacket', 'tan sneakers', 'simple tote bag'],
+          occasion: 'athleisure lifestyle, minimal active',
+          brands: ['Alo', 'Toteme', 'Lululemon']
         }
       ]
     },
@@ -1137,6 +1650,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['camel wool blazer', 'brown tailored trousers', 'cream blouse', 'gold jewelry', 'brown heels'],
           occasion: 'executive setting, warm luxury',
           brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'beige_dark_biz_003',
+          name: 'Brown Tailored Suit',
+          description: 'Brown tailored suit, camel silk blouse, tan pumps, gold jewelry',
+          pieces: ['brown tailored suit', 'camel silk blouse', 'tan pumps', 'gold jewelry'],
+          occasion: 'luxury business, warm setting',
+          brands: ['The Row', 'Toteme', 'Khaite']
+        },
+        {
+          id: 'beige_dark_biz_004',
+          name: 'Camel Double-Breasted',
+          description: 'Camel double-breasted blazer, matching trousers, cream button-down, brown boots',
+          pieces: ['camel double-breasted blazer', 'matching camel trousers', 'cream button-down', 'brown boots', 'gold jewelry'],
+          occasion: 'boardroom, high-stakes meeting',
+          brands: ['The Row', 'Khaite', 'Toteme']
         }
       ],
       casual: [
@@ -1155,6 +1684,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['camel cashmere cardigan', 'brown tee', 'camel trousers', 'brown suede boots'],
           occasion: 'casual luxury, relaxed',
           brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'beige_dark_cas_003',
+          name: 'Brown Oversized',
+          description: 'Brown oversized blazer, camel tee, brown jeans, tan boots',
+          pieces: ['brown oversized blazer', 'camel ribbed tank', 'brown straight-leg jeans', 'tan boots', 'brown tote'],
+          occasion: 'evening casual, dinner, drinks',
+          brands: ['The Row', 'Khaite', 'Toteme']
+        },
+        {
+          id: 'beige_dark_cas_004',
+          name: 'Camel Relaxed',
+          description: 'Camel sweater, brown trousers, tan boots, warm bag',
+          pieces: ['camel cashmere sweater', 'brown wide-leg trousers', 'tan leather boots', 'warm beige bag'],
+          occasion: 'casual day out, warm setting',
+          brands: ['The Row', 'Toteme']
         }
       ],
       bohemian: [
@@ -1164,6 +1709,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           description: 'Chocolate brown maxi dress, gold jewelry, brown sandals',
           pieces: ['chocolate brown flowy maxi dress', 'layered gold necklaces', 'brown sandals'],
           occasion: 'luxury bohemian, warm aesthetic',
+          brands: ['Free People', 'Anthropologie']
+        },
+        {
+          id: 'beige_dark_boh_002',
+          name: 'Camel Midi Dress',
+          description: 'Camel midi dress with flowy sleeves, layered gold necklaces, brown sandals',
+          pieces: ['camel midi dress', 'layered gold necklaces', 'gold cuffs', 'brown sandals'],
+          occasion: 'brunch, casual event, gallery',
+          brands: ['Free People', 'Anthropologie', 'The Row']
+        },
+        {
+          id: 'beige_dark_boh_003',
+          name: 'Brown Layered Look',
+          description: 'Brown kimono cardigan, camel slip dress, gold jewelry, brown sandals',
+          pieces: ['brown kimono cardigan', 'camel slip dress', 'layered gold jewelry', 'brown sandals'],
+          occasion: 'evening casual, creative gathering',
           brands: ['Free People', 'Anthropologie']
         }
       ],
@@ -1175,6 +1736,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['chocolate brown coat', 'camel cashmere sweater', 'brown trousers', 'tan boots'],
           occasion: 'timeless elegance, warm luxury',
           brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'beige_dark_cla_002',
+          name: 'Brown Suit Classic',
+          description: 'Brown tailored suit, camel blouse, tan heels, gold jewelry',
+          pieces: ['brown tailored suit', 'camel silk blouse', 'tan heels', 'gold jewelry'],
+          occasion: 'professional, timeless elegance',
+          brands: ['The Row', 'Toteme', 'Khaite']
+        },
+        {
+          id: 'beige_dark_cla_003',
+          name: 'Camel Blazer Classic',
+          description: 'Camel blazer, brown blouse, beige trousers, tan pumps',
+          pieces: ['camel blazer', 'brown silk blouse', 'beige trousers', 'tan pumps'],
+          occasion: 'classic elegance, refined setting',
+          brands: ['The Row', 'Toteme']
         }
       ],
       trendy: [
@@ -1185,6 +1762,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['brown oversized blazer', 'camel bodysuit', 'brown wide-leg trousers', 'tan platform boots'],
           occasion: 'trendy luxury, warm aesthetic',
           brands: ['The Row', 'Khaite']
+        },
+        {
+          id: 'beige_dark_tre_002',
+          name: 'Cropped Statement',
+          description: 'Cropped brown jacket, high-waisted camel trousers, tan sneakers, minimal gold jewelry',
+          pieces: ['cropped brown jacket', 'high-waisted camel trousers', 'tan designer sneakers', 'minimal gold jewelry'],
+          occasion: 'trendy casual, modern setting',
+          brands: ['The Row', 'Khaite']
+        },
+        {
+          id: 'beige_dark_tre_003',
+          name: 'Oversized Chic',
+          description: 'Oversized camel coat, brown tee, beige jeans, tan boots',
+          pieces: ['oversized camel coat', 'brown ribbed tank', 'beige straight-leg jeans', 'tan ankle boots'],
+          occasion: 'trendy day out, modern casual',
+          brands: ['The Row', 'Toteme', 'Celine']
         }
       ],
       athletic: [
@@ -1195,6 +1788,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['brown athletic set', 'camel cashmere cardigan', 'tan designer sneakers'],
           occasion: 'luxury athleisure, warm tones',
           brands: ['Alo', 'Lululemon', 'The Row']
+        },
+        {
+          id: 'beige_dark_ath_002',
+          name: 'Cozy Active Luxe',
+          description: 'Chocolate leggings, camel ribbed top, oversized brown hoodie, gold watch',
+          pieces: ['chocolate high-waisted leggings', 'camel ribbed sports bra', 'oversized brown cashmere hoodie', 'tan athletic sneakers', 'gold minimalist watch'],
+          occasion: 'post-workout luxury, cozy active',
+          brands: ['Alo', 'The Row', 'Outdoor Voices']
+        },
+        {
+          id: 'beige_dark_ath_003',
+          name: 'Brown Athletic Dress',
+          description: 'Brown athletic dress, camel bomber jacket, tan sneakers, brown leather gym bag',
+          pieces: ['brown athletic dress', 'camel bomber jacket', 'tan designer sneakers', 'brown leather gym bag'],
+          occasion: 'athleisure lifestyle, warm luxury',
+          brands: ['Alo', 'The Row', 'Lululemon']
         }
       ]
     },
@@ -1290,6 +1899,30 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['cream tailored blazer', 'sand trousers', 'white button-down', 'nude pumps'],
           occasion: 'luxury business, bright setting',
           brands: ['The Row', 'Toteme', 'Khaite']
+        },
+        {
+          id: 'beige_light_biz_002',
+          name: 'Sand Power Dressing',
+          description: 'Sand wool blazer, cream trousers, white blouse, gold jewelry',
+          pieces: ['sand wool blazer', 'cream tailored trousers', 'white blouse', 'gold jewelry', 'nude heels'],
+          occasion: 'executive setting, coastal luxury',
+          brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'beige_light_biz_003',
+          name: 'Cream Tailored Suit',
+          description: 'Cream tailored suit, white silk blouse, nude pumps, gold jewelry',
+          pieces: ['cream tailored suit', 'white silk blouse', 'nude pumps', 'gold jewelry'],
+          occasion: 'luxury business, bright setting',
+          brands: ['The Row', 'Toteme', 'Khaite']
+        },
+        {
+          id: 'beige_light_biz_004',
+          name: 'Sand Double-Breasted',
+          description: 'Sand double-breasted blazer, matching trousers, white button-down, nude boots',
+          pieces: ['sand double-breasted blazer', 'matching sand trousers', 'white button-down', 'nude boots', 'gold jewelry'],
+          occasion: 'boardroom, high-stakes meeting',
+          brands: ['The Row', 'Khaite', 'Toteme']
         }
       ],
       casual: [
@@ -1308,6 +1941,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['sand linen shirt', 'cream wide-leg pants', 'tan sneakers', 'cream tote'],
           occasion: 'casual luxury, relaxed',
           brands: ['The Row', 'COS']
+        },
+        {
+          id: 'beige_light_cas_003',
+          name: 'Cream Oversized',
+          description: 'Cream oversized blazer, sand tee, cream jeans, nude sandals',
+          pieces: ['cream oversized blazer', 'sand ribbed tank', 'cream straight-leg jeans', 'nude sandals', 'cream tote'],
+          occasion: 'evening casual, dinner, drinks',
+          brands: ['The Row', 'Khaite', 'Toteme']
+        },
+        {
+          id: 'beige_light_cas_004',
+          name: 'Sand Coastal',
+          description: 'Sand sweater, cream trousers, nude sandals, coastal bag',
+          pieces: ['sand cashmere sweater', 'cream wide-leg trousers', 'nude sandals', 'coastal beige bag'],
+          occasion: 'casual day out, coastal setting',
+          brands: ['The Row', 'Toteme']
         }
       ],
       bohemian: [
@@ -1317,6 +1966,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           description: 'Cream maxi dress, minimal gold jewelry, nude sandals',
           pieces: ['cream flowy maxi dress', 'minimal gold jewelry', 'nude sandals'],
           occasion: 'coastal bohemian, beach elegance',
+          brands: ['Free People', 'Anthropologie']
+        },
+        {
+          id: 'beige_light_boh_002',
+          name: 'Sand Midi Dress',
+          description: 'Sand midi dress with flowy sleeves, layered gold necklaces, nude sandals',
+          pieces: ['sand midi dress', 'layered gold necklaces', 'gold cuffs', 'nude sandals'],
+          occasion: 'brunch, casual event, gallery',
+          brands: ['Free People', 'Anthropologie', 'The Row']
+        },
+        {
+          id: 'beige_light_boh_003',
+          name: 'Cream Layered Look',
+          description: 'Cream kimono cardigan, sand slip dress, gold jewelry, nude sandals',
+          pieces: ['cream kimono cardigan', 'sand slip dress', 'layered gold jewelry', 'nude sandals'],
+          occasion: 'evening casual, creative gathering',
           brands: ['Free People', 'Anthropologie']
         }
       ],
@@ -1328,6 +1993,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['cream blazer', 'white blouse', 'sand trousers', 'nude pumps'],
           occasion: 'timeless elegance, coastal luxury',
           brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'beige_light_cla_002',
+          name: 'Sand Coat Classic',
+          description: 'Sand wool coat, cream sweater, beige trousers, tan boots',
+          pieces: ['sand wool coat', 'cream cashmere sweater', 'beige trousers', 'tan leather boots'],
+          occasion: 'classic elegance, refined setting',
+          brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'beige_light_cla_003',
+          name: 'Cream Suit Classic',
+          description: 'Cream tailored suit, white blouse, nude heels, gold jewelry',
+          pieces: ['cream tailored suit', 'white silk blouse', 'nude heels', 'gold jewelry'],
+          occasion: 'professional, timeless elegance',
+          brands: ['The Row', 'Toteme', 'Khaite']
         }
       ],
       trendy: [
@@ -1338,6 +2019,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['cream oversized blazer', 'sand bodysuit', 'ivory wide-leg trousers', 'tan platform boots'],
           occasion: 'trendy coastal, modern luxury',
           brands: ['The Row', 'Khaite']
+        },
+        {
+          id: 'beige_light_tre_002',
+          name: 'Cropped Statement',
+          description: 'Cropped cream jacket, high-waisted sand trousers, tan sneakers, minimal gold jewelry',
+          pieces: ['cropped cream jacket', 'high-waisted sand trousers', 'tan designer sneakers', 'minimal gold jewelry'],
+          occasion: 'trendy casual, modern setting',
+          brands: ['The Row', 'Khaite']
+        },
+        {
+          id: 'beige_light_tre_003',
+          name: 'Oversized Chic',
+          description: 'Oversized sand coat, cream tee, beige jeans, tan boots',
+          pieces: ['oversized sand coat', 'cream ribbed tank', 'beige straight-leg jeans', 'tan ankle boots'],
+          occasion: 'trendy day out, modern casual',
+          brands: ['The Row', 'Toteme', 'Celine']
         }
       ],
       athletic: [
@@ -1348,6 +2045,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['cream athletic set', 'sand cardigan', 'tan designer sneakers'],
           occasion: 'coastal athleisure, luxury active',
           brands: ['Alo', 'Lululemon', 'The Row']
+        },
+        {
+          id: 'beige_light_ath_002',
+          name: 'Coastal Active Luxe',
+          description: 'Sand leggings, cream ribbed top, oversized tan hoodie, gold jewelry',
+          pieces: ['sand high-waisted leggings', 'cream ribbed sports bra', 'oversized tan cashmere hoodie', 'nude athletic sneakers', 'gold jewelry'],
+          occasion: 'post-workout luxury, coastal active',
+          brands: ['Alo', 'The Row', 'Outdoor Voices']
+        },
+        {
+          id: 'beige_light_ath_003',
+          name: 'Cream Athletic Dress',
+          description: 'Cream athletic dress, sand bomber jacket, tan sneakers, tan leather gym bag',
+          pieces: ['cream athletic dress', 'sand bomber jacket', 'tan designer sneakers', 'tan leather gym bag'],
+          occasion: 'athleisure lifestyle, coastal luxury',
+          brands: ['Alo', 'The Row', 'Lululemon']
         }
       ]
     },
@@ -1451,6 +2164,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['beige wool blazer', 'camel tailored trousers', 'cream blouse', 'gold jewelry', 'nude heels'],
           occasion: 'timeless business, classic elegance',
           brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'beige_beige_biz_003',
+          name: 'Camel Tailored Suit',
+          description: 'Camel tailored suit, cream silk blouse, tan pumps, gold jewelry',
+          pieces: ['camel tailored suit', 'cream silk blouse', 'tan pumps', 'gold jewelry'],
+          occasion: 'classic business, timeless elegance',
+          brands: ['The Row', 'Toteme', 'Khaite']
+        },
+        {
+          id: 'beige_beige_biz_004',
+          name: 'Beige Double-Breasted',
+          description: 'Beige double-breasted blazer, matching trousers, cream button-down, tan boots',
+          pieces: ['beige double-breasted blazer', 'matching beige trousers', 'cream button-down', 'tan boots', 'gold jewelry'],
+          occasion: 'boardroom, high-stakes meeting',
+          brands: ['The Row', 'Khaite', 'Toteme']
         }
       ],
       casual: [
@@ -1469,6 +2198,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['beige linen shirt', 'cream wide-leg pants', 'tan sandals', 'camel bag'],
           occasion: 'classic casual, European elegance',
           brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'beige_beige_cas_003',
+          name: 'Camel Oversized',
+          description: 'Camel oversized blazer, beige tee, tan jeans, tan sandals',
+          pieces: ['camel oversized blazer', 'beige ribbed tank', 'tan straight-leg jeans', 'tan sandals', 'camel bag'],
+          occasion: 'evening casual, dinner, drinks',
+          brands: ['The Row', 'Khaite', 'Toteme']
+        },
+        {
+          id: 'beige_beige_cas_004',
+          name: 'Beige Classic',
+          description: 'Beige sweater, camel trousers, tan boots, classic bag',
+          pieces: ['beige cashmere sweater', 'camel wide-leg trousers', 'tan leather boots', 'classic beige bag'],
+          occasion: 'casual day out, timeless setting',
+          brands: ['The Row', 'Toteme']
         }
       ],
       bohemian: [
@@ -1478,6 +2223,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           description: 'Camel maxi dress, layered gold jewelry, tan sandals',
           pieces: ['camel flowy maxi dress', 'layered gold necklaces', 'tan sandals'],
           occasion: 'classic bohemian, timeless elegance',
+          brands: ['Free People', 'Anthropologie']
+        },
+        {
+          id: 'beige_beige_boh_002',
+          name: 'Beige Midi Dress',
+          description: 'Beige midi dress with flowy sleeves, layered gold necklaces, tan sandals',
+          pieces: ['beige midi dress', 'layered gold necklaces', 'gold cuffs', 'tan sandals'],
+          occasion: 'brunch, casual event, gallery',
+          brands: ['Free People', 'Anthropologie', 'The Row']
+        },
+        {
+          id: 'beige_beige_boh_003',
+          name: 'Camel Layered Look',
+          description: 'Camel kimono cardigan, beige slip dress, gold jewelry, tan sandals',
+          pieces: ['camel kimono cardigan', 'beige slip dress', 'layered gold jewelry', 'tan sandals'],
+          occasion: 'evening casual, creative gathering',
           brands: ['Free People', 'Anthropologie']
         }
       ],
@@ -1489,6 +2250,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['camel wool coat', 'cream cashmere sweater', 'beige trousers', 'tan leather boots'],
           occasion: 'timeless elegance, classic luxury',
           brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'beige_beige_cla_002',
+          name: 'Beige Suit Classic',
+          description: 'Beige tailored suit, cream blouse, tan heels, gold jewelry',
+          pieces: ['beige tailored suit', 'cream silk blouse', 'tan heels', 'gold jewelry'],
+          occasion: 'professional, timeless elegance',
+          brands: ['The Row', 'Toteme', 'Khaite']
+        },
+        {
+          id: 'beige_beige_cla_003',
+          name: 'Camel Blazer Classic',
+          description: 'Camel blazer, beige blouse, cream trousers, nude pumps',
+          pieces: ['camel blazer', 'beige silk blouse', 'cream trousers', 'nude pumps'],
+          occasion: 'classic elegance, refined setting',
+          brands: ['The Row', 'Toteme']
         }
       ],
       trendy: [
@@ -1499,6 +2276,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['camel oversized blazer', 'beige bodysuit', 'tan wide-leg trousers', 'camel platform boots'],
           occasion: 'trendy classic, modern elegance',
           brands: ['The Row', 'Khaite']
+        },
+        {
+          id: 'beige_beige_tre_002',
+          name: 'Cropped Statement',
+          description: 'Cropped camel jacket, high-waisted beige trousers, tan sneakers, minimal gold jewelry',
+          pieces: ['cropped camel jacket', 'high-waisted beige trousers', 'tan designer sneakers', 'minimal gold jewelry'],
+          occasion: 'trendy casual, modern setting',
+          brands: ['The Row', 'Khaite']
+        },
+        {
+          id: 'beige_beige_tre_003',
+          name: 'Oversized Chic',
+          description: 'Oversized tan coat, beige tee, camel jeans, tan boots',
+          pieces: ['oversized tan coat', 'beige ribbed tank', 'camel straight-leg jeans', 'tan ankle boots'],
+          occasion: 'trendy day out, modern casual',
+          brands: ['The Row', 'Toteme', 'Celine']
         }
       ],
       athletic: [
@@ -1509,6 +2302,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['camel athletic set', 'beige cashmere cardigan', 'tan designer sneakers'],
           occasion: 'classic athleisure, timeless active',
           brands: ['Alo', 'Lululemon', 'The Row']
+        },
+        {
+          id: 'beige_beige_ath_002',
+          name: 'Classic Active Luxe',
+          description: 'Camel leggings, beige ribbed top, oversized tan hoodie, gold watch',
+          pieces: ['camel high-waisted leggings', 'beige ribbed sports bra', 'oversized tan cashmere hoodie', 'nude athletic sneakers', 'gold minimalist watch'],
+          occasion: 'post-workout luxury, active lifestyle',
+          brands: ['Alo', 'The Row', 'Outdoor Voices']
+        },
+        {
+          id: 'beige_beige_ath_003',
+          name: 'Tan Athletic Dress',
+          description: 'Tan athletic dress, camel bomber jacket, beige sneakers, tan leather gym bag',
+          pieces: ['tan athletic dress', 'camel bomber jacket', 'beige designer sneakers', 'tan leather gym bag'],
+          occasion: 'athleisure lifestyle, luxury active',
+          brands: ['Alo', 'The Row', 'Lululemon']
         }
       ]
     },
@@ -1604,6 +2413,30 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['rust wool blazer', 'burgundy trousers', 'cream silk blouse', 'cognac pumps'],
           occasion: 'warm business, Italian elegance',
           brands: ['The Row', 'Toteme', 'Khaite']
+        },
+        {
+          id: 'warm_dark_biz_002',
+          name: 'Burgundy Power Dressing',
+          description: 'Burgundy wool blazer, rust trousers, terracotta blouse, gold jewelry',
+          pieces: ['burgundy wool blazer', 'rust tailored trousers', 'terracotta blouse', 'gold jewelry', 'cognac heels'],
+          occasion: 'executive setting, warm luxury',
+          brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'warm_dark_biz_003',
+          name: 'Rust Tailored Suit',
+          description: 'Rust tailored suit, burgundy silk blouse, cognac pumps, gold jewelry',
+          pieces: ['rust tailored suit', 'burgundy silk blouse', 'cognac pumps', 'gold jewelry'],
+          occasion: 'warm business, Italian elegance',
+          brands: ['The Row', 'Toteme', 'Khaite']
+        },
+        {
+          id: 'warm_dark_biz_004',
+          name: 'Burgundy Double-Breasted',
+          description: 'Burgundy double-breasted blazer, matching trousers, cream button-down, cognac boots',
+          pieces: ['burgundy double-breasted blazer', 'matching burgundy trousers', 'cream button-down', 'cognac boots', 'gold jewelry'],
+          occasion: 'boardroom, high-stakes meeting',
+          brands: ['The Row', 'Khaite', 'Toteme']
         }
       ],
       casual: [
@@ -1622,6 +2455,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['burgundy cardigan', 'terracotta top', 'brown pants', 'cognac boots'],
           occasion: 'warm casual, Italian vibe',
           brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'warm_dark_cas_003',
+          name: 'Rust Oversized',
+          description: 'Rust oversized blazer, burgundy tee, brown jeans, cognac boots',
+          pieces: ['rust oversized blazer', 'burgundy ribbed tank', 'brown straight-leg jeans', 'cognac boots', 'warm tote'],
+          occasion: 'evening casual, dinner, drinks',
+          brands: ['The Row', 'Khaite', 'Toteme']
+        },
+        {
+          id: 'warm_dark_cas_004',
+          name: 'Burgundy Cozy',
+          description: 'Burgundy sweater, rust trousers, cognac boots, warm bag',
+          pieces: ['burgundy cashmere sweater', 'rust wide-leg trousers', 'cognac leather boots', 'warm brown bag'],
+          occasion: 'casual day out, warm setting',
+          brands: ['The Row', 'Toteme']
         }
       ],
       bohemian: [
@@ -1631,6 +2480,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           description: 'Burgundy maxi dress, gold jewelry, cognac sandals',
           pieces: ['burgundy flowy maxi dress', 'layered gold necklaces', 'cognac sandals'],
           occasion: 'warm bohemian, romantic',
+          brands: ['Free People', 'Anthropologie']
+        },
+        {
+          id: 'warm_dark_boh_002',
+          name: 'Terracotta Midi Dress',
+          description: 'Terracotta midi dress with flowy sleeves, layered gold necklaces, cognac sandals',
+          pieces: ['terracotta midi dress', 'layered gold necklaces', 'gold cuffs', 'cognac sandals'],
+          occasion: 'brunch, casual event, gallery',
+          brands: ['Free People', 'Anthropologie', 'The Row']
+        },
+        {
+          id: 'warm_dark_boh_003',
+          name: 'Burgundy Layered Look',
+          description: 'Burgundy kimono cardigan, terracotta slip dress, gold jewelry, cognac sandals',
+          pieces: ['burgundy kimono cardigan', 'terracotta slip dress', 'layered gold jewelry', 'cognac sandals'],
+          occasion: 'evening casual, creative gathering',
           brands: ['Free People', 'Anthropologie']
         }
       ],
@@ -1642,6 +2507,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['rust wool coat', 'burgundy cashmere sweater', 'brown trousers', 'cognac boots'],
           occasion: 'timeless warmth, Italian elegance',
           brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'warm_dark_cla_002',
+          name: 'Burgundy Suit Classic',
+          description: 'Burgundy tailored suit, terracotta blouse, cognac heels, gold jewelry',
+          pieces: ['burgundy tailored suit', 'terracotta silk blouse', 'cognac heels', 'gold jewelry'],
+          occasion: 'professional, timeless elegance',
+          brands: ['The Row', 'Toteme', 'Khaite']
+        },
+        {
+          id: 'warm_dark_cla_003',
+          name: 'Rust Blazer Classic',
+          description: 'Rust blazer, burgundy blouse, brown trousers, cognac pumps',
+          pieces: ['rust blazer', 'burgundy silk blouse', 'brown trousers', 'cognac pumps'],
+          occasion: 'classic elegance, refined setting',
+          brands: ['The Row', 'Toteme']
         }
       ],
       trendy: [
@@ -1652,6 +2533,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['burgundy oversized blazer', 'terracotta bodysuit', 'rust wide-leg trousers', 'cognac platform boots'],
           occasion: 'trendy warm, modern Italian',
           brands: ['The Row', 'Khaite']
+        },
+        {
+          id: 'warm_dark_tre_002',
+          name: 'Cropped Statement',
+          description: 'Cropped burgundy jacket, high-waisted rust trousers, cognac sneakers, gold jewelry',
+          pieces: ['cropped burgundy jacket', 'high-waisted rust trousers', 'cognac designer sneakers', 'gold jewelry'],
+          occasion: 'trendy casual, modern setting',
+          brands: ['The Row', 'Khaite']
+        },
+        {
+          id: 'warm_dark_tre_003',
+          name: 'Oversized Chic',
+          description: 'Oversized rust coat, burgundy tee, brown jeans, cognac boots',
+          pieces: ['oversized rust coat', 'burgundy ribbed tank', 'brown straight-leg jeans', 'cognac ankle boots'],
+          occasion: 'trendy day out, modern casual',
+          brands: ['The Row', 'Toteme', 'Celine']
         }
       ],
       athletic: [
@@ -1662,6 +2559,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['burgundy athletic set', 'rust cashmere cardigan', 'cognac designer sneakers'],
           occasion: 'warm athleisure, Italian active',
           brands: ['Alo', 'Lululemon', 'The Row']
+        },
+        {
+          id: 'warm_dark_ath_002',
+          name: 'Italian Active Luxe',
+          description: 'Burgundy leggings, terracotta ribbed top, oversized rust hoodie, gold watch',
+          pieces: ['burgundy high-waisted leggings', 'terracotta ribbed sports bra', 'oversized rust cashmere hoodie', 'cognac athletic sneakers', 'gold minimalist watch'],
+          occasion: 'post-workout luxury, Italian active',
+          brands: ['Alo', 'The Row', 'Outdoor Voices']
+        },
+        {
+          id: 'warm_dark_ath_003',
+          name: 'Burgundy Athletic Dress',
+          description: 'Burgundy athletic dress, rust bomber jacket, cognac sneakers, brown leather gym bag',
+          pieces: ['burgundy athletic dress', 'rust bomber jacket', 'cognac designer sneakers', 'brown leather gym bag'],
+          occasion: 'athleisure lifestyle, warm luxury',
+          brands: ['Alo', 'The Row', 'Lululemon']
         }
       ]
     },
@@ -1757,6 +2670,30 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['ivory tailored blazer', 'cream trousers', 'white button-down', 'nude pumps'],
           occasion: 'warm business, bright setting',
           brands: ['The Row', 'Toteme', 'Khaite']
+        },
+        {
+          id: 'warm_light_biz_002',
+          name: 'Cream Power Dressing',
+          description: 'Cream wool blazer, ivory trousers, white blouse, gold jewelry',
+          pieces: ['cream wool blazer', 'ivory tailored trousers', 'white blouse', 'gold jewelry', 'nude heels'],
+          occasion: 'executive setting, zen luxury',
+          brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'warm_light_biz_003',
+          name: 'Ivory Tailored Suit',
+          description: 'Ivory tailored suit, white silk blouse, nude pumps, gold jewelry',
+          pieces: ['ivory tailored suit', 'white silk blouse', 'nude pumps', 'gold jewelry'],
+          occasion: 'warm business, bright setting',
+          brands: ['The Row', 'Toteme', 'Khaite']
+        },
+        {
+          id: 'warm_light_biz_004',
+          name: 'Cream Double-Breasted',
+          description: 'Cream double-breasted blazer, matching trousers, white button-down, beige boots',
+          pieces: ['cream double-breasted blazer', 'matching cream trousers', 'white button-down', 'beige boots', 'gold jewelry'],
+          occasion: 'boardroom, high-stakes meeting',
+          brands: ['The Row', 'Khaite', 'Toteme']
         }
       ],
       casual: [
@@ -1775,6 +2712,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['cream knit cardigan', 'white tee', 'cream trousers', 'white sneakers'],
           occasion: 'warm casual, relaxed',
           brands: ['The Row', 'COS']
+        },
+        {
+          id: 'warm_light_cas_003',
+          name: 'Ivory Oversized',
+          description: 'Ivory oversized blazer, cream tee, white jeans, beige sandals',
+          pieces: ['ivory oversized blazer', 'cream ribbed tank', 'white straight-leg jeans', 'beige sandals', 'warm tote'],
+          occasion: 'evening casual, dinner, drinks',
+          brands: ['The Row', 'Khaite', 'Toteme']
+        },
+        {
+          id: 'warm_light_cas_004',
+          name: 'Cream Zen',
+          description: 'Cream sweater, ivory trousers, nude sandals, warm bag',
+          pieces: ['cream cashmere sweater', 'ivory wide-leg trousers', 'nude sandals', 'warm beige bag'],
+          occasion: 'casual day out, zen setting',
+          brands: ['The Row', 'Toteme']
         }
       ],
       bohemian: [
@@ -1784,6 +2737,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           description: 'Ivory maxi dress, minimal gold jewelry, white sandals',
           pieces: ['ivory flowy maxi dress', 'minimal gold jewelry', 'white sandals'],
           occasion: 'warm bohemian, zen simplicity',
+          brands: ['Free People', 'Anthropologie']
+        },
+        {
+          id: 'warm_light_boh_002',
+          name: 'Cream Midi Dress',
+          description: 'Cream midi dress with flowy sleeves, layered gold necklaces, white sandals',
+          pieces: ['cream midi dress', 'layered gold necklaces', 'gold cuffs', 'white sandals'],
+          occasion: 'brunch, casual event, gallery',
+          brands: ['Free People', 'Anthropologie', 'The Row']
+        },
+        {
+          id: 'warm_light_boh_003',
+          name: 'Ivory Layered Look',
+          description: 'Ivory kimono cardigan, cream slip dress, gold jewelry, beige sandals',
+          pieces: ['ivory kimono cardigan', 'cream slip dress', 'layered gold jewelry', 'beige sandals'],
+          occasion: 'evening casual, creative gathering',
           brands: ['Free People', 'Anthropologie']
         }
       ],
@@ -1795,6 +2764,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['ivory wool coat', 'cream cashmere sweater', 'white trousers', 'nude pumps'],
           occasion: 'timeless warmth, zen elegance',
           brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'warm_light_cla_002',
+          name: 'Cream Suit Classic',
+          description: 'Cream tailored suit, white blouse, nude heels, gold jewelry',
+          pieces: ['cream tailored suit', 'white silk blouse', 'nude heels', 'gold jewelry'],
+          occasion: 'professional, timeless elegance',
+          brands: ['The Row', 'Toteme', 'Khaite']
+        },
+        {
+          id: 'warm_light_cla_003',
+          name: 'Ivory Blazer Classic',
+          description: 'Ivory blazer, cream blouse, white trousers, beige pumps',
+          pieces: ['ivory blazer', 'cream silk blouse', 'white trousers', 'beige pumps'],
+          occasion: 'classic elegance, refined setting',
+          brands: ['The Row', 'Toteme']
         }
       ],
       trendy: [
@@ -1805,6 +2790,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['ivory oversized blazer', 'white bodysuit', 'cream wide-leg trousers', 'white platform boots'],
           occasion: 'trendy warm, modern zen',
           brands: ['The Row', 'Khaite']
+        },
+        {
+          id: 'warm_light_tre_002',
+          name: 'Cropped Statement',
+          description: 'Cropped ivory jacket, high-waisted cream trousers, white sneakers, gold jewelry',
+          pieces: ['cropped ivory jacket', 'high-waisted cream trousers', 'white designer sneakers', 'gold jewelry'],
+          occasion: 'trendy casual, modern setting',
+          brands: ['The Row', 'Khaite']
+        },
+        {
+          id: 'warm_light_tre_003',
+          name: 'Oversized Chic',
+          description: 'Oversized cream coat, white tee, ivory jeans, beige boots',
+          pieces: ['oversized cream coat', 'white ribbed tank', 'ivory straight-leg jeans', 'beige ankle boots'],
+          occasion: 'trendy day out, modern casual',
+          brands: ['The Row', 'Toteme', 'Celine']
         }
       ],
       athletic: [
@@ -1815,6 +2816,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['ivory athletic set', 'cream cashmere cardigan', 'white designer sneakers'],
           occasion: 'warm athleisure, zen active',
           brands: ['Alo', 'Lululemon', 'The Row']
+        },
+        {
+          id: 'warm_light_ath_002',
+          name: 'Zen Active Luxe',
+          description: 'Cream leggings, ivory ribbed top, oversized white hoodie, gold jewelry',
+          pieces: ['cream high-waisted leggings', 'ivory ribbed sports bra', 'oversized white cashmere hoodie', 'white athletic sneakers', 'gold jewelry'],
+          occasion: 'post-workout luxury, zen active',
+          brands: ['Alo', 'The Row', 'Outdoor Voices']
+        },
+        {
+          id: 'warm_light_ath_003',
+          name: 'Ivory Athletic Dress',
+          description: 'Ivory athletic dress, cream bomber jacket, white sneakers, tan leather gym bag',
+          pieces: ['ivory athletic dress', 'cream bomber jacket', 'white designer sneakers', 'tan leather gym bag'],
+          occasion: 'athleisure lifestyle, warm luxury',
+          brands: ['Alo', 'The Row', 'Lululemon']
         }
       ]
     },
@@ -1910,6 +2927,30 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['caramel tailored blazer', 'sand trousers', 'cream silk blouse', 'tan pumps'],
           occasion: 'warm business, Barcelona elegance',
           brands: ['The Row', 'Toteme', 'Khaite']
+        },
+        {
+          id: 'warm_beige_biz_002',
+          name: 'Sand Power Dressing',
+          description: 'Sand wool blazer, caramel trousers, cream blouse, gold jewelry',
+          pieces: ['sand wool blazer', 'caramel tailored trousers', 'cream blouse', 'gold jewelry', 'tan heels'],
+          occasion: 'executive setting, Mediterranean luxury',
+          brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'warm_beige_biz_003',
+          name: 'Caramel Tailored Suit',
+          description: 'Caramel tailored suit, sand silk blouse, tan pumps, gold jewelry',
+          pieces: ['caramel tailored suit', 'sand silk blouse', 'tan pumps', 'gold jewelry'],
+          occasion: 'warm business, Barcelona elegance',
+          brands: ['The Row', 'Toteme', 'Khaite']
+        },
+        {
+          id: 'warm_beige_biz_004',
+          name: 'Sand Double-Breasted',
+          description: 'Sand double-breasted blazer, matching trousers, cream button-down, tan boots',
+          pieces: ['sand double-breasted blazer', 'matching sand trousers', 'cream button-down', 'tan boots', 'gold jewelry'],
+          occasion: 'boardroom, high-stakes meeting',
+          brands: ['The Row', 'Khaite', 'Toteme']
         }
       ],
       casual: [
@@ -1928,6 +2969,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['sand linen shirt', 'caramel wide-leg pants', 'tan sandals', 'warm beige bag'],
           occasion: 'warm casual, relaxed',
           brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'warm_beige_cas_003',
+          name: 'Caramel Oversized',
+          description: 'Caramel oversized blazer, sand tee, tan jeans, tan sandals',
+          pieces: ['caramel oversized blazer', 'sand ribbed tank', 'tan straight-leg jeans', 'tan sandals', 'warm tote'],
+          occasion: 'evening casual, dinner, drinks',
+          brands: ['The Row', 'Khaite', 'Toteme']
+        },
+        {
+          id: 'warm_beige_cas_004',
+          name: 'Sand Mediterranean',
+          description: 'Sand sweater, caramel trousers, tan sandals, warm bag',
+          pieces: ['sand cashmere sweater', 'caramel wide-leg trousers', 'tan sandals', 'warm Mediterranean bag'],
+          occasion: 'casual day out, Mediterranean setting',
+          brands: ['The Row', 'Toteme']
         }
       ],
       bohemian: [
@@ -1937,6 +2994,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           description: 'Toffee maxi dress, layered gold jewelry, tan sandals',
           pieces: ['toffee flowy maxi dress', 'layered gold necklaces', 'tan sandals'],
           occasion: 'warm bohemian, Mediterranean',
+          brands: ['Free People', 'Anthropologie']
+        },
+        {
+          id: 'warm_beige_boh_002',
+          name: 'Caramel Midi Dress',
+          description: 'Caramel midi dress with flowy sleeves, layered gold necklaces, tan sandals',
+          pieces: ['caramel midi dress', 'layered gold necklaces', 'gold cuffs', 'tan sandals'],
+          occasion: 'brunch, casual event, gallery',
+          brands: ['Free People', 'Anthropologie', 'The Row']
+        },
+        {
+          id: 'warm_beige_boh_003',
+          name: 'Toffee Layered Look',
+          description: 'Toffee kimono cardigan, caramel slip dress, gold jewelry, tan sandals',
+          pieces: ['toffee kimono cardigan', 'caramel slip dress', 'layered gold jewelry', 'tan sandals'],
+          occasion: 'evening casual, creative gathering',
           brands: ['Free People', 'Anthropologie']
         }
       ],
@@ -1948,6 +3021,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['caramel wool coat', 'sand cashmere sweater', 'beige trousers', 'tan leather boots'],
           occasion: 'timeless warmth, Mediterranean elegance',
           brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'warm_beige_cla_002',
+          name: 'Caramel Suit Classic',
+          description: 'Caramel tailored suit, sand blouse, tan heels, gold jewelry',
+          pieces: ['caramel tailored suit', 'sand silk blouse', 'tan heels', 'gold jewelry'],
+          occasion: 'professional, timeless elegance',
+          brands: ['The Row', 'Toteme', 'Khaite']
+        },
+        {
+          id: 'warm_beige_cla_003',
+          name: 'Sand Blazer Classic',
+          description: 'Sand blazer, caramel blouse, beige trousers, tan pumps',
+          pieces: ['sand blazer', 'caramel silk blouse', 'beige trousers', 'tan pumps'],
+          occasion: 'classic elegance, refined setting',
+          brands: ['The Row', 'Toteme']
         }
       ],
       trendy: [
@@ -1958,6 +3047,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['caramel oversized blazer', 'sand bodysuit', 'toffee wide-leg trousers', 'tan platform boots'],
           occasion: 'trendy warm, modern Mediterranean',
           brands: ['The Row', 'Khaite']
+        },
+        {
+          id: 'warm_beige_tre_002',
+          name: 'Cropped Statement',
+          description: 'Cropped caramel jacket, high-waisted sand trousers, tan sneakers, gold jewelry',
+          pieces: ['cropped caramel jacket', 'high-waisted sand trousers', 'tan designer sneakers', 'gold jewelry'],
+          occasion: 'trendy casual, modern setting',
+          brands: ['The Row', 'Khaite']
+        },
+        {
+          id: 'warm_beige_tre_003',
+          name: 'Oversized Chic',
+          description: 'Oversized sand coat, caramel tee, beige jeans, tan boots',
+          pieces: ['oversized sand coat', 'caramel ribbed tank', 'beige straight-leg jeans', 'tan ankle boots'],
+          occasion: 'trendy day out, modern casual',
+          brands: ['The Row', 'Toteme', 'Celine']
         }
       ],
       athletic: [
@@ -1968,6 +3073,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['caramel athletic set', 'sand cashmere cardigan', 'tan designer sneakers'],
           occasion: 'warm athleisure, Mediterranean active',
           brands: ['Alo', 'Lululemon', 'The Row']
+        },
+        {
+          id: 'warm_beige_ath_002',
+          name: 'Mediterranean Active',
+          description: 'Caramel leggings, sand ribbed top, oversized tan hoodie, gold watch',
+          pieces: ['caramel high-waisted leggings', 'sand ribbed sports bra', 'oversized tan cashmere hoodie', 'nude athletic sneakers', 'gold minimalist watch'],
+          occasion: 'post-workout luxury, Mediterranean active',
+          brands: ['Alo', 'The Row', 'Outdoor Voices']
+        },
+        {
+          id: 'warm_beige_ath_003',
+          name: 'Caramel Athletic Dress',
+          description: 'Caramel athletic dress, sand bomber jacket, tan sneakers, tan leather gym bag',
+          pieces: ['caramel athletic dress', 'sand bomber jacket', 'tan designer sneakers', 'tan leather gym bag'],
+          occasion: 'athleisure lifestyle, warm luxury',
+          brands: ['Alo', 'The Row', 'Lululemon']
         }
       ]
     },
@@ -2063,6 +3184,30 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['black leather blazer', 'black distressed jeans', 'band t-shirt', 'combat boots'],
           occasion: 'edgy business, urban edge',
           brands: ['Saint Laurent', 'Acne Studios', 'The Row']
+        },
+        {
+          id: 'edgy_dark_biz_002',
+          name: 'Charcoal Edgy Power',
+          description: 'Charcoal leather blazer, black trousers, black tee, silver chains',
+          pieces: ['charcoal leather blazer', 'black tailored trousers', 'black tee', 'silver chains', 'combat boots'],
+          occasion: 'executive setting, edgy luxury',
+          brands: ['Saint Laurent', 'The Row']
+        },
+        {
+          id: 'edgy_dark_biz_003',
+          name: 'Black Tailored Edgy',
+          description: 'Black tailored suit, black tee, combat boots, silver chains',
+          pieces: ['black tailored suit', 'black tee', 'combat boots', 'silver chains'],
+          occasion: 'edgy business, urban edge',
+          brands: ['Saint Laurent', 'Acne Studios', 'The Row']
+        },
+        {
+          id: 'edgy_dark_biz_004',
+          name: 'Charcoal Double-Breasted Edgy',
+          description: 'Charcoal double-breasted blazer, matching trousers, black button-down, combat boots',
+          pieces: ['charcoal double-breasted blazer', 'matching charcoal trousers', 'black button-down', 'combat boots', 'silver chains'],
+          occasion: 'boardroom, high-stakes meeting',
+          brands: ['Saint Laurent', 'Acne Studios', 'The Row']
         }
       ],
       casual: [
@@ -2081,6 +3226,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['black leather pants', 'black hoodie', 'silver chains', 'combat boots'],
           occasion: 'edgy casual, underground',
           brands: ['Saint Laurent', 'The Row']
+        },
+        {
+          id: 'edgy_dark_cas_003',
+          name: 'Black Oversized Edgy',
+          description: 'Black oversized blazer, charcoal tee, black jeans, combat boots',
+          pieces: ['black oversized blazer', 'charcoal ribbed tank', 'black straight-leg jeans', 'combat boots', 'silver chains'],
+          occasion: 'evening casual, dinner, drinks',
+          brands: ['Saint Laurent', 'Acne Studios', 'The Row']
+        },
+        {
+          id: 'edgy_dark_cas_004',
+          name: 'Charcoal Street',
+          description: 'Charcoal sweater, black trousers, combat boots, edgy bag',
+          pieces: ['charcoal cashmere sweater', 'black wide-leg trousers', 'combat boots', 'edgy black bag'],
+          occasion: 'casual day out, urban setting',
+          brands: ['Saint Laurent', 'The Row']
         }
       ],
       bohemian: [
@@ -2090,6 +3251,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           description: 'Black maxi dress, silver chains, combat boots',
           pieces: ['black flowy maxi dress', 'silver chain necklaces', 'combat boots'],
           occasion: 'edgy bohemian, urban',
+          brands: ['Free People', 'Saint Laurent']
+        },
+        {
+          id: 'edgy_dark_boh_002',
+          name: 'Charcoal Midi Dress',
+          description: 'Charcoal midi dress with flowy sleeves, silver chains, combat boots',
+          pieces: ['charcoal midi dress', 'silver chain necklaces', 'combat boots'],
+          occasion: 'brunch, casual event, gallery',
+          brands: ['Free People', 'Saint Laurent', 'Acne Studios']
+        },
+        {
+          id: 'edgy_dark_boh_003',
+          name: 'Black Layered Look',
+          description: 'Black kimono cardigan, charcoal slip dress, silver chains, combat boots',
+          pieces: ['black kimono cardigan', 'charcoal slip dress', 'silver chain necklaces', 'combat boots'],
+          occasion: 'evening casual, creative gathering',
           brands: ['Free People', 'Saint Laurent']
         }
       ],
@@ -2101,6 +3278,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['black blazer', 'black tee', 'black jeans', 'combat boots'],
           occasion: 'edgy classic, urban',
           brands: ['Saint Laurent', 'Acne Studios']
+        },
+        {
+          id: 'edgy_dark_cla_002',
+          name: 'Black Suit Edgy',
+          description: 'Black tailored suit, black tee, combat boots, silver chains',
+          pieces: ['black tailored suit', 'black tee', 'combat boots', 'silver chains'],
+          occasion: 'professional, edgy elegance',
+          brands: ['Saint Laurent', 'Acne Studios', 'The Row']
+        },
+        {
+          id: 'edgy_dark_cla_003',
+          name: 'Charcoal Blazer Classic',
+          description: 'Charcoal blazer, black blouse, black trousers, combat boots',
+          pieces: ['charcoal blazer', 'black silk blouse', 'black trousers', 'combat boots'],
+          occasion: 'classic elegance, urban setting',
+          brands: ['Saint Laurent', 'Acne Studios']
         }
       ],
       trendy: [
@@ -2110,6 +3303,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           description: 'Black oversized blazer, black bodysuit, leather pants, platform boots',
           pieces: ['black oversized blazer', 'black bodysuit', 'black leather pants', 'platform boots'],
           occasion: 'trendy edgy, fashion-forward',
+          brands: ['Saint Laurent', 'Acne Studios', 'The Row']
+        },
+        {
+          id: 'edgy_dark_tre_002',
+          name: 'Cropped Statement',
+          description: 'Cropped black jacket, high-waisted black trousers, platform boots, silver chains',
+          pieces: ['cropped black jacket', 'high-waisted black trousers', 'platform boots', 'silver chains'],
+          occasion: 'trendy casual, modern setting',
+          brands: ['Saint Laurent', 'Acne Studios']
+        },
+        {
+          id: 'edgy_dark_tre_003',
+          name: 'Oversized Chic',
+          description: 'Oversized charcoal coat, black tee, black jeans, combat boots',
+          pieces: ['oversized charcoal coat', 'black ribbed tank', 'black straight-leg jeans', 'combat boots'],
+          occasion: 'trendy day out, modern casual',
           brands: ['Saint Laurent', 'Acne Studios', 'The Row']
         }
       ],
@@ -2121,6 +3330,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['black athletic set', 'black oversized blazer', 'combat boots'],
           occasion: 'edgy athleisure, urban active',
           brands: ['Alo', 'Lululemon', 'Saint Laurent']
+        },
+        {
+          id: 'edgy_dark_ath_002',
+          name: 'Urban Street Active',
+          description: 'Black leggings, charcoal ribbed top, oversized black hoodie, silver chains',
+          pieces: ['black high-waisted leggings', 'charcoal ribbed sports bra', 'oversized black hoodie', 'combat boots', 'silver chains'],
+          occasion: 'post-workout edgy, urban active',
+          brands: ['Alo', 'Saint Laurent', 'Acne Studios']
+        },
+        {
+          id: 'edgy_dark_ath_003',
+          name: 'Black Athletic Dress',
+          description: 'Black athletic dress, black bomber jacket, combat boots, black gym bag',
+          pieces: ['black athletic dress', 'black bomber jacket', 'combat boots', 'black gym bag'],
+          occasion: 'athleisure lifestyle, edgy active',
+          brands: ['Alo', 'Saint Laurent', 'Lululemon']
         }
       ]
     },
@@ -2216,6 +3441,30 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['white oversized blazer', 'black leather pants', 'white t-shirt', 'platform sneakers'],
           occasion: 'edgy business, modern street',
           brands: ['Saint Laurent', 'Acne Studios', 'The Row']
+        },
+        {
+          id: 'edgy_light_biz_002',
+          name: 'Cream Edgy Power',
+          description: 'Cream leather blazer, white trousers, black tee, silver chains',
+          pieces: ['cream leather blazer', 'white tailored trousers', 'black tee', 'silver chains', 'platform sneakers'],
+          occasion: 'executive setting, edgy luxury',
+          brands: ['Saint Laurent', 'The Row']
+        },
+        {
+          id: 'edgy_light_biz_003',
+          name: 'White Tailored Edgy',
+          description: 'White tailored suit, black tee, platform sneakers, silver chains',
+          pieces: ['white tailored suit', 'black tee', 'platform sneakers', 'silver chains'],
+          occasion: 'edgy business, modern street',
+          brands: ['Saint Laurent', 'Acne Studios', 'The Row']
+        },
+        {
+          id: 'edgy_light_biz_004',
+          name: 'Cream Double-Breasted Edgy',
+          description: 'Cream double-breasted blazer, matching trousers, white button-down, platform sneakers',
+          pieces: ['cream double-breasted blazer', 'matching cream trousers', 'white button-down', 'platform sneakers', 'silver chains'],
+          occasion: 'boardroom, high-stakes meeting',
+          brands: ['Saint Laurent', 'Acne Studios', 'The Row']
         }
       ],
       casual: [
@@ -2234,6 +3483,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['black leather pants', 'white tee', 'platform sneakers', 'minimal silver jewelry'],
           occasion: 'edgy casual, contemporary cool',
           brands: ['Saint Laurent', 'The Row']
+        },
+        {
+          id: 'edgy_light_cas_003',
+          name: 'White Oversized Edgy',
+          description: 'White oversized blazer, cream tee, black jeans, platform sneakers',
+          pieces: ['white oversized blazer', 'cream ribbed tank', 'black straight-leg jeans', 'platform sneakers', 'silver chains'],
+          occasion: 'evening casual, dinner, drinks',
+          brands: ['Saint Laurent', 'Acne Studios', 'The Row']
+        },
+        {
+          id: 'edgy_light_cas_004',
+          name: 'Cream Street',
+          description: 'Cream sweater, white trousers, platform sneakers, edgy bag',
+          pieces: ['cream cashmere sweater', 'white wide-leg trousers', 'platform sneakers', 'edgy white bag'],
+          occasion: 'casual day out, modern setting',
+          brands: ['Saint Laurent', 'The Row']
         }
       ],
       bohemian: [
@@ -2243,6 +3508,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           description: 'White maxi dress, minimal silver jewelry, white sandals',
           pieces: ['white flowy maxi dress', 'minimal silver jewelry', 'white sandals'],
           occasion: 'edgy bohemian, modern',
+          brands: ['Free People', 'Saint Laurent']
+        },
+        {
+          id: 'edgy_light_boh_002',
+          name: 'Cream Midi Dress',
+          description: 'Cream midi dress with flowy sleeves, silver chains, white sandals',
+          pieces: ['cream midi dress', 'silver chain necklaces', 'white sandals'],
+          occasion: 'brunch, casual event, gallery',
+          brands: ['Free People', 'Saint Laurent', 'Acne Studios']
+        },
+        {
+          id: 'edgy_light_boh_003',
+          name: 'White Layered Look',
+          description: 'White kimono cardigan, cream slip dress, silver chains, white sandals',
+          pieces: ['white kimono cardigan', 'cream slip dress', 'silver chain necklaces', 'white sandals'],
+          occasion: 'evening casual, creative gathering',
           brands: ['Free People', 'Saint Laurent']
         }
       ],
@@ -2254,6 +3535,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['white blazer', 'black tee', 'black jeans', 'white sneakers'],
           occasion: 'edgy classic, modern',
           brands: ['Saint Laurent', 'Acne Studios']
+        },
+        {
+          id: 'edgy_light_cla_002',
+          name: 'White Suit Edgy',
+          description: 'White tailored suit, black tee, white sneakers, silver chains',
+          pieces: ['white tailored suit', 'black tee', 'white sneakers', 'silver chains'],
+          occasion: 'professional, edgy elegance',
+          brands: ['Saint Laurent', 'Acne Studios', 'The Row']
+        },
+        {
+          id: 'edgy_light_cla_003',
+          name: 'Cream Blazer Classic',
+          description: 'Cream blazer, white blouse, black trousers, white sneakers',
+          pieces: ['cream blazer', 'white silk blouse', 'black trousers', 'white sneakers'],
+          occasion: 'classic elegance, modern setting',
+          brands: ['Saint Laurent', 'Acne Studios']
         }
       ],
       trendy: [
@@ -2263,6 +3560,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           description: 'White oversized blazer, black bodysuit, white trousers, platform boots',
           pieces: ['white oversized blazer', 'black bodysuit', 'white wide-leg trousers', 'platform boots'],
           occasion: 'trendy edgy, Seoul fashion',
+          brands: ['Saint Laurent', 'Acne Studios', 'The Row']
+        },
+        {
+          id: 'edgy_light_tre_002',
+          name: 'Cropped Statement',
+          description: 'Cropped white jacket, high-waisted white trousers, platform sneakers, silver chains',
+          pieces: ['cropped white jacket', 'high-waisted white trousers', 'platform sneakers', 'silver chains'],
+          occasion: 'trendy casual, modern setting',
+          brands: ['Saint Laurent', 'Acne Studios']
+        },
+        {
+          id: 'edgy_light_tre_003',
+          name: 'Oversized Chic',
+          description: 'Oversized cream coat, white tee, black jeans, white sneakers',
+          pieces: ['oversized cream coat', 'white ribbed tank', 'black straight-leg jeans', 'white sneakers'],
+          occasion: 'trendy day out, modern casual',
           brands: ['Saint Laurent', 'Acne Studios', 'The Row']
         }
       ],
@@ -2274,6 +3587,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['white athletic set', 'black oversized blazer', 'platform sneakers'],
           occasion: 'edgy athleisure, modern active',
           brands: ['Alo', 'Lululemon', 'Saint Laurent']
+        },
+        {
+          id: 'edgy_light_ath_002',
+          name: 'Urban Active Edge',
+          description: 'White leggings, black ribbed top, oversized black hoodie, silver chains',
+          pieces: ['white high-waisted leggings', 'black ribbed sports bra', 'oversized black hoodie', 'platform sneakers', 'silver chains'],
+          occasion: 'post-workout edgy, urban active',
+          brands: ['Alo', 'Saint Laurent', 'Acne Studios']
+        },
+        {
+          id: 'edgy_light_ath_003',
+          name: 'White Athletic Dress',
+          description: 'White athletic dress, black bomber jacket, platform sneakers, black gym bag',
+          pieces: ['white athletic dress', 'black bomber jacket', 'platform sneakers', 'black gym bag'],
+          occasion: 'athleisure lifestyle, edgy active',
+          brands: ['Alo', 'Saint Laurent', 'Lululemon']
         }
       ]
     },
@@ -2369,6 +3698,30 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['tan utility jacket', 'cargo pants', 'combat boots', 'minimal leather accessories'],
           occasion: 'edgy business, urban workwear',
           brands: ['The Row', 'Acne Studios']
+        },
+        {
+          id: 'edgy_beige_biz_002',
+          name: 'Beige Edgy Power',
+          description: 'Beige utility blazer, tan trousers, beige tee, silver chains',
+          pieces: ['beige utility blazer', 'tan tailored trousers', 'beige tee', 'silver chains', 'combat boots'],
+          occasion: 'executive setting, edgy luxury',
+          brands: ['The Row', 'Acne Studios']
+        },
+        {
+          id: 'edgy_beige_biz_003',
+          name: 'Tan Tailored Edgy',
+          description: 'Tan tailored suit, beige tee, combat boots, silver chains',
+          pieces: ['tan tailored suit', 'beige tee', 'combat boots', 'silver chains'],
+          occasion: 'edgy business, urban workwear',
+          brands: ['The Row', 'Acne Studios', 'Saint Laurent']
+        },
+        {
+          id: 'edgy_beige_biz_004',
+          name: 'Beige Double-Breasted Edgy',
+          description: 'Beige double-breasted blazer, matching trousers, tan button-down, combat boots',
+          pieces: ['beige double-breasted blazer', 'matching beige trousers', 'tan button-down', 'combat boots', 'silver chains'],
+          occasion: 'boardroom, high-stakes meeting',
+          brands: ['The Row', 'Acne Studios', 'Saint Laurent']
         }
       ],
       casual: [
@@ -2387,6 +3740,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['beige workwear pieces', 'tan cargo pants', 'combat boots', 'neutral cap'],
           occasion: 'edgy casual, urban cool',
           brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'edgy_beige_cas_003',
+          name: 'Tan Oversized Edgy',
+          description: 'Tan oversized blazer, beige tee, tan jeans, combat boots',
+          pieces: ['tan oversized blazer', 'beige ribbed tank', 'tan straight-leg jeans', 'combat boots', 'silver chains'],
+          occasion: 'evening casual, dinner, drinks',
+          brands: ['The Row', 'Acne Studios', 'Saint Laurent']
+        },
+        {
+          id: 'edgy_beige_cas_004',
+          name: 'Beige Urban',
+          description: 'Beige sweater, tan trousers, combat boots, edgy bag',
+          pieces: ['beige cashmere sweater', 'tan wide-leg trousers', 'combat boots', 'edgy beige bag'],
+          occasion: 'casual day out, urban setting',
+          brands: ['The Row', 'Acne Studios']
         }
       ],
       bohemian: [
@@ -2396,6 +3765,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           description: 'Tan maxi dress, minimal leather accessories, combat boots',
           pieces: ['tan flowy maxi dress', 'minimal leather accessories', 'combat boots'],
           occasion: 'edgy bohemian, urban',
+          brands: ['Free People', 'The Row']
+        },
+        {
+          id: 'edgy_beige_boh_002',
+          name: 'Beige Midi Dress',
+          description: 'Beige midi dress with flowy sleeves, silver chains, combat boots',
+          pieces: ['beige midi dress', 'silver chain necklaces', 'combat boots'],
+          occasion: 'brunch, casual event, gallery',
+          brands: ['Free People', 'The Row', 'Acne Studios']
+        },
+        {
+          id: 'edgy_beige_boh_003',
+          name: 'Tan Layered Look',
+          description: 'Tan kimono cardigan, beige slip dress, silver chains, combat boots',
+          pieces: ['tan kimono cardigan', 'beige slip dress', 'silver chain necklaces', 'combat boots'],
+          occasion: 'evening casual, creative gathering',
           brands: ['Free People', 'The Row']
         }
       ],
@@ -2407,6 +3792,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['tan blazer', 'beige tee', 'cargo pants', 'combat boots'],
           occasion: 'edgy classic, urban',
           brands: ['The Row', 'Acne Studios']
+        },
+        {
+          id: 'edgy_beige_cla_002',
+          name: 'Tan Suit Edgy',
+          description: 'Tan tailored suit, beige tee, combat boots, silver chains',
+          pieces: ['tan tailored suit', 'beige tee', 'combat boots', 'silver chains'],
+          occasion: 'professional, edgy elegance',
+          brands: ['The Row', 'Acne Studios', 'Saint Laurent']
+        },
+        {
+          id: 'edgy_beige_cla_003',
+          name: 'Beige Blazer Classic',
+          description: 'Beige blazer, tan blouse, cargo pants, combat boots',
+          pieces: ['beige blazer', 'tan silk blouse', 'cargo pants', 'combat boots'],
+          occasion: 'classic elegance, urban setting',
+          brands: ['The Row', 'Acne Studios']
         }
       ],
       trendy: [
@@ -2417,6 +3818,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['tan oversized utility jacket', 'beige bodysuit', 'cargo pants', 'platform boots'],
           occasion: 'trendy edgy, modern workwear',
           brands: ['The Row', 'Acne Studios']
+        },
+        {
+          id: 'edgy_beige_tre_002',
+          name: 'Cropped Statement',
+          description: 'Cropped tan jacket, high-waisted beige trousers, combat boots, silver chains',
+          pieces: ['cropped tan jacket', 'high-waisted beige trousers', 'combat boots', 'silver chains'],
+          occasion: 'trendy casual, modern setting',
+          brands: ['The Row', 'Acne Studios']
+        },
+        {
+          id: 'edgy_beige_tre_003',
+          name: 'Oversized Chic',
+          description: 'Oversized beige coat, tan tee, cargo pants, combat boots',
+          pieces: ['oversized beige coat', 'tan ribbed tank', 'cargo pants', 'combat boots'],
+          occasion: 'trendy day out, modern casual',
+          brands: ['The Row', 'Acne Studios', 'Saint Laurent']
         }
       ],
       athletic: [
@@ -2427,6 +3844,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['tan athletic set', 'utility jacket', 'combat boots'],
           occasion: 'edgy athleisure, urban active',
           brands: ['Alo', 'Lululemon', 'The Row']
+        },
+        {
+          id: 'edgy_beige_ath_002',
+          name: 'Urban Workwear Active',
+          description: 'Tan leggings, beige ribbed top, oversized utility jacket, combat boots',
+          pieces: ['tan high-waisted leggings', 'beige ribbed sports bra', 'oversized utility jacket', 'combat boots', 'silver chains'],
+          occasion: 'post-workout edgy, urban active',
+          brands: ['Alo', 'The Row', 'Acne Studios']
+        },
+        {
+          id: 'edgy_beige_ath_003',
+          name: 'Tan Athletic Dress',
+          description: 'Tan athletic dress, utility bomber jacket, combat boots, black gym bag',
+          pieces: ['tan athletic dress', 'utility bomber jacket', 'combat boots', 'black gym bag'],
+          occasion: 'athleisure lifestyle, edgy active',
+          brands: ['Alo', 'The Row', 'Lululemon']
         }
       ]
     },
@@ -2530,6 +3963,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['black power suit', 'minimal gold jewelry', 'black leather briefcase', 'black heels'],
           occasion: 'executive presentation, CEO energy',
           brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'prof_dark_biz_003',
+          name: 'Charcoal Power Dressing',
+          description: 'Charcoal wool blazer, black trousers, white blouse, gold jewelry',
+          pieces: ['charcoal wool blazer', 'black tailored trousers', 'white blouse', 'gold jewelry', 'black heels'],
+          occasion: 'executive setting, corporate luxury',
+          brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'prof_dark_biz_004',
+          name: 'Black Double-Breasted',
+          description: 'Black double-breasted blazer, matching trousers, white button-down, black boots',
+          pieces: ['black double-breasted blazer', 'matching black trousers', 'white button-down', 'black boots', 'gold jewelry'],
+          occasion: 'boardroom, high-stakes meeting',
+          brands: ['The Row', 'Khaite', 'Toteme']
         }
       ],
       casual: [
@@ -2539,6 +3988,30 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           description: 'Black blazer, black tee, black trousers, black sneakers',
           pieces: ['black blazer', 'black tee', 'black trousers', 'black designer sneakers'],
           occasion: 'professional casual, corporate',
+          brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'prof_dark_cas_002',
+          name: 'Charcoal Relaxed',
+          description: 'Charcoal cardigan, black tee, black trousers, black sneakers',
+          pieces: ['charcoal cardigan', 'black ribbed tank', 'black trousers', 'black designer sneakers', 'black tote'],
+          occasion: 'evening casual, dinner, drinks',
+          brands: ['The Row', 'Khaite', 'Toteme']
+        },
+        {
+          id: 'prof_dark_cas_003',
+          name: 'Black Oversized',
+          description: 'Black oversized blazer, white tee, black jeans, black boots',
+          pieces: ['black oversized blazer', 'white ribbed tank', 'black straight-leg jeans', 'black ankle boots', 'black bag'],
+          occasion: 'casual day out, corporate setting',
+          brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'prof_dark_cas_004',
+          name: 'Charcoal Corporate',
+          description: 'Charcoal sweater, black trousers, black boots, professional bag',
+          pieces: ['charcoal cashmere sweater', 'black wide-leg trousers', 'black leather boots', 'professional black bag'],
+          occasion: 'casual day out, corporate setting',
           brands: ['The Row', 'Toteme']
         }
       ],
@@ -2550,6 +4023,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['black flowy maxi dress', 'minimal gold jewelry', 'black sandals'],
           occasion: 'professional bohemian, corporate',
           brands: ['The Row', 'Free People']
+        },
+        {
+          id: 'prof_dark_boh_002',
+          name: 'Charcoal Midi Dress',
+          description: 'Charcoal midi dress with flowy sleeves, layered gold necklaces, black sandals',
+          pieces: ['charcoal midi dress', 'layered gold necklaces', 'gold cuffs', 'black sandals'],
+          occasion: 'brunch, casual event, gallery',
+          brands: ['Free People', 'Anthropologie', 'The Row']
+        },
+        {
+          id: 'prof_dark_boh_003',
+          name: 'Black Layered Look',
+          description: 'Black kimono cardigan, charcoal slip dress, gold jewelry, black sandals',
+          pieces: ['black kimono cardigan', 'charcoal slip dress', 'layered gold jewelry', 'black sandals'],
+          occasion: 'evening casual, creative gathering',
+          brands: ['Free People', 'Anthropologie']
         }
       ],
       classic: [
@@ -2560,6 +4049,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['black blazer', 'white blouse', 'black trousers', 'black pumps'],
           occasion: 'timeless professional, corporate',
           brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'prof_dark_cla_002',
+          name: 'Charcoal Coat Classic',
+          description: 'Charcoal wool coat, black sweater, charcoal trousers, black boots',
+          pieces: ['charcoal wool coat', 'black cashmere sweater', 'charcoal trousers', 'black leather boots'],
+          occasion: 'classic elegance, refined setting',
+          brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'prof_dark_cla_003',
+          name: 'Black Suit Classic',
+          description: 'Black tailored suit, white blouse, black pumps, gold jewelry',
+          pieces: ['black tailored suit', 'white silk blouse', 'black pumps', 'gold jewelry'],
+          occasion: 'professional, timeless elegance',
+          brands: ['The Row', 'Toteme', 'Khaite']
         }
       ],
       trendy: [
@@ -2570,6 +4075,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['black oversized blazer', 'black bodysuit', 'black wide-leg trousers', 'black platform boots'],
           occasion: 'trendy professional, modern corporate',
           brands: ['The Row', 'Khaite']
+        },
+        {
+          id: 'prof_dark_tre_002',
+          name: 'Cropped Statement',
+          description: 'Cropped black jacket, high-waisted black trousers, black sneakers, minimal gold jewelry',
+          pieces: ['cropped black jacket', 'high-waisted black trousers', 'black designer sneakers', 'minimal gold jewelry'],
+          occasion: 'trendy casual, modern setting',
+          brands: ['The Row', 'Khaite']
+        },
+        {
+          id: 'prof_dark_tre_003',
+          name: 'Oversized Chic',
+          description: 'Oversized charcoal coat, black tee, black jeans, black boots',
+          pieces: ['oversized charcoal coat', 'black ribbed tank', 'black straight-leg jeans', 'black ankle boots'],
+          occasion: 'trendy day out, modern casual',
+          brands: ['The Row', 'Toteme', 'Celine']
         }
       ],
       athletic: [
@@ -2580,6 +4101,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['black athletic set', 'black blazer', 'black designer sneakers'],
           occasion: 'professional athleisure, corporate active',
           brands: ['Alo', 'Lululemon', 'The Row']
+        },
+        {
+          id: 'prof_dark_ath_002',
+          name: 'Dark Active Power',
+          description: 'Charcoal leggings, black ribbed top, oversized black hoodie, gold watch',
+          pieces: ['charcoal high-waisted leggings', 'black ribbed sports bra', 'oversized black cashmere hoodie', 'black athletic sneakers', 'gold minimalist watch'],
+          occasion: 'post-workout luxury, active lifestyle',
+          brands: ['Alo', 'The Row', 'Outdoor Voices']
+        },
+        {
+          id: 'prof_dark_ath_003',
+          name: 'Black Athletic Dress',
+          description: 'Black athletic dress, charcoal bomber jacket, black sneakers, black leather gym bag',
+          pieces: ['black athletic dress', 'charcoal bomber jacket', 'black designer sneakers', 'black leather gym bag'],
+          occasion: 'athleisure lifestyle, luxury active',
+          brands: ['Alo', 'The Row', 'Lululemon']
         }
       ]
     },
@@ -2683,6 +4220,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['white suit', 'minimal gold jewelry', 'cream leather bag', 'nude heels'],
           occasion: 'executive presentation, refined elegance',
           brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'prof_light_biz_003',
+          name: 'Cream Power Dressing',
+          description: 'Cream wool blazer, white trousers, white blouse, gold jewelry',
+          pieces: ['cream wool blazer', 'white tailored trousers', 'white blouse', 'gold jewelry', 'nude heels'],
+          occasion: 'executive setting, bright corporate',
+          brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'prof_light_biz_004',
+          name: 'White Double-Breasted',
+          description: 'White double-breasted blazer, matching trousers, cream button-down, beige boots',
+          pieces: ['white double-breasted blazer', 'matching white trousers', 'cream button-down', 'beige boots', 'gold jewelry'],
+          occasion: 'boardroom, high-stakes meeting',
+          brands: ['The Row', 'Khaite', 'Toteme']
         }
       ],
       casual: [
@@ -2692,6 +4245,30 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           description: 'White blazer, cream tee, white trousers, white sneakers',
           pieces: ['white blazer', 'cream tee', 'white trousers', 'white designer sneakers'],
           occasion: 'professional casual, bright corporate',
+          brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'prof_light_cas_002',
+          name: 'Cream Relaxed',
+          description: 'Cream cardigan, white tee, cream trousers, white sneakers',
+          pieces: ['cream cardigan', 'white ribbed tank', 'cream trousers', 'white designer sneakers', 'cream tote'],
+          occasion: 'evening casual, dinner, drinks',
+          brands: ['The Row', 'Khaite', 'Toteme']
+        },
+        {
+          id: 'prof_light_cas_003',
+          name: 'White Oversized',
+          description: 'White oversized blazer, cream tee, white jeans, beige sandals',
+          pieces: ['white oversized blazer', 'cream ribbed tank', 'white straight-leg jeans', 'beige sandals', 'white bag'],
+          occasion: 'casual day out, bright corporate',
+          brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'prof_light_cas_004',
+          name: 'Cream Corporate',
+          description: 'Cream sweater, white trousers, beige sandals, professional bag',
+          pieces: ['cream cashmere sweater', 'white wide-leg trousers', 'beige sandals', 'professional cream bag'],
+          occasion: 'casual day out, bright corporate',
           brands: ['The Row', 'Toteme']
         }
       ],
@@ -2703,6 +4280,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['white flowy maxi dress', 'minimal gold jewelry', 'white sandals'],
           occasion: 'professional bohemian, bright corporate',
           brands: ['The Row', 'Free People']
+        },
+        {
+          id: 'prof_light_boh_002',
+          name: 'Cream Midi Dress',
+          description: 'Cream midi dress with flowy sleeves, layered gold necklaces, white sandals',
+          pieces: ['cream midi dress', 'layered gold necklaces', 'gold cuffs', 'white sandals'],
+          occasion: 'brunch, casual event, gallery',
+          brands: ['Free People', 'Anthropologie', 'The Row']
+        },
+        {
+          id: 'prof_light_boh_003',
+          name: 'Ivory Layered Look',
+          description: 'Ivory kimono cardigan, white slip dress, gold jewelry, beige sandals',
+          pieces: ['ivory kimono cardigan', 'white slip dress', 'layered gold jewelry', 'beige sandals'],
+          occasion: 'evening casual, creative gathering',
+          brands: ['Free People', 'Anthropologie']
         }
       ],
       classic: [
@@ -2713,6 +4306,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['white blazer', 'white blouse', 'cream trousers', 'nude pumps'],
           occasion: 'timeless professional, contemporary polish',
           brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'prof_light_cla_002',
+          name: 'Cream Coat Classic',
+          description: 'Cream wool coat, white sweater, beige trousers, tan boots',
+          pieces: ['cream wool coat', 'white cashmere sweater', 'beige trousers', 'tan leather boots'],
+          occasion: 'classic elegance, refined setting',
+          brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'prof_light_cla_003',
+          name: 'Sophisticated Suit',
+          description: 'Ivory suit, cream blouse, nude heels, gold jewelry',
+          pieces: ['ivory tailored suit', 'cream silk blouse', 'nude heels', 'gold jewelry'],
+          occasion: 'professional, timeless elegance',
+          brands: ['The Row', 'Toteme', 'Khaite']
         }
       ],
       trendy: [
@@ -2723,6 +4332,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['white oversized blazer', 'cream bodysuit', 'white wide-leg trousers', 'white platform boots'],
           occasion: 'trendy professional, modern corporate',
           brands: ['The Row', 'Khaite']
+        },
+        {
+          id: 'prof_light_tre_002',
+          name: 'Cropped Statement',
+          description: 'Cropped white jacket, high-waisted cream trousers, white sneakers, minimal gold jewelry',
+          pieces: ['cropped white jacket', 'high-waisted cream trousers', 'white designer sneakers', 'minimal gold jewelry'],
+          occasion: 'trendy casual, modern setting',
+          brands: ['The Row', 'Khaite']
+        },
+        {
+          id: 'prof_light_tre_003',
+          name: 'Oversized Chic',
+          description: 'Oversized cream coat, white tee, white jeans, nude boots',
+          pieces: ['oversized cream coat', 'white ribbed tank', 'white straight-leg jeans', 'nude ankle boots'],
+          occasion: 'trendy day out, modern casual',
+          brands: ['The Row', 'Toteme', 'Celine']
         }
       ],
       athletic: [
@@ -2733,6 +4358,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['white athletic set', 'white blazer', 'white designer sneakers'],
           occasion: 'professional athleisure, bright corporate',
           brands: ['Alo', 'Lululemon', 'The Row']
+        },
+        {
+          id: 'prof_light_ath_002',
+          name: 'Bright Active Luxe',
+          description: 'Cream leggings, white ribbed top, oversized white hoodie, gold watch',
+          pieces: ['cream high-waisted leggings', 'white ribbed sports bra', 'oversized white cashmere hoodie', 'nude athletic sneakers', 'gold minimalist watch'],
+          occasion: 'post-workout luxury, active lifestyle',
+          brands: ['Alo', 'The Row', 'Outdoor Voices']
+        },
+        {
+          id: 'prof_light_ath_003',
+          name: 'White Athletic Dress',
+          description: 'White athletic dress, cream bomber jacket, white sneakers, tan leather gym bag',
+          pieces: ['white athletic dress', 'cream bomber jacket', 'white designer sneakers', 'tan leather gym bag'],
+          occasion: 'athleisure lifestyle, luxury active',
+          brands: ['Alo', 'The Row', 'Lululemon']
         }
       ]
     },
@@ -2836,6 +4477,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['beige suit', 'gold jewelry', 'tan leather bag', 'nude heels'],
           occasion: 'professional working, established elegance',
           brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'prof_beige_biz_003',
+          name: 'Camel Power Dressing',
+          description: 'Camel wool blazer, beige trousers, cream blouse, gold jewelry',
+          pieces: ['camel wool blazer', 'beige tailored trousers', 'cream blouse', 'gold jewelry', 'tan heels'],
+          occasion: 'executive setting, classic elegance',
+          brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'prof_beige_biz_004',
+          name: 'Beige Double-Breasted',
+          description: 'Beige double-breasted blazer, matching trousers, cream button-down, tan boots',
+          pieces: ['beige double-breasted blazer', 'matching beige trousers', 'cream button-down', 'tan boots', 'gold jewelry'],
+          occasion: 'boardroom, high-stakes meeting',
+          brands: ['The Row', 'Khaite', 'Toteme']
         }
       ],
       casual: [
@@ -2845,6 +4502,30 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           description: 'Camel blazer, cream blouse, beige trousers, nude heels',
           pieces: ['camel blazer', 'cream blouse', 'beige trousers', 'nude heels'],
           occasion: 'professional casual, classic elegance',
+          brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'prof_beige_cas_002',
+          name: 'Beige Relaxed',
+          description: 'Beige cardigan, camel tee, beige trousers, tan sneakers',
+          pieces: ['beige cardigan', 'camel ribbed tank', 'beige trousers', 'tan designer sneakers', 'camel tote'],
+          occasion: 'evening casual, dinner, drinks',
+          brands: ['The Row', 'Khaite', 'Toteme']
+        },
+        {
+          id: 'prof_beige_cas_003',
+          name: 'Camel Oversized',
+          description: 'Camel oversized blazer, beige tee, tan jeans, tan sandals',
+          pieces: ['camel oversized blazer', 'beige ribbed tank', 'tan straight-leg jeans', 'tan sandals', 'beige bag'],
+          occasion: 'casual day out, classic corporate',
+          brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'prof_beige_cas_004',
+          name: 'Beige Classic',
+          description: 'Beige sweater, camel trousers, tan boots, professional bag',
+          pieces: ['beige cashmere sweater', 'camel wide-leg trousers', 'tan leather boots', 'professional beige bag'],
+          occasion: 'casual day out, classic corporate',
           brands: ['The Row', 'Toteme']
         }
       ],
@@ -2856,6 +4537,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['camel flowy maxi dress', 'gold jewelry', 'tan sandals'],
           occasion: 'professional bohemian, classic',
           brands: ['The Row', 'Free People']
+        },
+        {
+          id: 'prof_beige_boh_002',
+          name: 'Beige Midi Dress',
+          description: 'Beige midi dress with flowy sleeves, layered gold necklaces, tan sandals',
+          pieces: ['beige midi dress', 'layered gold necklaces', 'gold cuffs', 'tan sandals'],
+          occasion: 'brunch, casual event, gallery',
+          brands: ['Free People', 'Anthropologie', 'The Row']
+        },
+        {
+          id: 'prof_beige_boh_003',
+          name: 'Camel Layered Look',
+          description: 'Camel kimono cardigan, beige slip dress, gold jewelry, tan sandals',
+          pieces: ['camel kimono cardigan', 'beige slip dress', 'layered gold jewelry', 'tan sandals'],
+          occasion: 'evening casual, creative gathering',
+          brands: ['Free People', 'Anthropologie']
         }
       ],
       classic: [
@@ -2865,6 +4562,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           description: 'Camel coat, cream sweater, beige trousers, tan boots',
           pieces: ['camel coat', 'cream sweater', 'beige trousers', 'tan boots'],
           occasion: 'timeless professional, established elegance',
+          brands: ['The Row', 'Toteme']
+        },
+        {
+          id: 'prof_beige_cla_002',
+          name: 'Beige Suit Classic',
+          description: 'Beige tailored suit, cream blouse, tan heels, gold jewelry',
+          pieces: ['beige tailored suit', 'cream silk blouse', 'tan heels', 'gold jewelry'],
+          occasion: 'professional, timeless elegance',
+          brands: ['The Row', 'Toteme', 'Khaite']
+        },
+        {
+          id: 'prof_beige_cla_003',
+          name: 'Camel Blazer Classic',
+          description: 'Camel blazer, beige blouse, cream trousers, nude pumps',
+          pieces: ['camel blazer', 'beige silk blouse', 'cream trousers', 'nude pumps'],
+          occasion: 'classic elegance, refined setting',
           brands: ['The Row', 'Toteme']
         }
       ],
@@ -2876,6 +4589,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['camel oversized blazer', 'beige bodysuit', 'tan wide-leg trousers', 'camel platform boots'],
           occasion: 'trendy professional, modern classic',
           brands: ['The Row', 'Khaite']
+        },
+        {
+          id: 'prof_beige_tre_002',
+          name: 'Cropped Statement',
+          description: 'Cropped camel jacket, high-waisted beige trousers, tan sneakers, minimal gold jewelry',
+          pieces: ['cropped camel jacket', 'high-waisted beige trousers', 'tan designer sneakers', 'minimal gold jewelry'],
+          occasion: 'trendy casual, modern setting',
+          brands: ['The Row', 'Khaite']
+        },
+        {
+          id: 'prof_beige_tre_003',
+          name: 'Oversized Chic',
+          description: 'Oversized tan coat, beige tee, camel jeans, tan boots',
+          pieces: ['oversized tan coat', 'beige ribbed tank', 'camel straight-leg jeans', 'tan ankle boots'],
+          occasion: 'trendy day out, modern casual',
+          brands: ['The Row', 'Toteme', 'Celine']
         }
       ],
       athletic: [
@@ -2886,6 +4615,22 @@ export const VIBE_LIBRARIES: Record<VibeKey, VibeLibrary> = {
           pieces: ['camel athletic set', 'beige blazer', 'tan designer sneakers'],
           occasion: 'professional athleisure, classic active',
           brands: ['Alo', 'Lululemon', 'The Row']
+        },
+        {
+          id: 'prof_beige_ath_002',
+          name: 'Camel Active Luxe',
+          description: 'Camel leggings, beige ribbed top, oversized tan hoodie, gold watch',
+          pieces: ['camel high-waisted leggings', 'beige ribbed sports bra', 'oversized tan cashmere hoodie', 'nude athletic sneakers', 'gold minimalist watch'],
+          occasion: 'post-workout luxury, active lifestyle',
+          brands: ['Alo', 'The Row', 'Outdoor Voices']
+        },
+        {
+          id: 'prof_beige_ath_003',
+          name: 'Sand Athletic Dress',
+          description: 'Sand athletic dress, camel bomber jacket, beige sneakers, tan leather gym bag',
+          pieces: ['sand athletic dress', 'camel bomber jacket', 'beige designer sneakers', 'tan leather gym bag'],
+          occasion: 'athleisure lifestyle, luxury active',
+          brands: ['Alo', 'The Row', 'Lululemon']
         }
       ]
     },

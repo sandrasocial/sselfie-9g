@@ -104,7 +104,7 @@ const UNIFIED_STEPS = [
   {
     id: "welcome",
     title: "Welcome",
-    subtitle: "Let's get started",
+    subtitle: "Let\u0027s get started",
   },
   {
     id: "business",
@@ -120,14 +120,14 @@ const UNIFIED_STEPS = [
   },
   {
     id: "story",
-    title: "What's your story?",
+    title: "What\u0027s your story?",
     subtitle: "Step 3 of 8",
     field: "transformationStory",
     isTextarea: true,
   },
   {
     id: "visual",
-    title: "What's your visual style?",
+    title: "What\u0027s your visual style?",
     subtitle: "Step 4 of 8",
     isVisualSelector: true,
   },
@@ -505,10 +505,10 @@ export default function UnifiedOnboardingWizard({
                 {currentStep === 0 && (
                   <div className="space-y-6">
                     <p className="text-base sm:text-lg font-light leading-relaxed text-stone-700">
-                      Hi {userName && !userName.includes('@') ? userName : "there"}! 👋 Let's create content that actually looks and sounds like you. This will only take a few minutes.
+                      Hi {userName && !userName.includes('@') ? userName : "there"}! 👋 Let\u0027s create content that actually looks and sounds like you. This will only take a few minutes.
                     </p>
                     <p className="text-sm font-light text-stone-600">
-                      We'll ask you a few questions about your brand, style, and goals. Your answers help us generate personalized content just for you.
+                      We\u0027ll ask you a few questions about your brand, style, and goals. Your answers help us generate personalized content just for you.
                     </p>
                   </div>
                 )}
@@ -529,7 +529,7 @@ export default function UnifiedOnboardingWizard({
                       />
                       {/* Debug: Show current formData value */}
                       {process.env.NODE_ENV === 'development' && (
-                        <p className="text-xs text-stone-400 mt-1">Debug: formData.businessType = "{formData.businessType}"</p>
+                        <p className="text-xs text-stone-400 mt-1">Debug: formData.businessType = &quot;{formData.businessType}&quot;</p>
                       )}
                     </div>
                   </div>
@@ -579,7 +579,7 @@ export default function UnifiedOnboardingWizard({
                   <div className="space-y-6">
                     <div>
                       <label className="block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-stone-700 mb-2 sm:mb-3">
-                        What's your story?
+                        What\u0027s your story?
                       </label>
                       <Textarea
                         value={formData.transformationStory}
@@ -595,7 +595,7 @@ export default function UnifiedOnboardingWizard({
                 {currentStep === 4 && (
                   <div className="space-y-6">
                     <p className="text-sm font-light text-stone-600 mb-6">
-                      Pick a vibe that feels like you. Don't worry, you can always switch things up later!
+                      Pick a vibe that feels like you. Don\u0027t worry, you can always switch things up later!
                     </p>
 
                     {/* Visual Aesthetic Selection */}
@@ -829,12 +829,12 @@ export default function UnifiedOnboardingWizard({
                           <div className="flex-1">
                             <p className="text-xs font-semibold text-stone-950 mb-1">Maya</p>
                             <p className="text-sm text-stone-600 leading-relaxed">
-                              Now let's figure out what you'll actually post about! Content pillars are the main themes you'll create
+                            Now let\u0027s figure out what you\u0027ll actually post about! Content pillars are the main themes you\u0027ll create
                               content around. Think of them as your content categories - they keep your feed organized and make it easy
                               to come up with post ideas.
                             </p>
                             <p className="text-sm text-stone-600 leading-relaxed mt-2">
-                              Based on everything you've told me about your brand, I can suggest pillars that will work perfectly for
+                            Based on everything you\u0027ve told me about your brand, I can suggest pillars that will work perfectly for
                               you. Ready?
                             </p>
                           </div>

@@ -301,7 +301,7 @@ export default function InteractivePipelineShowcase() {
                     </div>
                     <div className="bg-stone-100 rounded-2xl rounded-tl-none px-4 py-3 max-w-[80%]">
                       <p className="text-sm font-light text-stone-800">
-                        Hi! I'm Maya. What kind of photos do you need for your brand today?
+                        Hi! I&apos;m Maya. What kind of photos do you need for your brand today?
                       </p>
                     </div>
                   </motion.div>
@@ -330,7 +330,7 @@ export default function InteractivePipelineShowcase() {
                     </div>
                     <div className="bg-stone-100 rounded-2xl rounded-tl-none px-4 py-3 max-w-[80%]">
                       <p className="text-sm font-light text-stone-800">
-                        I love that! Let's create something beautiful that shows who you really are. I'll design some
+                        I love that! Let&apos;s create something beautiful that shows who you really are. I&apos;ll design some
                         photo concepts that capture your authentic style. ✨
                       </p>
                     </div>
@@ -346,7 +346,7 @@ export default function InteractivePipelineShowcase() {
                       <p className="text-xs font-light tracking-wider uppercase text-stone-500 mb-2">CONCEPT CARD</p>
                       <h4 className="text-sm font-medium mb-2">The Confident Minimalist</h4>
                       <p className="text-xs font-light text-stone-600 mb-3">
-                        Soft natural light, clean backdrop, elegant neutral tones. You'll look confident and authentic.
+                        Soft natural light, clean backdrop, elegant neutral tones. You&apos;ll look confident and authentic.
                       </p>
                       <button className="w-full bg-stone-950 text-stone-50 px-4 py-2 rounded-lg text-xs uppercase tracking-wider hover:bg-stone-800 transition-colors">
                         GENERATE PHOTO
@@ -373,7 +373,7 @@ export default function InteractivePipelineShowcase() {
                 Chat with Maya
               </h3>
               <p className="text-sm sm:text-base font-light leading-relaxed text-stone-700">
-                Tell Maya what you need. She'll understand your vision and create personalized photo concepts that
+                Tell Maya what you need. She&apos;ll understand your vision and create personalized photo concepts that
                 capture your authentic style and build your personal brand.
               </p>
             </motion.div>

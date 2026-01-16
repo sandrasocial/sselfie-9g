@@ -276,7 +276,7 @@ export function HealthCheckDashboard() {
         {/* No Data State */}
         {!healthData && !loading && (
           <div className="bg-white border border-stone-200 p-8 rounded-lg text-center">
-            <p className="text-stone-600 mb-4">No health check data available</p>
+            <p className="text-stone-600 mb-4">No health check data available yet</p>
             <Button onClick={runHealthCheck} disabled={running} className="bg-stone-950 text-white">
               <RefreshCw className={`w-4 h-4 mr-2 ${running ? "animate-spin" : ""}`} />
               Run Health Check

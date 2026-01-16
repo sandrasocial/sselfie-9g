@@ -9,6 +9,7 @@ import { checkCredits, deductCredits } from "@/lib/credits"
 const sql = getDbClient()
 
 export async function POST(request: NextRequest) {
+  if (process.env.ENABLE_UNUSED_ENDPOINTS !== "true") return NextResponse.json({ error: "Endpoint disabled" }, { status: 410 })
   const rateLimitResult = await rateLimit(request, {
     maxRequests: 30,
     windowMs: 60000, // 1 minute
@@ -79,7 +80,6 @@ export async function POST(request: NextRequest) {
 
     const replicate = getReplicateClient()
 
-    // Construct the full prompt with trigger word
     const fullPrompt = `${model.trigger_word} ${prompt}`
 
     console.log("[v0] Full prompt:", fullPrompt)

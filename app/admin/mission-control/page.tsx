@@ -154,7 +154,7 @@ export default function MissionControlPage() {
                 MISSION CONTROL
               </h1>
               <p className="text-xs sm:text-sm text-stone-500 tracking-[0.1em] uppercase">
-                Your AI team's daily intelligence report
+                Your AI team&apos;s daily intelligence report
               </p>
             </div>
             <Button onClick={runDailyChecks} size="lg" disabled={loading} className="w-full sm:w-auto min-h-[44px]">

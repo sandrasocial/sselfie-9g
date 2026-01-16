@@ -53,7 +53,7 @@ export default function AdminLoginAsUserPage() {
 
         <h1 className="text-2xl font-bold text-stone-950 mb-2">Login as User</h1>
         <p className="text-stone-600 mb-6 text-sm">
-          Enter the user's email and admin password to access their account.
+          Enter the user&apos;s email and admin password to access their account.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">

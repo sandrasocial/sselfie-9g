@@ -154,13 +154,11 @@ function detectCategoryFromRequest(
   
   if (!hasMeaningfulText) {
     // No meaningful text - return special marker to allow fallback to upload module category
-    console.log('[v0] [CATEGORY-DETECTION] No meaningful text found, returning empty string for fallback')
     return '' // Return empty string instead of null (callers can check for empty)
   }
   
     // We have text but no patterns matched - return null to allow dynamic generation
     // This is likely an aesthetic description (e.g., "pinterest influencer aesthetic") not a category
-    console.log('[v0] [CATEGORY-DETECTION] No category pattern matched - allowing dynamic generation. Combined text:', combined.substring(0, 100))
     return null // Return null instead of defaulting - allows Maya to use full fashion knowledge
 }
 
@@ -762,19 +760,16 @@ export async function POST(req: NextRequest) {
       if (hasSpecificDetails) {
         detectedGuidePrompt = userRequest.trim()
         hasNewUserRequest = true
-        console.log("[v0] ✅ Auto-detected detailed prompt as guide prompt (length:", detectedGuidePrompt?.length || 0, "chars)")
       } else if (userRequestLength > 20) {
         // User provided a substantial request (even if not detailed enough for guide prompt)
         // This indicates they want something NEW, not to continue with old guide prompt
         hasNewUserRequest = true
-        console.log("[v0] ✅ User provided new request (length:", userRequestLength, "chars) - will NOT use old guide prompt from conversation")
       }
     }
     
     // Second, use explicitly provided guidePrompt if no userRequest guide prompt was detected
     if (!detectedGuidePrompt && guidePrompt) {
       detectedGuidePrompt = guidePrompt
-      console.log("[v0] ✅ Using explicitly provided guide prompt (length:", guidePrompt.length, "chars)")
     }
     
     // 🔴 CRITICAL: Only extract guide prompt from conversationContext if:
@@ -785,7 +780,6 @@ export async function POST(req: NextRequest) {
       const guidePromptMatch = conversationContext.match(/\[GUIDE_PROMPT_TEXT:\s*([^\]]+)\]/i)
       if (guidePromptMatch && guidePromptMatch[1]) {
         detectedGuidePrompt = guidePromptMatch[1].trim()
-        console.log("[v0] ✅ Extracted guide prompt from conversation context (length:", detectedGuidePrompt?.length || 0, "chars)")
       }
     } else if (conversationContext && hasNewUserRequest && !detectedGuidePrompt) {
       // User provided new request - check if they're asking to continue/refine the old guide prompt
@@ -806,30 +800,10 @@ export async function POST(req: NextRequest) {
         // Otherwise, treat it as a NEW request and don't use old guide prompt
         if (newMentionsOutfit || newMentionsLocation) {
           detectedGuidePrompt = oldGuidePrompt
-          console.log("[v0] ✅ User request appears to be refinement of old guide prompt - using old guide prompt")
-        } else {
-          console.log("[v0] ✅ User provided NEW request that doesn't match old guide prompt - ignoring old guide prompt")
         }
       }
     }
 
-    // Log userRequest to debug context loss
-    console.log("[v0] Generating concepts:", {
-      userRequest: userRequest || '(EMPTY - THIS MAY CAUSE DEFAULTS)',
-      userRequestLength: userRequest?.length || 0,
-      aesthetic,
-      context,
-      mode,
-      count,
-      studioProMode,
-      enhancedAuthenticity,
-      hasConversationContext: !!conversationContext,
-      hasReferenceImage: !!referenceImageUrl,
-      hasGuidePrompt: !!detectedGuidePrompt,
-      guidePromptLength: detectedGuidePrompt?.length || 0,
-      referenceImageUrl: referenceImageUrl ? referenceImageUrl.substring(0, 100) + "..." : undefined,
-    })
-    
     // Warn if userRequest is empty - this causes defaults
     if (!userRequest || userRequest.trim().length === 0) {
       console.warn('[v0] ⚠️ WARNING: userRequest is empty! This will cause category detection to default. Check if Maya tool is extracting userRequest properly.')
@@ -839,8 +813,6 @@ export async function POST(req: NextRequest) {
     const host = req.headers.get("host") || ""
     const isProduction = host === "sselfie.ai" || host === "www.sselfie.ai"
     const isPreview = host.includes("vercel.app") || host.includes("v0.dev") || host.includes("vusercontent.net")
-
-    console.log("[v0] Environment:", isPreview ? "Preview" : isProduction ? "Production" : "Development")
 
     // Get user data
     let userGender = "person"
@@ -2745,28 +2717,19 @@ Same quality/luxury/styling as professional concepts, but with:
       } else if (uploadCategoryLower.includes('beauty') || uploadCategoryLower === 'beauty-self-care' || uploadCategoryLower === 'selfie-styles') {
         // Beauty categories - use AI generation system (not prompt constructor)
         detectedCategory = 'casual-lifestyle' // Fallback, but will use AI generation
-        console.log("[v0] [AI-GENERATION] ⚠️ Beauty category - using AI generation system")
       } else if (uploadCategoryLower === 'tech-work' || uploadCategoryLower === 'tech') {
         // Tech categories - use AI generation system
         detectedCategory = 'casual-lifestyle' // Fallback, but will use AI generation
-        console.log("[v0] [AI-GENERATION] ⚠️ Tech category - using AI generation system")
       } else {
         // If upload module category doesn't match known categories, use pattern matching
-        console.log("[v0] [AI-GENERATION] ⚠️ Upload module category not recognized, using pattern matching:", uploadModuleCategoryForAI)
         detectedCategory = detectCategoryFromRequest(enrichedUserRequestForDetection, aesthetic, context, conversationContext)
       }
     } else {
       // User provided a request OR no upload module category - prioritize user request
-      if (hasUserRequestForAI) {
-        console.log("[v0] [AI-GENERATION] 🔴 User provided request - prioritizing user request over upload module category")
-      } else {
-        console.log("[v0] [AI-GENERATION] No upload module category, using pattern matching")
-      }
       detectedCategory = detectCategoryFromRequest(enrichedUserRequestForDetection, aesthetic, context, conversationContext)
       
       // 🔴 FIX: If no category detected and upload module category exists, use it as fallback
       if (!detectedCategory && uploadModuleCategoryForAI) {
-        console.log("[v0] [AI-GENERATION] ⚠️ No category detected from user request, using upload module category as fallback:", uploadModuleCategoryForAI)
         const uploadCategoryLower = uploadModuleCategoryForAI.toLowerCase()
         if (uploadCategoryLower.includes('workout') || uploadCategoryLower.includes('athletic') || uploadCategoryLower.includes('fitness') || uploadCategoryLower === 'gym' || uploadCategoryLower === 'brand-content' || uploadCategoryLower === 'wellness-content') {
           detectedCategory = 'alo-workout'
@@ -2790,16 +2753,13 @@ Same quality/luxury/styling as professional concepts, but with:
         if (hasAnyText) {
           // User provided text but no category matched - this is likely an aesthetic description
           // Allow Maya to use her full fashion knowledge dynamically
-          console.log("[v0] [AI-GENERATION] No category detected but user provided text - allowing dynamic generation with Maya fashion knowledge")
           detectedCategory = null // Set to null to trigger dynamic generation path
         } else if (uploadModuleCategoryForAI) {
           // No text but upload module category exists - use it
-          console.log("[v0] [AI-GENERATION] No text but upload module category exists - using upload category")
           // This should have been handled above, but if not, we'll use AI generation with upload category context
           detectedCategory = null
         } else {
           // No text and no upload category - use AI generation with full Maya knowledge
-          console.log("[v0] [AI-GENERATION] No category, no text, no upload category - using dynamic generation")
           detectedCategory = null
         }
       }
@@ -2807,21 +2767,7 @@ Same quality/luxury/styling as professional concepts, but with:
     
     const detectedBrandValue = detectBrand(enrichedUserRequestForDetection || aesthetic || context)
 
-    console.log("[v0] Detected category:", detectedCategory, "brand:", detectedBrandValue, "from userRequest:", userRequest?.substring(0, 100) || '(empty)', "aesthetic:", aesthetic, "context:", context, "hasConversationContext:", !!conversationContext)
-    
-    // Log if category is null (will use dynamic generation)
-    if (!detectedCategory && enrichedUserRequestForDetection && enrichedUserRequestForDetection.trim().length > 0) {
-      console.log('[v0] [AI-GENERATION] Category is null - will use dynamic generation with Maya fashion knowledge. User request:', enrichedUserRequestForDetection.substring(0, 100))
-    }
-    
-    // Special logging for Christmas requests
-    if (detectedCategory === 'seasonal-christmas') {
-      console.log('[v0] ✅ Christmas category detected! userRequest:', userRequest, 'aesthetic:', aesthetic, 'context:', context, 'conversationContext:', conversationContext?.substring(0, 200))
-    }
-
     // Generate concepts using Maya's AI generation
-    console.log(`[v0] [AI-GENERATION] Generating ${count} concepts using Maya's AI generation`)
-
     // Generate all concepts using Maya's AI
     const { text } = await generateText({
       model: 'anthropic/claude-sonnet-4-20250514',
@@ -2834,15 +2780,11 @@ Same quality/luxury/styling as professional concepts, but with:
       temperature: 0.85,
     })
 
-    console.log('[v0] Generated concept text (first 300 chars):', text.substring(0, 300))
-
     // Parse JSON response
     let concepts: MayaConcept[] = []
     const jsonMatch = text.match(/\[[\s\S]*\]/)
     if (jsonMatch) {
       concepts = JSON.parse(jsonMatch[0])
-      
-      console.log(`[v0] [AI-GENERATION] ✅ Generated ${concepts.length} concepts using Maya's AI`)
     } else {
       console.error('[v0] [AI-GENERATION] ❌ Failed to parse JSON from AI response')
       // Return empty array if parsing fails
@@ -2855,14 +2797,7 @@ Same quality/luxury/styling as professional concepts, but with:
     const unsupportedCategories = ['beauty', 'tech', 'selfies', 'beauty-self-care', 'selfie-styles', 'tech-work']
     const isUnsupportedCategory = uploadModuleCategory && 
       unsupportedCategories.some(unsupported => uploadModuleCategory.toLowerCase().includes(unsupported.toLowerCase()))
-    
-    console.log("[v0] [PROMPT-CONSTRUCTOR] Upload module context:", {
-      uploadModuleCategory,
-      uploadModuleConcept,
-      isUnsupportedCategory,
-      referenceImagesKeys: referenceImages ? Object.keys(referenceImages) : "none"
-    })
-    
+
     // Verify Maya generated prompts
     if (concepts.length > 0) {
       concepts.forEach((concept, i) => {
@@ -2881,14 +2816,8 @@ Same quality/luxury/styling as professional concepts, but with:
           }
           
           if (validation.warnings.length > 0) {
-            console.log(`[v0] [VALIDATION] Warnings for concept "${concept.title}":`, validation.warnings)
           }
         }
-      })
-      
-      console.log('[v0] Using Maya\'s generated prompts directly:', {
-        conceptsWithPrompts: concepts.filter(c => c.prompt).length,
-        totalConcepts: concepts.length
       })
     }
     
@@ -3604,12 +3533,6 @@ Same quality/luxury/styling as professional concepts, but with:
         imageAnalysisText || "",
       )
 
-      console.log("[v0] Validating prompt for required anti-plastic elements...")
-      console.log("[v0] Style context:", styleContext.substring(0, 100))
-      console.log("[v0] Professional/Studio request detected:", wantsProfessional)
-      console.log("[v0] B&W/Monochrome detected:", wantsBAndW)
-      console.log("[v0] Image shows studio:", imageShowsStudio)
-
       // 🔴 CRITICAL: Check if skin texture should be included (from user prompt, guide prompt, or templates)
       // BUT: NEVER add in Studio Pro mode - Studio Pro uses professional photography without explicit skin texture mentions
       const shouldAddSkinTexture = shouldIncludeSkinTexture(userRequest, guidePrompt, templateExamples) && !isStudioPro
@@ -3618,7 +3541,6 @@ Same quality/luxury/styling as professional concepts, but with:
       // Format: "natural skin texture with visible pores" (not "with visible pores" at the end)
       if (!/natural\s+skin\s+texture/i.test(enhanced)) {
         if (shouldAddSkinTexture) {
-          console.log("[v0] Missing: natural skin texture - adding in proper location (found in user/guide/templates, classic mode only)")
           // Insert before camera specs or at end if no camera specs
           if (/professional\s+photography|85mm|f\/|shot\s+on/i.test(enhanced)) {
             // Insert before camera specs
@@ -3632,11 +3554,6 @@ Same quality/luxury/styling as professional concepts, but with:
           }
           addedCount += 6
         } else {
-          if (isStudioPro) {
-            console.log("[v0] Skipping: natural skin texture - Studio Pro mode (professional photography, no explicit skin texture)")
-          } else {
-            console.log("[v0] Skipping: natural skin texture - not found in user prompt, guide prompt, or templates")
-          }
         }
       }
       
@@ -3650,7 +3567,6 @@ Same quality/luxury/styling as professional concepts, but with:
       if (studioProMode) {
         // Ensure camera specs are present
         if (!/professional\s+photography|85mm|f\/\d|f\s*\d/i.test(enhanced)) {
-          console.log("[v0] Missing camera specs for Studio Pro - adding")
           if (/natural\s+skin\s+texture/i.test(enhanced)) {
             enhanced = enhanced.replace(/(natural\s+skin\s+texture)/i, "professional photography, 85mm lens, f/2.0 depth of field, $1")
           } else {
@@ -3664,7 +3580,6 @@ Same quality/luxury/styling as professional concepts, but with:
         // This safely matches "natural light" but NOT "natural skin texture" (since "skin" isn't a lighting word)
         const hasLighting = /(?:soft|window|warm|ambient|mixed|color\s+temperatures|lighting|light|natural)\s+(?:light|lighting|window\s+light|ambient|illumination|shadows)/i.test(enhanced)
         if (!hasLighting) {
-          console.log("[v0] Missing lighting description - adding")
           // Add before camera specs if they exist, otherwise at end
           if (/professional\s+photography|85mm/i.test(enhanced)) {
             enhanced = enhanced.replace(/(professional\s+photography|85mm)/i, "soft natural lighting, $1")
@@ -3685,7 +3600,6 @@ Same quality/luxury/styling as professional concepts, but with:
         const antiPlasticCount = antiPlasticMatches.length
 
         if (antiPlasticCount < 2) {
-          console.log(`[v0] Anti-plastic phrases: ${antiPlasticCount}/2 - adding more`)
           const antiPlasticPhrases = [
             "organic imperfections",
             "unretouched skin texture",
@@ -3699,8 +3613,6 @@ Same quality/luxury/styling as professional concepts, but with:
             addedCount += 2 * needed
           }
         }
-      } else {
-        console.log("[v0] Skipping anti-plastic phrases - skin texture not in user/guide/templates")
       }
 
       // Check for film grain (ALWAYS required - no exceptions)
@@ -3979,15 +3891,6 @@ Same quality/luxury/styling as professional concepts, but with:
 
     console.log("[v0] Successfully generated", concepts.length, "sophisticated concepts")
 
-
-    // 🔴 CRITICAL: Log all final prompts before returning (what gets sent to frontend)
-    console.log("[v0] ========== FINAL CONCEPT PROMPTS (RETURNED TO FRONTEND) ==========")
-    concepts.slice(0, count).forEach((concept, idx) => {
-      console.log(`[v0] Concept #${idx + 1} PROMPT:`, concept.prompt)
-      console.log(`[v0] Concept #${idx + 1} has visible pores:`, /visible\s+pores/i.test(concept.prompt))
-      console.log(`[v0] Concept #${idx + 1} has scene/location:`, /(?:tree|sofa|fireplace|room|setting|scene|location|background|interior|illuminated|presents|Christmas)/i.test(concept.prompt))
-    })
-    console.log("[v0] ========== END FINAL CONCEPT PROMPTS ==========")
 
     return NextResponse.json({
       state: "ready",

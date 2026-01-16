@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { Aperture, Edit2, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import UnifiedOnboardingWizard from "@/components/onboarding/unified-onboarding-wizard"
 import BrandProfileWizard from "./brand-profile-wizard"
 import UnifiedLoading from "./unified-loading"
 

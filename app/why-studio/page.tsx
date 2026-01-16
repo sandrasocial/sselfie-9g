@@ -258,7 +258,7 @@ export default function WhyStudioPage() {
                 fontStyle: "italic",
               }}
             >
-              "I used to hide behind my logo. Now I'm the face of my brand, and it's changed everything."
+              &quot;I used to hide behind my logo. Now I&apos;m the face of my brand, and it&apos;s changed everything.&quot;
             </blockquote>
             <p className="label fade-up" style={{ color: "rgba(255, 255, 255, 0.6)" }}>
               — Sarah, Studio Member
@@ -308,7 +308,7 @@ export default function WhyStudioPage() {
                   fontWeight: "normal",
                 }}
               >
-                You don't need another AI app. You need a visibility system.
+                You don&apos;t need another AI app. You need a visibility system.
               </h2>
               <p className="description fade-up text-sm md:text-base" style={{ color: "#d6d3d1" }}>
                 Most people struggle to stay consistent online. SSELFIE Studio makes it easy to keep showing up with confidence.
@@ -555,7 +555,7 @@ export default function WhyStudioPage() {
               Choose your visibility plan
             </h2>
             <p className="description text-center mb-8 fade-up" style={{ color: "rgba(250, 250, 249, 0.9)" }}>
-              Whether you want to try the Studio or go all in, we've made it simple.
+              Whether you want to try the Studio or go all in, we&apos;ve made it simple.
             </p>
             <div
               style={{
@@ -773,7 +773,7 @@ export default function WhyStudioPage() {
             <div className="fade-up">
               <span className="label mb-4">Founder Message</span>
               <h2 className="hero-title mb-6" style={{ fontSize: "36px", fontFamily: "'Times New Roman', serif" }}>
-                "I built this because showing up online used to feel impossible."
+                &quot;I built this because showing up online used to feel impossible.&quot;
               </h2>
               <div className="relative aspect-[3/4] max-w-[280px] mx-auto mb-6 rounded-lg overflow-hidden">
                 <img
@@ -791,12 +791,12 @@ export default function WhyStudioPage() {
                 />
               </div>
               <p className="description text-stone-300 mb-4">
-                I was tired of hiding behind my logo and filters. I wanted something that made visibility simple, not scary. That's how SSELFIE Studio was born.
+                I was tired of hiding behind my logo and filters. I wanted something that made visibility simple, not scary. That&apos;s how SSELFIE Studio was born.
               </p>
               <p className="text-xs text-stone-400 mt-6">— Sandra</p>
               <div className="mt-8">
                 <h2 className="hero-title mb-6" style={{ fontSize: "36px", fontFamily: "'Times New Roman', serif" }}>
-                  You don't need perfect photos. You just need to show up.
+                  You don&apos;t need perfect photos. You just need to show up.
                 </h2>
                 <a
                   href="#pricing"

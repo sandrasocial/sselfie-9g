@@ -255,7 +255,7 @@ export default function CronHealthPage() {
                 {healthDashboard.length === 0 && (
                   <tr>
                     <td colSpan={6} className="px-6 py-12 text-center text-sm text-stone-500">
-                      No cron jobs have run yet. Jobs will appear here after their first execution.
+                      No cron health data available yet. Jobs will appear here after their first execution.
                     </td>
                   </tr>
                 )}

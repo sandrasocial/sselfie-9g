@@ -3,7 +3,6 @@ import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId, getOrCreateNeonUser } from "@/lib/user-mapping"
 import { grantFreeUserCredits } from "@/lib/credits"
 import { neon } from "@neondatabase/serverless"
-
 const sql = neon(process.env.DATABASE_URL!)
 
 /**
@@ -15,6 +14,7 @@ const sql = neon(process.env.DATABASE_URL!)
  * Decision 1: Credit System for All Users
  */
 export async function POST(request: NextRequest) {
+  if (process.env.ENABLE_UNUSED_ENDPOINTS !== "true") return NextResponse.json({ error: "Endpoint disabled" }, { status: 410 })
   try {
     console.log("[Credits] ===== GRANT-FREE-WELCOME ENDPOINT CALLED =====")
     const body = await request.json()

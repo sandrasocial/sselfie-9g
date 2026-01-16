@@ -27,7 +27,7 @@ export default function FeedContentCalendar() {
             Your 30-Day Content Plan
           </h2>
           <p className="text-xs sm:text-sm font-light text-stone-600 leading-relaxed max-w-2xl mx-auto px-4">
-            No more "what should I post today?" moments. Here's your whole month planned out—just show up and create!
+            No more &quot;what should I post today?&quot; moments. Here&apos;s your whole month planned out—just show up and create!
           </p>
         </div>
 

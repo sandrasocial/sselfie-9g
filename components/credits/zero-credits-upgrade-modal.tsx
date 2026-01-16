@@ -86,7 +86,7 @@ export function ZeroCreditsUpgradeModal({ credits, onClose }: ZeroCreditsUpgrade
             </h2>
 
             <p className="text-center text-stone-600 font-light text-sm mb-6">
-              You've used all your credits. Upgrade to Studio Membership for monthly credits, or purchase a one-time session.
+              You&apos;ve used all your credits. Upgrade to Studio Membership for monthly credits, or purchase a one-time session.
             </p>
 
             <div className="space-y-3 mb-8">
@@ -102,7 +102,7 @@ export function ZeroCreditsUpgradeModal({ credits, onClose }: ZeroCreditsUpgrade
                 disabled={isUpgrading}
                 className="w-full bg-stone-100 text-stone-900 px-6 py-3 rounded-lg text-xs font-medium uppercase tracking-wider hover:bg-stone-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-stone-300/40"
               >
-                BUY ONE-TIME SESSION
+                BUY CREDITS
               </button>
               <button
                 onClick={handleDismiss}

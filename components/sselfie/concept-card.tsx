@@ -1996,7 +1996,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
 
                   <div className="px-6 py-4 space-y-3">
                     <p className="text-sm text-stone-700 leading-relaxed">
-                      We'll create <span className="font-semibold text-stone-950">6-9 photos</span> with the same outfit
+                      We&apos;ll create <span className="font-semibold text-stone-950">6-9 photos</span> with the same outfit
                       and vibe, perfect for a carousel post.
                     </p>
 
@@ -2021,7 +2021,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                       onClick={handleCreatePhotoshoot}
                       className="w-full bg-gradient-to-br from-stone-600 via-stone-700 to-stone-800 text-white px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] hover:from-stone-700 hover:via-stone-800 hover:to-stone-900"
                     >
-                      Let's Go
+                      Let&apos;s Go
                     </button>
                     <button
                       onClick={() => setShowPhotoshootConfirm(false)}

@@ -79,7 +79,7 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
   const [isPollingAccess, setIsPollingAccess] = useState(false)
   const [pollAttempts, setPollAttempts] = useState(0)
   const MAX_POLL_ATTEMPTS = 60 // 60 attempts × 2s = 120s timeout
-  const [pollingMessage, setPollingMessage] = useState("Processing your payment...")
+  const [pollingMessage, setPollingMessage] = useState("Processing your payment. This can take up to 2 minutes.")
   const [timeRemaining, setTimeRemaining] = useState(120)
   const [showTimeoutActions, setShowTimeoutActions] = useState(false)
 
@@ -169,11 +169,11 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
             setTimeRemaining(Math.max(0, remaining))
 
             if (newAttempts < 20) {
-              setPollingMessage("Processing your payment...")
+              setPollingMessage("Processing your payment. This can take up to 2 minutes.")
             } else if (newAttempts < 40) {
-              setPollingMessage("Payment confirmed, granting access...")
+              setPollingMessage("Payment confirmed. Granting access now...")
             } else {
-              setPollingMessage("Finalizing your access...")
+              setPollingMessage("Finalizing access. Almost there...")
             }
 
             if (newAttempts >= MAX_POLL_ATTEMPTS) {
@@ -181,7 +181,7 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
               console.log('[SUCCESS PAGE] Polling timeout after 120 seconds')
               setIsPollingAccess(false)
               setShowTimeoutActions(true)
-              setPollingMessage("Payment processing is taking longer than expected.")
+              setPollingMessage("Payment confirmed. Access is still syncing.")
             }
             
             return newAttempts
@@ -199,7 +199,7 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
           if (newAttempts >= MAX_POLL_ATTEMPTS) {
             setIsPollingAccess(false)
             setShowTimeoutActions(true)
-            setPollingMessage("Payment processing is taking longer than expected.")
+            setPollingMessage("Payment confirmed. Access is still syncing.")
           }
           
           return newAttempts
@@ -247,8 +247,7 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
             Payment Processing
           </h2>
           <p className="text-stone-600 max-w-md">
-            Your payment was successful, but access is still being processed. 
-            This usually completes within a few minutes.
+            Your payment was successful. Access is syncing and should complete within a few minutes.
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-4">
@@ -430,17 +429,17 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
             <div className="font-serif text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extralight tracking-[0.3em] sm:tracking-[0.2em] uppercase text-white mb-3 sm:mb-4">
               S S E L F I E
             </div>
-            <p className="text-sm sm:text-base md:text-lg text-white/90 font-light max-w-md">You're in</p>
+            <p className="text-sm sm:text-base md:text-lg text-white/90 font-light max-w-md">You&apos;re in</p>
           </div>
         </div>
 
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12 md:py-16">
           <div className="text-center mb-8 sm:mb-12">
             <h1 className="font-serif text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extralight tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-900 mb-3 sm:mb-4 px-2">
-              LET'S GET YOU STARTED
+              LET&apos;S GET YOU STARTED
             </h1>
             <p className="text-sm sm:text-base text-stone-600 font-light leading-relaxed max-w-xl mx-auto px-4">
-              Just a few quick details and you'll be creating your first AI photos. This takes less than a minute.
+              Just a few quick details and you&apos;ll be creating your first AI photos. This takes less than a minute.
             </p>
           </div>
 
@@ -529,7 +528,7 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
                 disabled={isSubmitting}
                 className="w-full bg-stone-950 text-stone-50 px-6 py-3 sm:py-4 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
               >
-                {isSubmitting ? "SETTING UP..." : "LET'S GO"}
+                {isSubmitting ? "SETTING UP..." : "LET&apos;S GO"}
               </button>
 
               <p className="text-[10px] sm:text-xs text-stone-500 font-light text-center leading-relaxed">
@@ -565,7 +564,7 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
             S S E L F I E
           </div>
           <p className="text-sm sm:text-base md:text-lg text-white/90 font-light max-w-md">
-            {isAuthenticated ? "Welcome back" : "You're in"}
+            {isAuthenticated ? "Welcome back" : "You&apos;re in"}
           </p>
         </div>
       </div>
@@ -575,10 +574,10 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
           <>
             <div className="text-center mb-8 sm:mb-12">
               <h1 className="font-serif text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extralight tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-900 mb-3 sm:mb-4 px-2">
-                LET'S GET YOU STARTED
+                LET&apos;S GET YOU STARTED
               </h1>
               <p className="text-sm sm:text-base text-stone-600 font-light leading-relaxed max-w-xl mx-auto px-4">
-                Just a few quick details and you'll be creating your first AI photos. This takes less than a minute.
+                Just a few quick details and you&apos;ll be creating your first AI photos. This takes less than a minute.
               </p>
             </div>
 
@@ -667,7 +666,7 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
                   disabled={isSubmitting}
                   className="w-full bg-stone-950 text-stone-50 px-6 py-3 sm:py-4 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
                 >
-                  {isSubmitting ? "SETTING UP..." : "LET'S GO"}
+                  {isSubmitting ? "SETTING UP..." : "LET&apos;S GO"}
                 </button>
 
                 <p className="text-[10px] sm:text-xs text-stone-500 font-light text-center leading-relaxed">
@@ -686,7 +685,7 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
           <>
             <div className="text-center mb-8 sm:mb-12">
               <h1 className="font-serif text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extralight tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-900 mb-3 sm:mb-4 px-2">
-                {isAuthenticated ? "YOU'RE ALL SET" : "ORDER CONFIRMED"}
+                {isAuthenticated ? "YOU&apos;RE ALL SET" : "ORDER CONFIRMED"}
               </h1>
               <p className="text-sm sm:text-base text-stone-600 font-light leading-relaxed max-w-xl mx-auto px-4">
                 {isPollingAccess
@@ -726,33 +725,6 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
                   <span className="text-xs sm:text-sm text-stone-500 font-light tracking-wider uppercase">Email</span>
                   <span className="text-sm sm:text-base text-stone-900 font-light">
                     {userInfo.email || initialEmail}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs sm:text-sm text-stone-500 font-light tracking-wider uppercase">Status</span>
-                  <span className="text-sm sm:text-base text-stone-700 font-light">Active</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="text-center">
-              <button
-                onClick={() => router.push("/maya")}
-                className="bg-stone-950 text-stone-50 px-8 sm:px-12 py-3 sm:py-4 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 min-h-[44px]"
-              >
-                Continue
-              </button>
-              <p className="text-[10px] sm:text-xs text-stone-500 font-light mt-4 sm:mt-6">
-                A confirmation email has been sent to {userInfo.email || initialEmail}
-              </p>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  )
-}
-
                   </span>
                 </div>
                 <div className="flex justify-between items-center">

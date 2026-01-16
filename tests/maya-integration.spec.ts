@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { describe, it } from 'vitest'
 import { createTestUser, cleanupTestUser } from './helpers/test-user'
 
 /**
@@ -7,6 +7,15 @@ import { createTestUser, cleanupTestUser } from './helpers/test-user'
  * Tests that paid users get Maya-generated unique prompts for each position
  * Verifies that each generated image is unique while maintaining preview aesthetic
  */
+
+const runPlaywright = process.env.PLAYWRIGHT_TEST === '1'
+
+if (!runPlaywright) {
+  describe.skip('Playwright E2E (set PLAYWRIGHT_TEST=1)', () => {
+    it('skipped in vitest', () => {})
+  })
+} else {
+  const { test, expect } = require('@playwright/test')
 
 test.describe('Maya Integration for Paid Users', () => {
   const testEmail = `maya-test-${Date.now()}@playwright.test`
@@ -111,3 +120,4 @@ test.describe('Maya Integration for Paid Users', () => {
     }
   })
 })
+}

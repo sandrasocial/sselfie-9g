@@ -19,6 +19,25 @@
     ],
     "prefer-const": "warn"
   },
+  "overrides": [
+    {
+      "files": [
+        "tests/**/*",
+        "**/*.spec.*",
+        "**/*.test.*",
+        "tests/root-tests/**/*.js",
+        "tests/root-tests/**/*.ts"
+      ],
+      "rules": {
+        "no-console": "off",
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/no-unused-vars": "off",
+        "react-hooks/exhaustive-deps": "off",
+        "react/no-unescaped-entities": "off",
+        "@next/next/no-img-element": "off"
+      }
+    }
+  ],
   "ignorePatterns": [
     "node_modules/",
     ".next/",

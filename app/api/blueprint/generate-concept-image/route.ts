@@ -2,6 +2,10 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getReplicateClient } from "@/lib/replicate-client"
 
 export async function POST(req: NextRequest) {
+  if (process.env.ENABLE_BLUEPRINT_CONCEPT_IMAGE !== "true") {
+    return NextResponse.json({ error: "Endpoint disabled" }, { status: 410 })
+  }
+
   try {
     const { prompt, aspectRatio = "1:1" } = await req.json()
 

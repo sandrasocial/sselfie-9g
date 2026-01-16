@@ -52,7 +52,7 @@ export default function FeedCaptionTemplates({ businessType }: FeedCaptionTempla
             Caption Templates
           </h2>
           <p className="text-xs sm:text-sm font-light text-stone-600 leading-relaxed max-w-2xl mx-auto px-4">
-            Struggling with what to say? We've got you. Just copy these, fill in the blanks, and you're good to go!
+            Struggling with what to say? We&apos;ve got you. Just copy these, fill in the blanks, and you&apos;re good to go!
           </p>
         </div>
 

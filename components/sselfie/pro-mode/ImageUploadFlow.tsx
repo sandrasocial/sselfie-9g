@@ -679,7 +679,7 @@ export default function ImageUploadFlow({
               letterSpacing: Typography.subheaders.letterSpacing,
             }}
           >
-            Let's gather your images to begin
+            Let&apos;s gather your images to begin
           </h2>
 
           {/* Body Text: Explaining the process */}
@@ -696,7 +696,7 @@ export default function ImageUploadFlow({
               padding: '0 clamp(16px, 4vw, 24px)',
             }}
           >
-            We'll help you organize your images into categories: selfies for your face and features, 
+            We&apos;ll help you organize your images into categories: selfies for your face and features, 
             products for brand partnerships, people for lifestyle moments, and vibes for aesthetic inspiration. 
             This library will power your creative projects in Studio Pro Mode.
           </p>

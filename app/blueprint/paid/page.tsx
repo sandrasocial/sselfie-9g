@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
@@ -25,7 +25,7 @@ interface PaidBlueprintStatus {
   accessToken?: string
 }
 
-export default function PaidBlueprintPage() {
+function PaidBlueprintPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const accessToken = searchParams.get("access")
@@ -452,5 +452,13 @@ export default function PaidBlueprintPage() {
         )}
       </div>
     </div>
+  )
+}
+
+export default function PaidBlueprintPageWrapper() {
+  return (
+    <Suspense fallback={null}>
+      <PaidBlueprintPage />
+    </Suspense>
   )
 }

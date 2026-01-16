@@ -80,7 +80,7 @@ export function BetaTestimonialBroadcast() {
             Step 1: Create Beta Customer Segment
           </CardTitle>
           <CardDescription>
-            This will tag all paying customers as "status:customer" (separate from freebie leads who have "status:lead")
+            This will tag all paying customers as &quot;status:customer&quot; (separate from freebie leads who have &quot;status:lead&quot;)
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -97,7 +97,7 @@ export function BetaTestimonialBroadcast() {
               </div>
             </div>
             <p className="text-xs text-amber-700">
-              This ensures only paying customers (not the 28 freebie subscribers with "status:lead") receive the testimonial request.
+              This ensures only paying customers (not the 28 freebie subscribers with &quot;status:lead&quot;) receive the testimonial request.
             </p>
           </div>
 
@@ -266,7 +266,7 @@ export function BetaTestimonialBroadcast() {
           <ol className="space-y-2 text-sm">
             <li className="flex gap-2">
               <span className="font-semibold">1.</span>
-              <span>Click "Create Beta Segment" to tag all paying customers with <code className="text-xs bg-gray-100 px-1 rounded">status:customer</code></span>
+              <span>Click &quot;Create Beta Segment&quot; to tag all paying customers with <code className="text-xs bg-gray-100 px-1 rounded">status:customer</code></span>
             </li>
             <li className="flex gap-2">
               <span className="font-semibold">2.</span>
@@ -278,7 +278,7 @@ export function BetaTestimonialBroadcast() {
             </li>
             <li className="flex gap-2">
               <span className="font-semibold">4.</span>
-              <span>Click "Create Broadcast Draft" to create the email campaign in Resend</span>
+              <span>Click &quot;Create Broadcast Draft&quot; to create the email campaign in Resend</span>
             </li>
             <li className="flex gap-2">
               <span className="font-semibold">5.</span>

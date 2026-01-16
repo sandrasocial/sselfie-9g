@@ -5,6 +5,7 @@ import { getUserId } from "@/lib/user-mapping"
 const sql = neon(process.env.DATABASE_URL || "")
 
 export async function GET() {
+  if (process.env.ENABLE_UNUSED_ENDPOINTS !== "true") return NextResponse.json({ error: "Endpoint disabled" }, { status: 410 })
   try {
     const userId = await getUserId()
 
@@ -14,7 +15,6 @@ export async function GET() {
 
     console.log("[v0] Fetching quota for user:", userId)
 
-    // Check user's plan and usage from user_usage table
     const usageResult = await sql`
       SELECT 
         monthly_generations_allowed,

@@ -221,11 +221,12 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
       </div>
     )
   }
-  
+  const uniquePriorities = todaysPriorities.filter(
+    (task, index, array) => array.findIndex((item) => item.title === task.title && item.description === task.description) === index,
+  )
   return (
     <div className="min-h-screen bg-stone-50">
       <AdminNav />
-      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         
         {/* Hero Section - Revenue Metrics */}
@@ -376,13 +377,13 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
         {/* Today's Focus Section */}
         <div className="mb-12 sm:mb-16">
           <h2 className="font-['Times_New_Roman'] text-2xl sm:text-3xl lg:text-4xl font-extralight tracking-[0.2em] sm:tracking-[0.3em] uppercase text-stone-950 mb-3 sm:mb-4">
-            TODAY'S FOCUS
+            TODAY&apos;S FOCUS
           </h2>
           
           {/* Today's Priorities */}
-          {todaysPriorities.length > 0 ? (
+          {uniquePriorities.length > 0 ? (
             <div className="space-y-3 sm:space-y-4 mb-8 sm:mb-12">
-              {todaysPriorities.map((task, idx) => (
+              {uniquePriorities.map((task, idx) => (
                 <div 
                   key={idx}
                   className="bg-white border border-stone-200 p-4 sm:p-6 rounded-none group hover:border-stone-400 transition-all"
