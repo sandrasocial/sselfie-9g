@@ -19,6 +19,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  if (request.nextUrl.pathname.startsWith("/api/cron/")) {
+    console.log("[v0] Skipping middleware for cron routes")
+    return NextResponse.next()
+  }
+
   if (request.nextUrl.pathname.startsWith("/api/freebie/")) {
     console.log("[v0] Skipping auth middleware for public freebie API")
     return NextResponse.next()

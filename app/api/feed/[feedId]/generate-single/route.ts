@@ -749,12 +749,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
             // 🔴 CRITICAL FIX: Bypass Maya for Pro Mode when we have injected template
             // Pro Mode requires strict Blueprint Photoshoot template formatting with brand injection
             // Maya rewrites prompts to natural language, which breaks Pro Mode consistency
-            const hasInjectedPrompt = !!(templateReferencePrompt || previewTemplate)
+            const effectivePreviewTemplate = isPreviewFeed ? previewTemplate : null
+            const hasInjectedPrompt = !!(templateReferencePrompt || effectivePreviewTemplate)
             
             if (generationMode === 'pro' && hasInjectedPrompt) {
               // Use injected/extracted prompt directly for Pro Mode
               // This preserves the specific Blueprint Photoshoot formatting and brand details
-              finalPrompt = templateReferencePrompt || previewTemplate || null
+              if (isPreviewFeed) {
+                finalPrompt = templateReferencePrompt || effectivePreviewTemplate || null
+              } else {
+                finalPrompt = templateReferencePrompt || null
+              }
               
               if (finalPrompt) {
                 console.log(`[v0] [GENERATE-SINGLE] ✅ Skipping Maya enhancement for Pro Mode - using injected template directly (${finalPrompt.split(/\s+/).length} words)`)
@@ -775,11 +780,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
                   console.log(`[v0] [GENERATE-SINGLE] ⚠️ Rotation not incremented - using preview template (rotation handled during preview generation)`)
                 }
               } else {
-                console.error(`[v0] [GENERATE-SINGLE] ❌ Injected prompt is null - this should not happen`)
+                console.error(`[v0] [GENERATE-SINGLE] ❌ Injected prompt is null - non-preview feeds must use templateReferencePrompt`)
                 return Response.json(
                   {
                     error: "Prompt generation failed",
-                    details: "Failed to generate prompt from injected template. Please try again.",
+                    details: "Missing extracted scene prompt for full feed. Please try again.",
                   },
                   { status: 500 }
                 )

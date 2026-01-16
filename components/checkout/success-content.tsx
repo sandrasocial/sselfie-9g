@@ -125,40 +125,13 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
         })
 
         if (data.isPaidBlueprint) {
-          // Webhook completed! Get access token and redirect to paid blueprint page
-          console.log('[SUCCESS PAGE] Paid access confirmed, fetching access token...')
+          // Webhook completed! Redirect to Feed Planner
+          console.log('[SUCCESS PAGE] Paid access confirmed, redirecting to feed planner...')
           setIsPollingAccess(false)
           setPollingMessage("Access granted! Redirecting...")
-          
-          // Fetch access token from subscriber by email
-          try {
-            const email = userInfo?.email || initialEmail
-            if (email) {
-              const tokenResponse = await fetch(`/api/blueprint/get-access-token?email=${encodeURIComponent(email)}`)
-              const tokenData = await tokenResponse.json()
-              
-              if (tokenData.accessToken) {
-                setTimeout(() => {
-                  router.push(`/blueprint/paid?access=${tokenData.accessToken}&purchase=success`)
-                }, 500)
-              } else {
-                // Fallback: redirect to feed planner
-                setTimeout(() => {
-                  router.push('/feed-planner?purchase=success')
-                }, 500)
-              }
-            } else {
-              setTimeout(() => {
-                router.push('/feed-planner?purchase=success')
-              }, 500)
-            }
-          } catch (err) {
-            console.error('[SUCCESS PAGE] Error fetching access token:', err)
-            // Fallback: redirect to feed planner
-            setTimeout(() => {
-              router.push('/feed-planner?purchase=success')
-            }, 500)
-          }
+          setTimeout(() => {
+            router.push('/feed-planner?purchase=success')
+          }, 500)
         } else {
           // Webhook not done yet, continue polling
           setPollAttempts((prev) => {

@@ -81,6 +81,128 @@ export async function GET(request: Request) {
         }
       }
 
+      // Create blueprint_subscribers record for free app signups (idempotent)
+      if (neonUser?.id && data.user.email) {
+        try {
+          const { neon } = await import("@neondatabase/serverless")
+          const sql = neon(process.env.DATABASE_URL!)
+
+          // Only create for non-subscribed users (free blueprint flow)
+          const hasSubscription = await sql`
+            SELECT COUNT(*) as count
+            FROM subscriptions
+            WHERE user_id = ${neonUser.id} AND status = 'active'
+          `
+
+          if (hasSubscription[0].count === 0) {
+            const existingSubscriber = await sql`
+              SELECT id
+              FROM blueprint_subscribers
+              WHERE user_id = ${neonUser.id}
+                OR LOWER(email) = LOWER(${data.user.email})
+              LIMIT 1
+            `
+
+            if (existingSubscriber.length === 0) {
+              const accessToken = crypto.randomUUID()
+              const subscriberName =
+                data.user.user_metadata?.name ||
+                neonUser.display_name ||
+                data.user.email.split("@")[0] ||
+                "User"
+
+              const hasIsPaidColumn = await sql`
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name = 'blueprint_subscribers'
+                  AND column_name = 'is_paid'
+                LIMIT 1
+              `
+
+              if (hasIsPaidColumn.length > 0) {
+                await sql`
+                  INSERT INTO blueprint_subscribers (
+                    user_id,
+                    email,
+                    name,
+                    source,
+                    access_token,
+                    is_paid,
+                    created_at,
+                    updated_at
+                  )
+                  VALUES (
+                    ${neonUser.id},
+                    ${data.user.email},
+                    ${subscriberName},
+                    'app_free_signup',
+                    ${accessToken},
+                    false,
+                    NOW(),
+                    NOW()
+                  )
+                `
+              } else {
+                await sql`
+                  INSERT INTO blueprint_subscribers (
+                    user_id,
+                    email,
+                    name,
+                    source,
+                    access_token,
+                    created_at,
+                    updated_at
+                  )
+                  VALUES (
+                    ${neonUser.id},
+                    ${data.user.email},
+                    ${subscriberName},
+                    'app_free_signup',
+                    ${accessToken},
+                    NOW(),
+                    NOW()
+                  )
+                `
+              }
+
+              try {
+                const { addOrUpdateResendContact } = await import("@/lib/resend/manage-contact")
+                const resendResult = await addOrUpdateResendContact(
+                  data.user.email,
+                  subscriberName?.split(" ")[0] || subscriberName,
+                  {
+                    source: "blueprint-subscriber",
+                    status: "lead",
+                    product: "sselfie-brand-blueprint",
+                    journey: "nurture",
+                    signup_date: new Date().toISOString().split("T")[0],
+                  },
+                )
+
+                if (resendResult.success) {
+                  console.log(`[v0] ✅ Resend contact upserted for free signup: ${data.user.email}`)
+                } else {
+                  console.log(`[v0] ⏭️ Resend sync skipped: ${resendResult.error || "Unknown error"}`)
+                }
+              } catch (resendError) {
+                console.log(
+                  `[v0] Resend integration unavailable, continuing without it:`,
+                  resendError instanceof Error ? resendError.message : "Unknown error",
+                )
+              }
+
+              console.log(`[v0] ✅ Created blueprint_subscribers record for user ${neonUser.id}`)
+            } else {
+              console.log(`[v0] ⏭️ blueprint_subscribers record already exists for user ${neonUser.id}`)
+            }
+          } else {
+            console.log(`[v0] ⏭️ User ${neonUser.id} has active subscription - skipping blueprint_subscribers insert`)
+          }
+        } catch (blueprintSubscriberError) {
+          console.error(`[v0] ⚠️ Failed to create blueprint_subscribers record (non-critical):`, blueprintSubscriberError)
+        }
+      }
+
       // Update last login timestamp for retention tracking
       if (neonUser?.id) {
         try {

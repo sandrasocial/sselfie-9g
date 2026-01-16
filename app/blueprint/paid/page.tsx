@@ -36,6 +36,12 @@ function PaidBlueprintPage() {
   const [generatingGrids, setGeneratingGrids] = useState<Set<number>>(new Set())
   const [error, setError] = useState<string | null>(null)
 
+  // Legacy route safety: always redirect paid blueprint page to feed planner
+  useEffect(() => {
+    const query = searchParams.toString()
+    router.replace(`/feed-planner${query ? `?${query}` : ""}`)
+  }, [router, searchParams])
+
   // Fetch status on mount and when access token changes
   useEffect(() => {
     if (!accessToken) {

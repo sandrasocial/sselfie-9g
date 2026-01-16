@@ -39,6 +39,7 @@ export async function createLandingCheckoutSession(productId: string, promoCode?
   } else if (product.type === "paid_blueprint") {
     stripePriceId = process.env.STRIPE_PAID_BLUEPRINT_PRICE_ID
   }
+  stripePriceId = stripePriceId?.trim()
 
   if (!stripePriceId) {
     console.error("[v0] Missing Stripe Price ID for:", productId)

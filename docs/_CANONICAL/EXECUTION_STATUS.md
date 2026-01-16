@@ -310,94 +310,54 @@
  - Baseline vs optional capability:
   - Baseline always-on: Maya + Feed AI endpoints (auth/credit enforcement only).
   - Optional/guarded: Training, Strategist, Blueprint guest, unused endpoints.
+ - What was done (Phase AO-1):
+  - Captured canonical reality baseline in `docs/_CANONICAL/REALITY_BASELINE.md`.
+  - Defined drift detection rules in `docs/_CANONICAL/DRIFT_RULES.md`.
+  - Documented admin observability surfaces and cron definitions from code/config.
+ - Known risks (Phase AO-1):
+  - Subscription schema mismatch risk: code expects `subscriptions.product_type`, base schema shows `plan_name`; DB state not verified.
+  - Cron health views/tables (`cron_job_*`) are referenced in code but definitions are not present in repo.
+ - Unknowns requiring verification (Phase AO-1):
+  - Actual applied migrations in production (`schema_migrations` contents not checked).
+  - Current admin feature flag values (`admin_feature_flags` not queried).
+  - Live cron execution success rates (admin APIs require runtime data).
 
- - What was done (Phase AO-2B):
-  - Ran read-only DB queries and Stripe API checks using env credentials.
-  - Free credits: 184 free users total; 63 with exact 2-credit grant; 121 missing grant; 0 duplicate grants.
-  - Paid blueprint: 8 entitlements; 5 linked to user_id; 2 missing timestamps; 3 missing user_id.
-  - Membership credits: 30 active members; 1 missing monthly grant; 9 stale grants (>40 days).
-  - Credit top-ups: 0 subscriptions with product_type = credit_topup.
-  - Onboarding persistence (active subs): 36 total; 6 completed; 2 with profiles; 29 missing both.
-  - Schema checks: required columns exist; schema_migrations contains 4 of 5 expected entries (missing 015 entry but column exists).
-  - Stripe: webhook endpoint enabled for `https://sselfie.ai/api/webhooks/stripe`.
-  - Stripe events last 7d: checkout.session.completed=34, invoice.payment_succeeded=10, subscription.created=1, updated=20, deleted=3.
-  - Webhook errors last 7d: 0. stripe_payments last 7d: 0 rows.
- - Verified OK (Phase AO-2B):
-  - No duplicate free welcome bonuses in credit ledger.
-  - No credit_topup subscriptions created.
-  - No stuck payments in `processing/pending` > 1 day.
-  - Stripe webhook endpoint enabled with expected URL.
- - Runtime mismatches / Broken (Phase AO-2B):
-  - ❌ 121 free users missing the 2-credit welcome bonus (core entitlement invariant broken).
-  - ❌ 1 active member missing monthly credits; 9 members stale >40 days (core entitlement drift).
-  - ❌ Stripe events present in last 7d, but `stripe_payments` has 0 rows last 7d (webhook ingestion gap risk).
- - Known unknowns (Phase AO-2B):
-  - Paid blueprint entitlements missing user_id for 3/8 (may be legacy email-only).
-  - Paid blueprint payments not present in `stripe_payments` (0 in last 30d for product_type='paid_blueprint').
-  - Onboarding persistence gaps may be expected for older users; needs product confirmation.
-  - schema_migrations missing `015_add_product_type_to_credit_transactions` record despite column existing.
- - STOP recommendations (Phase AO-2B):
-  - STOP: Free welcome credits and monthly member credits are out of compliance with invariants.
-  - STOP: Webhook ingestion gap (Stripe events without stripe_payments rows) requires investigation before certifying runtime integrity.
+ - What was done (Phase AO-4):
+  - Attempted prod reconcile cron with CRON_SECRET (Authorization: Bearer).
+  - Result: HTTP 400 (cron endpoint not runnable).
+ - AO-4 status:
+  - ❌ FAILED: Reconciliation cron did not return 200 in production.
+ - Root cause (current evidence):
+  - Prod `/api/cron/reconcile-credits` returns 400 despite auth header.
+  - Requires investigation before further verification steps.
+ - STOP recommendation (Phase AO-4):
+  - Stop AO-4; do not certify production runtime until reconcile endpoint returns 200.
 
- - What was done (Phase AO-3A):
-  - Diagnosed welcome credits grant path: credits are granted on `/studio` load for free users (not at signup).
-  - Ran idempotent backfill scripts (READ/WRITE, no critical file edits):
-    - `scripts/backfill/backfill-free-welcome-credits.ts`
-    - `scripts/backfill/backfill-membership-credits.ts`
-  - Verified post-backfill counts with SELECT queries.
- - Before/After (Phase AO-3A):
-  - Free users (welcome credits):
-    - Before: free_users=185, exact_grant=64, missing=121, bad=0.
-    - After: free_users=185, exact_grant=185, missing=0, bad=0.
-  - Membership credits (monthly grants):
-    - Before: active_members=30, with_grant=29, missing=1, stale>40d=9.
-    - After: active_members=30, with_grant=30, missing=0, stale>40d=0.
- - Verified OK (Phase AO-3A):
-  - No duplicate welcome bonuses created (0 duplicate users).
-  - All free users now have exactly one 2-credit welcome bonus.
-  - All active members have a recent monthly grant (<=40 days).
- - Remaining risks (Phase AO-3A):
-  - Root cause for stale monthly grants likely linked to webhook/stripe_payments ingestion gap (see AO-2B) — not fixed here.
- - Rollback notes (Phase AO-3A):
-  - If rollback is required, use compensating negative credit transactions and adjust balances; do NOT delete ledger rows.
+ - What was done (Phase AO-4D):
+  - Verified route exists in repo: `app/api/cron/reconcile-credits/route.ts`.
+  - Verified build manifest includes route after build: `.next/app-path-routes-manifest.json` maps `/api/cron/reconcile-credits`.
+  - Verified `vercel.json` cron path matches `/api/cron/reconcile-credits`.
+  - Redeployed to production (new deployment URL created).
+ - Root cause (Phase AO-4D):
+  - Route exists and is registered in build, but prod requests return HTTP 400 before handler.
+  - Likely blocked by middleware or platform request validation; requires critical-file change (middleware) to bypass cron paths.
+ - STOP recommendation (Phase AO-4D):
+  - STOP: Any fix likely touches `middleware.ts` (🔴 critical) — requires approval.
 
- - What was done (Phase AO-3B):
-  - Added idempotent recent Stripe payments backfill script: `scripts/backfill/backfill-stripe-payments-recent.ts`.
-  - Added reconciliation cron endpoint: `/api/cron/reconcile-credits` (welcome credits + monthly grants + optional Stripe reconcile).
-  - Scheduled daily cron in `vercel.json`: `0 5 * * *`.
-  - Ran recent Stripe backfill for last 30 days:
-    - Before: stripe_payments last_7d=0, last_30d=16, last_payment_date=2026-01-03.
-    - After: stripe_payments last_7d=10, last_30d=26, last_payment_date=2026-01-16.
-  - Attempted local cron invocation for `/api/cron/reconcile-credits`; received HTTP 400/socket close (needs runtime verification in prod).
- - Verified OK (Phase AO-3B):
-  - stripe_payments now reflects recent live payments after backfill.
- - Known unknowns (Phase AO-3B):
-  - Reconcile cron runtime execution not verified (local call failed).
-  - Stripe backfill covers last 30 days only; historical integrity still depends on existing backfill or webhook correctness.
- - Rollback notes (Phase AO-3B):
-  - Remove `/api/cron/reconcile-credits` from `vercel.json` to stop scheduled runs.
-  - Revert new backfill script and cron route if needed (no data rollback performed).
+ - What was done (Phase AO-4D-2):
+  - Added middleware bypass for `/api/cron/*` to avoid auth/middleware interference.
+  - Redeployed to production.
+  - Retested cron endpoints on prod + deployment URL; still HTTP 400.
+ - Runtime mismatches / Blockers (Phase AO-4D-2):
+  - ❌ All cron endpoints return HTTP 400 (plain text), indicating requests do not reach route handler.
+  - ❌ reconcile-credits still not callable in prod after middleware bypass.
+ - STOP recommendation (Phase AO-4D-2):
+  - STOP: Requires platform-level investigation (Vercel/WAF) before runtime verification can proceed.
 
- - What was done (Phase AO-3C):
-  - Confirmed cron auth contract: expects `authorization` header with `Bearer ${CRON_SECRET}`.
-  - Verified production env var presence via Vercel CLI:
-    - CRON_SECRET: present
-    - RECONCILE_STRIPE_PAYMENTS: missing
-    - STRIPE_RECONCILE_DAYS: missing
-  - Triggered prod reconcile endpoint twice with auth header: both returned HTTP 400.
-  - Admin surfaces checked in prod: `/admin/diagnostics/cron` loads; `/admin/cron-health` shows no data on page load; `/admin/health` loads.
-  - Verified DB idempotency counts before/after manual calls (duplicates remain 0).
- - HTTP results (Phase AO-3C):
-  - 2026-01-16T14:03:28Z — HTTP 400 — body: `400 Bad Request`.
-  - 2026-01-16T14:03:38Z — HTTP 400 — body: `400 Bad Request`.
- - DB before/after (Phase AO-3C):
-  - Welcome bonus duplicates: 0 → 0.
-  - Monthly grant duplicates (40d window): 0 → 0.
-  - stripe_payments duplicates: 0 → 0.
- - Runtime mismatches / Blockers (Phase AO-3C):
-  - ❌ Production `/api/cron/reconcile-credits` returns HTTP 400 with auth header (endpoint not runnable).
-  - ⚠️ Optional reconcile env vars missing (Stripe reconcile disabled by default).
- - STOP recommendations (Phase AO-3C):
-  - STOP: Cannot certify prod cron execution until endpoint returns 200 and auth header is accepted.
-  - Validate CRON_SECRET value in production matches the caller secret.
+ - What was done (Phase AO-4D-3):
+  - Pulled Vercel deployment logs for latest prod deploy.
+  - Logs confirm `/api/cron/reconcile-credits` and `/api/cron/resolve-pending-payments` are registered as serverless functions.
+ - Root cause update (Phase AO-4D-3):
+  - Route exists in prod functions list; HTTP 400 likely due to edge/platform request rejection or auth header mismatch.
+ - STOP recommendation (Phase AO-4D-3):
+  - STOP: escalate to platform-level inspection (WAF/edge) or validate CRON_SECRET header delivery from external client.

@@ -4,6 +4,9 @@ import { sendEmail } from "@/lib/email/send-email"
 import { createCronLogger } from "@/lib/cron-logger"
 import { logAdminError } from "@/lib/admin-error-log"
 import { generateWelcomeDay0, generateWelcomeDay3, generateWelcomeDay7 } from "@/lib/email/templates/welcome-sequence"
+import { generateBlueprintFollowupDay0Email } from "@/lib/email/templates/blueprint-followup-day-0"
+
+const FREE_BLUEPRINT_WELCOME_SUBJECT = "Your Brand Blueprint is Here!"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -39,6 +42,7 @@ export async function GET(request: Request) {
       day0: { sent: 0, failed: 0 },
       day3: { sent: 0, failed: 0 },
       day7: { sent: 0, failed: 0 },
+      freeBlueprintDay0: { found: 0, sent: 0, failed: 0, skipped: 0 },
     }
 
     try {
@@ -108,7 +112,7 @@ export async function GET(request: Request) {
       const day3CampaignId = await getCampaignId("welcome-day-3")
       const day7CampaignId = await getCampaignId("welcome-day-7")
 
-      // Send Day 0 emails
+      // Send Day 0 emails (paid members only)
       for (const user of day0Users) {
         try {
           const emailContent = generateWelcomeDay0({
@@ -198,10 +202,99 @@ export async function GET(request: Request) {
         }
       }
 
+      // Send Day 0 emails for FREE blueprint users (no active subscription, no paid blueprint)
+      const hasIsPaidColumn = await sql`
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = 'blueprint_subscribers'
+          AND column_name = 'is_paid'
+        LIMIT 1
+      `
+
+      const freeBlueprintSubscribers = hasIsPaidColumn.length > 0
+        ? await sql`
+            SELECT
+              bs.id,
+              bs.email,
+              bs.name,
+              bs.form_data,
+              bs.created_at
+            FROM blueprint_subscribers bs
+            LEFT JOIN users u ON (u.id = bs.user_id OR LOWER(u.email) = LOWER(bs.email))
+            LEFT JOIN subscriptions s ON s.user_id = u.id AND s.status = 'active'
+            LEFT JOIN email_logs el ON el.user_email = bs.email AND el.email_type = 'blueprint-followup-day-0'
+            WHERE (bs.is_paid = FALSE OR bs.is_paid IS NULL)
+              AND (bs.paid_blueprint_purchased IS NULL OR bs.paid_blueprint_purchased = FALSE)
+              AND (bs.welcome_email_sent = FALSE OR bs.welcome_email_sent IS NULL)
+              AND bs.created_at >= NOW() - INTERVAL '2 hours'
+              AND bs.created_at < NOW()
+              AND s.id IS NULL
+              AND el.id IS NULL
+            ORDER BY bs.created_at ASC
+          `
+        : await sql`
+            SELECT
+              bs.id,
+              bs.email,
+              bs.name,
+              bs.form_data,
+              bs.created_at
+            FROM blueprint_subscribers bs
+            LEFT JOIN users u ON (u.id = bs.user_id OR LOWER(u.email) = LOWER(bs.email))
+            LEFT JOIN subscriptions s ON s.user_id = u.id AND s.status = 'active'
+            LEFT JOIN email_logs el ON el.user_email = bs.email AND el.email_type = 'blueprint-followup-day-0'
+            WHERE (bs.paid_blueprint_purchased IS NULL OR bs.paid_blueprint_purchased = FALSE)
+              AND (bs.welcome_email_sent = FALSE OR bs.welcome_email_sent IS NULL)
+              AND bs.created_at >= NOW() - INTERVAL '2 hours'
+              AND bs.created_at < NOW()
+              AND s.id IS NULL
+              AND el.id IS NULL
+            ORDER BY bs.created_at ASC
+          `
+
+      results.freeBlueprintDay0.found = freeBlueprintSubscribers.length
+
+      for (const subscriber of freeBlueprintSubscribers) {
+        try {
+          const firstName = subscriber.name?.split(" ")[0] || undefined
+          const emailContent = generateBlueprintFollowupDay0Email({
+            firstName,
+            email: subscriber.email,
+            formData: subscriber.form_data || undefined,
+          })
+
+          const sendResult = await sendEmail({
+            to: subscriber.email,
+            subject: FREE_BLUEPRINT_WELCOME_SUBJECT,
+            html: emailContent.html,
+            text: emailContent.text,
+            from: "Sandra from SSELFIE <hello@sselfie.ai>",
+            emailType: "blueprint-followup-day-0",
+          })
+
+          if (sendResult.success) {
+            await sql`
+              UPDATE blueprint_subscribers
+              SET
+                welcome_email_sent = TRUE,
+                welcome_email_sent_at = NOW(),
+                updated_at = NOW()
+              WHERE id = ${subscriber.id}
+            `
+            results.freeBlueprintDay0.sent++
+          } else {
+            results.freeBlueprintDay0.failed++
+          }
+        } catch (error) {
+          console.error(`Failed to send free blueprint Day 0 to ${subscriber.email}:`, error)
+          results.freeBlueprintDay0.failed++
+        }
+      }
+
       console.log("[Welcome Sequence] Results:", results)
 
-      const totalSent = results.day0.sent + results.day3.sent + results.day7.sent
-      const totalFailed = results.day0.failed + results.day3.failed + results.day7.failed
+      const totalSent = results.day0.sent + results.day3.sent + results.day7.sent + results.freeBlueprintDay0.sent
+      const totalFailed = results.day0.failed + results.day3.failed + results.day7.failed + results.freeBlueprintDay0.failed
 
       await cronLogger.success({
         day0Sent: results.day0.sent,
@@ -210,6 +303,8 @@ export async function GET(request: Request) {
         day3Failed: results.day3.failed,
         day7Sent: results.day7.sent,
         day7Failed: results.day7.failed,
+        freeBlueprintDay0Sent: results.freeBlueprintDay0.sent,
+        freeBlueprintDay0Failed: results.freeBlueprintDay0.failed,
         totalSent,
         totalFailed,
       })

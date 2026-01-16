@@ -14,6 +14,16 @@ const sql = neon(process.env.DATABASE_URL!)
  */
 export async function GET(request: NextRequest) {
   try {
+    const meta = {
+      path: request.nextUrl.pathname,
+      method: request.method,
+      ts: new Date().toISOString(),
+      isVercelCron: request.headers.get("x-vercel-cron"),
+      userAgent: request.headers.get("user-agent"),
+      hasAuthHeader: request.headers.has("authorization"),
+      vercelIdHint: request.headers.get("x-vercel-id"),
+    }
+    console.log(`[CRON_META] ${JSON.stringify(meta)}`)
     // Verify cron secret (REQUIRED)
     const authHeader = request.headers.get("authorization")
     const cronSecret = process.env.CRON_SECRET
@@ -46,6 +56,15 @@ export async function GET(request: NextRequest) {
 
     if (pendingPayments.length === 0) {
       console.log("[v0] [CRON] No pending payments to resolve")
+      const summary = {
+        path: request.nextUrl.pathname,
+        processed: 0,
+        resolved: 0,
+        failed: 0,
+        skipped: 0,
+        status: "ok",
+      }
+      console.log(`[CRON_SUMMARY] ${JSON.stringify(summary)}`)
       return NextResponse.json({ success: true, processed: 0 })
     }
 
@@ -239,6 +258,16 @@ export async function GET(request: NextRequest) {
     }
 
     console.log(`[v0] [CRON] Completed: ${resolved} resolved, ${failed} failed, ${skipped} skipped`)
+
+    const summary = {
+      path: request.nextUrl.pathname,
+      processed: pendingPayments.length,
+      resolved,
+      failed,
+      skipped,
+      status: "ok",
+    }
+    console.log(`[CRON_SUMMARY] ${JSON.stringify(summary)}`)
 
     return NextResponse.json({
       success: true,

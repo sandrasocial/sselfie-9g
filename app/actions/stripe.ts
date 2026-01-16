@@ -129,6 +129,7 @@ export async function startProductCheckoutSession(productId: string, promoCode?:
   } else if (product.type === "paid_blueprint") {
     stripePriceId = process.env.STRIPE_PAID_BLUEPRINT_PRICE_ID
   }
+  stripePriceId = stripePriceId?.trim()
 
   if (!stripePriceId) {
     const envVarName =

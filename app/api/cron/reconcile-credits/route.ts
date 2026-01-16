@@ -344,6 +344,16 @@ async function reconcileStripePayments(days: number) {
  */
 export async function GET(request: NextRequest) {
   try {
+    const meta = {
+      path: request.nextUrl.pathname,
+      method: request.method,
+      ts: new Date().toISOString(),
+      isVercelCron: request.headers.get("x-vercel-cron"),
+      userAgent: request.headers.get("user-agent"),
+      hasAuthHeader: request.headers.has("authorization"),
+      vercelIdHint: request.headers.get("x-vercel-id"),
+    }
+    console.log(`[CRON_META] ${JSON.stringify(meta)}`)
     const authHeader = request.headers.get("authorization")
     const cronSecret = process.env.CRON_SECRET
 
@@ -376,6 +386,15 @@ export async function GET(request: NextRequest) {
       const days = Number(process.env.STRIPE_RECONCILE_DAYS || 7)
       stripeReconcile = await reconcileStripePayments(days)
     }
+
+    const summary = {
+      path: request.nextUrl.pathname,
+      grantedWelcomeCredits: welcomeGranted,
+      reconciledMembershipCredits: monthlyGranted,
+      backfilledPayments: stripeReconcile ? stripeReconcile.stored : 0,
+      status: "ok",
+    }
+    console.log(`[CRON_SUMMARY] ${JSON.stringify(summary)}`)
 
     return NextResponse.json({
       success: true,
