@@ -376,9 +376,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       if (isPreviewFeed) {
         console.log(`[v0] [GENERATE-SINGLE] ✅ Preview feed detected - forcing full template generation (ignoring stored prompt)`)
         finalPrompt = null  // Force regeneration of full template
-      } else if (post.prompt && post.prompt.length > 50) {
+      } else if (!access.isPaidBlueprint && post.prompt && post.prompt.length > 50) {
         // Post already has its scene prompt - use it (only for non-preview feeds)
         finalPrompt = post.prompt
+        console.log("[v0] PROMPT_SOURCE=db_prompt")
         console.log(`[v0] [GENERATE-SINGLE] ✅ Using existing scene prompt for position ${post.position} (${finalPrompt?.length || 0} chars)`)
       }
       // 🔴 FIX: Removed redundant Path A (paid user scene extraction)
@@ -421,6 +422,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
             
             // Preview feeds use the full injected template (all 9 scenes in one image)
             finalPrompt = injectedTemplate
+            console.log("[v0] PROMPT_SOURCE=preview_template")
             console.log(`[v0] [GENERATE-SINGLE] ✅ Preview feed - using full injected template with all 9 scenes (${finalPrompt.split(/\s+/).length} words)`)
             
             // Save the full template prompt to the database
@@ -429,6 +431,43 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
               SET prompt = ${finalPrompt}
               WHERE id = ${postId}
             `
+          } else if (access.isPaidBlueprint) {
+            // Paid blueprint (non-preview): ALWAYS use template injection + single-scene extraction
+            console.log(`[v0] [GENERATE-SINGLE] 🎨 Paid blueprint user - enforcing template injection only...`)
+            try {
+              const { category, mood } = await getCategoryAndMood(feedLayout, user, {
+                checkSettingsPreference: true,
+                checkBlueprintSubscribers: false,
+                trackSource: false,
+                orderBy: 'updated_at',
+              })
+              const { getBlueprintPhotoshootPrompt } = await import("@/lib/maya/blueprint-photoshoot-templates")
+              const fullTemplate = getBlueprintPhotoshootPrompt(category, mood)
+
+              const fashionStyle = await getFashionStyleForPosition(user, post.position)
+              const injectedTemplate = await injectAndValidateTemplate(
+                fullTemplate,
+                category,
+                mood,
+                fashionStyle,
+                user.id.toString()
+              )
+
+              const { buildSingleImagePrompt } = await import("@/lib/feed-planner/build-single-image-prompt")
+              finalPrompt = buildSingleImagePrompt(injectedTemplate, post.position)
+              console.log("[v0] PROMPT_SOURCE=template_injection")
+              console.log(`[v0] [GENERATE-SINGLE] ✅ Extracted scene ${post.position} from injected template (${finalPrompt.split(/\s+/).length} words)`)
+            } catch (templateError) {
+              console.error(`[v0] [GENERATE-SINGLE] ❌ Template injection failed for paid blueprint:`, templateError instanceof Error ? templateError.message : "Unknown error")
+              return Response.json(
+                {
+                  error: "TEMPLATE_INJECTION_FAILED",
+                  position: post.position,
+                  feedId: feedIdInt,
+                },
+                { status: 500 }
+              )
+            }
           } else if (access.isFree) {
             // Free users: Use blueprint templates (same as old blueprint)
             console.log(`[v0] [GENERATE-SINGLE] Free user - using blueprint template library...`)
@@ -463,6 +502,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
             // (Preview feeds are already handled above before this access check)
             const { buildSingleImagePrompt } = await import("@/lib/feed-planner/build-single-image-prompt")
             finalPrompt = buildSingleImagePrompt(injectedTemplate, post.position)
+            console.log("[v0] PROMPT_SOURCE=template_injection")
             console.log(`[v0] [GENERATE-SINGLE] ✅ Extracted scene ${post.position} from injected template (${finalPrompt.split(/\s+/).length} words)`)
             
             // Save the prompt to the database
@@ -471,7 +511,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
               SET prompt = ${finalPrompt}
               WHERE id = ${postId}
             `
-          } else if (access.isPaidBlueprint) {
+          } else if (access.isPaidBlueprint && isPreviewFeed) {
             // Phase 2: Paid blueprint users - ALWAYS use Maya to generate unique prompts
             // Maya will use preview template as reference if available, or generate based on personal brand data
             console.log(`[v0] [GENERATE-SINGLE] 🎨 Paid blueprint user - using Maya to generate unique prompt...`)
@@ -793,6 +833,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
               // Classic Mode OR Pro Mode without injected prompt - use Maya for enhancement
               // Classic Mode relies on Maya to insert trigger words and stylistic keywords
               // Pro Mode without injected prompt falls back to Maya (shouldn't happen in normal flow)
+              console.log("[v0] PROMPT_SOURCE=maya_fallback")
               console.log(`[v0] [GENERATE-SINGLE] Calling Maya to generate/enhance prompt (Mode: ${generationMode}, HasInjected: ${hasInjectedPrompt})`)
               
               try {

@@ -88,10 +88,11 @@ export default function FeedGridItem({
   // CRITICAL: Define this FIRST before using it in isGenerating
   const displayImageUrl = pollingImageUrl || post.image_url || null
 
-  // FIX: Simplified loading state - use polling status if available
+  // FIX: Show immediate loading state for optimistic UI (temp predictionId)
   // CRITICAL: Don't show generating if we already have an image
   const isGenerating = !isManualFeed && !displayImageUrl && (
     pollingStatus === "generating" ||
+    !!predictionId ||
     (post.generation_status === "generating" && post.prediction_id && !post.image_url) ||
     (post.prediction_id && !post.image_url)
   )
