@@ -710,45 +710,17 @@ export async function POST(request: NextRequest) {
               throw new Error("No avatar images found for Pro Mode")
             }
             
-            // Get brand kit colors from color_palette JSONB field
-            // Note: user_personal_brand doesn't have primary_color/secondary_color columns
-            // Colors are stored in color_palette JSONB field
-            const [brandData] = await sql`
-              SELECT color_palette, brand_vibe, color_theme
-              FROM user_personal_brand
-              WHERE user_id = ${neonUser.id}
-              LIMIT 1
-            `
+            // Phase 1A: Use canonical BrandKit builder
+            const { buildBrandKit } = await import('@/lib/brand/build-brand-kit')
+            const brandKitResult = buildBrandKit(brandProfile)
+            const brandKit = brandKitResult.brandKit
             
-            // Extract colors from color_palette JSONB if available
-            let brandKit: {
-              primary_color?: string
-              secondary_color?: string
-              accent_color?: string
-              font_style?: string
-              brand_tone?: string
-            } | undefined = undefined
-            
-            if (brandData?.color_palette) {
-              try {
-                const palette = typeof brandData.color_palette === 'string' 
-                  ? JSON.parse(brandData.color_palette) 
-                  : brandData.color_palette
-                
-                // Extract colors from palette array (format: [{name: "Primary", hex: "#..."}, ...])
-                if (Array.isArray(palette) && palette.length > 0) {
-                  brandKit = {
-                    primary_color: palette[0]?.hex || palette[0]?.color || undefined,
-                    secondary_color: palette[1]?.hex || palette[1]?.color || undefined,
-                    accent_color: palette[2]?.hex || palette[2]?.color || undefined,
-                    font_style: undefined, // Not stored in color_palette
-                    brand_tone: brandData.brand_vibe || brandData.color_theme || undefined,
-                  }
-                }
-              } catch (e) {
-                console.warn(`[FEED-FROM-STRATEGY] Failed to parse color_palette:`, e)
-              }
-            }
+            console.log(`[FEED-FROM-STRATEGY] BrandKit built:`, {
+              hasColors: brandKitResult.metadata.hasColors,
+              hasVisualAesthetic: brandKitResult.metadata.hasVisualAesthetic,
+              hasFashionStyle: brandKitResult.metadata.hasFashionStyle,
+              missingFields: brandKitResult.metadata.missingFields,
+            })
             
             // Check if this is a quote graphic post
             if (post.type === 'quote' || proModeType === 'quote-graphic') {
@@ -803,11 +775,11 @@ export async function POST(request: NextRequest) {
                 textElements: undefined, // Don't add text elements for non-quote posts
                 platformFormat: customSettings?.aspectRatio || '4:5',
                 brandKit: brandKit ? {
-                  primaryColor: brandKit.primary_color || null,
-                  secondaryColor: brandKit.secondary_color || null,
-                  accentColor: brandKit.accent_color || null,
+                  primaryColor: brandKit.primary_color || brandKit.colorPalette?.primary || null,
+                  secondaryColor: brandKit.secondary_color || brandKit.colorPalette?.secondary || null,
+                  accentColor: brandKit.accent_color || brandKit.colorPalette?.accent || null,
                   fontStyle: brandKit.font_style || null,
-                  brandTone: brandKit.brand_tone || null,
+                  brandTone: brandKit.brand_tone || brandKit.brandVibe || null,
                 } : undefined,
               })
               

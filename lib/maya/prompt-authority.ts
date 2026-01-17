@@ -1145,10 +1145,40 @@ export async function generateFeedSinglePromptViaAuthority(
   const startTime = Date.now()
   const timestamp = new Date().toISOString()
   
+  // Phase 1A: Fetch BrandKit for brand profile injection
+  let brandKit: any = null
+  if (context?.userId) {
+    try {
+      const { neon } = await import('@neondatabase/serverless')
+      const sql = neon(process.env.DATABASE_URL!)
+      const [brandProfile] = await sql`
+        SELECT * FROM user_personal_brand
+        WHERE user_id = ${context.userId}
+        AND is_completed = true
+        LIMIT 1
+      `
+      
+      if (brandProfile && brandProfile.length > 0) {
+        const { buildBrandKit } = await import('@/lib/brand/build-brand-kit')
+        const brandKitResult = buildBrandKit(brandProfile[0])
+        brandKit = brandKitResult.brandKit
+        console.log(`[PROMPT-AUTHORITY] EP-05 BrandKit loaded:`, {
+          hasColors: brandKitResult.metadata.hasColors,
+          hasVisualAesthetic: brandKitResult.metadata.hasVisualAesthetic,
+          hasFashionStyle: brandKitResult.metadata.hasFashionStyle,
+        })
+      }
+    } catch (error) {
+      console.warn(`[PROMPT-AUTHORITY] EP-05 Failed to load BrandKit (continuing without it):`, error)
+    }
+  }
+  
   // Import and call the existing builder (preserves exact behavior)
   // Use dynamic import to match codebase pattern
+  // Phase P0: buildSingleImagePrompt is now async (Scene Contract enforcement)
+  // Phase 1A: buildSingleImagePrompt now accepts BrandKit for brand profile injection
   const { buildSingleImagePrompt } = await import('@/lib/feed-planner/build-single-image-prompt')
-  const prompt = buildSingleImagePrompt(templatePrompt, position)
+  const prompt = await buildSingleImagePrompt(templatePrompt, position, brandKit)
   
   // Compute fingerprint hash (privacy-safe, no full prompt logged)
   const fingerprint = createHash('sha256')

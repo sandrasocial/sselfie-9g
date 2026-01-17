@@ -212,26 +212,53 @@ function cleanFrameDescription(description: string, frameType: 'flatlay' | 'clos
 /**
  * Builds complete NanoBanana prompt for single image generation
  * 
+ * Phase P0: Enhanced with Scene Contract enforcement
+ * Phase 1A: Enhanced with BrandKit injection
+ * 
  * Structure:
- * 1. Base identity prompt (fixed)
- * 2. Vibe context (from template)
- * 3. Setting context (from template)
- * 4. Frame description (from template, position-specific, cleaned for frame type)
- * 5. Color grade (from template)
+ * 1. STYLE LOCK (global brand realism + NanoBanana rules)
+ * 2. USER BRAND PROFILE (Phase 1A: injected from BrandKit)
+ * 3. SCENE DNA (verbatim scene spec from scene library)
+ * 4. USER / BRAND KIT VARIABLES (only fill slots, do not rewrite scene)
+ * 5. CAMERA + COMPOSITION
+ * 6. QUALITY CONSTRAINTS (sharpness, realism, no artifacts)
+ * 7. NEGATIVE RULES
  * 
  * @param templatePrompt - Full template prompt from BLUEPRINT_PHOTOSHOOT_TEMPLATES (should already have placeholders replaced)
- * @param position - Frame position (1-9)
+ * @param position - Frame position (1-9), maps deterministically to sceneId
+ * @param brandKit - Optional BrandKit for brand profile injection (Phase 1A)
  * @returns Complete prompt for NanoBanana generation
  * @throws Error if frame not found for position
  */
-export function buildSingleImagePrompt(
+export async function buildSingleImagePrompt(
   templatePrompt: string,
-  position: number
-): string {
+  position: number,
+  brandKit?: {
+    brandVibe?: string | null
+    fashionStyle?: string[] | null
+    visualAesthetic?: string[] | null
+    colorPalette?: {
+      primary?: string | null
+      secondary?: string | null
+      accent?: string | null
+    } | null
+    communicationVoice?: string[] | null
+    brandVoice?: string | null
+    targetAudience?: string | null
+    settingsPreference?: string[] | null
+    contentPillars?: string | null
+    businessType?: string | null
+  } | null
+): Promise<string> {
   // Validate position
   if (position < 1 || position > 9) {
     throw new Error(`Position must be between 1 and 9, got ${position}`)
   }
+  
+  // Phase P0: Get scene specification (deterministic mapping: position = sceneId)
+  // Use dynamic import to avoid circular dependencies
+  const sceneLibrary = await import('@/lib/maya/scene-library')
+  const sceneSpec = sceneLibrary.getSceneSpec(position)
   
   // Parse template to extract frames, vibe, setting, and color grade
   const { frames, vibe, setting, colorGrade } = parseTemplateFrames(templatePrompt)
@@ -245,35 +272,95 @@ export function buildSingleImagePrompt(
   // Detect frame type for cleanup
   const frameType = detectFrameType(frame.description)
   
+  // Phase P0: Validate frame type matches scene spec
+  if (sceneSpec && sceneSpec.frameType !== frameType) {
+    console.warn(`[SCENE-CONTRACT] Frame type mismatch: template has '${frameType}', scene spec expects '${sceneSpec.frameType}' for position ${position}. Using scene spec.`)
+  }
+  
   // Clean frame description based on frame type
   const cleanedFrameDescription = cleanFrameDescription(frame.description, frameType)
   
-  // Build complete prompt with all context
-  // Structure: Base identity (for user photos only) + Vibe + Setting + Frame description (cleaned) + Color grade
-  // Use natural language joining (space separated) for coherent sentence structure
+  // Phase P0 + Phase 1A: Build prompt with Scene Contract enforcement + BrandKit injection
+  // Structure: STYLE LOCK + USER BRAND PROFILE + SCENE DNA + USER VARIABLES + CAMERA + QUALITY + NEGATIVE RULES
   const promptParts: string[] = []
   
+  // 1. STYLE LOCK (global brand realism + NanoBanana rules)
   // Only add identity prompt for user photos (not flatlays)
   if (frameType !== 'flatlay') {
     promptParts.push(BASE_IDENTITY_PROMPT)
   }
   
+  // 2. USER BRAND PROFILE (Phase 1A: Required brand profile injection)
+  if (brandKit) {
+    const { formatBrandProfileBlock } = await import('@/lib/brand/build-brand-kit')
+    const brandProfileBlock = formatBrandProfileBlock(brandKit)
+    if (brandProfileBlock) {
+      promptParts.push(brandProfileBlock)
+    }
+  }
+  
+  // 3. SCENE DNA (verbatim scene spec - Phase P0 enhancement)
+  if (sceneSpec) {
+    // Add scene DNA as explicit constraint
+    promptParts.push(`Scene requirement: ${sceneSpec.sceneDNA}.`)
+    promptParts.push(`Composition: ${sceneSpec.composition}.`)
+    promptParts.push(`Location constraint: ${sceneSpec.location}.`)
+    
+    // Add negative rules as constraints
+    if (sceneSpec.negativeRules.length > 0) {
+      const criticalRules = sceneSpec.negativeRules.filter(r => 
+        r.includes('Do not change location') || 
+        r.includes('Do not mix') || 
+        r.includes('Do not change outfit')
+      )
+      if (criticalRules.length > 0) {
+        promptParts.push(`Critical constraints: ${criticalRules.join(' ')}`)
+      }
+    }
+  }
+  
+  // 4. USER / BRAND KIT VARIABLES (only fill slots, do not rewrite scene)
   // Add vibe context if available (as natural language, not label)
   if (vibe && vibe.length > 0) {
-    promptParts.push(`with ${vibe} aesthetic`)
+    promptParts.push(`Aesthetic: ${vibe}`)
   }
   
   // Add setting context if available (as natural language, not label)
   if (setting && setting.length > 0) {
-    promptParts.push(`in ${setting}`)
+    promptParts.push(`Setting context: ${setting}`)
   }
   
-  // Add cleaned frame description (already natural language)
+  // Add cleaned frame description (already natural language) - this fills brand kit variables
   promptParts.push(cleanedFrameDescription)
+  
+  // 5. CAMERA + COMPOSITION
+  if (sceneSpec) {
+    promptParts.push(`Camera: ${sceneSpec.cameraConstraints}`)
+    promptParts.push(`Lighting: ${sceneSpec.lighting}`)
+  }
+  
+  // 6. QUALITY CONSTRAINTS (sharpness, realism, no artifacts)
+  promptParts.push(`Quality: Sharp focus, natural realism, no artifacts, iPhone photography style`)
   
   // Add color grade (as natural language, not label)
   if (colorGrade && colorGrade.length > 0) {
-    promptParts.push(`with ${colorGrade} color palette`)
+    promptParts.push(`Color palette: ${colorGrade}`)
+  }
+  
+  // 7. NEGATIVE RULES (Phase P0: Explicit scene contract enforcement)
+  if (sceneSpec && sceneSpec.negativeRules.length > 0) {
+    const negativeRulesText = sceneSpec.negativeRules
+      .filter(r => !r.includes('Do not change location') && !r.includes('Do not mix') && !r.includes('Do not change outfit')) // Already added above
+      .map(r => r.replace('Do not ', 'Avoid '))
+      .join('. ')
+    if (negativeRulesText) {
+      promptParts.push(`Avoid: ${negativeRulesText}`)
+    }
+  }
+  
+  // Phase P0: Final scene contract reminder
+  if (sceneSpec) {
+    promptParts.push(`Generate exactly ONE scene matching scene ${position} specification. Do not mix scenes.`)
   }
   
   // Join with spaces for natural language flow (identity anchor is always first)

@@ -454,10 +454,14 @@ const handleUpgrade = async () => {
 
 ### Issue 4: Maya/Academy/Gallery Modal Fixes (2 files)
 1. `components/UpgradeOrCredits.tsx`
+   - Added import for `startEmbeddedCheckout` (line 6)
    - Added `requiresMembership?: boolean` prop (line 11)
-   - Updated title logic to show "UPGRADE TO MEMBERSHIP" for membership-only features (lines 22-24)
-   - Updated message logic with membership-specific messaging (lines 26-31)
-   - Conditionally hide "BUY CREDITS" button when `requiresMembership` is true (lines 60-68)
+   - Added `isUpgrading` state for loading UI (line 20)
+   - **Fixed `handleUpgrade` to use embedded checkout directly** (lines 22-32)
+   - Updated title logic to show "UPGRADE TO MEMBERSHIP" for membership-only features (lines 30-32)
+   - Updated message logic with membership-specific messaging (lines 34-38)
+   - Added loading state and disabled state to buttons (lines 60-76)
+   - Conditionally hide "BUY CREDITS" button when `requiresMembership` is true (lines 67-76)
 
 2. `components/sselfie/sselfie-app.tsx`
    - Added `requiresMembership={true}` prop to Maya screen UpgradeOrCredits (line 959)
