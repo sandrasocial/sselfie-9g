@@ -6,6 +6,7 @@ import { checkCredits, deductCredits, getUserCredits } from "@/lib/credits"
 import { generateWithNanoBanana, getStudioProCreditCost } from "@/lib/nano-banana-client"
 import { neon } from "@neondatabase/serverless"
 import { put } from "@vercel/blob"
+import { routeProModeImagePromptViaAuthority } from "@/lib/maya/prompt-authority"
 
 export const maxDuration = 300 // 5 minutes for image generation
 
@@ -92,9 +93,21 @@ export async function POST(req: NextRequest) {
 
     console.log("[v0] [PRO MODE] Using", imageInput.length, "input images")
 
+    // Phase 3C P0-1: Route prompt through Authority Layer for audit logging
+    const authorityResult = routeProModeImagePromptViaAuthority({
+      fullPrompt,
+      userId: dbUserId,
+      category,
+      conceptTitle,
+      conceptDescription,
+      resolution,
+      aspectRatio,
+    })
+    const routedPrompt = authorityResult.prompt
+
     // Generate image with Nano Banana Pro
     const generationResult = await generateWithNanoBanana({
-      prompt: fullPrompt,
+      prompt: routedPrompt,
       image_input: imageInput.length > 0 ? imageInput : undefined,
       aspect_ratio: aspectRatio as any,
       resolution: resolution as "1K" | "2K" | "4K",
@@ -156,7 +169,7 @@ export async function POST(req: NextRequest) {
             ${dbUserId},
             ${blob.url},
             ${conceptTitle || conceptDescription || "Pro Mode generation"},
-            ${fullPrompt},
+            ${routedPrompt},
             ${generationResult.predictionId},
             'completed',
             'maya_pro',

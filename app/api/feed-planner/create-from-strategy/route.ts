@@ -8,6 +8,7 @@ import { generateInstagramCaption } from "@/lib/feed-planner/caption-writer"
 import { detectRequiredMode, detectProModeType } from "@/lib/feed-planner/mode-detection"
 import { generateVisualComposition } from "@/lib/feed-planner/visual-composition-expert"
 import { buildSophisticatedQuotePrompt } from "@/lib/maya/quote-graphic-prompt-builder"
+import { generateFeedPlannerProModePromptViaAuthority } from "@/lib/maya/prompt-authority"
 import { 
   generateFeedPrompt,
   validateFeedPrompt,
@@ -788,32 +789,30 @@ export async function POST(request: NextRequest) {
               console.log(`[FEED-FROM-STRATEGY] ✅ Sophisticated quote prompt generated for post ${post.position}`)
             } else {
               // Use Nano Banana prompt builder for other Pro Mode posts (carousels, text overlays, etc.)
-              const { buildNanoBananaPrompt } = await import("@/lib/maya/nano-banana-prompt-builder")
-              
-              // Use post.description as userRequest (visual direction input)
-              const { optimizedPrompt } = await buildNanoBananaPrompt({
+              // Phase 4B: Route through Prompt Authority Layer
+              const authorityResult = await generateFeedPlannerProModePromptViaAuthority({
                 userId: neonUser.id.toString(),
-                mode: (proModeType || 'workbench') as any,
+                mode: (proModeType || 'workbench') as string,
                 userRequest: post.description || post.purpose || `Feed post ${post.position}`,
-                inputImages: {
-                  baseImages,
-                  productImages: [],
-                  textElements: undefined, // Don't add text elements for non-quote posts
-                },
-                workflowMeta: {
-                  platformFormat: customSettings?.aspectRatio || '4:5',
-                },
+                baseImages: baseImages.map(img => ({
+                  url: img.url,
+                  type: img.type || 'avatar',
+                  description: undefined,
+                })),
+                productImages: [],
+                textElements: undefined, // Don't add text elements for non-quote posts
+                platformFormat: customSettings?.aspectRatio || '4:5',
                 brandKit: brandKit ? {
-                  primary_color: brandKit.primary_color,
-                  secondary_color: brandKit.secondary_color,
-                  accent_color: brandKit.accent_color,
-                  font_style: brandKit.font_style,
-                  brand_tone: brandKit.brand_tone,
+                  primaryColor: brandKit.primary_color || null,
+                  secondaryColor: brandKit.secondary_color || null,
+                  accentColor: brandKit.accent_color || null,
+                  fontStyle: brandKit.font_style || null,
+                  brandTone: brandKit.brand_tone || null,
                 } : undefined,
               })
               
-              finalPrompt = optimizedPrompt
-              console.log(`[FEED-FROM-STRATEGY] ✅ Generated Nano Banana Pro prompt for post ${post.position}`)
+              finalPrompt = authorityResult.prompt
+              console.log(`[FEED-FROM-STRATEGY] ✅ Generated Nano Banana Pro prompt for post ${post.position} via Authority Layer`)
             }
           } catch (promptError) {
             console.error(`[FEED-FROM-STRATEGY] ❌ Error generating Pro Mode prompt for post ${post.position}:`, promptError)

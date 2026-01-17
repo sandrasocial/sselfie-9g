@@ -1,12 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PromptGenerator, type WorkbenchContext } from '@/lib/maya/prompt-generator'
+import { generatePromptSuggestions, type WorkbenchContext } from '@/lib/maya/prompt-authority'
+import { checkInternalOnly } from '@/lib/maya/internal-only-guard'
 
+/**
+ * PROMPT SUGGESTIONS API (EP-02)
+ * 
+ * Phase 3A: Migrated to use Prompt Authority Layer
+ * Phase 5C: Internal-only enforcement added
+ * 
+ * Routes prompt suggestion generation through Authority Layer for audit logging
+ * while preserving exact behavior (same inputs, same outputs).
+ * 
+ * Classification: INTERNAL (used by workbench UI only, not public API)
+ */
 export async function POST(req: NextRequest) {
+  // Phase 5C: Internal-only enforcement
+  const internalCheck = checkInternalOnly(req, {
+    routeId: 'EP-02',
+    routePath: '/api/maya/generate-prompt-suggestions',
+    kind: 'internal',
+  })
+  if (!internalCheck.allowed) {
+    return NextResponse.json({ error: internalCheck.error }, { status: 403 })
+  }
+  
   try {
     const body = await req.json()
     const { workbenchImages, userIntent, previousMessages, contentType, userPreferences } = body
     
-    // Build context
+    // Build context (unchanged from original)
     const context: WorkbenchContext = {
       images: workbenchImages || [],
       userIntent: userIntent || 'Create engaging Instagram content',
@@ -15,11 +37,10 @@ export async function POST(req: NextRequest) {
       userPreferences: userPreferences || undefined
     }
     
-    // Generate suggestions
-    const generator = new PromptGenerator()
-    const suggestions = await generator.generatePromptSuggestions(context)
+    // Generate suggestions via Prompt Authority Layer (Phase 3A migration)
+    const suggestions = await generatePromptSuggestions(context)
     
-    // Return top 3 suggestions
+    // Return top 3 suggestions (unchanged behavior)
     const topSuggestions = suggestions.slice(0, 3)
     
     return NextResponse.json({

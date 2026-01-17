@@ -1,12 +1,29 @@
+const ADMIN_EMAIL = "ssa@ssasocial.com"
+
 export function getAccessState({
   credits,
   subscriptionStatus,
   productType,
+  userEmail,
 }: {
   credits: number
   subscriptionStatus: string | null
   productType?: string | null
+  userEmail?: string | null
 }) {
+  // Admin users get full access regardless of subscription status
+  const isAdmin = userEmail?.toLowerCase() === ADMIN_EMAIL.toLowerCase()
+  
+  if (isAdmin) {
+    return {
+      isMember: true,
+      canUseGenerators: true, // Admin = full access
+      showUpgradeUI: false,
+      isPaidBlueprintOnly: false,
+      hasFullAccess: true, // Admin has access to everything including Academy
+    }
+  }
+
   const isMember = subscriptionStatus === "active" || subscriptionStatus === "trialing"
   const isPaidBlueprintOnly = isMember && productType === "paid_blueprint"
   const isMembership = isMember && ["sselfie_studio_membership", "brand_studio_membership", "pro", "one_time_session"].includes(productType || "")
@@ -17,6 +34,7 @@ export function getAccessState({
       canUseGenerators: true, // Membership = full access
       showUpgradeUI: false,
       isPaidBlueprintOnly: false,
+      hasFullAccess: ["sselfie_studio_membership", "brand_studio_membership", "pro"].includes(productType || ""), // Only Studio Membership has Academy
     }
   }
 
@@ -26,6 +44,7 @@ export function getAccessState({
       canUseGenerators: false, // Paid blueprint = Feed Planner only
       showUpgradeUI: true, // Show upgrade to membership
       isPaidBlueprintOnly: true,
+      hasFullAccess: false,
     }
   }
 
@@ -37,5 +56,6 @@ export function getAccessState({
     canUseGenerators: false,
     showUpgradeUI: true,
     isPaidBlueprintOnly: false,
+    hasFullAccess: false,
   }
 }

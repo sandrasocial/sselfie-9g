@@ -317,9 +317,10 @@ export default function SselfieApp({
     credits: creditBalance,
     subscriptionStatus,
     productType,
+    userEmail,
   })
   const isOneTimeSession = productType === "one_time_session"
-  const academyBlocked = access.isPaidBlueprintOnly || isOneTimeSession
+  const academyBlocked = !access.hasFullAccess
 
   const handleTabChange = (tabId: string) => {
     // Prevent paid blueprint users from accessing Maya
@@ -955,6 +956,7 @@ export default function SselfieApp({
               <UpgradeOrCredits
                     feature={activeTab === "maya" ? "Maya" : "Training"}
                     isPaidBlueprintUser={access.isPaidBlueprintOnly}
+                    requiresMembership={true}
               />
                 </motion.div>
               ) : (
@@ -972,11 +974,12 @@ export default function SselfieApp({
                     setActiveTab={handleTabChange}
                     userId={userId}
                     hasTrainedModel={hasTrainedModel}
+                    isMembership={access.hasFullAccess} // Only membership users see Pro/Classic toggle
                   />
                 )}
                 {activeTab === "gallery" && (
                   !access.canUseGenerators ? (
-                    <UpgradeOrCredits feature="Gallery" />
+                    <UpgradeOrCredits feature="Gallery" isPaidBlueprintUser={access.isPaidBlueprintOnly} requiresMembership={true} />
                   ) : (
                     <GalleryScreen user={user} userId={userId} />
                   )
@@ -984,7 +987,7 @@ export default function SselfieApp({
                 {activeTab === "feed-planner" && <FeedPlannerClient userId={userId.toString()} userName={userName} />}
                 {activeTab === "academy" && (
                   (!access.canUseGenerators || academyBlocked) ? (
-                    <UpgradeOrCredits feature="Academy" isPaidBlueprintUser={access.isPaidBlueprintOnly} />
+                    <UpgradeOrCredits feature="Academy" isPaidBlueprintUser={access.isPaidBlueprintOnly} requiresMembership={true} />
                   ) : (
                     <AcademyScreen />
                   )

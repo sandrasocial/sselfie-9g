@@ -107,7 +107,7 @@ const STEPS = [
   {
     id: "intro",
     title: "Welcome",
-    subtitle: "Let\u0027s create your personal brand together",
+    subtitle: "Let's create your personal brand together",
     mayaMessage:
       "I\u0027m Maya, and I\u0027m here to help you create content that actually looks and sounds like YOU. To do that, I need to understand your unique style, voice, and vision. This will only take a few minutes, and trust me - it\u0027s worth it!",
   },
@@ -712,7 +712,7 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                     <Input
                       value={formData.signaturePhrases}
                       onChange={(e) => handleInputChange("signaturePhrases", e.target.value)}
-                      placeholder="e.g., Let\u0027s make it happen, Your time is now, etc."
+                      placeholder="e.g., Let's make it happen, Your time is now, etc."
                       className="border-stone-200 focus:border-stone-400 text-base"
                     />
                   </div>

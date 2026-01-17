@@ -174,7 +174,7 @@ export function FeedbackModal({ open, onOpenChange, userId, userEmail, userName 
       <DialogContent className="sm:max-w-[600px] bg-white/95 backdrop-blur-xl border-stone-200 max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-serif text-2xl font-extralight tracking-[0.2em] uppercase text-stone-950 text-center">
-            {selectedType ? "Send Message" : "Let\u0027s Chat"}
+            {selectedType ? "Send Message" : "Let's Chat"}
           </DialogTitle>
           <p className="text-sm text-stone-600 text-center leading-relaxed mt-2">
             Hey there. I&apos;m Sandra, and I&apos;d love to hear from you.

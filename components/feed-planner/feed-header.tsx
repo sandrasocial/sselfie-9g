@@ -17,7 +17,7 @@ interface FeedHeaderProps {
   onCreateHighlights?: () => void
   onOpenWizard?: () => void // Callback to open wizard
   onOpenWelcomeWizard?: () => void // Callback to open welcome wizard (for paid blueprint users)
-  access?: { isFree?: boolean; isPaidBlueprint?: boolean } // Access control to hide buttons for free users
+  access?: { isFree?: boolean; isPaidBlueprint?: boolean; isMembership?: boolean } // Access control to hide buttons for free users
 }
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
@@ -410,8 +410,8 @@ export default function FeedHeader({
                   </>
                 )}
               </button>
-              {/* Hide "New Feed" button for free users - only show for paid blueprint users */}
-              {access?.isPaidBlueprint && !access?.isFree && (
+              {/* Hide "New Feed" button for free users - show for paid blueprint users AND members */}
+              {!access?.isFree && (access?.isPaidBlueprint || access?.isMembership) && (
                 <button
                   onClick={handleCreateNewFeedClick}
                   disabled={isCreatingFeed}

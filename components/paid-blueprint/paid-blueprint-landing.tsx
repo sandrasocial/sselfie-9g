@@ -154,7 +154,7 @@ export default function PaidBlueprintLanding() {
             <div className="space-y-3">
               <h3 className="text-xl font-light text-white mb-2">It\u0027s That Simple</h3>
               <p className="text-sm sm:text-base font-light text-stone-300 leading-relaxed">
-                Upload your selfies. We\u0027ll create all 30 photos automatically. No manual work, no stress.
+                Upload your selfies. We'll create all 30 photos automatically. No manual work, no stress.
               </p>
             </div>
             <div className="space-y-3">

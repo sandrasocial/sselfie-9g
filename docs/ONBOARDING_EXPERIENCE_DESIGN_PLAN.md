@@ -4,6 +4,8 @@
 **Goal:** Complete Blueprint Welcome Wizard, implement entitlement-based welcome routing, persist onboarding state  
 **Mode:** PLANNING ONLY (No code implementation)
 
+**Note:** This document describes the technical onboarding flow. For the product messaging and value proposition, see the updated README.md which reflects SSELFIE's core positioning: "Turn one good selfie into a full week of brand-consistent content — without overthinking."
+
 **Approved Decisions (from [THREE_CRITICAL_DECISIONS_ANALYSIS.md](./THREE_CRITICAL_DECISIONS_ANALYSIS.md)):**
 - ✅ **Decision 1:** Grant credits to all users (2 credits for free users, 60 credits for paid blueprint users)
 - ✅ **Decision 2:** Embed Feed Planner UI with feature flags for paid blueprint screen

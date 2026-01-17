@@ -57,6 +57,7 @@ import {
   validatePromptLength,
   type PromptConstructorParams 
 } from "@/lib/maya/prompt-constructor"
+import { generateConceptCardsViaAuthority, auditLogMayaChatGeneration } from "@/lib/maya/prompt-authority"
 // prompt-constructor-enhanced removed - using unified system instead
 // import { buildEnhancedPrompt, type EnhancedPromptParams } from "@/lib/maya/prompt-constructor-enhanced"
 import {
@@ -2767,28 +2768,113 @@ Same quality/luxury/styling as professional concepts, but with:
     
     const detectedBrandValue = detectBrand(enrichedUserRequestForDetection || aesthetic || context)
 
-    // Generate concepts using Maya's AI generation
-    // Generate all concepts using Maya's AI
-    const { text } = await generateText({
-      model: 'anthropic/claude-sonnet-4-20250514',
-      messages: [
-        {
-          role: 'user',
-          content: conceptPrompt,
-        },
-      ],
-      temperature: 0.85,
-    })
-
-    // Parse JSON response
+    // Phase 3A P0-2: Route through Prompt Authority Layer (default, no feature flag)
     let concepts: MayaConcept[] = []
-    const jsonMatch = text.match(/\[[\s\S]*\]/)
-    if (jsonMatch) {
-      concepts = JSON.parse(jsonMatch[0])
-    } else {
-      console.error('[v0] [AI-GENERATION] ❌ Failed to parse JSON from AI response')
-      // Return empty array if parsing fails
-      concepts = []
+    let generationStartTime = Date.now()
+    let pathUsed: 'authority' | 'legacy' = 'authority'
+    
+    // Route through Prompt Authority Layer (Phase 3A migration)
+    console.log('[v0] [CONCEPT-CARDS] ✅ Routing through Prompt Authority Layer (Phase 3A)')
+    generationStartTime = Date.now()
+    
+    try {
+      const authorityResult = await generateConceptCardsViaAuthority<MayaConcept>(
+        {
+          userId: effectiveUser.id.toString(),
+          triggerWord,
+          userGender,
+          ethnicity,
+          physicalPreferences,
+          category: detectedCategory,
+          userRequest: enrichedUserRequestForDetection,
+          aesthetic,
+          context,
+          conversationContext,
+          conceptPrompt, // Pass the full Maya system prompt
+        },
+        async (prompt: string) => {
+          // Delegate to existing Maya chat logic
+          return await generateText({
+            model: 'anthropic/claude-sonnet-4-20250514',
+            messages: [
+              {
+                role: 'user',
+                content: prompt,
+              },
+            ],
+            temperature: 0.85,
+          })
+        }
+      )
+      
+      concepts = authorityResult.concepts
+      console.log('[v0] [CONCEPT-CARDS] ✅ Authority Layer generated', concepts.length, 'concepts in', authorityResult.metadata.executionTimeMs, 'ms')
+      console.log('[v0] [CONCEPT-CARDS] Input hash:', authorityResult.metadata.inputHash)
+      
+    } catch (authorityError) {
+      console.error('[v0] [CONCEPT-CARDS] ❌ Authority Layer failed, falling back to legacy:', authorityError)
+      // Fallback to legacy path
+      pathUsed = 'legacy'
+      generationStartTime = Date.now()
+      
+      // Continue with legacy logic below
+    }
+    
+    // Legacy path (fallback only if Authority Layer fails)
+    if (pathUsed === 'legacy' || concepts.length === 0) {
+      console.log('[v0] [CONCEPT-CARDS] Using legacy generation path')
+      generationStartTime = Date.now()
+      
+      // Generate concepts using Maya's AI generation
+      // Generate all concepts using Maya's AI
+      const { text } = await generateText({
+        model: 'anthropic/claude-sonnet-4-20250514',
+        messages: [
+          {
+            role: 'user',
+            content: conceptPrompt,
+          },
+        ],
+        temperature: 0.85,
+      })
+
+      // Parse JSON response
+      const jsonMatch = text.match(/\[[\s\S]*\]/)
+      if (jsonMatch) {
+        concepts = JSON.parse(jsonMatch[0])
+      } else {
+        console.error('[v0] [AI-GENERATION] ❌ Failed to parse JSON from AI response')
+        // Return empty array if parsing fails
+        concepts = []
+      }
+      
+      // Audit log legacy path
+      const legacyGenerationTime = Date.now() - generationStartTime
+      concepts.forEach((concept, index) => {
+        if (concept.prompt) {
+          try {
+            auditLogMayaChatGeneration(
+              'classic',
+              'concept-card',
+              {
+                userId: effectiveUser.id.toString(),
+                triggerWord,
+                userGender,
+                ethnicity,
+                physicalPreferences,
+                category: detectedCategory,
+                userRequest: enrichedUserRequestForDetection,
+              },
+              concept.prompt,
+              legacyGenerationTime / concepts.length, // Average time per concept
+              'legacy' // Explicitly mark as legacy path
+            )
+          } catch (auditError) {
+            // Don't fail if audit logging fails
+            console.warn('[v0] [CONCEPT-CARDS] Legacy audit logging failed (non-critical):', auditError)
+          }
+        }
+      })
     }
 
     // 🔴 CRITICAL: Check for upload module category - some categories (beauty, tech, selfies) don't use prompt constructor

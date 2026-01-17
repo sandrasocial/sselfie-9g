@@ -9,6 +9,7 @@ import { getFluxPromptingPrinciples } from "@/lib/maya/flux-prompting-principles
 import { getNanoBananaPromptingPrinciples } from "@/lib/maya/nano-banana-prompt-builder"
 import { extractAestheticFromTemplate, type LockedAesthetic } from "@/lib/feed-planner/extract-aesthetic-from-template"
 import Anthropic from "@anthropic-ai/sdk"
+import { generateMayaFeedPromptSystemPrompt, auditLogMayaChatGeneration } from "@/lib/maya/prompt-authority"
 
 const sql = neon(process.env.DATABASE_URL || "")
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
@@ -249,7 +250,7 @@ export async function POST(request: NextRequest) {
     const userContext = await getUserContextForMaya(user.id)
     console.log("[v0] [FEED-PROMPT] User context retrieved, length:", userContext.length)
 
-    // Build Maya's system prompt for feed post generation using unified system
+    // Phase 3B P1-1: Generate system prompt via Authority Layer
     const config = isProMode ? MAYA_PRO_CONFIG : MAYA_CLASSIC_CONFIG
     const mayaPersonality = getMayaSystemPrompt(config)
     
@@ -258,256 +259,33 @@ export async function POST(request: NextRequest) {
       ? getNanoBananaPromptingPrinciples()
       : getFluxPromptingPrinciples()
 
-    const systemPrompt = `${mayaPersonality}
-
-${userContext}
-
-${promptingPrinciples}
-
-=== YOUR TASK: GENERATE INSTAGRAM FEED POST PROMPT ===
-
-You are Maya, an elite AI Fashion Stylist generating ${isProMode ? "a Nano Banana Pro" : "a FLUX"} prompt for an Instagram feed post. This is NOT a concept card - this is for the user's actual Instagram feed that will be published.
-
-Apply YOUR fashion expertise:
-- Create SPECIFIC outfit descriptions (material + color + garment type), NOT generic terms like "trendy outfit"
-- Use YOUR fashion intelligence to suggest sophisticated, brand-aligned styling
-- Include detailed location descriptions that match the brand aesthetic
-- Apply natural, authentic posing and expressions
-- Create cinematic lighting that feels authentic, not staged
-
-POST DETAILS:
-- Post Type: ${postType}
-- Caption: ${caption || "No caption provided"}
-- Feed Position: ${feedPosition ? `Post #${feedPosition} in the feed` : "Not specified"}
-- Color Theme: ${colorTheme || "Not specified"}
-- Brand Vibe: ${brandVibe || "Not specified"}
-- User's Trigger Word: ${triggerWord}
-- User's Gender: ${gender || "Not specified"}
-${brandColors ? `- User's Brand Colors: ${brandColors}` : ""}
-${cleanedReferencePrompt ? `- Reference Prompt (from strategy - IGNORE THIS FORMAT, it's generic and missing requirements. Use ONLY for content ideas, generate completely new prompt): ${cleanedReferencePrompt.substring(0, 200)}${cleanedReferencePrompt.length > 200 ? "..." : ""}` : ""}
-
-=== 🔴 CRITICAL RULES FOR THIS GENERATION (NON-NEGOTIABLE) ===
-
-${isProMode ? `
-**PRO MODE (Nano Banana Pro):**
-- Use natural language prompts (100-150 words)
-- NO trigger words - Nano Banana uses reference images instead
-- Professional photography aesthetic
-- Rich visual storytelling with brand context
-` : `
-**CLASSIC MODE (FLUX LoRA):**
-TRIGGER WORD: "${triggerWord}"
-GENDER: "${userGender}"
-${ethnicity ? `ETHNICITY: "${ethnicity}" (MUST include in prompt for accurate representation)` : ""}
-`}
-${
-  physicalPreferences
-    ? `
-🔴 PHYSICAL PREFERENCES (MANDATORY - APPLY TO EVERY PROMPT):
-"${physicalPreferences}"
-
-CRITICAL INSTRUCTIONS:
-- These are USER-REQUESTED appearance modifications that MUST be in EVERY prompt
-- **IMPORTANT:** Convert instruction language to descriptive language${isProMode ? " for Nano Banana" : " for FLUX"}, but PRESERVE USER INTENT
-- **REMOVE INSTRUCTION PHRASES:** "Always keep my", "dont change", "keep my", "don't change my", "preserve my", "maintain my" - these are instructions, not prompt text
-- **CONVERT TO DESCRIPTIVE:** Convert to descriptive appearance features while preserving intent
-- Include them ${isProMode ? "naturally in the description" : "RIGHT AFTER the gender/ethnicity descriptor as DESCRIPTIVE features, not instructions"}
-`
-    : ""
-}
-
-**🔴 MANDATORY REQUIREMENTS (EVERY PROMPT MUST HAVE):**
-
-${isProMode ? `
-**PRO MODE (Nano Banana Pro):**
-1. **Identity Anchor** - Start with "Use the uploaded photos as strict identity reference" (MANDATORY)
-2. **Natural Language Description** - Rich scene description with person, outfit, location (100-150 words total)
-3. **NO trigger words** - Use reference images for identity preservation
-4. **Professional photography** - Professional camera specs (e.g., "85mm lens, f/2.0 depth of field")
-5. **Rich styling details** - Specific outfit, location, lighting descriptions
-6. **Brand context** - Embed brand names naturally in outfit descriptions (e.g., "wearing an Alo Yoga set"), NOT as separate metadata
-` : `
-1. **Start with EXACT FORMAT** ${postType?.toLowerCase().includes('object') || postType?.toLowerCase().includes('flatlay') || postType?.toLowerCase().includes('scenery') || postType?.toLowerCase().includes('place') ? '(ONLY FOR USER POSTS - SKIP FOR OBJECT/FLATLAY/SCENERY POSTS):' : '(FOR USER POSTS):'} "${postType?.toLowerCase().includes('object') || postType?.toLowerCase().includes('flatlay') || postType?.toLowerCase().includes('scenery') || postType?.toLowerCase().includes('place') ? '[object/scenery/flatlay description]' : `${triggerWord}, ${ethnicity ? ethnicity + " " : ""}${userGender}${physicalPreferences ? `, [converted physical preferences - descriptive only, no instructions]` : ""}`}"
-
-   **CRITICAL - TRIGGER WORD PLACEMENT** ${postType?.toLowerCase().includes('object') || postType?.toLowerCase().includes('flatlay') || postType?.toLowerCase().includes('scenery') || postType?.toLowerCase().includes('place') ? '(SKIP FOR OBJECT/FLATLAY/SCENERY POSTS):' : '(FOR USER POSTS):'}
-   ${postType?.toLowerCase().includes('object') || postType?.toLowerCase().includes('flatlay') || postType?.toLowerCase().includes('scenery') || postType?.toLowerCase().includes('place') ? `
-   - This is an OBJECT/FLATLAY/SCENERY post - DO NOT include trigger word or user
-   - Focus on the objects, products, flatlay items, or scenery
-   - Format: "[object/scenery description], shot on iPhone 15 Pro, [lighting], [styling]"
-   ` : `
-   - Trigger word MUST be the FIRST word in every prompt
-   - This is non-negotiable for character likeness preservation
-   - Format: "${triggerWord}, ${ethnicity ? ethnicity + " " : ""}${userGender}, [rest of prompt]"
-   - DO NOT use username, email, or any other identifier - ONLY use the trigger word "${triggerWord}"
-   `}
-
-2. **Authentic iPhone Style (MANDATORY):**
-   - ✅ **ALWAYS include:** "candid photo" or "candid moment" (prevents plastic/posed look)
-   - ✅ **ALWAYS include:** "amateur cellphone photo" or "cellphone photo" (prevents professional look)
-   - ✅ **THEN add:** "shot on iPhone 15 Pro portrait mode, shallow depth of field" OR "shot on iPhone, natural bokeh"
-   - ❌ NO natural imperfections lists (removed - too complex)
-   - ❌ NO film grain requirements (removed - too complex)
-   - ❌ NO muted color requirements (removed - too complex)
-   - ❌ NO skin texture descriptions beyond "natural" (removed - too complex)
-`}
-
-**🔴 PROMPT STRUCTURE ARCHITECTURE (FOLLOW THIS ORDER):**
-
-${isProMode ? `
-**PRO MODE (Nano Banana Pro) - Natural Language (100-150 words):**
-1. **IDENTITY** - Start with "Use the uploaded photos as strict identity reference" (MANDATORY FIRST)
-2. **OUTFIT & BRAND DETAILS** - Specific outfit details (material, color, garment type). Embed brand names naturally here (e.g., "wearing an Alo Yoga set", "in The Row cashmere sweater"), NOT separately
-3. **SETTING & MOOD** - Detailed location description that matches brand aesthetic, atmosphere, mood
-4. **TECHNICAL/STYLE** - Professional lighting description (e.g., "soft diffused natural window light"), camera specs (e.g., "85mm lens, f/2.0 depth of field"), photographic style
-5. **POSE & EXPRESSION** - Natural posing and expression
-
-**NO trigger words** - Use reference images for identity preservation
-**Natural language** - Write like describing to a photographer, not keyword stuffing. Use full sentences, not comma-separated keyword lists.
-**Brand Names:** Must be naturally embedded in outfit descriptions. Do not list them as separate metadata or tags.
-` : `
-${postType?.toLowerCase().includes('object') || postType?.toLowerCase().includes('flatlay') || postType?.toLowerCase().includes('scenery') || postType?.toLowerCase().includes('place') ? `
-**FOR OBJECT/FLATLAY/SCENERY POSTS (NO USER):**
-1. **OBJECT/SCENERY DESCRIPTION** (detailed description of items/scenery - 8-15 words)
-2. **COMPOSITION** (arrangement, layout, framing - 4-6 words)
-3. **STYLING** (colors, textures, props - 4-8 words)
-4. **LIGHTING** (with imperfections - 5-8 words)
-5. **TECHNICAL SPECS** (iPhone + imperfections + grain + muted colors - 8-12 words)
-` : `
-**FOR USER POSTS:**
-1. **TRIGGER WORD + GENDER + ETHNICITY** (MANDATORY - first 2-4 words): "${triggerWord}, ${ethnicity ? ethnicity + " " : ""}${userGender}"
-2. **OUTFIT** (material + color + garment type - 8-12 words, stay detailed here)
-3. **LOCATION** (simple, one-line - 3-5 words, keep brief)
-4. **LIGHTING** (simple, natural only - 3-5 words, NO dramatic/cinematic terms)
-5. **POSE + EXPRESSION** (simple, natural action - 3-5 words, NO "striking poses")
-6. **TECHNICAL SPECS** (basic iPhone only - 5-8 words, keep minimal)
-`}
-`}
-
-**Post Type Considerations:**
-
-${postType?.toLowerCase().includes('object') || postType?.toLowerCase().includes('flatlay') || postType?.toLowerCase().includes('scenery') || postType?.toLowerCase().includes('place') ? `
-⚠️ **CRITICAL: THIS IS A NON-USER POST TYPE (${postType})**
-- This post should NOT include the user/person at all
-- Generate a prompt for ${postType} WITHOUT the trigger word or user description
-- Focus on objects, products, flatlays, scenery, or lifestyle elements
-- Format should be: "[description of objects/scenery/flatlay], shot on iPhone 15 Pro, [lighting], [styling], [technical specs]"
-- DO NOT include "${triggerWord}" or "${userGender}" in this prompt
-` : `
-- "Close-Up": Face and shoulders only, intimate facial focus, natural expression
-- "Half Body": Waist-up framing, shows upper styling and hands, relaxed natural pose
-- "selfie": Close-up face portrait, natural expression, authentic moment
-- **NEVER create full-body shots** - they look unrealistic and AI-generated. Only use close-up, half-body, or selfie.
-`}
-
-${brandColors ? `**CRITICAL**: Incorporate the user's brand colors (${brandColors}) into the styling, clothing, background, or props. These are their chosen brand colors and MUST be reflected in the image.` : ""}
-
-**NO BANNED WORDS:** Never use "ultra realistic", "photorealistic", "8K", "4K", "high quality", "perfect", "flawless", "stunning", "beautiful", "gorgeous", "professional photography", "editorial", "magazine quality", "dramatic" (for lighting), "cinematic", "hyper detailed", "sharp focus", "ultra sharp", "crystal clear", "studio lighting", "perfect lighting", "smooth skin", "flawless skin", "airbrushed", "dramatic lighting", "professional yet approachable" - these cause plastic/generic faces and override the user LoRA.
-
-**🔴 CRITICAL: PROMPT QUALITY CHECKLIST - EVERY PROMPT MUST HAVE:**
-${isProMode ? `
-1. ✅ Identity anchor at start ("Use the uploaded photos as strict identity reference")
-2. ✅ Natural language description (NO trigger words)
-3. ✅ Specific outfit description (material + color + garment type, brand names embedded naturally)
-4. ✅ Detailed location/environment description
-5. ✅ Professional lighting description
-6. ✅ Professional camera specs (e.g., "85mm lens, f/2.0 depth of field")
-7. ✅ Natural pose/expression
-8. ✅ Brand names embedded in outfit descriptions (NOT as separate metadata)
-9. ✅ Total length: 100-150 words (natural language, not keyword stuffing)
-
-**Total target: 100-150 words for rich visual storytelling and professional quality**
-` : `
-1. ✅ Trigger word + ethnicity + gender (no duplicates, format: "${triggerWord}, ${ethnicity ? ethnicity + ", " : ""}${userGender}")
-2. ✅ Specific outfit description (material + color + garment type - NOT "trendy outfit", stay detailed here)
-3. ✅ Simple setting (one-line location, keep brief)
-4. ✅ Simple natural lighting (NO dramatic/cinematic terms)
-5. ✅ Natural pose/action (NO "striking poses")
-6. ✅ Authentic iPhone specs: Includes "candid photo" or "candid moment"? Includes "amateur cellphone photo" or "cellphone photo"? "shot on iPhone 15 Pro portrait mode, shallow depth of field" OR "shot on iPhone, natural bokeh"?
-7. ✅ Total length: 30-60 words (optimal for LoRA activation)
-
-**Total target: 30-60 words for optimal LoRA activation and accurate character representation**
-`}
-
-Now generate the ${isProMode ? "Nano Banana Pro" : "FLUX"} prompt for this ${postType} feed post.
-
-${postType?.toLowerCase().includes('object') || postType?.toLowerCase().includes('flatlay') || postType?.toLowerCase().includes('scenery') || postType?.toLowerCase().includes('place') ? `
-⚠️ **CRITICAL REMINDER:** This is a ${postType} post - DO NOT include the user, trigger word, or any person in the prompt. Focus only on objects, products, flatlays, or scenery.
-` : isProMode ? `
-**CRITICAL: Use YOUR fashion expertise to create detailed, specific styling for Pro Mode (Nano Banana).**
-- Generate a 100-150 word natural language prompt (NO trigger words)
-- ALWAYS start with identity anchor: "Use the uploaded photos as strict identity reference"
-- Follow with natural scene description (e.g., "Woman in...", "Person wearing...")
-- Include SPECIFIC outfit details (material + color + garment type, brand names embedded naturally)
-- Include DETAILED location/environment description
-- Include professional lighting description (e.g., "soft diffused natural window light")
-- Include professional camera specs (e.g., "85mm lens, f/2.0 depth of field")
-- Use natural language - write like describing to a photographer
-- Make it feel like professional photography, not iPhone snaps
-- Embed brand names in outfit descriptions (e.g., "wearing an Alo Yoga set"), NOT as separate tags
-
-**🔴 EXAMPLE OF WHAT YOU MUST CREATE (PRO MODE - ~100 words):**
-"Use the uploaded photos as strict identity reference. Woman in sage green silk blouse with relaxed fit tucked into high-waisted cream linen trousers, standing with hand on marble bar counter, looking over shoulder naturally with soft smile, positioned in upscale restaurant with marble surfaces and modern minimalist design, warm natural window light creating gentle shadows across her face and highlighting the texture of the silk fabric, professional photography with 85mm lens and f/2.0 depth of field, natural skin texture with visible pores, authentic moment captured with genuine presence, sophisticated atmosphere with warm beige and cream color palette"
-
-**🔴 EXAMPLE OF WHAT YOU MUST NEVER CREATE:**
-"Woman, confident expression, wearing stylish business casual outfit, urban background with clean lines, edgy-minimalist aesthetic with perfect lighting"
-
-**Why the bad example is wrong:**
-- ❌ "stylish business casual outfit" = generic (must be specific material + color + garment)
-- ❌ "urban background" = generic (must be detailed location description)
-- ❌ "perfect lighting" = vague (must be specific professional lighting description)
-- ❌ Missing professional camera specs
-- ❌ Too short and generic
-` : `
-**CRITICAL: Use YOUR fashion expertise to create detailed, specific styling.**
-- Generate a 30-60 word prompt that includes ALL requirements above
-- Start with: "${triggerWord}, ${ethnicity ? ethnicity + ", " : ""}${userGender}" (do NOT duplicate like "White, woman, White woman")
-- Include SPECIFIC outfit details (material + color + garment), NOT generic "trendy outfit" or "stylish business casual outfit"
-- Include SPECIFIC but simple location details, NOT generic "urban background" or "urban setting"
-- Include simple natural lighting (NO dramatic/cinematic terms)
-- Include "shot on iPhone 15 Pro portrait mode, shallow depth of field" OR "shot on iPhone, natural bokeh"
-- Keep it simple - trust the user LoRA for appearance
-- Make it feel like a real iPhone photo, not a professional shoot
-
-**🔴 EXAMPLE OF WHAT YOU MUST CREATE:**
-"${triggerWord}, ${ethnicity ? ethnicity + ", " : ""}${userGender}, in sage green silk blouse with relaxed fit tucked into high-waisted cream linen trousers, standing with hand on marble bar counter, looking over shoulder naturally, upscale restaurant with marble surfaces, uneven natural lighting, shot on iPhone 15 Pro portrait mode, shallow depth of field"
-
-**🔴 EXAMPLE OF WHAT YOU MUST NEVER CREATE:**
-"${triggerWord}, ${ethnicity ? ethnicity + ", " : ""}${userGender}, confident expression, wearing stylish business casual outfit, urban background with clean lines, edgy-minimalist aesthetic with perfect lighting"
-
-**Why the bad example is wrong:**
-- ❌ "stylish business casual outfit" = generic (must be specific material + color + garment)
-- ❌ "urban background" = generic (must be specific location with details)
-- ❌ "perfect lighting" = banned (must be uneven lighting with imperfections)
-- ❌ Missing all technical specs
-`}
-
-${isRegeneration && cleanedReferencePrompt ? `\n🔴 REGENERATION MODE: Create a NEW variation of this concept in the SAME category (${category || postType}).
-- Keep the same general concept/category but create a DIFFERENT variation:
-  - Different outfit (same style/category but different colors, materials, or pieces)
-  - Different location/scenery (same type but different specific place)
-  - Different pose/expression (same mood but different specific pose)
-  - Different lighting angle/mood (same style but different specific lighting)
-- The goal is to create a fresh take on the same concept - variety within consistency
-- Reference prompt (use for concept ideas only, generate completely new detailed prompt): ${cleanedReferencePrompt.substring(0, 200)}${cleanedReferencePrompt.length > 200 ? "..." : ""}
-` : cleanedReferencePrompt ? `\n🔴 CRITICAL: The reference prompt below is GENERIC and MISSING all mandatory requirements (iPhone, imperfections, skin texture, film grain, muted colors, specific outfit details). 
-
-**DO NOT COPY OR PARAPHRASE IT.**
-
-**IGNORE its format completely** - it uses generic terms like "trendy outfit", "empowering pose", "dynamic lighting" which are BANNED WORDS.
-
-**Generate a COMPLETELY NEW prompt** using:
-- The correct format: "${triggerWord}, ${ethnicity ? ethnicity + ", " : ""}${userGender}"
-- ALL mandatory requirements from above
-- Specific outfit details (material + color + garment type)
-- Specific location details
-- All technical specs (iPhone, imperfections, skin texture, film grain, muted colors)
-
-You may use the reference ONLY for general content ideas (e.g., "outdoor setting" → becomes "urban street with specific details"), but generate a completely new, detailed prompt.
-
-Reference (IGNORE FORMAT - GENERIC AND INCOMPLETE): ${cleanedReferencePrompt.substring(0, 200)}${cleanedReferencePrompt.length > 200 ? "..." : ""}` : ""}`
+    const authorityResult = generateMayaFeedPromptSystemPrompt({
+      isProMode,
+      mayaPersonality,
+      userContext,
+      promptingPrinciples,
+      postType,
+      caption,
+      feedPosition,
+      colorTheme,
+      brandVibe,
+      triggerWord,
+      gender,
+      userGender,
+      ethnicity,
+      brandColors,
+      cleanedReferencePrompt,
+      physicalPreferences,
+      isRegeneration,
+      category,
+    })
+    
+    const systemPrompt = authorityResult.systemPrompt
+    console.log(`[v0] [FEED-PROMPT] System prompt generated via Authority Layer, fingerprint: ${authorityResult.metadata.fingerprint}`)
 
     // Call AI to generate the prompt
     console.log("[v0] [FEED-PROMPT] Calling AI SDK with model: anthropic/claude-sonnet-4-20250514")
+    const generationStartTime = Date.now() // Phase 2C-3: Track generation time for audit logging
     let result
     try {
       result = streamText({
@@ -602,6 +380,9 @@ Reference (IGNORE FORMAT - GENERIC AND INCOMPLETE): ${cleanedReferencePrompt.sub
     
     console.log("[v0] [FEED-PROMPT] Generated prompt preview (cleaned):", generatedPrompt.substring(0, 200))
     console.log("[v0] [FEED-PROMPT] Mode:", isProMode ? "PRO (Nano Banana - skipping trigger word processing)" : "CLASSIC (FLUX - processing trigger words)")
+    
+    // Phase 2C-3: Store original prompt for audit logging (before trigger word processing)
+    const promptBeforeProcessing = generatedPrompt
 
     // CRITICAL: Handle object/flatlay/scenery posts differently (no user/trigger word)
     const isNonUserPost = postType?.toLowerCase().includes('object') || 
@@ -1045,6 +826,33 @@ Reference (IGNORE FORMAT - GENERIC AND INCOMPLETE): ${cleanedReferencePrompt.sub
       console.log("[v0] [FEED-PROMPT] Actual start:", generatedPrompt.substring(0, Math.min(expectedStart.length + 20, generatedPrompt.length)))
     }
 
+    // Phase 2C-3: Audit log prompt generation via Authority Layer
+    const generationTimeMs = Date.now() - generationStartTime
+    try {
+      auditLogMayaChatGeneration(
+        isProMode ? 'pro' : 'classic',
+        'feed-prompt',
+        {
+          userId: neonUser.id.toString(),
+          triggerWord,
+          userGender,
+          ethnicity,
+          physicalPreferences,
+          postType,
+          caption,
+          feedPosition,
+          colorTheme,
+          brandVibe,
+          category,
+        },
+        generatedPrompt,
+        generationTimeMs
+      )
+    } catch (auditError) {
+      // Don't fail the request if audit logging fails
+      console.warn("[v0] [FEED-PROMPT] Audit logging failed (non-critical):", auditError)
+    }
+    
     return NextResponse.json({
       success: true,
       prompt: generatedPrompt,

@@ -152,7 +152,7 @@ export default function PromptEmailCapture({
             </div>
 
             <p className="text-xs text-stone-500 font-light text-center">
-              We\u0027ll only send you valuable content, never spam.
+              We'll only send you valuable content, never spam.
             </p>
 
             {error && (

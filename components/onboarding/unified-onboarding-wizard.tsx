@@ -104,7 +104,7 @@ const UNIFIED_STEPS = [
   {
     id: "welcome",
     title: "Welcome",
-    subtitle: "Let\u0027s get started",
+    subtitle: "Let's get started",
   },
   {
     id: "business",
@@ -120,7 +120,7 @@ const UNIFIED_STEPS = [
   },
   {
     id: "story",
-    title: "What\u0027s your story?",
+    title: "What's your story?",
     subtitle: "Step 3 of 8",
     field: "transformationStory",
     isTextarea: true,
@@ -494,10 +494,10 @@ export default function UnifiedOnboardingWizard({
                 {currentStep === 0 && (
                   <div className="space-y-6">
                     <p className="text-base sm:text-lg font-light leading-relaxed text-stone-700">
-                      Hi {userName && !userName.includes('@') ? userName : "there"}! 👋 Let\u0027s create content that actually looks and sounds like you. This will only take a few minutes.
+                      Hi {userName && !userName.includes('@') ? userName : "there"}! 👋 Let's create content that actually looks and sounds like you. This will only take a few minutes.
                     </p>
                     <p className="text-sm font-light text-stone-600">
-                      We\u0027ll ask you a few questions about your brand, style, and goals. Your answers help us generate personalized content just for you.
+                      We'll ask you a few questions about your brand, style, and goals. Your answers help us generate personalized content just for you.
                     </p>
                   </div>
                 )}

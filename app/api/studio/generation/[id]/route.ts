@@ -3,6 +3,7 @@ import { neon } from "@neondatabase/serverless"
 import { createServerClient } from "@/lib/supabase/server"
 import { getReplicateClient } from "@/lib/replicate-client"
 import { put } from "@vercel/blob"
+import { hookStudioGeneration } from "@/lib/quality/hooks"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -64,6 +65,16 @@ export async function GET(request: Request, { params }: { params: { id: string }
             })
 
             uploadedUrls.push(blob.url)
+            
+            // Quality monitoring hook (fire-and-forget)
+            hookStudioGeneration({
+              imageUrl: blob.url,
+              prompt: generation.prompt || generation.subcategory || "",
+              userId: neonUser.id,
+              generationId: generationId,
+              predictionId: predictionId,
+              category: generation.category,
+            }).catch(() => {})
           } catch (uploadError) {
             console.error("[v0] Failed to upload image to Blob:", uploadError)
             // Fall back to original URL if upload fails

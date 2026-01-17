@@ -71,6 +71,7 @@ interface MayaChatScreenProps {
   selectedGuideCategory?: string | null // Selected guide category
   onGuideChange?: (id: number | null, category: string | null) => void // Callback when guide selection changes
   hasTrainedModel?: boolean // Whether user has a trained model
+  isMembership?: boolean // Whether user has membership (for Pro/Classic toggle visibility)
 }
 
 export default function MayaChatScreen({ 
@@ -85,6 +86,7 @@ export default function MayaChatScreen({
   selectedGuideCategory = null,
   onGuideChange,
   hasTrainedModel = true, // Default to true to avoid breaking existing usage
+  isMembership = false, // Default to false - only membership users see Pro/Classic toggle
 }: MayaChatScreenProps) {
   const { toast } = useToast()
   const [inputValue, setInputValue] = useState("")
@@ -2354,6 +2356,7 @@ export default function MayaChatScreen({
           selectedGuideCategory={selectedGuideCategory}
           onGuideChange={onGuideChange}
           userId={userId}
+          showModeToggle={isMembership} // Only show Pro/Classic toggle for membership users
           onEditIntent={async () => {
             const newIntent = prompt('Enter your creative intent:', imageLibrary.intent || '')
             if (newIntent !== null) {

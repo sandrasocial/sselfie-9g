@@ -1,0 +1,7 @@
+[
+  {
+    "file": "app/api/feed-planner/create-strategy/route.ts",
+    "reason": "Legacy deprecated route - will be removed in future version",
+    "migrationPlan": "Route is deprecated, users should use Maya Chat Feed Tab instead"
+  }
+]

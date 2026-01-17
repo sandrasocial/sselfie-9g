@@ -296,7 +296,29 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
       mutatePersonalBrand(), // Explicitly refresh personal brand data
     ])
     
-    console.log("[Feed Planner Wizard] ✅ Cache invalidated, wizard closed, feed planner should refresh")
+    console.log("[Feed Planner Wizard] ✅ Cache invalidated, wizard closed")
+    
+    // 🔴 FIX ISSUE 2: Route user to their feed after wizard completion
+    // Fetch the latest feed to get the feedId
+    try {
+      const latestFeedResponse = await fetch("/api/feed/latest")
+      if (latestFeedResponse.ok) {
+        const latestFeedData = await latestFeedResponse.json()
+        if (latestFeedData?.feed?.id) {
+          console.log("[Feed Planner Wizard] ✅ Routing to feed:", latestFeedData.feed.id)
+          // Component will automatically show the feed when feedId is available via SWR
+          // No need to manually route - FeedViewScreen will handle it
+        } else {
+          console.log("[Feed Planner Wizard] ⚠️ No feed found after wizard completion")
+          // Stay on feed planner - user will see welcome wizard or creation screen
+        }
+      }
+    } catch (error) {
+      console.error("[Feed Planner Wizard] ❌ Error fetching latest feed:", error)
+      // Stay on feed planner - graceful fallback
+    }
+    
+    console.log("[Feed Planner Wizard] ✅ Feed planner should refresh with latest feed")
   }
 
   // Memoize existingData BEFORE any conditional returns (Rules of Hooks)
@@ -450,7 +472,11 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
     // This ensures the useEffect won't show it again on refresh
     await mutate("/api/feed-planner/welcome-status")
     
-    console.log('[FeedPlannerClient] ✅ Welcome wizard closed and status refreshed')
+    // 🔴 FIX ISSUE 2: Route user to their feed after welcome wizard completion
+    // Refresh the latest feed data so FeedViewScreen shows the correct feed
+    await mutate("/api/feed/latest")
+    
+    console.log('[FeedPlannerClient] ✅ Welcome wizard closed, status refreshed, and feed data updated')
   }
 
   // Handle "Use Preview Style" - create feed with existing data

@@ -54,7 +54,33 @@ export function useFeedPostPolling({
 
       // Handle errors from API
       if (data.error) {
-        throw new Error(data.error || "Failed to check generation status")
+        // 🔴 FIX: Handle content moderation errors gracefully (E005)
+        const errorMessage = data.error || "Failed to check generation status"
+        const isContentFlagged = errorMessage.includes("E005") || errorMessage.includes("flagged as sensitive")
+        
+        if (isContentFlagged) {
+          console.warn(`[useFeedPostPolling] Content flagged for post ${postId}:`, errorMessage)
+          // Set a user-friendly error message
+          const friendlyError = "Content flagged by safety systems. Please try different wording or style."
+          setStatus("failed")
+          setError(friendlyError)
+          setImageUrl(null)
+
+          // Stop polling
+          if (pollIntervalRef.current) {
+            clearInterval(pollIntervalRef.current)
+            pollIntervalRef.current = null
+          }
+
+          // Call error callback with friendly message
+          if (onError) {
+            onError(friendlyError)
+          }
+          return // Don't throw - handle gracefully
+        }
+        
+        // For other errors, throw as before
+        throw new Error(errorMessage)
       }
 
       console.log(`[useFeedPostPolling] Post ${postId} status:`, data.status)

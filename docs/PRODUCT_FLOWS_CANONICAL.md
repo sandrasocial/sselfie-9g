@@ -8,17 +8,21 @@
 ## 1. PRODUCT OVERVIEW
 
 ### What SSELFIE Studio Is
-SSELFIE Studio is an AI-powered personal brand photo generation platform. Users upload 10-20 selfies to train a personal AI model, then use Maya (an AI stylist) to generate professional brand photos in various styles and contexts.
+SSELFIE Studio turns the selfies you already take into clear, on-brand content you can actually post. Instead of staring at a blank screen wondering what to post, SSELFIE already knows your vibe, style, brand, and how you show up — so you don't have to start from zero every time.
 
 ### Who It Is For
-- **Primary:** Women entrepreneurs who need professional brand photos
-- **Use Cases:** Instagram feeds, websites, media kits, digital products, online courses
-- **Value:** 100+ professional photos per month for $47/month (less than a coffee per day)
+- **Primary:** Women who care about showing up online but feel drained by it
+- **Pain Points:** Overthinking what to post, inconsistency, decision fatigue, falling off when life gets busy
+- **Core Need:** Stay visible online without burning out, forcing creativity, or pretending to be someone you're not
 
 ### Core Value Proposition
+**Turn one good selfie into a full week of brand-consistent content — without overthinking.**
+
+The goal isn't perfection. The goal is **continuity**.
+
 1. **Train once** - Upload selfies to create personal AI model (one-time, ~5 minutes)
-2. **Style with Maya** - Chat with AI stylist to create styled shoots matching brand vibe
-3. **Gallery** - Save 100+ fresh professional images monthly into brand asset library
+2. **Chat with Maya** - Your AI brand guide who removes the question "What should I post?"
+3. **Generate & Post** - Get on-brand photos, feeds, and content when you need them
 
 ### Classic Mode vs Pro Mode (System Level)
 

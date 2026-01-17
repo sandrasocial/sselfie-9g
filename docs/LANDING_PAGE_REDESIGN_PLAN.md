@@ -1,5 +1,7 @@
 # Landing Page Redesign - Implementation Plan
 
+**Note:** This document describes a technical landing page redesign. For the updated SSELFIE messaging and value proposition, see README.md which reflects our core positioning: "Turn one good selfie into a full week of brand-consistent content — without overthinking."
+
 ## 📊 Current vs New Design Analysis
 
 ### Quick Comparison Table

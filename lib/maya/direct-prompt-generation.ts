@@ -1,8 +1,41 @@
 /**
- * Direct Prompt Generation - Let Claude Be Claude
+ * PROMPT VALIDATION & FIX HELPERS
  * 
- * No extraction, no rebuilding, no fighting.
- * Just perfect examples and simple validation.
+ * STATUS: ✅ ACTIVELY USED - Validation utilities
+ * 
+ * PURPOSE:
+ * Provides validation and programmatic fix functions for prompts AFTER generation.
+ * This is NOT a prompt builder - it validates and fixes existing prompts.
+ * 
+ * ACTIVELY USED BY:
+ * - API: app/api/maya/generate-concepts/route.ts:63-67
+ *   - applyProgrammaticFixes() - Fixes prompt issues
+ *   - validatePromptLight() - Lightweight validation
+ *   - DirectPromptContext type
+ * 
+ * NAMING WARNING:
+ * ⚠️ File name "direct-prompt-generation" is misleading - suggests prompt generation
+ * ⚠️ Actually provides validation/fix helpers, NOT generation
+ * ⚠️ Recommended rename: "prompt-validation-helpers.ts" (Phase 4)
+ * 
+ * LEGACY STATUS:
+ * - This is a helper module, not an entry point
+ * - Should be internal to prompt-constructor or prompt-authority
+ * - Migration target: Phase 3+ (consolidate into appropriate builder)
+ * 
+ * FOR NEW WORK:
+ * - Do NOT create new "direct" prompt builders
+ * - Use Prompt Authority Layer (lib/maya/prompt-authority.ts)
+ * - Validation helpers should be internal to builders
+ * - See: docs/_CANONICAL/PROMPT_AUTHORITY_POLICY.md
+ * 
+ * EXPORTS:
+ * - applyProgrammaticFixes() - Applies fixes to prompts
+ * - validatePromptLight() - Lightweight prompt validation
+ * - DirectPromptContext type - Context for validation
+ * - generatePromptDirect() - Legacy function (use with caution)
+ * 
+ * Last Updated: 2026-01-17 (Phase 2F - Documentation fixes)
  */
 
 export interface DirectPromptContext {

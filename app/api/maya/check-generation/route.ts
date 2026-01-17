@@ -3,6 +3,7 @@ import { neon } from "@neondatabase/serverless"
 import { getReplicateClient } from "@/lib/replicate-client"
 import { put } from "@vercel/blob"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { hookMayaGeneration } from "@/lib/quality/hooks"
 
 const sql = neon(process.env.DATABASE_URL || "")
 
@@ -97,6 +98,16 @@ export async function GET(request: NextRequest) {
               )
             `
           }
+          
+          // Quality monitoring hook (fire-and-forget)
+          hookMayaGeneration({
+            imageUrl: blob.url,
+            prompt: generation.prompt || generation.description || generation.subcategory || "",
+            userId: generation.user_id,
+            generationId: generationId,
+            predictionId: predictionId,
+            category: generation.category,
+          }).catch(() => {})
         }
       } catch (galleryError: any) {
         console.error("[v0] Failed to save to gallery:", galleryError?.message || String(galleryError))

@@ -4,9 +4,11 @@ import { getReplicateClient } from "@/lib/replicate-client"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { checkCredits, deductCredits, CREDIT_COSTS } from "@/lib/credits"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { generatePrompt } from "@/lib/maya/prompt-authority"
 
 const sql = neon(process.env.DATABASE_URL || "")
 
+// Phase 2C-3: Keep original function as fallback
 function enhanceMotionPrompt(userPrompt: string | undefined, imageDescription?: string): string {
   // If Maya (the AI agent) provided a prompt, trust it completely
   if (userPrompt && userPrompt.trim().length > 0) {
@@ -117,8 +119,22 @@ export async function POST(request: NextRequest) {
 
     const replicate = getReplicateClient()
 
-    // Enhanced motion prompt
-    const baseMotionPrompt = enhanceMotionPrompt(motionPrompt, imageDescription)
+    // Phase 2C-3: Route motion prompt enhancement through Prompt Authority Layer
+    const enhancementStartTime = Date.now()
+    let baseMotionPrompt: string
+    try {
+      const authorityResult = await generatePrompt('video', 'video-generation', {
+        userId: neonUser.id.toString(),
+        motionPrompt,
+        imageDescription,
+      })
+      baseMotionPrompt = authorityResult.prompt
+      console.log("[v0] ✅ Motion prompt enhanced via Prompt Authority Layer (", Date.now() - enhancementStartTime, "ms)")
+    } catch (authorityError) {
+      // Fallback to original logic if Authority Layer fails
+      console.warn("[v0] ⚠️ Prompt Authority Layer failed, using fallback:", authorityError)
+      baseMotionPrompt = enhanceMotionPrompt(motionPrompt, imageDescription)
+    }
 
     // Controlled seed variation for consistency with variety
     // Use a seed range (0-999999) for reproducibility while maintaining variety

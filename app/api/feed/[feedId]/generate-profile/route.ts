@@ -6,6 +6,7 @@ import { getReplicateClient } from "@/lib/replicate-client"
 import { MAYA_QUALITY_PRESETS } from "@/lib/maya/quality-settings"
 import { generateObject } from "ai"
 import { z } from "zod"
+import { generatePrompt } from "@/lib/maya/prompt-authority"
 
 export async function POST(req: NextRequest, { params }: { params: { feedId: string } }) {
   try {
@@ -124,7 +125,20 @@ Be sophisticated and specific - this should feel like a Vogue editorial, not a L
       console.log("[v0] ✓ Maya's sophisticated profile prompt saved")
     }
 
-    const finalPrompt = `${model.trigger_word}, ${basePrompt}`
+    // Phase 2C-2: Route profile image prompt through Prompt Authority Layer
+    let finalPrompt: string
+    try {
+      const authorityResult = await generatePrompt('profile-image', 'profile-image', {
+        userId: user.id.toString(),
+        triggerWord: model.trigger_word,
+      })
+      finalPrompt = authorityResult.prompt
+      console.log("[v0] ✅ Profile prompt generated via Prompt Authority Layer")
+    } catch (authorityError) {
+      // Fallback to original logic if Authority Layer fails
+      console.warn("[v0] ⚠️ Prompt Authority Layer failed, using fallback:", authorityError)
+      finalPrompt = `${model.trigger_word}, ${basePrompt}`
+    }
 
     const qualitySettings = MAYA_QUALITY_PRESETS.default
 

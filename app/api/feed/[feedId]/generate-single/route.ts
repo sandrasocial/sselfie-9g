@@ -8,6 +8,7 @@ import { MAYA_QUALITY_PRESETS } from "@/lib/maya/quality-settings"
 import { checkGenerationRateLimit } from "@/lib/rate-limit"
 import { checkCredits, deductCredits, CREDIT_COSTS } from "@/lib/credits"
 import { extractReplicateVersionId, ensureTriggerWordPrefix, ensureGenderInPrompt, buildClassicModeReplicateInput } from "@/lib/replicate-helpers"
+import { validatePrompt, generateFeedSinglePromptViaAuthority } from "@/lib/maya/prompt-authority"
 import { generateWithNanoBanana, getStudioProCreditCost } from "@/lib/nano-banana-client"
 import { getFeedPlannerAccess } from "@/lib/feed-planner/access-control"
 import { getCategoryAndMood, getFashionStyleForPosition, injectAndValidateTemplate } from "@/lib/feed-planner/generation-helpers"
@@ -530,10 +531,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
                 user.id.toString()
               )
 
-              const { buildSingleImagePrompt } = await import("@/lib/feed-planner/build-single-image-prompt")
-              finalPrompt = buildSingleImagePrompt(injectedTemplate, post.position)
+              // Phase 3B P1-2: Generate prompt via Authority Layer
+              const authorityResult = await generateFeedSinglePromptViaAuthority(
+                injectedTemplate,
+                post.position,
+                {
+                  userId: user.id.toString(),
+                  feedId: feedIdInt,
+                  postId,
+                  generationMode: 'pro',
+                }
+              )
+              finalPrompt = authorityResult.prompt
               console.log("[v0] PROMPT_SOURCE=template_injection")
-              console.log(`[v0] [GENERATE-SINGLE] ✅ Extracted scene ${post.position} from injected template (${finalPrompt.split(/\s+/).length} words)`)
+              console.log(`[v0] [GENERATE-SINGLE] ✅ Extracted scene ${post.position} from injected template via Authority Layer (${finalPrompt.split(/\s+/).length} words, fingerprint: ${authorityResult.metadata.fingerprint})`)
             } catch (templateError) {
               console.error(`[v0] [GENERATE-SINGLE] ❌ Template injection failed for paid blueprint:`, templateError instanceof Error ? templateError.message : "Unknown error")
               return Response.json(
@@ -577,10 +588,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
             
             // Free user full feeds extract individual scenes from the injected template
             // (Preview feeds are already handled above before this access check)
-            const { buildSingleImagePrompt } = await import("@/lib/feed-planner/build-single-image-prompt")
-            finalPrompt = buildSingleImagePrompt(injectedTemplate, post.position)
+            // Phase 3B P1-2: Generate prompt via Authority Layer
+            const authorityResult = await generateFeedSinglePromptViaAuthority(
+              injectedTemplate,
+              post.position,
+              {
+                userId: user.id.toString(),
+                feedId: feedIdInt,
+                postId,
+                generationMode: 'pro',
+              }
+            )
+            finalPrompt = authorityResult.prompt
             console.log("[v0] PROMPT_SOURCE=template_injection")
-            console.log(`[v0] [GENERATE-SINGLE] ✅ Extracted scene ${post.position} from injected template (${finalPrompt.split(/\s+/).length} words)`)
+            console.log(`[v0] [GENERATE-SINGLE] ✅ Extracted scene ${post.position} from injected template via Authority Layer (${finalPrompt.split(/\s+/).length} words, fingerprint: ${authorityResult.metadata.fingerprint})`)
             
             // Save the prompt to the database
             await sql`
@@ -844,10 +865,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
                 )
                 
                 // ✅ EXTRACT SINGLE SCENE (same as free users)
-                const { buildSingleImagePrompt } = await import("@/lib/feed-planner/build-single-image-prompt")
-                templateReferencePrompt = buildSingleImagePrompt(injectedTemplate, post.position)
+                // Phase 3B P1-2: Generate prompt via Authority Layer
+                const authorityResult = await generateFeedSinglePromptViaAuthority(
+                  injectedTemplate,
+                  post.position,
+                  {
+                    userId: user.id.toString(),
+                    feedId: feedIdInt,
+                    postId,
+                    generationMode: 'pro',
+                  }
+                )
+                templateReferencePrompt = authorityResult.prompt
                 
-                console.log(`[v0] [GENERATE-SINGLE] ✅ Extracted scene ${post.position} from injected template (${templateReferencePrompt.split(/\s+/).length} words)`)
+                console.log(`[v0] [GENERATE-SINGLE] ✅ Extracted scene ${post.position} from injected template via Authority Layer (${templateReferencePrompt.split(/\s+/).length} words, fingerprint: ${authorityResult.metadata.fingerprint})`)
               } catch (templateError) {
                 console.error(`[v0] [GENERATE-SINGLE] ⚠️ Error with template injection:`, templateError)
                 // Fallback: use raw template if injection fails
@@ -1314,8 +1345,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
         return Response.json({ error: "Model configuration error" }, { status: 500 })
       }
 
-      finalPrompt = ensureTriggerWordPrefix(finalPrompt, model.trigger_word || '')
-      
+      // Phase 2C-2: Route prompt validation through Prompt Authority Layer
       // Build user gender term (same format as concept cards)
       let userGender = "person"
       if (model.gender) {
@@ -1328,9 +1358,35 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
         }
       }
       
-      // CRITICAL: Ensure gender is present after trigger word (fixes missing gender issue)
       const ethnicityStr = typeof model.ethnicity === 'string' ? model.ethnicity : undefined
-      finalPrompt = ensureGenderInPrompt(finalPrompt, model.trigger_word || '', userGender, ethnicityStr)
+      
+      try {
+        const validationResult = validatePrompt(finalPrompt, 'classic', {
+          userId: user.id.toString(),
+          triggerWord: model.trigger_word || '',
+          userGender,
+          ethnicity: ethnicityStr,
+        })
+        
+        if (validationResult.valid) {
+          finalPrompt = validationResult.prompt
+          if (validationResult.fixes.length > 0) {
+            console.log("[v0] [GENERATE-SINGLE] ✅ Prompt validated via Authority Layer, fixes applied:", validationResult.fixes)
+          } else {
+            console.log("[v0] [GENERATE-SINGLE] ✅ Prompt validated via Authority Layer, no fixes needed")
+          }
+        } else {
+          // Fallback to original validation if Authority Layer fails
+          console.warn("[v0] [GENERATE-SINGLE] ⚠️ Authority Layer validation failed, using fallback:", validationResult.fixes)
+          finalPrompt = ensureTriggerWordPrefix(finalPrompt, model.trigger_word || '')
+          finalPrompt = ensureGenderInPrompt(finalPrompt, model.trigger_word || '', userGender, ethnicityStr)
+        }
+      } catch (authorityError) {
+        // Fallback to original validation if Authority Layer throws
+        console.warn("[v0] [GENERATE-SINGLE] ⚠️ Prompt Authority Layer error, using fallback:", authorityError)
+        finalPrompt = ensureTriggerWordPrefix(finalPrompt, model.trigger_word || '')
+        finalPrompt = ensureGenderInPrompt(finalPrompt, model.trigger_word || '', userGender, ethnicityStr)
+      }
       
       if (model.trigger_word && finalPrompt.toLowerCase().startsWith(model.trigger_word.toLowerCase())) {
         console.log("[v0] [GENERATE-SINGLE] ✅ Trigger word confirmed at start of prompt")

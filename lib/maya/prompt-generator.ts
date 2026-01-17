@@ -1,11 +1,41 @@
 /**
- * Intelligent Prompt Generator for NanoBanana Pro
- * Analyzes workbench context and generates optimized prompts
+ * PROMPT SUGGESTION GENERATOR (Workbench Feature)
+ * 
+ * STATUS: ✅ ACTIVELY USED - DO NOT DELETE
+ * 
+ * PURPOSE:
+ * Analyzes workbench context (images + user intent) and generates 3 prompt
+ * suggestions for NanoBanana Pro Mode. This is the "suggestion" feature,
+ * NOT the actual prompt generation for image creation.
+ * 
+ * ACTIVELY USED BY:
+ * - API: app/api/maya/generate-prompt-suggestions/route.ts (EP-02)
+ * - UI: components/sselfie/maya-chat-screen.tsx:50
+ * - UI: components/sselfie/maya/maya-chat-interface.tsx:8
+ * - UI: components/sselfie/prompt-suggestion-card.tsx:10
+ * 
+ * LEGACY STATUS:
+ * - ⚠️ This file bypasses Prompt Authority Layer (Phase 2E finding)
+ * - Migration target: Phase 3+ (migrate to route through Authority)
+ * - Until migration: DO NOT DELETE - critical for workbench suggestions
+ * 
+ * NAMING NOTE:
+ * - Despite file name "prompt-generator", this generates SUGGESTIONS, not prompts
+ * - Actual prompt generation for images uses prompt-authority.ts → builders
+ * - Consider renaming to "prompt-suggestion-generator.ts" (Phase 4)
+ * 
+ * FOR NEW WORK:
+ * - Do NOT add new prompt types here
+ * - Use Prompt Authority Layer (lib/maya/prompt-authority.ts)
+ * - See: docs/_CANONICAL/PROMPT_AUTHORITY_POLICY.md
+ * 
+ * HISTORY:
+ * - Template system removed as part of Phase 5 consolidation
+ * - PromptGenerator class remains active and critical
+ * - Exports: PromptGenerator class, WorkbenchContext type, PromptSuggestion type
+ * 
+ * Last Updated: 2026-01-17 (Phase 2F - Documentation fixes)
  */
-
-// Template system removed - this file is deprecated
-// All template imports removed as part of Phase 5 consolidation
-// TODO: This file should be refactored or removed if not actively used
 
 // Placeholder types for backward compatibility
 type PromptTemplate = any

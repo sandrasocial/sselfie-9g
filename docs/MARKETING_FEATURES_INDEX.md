@@ -8,11 +8,17 @@
 
 ## 📋 Executive Summary
 
-**SSELFIE Studio** is an AI-powered personal brand photography platform that helps women entrepreneurs create professional brand photos every month without a photographer. The platform combines AI image generation, Instagram strategy, content planning, and educational resources into one comprehensive solution.
+**SSELFIE Studio** turns one good selfie into a full week of brand-consistent content — without overthinking. It's a visibility safety net for women who care about showing up online but feel drained by it.
 
-**Target Audience:** Women entrepreneurs, content creators, personal brand builders, coaches, consultants, and lifestyle influencers who need consistent, professional brand photos for Instagram and their business.
+**Target Audience:** Women who overthink what to post, feel inconsistent, experience decision fatigue, and are tired of relying on motivation to stay visible.
 
-**Core Value Proposition:** "100 professional brand photos every month for less than the price of a coffee a day ($97/month)"
+**Core Value Proposition:** "Stay visible online without burning out, forcing creativity, or pretending to be someone you're not."
+
+**The Real Problem We Solve:** Not tools. Mental relief. SSELFIE answers "What should I post?" so you don't have to start from zero every time.
+
+**Pricing:**
+- Starter Photoshoot: $49 (one-time) — 50 on-brand photos
+- Creator Studio: $97/month — 200 credits/month, full system access
 
 ---
 
@@ -40,9 +46,11 @@
 
 ---
 
-### 2. MAYA - AI Stylist & Chat Interface
+### 2. MAYA - Your AI Brand Guide
 
-**Purpose:** AI-powered stylist that helps users create styled photoshoots through conversation
+**Purpose:** Maya removes the question "What should I post?" — she's your built-in brand guide who's calm, honest, and practical.
+
+**What Maya Does:** Helps you decide what makes sense for you, turn thoughts into content, and stay aligned when your brain feels full. You don't need to know what to ask. You can just talk.
 
 **Key Capabilities:**
 - **Classic Mode:** Uses Flux LoRA models with trigger words

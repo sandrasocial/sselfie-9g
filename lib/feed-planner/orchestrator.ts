@@ -11,6 +11,7 @@ import INFLUENCER_POSING_KNOWLEDGE from "../maya/influencer-posing-knowledge"
 import INSTAGRAM_LOCATION_INTELLIGENCE from "../maya/instagram-location-intelligence"
 import { getLuxuryLifestyleSettings } from "../maya/luxury-lifestyle-settings"
 import { detectRequiredMode, detectProModeType } from "./mode-detection"
+import { generateBatch, auditLogMayaChatGeneration } from "../maya/prompt-authority"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -229,16 +230,14 @@ What Instagram feed should we create?`,
   const fashionIntelligence = getFashionIntelligencePrinciples(userGender, userEthnicity)
   const fluxPrinciples = getFluxPromptingPrinciples()
 
-  const posts = await Promise.all(
-    layoutStrategy.posts.map(async (postLayout, index) => {
-      console.log(`[v0] Feed Planner: Generating concept card for post ${index + 1}/9...`)
-
-      try {
-        // Build user request from feed post context
-        const userRequest = `${postLayout.visualDirection}. ${postLayout.purpose}. Position ${postLayout.position} in a 9-post Instagram feed with ${brandVibe} aesthetic. Shot type: ${postLayout.shotType}`
-        
-        // Generate concept using Maya's concept generation logic
-        const conceptPrompt = `You are Maya, an elite fashion photographer with 15 years of experience shooting for Vogue, Elle, and creating viral Instagram content. You have an OBSESSIVE eye for authenticity - you know that the best images feel stolen from real life, not produced.
+  // Phase 2C-4-2: Feature flag for Authority Layer routing
+  const ENABLE_AUTHORITY_FEED_PLANNER_PROMPTS = process.env.ENABLE_AUTHORITY_FEED_PLANNER_PROMPTS === 'true'
+  
+  // Build all concept prompts first (needed for both paths)
+  const postContexts = layoutStrategy.posts.map((postLayout, index) => {
+    const userRequest = `${postLayout.visualDirection}. ${postLayout.purpose}. Position ${postLayout.position} in a 9-post Instagram feed with ${brandVibe} aesthetic. Shot type: ${postLayout.shotType}`
+    
+    const conceptPrompt = `You are Maya, an elite fashion photographer with 15 years of experience shooting for Vogue, Elle, and creating viral Instagram content. You have an OBSESSIVE eye for authenticity - you know that the best images feel stolen from real life, not produced.
 
 ${fashionIntelligence}
 
@@ -301,13 +300,80 @@ Return ONLY valid JSON, no markdown:
   "category": "Close-Up Portrait" | "Half Body Lifestyle" | "Environmental Portrait" | "Full Body" | "Object" | "Flatlay" | "Scenery",
   "prompt": "YOUR CRAFTED FLUX PROMPT - MUST start with ${actualTriggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender}${physicalPreferences ? `, [converted physical preferences - descriptive only]` : ""}"
 }`
-
+    
+    return {
+      userId: userId.toString(),
+      triggerWord: actualTriggerWord,
+      userGender,
+      ethnicity: userEthnicity,
+      physicalPreferences,
+      userRequest,
+      conceptPrompt,
+      postIndex: postLayout.position,
+      postPosition: postLayout.position,
+      visualDirection: postLayout.visualDirection,
+      purpose: postLayout.purpose,
+      shotType: postLayout.shotType,
+      brandVibe,
+      colorPalette,
+    }
+  })
+  
+  // Generate prompts via Authority Layer or legacy path
+  let promptResults: Array<{ prompt: string; postIndex: number }> = []
+  let pathUsed: 'authority' | 'legacy' = 'legacy'
+  
+  if (ENABLE_AUTHORITY_FEED_PLANNER_PROMPTS) {
+    // Route through Prompt Authority Layer
+    console.log('[v0] Feed Planner: ✅ Routing prompt generation through Prompt Authority Layer')
+    pathUsed = 'authority'
+    
+    try {
+      const batchResult = await generateBatch(
+        'classic',
+        'feed-planner-batch',
+        postContexts,
+        async (prompt: string, index: number) => {
+          // Delegate to existing Maya chat logic
+          return await generateText({
+            model: "anthropic/claude-sonnet-4-20250514",
+            messages: [{ role: "user", content: prompt }],
+            maxTokens: 2000,
+            temperature: 0.85,
+          })
+        }
+      )
+      
+      promptResults = batchResult.prompts.map(p => ({
+        prompt: p.prompt,
+        postIndex: p.postIndex,
+      }))
+      
+      console.log(`[v0] Feed Planner: ✅ Authority Layer generated ${promptResults.length} prompts in ${batchResult.metadata.totalTimeMs}ms`)
+      console.log(`[v0] Feed Planner: Success: ${batchResult.metadata.successCount}, Failures: ${batchResult.metadata.failureCount}`)
+    } catch (authorityError) {
+      console.error('[v0] Feed Planner: ❌ Authority Layer failed, falling back to legacy:', authorityError)
+      pathUsed = 'legacy'
+      // Continue with legacy path below
+    }
+  }
+  
+  // Legacy path (or fallback from Authority Layer)
+  if (pathUsed === 'legacy' || promptResults.length === 0) {
+    console.log('[v0] Feed Planner: Using legacy prompt generation path')
+    pathUsed = 'legacy'
+    
+    // Generate prompts using existing logic
+    const legacyPrompts = await Promise.all(
+      postContexts.map(async (context, index) => {
+        const generationStartTime = Date.now()
+        
         const { text } = await generateText({
           model: "anthropic/claude-sonnet-4-20250514",
           messages: [
             {
               role: "user",
-              content: conceptPrompt,
+              content: context.conceptPrompt,
             },
           ],
           maxTokens: 2000,
@@ -334,7 +400,73 @@ Return ONLY valid JSON, no markdown:
           throw new Error("Concept generated but no prompt found in response")
         }
         
-        console.log(`[v0] Feed Planner: Post ${index + 1} concept generated (${fluxPrompt.split(/\s+/).length} words): ${fluxPrompt.substring(0, 100)}...`)
+        // Audit log legacy path
+        const generationTimeMs = Date.now() - generationStartTime
+        try {
+          auditLogMayaChatGeneration(
+            'classic',
+            'feed-planner-batch',
+            {
+              userId: context.userId,
+              triggerWord: context.triggerWord,
+              userGender: context.userGender,
+              ethnicity: context.ethnicity,
+              physicalPreferences: context.physicalPreferences,
+              userRequest: context.userRequest,
+            },
+            fluxPrompt,
+            generationTimeMs,
+            'legacy'
+          )
+        } catch (auditError) {
+          // Don't fail if audit logging fails
+          console.warn(`[v0] Feed Planner: Legacy audit logging failed for post ${context.postIndex} (non-critical):`, auditError)
+        }
+        
+        // Parse concept from legacy generation for metadata
+        const jsonMatch = text.match(/\{[\s\S]*\}/)
+        let concept: any = null
+        if (jsonMatch) {
+          try {
+            concept = JSON.parse(jsonMatch[0])
+          } catch {
+            // Ignore parse errors, concept will be null
+          }
+        }
+        
+        return {
+          prompt: fluxPrompt,
+          postIndex: context.postIndex,
+          concept: concept ? {
+            title: concept.title,
+            description: concept.description,
+            category: concept.category,
+          } : null,
+        }
+      })
+    )
+    
+    promptResults = legacyPrompts
+  }
+  
+  // Create maps for prompts and concepts by postIndex for easy lookup
+  const promptMap = new Map(promptResults.map(p => [p.postIndex, p.prompt]))
+  const conceptMap = new Map(promptResults.map(p => [p.postIndex, p.concept || null]))
+  
+  const posts = await Promise.all(
+    layoutStrategy.posts.map(async (postLayout, index) => {
+      console.log(`[v0] Feed Planner: Processing post ${index + 1}/9...`)
+
+      try {
+        // Get prompt from Authority Layer or legacy generation
+        const fluxPrompt = promptMap.get(postLayout.position) || ""
+        const concept = conceptMap.get(postLayout.position) || null
+        
+        if (!fluxPrompt) {
+          throw new Error(`No prompt found for post ${postLayout.position}`)
+        }
+        
+        console.log(`[v0] Feed Planner: Post ${index + 1} prompt ready (${fluxPrompt.split(/\s+/).length} words): ${fluxPrompt.substring(0, 100)}...`)
 
         // Collect previous captions for uniqueness
         const previousCaptions = posts
@@ -348,7 +480,7 @@ Return ONLY valid JSON, no markdown:
           postPosition: postLayout.position,
           shotType: postLayout.shotType,
           purpose: postLayout.purpose,
-          emotionalTone: concept.category || "authentic",
+          emotionalTone: concept?.category || "authentic",
           brandProfile,
           targetAudience,
           brandVoice: brandProfile.brand_voice || "authentic",
@@ -501,7 +633,7 @@ Return ONLY valid JSON, no markdown:
           prompt: fluxPrompt,
           caption,
           visualComposition: {
-            emotionalTone: concept.category || "authentic",
+            emotionalTone: concept?.category || "authentic",
             fluxPrompt: fluxPrompt,
           },
           contentPillar: postLayout.purpose,

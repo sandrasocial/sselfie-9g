@@ -1,96 +1,215 @@
-# SSELFIE Studio 📸
+# 📸 SSELFIE Studio
 
 [![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/sselfie-studio/v0-sselfie)
 [![Built with v0](https://img.shields.io/badge/Built%20with-v0.app-black?style=for-the-badge)](https://v0.app/chat/projects/M0ivfv4hQpE)
 
-> **Your personal AI photographer that knows your best angles.**
+> **Turn one good selfie into a full week of brand-consistent content — without overthinking.**
 
-SSELFIE Studio is the world's first AI-powered personal brand studio. We help women entrepreneurs create professional brand photos every month—no photographer needed. Just AI selfies that look like you, styled for your brand, and ready to use everywhere.
-
----
-
-## 🌟 The Story Behind SSELFIE
-
-I started by teaching women how to take better selfies on Instagram. Then I began sharing my own story—a single mom of three, divorced, heartbroken, broke, and totally overwhelmed. I had to build my whole life and business from scratch, with nothing.
-
-That's how my "SSELFIE machine" was born. Today, it's called SSELFIE Studio.
-
-I created it for women who feel overwhelmed, stuck, or like they don't see themselves as powerful or beautiful. Women who don't have the time or money for a brand photoshoot but still need professional-looking brand photos. I wanted them to have a way to see themselves in a new light and finally feel confident, proud, and strong enough to build their own personal brands.
+Stay visible online without burning out, forcing creativity, or pretending to be someone you're not.
 
 ---
 
-## 💡 What SSELFIE Studio Does
+## 🌟 Why SSELFIE Exists
 
-SSELFIE Studio gives you **100 professional brand photos every month** for less than the price of a coffee a day ($47/month).
+You already know how to take a great selfie.  
+That part isn't the problem.
 
-### The 3-Step Flow
+The problem is what happens after.
 
-1. **TRAIN** → Upload 10–20 selfies to build your personal AI model
-2. **STYLE** → Chat with Maya (your AI stylist) to create styled shoots in your brand vibe
-3. **GALLERY** → Save 100+ fresh professional images every month into your brand asset library
+- What do I post with this?
+- How do I make my feed make sense?
+- How do I stay consistent without thinking every single day?
+- How do I show up when life is heavy?
 
-### What You Get
+**SSELFIE is the system that answers those questions for you.**
 
-- **Professional brand photos** for Instagram feed, reels, carousel posts
-- **Consistent branding** across your website, brochures, guides, and media kits
-- **Digital product assets** for online courses and downloadable content
-- **Maya, your AI stylist** who styles your shoots like a best friend
-- **Variety of styles**: Business, lifestyle, casual, travel, fashion, GRWM, aspirational
-
----
-
-## 🎯 Why It Matters
-
-**Instagram is built on visuals.** Video might be trending, but photos—especially selfies—are still the #1 way to show off your personal brand.
-
-**Consistency builds trust.** When your photos look professional and cohesive across Instagram, your website, your media kit—people see you as the real deal.
-
-**Selfies are personal branding assets.** They're not vanity. They're proof of your identity, your authority, and your future vision.
-
-We help women imagine themselves in outfits, settings, and lifestyles they never thought possible. It's what we call the **Future Self Vision**: seeing yourself as the successful, powerful version of you that you're becoming.
+Not louder content.  
+Not more pressure.  
+Just a way to stay visible — even when motivation drops.
 
 ---
 
-## 🚀 Key Features
+## 💡 What SSELFIE Studio Is
 
-### 🎨 Studio
-- Upload and train your personal AI model
-- Manage your training photos
-- View training status and model readiness
+SSELFIE Studio turns the selfies you already take into clear, on-brand content you can actually post.
 
-### 💬 Maya - Your AI Stylist
-- Chat with Maya to create custom styled shoots
-- Get personalized style recommendations
-- Generate images based on your brand profile
-- Access concept cards for quick inspiration
+Instead of staring at a blank screen, SSELFIE already knows:
+- your vibe
+- your style
+- your brand
+- how you show up
 
-### 🖼️ Gallery
-- Browse all your generated images
-- Organize by style, date, or category
-- Download high-resolution photos
-- Share directly to social media
+So you don't have to start from zero every time.
 
-### 📅 Feed Planner
-- Plan your Instagram feed strategy
-- Create cohesive 9-post feed layouts
-- Generate captions, hashtags, and strategies with AI
-- Create and manage story highlights (3-4 max)
-- Drag-and-drop post reordering
-- Generate images for posts
-- Manage multiple feeds
-- Mobile-optimized interface
+Think of it as:
+- A visibility safety net
+- A second brain for your content
+- A system that keeps you from disappearing
 
-### 🎓 Academy
-- Learn personal branding strategies
-- Master Instagram content creation
-- Discover styling tips and tricks
-- Access exclusive courses
+You don't need to feel inspired.  
+You don't need to "be on."  
+You just need a selfie.
 
-### 👤 Profile & Brand Wizard
-- Complete your brand profile
-- Define your visual aesthetic
-- Set your color palette
-- Establish your brand voice
+---
+
+## 🎯 Who This Is For
+
+SSELFIE Studio is for women who:
+- Care about showing up online — but feel drained by it
+- Overthink what to post
+- Feel inconsistent even though they want to be visible
+- Don't want cookie-cutter templates
+- Are tired of relying on motivation
+
+If you've ever thought: **"I just want this to feel easier…"**  
+You're exactly who this is for.
+
+---
+
+## 💪 The Real Problem SSELFIE Solves
+
+This isn't about tools.  
+It's about **mental relief**.
+
+SSELFIE helps you with:
+- "What should I post?"
+- Decision fatigue
+- Inconsistency
+- Confidence dips
+- Falling off when life gets busy
+
+The goal isn't perfection.  
+The goal is **continuity**.
+
+---
+
+## 🚀 How It Works (Real Life)
+
+### When you need content this week
+1. Open SSELFIE
+2. Ask Maya for a few ideas
+3. Generate a handful of photos
+4. Post when you're ready
+
+⏱ **Time:** ~10 minutes  
+📌 **Result:** You show up
+
+### When you want to plan ahead
+1. Start a Feed conversation
+2. Shape the vibe and direction
+3. Generate a full 9-post feed
+4. Save it and breathe
+
+⏱ **Time:** ~1 hour  
+📌 **Result:** Content for weeks
+
+### When you don't feel like showing up
+You still can.  
+SSELFIE already knows what to do.
+
+That's the point.
+
+---
+
+## 💬 Meet Maya
+
+Maya removes the question: **"What should I post?"**
+
+She's your built-in brand guide — calm, honest, and practical.
+
+Maya helps you:
+- Decide what makes sense for you
+- Turn thoughts into content
+- Stay aligned when your brain feels full
+
+You don't need to know what to ask.  
+You can just talk.
+
+---
+
+## 💰 Pricing & Plans
+
+### Starter Photoshoot — $49 (one-time)
+One selfie session that changes how you show up online.
+
+Perfect if you want a fast win without committing.
+
+**You'll get:**
+- 50 on-brand photos that look like you
+- Your personal AI model trained on your selfies
+- Multiple outfits & locations
+- Ready-to-post images within hours
+- Full commercial rights
+
+This isn't about looking perfect.  
+It's about feeling okay showing up.
+
+### Creator Studio — $97/month ⭐ Most Popular
+Turn selfies into a repeatable content system.
+
+For women who don't want to rely on motivation anymore.
+
+**You get:**
+- 200 credits every month
+- Photos that look like you — not stock or filters
+- Full Instagram feed creation (visual + strategy)
+- Captions, bios, and content ideas without overthinking
+- Video B-roll for Reels
+- Maya — available anytime
+- Priority support
+
+This isn't about doing more.  
+It's about doing less — and still being seen.
+
+### 💳 How Credits Work (Simple)
+Credits are just how content gets created inside SSELFIE.
+
+Creator Studio includes:
+- 200 credits/month
+- They refresh automatically
+- Use them however you want
+
+Photos, feeds, videos, updates — no micromanaging.
+
+### 🎓 Academy (Optional Support)
+Inside SSELFIE you'll also find:
+- Short lessons on personal branding & visibility
+- Simple selfie guidance (not technical)
+- Canva templates
+- Visual resources
+- New drops over time
+
+Use it when you want.  
+Ignore it when you don't.
+
+---
+
+## 🎯 What Matters Most
+
+SSELFIE Studio answers one question:
+
+**"How do I stay visible without burning myself out?"**
+
+Not louder.  
+Not trendier.  
+Just lighter.
+
+### The Bridge From Your Selfie Tutorials
+
+You already know how to take a great selfie.
+
+SSELFIE answers what comes next.
+
+"Here's how this one photo becomes your personal brand this week."
+
+SSELFIE doesn't help you take selfies.  
+It helps you turn selfies into a personal brand you actually show up for.
+
+### After 30 Days, You Should Feel:
+
+- "People recognize me."
+- "My feed finally makes sense."
+- "I don't overthink posting anymore."
 
 ---
 
@@ -284,13 +403,23 @@ sselfie/
 
 ---
 
-## 🌍 Our Vision
+## 💬 Need Help?
 
-We don't just want to build an AI app. We want to change the way women see themselves.
+You're never bothering us.
 
-Our vision is to help **millions of women around the world** feel confident enough to be visible again. To show up on Instagram, to launch businesses, to share their story—without the fear of not looking "professional enough."
+- Check the Academy
+- Message support inside the app
+- Or email: support@sselfie.studio
 
-SSELFIE Studio isn't just about AI photos. It's about **identity, confidence, and consistency**. It's the bridge between who you are now and who you're becoming.
+We're real people.  
+And we're rooting for you.
+
+---
+
+## 🌍 SSELFIE Studio
+
+Because you don't need more pressure to show up.  
+You need support.
 
 ---
 

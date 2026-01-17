@@ -148,11 +148,19 @@ export async function checkEmailRateLimit(email: string): Promise<RateLimitResul
 
 /**
  * Generic rate limit checker
+ * 
+ * Phase 6A: Safe mode reduces rate limits by 50% when enabled.
  */
 async function checkRateLimit(userId: string, type: "training" | "generation" | "video"): Promise<RateLimitResult> {
   try {
     const redis = getRedisClient()
-    const config = RateLimits[type]
+    const baseConfig = RateLimits[type]
+    
+    // Phase 6A: Safe mode reduces rate limits by 50%
+    const safeModeEnabled = process.env.SAFE_MODE === 'true'
+    const config = safeModeEnabled
+      ? { ...baseConfig, max: Math.max(1, Math.floor(baseConfig.max * 0.5)) }
+      : baseConfig
 
     let key: string
     switch (type) {

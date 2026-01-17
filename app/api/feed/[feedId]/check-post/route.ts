@@ -4,6 +4,7 @@ import { neon } from "@neondatabase/serverless"
 import { getReplicateClient } from "@/lib/replicate-client"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { put } from "@vercel/blob"
+import { hookFeedPostGeneration } from "@/lib/quality/hooks"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -172,6 +173,23 @@ export async function GET(request: Request) {
       `
 
       console.log("[v0] Feed post updated with image URL:", blobUrl)
+      
+      // Get post details for quality monitoring
+      const [postDetails] = await sql`
+        SELECT prompt, caption, user_id FROM feed_posts WHERE id = ${Number.parseInt(postId)}
+      `
+      
+      if (postDetails) {
+        // Quality monitoring hook (fire-and-forget)
+        hookFeedPostGeneration({
+          imageUrl: blobUrl,
+          prompt: postDetails.prompt || postDetails.caption || "",
+          userId: postDetails.user_id,
+          postId: postId,
+          predictionId: predictionId,
+          category: 'feed-post',
+        }).catch(() => {})
+      }
 
       try {
         const [post] = await sql`
@@ -241,6 +259,25 @@ export async function GET(request: Request) {
         imageUrl: blobUrl,
       })
     } else if (prediction.status === "failed") {
+      // 🔴 FIX: Handle content moderation errors gracefully (E005)
+      const originalError = prediction.error || "Generation failed"
+      const isContentFlagged = 
+        originalError.includes("E005") || 
+        originalError.includes("flagged as sensitive") ||
+        originalError.includes("content moderation") ||
+        originalError.toLowerCase().includes("inappropriate")
+      
+      // Use a user-friendly error message for content moderation failures
+      const userFriendlyError = isContentFlagged
+        ? "Content flagged by safety systems. Please try different wording or style."
+        : originalError
+      
+      if (isContentFlagged) {
+        console.warn(`[v0] ⚠️ Content moderation triggered for post ${postId}:`, originalError)
+      } else {
+        console.error(`[v0] ❌ Generation failed for post ${postId}:`, originalError)
+      }
+
       await sql`
         UPDATE feed_posts
         SET generation_status = 'failed'
@@ -249,7 +286,7 @@ export async function GET(request: Request) {
 
       return NextResponse.json({
         status: "failed",
-        error: prediction.error || "Generation failed",
+        error: userFriendlyError,
       })
     } else if (prediction.status === "canceled") {
       // Handle canceled predictions

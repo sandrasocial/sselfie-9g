@@ -53,7 +53,7 @@ const EXTENSION_STEPS = [
     title: "Who is your dream client?",
     subtitle: "Step 1 of 3",
     mayaMessage:
-      "Let\u0027s get clear on who you\u0027re creating content for. This helps me craft messaging and visuals that resonate with your ideal audience.",
+      "Let's get clear on who you're creating content for. This helps me craft messaging and visuals that resonate with your ideal audience.",
     field: "dreamClient",
     placeholder: "e.g., Women entrepreneurs, New moms, Career changers...",
   },

@@ -4,6 +4,7 @@ import { neon } from "@neondatabase/serverless"
 import { FLUX_PROMPTING_PRINCIPLES } from "@/lib/maya/flux-prompting-principles"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
+import { generateBlueprintConceptsPrompt, auditLogMayaChatGeneration } from "@/lib/maya/prompt-authority"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -322,90 +323,20 @@ export async function POST(req: NextRequest) {
 
     const businessProps = getBusinessSpecificProps(formData.business)
 
+    // Phase 3A P0-3: Generate prompt via Authority Layer
+    const generationStartTime = Date.now()
+    const authorityResult = generateBlueprintConceptsPrompt({
+      formData,
+      selectedFeedStyle,
+      aestheticStyle,
+      businessProps,
+    })
+    
+    console.log(`[Blueprint] Prompt generated via Authority Layer, fingerprint: ${authorityResult.metadata.fingerprint}`)
+    
     const { text } = await generateText({
       model: "openai/gpt-4o",
-      prompt: `You are Maya, SSELFIE's personal brand strategist. You help creators build authentic, visible brands through personalized Pro Photoshoot grids that create consistent Instagram feeds.
-
-You are generating ONE Pro Photoshoot grid concept. This is a 3x3 grid (9 frames) that shows the same person in different angles, settings, and poses while maintaining perfect facial and body consistency.
-
-**TITLE REQUIREMENTS:**
-- 3-5 words that describe the aesthetic and setting
-- Examples: "Luxury SoHo Evening", "Minimal Copenhagen Light", "Beige Parisian Café", "Edgy Brooklyn Street", "Professional London Office"
-- Should reflect: [Aesthetic] + [Location/Setting] or [Aesthetic] + [Style]
-- Use the selected feed style (${selectedFeedStyle}) and vibe (${formData.vibe})
-
-**DESCRIPTION REQUIREMENTS:**
-- 2-3 sentences describing what the photoshoot grid will show
-- Should mention: the setting/location, the aesthetic style, the type of shots (close-up, full body, detail, etc.)
-- Should feel inspiring and help the user visualize their brand photos
-- Write in a friendly, teaching tone (as if you're explaining to them what they'll get)
-
-**MANDATORY REQUIREMENTS (EVERY FLATLAY PROMPT MUST HAVE):**
-1. **Camera Specs:** "shot on iPhone 15 Pro" OR "shot on iPhone 15 Pro, 50mm"
-2. **Film Grain + Muted Colors:** "film grain, muted colors" OR "visible film grain, muted color palette"
-3. **Uneven Lighting:** "uneven lighting with mixed color temperatures" OR "uneven natural lighting, mixed color temperatures"
-4. **Authenticity Keywords:** "candid photo" or "candid moment", "amateur cellphone photo" or "cellphone photo"
-5. **End with:** "authentic iPhone photo aesthetic"
-
-**NEVER USE:**
-❌ "8K", "4K", "high resolution", "high quality"
-❌ "perfect", "flawless", "stunning", "beautiful", "gorgeous"
-❌ "professional photography", "editorial", "magazine quality"
-❌ "perfect lighting", "studio lighting", "professional lighting", "clean lighting", "even lighting"
-❌ "white background" (causes blur in FLUX)
-❌ "ultra realistic", "photorealistic"
-❌ "vibrant colors" (use "muted desaturated palette" instead)
-
-USER'S BRAND CONTEXT:
-• Business: "${formData.business}"
-• Dream Client: "${formData.dreamClient}"  
-• Brand Vibe: "${formData.vibe}"
-• Feed Aesthetic: "${selectedFeedStyle}" (${aestheticStyle})
-
-**AESTHETIC STYLE CONTEXT:**
-${
-  aestheticStyle === "scandinavian-light"
-    ? `Light & Minimalistic: Bright, clean, Scandinavian-inspired. Think Copenhagen, white spaces, natural daylight, minimal styling.`
-    : aestheticStyle === "dark-moody"
-      ? `Dark & Moody: Sophisticated, cinematic, luxury aesthetic. Think SoHo NYC, evening light, deep blacks, rich charcoals.`
-      : aestheticStyle === "beige-aesthetic"
-        ? `Beige Aesthetic: Soft greige, warm taupes, refined minimalism. Think Parisian cafés, neutral tones, sophisticated neutrals.`
-        : `Bold & Colorful: Vibrant, energetic, contemporary. Think color-blocked styling, saturated tones.`
-}
-
-**TITLE EXAMPLES:**
-- "Luxury SoHo Evening" (for luxury + dark moody)
-- "Minimal Copenhagen Light" (for minimal + light minimalistic)
-- "Beige Parisian Café" (for beige + beige aesthetic)
-- "Edgy Brooklyn Street" (for edgy + dark moody)
-- "Professional London Office" (for professional + beige aesthetic)
-
-**DESCRIPTION EXAMPLES:**
-- "A 3x3 grid showcasing 9 distinct angles in a luxury SoHo setting at dusk. Close-up portraits, full-body shots, and detail shots of designer accessories, all maintaining perfect consistency while capturing the dark and moody luxury aesthetic."
-- "A minimal photoshoot grid set in bright Copenhagen spaces. Nine frames showing different perspectives - from close-up portraits to environmental shots - all in clean whites and natural Scandinavian light, maintaining your consistent brand presence."
-- "A beige aesthetic grid featuring 9 cohesive shots in a Parisian café setting. Mix of portraits, detail shots of accessories, and full-body moments, all in warm camel and beige tones with natural Parisian daylight."
-
-**YOUR TASK:**
-Generate ONE concept with:
-1. **Title:** 3-5 words that capture the aesthetic and setting (use ${selectedFeedStyle} aesthetic + ${formData.vibe} vibe)
-2. **Description:** 2-3 sentences explaining what the photoshoot grid will show - the setting, the types of shots (close-up, full body, detail, environmental), and the aesthetic style. Write in a friendly, teaching tone.
-
-**CONTEXT:**
-- Business: ${formData.business}
-- Dream Client: ${formData.dreamClient}
-- Vibe: ${formData.vibe}
-- Feed Style: ${selectedFeedStyle} (which maps to ${aestheticStyle})
-
-Return ONLY valid JSON (no markdown):
-{
-  "concepts": [
-    {
-      "title": "3-5 word evocative title (aesthetic + setting/style)",
-      "prompt": "2-3 sentence description of what the photoshoot grid will show - setting, shot types, aesthetic. Friendly teaching tone.",
-      "category": "photoshoot"
-    }
-  ]
-}`,
+      prompt: authorityResult.prompt,
     })
 
     let cleanedText = text.trim()
@@ -416,6 +347,28 @@ Return ONLY valid JSON (no markdown):
     }
 
     const concepts = JSON.parse(cleanedText)
+
+    // Phase 3A P0-3: Audit logging already handled by Authority Layer wrapper
+    // Additional audit log for concept output (preserves existing behavior)
+    const generationTimeMs = Date.now() - generationStartTime
+    const generatedPrompt = concepts.concepts?.[0]?.prompt || JSON.stringify(concepts)
+    try {
+      auditLogMayaChatGeneration(
+        'blueprint-preview',
+        'blueprint-preview',
+        {
+          userId: userId?.toString() || null,
+          feedStyle: selectedFeedStyle,
+          businessType: formData.business,
+          formData,
+        },
+        generatedPrompt,
+        generationTimeMs
+      )
+    } catch (auditError) {
+      // Don't fail the request if audit logging fails
+      console.warn("[Blueprint] Audit logging failed (non-critical):", auditError)
+    }
 
     // Save strategy to database (only the first concept)
     const strategyData = concepts.concepts[0]

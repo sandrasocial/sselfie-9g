@@ -3,6 +3,7 @@ import { getReplicateClient } from "@/lib/replicate-client"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { put } from "@vercel/blob"
 import { neon } from "@neondatabase/serverless"
+import { hookPhotoshootGeneration } from "@/lib/quality/hooks"
 
 const sql = neon(process.env.DATABASE_URL || "")
 
@@ -140,6 +141,16 @@ export async function GET(request: NextRequest) {
                 RETURNING id
               `
               console.log(`[v0] ✅ Saved to gallery with ID: ${result[0]?.id}`)
+              
+              // Quality monitoring hook (fire-and-forget)
+              hookPhotoshootGeneration({
+                imageUrl: blob.url,
+                prompt: fluxPrompts[i] || displayCaption,
+                userId: numericUserId,
+                predictionId: predictionId,
+                conceptDescription: conceptDescription || undefined,
+                imageIndex: i,
+              }).catch(() => {})
             }
           } catch (galleryError: any) {
             console.error(`[v0] ❌ Gallery save failed for image ${i + 1}:`, galleryError?.message)

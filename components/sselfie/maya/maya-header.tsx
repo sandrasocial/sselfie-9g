@@ -65,6 +65,9 @@ interface MayaHeaderUnifiedProps {
   onTabChange?: (tab: "photos" | "videos" | "prompts" | "training" | "feed") => void
   photosCount?: number
   videosCount?: number
+  
+  // Access Control
+  showModeToggle?: boolean // Show Pro/Classic toggle (only for membership users)
 }
 
 /**
@@ -107,6 +110,7 @@ export default function MayaHeaderUnified({
   onSwitchToClassic,
   onSettings,
   isAdmin = false,
+  showModeToggle = true, // Default to true for backward compatibility
   selectedGuideId = null,
   selectedGuideCategory = null,
   onGuideChange,
@@ -403,22 +407,24 @@ export default function MayaHeaderUnified({
             </div>
           )}
 
-          {/* Mode Toggle - Always show (segmented control showing both options)
+          {/* Mode Toggle - Show only for membership users (segmented control showing both options)
               Progressive enhancement: Same component, different state based on current mode */}
-          {proMode ? (
-            onSwitchToClassic && (
+          {showModeToggle && (
+            proMode ? (
+              onSwitchToClassic && (
+                <MayaModeToggle
+                  currentMode="pro"
+                  onToggle={onSwitchToClassic}
+                  variant="compact"
+                />
+              )
+            ) : (
               <MayaModeToggle
-                currentMode="pro"
-                onToggle={onSwitchToClassic}
+                currentMode="classic"
+                onToggle={() => onModeSwitch(true)}
                 variant="compact"
               />
             )
-          ) : (
-            <MayaModeToggle
-              currentMode="classic"
-              onToggle={() => onModeSwitch(true)}
-              variant="compact"
-            />
           )}
 
           {/* Menu Button */}
@@ -703,8 +709,8 @@ export default function MayaHeaderUnified({
                   </button>
                 )}
 
-                {/* Switch Mode - Pro Mode shows "Switch to Classic" in menu on mobile */}
-                {proMode && onSwitchToClassic && (
+                {/* Switch Mode - Pro Mode shows "Switch to Classic" in menu on mobile (membership only) */}
+                {showModeToggle && proMode && onSwitchToClassic && (
                   <>
                     <div
                       className="border-t my-2"

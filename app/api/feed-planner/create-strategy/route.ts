@@ -10,6 +10,11 @@ import { generateInstagramCaption } from "@/lib/feed-planner/caption-writer"
 import { getFluxPromptingPrinciples } from "@/lib/maya/flux-prompting-principles"
 import { detectRequiredMode, detectProModeType } from "@/lib/feed-planner/mode-detection"
 import { buildNanoBananaPrompt } from "@/lib/maya/nano-banana-prompt-builder"
+import { 
+  generateFeedPlannerStrategyPromptViaAuthority,
+  generateFeedPlannerProModePromptViaAuthority,
+  generateFeedPlannerClassicModePromptViaAuthority,
+} from "@/lib/maya/prompt-authority"
 import { getFashionIntelligencePrinciples } from "@/lib/maya/fashion-knowledge-2025"
 // influencer-posing-knowledge removed - Maya uses her intelligence from core-personality
 // import INFLUENCER_POSING_KNOWLEDGE from "@/lib/maya/influencer-posing-knowledge"
@@ -200,9 +205,18 @@ Every caption MUST follow this structure:
       // Continue without knowledge base
     }
 
+    // Phase 3B P1-4 PS-01: Generate strategy prompt via Authority Layer
+    const strategyPromptResult = generateFeedPlannerStrategyPromptViaAuthority({
+      userRequest,
+      brandProfile,
+      userContext,
+      knowledgeBaseInsights,
+    })
+    
     const strategyResult = await generateText({
       model: "anthropic/claude-sonnet-4",
-      system: `You are an elite Instagram Growth Strategist with deep expertise in:
+      system: strategyPromptResult.systemPrompt,
+      prompt: strategyPromptResult.userPrompt,
 - 2025 Instagram algorithm (saves, shares, DMs, comments are priority signals)
 - Hook-Story-Value-CTA caption framework (proven engagement structure)
 - Narrative storytelling across 9-post feeds (cohesive story arc)
@@ -1143,21 +1157,18 @@ This is the FIRST post (position ${post.position} of 9). Create a strong, unique
                 ? captionResult.caption 
                 : undefined
 
-              const { optimizedPrompt } = await buildNanoBananaPrompt({
+              // Phase 3B P1-4 PS-02: Generate Pro Mode prompt via Authority Layer
+              const proModeResult = await generateFeedPlannerProModePromptViaAuthority({
                 userId: neonUser.id,
-                mode: effectiveProMode as any,
+                mode: effectiveProMode,
                 userRequest, // Visual direction, NOT Instagram caption
-                inputImages: {
-                  baseImages,
-                  productImages: [],
-                  textElements: quoteCaption ? [{
-                    text: quoteCaption,
-                    style: 'quote' as const,
-                  }] : undefined,
-                },
-                workflowMeta: {
-                  platformFormat: '4:5', // Instagram portrait format
-                },
+                baseImages,
+                productImages: [],
+                textElements: quoteCaption ? [{
+                  text: quoteCaption,
+                  style: 'quote',
+                }] : undefined,
+                platformFormat: '4:5', // Instagram portrait format
                 brandKit: brandKit ? {
                   primaryColor: brandKit.primary_color,
                   secondaryColor: brandKit.secondary_color,
@@ -1167,7 +1178,7 @@ This is the FIRST post (position ${post.position} of 9). Create a strong, unique
                 } : undefined,
               })
               
-              finalPrompt = optimizedPrompt
+              finalPrompt = proModeResult.prompt
               console.log(`[v0] ✅ Generated Nano Banana prompt for post ${post.position} (${finalPrompt.split(/\s+/).length} words)`)
             }
           } catch (proModeError) {
@@ -1179,85 +1190,23 @@ This is the FIRST post (position ${post.position} of 9). Create a strong, unique
           // CLASSIC MODE: Generate FLUX prompt using Maya's concept generation (same as concept cards)
           const userRequest = `${post.prompt || post.visualDirection || "Professional Instagram post"}. Position ${post.position} in a 9-post Instagram feed. Shot type: ${post.postType || "portrait"}`
           
-          const conceptPrompt = `You are Maya, an elite fashion photographer with 15 years of experience shooting for Vogue, Elle, and creating viral Instagram content. You have an OBSESSIVE eye for authenticity - you know that the best images feel stolen from real life, not produced.
-
-${fashionIntelligence}
-
-${colorPaletteSection}
-
-${physicalPreferencesSection}
-
-=== LIGHTING CONSISTENCY (FOR FEED COHESION) ===
-**CRITICAL:** All 9 posts in this feed must have CONSISTENT lighting style for visual cohesion.
-
-${previousPosts.length > 0 && previousPosts[0].lighting
-  ? `**ESTABLISHED LIGHTING STYLE:** ${previousPosts[0].lighting}
-  
-**YOU MUST USE THE SAME LIGHTING STYLE** as previous posts. Check the previous posts context above to see what lighting was used.
-Maintain the same lighting mood/style across all 9 posts for feed cohesion.`
-  : `**LIGHTING OPTIONS (choose ONE style and use it consistently for ALL 9 posts):**
-- Soft natural lighting (warm, diffused, even)
-- Golden hour lighting (warm, directional, sunset/rise)
-- Moody lighting (dramatic shadows, high contrast)
-- Bright natural lighting (daylight, airy, fresh)
-- Soft indoor lighting (cozy, warm, intimate)
-
-**IMPORTANT:** 
-- Choose a lighting style that fits the brand vibe: ${brandProfile.brand_vibe || "authentic"}
-- This lighting style will be used for ALL 9 posts in the feed
-- Lighting consistency creates visual flow across the feed grid
-- You can vary lighting INTENSITY and DIRECTION, but maintain the same STYLE/MOOD`}
-
-=== NATURAL POSING REFERENCE ===
-Use this for inspiration on authentic, Instagram-style poses. These are REAL influencer poses that look natural and candid:
-
-${INFLUENCER_POSING_KNOWLEDGE}
-
-Remember: Describe poses SIMPLY and NATURALLY, like you're telling a friend what someone is doing. Avoid technical photography language.
-===
-
-${varietyContext}
-
-FEED POST CONTEXT:
-- Position: ${post.position} of 9
-- Purpose: ${post.contentPillar || "Showcase personal brand"}
-- Visual Direction: ${post.prompt || post.visualDirection || "Professional and authentic"}
-- Brand Vibe: ${brandProfile.brand_vibe || "authentic"}
-- Shot Type: ${post.postType || "portrait"}
-
-USER REQUEST: "${userRequest}"
-
-MODE: FEED POST - Create 1 concept that fits this specific position in the Instagram feed grid. This is part of a cohesive 9-post story with VARIETY in outfits, locations, and concepts.
-
-${fluxPrinciples}
-
-**🔴 PROMPT STRUCTURE ARCHITECTURE (FOLLOW THIS ORDER):**
-1. **TRIGGER WORD** (first position - MANDATORY): ${triggerWord}
-2. **GENDER/ETHNICITY** (2-3 words)${userEthnicity ? `: ${userEthnicity}` : ''} ${userGender}${physicalPreferences ? `, [converted physical preferences - descriptive only, no instructions]` : ""}
-3. **OUTFIT** (material + color + garment type - 6-10 words) - MUST be DIFFERENT from previous posts
-4. **POSE + EXPRESSION** (simple, natural - 4-6 words) - Vary from previous posts
-5. **LOCATION** (brief, atmospheric - 3-6 words) - MUST be DIFFERENT location from previous posts
-6. **LIGHTING** (with imperfections - 5-8 words)
-7. **TECHNICAL SPECS** (iPhone + imperfections + skin texture + grain + muted colors - 8-12 words)
-8. **CASUAL MOMENT** (optional - 2-4 words)
-
-**Total target: 50-80 words for optimal quality and detail**
-
-**CRITICAL FOR VARIETY:**
-- Choose a DIFFERENT outfit color/material/style than previous posts
-- Choose a DIFFERENT location/scenery than previous posts  
-- Vary the pose, angle, and composition
-- Create a unique concept that stands out in the feed
-
-Return ONLY valid JSON, no markdown:
-{
-  "title": "Simple, catchy title (2-4 words)",
-  "description": "Quick, exciting one-liner",
-  "category": "Close-Up Portrait" | "Half Body Lifestyle" | "Environmental Portrait" | "Full Body" | "Object" | "Flatlay" | "Scenery",
-  "outfit": "Brief description of outfit for variety tracking",
-  "location": "Brief description of location for variety tracking",
-  "prompt": "YOUR CRAFTED FLUX PROMPT - MUST start with ${triggerWord}, ${userEthnicity ? userEthnicity + " " : ""}${userGender}${physicalPreferences ? `, [converted physical preferences - descriptive only]` : ""}"
-}`
+          // Phase 3B P1-4 PS-03: Generate Classic Mode prompt via Authority Layer
+          const classicModeResult = generateFeedPlannerClassicModePromptViaAuthority({
+            userRequest,
+            post,
+            brandProfile,
+            triggerWord,
+            userGender,
+            userEthnicity,
+            physicalPreferences,
+            fashionIntelligence,
+            colorPaletteSection,
+            physicalPreferencesSection,
+            previousPosts,
+            varietyContext,
+            fluxPrinciples,
+          })
+          const conceptPrompt = classicModeResult.conceptPrompt
 
           const { text: conceptText } = await generateText({
             model: "anthropic/claude-sonnet-4-20250514",

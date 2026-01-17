@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db"
 import { getReplicateClient } from "@/lib/replicate-client"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { put } from "@vercel/blob"
+import { hookFeedPostGeneration } from "@/lib/quality/hooks"
 
 export async function GET(request: Request, { params }: { params: Promise<{ feedId: string }> }) {
   try {
@@ -96,6 +97,23 @@ export async function GET(request: Request, { params }: { params: Promise<{ feed
               updated_at = NOW()
             WHERE id = ${post.id}
           `
+          
+          // Get post details for quality monitoring
+          const [postForQuality] = await sql`
+            SELECT prompt, caption, user_id FROM feed_posts WHERE id = ${post.id}
+          `
+          
+          if (postForQuality) {
+            // Quality monitoring hook (fire-and-forget)
+            hookFeedPostGeneration({
+              imageUrl: finalImageUrl,
+              prompt: postForQuality.prompt || postForQuality.caption || "",
+              userId: postForQuality.user_id,
+              postId: post.id.toString(),
+              predictionId: post.prediction_id,
+              category: 'feed-post',
+            }).catch(() => {})
+          }
 
           // Save to ai_images gallery (like concept cards)
           try {

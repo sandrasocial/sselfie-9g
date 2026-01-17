@@ -1,0 +1,21 @@
+# SSELFIE Studio - Cursor Rules Entry Point
+
+**AUTHORITATIVE RULES:** See `docs/_CANONICAL/CURSOR_CONSTITUTION.md`
+
+This file exists only to point Cursor to the authoritative rules document.
+
+All Cursor AI behavior rules, operating modes, business invariants, and workflows are defined in:
+**`docs/_CANONICAL/CURSOR_CONSTITUTION.md`**
+
+Please read that file for complete rules.
+
+---
+
+**Quick Reference:**
+- Primary Directive: You are Sandra's autonomous engineering team maintaining a LIVE SaaS
+- Operating Modes: AUDIT (read-only) / IMPLEMENT (scoped changes) / REFACTOR (explicit only)
+- Critical Files: Edit requires approval (see constitution for list)
+- Stop Conditions: Must ask before proceeding (see constitution)
+- Output Format: Required for every response (see constitution)
+
+**Full Rules:** `docs/_CANONICAL/CURSOR_CONSTITUTION.md`

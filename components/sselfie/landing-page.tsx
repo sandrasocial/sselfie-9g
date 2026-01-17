@@ -188,7 +188,7 @@ export default function LandingPage() {
       const data = await response.json()
 
       if (response.ok) {
-        setWaitlistMessage({ type: "success", text: "You\u0027re on the list! We\u0027ll be in touch soon." })
+        setWaitlistMessage({ type: "success", text: "You're on the list! We'll be in touch soon." })
         setWaitlistEmail("")
       } else {
         setWaitlistMessage({ type: "error", text: data.error || "Something went wrong. Please try again." })
