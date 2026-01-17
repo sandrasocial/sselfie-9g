@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { createHash } from "crypto"
 import { neon } from "@neondatabase/serverless"
 import { generateWithNanoBanana } from "@/lib/nano-banana-client"
 import { getBlueprintPhotoshootPrompt, type BlueprintCategory, type BlueprintMood } from "@/lib/maya/blueprint-photoshoot-templates"
@@ -104,6 +105,40 @@ export async function POST(req: NextRequest) {
     const data = subscriber[0]
     const email = data.email
 
+    const parseArrayField = (value: unknown): string[] | null => {
+      if (Array.isArray(value)) {
+        const items = value.map((item) => String(item).trim()).filter(Boolean)
+        return items.length > 0 ? items : null
+      }
+      if (typeof value === "string") {
+        try {
+          const parsed = JSON.parse(value)
+          if (Array.isArray(parsed)) {
+            const items = parsed.map((item) => String(item).trim()).filter(Boolean)
+            return items.length > 0 ? items : null
+          }
+          if (parsed && typeof parsed === "object") {
+            const items = Object.keys(parsed).map((item) => String(item).trim()).filter(Boolean)
+            return items.length > 0 ? items : null
+          }
+        } catch {
+          const cleaned = value.replace(/[\[\]{}"]/g, "")
+          const items = cleaned
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean)
+          return items.length > 0 ? items : null
+        }
+      }
+      if (value && typeof value === "object") {
+        const items = Object.keys(value as Record<string, unknown>)
+          .map((item) => String(item).trim())
+          .filter(Boolean)
+        return items.length > 0 ? items : null
+      }
+      return null
+    }
+
     const featureEnabled = process.env.ENABLE_BLUEPRINT_PAID === "true"
     if (!featureEnabled && !data.paid_blueprint_purchased && !userIsAdmin) {
       return NextResponse.json({ error: "Endpoint disabled" }, { status: 410 })
@@ -186,6 +221,17 @@ export async function POST(req: NextRequest) {
     let mood: BlueprintMood
     
     if (userId) {
+      const [personalBrand] = await sql`
+        SELECT visual_aesthetic, fashion_style
+        FROM user_personal_brand
+        WHERE user_id = ${userId}
+        ORDER BY updated_at DESC
+        LIMIT 1
+      `
+
+      const visualAestheticValues = parseArrayField(personalBrand?.visual_aesthetic)
+      const fashionStyleValues = parseArrayField(personalBrand?.fashion_style)
+
       // User has converted - use unified helper to check feed_layouts and user_personal_brand first
       // Try to get feedLayout if user has a feed
       let feedLayout: { feed_style?: string | null } | null = null
@@ -201,21 +247,51 @@ export async function POST(req: NextRequest) {
         console.log(`[v0][paid-blueprint] Found feed_layout for user, feed_style: ${userFeedLayout.feed_style || 'none'}`)
       }
 
-      // Use unified helper (will check feed_layouts.feed_style, user_personal_brand, then blueprint_subscribers)
+      const missing: string[] = []
+      if (!feedLayout?.feed_style) {
+        missing.push("feed_style")
+      }
+      if (!visualAestheticValues || visualAestheticValues.length === 0) {
+        missing.push("visual_aesthetic")
+      }
+      if (!fashionStyleValues || fashionStyleValues.length === 0) {
+        missing.push("fashion_style")
+      }
+
+      if (missing.length > 0) {
+        const userIdHash = createHash("sha256").update(String(userId)).digest("hex")
+        console.log("[v0] CONTRACT_MISSING", { missing, route: "generate-paid", userIdHash })
+        return NextResponse.json(
+          {
+            error: missing.includes("feed_style") ? "FEED_STYLE_REQUIRED" : "CANONICAL_FIELDS_REQUIRED",
+            missing,
+          },
+          { status: 422 }
+        )
+      }
+
+      // Use unified helper (feed_layouts + user_personal_brand only for paid blueprint)
       const result = await getCategoryAndMood(feedLayout, { id: userId }, {
-        checkSettingsPreference: true,
-        checkBlueprintSubscribers: true, // Enable fallback to blueprint_subscribers
+        checkSettingsPreference: false,
+        checkBlueprintSubscribers: false,
         trackSource: true
       })
       category = result.category as BlueprintCategory
       mood = result.mood as BlueprintMood
     } else {
-      // User hasn't converted - use data from blueprint_subscribers directly (already fetched above)
-      // This matches the original behavior for non-converted users
-      const formData = data.form_data || {}
-      category = (formData.vibe || "professional") as BlueprintCategory
-      mood = (data.feed_style || formData.feed_style || "minimal") as BlueprintMood
-      console.log(`[v0][paid-blueprint] Non-converted user - using blueprint_subscribers data: ${category}_${mood}`)
+      const userIdHash = createHash("sha256").update(String(accessToken)).digest("hex")
+      console.log("[v0] CONTRACT_MISSING", {
+        missing: ["feed_style", "visual_aesthetic", "fashion_style"],
+        route: "generate-paid",
+        userIdHash,
+      })
+      return NextResponse.json(
+        {
+          error: "CANONICAL_FIELDS_REQUIRED",
+          missing: ["feed_style", "visual_aesthetic", "fashion_style"],
+        },
+        { status: 422 }
+      )
     }
 
     console.log(`[v0][paid-blueprint] Using category: ${category}, mood: ${mood}`)

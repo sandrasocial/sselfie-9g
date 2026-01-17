@@ -39,9 +39,39 @@ export async function POST(req: NextRequest) {
       console.log("[v0] No body or invalid JSON, using defaults")
     }
     const title = body.title || `My Feed - ${new Date().toLocaleDateString()}`
-    const feedStyle = body.feedStyle || null // "luxury", "minimal", or "beige"
+    let feedStyle = body.feedStyle || null // "luxury", "minimal", or "beige"
     const visualAesthetic = body.visualAesthetic || null // Array of visual aesthetics
     const fashionStyle = body.fashionStyle || null // Array of fashion styles
+
+    if (!feedStyle) {
+      const [personalBrand] = await sql`
+        SELECT settings_preference
+        FROM user_personal_brand
+        WHERE user_id = ${user.id}
+        ORDER BY updated_at DESC
+        LIMIT 1
+      `
+      const settingsPreference = personalBrand?.settings_preference
+      if (settingsPreference) {
+        try {
+          const settings = typeof settingsPreference === "string"
+            ? JSON.parse(settingsPreference)
+            : settingsPreference
+          if (Array.isArray(settings) && settings.length > 0) {
+            feedStyle = settings[0]?.toLowerCase?.().trim?.() || null
+          }
+        } catch {
+          // Ignore parse errors; fall through to validation
+        }
+      }
+    }
+
+    if (!feedStyle) {
+      return NextResponse.json(
+        { error: "FEED_STYLE_REQUIRED", details: "Feed style is required to create a feed." },
+        { status: 422 }
+      )
+    }
     
     // Note: visualAesthetic and fashionStyle are already saved to personal brand by the frontend
     // We just log them here for reference

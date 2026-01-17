@@ -5,6 +5,7 @@ import { flushSync } from "react-dom"
 import Image from "next/image"
 import { ImageIcon, Loader2 } from 'lucide-react'
 import { toast } from "@/hooks/use-toast"
+import { ToastAction } from "@/components/ui/toast"
 
 interface FeedPost {
   id: number
@@ -22,9 +23,11 @@ interface FeedGridPreviewProps {
   feedId: number
   posts: FeedPost[]
   onGenerate: () => void
+  onRequireFeedStyle?: () => void
+  onRequireOnboarding?: () => void
 }
 
-export default function FeedGridPreview({ feedId, posts, onGenerate }: FeedGridPreviewProps) {
+export default function FeedGridPreview({ feedId, posts, onGenerate, onRequireFeedStyle, onRequireOnboarding }: FeedGridPreviewProps) {
   const [generatingPostId, setGeneratingPostId] = useState<number | null>(null)
 
   const handleGeneratePost = (postId: number) => {
@@ -42,7 +45,41 @@ export default function FeedGridPreview({ feedId, posts, onGenerate }: FeedGridP
     })
       .then(async (response) => {
         if (!response.ok) {
-          throw new Error("Failed to generate")
+          const errorData = await response.json().catch(() => ({ error: "Failed to generate" }))
+          const errorCode = errorData.error || "Failed to generate"
+
+          if (response.status === 422) {
+            if (errorCode === "FEED_STYLE_REQUIRED") {
+              toast({
+                title: "Choose a feed style",
+                description: "Pick a style to generate this feed.",
+                variant: "destructive",
+                action: onRequireFeedStyle ? (
+                  <ToastAction altText="Choose style" onClick={onRequireFeedStyle}>
+                    Choose style
+                  </ToastAction>
+                ) : undefined,
+              })
+              setGeneratingPostId(null)
+              return
+            }
+
+            if (errorCode === "CANONICAL_FIELDS_REQUIRED" || errorCode === "TEMPLATE_INJECTION_REQUIRED") {
+              toast({
+                title: "Complete your brand profile",
+                description: "Add your visual aesthetic and fashion style to generate images.",
+                variant: "destructive",
+                action: onRequireOnboarding ? (
+                  <ToastAction altText="Complete profile" onClick={onRequireOnboarding}>
+                    Complete profile
+                  </ToastAction>
+                ) : undefined,
+              })
+              setGeneratingPostId(null)
+              return
+            }
+          }
+          throw new Error(errorCode)
         }
 
         toast({

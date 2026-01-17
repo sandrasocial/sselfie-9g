@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import useSWR from "swr"
 import InstagramFeedView from "./instagram-feed-view"
@@ -41,6 +41,8 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
   const [isCreatingManual, setIsCreatingManual] = useState(false)
   const [isCreatingFreeExample, setIsCreatingFreeExample] = useState(false)
   const [localFeedStyleModal, setLocalFeedStyleModal] = useState(false)
+  const didOpenFeedStyleFromQuery = useRef(false)
+  const didOpenWizardFromQuery = useRef(false)
 
   // Use controlled state if provided, otherwise use local state
   const showFeedStyleModal = controlledFeedStyleModal !== undefined ? controlledFeedStyleModal : localFeedStyleModal
@@ -87,6 +89,20 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
   
   // Get feedId from prop, query param, or null
   const feedIdFromQuery = feedIdProp ?? (searchParams.get('feedId') ? parseInt(searchParams.get('feedId')!, 10) : null)
+
+  useEffect(() => {
+    if (!didOpenFeedStyleFromQuery.current && searchParams.get("openFeedStyle") === "1") {
+      didOpenFeedStyleFromQuery.current = true
+      setShowFeedStyleModal(true)
+    }
+  }, [searchParams])
+
+  useEffect(() => {
+    if (!didOpenWizardFromQuery.current && searchParams.get("openWizard") === "1") {
+      didOpenWizardFromQuery.current = true
+      onOpenWizard?.()
+    }
+  }, [searchParams, onOpenWizard])
 
   // Phase 4.1: Use standard feed endpoints (removed blueprint endpoint)
   // Use specific feedId or latest feed
@@ -454,6 +470,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
           access={access} // Phase 4.1: Pass access control to InstagramFeedView
           onOpenWizard={onOpenWizard} // Pass wizard handler for header button
           onOpenWelcomeWizard={onOpenWelcomeWizard} // Pass welcome wizard handler for header button
+          onRequireFeedStyle={() => setShowFeedStyleModal(true)}
         />
       </div>
 

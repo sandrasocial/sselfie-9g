@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server"
+import { createHash } from "crypto"
 import { getAuthenticatedUserWithRetry, clearAuthCache } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { neon } from "@neondatabase/serverless"
@@ -364,6 +365,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       // 🔴 CRITICAL: Check if this is a preview feed FIRST (before access checks)
       // Preview feeds use full template (all 9 scenes) for ALL users (free and paid)
       const isPreviewFeed = feedLayout?.layout_type === 'preview'
+      let chosenPromptSource: "template_injection" | "db_prompt" | "maya_fallback" | "preview_template" | null = null
+      let templateReferencePrompt: string | null = null
+      let previewTemplate: string | null = null
       
       // For paid blueprint users: Each position should already have its extracted scene prompt
       // If not, extract it from the template using the current feed's feed_style
@@ -379,6 +383,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       } else if (!access.isPaidBlueprint && post.prompt && post.prompt.length > 50) {
         // Post already has its scene prompt - use it (only for non-preview feeds)
         finalPrompt = post.prompt
+        chosenPromptSource = "db_prompt"
         console.log("[v0] PROMPT_SOURCE=db_prompt")
         console.log(`[v0] [GENERATE-SINGLE] ✅ Using existing scene prompt for position ${post.position} (${finalPrompt?.length || 0} chars)`)
       }
@@ -422,6 +427,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
             
             // Preview feeds use the full injected template (all 9 scenes in one image)
             finalPrompt = injectedTemplate
+            chosenPromptSource = "preview_template"
             console.log("[v0] PROMPT_SOURCE=preview_template")
             console.log(`[v0] [GENERATE-SINGLE] ✅ Preview feed - using full injected template with all 9 scenes (${finalPrompt.split(/\s+/).length} words)`)
             
@@ -435,8 +441,79 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
             // Paid blueprint (non-preview): ALWAYS use template injection + single-scene extraction
             console.log(`[v0] [GENERATE-SINGLE] 🎨 Paid blueprint user - enforcing template injection only...`)
             try {
+              const parseArrayField = (value: unknown): string[] | null => {
+                if (Array.isArray(value)) {
+                  const items = value.map((item) => String(item).trim()).filter(Boolean)
+                  return items.length > 0 ? items : null
+                }
+                if (typeof value === "string") {
+                  try {
+                    const parsed = JSON.parse(value)
+                    if (Array.isArray(parsed)) {
+                      const items = parsed.map((item) => String(item).trim()).filter(Boolean)
+                      return items.length > 0 ? items : null
+                    }
+                    if (parsed && typeof parsed === "object") {
+                      const items = Object.keys(parsed).map((item) => String(item).trim()).filter(Boolean)
+                      return items.length > 0 ? items : null
+                    }
+                  } catch {
+                    const cleaned = value.replace(/[\[\]{}"]/g, "")
+                    const items = cleaned
+                      .split(",")
+                      .map((item) => item.trim())
+                      .filter(Boolean)
+                    return items.length > 0 ? items : null
+                  }
+                }
+                if (value && typeof value === "object") {
+                  const items = Object.keys(value as Record<string, unknown>)
+                    .map((item) => String(item).trim())
+                    .filter(Boolean)
+                  return items.length > 0 ? items : null
+                }
+                return null
+              }
+
+              const [personalBrand] = await sql`
+                SELECT visual_aesthetic, fashion_style
+                FROM user_personal_brand
+                WHERE user_id = ${user.id}
+                ORDER BY updated_at DESC
+                LIMIT 1
+              `
+
+              const visualAestheticValues = parseArrayField(personalBrand?.visual_aesthetic)
+              const fashionStyleValues = parseArrayField(personalBrand?.fashion_style)
+              const missing: string[] = []
+
+              if (!feedLayout?.feed_style) {
+                missing.push("feed_style")
+              }
+              if (!visualAestheticValues || visualAestheticValues.length === 0) {
+                missing.push("visual_aesthetic")
+              }
+              if (!fashionStyleValues || fashionStyleValues.length === 0) {
+                missing.push("fashion_style")
+              }
+
+              if (missing.length > 0) {
+                const userIdHash = createHash("sha256").update(String(user.id)).digest("hex")
+                console.log("[v0] CONTRACT_MISSING", { missing, feedId: feedIdInt, userIdHash })
+                return Response.json(
+                  {
+                    error: missing.includes("feed_style") ? "FEED_STYLE_REQUIRED" : "CANONICAL_FIELDS_REQUIRED",
+                    missing,
+                    feedId: feedIdInt,
+                    postId,
+                    position: post.position,
+                  },
+                  { status: 422 },
+                )
+              }
+
               const { category, mood } = await getCategoryAndMood(feedLayout, user, {
-                checkSettingsPreference: true,
+                checkSettingsPreference: false,
                 checkBlueprintSubscribers: false,
                 trackSource: false,
                 orderBy: 'updated_at',
@@ -518,7 +595,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
             
             // 🔴 CRITICAL FIX: Look for preview template in PREVIEW FEED (layout_type: 'preview'), not current feed
             // The preview feed is separate from the paid blueprint feed
-            let previewTemplate: string | null = null
+            previewTemplate = null
             
             // First, try to find the preview feed (layout_type: 'preview')
             const [previewFeed] = await sql`
@@ -556,7 +633,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
             
             // Extract aesthetic from preview template for locked aesthetic mode
             let lockedAesthetic = null
-            let templateReferencePrompt: string | null = null
+            templateReferencePrompt = null
             
             // 🔴 CRITICAL: Check if preview feed matches current brand profile style
             // If user updated their style in wizard, use new style instead of old preview
@@ -833,6 +910,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
               // Classic Mode OR Pro Mode without injected prompt - use Maya for enhancement
               // Classic Mode relies on Maya to insert trigger words and stylistic keywords
               // Pro Mode without injected prompt falls back to Maya (shouldn't happen in normal flow)
+              if (access.isPaidBlueprint && !isPreviewFeed) {
+                return Response.json(
+                  {
+                    error: "TEMPLATE_INJECTION_REQUIRED",
+                    feedId: feedIdInt,
+                    postId,
+                    position: post.position,
+                  },
+                  { status: 422 }
+                )
+              }
+              chosenPromptSource = "maya_fallback"
               console.log("[v0] PROMPT_SOURCE=maya_fallback")
               console.log(`[v0] [GENERATE-SINGLE] Calling Maya to generate/enhance prompt (Mode: ${generationMode}, HasInjected: ${hasInjectedPrompt})`)
               
@@ -873,6 +962,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
               if (mayaResponse.ok) {
                 const mayaData = await mayaResponse.json()
                 finalPrompt = mayaData.prompt || mayaData.enhancedPrompt
+                chosenPromptSource = "maya_fallback"
                 
                 // Clean prompt (remove markdown, prefixes, etc.)
                 if (finalPrompt) {
@@ -988,6 +1078,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
           } // Close if (access.isPaidBlueprint)
         } catch (promptError) {
           console.error(`[v0] [GENERATE-SINGLE] Error generating prompt:`, promptError)
+          if (access.isPaidBlueprint && !isPreviewFeed) {
+            return Response.json(
+              {
+                error: "TEMPLATE_INJECTION_REQUIRED",
+                feedId: feedIdInt,
+                postId,
+                position: post.position,
+              },
+              { status: 422 }
+            )
+          }
           // Fallback to simple prompt
           finalPrompt = post.content_pillar || `Feed post ${post.position}`
         }
@@ -1005,6 +1106,24 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
         )
       }
       
+      if (!chosenPromptSource && finalPrompt) {
+        chosenPromptSource = "db_prompt"
+      }
+      console.log("[v0] [GENERATE-SINGLE] PROVENANCE", {
+        feedId: feedIdInt,
+        postId,
+        isPreviewFeed,
+        layout_type: feedLayout?.layout_type || null,
+        accessFlags: {
+          isPaidBlueprint: access.isPaidBlueprint,
+          isFree: access.isFree,
+          isMember: access.isMembership,
+        },
+        generationMode,
+        chosenPromptSource: chosenPromptSource || "unknown",
+        hasTemplateReferencePrompt: !!templateReferencePrompt,
+        hasPreviewTemplate: !!previewTemplate,
+      })
       const aspectRatio = isPreviewFeed ? '9:16' : (access.isFree ? '9:16' : '4:5')
       
       const { cleanBlueprintPrompt } = await import('@/lib/feed-planner/build-single-image-prompt')

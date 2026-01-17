@@ -222,6 +222,11 @@ export async function POST(req: NextRequest) {
       // Continue without prompt - it will be generated on first generation
     }
 
+    // Ensure preview feeds always store a feed_style (fallback to minimal)
+    if (!feedStyleToStore) {
+      feedStyleToStore = "minimal"
+    }
+
     // Create feed layout with layout_type: 'preview'
     const title = `Preview Feed - ${new Date().toLocaleDateString()}`
     let feedResult: any[]

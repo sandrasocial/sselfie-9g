@@ -4,6 +4,30 @@ import { getUserPersonalMemory, getUserPersonalBrand } from "@/lib/data/maya"
 
 const sql = neon(process.env.DATABASE_URL!)
 
+const parseStringArray = (value: unknown): string[] | null => {
+  if (Array.isArray(value)) {
+    const items = value.map((item) => String(item).trim()).filter(Boolean)
+    return items.length > 0 ? items : null
+  }
+  if (typeof value === "string") {
+    try {
+      const parsed = JSON.parse(value)
+      if (Array.isArray(parsed)) {
+        const items = parsed.map((item) => String(item).trim()).filter(Boolean)
+        return items.length > 0 ? items : null
+      }
+    } catch {
+      const cleaned = value.replace(/[\[\]{}"]/g, "")
+      const items = cleaned
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean)
+      return items.length > 0 ? items : null
+    }
+  }
+  return null
+}
+
 export async function getUserContextForMaya(authUserId: string): Promise<string> {
   try {
     console.log("[v0] getUserContextForMaya: Starting for authUserId:", authUserId)
@@ -94,19 +118,13 @@ export async function getUserContextForMaya(authUserId: string): Promise<string>
       }
 
       if (personalBrand.settings_preference) {
-        try {
-          const settings =
-            typeof personalBrand.settings_preference === "string"
-              ? JSON.parse(personalBrand.settings_preference)
-              : personalBrand.settings_preference
-          if (Array.isArray(settings) && settings.length > 0) {
-            contextParts.push(`Preferred Settings: ${settings.join(", ")}`)
-            contextParts.push(`IMPORTANT: Use these location types in photo concepts: ${settings.join(", ")}`)
-          }
-        } catch (e) {
-          if (typeof personalBrand.settings_preference === "string") {
-            contextParts.push(`Preferred Settings: ${personalBrand.settings_preference}`)
-          }
+        const settings = parseStringArray(personalBrand.settings_preference)
+        if (settings && settings.length > 0) {
+          contextParts.push(`Preferred Settings: ${settings.join(", ")}`)
+          contextParts.push(`IMPORTANT: Use these location types in photo concepts: ${settings.join(", ")}`)
+        } else if (typeof personalBrand.settings_preference === "string") {
+          console.warn("[v0] getUserContextForMaya: Failed to parse settings_preference JSON, using fallback string")
+          contextParts.push(`Preferred Settings: ${personalBrand.settings_preference}`)
         }
       }
 

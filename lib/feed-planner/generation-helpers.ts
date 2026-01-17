@@ -230,13 +230,21 @@ export async function getCategoryAndMood(
     }
   } else if (!checkSettingsPreference) {
     // For preview feeds: Get category from user_personal_brand.visual_aesthetic only
-    const personalBrand = await sql`
-      SELECT visual_aesthetic
-      FROM user_personal_brand
-      WHERE user_id = ${user.id}
-      ORDER BY created_at DESC
-      LIMIT 1
-    ` as PersonalBrand[]
+    const personalBrand = orderBy === 'updated_at'
+      ? await sql`
+          SELECT visual_aesthetic
+          FROM user_personal_brand
+          WHERE user_id = ${user.id}
+          ORDER BY updated_at DESC
+          LIMIT 1
+        ` as PersonalBrand[]
+      : await sql`
+          SELECT visual_aesthetic
+          FROM user_personal_brand
+          WHERE user_id = ${user.id}
+          ORDER BY created_at DESC
+          LIMIT 1
+        ` as PersonalBrand[]
 
     if (personalBrand && personalBrand.length > 0 && personalBrand[0].visual_aesthetic) {
       try {
@@ -288,7 +296,7 @@ export async function getFashionStyleForPosition(
     SELECT fashion_style
     FROM user_personal_brand
     WHERE user_id = ${user.id}
-    ORDER BY created_at DESC
+    ORDER BY updated_at DESC
     LIMIT 1
   ` as PersonalBrand[]
 

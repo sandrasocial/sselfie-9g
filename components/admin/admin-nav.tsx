@@ -13,6 +13,8 @@ export function AdminNav() {
     { label: 'GROWTH', href: '/admin/growth-dashboard' },
     { label: 'MISSION CONTROL', href: '/admin/mission-control' },
     { label: 'HEALTH', href: '/admin/health' },
+    { label: 'CRON HEALTH', href: '/admin/cron-health' },
+    { label: 'BLUEPRINT HEALTH', href: '/admin/blueprint-health' },
     { label: 'JOURNAL', href: '/admin/journal' },
     { label: 'ALEX', href: '/admin/alex' },
     { label: 'EMAIL SEQUENCES', href: '/admin/email-sequences' },

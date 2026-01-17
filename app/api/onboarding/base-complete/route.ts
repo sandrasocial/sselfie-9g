@@ -32,6 +32,25 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { name, businessType, colorTheme, visualAesthetic, currentSituation, customColors } = body
 
+    const normalizeArrayField = (value: unknown): string[] | null => {
+      if (Array.isArray(value)) {
+        const items = value.map((item) => String(item).trim()).filter(Boolean)
+        return items.length > 0 ? items : null
+      }
+      if (typeof value === "string") {
+        return value.trim().length > 0 ? [value.trim()] : null
+      }
+      if (value && typeof value === "object") {
+        const items = Object.keys(value as Record<string, unknown>).map((item) => String(item).trim()).filter(Boolean)
+        return items.length > 0 ? items : null
+      }
+      return null
+    }
+
+    const visualAestheticJson = normalizeArrayField(visualAesthetic)
+      ? JSON.stringify(normalizeArrayField(visualAesthetic))
+      : null
+
     console.log("[Base Wizard] Saving base wizard data for user:", neonUser.id, {
       name: !!name,
       businessType: !!businessType,
@@ -57,7 +76,7 @@ export async function POST(request: NextRequest) {
           business_type = ${businessType || ""},
           color_theme = ${colorTheme || ""},
           color_palette = ${customColors || null},
-          visual_aesthetic = ${visualAesthetic || ""},
+          visual_aesthetic = ${visualAestheticJson}::jsonb,
           current_situation = ${currentSituation || ""},
           updated_at = NOW()
         WHERE user_id = ${neonUser.id}
@@ -86,7 +105,7 @@ export async function POST(request: NextRequest) {
           ${businessType || ""},
           ${colorTheme || ""},
           ${customColors || null},
-          ${visualAesthetic || ""},
+          ${visualAestheticJson}::jsonb,
           ${currentSituation || ""},
           false,
           NOW(),

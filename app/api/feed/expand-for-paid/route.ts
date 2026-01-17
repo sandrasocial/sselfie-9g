@@ -52,6 +52,13 @@ export async function POST(req: NextRequest) {
       LIMIT 1
     ` as any[]
 
+    if (!feedLayout?.feed_style) {
+      return NextResponse.json(
+        { error: "FEED_STYLE_REQUIRED", details: "Feed style is required for paid blueprint generation." },
+        { status: 422 }
+      )
+    }
+
     // Phase 4: Create posts for missing positions 2-9 (3x3 grid)
     const positionsToCreate = [2, 3, 4, 5, 6, 7, 8, 9].filter(
       (pos) => !existingPositions.includes(pos)

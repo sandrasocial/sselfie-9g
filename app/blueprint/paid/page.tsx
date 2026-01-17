@@ -35,6 +35,7 @@ function PaidBlueprintPage() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatingGrids, setGeneratingGrids] = useState<Set<number>>(new Set())
   const [error, setError] = useState<string | null>(null)
+  const [canonicalAction, setCanonicalAction] = useState<"feed_style" | "onboarding" | null>(null)
 
   // Legacy route safety: always redirect paid blueprint page to feed planner
   useEffect(() => {
@@ -107,6 +108,7 @@ function PaidBlueprintPage() {
 
     setIsGenerating(true)
     setError(null)
+    setCanonicalAction(null)
 
     try {
       trackEvent("paid_blueprint_generate_start", {
@@ -134,6 +136,16 @@ function PaidBlueprintPage() {
           const data = await response.json()
 
           if (!response.ok) {
+            if (response.status === 422) {
+              if (data.error === "FEED_STYLE_REQUIRED") {
+                setCanonicalAction("feed_style")
+                throw new Error("Choose a feed style to generate your blueprint.")
+              }
+              if (data.error === "CANONICAL_FIELDS_REQUIRED") {
+                setCanonicalAction("onboarding")
+                throw new Error("Complete your brand profile to generate your blueprint.")
+              }
+            }
             throw new Error(data.error || "Failed to start generation")
           }
 
@@ -376,6 +388,26 @@ function PaidBlueprintPage() {
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-sm text-red-800">{error}</p>
+            {canonicalAction === "feed_style" && (
+              <div className="mt-3">
+                <Button
+                  onClick={() => router.push("/feed-planner?openFeedStyle=1")}
+                  className="bg-stone-900 text-white hover:bg-stone-800"
+                >
+                  Choose feed style
+                </Button>
+              </div>
+            )}
+            {canonicalAction === "onboarding" && (
+              <div className="mt-3">
+                <Button
+                  onClick={() => router.push("/feed-planner?openWizard=1")}
+                  className="bg-stone-900 text-white hover:bg-stone-800"
+                >
+                  Complete profile
+                </Button>
+              </div>
+            )}
           </div>
         )}
 

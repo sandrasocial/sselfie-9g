@@ -32,9 +32,10 @@ interface InstagramFeedViewProps {
   access?: FeedPlannerAccess // Phase 4.2: Access control object (replaces mode prop)
   onOpenWizard?: () => void // Callback to open wizard
   onOpenWelcomeWizard?: () => void // Callback to open welcome wizard (for paid blueprint users)
+  onRequireFeedStyle?: () => void
 }
 
-export default function InstagramFeedView({ feedId, onBack, access, onOpenWizard, onOpenWelcomeWizard }: InstagramFeedViewProps) {
+export default function InstagramFeedView({ feedId, onBack, access, onOpenWizard, onOpenWelcomeWizard, onRequireFeedStyle }: InstagramFeedViewProps) {
   // Use custom hooks for all complex logic
   const { feedData, feedError, mutate, isLoading: isFeedLoading, isValidating } = useFeedPolling(feedId)
   const { selectedPost, setSelectedPost, showGallery, setShowGallery, showProfileGallery, setShowProfileGallery } = useFeedModals()
@@ -535,6 +536,8 @@ export default function InstagramFeedView({ feedId, onBack, access, onOpenWizard
                 post={displayPosts?.[0] || null}
                 onAddImage={() => setShowGallery(0)} // Open gallery for free users
                 onGenerateImage={() => mutate()} // Refresh feed data after generation
+                onRequireFeedStyle={onRequireFeedStyle}
+                onRequireOnboarding={onOpenWizard}
               />
             ) : (
               <>
@@ -549,6 +552,8 @@ export default function InstagramFeedView({ feedId, onBack, access, onOpenWizard
                   onPostClick={setSelectedPost}
                   onAddImage={setShowGallery}
                   onGenerateImage={async (postId: number) => await mutate()} // Phase 5.1: Refresh feed data after generation
+                  onRequireFeedStyle={onRequireFeedStyle}
+                  onRequireOnboarding={onOpenWizard}
                   onDragStart={dragDrop.handleDragStart}
                   onDragOver={dragDrop.handleDragOver}
                   onDragEnd={dragDrop.handleDragEnd}

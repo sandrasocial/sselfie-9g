@@ -198,7 +198,7 @@ export async function POST(request: NextRequest) {
       console.log("[v0] Updating existing brand profile:", existingBrand[0].id)
       
       // Prepare JSONB fields - handle arrays and strings properly
-      const prepareJsonbValue = (value: any): any => {
+      const prepareJsonbValue = (value: any, convertObjectToArray: boolean = false): any => {
         if (!value) return null
         if (Array.isArray(value)) {
           return value.length > 0 ? value : null
@@ -206,17 +206,24 @@ export async function POST(request: NextRequest) {
         if (typeof value === 'string') {
           // If it's already a JSON string, try to parse it
           try {
-            return JSON.parse(value)
+            const parsed = JSON.parse(value)
+            if (convertObjectToArray && parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+              return Object.keys(parsed)
+            }
+            return parsed
           } catch {
             // Not valid JSON, return as array with single value
             return [value]
           }
         }
+        if (convertObjectToArray && value && typeof value === "object" && !Array.isArray(value)) {
+          return Object.keys(value)
+        }
         return value
       }
       
-      const visualAestheticJson = prepareJsonbValue(body.visualAesthetic)
-      const fashionStyleJson = prepareJsonbValue(body.fashionStyle)
+      const visualAestheticJson = prepareJsonbValue(body.visualAesthetic, true)
+      const fashionStyleJson = prepareJsonbValue(body.fashionStyle, true)
       const settingsPreferenceJson = prepareJsonbValue(body.settingsPreference)
       const contentPillarsJson = prepareJsonbValue(body.contentPillars)
       

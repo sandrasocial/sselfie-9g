@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from "react"
 import { Loader2, ArrowRight, Download } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
+import { ToastAction } from "@/components/ui/toast"
 import { Button } from "@/components/ui/button"
 import BuyBlueprintModal from "@/components/sselfie/buy-blueprint-modal"
 import FreeModeUpsellModal from "./free-mode-upsell-modal"
@@ -13,6 +14,8 @@ interface FeedSinglePlaceholderProps {
   post: any | null // The single post for free users
   onAddImage?: () => void // Open gallery selector (upload + gallery) for free users
   onGenerateImage?: () => void // Callback to refresh feed data after generation
+  onRequireFeedStyle?: () => void
+  onRequireOnboarding?: () => void
 }
 
 /**
@@ -26,7 +29,9 @@ export default function FeedSinglePlaceholder({
   feedId, 
   post, 
   onAddImage, 
-  onGenerateImage 
+  onGenerateImage,
+  onRequireFeedStyle,
+  onRequireOnboarding,
 }: FeedSinglePlaceholderProps) {
   const [showBlueprintModal, setShowBlueprintModal] = useState(false)
   const [showUpsellModal, setShowUpsellModal] = useState(false)
@@ -111,9 +116,40 @@ export default function FeedSinglePlaceholder({
         // Clear optimistic state on error
         setPredictionId(null)
         const errorData = await response.json().catch(() => ({ error: "Failed to generate" }))
-        const errorMessage = errorData.error || "Failed to generate"
+        const errorCode = errorData.error || "Failed to generate"
         const errorDetails = errorData.details || errorData.message || ""
-        const fullErrorMessage = errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage
+
+        if (response.status === 422) {
+          if (errorCode === "FEED_STYLE_REQUIRED") {
+            toast({
+              title: "Choose a feed style",
+              description: "Pick a style to generate this feed.",
+              variant: "destructive",
+              action: onRequireFeedStyle ? (
+                <ToastAction altText="Choose style" onClick={onRequireFeedStyle}>
+                  Choose style
+                </ToastAction>
+              ) : undefined,
+            })
+            return
+          }
+
+          if (errorCode === "CANONICAL_FIELDS_REQUIRED" || errorCode === "TEMPLATE_INJECTION_REQUIRED") {
+            toast({
+              title: "Complete your brand profile",
+              description: "Add your visual aesthetic and fashion style to generate images.",
+              variant: "destructive",
+              action: onRequireOnboarding ? (
+                <ToastAction altText="Complete profile" onClick={onRequireOnboarding}>
+                  Complete profile
+                </ToastAction>
+              ) : undefined,
+            })
+            return
+          }
+        }
+
+        const fullErrorMessage = errorDetails ? `${errorCode}: ${errorDetails}` : errorCode
         throw new Error(fullErrorMessage)
       }
 

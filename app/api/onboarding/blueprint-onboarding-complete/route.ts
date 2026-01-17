@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
       consistencyLevel,
       currentSelfieHabits,
       feedStyle,
+      fashionStyle,
       selfieImages, // Include selfie images (already uploaded, just for reference)
     } = await req.json()
     
@@ -117,6 +118,10 @@ export async function POST(req: NextRequest) {
     if (consistencyLevel) stylePreferencesParts.push(`Consistency level: ${consistencyLevel}`)
     const stylePreferences = stylePreferencesParts.length > 0 ? stylePreferencesParts.join("; ") : null
 
+    const fashionStyleJson = Array.isArray(fashionStyle) && fashionStyle.length > 0
+      ? JSON.stringify(fashionStyle)
+      : null
+
     // Step 1: Save ALL blueprint wizard data to user_personal_brand for Maya context
     const existingBrand = await sql`
       SELECT id FROM user_personal_brand
@@ -135,6 +140,7 @@ export async function POST(req: NextRequest) {
           brand_vibe = ${vibe || null},
           visual_aesthetic = ${vibe ? JSON.stringify([vibe]) : null},
           settings_preference = ${feedStyle ? JSON.stringify([feedStyle]) : null},
+          fashion_style = ${fashionStyleJson}::jsonb,
           photo_goals = ${photoGoals || null},
           style_preferences = ${stylePreferences || null},
           updated_at = NOW()
@@ -151,6 +157,7 @@ export async function POST(req: NextRequest) {
           brand_vibe,
           visual_aesthetic,
           settings_preference,
+          fashion_style,
           photo_goals,
           style_preferences,
           created_at,
@@ -163,6 +170,7 @@ export async function POST(req: NextRequest) {
           ${vibe || null},
           ${vibe ? JSON.stringify([vibe]) : null},
           ${feedStyle ? JSON.stringify([feedStyle]) : null},
+          ${fashionStyleJson}::jsonb,
           ${photoGoals || null},
           ${stylePreferences || null},
           NOW(),

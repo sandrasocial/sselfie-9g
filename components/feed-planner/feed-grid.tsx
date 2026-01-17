@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { toast } from "@/hooks/use-toast"
+import { ToastAction } from "@/components/ui/toast"
 import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 import FeedGridItem from "./feed-grid-item"
 
@@ -16,6 +17,8 @@ interface FeedGridProps {
   onPostClick: (post: any) => void
   onAddImage?: (postId: number) => void // Open gallery selector (upload + gallery)
   onGenerateImage?: (postId: number) => Promise<void> // Phase 5.1: Callback after image generation
+  onRequireFeedStyle?: () => void
+  onRequireOnboarding?: () => void
   onDragStart: (index: number) => void
   onDragOver: (e: React.DragEvent<HTMLDivElement>, index: number) => void
   onDragEnd: () => void
@@ -32,6 +35,8 @@ export default function FeedGrid({
   onPostClick,
   onAddImage,
   onGenerateImage,
+  onRequireFeedStyle,
+  onRequireOnboarding,
   onDragStart,
   onDragOver,
   onDragEnd,
@@ -62,9 +67,40 @@ export default function FeedGrid({
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: "Failed to generate" }))
-        const errorMessage = errorData.error || "Failed to generate"
+        const errorCode = errorData.error || "Failed to generate"
         const errorDetails = errorData.details || errorData.message || ""
-        const fullErrorMessage = errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage
+
+        if (response.status === 422) {
+          if (errorCode === "FEED_STYLE_REQUIRED") {
+            toast({
+              title: "Choose a feed style",
+              description: "Pick a style to generate this feed.",
+              variant: "destructive",
+              action: onRequireFeedStyle ? (
+                <ToastAction altText="Choose style" onClick={onRequireFeedStyle}>
+                  Choose style
+                </ToastAction>
+              ) : undefined,
+            })
+            return { error: errorCode }
+          }
+
+          if (errorCode === "CANONICAL_FIELDS_REQUIRED" || errorCode === "TEMPLATE_INJECTION_REQUIRED") {
+            toast({
+              title: "Complete your brand profile",
+              description: "Add your visual aesthetic and fashion style to generate images.",
+              variant: "destructive",
+              action: onRequireOnboarding ? (
+                <ToastAction altText="Complete profile" onClick={onRequireOnboarding}>
+                  Complete profile
+                </ToastAction>
+              ) : undefined,
+            })
+            return { error: errorCode }
+          }
+        }
+
+        const fullErrorMessage = errorDetails ? `${errorCode}: ${errorDetails}` : errorCode
         throw new Error(fullErrorMessage)
       }
 
