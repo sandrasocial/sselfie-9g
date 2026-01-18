@@ -4,6 +4,7 @@ import { getAuthenticatedUserWithRetry } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getDb } from "@/lib/db"
 import { getFeedPlannerAccess } from "@/lib/feed-planner/access-control"
+import { getCategoryAndMood } from '@/lib/feed-planner/generation-helpers'
 
 /**
  * Create Preview Feed
@@ -73,149 +74,51 @@ export async function POST(req: NextRequest) {
     // Users should be able to create multiple preview feeds with different styles
     // This allows them to test different feed styles without losing previous work
 
-    // Get wizard context from user_personal_brand (unified wizard) - PRIMARY SOURCE
+    // Get wizard context using canonical category resolver
     // Use template-based prompts from grid library based on user's current style choices
     let templatePrompt = null
     let feedStyleToStore: string | null = null
     try {
-      // PRIMARY: Try unified wizard (user_personal_brand)
-      const personalBrand = await sql`
-        SELECT settings_preference, visual_aesthetic
-        FROM user_personal_brand
-        WHERE user_id = ${user.id}
-        ORDER BY updated_at DESC
-        LIMIT 1
-      ` as any[]
+      // Use canonical category resolver (Phase 1C/1D)
+      const { category, mood } = await getCategoryAndMood(
+        null,
+        { id: user.id },
+        {
+          checkSettingsPreference: true,
+          checkBlueprintSubscribers: true,
+          trackSource: true,
+        }
+      )
       
-      if (personalBrand && personalBrand.length > 0) {
-        let feedStyle: string | null = null
-        let category: "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional" = "professional"
-        let mood: "luxury" | "minimal" | "beige" = "minimal"
-        
-        // Extract feedStyle from settings_preference (unless overridden by request)
-        if (requestedFeedStyle) {
-          // Use requested feedStyle from modal selection
-          feedStyle = requestedFeedStyle
-          feedStyleToStore = feedStyle
-          if (feedStyle === "luxury" || feedStyle === "minimal" || feedStyle === "beige") {
-            mood = feedStyle as "luxury" | "minimal" | "beige"
-          }
-          console.log(`[v0] Using requested feedStyle: ${feedStyle}`)
-        } else if (personalBrand[0].settings_preference) {
-          // Fall back to user's saved preference
-          try {
-            const settings = typeof personalBrand[0].settings_preference === 'string'
-              ? JSON.parse(personalBrand[0].settings_preference)
-              : personalBrand[0].settings_preference
-            
-            if (Array.isArray(settings) && settings.length > 0) {
-              feedStyle = settings[0]?.toLowerCase().trim()
-              feedStyleToStore = feedStyle // Store for feed_layouts
-              if (feedStyle === "luxury" || feedStyle === "minimal" || feedStyle === "beige") {
-                mood = feedStyle as "luxury" | "minimal" | "beige"
-              }
-            }
-          } catch (e) {
-            console.warn(`[v0] Failed to parse settings_preference:`, e)
-          }
-        }
-        
-        // Extract category from visual_aesthetic (use requested if provided, otherwise saved)
-        if (requestedVisualAesthetic && requestedVisualAesthetic.length > 0) {
-          // Use first requested visual aesthetic as category
-          const firstAesthetic = requestedVisualAesthetic[0]
-          const validCategories: Array<"luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"> = 
-            ["luxury", "minimal", "beige", "warm", "edgy", "professional"]
-          if (validCategories.includes(firstAesthetic as any)) {
-            category = firstAesthetic as "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"
-            console.log(`[v0] Using requested visualAesthetic for category: ${category}`)
-          }
-        } else if (personalBrand[0].visual_aesthetic) {
-          // Fall back to saved visual aesthetic
-          try {
-            const aesthetics = typeof personalBrand[0].visual_aesthetic === 'string'
-              ? JSON.parse(personalBrand[0].visual_aesthetic)
-              : personalBrand[0].visual_aesthetic
-            
-            if (Array.isArray(aesthetics) && aesthetics.length > 0) {
-              const firstAesthetic = aesthetics[0]?.toLowerCase().trim()
-              const validCategories: Array<"luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"> = 
-                ["luxury", "minimal", "beige", "warm", "edgy", "professional"]
-              
-              if (firstAesthetic && validCategories.includes(firstAesthetic as any)) {
-                category = firstAesthetic as "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"
-              }
-            }
-          } catch (e) {
-            console.warn(`[v0] Failed to parse visual_aesthetic:`, e)
-          }
-        }
-        
-        // Get template prompt from grid library
-        const { BLUEPRINT_PHOTOSHOOT_TEMPLATES, MOOD_MAP } = await import("@/lib/maya/blueprint-photoshoot-templates")
-        const { validateBlueprintTemplate } = await import("@/lib/feed-planner/extract-aesthetic-from-template")
-        // Map mood correctly using MOOD_MAP
-        const moodMapped = MOOD_MAP[mood as keyof typeof MOOD_MAP] || "light_minimalistic"
-        const templateKey = `${category}_${moodMapped}` as keyof typeof BLUEPRINT_PHOTOSHOOT_TEMPLATES
-        templatePrompt = BLUEPRINT_PHOTOSHOOT_TEMPLATES[templateKey] || null
-        
-        if (templatePrompt) {
-          // Validate template can be properly extracted for NanoBanana structure
-          const validation = validateBlueprintTemplate(templatePrompt)
-          if (!validation.isValid) {
-            console.warn(`[v0] ⚠️ Template ${templateKey} has missing fields:`, validation.missingFields)
-            console.warn(`[v0] ⚠️ Warnings:`, validation.warnings)
-          } else {
-            console.log(`[v0] ✅ Template ${templateKey} validated successfully`)
-          }
-          console.log(`[v0] Using template prompt from unified wizard: ${category}_${moodMapped} (${templatePrompt.split(/\s+/).length} words)`)
-        } else {
-          console.log(`[v0] Template not found for ${category}_${moodMapped} - prompt will be generated on first generation`)
-        }
+      // Use requested feedStyle if provided (for feed_layouts storage)
+      if (requestedFeedStyle) {
+        feedStyleToStore = requestedFeedStyle
+        console.log(`[v0] Using requested feedStyle for storage: ${requestedFeedStyle}`)
       } else {
-        // FALLBACK: Try legacy blueprint_subscribers
-        console.log(`[v0] No user_personal_brand found, checking blueprint_subscribers (legacy)...`)
-        const blueprintSubscriber = await sql`
-          SELECT form_data, feed_style
-          FROM blueprint_subscribers
-          WHERE user_id = ${user.id}
-          LIMIT 1
-        ` as any[]
-        
-        if (blueprintSubscriber.length > 0) {
-          const formData = blueprintSubscriber[0].form_data || {}
-          // Use requested feedStyle if provided, otherwise use saved feed_style
-          const savedFeedStyle = blueprintSubscriber[0].feed_style || null
-          const finalFeedStyle = requestedFeedStyle || savedFeedStyle
-          feedStyleToStore = finalFeedStyle // Store for feed_layouts
-          
-          // Get category from form_data.vibe (same as old blueprint)
-          const category = (formData.vibe || "professional") as "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"
-          // Get mood from feed_style (use requested or saved)
-          const mood = (finalFeedStyle || "minimal") as "luxury" | "minimal" | "beige"
-          
-          // Get template prompt from grid library
-          const { BLUEPRINT_PHOTOSHOOT_TEMPLATES, MOOD_MAP } = await import("@/lib/maya/blueprint-photoshoot-templates")
-          const { validateBlueprintTemplate } = await import("@/lib/feed-planner/extract-aesthetic-from-template")
-          // Map mood correctly using MOOD_MAP
-          const moodMapped = MOOD_MAP[mood as keyof typeof MOOD_MAP] || "light_minimalistic"
-          const templateKey = `${category}_${moodMapped}` as keyof typeof BLUEPRINT_PHOTOSHOOT_TEMPLATES
-          templatePrompt = BLUEPRINT_PHOTOSHOOT_TEMPLATES[templateKey] || null
-          
-          if (templatePrompt) {
-            // Validate template can be properly extracted for NanoBanana structure
-            const validation = validateBlueprintTemplate(templatePrompt)
-            if (!validation.isValid) {
-              console.warn(`[v0] ⚠️ Template ${templateKey} has missing fields:`, validation.missingFields)
-              console.warn(`[v0] ⚠️ Warnings:`, validation.warnings)
-            } else {
-              console.log(`[v0] ✅ Template ${templateKey} validated successfully`)
-            }
-            console.log(`[v0] Using template prompt from legacy blueprint: ${category}_${moodMapped} (${templatePrompt.split(/\s+/).length} words)`)
-          }
+        // Extract feedStyle from mood for storage
+        feedStyleToStore = mood
+      }
+      
+      // Get template prompt from grid library
+      const { BLUEPRINT_PHOTOSHOOT_TEMPLATES, MOOD_MAP } = await import("@/lib/maya/blueprint-photoshoot-templates")
+      const { validateBlueprintTemplate } = await import("@/lib/feed-planner/extract-aesthetic-from-template")
+      // Map mood correctly using MOOD_MAP
+      const moodMapped = MOOD_MAP[mood as keyof typeof MOOD_MAP] || "light_minimalistic"
+      const templateKey = `${category}_${moodMapped}` as keyof typeof BLUEPRINT_PHOTOSHOOT_TEMPLATES
+      templatePrompt = BLUEPRINT_PHOTOSHOOT_TEMPLATES[templateKey] || null
+      
+      if (templatePrompt) {
+        // Validate template can be properly extracted for NanoBanana structure
+        const validation = validateBlueprintTemplate(templatePrompt)
+        if (!validation.isValid) {
+          console.warn(`[v0] ⚠️ Template ${templateKey} has missing fields:`, validation.missingFields)
+          console.warn(`[v0] ⚠️ Warnings:`, validation.warnings)
         } else {
-          console.log(`[v0] No wizard data found in either source - prompt will be generated on first generation`)
+          console.log(`[v0] ✅ Template ${templateKey} validated successfully`)
         }
+        console.log(`[v0] Using template prompt from canonical resolver: ${category}_${moodMapped} (${templatePrompt.split(/\s+/).length} words)`)
+      } else {
+        console.log(`[v0] Template not found for ${category}_${moodMapped} - prompt will be generated on first generation`)
       }
     } catch (error) {
       console.error("[v0] Error getting template prompt for free example:", error)

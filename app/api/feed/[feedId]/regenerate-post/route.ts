@@ -7,6 +7,7 @@ import { extractReplicateVersionId, ensureTriggerWordPrefix, buildClassicModeRep
 import { checkCredits, deductCredits, CREDIT_COSTS } from "@/lib/credits"
 import { generateWithNanoBanana, getStudioProCreditCost } from "@/lib/nano-banana-client"
 import { getFeedPlannerAccess } from "@/lib/feed-planner/access-control"
+import { getCategoryAndMood } from '@/lib/feed-planner/generation-helpers'
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -110,108 +111,20 @@ export async function POST(request: Request, { params }: { params: Promise<{ fee
         
         if (access.isFree || access.isPaidBlueprint) {
           // Use blueprint templates (same logic as generate-single)
-          // FIX 1: Check user_personal_brand FIRST (unified wizard), then fall back to blueprint_subscribers (legacy)
-          let category: "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional" = "professional"
-          let mood: "luxury" | "minimal" | "beige" = "minimal"
-          let sourceUsed = "default"
-          
-          // PRIMARY SOURCE: user_personal_brand (unified wizard)
-          const personalBrand = await sql`
-            SELECT settings_preference, visual_aesthetic
-            FROM user_personal_brand
-            WHERE user_id = ${neonUser.id}
-            ORDER BY created_at DESC
-            LIMIT 1
-          ` as any[]
-          
-          if (personalBrand && personalBrand.length > 0) {
-            console.log(`[v0] [REGENERATE-POST] [TEMPLATE DEBUG] user_personal_brand found:`, {
-              visual_aesthetic: personalBrand[0].visual_aesthetic,
-              settings_preference: personalBrand[0].settings_preference
-            })
-            
-            // Extract feedStyle from settings_preference (first element of JSONB array)
-            let feedStyle: string | null = null
-            if (personalBrand[0].settings_preference) {
-              try {
-                const settings = typeof personalBrand[0].settings_preference === 'string'
-                  ? JSON.parse(personalBrand[0].settings_preference)
-                  : personalBrand[0].settings_preference
-                
-                if (Array.isArray(settings) && settings.length > 0) {
-                  feedStyle = settings[0] // First element is feedStyle
-                }
-              } catch (e) {
-                console.warn(`[v0] [REGENERATE-POST] Failed to parse settings_preference:`, e)
-              }
+          // Use canonical category resolver (Phase 1C/1D)
+          const { category, mood } = await getCategoryAndMood(
+            null,
+            { id: neonUser.id },
+            {
+              checkSettingsPreference: true,
+              checkBlueprintSubscribers: true,
+              trackSource: true,
             }
-            
-            // Map feedStyle to mood (values are already exact: "luxury", "minimal", "beige")
-            if (feedStyle) {
-              const feedStyleLower = feedStyle.toLowerCase().trim()
-              if (feedStyleLower === "luxury" || feedStyleLower === "minimal" || feedStyleLower === "beige") {
-                mood = feedStyleLower as "luxury" | "minimal" | "beige"
-              }
-            }
-            
-            // Extract category from visual_aesthetic (array of IDs)
-            if (personalBrand[0].visual_aesthetic) {
-              try {
-                const aesthetics = typeof personalBrand[0].visual_aesthetic === 'string'
-                  ? JSON.parse(personalBrand[0].visual_aesthetic)
-                  : personalBrand[0].visual_aesthetic
-                
-                if (Array.isArray(aesthetics) && aesthetics.length > 0) {
-                  const firstAesthetic = aesthetics[0]?.toLowerCase().trim()
-                  const validCategories: Array<"luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"> = 
-                    ["luxury", "minimal", "beige", "warm", "edgy", "professional"]
-                  
-                  if (firstAesthetic && validCategories.includes(firstAesthetic as any)) {
-                    category = firstAesthetic as "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"
-                  }
-                }
-              } catch (e) {
-                console.warn(`[v0] [REGENERATE-POST] Failed to parse visual_aesthetic:`, e)
-              }
-            }
-            
-            sourceUsed = "unified_wizard"
-            console.log(`[v0] [REGENERATE-POST] ✅ Found user_personal_brand data: ${category}_${mood}`)
-          } else {
-            // FALLBACK: Check blueprint_subscribers (legacy blueprint wizard)
-            console.log(`[v0] [REGENERATE-POST] ⚠️ No user_personal_brand data, checking blueprint_subscribers (legacy)...`)
-            
-            const blueprintSubscriber = await sql`
-              SELECT form_data, feed_style
-              FROM blueprint_subscribers
-              WHERE user_id = ${neonUser.id}
-              LIMIT 1
-            ` as any[]
-            
-            console.log(`[v0] [REGENERATE-POST] [TEMPLATE DEBUG] blueprint_subscribers:`, {
-              form_data: blueprintSubscriber[0]?.form_data,
-              feed_style: blueprintSubscriber[0]?.feed_style
-            })
-            
-            if (blueprintSubscriber.length > 0) {
-              const formData = blueprintSubscriber[0].form_data || {}
-              const feedStyle = blueprintSubscriber[0].feed_style || null
-              category = (formData.vibe || "professional") as "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"
-              mood = (feedStyle || "minimal") as "luxury" | "minimal" | "beige"
-              
-              sourceUsed = "legacy_blueprint"
-              console.log(`[v0] [REGENERATE-POST] ✅ Found blueprint_subscribers data: ${category}_${mood}`)
-            } else {
-              sourceUsed = "default"
-              console.log(`[v0] [REGENERATE-POST] ⚠️ No wizard data found in either source. Using defaults: professional_minimal`)
-            }
-          }
-          
-          console.log(`[v0] [REGENERATE-POST] [TEMPLATE DEBUG] Final selection: ${category}_${mood} (source: ${sourceUsed})`)
+          )
           
           const { getBlueprintPhotoshootPrompt } = await import("@/lib/maya/blueprint-photoshoot-templates")
           finalPrompt = getBlueprintPhotoshootPrompt(category, mood)
-          console.log(`[v0] [REGENERATE-POST] ✅ Using blueprint template prompt: ${category}_${mood}`)
+          console.log(`[v0] [REGENERATE-POST] ✅ Using blueprint template prompt from canonical resolver: ${category}_${mood}`)
         } else {
           // Membership users: Keep Maya AI (Classic Mode uses Maya, Pro Mode uses templates if needed)
           // This path should not be hit for Pro Mode regeneration, but keeping for safety
