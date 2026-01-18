@@ -62,6 +62,77 @@ interface GetCategoryAndMoodResult {
 }
 
 /**
+ * Phase 1C: Map visual aesthetic string to category with partial matching
+ * Phase 1D: Extended with explicit allowlist for known onboarding variants
+ * 
+ * Supports partial matching to handle values like "beige feed", "beige aesthetic", etc.
+ * 
+ * @param aesthetic - Raw visual aesthetic string (e.g., "beige feed", "luxury minimal")
+ * @returns Category string or null if no match found
+ */
+export function mapVisualAestheticToCategory(aesthetic: string | null | undefined): "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional" | null {
+  if (!aesthetic) return null
+  
+  const normalized = aesthetic.toLowerCase().trim()
+  
+  // Phase 1D: Explicit allowlist for known onboarding variants (deterministic)
+  // These are proven to exist in UI/onboarding flows
+  const explicitMappings: Record<string, "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"> = {
+    // Beige variants
+    'beige feed': 'beige',
+    'beige aesthetic': 'beige',
+    'beige creamy': 'beige',
+    'beige': 'beige',
+    
+    // Minimal variants
+    'minimalist': 'minimal',
+    'minimalist & clean': 'minimal',
+    'minimal': 'minimal',
+    'editorial monochrome': 'minimal',
+    'clean girl': 'minimal',
+    'clean': 'minimal',
+    
+    // Luxury variants
+    'luxurious': 'luxury',
+    'luxurious & polished': 'luxury',
+    'luxury': 'luxury',
+    
+    // Warm variants
+    'warm': 'warm',
+    'warm & terracotta': 'warm',
+    'warm terracotta': 'warm',
+    
+    // Edgy variants
+    'edgy': 'edgy',
+    'edgy & modern': 'edgy',
+    
+    // Professional variants
+    'professional': 'professional',
+    'business': 'professional',
+    'corporate': 'professional',
+    'business professional': 'professional',
+  }
+  
+  // Check explicit mappings first (exact match)
+  if (explicitMappings[normalized]) {
+    return explicitMappings[normalized]
+  }
+  
+  // Phase 1C: Partial contains matching (order matters - check more specific first)
+  if (normalized.includes('beige')) return 'beige'
+  if (normalized.includes('minimal')) return 'minimal'
+  if (normalized.includes('luxury') || normalized.includes('luxurious')) return 'luxury'
+  if (normalized.includes('warm')) return 'warm'
+  if (normalized.includes('edgy')) return 'edgy'
+  if (normalized.includes('professional') || normalized.includes('business') || normalized.includes('corporate')) {
+    return 'professional'
+  }
+  
+  // No match found
+  return null
+}
+
+/**
  * Get category and mood for template selection
  * 
  * Priority order:
@@ -162,7 +233,7 @@ export async function getCategoryAndMood(
         }
       }
 
-      // Extract category from visual_aesthetic (array of IDs)
+      // Phase 1C: Extract category from visual_aesthetic with partial matching support
       if (personalBrand[0].visual_aesthetic) {
         try {
           const aesthetics = typeof personalBrand[0].visual_aesthetic === 'string'
@@ -170,12 +241,30 @@ export async function getCategoryAndMood(
             : personalBrand[0].visual_aesthetic
 
           if (Array.isArray(aesthetics) && aesthetics.length > 0) {
-            const firstAesthetic = aesthetics[0]?.toLowerCase().trim()
-            const validCategories: Array<"luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"> =
-              ["luxury", "minimal", "beige", "warm", "edgy", "professional"]
+            const firstAesthetic = aesthetics[0]
+            
+            // Phase 1C: Try partial matching first (handles "beige feed", "beige aesthetic", etc.)
+            const mappedCategory = mapVisualAestheticToCategory(firstAesthetic)
+            if (mappedCategory) {
+              category = mappedCategory
+              if (trackSource) {
+                console.log(`[v0] [GENERATE-SINGLE] ✅ Mapped visual_aesthetic "${firstAesthetic}" to category "${mappedCategory}" via partial matching`)
+              }
+            } else {
+              // Phase 1D: Log unmapped visual_aesthetic values (non-sensitive audit)
+              const normalizedAesthetic = firstAesthetic?.toLowerCase().trim() || ''
+              console.log(`[UNMAPPED-AESTHETIC] routeId=EP-05 unmapped_aesthetic length=${firstAesthetic?.length || 0} normalized="${normalizedAesthetic.substring(0, 50)}"`)
+              // Fallback to exact match (backward compatibility)
+              const firstAestheticLower = firstAesthetic?.toLowerCase().trim()
+              const validCategories: Array<"luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"> =
+                ["luxury", "minimal", "beige", "warm", "edgy", "professional"]
 
-            if (firstAesthetic && validCategories.includes(firstAesthetic as any)) {
-              category = firstAesthetic as "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"
+              if (firstAestheticLower && validCategories.includes(firstAestheticLower as any)) {
+                category = firstAestheticLower as "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"
+                if (trackSource) {
+                  console.log(`[v0] [GENERATE-SINGLE] ✅ Mapped visual_aesthetic "${firstAesthetic}" to category "${category}" via exact match`)
+                }
+              }
             }
           }
         } catch (e) {

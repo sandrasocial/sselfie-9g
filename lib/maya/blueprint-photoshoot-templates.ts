@@ -25,32 +25,32 @@ export const MOOD_MAP: Record<BlueprintMood, string> = {
 
 export const BLUEPRINT_PHOTOSHOOT_TEMPLATES: Record<string, string> = {
   // LUXURY category
-  luxury_dark_moody: `Use reference images for strict identity consistency (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Different angles from reference.
+  luxury_dark_moody: `Maintain strict identity consistency using reference images (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Vary angles from reference.
 
-Vibe: Dark luxury editorial aesthetic. All black outfits with urban edge. Moody city lighting, concrete architecture, professional spaces. iPhone photography style with natural film grain, high contrast shadows, sophisticated and effortless.
+Vibe: Dark luxury editorial aesthetic. All black outfits with urban sophistication. Moody city lighting, concrete architecture, professional spaces. Authentic iPhone photography with natural film grain, high contrast shadows, sophisticated and effortless.
 
 Setting: Urban concrete structures, modern office interiors, city streets at dusk, luxury building lobbies
 
 Outfits: {{COLOR_PALETTE}} {{TEXTURE_NOTES}}
 
 9 frames:
-1. Sitting on {{LOCATION_OUTDOOR_1}} - {{OUTFIT_FULLBODY_1}}, {{STYLING_NOTES}}, relaxed pose
-2. Coffee and {{ACCESSORY_FLATLAY_1}} on {{LOCATION_INDOOR_1}} - overhead flatlay, {{LIGHTING_EVENING}}
-3. Full-body against {{LOCATION_ARCHITECTURAL_1}} - {{OUTFIT_FULLBODY_2}}, dynamic pose, urban background
+1. Seated on {{LOCATION_OUTDOOR_1}} - {{OUTFIT_FULLBODY_1}}, {{STYLING_NOTES}}, relaxed confident pose
+2. Coffee and {{ACCESSORY_FLATLAY_1}} arranged on {{LOCATION_INDOOR_1}} - overhead flatlay, {{LIGHTING_EVENING}}
+3. Full-body positioned against {{LOCATION_ARCHITECTURAL_1}} - {{OUTFIT_FULLBODY_2}}, dynamic confident pose, urban architectural background
 
-4. Close-up {{ACCESSORY_CLOSEUP_1}} - hand touching collarbone, soft shadow
-5. Street sign reading "ICONIC" in bold serif font on {{LOCATION_ARCHITECTURAL_1}}, {{LIGHTING_EVENING}}
-6. {{OUTFIT_MIDSHOT_1}} with rhinestone details - close texture shot on reflective dark surface
+4. Close-up {{ACCESSORY_CLOSEUP_1}} - hand near collarbone, soft shadow defining form
+5. Street sign reading "ICONIC" in bold serif typography on {{LOCATION_ARCHITECTURAL_1}}, {{LIGHTING_EVENING}}
+6. {{OUTFIT_MIDSHOT_1}} featuring rhinestone details - close texture detail on reflective dark surface
 
-7. Walking naturally on {{LOCATION_OUTDOOR_1}} - {{OUTFIT_FULLBODY_3}}, yellow road markings visible
-8. Working at laptop with coffee - overhead view, hands typing, {{LOCATION_INDOOR_2}}
-9. Mirror selfie - {{OUTFIT_FULLBODY_4}}, phone in hand, {{LOCATION_INDOOR_3}}
+7. Walking naturally along {{LOCATION_OUTDOOR_1}} - {{OUTFIT_FULLBODY_3}}, yellow road markings visible in frame
+8. Working at laptop with coffee - overhead perspective, hands typing, {{LOCATION_INDOOR_2}}
+9. Mirror selfie - {{OUTFIT_FULLBODY_4}}, phone visible in hand, {{LOCATION_INDOOR_3}}
 
-Color grade: Deep blacks, cool grays, concrete tones, warm skin preserved, gold jewelry highlights, dramatic shadows, iPhone grain, moody candid lighting, high contrast.`,
+Color grade: Deep blacks, cool grays, concrete tones, warm skin tones preserved, gold jewelry highlights, dramatic shadows, authentic iPhone grain, moody candid lighting, high contrast.`,
 
-  luxury_light_minimalistic: `Use reference images for strict identity consistency (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Different angles from reference.
+  luxury_light_minimalistic: `Maintain strict identity consistency using reference images (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Vary angles from reference.
 
-Vibe: Bright luxury minimalist aesthetic. White and cream tailored pieces with airy elegance. Bright natural daylight, clean white interiors, sophisticated simplicity. iPhone photography style with soft lighting, minimal shadows, effortless polish.
+Vibe: Bright luxury minimalist aesthetic. White and cream tailored pieces with airy elegance. Bright natural daylight, clean white interiors, sophisticated simplicity. Authentic iPhone photography with soft lighting, minimal shadows, effortless polish.
 
 Setting: Bright white penthouse interiors, luxury hotel lobbies with natural light, clean modern architecture
 
@@ -58,22 +58,22 @@ Outfits: {{COLOR_PALETTE}} {{TEXTURE_NOTES}}
 
 9 frames:
 1. Standing in {{LOCATION_INDOOR_1}} - {{OUTFIT_FULLBODY_1}}, hand in pocket, {{LIGHTING_BRIGHT}}
-2. Latte and {{ACCESSORY_FLATLAY_1}} on {{LOCATION_INDOOR_2}} - overhead flatlay, {{LIGHTING_BRIGHT}}
-3. Full-body in {{LOCATION_ARCHITECTURAL_1}} - {{OUTFIT_FULLBODY_2}}, architectural white background
+2. Latte and {{ACCESSORY_FLATLAY_1}} arranged on {{LOCATION_INDOOR_2}} - overhead flatlay, {{LIGHTING_BRIGHT}}
+3. Full-body positioned in {{LOCATION_ARCHITECTURAL_1}} - {{OUTFIT_FULLBODY_2}}, architectural white background
 
 4. Close-up of {{ACCESSORY_CLOSEUP_1}} - minimal styling, soft focus
-5. Minimalist sign reading "RELAX" in elegant thin serif on {{LOCATION_ARCHITECTURAL_1}}, {{LIGHTING_BRIGHT}}
-6. {{OUTFIT_MIDSHOT_1}} fabric texture - extreme close-up, luxurious material detail
+5. Minimalist sign reading "RELAX" in elegant thin serif typography on {{LOCATION_ARCHITECTURAL_1}}, {{LIGHTING_BRIGHT}}
+6. {{OUTFIT_MIDSHOT_1}} fabric texture - extreme close-up revealing luxurious material detail
 
-7. Walking in {{LOCATION_INDOOR_3}} - {{OUTFIT_FULLBODY_3}}, natural stride, soft shadows
-8. {{LOCATION_INDOOR_2}} with laptop and coffee - overhead view, minimal workspace, {{LIGHTING_BRIGHT}}
-9. Mirror selfie - {{OUTFIT_FULLBODY_4}}, phone in hand, {{LOCATION_INDOOR_1}}
+7. Walking through {{LOCATION_INDOOR_3}} - {{OUTFIT_FULLBODY_3}}, natural stride, soft shadows
+8. {{LOCATION_INDOOR_2}} featuring laptop and coffee - overhead perspective, minimal workspace, {{LIGHTING_BRIGHT}}
+9. Mirror selfie - {{OUTFIT_FULLBODY_4}}, phone visible in hand, {{LOCATION_INDOOR_1}}
 
 Color grade: Bright whites, soft creams, warm beiges, gentle shadows, natural daylight, minimal grain, airy and clean, soft focus, high-key lighting.`,
 
-  luxury_beige_aesthetic: `Use reference images for strict identity consistency (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Different angles from reference.
+  luxury_beige_aesthetic: `Maintain strict identity consistency using reference images (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Vary angles from reference.
 
-Vibe: Warm beige luxury aesthetic. Camel, tan, and cream tailored pieces with golden hour elegance. Soft warm lighting, beige interiors, sophisticated warmth. iPhone photography style with warm tones, soft shadows, timeless luxury.
+Vibe: Warm beige luxury aesthetic. Camel, tan, and cream tailored pieces with golden hour elegance. Soft warm lighting, beige interiors, sophisticated warmth. Authentic iPhone photography with warm tones, soft shadows, timeless luxury.
 
 Setting: Beige stone architecture, warm-toned luxury apartments, golden hour city streets, tan leather interiors
 
@@ -95,9 +95,9 @@ Outfits: {{COLOR_PALETTE}} {{TEXTURE_NOTES}}
 Color grade: Warm beiges, camel tones, cream highlights, golden hour warmth, soft shadows, gentle grain, sophisticated warmth, buttery soft lighting.`,
 
   // MINIMAL category
-  minimal_dark_moody: `Use reference images for strict identity consistency (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Different angles from reference.
+  minimal_dark_moody: `Maintain strict identity consistency using reference images (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Vary angles from reference.
 
-Vibe: Dark minimal editorial aesthetic. All black uniform pieces with architectural precision. Harsh geometric shadows, concrete spaces, stripped-back sophistication. iPhone photography style with high contrast, clean lines, modern minimalism.
+Vibe: Dark minimal editorial aesthetic. All black uniform pieces with architectural precision. Harsh geometric shadows, concrete spaces, stripped-back sophistication. Authentic iPhone photography with high contrast, clean lines, modern minimalism.
 
 Setting: Concrete brutalist architecture, minimal black interiors, geometric urban spaces, modern art galleries
 
@@ -118,9 +118,9 @@ Outfits: {{COLOR_PALETTE}} {{TEXTURE_NOTES}}
 
 Color grade: Deep blacks, charcoal grays, high contrast, harsh geometric shadows, minimal grain, modern stark aesthetic, architectural precision.`,
 
-  minimal_light_minimalistic: `Use reference images for strict identity consistency (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Different angles from reference.
+  minimal_light_minimalistic: `Maintain strict identity consistency using reference images (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Vary angles from reference.
 
-Vibe: Pure white minimal aesthetic. All-white uniform pieces with Scandinavian simplicity. Bright even daylight, white interiors, absolute minimalism. iPhone photography style with soft lighting, no shadows, zen simplicity.
+Vibe: Pure white minimal aesthetic. All-white uniform pieces with Scandinavian simplicity. Bright even daylight, white interiors, absolute minimalism. Authentic iPhone photography with soft lighting, no shadows, zen simplicity.
 
 Setting: Pure white gallery spaces, Scandinavian white interiors, bright white studios, minimal architecture
 
@@ -141,33 +141,33 @@ Outfits: {{COLOR_PALETTE}} {{TEXTURE_NOTES}}
 
 Color grade: Pure whites, soft grays, no shadows, bright even lighting, minimal grain, Scandinavian aesthetic, zen simplicity, high-key exposure.`,
 
-  minimal_beige_aesthetic: `Use reference images for strict identity consistency (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Different angles from reference.
+  minimal_beige_aesthetic: `Maintain strict identity consistency using reference images (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Vary angles from reference.
 
-Vibe: Beige minimal aesthetic. Neutral beige and sand tones with understated elegance. Soft Nordic light, beige interiors, quiet sophistication. iPhone photography style with gentle lighting, minimal styling, calm simplicity.
+Vibe: Beige minimal aesthetic. Neutral beige and sand tones with understated elegance. Soft Nordic light, beige interiors, quiet sophistication. Authentic iPhone photography with gentle lighting, minimal styling, calm simplicity.
 
 Setting: Beige minimal apartments, sand-colored interiors, neutral modern spaces, soft natural environments
 
 Outfits: {{COLOR_PALETTE}} {{TEXTURE_NOTES}}
 
 9 frames:
-1. Sitting on {{LOCATION_INDOOR_1}} - {{OUTFIT_FULLBODY_1}}, relaxed pose, soft window light
-2. Beige coffee cup on {{LOCATION_INDOOR_2}} - overhead flatlay, gentle natural light, minimal styling
-3. Full-body standing - {{OUTFIT_FULLBODY_2}}, beige wall background, centered, soft shadows
+1. Seated on {{LOCATION_INDOOR_1}} - {{OUTFIT_FULLBODY_1}}, relaxed pose, soft window light
+2. Beige coffee cup arranged on {{LOCATION_INDOOR_2}} - overhead flatlay, gentle natural light, minimal styling
+3. Full-body standing - {{OUTFIT_FULLBODY_2}}, beige wall background, centered composition, soft shadows
 
-4. Close-up hands holding beige cup - {{OUTFIT_MIDSHOT_1}}, {{STYLING_NOTES}}, warm skin, soft focus
-5. Simple wooden sign reading "COZY" in natural carved letters on {{LOCATION_ARCHITECTURAL_1}}, soft light
-6. {{OUTFIT_MIDSHOT_2}} texture - close-up, ribbed pattern, natural fiber detail, soft lighting
+4. Close-up hands holding beige cup - {{OUTFIT_MIDSHOT_1}}, {{STYLING_NOTES}}, warm skin tones, soft focus
+5. Simple wooden sign reading "COZY" in natural carved typography on {{LOCATION_ARCHITECTURAL_1}}, soft light
+6. {{OUTFIT_MIDSHOT_2}} texture - close-up revealing ribbed pattern, natural fiber detail, soft lighting
 
 7. Walking past {{LOCATION_ARCHITECTURAL_1}} - {{OUTFIT_FULLBODY_3}}, natural stride, gentle side lighting, calm movement
-8. {{LOCATION_INDOOR_3}} - overhead, laptop, coffee, neutral desk, soft natural light from window
-9. Sitting by window - {{OUTFIT_FULLBODY_4}}, holding cup, soft profile, warm natural light
+8. {{LOCATION_INDOOR_3}} - overhead perspective, laptop, coffee, neutral desk, soft natural light from window
+9. Seated by window - {{OUTFIT_FULLBODY_4}}, holding cup, soft profile, warm natural light
 
 Color grade: Warm beiges, sand tones, oatmeal neutrals, soft shadows, gentle Nordic light, minimal grain, quiet sophistication, calm aesthetic.`,
 
   // BEIGE category
-  beige_dark_moody: `Use reference images for strict identity consistency (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Different angles from reference.
+  beige_dark_moody: `Maintain strict identity consistency using reference images (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Vary angles from reference.
 
-Vibe: Dark cozy beige aesthetic. Chocolate brown, camel, and taupe with evening warmth. Moody warm lighting, autumn vibes, cozy sophistication. iPhone photography style with warm shadows, rich tones, intimate atmosphere.
+Vibe: Dark cozy beige aesthetic. Chocolate brown, camel, and taupe with evening warmth. Moody warm lighting, autumn vibes, cozy sophistication. Authentic iPhone photography with warm shadows, rich tones, intimate atmosphere.
 
 Setting: Evening city streets, warm-lit cafes, cozy apartment interiors, autumn urban landscapes
 
@@ -188,9 +188,9 @@ Outfits: {{COLOR_PALETTE}} {{TEXTURE_NOTES}}
 
 Color grade: Chocolate browns, warm camel, taupe shadows, golden evening light, rich warm tones, cozy grain, autumn aesthetic, intimate moody lighting.`,
 
-  beige_light_minimalistic: `Use reference images for strict identity consistency (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Different angles from reference.
+  beige_light_minimalistic: `Maintain strict identity consistency using reference images (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Vary angles from reference.
 
-Vibe: Bright beige coastal aesthetic. Cream, sand, and ivory with beach elegance. Bright coastal daylight, airy spaces, effortless luxury. iPhone photography style with bright natural light, soft breezy feel, coastal sophistication.
+Vibe: Bright beige coastal aesthetic. Cream, sand, and ivory with beach elegance. Bright coastal daylight, airy spaces, effortless luxury. Authentic iPhone photography with bright natural light, soft breezy feel, coastal sophistication.
 
 Setting: Bright beach houses, coastal cafes, sandy beach backgrounds, white-washed architecture
 
@@ -211,9 +211,9 @@ Outfits: {{COLOR_PALETTE}} {{TEXTURE_NOTES}}
 
 Color grade: Bright creams, sand tones, ivory highlights, coastal natural light, soft breezy shadows, gentle grain, beach aesthetic, airy sophistication.`,
 
-  beige_beige_aesthetic: `Use reference images for strict identity consistency (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Different angles from reference.
+  beige_beige_aesthetic: `Maintain strict identity consistency using reference images (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Vary angles from reference.
 
-Vibe: Classic beige aesthetic. Camel, tan, and cream with timeless elegance. Soft natural light, neutral spaces, understated luxury. iPhone photography style with warm neutral tones, gentle shadows, editorial sophistication.
+Vibe: Classic beige aesthetic. Camel, tan, and cream with timeless elegance. Soft natural light, neutral spaces, understated luxury. Authentic iPhone photography with warm neutral tones, gentle shadows, editorial sophistication.
 
 Setting: Beige townhouses, neutral modern apartments, classic cafes, European architecture
 
@@ -221,23 +221,23 @@ Outfits: {{COLOR_PALETTE}} {{TEXTURE_NOTES}}
 
 9 frames:
 1. Leaning against {{LOCATION_ARCHITECTURAL_1}} - {{OUTFIT_FULLBODY_1}}, {{STYLING_NOTES}}, relaxed sophisticated pose
-2. Cappuccino and {{ACCESSORY_FLATLAY_1}} on {{LOCATION_INDOOR_1}} - overhead flatlay, soft natural window light
-3. Full-body in {{LOCATION_INDOOR_2}} - {{OUTFIT_FULLBODY_2}}, walking naturally, soft shadows
+2. Cappuccino and {{ACCESSORY_FLATLAY_1}} arranged on {{LOCATION_INDOOR_1}} - overhead flatlay, soft natural window light
+3. Full-body positioned in {{LOCATION_INDOOR_2}} - {{OUTFIT_FULLBODY_2}}, walking naturally, soft shadows
 
 4. Close-up {{ACCESSORY_CLOSEUP_1}} - warm tones, soft focus, gentle lighting
-5. Classic sign reading "ELEGANCE" in timeless serif on {{LOCATION_ARCHITECTURAL_1}}, soft afternoon light
-6. {{OUTFIT_MIDSHOT_1}} texture - close-up, luxury knit detail, soft warm lighting
+5. Classic sign reading "ELEGANCE" in timeless serif typography on {{LOCATION_ARCHITECTURAL_1}}, soft afternoon light
+6. {{OUTFIT_MIDSHOT_1}} texture - close-up revealing luxury knit detail, soft warm lighting
 
-7. Sitting on {{LOCATION_INDOOR_3}} - {{OUTFIT_FULLBODY_3}}, crossed legs, editorial pose, natural light
-8. Neutral workspace - overhead, coffee, tan notebook, minimal desk, {{LOCATION_INDOOR_2}}, soft daylight
-9. Mirror selfie - {{OUTFIT_FULLBODY_4}}, {{STYLING_NOTES}}, phone in hand, warm neutral bathroom
+7. Seated on {{LOCATION_INDOOR_3}} - {{OUTFIT_FULLBODY_3}}, crossed legs, editorial pose, natural light
+8. Neutral workspace - overhead perspective, coffee, tan notebook, minimal desk, {{LOCATION_INDOOR_2}}, soft daylight
+9. Mirror selfie - {{OUTFIT_FULLBODY_4}}, {{STYLING_NOTES}}, phone visible in hand, warm neutral bathroom
 
 Color grade: Warm camels, soft tans, cream highlights, natural neutral light, gentle shadows, subtle grain, timeless aesthetic, editorial sophistication.`,
 
   // WARM category
-  warm_dark_moody: `Use reference images for strict identity consistency (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Different angles from reference.
+  warm_dark_moody: `Maintain strict identity consistency using reference images (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Vary angles from reference.
 
-Vibe: Warm moody aesthetic. Rust, burgundy, and chocolate brown with evening richness. Warm Italian lighting, intimate spaces, romantic atmosphere. iPhone photography style with glowing warm tones, rich shadows, cozy drama.
+Vibe: Warm moody aesthetic. Rust, burgundy, and chocolate brown with evening richness. Warm Italian lighting, intimate spaces, romantic atmosphere. Authentic iPhone photography with glowing warm tones, rich shadows, cozy drama.
 
 Setting: Evening Italian streets, warm-lit trattorias, cozy wine bars, sunset architecture
 
@@ -258,9 +258,9 @@ Outfits: {{COLOR_PALETTE}} {{TEXTURE_NOTES}}
 
 Color grade: Rich rusts, deep burgundy, chocolate browns, golden evening light, warm romantic shadows, cozy grain, Italian aesthetic, intimate atmosphere.`,
 
-  warm_light_minimalistic: `Use reference images for strict identity consistency (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Different angles from reference.
+  warm_light_minimalistic: `Maintain strict identity consistency using reference images (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Vary angles from reference.
 
-Vibe: Bright warm minimal aesthetic. Ivory, cream, and white with warm sunlight. Bright Japanese daylight, clean spaces, zen warmth. iPhone photography style with bright natural light, minimal styling, warm simplicity.
+Vibe: Bright warm minimal aesthetic. Ivory, cream, and white with warm sunlight. Bright Japanese daylight, clean spaces, zen warmth. Authentic iPhone photography with bright natural light, minimal styling, warm simplicity.
 
 Setting: Bright Tokyo apartments, minimal Japanese interiors, sunny modern spaces, clean architecture
 
@@ -281,9 +281,9 @@ Outfits: {{COLOR_PALETTE}} {{TEXTURE_NOTES}}
 
 Color grade: Warm ivories, soft creams, bright whites, warm natural daylight, minimal shadows, gentle grain, Japanese aesthetic, zen simplicity.`,
 
-  warm_beige_aesthetic: `Use reference images for strict identity consistency (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Different angles from reference.
+  warm_beige_aesthetic: `Maintain strict identity consistency using reference images (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Vary angles from reference.
 
-Vibe: Warm beige lifestyle aesthetic. Caramel, sand, and toffee with golden afternoon glow. Warm Barcelona light, cozy cafes, Mediterranean warmth. iPhone photography style with golden tones, soft warmth, lifestyle elegance.
+Vibe: Warm beige lifestyle aesthetic. Caramel, sand, and toffee with golden afternoon glow. Warm Barcelona light, cozy cafes, Mediterranean warmth. Authentic iPhone photography with golden tones, soft warmth, lifestyle elegance.
 
 Setting: Barcelona cafes, warm Mediterranean streets, golden hour terraces, sunny architecture
 
@@ -305,9 +305,9 @@ Outfits: {{COLOR_PALETTE}} {{TEXTURE_NOTES}}
 Color grade: Warm caramels, golden sands, toffee highlights, Mediterranean golden light, warm shadows, gentle grain, Barcelona aesthetic, lifestyle warmth.`,
 
   // EDGY category
-  edgy_dark_moody: `Use reference images for strict identity consistency (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Different angles from reference.
+  edgy_dark_moody: `Maintain strict identity consistency using reference images (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Vary angles from reference.
 
-Vibe: Dark edgy urban aesthetic. All black leather, denim, and grunge with industrial edge. Harsh urban lighting, neon accents, underground nightlife. iPhone photography style with high contrast, gritty grain, rebellious attitude.
+Vibe: Dark edgy urban aesthetic. All black leather, denim, and grunge with industrial edge. Harsh urban lighting, neon accents, underground nightlife. Authentic iPhone photography with high contrast, gritty grain, rebellious attitude.
 
 Setting: Industrial London streets, underground venues, graffiti walls, neon-lit alleys, urban nightlife
 
@@ -328,9 +328,9 @@ Outfits: {{COLOR_PALETTE}} {{TEXTURE_NOTES}}
 
 Color grade: Deep blacks, cool grays, neon accents (red/blue), harsh contrast, heavy grain, industrial aesthetic, gritty urban, rebellious mood.`,
 
-  edgy_light_minimalistic: `Use reference images for strict identity consistency (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Different angles from reference.
+  edgy_light_minimalistic: `Maintain strict identity consistency using reference images (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Vary angles from reference.
 
-Vibe: Bright edgy modern aesthetic. White-black contrast with streetwear edge. Bright Seoul daylight, clean urban spaces, modern street style. iPhone photography style with bright light, clean contrast, contemporary cool.
+Vibe: Bright edgy modern aesthetic. White-black contrast with streetwear edge. Bright Seoul daylight, clean urban spaces, modern street style. Authentic iPhone photography with bright light, clean contrast, contemporary cool.
 
 Setting: Modern Seoul streets, bright subway stations, contemporary architecture, clean urban spaces
 
@@ -351,9 +351,9 @@ Outfits: {{COLOR_PALETTE}} {{TEXTURE_NOTES}}
 
 Color grade: Bright whites, deep blacks, clean contrast, bright Seoul daylight, minimal shadows, contemporary grain, modern aesthetic, street style cool.`,
 
-  edgy_beige_aesthetic: `Use reference images for strict identity consistency (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Different angles from reference.
+  edgy_beige_aesthetic: `Maintain strict identity consistency using reference images (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Vary angles from reference.
 
-Vibe: Urban beige edgy aesthetic. Tan utility wear with street edge. Natural Brooklyn shadows, industrial beige spaces, urban workwear cool. iPhone photography style with natural shadows, neutral tones, street sophistication.
+Vibe: Urban beige edgy aesthetic. Tan utility wear with street edge. Natural Brooklyn shadows, industrial beige spaces, urban workwear cool. Authentic iPhone photography with natural shadows, neutral tones, street sophistication.
 
 Setting: Brooklyn industrial areas, neutral urban spaces, vintage warehouses, concrete and metal environments
 
@@ -375,9 +375,9 @@ Outfits: {{COLOR_PALETTE}} {{TEXTURE_NOTES}}
 Color grade: Neutral tans, concrete grays, warm beiges, natural urban shadows, subtle grain, Brooklyn aesthetic, industrial cool, street sophistication.`,
 
   // PROFESSIONAL category
-  professional_dark_moody: `Use reference images for strict identity consistency (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Different angles from reference.
+  professional_dark_moody: `Maintain strict identity consistency using reference images (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Vary angles from reference.
 
-Vibe: Dark corporate power aesthetic. All black suiting with executive presence. Dramatic evening city glow, modern offices, CEO energy. iPhone photography style with dramatic lighting, high contrast, sophisticated power.
+Vibe: Dark corporate power aesthetic. All black suiting with executive presence. Dramatic evening city glow, modern offices, CEO energy. Authentic iPhone photography with dramatic lighting, high contrast, sophisticated power.
 
 Setting: Singapore financial district at night, luxury offices, corporate towers, modern architecture
 
@@ -398,9 +398,9 @@ Outfits: {{COLOR_PALETTE}} {{TEXTURE_NOTES}}
 
 Color grade: Deep blacks, charcoal grays, gold accents, dramatic city lights, high contrast, executive grain, Singapore aesthetic, corporate power.`,
 
-  professional_light_minimalistic: `Use reference images for strict identity consistency (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Different angles from reference.
+  professional_light_minimalistic: `Maintain strict identity consistency using reference images (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Vary angles from reference.
 
-Vibe: Bright professional elegant aesthetic. White suiting with fresh sophistication. Bright Swiss daylight, modern offices, refined elegance. iPhone photography style with bright natural light, clean professionalism, contemporary polish.
+Vibe: Bright professional elegant aesthetic. White suiting with fresh sophistication. Bright Swiss daylight, modern offices, refined elegance. Authentic iPhone photography with bright natural light, clean professionalism, contemporary polish.
 
 Setting: Zurich modern offices, bright financial district, clean contemporary architecture, natural light spaces
 
@@ -421,9 +421,9 @@ Outfits: {{COLOR_PALETTE}} {{TEXTURE_NOTES}}
 
 Color grade: Bright whites, soft creams, gentle shadows, natural Swiss daylight, minimal grain, professional polish, contemporary elegance, refined aesthetic.`,
 
-  professional_beige_aesthetic: `Use reference images for strict identity consistency (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Different angles from reference.
+  professional_beige_aesthetic: `Maintain strict identity consistency using reference images (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Vary angles from reference.
 
-Vibe: Classic professional beige aesthetic. Camel and beige suiting with timeless sophistication. Natural London daylight, traditional offices, established elegance. iPhone photography style with natural warm light, classic professionalism, timeless quality.
+Vibe: Classic professional beige aesthetic. Camel and beige suiting with timeless sophistication. Natural London daylight, traditional offices, established elegance. Authentic iPhone photography with natural warm light, classic professionalism, timeless quality.
 
 Setting: Mayfair London offices, classic architecture, traditional business districts, natural light interiors
 

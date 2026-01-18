@@ -40,12 +40,12 @@ export const SCENE_LIBRARY: Record<number, SceneSpec> = {
   1: {
     sceneId: 1,
     title: "Opening Portrait",
-    sceneDNA: "Full-body or midshot portrait with person in frame, natural pose, establishing shot",
-    composition: "Full-body or midshot, centered or rule-of-thirds framing",
-    lighting: "Natural lighting matching feed aesthetic (golden hour, bright daylight, or moody evening)",
+    sceneDNA: "Full-body or midshot portrait establishing the subject with natural, confident pose",
+    composition: "Full-body or midshot framing, centered or rule-of-thirds composition",
+    lighting: "Natural lighting aligned with feed aesthetic—golden hour warmth, bright daylight clarity, or moody evening atmosphere",
     wardrobe: "Outfit matching brand kit colors and style",
-    location: "Primary location matching feed setting (indoor/outdoor/architectural)",
-    cameraConstraints: "iPhone photography style, natural film grain, authentic framing",
+    location: "Primary location matching feed setting—indoor, outdoor, or architectural context",
+    cameraConstraints: "Authentic iPhone photography aesthetic with natural film grain and genuine framing",
     negativeRules: [
       "Do not mix multiple scenes in one image",
       "Do not change location beyond scene specification",
@@ -57,12 +57,12 @@ export const SCENE_LIBRARY: Record<number, SceneSpec> = {
   2: {
     sceneId: 2,
     title: "Lifestyle Flatlay",
-    sceneDNA: "Overhead flatlay of coffee/drink and accessories on surface, minimal styling",
-    composition: "Overhead view, centered composition, clean flatlay arrangement",
-    lighting: "Natural window light or ambient lighting matching feed aesthetic",
+    sceneDNA: "Overhead flatlay featuring coffee or drink with curated accessories arranged on surface, minimal editorial styling",
+    composition: "Overhead perspective, centered composition, thoughtfully arranged flatlay",
+    lighting: "Natural window light or ambient lighting that complements feed aesthetic",
     wardrobe: undefined, // No person in frame
-    location: "Indoor surface (table, desk, counter) matching feed setting",
-    cameraConstraints: "Overhead angle, iPhone photography style, clean minimal composition",
+    location: "Indoor surface—table, desk, or counter—matching feed setting",
+    cameraConstraints: "Overhead angle, authentic iPhone photography aesthetic, clean minimal composition",
     negativeRules: [
       "Do not include person in frame",
       "Do not change to non-flatlay composition",
@@ -74,12 +74,12 @@ export const SCENE_LIBRARY: Record<number, SceneSpec> = {
   3: {
     sceneId: 3,
     title: "Architectural Portrait",
-    sceneDNA: "Full-body portrait against architectural background, dynamic pose, urban/architectural context",
-    composition: "Full-body framing, architectural background visible, dynamic pose",
-    lighting: "Natural lighting with architectural shadows, matching feed aesthetic",
+    sceneDNA: "Full-body portrait positioned against architectural backdrop with dynamic, confident pose in urban or architectural context",
+    composition: "Full-body framing with architectural background clearly visible, dynamic pose",
+    lighting: "Natural lighting enhanced by architectural shadows, aligned with feed aesthetic",
     wardrobe: "Outfit matching brand kit colors and style",
-    location: "Architectural location (building facade, interior architecture, urban structure)",
-    cameraConstraints: "iPhone photography style, architectural framing, natural shadows",
+    location: "Architectural setting—building facade, interior architecture, or urban structure",
+    cameraConstraints: "Authentic iPhone photography aesthetic with architectural framing and natural shadow play",
     negativeRules: [
       "Do not change architectural background",
       "Do not switch to non-architectural location",
@@ -91,12 +91,12 @@ export const SCENE_LIBRARY: Record<number, SceneSpec> = {
   4: {
     sceneId: 4,
     title: "Close-Up Detail",
-    sceneDNA: "Close-up of accessory or detail (hand, jewelry, accessory), soft focus, intimate framing",
-    composition: "Close-up framing, detail-focused, soft focus on subject",
-    lighting: "Soft natural light, warm skin tones, gentle shadows",
-    wardrobe: "Accessory or detail visible (hand, jewelry, accessory)",
-    location: "Minimal background, detail-focused",
-    cameraConstraints: "Close-up angle, soft focus, iPhone photography style",
+    sceneDNA: "Intimate close-up of accessory or detail—hand, jewelry, or accessory—with soft focus and editorial framing",
+    composition: "Close-up framing with detail-focused composition, soft focus on primary subject",
+    lighting: "Soft natural light enhancing warm skin tones with gentle, flattering shadows",
+    wardrobe: "Accessory or detail visible—hand, jewelry, or accessory",
+    location: "Minimal background, detail-focused environment",
+    cameraConstraints: "Close-up angle with soft focus, authentic iPhone photography aesthetic",
     negativeRules: [
       "Do not change to full-body or midshot",
       "Do not add full location context",
@@ -108,12 +108,12 @@ export const SCENE_LIBRARY: Record<number, SceneSpec> = {
   5: {
     sceneId: 5,
     title: "Text/Graphic Element",
-    sceneDNA: "Street sign, text graphic, or minimalist text element on architectural background",
-    composition: "Text-focused composition, architectural background, centered or rule-of-thirds",
-    lighting: "Natural lighting matching feed aesthetic, text legibility",
+    sceneDNA: "Street sign, text graphic, or minimalist text element positioned on architectural background",
+    composition: "Text-focused composition with architectural background, centered or rule-of-thirds framing",
+    lighting: "Natural lighting aligned with feed aesthetic, ensuring text legibility",
     wardrobe: undefined, // No person in frame
     location: "Architectural background matching feed setting",
-    cameraConstraints: "iPhone photography style, text-focused framing, architectural context",
+    cameraConstraints: "Authentic iPhone photography aesthetic with text-focused framing and architectural context",
     negativeRules: [
       "Do not include person in frame",
       "Do not change text/graphic element",
@@ -125,12 +125,12 @@ export const SCENE_LIBRARY: Record<number, SceneSpec> = {
   6: {
     sceneId: 6,
     title: "Texture Detail",
-    sceneDNA: "Extreme close-up of fabric texture, material detail, or outfit element, high detail",
-    composition: "Extreme close-up, texture-focused, material detail visible",
-    lighting: "Natural lighting highlighting texture, matching feed aesthetic",
-    wardrobe: "Fabric/texture detail from outfit matching brand kit",
-    location: "Minimal background, texture-focused",
-    cameraConstraints: "Extreme close-up angle, high detail, iPhone photography style",
+    sceneDNA: "Extreme close-up revealing fabric texture, material detail, or outfit element with exceptional detail",
+    composition: "Extreme close-up with texture-focused composition, material detail clearly visible",
+    lighting: "Natural lighting that highlights texture and material qualities, aligned with feed aesthetic",
+    wardrobe: "Fabric or texture detail from outfit matching brand kit",
+    location: "Minimal background, texture-focused environment",
+    cameraConstraints: "Extreme close-up angle with high detail capture, authentic iPhone photography aesthetic",
     negativeRules: [
       "Do not change to full-body or midshot",
       "Do not add full location context",
@@ -142,12 +142,12 @@ export const SCENE_LIBRARY: Record<number, SceneSpec> = {
   7: {
     sceneId: 7,
     title: "Lifestyle Movement",
-    sceneDNA: "Full-body walking or movement shot, natural stride, lifestyle context",
-    composition: "Full-body framing, movement captured, natural stride pose",
-    lighting: "Natural lighting matching feed aesthetic, movement-friendly shadows",
+    sceneDNA: "Full-body walking or movement shot capturing natural stride in authentic lifestyle context",
+    composition: "Full-body framing with movement captured, natural stride pose",
+    lighting: "Natural lighting aligned with feed aesthetic, movement-friendly shadow play",
     wardrobe: "Outfit matching brand kit colors and style",
     location: "Outdoor or indoor location matching feed setting",
-    cameraConstraints: "iPhone photography style, movement-friendly framing, natural shadows",
+    cameraConstraints: "Authentic iPhone photography aesthetic with movement-friendly framing and natural shadows",
     negativeRules: [
       "Do not change to static pose",
       "Do not remove movement/lifestyle context",
@@ -159,12 +159,12 @@ export const SCENE_LIBRARY: Record<number, SceneSpec> = {
   8: {
     sceneId: 8,
     title: "Workspace Flatlay",
-    sceneDNA: "Overhead workspace flatlay with laptop, coffee, notebook, minimal desk setup",
-    composition: "Overhead view, workspace-focused, minimal arrangement",
-    lighting: "Natural window light or ambient lighting matching feed aesthetic",
+    sceneDNA: "Overhead workspace flatlay featuring laptop, coffee, and notebook arranged in minimal desk setup",
+    composition: "Overhead perspective, workspace-focused composition with minimal, intentional arrangement",
+    lighting: "Natural window light or ambient lighting that complements feed aesthetic",
     wardrobe: undefined, // No person in frame (or hands only)
-    location: "Indoor workspace (desk, table) matching feed setting",
-    cameraConstraints: "Overhead angle, iPhone photography style, clean minimal composition",
+    location: "Indoor workspace—desk or table—matching feed setting",
+    cameraConstraints: "Overhead angle, authentic iPhone photography aesthetic, clean minimal composition",
     negativeRules: [
       "Do not include full person in frame (hands only if specified)",
       "Do not change to non-workspace scene",
@@ -176,12 +176,12 @@ export const SCENE_LIBRARY: Record<number, SceneSpec> = {
   9: {
     sceneId: 9,
     title: "Closing Selfie",
-    sceneDNA: "Mirror selfie or self-portrait, phone visible, intimate closing shot",
-    composition: "Selfie framing, mirror reflection or self-portrait angle, phone visible",
-    lighting: "Natural bathroom/indoor lighting matching feed aesthetic",
+    sceneDNA: "Mirror selfie or self-portrait with phone visible, creating intimate closing moment",
+    composition: "Selfie framing with mirror reflection or self-portrait angle, phone clearly visible",
+    lighting: "Natural bathroom or indoor lighting aligned with feed aesthetic",
     wardrobe: "Outfit matching brand kit colors and style",
-    location: "Indoor location (bathroom, mirror, interior) matching feed setting",
-    cameraConstraints: "Selfie angle, iPhone photography style, mirror reflection visible",
+    location: "Indoor location—bathroom, mirror, or interior—matching feed setting",
+    cameraConstraints: "Selfie angle, authentic iPhone photography aesthetic, mirror reflection visible",
     negativeRules: [
       "Do not change to non-selfie composition",
       "Do not remove phone from frame",
@@ -195,14 +195,48 @@ export const SCENE_LIBRARY: Record<number, SceneSpec> = {
 /**
  * Get scene specification for a given position (1-9)
  * 
+ * Phase 1C: Made category-aware for Scene 8 (workspace flatlay vs lifestyle flatlay)
+ * 
  * @param position - Feed position (1-9)
+ * @param options - Optional category for Scene 8 customization
  * @returns Scene specification or null if invalid position
  */
-export function getSceneSpec(position: number): SceneSpec | null {
+export function getSceneSpec(
+  position: number,
+  options?: {
+    category?: "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional" | null
+  }
+): SceneSpec | null {
   if (position < 1 || position > 9) {
     return null
   }
-  return SCENE_LIBRARY[position] || null
+  
+  const baseSpec = SCENE_LIBRARY[position]
+  if (!baseSpec) {
+    return null
+  }
+  
+  // Phase 1C: Make Scene 8 category-aware (remove hardcoded workspace for non-professional)
+  if (position === 8 && options?.category && options.category !== 'professional') {
+    // Non-professional categories: lifestyle flatlay (NO laptop/office props)
+      return {
+        ...baseSpec,
+        title: "Lifestyle Flatlay",
+        sceneDNA: "Overhead lifestyle flatlay featuring coffee or drink with curated accessories arranged on surface, minimal editorial styling",
+        composition: "Overhead perspective, lifestyle-focused composition with minimal, intentional arrangement",
+        location: "Indoor surface—table, counter, or surface—matching feed setting",
+        negativeRules: [
+          "Do not include full person in frame (hands only if specified)",
+          "Do not change to non-flatlay composition",
+          "Do not add laptop, office desk, or work-related items",
+          "Do not add items beyond coffee/drink and specified accessories",
+          "Do not change surface material beyond scene specification"
+        ],
+      }
+  }
+  
+  // Professional category or no category specified: use original workspace flatlay
+  return baseSpec
 }
 
 /**

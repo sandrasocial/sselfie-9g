@@ -532,6 +532,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
               )
 
               // Phase 3B P1-2: Generate prompt via Authority Layer
+              // Phase 1C: Pass category for Scene 8 customization
               const authorityResult = await generateFeedSinglePromptViaAuthority(
                 injectedTemplate,
                 post.position,
@@ -540,6 +541,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
                   feedId: feedIdInt,
                   postId,
                   generationMode: 'pro',
+                  category: category, // Phase 1C: Pass category for Scene 8 awareness
                 }
               )
               finalPrompt = authorityResult.prompt
@@ -866,6 +868,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
                 
                 // ✅ EXTRACT SINGLE SCENE (same as free users)
                 // Phase 3B P1-2: Generate prompt via Authority Layer
+                // Phase 1C: Pass category for Scene 8 customization
                 const authorityResult = await generateFeedSinglePromptViaAuthority(
                   injectedTemplate,
                   post.position,
@@ -874,6 +877,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
                     feedId: feedIdInt,
                     postId,
                     generationMode: 'pro',
+                    category: category, // Phase 1C: Pass category for Scene 8 awareness
                   }
                 )
                 templateReferencePrompt = authorityResult.prompt

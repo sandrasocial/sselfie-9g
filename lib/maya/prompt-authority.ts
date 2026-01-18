@@ -1132,6 +1132,7 @@ export async function generateFeedSinglePromptViaAuthority(
     feedId?: string | number
     postId?: string | number
     generationMode?: 'pro' | 'classic'
+    category?: "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional" | null
   }
 ): {
   prompt: string
@@ -1177,8 +1178,9 @@ export async function generateFeedSinglePromptViaAuthority(
   // Use dynamic import to match codebase pattern
   // Phase P0: buildSingleImagePrompt is now async (Scene Contract enforcement)
   // Phase 1A: buildSingleImagePrompt now accepts BrandKit for brand profile injection
+  // Phase 1C: buildSingleImagePrompt now accepts category for Scene 8 customization
   const { buildSingleImagePrompt } = await import('@/lib/feed-planner/build-single-image-prompt')
-  const prompt = await buildSingleImagePrompt(templatePrompt, position, brandKit)
+  const prompt = await buildSingleImagePrompt(templatePrompt, position, brandKit, context?.category || null)
   
   // Compute fingerprint hash (privacy-safe, no full prompt logged)
   const fingerprint = createHash('sha256')

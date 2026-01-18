@@ -78,7 +78,7 @@ export function parseTemplateFrames(templatePrompt: string): {
  * This is fixed for all generations to maintain identity consistency
  * Updated to include explicit reference image language per NanoBanana Pro best practices
  */
-const BASE_IDENTITY_PROMPT = "Use the uploaded photos as strict identity reference. Influencer/pinterest style of a woman maintaining exactly the same physical characteristics (face, body, skin tone, hair) as the reference images."
+const BASE_IDENTITY_PROMPT = "Maintain strict identity consistency using uploaded reference images. Preserve exact physical characteristics: face structure, body proportions, skin tone, and hair texture. Influencer-style photography with authentic, natural presentation."
 
 /**
  * Detects frame type from frame description
@@ -248,7 +248,8 @@ export async function buildSingleImagePrompt(
     settingsPreference?: string[] | null
     contentPillars?: string | null
     businessType?: string | null
-  } | null
+  } | null,
+  category?: "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional" | null
 ): Promise<string> {
   // Validate position
   if (position < 1 || position > 9) {
@@ -256,9 +257,12 @@ export async function buildSingleImagePrompt(
   }
   
   // Phase P0: Get scene specification (deterministic mapping: position = sceneId)
+  // Phase 1C: Pass category to make Scene 8 category-aware
   // Use dynamic import to avoid circular dependencies
   const sceneLibrary = await import('@/lib/maya/scene-library')
-  const sceneSpec = sceneLibrary.getSceneSpec(position)
+  const sceneSpec = sceneLibrary.getSceneSpec(position, {
+    category: category || null // Phase 1C: Pass category for Scene 8 customization
+  })
   
   // Parse template to extract frames, vibe, setting, and color grade
   const { frames, vibe, setting, colorGrade } = parseTemplateFrames(templatePrompt)
@@ -302,9 +306,9 @@ export async function buildSingleImagePrompt(
   // 3. SCENE DNA (verbatim scene spec - Phase P0 enhancement)
   if (sceneSpec) {
     // Add scene DNA as explicit constraint
-    promptParts.push(`Scene requirement: ${sceneSpec.sceneDNA}.`)
-    promptParts.push(`Composition: ${sceneSpec.composition}.`)
-    promptParts.push(`Location constraint: ${sceneSpec.location}.`)
+    promptParts.push(`Scene: ${sceneSpec.sceneDNA}`)
+    promptParts.push(`Composition: ${sceneSpec.composition}`)
+    promptParts.push(`Location: ${sceneSpec.location}`)
     
     // Add negative rules as constraints
     if (sceneSpec.negativeRules.length > 0) {
@@ -322,12 +326,12 @@ export async function buildSingleImagePrompt(
   // 4. USER / BRAND KIT VARIABLES (only fill slots, do not rewrite scene)
   // Add vibe context if available (as natural language, not label)
   if (vibe && vibe.length > 0) {
-    promptParts.push(`Aesthetic: ${vibe}`)
+    promptParts.push(`Aesthetic direction: ${vibe}`)
   }
   
   // Add setting context if available (as natural language, not label)
   if (setting && setting.length > 0) {
-    promptParts.push(`Setting context: ${setting}`)
+    promptParts.push(`Setting: ${setting}`)
   }
   
   // Add cleaned frame description (already natural language) - this fills brand kit variables
@@ -335,32 +339,32 @@ export async function buildSingleImagePrompt(
   
   // 5. CAMERA + COMPOSITION
   if (sceneSpec) {
-    promptParts.push(`Camera: ${sceneSpec.cameraConstraints}`)
-    promptParts.push(`Lighting: ${sceneSpec.lighting}`)
+    promptParts.push(`Camera approach: ${sceneSpec.cameraConstraints}`)
+    promptParts.push(`Lighting direction: ${sceneSpec.lighting}`)
   }
   
   // 6. QUALITY CONSTRAINTS (sharpness, realism, no artifacts)
-  promptParts.push(`Quality: Sharp focus, natural realism, no artifacts, iPhone photography style`)
+  promptParts.push(`Technical requirements: Sharp focus throughout, natural realism, zero artifacts, authentic iPhone photography aesthetic`)
   
   // Add color grade (as natural language, not label)
   if (colorGrade && colorGrade.length > 0) {
-    promptParts.push(`Color palette: ${colorGrade}`)
+    promptParts.push(`Color grading: ${colorGrade}`)
   }
   
   // 7. NEGATIVE RULES (Phase P0: Explicit scene contract enforcement)
   if (sceneSpec && sceneSpec.negativeRules.length > 0) {
     const negativeRulesText = sceneSpec.negativeRules
       .filter(r => !r.includes('Do not change location') && !r.includes('Do not mix') && !r.includes('Do not change outfit')) // Already added above
-      .map(r => r.replace('Do not ', 'Avoid '))
+      .map(r => r.replace('Do not ', 'Avoid ').replace('Do not add', 'Exclude').replace('Do not change', 'Maintain'))
       .join('. ')
     if (negativeRulesText) {
-      promptParts.push(`Avoid: ${negativeRulesText}`)
+      promptParts.push(`Restrictions: ${negativeRulesText}`)
     }
   }
   
   // Phase P0: Final scene contract reminder
   if (sceneSpec) {
-    promptParts.push(`Generate exactly ONE scene matching scene ${position} specification. Do not mix scenes.`)
+    promptParts.push(`Deliver exactly one scene matching position ${position} specification. Maintain scene integrity—no mixing or blending.`)
   }
   
   // Join with spaces for natural language flow (identity anchor is always first)
