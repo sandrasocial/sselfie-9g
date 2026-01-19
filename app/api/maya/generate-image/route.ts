@@ -7,10 +7,12 @@ import { getDbClient } from "@/lib/db-singleton"
 import { getReplicateClient } from "@/lib/replicate-client"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { checkCredits, deductCredits, getUserCredits, CREDIT_COSTS } from "@/lib/credits"
+import { hasStudioMembership } from "@/lib/subscription"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { rateLimit } from "@/lib/rate-limit-api"
 import { guardClassicModeRoute } from "@/lib/maya/type-guards"
 import { extractReplicateVersionId, ensureTriggerWordPrefix, ensureGenderInPrompt, buildClassicModeReplicateInput } from "@/lib/replicate-helpers"
+import { logger } from "@/lib/logger"
 
 const sql = getDbClient()
 
@@ -69,6 +71,17 @@ export async function POST(request: NextRequest) {
     const neonUser = await getEffectiveNeonUser(user.id)
     if (!neonUser) {
       return NextResponse.json({ error: "User not found in database" }, { status: 404 })
+    }
+
+    const hasMembership = await hasStudioMembership(neonUser.id)
+    if (!hasMembership) {
+      return NextResponse.json(
+        {
+          error: "Membership required",
+          message: "Studio image generation requires an active Studio Membership.",
+        },
+        { status: 403 },
+      )
     }
 
     const hasEnoughCredits = await checkCredits(neonUser.id, CREDIT_COSTS.IMAGE)
@@ -360,7 +373,10 @@ export async function POST(request: NextRequest) {
         console.error(`[v0] Error triggering referral email (non-critical):`, error)
       })
     } catch (error) {
-      // Ignore errors - referral trigger is non-critical
+      logger.error("Referral trigger import failed (non-critical)", error as Error, {
+        route: "/api/maya/generate-image",
+        userId: neonUser.id,
+      })
     }
 
     return NextResponse.json({

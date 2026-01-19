@@ -5,6 +5,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { BlueprintEmailCapture } from "@/components/blueprint/blueprint-email-capture"
+import { formatPriceFromCents, getProductById } from "@/lib/products"
 
 /**
  * Paid Blueprint Landing Page Component
@@ -21,6 +22,8 @@ import { BlueprintEmailCapture } from "@/components/blueprint/blueprint-email-ca
 export default function PaidBlueprintLanding() {
   const router = useRouter()
   const [showEmailModal, setShowEmailModal] = useState(false)
+  const blueprintProduct = getProductById("paid_blueprint")
+  const blueprintPrice = blueprintProduct ? formatPriceFromCents(blueprintProduct.priceInCents) : "$47"
 
   // Scroll to section handler
   const scrollToSection = (sectionId: string) => {
@@ -31,7 +34,7 @@ export default function PaidBlueprintLanding() {
   }
 
   // Handle email capture success - route to checkout
-  const handleEmailSuccess = (email: string, name: string, accessToken: string) => {
+  const handleEmailSuccess = (email: string, _name: string, _accessToken: string) => {
     setShowEmailModal(false)
     // Route to checkout with email
     router.push(`/checkout/blueprint?email=${encodeURIComponent(email)}`)
@@ -114,7 +117,7 @@ export default function PaidBlueprintLanding() {
           <div className="mb-4 sm:mb-6">
             <button
               onClick={() => setShowEmailModal(true)}
-              className="bg-white text-black px-6 sm:px-8 py-3 sm:py-3.5 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-100 transition-all duration-200 inline-block min-h-[40px] sm:min-h-[44px] flex items-center justify-center whitespace-nowrap"
+              className="bg-white text-black px-6 sm:px-8 py-3 sm:py-3.5 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-100 transition-all duration-200 min-h-[40px] sm:min-h-[44px] flex items-center justify-center whitespace-nowrap"
             >
               Get My 30 Photos →
             </button>
@@ -154,7 +157,7 @@ export default function PaidBlueprintLanding() {
             <div className="space-y-3">
               <h3 className="text-xl font-light text-white mb-2">It\u0027s That Simple</h3>
               <p className="text-sm sm:text-base font-light text-stone-300 leading-relaxed">
-                Upload your selfies. We'll create all 30 photos automatically. No manual work, no stress.
+                Upload your selfies. We&apos;ll create all 30 photos automatically. No manual work, no stress.
               </p>
             </div>
             <div className="space-y-3">
@@ -178,7 +181,7 @@ export default function PaidBlueprintLanding() {
                   <p className="text-stone-400 text-[10px] uppercase tracking-wider">One-Time Purchase</p>
                 </div>
                 <div className="text-right">
-                  <span className="text-xl font-serif">$47</span>
+                  <span className="text-xl font-serif">{blueprintPrice}</span>
                   <span className="text-[9px] uppercase text-stone-500 block">one-time</span>
                 </div>
               </div>
@@ -360,14 +363,14 @@ export default function PaidBlueprintLanding() {
             Ready to Bring Your Blueprint to Life?
           </h2>
           <p className="text-base sm:text-lg font-light leading-relaxed text-stone-300 mb-8 sm:mb-10">
-            Get 30 custom photos that look like you, based on your brand strategy. $47 one-time. Ready to download and use right away.
+            Get 30 custom photos that look like you, based on your brand strategy. {blueprintPrice} one-time. Ready to download and use right away.
           </p>
 
           {/* Direct CTA Button */}
           <div className="mb-6">
             <button
               onClick={() => setShowEmailModal(true)}
-              className="bg-white text-black px-6 sm:px-8 py-3 sm:py-3.5 rounded-lg text-sm font-medium uppercase tracking-wider hover:bg-stone-100 transition-all duration-200 inline-block min-h-[44px] flex items-center justify-center whitespace-nowrap"
+              className="bg-white text-black px-6 sm:px-8 py-3 sm:py-3.5 rounded-lg text-sm font-medium uppercase tracking-wider hover:bg-stone-100 transition-all duration-200 min-h-[44px] flex items-center justify-center whitespace-nowrap"
             >
               Get My 30 Photos →
             </button>
@@ -403,7 +406,7 @@ export default function PaidBlueprintLanding() {
 
       {/* Email Capture Modal */}
       {showEmailModal && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-200 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
           <div className="relative w-full max-w-[600px] max-h-[90vh] overflow-auto rounded-lg">
             <button
               onClick={() => setShowEmailModal(false)}

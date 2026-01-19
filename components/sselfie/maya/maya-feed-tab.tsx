@@ -391,18 +391,43 @@ export default function MayaFeedTab({
       return
     }
 
-    // Simple trigger detection (single pattern)
-    const feedStrategyMatch = textContent.match(/\[CREATE_FEED_STRATEGY:\s*(\{[\s\S]*\})\]/i)
-    
-    if (feedStrategyMatch) {
-      const strategyJson = feedStrategyMatch[1]
-      if (strategyJson) {
-        console.log("[FEED] ✅ Detected feed trigger:", { messageKey, messageId: messageId || "no-id-yet", strategyLength: strategyJson.length })
-        processedFeedMessagesRef.current.add(messageKey)
-        // CRITICAL: Set loading state immediately (like concept cards)
-        setIsCreatingFeed(true)
-        setPendingFeedRequest({ strategyJson, messageId: messageId || messageKey })
+    const extractStrategyJson = (text: string): string | null => {
+      const inlineMatch = text.match(/\[CREATE_FEED_STRATEGY:\s*(\{[\s\S]*\})\]/i)
+      if (inlineMatch?.[1]) {
+        return inlineMatch[1]
       }
+
+      const fencedJsonMatch = text.match(/\[CREATE_FEED_STRATEGY\][\s\S]*?```json\s*([\s\S]*?)\s*```/i)
+      if (fencedJsonMatch?.[1]) {
+        return fencedJsonMatch[1]
+      }
+
+      const fencedMatch = text.match(/\[CREATE_FEED_STRATEGY\][\s\S]*?```\s*([\s\S]*?)\s*```/i)
+      if (fencedMatch?.[1]) {
+        return fencedMatch[1]
+      }
+
+      if (text.includes("[CREATE_FEED_STRATEGY]")) {
+        const markerIndex = text.indexOf("[CREATE_FEED_STRATEGY]")
+        const afterMarker = text.slice(markerIndex)
+        const jsonStart = afterMarker.indexOf("{")
+        const jsonEnd = afterMarker.lastIndexOf("}") + 1
+        if (jsonStart >= 0 && jsonEnd > jsonStart) {
+          return afterMarker.slice(jsonStart, jsonEnd)
+        }
+      }
+
+      return null
+    }
+
+    const strategyJson = extractStrategyJson(textContent)
+
+    if (strategyJson) {
+      console.log("[FEED] ✅ Detected feed trigger:", { messageKey, messageId: messageId || "no-id-yet", strategyLength: strategyJson.length })
+      processedFeedMessagesRef.current.add(messageKey)
+      // CRITICAL: Set loading state immediately (like concept cards)
+      setIsCreatingFeed(true)
+      setPendingFeedRequest({ strategyJson, messageId: messageId || messageKey })
     }
   }, [messages, status, isCreatingFeed, pendingFeedRequest, setIsCreatingFeed])
 

@@ -7,6 +7,7 @@ import { createTrainingZip } from "@/lib/storage"
 import { getDbClient } from "@/lib/db-singleton"
 import { rateLimit } from "@/lib/rate-limit-api"
 import { checkCredits, deductCredits, getUserCredits, CREDIT_COSTS } from "@/lib/credits"
+import { hasStudioMembership } from "@/lib/subscription"
 
 const sql = getDbClient()
 
@@ -57,6 +58,17 @@ export async function POST(request: NextRequest) {
       userId: neonUser.id,
       email: neonUser.email,
     })
+
+    const hasMembership = await hasStudioMembership(neonUser.id)
+    if (!hasMembership) {
+      return NextResponse.json(
+        {
+          error: "Membership required",
+          message: "Training a model requires an active Studio Membership.",
+        },
+        { status: 403 },
+      )
+    }
 
     const hasEnoughCredits = await checkCredits(neonUser.id, CREDIT_COSTS.TRAINING)
     if (!hasEnoughCredits) {

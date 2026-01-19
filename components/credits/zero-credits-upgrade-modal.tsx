@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { startEmbeddedCheckout } from "@/lib/start-embedded-checkout"
 import { BuyCreditsDialog } from "./buy-credits-dialog"
+import { trackCTAClick } from "@/lib/analytics"
 import useSWR from "swr"
 
 interface ZeroCreditsUpgradeModalProps {
@@ -51,6 +52,7 @@ export function ZeroCreditsUpgradeModal({ credits, onClose }: ZeroCreditsUpgrade
   const handleUpgrade = async () => {
     try {
       setIsUpgrading(true)
+      trackCTAClick("zero_credits_modal", "Upgrade to Studio", "/checkout")
       const clientSecret = await startEmbeddedCheckout("sselfie_studio_membership")
       window.location.href = `/checkout?client_secret=${clientSecret}`
     } catch (error) {
@@ -61,6 +63,7 @@ export function ZeroCreditsUpgradeModal({ credits, onClose }: ZeroCreditsUpgrade
   }
 
   const handleBuyCredits = () => {
+    trackCTAClick("zero_credits_modal", "Buy Credits", "/checkout/credits")
     setShowModal(false)
     setShowBuyDialog(true)
   }

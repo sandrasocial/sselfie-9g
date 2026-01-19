@@ -98,3 +98,8 @@ export function getProductById(productId: string): PricingProduct | undefined {
 export function getCreditPackageById(packageId: string): CreditPackage | undefined {
   return CREDIT_PACKAGES.find((p) => p.id === packageId)
 }
+
+export function formatPriceFromCents(priceInCents: number, decimals?: number) {
+  const resolvedDecimals = decimals ?? (priceInCents % 100 === 0 ? 0 : 2)
+  return `$${(priceInCents / 100).toFixed(resolvedDecimals)}`
+}

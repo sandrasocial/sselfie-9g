@@ -89,6 +89,7 @@ export default function MayaChatScreen({
   isMembership = false, // Default to false - only membership users see Pro/Classic toggle
 }: MayaChatScreenProps) {
   const { toast } = useToast()
+  const isFeedTabDisabled = true
   const [inputValue, setInputValue] = useState("")
   const [showHistory, setShowHistory] = useState(false)
   const [showNavMenu, setShowNavMenu] = useState(false)
@@ -126,17 +127,27 @@ export default function MayaChatScreen({
       if (hash === "#maya/training" || hash === "#training") {
         return "training"
       }
-      if (hash === "#maya/feed" || hash === "#feed") {
+      if (!isFeedTabDisabled && (hash === "#maya/feed" || hash === "#feed")) {
         return "feed"
       }
       // Check localStorage for persisted tab selection
       const savedTab = localStorage.getItem("mayaActiveTab")
-      if (savedTab === "photos" || savedTab === "videos" || savedTab === "prompts" || savedTab === "training" || savedTab === "feed") {
+      if (savedTab === "photos" || savedTab === "videos" || savedTab === "prompts" || savedTab === "training" || (!isFeedTabDisabled && savedTab === "feed")) {
         return savedTab as "photos" | "videos" | "prompts" | "training" | "feed"
       }
     }
     return "photos" // Default to Photos tab
   })
+
+  useEffect(() => {
+    if (!isFeedTabDisabled) return
+    if (activeMayaTab !== "feed") return
+    setActiveMayaTab("photos")
+    if (typeof window !== "undefined") {
+      localStorage.setItem("mayaActiveTab", "photos")
+      window.history.replaceState(null, "", "#maya")
+    }
+  }, [activeMayaTab, isFeedTabDisabled])
   
   // Mode managed by useMayaMode hook
   const { proMode, setProMode, getModeString, hasModeChanged } = useMayaMode(forcedProMode)
@@ -2370,6 +2381,9 @@ export default function MayaChatScreen({
           onSettings={() => setShowSettings(true)}
           activeTab={activeMayaTab}
           onTabChange={(tab) => {
+            if (isFeedTabDisabled && tab === "feed") {
+              return
+            }
             setActiveMayaTab(tab)
             // Persist to localStorage
             if (typeof window !== "undefined") {
@@ -2387,6 +2401,7 @@ export default function MayaChatScreen({
           }}
           photosCount={undefined} // Can be added later if needed
           videosCount={undefined} // Can be added later if needed
+          disableFeedTab={isFeedTabDisabled}
         />
       </div>
 
@@ -3024,7 +3039,7 @@ export default function MayaChatScreen({
       )}
 
       {/* Tab Content - Feed Tab */}
-      {activeMayaTab === "feed" && (
+      {!isFeedTabDisabled && activeMayaTab === "feed" && (
         <>
           {/* CRITICAL FIX: Show loading indicator during chat load, but don't block UI */}
           {isLoadingChat && messages.length === 0 && (

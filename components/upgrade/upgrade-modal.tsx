@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { getProductById } from "@/lib/products"
+import { trackCTAClick } from "@/lib/analytics"
 
 type TierId = "one_time_session" | "sselfie_studio_membership"
 
@@ -23,6 +24,7 @@ export function UpgradeModal({ open, currentTier, targetTier = "sselfie_studio_m
     setError(null)
     try {
       console.log("[UPGRADE] Starting upgrade to:", targetTier)
+      trackCTAClick("upgrade_modal", `Upgrade to ${targetName}`, "/checkout")
       const response = await fetch("/api/subscription/upgrade", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

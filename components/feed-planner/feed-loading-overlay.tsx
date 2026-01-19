@@ -121,7 +121,7 @@ export default function FeedLoadingOverlay({
                   {isTakingLonger && (
                     <div className="mt-6 pt-6 border-t border-stone-200">
                       <p className="text-sm font-light text-stone-600 leading-relaxed">
-                        ✨ This is taking a bit longer than expected! Your photos are being carefully crafted with high-quality details. Feel free to grab a coffee—we'll have them ready soon! ☕
+                        ✨ This is taking a bit longer than expected! Your photos are being carefully crafted with high-quality details. Feel free to grab a coffee—we&apos;ll have them ready soon! ☕
                       </p>
                     </div>
                   )}

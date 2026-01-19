@@ -37,6 +37,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { DesignClasses } from "@/lib/design-tokens"
 import { ReferralDashboard } from "@/components/referrals/referral-dashboard"
+import { trackCTAClick } from "@/lib/analytics"
 
 interface AccountScreenProps {
   user: UserType
@@ -749,6 +750,7 @@ export default function AccountScreen({ user, creditBalance }: AccountScreenProp
                 onClick={(e) => {
                   e.preventDefault()
                   e.stopPropagation()
+                  trackCTAClick("account_screen_upgrade", "Upgrade now", "/checkout")
                   setShowUpgradeModal(true)
                 }}
                 className="w-full flex items-center justify-center gap-2 text-sm tracking-[0.15em] uppercase font-medium rounded-2xl py-4 bg-stone-900 text-white hover:bg-stone-800 transition-colors active:scale-[0.98]"

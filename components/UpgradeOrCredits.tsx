@@ -5,6 +5,7 @@ import { CreditCard, ArrowRight } from "lucide-react"
 import { useState } from "react"
 import BuyCreditsModal from "@/components/sselfie/buy-credits-modal"
 import { startEmbeddedCheckout } from "@/lib/start-embedded-checkout"
+import { trackCTAClick } from "@/lib/analytics"
 
 interface UpgradeOrCreditsProps {
   feature?: string
@@ -23,6 +24,7 @@ export function UpgradeOrCredits({
   const handleUpgrade = async () => {
     try {
       setIsUpgrading(true)
+      trackCTAClick("upgrade_or_credits", "Upgrade to Membership", "/checkout")
       const clientSecret = await startEmbeddedCheckout("sselfie_studio_membership")
       window.location.href = `/checkout?client_secret=${clientSecret}`
     } catch (error) {
@@ -33,6 +35,7 @@ export function UpgradeOrCredits({
   }
 
   const handleBuyCredits = () => {
+    trackCTAClick("upgrade_or_credits", "Buy Credits", "/checkout/credits")
     setShowBuyCredits(true)
   }
 

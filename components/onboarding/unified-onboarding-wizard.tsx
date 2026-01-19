@@ -440,7 +440,7 @@ export default function UnifiedOnboardingWizard({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-stone-950/60 backdrop-blur-sm z-[100]"
+            className="fixed inset-0 bg-stone-950/60 backdrop-blur-sm z-100"
             onClick={onDismiss}
           />
 
@@ -449,7 +449,7 @@ export default function UnifiedOnboardingWizard({
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 pb-24 sm:pb-28 md:pb-32"
+            className="fixed inset-0 z-100 flex items-center justify-center p-4 pb-24 sm:pb-28 md:pb-32"
             onClick={(e) => e.stopPropagation()}
             style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 6rem)" }}
           >
@@ -494,10 +494,10 @@ export default function UnifiedOnboardingWizard({
                 {currentStep === 0 && (
                   <div className="space-y-6">
                     <p className="text-base sm:text-lg font-light leading-relaxed text-stone-700">
-                      Hi {userName && !userName.includes('@') ? userName : "there"}! 👋 Let's create content that actually looks and sounds like you. This will only take a few minutes.
+                      Hi {userName && !userName.includes('@') ? userName : "there"}! 👋 Let&apos;s create content that actually looks and sounds like you. This will only take a few minutes.
                     </p>
                     <p className="text-sm font-light text-stone-600">
-                      We'll ask you a few questions about your brand, style, and goals. Your answers help us generate personalized content just for you.
+                      We&apos;ll ask you a few questions about your brand, style, and goals. Your answers help us generate personalized content just for you.
                     </p>
                   </div>
                 )}
@@ -752,7 +752,7 @@ export default function UnifiedOnboardingWizard({
                         {/* Maya's Explanation */}
                         {pillarExplanation && (
                           <div className="flex gap-4 items-start bg-stone-50 rounded-xl p-4">
-                            <div className="flex-shrink-0 w-12 h-12 bg-stone-950 rounded-full flex items-center justify-center">
+                            <div className="shrink-0 w-12 h-12 bg-stone-950 rounded-full flex items-center justify-center">
                               <Aperture size={20} className="text-white" />
                             </div>
                             <div className="flex-1">
@@ -812,7 +812,7 @@ export default function UnifiedOnboardingWizard({
                       <>
                         {/* Maya's Introduction */}
                         <div className="flex gap-4 items-start bg-stone-50 rounded-xl p-4">
-                          <div className="flex-shrink-0 w-12 h-12 bg-stone-950 rounded-full flex items-center justify-center">
+                          <div className="shrink-0 w-12 h-12 bg-stone-950 rounded-full flex items-center justify-center">
                             <Aperture size={20} className="text-white" />
                           </div>
                           <div className="flex-1">

@@ -4,13 +4,13 @@
  * ✅ SINGLE SOURCE OF TRUTH: All Feed Planner prompt text generation happens here.
  * 
  * NANO BANANA PRO COMPLIANCE:
- * - Preview prompts: 500-700 words with 9 full scene execution blocks
+ * - Preview prompts: 300-450 words with 9 concise scene execution blocks
  * - Single scene prompts: 200-270 words with explicit block structure
  * - Both include identity anchors at start and end
  * - Both use execution data (outfits, locations, poses) for scene descriptions
  * 
  * PROMPT MODES:
- * - PREVIEW = 3×3 grid prompt with 9 scene execution blocks (9:16 aspect ratio)
+ * - PREVIEW = 3×3 grid prompt with 9 concise scene blocks (9:16 aspect ratio)
  * - SINGLE SCENE = One scene with full execution details (4:5 aspect ratio)
  * 
  * This is the ONLY place where natural language is generated for Feed Planner.
@@ -48,10 +48,10 @@ export type PromptMode = 'preview_multi' | 'single_scene'
  * Everything else must either call it or be frozen.
  * 
  * FEED PLANNER MODES:
- * 1. PREVIEW = 3×3 grid prompt (500-700 words)
+ * 1. PREVIEW = 3×3 grid prompt (300-450 words)
  *    - Identity anchor at start
  *    - Explicit grid layout specification
- *    - 9 scene execution blocks (40-60 words each)
+ *    - 9 scene execution blocks (25-35 words each)
  *    - Technical specifications block
  *    - Final identity reminder
  * 
@@ -156,7 +156,7 @@ function getColorGradeDescription(visualAesthetic: string | null | undefined, ca
  * NANO BANANA PRO COMPLIANCE:
  * - Identity anchor at start (25-30 words)
  * - Explicit 3×3 grid layout specification (15-20 words)
- * - 9 scene blocks with execution data (40-60 words each)
+ * - 9 scene blocks with execution data (25-35 words each)
  * - Technical specifications block (40-50 words)
  * - Cohesion statement (20-30 words)
  * - Final identity reminder (10-15 words)
@@ -183,7 +183,7 @@ function buildPreviewMultiPrompt(scene: FeedPlannerScene, allScenes?: FeedPlanne
     'location, and composition.'
   )
   
-  // [3] SCENE-BY-SCENE DESCRIPTIONS (40-60 words each × 9)
+  // [3] SCENE-BY-SCENE DESCRIPTIONS (25-35 words each × 9)
   // CRITICAL: Use ACTUAL execution data from allScenes
   if (allScenes && allScenes.length >= 9) {
     const sortedScenes = [...allScenes].sort((a, b) => a.position - b.position)
@@ -1327,11 +1327,11 @@ export function validateFeedPlannerPrompt(prompt: string, mode: PromptMode): {
   
   // Check length
   if (mode === 'preview_multi') {
-    // Preview should be 500-700 words per Nano Banana Pro spec
-    if (wordCount < 400) {
-      warnings.push(`Preview prompt is short (${wordCount} words, target: 500-700)`)
-    } else if (wordCount > 800) {
-      warnings.push(`Preview prompt is long (${wordCount} words, target: 500-700)`)
+    // Preview should be 300-450 words per Nano Banana Pro optimization
+    if (wordCount < 120) {
+      warnings.push(`Preview prompt is short (${wordCount} words, target: 300-450)`)
+    } else if (wordCount > 500) {
+      warnings.push(`Preview prompt is long (${wordCount} words, target: 300-450)`)
     }
   } else {
     // Single scene should be 200-270 words per Nano Banana Pro spec

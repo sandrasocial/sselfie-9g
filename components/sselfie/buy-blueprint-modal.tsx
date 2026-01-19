@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button"
 import { startProductCheckoutSession } from "@/app/actions/stripe"
 import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
 import { createClient } from "@/lib/supabase/client"
-import { getProductById } from "@/lib/products"
+import { formatPriceFromCents, getProductById } from "@/lib/products"
+import { trackCTAClick } from "@/lib/analytics"
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
@@ -33,7 +34,7 @@ export default function BuyBlueprintModal({
   const clientSecretRef = useRef<string | null>(null)
 
   const product = getProductById("paid_blueprint")
-  const price = product ? `$${(product.priceInCents / 100).toFixed(2)}` : "$47"
+  const price = product ? formatPriceFromCents(product.priceInCents) : "$47"
 
   const startCheckout = useCallback(async () => {
     try {
@@ -150,6 +151,7 @@ export default function BuyBlueprintModal({
                 <Button
                   onClick={() => {
                     console.log("[BuyBlueprintModal] Continue to Checkout clicked")
+                    trackCTAClick("buy_blueprint_modal", "Continue to Checkout", "/checkout/blueprint")
                     setShowCheckout(true)
                   }}
                   className="w-full bg-stone-900 hover:bg-stone-800 text-white rounded-xl py-3 px-6 font-medium transition-colors mt-6"

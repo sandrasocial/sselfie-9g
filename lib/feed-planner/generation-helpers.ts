@@ -602,6 +602,7 @@ export async function injectAndValidateTemplate(
 
   // Inject dynamic content into template
   const { injectDynamicContentWithRotation } = await import("@/lib/feed-planner/dynamic-template-injector")
+  const { getVibeLibrary } = await import("@/lib/styling/vibe-libraries")
   let injectedTemplate: string
   try {
     injectedTemplate = await injectDynamicContentWithRotation(
@@ -623,8 +624,44 @@ export async function injectAndValidateTemplate(
 
     console.log(`[v0] [GENERATE-SINGLE] ✅ Injection successful - all placeholders replaced (${injectedTemplate.split(/\s+/).length} words)`)
   } catch (injectionError: any) {
+    const errorMessage = injectionError?.message || String(injectionError)
     console.error(`[v0] [GENERATE-SINGLE] ❌ Injection error:`, injectionError)
-    throw new Error(`Failed to inject dynamic content: ${injectionError.message}`)
+
+    if (errorMessage.includes("No outfits found for vibe")) {
+      const library = getVibeLibrary(vibeKey)
+      const availableStyles = library ? Object.keys(library.fashionStyles) : []
+      const fallbackStyle = availableStyles.includes("classic")
+        ? "classic"
+        : availableStyles[0]
+
+      if (fallbackStyle) {
+        console.warn(
+          `[v0] [GENERATE-SINGLE] ⚠️ Falling back to fashion style "${fallbackStyle}" for vibe ${vibeKey} (original: ${fashionStyle})`
+        )
+        injectedTemplate = await injectDynamicContentWithRotation(
+          fullTemplate,
+          vibeKey,
+          fallbackStyle,
+          userId
+        )
+
+        const { extractPlaceholderKeys } = await import("@/lib/feed-planner/template-placeholders")
+        const remainingPlaceholders = extractPlaceholderKeys(injectedTemplate)
+        if (remainingPlaceholders.length > 0) {
+          console.error(`[v0] [GENERATE-SINGLE] ❌ Injection failed - ${remainingPlaceholders.length} placeholders still remain:`, remainingPlaceholders)
+          console.error(`[v0] [GENERATE-SINGLE] ❌ Template preview (first 500 chars):`, injectedTemplate.substring(0, 500))
+          console.error(`[v0] [GENERATE-SINGLE] ❌ Vibe key: ${vibeKey}, Fashion style: ${fallbackStyle}, User ID: ${userId}`)
+          throw new Error(`Template injection incomplete: ${remainingPlaceholders.length} placeholders not replaced: ${remainingPlaceholders.join(', ')}`)
+        }
+
+        console.log(
+          `[v0] [GENERATE-SINGLE] ✅ Injection successful with fallback style "${fallbackStyle}" (${injectedTemplate.split(/\s+/).length} words)`
+        )
+        return injectedTemplate
+      }
+    }
+
+    throw new Error(`Failed to inject dynamic content: ${errorMessage}`)
   }
 
   return injectedTemplate

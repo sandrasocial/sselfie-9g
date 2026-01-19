@@ -8,6 +8,7 @@ import { useScroll, useTransform, motion } from "framer-motion"
 import Image from "next/image"
 import { trackCTAClick, trackPricingView, trackCheckoutStart, trackEmailSignup, trackSocialClick } from "@/lib/analytics"
 import { startEmbeddedCheckout } from "@/lib/start-embedded-checkout"
+import { formatPriceFromCents, getProductById } from "@/lib/products"
 
 // Dynamic imports for heavy components (code splitting)
 const InteractivePipelineShowcase = lazy(() => import("./interactive-pipeline-showcase"))
@@ -31,6 +32,10 @@ export default function LandingPage() {
   const [waitlistEmail, setWaitlistEmail] = useState("")
   const [waitlistLoading, setWaitlistLoading] = useState(false)
   const [waitlistMessage, setWaitlistMessage] = useState<{ type: "success" | "error"; text: string } | null>(null)
+  const oneTimeProduct = getProductById("one_time_session")
+  const membershipProduct = getProductById("sselfie_studio_membership")
+  const oneTimePrice = oneTimeProduct ? formatPriceFromCents(oneTimeProduct.priceInCents) : "$49"
+  const membershipPrice = membershipProduct ? formatPriceFromCents(membershipProduct.priceInCents) : "$97"
 
   const [stats, setStats] = useState<LandingStats>({
     waitlistCount: 2847,
@@ -331,7 +336,7 @@ export default function LandingPage() {
             blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
           />
 
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent" />
+          <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/40 to-transparent" />
 
           <div className="absolute inset-0 flex items-end z-10 pb-12 sm:pb-16 md:pb-24 lg:pb-32 px-6 sm:px-8 md:px-12 lg:px-16">
             <div className="text-left text-white max-w-4xl">
@@ -350,7 +355,7 @@ export default function LandingPage() {
                   trackCTAClick("hero", "SEE HOW IT WORKS", "#features")
                   scrollToFeatures(e)
                 }}
-                className="inline-block px-8 sm:px-10 py-3.5 sm:py-4 bg-white text-black text-sm sm:text-base uppercase tracking-wider transition-all duration-300 hover:bg-black hover:text-white border border-white min-h-[48px] flex items-center justify-center font-light"
+                className="px-8 sm:px-10 py-3.5 sm:py-4 bg-white text-black text-sm sm:text-base uppercase tracking-wider transition-all duration-300 hover:bg-black hover:text-white border border-white min-h-[48px] flex items-center justify-center font-light"
               >
                 SEE HOW IT WORKS
               </a>
@@ -521,7 +526,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12 md:gap-16 items-start">
             <motion.div style={{ y: aboutY }} className="relative hidden md:block">
-              <div className="relative aspect-[3/4] rounded-2xl overflow-hidden max-w-md mx-auto">
+              <div className="relative aspect-3/4 rounded-2xl overflow-hidden max-w-md mx-auto">
                 <Image
                   src="/images/100-w8hxvehcig14xjvduygpubkahlwzcj.png"
                   fill
@@ -553,7 +558,7 @@ export default function LandingPage() {
               </div>
 
               <div className="relative md:hidden my-6 sm:my-8">
-                <div className="relative aspect-[3/4] rounded-2xl overflow-hidden max-w-[240px] sm:max-w-[280px] mx-auto">
+                <div className="relative aspect-3/4 rounded-2xl overflow-hidden max-w-[240px] sm:max-w-[280px] mx-auto">
                   <Image
                     src="/images/100-w8hxvehcig14xjvduygpubkahlwzcj.png"
                     fill
@@ -675,7 +680,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 sm:gap-16 max-w-5xl mx-auto">
             {/* Generic AI Headshot */}
             <div className="space-y-4 sm:space-y-6">
-              <div className="relative aspect-[3/4] overflow-hidden">
+              <div className="relative aspect-3/4 overflow-hidden">
                 <Image
                   src="/images/nano-banana-2025-09-07t16-04-25-202.png"
                   fill
@@ -709,7 +714,7 @@ export default function LandingPage() {
 
             {/* SSELFIE Studio */}
             <div className="space-y-4 sm:space-y-6">
-              <div className="relative aspect-[3/4] overflow-hidden border-2 border-stone-950">
+              <div className="relative aspect-3/4 overflow-hidden border-2 border-stone-950">
                 <Image
                   src="/images/img-8033.png"
                   fill
@@ -833,7 +838,7 @@ export default function LandingPage() {
                     className="text-5xl sm:text-6xl font-light text-stone-900"
                     style={{ fontFamily: "'Times New Roman', Times, serif" }}
                   >
-                    $49
+                    {oneTimePrice}
                   </span>
                 </div>
                 <p className="text-sm sm:text-base font-light text-stone-600 mt-2">one-time</p>
@@ -897,7 +902,7 @@ export default function LandingPage() {
                     className="text-5xl sm:text-6xl font-light text-stone-50"
                     style={{ fontFamily: "'Times New Roman', Times, serif" }}
                   >
-                    $97
+                    {membershipPrice}
                   </span>
                 </div>
                 <p className="text-sm sm:text-base font-light text-stone-300 mt-2">per month</p>

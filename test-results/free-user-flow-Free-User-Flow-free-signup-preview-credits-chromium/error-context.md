@@ -27,8 +27,8 @@
               - progressbar [ref=e45]
             - heading "Welcome" [level=2] [ref=e47]
             - generic [ref=e48]:
-              - paragraph [ref=e49]: Hi Free Test User! 👋 Let\u0027s create content that actually looks and sounds like you. This will only take a few minutes.
-              - paragraph [ref=e50]: We\u0027ll ask you a few questions about your brand, style, and goals. Your answers help us generate personalized content just for you.
+              - paragraph [ref=e49]: Hi Free Test User! 👋 Let's create content that actually looks and sounds like you. This will only take a few minutes.
+              - paragraph [ref=e50]: We'll ask you a few questions about your brand, style, and goals. Your answers help us generate personalized content just for you.
             - button "Continue →" [ref=e52]
     - navigation "Main navigation" [ref=e53]:
       - generic [ref=e56]:

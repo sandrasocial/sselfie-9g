@@ -9,7 +9,8 @@ import { Check } from 'lucide-react'
 import { startProductCheckoutSession } from "@/app/actions/stripe"
 import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
 import { createClient } from "@/lib/supabase/client"
-import { getProductById } from "@/lib/products"
+import { formatPriceFromCents, getProductById } from "@/lib/products"
+import { trackCTAClick } from "@/lib/analytics"
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
@@ -30,7 +31,7 @@ export default function BuyBlueprintModal({
   const [isLoading, setIsLoading] = useState(false)
 
   const product = getProductById("paid_blueprint")
-  const price = product ? `$${(product.priceInCents / 100).toFixed(2)}` : "$47"
+  const price = product ? formatPriceFromCents(product.priceInCents) : "$47"
 
   const startCheckout = useCallback(async () => {
     try {
@@ -114,7 +115,10 @@ export default function BuyBlueprintModal({
                 </div>
 
                 <button
-                  onClick={() => setIsLoading(true)}
+                  onClick={() => {
+                    trackCTAClick("feed_planner_buy_blueprint_modal", "Continue to Checkout", "/checkout/blueprint")
+                    setIsLoading(true)
+                  }}
                   className="w-full bg-stone-900 hover:bg-stone-800 text-white rounded-xl py-3 px-6 font-medium transition-colors mt-6"
                 >
                   Continue to Checkout

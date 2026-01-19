@@ -65,6 +65,7 @@ interface MayaHeaderUnifiedProps {
   onTabChange?: (tab: "photos" | "videos" | "prompts" | "training" | "feed") => void
   photosCount?: number
   videosCount?: number
+  disableFeedTab?: boolean
   
   // Access Control
   showModeToggle?: boolean // Show Pro/Classic toggle (only for membership users)
@@ -122,6 +123,7 @@ export default function MayaHeaderUnified({
   onTabChange,
   photosCount,
   videosCount,
+  disableFeedTab = false,
 }: MayaHeaderUnifiedProps) {
   const [isManageOpen, setIsManageOpen] = useState(false)
   const [isGuideMenuOpen, setIsGuideMenuOpen] = useState(false)
@@ -489,6 +491,7 @@ export default function MayaHeaderUnified({
               onTabChange={onTabChange}
               photosCount={photosCount}
               videosCount={videosCount}
+              disableFeedTab={disableFeedTab}
             />
           </div>
         </div>

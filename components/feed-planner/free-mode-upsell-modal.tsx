@@ -6,6 +6,8 @@ import { ArrowRight } from "lucide-react"
 import BuyBlueprintModal from "@/components/sselfie/buy-blueprint-modal"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { CREDIT_PACKAGES, formatPriceFromCents, getProductById } from "@/lib/products"
+import { trackCTAClick } from "@/lib/analytics"
 
 interface FreeModeUpsellModalProps {
   open: boolean
@@ -29,15 +31,23 @@ export default function FreeModeUpsellModal({
 }: FreeModeUpsellModalProps) {
   const router = useRouter()
   const [showBlueprintModal, setShowBlueprintModal] = useState(false)
+  const blueprintProduct = getProductById("paid_blueprint")
+  const starterPack = CREDIT_PACKAGES.find((pkg) => pkg.id === "credits_topup_10")
+  const powerPack = CREDIT_PACKAGES.find((pkg) => pkg.id === "credits_topup_100")
+  const blueprintPrice = blueprintProduct ? formatPriceFromCents(blueprintProduct.priceInCents) : "$47"
+  const starterPrice = starterPack ? formatPriceFromCents(starterPack.priceInCents) : "$9.99"
+  const powerPrice = powerPack ? formatPriceFromCents(powerPack.priceInCents) : "$45"
 
   const handleTestMore = () => {
     // Close upsell modal and navigate to credits checkout page with 10-credit pack highlighted
+    trackCTAClick("free_mode_upsell", "Test More", "/checkout/credits")
     onOpenChange(false)
     router.push("/checkout/credits")
   }
 
   const handleUnlockBlueprint = () => {
     // Close upsell modal first to prevent duplicate modals
+    trackCTAClick("free_mode_upsell", "Unlock Full Blueprint", "/checkout/blueprint")
     onOpenChange(false)
     // Small delay to ensure upsell modal is fully closed before showing blueprint modal
     setTimeout(() => {
@@ -47,6 +57,7 @@ export default function FreeModeUpsellModal({
 
   const handleGetMoreCredits = () => {
     // Close upsell modal and navigate to credits checkout page
+    trackCTAClick("free_mode_upsell", "Get More Credits", "/checkout/credits")
     onOpenChange(false)
     router.push("/checkout/credits")
   }
@@ -74,9 +85,9 @@ export default function FreeModeUpsellModal({
               <div className="flex items-center gap-2 sm:gap-3 w-full">
                 <div className="flex-1 text-left min-w-0">
                   <div className="font-medium text-stone-900 text-sm sm:text-base">Test More</div>
-                  <div className="text-xs text-stone-500 mt-0.5 sm:mt-0">$9.99 • 5 preview feeds</div>
+                  <div className="text-xs text-stone-500 mt-0.5 sm:mt-0">{starterPrice} • 5 preview feeds</div>
                 </div>
-                <ArrowRight className="w-4 h-4 text-stone-400 flex-shrink-0" />
+                <ArrowRight className="w-4 h-4 text-stone-400 shrink-0" />
               </div>
             </Button>
 
@@ -88,9 +99,9 @@ export default function FreeModeUpsellModal({
               <div className="flex items-center gap-2 sm:gap-3 w-full">
                 <div className="flex-1 text-left min-w-0">
                   <div className="font-medium text-white text-sm sm:text-base">Unlock Full Blueprint</div>
-                  <div className="text-xs text-stone-300 mt-0.5 sm:mt-0">$47 • 60 Credits • Full Feed Planner</div>
+                  <div className="text-xs text-stone-300 mt-0.5 sm:mt-0">{blueprintPrice} • 60 Credits • Full Feed Planner</div>
                 </div>
-                <ArrowRight className="w-4 h-4 text-stone-300 flex-shrink-0" />
+                <ArrowRight className="w-4 h-4 text-stone-300 shrink-0" />
               </div>
             </Button>
 
@@ -103,9 +114,9 @@ export default function FreeModeUpsellModal({
               <div className="flex items-center gap-2 sm:gap-3 w-full">
                 <div className="flex-1 text-left min-w-0">
                   <div className="font-medium text-stone-700 text-sm sm:text-base">Get More Credits</div>
-                  <div className="text-xs text-stone-500 mt-0.5 sm:mt-0">$45 • 100 credits • 50 preview feeds</div>
+                  <div className="text-xs text-stone-500 mt-0.5 sm:mt-0">{powerPrice} • 100 credits • 50 preview feeds</div>
                 </div>
-                <ArrowRight className="w-4 h-4 text-stone-400 flex-shrink-0" />
+                <ArrowRight className="w-4 h-4 text-stone-400 shrink-0" />
               </div>
             </Button>
           </div>

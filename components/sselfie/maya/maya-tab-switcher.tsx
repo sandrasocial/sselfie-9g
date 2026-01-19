@@ -9,6 +9,7 @@ interface MayaTabSwitcherProps {
   onTabChange: (tab: "photos" | "videos" | "prompts" | "training" | "feed") => void
   photosCount?: number // Optional: show count of generated photos
   videosCount?: number // Optional: show count of generated videos
+  disableFeedTab?: boolean
   className?: string
 }
 
@@ -35,6 +36,7 @@ export default function MayaTabSwitcher({
   onTabChange,
   photosCount,
   videosCount,
+  disableFeedTab = false,
   className = "",
 }: MayaTabSwitcherProps) {
   const tabs = [
@@ -85,23 +87,27 @@ export default function MayaTabSwitcher({
     >
       {tabs.map((tab) => {
         const isActive = activeTab === tab.id
+        const isDisabled = tab.id === "feed" && disableFeedTab
         return (
           <button
             key={tab.id}
             ref={isActive ? activeTabRef : null}
             onClick={() => {
-              if (!isActive) {
+              if (!isActive && !isDisabled) {
                 onTabChange(tab.id)
               }
             }}
             className={`px-2 sm:px-3 md:px-4 py-3 sm:py-4 md:py-5 border-b-2 transition-all touch-manipulation active:scale-95 min-h-[44px] sm:min-h-[48px] flex items-center gap-1.5 sm:gap-2 whitespace-nowrap scroll-snap-align-start ${
               isActive
                 ? "border-stone-950 text-stone-950 cursor-default"
-                : "border-transparent text-stone-400 hover:text-stone-600 hover:border-stone-300 cursor-pointer"
+                : isDisabled
+                  ? "border-transparent text-stone-300 cursor-not-allowed"
+                  : "border-transparent text-stone-400 hover:text-stone-600 hover:border-stone-300 cursor-pointer"
             }`}
             aria-label={`${tab.label} tab`}
-            title={`${tab.label} tab`}
-            disabled={isActive}
+            title={isDisabled ? "Feed is temporarily unavailable" : `${tab.label} tab`}
+            disabled={isActive || isDisabled}
+            aria-disabled={isDisabled}
             style={{
               fontFamily: 'serif',
               fontSize: '11px',

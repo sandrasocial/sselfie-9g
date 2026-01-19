@@ -2,8 +2,7 @@ import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { neon } from "@neondatabase/serverless"
-import { stripe } from "@/lib/stripe"
-import type Stripe from "stripe"
+import { getDBRevenueMetrics } from "@/lib/revenue/db-revenue-metrics"
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "ssa@ssasocial.com"
 
@@ -88,52 +87,8 @@ export async function GET() {
       AND is_test_mode = FALSE
     `
 
-    // Get ALL successful payments from Stripe (with pagination)
-    // IMPORTANT: Stripe's list() only returns 100 items by default
-    // We need to paginate to get ALL charges for accurate revenue
-    const getAllCharges = async () => {
-      let allCharges: Stripe.Charge[] = []
-      let hasMore = true
-      let startingAfter: string | undefined = undefined
-
-      while (hasMore) {
-        const charges = await stripe.charges.list({
-          limit: 100,
-          ...(startingAfter && { starting_after: startingAfter }),
-        })
-
-        allCharges = allCharges.concat(charges.data)
-        hasMore = charges.has_more
-        if (hasMore && charges.data.length > 0) {
-          startingAfter = charges.data[charges.data.length - 1].id
-        }
-      }
-
-      return allCharges
-    }
-
-    // Get all charges (paginated)
-    const allCharges = await getAllCharges()
-
-    // Filter for successful, non-refunded, production charges
-    const successfulCharges = allCharges.filter(
-      (charge) => charge.paid && !charge.refunded && charge.livemode === true,
-    )
-
-    // Total Revenue = Sum of all successful Stripe payments
-    // NOTE: This already includes:
-    // - Subscription payments (monthly recurring)
-    // - One-time session payments
-    // - Credit top-up purchases
-    // DO NOT add MRR separately - that would double count subscription revenue!
-    const totalRevenue = successfulCharges.reduce((sum, charge) => sum + charge.amount, 0) / 100
-
-    // One-time revenue (last 30 days) - excludes subscription payments
-    const thirtyDaysAgo = Math.floor(Date.now() / 1000) - 30 * 24 * 60 * 60
-    const oneTimeCharges = successfulCharges.filter(
-      (charge) => charge.created >= thirtyDaysAgo && !charge.invoice, // Invoices are subscriptions
-    )
-    const oneTimeRevenue = oneTimeCharges.reduce((sum, charge) => sum + charge.amount, 0) / 100
+    // Database revenue metrics (stripe_payments = primary source of truth)
+    const dbRevenueMetrics = await getDBRevenueMetrics()
 
     const revenueTrend = await sql`
       SELECT 
@@ -179,9 +134,9 @@ export async function GET() {
 
     return NextResponse.json({
       mrr: Math.round(mrr * 100) / 100, // Keep 2 decimal places for MRR
-      totalRevenue: Math.round(totalRevenue * 100) / 100, // Total from Stripe (already includes everything)
-      oneTimeRevenue: Math.round(oneTimeRevenue * 100) / 100,
-      realCreditRevenue: Math.round(realCreditRevenue * 100) / 100,
+      totalRevenue: Math.round(dbRevenueMetrics.totalRevenue * 100) / 100,
+      oneTimeRevenue: Math.round(dbRevenueMetrics.oneTimeRevenue * 100) / 100,
+      realCreditRevenue: Math.round(dbRevenueMetrics.creditPurchaseRevenue * 100) / 100,
       subscriptionBreakdown,
       totalPurchases: Number(creditPurchasesResult[0]?.total_purchases || 0),
       totalCreditsSold: Number(creditPurchasesResult[0]?.total_credits_sold || 0),

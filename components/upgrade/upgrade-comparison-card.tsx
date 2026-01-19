@@ -1,7 +1,8 @@
 "use client"
 
 import { ArrowRight, Check } from "lucide-react"
-import { getProductById } from "@/lib/products"
+import { formatPriceFromCents, getProductById } from "@/lib/products"
+import { trackCTAClick } from "@/lib/analytics"
 
 type TierId = "one_time_session" | "sselfie_studio_membership"
 
@@ -26,16 +27,13 @@ const BASE_TIER_META: Record<TierId, Omit<TierMeta, "price" | "credits"> & Parti
   },
 }
 
-function formatPrice(cents: number, isSubscription: boolean) {
-  const dollars = (cents / 100).toFixed(0)
-  return isSubscription ? `$${dollars} / month` : `$${dollars} one-time`
-}
-
 function buildTierMeta(tierId: TierId): TierMeta {
   const base = BASE_TIER_META[tierId]
   const product = getProductById(tierId)
 
-  const price = product ? formatPrice(product.priceInCents, product.type !== "one_time_session") : base.price || "$0"
+  const price = product
+    ? `${formatPriceFromCents(product.priceInCents)}${product.type === "one_time_session" ? " one-time" : " / month"}`
+    : base.price || "$0"
   const credits =
     product?.credits && product.credits > 0
       ? `${product.credits} credits${product.type === "one_time_session" ? "" : " / month"}`
@@ -108,6 +106,7 @@ export function UpgradeComparisonCard({
           e.preventDefault()
           e.stopPropagation()
           console.log("[UPGRADE-CARD] Upgrade button clicked")
+          trackCTAClick("upgrade_comparison_card", "Upgrade now", "/checkout")
           if (!loading && onUpgrade) {
             onUpgrade()
           }

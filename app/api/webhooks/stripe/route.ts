@@ -8,6 +8,7 @@ import { getOrCreateNeonUser } from "@/lib/user-mapping"
 import { sendEmail } from "@/lib/email/send-email"
 import { generateWelcomeEmail } from "@/lib/email/templates/welcome-email"
 import { generatePaidBlueprintDeliveryEmail, PAID_BLUEPRINT_DELIVERY_SUBJECT } from "@/lib/email/templates/paid-blueprint-delivery"
+import { generatePaymentFailedEmail } from "@/lib/email/templates/payment-failed"
 import { checkWebhookRateLimit } from "@/lib/rate-limit"
 import { logWebhookError, alertWebhookError, isCriticalError } from "@/lib/webhook-monitoring"
 import {
@@ -80,13 +81,6 @@ export async function POST(request: NextRequest) {
       console.log(`[v0] ⚠️ Duplicate event detected: ${eventId} - skipping processing`)
       return NextResponse.json({ received: true, duplicate: true })
     }
-
-    // Record event as processed
-    await sql`
-      INSERT INTO webhook_events (stripe_event_id, processed_at)
-      VALUES (${eventId}, NOW())
-    `
-    console.log(`[v0] Event ${eventId} recorded in idempotency table`)
   } catch (idempotencyError: any) {
     console.error("[v0] Idempotency check error:", idempotencyError.message)
     // Continue processing if idempotency check fails (better to risk duplicate than miss event)
@@ -1123,7 +1117,7 @@ export async function POST(request: NextRequest) {
               if (userId && isPaymentPaid) {
                 try {
                   // Fix: Use session.id for $0 payments (no payment intent)
-                  const paymentIdForCredits = paymentIntentId || (isZeroAmountPayment ? session.id : undefined)
+                  const paymentIdForCredits = paymentIntentId || session.id
                   
                   // Fix #3: Check if credits already granted for this payment (idempotency)
                   if (paymentIdForCredits) {
@@ -2118,6 +2112,10 @@ export async function POST(request: NextRequest) {
         break
       }
 
+      case "invoice.paid": {
+        console.log("[v0] Invoice paid event received - processing as payment_succeeded")
+        // fallthrough
+      }
       case "invoice.payment_succeeded": {
         const invoice = event.data.object
 
@@ -2550,6 +2548,71 @@ export async function POST(request: NextRequest) {
         `
 
         console.log(`[v0] ⚠️ Payment failed for subscription ${subscriptionId} - marked as past_due`)
+
+        try {
+          const failureMessage = `Stripe payment failed for subscription ${subscriptionId} (invoice: ${invoice.id || "unknown"})`
+          const webhookError = {
+            eventType: event.type,
+            errorMessage: failureMessage,
+            errorStack: undefined,
+            eventData: invoice,
+            timestamp: new Date(),
+          }
+          await logWebhookError(webhookError)
+          await alertWebhookError(webhookError)
+        } catch (alertError) {
+          console.error("[v0] ⚠️ Failed to log/alert payment failure:", alertError)
+        }
+
+        try {
+          const [subRecord] = await sql`
+            SELECT user_id FROM subscriptions WHERE stripe_subscription_id = ${subscriptionId} LIMIT 1
+          `
+          if (!subRecord?.user_id) break
+
+          const [userRecord] = await sql`
+            SELECT email, display_name FROM users WHERE id = ${subRecord.user_id} LIMIT 1
+          `
+          if (!userRecord?.email) break
+
+          const recentSend = await sql`
+            SELECT id FROM email_logs
+            WHERE user_email = ${userRecord.email}
+              AND email_type = 'payment-failed'
+              AND sent_at >= NOW() - INTERVAL '3 days'
+            LIMIT 1
+          `
+          if (recentSend.length > 0) break
+
+          const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai"
+          const manageBillingUrl = `${siteUrl}/studio?tab=account`
+          const retryDate = invoice.next_payment_attempt
+            ? new Date(invoice.next_payment_attempt * 1000).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })
+            : undefined
+
+          const emailContent = generatePaymentFailedEmail({
+            firstName: userRecord.display_name?.split(" ")[0] || undefined,
+            recipientEmail: userRecord.email,
+            retryDate,
+            manageBillingUrl,
+          })
+
+          await sendEmail({
+            to: userRecord.email,
+            subject: emailContent.subject,
+            html: emailContent.html,
+            text: emailContent.text,
+            from: "Sandra from SSELFIE <hello@sselfie.ai>",
+            emailType: "payment-failed",
+            tags: ["billing", "payment-failed"],
+          })
+        } catch (emailError) {
+          console.error("[v0] ⚠️ Failed to send payment failed email:", emailError)
+        }
         break
       }
 
@@ -2612,6 +2675,18 @@ export async function POST(request: NextRequest) {
         console.log(`[v0] ⚠️ UNHANDLED EVENT TYPE: ${event.type}`)
         console.log(`[v0] This event was received but not processed. If this is expected, you can ignore this message.`)
         console.log(`[v0] Event data:`, JSON.stringify(event.data.object, null, 2))
+    }
+
+    try {
+      await sql`
+        INSERT INTO webhook_events (stripe_event_id, processed_at)
+        VALUES (${event.id}, NOW())
+        ON CONFLICT (stripe_event_id) DO NOTHING
+      `
+      console.log(`[v0] Event ${event.id} recorded in idempotency table (post-processing)`)
+    } catch (idempotencyError: any) {
+      console.error("[v0] Idempotency record insert failed:", idempotencyError.message)
+      // Do not fail webhook response if idempotency insert fails
     }
 
     return NextResponse.json({ received: true })

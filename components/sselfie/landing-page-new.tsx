@@ -6,6 +6,7 @@ import Image from "next/image"
 import { trackCTAClick, trackPricingView, trackCheckoutStart } from "@/lib/analytics"
 import { startEmbeddedCheckout } from "@/lib/start-embedded-checkout"
 import TestimonialCarousel from "@/components/testimonials/testimonial-carousel"
+import { formatPriceFromCents, getProductById } from "@/lib/products"
 
 export default function LandingPageNew() {
   const [activeScene, setActiveScene] = useState(0)
@@ -14,6 +15,10 @@ export default function LandingPageNew() {
   const [isPaidBlueprintEnabled, setIsPaidBlueprintEnabled] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const scenesRef = useRef<(HTMLDivElement | null)[]>([])
+  const oneTimeProduct = getProductById("one_time_session")
+  const membershipProduct = getProductById("sselfie_studio_membership")
+  const oneTimePrice = oneTimeProduct ? formatPriceFromCents(oneTimeProduct.priceInCents) : "$49"
+  const membershipPrice = membershipProduct ? formatPriceFromCents(membershipProduct.priceInCents) : "$97"
 
   const totalScenes = 9
 
@@ -645,7 +650,7 @@ export default function LandingPageNew() {
             }}
           />
           <div className="h-full w-full overflow-y-auto relative z-10">
-            <div className="content h-full justify-center min-h-[100dvh]">
+            <div className="content h-full justify-center min-h-dvh">
               <span className="label text-center w-full fade-up mt-8 md:mt-0">Join SSELFIE Studio</span>
               <h2 className="hero-title text-center mb-4 fade-up" style={{ fontSize: "32px", fontFamily: "'Times New Roman', serif" }}>
                 Join SSELFIE Studio
@@ -673,7 +678,7 @@ export default function LandingPageNew() {
                       <p className="text-stone-400 text-[10px] uppercase tracking-wider">Try It First</p>
                     </div>
                     <div className="text-right">
-                      <span className="text-xl font-serif">$49</span>
+                      <span className="text-xl font-serif">{oneTimePrice}</span>
                       <span className="text-[9px] uppercase text-stone-500 block">one-time</span>
                     </div>
                   </div>
@@ -699,7 +704,7 @@ export default function LandingPageNew() {
                       <p className="text-stone-400 text-[10px] uppercase tracking-wider">Most Popular</p>
                     </div>
                     <div className="text-right">
-                      <span className="text-xl font-serif">$97</span>
+                      <span className="text-xl font-serif">{membershipPrice}</span>
                       <span className="text-[9px] uppercase text-stone-500 block">/ month</span>
                     </div>
                   </div>
@@ -788,7 +793,7 @@ export default function LandingPageNew() {
               <h2 className="hero-title mb-6" style={{ fontSize: "36px", fontFamily: "'Times New Roman', serif" }}>
                 &quot;I built SSELFIE because showing up online used to feel impossible.&quot;
               </h2>
-              <div className="relative aspect-[3/4] max-w-[280px] mx-auto mb-6 rounded-lg overflow-hidden">
+              <div className="relative aspect-3/4 max-w-[280px] mx-auto mb-6 rounded-lg overflow-hidden">
                 <img
                   src="https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/maya-pro-generations/c8cjbbd6ehrmt0cvhqasfj7q30-CVfFXH8JOv3NtYQFMbPU0opeNPo6De.png"
                   alt="Sandra - Founder of SSELFIE"

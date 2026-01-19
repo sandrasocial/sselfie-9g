@@ -432,52 +432,54 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
           // Preview = Strategy Only (Position, Content Type, Framing, Visual Role)
           // Single Scene = Execution Only (Outfits, Locations, Poses, Activities)
           if (isPreviewFeed) {
-            console.log(`[v0] [GENERATE-SINGLE] ✅ Preview feed detected - using CANONICAL pipeline (scene-resolver → prompt-shaper)`)
+            console.log(`[v0] [GENERATE-SINGLE] ✅ Preview feed detected - using LEGACY template injection`)
             
             try {
-              // FEED PLANNER — DO NOT USE LEGACY PROMPT BUILDERS
-              // Use canonical pipeline: scene-resolver → scene-consistency → prompt-shaper
-              const { resolveConsistentScenes, buildPreviewPromptFromScenes } = await import("@/lib/feed-planner/scene-consistency")
-              
-              // Resolve all 9 scenes (single source of truth)
-              // IMPORTANT: Scenes contain EXECUTION data, but preview uses it to derive STRATEGY only
-              const scenes = await resolveConsistentScenes(feedLayout, user, {
+              const { getCoherentStyleParameters } = await import("@/lib/feed-planner/generation-helpers")
+              const {
+                category,
+                mood,
+                fashionStyle: resolvedFashionStyle,
+                adaptationApplied,
+              } = await getCoherentStyleParameters(feedLayout, user, post.position, {
                 checkSettingsPreference: false,
                 checkBlueprintSubscribers: false,
-                defaultCategory: 'minimal'  // Lifestyle individual, NOT business/CEO
+                defaultCategory: 'minimal',
               })
               
-              // 🔴 PROMPT AUTHORITY LOCK-IN: Phase 4 - Validate scene count before prompt generation
-              if (scenes.length !== 9) {
-                throw new Error(
-                  `Preview feed requires exactly 9 scenes. Got: ${scenes.length} scenes. ` +
-                  `Scene resolution failed - cannot generate preview prompt.`
-                )
+              if (adaptationApplied) {
+                console.log(`[v0] [GENERATE-SINGLE] ⚠️ Fashion style adapted for coherence: ${resolvedFashionStyle}`)
               }
               
-              console.log(`[v0] [GENERATE-SINGLE] ✅ Resolved ${scenes.length} scenes for preview feed`)
+              const { getBlueprintPhotoshootPrompt } = await import("@/lib/maya/blueprint-photoshoot-templates")
+              const fullTemplate = await getBlueprintPhotoshootPrompt(category, mood, resolvedFashionStyle)
               
-              // Build preview prompt (STRATEGY ONLY, NOT execution)
-              // This outputs position strategies, NOT scene descriptions with outfits/locations/poses
-              finalPrompt = buildPreviewPromptFromScenes(scenes)
+              const injectedTemplate = await injectAndValidateTemplate(
+                fullTemplate,
+                category,
+                mood,
+                resolvedFashionStyle,
+                user.id.toString()
+              )
               
-              chosenPromptSource = "canonical_preview_pipeline"
-              console.log("[v0] PROMPT_SOURCE=canonical_preview_pipeline")
-              console.log(`[v0] [GENERATE-SINGLE] ✅ Preview feed - 9-scene grid prompt via CANONICAL pipeline (${finalPrompt.split(/\s+/).length} words)`)
+              finalPrompt = injectedTemplate
+              chosenPromptSource = "preview_template"
+              console.log("[v0] PROMPT_SOURCE=preview_template")
+              console.log(`[v0] [GENERATE-SINGLE] ✅ Preview feed - legacy injected template (${finalPrompt.split(/\s+/).length} words)`)
               
-              // Save the preview prompt to the database
               await sql`
                 UPDATE feed_posts
                 SET prompt = ${finalPrompt}
                 WHERE id = ${postId}
               `
-            } catch (sceneError) {
-              console.error(`[v0] [GENERATE-SINGLE] ❌ Canonical pipeline failed:`, sceneError instanceof Error ? sceneError.message : "Unknown error")
-              console.error(`[v0] [GENERATE-SINGLE] ❌ Scene error stack:`, sceneError instanceof Error ? sceneError.stack : "No stack trace")
+            } catch (templateError) {
+              const errorMessage = templateError instanceof Error ? templateError.message : "Unknown error"
+              console.error(`[v0] [GENERATE-SINGLE] ❌ Preview template injection failed:`, errorMessage)
+              console.error(`[v0] [GENERATE-SINGLE] ❌ Template error stack:`, templateError instanceof Error ? templateError.stack : "No stack trace")
               return Response.json(
                 {
-                  error: "SCENE_RESOLUTION_FAILED",
-                  details: sceneError instanceof Error ? sceneError.message : "Failed to resolve scenes",
+                  error: "PREVIEW_TEMPLATE_INJECTION_FAILED",
+                  details: errorMessage,
                   position: post.position,
                   feedId: feedIdInt,
                 },

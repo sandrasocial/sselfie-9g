@@ -10,6 +10,7 @@ import { BlueprintConceptCard } from "@/components/blueprint/blueprint-concept-c
 import { Button } from "@/components/ui/button"
 import { Copy, Check, Edit } from "lucide-react"
 import BuyBlueprintModal from "@/components/sselfie/buy-blueprint-modal"
+import { trackCTAClick } from "@/lib/analytics"
 
 interface BlueprintScreenProps {
   userId: string
@@ -996,7 +997,10 @@ function BlueprintUpsell({ onUpgrade }: { onUpgrade: () => void }) {
         </div>
         <div className="text-center pt-2">
           <Button
-            onClick={onUpgrade}
+            onClick={() => {
+              trackCTAClick("blueprint_screen_upsell", "Get my 30 photos", "/checkout/blueprint")
+              onUpgrade()
+            }}
             className="bg-stone-950 text-stone-50 px-8 sm:px-12 py-3 sm:py-4 text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 rounded-lg"
           >
             Get my 30 photos

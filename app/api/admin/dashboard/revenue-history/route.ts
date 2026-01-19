@@ -6,51 +6,54 @@ const sql = neon(process.env.DATABASE_URL!)
 
 export async function GET() {
   try {
-    console.log("[v0] Fetching revenue history from Stripe...")
-    
-    const thirtyDaysAgo = Math.floor(Date.now() / 1000) - 30 * 24 * 60 * 60
-    const charges = await stripe.charges.list({
-      limit: 100,
-      created: { gte: thirtyDaysAgo },
-    })
+    console.log("[v0] Fetching revenue history from database...")
 
-    console.log("[v0] Stripe charges fetched:", charges.data.length)
+    const tableExists = await sql`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'stripe_payments'
+      )
+    `
 
     const revenueByDate = new Map<string, number>()
-    
-    charges.data
-      .filter((charge) => charge.paid && !charge.refunded && charge.livemode === true)
-      .forEach((charge) => {
-        const date = new Date(charge.created * 1000).toISOString().split("T")[0]
-        const currentRevenue = revenueByDate.get(date) || 0
-        revenueByDate.set(date, currentRevenue + charge.amount)
+
+    if (tableExists[0]?.exists) {
+      const historyRows = await sql`
+        SELECT 
+          DATE(COALESCE(payment_date, created_at)) as date,
+          COALESCE(SUM(amount_cents), 0)::int as total_cents
+        FROM stripe_payments
+        WHERE status IN ('paid', 'succeeded')
+          AND (is_test_mode = FALSE OR is_test_mode IS NULL)
+          AND COALESCE(payment_date, created_at) >= NOW() - INTERVAL '30 days'
+        GROUP BY DATE(COALESCE(payment_date, created_at))
+        ORDER BY DATE(COALESCE(payment_date, created_at)) ASC
+      `
+
+      historyRows.forEach((row: any) => {
+        const date = new Date(row.date).toISOString().split("T")[0]
+        revenueByDate.set(date, Number(row.total_cents || 0))
+      })
+    } else {
+      console.log("[v0] stripe_payments table not found - falling back to Stripe charges")
+
+      const thirtyDaysAgo = Math.floor(Date.now() / 1000) - 30 * 24 * 60 * 60
+      const charges = await stripe.charges.list({
+        limit: 100,
+        created: { gte: thirtyDaysAgo },
       })
 
-    // Get actual subscription prices from products config
-    const { PRICING_PRODUCTS } = await import("@/lib/products")
-    
-    const subscriptionRevenue = await sql`
-      SELECT 
-        DATE(created_at) as date,
-        product_type,
-        COUNT(*) as count
-      FROM subscriptions
-      WHERE 
-        is_test_mode = FALSE
-        AND status = 'active'
-        AND (product_type = 'sselfie_studio_membership' OR product_type = 'brand_studio_membership')
-        AND created_at >= NOW() - INTERVAL '30 days'
-      GROUP BY DATE(created_at), product_type
-    `
-    
-    // Calculate revenue using actual product prices
-    subscriptionRevenue.forEach((row: any) => {
-      const product = PRICING_PRODUCTS.find((p) => p.type === row.product_type)
-      const priceCents = product?.priceInCents || 0
-      const date = row.date
-      const currentRevenue = revenueByDate.get(date) || 0
-      revenueByDate.set(date, currentRevenue + (Number(row.count) * priceCents))
-    })
+      console.log("[v0] Stripe charges fetched:", charges.data.length)
+
+      charges.data
+        .filter((charge) => charge.paid && !charge.refunded && charge.livemode === true)
+        .forEach((charge) => {
+          const date = new Date(charge.created * 1000).toISOString().split("T")[0]
+          const currentRevenue = revenueByDate.get(date) || 0
+          revenueByDate.set(date, currentRevenue + charge.amount)
+        })
+    }
 
     const formattedHistory = Array.from(revenueByDate.entries())
       .map(([date, revenue]) => ({

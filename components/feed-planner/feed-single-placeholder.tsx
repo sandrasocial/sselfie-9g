@@ -6,6 +6,7 @@ import { toast } from "@/hooks/use-toast"
 import { ToastAction } from "@/components/ui/toast"
 import { Button } from "@/components/ui/button"
 import BuyBlueprintModal from "@/components/sselfie/buy-blueprint-modal"
+import { trackCTAClick } from "@/lib/analytics"
 import FreeModeUpsellModal from "./free-mode-upsell-modal"
 import { useFeedPostPolling } from "@/lib/hooks/use-feed-post-polling"
 
@@ -414,7 +415,7 @@ export default function FeedSinglePlaceholder({
         {hasImage ? (
           // Show generated image with download button
           <div className="relative group">
-            <div className="aspect-[9/16] bg-white border border-stone-200 rounded-lg overflow-hidden">
+            <div className="aspect-9/16 bg-white border border-stone-200 rounded-lg overflow-hidden">
               <img
                 src={displayImageUrl}
                 alt="Generated post"
@@ -521,7 +522,7 @@ export default function FeedSinglePlaceholder({
         ) : (
           // Show single placeholder
           <div className="relative">
-            <div className="aspect-[9/16] bg-white border-2 border-dashed border-stone-300 rounded-lg"></div>
+            <div className="aspect-9/16 bg-white border-2 border-dashed border-stone-300 rounded-lg"></div>
 
             {/* Generation button overlay - only show if NOT generating */}
             {!isPostGenerating && (
@@ -551,7 +552,7 @@ export default function FeedSinglePlaceholder({
                   {isTakingLonger && (
                     <div className="mt-4 pt-4 border-t border-stone-200">
                       <p className="text-xs font-light text-stone-600 leading-relaxed">
-                        ✨ This is taking a bit longer than expected! Your photo is being carefully crafted with high-quality details. Feel free to grab a coffee—we'll have it ready soon! ☕
+                        ✨ This is taking a bit longer than expected! Your photo is being carefully crafted with high-quality details. Feel free to grab a coffee—we&apos;ll have it ready soon! ☕
                       </p>
                     </div>
                   )}
@@ -577,6 +578,7 @@ export default function FeedSinglePlaceholder({
           <Button
             onClick={() => {
               // Always show the embedded checkout modal with 30 photos card
+              trackCTAClick("feed_preview_placeholder", "Continue Creating", "/checkout/blueprint")
               setShowBlueprintModal(true)
             }}
             className="w-full bg-stone-900 hover:bg-stone-800 text-white font-medium shadow-lg hover:shadow-xl transition-all"

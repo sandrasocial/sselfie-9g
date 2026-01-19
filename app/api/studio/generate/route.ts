@@ -5,6 +5,8 @@ import { getUserTrainedModel } from "@/lib/data/studio"
 import { createServerClient } from "@/lib/supabase/server"
 import { getReplicateClient } from "@/lib/replicate-client"
 import { checkCredits, deductCredits } from "@/lib/credits"
+import { hasStudioMembership } from "@/lib/subscription"
+import { logger } from "@/lib/logger"
 
 const sql = getDbClient()
 
@@ -45,6 +47,17 @@ export async function POST(request: NextRequest) {
     }
 
     const { prompt, category, subcategory } = await request.json()
+
+    const hasMembership = await hasStudioMembership(neonUser.id)
+    if (!hasMembership) {
+      return NextResponse.json(
+        {
+          error: "Membership required",
+          message: "Studio image generation requires an active Studio Membership.",
+        },
+        { status: 403 },
+      )
+    }
 
     if (!prompt) {
       return NextResponse.json({ error: "Prompt is required" }, { status: 400 })
@@ -156,7 +169,10 @@ export async function POST(request: NextRequest) {
         console.error(`[v0] Error triggering referral email (non-critical):`, error)
       })
     } catch (error) {
-      // Ignore errors - referral trigger is non-critical
+      logger.error("Referral trigger import failed (non-critical)", error as Error, {
+        route: "/api/studio/generate",
+        userId: neonUser.id,
+      })
     }
 
     // Wrapped in try/catch to avoid breaking the response if deduction fails
