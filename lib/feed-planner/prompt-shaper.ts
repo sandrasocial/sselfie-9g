@@ -259,6 +259,14 @@ function buildPreviewMultiPrompt(scene: FeedPlannerScene, allScenes?: FeedPlanne
  * @returns Complete prompt for single scene ready for Nano Banana Pro
  */
 function buildSingleScenePrompt(scene: FeedPlannerScene): string {
+  // 🔴 POSITION 5: SIGN/TEXT CLOSE-UP (SPECIAL HANDLING)
+  // Position 5 is the CENTER ANCHOR and should ALWAYS be a sign/text close-up with brand statement
+  // This is a special content type that does NOT include the person or identity anchor
+  if (scene.position === 5) {
+    console.log(`[SINGLE SCENE] Position 5: Routing to SIGN/TEXT builder (no person, no identity anchor)`)
+    return buildSignTextBlock(scene, scene.position, getPositionLabel(scene.position))
+  }
+  
   const parts: string[] = []
   
   // [IDENTITY ANCHOR - Required First] (25-35 words)
@@ -493,6 +501,13 @@ function buildSceneExecutionBlock(scene: FeedPlannerScene, position: number): st
     narrative: scene.narrative?.substring(0, 100),
   })
   
+  // 🔴 POSITION 5: SIGN/TEXT CLOSE-UP (ALWAYS - HIGHEST PRIORITY)
+  // Position 5 is the CENTER ANCHOR and should ALWAYS be a sign/text close-up with brand statement
+  if (position === 5) {
+    console.log(`[SCENE EXECUTION] Position 5: Routing to SIGN/TEXT block`)
+    return buildSignTextBlockPreview(scene, position, positionLabel)
+  }
+  
   // Determine content type based on framing, objects, and activity
   const isFlatlay = scene.camera.framing === 'flatlay'
   const isCloseUp = scene.camera.framing === 'close_up'
@@ -659,14 +674,46 @@ function buildPortraitBlockPreview(scene: FeedPlannerScene, position: number, po
   const pose = scene.pose?.description || 'standing'
   const lighting = scene.lighting?.description || 'natural light'
   
-  // 🔴 POSITION 5: CENTER ANCHOR - Add sign/text overlay with brand statement
-  if (position === 5) {
-    // Position 5 is the CENTER ANCHOR - should have sign with brand message or statement
-    const narrative = scene.narrative || 'Your brand statement here'
-    return `Position ${position} (${positionLabel}): ${outfit} outfit, ${pose.split(' ')[0]} in ${location}, ${framing} angle, ${lighting.replace(/_/g, ' ')}. Holding a small sign with text: "${narrative}".`
-  }
-  
   return `Position ${position} (${positionLabel}): ${outfit} outfit, ${pose.split(' ')[0]} in ${location}, ${framing} angle, ${lighting.replace(/_/g, ' ')}.`
+}
+
+/**
+ * Build Sign/Text Block - PREVIEW MODE (CONCISE)
+ * 
+ * For position 5 (center anchor): Creates a close-up of a street sign or wall sign
+ * displaying the brand statement. NO person holding the sign - the sign itself is the focus.
+ */
+function buildSignTextBlockPreview(scene: FeedPlannerScene, position: number, positionLabel: string): string {
+  const narrative = scene.narrative || 'Brand statement'
+  const aesthetic = getDetailedAestheticDescription(scene.category, scene.mood || '', scene.visualAesthetic)
+  const location = scene.location.description || 'urban street'
+  
+  return `Position ${position} (${positionLabel}): Close-up of a vintage street sign or wall-mounted sign displaying "${narrative}" in bold typography, ${location} background softly blurred, natural daylight, modern editorial lifestyle photography, ${aesthetic}.`
+}
+
+/**
+ * Build Sign/Text Block - SINGLE SCENE MODE (DETAILED)
+ * 
+ * For position 5 (center anchor): Creates a detailed close-up description of a sign/text
+ * with the brand statement. NO person holding it - environmental/lifestyle context.
+ */
+function buildSignTextBlock(scene: FeedPlannerScene, position: number, _positionLabel: string): string {
+  const narrative = scene.narrative || 'Brand statement'
+  const location = scene.location.description || 'urban street corner'
+  const lightingDesc = scene.lighting?.description || 'natural daylight'
+  const lighting = expandLightingDescription(lightingDesc, position)
+  const aesthetic = getDetailedAestheticDescription(scene.category, scene.mood || '', scene.visualAesthetic)
+  
+  // Create natural prose for sign/text scene
+  const openings = [
+    'A close-up photograph of a vintage street sign reading',
+    'An eye-level shot of a wall-mounted sign displaying',
+    'A detailed close-up of an elegant sign showcasing',
+    'A lifestyle photograph of a street sign featuring'
+  ]
+  const opening = openings[position % openings.length]
+  
+  return `${opening} "${narrative}" in bold, modern typography. The sign is positioned at eye level in ${location}, creating an authentic lifestyle aesthetic. ${lighting}. The background is softly blurred with natural bokeh, keeping focus on the crisp lettering of the sign. ${aesthetic} across the frame. Shot on iPhone 15 Pro with shallow depth of field, the sign's text remains sharp while the environment provides context without distraction.`
 }
 
 /**

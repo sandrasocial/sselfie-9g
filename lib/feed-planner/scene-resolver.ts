@@ -919,13 +919,13 @@ function deriveCameraFromActivity(
 ): FeedPlannerScene['camera'] {
   // 🔴 STRATEGIC POSITIONING FOR FEED DIVERSITY
   // Position-based framing assignment following Instagram feed layout principles
-  // This ensures diverse content types: portraits + flatlays + close-ups + texture shots
+  // This ensures diverse content types: portraits + flatlays + close-ups + texture shots + sign/text
   const strategicFraming: Record<number, FeedPlannerScene['camera']['framing']> = {
     1: 'full_body',    // Position 1: Portrait opener (strong hook)
     2: 'flatlay',      // Position 2: Object flatlay (breathing room, lifestyle context)
     3: 'full_body',    // Position 3: Portrait (dynamic variety)
     4: 'close_up',     // Position 4: Detail close-up (intimacy, personal touch)
-    5: 'full_body',    // Position 5: Portrait (center anchor - focal point)
+    5: 'close_up',     // Position 5: Sign/Text close-up (center anchor - brand statement)
     6: 'close_up',     // Position 6: Texture shot (quality/craftsmanship focus)
     7: 'full_body',    // Position 7: Portrait (lifestyle activity)
     8: 'flatlay',      // Position 8: Overhead flatlay (different perspective)
