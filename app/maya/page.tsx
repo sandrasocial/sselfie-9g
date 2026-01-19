@@ -47,14 +47,29 @@ export default async function MayaPage() {
     redirect("/auth/login?returnTo=/maya")
   }
 
-  // Fix #4: Check if user has paid_blueprint subscription (block Maya access)
-  const { hasPaidBlueprint } = await import("@/lib/subscription")
-  const isPaidBlueprint = await hasPaidBlueprint(neonUser.id)
+  // Check Maya access: Studio members always have access, even if they also have paid blueprint
+  // Priority 1: Studio Membership (highest tier) - always gets Maya
+  // Priority 2: Paid Blueprint only (no studio) - blocked from Maya
+  // Priority 3: All others (free, one-time session) - Maya access granted
+  const { hasStudioMembership, hasPaidBlueprint } = await import("@/lib/subscription")
   
-  if (isPaidBlueprint) {
-    // Block Maya access - redirect to Blueprint
-    console.log(`[Maya Page] Blocking access for paid_blueprint user ${neonUser.id}, redirecting to /blueprint`)
-    redirect("/blueprint")
+  const hasStudio = await hasStudioMembership(neonUser.id)
+  
+  if (hasStudio) {
+    // Studio members have full Maya access
+    console.log(`[Maya Page] ✅ Studio member ${neonUser.email} has Maya access`)
+  } else {
+    // For non-studio users, check if they have paid blueprint (should use Blueprint instead)
+    const isPaidBlueprint = await hasPaidBlueprint(neonUser.id)
+    
+    if (isPaidBlueprint) {
+      // Block Maya access - redirect to Blueprint
+      console.log(`[Maya Page] ❌ Paid blueprint-only user ${neonUser.email}, redirecting to /blueprint`)
+      redirect("/blueprint")
+    }
+    
+    // All other users (free, one-time session) get Maya access
+    console.log(`[Maya Page] ✅ User ${neonUser.email} has Maya access`)
   }
 
   const subscription = await getUserSubscription(neonUser.id)
