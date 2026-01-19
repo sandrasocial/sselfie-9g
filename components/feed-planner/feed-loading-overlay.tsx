@@ -10,6 +10,7 @@ interface FeedLoadingOverlayProps {
   processingStage?: string
   isValidating: boolean
   getProgressMessage: () => string
+  isTakingLonger?: boolean
 }
 
 export default function FeedLoadingOverlay({
@@ -19,6 +20,7 @@ export default function FeedLoadingOverlay({
   overallProgress,
   isValidating,
   getProgressMessage,
+  isTakingLonger,
 }: FeedLoadingOverlayProps) {
   return (
     <div className="w-full max-w-none md:max-w-[935px] mx-auto bg-white min-h-screen relative overflow-hidden">
@@ -115,6 +117,14 @@ export default function FeedLoadingOverlay({
                       <span className="text-xs text-stone-400 ml-2">(checking...)</span>
                     )}
                   </div>
+                  
+                  {isTakingLonger && (
+                    <div className="mt-6 pt-6 border-t border-stone-200">
+                      <p className="text-sm font-light text-stone-600 leading-relaxed">
+                        ✨ This is taking a bit longer than expected! Your photos are being carefully crafted with high-quality details. Feel free to grab a coffee—we'll have them ready soon! ☕
+                      </p>
+                    </div>
+                  )}
                 </div>
               </>
             )}

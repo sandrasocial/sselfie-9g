@@ -43,6 +43,10 @@ export default function FeedSinglePlaceholder({
     post?.prediction_id && !post?.image_url ? post.prediction_id : null
   )
 
+  // Track generation start time for "taking longer" message
+  const generationStartTimeRef = useRef<number | null>(null)
+  const [isTakingLonger, setIsTakingLonger] = useState(false)
+  
   // FIX: Use per-placeholder polling hook (matches concept card pattern)
   // This polls the existing /api/feed/[feedId]/check-post endpoint
   // CRITICAL: Only poll if we have predictionId AND no image_url yet
@@ -55,6 +59,9 @@ export default function FeedSinglePlaceholder({
     onComplete: (imageUrl) => {
       // Clear predictionId to stop polling
       setPredictionId(null)
+      // Reset generation timer
+      generationStartTimeRef.current = null
+      setIsTakingLonger(false)
       // Call refresh callback to update parent feed data
       if (onGenerateImage) {
         onGenerateImage()
@@ -64,6 +71,9 @@ export default function FeedSinglePlaceholder({
       console.error("[Feed Single Placeholder] ❌ Generation failed:", error)
       // Clear predictionId to stop polling
       setPredictionId(null)
+      // Reset generation timer
+      generationStartTimeRef.current = null
+      setIsTakingLonger(false)
       toast({
         title: "Generation failed",
         description: error.length > 100 ? `${error.substring(0, 100)}...` : error,
@@ -71,6 +81,36 @@ export default function FeedSinglePlaceholder({
       })
     },
   })
+  
+  // Track generation time and show "taking longer" message after 3 minutes
+  useEffect(() => {
+    if (predictionId && !post?.image_url) {
+      // Generation is active
+      if (generationStartTimeRef.current === null) {
+        generationStartTimeRef.current = Date.now()
+        setIsTakingLonger(false)
+      }
+      
+      // Check elapsed time every 10 seconds
+      const interval = setInterval(() => {
+        if (generationStartTimeRef.current) {
+          const elapsedTime = Date.now() - generationStartTimeRef.current
+          if (elapsedTime > 3 * 60 * 1000 && !isTakingLonger) {
+            console.log(`[Feed Single Placeholder] ℹ️ Generation taking longer than 3 minutes`)
+            setIsTakingLonger(true)
+          }
+        }
+      }, 10000) // Check every 10 seconds
+      
+      return () => clearInterval(interval)
+    } else {
+      // Generation stopped
+      if (generationStartTimeRef.current) {
+        generationStartTimeRef.current = null
+        setIsTakingLonger(false)
+      }
+    }
+  }, [predictionId, post?.image_url, isTakingLonger])
 
   // Update predictionId when post data changes (e.g., from parent polling)
   // FIX: Only update if post doesn't already have an image_url
@@ -504,10 +544,17 @@ export default function FeedSinglePlaceholder({
             {/* Loading state - show when generating (from API call OR from post data) */}
             {isPostGenerating && (
               <div className="absolute inset-0 bg-white/90 backdrop-blur-sm flex items-center justify-center rounded-lg">
-                <div className="text-center space-y-3 px-4">
+                <div className="text-center space-y-3 px-4 max-w-sm mx-auto">
                   <Loader2 className="w-8 h-8 text-stone-600 animate-spin mx-auto" />
                   <div className="text-sm font-medium text-stone-900">Generating your preview feed</div>
                   <div className="text-xs font-light text-stone-600">This usually takes 1-2 minutes...</div>
+                  {isTakingLonger && (
+                    <div className="mt-4 pt-4 border-t border-stone-200">
+                      <p className="text-xs font-light text-stone-600 leading-relaxed">
+                        ✨ This is taking a bit longer than expected! Your photo is being carefully crafted with high-quality details. Feel free to grab a coffee—we'll have it ready soon! ☕
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

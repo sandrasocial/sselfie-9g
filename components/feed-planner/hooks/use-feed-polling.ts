@@ -42,6 +42,8 @@ export function useFeedPolling(feedId: number | null) {
   const [hasTimedOut, setHasTimedOut] = useState(false)
   // Track last known completed count to detect new completions
   const lastCompletedCountRef = useRef<number>(0)
+  // Track if polling has taken longer than 3 minutes
+  const [isTakingLonger, setIsTakingLonger] = useState(false)
   
   // Poll both feed data AND progress endpoint to update database
   const { data: feedData, error: feedError, mutate, isLoading, isValidating } = useSWR(
@@ -57,13 +59,26 @@ export function useFeedPolling(feedId: number | null) {
           const elapsedMinutes = Math.floor(elapsedTime / 60000)
           const elapsedSeconds = Math.floor((elapsedTime % 60000) / 1000)
           
+          // Show "taking longer" message after 3 minutes
+          if (elapsedTime > 3 * 60 * 1000 && !isTakingLonger) {
+            console.log(`[useFeedPolling] ℹ️ Generation taking longer than 3 minutes, showing friendly message`)
+            console.log(`[useFeedPolling] Elapsed time: ${elapsedMinutes}m ${elapsedSeconds}s`)
+            setIsTakingLonger(true)
+          }
+          
+          // Debug: Log every 30 seconds while polling
+          if (elapsedTime % 30000 < 3000) { // Log roughly every 30 seconds
+            console.log(`[useFeedPolling] ⏱️ Still polling... ${elapsedMinutes}m ${elapsedSeconds}s elapsed, isTakingLonger: ${isTakingLonger}`)
+          }
+          
           if (elapsedTime > MAX_POLLING_DURATION) {
-            console.error(`[useFeedPolling] ⚠️ Max polling duration exceeded (10 minutes), stopping poll. Elapsed: ${elapsedMinutes}m ${elapsedSeconds}s`)
+            console.warn(`[useFeedPolling] ⏱️ Polling timeout reached (10 minutes). Elapsed: ${elapsedMinutes}m ${elapsedSeconds}s`)
+            console.log(`[useFeedPolling] 🔍 Checking for stuck posts and attempting final recovery...`)
             
             // Check Replicate status one more time before marking as failed
             const stuckPosts = data?.posts?.filter((p: any) => p.prediction_id && !p.image_url) || []
             if (stuckPosts.length > 0) {
-              console.error(`[useFeedPolling] Posts still generating after timeout:`, stuckPosts.map((p: any) => ({
+              console.warn(`[useFeedPolling] ⚠️ ${stuckPosts.length} post(s) still generating after timeout:`, stuckPosts.map((p: any) => ({
                 id: p.id,
                 position: p.position,
                 predictionId: p.prediction_id?.substring(0, 20),
@@ -93,7 +108,8 @@ export function useFeedPolling(feedId: number | null) {
                             ) || []
                             
                             if (stillStuck.length > 0) {
-                              console.error(`[useFeedPolling] ${stillStuck.length} post(s) still stuck after final check, marking as failed`)
+                              console.log(`[useFeedPolling] ⏱️ ${stillStuck.length} post(s) still stuck after final check, marking as failed`)
+                              console.log(`[useFeedPolling] ℹ️ User will be able to retry these posts manually`)
                               setHasTimedOut(true)
                               
                               stillStuck.forEach((post: any) => {
@@ -101,12 +117,12 @@ export function useFeedPolling(feedId: number | null) {
                                   .then(res => res.json())
                                   .then(result => {
                                     if (result.success) {
-                                      console.log(`[useFeedPolling] ✅ Post ${post.id} marked as failed`)
+                                      console.log(`[useFeedPolling] ✅ Post ${post.position} marked as failed, user can retry`)
                                       mutate()
                                     }
                                   })
                                   .catch(err => {
-                                    console.error(`[useFeedPolling] ❌ Failed to mark post ${post.id} as failed:`, err)
+                                    console.warn(`[useFeedPolling] ⚠️ Could not mark post ${post.position} as failed:`, err)
                                   })
                               })
                             } else {

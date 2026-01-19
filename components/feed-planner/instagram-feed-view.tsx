@@ -37,7 +37,7 @@ interface InstagramFeedViewProps {
 
 export default function InstagramFeedView({ feedId, onBack, access, onOpenWizard, onOpenWelcomeWizard, onRequireFeedStyle }: InstagramFeedViewProps) {
   // Use custom hooks for all complex logic
-  const { feedData, feedError, mutate, isLoading: isFeedLoading, isValidating } = useFeedPolling(feedId)
+  const { feedData, feedError, mutate, isLoading: isFeedLoading, isValidating, isTakingLonger } = useFeedPolling(feedId)
   const { selectedPost, setSelectedPost, showGallery, setShowGallery, showProfileGallery, setShowProfileGallery } = useFeedModals()
   
   // Removed excessive console.log statements that were causing performance issues during polling
@@ -499,6 +499,7 @@ export default function InstagramFeedView({ feedId, onBack, access, onOpenWizard
         overallProgress={overallProgress}
         isValidating={isValidating}
         getProgressMessage={getProgressMessage}
+        isTakingLonger={isTakingLonger}
       />
     )
   }
