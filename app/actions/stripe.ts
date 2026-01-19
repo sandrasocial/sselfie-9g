@@ -4,6 +4,7 @@ import { stripe } from "@/lib/stripe"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getCreditPackageById, getProductById } from "@/lib/products"
 import { createServerClient } from "@/lib/supabase/server"
+import { assertStripePricingConfig } from "@/lib/stripe/validate-pricing-config"
 
 export async function startCreditCheckoutSession(packageId: string, promoCode?: string) {
   const creditPackage = getCreditPackageById(packageId)
@@ -82,6 +83,9 @@ export async function startCreditCheckoutSession(packageId: string, promoCode?: 
 }
 
 export async function startProductCheckoutSession(productId: string, promoCode?: string) {
+  // FIX B3: Validate pricing configuration on first use
+  await assertStripePricingConfig()
+  
   const product = getProductById(productId)
   if (!product) {
     throw new Error(`Product with id "${productId}" not found`)
@@ -120,26 +124,30 @@ export async function startProductCheckoutSession(productId: string, promoCode?:
     }
   }
   
-  // Determine which Stripe Price ID to use based on product type (same as createLandingCheckoutSession)
+  // FIX B1: Removed hardcoded fallback - fail fast if env var not set
   let stripePriceId: string | undefined
+  const envVarName =
+    product.type === "one_time_session"
+      ? "STRIPE_ONE_TIME_SESSION_PRICE_ID"
+      : product.type === "paid_blueprint"
+        ? "STRIPE_PAID_BLUEPRINT_PRICE_ID"
+        : "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID"
+  
   if (product.type === "one_time_session") {
     stripePriceId = process.env.STRIPE_ONE_TIME_SESSION_PRICE_ID
   } else if (product.type === "sselfie_studio_membership") {
-    stripePriceId = process.env.STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID || "price_1SmIRaEVJvME7vkwMo5vSLzf"
+    stripePriceId = process.env.STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID
   } else if (product.type === "paid_blueprint") {
     stripePriceId = process.env.STRIPE_PAID_BLUEPRINT_PRICE_ID
   }
   stripePriceId = stripePriceId?.trim()
 
   if (!stripePriceId) {
-    const envVarName =
-      product.type === "one_time_session"
-        ? "STRIPE_ONE_TIME_SESSION_PRICE_ID"
-        : product.type === "paid_blueprint"
-          ? "STRIPE_PAID_BLUEPRINT_PRICE_ID"
-          : "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID"
-    console.error("[v0] Environment variable needed:", envVarName)
-    throw new Error(`Stripe Price ID not configured for ${productId}`)
+    console.error("[v0] ❌ CRITICAL: Missing Stripe Price ID for product:", productId)
+    console.error("[v0] ❌ Required environment variable:", envVarName)
+    throw new Error(
+      `Stripe Price ID not configured. Please contact support. (Missing: ${envVarName})`
+    )
   }
 
   let customerId: string | undefined

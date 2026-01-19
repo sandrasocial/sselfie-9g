@@ -2301,17 +2301,37 @@ export async function POST(request: NextRequest) {
         } else {
           // Grant credits for studio membership subscriptions (Creator Studio)
           if (sub.product_type === "sselfie_studio_membership") {
-            // Check if we've already granted credits for this invoice period (idempotency)
-            // Use invoice.period_start to check for duplicates, not subscription period
+            // FIX B5: Payment-level idempotency using invoice ID
+            // Check if we've already granted credits for THIS SPECIFIC INVOICE
+            const invoiceId = invoice.id
             const invoicePeriodStart = invoice.period_start
               ? new Date(invoice.period_start * 1000)
               : null
+            const invoicePeriodEnd = invoice.period_end
+              ? new Date(invoice.period_end * 1000)
+              : null
 
             let shouldGrant = true
-            if (invoicePeriodStart) {
-              // Check if we've already granted credits for this specific invoice period
-              // This prevents duplicates while allowing credits for upgrades/new subscriptions
-              const recentGrants = await sql`
+            
+            // Check 1: Have we already processed THIS invoice ID?
+            const existingGrant = await sql`
+              SELECT id, amount, created_at
+              FROM credit_transactions
+              WHERE user_id = ${sub.user_id}
+              AND transaction_type = 'subscription_grant'
+              AND stripe_payment_id = ${invoiceId}
+              LIMIT 1
+            `
+            
+            if (existingGrant.length > 0) {
+              console.log(
+                `[v0] ⏭️ Credits already granted for invoice ${invoiceId} on ${existingGrant[0].created_at}. Skipping (invoice-level idempotency).`
+              )
+              shouldGrant = false
+            } else if (invoicePeriodStart) {
+              // Check 2: Have we already granted credits for this billing period?
+              // This is a fallback check for invoices that may not have the stripe_payment_id set
+              const periodGrants = await sql`
                 SELECT COUNT(*) as count
                 FROM credit_transactions
                 WHERE user_id = ${sub.user_id}
@@ -2320,9 +2340,9 @@ export async function POST(request: NextRequest) {
                 AND created_at <= NOW()
               `
 
-              if (recentGrants[0]?.count > 0) {
+              if (periodGrants[0]?.count > 0) {
                 console.log(
-                  `[v0] ⚠️ Credits already granted for this invoice period (${recentGrants[0].count} grant(s) found). Skipping to prevent duplicates.`,
+                  `[v0] ⚠️ Credits already granted for billing period starting ${invoicePeriodStart.toISOString()} (${periodGrants[0].count} grant(s) found). Skipping to prevent duplicates.`
                 )
                 shouldGrant = false
               }
@@ -2339,6 +2359,25 @@ export async function POST(request: NextRequest) {
                   "sselfie_studio_membership",
                   false, // Always false for production payments
                 )
+                
+                // FIX B5: Update the credit transaction to include invoice ID for idempotency
+                if (result.success) {
+                  try {
+                    await sql`
+                      UPDATE credit_transactions
+                      SET stripe_payment_id = ${invoiceId}
+                      WHERE user_id = ${sub.user_id}
+                      AND transaction_type = 'subscription_grant'
+                      AND stripe_payment_id IS NULL
+                      AND created_at >= NOW() - INTERVAL '10 seconds'
+                      LIMIT 1
+                    `
+                    console.log(`[v0] ✅ Updated credit transaction with invoice ID for idempotency`)
+                  } catch (updateError: any) {
+                    console.warn(`[v0] ⚠️ Failed to update credit transaction with invoice ID:`, updateError.message)
+                    // Non-critical - credits were granted successfully
+                  }
+                }
                 if (result.success) {
                   console.log(
                     `[v0] ✅ Monthly credits granted to user ${sub.user_id}. New balance: ${result.newBalance}`,

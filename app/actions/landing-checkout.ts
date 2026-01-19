@@ -3,11 +3,15 @@
 import { stripe } from "@/lib/stripe"
 import { getProductById } from "@/lib/products"
 import { neon } from "@neondatabase/serverless"
-import type Stripe from "stripe" // Declare the Stripe variable
+import type Stripe from "stripe"
+import { assertStripePricingConfig } from "@/lib/stripe/validate-pricing-config" // Declare the Stripe variable
 
 const ENABLE_BETA_DISCOUNT = false
 
 export async function createLandingCheckoutSession(productId: string, promoCode?: string, customerEmail?: string | null) {
+  // FIX B3: Validate pricing configuration on first use
+  await assertStripePricingConfig()
+  
   console.log("[v0] Creating checkout session for product:", productId, promoCode ? `with promo: ${promoCode}` : "")
 
   const product = getProductById(productId)
@@ -29,88 +33,79 @@ export async function createLandingCheckoutSession(productId: string, promoCode?
   })
 
   // Determine which Stripe Price ID to use based on product type
+  // FIX B1: Removed hardcoded fallback - fail fast if env var not set
   let stripePriceId: string | undefined
+  const envVarName =
+    product.type === "one_time_session"
+      ? "STRIPE_ONE_TIME_SESSION_PRICE_ID"
+      : product.type === "paid_blueprint"
+        ? "STRIPE_PAID_BLUEPRINT_PRICE_ID"
+        : "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID"
+  
   if (product.type === "one_time_session") {
     stripePriceId = process.env.STRIPE_ONE_TIME_SESSION_PRICE_ID
   } else if (product.type === "sselfie_studio_membership") {
-    // CRITICAL: Use correct price ID for Creator Studio membership
-    // Fallback to correct price ID if env var is not set
-    stripePriceId = process.env.STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID || "price_1SmIRaEVJvME7vkwMo5vSLzf"
+    stripePriceId = process.env.STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID
   } else if (product.type === "paid_blueprint") {
     stripePriceId = process.env.STRIPE_PAID_BLUEPRINT_PRICE_ID
   }
   stripePriceId = stripePriceId?.trim()
 
   if (!stripePriceId) {
-    console.error("[v0] Missing Stripe Price ID for:", productId)
-    const envVarName =
-      product.type === "one_time_session"
-        ? "STRIPE_ONE_TIME_SESSION_PRICE_ID"
-        : product.type === "paid_blueprint"
-          ? "STRIPE_PAID_BLUEPRINT_PRICE_ID"
-          : "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID"
-    console.error("[v0] Environment variable needed:", envVarName)
-    throw new Error(`Stripe Price ID not configured for ${productId}`)
+    console.error("[v0] ❌ CRITICAL: Missing Stripe Price ID for product:", productId)
+    console.error("[v0] ❌ Required environment variable:", envVarName)
+    console.error("[v0] ❌ This checkout cannot proceed without proper price configuration")
+    throw new Error(
+      `Stripe Price ID not configured. Please contact support. (Missing: ${envVarName})`
+    )
   }
 
   console.log("[v0] Using Stripe Price ID:", stripePriceId)
 
-  // Validate that the price ID exists and is active
+  // FIX B2: Strict validation - NO automatic fallback to "any active price"
+  // Validate that the configured price ID exists and is active
   try {
     const priceObj = await stripe.prices.retrieve(stripePriceId)
+    
     if (!priceObj.active) {
-      console.error("[v0] Price ID is inactive:", stripePriceId)
+      console.error("[v0] ❌ CRITICAL: Configured price ID is INACTIVE:", stripePriceId)
+      console.error("[v0] ❌ Environment variable:", envVarName)
+      console.error("[v0] ❌ This indicates a configuration error that must be fixed")
       
-      // Try to find an active price for the same Stripe product
-      const stripeProduct = await stripe.products.retrieve(priceObj.product as string)
-      const activePrices = await stripe.prices.list({
-        product: stripeProduct.id,
-        active: true,
-        limit: 10,
-      })
-      
-      if (activePrices.data.length > 0) {
-        const activePrice = activePrices.data.find(
-          (p) => 
-            (isSubscription && p.recurring) || 
-            (!isSubscription && !p.recurring)
-        ) || activePrices.data[0]
-        
-        console.log("[v0] Found active price, using:", activePrice.id)
-        stripePriceId = activePrice.id
-      } else {
-        const envVarSuffix = 
-          product.type === "one_time_session" 
-            ? "ONE_TIME_SESSION" 
-            : product.type === "paid_blueprint"
-              ? "PAID_BLUEPRINT"
-              : "SSELFIE_STUDIO_MEMBERSHIP"
-        throw new Error(
-          `Price ID ${stripePriceId} is inactive and no active price found for Stripe product ${stripeProduct.id}. ` +
-          `Please update STRIPE_${envVarSuffix}_PRICE_ID ` +
-          `environment variable with an active price ID.`
-        )
-      }
-    }
-  } catch (error: any) {
-    if (error.message && error.message.includes("inactive")) {
-      throw error
-    }
-    // If price doesn't exist, throw helpful error
-    if (error.code === "resource_missing") {
-      const envVarSuffix = 
-        product.type === "one_time_session" 
-          ? "ONE_TIME_SESSION" 
-          : product.type === "paid_blueprint"
-            ? "PAID_BLUEPRINT"
-            : "SSELFIE_STUDIO_MEMBERSHIP"
       throw new Error(
-        `Price ID ${stripePriceId} not found in Stripe. ` +
-        `Please check your STRIPE_${envVarSuffix}_PRICE_ID ` +
-        `environment variable.`
+        `The configured price for ${product.name} is inactive in Stripe. ` +
+        `Please contact support. (Price ID: ${stripePriceId}, Env: ${envVarName})`
       )
     }
-    // Re-throw other errors
+    
+    // Additional validation: verify price matches expected product type
+    if (isSubscription && !priceObj.recurring) {
+      console.error("[v0] ❌ CRITICAL: Price is one-time but product requires subscription")
+      throw new Error(
+        `Price configuration error for ${product.name}. Please contact support.`
+      )
+    }
+    
+    if (!isSubscription && priceObj.recurring) {
+      console.error("[v0] ❌ CRITICAL: Price is subscription but product is one-time")
+      throw new Error(
+        `Price configuration error for ${product.name}. Please contact support.`
+      )
+    }
+    
+    console.log("[v0] ✅ Price validation passed:", stripePriceId, `($${(priceObj.unit_amount || 0) / 100})`)
+  } catch (error: any) {
+    // If price doesn't exist, throw helpful error
+    if (error.code === "resource_missing") {
+      console.error("[v0] ❌ CRITICAL: Price ID not found in Stripe:", stripePriceId)
+      console.error("[v0] ❌ Environment variable:", envVarName)
+      
+      throw new Error(
+        `The configured price for ${product.name} does not exist in Stripe. ` +
+        `Please contact support. (Price ID: ${stripePriceId}, Env: ${envVarName})`
+      )
+    }
+    // Re-throw all errors (including our custom validation errors)
     throw error
   }
 

@@ -130,18 +130,20 @@ async function getEligibleMembers() {
     SELECT am.user_id, am.product_type, mg.last_grant
     FROM active_members am
     LEFT JOIN monthly_grants mg ON mg.user_id = am.user_id
-    WHERE mg.last_grant IS NULL OR mg.last_grant < NOW() - INTERVAL '40 days'
+    WHERE mg.last_grant IS NULL OR mg.last_grant < NOW() - INTERVAL '25 days'
   `
 }
 
 async function grantMonthlyCredits(userId: string, hasTestMode: boolean) {
+  // FIX B6: Use 25-day window instead of 40 days (monthly billing is ~30 days)
+  // This prevents accidental double-grants while still catching missed grants
   const recent = await sql`
     SELECT 1
     FROM credit_transactions
     WHERE user_id = ${userId}
       AND transaction_type = 'subscription_grant'
       AND description = ${MONTHLY_GRANT_DESC}
-      AND created_at > NOW() - INTERVAL '40 days'
+      AND created_at > NOW() - INTERVAL '25 days'
     LIMIT 1
   `
   if (recent.length > 0) {

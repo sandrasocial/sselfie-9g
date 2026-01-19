@@ -99,7 +99,8 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ requiresCheckout: true, clientSecret })
       }
 
-      // Perform upgrade with proration
+      // FIX B4: Change proration behavior to apply at next renewal (more predictable)
+      // This prevents surprise mid-cycle charges
       await stripe.subscriptions.update(subscription.stripe_subscription_id, {
         items: [
           {
@@ -107,14 +108,19 @@ export async function POST(req: NextRequest) {
             price: targetPriceId,
           },
         ],
-        proration_behavior: "create_prorations",
+        proration_behavior: "none", // Apply new price at next renewal (no immediate charge)
         metadata: {
           ...stripeSub.metadata,
           upgraded_from: subscription.product_type ?? "unknown",
           upgraded_to: targetTier,
+          upgrade_date: new Date().toISOString(),
           user_id: neonUser.id,
         },
       })
+      
+      console.log(
+        `[UPGRADE_API] ✅ Subscription upgraded. New price will apply at next renewal (${new Date(stripeSub.current_period_end * 1000).toISOString().split('T')[0]})`
+      )
 
       // Reflect change in local database
       await sql`
