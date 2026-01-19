@@ -8,32 +8,37 @@
 /**
  * Maps fashion style from wizard/onboarding to vibe library format
  * 
- * Wizard styles: casual, business, trendy, timeless
+ * Wizard styles: casual, business, trendy, timeless, bohemian, athletic
  * Vibe library styles: business, casual, bohemian, classic, trendy, athletic
  * 
  * @param wizardStyle - Style from brand profile wizard
- * @returns Mapped style for vibe library (defaults to 'business')
+ * @returns Mapped style for vibe library (defaults to 'casual' - neutral lifestyle)
  */
 export function mapFashionStyleToVibeLibrary(wizardStyle: string | null | undefined): string {
   if (!wizardStyle) {
-    return 'business' // Default
+    return 'casual' // Changed from 'business' - neutral lifestyle default
   }
   
   const style = wizardStyle.toLowerCase().trim()
   
-  // Direct mappings
+  // Direct mappings (case-insensitive, tolerant)
   const styleMap: Record<string, string> = {
     'casual': 'casual',
     'business': 'business',
     'business professional': 'business',
+    'professional': 'business',
     'trendy': 'trendy',
     'trendy/fashion-forward': 'trendy',
     'fashion-forward': 'trendy',
+    'fashion forward': 'trendy',
     'timeless': 'classic',
     'timeless classic': 'classic',
     'classic': 'classic',
     'bohemian': 'bohemian',
+    'boho': 'bohemian',
     'athletic': 'athletic',
+    'athleisure': 'athletic',
+    'sporty': 'athletic',
   }
   
   // Try exact match first
@@ -41,16 +46,17 @@ export function mapFashionStyleToVibeLibrary(wizardStyle: string | null | undefi
     return styleMap[style]
   }
   
-  // Try partial match
+  // Try partial match (more tolerant)
   for (const [key, value] of Object.entries(styleMap)) {
     if (style.includes(key) || key.includes(style)) {
+      console.log(`[Fashion Style Mapper] Partial match: "${wizardStyle}" → "${value}"`)
       return value
     }
   }
   
-  // Default to business if no match
-  console.warn(`[Fashion Style Mapper] Unknown fashion style "${wizardStyle}", defaulting to "business"`)
-  return 'business'
+  // Default to casual (lifestyle) if no match - NOT business
+  console.warn(`[Fashion Style Mapper] Unknown fashion style "${wizardStyle}", defaulting to "casual" (lifestyle)`)
+  return 'casual'
 }
 
 /**

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
+import { useToast } from "@/hooks/use-toast"
 
 /**
  * Hook for polling individual feed post generation status
@@ -30,10 +31,14 @@ export function useFeedPostPolling({
   onComplete?: (imageUrl: string) => void
   onError?: (error: string) => void
 }) {
+  const { toast } = useToast()
   const [status, setStatus] = useState<"idle" | "generating" | "completed" | "failed">("idle")
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const startTimeRef = useRef<number | null>(null)
+  const slowWarningShownRef = useRef<boolean>(false)
+  const verySlowWarningShownRef = useRef<boolean>(false)
 
   // Check post status (matches concept card pattern)
   const checkStatus = useCallback(async () => {
@@ -47,7 +52,22 @@ export function useFeedPostPolling({
       )
 
       if (!response.ok) {
-        throw new Error(`Failed to check status: ${response.statusText}`)
+        // Try to get error details from response
+        let errorDetails = response.statusText
+        try {
+          const errorData = await response.json()
+          errorDetails = errorData.details || errorData.error || response.statusText
+        } catch {
+          // If JSON parsing fails, use statusText
+        }
+        
+        // Don't throw for 503 (Service Unavailable) - allow retry
+        if (response.status === 503) {
+          console.warn(`[useFeedPostPolling] Service unavailable for post ${postId}, will retry:`, errorDetails)
+          return // Don't throw, allow polling to continue
+        }
+        
+        throw new Error(`Failed to check status (${response.status}): ${errorDetails}`)
       }
 
       const data = await response.json()
@@ -119,20 +139,126 @@ export function useFeedPostPolling({
           onError(errorMessage)
         }
       } else {
-        // Still processing (processing, starting, etc.)
+        // Still processing (processing, starting, queued, etc.)
         setStatus("generating")
         setError(null)
+        
+        // Check how long it's been and show user-friendly notifications
+        if (!startTimeRef.current) {
+          startTimeRef.current = Date.now()
+        }
+        
+        const elapsedSeconds = Math.floor((Date.now() - startTimeRef.current) / 1000)
+        
+        // Show "taking longer than expected" message after 90 seconds (1.5 min)
+        if (elapsedSeconds > 90 && !slowWarningShownRef.current) {
+          slowWarningShownRef.current = true
+          toast({
+            title: "Still generating...",
+            description: "Your image is taking a bit longer than usual. Replicate might be queued. We'll keep trying.",
+            duration: 5000,
+          })
+        }
+        
+        // Show "still working" message after 3 minutes
+        if (elapsedSeconds > 180 && !verySlowWarningShownRef.current) {
+          verySlowWarningShownRef.current = true
+          toast({
+            title: "Generation in progress",
+            description: "Your image is still being generated. This can take up to 5 minutes during peak times.",
+            duration: 5000,
+          })
+        }
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "Failed to check generation status"
-      console.error(`[useFeedPostPolling] Error checking post ${postId}:`, err)
+      // Extract error message with better handling for various error types
+      let errorMessage = "Failed to check generation status"
+      let errorDetails: any = {}
+      
+      if (err instanceof Error) {
+        errorMessage = err.message || errorMessage
+        errorDetails = {
+          name: err.name,
+          message: err.message,
+          stack: err.stack?.substring(0, 200), // First 200 chars of stack
+        }
+      } else if (typeof err === 'string') {
+        errorMessage = err
+      } else if (err && typeof err === 'object') {
+        // Try to extract meaningful information from error object
+        errorDetails = err
+        if ('message' in err && typeof err.message === 'string') {
+          errorMessage = err.message
+        } else if ('error' in err && typeof err.error === 'string') {
+          errorMessage = err.error
+        } else if ('details' in err && typeof err.details === 'string') {
+          errorMessage = err.details
+        } else {
+          // If it's an empty object or has no message, use stringified version
+          const stringified = JSON.stringify(err)
+          if (stringified !== '{}') {
+            errorMessage = `Error: ${stringified.substring(0, 200)}`
+          }
+        }
+      }
+      
+      const isRetryable = errorMessage.includes("503") || 
+                         errorMessage.includes("Service Unavailable") ||
+                         errorMessage.includes("Network") ||
+                         errorMessage.includes("fetch") ||
+                         errorMessage.includes("timeout") ||
+                         errorMessage.includes("canceled") ||
+                         errorMessage.includes("cancelled")
+      
+      if (isRetryable) {
+        // Retryable errors - log but don't stop polling
+        console.warn(`[useFeedPostPolling] Retryable error for post ${postId}, will retry:`, errorMessage)
+        
+        // Show user-friendly message for canceled/queued errors
+        if (errorMessage.includes("cancel")) {
+          toast({
+            title: "Generation queued",
+            description: "Replicate is processing your request. This might take a few minutes.",
+            duration: 4000,
+          })
+        }
+        
+        setError(null) // Clear error for retryable issues
+        return // Don't throw, allow polling to continue
+      }
+      
+      // Non-retryable errors - log with full context
+      // Log errorMessage directly (not in object) to avoid empty {} display
+      console.error(`[useFeedPostPolling] Error checking post ${postId}: ${errorMessage}`)
+      console.error(`[useFeedPostPolling] Error context:`, {
+        errorType: err instanceof Error ? err.constructor.name : typeof err,
+        errorDetails: Object.keys(errorDetails).length > 0 ? errorDetails : 'No additional details',
+        postId,
+        predictionId,
+        feedId,
+        rawError: err // Include raw error for full inspection
+      })
 
       // Don't stop polling on network errors - retry on next interval
       // Only stop on actual generation failures
       setError(errorMessage)
+      
+      // Show user-friendly error toast for non-retryable errors
+      if (!isRetryable) {
+        // Use Replicate error handler for friendly messages
+        import("@/lib/replicate-error-handler").then(({ getReplicateErrorMessage }) => {
+          const friendlyError = getReplicateErrorMessage(err)
+          toast({
+            title: "Generation issue",
+            description: friendlyError.userMessage,
+            variant: "destructive",
+            duration: 7000,
+          })
+        })
+      }
 
-      // Call error callback for actual errors
-      if (onError && errorMessage.includes("Generation failed")) {
+      // Call error callback for actual errors (not retryable ones)
+      if (onError && errorMessage.includes("Generation failed") && !isRetryable) {
         onError(errorMessage)
       }
     }

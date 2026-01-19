@@ -1,4 +1,5 @@
 import { streamText, convertToModelMessages, type UIMessage } from "ai"
+import { createAnthropic } from "@ai-sdk/anthropic"
 import { getMayaSystemPrompt, MAYA_CLASSIC_CONFIG, MAYA_PRO_CONFIG } from "@/lib/maya/mode-adapters"
 import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
 import { createServerClient } from "@/lib/supabase/server"
@@ -403,10 +404,42 @@ export async function POST(req: Request) {
 
     console.log("[v0] Conversation summary length:", conversationSummary.length)
 
+    // 🔴 CRITICAL FIX: Filter out messages with empty content BEFORE normalization
+    // AI SDK doesn't allow empty messages except for the optional final assistant message
+    const messagesWithContent = messages.filter((m: any) => {
+      if (!m || !m.role) return false
+      
+      // Check if message has any content
+      let hasContent = false
+      
+      // Check parts array
+      if (m.parts && Array.isArray(m.parts) && m.parts.length > 0) {
+        // Check if any part has actual content
+        hasContent = m.parts.some((p: any) => {
+          if (p && p.type === "text" && p.text && p.text.trim().length > 0) return true
+          if (p && (p.type === "image" || p.type === "file")) return true
+          return false
+        })
+      }
+      
+      // Check content field
+      if (!hasContent && typeof m.content === "string" && m.content.trim().length > 0) {
+        hasContent = true
+      }
+      
+      if (!hasContent) {
+        console.log("[v0] ⚠️ Filtering out message with empty content:", m.id || "unknown", m.role)
+      }
+      
+      return hasContent
+    })
+    
+    console.log("[v0] Filtered", messages.length, "messages to", messagesWithContent.length, "messages with content")
+    
     // CRITICAL: Normalize messages to ensure they have 'parts' array format
     // convertToModelMessages expects messages with 'parts' array, not just 'content' field
     // CRITICAL: Remove 'content' field when creating 'parts' to avoid dual-field structure
-    const normalizedMessages = messages.map((m: any) => {
+    const normalizedMessages = messagesWithContent.map((m: any) => {
       // Skip normalization if message already has valid non-empty 'parts' array
       // Also remove 'content' field if present to avoid dual-field issues
       if (m.parts && Array.isArray(m.parts) && m.parts.length > 0) {
@@ -414,20 +447,21 @@ export async function POST(req: Request) {
         return rest // Remove 'content' field if it exists
       }
       
-      // If message has empty 'parts' array, normalize it to ensure at least one empty text part
-      // This prevents convertToModelMessages from failing on messages with empty parts
+      // If message has empty 'parts' array, skip it (should have been filtered above)
+      // This should not happen after filtering, but add safety check
       if (m.parts && Array.isArray(m.parts) && m.parts.length === 0) {
-        const { content, parts, ...rest } = m
-        return {
-          ...rest, // Preserve id, role, timestamp, and all other metadata (excluding content and parts)
-          parts: [{ type: "text", text: "" }], // Normalize empty parts to empty text part
-        }
+        console.warn("[v0] ⚠️ Message with empty parts array passed filter (should not happen)")
+        return null // Will be filtered out
       }
       
       // If message has 'content' field (string) but no 'parts', convert it to 'parts' format
       // Remove 'content' field to avoid dual-field structure that could confuse convertToModelMessages
-      // Always normalize string content, even if empty, to maintain consistent message structure
+      // Content should not be empty after filtering, but validate anyway
       if (typeof m.content === "string") {
+        if (m.content.trim().length === 0) {
+          console.warn("[v0] ⚠️ Message with empty string content passed filter (should not happen)")
+          return null // Will be filtered out
+        }
         const { content, ...rest } = m
         return {
           ...rest, // Preserve id, role, timestamp, and all other metadata (excluding content)
@@ -437,23 +471,23 @@ export async function POST(req: Request) {
       
       // If message has 'content' as array (already in parts-like format), convert to parts
       // Remove 'content' field to avoid dual-field structure
-      // Handle empty arrays to maintain consistent message structure
+      // Empty arrays should have been filtered above
       if (Array.isArray(m.content)) {
+        if (m.content.length === 0) {
+          console.warn("[v0] ⚠️ Message with empty content array passed filter (should not happen)")
+          return null // Will be filtered out
+        }
         const { content, ...rest } = m
         return {
           ...rest, // Preserve id, role, timestamp, and all other metadata (excluding content)
-          parts: content.length > 0 ? content : [{ type: "text", text: "" }], // Normalize empty arrays to empty text part
+          parts: content, // Convert content array to parts
         }
       }
       
-      // If message has neither 'parts' nor 'content', create empty parts array
-      // This ensures all messages have a consistent structure
+      // If message has neither 'parts' nor 'content', skip it (should have been filtered above)
       if (!m.parts && !m.content) {
-        const { content, parts, ...rest } = m
-        return {
-          ...rest, // Preserve id, role, timestamp, and all other metadata
-          parts: [{ type: "text", text: "" }], // Create empty text part for normalization
-        }
+        console.warn("[v0] ⚠️ Message with no parts or content passed filter (should not happen)")
+        return null // Will be filtered out
       }
       
       // Keep message as-is if it doesn't match above patterns (should rarely happen)
@@ -464,7 +498,9 @@ export async function POST(req: Request) {
       }
       
       return m
-    })
+    }).filter((m: any) => m !== null) // Remove any null messages from normalization
+
+    console.log("[v0] Normalized", normalizedMessages.length, "messages (after filtering nulls)")
 
     // Convert UI messages to model messages using AI SDK's convertToModelMessages
     // This properly handles images, text, and other content types
@@ -771,9 +807,20 @@ export async function POST(req: Request) {
     // Add user context to system prompt
     // Studio Pro mode: Add to Pro personality (which doesn't include it by default)
     // Classic mode: Add to standard personality (which also doesn't include it by default)
+    // 🔴 CRITICAL FIX: Validate context size before adding to prevent "Payload Too Large" errors
     if (userContext) {
+      const MAX_CONTEXT_LENGTH = 50000 // 50KB max
+      let finalUserContext = userContext
+      if (userContext.length > MAX_CONTEXT_LENGTH) {
+        console.error(
+          `[v0] ❌ ERROR: User context too large (${userContext.length} chars), truncating to prevent API error`
+        )
+        // This should have been caught in getUserContextForMaya, but add safety check here too
+        finalUserContext = userContext.substring(0, MAX_CONTEXT_LENGTH) + "\n\n[Context truncated due to size]"
+      }
+      
       systemPrompt += `\n\n## USER CONTEXT (BRAND PROFILE / WIZARD)
-${userContext}
+${finalUserContext}
 
 **CRITICAL - USE THEIR BRAND PROFILE:**
 - This is their brand profile (wizard) data - their style preferences, brand story, aesthetic, and vision
@@ -1068,10 +1115,16 @@ You: "Love the cozy fall vibe! 🥰 Creating some concepts with warm textures, t
 - ❌ DO NOT stop before including the [GENERATE_CONCEPTS] trigger
 - ❌ DO NOT use generic, cold responses - always be warm and enthusiastic` : ''}`
 
+    // Create Anthropic provider with direct API key (bypasses AI Gateway)
+    // This ensures Maya uses Claude directly, not through Gateway
+    const anthropic = createAnthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+    })
+
     let result
     try {
       result = streamText({
-        model: "anthropic/claude-sonnet-4-20250514",
+        model: anthropic("claude-sonnet-4-20250514"),
         system: systemPrompt,
         messages: modelMessages,
         maxTokens: 4096, // CRITICAL: Ensure Maya has enough tokens to complete response including [GENERATE_CONCEPTS] trigger
@@ -1079,7 +1132,43 @@ You: "Love the cozy fall vibe! 🥰 Creating some concepts with warm textures, t
       })
     } catch (streamError) {
       console.error("[v0] Error in streamText call:", streamError)
-      throw streamError // Re-throw to be caught by outer catch block
+      
+      // If streamText fails (e.g., Gateway error), return a streaming error response
+      // The client expects a streaming format, not JSON
+      const errorMessage = streamError instanceof Error 
+        ? (streamError.message.includes("Gateway") || streamError.message.includes("gateway")
+          ? "AI service temporarily unavailable. Please try again in a moment."
+          : streamError.message)
+        : "Failed to process chat request"
+      
+      console.error("[v0] ❌ Returning streaming error response:", errorMessage)
+      
+      // Return a streaming error response in the format expected by AI SDK
+      // The SDK expects Server-Sent Events (SSE) format with specific structure
+      const encoder = new TextEncoder()
+      const errorStream = new ReadableStream({
+        start(controller) {
+          // AI SDK expects error in this format: "0:{"type":"error","error":{"message":"..."}}"
+          const errorData = {
+            type: "error",
+            error: {
+              message: errorMessage,
+            },
+          }
+          // Format: "0:" prefix + JSON data + "\n\n"
+          controller.enqueue(encoder.encode(`0:${JSON.stringify(errorData)}\n\n`))
+          controller.close()
+        },
+      })
+      
+      return new Response(errorStream, {
+        status: 200, // Use 200 to avoid triggering HTTP error handlers
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive",
+        },
+      })
     }
 
     // Save chat to database - ensure chat exists with correct chat_type
@@ -1143,7 +1232,45 @@ You: "Love the cozy fall vibe! 🥰 Creating some concepts with warm textures, t
       console.error("[v0] Failed to deduct credits for Maya chat (non-fatal):", deductError)
     }
 
-    return result.toUIMessageStreamResponse()
+    try {
+      return result.toUIMessageStreamResponse()
+    } catch (streamResponseError) {
+      // If converting to stream response fails (e.g., Gateway error during streaming)
+      console.error("[v0] Error converting to stream response:", streamResponseError)
+      
+      const errorMessage = streamResponseError instanceof Error 
+        ? (streamResponseError.message.includes("Gateway") || streamResponseError.message.includes("gateway")
+          ? "AI service temporarily unavailable. Please try again in a moment."
+          : streamResponseError.message)
+        : "Failed to process chat request"
+      
+      // Return a streaming error response in the format expected by AI SDK
+      // The SDK expects Server-Sent Events (SSE) format with specific structure
+      const encoder = new TextEncoder()
+      const errorStream = new ReadableStream({
+        start(controller) {
+          // AI SDK expects error in this format: "0:{"type":"error","error":{"message":"..."}}"
+          const errorData = {
+            type: "error",
+            error: {
+              message: errorMessage,
+            },
+          }
+          // Format: "0:" prefix + JSON data + "\n\n"
+          controller.enqueue(encoder.encode(`0:${JSON.stringify(errorData)}\n\n`))
+          controller.close()
+        },
+      })
+      
+      return new Response(errorStream, {
+        status: 200, // Use 200 to avoid triggering HTTP error handlers
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          "Connection": "keep-alive",
+        },
+      })
+    }
   } catch (error) {
     // Log detailed error information
     let errorMessage = "Failed to process chat"
@@ -1155,6 +1282,17 @@ You: "Love the cozy fall vibe! 🥰 Creating some concepts with warm textures, t
         message: error.message,
         stack: error.stack,
         name: error.name,
+      }
+      
+      // Check for Gateway/AI Gateway errors
+      if (errorMessage.includes("Gateway") || errorMessage.includes("gateway") || errorMessage.includes("AI Gateway")) {
+        errorMessage = "AI service temporarily unavailable. Please try again in a moment."
+        console.error("[v0] ❌ AI Gateway error detected:", {
+          originalError: error.message,
+          stack: error.stack,
+          timestamp: new Date().toISOString(),
+          suggestion: "Check AI_GATEWAY_API_KEY environment variable",
+        })
       }
     } else if (error && typeof error === "object") {
       errorDetails = error
@@ -1170,12 +1308,23 @@ You: "Love the cozy fall vibe! 🥰 Creating some concepts with warm textures, t
       timestamp: new Date().toISOString(),
     })
     
-    return NextResponse.json(
-      { 
+    // Return error response that useChat can handle
+    // The AI SDK's useChat expects either a streaming response or a proper error response
+    // When streamText fails, we return a JSON error that the client's onError handler will catch
+    // The "Invalid error response format" occurs when the SDK tries to parse a non-streaming error as a stream
+    // By returning a proper error response with status 500, the SDK should route it to onError
+    return new Response(
+      JSON.stringify({
         error: errorMessage,
-        details: process.env.NODE_ENV === "development" ? errorDetails : undefined,
-      }, 
-      { status: 500 }
+        message: errorMessage,
+        ...(process.env.NODE_ENV === "development" ? { details: errorDetails } : {}),
+      }),
+      {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
     )
   }
 }

@@ -310,15 +310,18 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
 
       {/* Instagram Image */}
       <div className="relative aspect-square bg-gradient-to-br from-stone-50 to-stone-100">
-        {post.image_url ? (
-          <Image
-            src={post.image_url || "/placeholder.svg"}
-            alt={`Post ${post.position}`}
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, 470px"
-          />
-        ) : post.generation_status === "generating" && post.prediction_id ? (
+        {/* PHASE 5 FIX: Use preview_image_url as fallback for preview feeds */}
+        {(() => {
+          const imageUrl = post.image_url || (post as any).preview_image_url
+          return imageUrl ? (
+            <Image
+              src={imageUrl || "/placeholder.svg"}
+              alt={`Post ${post.position}`}
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 470px"
+            />
+          ) : post.generation_status === "generating" && post.prediction_id ? (
           <div className="w-full h-full flex flex-col items-center justify-center">
             <div className="relative mb-4">
               <div className="w-16 h-16 rounded-full border-4 border-stone-200 border-t-stone-900 animate-spin"></div>
@@ -373,7 +376,8 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
               <span className="text-[10px] font-medium text-stone-700">{post.position}</span>
             </div>
           </div>
-        )}
+          )
+        })()}
       </div>
 
       {/* Instagram Action Bar */}

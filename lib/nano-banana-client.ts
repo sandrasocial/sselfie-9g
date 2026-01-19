@@ -69,45 +69,36 @@ export async function generateWithNanoBanana(
   })
 
   try {
-    // CRITICAL: Add "Generate an image of..." prefix to prevent "No images were returned" errors
-    // Nano Banana Pro sometimes gets confused if the prompt doesn't explicitly request image generation
-    // IMPORTANT: Preserve identity anchor if present (it should always be first)
-    let finalPrompt = input.prompt.trim()
-    const promptLower = finalPrompt.toLowerCase()
+    // ❄️ FROZEN — DO NOT MODIFY PROMPTS HERE
+    // Feed Planner prompts come from prompt-shaper.ts (THE AUTHORITY)
+    // This file may pass data to Replicate, but may NOT modify Feed Planner prompts
+    // 
+    // NOTE: Feed Planner prompts from prompt-shaper.ts now ALWAYS include identity anchors
+    // This fallback is only for legacy non-Feed-Planner paths (if any exist)
+    // 
+    // Nano Banana Pro expects plain natural language with identity anchor
+    // 🔴 PROMPT AUTHORITY LOCK-IN: Phase 2 - Identity anchor injection REMOVED
+    // All Feed Planner prompts from prompt-shaper.ts already include identity anchors
+    // No mutation of prompts after canonical builder - prompts pass through unchanged
+    // NO instruction phrases like "Generate an image of" or "Shows the subject"
+    const finalPrompt = input.prompt.trim()
     
-    // Check if prompt already contains identity reference anchor
-    const hasIdentityAnchor = promptLower.includes('use the uploaded photos') || 
-                              promptLower.includes('identity reference') ||
-                              promptLower.startsWith('use the uploaded photos')
-    
-    // Only add prefix if prompt doesn't already start with generation-related phrases
-    if (!promptLower.startsWith('generate an image') && 
-        !promptLower.startsWith('create an image') && 
-        !promptLower.startsWith('generate a') &&
-        !promptLower.startsWith('create a') &&
-        !promptLower.startsWith('make an image') &&
-        !promptLower.startsWith('produce an image')) {
-      
-      if (hasIdentityAnchor) {
-        // Identity anchor exists - preserve it at the start, add generation prefix after
-        // Structure: [Identity Anchor]. Generate an image of [Rest of Prompt]
-        const identityMatch = finalPrompt.match(/^(Use the uploaded photos[^.]*\.)/i)
-        if (identityMatch) {
-          const identityAnchor = identityMatch[1]
-          const restOfPrompt = finalPrompt.substring(identityMatch[0].length).trim()
-          finalPrompt = `${identityAnchor} Generate an image of ${restOfPrompt}`
-          console.log("[NANO-BANANA] Preserved identity anchor at start, added 'Generate an image of...' after identity reference")
-        } else {
-          // Identity anchor exists but not at start - move it to start
-          finalPrompt = `Generate an image of ${finalPrompt}`
-          console.log("[NANO-BANANA] Added 'Generate an image of...' prefix (identity anchor detected but not at start)")
-        }
-      } else {
-        // No identity anchor - use standard prefix
-        finalPrompt = `Generate an image of ${finalPrompt}`
-        console.log("[NANO-BANANA] Added 'Generate an image of...' prefix to prevent 'No images were returned' error")
-      }
+    // 🔴 PROMPT AUTHORITY LOCK-IN: Phase 7 - Transmission validation before sending to Replicate
+    if (!finalPrompt || finalPrompt.length === 0) {
+      throw new Error('Prompt is empty - cannot send to Replicate')
     }
+    
+    // Optional: Check for prompt source tag (for debugging/logging)
+    // Note: Source tag is optional - we don't fail if missing, just log warning
+    const hasSourceTag = finalPrompt.includes('[PROMPT_SOURCE:')
+    if (!hasSourceTag) {
+      console.warn('[NANO-BANANA] Prompt missing source tag (optional - for debugging)')
+    }
+    
+    // Log final prompt length for verification
+    const wordCount = finalPrompt.split(/\s+/).length
+    console.log("[NANO-BANANA] Final prompt length:", finalPrompt.length, "chars,", wordCount, "words")
+    console.log("[NANO-BANANA] Final prompt preview:", finalPrompt.substring(0, 200) + "...")
     
     const replicateInput = {
       prompt: finalPrompt,
@@ -167,7 +158,9 @@ export async function generateWithNanoBanana(
       })
     }
     
-    throw error
+    // Re-throw with context for upstream error handling
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    throw new Error(`Nano Banana generation failed: ${errorMessage}`)
   }
 }
 
@@ -200,7 +193,8 @@ export async function checkNanoBananaPrediction(
     }
   } catch (error) {
     console.error("[NANO-BANANA] Status check error:", error)
-    throw error
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    throw new Error(`Nano Banana status check failed: ${errorMessage}`)
   }
 }
 

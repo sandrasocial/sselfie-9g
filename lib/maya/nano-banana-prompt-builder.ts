@@ -1,6 +1,11 @@
 /**
  * Nano Banana Pro Prompt Builder (Studio Pro ONLY)
  *
+ * 🧊 FROZEN: Maya system - DO NOT MODIFY. Feed Planner will use direct prompt shaping.
+ * 
+ * PHASE 6: This file is frozen. Feed Planner now uses prompt-shaper.ts for prompt generation.
+ * This is Maya's prompt builder and should not be called for Feed Planner generation.
+ *
  * ⚠️ CRITICAL:
  * - This file is ONLY used for Studio Pro mode (google/nano-banana-pro).
  * - Standard mode uses flux-prompt-builder.ts and MUST preserve trigger words.

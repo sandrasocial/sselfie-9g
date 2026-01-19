@@ -35,12 +35,17 @@ export async function POST(request: NextRequest) {
       conceptCardsCount: Array.isArray(conceptCards) ? conceptCards.length : 0,
     })
 
-    if (!messageId || content === undefined) {
+    // 🔴 FIX: Allow empty content string (for concept card updates that only update JSONB)
+    // Only require messageId - content can be empty string or undefined
+    if (!messageId) {
       return NextResponse.json(
-        { error: "Missing required fields: messageId and content" },
+        { error: "Missing required field: messageId" },
         { status: 400 }
       )
     }
+    
+    // Default content to empty string if not provided (for JSONB-only updates)
+    const safeContent = content !== undefined ? content : ""
 
     // Ensure messageId is a number
     const messageIdNum = typeof messageId === 'string' ? parseInt(messageId, 10) : messageId
@@ -99,9 +104,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Update content (append or replace)
+    // Use safeContent which defaults to empty string if content was undefined
     const updatedContent = append
-      ? `${currentMessage.content || ""}\n${content}`
-      : content
+      ? `${currentMessage.content || ""}\n${safeContent}`
+      : safeContent
 
     // Update concept_cards JSONB if provided
     if (conceptCards && Array.isArray(conceptCards)) {

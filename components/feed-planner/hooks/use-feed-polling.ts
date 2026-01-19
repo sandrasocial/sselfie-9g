@@ -28,9 +28,11 @@ const fetcher = async (url: string) => {
 /**
  * Hook for fetching feed data with intelligent polling
  * Polls every 3s when posts are generating, stops when complete
- * FIX 4: Added 5-minute timeout to prevent infinite polling
+ * FIX 4: Added timeout to prevent infinite polling
+ * UPDATED: Increased timeout to 10 minutes to account for longer Nano Banana Pro prompts
+ * (Preview prompts: 500-700 words, Single scene: 200-270 words)
  */
-const MAX_POLLING_DURATION = 5 * 60 * 1000 // 5 minutes in milliseconds
+const MAX_POLLING_DURATION = 10 * 60 * 1000 // 10 minutes in milliseconds (increased from 5 minutes)
 
 export function useFeedPolling(feedId: number | null) {
   // Track last update time to continue polling for a grace period after updates
@@ -52,35 +54,96 @@ export function useFeedPolling(feedId: number | null) {
         // FIX 4: Check if polling has exceeded max duration
         if (pollingStartTimeRef.current !== null) {
           const elapsedTime = Date.now() - pollingStartTimeRef.current
+          const elapsedMinutes = Math.floor(elapsedTime / 60000)
+          const elapsedSeconds = Math.floor((elapsedTime % 60000) / 1000)
+          
           if (elapsedTime > MAX_POLLING_DURATION) {
-            console.error('[useFeedPolling] ⚠️ Max polling duration exceeded (5 minutes), stopping poll')
+            console.error(`[useFeedPolling] ⚠️ Max polling duration exceeded (10 minutes), stopping poll. Elapsed: ${elapsedMinutes}m ${elapsedSeconds}s`)
             
-            // Mark stuck posts as failed in database
+            // Check Replicate status one more time before marking as failed
             const stuckPosts = data?.posts?.filter((p: any) => p.prediction_id && !p.image_url) || []
             if (stuckPosts.length > 0) {
-              console.error(`[useFeedPolling] Posts stuck:`, stuckPosts.map((p: any) => p.id))
-              setHasTimedOut(true)
+              console.error(`[useFeedPolling] Posts still generating after timeout:`, stuckPosts.map((p: any) => ({
+                id: p.id,
+                position: p.position,
+                predictionId: p.prediction_id?.substring(0, 20),
+                status: p.generation_status
+              })))
               
-              // Mark each stuck post as failed in database
-              stuckPosts.forEach((post: any) => {
-                fetch(`/api/feed/post/${post.id}/mark-failed`, { method: 'POST' })
+              // Call progress endpoint one final time to check status
+              if (feedId) {
+                const stuckPostIds = stuckPosts.map((p: any) => p.id)
+                fetch(`/api/feed/${feedId}/progress`)
                   .then(res => res.json())
-                  .then(result => {
-                    if (result.success) {
-                      console.log(`[useFeedPolling] ✅ Post ${post.id} marked as failed`)
-                      // Refresh feed data to show failed status
-                      mutate()
-                    }
+                  .then(progressData => {
+                    console.log(`[useFeedPolling] Final progress check:`, progressData)
+                    mutate() // Refresh to get any updates
+                    
+                    // Only mark as failed if still no image after final check
+                    // Wait a bit for mutate to complete, then check again
+                    setTimeout(() => {
+                      // Re-check feed data after progress endpoint update
+                      mutate().then(() => {
+                        // Check if posts are still stuck by re-fetching feed data
+                        fetch(`/api/feed/${feedId}`)
+                          .then(res => res.json())
+                          .then(updatedData => {
+                            const stillStuck = updatedData?.posts?.filter((p: any) => 
+                              stuckPostIds.includes(p.id) && p.prediction_id && !p.image_url
+                            ) || []
+                            
+                            if (stillStuck.length > 0) {
+                              console.error(`[useFeedPolling] ${stillStuck.length} post(s) still stuck after final check, marking as failed`)
+                              setHasTimedOut(true)
+                              
+                              stillStuck.forEach((post: any) => {
+                                fetch(`/api/feed/post/${post.id}/mark-failed`, { method: 'POST' })
+                                  .then(res => res.json())
+                                  .then(result => {
+                                    if (result.success) {
+                                      console.log(`[useFeedPolling] ✅ Post ${post.id} marked as failed`)
+                                      mutate()
+                                    }
+                                  })
+                                  .catch(err => {
+                                    console.error(`[useFeedPolling] ❌ Failed to mark post ${post.id} as failed:`, err)
+                                  })
+                              })
+                            } else {
+                              console.log(`[useFeedPolling] ✅ All posts completed after final check`)
+                            }
+                          })
+                          .catch(err => {
+                            console.error('[useFeedPolling] ❌ Error re-checking feed data:', err)
+                          })
+                      })
+                    }, 3000) // Wait 3 seconds for progress endpoint to update database
                   })
                   .catch(err => {
-                    console.error(`[useFeedPolling] ❌ Failed to mark post ${post.id} as failed:`, err)
+                    console.error('[useFeedPolling] ❌ Error in final progress check:', err)
+                    // Mark as failed if progress check fails
+                    setHasTimedOut(true)
+                    stuckPosts.forEach((post: any) => {
+                      fetch(`/api/feed/post/${post.id}/mark-failed`, { method: 'POST' })
+                        .catch(err => console.error(`[useFeedPolling] ❌ Failed to mark post ${post.id} as failed:`, err))
+                    })
                   })
-              })
+              } else {
+                // No feedId - mark as failed immediately
+                setHasTimedOut(true)
+                stuckPosts.forEach((post: any) => {
+                  fetch(`/api/feed/post/${post.id}/mark-failed`, { method: 'POST' })
+                    .catch(err => console.error(`[useFeedPolling] ❌ Failed to mark post ${post.id} as failed:`, err))
+                })
+              }
             }
             
             // Reset polling start time
             pollingStartTimeRef.current = null
             return 0 // Stop polling
+          } else if (elapsedMinutes >= 8) {
+            // Warn when approaching timeout (8+ minutes)
+            console.warn(`[useFeedPolling] ⚠️ Polling approaching timeout: ${elapsedMinutes}m ${elapsedSeconds}s elapsed (10 min max)`)
           }
         }
         
@@ -137,7 +200,7 @@ export function useFeedPolling(feedId: number | null) {
           // Record start time on first poll
           if (pollingStartTimeRef.current === null) {
             pollingStartTimeRef.current = Date.now()
-            console.log('[useFeedPolling] ✅ Polling started, will timeout after 5 minutes')
+            console.log('[useFeedPolling] ✅ Polling started, will timeout after 10 minutes (longer prompts may take more time)')
           }
           
           // CRITICAL FIX: Always call progress endpoint when there are generating posts

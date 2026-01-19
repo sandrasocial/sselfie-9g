@@ -21,6 +21,7 @@ interface BlueprintSubscriber {
 }
 
 interface FeedLayout {
+  id?: string | number
   feed_style?: string | null
 }
 
@@ -53,11 +54,20 @@ interface GetCategoryAndMoodOptions {
    * Default: 'created_at'
    */
   orderBy?: 'created_at' | 'updated_at'
+  
+  /**
+   * Default category when no brand context exists
+   * 'minimal' for lifestyle/neutral aesthetic (default for all users)
+   * Only use 'professional' when explicitly required
+   * Default: 'minimal'
+   */
+  defaultCategory?: "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"
 }
 
 interface GetCategoryAndMoodResult {
   category: "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"
   mood: "luxury" | "minimal" | "beige"
+  visualAesthetic?: string // Raw user choice (e.g., "Warm & Cozy", "Clean & Minimalistic")
   sourceUsed?: string
 }
 
@@ -156,29 +166,60 @@ export async function getCategoryAndMood(
     checkSettingsPreference = true,
     checkBlueprintSubscribers = true,
     trackSource = false,
-    orderBy = 'created_at'
+    orderBy = 'created_at',
+    defaultCategory = 'minimal'  // Changed from 'professional' - neutral lifestyle default
   } = options
 
-  let category: "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional" = "professional"
+  let category: "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional" = defaultCategory
   let mood: "luxury" | "minimal" | "beige" = "minimal"
+  let visualAesthetic: string | undefined
   let sourceUsed = "default"
 
-  // PRIMARY SOURCE: feed_layouts.feed_style (per-feed style selection from modal)
-  // This is the most specific and should always take priority
+  // PRIMARY SOURCE 1: feed_layouts.visual_aesthetic (feed-specific override, highest priority)
+  // This is feed-specific and should always take priority over personal brand
+  if (feedLayout?.visual_aesthetic) {
+    try {
+      const feedVisualAesthetic = Array.isArray(feedLayout.visual_aesthetic)
+        ? feedLayout.visual_aesthetic
+        : JSON.parse(feedLayout.visual_aesthetic)
+      
+      if (Array.isArray(feedVisualAesthetic) && feedVisualAesthetic.length > 0) {
+        const firstAesthetic = feedVisualAesthetic[0]
+        const firstAestheticLower = typeof firstAesthetic === 'string' ? firstAesthetic.toLowerCase().trim() : String(firstAesthetic).toLowerCase().trim()
+        const validCategories = ["luxury", "minimal", "beige", "warm", "edgy", "professional"]
+        
+        if (validCategories.includes(firstAestheticLower)) {
+          category = firstAestheticLower as "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"
+          visualAesthetic = typeof firstAesthetic === 'string' ? firstAesthetic : String(firstAesthetic)
+          sourceUsed = "feed_visual_aesthetic"
+          if (trackSource) {
+            console.log(`[v0] [GENERATE-SINGLE] ✅ Using feed-specific visual_aesthetic (PRIORITY 1): ${category}`)
+          }
+        }
+      }
+    } catch (e) {
+      console.warn(`[v0] [GENERATE-SINGLE] Failed to parse feed visual_aesthetic:`, e)
+    }
+  }
+
+  // PRIMARY SOURCE 2: feed_layouts.feed_style (per-feed style selection from modal)
+  // This is feed-specific and should take priority over personal brand
   if (feedLayout?.feed_style) {
     const feedStyle = feedLayout.feed_style.toLowerCase().trim()
     if (feedStyle === "luxury" || feedStyle === "minimal" || feedStyle === "beige") {
       mood = feedStyle as "luxury" | "minimal" | "beige"
-      sourceUsed = "feed_style"
+      if (sourceUsed === "default") {
+        sourceUsed = "feed_style"
+      }
       if (trackSource) {
-        console.log(`[v0] [GENERATE-SINGLE] ✅ Using feed's feed_style (PRIMARY): ${feedStyle}`)
+        console.log(`[v0] [GENERATE-SINGLE] ✅ Using feed's feed_style (PRIORITY 2): ${feedStyle}`)
       }
     }
   }
 
-  // SECONDARY SOURCE: user_personal_brand.settings_preference[0] - only if feed_style not set
-  // This is synced from feed style modal selections
-  if (checkSettingsPreference && sourceUsed === "default") {
+  // FALLBACK SOURCE: user_personal_brand.settings_preference[0] and visual_aesthetic
+  // Only used if feed-specific values are not set (legacy feeds or missing data)
+  if (checkSettingsPreference && (sourceUsed === "default" || category === defaultCategory)) {
     // Use orderBy parameter (created_at for free users, updated_at for paid blueprint users)
     const personalBrand = orderBy === 'updated_at'
       ? await sql`
@@ -242,6 +283,10 @@ export async function getCategoryAndMood(
 
           if (Array.isArray(aesthetics) && aesthetics.length > 0) {
             const firstAesthetic = aesthetics[0]
+            // Store raw aesthetic string for prompt generation
+            if (!visualAesthetic) {
+              visualAesthetic = typeof firstAesthetic === 'string' ? firstAesthetic : String(firstAesthetic)
+            }
             
             // Phase 1C: Try partial matching first (handles "beige feed", "beige aesthetic", etc.)
             const mappedCategory = mapVisualAestheticToCategory(firstAesthetic)
@@ -300,8 +345,9 @@ export async function getCategoryAndMood(
         const formData = blueprintSubscriber[0].form_data || {}
         const feedStyle = blueprintSubscriber[0].feed_style || null
 
-        // Get category from form_data.vibe (same as old blueprint)
-        category = (formData.vibe || "professional") as "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"
+        // Get category from form_data.vibe (legacy blueprint support)
+        // Changed: No longer defaults to "professional" - uses defaultCategory instead
+        category = (formData.vibe || defaultCategory) as "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"
         // Get mood from feed_style (same as old blueprint)
         mood = (feedStyle || "minimal") as "luxury" | "minimal" | "beige"
 
@@ -357,6 +403,9 @@ export async function getCategoryAndMood(
   }
 
   const result: GetCategoryAndMoodResult = { category, mood }
+  if (visualAesthetic) {
+    result.visualAesthetic = visualAesthetic
+  }
   if (trackSource) {
     result.sourceUsed = sourceUsed
   }
@@ -376,11 +425,32 @@ export async function getCategoryAndMood(
  */
 export async function getFashionStyleForPosition(
   user: User,
-  position: number
+  position: number,
+  feedLayout?: { fashion_style?: any } | null
 ): Promise<string> {
   const { mapFashionStyleToVibeLibrary } = await import("@/lib/feed-planner/fashion-style-mapper")
-  let fashionStyle = 'business' // Default fashion style
+  let fashionStyle = 'casual' // Neutral lifestyle default
 
+  // PRIORITY 1: Check feed-specific fashion_style (feed override)
+  if (feedLayout?.fashion_style) {
+    try {
+      const feedFashionStyle = Array.isArray(feedLayout.fashion_style)
+        ? feedLayout.fashion_style
+        : JSON.parse(feedLayout.fashion_style)
+      
+      if (Array.isArray(feedFashionStyle) && feedFashionStyle.length > 0) {
+        const styleIndex = (position - 1) % feedFashionStyle.length
+        fashionStyle = mapFashionStyleToVibeLibrary(feedFashionStyle[styleIndex])
+        console.log(`[v0] [GENERATE-SINGLE] ✅ Using feed-specific fashion_style ${styleIndex + 1}/${feedFashionStyle.length}: ${fashionStyle} for position ${position}`)
+        return fashionStyle
+      }
+    } catch (e) {
+      console.warn(`[v0] [GENERATE-SINGLE] Failed to parse feed fashion_style:`, e)
+      // Fall through to personal brand
+    }
+  }
+
+  // PRIORITY 2 (FALLBACK): Check user_personal_brand.fashion_style
   const personalBrandForStyle = await sql`
     SELECT fashion_style
     FROM user_personal_brand
@@ -427,15 +497,73 @@ export async function getFashionStyleForPosition(
         fashionStyle = mapFashionStyleToVibeLibrary(styles[styleIndex])
         console.log(`[v0] [GENERATE-SINGLE] Using style ${styleIndex + 1}/${styles.length}: ${fashionStyle} for frame ${position}`)
       } else {
-        console.warn(`[v0] [GENERATE-SINGLE] No valid fashion styles found, using default: business`)
+        console.warn(`[v0] [GENERATE-SINGLE] No valid fashion styles found, using default: casual`)
       }
     } catch (e) {
       console.error(`[v0] [GENERATE-SINGLE] Failed to parse fashion_style:`, e)
-      console.warn(`[v0] [GENERATE-SINGLE] Using default fashion style: business`)
+      console.warn(`[v0] [GENERATE-SINGLE] Using default fashion style: casual`)
     }
   }
 
   return fashionStyle
+}
+
+/**
+ * Get Coherent Style Parameters
+ * 
+ * NEW: Style Coherence Resolver Integration
+ * 
+ * This function wraps getCategoryAndMood() and getFashionStyleForPosition()
+ * with coherence validation and adaptation logic.
+ * 
+ * It ensures that fashion styles are compatible with the selected category
+ * and mood, adapting or blocking incompatible combinations.
+ * 
+ * @param feedLayout - Feed layout with style preferences
+ * @param user - User object with id
+ * @param position - Frame position (1-9)
+ * @param options - Same options as getCategoryAndMood
+ * @returns Coherent style parameters ready for prompt construction
+ */
+export async function getCoherentStyleParameters(
+  feedLayout: FeedLayout | null | undefined,
+  user: User,
+  position: number,
+  options: GetCategoryAndMoodOptions = {}
+): Promise<{
+  category: "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional"
+  mood: "luxury" | "minimal" | "beige"
+  visualAesthetic?: string
+  fashionStyle: string
+  adaptationApplied: boolean
+  adaptationReason?: string
+}> {
+  // Step 1: Get category and mood (Priority 1 & 2 in hierarchy)
+  const { category, mood, visualAesthetic } = await getCategoryAndMood(feedLayout, user, options)
+  
+  // Step 2: Get raw fashion style (Priority 3 in hierarchy, pre-adaptation)
+  const rawFashionStyle = await getFashionStyleForPosition(user, position, feedLayout)
+  
+  // Step 3: Apply coherence resolver
+  const { resolveCoherentStyle } = await import('./style-coherence-resolver')
+  
+  const coherentStyle = resolveCoherentStyle({
+    category,
+    mood,
+    fashionStyle: rawFashionStyle,
+    userId: typeof user.id === 'string' ? user.id : String(user.id),
+    feedId: feedLayout?.id || undefined
+  })
+  
+  // Return coherent parameters
+  return {
+    category: coherentStyle.resolvedCategory as "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional",
+    mood: coherentStyle.resolvedMood as "luxury" | "minimal" | "beige",
+    visualAesthetic,
+    fashionStyle: coherentStyle.resolvedFashionStyle,
+    adaptationApplied: coherentStyle.adaptationApplied,
+    adaptationReason: coherentStyle.adaptationReason
+  }
 }
 
 /**
@@ -459,12 +587,18 @@ export async function injectAndValidateTemplate(
   fashionStyle: string,
   userId: string
 ): Promise<string> {
+  // Validate template input
+  if (!fullTemplate || typeof fullTemplate !== 'string') {
+    throw new Error(`Invalid template: expected string, got ${typeof fullTemplate}`)
+  }
+
   // Map mood to vibe library format (e.g., "luxury" -> "dark_moody", "minimal" -> "light_minimalistic")
   const { MOOD_MAP } = await import("@/lib/maya/blueprint-photoshoot-templates")
   const moodMapped = MOOD_MAP[mood as keyof typeof MOOD_MAP] || "light_minimalistic"
   const vibeKey = `${category}_${moodMapped}` // e.g., "luxury_dark_moody", "minimal_light_minimalistic"
 
   console.log(`[v0] [GENERATE-SINGLE] Using vibe: ${vibeKey}, fashion style: ${fashionStyle}`)
+  console.log(`[v0] [GENERATE-SINGLE] Template length: ${fullTemplate.length} chars, preview: ${fullTemplate.substring(0, 200)}...`)
 
   // Inject dynamic content into template
   const { injectDynamicContentWithRotation } = await import("@/lib/feed-planner/dynamic-template-injector")
@@ -482,7 +616,9 @@ export async function injectAndValidateTemplate(
     const remainingPlaceholders = extractPlaceholderKeys(injectedTemplate)
     if (remainingPlaceholders.length > 0) {
       console.error(`[v0] [GENERATE-SINGLE] ❌ Injection failed - ${remainingPlaceholders.length} placeholders still remain:`, remainingPlaceholders)
-      throw new Error(`Template injection incomplete: ${remainingPlaceholders.length} placeholders not replaced`)
+      console.error(`[v0] [GENERATE-SINGLE] ❌ Template preview (first 500 chars):`, injectedTemplate.substring(0, 500))
+      console.error(`[v0] [GENERATE-SINGLE] ❌ Vibe key: ${vibeKey}, Fashion style: ${fashionStyle}, User ID: ${userId}`)
+      throw new Error(`Template injection incomplete: ${remainingPlaceholders.length} placeholders not replaced: ${remainingPlaceholders.join(', ')}`)
     }
 
     console.log(`[v0] [GENERATE-SINGLE] ✅ Injection successful - all placeholders replaced (${injectedTemplate.split(/\s+/).length} words)`)

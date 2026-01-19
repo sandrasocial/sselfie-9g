@@ -466,6 +466,21 @@ Baseline must remain functional:
 
 ---
 
-**Last Updated:** 2026-01-16  
+## RECENT IMPLEMENTATIONS (REFERENCE)
+
+### Nano Banana Pro Optimization (2026-01-19)
+**Status:** ✅ COMPLETE  
+**Impact:** Feed preview prompts optimized for Nano Banana Pro (reduced from ~760 words to ~300-450 words)  
+**Details:** See `NANO_BANANA_PRO_OPTIMIZATION_SUMMARY.md` and `docs/_CANONICAL/NANO_BANANA_PROMPT_AUDIT_2026.md`
+
+**Key Changes:**
+- Preview prompts use concise scene blocks (25-35 words each) for optimal multi-scene grid generation
+- Single scene prompts remain detailed (200-270 words) for single image quality
+- Validation thresholds updated: preview 120-500 words (optimal: 300-450), single 180-300 words
+- JSONB type mismatch fixed in personal brand updates
+
+---
+
+**Last Updated:** 2026-01-19  
 **Authority:** `docs/_CANONICAL/CURSOR_CONSTITUTION.md`  
 **Reference:** See `docs/_CANONICAL/SYSTEM_REALITY.md` for system state

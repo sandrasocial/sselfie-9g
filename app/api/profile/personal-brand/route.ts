@@ -52,6 +52,46 @@ export async function GET(request: NextRequest) {
 
     const brand = personalBrand[0]
 
+    // Sanitize settingsPreference to remove corrupted nested JSON strings
+    const sanitizeSettingsPreference = (settings: any): string[] | null => {
+      if (!settings) return null
+      if (!Array.isArray(settings)) {
+        // Try to parse if it's a string
+        if (typeof settings === 'string') {
+          try {
+            const parsed = JSON.parse(settings)
+            if (Array.isArray(parsed)) {
+              return sanitizeSettingsPreference(parsed)
+            }
+          } catch {
+            // Not valid JSON, might be a plain string
+            const validStyles = ['luxury', 'minimal', 'beige']
+            if (validStyles.includes(settings.toLowerCase().trim())) {
+              return [settings.toLowerCase().trim()]
+            }
+            return null
+          }
+        }
+        return null
+      }
+      
+      const validStyles = ['luxury', 'minimal', 'beige']
+      const sanitized = settings
+        .filter((s: any) => {
+          if (typeof s !== 'string') return false
+          // Filter out corrupted data: very long strings or nested JSON patterns
+          if (s.length > 100) return false
+          if (s.includes('{\\"') || s.includes('\\\\')) return false
+          // Only keep valid feed style strings
+          return validStyles.includes(s.toLowerCase().trim())
+        })
+        .map((s: string) => s.toLowerCase().trim())
+        // Remove duplicates
+        .filter((s: string, index: number, arr: string[]) => arr.indexOf(s) === index)
+      
+      return sanitized.length > 0 ? sanitized : null
+    }
+
     // Parse JSONB fields that might be strings
     // Also converts objects to arrays (for visual_aesthetic and fashion_style)
     const parseJsonb = (value: any, convertObjectToArray: boolean = false) => {
@@ -127,7 +167,7 @@ export async function GET(request: NextRequest) {
         photoGoals: brand.photo_goals,
         stylePreferences: parseJsonb(brand.style_preferences),
         visualAesthetic: parseJsonb(brand.visual_aesthetic, true), // Convert objects to arrays
-        settingsPreference: parseJsonb(brand.settings_preference),
+        settingsPreference: sanitizeSettingsPreference(brand.settings_preference) || parseJsonb(brand.settings_preference),
         fashionStyle: parseJsonb(brand.fashion_style, true), // Convert objects to arrays
         idealAudience: brand.ideal_audience,
         audienceChallenge: brand.audience_challenge,
@@ -174,6 +214,12 @@ export async function POST(request: NextRequest) {
       visualAesthetic: body.visualAesthetic,
       fashionStyle: body.fashionStyle,
       settingsPreference: body.settingsPreference,
+      visualAestheticType: typeof body.visualAesthetic,
+      fashionStyleType: typeof body.fashionStyle,
+      settingsPreferenceType: typeof body.settingsPreference,
+      visualAestheticIsArray: Array.isArray(body.visualAesthetic),
+      fashionStyleIsArray: Array.isArray(body.fashionStyle),
+      settingsPreferenceIsArray: Array.isArray(body.settingsPreference),
     })
 
     const sql = neon(process.env.DATABASE_URL!)
@@ -222,13 +268,42 @@ export async function POST(request: NextRequest) {
         return value
       }
       
+      // Sanitize settingsPreference to remove corrupted nested JSON strings
+      const sanitizeSettingsPreference = (settings: any): string[] | null => {
+        if (!settings) return null
+        if (!Array.isArray(settings)) return null
+        
+        const validStyles = ['luxury', 'minimal', 'beige']
+        const sanitized = settings
+          .filter((s: any) => {
+            if (typeof s !== 'string') return false
+            // Filter out corrupted data: very long strings or nested JSON patterns
+            if (s.length > 100) return false
+            if (s.includes('{\\"') || s.includes('\\\\')) return false
+            // Only keep valid feed style strings
+            return validStyles.includes(s.toLowerCase().trim())
+          })
+          .map((s: string) => s.toLowerCase().trim())
+          // Remove duplicates
+          .filter((s: string, index: number, arr: string[]) => arr.indexOf(s) === index)
+        
+        return sanitized.length > 0 ? sanitized : null
+      }
+      
       const visualAestheticJson = prepareJsonbValue(body.visualAesthetic, true)
       const fashionStyleJson = prepareJsonbValue(body.fashionStyle, true)
-      const settingsPreferenceJson = prepareJsonbValue(body.settingsPreference)
+      const settingsPreferenceJson = sanitizeSettingsPreference(body.settingsPreference) || prepareJsonbValue(body.settingsPreference)
       const contentPillarsJson = prepareJsonbValue(body.contentPillars)
       
+      console.log("[v0] Prepared JSONB values:", {
+        visualAestheticJson: visualAestheticJson ? JSON.stringify(visualAestheticJson).substring(0, 100) : null,
+        fashionStyleJson: fashionStyleJson ? JSON.stringify(fashionStyleJson).substring(0, 100) : null,
+        settingsPreferenceJson: settingsPreferenceJson ? JSON.stringify(settingsPreferenceJson).substring(0, 100) : null,
+        contentPillarsJson: contentPillarsJson ? JSON.stringify(contentPillarsJson).substring(0, 100) : null,
+      })
+      
       // Use COALESCE to only update fields that are provided (not undefined)
-      // For JSONB fields, pass JSON objects directly - Neon handles conversion automatically
+      // For JSONB fields, explicitly stringify arrays/objects for Neon compatibility
       const result = await sql`
         UPDATE user_personal_brand
         SET
@@ -247,10 +322,10 @@ export async function POST(request: NextRequest) {
           future_vision = COALESCE(${body.futureVision ?? null}, future_vision),
           content_goals = COALESCE(${body.contentGoals ?? null}, content_goals),
           photo_goals = COALESCE(${body.photoGoals ?? null}, photo_goals),
-          content_pillars = COALESCE(${contentPillarsJson}, content_pillars),
-          visual_aesthetic = COALESCE(${visualAestheticJson}, visual_aesthetic),
-          settings_preference = COALESCE(${settingsPreferenceJson}, settings_preference),
-          fashion_style = COALESCE(${fashionStyleJson}, fashion_style),
+          content_pillars = COALESCE(${contentPillarsJson !== null && contentPillarsJson !== undefined ? JSON.stringify(contentPillarsJson) : null}::jsonb, content_pillars::jsonb),
+          visual_aesthetic = COALESCE(${visualAestheticJson !== null && visualAestheticJson !== undefined ? JSON.stringify(visualAestheticJson) : null}::jsonb, visual_aesthetic::jsonb),
+          settings_preference = COALESCE(${settingsPreferenceJson !== null && settingsPreferenceJson !== undefined ? JSON.stringify(settingsPreferenceJson) : null}::jsonb, settings_preference::jsonb),
+          fashion_style = COALESCE(${fashionStyleJson !== null && fashionStyleJson !== undefined ? JSON.stringify(fashionStyleJson) : null}::jsonb, fashion_style::jsonb),
           ideal_audience = COALESCE(${body.idealAudience ?? null}, ideal_audience),
           audience_challenge = COALESCE(${body.audienceChallenge ?? null}, audience_challenge),
           audience_transformation = COALESCE(${body.audienceTransformation ?? null}, audience_transformation),
@@ -267,6 +342,35 @@ export async function POST(request: NextRequest) {
       console.log("[v0] Updated brand profile successfully:", brandId)
     } else {
       console.log("[v0] Creating new brand profile for user:", neonUser.id)
+      
+      // Prepare JSONB fields for INSERT (same logic as UPDATE)
+      const prepareJsonbValue = (value: any, convertObjectToArray: boolean = false): any => {
+        if (!value) return null
+        if (Array.isArray(value)) {
+          return value.length > 0 ? value : null
+        }
+        if (typeof value === 'string') {
+          try {
+            const parsed = JSON.parse(value)
+            if (convertObjectToArray && parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+              return Object.keys(parsed)
+            }
+            return parsed
+          } catch {
+            return [value]
+          }
+        }
+        if (convertObjectToArray && value && typeof value === "object" && !Array.isArray(value)) {
+          return Object.keys(value)
+        }
+        return value
+      }
+      
+      const visualAestheticJson = prepareJsonbValue(body.visualAesthetic, true)
+      const fashionStyleJson = prepareJsonbValue(body.fashionStyle, true)
+      const settingsPreferenceJson = prepareJsonbValue(body.settingsPreference)
+      const contentPillarsJson = prepareJsonbValue(body.contentPillars)
+      
       const result = await sql`
         INSERT INTO user_personal_brand (
           user_id,
@@ -316,10 +420,10 @@ export async function POST(request: NextRequest) {
           ${body.futureVision || ""},
           ${body.contentGoals || ""},
           ${body.photoGoals || ""},
-          ${body.contentPillars ? JSON.stringify(body.contentPillars) : null}::jsonb,
-          ${body.visualAesthetic || ""},
-          ${body.settingsPreference || ""},
-          ${body.fashionStyle || ""},
+          ${contentPillarsJson !== null && contentPillarsJson !== undefined ? JSON.stringify(contentPillarsJson) : null}::jsonb,
+          ${visualAestheticJson !== null && visualAestheticJson !== undefined ? JSON.stringify(visualAestheticJson) : null}::jsonb,
+          ${settingsPreferenceJson !== null && settingsPreferenceJson !== undefined ? JSON.stringify(settingsPreferenceJson) : null}::jsonb,
+          ${fashionStyleJson !== null && fashionStyleJson !== undefined ? JSON.stringify(fashionStyleJson) : null}::jsonb,
           ${body.idealAudience || ""},
           ${body.audienceChallenge || ""},
           ${body.audienceTransformation || ""},
@@ -438,16 +542,48 @@ export async function POST(request: NextRequest) {
     console.log("[v0] Brand profile save complete!")
     return NextResponse.json({ success: true, brandId })
   } catch (error: any) {
-    console.error("[v0] Error updating personal brand:", error)
-    console.error("[v0] Error details:", {
-      message: error?.message,
+    const errorMessage = error?.message || String(error)
+    const errorCode = error?.code
+    const errorDetail = error?.detail || error?.constraint
+    
+    console.error("[v0] ❌ Error updating personal brand:", {
+      message: errorMessage,
+      code: errorCode,
+      detail: errorDetail,
       stack: error?.stack,
-      code: error?.code,
-      detail: error?.detail
+      errorType: error?.constructor?.name,
     })
+    
+    // Check for specific database errors
+    if (errorCode === '23505') { // Unique constraint violation
+      return NextResponse.json({ 
+        error: "Failed to update personal brand",
+        details: "A personal brand already exists for this user",
+        code: errorCode,
+      }, { status: 409 }) // Conflict
+    }
+    
+    if (errorCode === '23503') { // Foreign key violation
+      return NextResponse.json({ 
+        error: "Failed to update personal brand",
+        details: "Invalid reference in personal brand data",
+        code: errorCode,
+      }, { status: 400 })
+    }
+    
+    if (errorMessage.includes("JSON") || errorMessage.includes("parse")) {
+      return NextResponse.json({ 
+        error: "Failed to update personal brand",
+        details: "Invalid data format. Please try again.",
+        code: "INVALID_FORMAT",
+      }, { status: 400 })
+    }
+    
+    // Generic error
     return NextResponse.json({ 
       error: "Failed to update personal brand",
-      details: error?.message || "Unknown error"
+      details: errorMessage || "Unknown error occurred",
+      code: errorCode || "UNKNOWN_ERROR",
     }, { status: 500 })
   }
 }

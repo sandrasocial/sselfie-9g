@@ -314,10 +314,17 @@ export async function POST(req: NextRequest) {
 
     console.log(`[v0][paid-blueprint] Generating Grid ${gridNumber}/30 for ${email.substring(0, 3)}*** (${validSelfieUrls.length} selfies)`)
 
-    // Get prompt from template library
+    // Phase 2E: Get fashionStyle for subject identity override (before template)
+    // Get user's fashion style for dynamic injection
+    // For full 9-grid images, use position 1 for consistency (all 9 scenes use same style)
+    // Alternatively, could use ((gridNumber - 1) % 9) + 1 to rotate styles across grids
+    // If userId doesn't exist, default to 'business'
+    const fashionStyle = userId ? await getFashionStyleForPosition({ id: userId }, 1) : 'business'
+
+    // Get prompt from template library (Phase 2E: includes subject identity override)
     let fullTemplate: string
     try {
-      fullTemplate = getBlueprintPhotoshootPrompt(category, mood)
+      fullTemplate = await getBlueprintPhotoshootPrompt(category, mood, fashionStyle)
       console.log(`[v0][paid-blueprint] Prompt template: ${category}_${mood} (${fullTemplate.split(/\s+/).length} words)`)
     } catch (error) {
       console.error("[v0][paid-blueprint] Template error:", error)
@@ -330,12 +337,6 @@ export async function POST(req: NextRequest) {
         { status: 500 },
       )
     }
-
-    // Get user's fashion style for dynamic injection
-    // For full 9-grid images, use position 1 for consistency (all 9 scenes use same style)
-    // Alternatively, could use ((gridNumber - 1) % 9) + 1 to rotate styles across grids
-    // If userId doesn't exist, default to 'business'
-    const fashionStyle = userId ? await getFashionStyleForPosition({ id: userId }, 1) : 'business'
 
     // Inject dynamic content into template and validate (same as preview feeds)
     let injectedTemplate: string

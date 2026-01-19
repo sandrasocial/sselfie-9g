@@ -12,6 +12,16 @@
  * - Each scene is deterministic: position 1 = scene 1, position 2 = scene 2, etc.
  * - Scene specs are extracted from BLUEPRINT_PHOTOSHOOT_TEMPLATES but stored here
  *   as the canonical source of truth for enforcement
+ * 
+ * ARCHITECTURE NOTE (Post-Cleanup, Jan 2026):
+ * Feed generation is DETERMINISTIC by design:
+ * - Position number → deterministic scene spec lookup (no orchestration layer)
+ * - Each image generated independently using buildSingleImagePrompt()
+ * - No feed-level planning, story coherence tracking, or outfit variation logic
+ * - This is by design after removing unused orchestration code (orchestrator.ts)
+ * 
+ * If feed-level orchestration is needed in the future, it should be implemented
+ * as a separate layer ABOVE this deterministic scene library, not embedded in prompts.
  */
 
 export interface SceneSpec {
@@ -195,7 +205,10 @@ export const SCENE_LIBRARY: Record<number, SceneSpec> = {
 /**
  * Get scene specification for a given position (1-9)
  * 
- * Phase 1C: Made category-aware for Scene 8 (workspace flatlay vs lifestyle flatlay)
+ * SEMANTIC AUTHORITY ENFORCEMENT:
+ * - Scene 8 defaults to LIFESTYLE flatlay (coffee, accessories)
+ * - Workspace semantics (laptop, desk, office) ONLY when category === "professional"
+ * - This enforces the constitutional rule: business identity only when explicitly selected
  * 
  * @param position - Feed position (1-9)
  * @param options - Optional category for Scene 8 customization
@@ -216,26 +229,32 @@ export function getSceneSpec(
     return null
   }
   
-  // Phase 1C: Make Scene 8 category-aware (remove hardcoded workspace for non-professional)
-  if (position === 8 && options?.category && options.category !== 'professional') {
-    // Non-professional categories: lifestyle flatlay (NO laptop/office props)
-      return {
-        ...baseSpec,
-        title: "Lifestyle Flatlay",
-        sceneDNA: "Overhead lifestyle flatlay featuring coffee or drink with curated accessories arranged on surface, minimal editorial styling",
-        composition: "Overhead perspective, lifestyle-focused composition with minimal, intentional arrangement",
-        location: "Indoor surface—table, counter, or surface—matching feed setting",
-        negativeRules: [
-          "Do not include full person in frame (hands only if specified)",
-          "Do not change to non-flatlay composition",
-          "Do not add laptop, office desk, or work-related items",
-          "Do not add items beyond coffee/drink and specified accessories",
-          "Do not change surface material beyond scene specification"
-        ],
-      }
+  // SEMANTIC AUTHORITY: Scene 8 is category-aware
+  // DEFAULT: Lifestyle flatlay (NO business semantics)
+  // EXCEPTION: Workspace flatlay ONLY when category === "professional"
+  if (position === 8) {
+    if (options?.category === 'professional') {
+      // Professional category: workspace flatlay with laptop/office props
+      return baseSpec // Use original workspace spec
+    }
+    
+    // ALL OTHER CATEGORIES (including null): lifestyle flatlay (NO business props)
+    return {
+      ...baseSpec,
+      title: "Lifestyle Flatlay",
+      sceneDNA: "Overhead lifestyle flatlay featuring coffee or drink with curated accessories arranged on surface, minimal editorial styling",
+      composition: "Overhead perspective, lifestyle-focused composition with minimal, intentional arrangement",
+      location: "Indoor surface—table, counter, or surface—matching feed setting",
+      negativeRules: [
+        "Do not include full person in frame (hands only if specified)",
+        "Do not change to non-flatlay composition",
+        "Do not add laptop, office desk, or work-related items",
+        "Do not add items beyond coffee/drink and specified accessories",
+        "Do not change surface material beyond scene specification"
+      ],
+    }
   }
   
-  // Professional category or no category specified: use original workspace flatlay
   return baseSpec
 }
 

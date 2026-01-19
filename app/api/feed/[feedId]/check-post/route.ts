@@ -102,10 +102,17 @@ export async function GET(request: Request) {
       }
 
       console.error("[v0] Error getting Replicate prediction:", errorMessage)
+      
+      // Use replicate error handler for user-friendly messages
+      const { formatReplicateErrorResponse } = await import("@/lib/replicate-error-handler")
+      const errorResponse = formatReplicateErrorResponse(error, "Failed to check image status")
+      
       return NextResponse.json(
         {
-          error: "Failed to check generation status",
-          details: errorMessage,
+          error: errorResponse.error,
+          details: errorResponse.details,
+          shouldRetry: errorResponse.shouldRetry,
+          retryAfter: errorResponse.retryAfter
         },
         { status: 500 },
       )
@@ -163,28 +170,70 @@ export async function GET(request: Request) {
         throw blobError
       }
 
-      await sql`
-        UPDATE feed_posts
-        SET 
-          image_url = ${blobUrl},
-          generation_status = 'completed',
-          updated_at = NOW()
-        WHERE id = ${Number.parseInt(postId)}
-      `
-
-      console.log("[v0] Feed post updated with image URL:", blobUrl)
-      
-      // Get post details for quality monitoring
+      // Check if this is a preview feed (layout_type = 'preview')
       const [postDetails] = await sql`
-        SELECT prompt, caption, user_id FROM feed_posts WHERE id = ${Number.parseInt(postId)}
+        SELECT feed_layout_id, position FROM feed_posts WHERE id = ${Number.parseInt(postId)}
       `
       
       if (postDetails) {
+        const [feedLayout] = await sql`
+          SELECT layout_type FROM feed_layouts WHERE id = ${postDetails.feed_layout_id}
+        `
+        
+        // PHASE 5 FIX: Preview feed images should be saved to all 9 posts
+        if (feedLayout?.layout_type === 'preview') {
+          console.log("[v0] Preview feed detected - saving image to all 9 posts")
+          
+          // Save preview_image_url to all 9 posts in this feed layout
+          await sql`
+            UPDATE feed_posts
+            SET 
+              preview_image_url = ${blobUrl},
+              generation_status = 'completed',
+              updated_at = NOW()
+            WHERE feed_layout_id = ${postDetails.feed_layout_id}
+              AND position BETWEEN 1 AND 9
+          `
+          
+          console.log("[v0] Preview feed image saved to all 9 posts:", blobUrl)
+        } else {
+          // Regular feed: Save image_url to this post only
+          await sql`
+            UPDATE feed_posts
+            SET 
+              image_url = ${blobUrl},
+              generation_status = 'completed',
+              updated_at = NOW()
+            WHERE id = ${Number.parseInt(postId)}
+          `
+          
+          console.log("[v0] Feed post updated with image URL:", blobUrl)
+        }
+      } else {
+        // Fallback: Save to this post only (if post details not found)
+        await sql`
+          UPDATE feed_posts
+          SET 
+            image_url = ${blobUrl},
+            generation_status = 'completed',
+            updated_at = NOW()
+          WHERE id = ${Number.parseInt(postId)}
+        `
+        
+        console.log("[v0] Feed post updated with image URL (fallback):", blobUrl)
+      }
+      
+      // Get post details for quality monitoring
+      const [postQualityData] = await sql`
+        SELECT prompt, caption, user_id FROM feed_posts WHERE id = ${Number.parseInt(postId)}
+      `
+      
+      if (postQualityData) {
         // Quality monitoring hook (fire-and-forget)
         hookFeedPostGeneration({
           imageUrl: blobUrl,
-          prompt: postDetails.prompt || postDetails.caption || "",
-          userId: postDetails.user_id,
+          prompt: postQualityData.prompt || postQualityData.caption || "",
+          userId: postQualityData.user_id,
           postId: postId,
           predictionId: predictionId,
           category: 'feed-post',
@@ -307,11 +356,57 @@ export async function GET(request: Request) {
       status: prediction.status,
     })
   } catch (error: any) {
-    console.error("[v0] Error checking post generation:", error)
+    const errorMessage = error?.message || String(error)
+    const errorStack = error?.stack
+    
+    console.error("[v0] ❌ Error checking post generation:", {
+      error: errorMessage,
+      stack: errorStack,
+      predictionId,
+      postId,
+      errorType: error?.constructor?.name,
+    })
+    
+    // Check for specific error types
+    if (errorMessage.includes("Failed to get prediction")) {
+      return NextResponse.json(
+        {
+          error: "Failed to check generation status",
+          details: "Unable to reach Replicate API. Please try again.",
+          retryable: true,
+        },
+        { status: 503 }, // Service Unavailable - retryable
+      )
+    }
+    
+    if (errorMessage.includes("Blob") || errorMessage.includes("upload")) {
+      return NextResponse.json(
+        {
+          error: "Failed to save image",
+          details: "Image generated but failed to save. Please try regenerating.",
+          retryable: true,
+        },
+        { status: 500 },
+      )
+    }
+    
+    if (errorMessage.includes("Database") || errorMessage.includes("SQL")) {
+      return NextResponse.json(
+        {
+          error: "Database error",
+          details: "Failed to update post status. Please refresh the page.",
+          retryable: false,
+        },
+        { status: 500 },
+      )
+    }
+    
+    // Generic error
     return NextResponse.json(
       {
         error: "Failed to check generation status",
-        details: error?.message || String(error),
+        details: errorMessage,
+        retryable: true,
       },
       { status: 500 },
     )

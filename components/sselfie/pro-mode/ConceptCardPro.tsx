@@ -1067,17 +1067,37 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                 let errorMessage = 'Unknown error'
                 let errorDetails: any = {}
                 
+                // 🔴 FIX: Better error extraction to handle all error types
                 if (jsonbError instanceof Error) {
-                  errorMessage = jsonbError.message
+                  errorMessage = jsonbError.message || 'Error object without message'
                   errorDetails = {
                     name: jsonbError.name,
-                    stack: jsonbError.stack,
+                    stack: jsonbError.stack?.substring(0, 500), // Limit stack trace
+                    constructor: jsonbError.constructor?.name,
                   }
                 } else if (typeof jsonbError === 'string') {
                   errorMessage = jsonbError
                 } else if (jsonbError && typeof jsonbError === 'object') {
-                  errorMessage = jsonbError.message || jsonbError.error || jsonbError.details || JSON.stringify(jsonbError)
-                  errorDetails = { ...jsonbError }
+                  // Try to extract error from various possible structures
+                  errorMessage = jsonbError.message || 
+                                jsonbError.error || 
+                                jsonbError.details || 
+                                jsonbError.toString?.() ||
+                                'Error object without readable message'
+                  
+                  // Include all properties for debugging
+                  errorDetails = {
+                    ...jsonbError,
+                    // Stringify if it's a complex object
+                    stringified: Object.keys(jsonbError).length === 0 ? 'Empty error object' : JSON.stringify(jsonbError).substring(0, 500),
+                  }
+                } else {
+                  // Fallback for unexpected error types
+                  errorMessage = String(jsonbError) || 'Unknown error type'
+                  errorDetails = { 
+                    type: typeof jsonbError,
+                    value: jsonbError,
+                  }
                 }
                 
                 console.error('[ConceptCardPro] ❌ Error saving to JSONB:', {
@@ -1086,6 +1106,8 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                   predictionId: pollPredictionId,
                   error: errorMessage,
                   errorDetails,
+                  // Include the raw error for debugging
+                  rawError: jsonbError,
                 })
                 // Don't fail - image still shows in UI, just won't persist on refresh
               }

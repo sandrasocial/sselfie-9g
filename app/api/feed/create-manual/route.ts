@@ -40,8 +40,24 @@ export async function POST(req: NextRequest) {
     }
     const title = body.title || `My Feed - ${new Date().toLocaleDateString()}`
     let feedStyle = body.feedStyle || null // "luxury", "minimal", or "beige"
-    const visualAesthetic = body.visualAesthetic || null // Array of visual aesthetics
-    const fashionStyle = body.fashionStyle || null // Array of fashion styles
+    let visualAesthetic = body.visualAesthetic || null // Array of visual aesthetics
+    let fashionStyle = body.fashionStyle || null // Array of fashion styles
+
+    // Validate and prepare JSONB arrays
+    const prepareJsonbArray = (value: any): any => {
+      if (!value) return null
+      if (Array.isArray(value)) {
+        return value.length > 0 ? value : null
+      }
+      // If single string, convert to array
+      if (typeof value === 'string') {
+        return [value]
+      }
+      return null
+    }
+
+    visualAesthetic = prepareJsonbArray(visualAesthetic)
+    fashionStyle = prepareJsonbArray(fashionStyle)
 
     if (!feedStyle) {
       const [personalBrand] = await sql`
@@ -73,18 +89,17 @@ export async function POST(req: NextRequest) {
       )
     }
     
-    // Note: visualAesthetic and fashionStyle are already saved to personal brand by the frontend
-    // We just log them here for reference
+    // Log feed-specific style selections that will be persisted
     if (visualAesthetic) {
-      console.log(`[v0] Feed created with visualAesthetic:`, visualAesthetic)
+      console.log(`[v0] Feed will be created with feed-specific visualAesthetic:`, visualAesthetic)
     }
     if (fashionStyle) {
-      console.log(`[v0] Feed created with fashionStyle:`, fashionStyle)
+      console.log(`[v0] Feed will be created with feed-specific fashionStyle:`, fashionStyle)
     }
 
     // Create feed layout with layout_type: 'grid_3x3' for full feeds (3x3 grid = 9 posts)
     // Set status to 'saved' so feed appears immediately in Feed Planner
-    // Include feed_style if provided
+    // Include feed_style, visual_aesthetic, and fashion_style for feed-specific overrides
     // Try with created_by field first, fallback if field doesn't exist
     let feedResult: any[]
     try {
@@ -97,6 +112,8 @@ export async function POST(req: NextRequest) {
           status,
           layout_type,
           feed_style,
+          visual_aesthetic,
+          fashion_style,
           created_by
         )
         VALUES (
@@ -107,14 +124,16 @@ export async function POST(req: NextRequest) {
           'saved',
           'grid_3x3',
           ${feedStyle},
+          ${visualAesthetic}::jsonb,
+          ${fashionStyle}::jsonb,
           'manual'
         )
         RETURNING *
       ` as any[]
     } catch (error: any) {
-      // If created_by or feed_style field doesn't exist, try without them
-      if (error?.message?.includes('created_by') || error?.message?.includes('feed_style') || error?.code === '42703') {
-        console.log("[v0] created_by or feed_style field not found, creating feed without them")
+      // If created_by, visual_aesthetic, or fashion_style fields don't exist, try without them
+      if (error?.message?.includes('created_by') || error?.message?.includes('visual_aesthetic') || error?.message?.includes('fashion_style') || error?.code === '42703') {
+        console.log("[v0] New columns not found, trying without visual_aesthetic/fashion_style")
         try {
           feedResult = await sql`
             INSERT INTO feed_layouts (
@@ -124,7 +143,8 @@ export async function POST(req: NextRequest) {
               description,
               status,
               layout_type,
-              feed_style
+              feed_style,
+              created_by
             )
             VALUES (
               ${user.id},
@@ -133,14 +153,15 @@ export async function POST(req: NextRequest) {
               NULL,
               'saved',
               'grid_3x3',
-              ${feedStyle}
+              ${feedStyle},
+              'manual'
             )
             RETURNING *
           ` as any[]
         } catch (error2: any) {
-          // If feed_style also doesn't exist, try without it
-          if (error2?.message?.includes('feed_style') || error2?.code === '42703') {
-            console.log("[v0] feed_style field not found, creating feed without it")
+          // If created_by also doesn't exist, try without it
+          if (error2?.message?.includes('created_by') || error2?.code === '42703') {
+            console.log("[v0] created_by field not found, creating feed without it")
             feedResult = await sql`
               INSERT INTO feed_layouts (
                 user_id,
@@ -148,7 +169,8 @@ export async function POST(req: NextRequest) {
                 username,
                 description,
                 status,
-                layout_type
+                layout_type,
+                feed_style
               )
               VALUES (
                 ${user.id},
@@ -156,7 +178,8 @@ export async function POST(req: NextRequest) {
                 ${user.name?.toLowerCase().replace(/\s+/g, "") || "yourbrand"},
                 NULL,
                 'saved',
-                'grid_3x3'
+                'grid_3x3',
+                ${feedStyle}
               )
               RETURNING *
             ` as any[]

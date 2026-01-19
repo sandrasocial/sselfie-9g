@@ -1,3 +1,11 @@
+/**
+ * 🚫 BYPASS: Flux prompt builder. Feed Planner uses Pro Mode (Nano Banana) only.
+ * 
+ * PHASE 6: This file should never be called for Feed Planner generation.
+ * Feed Planner uses Pro Mode (Nano Banana) exclusively, not Flux/Classic Mode.
+ * This file creates Flux prompts and is not used in Feed Planner pipeline.
+ */
+
 import { generateText } from "ai"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import { getMayaSystemPrompt, MAYA_CLASSIC_CONFIG } from "@/lib/maya/mode-adapters"

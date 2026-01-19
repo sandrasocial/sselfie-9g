@@ -38,9 +38,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ fee
     }
 
     // Check generation mode (Pro Mode vs Classic Mode)
-    const generationMode = post.generation_mode || 'classic'
+    // Feed Planner should ALWAYS use Pro Mode (Nano Banana Pro) for ALL users
+    // Force Pro Mode for all Feed Planner regenerations, regardless of stored post.generation_mode
+    const generationMode = 'pro'
     const proModeType = post.pro_mode_type || null
-    console.log("[v0] [REGENERATE-POST] Post generation mode:", { generationMode, proModeType })
+    console.log("[v0] [REGENERATE-POST] Post generation mode:", { generationMode, proModeType, storedGenerationMode: post.generation_mode })
 
     // Check credits based on generation mode (Pro Mode = 2 credits, Classic = 1 credit)
     const creditsNeeded = generationMode === 'pro' ? getStudioProCreditCost('2K') : CREDIT_COSTS.IMAGE
@@ -122,15 +124,35 @@ export async function POST(request: Request, { params }: { params: Promise<{ fee
             }
           )
           
+          // Phase 2E: Fetch fashionStyle for subject identity override
+          let fashionStyle: string | null = null
+          try {
+            const brandResult = await sql`
+              SELECT fashion_style FROM user_personal_brand
+              WHERE user_id = ${neonUser.id} AND is_completed = true
+              LIMIT 1
+            `
+            if (brandResult.length > 0 && brandResult[0].fashion_style) {
+              const fashionStyleArray = Array.isArray(brandResult[0].fashion_style) 
+                ? brandResult[0].fashion_style 
+                : [brandResult[0].fashion_style]
+              if (fashionStyleArray.length > 0) {
+                fashionStyle = fashionStyleArray[0]
+              }
+            }
+          } catch (error) {
+            console.warn(`[v0] [REGENERATE-POST] Could not fetch fashionStyle:`, error)
+          }
+          
           const { getBlueprintPhotoshootPrompt } = await import("@/lib/maya/blueprint-photoshoot-templates")
-          finalPrompt = getBlueprintPhotoshootPrompt(category, mood)
+          finalPrompt = await getBlueprintPhotoshootPrompt(category, mood, fashionStyle)
           console.log(`[v0] [REGENERATE-POST] ✅ Using blueprint template prompt from canonical resolver: ${category}_${mood}`)
         } else {
           // Membership users: Keep Maya AI (Classic Mode uses Maya, Pro Mode uses templates if needed)
           // This path should not be hit for Pro Mode regeneration, but keeping for safety
           console.warn(`[v0] [REGENERATE-POST] ⚠️ Membership user Pro Mode regeneration - using default template`)
           const { getBlueprintPhotoshootPrompt } = await import("@/lib/maya/blueprint-photoshoot-templates")
-          finalPrompt = getBlueprintPhotoshootPrompt("professional", "minimal")
+          finalPrompt = await getBlueprintPhotoshootPrompt("professional", "minimal", null)
         }
       }
       

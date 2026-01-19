@@ -524,9 +524,39 @@ export async function getUserPersonalBrand(userId: string): Promise<UserPersonal
 
     const result = brand.length > 0 ? (brand[0] as UserPersonalBrand) : null
 
-    // Cache the result
-    await redis.setex(cacheKey, CacheTTL.personalBrand, result)
-    console.log("[v0] Cached personal brand for:", userId)
+    // 🔴 CRITICAL FIX: Validate data before caching to prevent Redis errors
+    if (result) {
+      // Check for corrupted data that would cause Redis errors
+      let hasCorruptedData = false
+      for (const [key, value] of Object.entries(result)) {
+        if (typeof value === "string") {
+          // Check for excessive backslashes (corrupted JSON)
+          const backslashCount = (value.match(/\\\\/g) || []).length
+          if (backslashCount > 100) {
+            console.error(`[v0] ❌ Corrupted data detected in field ${key}, skipping cache`)
+            hasCorruptedData = true
+            break
+          }
+          // Check for extremely large strings
+          if (value.length > 100000) {
+            console.warn(`[v0] ⚠️ Very large field ${key} (${value.length} chars), may cause issues`)
+          }
+        }
+      }
+      
+      // Only cache if data is valid
+      if (!hasCorruptedData) {
+        try {
+          await redis.setex(cacheKey, CacheTTL.personalBrand, result)
+          console.log("[v0] Cached personal brand for:", userId)
+        } catch (cacheError: any) {
+          console.error("[v0] ⚠️ Failed to cache personal brand (non-critical):", cacheError?.message)
+          // Continue without caching - not a fatal error
+        }
+      } else {
+        console.warn("[v0] ⚠️ Skipping cache due to corrupted data")
+      }
+    }
 
     return result
   } catch (error) {

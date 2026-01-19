@@ -1,8 +1,24 @@
 /**
  * Single Image Prompt Builder
  * 
+ * ❄️ FROZEN — DO NOT MODIFY PROMPTS HERE
+ * This file must NOT decide prompt content
+ * 
+ * Feed Planner now uses scene-resolver.ts + prompt-shaper.ts (THE AUTHORITY).
+ * This parser is legacy and should NOT be used for Feed Planner prompts.
+ * 
+ * This file may:
+ * - Pass data
+ * - Call the authority
+ * - Format UI
+ * 
+ * It may NOT:
+ * - Build strings for Feed Planner
+ * - Modify Feed Planner prompt text
+ * - Inject scene descriptions for Feed Planner
+ * 
  * Parses blueprint photoshoot templates and builds complete NanoBanana prompts
- * for individual frame generation.
+ * for individual frame generation (LEGACY ONLY - NOT FOR FEED PLANNER).
  * 
  * Each template contains:
  * - Grid description (first paragraph - only used for free mode)
@@ -21,6 +37,9 @@
 /**
  * Parses template and extracts frame descriptions, vibe, setting, and color grade
  * 
+ * REFACTORED: Now supports natural language templates (no headers, narrative prose)
+ * Also supports old format for backward compatibility
+ * 
  * @param templatePrompt - Full template prompt from BLUEPRINT_PHOTOSHOOT_TEMPLATES
  * @returns Object containing array of frames, vibe, setting, and color grade
  */
@@ -31,44 +50,143 @@ export function parseTemplateFrames(templatePrompt: string): {
   colorGrade: string
 } {
   const frames: Array<{ position: number; description: string }> = []
+  let vibe = ''
+  let setting = ''
+  let colorGrade = ''
   
-  // Extract vibe section (everything after "Vibe:" until next section)
-  const vibeMatch = templatePrompt.match(/Vibe:\s*([^\n]+(?:\n(?!Setting:|Outfits:|9 frames:)[^\n]+)*)/i)
-  const vibe = vibeMatch ? vibeMatch[1].trim() : ''
+  // Check if this is the new natural language format (no headers)
+  const isNaturalLanguageFormat = !templatePrompt.includes('Vibe:') && !templatePrompt.includes('9 frames:')
   
-  // Extract setting section (everything after "Setting:" until next section)
-  const settingMatch = templatePrompt.match(/Setting:\s*([^\n]+(?:\n(?!Outfits:|9 frames:|Color grade:)[^\n]+)*)/i)
-  const setting = settingMatch ? settingMatch[1].trim() : ''
-  
-  // Extract frames section (everything between "9 frames:" and "Color grade:")
-  const framesMatch = templatePrompt.match(/9 frames:([\s\S]+?)(?=Color grade:|$)/i)
-  
-  if (framesMatch) {
-    const framesText = framesMatch[1]
-    // Split by newlines and parse each frame
-    const frameLines = framesText.split('\n')
+  if (isNaturalLanguageFormat) {
+    // NEW FORMAT: Natural language prose
+    // Extract vibe from "The aesthetic is..." paragraph (may span multiple sentences)
+    const vibeMatch = templatePrompt.match(/The aesthetic is ([^\.]+(?:\.[^\.]+)*?)(?=\.\s*The (?:setting|photography|first frame))/is)
+    if (vibeMatch) {
+      vibe = vibeMatch[1].trim()
+    } else {
+      // Fallback: get first sentence after "The aesthetic is"
+      const vibeFallback = templatePrompt.match(/The aesthetic is ([^\.]+)/i)
+      vibe = vibeFallback ? vibeFallback[1].trim() : ''
+    }
     
-    for (const line of frameLines) {
-      // Match pattern: "1. Frame description" or "1. Frame description with - dashes"
-      const match = line.match(/^(\d+)\.\s*(.+)$/i)
-      if (match) {
-        const position = parseInt(match[1], 10)
-        const description = match[2].trim()
-        
-        // Only add if position is valid (1-9) and description is not empty
-        if (position >= 1 && position <= 9 && description.length > 0) {
-          frames.push({
-            position,
-            description
-          })
+    // Extract setting from "The setting spans..." paragraph
+    const settingMatch = templatePrompt.match(/The setting spans ([^\.]+(?:\.[^\.]+)*?)(?=\.\s*The (?:outfits|first frame))/is)
+    if (settingMatch) {
+      setting = settingMatch[1].trim()
+    } else {
+      // Fallback: get first sentence after "The setting spans"
+      const settingFallback = templatePrompt.match(/The setting spans ([^\.]+)/i)
+      setting = settingFallback ? settingFallback[1].trim() : ''
+    }
+    
+    // Extract frames by looking for "The first frame...", "The second frame...", etc.
+    // Each frame description may span multiple sentences until the next frame
+    const frameOrdinals = [
+      { ordinal: 'first', position: 1 },
+      { ordinal: 'second', position: 2 },
+      { ordinal: 'third', position: 3 },
+      { ordinal: 'fourth', position: 4 },
+      { ordinal: 'fifth', position: 5 },
+      { ordinal: 'sixth', position: 6 },
+      { ordinal: 'seventh', position: 7 },
+      { ordinal: 'eighth', position: 8 },
+      { ordinal: 'ninth', position: 9 },
+    ]
+    
+    // Extract all frames at once by splitting on frame markers
+    // Frames are written as "The first frame... The second frame..." etc., sometimes on the same line
+    for (const { ordinal, position } of frameOrdinals) {
+      // Find the start of this frame (case-insensitive)
+      const frameStartMarker = `The ${ordinal} frame `
+      const frameStartIndex = templatePrompt.toLowerCase().indexOf(frameStartMarker.toLowerCase())
+      
+      if (frameStartIndex === -1) continue
+      
+      // Find the start of the next frame or color grade section
+      let frameEndIndex = templatePrompt.length
+      const nextOrdinals = frameOrdinals.filter(f => f.position > position)
+      
+      for (const nextFrame of nextOrdinals) {
+        const nextMarker = `The ${nextFrame.ordinal} frame `
+        const nextIndex = templatePrompt.toLowerCase().indexOf(nextMarker.toLowerCase(), frameStartIndex)
+        if (nextIndex !== -1 && nextIndex < frameEndIndex) {
+          frameEndIndex = nextIndex
+        }
+      }
+      
+      // Also check for color grade section
+      const colorGradeMarker = 'The color grade features'
+      const colorGradeIndex = templatePrompt.toLowerCase().indexOf(colorGradeMarker.toLowerCase(), frameStartIndex)
+      if (colorGradeIndex !== -1 && colorGradeIndex < frameEndIndex) {
+        frameEndIndex = colorGradeIndex
+      }
+      
+      // Extract the frame description
+      const frameText = templatePrompt.substring(frameStartIndex, frameEndIndex)
+      // Remove the "The [ordinal] frame " prefix (case-insensitive)
+      const description = frameText.replace(new RegExp(`^The ${ordinal} frame `, 'i'), '').trim()
+      
+      // Clean up: remove trailing period and whitespace
+      const cleanedDescription = description.replace(/\.\s*$/, '').trim()
+      
+      if (cleanedDescription.length > 0) {
+        frames.push({
+          position,
+          description: cleanedDescription
+        })
+      }
+    }
+    
+    // Extract color grade from "The color grade features..." paragraph
+    const colorGradeMatch = templatePrompt.match(/The color grade features ([^\.]+(?:\.[^\.]+)*)/is)
+    if (colorGradeMatch) {
+      colorGrade = colorGradeMatch[1].trim()
+    } else {
+      // Fallback: get everything after "The color grade features" until end
+      const colorGradeFallback = templatePrompt.match(/The color grade features (.+)/is)
+      colorGrade = colorGradeFallback ? colorGradeFallback[1].trim() : ''
+    }
+    
+  } else {
+    // OLD FORMAT: Template headers (backward compatibility)
+    // Extract vibe section (everything after "Vibe:" until next section)
+    const vibeMatch = templatePrompt.match(/Vibe:\s*([^\n]+(?:\n(?!Setting:|Outfits:|9 frames:)[^\n]+)*)/i)
+    vibe = vibeMatch ? vibeMatch[1].trim() : ''
+    
+    // Extract setting section (everything after "Setting:" until next section)
+    const settingMatch = templatePrompt.match(/Setting:\s*([^\n]+(?:\n(?!Outfits:|9 frames:|Color grade:)[^\n]+)*)/i)
+    setting = settingMatch ? settingMatch[1].trim() : ''
+    
+    // Extract frames section (everything between "9 frames:" and "Color grade:")
+    const framesMatch = templatePrompt.match(/9 frames:([\s\S]+?)(?=Color grade:|$)/i)
+    
+    if (framesMatch) {
+      const framesText = framesMatch[1]
+      // Split by newlines and parse each frame
+      const frameLines = framesText.split('\n')
+      
+      for (const line of frameLines) {
+        // Match pattern: "1. Frame description" or "1. Frame description with - dashes"
+        const match = line.match(/^(\d+)\.\s*(.+)$/i)
+        if (match) {
+          const position = parseInt(match[1], 10)
+          const description = match[2].trim()
+          
+          // Only add if position is valid (1-9) and description is not empty
+          if (position >= 1 && position <= 9 && description.length > 0) {
+            frames.push({
+              position,
+              description
+            })
+          }
         }
       }
     }
+    
+    // Extract color grade (everything after "Color grade:")
+    const colorGradeMatch = templatePrompt.match(/Color grade:\s*([^\n`]+)/i)
+    colorGrade = colorGradeMatch ? colorGradeMatch[1].trim() : ''
   }
-  
-  // Extract color grade (everything after "Color grade:")
-  const colorGradeMatch = templatePrompt.match(/Color grade:\s*([^\n`]+)/i)
-  const colorGrade = colorGradeMatch ? colorGradeMatch[1].trim() : ''
   
   return { frames, vibe, setting, colorGrade }
 }
@@ -106,108 +224,6 @@ export function detectFrameType(description: string): 'flatlay' | 'closeup' | 'f
   return 'midshot'
 }
 
-/**
- * Cleans frame description for flatlay and closeup scenes
- * Removes redundant location details and ambient descriptions
- */
-function cleanFrameDescription(description: string, frameType: 'flatlay' | 'closeup' | 'fullbody' | 'midshot'): string {
-  if (frameType === 'flatlay') {
-    // For flatlay, remove redundant location details that might have been injected
-    // Keep: items, surface, lighting, camera angle
-    // Remove: full location descriptions with ambient details
-    
-    let cleaned = description
-    
-    // Pattern 1: Find "on [location]" and replace with simplified surface description
-    // Example: "Coffee and accessories on Luxurious hotel lobby with floor-to-ceiling dark marble walls..." 
-    // Should become: "Coffee and accessories on dark marble surface"
-    cleaned = cleaned.replace(/on\s+([^-\n\.]+?)(?=\s*-\s*(overhead|flatlay)|\.|$)/gi, (match, locationText) => {
-      // Extract surface/material keywords from the location text
-      const lowerText = locationText.toLowerCase()
-      
-      // Look for material keywords
-      if (lowerText.includes('marble')) {
-        // Extract color if present
-        const colorMatch = locationText.match(/(dark|light|black|white|grey|gray|beige)/i)
-        const color = colorMatch ? colorMatch[0].toLowerCase() : 'dark'
-        return `on ${color} marble surface`
-      }
-      if (lowerText.includes('wood') || lowerText.includes('wooden')) {
-        return 'on wooden surface'
-      }
-      if (lowerText.includes('concrete')) {
-        return 'on concrete surface'
-      }
-      if (lowerText.includes('stone')) {
-        return 'on stone surface'
-      }
-      if (lowerText.includes('glass')) {
-        return 'on glass surface'
-      }
-      if (lowerText.includes('metal')) {
-        return 'on metal surface'
-      }
-      if (lowerText.includes('table') || lowerText.includes('desk') || lowerText.includes('counter')) {
-        // Extract material if mentioned
-        const materialMatch = locationText.match(/(marble|wood|concrete|stone|glass|metal)/i)
-        if (materialMatch) {
-          return `on ${materialMatch[0].toLowerCase()} ${lowerText.includes('table') ? 'table' : lowerText.includes('desk') ? 'desk' : 'counter'}`
-        }
-        return lowerText.includes('table') ? 'on table' : lowerText.includes('desk') ? 'on desk' : 'on counter'
-      }
-      
-      // Fallback: just "on surface"
-      return 'on surface'
-    })
-    
-    // Pattern 2: Remove sentences with ambient details that come after the location
-    // These are usually separate sentences after the location description
-    // Example: ". Ambient lighting from modern fixtures creates moody atmosphere. Designer furniture in charcoal and black tones."
-    cleaned = cleaned.replace(/\.\s*[A-Z][^.]*?(ambient|atmosphere|furniture|fixtures|creates|designer|interior|exterior|floor-to-ceiling|geometric patterns|moody atmosphere)[^.]*\./gi, '')
-    
-    // Pattern 3: Remove any remaining location context that's part of the same sentence
-    // Example: "Luxurious hotel lobby with floor-to-ceiling dark marble walls and geometric patterns"
-    // Should be simplified to just the surface
-    cleaned = cleaned.replace(/\s+(lobby|room|space|interior|exterior|hotel|building|venue|location)\s+[^,\-\.]+/gi, '')
-    
-    // Pattern 4: Clean up any double spaces or extra punctuation
-    cleaned = cleaned.replace(/\s{2,}/g, ' ').replace(/\.\s*\./g, '.').trim()
-    
-    return cleaned
-  }
-  
-  if (frameType === 'closeup') {
-    // For closeup, remove location descriptions entirely
-    // Keep: accessory/outfit detail, minimal context, lighting
-    
-    let cleaned = description
-    
-    // Remove location descriptions (usually after "on" or "in" or "at")
-    // Pattern: "Close-up accessory on [location]" -> "Close-up accessory"
-    cleaned = cleaned.replace(/\s+(on|in|at)\s+[^,\-\.]+(?=[,\-\.]|$)/gi, '')
-    
-    // Remove full sentences with location/ambient details
-    cleaned = cleaned.replace(/\.\s*[A-Z][^.]*?(ambient|atmosphere|furniture|fixtures|creates|designer|interior|exterior|lobby|room|space|location)[^.]*\./gi, '')
-    
-    // Remove any remaining location context that's too detailed
-    // Keep only essential closeup details: accessory, pose, lighting
-    const parts = cleaned.split(/[,\-]/)
-    const essentialParts = parts.filter(part => {
-      const lower = part.toLowerCase()
-      return !lower.includes('lobby') && 
-             !lower.includes('room') && 
-             !lower.includes('interior') && 
-             !lower.includes('exterior') &&
-             !lower.includes('furniture') &&
-             !lower.includes('ambient')
-    })
-    
-    return essentialParts.join(', ').trim()
-  }
-  
-  // For fullbody/midshot, return as-is (full location descriptions are appropriate)
-  return description
-}
 
 /**
  * Builds complete NanoBanana prompt for single image generation
@@ -249,7 +265,8 @@ export async function buildSingleImagePrompt(
     contentPillars?: string | null
     businessType?: string | null
   } | null,
-  category?: "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional" | null
+  category?: "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional" | null,
+  mood?: "luxury" | "minimal" | "beige" | null
 ): Promise<string> {
   // Validate position
   if (position < 1 || position > 9) {
@@ -273,16 +290,13 @@ export async function buildSingleImagePrompt(
     throw new Error(`Frame ${position} not found in template. Available frames: ${frames.map(f => f.position).join(', ')}`)
   }
   
-  // Detect frame type for cleanup
+  // Detect frame type for validation
   const frameType = detectFrameType(frame.description)
   
   // Phase P0: Validate frame type matches scene spec
   if (sceneSpec && sceneSpec.frameType !== frameType) {
     console.warn(`[SCENE-CONTRACT] Frame type mismatch: template has '${frameType}', scene spec expects '${sceneSpec.frameType}' for position ${position}. Using scene spec.`)
   }
-  
-  // Clean frame description based on frame type
-  const cleanedFrameDescription = cleanFrameDescription(frame.description, frameType)
   
   // Phase P0 + Phase 1A: Build prompt with Scene Contract enforcement + BrandKit injection
   // Structure: STYLE LOCK + USER BRAND PROFILE + SCENE DNA + USER VARIABLES + CAMERA + QUALITY + NEGATIVE RULES
@@ -295,9 +309,12 @@ export async function buildSingleImagePrompt(
   }
   
   // 2. USER BRAND PROFILE (Phase 1A: Required brand profile injection)
+  // SEMANTIC AUTHORITY ENFORCEMENT: Pass subjectRole to gate business semantics
   if (brandKit) {
     const { formatBrandProfileBlock } = await import('@/lib/brand/build-brand-kit')
-    const brandProfileBlock = formatBrandProfileBlock(brandKit)
+    const { resolveSubjectRole } = await import('@/lib/semantic/resolve-subject-role')
+    const subjectRole = resolveSubjectRole(category)
+    const brandProfileBlock = formatBrandProfileBlock(brandKit, subjectRole)
     if (brandProfileBlock) {
       promptParts.push(brandProfileBlock)
     }
@@ -334,8 +351,8 @@ export async function buildSingleImagePrompt(
     promptParts.push(`Setting: ${setting}`)
   }
   
-  // Add cleaned frame description (already natural language) - this fills brand kit variables
-  promptParts.push(cleanedFrameDescription)
+  // Add frame description verbatim (already natural language) - this fills brand kit variables
+  promptParts.push(frame.description)
   
   // 5. CAMERA + COMPOSITION
   if (sceneSpec) {
@@ -360,11 +377,6 @@ export async function buildSingleImagePrompt(
     if (negativeRulesText) {
       promptParts.push(`Restrictions: ${negativeRulesText}`)
     }
-  }
-  
-  // Phase P0: Final scene contract reminder
-  if (sceneSpec) {
-    promptParts.push(`Deliver exactly one scene matching position ${position} specification. Maintain scene integrity—no mixing or blending.`)
   }
   
   // Join with spaces for natural language flow (identity anchor is always first)

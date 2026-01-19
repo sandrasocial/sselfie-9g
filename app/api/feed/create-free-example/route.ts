@@ -30,10 +30,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    // Parse request body for feedStyle, visualAesthetic, and fashionStyle (optional)
+    // Parse request body for feedStyle, visualAesthetic, and fashionStyle
     let requestedFeedStyle: string | null = null
-    let requestedVisualAesthetic: string[] | null = null
-    let requestedFashionStyle: string[] | null = null
+    let requestedVisualAesthetic: any = null
+    let requestedFashionStyle: any = null
     
     try {
       const body = await req.json().catch(() => ({}))
@@ -44,25 +44,25 @@ export async function POST(req: NextRequest) {
         // Validate feedStyle
         const validStyles = ['luxury', 'minimal', 'beige']
         if (!validStyles.includes(requestedFeedStyle)) {
-          console.warn(`[v0] Invalid feedStyle requested: ${requestedFeedStyle}, using default`)
+          console.warn(`[v0] Invalid feedStyle requested: ${requestedFeedStyle}, rejecting`)
           requestedFeedStyle = null
         }
       }
       
-      // Parse visualAesthetic (array)
+      // Parse visualAesthetic (array) - will be stored in feed_layouts
       if (body.visualAesthetic && Array.isArray(body.visualAesthetic) && body.visualAesthetic.length > 0) {
         requestedVisualAesthetic = body.visualAesthetic.map((v: string) => v.toLowerCase().trim())
-        console.log(`[v0] Requested visualAesthetic:`, requestedVisualAesthetic)
+        console.log(`[v0] Preview feed will use visualAesthetic:`, requestedVisualAesthetic)
       }
       
-      // Parse fashionStyle (array)
+      // Parse fashionStyle (array) - will be stored in feed_layouts
       if (body.fashionStyle && Array.isArray(body.fashionStyle) && body.fashionStyle.length > 0) {
         requestedFashionStyle = body.fashionStyle.map((v: string) => v.toLowerCase().trim())
-        console.log(`[v0] Requested fashionStyle:`, requestedFashionStyle)
+        console.log(`[v0] Preview feed will use fashionStyle:`, requestedFashionStyle)
       }
     } catch (e) {
-      // No body or invalid JSON - continue with default behavior
-      console.log(`[v0] No body in request, using user's default`)
+      // No body or invalid JSON
+      console.log(`[v0] No body in request, feedStyle will be required`)
     }
 
     // Removed free-only restriction - all users can create preview feeds
@@ -77,60 +77,95 @@ export async function POST(req: NextRequest) {
     // Get wizard context using canonical category resolver
     // Use template-based prompts from grid library based on user's current style choices
     let templatePrompt = null
-    let feedStyleToStore: string | null = null
+    let feedStyleToStore: string | null = requestedFeedStyle // Use requested feedStyle first
+    
     try {
-      // Use canonical category resolver (Phase 1C/1D)
-      const { category, mood } = await getCategoryAndMood(
-        null,
-        { id: user.id },
-        {
-          checkSettingsPreference: true,
-          checkBlueprintSubscribers: true,
-          trackSource: true,
-        }
-      )
-      
-      // Use requested feedStyle if provided (for feed_layouts storage)
-      if (requestedFeedStyle) {
-        feedStyleToStore = requestedFeedStyle
-        console.log(`[v0] Using requested feedStyle for storage: ${requestedFeedStyle}`)
-      } else {
-        // Extract feedStyle from mood for storage
+      // If no feedStyle provided, try to get from personal brand
+      if (!feedStyleToStore) {
+        const { category, mood } = await getCategoryAndMood(
+          null,
+          { id: user.id },
+          {
+            checkSettingsPreference: true,
+            checkBlueprintSubscribers: true,
+            trackSource: true,
+          }
+        )
         feedStyleToStore = mood
       }
       
-      // Get template prompt from grid library
-      const { BLUEPRINT_PHOTOSHOOT_TEMPLATES, MOOD_MAP } = await import("@/lib/maya/blueprint-photoshoot-templates")
-      const { validateBlueprintTemplate } = await import("@/lib/feed-planner/extract-aesthetic-from-template")
-      // Map mood correctly using MOOD_MAP
-      const moodMapped = MOOD_MAP[mood as keyof typeof MOOD_MAP] || "light_minimalistic"
-      const templateKey = `${category}_${moodMapped}` as keyof typeof BLUEPRINT_PHOTOSHOOT_TEMPLATES
-      templatePrompt = BLUEPRINT_PHOTOSHOOT_TEMPLATES[templateKey] || null
+      // REQUIRED VALIDATION: feedStyle must be provided or resolved
+      if (!feedStyleToStore) {
+        return NextResponse.json(
+          { error: "FEED_STYLE_REQUIRED", details: "Feed style is required to create a preview feed." },
+          { status: 422 }
+        )
+      }
       
-      if (templatePrompt) {
+      console.log(`[v0] Preview feed will use feedStyle: ${feedStyleToStore}`)
+      
+      // Phase 2E: Get template prompt via getBlueprintPhotoshootPrompt (includes subject identity override)
+      const { getBlueprintPhotoshootPrompt } = await import("@/lib/maya/blueprint-photoshoot-templates")
+      const { validateBlueprintTemplate } = await import("@/lib/feed-planner/extract-aesthetic-from-template")
+      
+      // Fetch fashionStyle from user_personal_brand if not provided in request
+      let fashionStyle: string | null = null
+      if (requestedFashionStyle && requestedFashionStyle.length > 0) {
+        fashionStyle = requestedFashionStyle[0]
+      } else {
+        // Try to fetch from user_personal_brand
+        try {
+          const brandResult = await sql`
+            SELECT fashion_style FROM user_personal_brand
+            WHERE user_id = ${user.id} AND is_completed = true
+            LIMIT 1
+          `
+          if (brandResult.length > 0 && brandResult[0].fashion_style) {
+            const fashionStyleArray = Array.isArray(brandResult[0].fashion_style) 
+              ? brandResult[0].fashion_style 
+              : [brandResult[0].fashion_style]
+            if (fashionStyleArray.length > 0) {
+              fashionStyle = fashionStyleArray[0]
+            }
+          }
+        } catch (error) {
+          console.warn(`[v0] Could not fetch fashionStyle from user_personal_brand:`, error)
+        }
+      }
+      
+      // Use feedStyleToStore as mood for template generation
+      const moodForTemplate = feedStyleToStore as "luxury" | "minimal" | "beige"
+      
+      try {
+        templatePrompt = getBlueprintPhotoshootPrompt(category, moodForTemplate, fashionStyle)
+        
         // Validate template can be properly extracted for NanoBanana structure
         const validation = validateBlueprintTemplate(templatePrompt)
         if (!validation.isValid) {
-          console.warn(`[v0] ⚠️ Template ${templateKey} has missing fields:`, validation.missingFields)
+          console.warn(`[v0] ⚠️ Template ${category}_${moodForTemplate} has missing fields:`, validation.missingFields)
           console.warn(`[v0] ⚠️ Warnings:`, validation.warnings)
         } else {
-          console.log(`[v0] ✅ Template ${templateKey} validated successfully`)
+          console.log(`[v0] ✅ Template ${category}_${moodForTemplate} validated successfully`)
         }
-        console.log(`[v0] Using template prompt from canonical resolver: ${category}_${moodMapped} (${templatePrompt.split(/\s+/).length} words)`)
-      } else {
-        console.log(`[v0] Template not found for ${category}_${moodMapped} - prompt will be generated on first generation`)
+        console.log(`[v0] Using template prompt from canonical resolver with subject identity override: ${category}_${moodForTemplate} (${templatePrompt.split(/\s+/).length} words)`)
+      } catch (error) {
+        console.error(`[v0] Error getting template prompt:`, error)
+        templatePrompt = null
       }
     } catch (error) {
       console.error("[v0] Error getting template prompt for free example:", error)
+      // If feedStyle is missing at this point, return error (should have been caught above)
+      if (!feedStyleToStore) {
+        return NextResponse.json(
+          { error: "FEED_STYLE_REQUIRED", details: "Feed style is required to create a preview feed." },
+          { status: 422 }
+        )
+      }
       // Continue without prompt - it will be generated on first generation
     }
 
-    // Ensure preview feeds always store a feed_style (fallback to minimal)
-    if (!feedStyleToStore) {
-      feedStyleToStore = "minimal"
-    }
-
     // Create feed layout with layout_type: 'preview'
+    // Include feed-specific visual_aesthetic and fashion_style if provided
     const title = `Preview Feed - ${new Date().toLocaleDateString()}`
     let feedResult: any[]
     try {
@@ -143,6 +178,8 @@ export async function POST(req: NextRequest) {
           status,
           layout_type,
           feed_style,
+          visual_aesthetic,
+          fashion_style,
           created_by
         )
         VALUES (
@@ -153,35 +190,69 @@ export async function POST(req: NextRequest) {
           'saved',
           'preview',
           ${feedStyleToStore},
+          ${requestedVisualAesthetic ? requestedVisualAesthetic : null}::jsonb,
+          ${requestedFashionStyle ? requestedFashionStyle : null}::jsonb,
           'manual'
         )
         RETURNING *
       ` as any[]
     } catch (error: any) {
-      // If created_by field doesn't exist, try without it
-      if (error?.message?.includes('created_by') || error?.code === '42703') {
-        console.log("[v0] created_by field not found, creating feed without it")
-        feedResult = await sql`
-          INSERT INTO feed_layouts (
-            user_id,
-            brand_name,
-            username,
-            description,
-            status,
-            layout_type,
-            feed_style
-          )
-          VALUES (
-            ${user.id},
-            ${title},
-            ${user.name?.toLowerCase().replace(/\s+/g, "") || "yourbrand"},
-            NULL,
-            'saved',
-            'preview',
-            ${feedStyleToStore}
-          )
-          RETURNING *
-        ` as any[]
+      // If created_by, visual_aesthetic, or fashion_style fields don't exist, try without them
+      if (error?.message?.includes('created_by') || error?.message?.includes('visual_aesthetic') || error?.message?.includes('fashion_style') || error?.code === '42703') {
+        console.log("[v0] New columns not found, trying without visual_aesthetic/fashion_style")
+        try {
+          feedResult = await sql`
+            INSERT INTO feed_layouts (
+              user_id,
+              brand_name,
+              username,
+              description,
+              status,
+              layout_type,
+              feed_style,
+              created_by
+            )
+            VALUES (
+              ${user.id},
+              ${title},
+              ${user.name?.toLowerCase().replace(/\s+/g, "") || "yourbrand"},
+              NULL,
+              'saved',
+              'preview',
+              ${feedStyleToStore},
+              'manual'
+            )
+            RETURNING *
+          ` as any[]
+        } catch (error2: any) {
+          // If created_by also doesn't exist, try without it
+          if (error2?.message?.includes('created_by') || error2?.code === '42703') {
+            console.log("[v0] created_by field not found, creating feed without it")
+            feedResult = await sql`
+              INSERT INTO feed_layouts (
+                user_id,
+                brand_name,
+                username,
+                description,
+                status,
+                layout_type,
+                feed_style
+              )
+              VALUES (
+                ${user.id},
+                ${title},
+                ${user.name?.toLowerCase().replace(/\s+/g, "") || "yourbrand"},
+                NULL,
+                'saved',
+                'preview',
+                ${feedStyleToStore}
+              )
+              RETURNING *
+            ` as any[]
+          } else {
+            throw error2
+          }
+        }
       } else {
         throw error
       }

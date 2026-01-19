@@ -161,46 +161,32 @@ export async function POST(request: NextRequest) {
     const proPosts: typeof strategy.posts = []
     
     for (const post of strategy.posts) {
-      let generationMode: 'classic' | 'pro'
+      // CRITICAL: Feed Planner ALWAYS uses Pro Mode (Nano Banana Pro) for ALL users
+      // Force Pro Mode for all Feed Planner posts, regardless of user preference or post type
+      let generationMode: 'classic' | 'pro' = 'pro'
       
-      if (forceMode) {
-        // User explicitly chose a mode - use it for ALL posts
-        generationMode = forceMode
-      } else {
-        // No user preference - auto-detect based on post type
-        generationMode = post.generationMode || detectRequiredMode({
-          post_type: post.type || post.postType,
-          description: post.description || '',
-          prompt: '',
-          content_pillar: post.purpose || '',
-        })
-      }
-      
-      if (generationMode === 'classic') {
-        classicPosts.push(post)
-      } else {
-        proPosts.push(post)
-      }
+      // All Feed Planner posts go to Pro Mode
+      proPosts.push(post)
     }
     
-    console.log(`[FEED-FROM-STRATEGY] Mode distribution: ${classicPosts.length} Classic, ${proPosts.length} Pro`)
+    // CRITICAL: Feed Planner ALWAYS uses Pro Mode - all posts are Pro Mode
+    console.log(`[FEED-FROM-STRATEGY] Mode distribution: 0 Classic, ${proPosts.length} Pro (all Feed Planner posts use Pro Mode)`)
     
     // Calculate total credits needed (strategy + images)
     // Strategy credits: 1 credit (fixed)
     const strategyCredits = CREDIT_COSTS.STRATEGY || 1
     
-    // Image credits: Classic posts × 1 credit, Pro posts × 2 credits
-    const classicImageCredits = classicPosts.length * CREDIT_COSTS.IMAGE
-    const proImageCredits = proPosts.length * getStudioProCreditCost('2K')
-    const totalImageCredits = classicImageCredits + proImageCredits
+    // Image credits: All posts are Pro Mode × 2 credits each
+    const totalImageCredits = proPosts.length * getStudioProCreditCost('2K')
     
     // Total credits needed
     const totalCredits = strategyCredits + totalImageCredits
     
-    console.log(`[FEED-FROM-STRATEGY] Credit calculation: ${strategyCredits} (strategy) + ${totalImageCredits} (images: ${classicPosts.length} Classic × ${CREDIT_COSTS.IMAGE} + ${proPosts.length} Pro × ${getStudioProCreditCost('2K')}) = ${totalCredits} total credits`)
+    console.log(`[FEED-FROM-STRATEGY] Credit calculation: ${strategyCredits} (strategy) + ${totalImageCredits} (images: ${proPosts.length} Pro Mode posts × ${getStudioProCreditCost('2K')} credits each) = ${totalCredits} total credits`)
     
-    // Check for trained model (required for Classic Mode posts)
-    if (classicPosts.length > 0) {
+    // CRITICAL: Feed Planner ALWAYS uses Pro Mode - no Classic Mode posts, so no trained model check needed
+    // Removed Classic Mode trained model check since all Feed Planner posts use Pro Mode
+    if (false) { // This block is disabled - Feed Planner always uses Pro Mode
       const [model] = await sql`
         SELECT trigger_word, replicate_version_id, replicate_model_id, lora_weights_url
         FROM user_models
@@ -399,18 +385,9 @@ export async function POST(request: NextRequest) {
     
     for (const post of strategy.posts) {
       try {
-        // Determine generation mode (needed for post creation)
-        let generationMode: 'classic' | 'pro'
-        if (forceMode) {
-          generationMode = forceMode
-        } else {
-          generationMode = post.generationMode || detectRequiredMode({
-            post_type: post.type || post.postType,
-            description: post.description || '',
-            prompt: '',
-            content_pillar: post.purpose || '',
-          })
-        }
+        // CRITICAL: Feed Planner ALWAYS uses Pro Mode (Nano Banana Pro) for ALL users
+        // Force Pro Mode for all Feed Planner posts, regardless of user preference or post type
+        let generationMode: 'classic' | 'pro' = 'pro'
 
         const proModeType = generationMode === 'pro' 
           ? detectProModeType({
@@ -652,25 +629,10 @@ export async function POST(request: NextRequest) {
       try {
         console.log(`[FEED-FROM-STRATEGY] Processing post ${post.position} (type: ${post.type || post.postType})`)
         
-        // CRITICAL: Check user's mode preference FIRST (from toggle)
-        // If user explicitly chose Pro or Classic, use that for ALL posts
-        // Otherwise, use auto-detection per post
-        let generationMode: 'classic' | 'pro'
-        
-        if (forceMode) {
-          // User explicitly chose a mode - use it for ALL posts
-          generationMode = forceMode
-          console.log(`[FEED-FROM-STRATEGY] Post ${post.position}: Using user preference (${forceMode})`)
-        } else {
-          // No user preference - auto-detect based on post type
-          generationMode = post.generationMode || detectRequiredMode({
-            post_type: post.type || post.postType,
-            description: post.description || '',
-            prompt: '',
-            content_pillar: post.purpose || '',
-          })
-          console.log(`[FEED-FROM-STRATEGY] Post ${post.position}: Auto-detected as ${generationMode}`)
-        }
+        // CRITICAL: Feed Planner ALWAYS uses Pro Mode (Nano Banana Pro) for ALL users
+        // Force Pro Mode for all Feed Planner posts, regardless of user preference or post type
+        let generationMode: 'classic' | 'pro' = 'pro'
+        console.log(`[FEED-FROM-STRATEGY] Post ${post.position}: Forced to Pro Mode for Feed Planner`)
 
         const proModeType = generationMode === 'pro' 
           ? detectProModeType({

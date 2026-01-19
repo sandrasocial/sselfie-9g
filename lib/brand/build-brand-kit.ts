@@ -253,8 +253,19 @@ export function buildBrandKit(brandProfile: Partial<UserPersonalBrand> | null | 
 /**
  * Format BrandKit for prompt injection (Phase 1A)
  * Creates a "USER BRAND PROFILE" block for inclusion in prompts
+ * 
+ * SEMANTIC AUTHORITY ENFORCEMENT:
+ * - businessType field is ONLY injected when subjectRole === "professional"
+ * - Prevents implicit business identity leakage in lifestyle contexts
+ * 
+ * @param brandKit - BrandKit object with user brand data
+ * @param subjectRole - Resolved subject role ("lifestyle" or "professional")
+ * @returns Formatted brand profile block
  */
-export function formatBrandProfileBlock(brandKit: BrandKit): string {
+export function formatBrandProfileBlock(
+  brandKit: BrandKit,
+  subjectRole: "lifestyle" | "professional" = "lifestyle"
+): string {
   const parts: string[] = []
   
   parts.push('=== USER BRAND PROFILE ===')
@@ -299,7 +310,9 @@ export function formatBrandProfileBlock(brandKit: BrandKit): string {
     parts.push(`Content Pillars: ${brandKit.contentPillars}`)
   }
   
-  if (brandKit.businessType) {
+  // SEMANTIC GATE: businessType ONLY when subjectRole === "professional"
+  // This prevents business identity leakage in lifestyle contexts
+  if (brandKit.businessType && subjectRole === "professional") {
     parts.push(`Business Type: ${brandKit.businessType}`)
   }
   

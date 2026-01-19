@@ -1,11 +1,32 @@
+/**
+ * BLUEPRINT GRID GENERATION ROUTE
+ * 
+ * BLUEPRINT GRID — READ ONLY
+ * 
+ * Uses canonical scene pipeline (same as Feed Planner).
+ * Must never generate single-scene prompts.
+ * 
+ * CANONICAL FLOW:
+ * Blueprint Grid → resolveConsistentScenes → buildPreviewPromptFromScenes → Nano Banana
+ * 
+ * IMPORTANT:
+ * Blueprint grid uses preview prompts ONLY.
+ * Full planner logic is intentionally excluded.
+ * 
+ * This ensures:
+ * - Blueprint → Feed Preview → Full Planner = one visual truth
+ * - No duplicate logic
+ * - No future AI confusion
+ */
+
 import { NextRequest, NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import { generateWithNanoBanana } from "@/lib/nano-banana-client"
-import { getBlueprintPhotoshootPrompt } from "@/lib/maya/blueprint-photoshoot-templates"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getBlueprintEntitlement } from "@/lib/subscription"
 import { checkCredits, deductCredits, getUserCredits, CREDIT_COSTS } from "@/lib/credits"
+import { resolveConsistentScenes, buildPreviewPromptFromScenes } from "@/lib/feed-planner/scene-consistency"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -156,18 +177,72 @@ export async function POST(req: NextRequest) {
 
     console.log(`[Blueprint] Generating grid with ${validImageUrls.length} selfie(s) for category: ${category}, mood: ${mood}`)
 
-    // Get prompt from template library
+    // CANONICAL FEED PLANNER PIPELINE
+    // Blueprint grid uses the same scene pipeline as Feed Planner
+    // This ensures visual consistency: Blueprint → Feed Preview → Full Planner
+    
+    // Fetch user data for scene resolution
+    let user: { id: string | number } | null = null
+    if (userId) {
+      user = { id: userId }
+    } else {
+      // For email-based users, we need to get user_id from subscriber
+      const subscriberUserQuery = await sql`
+        SELECT user_id FROM blueprint_subscribers
+        WHERE email = ${email}
+        LIMIT 1
+      `
+      if (subscriberUserQuery.length > 0 && subscriberUserQuery[0].user_id) {
+        user = { id: subscriberUserQuery[0].user_id }
+      }
+    }
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: "User not found. Cannot resolve scenes." },
+        { status: 400 },
+      )
+    }
+    
+    // Construct feedLayout object for scene resolution
+    // feed_style format matches Feed Planner: just the mood (e.g., "minimal", "luxury", "beige")
+    // The scene resolver uses defaultCategory for category, feed_style for mood
+    const feedLayout = {
+      feed_style: mood, // Mood is the feed_style (e.g., "minimal", "luxury", "beige")
+      visual_aesthetic: [category],
+      fashion_style: null, // Will be fetched by scene resolver if needed
+    }
+    
+    // IMPORTANT: Blueprint grid uses preview prompts ONLY
+    // Full planner logic is intentionally excluded
     let prompt: string
     try {
-      prompt = getBlueprintPhotoshootPrompt(category, mood)
+      // Resolve all 9 scenes using canonical pipeline
+      // This ensures Blueprint → Feed Preview → Full Planner = one visual truth
+      const scenes = await resolveConsistentScenes(feedLayout, user, {
+        checkSettingsPreference: false,
+        checkBlueprintSubscribers: false,
+        defaultCategory: category as "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional",
+      })
+      
+      // Build preview prompt (STRATEGY ONLY, NOT execution)
+      // IMPORTANT: Blueprint grid uses preview prompts ONLY
+      // Full planner logic is intentionally excluded
+      // This outputs position strategies, NOT scene descriptions with outfits/locations/poses
+      prompt = buildPreviewPromptFromScenes(scenes)
+      
+      console.log(`[Blueprint] ✅ Generated preview prompt via CANONICAL pipeline (${prompt.split(/\s+/).length} words, ${scenes.length} scenes)`)
+      
+      // FEED SYSTEM LOCKED — STRATEGY ≠ EXECUTION
+      // Preview is now a blueprint. Single scenes now build the house.
     } catch (error) {
-      console.error("[Blueprint] Template error:", error)
+      console.error("[Blueprint] Scene resolution error:", error)
       return NextResponse.json(
         {
           error:
             error instanceof Error
               ? error.message
-              : "Prompt template not available. Please contact support.",
+              : "Failed to resolve scenes. Please contact support.",
         },
         { status: 500 },
       )

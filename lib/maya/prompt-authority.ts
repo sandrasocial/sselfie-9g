@@ -1,6 +1,11 @@
 /**
  * PROMPT AUTHORITY LAYER
  * 
+ * 🧊 FROZEN: Maya system - DO NOT MODIFY. Feed Planner will bypass this.
+ * 
+ * PHASE 6: This file is frozen. Feed Planner now uses scene-resolver.ts + prompt-shaper.ts.
+ * This is Maya's routing layer and should not be called for Feed Planner generation.
+ * 
  * Phase 2C-1: Foundation Implementation
  * 
  * PURPOSE: Central routing layer for all prompt generation and validation.
@@ -1133,8 +1138,10 @@ export async function generateFeedSinglePromptViaAuthority(
     postId?: string | number
     generationMode?: 'pro' | 'classic'
     category?: "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional" | null
+    mood?: "luxury" | "minimal" | "beige" | null
+    resolvedFashionStyle?: string // MANDATORY for Pro Mode - from coherence resolver
   }
-): {
+): Promise<{
   prompt: string
   metadata: {
     routeId: 'EP-05'
@@ -1142,7 +1149,7 @@ export async function generateFeedSinglePromptViaAuthority(
     fingerprint: string
     timestamp: string
   }
-} {
+}> {
   const startTime = Date.now()
   const timestamp = new Date().toISOString()
   
@@ -1174,13 +1181,50 @@ export async function generateFeedSinglePromptViaAuthority(
     }
   }
   
-  // Import and call the existing builder (preserves exact behavior)
-  // Use dynamic import to match codebase pattern
-  // Phase P0: buildSingleImagePrompt is now async (Scene Contract enforcement)
-  // Phase 1A: buildSingleImagePrompt now accepts BrandKit for brand profile injection
-  // Phase 1C: buildSingleImagePrompt now accepts category for Scene 8 customization
-  const { buildSingleImagePrompt } = await import('@/lib/feed-planner/build-single-image-prompt')
-  const prompt = await buildSingleImagePrompt(templatePrompt, position, brandKit, context?.category || null)
+  // Builder selection based on generation mode
+  // Pro Mode (Nano Banana Pro) requires natural language prompts
+  // Classic Mode (Flux) uses structured system-labeled prompts
+  let prompt: string
+  let builderUsed: string
+  
+  if (context?.generationMode === 'pro') {
+    // PRO MODE: Use Nano Banana prompt builder for natural language output
+    console.log(`[PROMPT-AUTHORITY] EP-05 Using buildNanoBananaPrompt for Pro Mode (Nano Banana Pro)`)
+    
+    // CRITICAL: resolvedFashionStyle is MANDATORY for coherence enforcement
+    if (!context.resolvedFashionStyle) {
+      console.error('[PROMPT-AUTHORITY] ❌ CRITICAL: resolvedFashionStyle is REQUIRED for Pro Mode')
+      console.error('[PROMPT-AUTHORITY] ❌ Must use coherence resolver before calling prompt authority')
+      throw new Error('COHERENCE_RESOLVER_REQUIRED: resolvedFashionStyle must be provided in context')
+    }
+    
+    // Adapter: Convert Feed Planner template to Nano Banana format
+    const { adaptFeedPlannerToNanoBanana } = await import('@/lib/feed-planner/nano-banana-adapter')
+    const nanoBananaInput = await adaptFeedPlannerToNanoBanana({
+      templatePrompt,
+      position,
+      brandKit,
+      userId: context.userId || '',
+      category: context.category,
+      mood: context.mood,
+      resolvedFashionStyle: context.resolvedFashionStyle, // MANDATORY - from coherence resolver
+      mode: "single", // Single-scene prompt (one frame only)
+    })
+    
+    const { buildNanoBananaPrompt } = await import('@/lib/maya/nano-banana-prompt-builder')
+    const result = await buildNanoBananaPrompt(nanoBananaInput)
+    prompt = result.optimizedPrompt
+    builderUsed = 'build-nano-banana-prompt'
+  } else {
+    // CLASSIC MODE: Use existing builder with system labels
+    // Phase P0: buildSingleImagePrompt is now async (Scene Contract enforcement)
+    // Phase 1A: buildSingleImagePrompt now accepts BrandKit for brand profile injection
+    // Phase 1C: buildSingleImagePrompt now accepts category for Scene 8 customization
+    // Phase 2C: buildSingleImagePrompt now accepts mood for lifestyle context
+    const { buildSingleImagePrompt } = await import('@/lib/feed-planner/build-single-image-prompt')
+    prompt = await buildSingleImagePrompt(templatePrompt, position, brandKit, context?.category || null, context?.mood || null)
+    builderUsed = 'build-single-image-prompt'
+  }
   
   // Compute fingerprint hash (privacy-safe, no full prompt logged)
   const fingerprint = createHash('sha256')
@@ -1192,10 +1236,10 @@ export async function generateFeedSinglePromptViaAuthority(
   const executionTimeMs = Date.now() - startTime
   logAudit({
     timestamp,
-    mode: context?.generationMode || 'pro', // Default to pro since buildSingleImagePrompt is for Pro Mode
+    mode: context?.generationMode || 'pro', // Default to pro
     feature: 'feed-single-post',
     userId: context?.userId,
-    builder: 'build-single-image-prompt',
+    builder: builderUsed, // Dynamic: 'build-nano-banana-prompt' or 'build-single-image-prompt'
     executionTimeMs,
     success: true,
     promptLength: prompt.length,
@@ -1422,8 +1466,8 @@ Return ONLY the JSON array, no markdown, no explanations, no code blocks.`
  * This function wraps Feed Planner strategy prompt generation to route through Prompt Authority Layer
  * for audit logging while preserving behavior.
  * 
- * Phase 3B P1-4: Migrating EP-08 (/api/feed-planner/create-strategy) to use Authority.
- * Prompt Site PS-01: Strategy generation system + user prompt
+ * Phase 3B P1-4: EP-08 (DELETED - /api/feed-planner/create-strategy removed Jan 2026)
+ * Prompt Site PS-01: Strategy generation system + user prompt (legacy reference)
  * 
  * @param context - Strategy generation context
  * @returns System prompt and user prompt strings with metadata
@@ -1588,9 +1632,9 @@ Note: Choose postType based on what makes sense for each post. Portrait posts fe
     })).digest('hex').substring(0, 16),
     outputHash: fingerprint,
     pathUsed: 'authority',
-    routeId: 'EP-08', // Phase 5A: Route identifier
-    routePath: '/api/feed-planner/create-strategy', // Phase 5A: Route path
-    promptType: 'feed-planner-strategy', // Phase 5A: Prompt type
+    routeId: 'EP-08', // Phase 5A: Route identifier (DEPRECATED - endpoint deleted Jan 2026)
+    routePath: '/api/feed-planner/create-strategy', // DELETED - endpoint removed
+    promptType: 'feed-planner-strategy', // Legacy reference
   })
   
   console.log(`[PROMPT-AUTHORITY] Feed Planner strategy prompt generated, fingerprint: ${fingerprint}`)
@@ -1610,8 +1654,8 @@ Note: Choose postType based on what makes sense for each post. Portrait posts fe
 /**
  * Generate Feed Planner Pro Mode prompt via Authority Layer.
  * 
- * Phase 3B P1-4: Migrating EP-08 (/api/feed-planner/create-strategy) to use Authority.
- * Prompt Site PS-02: Pro Mode prompt generation (buildNanoBananaPrompt wrapper)
+ * Phase 3B P1-4: EP-08 (DELETED - /api/feed-planner/create-strategy removed Jan 2026)
+ * Prompt Site PS-02: Pro Mode prompt generation (buildNanoBananaPrompt wrapper) (legacy reference)
  * 
  * @param context - Pro Mode prompt generation context
  * @returns Prompt string with metadata
@@ -1708,8 +1752,8 @@ export async function generateFeedPlannerProModePromptViaAuthority(context: {
 /**
  * Generate Feed Planner Classic Mode prompt via Authority Layer.
  * 
- * Phase 3B P1-4: Migrating EP-08 (/api/feed-planner/create-strategy) to use Authority.
- * Prompt Site PS-03: Classic Mode concept prompt generation
+ * Phase 3B P1-4: EP-08 (DELETED - /api/feed-planner/create-strategy removed Jan 2026)
+ * Prompt Site PS-03: Classic Mode concept prompt generation (legacy reference)
  * 
  * @param context - Classic Mode prompt generation context
  * @returns Concept prompt string with metadata

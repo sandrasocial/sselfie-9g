@@ -409,19 +409,23 @@ export default function FeedPublishingHub({
 
             {/* Image */}
             <div className="relative aspect-square bg-stone-100">
-              {selectedPost.image_url ? (
-                <img
-                  src={selectedPost.image_url || "/placeholder.svg"}
-                  alt={selectedPost.title}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
+              {/* PHASE 5 FIX: Use preview_image_url as fallback for preview feeds */}
+              {(() => {
+                const imageUrl = selectedPost.image_url || (selectedPost as any).preview_image_url
+                return imageUrl ? (
+                  <img
+                    src={imageUrl || "/placeholder.svg"}
+                    alt={selectedPost.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center p-8">
                   <ImageIcon size={48} className="text-stone-400 mb-4" />
                   <h3 className="text-xl font-medium text-stone-950 mb-2">{selectedPost.title}</h3>
                   <p className="text-sm text-stone-600 text-center">{selectedPost.description}</p>
                 </div>
-              )}
+              )
+              })()}
             </div>
 
             {/* Instagram-style action bar */}

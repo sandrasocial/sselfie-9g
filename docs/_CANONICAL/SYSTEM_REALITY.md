@@ -1,6 +1,6 @@
 # SSELFIE SYSTEM REALITY
 
-**Last Updated**: 2026-01-17 (Phase 4A)  
+**Last Updated**: 2026-01-19 (Nano Banana Pro Optimization)  
 **Purpose**: Single source of truth for how SSELFIE actually works today  
 **Audience**: Founder, future contributors, decision-makers  
 **Tone**: Clear, calm, founder-readable, no jargon
@@ -77,13 +77,19 @@ Maya chat (the AI assistant):
 Feed Planner:
 1. Plans content calendars
 2. Creates post concepts
-3. **Delegates prompt creation** to Prompt Authority
-4. Generates images using those prompts
+3. **Delegates prompt creation** to Prompt Authority (`lib/feed-planner/prompt-shaper.ts`)
+4. Generates images using those prompts (via Nano Banana Pro)
 
 **Feed Planner does NOT**:
 - Build prompts directly
 - Call models without prompts
 - Bypass Prompt Authority
+
+**Recent Optimization (2026-01-19)**:
+- Feed preview prompts optimized from ~760 words to ~300-450 words for Nano Banana Pro
+- Preview mode uses concise scene blocks (25-35 words each) for multi-scene grid generation
+- Single scene mode remains detailed (200-270 words) for single image quality
+- See `NANO_BANANA_PRO_OPTIMIZATION_SUMMARY.md` for details
 
 ### Legacy Paths (Behind Feature Flags)
 
@@ -305,6 +311,8 @@ User sees video
 **Feed Planner Orchestrator** (`lib/feed-planner/`):
 - Coordinates multi-post generation
 - Complex state management
+- Prompt generation: `lib/feed-planner/prompt-shaper.ts` (SINGLE SOURCE OF TRUTH)
+- Optimized for Nano Banana Pro (concise preview prompts, detailed single scene prompts)
 - Do not refactor without approval
 
 **Quality Monitoring Hooks** (`lib/quality/hooks.ts`):

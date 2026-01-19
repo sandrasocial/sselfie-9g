@@ -1,6 +1,11 @@
 /**
  * Dynamic Template Injector
  * 
+ * 🧊 FROZEN: Template injection. Will be replaced with scene composition.
+ * 
+ * PHASE 6: This file is frozen. Feed Planner now uses scene-resolver.ts for scene intent.
+ * This injector mutates template text and will be replaced with structured scene composition.
+ * 
  * Injects dynamic content from vibe libraries into template placeholders.
  * Handles outfit selection, location selection, and accessory selection based on
  * user's fashion style and rotation indices.

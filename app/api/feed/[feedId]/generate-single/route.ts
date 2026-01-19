@@ -1,3 +1,38 @@
+/**
+ * FEED PLANNER GENERATION ROUTE
+ * 
+ * CANONICAL FEED PLANNER PIPELINE
+ * 
+ * This route handles Feed Planner image generation:
+ * - Preview Feed (9 scenes → 1 prompt)
+ * - Full Feed Planner (9 scenes → 9 prompts)
+ * 
+ * CANONICAL FLOW (LOCK THIS IN):
+ * User → Blueprint / Feed Planner
+ *    → scene-resolver.ts          (decides scenes)
+ *    → scene-consistency.ts       (locks 9 scenes)
+ *    → prompt-shaper.ts           (creates prompts ONCE)
+ *    → replicate / nano banana
+ *    → image saved
+ *    → image rendered in UI
+ * 
+ * FEED PLANNER — DO NOT USE LEGACY PROMPT BUILDERS
+ * 
+ * DO NOT CALL:
+ * - nano-banana-adapter
+ * - template injectors
+ * - visual composition expert
+ * - build-single-image-prompt
+ * - generateFeedSinglePromptViaAuthority (Maya system)
+ * 
+ * These are frozen by design.
+ * 
+ * Use ONLY:
+ * - scene-resolver.ts
+ * - scene-consistency.ts
+ * - prompt-shaper.ts
+ */
+
 import { NextRequest } from "next/server"
 import { createHash } from "crypto"
 import { getAuthenticatedUserWithRetry, clearAuthCache } from "@/lib/auth-helper"
@@ -210,11 +245,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
     }
 
     // Check generation mode (Pro Mode vs Classic Mode)
-    // Free users and paid blueprint users should ALWAYS use Pro Mode (Nano Banana Pro) - no trained model required
-    // Membership users use Classic Mode (custom flux trained models)
-    // Force Pro Mode for free and paid blueprint users, regardless of post.generation_mode
+    // Feed Planner should ALWAYS use Pro Mode (Nano Banana Pro) for ALL users
+    // This includes free users, paid blueprint users, and Studio membership users
+    // Force Pro Mode for all Feed Planner users, regardless of post.generation_mode or membership status
     // Access was already fetched above, reuse it
-    const generationMode = (access.isFree || access.isPaidBlueprint) ? 'pro' : (post.generation_mode || 'classic')
+    const generationMode = 'pro'
     const proModeType = post.pro_mode_type || null
     console.log("[v0] [GENERATE-SINGLE] Post generation mode:", { generationMode, proModeType, isFree: access.isFree, isPaidBlueprint: access.isPaidBlueprint, postGenerationMode: post.generation_mode })
 
@@ -376,18 +411,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       // EXCEPTION: Preview feeds ALWAYS use full template - ignore any stored prompts
       let finalPrompt: string | null = null
       
-      // 🔴 CRITICAL FIX: For preview feeds, ALWAYS regenerate full template
-      // Don't use stored prompts - they might be single scene prompts from previous attempts
-      if (isPreviewFeed) {
-        console.log(`[v0] [GENERATE-SINGLE] ✅ Preview feed detected - forcing full template generation (ignoring stored prompt)`)
-        finalPrompt = null  // Force regeneration of full template
-      } else if (!access.isPaidBlueprint && post.prompt && post.prompt.length > 50) {
-        // Post already has its scene prompt - use it (only for non-preview feeds)
-        finalPrompt = post.prompt
-        chosenPromptSource = "db_prompt"
-        console.log("[v0] PROMPT_SOURCE=db_prompt")
-        console.log(`[v0] [GENERATE-SINGLE] ✅ Using existing scene prompt for position ${post.position} (${finalPrompt?.length || 0} chars)`)
-      }
+      // 🔴 PROMPT AUTHORITY LOCK-IN: Phase 1 - Database prompt reuse REMOVED
+      // All prompts MUST be generated via canonical builder (prompt-shaper.ts)
+      // Database prompts are stored for logging/debugging only, never reused
+      // This ensures all prompts match Nano Banana Pro spec requirements
+      finalPrompt = null  // Always force regeneration via canonical builder
       // 🔴 FIX: Removed redundant Path A (paid user scene extraction)
       // Paid users now go through Path B (Maya generation) which uses template injection
       
@@ -399,48 +427,68 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
         
         try {
           // 🔴 CRITICAL: Handle preview feeds FIRST (same logic for free and paid users)
+          // CANONICAL FEED PLANNER PIPELINE - Phase A Integration
+          // FEED SYSTEM LOCKED — STRATEGY ≠ EXECUTION
+          // Preview = Strategy Only (Position, Content Type, Framing, Visual Role)
+          // Single Scene = Execution Only (Outfits, Locations, Poses, Activities)
           if (isPreviewFeed) {
-            console.log(`[v0] [GENERATE-SINGLE] ✅ Preview feed detected - generating full template for all 9 scenes (applies to all users)`)
+            console.log(`[v0] [GENERATE-SINGLE] ✅ Preview feed detected - using CANONICAL pipeline (scene-resolver → prompt-shaper)`)
             
-            // Get category and mood (preview feeds: simpler logic, no settings_preference or blueprint_subscribers)
-            const { category, mood } = await getCategoryAndMood(feedLayout, user, {
-              checkSettingsPreference: false,
-              checkBlueprintSubscribers: false,
-              trackSource: false
-            })
-            
-            // Get template prompt from grid library
-            const { getBlueprintPhotoshootPrompt } = await import("@/lib/maya/blueprint-photoshoot-templates")
-            const fullTemplate = getBlueprintPhotoshootPrompt(category, mood)
-            console.log(`[v0] [GENERATE-SINGLE] ✅ Using blueprint template for preview feed: ${category}_${mood} (${fullTemplate.split(/\s+/).length} words)`)
-            
-            // Get user's fashion style for dynamic injection
-            const fashionStyle = await getFashionStyleForPosition(user, post.position)
-            
-            // Inject dynamic content into template and validate
-            const injectedTemplate = await injectAndValidateTemplate(
-              fullTemplate,
-              category,
-              mood,
-              fashionStyle,
-              user.id.toString()
-            )
-            
-            // Preview feeds use the full injected template (all 9 scenes in one image)
-            finalPrompt = injectedTemplate
-            chosenPromptSource = "preview_template"
-            console.log("[v0] PROMPT_SOURCE=preview_template")
-            console.log(`[v0] [GENERATE-SINGLE] ✅ Preview feed - using full injected template with all 9 scenes (${finalPrompt.split(/\s+/).length} words)`)
-            
-            // Save the full template prompt to the database
-            await sql`
-              UPDATE feed_posts
-              SET prompt = ${finalPrompt}
-              WHERE id = ${postId}
-            `
+            try {
+              // FEED PLANNER — DO NOT USE LEGACY PROMPT BUILDERS
+              // Use canonical pipeline: scene-resolver → scene-consistency → prompt-shaper
+              const { resolveConsistentScenes, buildPreviewPromptFromScenes } = await import("@/lib/feed-planner/scene-consistency")
+              
+              // Resolve all 9 scenes (single source of truth)
+              // IMPORTANT: Scenes contain EXECUTION data, but preview uses it to derive STRATEGY only
+              const scenes = await resolveConsistentScenes(feedLayout, user, {
+                checkSettingsPreference: false,
+                checkBlueprintSubscribers: false,
+                defaultCategory: 'minimal'  // Lifestyle individual, NOT business/CEO
+              })
+              
+              // 🔴 PROMPT AUTHORITY LOCK-IN: Phase 4 - Validate scene count before prompt generation
+              if (scenes.length !== 9) {
+                throw new Error(
+                  `Preview feed requires exactly 9 scenes. Got: ${scenes.length} scenes. ` +
+                  `Scene resolution failed - cannot generate preview prompt.`
+                )
+              }
+              
+              console.log(`[v0] [GENERATE-SINGLE] ✅ Resolved ${scenes.length} scenes for preview feed`)
+              
+              // Build preview prompt (STRATEGY ONLY, NOT execution)
+              // This outputs position strategies, NOT scene descriptions with outfits/locations/poses
+              finalPrompt = buildPreviewPromptFromScenes(scenes)
+              
+              chosenPromptSource = "canonical_preview_pipeline"
+              console.log("[v0] PROMPT_SOURCE=canonical_preview_pipeline")
+              console.log(`[v0] [GENERATE-SINGLE] ✅ Preview feed - 9-scene grid prompt via CANONICAL pipeline (${finalPrompt.split(/\s+/).length} words)`)
+              
+              // Save the preview prompt to the database
+              await sql`
+                UPDATE feed_posts
+                SET prompt = ${finalPrompt}
+                WHERE id = ${postId}
+              `
+            } catch (sceneError) {
+              console.error(`[v0] [GENERATE-SINGLE] ❌ Canonical pipeline failed:`, sceneError instanceof Error ? sceneError.message : "Unknown error")
+              console.error(`[v0] [GENERATE-SINGLE] ❌ Scene error stack:`, sceneError instanceof Error ? sceneError.stack : "No stack trace")
+              return Response.json(
+                {
+                  error: "SCENE_RESOLUTION_FAILED",
+                  details: sceneError instanceof Error ? sceneError.message : "Failed to resolve scenes",
+                  position: post.position,
+                  feedId: feedIdInt,
+                },
+                { status: 500 }
+              )
+            }
           } else if (access.isPaidBlueprint) {
-            // Paid blueprint (non-preview): ALWAYS use template injection + single-scene extraction
-            console.log(`[v0] [GENERATE-SINGLE] 🎨 Paid blueprint user - enforcing template injection only...`)
+            // CANONICAL FEED PLANNER PIPELINE - Phase A Integration
+            // FEED PLANNER — DO NOT USE LEGACY PROMPT BUILDERS
+            // Use ONLY: scene-resolver → scene-consistency → prompt-shaper
+            console.log(`[v0] [GENERATE-SINGLE] 🎨 Paid blueprint user - using CANONICAL pipeline...`)
             try {
               const parseArrayField = (value: unknown): string[] | null => {
                 if (Array.isArray(value)) {
@@ -513,45 +561,36 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
                 )
               }
 
-              const { category, mood } = await getCategoryAndMood(feedLayout, user, {
+              // CANONICAL FEED PLANNER PIPELINE - Phase A Integration
+              // FEED PLANNER — DO NOT USE LEGACY PROMPT BUILDERS
+              // Use canonical pipeline: scene-resolver → scene-consistency → prompt-shaper
+              const { resolveConsistentScenes, buildSingleScenePromptFromScene } = await import("@/lib/feed-planner/scene-consistency")
+              
+              // Resolve all 9 scenes (same as preview - ensures consistency)
+              const scenes = await resolveConsistentScenes(feedLayout, user, {
                 checkSettingsPreference: false,
                 checkBlueprintSubscribers: false,
-                trackSource: false,
-                orderBy: 'updated_at',
               })
-              const { getBlueprintPhotoshootPrompt } = await import("@/lib/maya/blueprint-photoshoot-templates")
-              const fullTemplate = getBlueprintPhotoshootPrompt(category, mood)
-
-              const fashionStyle = await getFashionStyleForPosition(user, post.position)
-              const injectedTemplate = await injectAndValidateTemplate(
-                fullTemplate,
-                category,
-                mood,
-                fashionStyle,
-                user.id.toString()
-              )
-
-              // Phase 3B P1-2: Generate prompt via Authority Layer
-              // Phase 1C: Pass category for Scene 8 customization
-              const authorityResult = await generateFeedSinglePromptViaAuthority(
-                injectedTemplate,
-                post.position,
-                {
-                  userId: user.id.toString(),
-                  feedId: feedIdInt,
-                  postId,
-                  generationMode: 'pro',
-                  category: category, // Phase 1C: Pass category for Scene 8 awareness
-                }
-              )
-              finalPrompt = authorityResult.prompt
-              console.log("[v0] PROMPT_SOURCE=template_injection")
-              console.log(`[v0] [GENERATE-SINGLE] ✅ Extracted scene ${post.position} from injected template via Authority Layer (${finalPrompt.split(/\s+/).length} words, fingerprint: ${authorityResult.metadata.fingerprint})`)
+              
+              // Get scene for this position (1-9)
+              const sceneForPosition = scenes.find(s => s.position === post.position)
+              if (!sceneForPosition) {
+                throw new Error(`Scene not found for position ${post.position}`)
+              }
+              
+              // Build single scene prompt
+              finalPrompt = buildSingleScenePromptFromScene(sceneForPosition)
+              
+              console.log("[v0] PROMPT_SOURCE=canonical_full_planner_pipeline")
+              console.log(`[v0] [GENERATE-SINGLE] ✅ Paid blueprint - scene ${post.position} prompt via CANONICAL pipeline (${finalPrompt.split(/\s+/).length} words)`)
             } catch (templateError) {
-              console.error(`[v0] [GENERATE-SINGLE] ❌ Template injection failed for paid blueprint:`, templateError instanceof Error ? templateError.message : "Unknown error")
+              const errorMessage = templateError instanceof Error ? templateError.message : "Unknown error"
+              console.error(`[v0] [GENERATE-SINGLE] ❌ Template injection failed for paid blueprint:`, errorMessage)
+              console.error(`[v0] [GENERATE-SINGLE] ❌ Template error stack:`, templateError instanceof Error ? templateError.stack : "No stack trace")
               return Response.json(
                 {
                   error: "TEMPLATE_INJECTION_FAILED",
+                  details: errorMessage,
                   position: post.position,
                   feedId: feedIdInt,
                 },
@@ -559,51 +598,112 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
               )
             }
           } else if (access.isFree) {
-            // Free users: Use blueprint templates (same as old blueprint)
-            console.log(`[v0] [GENERATE-SINGLE] Free user - using blueprint template library...`)
+            // CANONICAL FEED PLANNER PIPELINE - Phase A Integration
+            // FEED PLANNER — DO NOT USE LEGACY PROMPT BUILDERS
+            // Use ONLY: scene-resolver → scene-consistency → prompt-shaper
+            console.log(`[v0] [GENERATE-SINGLE] Free user - using CANONICAL pipeline...`)
+            const { resolveConsistentScenes, buildSingleScenePromptFromScene } = await import("@/lib/feed-planner/scene-consistency")
             
-            // 🔴 CRITICAL: Consistent source priority for mood/feedStyle
-            // PRIORITY: feed_layouts.feed_style > user_personal_brand.settings_preference[0] > user_personal_brand defaults
-            const { category, mood, sourceUsed } = await getCategoryAndMood(feedLayout, user, {
+            // Resolve all 9 scenes (same as preview - ensures consistency)
+            const scenes = await resolveConsistentScenes(feedLayout, user, {
               checkSettingsPreference: true,
               checkBlueprintSubscribers: true,
-              trackSource: true
             })
             
-            // Get template prompt from grid library
-            const { getBlueprintPhotoshootPrompt } = await import("@/lib/maya/blueprint-photoshoot-templates")
-            const fullTemplate = getBlueprintPhotoshootPrompt(category, mood)
-            console.log(`[v0] [GENERATE-SINGLE] [TEMPLATE DEBUG] Final selection: ${category}_${mood} (source: ${sourceUsed})`)
-            console.log(`[v0] [GENERATE-SINGLE] ✅ Using blueprint template prompt: ${category}_${mood} (${fullTemplate.split(/\s+/).length} words)`)
+            // Get scene for this position (1-9)
+            const sceneForPosition = scenes.find(s => s.position === post.position)
+            if (!sceneForPosition) {
+              throw new Error(`Scene not found for position ${post.position}`)
+            }
             
-            // Get user's fashion style from personal brand or default to "business"
-            const fashionStyle = await getFashionStyleForPosition(user, post.position)
-            
-            // Inject dynamic content into template and validate
-            const injectedTemplate = await injectAndValidateTemplate(
-              fullTemplate,
-              category,
-              mood,
-              fashionStyle,
-              user.id.toString()
-            )
-            
-            // Free user full feeds extract individual scenes from the injected template
-            // (Preview feeds are already handled above before this access check)
-            // Phase 3B P1-2: Generate prompt via Authority Layer
-            const authorityResult = await generateFeedSinglePromptViaAuthority(
-              injectedTemplate,
-              post.position,
-              {
-                userId: user.id.toString(),
-                feedId: feedIdInt,
-                postId,
-                generationMode: 'pro',
+            // Build single scene prompt with error handling
+            try {
+              finalPrompt = buildSingleScenePromptFromScene(sceneForPosition)
+              
+              if (!finalPrompt || finalPrompt.trim().length < 20) {
+                throw new Error(`Prompt too short or empty: ${finalPrompt?.length || 0} characters`)
               }
-            )
-            finalPrompt = authorityResult.prompt
-            console.log("[v0] PROMPT_SOURCE=template_injection")
-            console.log(`[v0] [GENERATE-SINGLE] ✅ Extracted scene ${post.position} from injected template via Authority Layer (${finalPrompt.split(/\s+/).length} words, fingerprint: ${authorityResult.metadata.fingerprint})`)
+              
+              console.log("[v0] PROMPT_SOURCE=canonical_full_planner_pipeline")
+              console.log(`[v0] [GENERATE-SINGLE] ✅ Free user - scene ${post.position} prompt via CANONICAL pipeline (${finalPrompt.split(/\s+/).length} words)`)
+            } catch (promptError) {
+              console.error(`[v0] [GENERATE-SINGLE] ❌ Prompt generation failed for scene ${post.position}:`, promptError)
+              console.error(`[v0] [GENERATE-SINGLE] Scene data:`, JSON.stringify(sceneForPosition, null, 2))
+              
+              // Extract error message directly (don't use Replicate error handler for prompt errors)
+              const errorMessage = promptError instanceof Error ? promptError.message : String(promptError)
+              
+              return Response.json(
+                {
+                  error: "Prompt generation failed",
+                  details: `We couldn't generate a prompt for position ${post.position}. ${errorMessage}`,
+                  position: post.position,
+                  sceneInfo: {
+                    position: sceneForPosition.position,
+                    activity: sceneForPosition.activity,
+                    category: sceneForPosition.category
+                  }
+                },
+                { status: 500 }
+              )
+            }
+            
+            // Save the prompt to the database
+            await sql`
+              UPDATE feed_posts
+              SET prompt = ${finalPrompt}
+              WHERE id = ${postId}
+            `
+          } else if (access.isMembership) {
+            // CANONICAL FEED PLANNER PIPELINE - Phase A Integration
+            // FEED PLANNER — DO NOT USE LEGACY PROMPT BUILDERS
+            // Use ONLY: scene-resolver → scene-consistency → prompt-shaper
+            console.log(`[v0] [GENERATE-SINGLE] Studio membership user - using CANONICAL pipeline...`)
+            const { resolveConsistentScenes, buildSingleScenePromptFromScene } = await import("@/lib/feed-planner/scene-consistency")
+            
+            // Resolve all 9 scenes (same as preview - ensures consistency)
+            const scenes = await resolveConsistentScenes(feedLayout, user, {
+              checkSettingsPreference: true,
+              checkBlueprintSubscribers: false,
+            })
+            
+            // Get scene for this position (1-9)
+            const sceneForPosition = scenes.find(s => s.position === post.position)
+            if (!sceneForPosition) {
+              throw new Error(`Scene not found for position ${post.position}`)
+            }
+            
+            // Build single scene prompt with error handling
+            try {
+              finalPrompt = buildSingleScenePromptFromScene(sceneForPosition)
+              
+              if (!finalPrompt || finalPrompt.trim().length < 20) {
+                throw new Error(`Prompt too short or empty: ${finalPrompt?.length || 0} characters`)
+              }
+              
+              console.log("[v0] PROMPT_SOURCE=canonical_full_planner_pipeline")
+              console.log(`[v0] [GENERATE-SINGLE] ✅ Membership user - scene ${post.position} prompt via CANONICAL pipeline (${finalPrompt.split(/\s+/).length} words)`)
+            } catch (promptError) {
+              console.error(`[v0] [GENERATE-SINGLE] ❌ Prompt generation failed for scene ${post.position}:`, promptError)
+              console.error(`[v0] [GENERATE-SINGLE] Scene data:`, JSON.stringify(sceneForPosition, null, 2))
+              
+              // Extract error message directly (don't use Replicate error handler for prompt errors)
+              const errorMessage = promptError instanceof Error ? promptError.message : String(promptError)
+              
+              return Response.json(
+                {
+                  error: "Prompt generation failed",
+                  details: `We couldn't generate a prompt for position ${post.position}. ${errorMessage}`,
+                  position: post.position,
+                  sceneInfo: {
+                    position: sceneForPosition.position,
+                    activity: sceneForPosition.activity,
+                    category: sceneForPosition.category
+                  }
+                },
+                { status: 500 }
+              )
+            }
             
             // Save the prompt to the database
             await sql`
@@ -612,15 +712,55 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
               WHERE id = ${postId}
             `
           } else if (access.isPaidBlueprint && isPreviewFeed) {
-            // Phase 2: Paid blueprint users - ALWAYS use Maya to generate unique prompts
-            // Maya will use preview template as reference if available, or generate based on personal brand data
-            console.log(`[v0] [GENERATE-SINGLE] 🎨 Paid blueprint user - using Maya to generate unique prompt...`)
+            // 🚫 DEAD CODE PATH: Preview feeds are handled at line 402
+            // This path should never execute, but if it does, use canonical pipeline
+            console.log(`[v0] [GENERATE-SINGLE] ⚠️ Unexpected path: Paid blueprint + preview feed (should be handled earlier)`)
+            console.log(`[v0] [GENERATE-SINGLE] Using CANONICAL pipeline as fallback...`)
             
-            // 🔴 CRITICAL FIX: Look for preview template in PREVIEW FEED (layout_type: 'preview'), not current feed
-            // The preview feed is separate from the paid blueprint feed
-            previewTemplate = null
+            // CANONICAL FEED PLANNER PIPELINE - Phase A Integration
+            // FEED PLANNER — DO NOT USE LEGACY PROMPT BUILDERS
+            try {
+              const { resolveConsistentScenes, buildPreviewPromptFromScenes } = await import("@/lib/feed-planner/scene-consistency")
+              
+              const scenes = await resolveConsistentScenes(feedLayout, user, {
+                checkSettingsPreference: false,
+                checkBlueprintSubscribers: false,
+                defaultCategory: 'minimal'
+              })
+              
+              // 🔴 PROMPT AUTHORITY LOCK-IN: Phase 4 - Validate scene count before prompt generation
+              if (scenes.length !== 9) {
+                throw new Error(
+                  `Preview feed requires exactly 9 scenes. Got: ${scenes.length} scenes. ` +
+                  `Scene resolution failed - cannot generate preview prompt.`
+                )
+              }
+              
+              finalPrompt = buildPreviewPromptFromScenes(scenes)
+              chosenPromptSource = "canonical_preview_pipeline_fallback"
+              console.log("[v0] PROMPT_SOURCE=canonical_preview_pipeline_fallback")
+            } catch (sceneError) {
+              console.error(`[v0] [GENERATE-SINGLE] ❌ Canonical pipeline fallback failed:`, sceneError)
+              return Response.json(
+                {
+                  error: "SCENE_RESOLUTION_FAILED",
+                  details: sceneError instanceof Error ? sceneError.message : "Failed to resolve scenes",
+                },
+                { status: 500 }
+              )
+            }
             
-            // First, try to find the preview feed (layout_type: 'preview')
+            // Skip all Maya fallback logic - canonical pipeline already handled it
+            // Save prompt and continue to image generation
+            if (finalPrompt) {
+              await sql`
+                UPDATE feed_posts
+                SET prompt = ${finalPrompt}
+                WHERE id = ${postId}
+              `
+            }
+            // Skip all legacy Maya fallback code below (lines 657-1122)
+            // This path should never execute, but if it does, finalPrompt is already set
             const [previewFeed] = await sql`
               SELECT id
               FROM feed_layouts
@@ -829,24 +969,27 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
             // If preview doesn't match current style OR no preview - use template from unified wizard as guide
             if (!shouldUsePreview) {
               // No preview feed - use template injection system (same as free users)
-              // Extract category and mood from user_personal_brand (same logic as free users)
-              // Note: Paid blueprint users don't check blueprint_subscribers (different from free users)
-              // Also use updated_at for personalBrand query (matches original logic)
-              const { category, mood } = await getCategoryAndMood(feedLayout, user, {
+              // COHERENCE RESOLVER ENFORCEMENT (2026-01-18)
+              const { getCoherentStyleParameters } = await import("@/lib/feed-planner/generation-helpers")
+              const {
+                category,
+                mood,
+                fashionStyle: resolvedFashionStyle,
+                adaptationApplied
+              } = await getCoherentStyleParameters(feedLayout, user, post.position, {
                 checkSettingsPreference: true,
                 checkBlueprintSubscribers: false,
                 trackSource: false,
                 orderBy: 'updated_at'
               })
               
-              // 🔴 FIX: Use template injection system (same as free users)
+              if (adaptationApplied) {
+                console.log(`[v0] [GENERATE-SINGLE] ⚠️ Fashion style adapted for coherence: ${resolvedFashionStyle}`)
+              }
               
               try {
                 const { getBlueprintPhotoshootPrompt } = await import("@/lib/maya/blueprint-photoshoot-templates")
-                const fullTemplate = getBlueprintPhotoshootPrompt(category, mood)
-                
-                // Get user's fashion style for dynamic injection
-                const fashionStyle = await getFashionStyleForPosition(user, post.position)
+                const fullTemplate = await getBlueprintPhotoshootPrompt(category, mood, resolvedFashionStyle)
                 
                 // Build vibe key for rotation tracking (needed after Maya generation)
                 const { MOOD_MAP } = await import("@/lib/maya/blueprint-photoshoot-templates")
@@ -855,20 +998,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
                 
                 // Store for rotation tracking
                 vibeKeyForRotation = vibeKey
-                fashionStyleForRotation = fashionStyle
+                fashionStyleForRotation = resolvedFashionStyle
                 
                 // ✅ INJECT DYNAMIC CONTENT (same as free users)
                 const injectedTemplate = await injectAndValidateTemplate(
                   fullTemplate,
                   category,
                   mood,
-                  fashionStyle,
+                  resolvedFashionStyle,
                   user.id.toString()
                 )
                 
                 // ✅ EXTRACT SINGLE SCENE (same as free users)
                 // Phase 3B P1-2: Generate prompt via Authority Layer
                 // Phase 1C: Pass category for Scene 8 customization
+                // Phase 2C: Pass mood for lifestyle context
+                // CRITICAL: Pass resolvedFashionStyle for coherence enforcement
                 const authorityResult = await generateFeedSinglePromptViaAuthority(
                   injectedTemplate,
                   post.position,
@@ -878,6 +1023,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
                     postId,
                     generationMode: 'pro',
                     category: category, // Phase 1C: Pass category for Scene 8 awareness
+                    mood: mood, // Phase 2C: Pass mood for lifestyle context
+                    resolvedFashionStyle: resolvedFashionStyle, // MANDATORY: Coherent fashion style
                   }
                 )
                 templateReferencePrompt = authorityResult.prompt
@@ -1135,15 +1282,33 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       
       // Ensure finalPrompt is not null before proceeding
       if (!finalPrompt || finalPrompt.trim().length < 20) {
+        console.error(`[v0] [GENERATE-SINGLE] ❌ Final prompt validation failed`, {
+          promptLength: finalPrompt?.length || 0,
+          promptPreview: finalPrompt?.substring(0, 100) || '(empty)',
+          postId,
+          position: post.position,
+          feedId: feedIdInt,
+          access: {
+            isPaidBlueprint: access.isPaidBlueprint,
+            isFree: access.isFree,
+            isMembership: access.isMembership
+          }
+        })
+        
         return Response.json(
-          { error: "Failed to generate prompt. Please try again." },
+          { 
+            error: "Prompt generation incomplete",
+            details: "We couldn't generate a valid prompt for your image. This might be due to missing brand profile information. Please ensure your feed style and aesthetic are set.",
+            position: post.position,
+            feedId: feedIdInt
+          },
           { status: 500 }
         )
       }
       
-      if (!chosenPromptSource && finalPrompt) {
-        chosenPromptSource = "db_prompt"
-      }
+      // 🔴 PROMPT AUTHORITY LOCK-IN: Removed db_prompt fallback
+      // All prompts now come from canonical builder, so chosenPromptSource is always set explicitly
+      // This fallback was misleading and suggested database prompts might still be reused
       console.log("[v0] [GENERATE-SINGLE] PROVENANCE", {
         feedId: feedIdInt,
         postId,
@@ -1161,8 +1326,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       })
       const aspectRatio = isPreviewFeed ? '9:16' : (access.isFree ? '9:16' : '4:5')
       
-      const { cleanBlueprintPrompt } = await import('@/lib/feed-planner/build-single-image-prompt')
-      const cleanedPrompt = cleanBlueprintPrompt(finalPrompt)
+      // ❄️ FROZEN — DO NOT MODIFY PROMPTS HERE
+      // Prompt is already final from prompt-shaper.ts (THE AUTHORITY)
+      // cleanBlueprintPrompt is legacy and should not mutate Feed Planner prompts
+      // Feed Planner prompts from prompt-shaper.ts are already correct
+      const cleanedPrompt = finalPrompt // Use prompt as-is from authority
       
       let generation
       for (let attempt = 0; attempt < 2; attempt++) {
@@ -1513,11 +1681,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
   } catch (error: unknown) {
     const err = error as { message?: string; stack?: string }
     console.error("[v0] [GENERATE-SINGLE] Error generating single post:", err.message || String(error))
+    
+    // Use replicate error handler for user-friendly messages
+    const { formatReplicateErrorResponse } = await import("@/lib/replicate-error-handler")
+    const errorResponse = formatReplicateErrorResponse(error, "Failed to start image generation")
+    
+    // Log technical details but return user-friendly message
+    console.error("[v0] [GENERATE-SINGLE] Technical error:", errorResponse._technical)
+    
     return Response.json(
       {
-        error: "Failed to generate post",
-        details: err.message || "Unknown error occurred",
-        shouldRetry: true,
+        error: errorResponse.error,
+        details: errorResponse.details,
+        shouldRetry: errorResponse.shouldRetry,
+        retryAfter: errorResponse.retryAfter
       },
       { status: 500 },
     )

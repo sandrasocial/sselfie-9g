@@ -107,9 +107,12 @@ async function runQATest(): Promise<void> {
     missingFields: brandKitResult.metadata.missingFields,
   })
   
-  // Step 3: Format brand profile block
-  const brandProfileBlock = formatBrandProfileBlock(brandKitResult.brandKit)
+  // Step 3: Format brand profile block (with semantic authority enforcement)
+  // Default to lifestyle unless explicitly professional
+  const subjectRole = category === "professional" ? "professional" : "lifestyle"
+  const brandProfileBlock = formatBrandProfileBlock(brandKitResult.brandKit, subjectRole)
   console.log('\n📄 Brand Profile Block:\n', brandProfileBlock)
+  console.log(`   (subjectRole: ${subjectRole})`)
   
   // Assertions on brand profile block
   assertContains(brandProfileBlock, [

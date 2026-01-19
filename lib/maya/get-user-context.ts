@@ -94,25 +94,74 @@ export async function getUserContextForMaya(authUserId: string): Promise<string>
 
     if (personalBrand && personalBrand.is_completed) {
       console.log("[v0] getUserContextForMaya: Processing personal brand data...")
+      
+      // 🔴 CRITICAL FIX: Validate personal brand data to prevent corrupted data
+      // Check if any field has suspiciously large or corrupted data
+      const suspiciousFields: string[] = []
+      for (const [key, value] of Object.entries(personalBrand)) {
+        if (typeof value === "string" && value.length > 10000) {
+          suspiciousFields.push(key)
+          console.warn(`[v0] ⚠️ Suspiciously large field detected: ${key} (${value.length} chars)`)
+        }
+        // Check for corrupted JSON patterns (excessive backslashes)
+        if (typeof value === "string" && (value.match(/\\\\/g) || []).length > 100) {
+          suspiciousFields.push(key)
+          console.warn(`[v0] ⚠️ Corrupted data detected in field: ${key}`)
+        }
+      }
+      
+      // If we have suspicious fields, skip them or truncate
+      if (suspiciousFields.length > 0) {
+        console.error(
+          `[v0] ❌ Corrupted personal brand data detected in fields: ${suspiciousFields.join(", ")}. Skipping these fields.`
+        )
+      }
+      
       contextParts.push("=== USER'S PERSONAL BRAND ===")
 
-      if (personalBrand.name) contextParts.push(`Name: ${personalBrand.name}`)
-      if (personalBrand.business_type) contextParts.push(`Business Type: ${personalBrand.business_type}`)
+      // 🔴 FIX: Validate and truncate fields to prevent corrupted data
+      const safeField = (value: any, maxLength = 500): string | null => {
+        if (!value) return null
+        const str = String(value)
+        // Check for corrupted patterns
+        if ((str.match(/\\\\/g) || []).length > 50) {
+          console.warn(`[v0] ⚠️ Skipping corrupted field value`)
+          return null
+        }
+        return str.length > maxLength ? str.substring(0, maxLength) + "..." : str
+      }
+      
+      const name = safeField(personalBrand.name, 200)
+      if (name && !suspiciousFields.includes("name")) contextParts.push(`Name: ${name}`)
+      
+      const businessType = safeField(personalBrand.business_type, 200)
+      if (businessType && !suspiciousFields.includes("business_type"))
+        contextParts.push(`Business Type: ${businessType}`)
 
       // Visual Style & Aesthetic
-      if (personalBrand.visual_aesthetic) {
+      if (personalBrand.visual_aesthetic && !suspiciousFields.includes("visual_aesthetic")) {
         try {
-          const aesthetics =
-            typeof personalBrand.visual_aesthetic === "string"
-              ? JSON.parse(personalBrand.visual_aesthetic)
-              : personalBrand.visual_aesthetic
-          if (Array.isArray(aesthetics) && aesthetics.length > 0) {
-            contextParts.push(`Visual Aesthetic: ${aesthetics.join(", ")}`)
-            contextParts.push(`IMPORTANT: Generate concepts that match these aesthetics: ${aesthetics.join(", ")}`)
+          const rawValue = personalBrand.visual_aesthetic
+          // Check for corruption before parsing
+          if (typeof rawValue === "string" && (rawValue.match(/\\\\/g) || []).length > 50) {
+            console.warn("[v0] ⚠️ Skipping corrupted visual_aesthetic field")
+          } else {
+            const aesthetics =
+              typeof rawValue === "string"
+                ? JSON.parse(rawValue)
+                : rawValue
+            if (Array.isArray(aesthetics) && aesthetics.length > 0) {
+              contextParts.push(`Visual Aesthetic: ${aesthetics.join(", ")}`)
+              contextParts.push(`IMPORTANT: Generate concepts that match these aesthetics: ${aesthetics.join(", ")}`)
+            }
           }
         } catch (e) {
+          // Only use string fallback if not corrupted
           if (typeof personalBrand.visual_aesthetic === "string") {
-            contextParts.push(`Visual Aesthetic: ${personalBrand.visual_aesthetic}`)
+            const str = personalBrand.visual_aesthetic
+            if ((str.match(/\\\\/g) || []).length <= 50 && str.length < 1000) {
+              contextParts.push(`Visual Aesthetic: ${str}`)
+            }
           }
         }
       }
@@ -342,7 +391,59 @@ export async function getUserContextForMaya(authUserId: string): Promise<string>
       }
     }
 
-    const finalContext = contextParts.length > 0 ? `\n\n${contextParts.join("\n")}` : ""
+    let finalContext = contextParts.length > 0 ? `\n\n${contextParts.join("\n")}` : ""
+    
+    // 🔴 CRITICAL FIX: Validate and limit context size to prevent "Payload Too Large" errors
+    // Anthropic API has a maximum request size limit
+    const MAX_CONTEXT_LENGTH = 50000 // 50KB max context (conservative limit)
+    
+    if (finalContext.length > MAX_CONTEXT_LENGTH) {
+      console.warn(
+        `[v0] ⚠️ WARNING: Context too large (${finalContext.length} chars), truncating to ${MAX_CONTEXT_LENGTH} chars`
+      )
+      
+      // Truncate but keep important sections
+      // Priority: User info > Physical preferences > Brand colors > Visual aesthetic > Other
+      const prioritySections: string[] = []
+      const otherSections: string[] = []
+      
+      for (const part of contextParts) {
+        if (
+          part.includes("USER INFORMATION") ||
+          part.includes("PHYSICAL APPEARANCE PREFERENCES") ||
+          part.includes("BRAND COLORS") ||
+          part.includes("VISUAL AESTHETIC PREFERENCE")
+        ) {
+          prioritySections.push(part)
+        } else {
+          otherSections.push(part)
+        }
+      }
+      
+      // Build truncated context with priority sections first
+      let truncatedContext = prioritySections.join("\n")
+      let remainingSpace = MAX_CONTEXT_LENGTH - truncatedContext.length
+      
+      // Add other sections until we hit the limit
+      for (const section of otherSections) {
+        if (truncatedContext.length + section.length + 2 <= MAX_CONTEXT_LENGTH) {
+          truncatedContext += "\n" + section
+        } else {
+          // Add partial section if there's space
+          const availableSpace = MAX_CONTEXT_LENGTH - truncatedContext.length - 10
+          if (availableSpace > 100) {
+            truncatedContext += "\n" + section.substring(0, availableSpace) + "... [truncated]"
+          }
+          break
+        }
+      }
+      
+      finalContext = `\n\n${truncatedContext}`
+      console.log(
+        `[v0] ✅ Context truncated from ${contextParts.join("\n").length} to ${finalContext.length} chars`
+      )
+    }
+    
     console.log("[v0] getUserContextForMaya: Context built successfully, length:", finalContext.length)
     return finalContext
   } catch (error) {

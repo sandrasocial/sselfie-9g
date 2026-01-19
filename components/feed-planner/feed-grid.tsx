@@ -100,7 +100,21 @@ export default function FeedGrid({
           }
         }
 
-        const fullErrorMessage = errorDetails ? `${errorCode}: ${errorDetails}` : errorCode
+        // For TEMPLATE_INJECTION_FAILED, show details if available
+        if (errorCode === "TEMPLATE_INJECTION_FAILED" && errorDetails) {
+          console.error(`[Feed Grid] Template injection failed:`, errorDetails)
+          toast({
+            title: "Template injection failed",
+            description: errorDetails,
+            variant: "destructive",
+          })
+        }
+
+        // Use errorDetails if available, otherwise use errorCode
+        // Don't concatenate if they're similar to avoid "error: error" messages
+        const fullErrorMessage = errorDetails && errorDetails !== errorCode 
+          ? errorDetails 
+          : errorCode
         throw new Error(fullErrorMessage)
       }
 

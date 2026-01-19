@@ -1,6 +1,11 @@
 /**
  * Blueprint Pro Photoshoot Prompt Templates
  *
+ * 🧊 FROZEN: Legacy template library. Will be replaced with scene-as-data.
+ * 
+ * PHASE 6: This file is frozen. Feed Planner now uses scene-resolver.ts for scene intent.
+ * These hardcoded templates are style-first (not activity-first) and will be replaced.
+ *
  * User will provide exact prompts for each category + mood combination.
  * Each prompt should be a complete Pro Photoshoot prompt that:
  * - Creates a 3x3 grid (9 frames)
@@ -25,441 +30,341 @@ export const MOOD_MAP: Record<BlueprintMood, string> = {
 
 export const BLUEPRINT_PHOTOSHOOT_TEMPLATES: Record<string, string> = {
   // LUXURY category
-  luxury_dark_moody: `Maintain strict identity consistency using reference images (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Vary angles from reference.
+  luxury_dark_moody: `A 3x3 grid of nine distinct Instagram-style photos with clean symmetrical layout and subtle frame separation. Each frame shows a different camera angle and composition, maintaining natural poses and authentic lighting throughout.
 
-Vibe: Dark luxury editorial aesthetic. All black outfits with urban sophistication. Moody city lighting, concrete architecture, professional spaces. Authentic iPhone photography with natural film grain, high contrast shadows, sophisticated and effortless.
+The aesthetic is dark luxury editorial with all black outfits and urban sophistication. The moody city lighting creates dramatic shadows against concrete architecture. The photography feels like authentic iPhone shots with natural film grain, high contrast shadows, sophisticated and effortless.
 
-Setting: Urban concrete structures, modern office interiors, city streets at dusk, luxury building lobbies
+The setting spans urban concrete structures, city streets at dusk, and luxury building lobbies. The outfits feature {{COLOR_PALETTE}} with {{TEXTURE_NOTES}}.
 
-Outfits: {{COLOR_PALETTE}} {{TEXTURE_NOTES}}
+The first frame shows the subject seated on {{LOCATION_OUTDOOR_1}} wearing {{OUTFIT_FULLBODY_1}} with {{STYLING_NOTES}}, in a relaxed confident pose. The second frame is an overhead lifestyle flatlay with coffee and {{ACCESSORY_FLATLAY_1}} arranged on {{LOCATION_INDOOR_1}}, captured in {{LIGHTING_EVENING}}. The third frame positions the subject full-body against {{LOCATION_ARCHITECTURAL_1}} wearing {{OUTFIT_FULLBODY_2}}, with a dynamic confident pose against the urban architectural background.
 
-9 frames:
-1. Seated on {{LOCATION_OUTDOOR_1}} - {{OUTFIT_FULLBODY_1}}, {{STYLING_NOTES}}, relaxed confident pose
-2. Coffee and {{ACCESSORY_FLATLAY_1}} arranged on {{LOCATION_INDOOR_1}} - overhead flatlay, {{LIGHTING_EVENING}}
-3. Full-body positioned against {{LOCATION_ARCHITECTURAL_1}} - {{OUTFIT_FULLBODY_2}}, dynamic confident pose, urban architectural background
+The fourth frame is a close-up of {{ACCESSORY_CLOSEUP_1}} with hand near collarbone, soft shadow defining form. The fifth frame shows a street sign reading "ICONIC" in bold serif typography on {{LOCATION_ARCHITECTURAL_1}}, captured in {{LIGHTING_EVENING}}. The sixth frame is a close texture detail of {{OUTFIT_MIDSHOT_1}} featuring rhinestone details on a reflective dark surface.
 
-4. Close-up {{ACCESSORY_CLOSEUP_1}} - hand near collarbone, soft shadow defining form
-5. Street sign reading "ICONIC" in bold serif typography on {{LOCATION_ARCHITECTURAL_1}}, {{LIGHTING_EVENING}}
-6. {{OUTFIT_MIDSHOT_1}} featuring rhinestone details - close texture detail on reflective dark surface
+The seventh frame shows the subject walking naturally along {{LOCATION_OUTDOOR_1}} wearing {{OUTFIT_FULLBODY_3}}, with yellow road markings visible in frame. The eighth frame is another overhead lifestyle flatlay with coffee and {{ACCESSORY_FLATLAY_1}} arranged on {{LOCATION_INDOOR_2}}, styled minimally. The ninth frame is a mirror selfie with {{OUTFIT_FULLBODY_4}}, phone visible in hand, captured in {{LOCATION_INDOOR_3}}.
 
-7. Walking naturally along {{LOCATION_OUTDOOR_1}} - {{OUTFIT_FULLBODY_3}}, yellow road markings visible in frame
-8. Working at laptop with coffee - overhead perspective, hands typing, {{LOCATION_INDOOR_2}}
-9. Mirror selfie - {{OUTFIT_FULLBODY_4}}, phone visible in hand, {{LOCATION_INDOOR_3}}
+The color grade features deep blacks, cool grays, concrete tones, with warm skin tones preserved and gold jewelry highlights. The images have dramatic shadows, authentic iPhone grain, moody candid lighting, and high contrast.`,
 
-Color grade: Deep blacks, cool grays, concrete tones, warm skin tones preserved, gold jewelry highlights, dramatic shadows, authentic iPhone grain, moody candid lighting, high contrast.`,
+  luxury_light_minimalistic: `A 3x3 grid of nine distinct Instagram-style photos with clean symmetrical layout and subtle frame separation. Each frame shows a different camera angle and composition, maintaining natural poses and authentic lighting throughout.
 
-  luxury_light_minimalistic: `Maintain strict identity consistency using reference images (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Vary angles from reference.
+The aesthetic is bright luxury minimalist with white and cream tailored pieces and airy elegance. Bright natural daylight fills clean white interiors with sophisticated simplicity. The photography feels like authentic iPhone shots with soft lighting, minimal shadows, and effortless polish.
 
-Vibe: Bright luxury minimalist aesthetic. White and cream tailored pieces with airy elegance. Bright natural daylight, clean white interiors, sophisticated simplicity. Authentic iPhone photography with soft lighting, minimal shadows, effortless polish.
+The setting spans bright white penthouse interiors, luxury hotel lobbies with natural light, and clean modern architecture. The outfits feature {{COLOR_PALETTE}} with {{TEXTURE_NOTES}}.
 
-Setting: Bright white penthouse interiors, luxury hotel lobbies with natural light, clean modern architecture
+The first frame shows the subject standing in {{LOCATION_INDOOR_1}} wearing {{OUTFIT_FULLBODY_1}}, hand in pocket, captured in {{LIGHTING_BRIGHT}}. The second frame is an overhead lifestyle flatlay with latte and {{ACCESSORY_FLATLAY_1}} arranged on {{LOCATION_INDOOR_2}}, captured in {{LIGHTING_BRIGHT}}. The third frame positions the subject full-body in {{LOCATION_ARCHITECTURAL_1}} wearing {{OUTFIT_FULLBODY_2}}, against an architectural white background.
 
-Outfits: {{COLOR_PALETTE}} {{TEXTURE_NOTES}}
+The fourth frame is a close-up of {{ACCESSORY_CLOSEUP_1}} with minimal styling and soft focus. The fifth frame shows a minimalist sign reading "RELAX" in elegant thin serif typography on {{LOCATION_ARCHITECTURAL_1}}, captured in {{LIGHTING_BRIGHT}}. The sixth frame is an extreme close-up of {{OUTFIT_MIDSHOT_1}} fabric texture revealing luxurious material detail.
 
-9 frames:
-1. Standing in {{LOCATION_INDOOR_1}} - {{OUTFIT_FULLBODY_1}}, hand in pocket, {{LIGHTING_BRIGHT}}
-2. Latte and {{ACCESSORY_FLATLAY_1}} arranged on {{LOCATION_INDOOR_2}} - overhead flatlay, {{LIGHTING_BRIGHT}}
-3. Full-body positioned in {{LOCATION_ARCHITECTURAL_1}} - {{OUTFIT_FULLBODY_2}}, architectural white background
+The seventh frame shows the subject walking through {{LOCATION_INDOOR_3}} wearing {{OUTFIT_FULLBODY_3}}, with natural stride and soft shadows. The eighth frame is another overhead lifestyle flatlay with coffee and curated accessories on {{LOCATION_INDOOR_2}}, captured in {{LIGHTING_BRIGHT}}. The ninth frame is a mirror selfie with {{OUTFIT_FULLBODY_4}}, phone visible in hand, captured in {{LOCATION_INDOOR_1}}.
 
-4. Close-up of {{ACCESSORY_CLOSEUP_1}} - minimal styling, soft focus
-5. Minimalist sign reading "RELAX" in elegant thin serif typography on {{LOCATION_ARCHITECTURAL_1}}, {{LIGHTING_BRIGHT}}
-6. {{OUTFIT_MIDSHOT_1}} fabric texture - extreme close-up revealing luxurious material detail
+The color grade features bright whites, soft creams, warm beiges, with gentle shadows and natural daylight. The images have minimal grain, airy and clean feel, soft focus, and high-key lighting.`,
 
-7. Walking through {{LOCATION_INDOOR_3}} - {{OUTFIT_FULLBODY_3}}, natural stride, soft shadows
-8. {{LOCATION_INDOOR_2}} featuring laptop and coffee - overhead perspective, minimal workspace, {{LIGHTING_BRIGHT}}
-9. Mirror selfie - {{OUTFIT_FULLBODY_4}}, phone visible in hand, {{LOCATION_INDOOR_1}}
+  luxury_beige_aesthetic: `A 3x3 grid of nine distinct Instagram-style photos with clean symmetrical layout and subtle frame separation. Each frame shows a different camera angle and composition, maintaining natural poses and authentic lighting throughout.
 
-Color grade: Bright whites, soft creams, warm beiges, gentle shadows, natural daylight, minimal grain, airy and clean, soft focus, high-key lighting.`,
+The aesthetic is warm beige luxury with camel, tan, and cream tailored pieces and golden hour elegance. Soft warm lighting fills beige interiors with sophisticated warmth. The photography feels like authentic iPhone shots with warm tones, soft shadows, and timeless luxury.
 
-  luxury_beige_aesthetic: `Maintain strict identity consistency using reference images (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Vary angles from reference.
+The setting spans beige stone architecture, warm-toned luxury apartments, golden hour city streets, and tan leather interiors. The outfits feature {{COLOR_PALETTE}} with {{TEXTURE_NOTES}}.
 
-Vibe: Warm beige luxury aesthetic. Camel, tan, and cream tailored pieces with golden hour elegance. Soft warm lighting, beige interiors, sophisticated warmth. Authentic iPhone photography with warm tones, soft shadows, timeless luxury.
+The first frame shows the subject leaning against {{LOCATION_ARCHITECTURAL_1}} wearing {{OUTFIT_FULLBODY_1}} with {{STYLING_NOTES}}, in a relaxed elegant pose. The second frame is an overhead lifestyle flatlay with cappuccino and {{ACCESSORY_FLATLAY_1}} on {{LOCATION_INDOOR_1}}, captured in {{LIGHTING_AMBIENT}}. The third frame shows the subject full-body walking wearing {{OUTFIT_FULLBODY_2}}, with city background and golden hour glow.
 
-Setting: Beige stone architecture, warm-toned luxury apartments, golden hour city streets, tan leather interiors
+The fourth frame is a close-up of {{ACCESSORY_CLOSEUP_1}} with warm skin tones, soft focus, and golden light. The fifth frame shows a vintage street sign reading "PARIS" in classic serif on {{LOCATION_ARCHITECTURAL_1}}, captured in {{LIGHTING_AMBIENT}}. The sixth frame is a texture close-up of {{OUTFIT_MIDSHOT_1}} showing luxury bag detail with buttery soft material and warm lighting.
 
-Outfits: {{COLOR_PALETTE}} {{TEXTURE_NOTES}}
+The seventh frame shows the subject sitting on {{LOCATION_INDOOR_2}} wearing {{OUTFIT_FULLBODY_3}}, with crossed legs in a sophisticated pose. The eighth frame is another overhead lifestyle flatlay with coffee and journal on {{LOCATION_INDOOR_3}}, with soft shadows. The ninth frame is a mirror selfie with {{OUTFIT_FULLBODY_4}} and {{STYLING_NOTES}}, captured in warm bathroom lighting.
 
-9 frames:
-1. Leaning against {{LOCATION_ARCHITECTURAL_1}} - {{OUTFIT_FULLBODY_1}}, {{STYLING_NOTES}}, relaxed elegant pose
-2. Cappuccino and {{ACCESSORY_FLATLAY_1}} on {{LOCATION_INDOOR_1}} - overhead flatlay, {{LIGHTING_AMBIENT}}
-3. Full-body walking - {{OUTFIT_FULLBODY_2}}, city background, golden hour glow
-
-4. Close-up {{ACCESSORY_CLOSEUP_1}} - warm skin tones, soft focus, golden light
-5. Vintage street sign reading "PARIS" in classic serif on {{LOCATION_ARCHITECTURAL_1}}, {{LIGHTING_AMBIENT}}
-6. {{OUTFIT_MIDSHOT_1}} texture close-up - luxury bag detail, buttery soft material, warm lighting
-
-7. Sitting on {{LOCATION_INDOOR_2}} - {{OUTFIT_FULLBODY_3}}, crossed legs, sophisticated
-8. {{LOCATION_INDOOR_3}} with coffee and notebook - overhead view, warm minimal desk, soft shadows
-9. Mirror selfie - {{OUTFIT_FULLBODY_4}}, {{STYLING_NOTES}}, warm bathroom lighting
-
-Color grade: Warm beiges, camel tones, cream highlights, golden hour warmth, soft shadows, gentle grain, sophisticated warmth, buttery soft lighting.`,
+The color grade features warm beiges, camel tones, cream highlights, with golden hour warmth and soft shadows. The images have gentle grain, sophisticated warmth, and buttery soft lighting.`,
 
   // MINIMAL category
-  minimal_dark_moody: `Maintain strict identity consistency using reference images (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Vary angles from reference.
+  minimal_dark_moody: `A 3x3 grid of nine distinct Instagram-style photos with clean symmetrical layout and subtle frame separation. Each frame shows a different camera angle and composition, maintaining natural poses and authentic lighting throughout.
 
-Vibe: Dark minimal editorial aesthetic. All black uniform pieces with architectural precision. Harsh geometric shadows, concrete spaces, stripped-back sophistication. Authentic iPhone photography with high contrast, clean lines, modern minimalism.
+The aesthetic is dark minimal editorial with all black uniform pieces and architectural precision. Harsh geometric shadows define concrete spaces with stripped-back sophistication. The photography feels like authentic iPhone shots with high contrast, clean lines, and modern minimalism.
 
-Setting: Concrete brutalist architecture, minimal black interiors, geometric urban spaces, modern art galleries
+The setting spans concrete brutalist architecture, minimal black interiors, geometric urban spaces, and modern art galleries. The outfits feature {{COLOR_PALETTE}} with {{TEXTURE_NOTES}}.
 
-Outfits: {{COLOR_PALETTE}} {{TEXTURE_NOTES}}
+The first frame shows the subject standing against {{LOCATION_ARCHITECTURAL_1}} wearing {{OUTFIT_FULLBODY_1}}, arms at sides, with geometric shadows. The second frame is an overhead minimal lifestyle flatlay with black coffee cup on {{LOCATION_INDOOR_1}}, captured with harsh single light source and minimal composition. The third frame positions the subject full-body in {{LOCATION_INDOOR_2}} wearing {{OUTFIT_FULLBODY_2}}, with centered composition and architectural symmetry.
 
-9 frames:
-1. Standing against {{LOCATION_ARCHITECTURAL_1}} - {{OUTFIT_FULLBODY_1}}, arms at sides, geometric shadows
-2. Black coffee cup on {{LOCATION_INDOOR_1}} - overhead flatlay, harsh single light source, minimal composition
-3. Full-body in {{LOCATION_INDOOR_2}} - {{OUTFIT_FULLBODY_2}}, centered composition, architectural symmetry
+The fourth frame is a close-up face profile with {{OUTFIT_MIDSHOT_1}}, {{ACCESSORY_CLOSEUP_1}} visible on hand near face, with sharp shadows. The fifth frame shows a modern street sign reading "BERLIN" in bold sans-serif on {{LOCATION_ARCHITECTURAL_1}}, captured in {{LIGHTING_EVENING}}. The sixth frame is an extreme close-up of {{OUTFIT_MIDSHOT_2}} texture showing ribbed knit detail with high contrast lighting.
 
-4. Close-up face profile - {{OUTFIT_MIDSHOT_1}}, {{ACCESSORY_CLOSEUP_1}} visible on hand near face, sharp shadows
-5. Modern street sign reading "BERLIN" in bold sans-serif on {{LOCATION_ARCHITECTURAL_1}}, {{LIGHTING_EVENING}}
-6. {{OUTFIT_MIDSHOT_2}} texture - extreme close-up, ribbed knit detail, high contrast lighting
+The seventh frame shows the subject walking through {{LOCATION_INDOOR_3}} wearing {{OUTFIT_FULLBODY_3}}, with straight-on angle and shadow play. The eighth frame is another overhead minimal lifestyle flatlay with black coffee and minimal accessories on {{LOCATION_INDOOR_2}}, with stark composition. The ninth frame is a mirror selfie with {{OUTFIT_FULLBODY_4}}, phone in hand, captured in {{LOCATION_INDOOR_1}}.
 
-7. Walking through {{LOCATION_INDOOR_3}} - {{OUTFIT_FULLBODY_3}}, straight-on angle, shadow play
-8. Black laptop on {{LOCATION_INDOOR_2}} - overhead minimal workspace, single black coffee cup, stark composition
-9. Mirror selfie - {{OUTFIT_FULLBODY_4}}, phone in hand, {{LOCATION_INDOOR_1}}
+The color grade features deep blacks, charcoal grays, high contrast, with harsh geometric shadows. The images have minimal grain, modern stark aesthetic, and architectural precision.`,
 
-Color grade: Deep blacks, charcoal grays, high contrast, harsh geometric shadows, minimal grain, modern stark aesthetic, architectural precision.`,
+  minimal_light_minimalistic: `A 3x3 grid of nine distinct Instagram-style photos with clean symmetrical layout and subtle frame separation. Each frame shows a different camera angle and composition, maintaining natural poses and authentic lighting throughout.
 
-  minimal_light_minimalistic: `Maintain strict identity consistency using reference images (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Vary angles from reference.
+The aesthetic is pure white minimal with all-white uniform pieces and Scandinavian simplicity. Bright even daylight fills white interiors with absolute minimalism. The photography feels like authentic iPhone shots with soft lighting, no shadows, and zen simplicity.
 
-Vibe: Pure white minimal aesthetic. All-white uniform pieces with Scandinavian simplicity. Bright even daylight, white interiors, absolute minimalism. Authentic iPhone photography with soft lighting, no shadows, zen simplicity.
+The setting spans pure white gallery spaces, Scandinavian white interiors, bright white studios, and minimal architecture. The outfits feature {{COLOR_PALETTE}} with {{TEXTURE_NOTES}}.
 
-Setting: Pure white gallery spaces, Scandinavian white interiors, bright white studios, minimal architecture
+The first frame shows the subject standing in {{LOCATION_INDOOR_1}} wearing {{OUTFIT_FULLBODY_1}}, hands relaxed, in even bright light. The second frame is an overhead minimal lifestyle flatlay with white coffee cup on {{LOCATION_INDOOR_2}}, captured with soft diffused light and pure minimalism. The third frame positions the subject full-body centered wearing {{OUTFIT_FULLBODY_2}}, against white background with symmetrical composition and clean lines.
 
-Outfits: {{COLOR_PALETTE}} {{TEXTURE_NOTES}}
+The fourth frame is a close-up face straight-on with {{OUTFIT_MIDSHOT_1}} and {{STYLING_NOTES}}, captured in soft natural light with serene expression. The fifth frame shows a clean sign reading "STILL" in thin minimal sans-serif on {{LOCATION_ARCHITECTURAL_1}}, with subtle embossed texture. The sixth frame is an extreme close-up of {{OUTFIT_MIDSHOT_2}} fabric showing natural texture with soft even lighting.
 
-9 frames:
-1. Standing in {{LOCATION_INDOOR_1}} - {{OUTFIT_FULLBODY_1}}, hands relaxed, even bright light
-2. White coffee cup on {{LOCATION_INDOOR_2}} - overhead flatlay, soft diffused light, pure minimalism
-3. Full-body centered - {{OUTFIT_FULLBODY_2}}, white background, symmetrical composition, clean lines
+The seventh frame shows the subject walking in {{LOCATION_INDOOR_3}} wearing {{OUTFIT_FULLBODY_3}}, with centered angle and bright daylight. The eighth frame is another overhead minimal lifestyle flatlay with white coffee cup and minimal accessories on {{LOCATION_INDOOR_2}}, with absolute simplicity. The ninth frame is a mirror reflection with {{OUTFIT_FULLBODY_4}}, white phone, captured in {{LOCATION_INDOOR_1}} with soft bright light.
 
-4. Close-up face straight-on - {{OUTFIT_MIDSHOT_1}}, {{STYLING_NOTES}}, soft natural light, serene expression
-5. Clean sign reading "STILL" in thin minimal sans-serif on {{LOCATION_ARCHITECTURAL_1}}, subtle embossed texture
-6. {{OUTFIT_MIDSHOT_2}} fabric - extreme close-up, natural texture, soft even lighting
+The color grade features pure whites, soft grays, with no shadows and bright even lighting. The images have minimal grain, Scandinavian aesthetic, zen simplicity, and high-key exposure.`,
 
-7. Walking in {{LOCATION_INDOOR_3}} - {{OUTFIT_FULLBODY_3}}, centered angle, bright daylight
-8. {{LOCATION_INDOOR_2}} minimal - overhead view, white laptop, white cup, absolute simplicity
-9. Mirror reflection - {{OUTFIT_FULLBODY_4}}, white phone, {{LOCATION_INDOOR_1}}, soft bright light
+  minimal_beige_aesthetic: `A 3x3 grid of nine distinct Instagram-style photos with clean symmetrical layout and subtle frame separation. Each frame shows a different camera angle and composition, maintaining natural poses and authentic lighting throughout.
 
-Color grade: Pure whites, soft grays, no shadows, bright even lighting, minimal grain, Scandinavian aesthetic, zen simplicity, high-key exposure.`,
+The aesthetic is beige minimal with neutral beige and sand tones and understated elegance. Soft Nordic light fills beige interiors with quiet sophistication. The photography feels like authentic iPhone shots with gentle lighting, minimal styling, and calm simplicity.
 
-  minimal_beige_aesthetic: `Maintain strict identity consistency using reference images (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Vary angles from reference.
+The setting spans beige minimal apartments, sand-colored interiors, neutral modern spaces, and soft natural environments. The outfits feature {{COLOR_PALETTE}} with {{TEXTURE_NOTES}}.
 
-Vibe: Beige minimal aesthetic. Neutral beige and sand tones with understated elegance. Soft Nordic light, beige interiors, quiet sophistication. Authentic iPhone photography with gentle lighting, minimal styling, calm simplicity.
+The first frame shows the subject seated on {{LOCATION_INDOOR_1}} wearing {{OUTFIT_FULLBODY_1}}, in relaxed pose with soft window light. The second frame is an overhead lifestyle flatlay with beige coffee cup arranged on {{LOCATION_INDOOR_2}}, captured in gentle natural light with minimal styling. The third frame positions the subject full-body standing wearing {{OUTFIT_FULLBODY_2}}, against beige wall background with centered composition and soft shadows.
 
-Setting: Beige minimal apartments, sand-colored interiors, neutral modern spaces, soft natural environments
+The fourth frame is a close-up of hands holding beige cup with {{OUTFIT_MIDSHOT_1}} and {{STYLING_NOTES}}, showing warm skin tones with soft focus. The fifth frame shows a simple wooden sign reading "COZY" in natural carved typography on {{LOCATION_ARCHITECTURAL_1}}, captured in soft light. The sixth frame is a close-up of {{OUTFIT_MIDSHOT_2}} texture revealing ribbed pattern with natural fiber detail and soft lighting.
 
-Outfits: {{COLOR_PALETTE}} {{TEXTURE_NOTES}}
+The seventh frame shows the subject walking past {{LOCATION_ARCHITECTURAL_1}} wearing {{OUTFIT_FULLBODY_3}}, with natural stride, gentle side lighting, and calm movement. The eighth frame is another overhead lifestyle flatlay with coffee and journal on neutral surface at {{LOCATION_INDOOR_3}}, captured in soft natural light from window. The ninth frame shows the subject seated by window wearing {{OUTFIT_FULLBODY_4}}, holding cup, with soft profile and warm natural light.
 
-9 frames:
-1. Seated on {{LOCATION_INDOOR_1}} - {{OUTFIT_FULLBODY_1}}, relaxed pose, soft window light
-2. Beige coffee cup arranged on {{LOCATION_INDOOR_2}} - overhead flatlay, gentle natural light, minimal styling
-3. Full-body standing - {{OUTFIT_FULLBODY_2}}, beige wall background, centered composition, soft shadows
-
-4. Close-up hands holding beige cup - {{OUTFIT_MIDSHOT_1}}, {{STYLING_NOTES}}, warm skin tones, soft focus
-5. Simple wooden sign reading "COZY" in natural carved typography on {{LOCATION_ARCHITECTURAL_1}}, soft light
-6. {{OUTFIT_MIDSHOT_2}} texture - close-up revealing ribbed pattern, natural fiber detail, soft lighting
-
-7. Walking past {{LOCATION_ARCHITECTURAL_1}} - {{OUTFIT_FULLBODY_3}}, natural stride, gentle side lighting, calm movement
-8. {{LOCATION_INDOOR_3}} - overhead perspective, laptop, coffee, neutral desk, soft natural light from window
-9. Seated by window - {{OUTFIT_FULLBODY_4}}, holding cup, soft profile, warm natural light
-
-Color grade: Warm beiges, sand tones, oatmeal neutrals, soft shadows, gentle Nordic light, minimal grain, quiet sophistication, calm aesthetic.`,
+The color grade features warm beiges, sand tones, oatmeal neutrals, with soft shadows and gentle Nordic light. The images have minimal grain, quiet sophistication, and calm aesthetic.`,
 
   // BEIGE category
-  beige_dark_moody: `Maintain strict identity consistency using reference images (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Vary angles from reference.
+  beige_dark_moody: `A 3x3 grid of nine distinct Instagram-style photos with clean symmetrical layout and subtle frame separation. Each frame shows a different camera angle and composition, maintaining natural poses and authentic lighting throughout.
 
-Vibe: Dark cozy beige aesthetic. Chocolate brown, camel, and taupe with evening warmth. Moody warm lighting, autumn vibes, cozy sophistication. Authentic iPhone photography with warm shadows, rich tones, intimate atmosphere.
+The aesthetic is dark cozy beige with chocolate brown, camel, and taupe tones and evening warmth. Moody warm lighting creates autumn vibes with cozy sophistication. The photography feels like authentic iPhone shots with warm shadows, rich tones, and intimate atmosphere.
 
-Setting: Evening city streets, warm-lit cafes, cozy apartment interiors, autumn urban landscapes
+The setting spans evening city streets, warm-lit cafes, cozy apartment interiors, and autumn urban landscapes. The outfits feature {{COLOR_PALETTE}} with {{TEXTURE_NOTES}}.
 
-Outfits: {{COLOR_PALETTE}} {{TEXTURE_NOTES}}
+The first frame shows the subject sitting on {{LOCATION_OUTDOOR_1}} wearing {{OUTFIT_FULLBODY_1}}, with evening street lamps behind in a cozy pose. The second frame is an overhead lifestyle flatlay with hot chocolate and {{ACCESSORY_FLATLAY_1}} on {{LOCATION_INDOOR_1}}, captured in warm cafe lighting. The third frame shows the subject full-body walking wearing {{OUTFIT_FULLBODY_2}}, on autumn street with fallen leaves and evening golden light.
 
-9 frames:
-1. Sitting on {{LOCATION_OUTDOOR_1}} - {{OUTFIT_FULLBODY_1}}, evening street lamps behind, cozy pose
-2. Hot chocolate and {{ACCESSORY_FLATLAY_1}} on {{LOCATION_INDOOR_1}} - overhead flatlay, warm cafe lighting
-3. Full-body walking - {{OUTFIT_FULLBODY_2}}, autumn street, fallen leaves, evening golden light
+The fourth frame is a close-up of {{ACCESSORY_CLOSEUP_1}} with warm skin, soft shadow, intimate lighting, and cozy feel. The fifth frame shows a vintage sign reading "AUTUMN" in warm serif font on {{LOCATION_ARCHITECTURAL_1}}, captured in glowing evening light. The sixth frame is a close-up texture of {{OUTFIT_MIDSHOT_1}} showing luxury bag with rich material and warm moody lighting.
 
-4. Close-up {{ACCESSORY_CLOSEUP_1}} - warm skin, soft shadow, intimate lighting, cozy feel
-5. Vintage sign reading "AUTUMN" in warm serif font on {{LOCATION_ARCHITECTURAL_1}}, glowing evening light
-6. {{OUTFIT_MIDSHOT_1}} texture - close-up luxury bag, rich material, warm moody lighting
+The seventh frame shows the subject leaning in doorway wearing {{OUTFIT_FULLBODY_3}}, with warm interior light and relaxed stance. The eighth frame is another overhead cozy lifestyle flatlay with latte and journal on {{LOCATION_INDOOR_2}}, captured in evening atmosphere. The ninth frame is a mirror selfie with {{OUTFIT_FULLBODY_4}}, phone in hand, captured in {{LOCATION_INDOOR_3}}.
 
-7. Leaning in doorway - {{OUTFIT_FULLBODY_3}}, warm interior light, relaxed stance
-8. Cozy workspace - overhead, latte, brown notebook, {{LOCATION_INDOOR_2}}, evening atmosphere
-9. Mirror selfie - {{OUTFIT_FULLBODY_4}}, phone in hand, {{LOCATION_INDOOR_3}}
+The color grade features chocolate browns, warm camel, taupe shadows, with golden evening light and rich warm tones. The images have cozy grain, autumn aesthetic, and intimate moody lighting.`,
 
-Color grade: Chocolate browns, warm camel, taupe shadows, golden evening light, rich warm tones, cozy grain, autumn aesthetic, intimate moody lighting.`,
+  beige_light_minimalistic: `A 3x3 grid of nine distinct Instagram-style photos with clean symmetrical layout and subtle frame separation. Each frame shows a different camera angle and composition, maintaining natural poses and authentic lighting throughout.
 
-  beige_light_minimalistic: `Maintain strict identity consistency using reference images (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Vary angles from reference.
+The aesthetic is bright beige coastal with cream, sand, and ivory tones and beach elegance. Bright coastal daylight fills airy spaces with effortless luxury. The photography feels like authentic iPhone shots with bright natural light, soft breezy feel, and coastal sophistication.
 
-Vibe: Bright beige coastal aesthetic. Cream, sand, and ivory with beach elegance. Bright coastal daylight, airy spaces, effortless luxury. Authentic iPhone photography with bright natural light, soft breezy feel, coastal sophistication.
+The setting spans bright beach houses, coastal cafes, sandy beach backgrounds, and white-washed architecture. The outfits feature {{COLOR_PALETTE}} with {{TEXTURE_NOTES}}.
 
-Setting: Bright beach houses, coastal cafes, sandy beach backgrounds, white-washed architecture
+The first frame shows the subject standing on {{LOCATION_OUTDOOR_1}} wearing {{OUTFIT_FULLBODY_1}}, with natural wind in hair, bright daylight, and ocean background. The second frame is an overhead lifestyle flatlay with iced latte and {{ACCESSORY_FLATLAY_1}} on {{LOCATION_INDOOR_1}}, captured in bright natural light with coastal vibe. The third frame shows the subject full-body walking wearing {{OUTFIT_FULLBODY_2}}, on beach path with breezy movement and soft shadows.
 
-Outfits: {{COLOR_PALETTE}} {{TEXTURE_NOTES}}
+The fourth frame is a close-up of {{ACCESSORY_CLOSEUP_1}} with sun-kissed skin, soft focus, and bright light. The fifth frame shows a beach sign reading "PARADISE" in weathered white paint on {{LOCATION_ARCHITECTURAL_1}}, captured in bright coastal light. The sixth frame is a close-up of {{OUTFIT_MIDSHOT_1}} fabric showing natural texture blowing in breeze with bright sunlight.
 
-9 frames:
-1. Standing on {{LOCATION_OUTDOOR_1}} - {{OUTFIT_FULLBODY_1}}, natural wind in hair, bright daylight, ocean background
-2. Iced latte and {{ACCESSORY_FLATLAY_1}} on {{LOCATION_INDOOR_1}} - overhead flatlay, bright natural light, coastal vibe
-3. Full-body walking - {{OUTFIT_FULLBODY_2}}, beach path, breezy movement, soft shadows
+The seventh frame shows the subject sitting on {{LOCATION_OUTDOOR_1}} wearing {{OUTFIT_FULLBODY_3}}, in relaxed pose with coastal architecture. The eighth frame is another overhead bright lifestyle flatlay with iced coffee and minimal accessories on {{LOCATION_INDOOR_2}}, captured in natural light. The ninth frame is a doorway moment with {{OUTFIT_FULLBODY_4}}, leaning in white doorframe, with bright airy interior.
 
-4. Close-up {{ACCESSORY_CLOSEUP_1}} - sun-kissed skin, soft focus, bright light
-5. Beach sign reading "PARADISE" in weathered white paint on {{LOCATION_ARCHITECTURAL_1}}, bright coastal light
-6. {{OUTFIT_MIDSHOT_1}} fabric - close-up, natural texture blowing in breeze, bright sunlight
+The color grade features bright creams, sand tones, ivory highlights, with coastal natural light and soft breezy shadows. The images have gentle grain, beach aesthetic, and airy sophistication.`,
 
-7. Sitting on {{LOCATION_OUTDOOR_1}} - {{OUTFIT_FULLBODY_3}}, relaxed pose, coastal architecture
-8. Bright workspace - overhead, iced coffee, minimal desk, {{LOCATION_INDOOR_2}}, natural light
-9. Doorway moment - {{OUTFIT_FULLBODY_4}}, leaning in white doorframe, bright airy interior
+  beige_beige_aesthetic: `A 3x3 grid of nine distinct Instagram-style photos with clean symmetrical layout and subtle frame separation. Each frame shows a different camera angle and composition, maintaining natural poses and authentic lighting throughout.
 
-Color grade: Bright creams, sand tones, ivory highlights, coastal natural light, soft breezy shadows, gentle grain, beach aesthetic, airy sophistication.`,
+The aesthetic is classic beige with camel, tan, and cream tones and timeless elegance. Soft natural light fills neutral spaces with understated luxury. The photography feels like authentic iPhone shots with warm neutral tones, gentle shadows, and editorial sophistication.
 
-  beige_beige_aesthetic: `Maintain strict identity consistency using reference images (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Vary angles from reference.
+The setting spans beige townhouses, neutral modern apartments, classic cafes, and European architecture. The outfits feature {{COLOR_PALETTE}} with {{TEXTURE_NOTES}}.
 
-Vibe: Classic beige aesthetic. Camel, tan, and cream with timeless elegance. Soft natural light, neutral spaces, understated luxury. Authentic iPhone photography with warm neutral tones, gentle shadows, editorial sophistication.
+The first frame shows the subject leaning against {{LOCATION_ARCHITECTURAL_1}} wearing {{OUTFIT_FULLBODY_1}} with {{STYLING_NOTES}}, in a relaxed sophisticated pose. The second frame is an overhead lifestyle flatlay with cappuccino and {{ACCESSORY_FLATLAY_1}} arranged on {{LOCATION_INDOOR_1}}, captured in soft natural window light. The third frame positions the subject full-body in {{LOCATION_INDOOR_2}} wearing {{OUTFIT_FULLBODY_2}}, walking naturally with soft shadows.
 
-Setting: Beige townhouses, neutral modern apartments, classic cafes, European architecture
+The fourth frame is a close-up of {{ACCESSORY_CLOSEUP_1}} with warm tones, soft focus, and gentle lighting. The fifth frame shows a classic sign reading "ELEGANCE" in timeless serif typography on {{LOCATION_ARCHITECTURAL_1}}, captured in soft afternoon light. The sixth frame is a close-up texture of {{OUTFIT_MIDSHOT_1}} revealing luxury knit detail with soft warm lighting.
 
-Outfits: {{COLOR_PALETTE}} {{TEXTURE_NOTES}}
+The seventh frame shows the subject seated on {{LOCATION_INDOOR_3}} wearing {{OUTFIT_FULLBODY_3}}, with crossed legs in editorial pose and natural light. The eighth frame is another overhead neutral lifestyle flatlay with coffee and journal on minimal surface at {{LOCATION_INDOOR_2}}, captured in soft daylight. The ninth frame is a mirror selfie with {{OUTFIT_FULLBODY_4}} and {{STYLING_NOTES}}, phone visible in hand, captured in warm neutral bathroom.
 
-9 frames:
-1. Leaning against {{LOCATION_ARCHITECTURAL_1}} - {{OUTFIT_FULLBODY_1}}, {{STYLING_NOTES}}, relaxed sophisticated pose
-2. Cappuccino and {{ACCESSORY_FLATLAY_1}} arranged on {{LOCATION_INDOOR_1}} - overhead flatlay, soft natural window light
-3. Full-body positioned in {{LOCATION_INDOOR_2}} - {{OUTFIT_FULLBODY_2}}, walking naturally, soft shadows
-
-4. Close-up {{ACCESSORY_CLOSEUP_1}} - warm tones, soft focus, gentle lighting
-5. Classic sign reading "ELEGANCE" in timeless serif typography on {{LOCATION_ARCHITECTURAL_1}}, soft afternoon light
-6. {{OUTFIT_MIDSHOT_1}} texture - close-up revealing luxury knit detail, soft warm lighting
-
-7. Seated on {{LOCATION_INDOOR_3}} - {{OUTFIT_FULLBODY_3}}, crossed legs, editorial pose, natural light
-8. Neutral workspace - overhead perspective, coffee, tan notebook, minimal desk, {{LOCATION_INDOOR_2}}, soft daylight
-9. Mirror selfie - {{OUTFIT_FULLBODY_4}}, {{STYLING_NOTES}}, phone visible in hand, warm neutral bathroom
-
-Color grade: Warm camels, soft tans, cream highlights, natural neutral light, gentle shadows, subtle grain, timeless aesthetic, editorial sophistication.`,
+The color grade features warm camels, soft tans, cream highlights, with natural neutral light and gentle shadows. The images have subtle grain, timeless aesthetic, and editorial sophistication.`,
 
   // WARM category
-  warm_dark_moody: `Maintain strict identity consistency using reference images (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Vary angles from reference.
+  warm_dark_moody: `A 3x3 grid of nine distinct Instagram-style photos with clean symmetrical layout and subtle frame separation. Each frame shows a different camera angle and composition, maintaining natural poses and authentic lighting throughout.
 
-Vibe: Warm moody aesthetic. Rust, burgundy, and chocolate brown with evening richness. Warm Italian lighting, intimate spaces, romantic atmosphere. Authentic iPhone photography with glowing warm tones, rich shadows, cozy drama.
+The aesthetic is warm moody with rust, burgundy, and chocolate brown tones and evening richness. Warm Italian lighting fills intimate spaces with romantic atmosphere. The photography feels like authentic iPhone shots with glowing warm tones, rich shadows, and cozy drama.
 
-Setting: Evening Italian streets, warm-lit trattorias, cozy wine bars, sunset architecture
+The setting spans evening Italian streets, warm-lit trattorias, cozy wine bars, and sunset architecture. The outfits feature {{COLOR_PALETTE}} with {{TEXTURE_NOTES}}.
 
-Outfits: {{COLOR_PALETTE}} {{TEXTURE_NOTES}}
+The first frame shows the subject sitting at {{LOCATION_INDOOR_1}} wearing {{OUTFIT_FULLBODY_1}}, with wine glass in warm evening glow. The second frame is an overhead lifestyle flatlay with red wine and {{ACCESSORY_FLATLAY_1}} on {{LOCATION_INDOOR_2}}, captured in candlelit atmosphere. The third frame shows the subject full-body walking wearing {{OUTFIT_FULLBODY_2}}, on Italian street with sunset warm light.
 
-9 frames:
-1. Sitting at {{LOCATION_INDOOR_1}} - {{OUTFIT_FULLBODY_1}}, wine glass, warm evening glow
-2. Red wine and {{ACCESSORY_FLATLAY_1}} on {{LOCATION_INDOOR_2}} - overhead flatlay, candlelit atmosphere
-3. Full-body walking - {{OUTFIT_FULLBODY_2}}, Italian street, sunset warm light
+The fourth frame is a close-up of {{ACCESSORY_CLOSEUP_1}} with warm intimate lighting, romantic glow, and soft shadows. The fifth frame shows a romantic sign reading "AMORE" in script font on {{LOCATION_ARCHITECTURAL_1}}, captured in warm evening light. The sixth frame is a close-up texture of {{OUTFIT_MIDSHOT_1}} showing rich fabric detail with warm glowing lighting.
 
-4. Close-up {{ACCESSORY_CLOSEUP_1}} - warm intimate lighting, romantic glow, soft shadows
-5. Romantic sign reading "AMORE" in script font on {{LOCATION_ARCHITECTURAL_1}}, warm evening light
-6. {{OUTFIT_MIDSHOT_1}} texture - close-up, rich fabric detail, warm glowing lighting
+The seventh frame shows the subject leaning in doorway wearing {{OUTFIT_FULLBODY_3}}, with warm interior light spilling out in romantic stance. The eighth frame is another overhead cozy evening setup with wine, journal, and {{LOCATION_INDOOR_3}}, captured in warm candlelight on wood table. The ninth frame is a window reflection with {{OUTFIT_FULLBODY_4}}, holding wine glass, with golden hour through window and warm glow.
 
-7. Leaning in doorway - {{OUTFIT_FULLBODY_3}}, warm interior light spilling out, romantic stance
-8. Cozy evening setup - overhead, wine, journal, {{LOCATION_INDOOR_3}}, warm candlelight on wood table
-9. Window reflection - {{OUTFIT_FULLBODY_4}}, holding wine glass, golden hour through window, warm glow
+The color grade features rich rusts, deep burgundy, chocolate browns, with golden evening light and warm romantic shadows. The images have cozy grain, Italian aesthetic, and intimate atmosphere.`,
 
-Color grade: Rich rusts, deep burgundy, chocolate browns, golden evening light, warm romantic shadows, cozy grain, Italian aesthetic, intimate atmosphere.`,
+  warm_light_minimalistic: `A 3x3 grid of nine distinct Instagram-style photos with clean symmetrical layout and subtle frame separation. Each frame shows a different camera angle and composition, maintaining natural poses and authentic lighting throughout.
 
-  warm_light_minimalistic: `Maintain strict identity consistency using reference images (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Vary angles from reference.
+The aesthetic is bright warm minimal with ivory, cream, and white tones and warm sunlight. Bright Japanese daylight fills clean spaces with zen warmth. The photography feels like authentic iPhone shots with bright natural light, minimal styling, and warm simplicity.
 
-Vibe: Bright warm minimal aesthetic. Ivory, cream, and white with warm sunlight. Bright Japanese daylight, clean spaces, zen warmth. Authentic iPhone photography with bright natural light, minimal styling, warm simplicity.
+The setting spans bright Tokyo apartments, minimal Japanese interiors, sunny modern spaces, and clean architecture. The outfits feature {{COLOR_PALETTE}} with {{TEXTURE_NOTES}}.
 
-Setting: Bright Tokyo apartments, minimal Japanese interiors, sunny modern spaces, clean architecture
+The first frame shows the subject standing in {{LOCATION_INDOOR_1}} wearing {{OUTFIT_FULLBODY_1}}, in natural pose with warm sunlight streaming. The second frame is an overhead zen lifestyle flatlay with green tea and {{ACCESSORY_FLATLAY_1}} on {{LOCATION_INDOOR_2}}, captured in bright natural light. The third frame positions the subject full-body centered wearing {{OUTFIT_FULLBODY_2}}, against white background with warm sunlit and clean composition.
 
-Outfits: {{COLOR_PALETTE}} {{TEXTURE_NOTES}}
+The fourth frame is a close-up of {{ACCESSORY_CLOSEUP_1}} with warm skin, soft focus, and bright gentle light. The fifth frame shows a minimal sign with Japanese character "和" (harmony) in simple black on white, with soft shadow. The sixth frame is a close-up texture of {{OUTFIT_MIDSHOT_1}} fabric showing natural cotton with warm bright lighting.
 
-9 frames:
-1. Standing in {{LOCATION_INDOOR_1}} - {{OUTFIT_FULLBODY_1}}, natural pose, warm sunlight streaming
-2. Green tea and {{ACCESSORY_FLATLAY_1}} on {{LOCATION_INDOOR_2}} - overhead flatlay, bright natural light
-3. Full-body centered - {{OUTFIT_FULLBODY_2}}, white background, warm sunlit, clean composition
+The seventh frame shows the subject walking in {{LOCATION_INDOOR_3}} wearing {{OUTFIT_FULLBODY_3}}, with warm sunlight, clean minimal space, and peaceful movement. The eighth frame is another overhead zen lifestyle flatlay with matcha tea and minimal accessories on {{LOCATION_INDOOR_2}}, captured in warm daylight flooding in. The ninth frame is a window seat moment with {{OUTFIT_FULLBODY_4}}, sitting peacefully, with warm natural light and zen atmosphere.
 
-4. Close-up {{ACCESSORY_CLOSEUP_1}} - warm skin, soft focus, bright gentle light
-5. Minimal sign with Japanese character "和" (harmony) in simple black on white, soft shadow
-6. {{OUTFIT_MIDSHOT_1}} fabric texture - close-up, natural cotton, warm bright lighting
+The color grade features warm ivories, soft creams, bright whites, with warm natural daylight and minimal shadows. The images have gentle grain, Japanese aesthetic, and zen simplicity.`,
 
-7. Walking in {{LOCATION_INDOOR_3}} - {{OUTFIT_FULLBODY_3}}, warm sunlight, clean minimal space, peaceful movement
-8. Bright workspace - overhead, matcha tea, minimal desk, {{LOCATION_INDOOR_2}}, warm daylight flooding in
-9. Window seat moment - {{OUTFIT_FULLBODY_4}}, sitting peacefully, warm natural light, zen atmosphere
+  warm_beige_aesthetic: `A 3x3 grid of nine distinct Instagram-style photos with clean symmetrical layout and subtle frame separation. Each frame shows a different camera angle and composition, maintaining natural poses and authentic lighting throughout.
 
-Color grade: Warm ivories, soft creams, bright whites, warm natural daylight, minimal shadows, gentle grain, Japanese aesthetic, zen simplicity.`,
+The aesthetic is warm beige lifestyle with caramel, sand, and toffee tones and golden afternoon glow. Warm Barcelona light fills cozy cafes with Mediterranean warmth. The photography feels like authentic iPhone shots with golden tones, soft warmth, and lifestyle elegance.
 
-  warm_beige_aesthetic: `Maintain strict identity consistency using reference images (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Vary angles from reference.
+The setting spans Barcelona cafes, warm Mediterranean streets, golden hour terraces, and sunny architecture. The outfits feature {{COLOR_PALETTE}} with {{TEXTURE_NOTES}}.
 
-Vibe: Warm beige lifestyle aesthetic. Caramel, sand, and toffee with golden afternoon glow. Warm Barcelona light, cozy cafes, Mediterranean warmth. Authentic iPhone photography with golden tones, soft warmth, lifestyle elegance.
+The first frame shows the subject sitting on {{LOCATION_OUTDOOR_1}} wearing {{OUTFIT_FULLBODY_1}}, with coffee cup in golden afternoon Barcelona light. The second frame is an overhead warm lifestyle flatlay with cortado and {{ACCESSORY_FLATLAY_1}} on {{LOCATION_INDOOR_1}}, captured in warm natural light. The third frame shows the subject full-body walking wearing {{OUTFIT_FULLBODY_2}}, on Mediterranean street with warm golden hour glow and natural stride.
 
-Setting: Barcelona cafes, warm Mediterranean streets, golden hour terraces, sunny architecture
+The fourth frame is a close-up of {{ACCESSORY_CLOSEUP_1}} with sun-kissed skin, warm focus, and golden light. The fifth frame shows a vintage sign reading "BARCELONA" in warm serif on {{LOCATION_ARCHITECTURAL_1}}, captured in golden afternoon light. The sixth frame is a close-up texture of {{OUTFIT_MIDSHOT_1}} showing warm fabric detail with golden lighting.
 
-Outfits: {{COLOR_PALETTE}} {{TEXTURE_NOTES}}
+The seventh frame shows the subject leaning on {{LOCATION_ARCHITECTURAL_1}} wearing {{OUTFIT_FULLBODY_3}}, in relaxed pose with Mediterranean architecture and golden glow. The eighth frame is another overhead warm lifestyle flatlay with coffee and journal on {{LOCATION_INDOOR_2}}, captured in golden afternoon light. The ninth frame is a balcony moment with {{OUTFIT_FULLBODY_4}}, holding coffee, with warm sunset light and Mediterranean view.
 
-9 frames:
-1. Sitting on {{LOCATION_OUTDOOR_1}} - {{OUTFIT_FULLBODY_1}}, coffee cup, golden afternoon Barcelona light
-2. Cortado and {{ACCESSORY_FLATLAY_1}} on {{LOCATION_INDOOR_1}} - overhead flatlay, warm natural light
-3. Full-body walking - {{OUTFIT_FULLBODY_2}}, Mediterranean street, warm golden hour glow, natural stride
-
-4. Close-up {{ACCESSORY_CLOSEUP_1}} - sun-kissed skin, warm focus, golden light
-5. Vintage sign reading "BARCELONA" in warm serif on {{LOCATION_ARCHITECTURAL_1}}, golden afternoon light
-6. {{OUTFIT_MIDSHOT_1}} texture - close-up, warm fabric detail, golden lighting
-
-7. Leaning on {{LOCATION_ARCHITECTURAL_1}} - {{OUTFIT_FULLBODY_3}}, relaxed pose, Mediterranean architecture, golden glow
-8. Warm cafe workspace - overhead, coffee, notebook, {{LOCATION_INDOOR_2}}, golden afternoon light
-9. Balcony moment - {{OUTFIT_FULLBODY_4}}, holding coffee, warm sunset light, Mediterranean view
-
-Color grade: Warm caramels, golden sands, toffee highlights, Mediterranean golden light, warm shadows, gentle grain, Barcelona aesthetic, lifestyle warmth.`,
+The color grade features warm caramels, golden sands, toffee highlights, with Mediterranean golden light and warm shadows. The images have gentle grain, Barcelona aesthetic, and lifestyle warmth.`,
 
   // EDGY category
-  edgy_dark_moody: `Maintain strict identity consistency using reference images (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Vary angles from reference.
+  edgy_dark_moody: `A 3x3 grid of nine distinct Instagram-style photos with clean symmetrical layout and subtle frame separation. Each frame shows a different camera angle and composition, maintaining natural poses and authentic lighting throughout.
 
-Vibe: Dark edgy urban aesthetic. All black leather, denim, and grunge with industrial edge. Harsh urban lighting, neon accents, underground nightlife. Authentic iPhone photography with high contrast, gritty grain, rebellious attitude.
+The aesthetic is dark edgy urban with all black leather, denim, and grunge and industrial edge. Harsh urban lighting creates neon accents with underground nightlife feel. The photography feels like authentic iPhone shots with high contrast, gritty grain, and rebellious attitude.
 
-Setting: Industrial London streets, underground venues, graffiti walls, neon-lit alleys, urban nightlife
+The setting spans industrial London streets, underground venues, graffiti walls, neon-lit alleys, and urban nightlife. The outfits feature {{COLOR_PALETTE}} with {{TEXTURE_NOTES}}.
 
-Outfits: {{COLOR_PALETTE}} {{TEXTURE_NOTES}}
+The first frame shows the subject leaning on {{LOCATION_ARCHITECTURAL_1}} wearing {{OUTFIT_FULLBODY_1}} with {{STYLING_NOTES}}, in an edgy pose. The second frame is an overhead edgy lifestyle flatlay with black coffee and {{ACCESSORY_FLATLAY_1}} on {{LOCATION_INDOOR_1}}, captured in harsh industrial light with neon glow. The third frame positions the subject full-body in {{LOCATION_OUTDOOR_1}} wearing {{OUTFIT_FULLBODY_2}}, walking confidently with urban neon background.
 
-9 frames:
-1. Leaning on {{LOCATION_ARCHITECTURAL_1}} - {{OUTFIT_FULLBODY_1}}, {{STYLING_NOTES}}, edgy pose
-2. Black coffee and {{ACCESSORY_FLATLAY_1}} on {{LOCATION_INDOOR_1}} - overhead flatlay, harsh industrial light, neon glow
-3. Full-body in {{LOCATION_OUTDOOR_1}} - {{OUTFIT_FULLBODY_2}}, walking confidently, urban neon background
+The fourth frame is a close-up of {{ACCESSORY_CLOSEUP_1}} with multiple chains, industrial lighting, and gritty detail. The fifth frame shows a neon sign reading "REBEL" in bold sans-serif with red neon glow on {{LOCATION_ARCHITECTURAL_1}}, captured at nighttime. The sixth frame is a close-up texture of {{OUTFIT_MIDSHOT_1}} showing worn leather detail with harsh side lighting.
 
-4. Close-up {{ACCESSORY_CLOSEUP_1}} - multiple chains, industrial lighting, gritty detail
-5. Neon sign reading "REBEL" in bold sans-serif with red neon glow on {{LOCATION_ARCHITECTURAL_1}}, nighttime
-6. {{OUTFIT_MIDSHOT_1}} texture - close-up, worn leather detail, harsh side lighting
+The seventh frame shows the subject sitting on {{LOCATION_OUTDOOR_1}} wearing {{OUTFIT_FULLBODY_3}} with {{STYLING_NOTES}}, at underground venue in moody atmosphere. The eighth frame is another overhead edgy lifestyle flatlay with black coffee and accessories on {{LOCATION_INDOOR_2}}, captured in harsh light. The ninth frame is a mirror selfie in {{LOCATION_INDOOR_3}} with {{OUTFIT_FULLBODY_4}}, phone in hand, captured in harsh fluorescent.
 
-7. Sitting on {{LOCATION_OUTDOOR_1}} - {{OUTFIT_FULLBODY_3}}, {{STYLING_NOTES}}, underground venue, moody
-8. Dark workspace - overhead, black coffee, laptop with stickers, {{LOCATION_INDOOR_2}}, harsh light
-9. Mirror selfie in {{LOCATION_INDOOR_3}} - {{OUTFIT_FULLBODY_4}}, phone in hand, harsh fluorescent
+The color grade features deep blacks, cool grays, neon accents (red/blue), with harsh contrast. The images have heavy grain, industrial aesthetic, gritty urban feel, and rebellious mood.`,
 
-Color grade: Deep blacks, cool grays, neon accents (red/blue), harsh contrast, heavy grain, industrial aesthetic, gritty urban, rebellious mood.`,
+  edgy_light_minimalistic: `A 3x3 grid of nine distinct Instagram-style photos with clean symmetrical layout and subtle frame separation. Each frame shows a different camera angle and composition, maintaining natural poses and authentic lighting throughout.
 
-  edgy_light_minimalistic: `Maintain strict identity consistency using reference images (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Vary angles from reference.
+The aesthetic is bright edgy modern with white-black contrast and streetwear edge. Bright Seoul daylight fills clean urban spaces with modern street style. The photography feels like authentic iPhone shots with bright light, clean contrast, and contemporary cool.
 
-Vibe: Bright edgy modern aesthetic. White-black contrast with streetwear edge. Bright Seoul daylight, clean urban spaces, modern street style. Authentic iPhone photography with bright light, clean contrast, contemporary cool.
+The setting spans modern Seoul streets, bright subway stations, contemporary architecture, and clean urban spaces. The outfits feature {{COLOR_PALETTE}} with {{TEXTURE_NOTES}}.
 
-Setting: Modern Seoul streets, bright subway stations, contemporary architecture, clean urban spaces
+The first frame shows the subject standing in {{LOCATION_INDOOR_1}} wearing {{OUTFIT_FULLBODY_1}}, against clean modern background. The second frame is an overhead clean lifestyle flatlay with iced americano and {{ACCESSORY_FLATLAY_1}} on {{LOCATION_INDOOR_2}}, captured in bright daylight with minimal styling. The third frame shows the subject full-body walking wearing {{OUTFIT_FULLBODY_2}}, on bright Seoul street with natural stride and contemporary cool.
 
-Outfits: {{COLOR_PALETTE}} {{TEXTURE_NOTES}}
+The fourth frame is a close-up of {{ACCESSORY_CLOSEUP_1}} with clean styling, bright focus, and modern simplicity. The fifth frame shows a modern sign with Korean text "서울" (Seoul) in bold sans-serif on {{LOCATION_ARCHITECTURAL_1}}, captured in bright clean light. The sixth frame is a close-up texture of {{OUTFIT_MIDSHOT_1}} showing oversized shirt detail with bright clean lighting.
 
-9 frames:
-1. Standing in {{LOCATION_INDOOR_1}} - {{OUTFIT_FULLBODY_1}}, clean modern background
-2. Iced americano and {{ACCESSORY_FLATLAY_1}} on {{LOCATION_INDOOR_2}} - overhead flatlay, bright daylight, minimal styling
-3. Full-body walking - {{OUTFIT_FULLBODY_2}}, bright Seoul street, natural stride, contemporary cool
+The seventh frame shows the subject sitting on {{LOCATION_OUTDOOR_1}} wearing {{OUTFIT_FULLBODY_3}}, in relaxed cool pose. The eighth frame is another overhead clean lifestyle flatlay with iced coffee and minimal accessories on {{LOCATION_INDOOR_3}}, captured in bright daylight with clean aesthetic. The ninth frame is a glass reflection with {{OUTFIT_FULLBODY_4}}, against modern building, with bright daylight and contemporary styling.
 
-4. Close-up {{ACCESSORY_CLOSEUP_1}} - clean styling, bright focus, modern simplicity
-5. Modern sign with Korean text "서울" (Seoul) in bold sans-serif on {{LOCATION_ARCHITECTURAL_1}}, bright clean light
-6. {{OUTFIT_MIDSHOT_1}} texture - close-up, oversized shirt detail, bright clean lighting
+The color grade features bright whites, deep blacks, clean contrast, with bright Seoul daylight and minimal shadows. The images have contemporary grain, modern aesthetic, and street style cool.`,
 
-7. Sitting on {{LOCATION_OUTDOOR_1}} - {{OUTFIT_FULLBODY_3}}, relaxed cool pose
-8. Bright workspace - overhead, iced coffee, white minimal desk, {{LOCATION_INDOOR_3}}, bright daylight, clean aesthetic
-9. Glass reflection - {{OUTFIT_FULLBODY_4}}, modern building, bright daylight, contemporary styling
+  edgy_beige_aesthetic: `A 3x3 grid of nine distinct Instagram-style photos with clean symmetrical layout and subtle frame separation. Each frame shows a different camera angle and composition, maintaining natural poses and authentic lighting throughout.
 
-Color grade: Bright whites, deep blacks, clean contrast, bright Seoul daylight, minimal shadows, contemporary grain, modern aesthetic, street style cool.`,
+The aesthetic is urban beige edgy with tan utility wear and street edge. Natural Brooklyn shadows define industrial beige spaces with urban workwear cool. The photography feels like authentic iPhone shots with natural shadows, neutral tones, and street sophistication.
 
-  edgy_beige_aesthetic: `Maintain strict identity consistency using reference images (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Vary angles from reference.
+The setting spans Brooklyn industrial areas, neutral urban spaces, vintage warehouses, and concrete and metal environments. The outfits feature {{COLOR_PALETTE}} with {{TEXTURE_NOTES}}.
 
-Vibe: Urban beige edgy aesthetic. Tan utility wear with street edge. Natural Brooklyn shadows, industrial beige spaces, urban workwear cool. Authentic iPhone photography with natural shadows, neutral tones, street sophistication.
+The first frame shows the subject leaning on {{LOCATION_ARCHITECTURAL_1}} wearing {{OUTFIT_FULLBODY_1}}, on Brooklyn street with casual edge. The second frame is an overhead industrial lifestyle flatlay with black coffee and {{ACCESSORY_FLATLAY_1}} on {{LOCATION_INDOOR_1}}, captured in natural urban shadows. The third frame shows the subject full-body walking wearing {{OUTFIT_FULLBODY_2}}, with industrial background, natural stride, and urban cool.
 
-Setting: Brooklyn industrial areas, neutral urban spaces, vintage warehouses, concrete and metal environments
+The fourth frame is a close-up of {{ACCESSORY_CLOSEUP_1}} with neutral tones, natural light, and street detail. The fifth frame shows a vintage sign reading "BK" in industrial stencil font on {{LOCATION_ARCHITECTURAL_1}}, captured in natural shadows. The sixth frame is a close-up texture of {{OUTFIT_MIDSHOT_1}} showing utility jacket detail with natural lighting.
 
-Outfits: {{COLOR_PALETTE}} {{TEXTURE_NOTES}}
+The seventh frame shows the subject sitting on {{LOCATION_OUTDOOR_1}} wearing {{OUTFIT_FULLBODY_3}}, in relaxed pose at warehouse setting with urban edge. The eighth frame is another overhead industrial lifestyle flatlay with coffee and journal on metal surface at {{LOCATION_INDOOR_2}}, captured in natural window light. The ninth frame is a mirror in warehouse with {{OUTFIT_FULLBODY_4}}, phone in hand, captured in {{LOCATION_INDOOR_3}} with natural shadows.
 
-9 frames:
-1. Leaning on {{LOCATION_ARCHITECTURAL_1}} - {{OUTFIT_FULLBODY_1}}, Brooklyn street, casual edge
-2. Black coffee and {{ACCESSORY_FLATLAY_1}} on {{LOCATION_INDOOR_1}} - overhead flatlay, natural urban shadows
-3. Full-body walking - {{OUTFIT_FULLBODY_2}}, industrial background, natural stride, urban cool
-
-4. Close-up {{ACCESSORY_CLOSEUP_1}} - neutral tones, natural light, street detail
-5. Vintage sign reading "BK" in industrial stencil font on {{LOCATION_ARCHITECTURAL_1}}, natural shadows
-6. {{OUTFIT_MIDSHOT_1}} texture - close-up, utility jacket detail, natural lighting
-
-7. Sitting on {{LOCATION_OUTDOOR_1}} - {{OUTFIT_FULLBODY_3}}, relaxed pose, warehouse setting, urban edge
-8. Industrial workspace - overhead, coffee, neutral notebook, metal desk, {{LOCATION_INDOOR_2}}, natural window light
-9. Mirror in warehouse - {{OUTFIT_FULLBODY_4}}, phone in hand, {{LOCATION_INDOOR_3}}, natural shadows
-
-Color grade: Neutral tans, concrete grays, warm beiges, natural urban shadows, subtle grain, Brooklyn aesthetic, industrial cool, street sophistication.`,
+The color grade features neutral tans, concrete grays, warm beiges, with natural urban shadows. The images have subtle grain, Brooklyn aesthetic, industrial cool, and street sophistication.`,
 
   // PROFESSIONAL category
-  professional_dark_moody: `Maintain strict identity consistency using reference images (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Vary angles from reference.
+  professional_dark_moody: `A 3x3 grid of nine distinct Instagram-style photos with clean symmetrical layout and subtle frame separation. Each frame shows a different camera angle and composition, maintaining natural poses and authentic lighting throughout.
 
-Vibe: Dark corporate power aesthetic. All black suiting with executive presence. Dramatic evening city glow, modern offices, CEO energy. Authentic iPhone photography with dramatic lighting, high contrast, sophisticated power.
+The aesthetic is dark corporate power with all black suiting and executive presence. Dramatic evening city glow illuminates modern offices with CEO energy. The photography feels like authentic iPhone shots with dramatic lighting, high contrast, and sophisticated power.
 
-Setting: Singapore financial district at night, luxury offices, corporate towers, modern architecture
+The setting spans Singapore financial district at night, luxury offices, corporate towers, and modern architecture. The outfits feature {{COLOR_PALETTE}} with {{TEXTURE_NOTES}}.
 
-Outfits: {{COLOR_PALETTE}} {{TEXTURE_NOTES}}
+The first frame shows the subject standing in {{LOCATION_INDOOR_1}} wearing {{OUTFIT_FULLBODY_1}}, with arms crossed, city lights behind, in executive stance. The second frame is an overhead workspace flatlay with espresso and {{ACCESSORY_FLATLAY_1}} on {{LOCATION_INDOOR_2}}, captured with dramatic desk lamp and corporate luxury. The third frame shows the subject full-body walking wearing {{OUTFIT_FULLBODY_2}}, on city street with evening city glow.
 
-9 frames:
-1. Standing in {{LOCATION_INDOOR_1}} - {{OUTFIT_FULLBODY_1}}, arms crossed, city lights behind, executive stance
-2. Espresso and {{ACCESSORY_FLATLAY_1}} on {{LOCATION_INDOOR_2}} - overhead flatlay, dramatic desk lamp, corporate luxury
-3. Full-body walking - {{OUTFIT_FULLBODY_2}}, city street, evening city glow
+The fourth frame is a close-up of {{ACCESSORY_CLOSEUP_1}} with power detail, dramatic lighting, and sophistication. The fifth frame shows a modern sign reading "CEO" in bold minimalist font on {{LOCATION_ARCHITECTURAL_1}}, captured with dramatic city reflection. The sixth frame is a close-up texture of {{OUTFIT_MIDSHOT_1}} fabric showing luxury tailoring detail with dramatic lighting.
 
-4. Close-up {{ACCESSORY_CLOSEUP_1}} - power detail, dramatic lighting, sophistication
-5. Modern sign reading "CEO" in bold minimalist font on {{LOCATION_ARCHITECTURAL_1}}, dramatic city reflection
-6. {{OUTFIT_MIDSHOT_1}} fabric - close-up, luxury tailoring detail, dramatic lighting
+The seventh frame shows the subject leaning on {{LOCATION_ARCHITECTURAL_1}} wearing {{OUTFIT_FULLBODY_3}}, with city skyline behind, evening lights, and power pose. The eighth frame is another overhead executive desk with laptop, espresso, black leather journal, and {{LOCATION_INDOOR_3}}, captured in evening workspace. The ninth frame is an elevator mirror with {{OUTFIT_FULLBODY_4}}, holding briefcase, with phone reflection and modern interior.
 
-7. Leaning on {{LOCATION_ARCHITECTURAL_1}} - {{OUTFIT_FULLBODY_3}}, city skyline behind, evening lights, power pose
-8. Executive desk - overhead, laptop, espresso, black leather journal, {{LOCATION_INDOOR_3}}, evening workspace
-9. Elevator mirror - {{OUTFIT_FULLBODY_4}}, holding briefcase, phone reflection, modern interior
+The color grade features deep blacks, charcoal grays, gold accents, with dramatic city lights and high contrast. The images have executive grain, Singapore aesthetic, and corporate power.`,
 
-Color grade: Deep blacks, charcoal grays, gold accents, dramatic city lights, high contrast, executive grain, Singapore aesthetic, corporate power.`,
+  professional_light_minimalistic: `A 3x3 grid of nine distinct Instagram-style photos with clean symmetrical layout and subtle frame separation. Each frame shows a different camera angle and composition, maintaining natural poses and authentic lighting throughout.
 
-  professional_light_minimalistic: `Maintain strict identity consistency using reference images (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Vary angles from reference.
+The aesthetic is bright professional elegant with white suiting and fresh sophistication. Bright Swiss daylight fills modern offices with refined elegance. The photography feels like authentic iPhone shots with bright natural light, clean professionalism, and contemporary polish.
 
-Vibe: Bright professional elegant aesthetic. White suiting with fresh sophistication. Bright Swiss daylight, modern offices, refined elegance. Authentic iPhone photography with bright natural light, clean professionalism, contemporary polish.
+The setting spans Zurich modern offices, bright financial district, clean contemporary architecture, and natural light spaces. The outfits feature {{COLOR_PALETTE}} with {{TEXTURE_NOTES}}.
 
-Setting: Zurich modern offices, bright financial district, clean contemporary architecture, natural light spaces
+The first frame shows the subject standing in {{LOCATION_INDOOR_1}} wearing {{OUTFIT_FULLBODY_1}}, in professional stance with floor-to-ceiling windows. The second frame is an overhead workspace flatlay with green tea and {{ACCESSORY_FLATLAY_1}} on {{LOCATION_INDOOR_2}}, captured in bright natural daylight with minimal elegance. The third frame shows the subject full-body walking in {{LOCATION_INDOOR_3}} wearing {{OUTFIT_FULLBODY_2}}, with confident stride, bright modern space, and clean lines.
 
-Outfits: {{COLOR_PALETTE}} {{TEXTURE_NOTES}}
+The fourth frame is a close-up of {{ACCESSORY_CLOSEUP_1}} with professional detail, bright focus, and refined look. The fifth frame shows a modern sign reading "EXCELLENCE" in elegant thin serif on {{LOCATION_ARCHITECTURAL_1}}, captured in soft natural light. The sixth frame is a close-up texture of {{OUTFIT_MIDSHOT_1}} showing tailored detail with bright natural lighting.
 
-9 frames:
-1. Standing in {{LOCATION_INDOOR_1}} - {{OUTFIT_FULLBODY_1}}, professional stance, floor-to-ceiling windows
-2. Green tea and {{ACCESSORY_FLATLAY_1}} on {{LOCATION_INDOOR_2}} - overhead flatlay, bright natural daylight, minimal elegance
-3. Full-body walking in {{LOCATION_INDOOR_3}} - {{OUTFIT_FULLBODY_2}}, confident stride, bright modern space, clean lines
+The seventh frame shows the subject sitting in modern chair wearing {{OUTFIT_FULLBODY_3}}, with crossed legs, bright office, and professional elegant pose. The eighth frame is another overhead bright workspace with laptop, tea, white desk, and {{LOCATION_INDOOR_2}}, captured in bright daylight with contemporary minimal aesthetic. The ninth frame is a glass door reflection with {{OUTFIT_FULLBODY_4}}, against modern office, with bright natural light and professional elegance.
 
-4. Close-up {{ACCESSORY_CLOSEUP_1}} - professional detail, bright focus, refined
-5. Modern sign reading "EXCELLENCE" in elegant thin serif on {{LOCATION_ARCHITECTURAL_1}}, soft natural light
-6. {{OUTFIT_MIDSHOT_1}} texture - close-up, tailored detail, bright natural lighting
+The color grade features bright whites, soft creams, gentle shadows, with natural Swiss daylight. The images have minimal grain, professional polish, contemporary elegance, and refined aesthetic.`,
 
-7. Sitting in modern chair - {{OUTFIT_FULLBODY_3}}, crossed legs, bright office, professional elegant pose
-8. Bright workspace - overhead, laptop, tea, white desk, {{LOCATION_INDOOR_2}}, bright daylight, contemporary minimal
-9. Glass door reflection - {{OUTFIT_FULLBODY_4}}, modern office, bright natural light, professional elegance
+  professional_beige_aesthetic: `A 3x3 grid of nine distinct Instagram-style photos with clean symmetrical layout and subtle frame separation. Each frame shows a different camera angle and composition, maintaining natural poses and authentic lighting throughout.
 
-Color grade: Bright whites, soft creams, gentle shadows, natural Swiss daylight, minimal grain, professional polish, contemporary elegance, refined aesthetic.`,
+The aesthetic is classic professional beige with camel and beige suiting and timeless sophistication. Natural London daylight fills traditional offices with established elegance. The photography feels like authentic iPhone shots with natural warm light, classic professionalism, and timeless quality.
 
-  professional_beige_aesthetic: `Maintain strict identity consistency using reference images (face, body, hair, skin tone, styling). Create 3x3 grid with 9 distinct camera angles. Clean symmetrical layout with subtle frame separation. High-resolution editorial photography. Natural poses, authentic lighting. Vary angles from reference.
+The setting spans Mayfair London offices, classic architecture, traditional business districts, and natural light interiors. The outfits feature {{COLOR_PALETTE}} with {{TEXTURE_NOTES}}.
 
-Vibe: Classic professional beige aesthetic. Camel and beige suiting with timeless sophistication. Natural London daylight, traditional offices, established elegance. Authentic iPhone photography with natural warm light, classic professionalism, timeless quality.
+The first frame shows the subject standing by window wearing {{OUTFIT_FULLBODY_1}}, in professional pose with natural London daylight. The second frame is an overhead workspace flatlay with coffee and {{ACCESSORY_FLATLAY_1}} on {{LOCATION_INDOOR_1}}, captured in warm natural light with classic elegance. The third frame positions the subject full-body in {{LOCATION_INDOOR_2}} wearing {{OUTFIT_FULLBODY_2}}, walking naturally with soft shadows.
 
-Setting: Mayfair London offices, classic architecture, traditional business districts, natural light interiors
+The fourth frame is a close-up of {{ACCESSORY_CLOSEUP_1}} with professional details, warm light, and classic sophistication. The fifth frame shows a traditional sign reading "MAYFAIR" in classic serif on {{LOCATION_ARCHITECTURAL_1}}, captured in natural afternoon light. The sixth frame is a close-up texture of {{OUTFIT_MIDSHOT_1}} showing luxury tailoring with warm natural lighting.
 
-Outfits: {{COLOR_PALETTE}} {{TEXTURE_NOTES}}
+The seventh frame shows the subject sitting at traditional desk wearing {{OUTFIT_FULLBODY_3}}, in leather chair with professional working pose and natural light. The eighth frame is another overhead classic workspace with coffee, leather journal, wood desk, and {{LOCATION_INDOOR_3}}, captured in warm daylight from window. The ninth frame is a traditional mirror with {{OUTFIT_FULLBODY_4}} and {{STYLING_NOTES}}, captured in warm natural bathroom light.
 
-9 frames:
-1. Standing by window - {{OUTFIT_FULLBODY_1}}, professional pose, natural London daylight
-2. Coffee and {{ACCESSORY_FLATLAY_1}} on {{LOCATION_INDOOR_1}} - overhead flatlay, warm natural light, classic elegance
-3. Full-body in {{LOCATION_INDOOR_2}} - {{OUTFIT_FULLBODY_2}}, walking naturally, soft shadows
+The color grade features warm camels, classic beiges, cream highlights, with natural London daylight and soft shadows. The images have timeless grain, Mayfair aesthetic, and established elegance.`,
+}
 
-4. Close-up {{ACCESSORY_CLOSEUP_1}} - professional details, warm light, classic sophistication
-5. Traditional sign reading "MAYFAIR" in classic serif on {{LOCATION_ARCHITECTURAL_1}}, natural afternoon light
-6. {{OUTFIT_MIDSHOT_1}} texture - close-up, luxury tailoring, warm natural lighting
-
-7. Sitting at traditional desk - {{OUTFIT_FULLBODY_3}}, leather chair, professional working pose, natural light
-8. Classic workspace - overhead, coffee, leather journal, wood desk, {{LOCATION_INDOOR_3}}, warm daylight from window
-9. Traditional mirror - {{OUTFIT_FULLBODY_4}}, {{STYLING_NOTES}}, warm natural bathroom light
-
-Color grade: Warm camels, classic beiges, cream highlights, natural London daylight, soft shadows, timeless grain, Mayfair aesthetic, established elegance.`,
+/**
+ * Build natural language feed preview prompt (Nano Banana Pro best practices)
+ * 
+ * SEMANTIC AUTHORITY ENFORCEMENT:
+ * - Subject identity defaults to lifestyle unless category === "professional"
+ * - Business semantics only allowed when category === "professional"
+ * - Natural language, subject-first, identity-anchored to reference images
+ * - No imperative commands, template headers, or scene numbering
+ * 
+ * @param category - Category (luxury, minimal, beige, warm, edgy, professional)
+ * @param mood - Mood (luxury=dark_moody, minimal=light_minimalistic, beige=beige_aesthetic)
+ * @param templatePrompt - Raw template with placeholders
+ * @returns Natural language prompt ready for injection
+ */
+/**
+ * Build natural language feed preview prompt (Nano Banana Pro best practices)
+ * 
+ * SEMANTIC AUTHORITY ENFORCEMENT:
+ * - Subject identity defaults to lifestyle unless category === "professional"
+ * - Business semantics only allowed when category === "professional"
+ * - Natural language, subject-first, identity-anchored to reference images
+ * - No imperative commands, template headers, or scene numbering
+ */
+async function buildNaturalLanguagePrompt(
+  category: BlueprintCategory,
+  mood: BlueprintMood,
+  templatePrompt: string
+): Promise<string> {
+  // Resolve subject role using semantic authority (async import for compatibility)
+  const { resolveSubjectRole, getSubjectIdentityDescriptor } = await import('@/lib/semantic/resolve-subject-role')
+  const subjectRole = resolveSubjectRole(category)
+  
+  // Extract components from template (they're already in natural language format)
+  // The template is now structured as natural prose, so we just need to ensure
+  // identity anchor is at the start
+  const parts: string[] = []
+  
+  // 1. IDENTITY ANCHOR (subject-first, reference images)
+  // Use semantic authority to determine identity descriptor
+  const identityDescriptor = getSubjectIdentityDescriptor(subjectRole)
+  parts.push(`The subject's identity is anchored entirely to the reference images provided. Every physical characteristic—face structure, body proportions, skin tone, hair texture, and styling—must match the reference images exactly. ${identityDescriptor}`)
+  
+  // 2. NATURAL LANGUAGE TEMPLATE (already refactored to prose)
+  parts.push(templatePrompt)
+  
+  return parts.join('\n\n')
 }
 
 /**
  * Get Pro Photoshoot prompt for category + mood combination
+ * 
+ * REFACTORED: Natural language, subject-first prompt following Nano Banana Pro best practices
+ * - No imperative commands ("Create", "Generate")
+ * - No template headers ("Vibe:", "Setting:", "9 frames:")
+ * - No scene numbering (1-9)
+ * - Subject identity anchored to reference images
+ * - Scenes described as narrative prose
+ * 
  * @param category - Category from formData.vibe (luxury, minimal, beige, warm, edgy, professional)
  * @param mood - Mood from selectedFeedStyle (luxury=dark_moody, minimal=light_minimalistic, beige=beige_aesthetic)
+ * @param fashionStyle - Optional fashion style from user_personal_brand (for identity resolution)
  */
-export function getBlueprintPhotoshootPrompt(category: BlueprintCategory, mood: BlueprintMood): string {
+export async function getBlueprintPhotoshootPrompt(
+  category: BlueprintCategory,
+  mood: BlueprintMood,
+  fashionStyle?: string | null
+): Promise<string> {
   const moodName = MOOD_MAP[mood]
   const promptKey = `${category}_${moodName}`
-  const prompt = BLUEPRINT_PHOTOSHOOT_TEMPLATES[promptKey]
+  const templatePrompt = BLUEPRINT_PHOTOSHOOT_TEMPLATES[promptKey]
 
-  if (!prompt || prompt === `[USER WILL PROVIDE EXACT PROMPT]`) {
+  if (!templatePrompt || templatePrompt === `[USER WILL PROVIDE EXACT PROMPT]`) {
     throw new Error(
       `Prompt template not provided for combination: ${category} + ${moodName} (key: ${promptKey}). Please add the prompt to BLUEPRINT_PHOTOSHOOT_TEMPLATES.`,
     )
   }
 
-  return prompt
+  // Build natural language prompt (now async)
+  return await buildNaturalLanguagePrompt(category, mood, templatePrompt)
 }
