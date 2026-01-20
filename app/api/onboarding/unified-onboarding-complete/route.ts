@@ -225,6 +225,8 @@ export async function POST(req: NextRequest) {
         SET 
           form_data = ${JSON.stringify(formDataForLegacy)}::jsonb,
           feed_style = ${feedStyleForLegacy},
+          blueprint_completed = true,
+          blueprint_completed_at = NOW(),
           updated_at = NOW()
         WHERE user_id = ${neonUser.id}
       `
@@ -238,7 +240,9 @@ export async function POST(req: NextRequest) {
           form_data,
           feed_style,
           created_at,
-          updated_at
+          updated_at,
+          blueprint_completed,
+          blueprint_completed_at
         )
         VALUES (
           ${neonUser.id},
@@ -248,6 +252,8 @@ export async function POST(req: NextRequest) {
           ${JSON.stringify(formDataForLegacy)}::jsonb,
           ${feedStyleForLegacy},
           NOW(),
+          NOW(),
+          true,
           NOW()
         )
         ON CONFLICT (email) DO UPDATE SET
@@ -256,6 +262,8 @@ export async function POST(req: NextRequest) {
           access_token = COALESCE(blueprint_subscribers.access_token, EXCLUDED.access_token),
           form_data = EXCLUDED.form_data,
           feed_style = EXCLUDED.feed_style,
+          blueprint_completed = true,
+          blueprint_completed_at = NOW(),
           updated_at = NOW()
       `
     }

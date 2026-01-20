@@ -59,7 +59,16 @@ async function sendEmailWithRetry(
         break
       }
 
-      console.log(`[v0] 📧 Attempting to send email via Resend...`)
+      const emailType = options.emailType || "general"
+      const isMarketing =
+        options.tags?.includes("campaign") ||
+        emailType.startsWith("campaign") ||
+        typeof options.campaignId === "number"
+
+      console.log(`[v0] 📧 Attempting to send email via Resend...`, {
+        emailType,
+        isMarketing,
+      })
 
       const { data, error } = await resend.emails.send({
         from: options.from || "SSelfie <hello@sselfie.ai>",
@@ -69,11 +78,9 @@ async function sendEmailWithRetry(
         text: options.text,
         reply_to: options.replyTo,
         tags: options.tags?.map((tag) => ({ name: tag, value: tag })),
-        // Disable click and open tracking to improve deliverability
-        // Click tracking modifies links which can trigger spam filters
-        // Open tracking requires external resources which can also hurt deliverability
-        tracking_opens: false,
-        tracking_clicks: false,
+        // Only enable tracking for marketing/campaign sends
+        tracking_opens: isMarketing,
+        tracking_clicks: isMarketing,
       })
 
       if (error) {

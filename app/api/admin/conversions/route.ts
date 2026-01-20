@@ -52,9 +52,18 @@ export async function GET(request: Request) {
       SELECT COUNT(*) as count
       FROM email_logs
       WHERE sent_at >= ${weekAgo.toISOString()}
-      AND status = 'sent'
+      AND status IN ('sent', 'delivered', 'success')
     `
     const sentCount = Number(emailsSentThisWeek[0]?.count || 0)
+
+    // Opens this week
+    const opensThisWeek = await sql`
+      SELECT COUNT(*) as count
+      FROM email_logs
+      WHERE opened = TRUE
+      AND opened_at >= ${weekAgo.toISOString()}
+    `
+    const openCount = Number(opensThisWeek[0]?.count || 0)
 
     // Clicks this week
     const clicksThisWeek = await sql`
@@ -75,27 +84,16 @@ export async function GET(request: Request) {
     `
     const checkoutCount = Number(checkoutsStarted[0]?.count || 0)
 
-    // Purchases completed this week (from subscriptions or credit transactions)
-    const purchasesSubscriptions = await sql`
-      SELECT DISTINCT u.email
-      FROM users u
-      JOIN subscriptions s ON s.user_id = u.id
-      WHERE s.created_at >= ${weekAgo.toISOString()}
-      AND s.status = 'active'
+    // Purchases completed this week (Stripe payments)
+    const purchasesThisWeek = await sql`
+      SELECT COUNT(DISTINCT user_id)::int as count
+      FROM stripe_payments
+      WHERE status IN ('paid', 'succeeded')
+      AND (is_test_mode = FALSE OR is_test_mode IS NULL)
+      AND COALESCE(payment_date, created_at) >= ${weekAgo.toISOString()}
+      AND user_id IS NOT NULL
     `
-    const purchasesCredits = await sql`
-      SELECT DISTINCT u.email
-      FROM users u
-      JOIN credit_transactions ct ON ct.user_id = u.id
-      WHERE ct.created_at >= ${weekAgo.toISOString()}
-      AND ct.transaction_type = 'purchase'
-      AND ct.amount > 0
-    `
-    const allPurchases = new Set([
-      ...purchasesSubscriptions.map((r: any) => r.email),
-      ...purchasesCredits.map((r: any) => r.email),
-    ])
-    const purchaseCount = allPurchases.size
+    const purchaseCount = Number(purchasesThisWeek[0]?.count || 0)
 
     // Overall conversion rate
     const overallConversionRate = subscriberCount > 0 
@@ -144,7 +142,7 @@ export async function GET(request: Request) {
         COUNT(DISTINCT el.id) FILTER (WHERE el.opened = TRUE) as total_opened,
         COUNT(DISTINCT el.id) FILTER (WHERE el.clicked = TRUE) as total_clicked,
         COUNT(DISTINCT el.id) FILTER (WHERE el.converted = TRUE) as total_converted,
-        COALESCE(SUM(ct.amount), 0) as revenue
+        COALESCE(SUM(ct.payment_amount_cents), 0) as revenue
       FROM admin_email_campaigns c
       LEFT JOIN email_logs el ON el.campaign_id = c.id
       LEFT JOIN credit_transactions ct ON ct.user_id IN (
@@ -197,14 +195,15 @@ export async function GET(request: Request) {
     // Revenue this week
     const revenueThisWeek = await sql`
       SELECT 
-        COALESCE(SUM(ct.amount), 0) as revenue,
-        COUNT(DISTINCT ct.user_id) as customers
-      FROM credit_transactions ct
-      WHERE ct.created_at >= ${weekAgo.toISOString()}
-      AND ct.transaction_type = 'purchase'
-      AND ct.amount > 0
+        COALESCE(SUM(amount_cents), 0)::bigint as revenue_cents,
+        COUNT(DISTINCT user_id)::int as customers
+      FROM stripe_payments
+      WHERE status IN ('paid', 'succeeded')
+      AND (is_test_mode = FALSE OR is_test_mode IS NULL)
+      AND COALESCE(payment_date, created_at) >= ${weekAgo.toISOString()}
+      AND user_id IS NOT NULL
     `
-    const weekRevenue = Number(revenueThisWeek[0]?.revenue || 0) / 100
+    const weekRevenue = Number(revenueThisWeek[0]?.revenue_cents || 0) / 100
     const weekCustomers = Number(revenueThisWeek[0]?.customers || 0)
     const averageOrderValue = weekCustomers > 0 ? weekRevenue / weekCustomers : 0
 
@@ -255,8 +254,8 @@ export async function GET(request: Request) {
       },
       {
         stage: "Emails Opened",
-        count: clickCount, // Using clicks as proxy for engagement
-        percentage: sentCount > 0 ? (clickCount / sentCount) * 100 : 0,
+        count: openCount,
+        percentage: sentCount > 0 ? (openCount / sentCount) * 100 : 0,
       },
       {
         stage: "Clicks",

@@ -308,15 +308,31 @@ export async function POST(request: NextRequest) {
               AND converted = false
             `
 
-            // Mark in email_logs for tracking
-            await sql`
+            // Mark only the most relevant email as converted (avoid inflating attribution)
+            const convertedEmail = await sql`
+              WITH candidate AS (
+                SELECT id
+                FROM email_logs
+                WHERE user_email = ${customerEmail}
+                AND converted = false
+                AND sent_at >= NOW() - INTERVAL '7 days'
+                ORDER BY 
+                  clicked_at DESC NULLS LAST,
+                  opened_at DESC NULLS LAST,
+                  sent_at DESC NULLS LAST
+                LIMIT 1
+              )
               UPDATE email_logs
               SET converted = true, converted_at = NOW()
-              WHERE user_email = ${customerEmail}
-              AND converted = false
+              WHERE id IN (SELECT id FROM candidate)
+              RETURNING id
             `
 
-            console.log(`[v0] Marked ${customerEmail} as converted in all email sequences`)
+            if (convertedEmail.length > 0) {
+              console.log(`[v0] Marked email_logs ${convertedEmail[0].id} as converted for ${customerEmail}`)
+            } else {
+              console.warn(`[v0] No recent email_logs found to mark converted for ${customerEmail}`)
+            }
 
             await updateTags(customerEmail, {
               status: "customer",
