@@ -25,8 +25,9 @@ export async function trySyncReplicateVersionToUserModel(
   }
 
   try {
-    const encoded = encodeURIComponent(replicateModelId)
-    const modelResponse = await fetch(`https://api.replicate.com/v1/models/${encoded}/versions`, {
+    // 1) Get latest version from versions list
+    const encodedModel = encodeURIComponent(replicateModelId)
+    const modelResponse = await fetch(`https://api.replicate.com/v1/models/${encodedModel}/versions`, {
       method: "GET",
       headers: {
         Authorization: `Bearer ${process.env.REPLICATE_API_TOKEN}`,
@@ -49,26 +50,102 @@ export async function trySyncReplicateVersionToUserModel(
       return null
     }
 
-    let loraUrl: string | null = null
-    try {
-      const files = latestVersion.files || []
-      const candidate = files.find((f: any) => {
-        const name = (f.name || f.filename || "").toLowerCase()
-        return name.includes("lora") || name.includes("weights") || name.endsWith(".tar")
-      }) || files[0]
+    const versionId = latestVersion.id
 
-      loraUrl = candidate?.url || candidate?.download_url || null
-    } catch (e) {
-      console.log("[v0] Error extracting lora url from version.files:", String(e))
-      loraUrl = null
+    // 2) Fetch the detailed version object (helps ensure files & metadata are present)
+    const versionDetailResp = await fetch(
+      `https://api.replicate.com/v1/models/${encodedModel}/versions/${encodeURIComponent(versionId)}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${process.env.REPLICATE_API_TOKEN}`,
+          Accept: "application/json",
+        },
+      },
+    )
+
+    let versionDetail: any = latestVersion
+    if (versionDetailResp.ok) {
+      versionDetail = await versionDetailResp.json()
+    } else {
+      // fallback to list result (we already have latestVersion) but prefer detail when possible
+      console.warn("[v0] Could not fetch version detail, falling back to list entry", {
+        status: versionDetailResp.status,
+        statusText: versionDetailResp.statusText,
+      })
     }
 
-    const replicateVersionId = latestVersion.id
+    // 3) Inspect files for a strong LoRA candidate
+    const files = versionDetail.files || []
+    const isLikelyLora = (f: any) => {
+      const name = String(f.name || f.filename || "").toLowerCase()
+      const contentType = String(f.content_type || f.mime || "").toLowerCase()
+      return (
+        name.includes("lora") ||
+        name.includes("weights") ||
+        name.endsWith(".tar") ||
+        contentType.includes("tar") ||
+        contentType.includes("application/x-tar")
+      )
+    }
+
+    let candidate = files.find(isLikelyLora) || files.find((f: any) => (f.url || f.download_url)) || null
+    let loraUrl: string | null = null
+
+    if (candidate) {
+      loraUrl = candidate.url || candidate.download_url || null
+    }
+
+    // 4) If no candidate URL found, try conservative constructed pbxt fallback using version hash
+    // But verify any URL with a quick HEAD request before trusting it.
+    const extractVersionHash = (id: string) => (id.includes(":") ? id.split(":")[1] : id)
+    const versionHash = extractVersionHash(versionId)
+
+    const tryVerify = async (url: string | null) => {
+      if (!url) return false
+      try {
+        const resp = await fetch(url, { method: "HEAD" })
+        return resp.ok
+      } catch (e) {
+        return false
+      }
+    }
+
+    let verified = false
+    if (loraUrl) {
+      verified = await tryVerify(loraUrl)
+      if (!verified) {
+        console.warn("[v0] Candidate LoRA URL failed HEAD check, ignoring:", loraUrl)
+        loraUrl = null
+      }
+    }
+
+    if (!loraUrl) {
+      // constructed fallback
+      const constructed = `https://replicate.delivery/pbxt/${versionHash}/flux-lora.tar`
+      const ok = await tryVerify(constructed)
+      if (ok) {
+        loraUrl = constructed
+        verified = true
+        console.log("[v0] Using constructed pbxt fallback and verified it exists:", constructed)
+      } else {
+        console.warn("[v0] No verifiable LoRA file found for version", versionId)
+      }
+    }
+
+    // 5) Only update DB and mark completed if we actually verified a usable LoRA URL.
+    if (!loraUrl) {
+      console.log("[v0] Aborting sync: no verified lora_weights_url available for", {
+        replicateModelId,
+        versionId,
+      })
+      return null
+    }
 
     const result = await sql`
       UPDATE user_models
       SET
-        replicate_version_id = ${replicateVersionId},
+        replicate_version_id = ${versionId},
         lora_weights_url = ${loraUrl},
         training_status = 'completed',
         training_progress = 100,
@@ -85,7 +162,7 @@ export async function trySyncReplicateVersionToUserModel(
 
     console.log("[v0] Synced replicate version to user_models:", {
       id: userModelId,
-      replicate_version_id: replicateVersionId,
+      replicate_version_id: versionId,
       lora_weights_url: loraUrl,
     })
 
