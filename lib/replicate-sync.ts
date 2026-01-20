@@ -9,7 +9,7 @@ const sql = neon(process.env.DATABASE_URL!)
  * or replicate_version_id), this helper will:
  *  - fetch the model versions from Replicate
  *  - pick the latest version
- *  - if a valid version is found, update user_models with version id, lora url and mark completed
+ *  - if a verified LoRA file is found, update user_models with version id, lora url and mark completed
  *
  * Returns the updated row object (or null if no update was performed)
  */
@@ -97,15 +97,65 @@ export async function trySyncReplicateVersionToUserModel(
     }
 
     // 4) If no candidate URL found, try conservative constructed pbxt fallback using version hash
-    // But verify any URL with a quick HEAD request before trusting it.
+    // But verify any URL with a robust verify function (HEAD -> fallback GET range) before trusting it.
     const extractVersionHash = (id: string) => (id.includes(":") ? id.split(":")[1] : id)
     const versionHash = extractVersionHash(versionId)
 
     const tryVerify = async (url: string | null) => {
       if (!url) return false
       try {
-        const resp = await fetch(url, { method: "HEAD" })
-        return resp.ok
+        const parsed = new URL(url)
+        const host = parsed.hostname.toLowerCase()
+        // For replicate-owned hosts, include the API token for verification
+        const isReplicateHost =
+          host.endsWith("replicate.com") || host.endsWith("replicate.delivery") || host === "api.replicate.com"
+
+        const baseHeaders: Record<string, string> = {}
+        if (isReplicateHost && process.env.REPLICATE_API_TOKEN) {
+          baseHeaders["Authorization"] = `Bearer ${process.env.REPLICATE_API_TOKEN}`
+        }
+
+        // First attempt: HEAD (fast, usually OK)
+        try {
+          const headResp = await fetch(url, {
+            method: "HEAD",
+            headers: baseHeaders,
+            redirect: "follow",
+          })
+          if (headResp.ok) return true
+          // If server explicitly rejects HEAD with 401/403/405, fall back to GET
+          if (![401, 403, 405].includes(headResp.status)) {
+            // Non-auth/failures like 404 or 5xx - treat as failure
+            return false
+          }
+        } catch (headErr) {
+          // Some servers close/deny HEAD outright - we'll try GET next
+        }
+
+        // Fallback: small ranged GET (only first bytes) with a short timeout.
+        // This handles GET-only presigned links and servers that reject HEAD.
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), 5000) // 5s timeout
+
+        try {
+          const resp = await fetch(url, {
+            method: "GET",
+            headers: {
+              ...baseHeaders,
+              // Range header requests just the first byte(s) if server supports it
+              Range: "bytes=0-1",
+            },
+            redirect: "follow",
+            signal: controller.signal,
+          })
+          clearTimeout(timeout)
+          // 200 OK or 206 Partial Content are acceptable
+          if (resp.ok || resp.status === 206) return true
+          return false
+        } catch (getErr) {
+          // GET failed or timed out -> not verified
+          return false
+        }
       } catch (e) {
         return false
       }
@@ -115,7 +165,7 @@ export async function trySyncReplicateVersionToUserModel(
     if (loraUrl) {
       verified = await tryVerify(loraUrl)
       if (!verified) {
-        console.warn("[v0] Candidate LoRA URL failed HEAD check, ignoring:", loraUrl)
+        console.warn("[v0] Candidate LoRA URL failed verification, ignoring:", loraUrl)
         loraUrl = null
       }
     }
