@@ -1887,6 +1887,15 @@ export default function MayaChatScreen({
     setShowNavMenu(false)
   }
 
+  const closeTrainingTab = () => {
+    const tab = "photos"
+    setActiveMayaTab(tab)
+    if (typeof window !== "undefined") {
+      localStorage.setItem("mayaActiveTab", tab)
+      window.history.replaceState(null, "", "#maya")
+    }
+  }
+
 
   const filteredMessages = messages.filter((msg) => {
     if (contentFilter === "all") return true
@@ -3093,17 +3102,30 @@ export default function MayaChatScreen({
       {/* Tab Content - Training Tab */}
       {activeMayaTab === "training" && (
         <div
-          style={{
-            // Header (~56-64px) + Tabs (~50px) + safe area = ~106-114px total
-            paddingTop: 'calc(106px + max(0.625rem, env(safe-area-inset-top, 0px)))',
-            paddingBottom: '20px', // Space for content
-          }}
+          className="fixed inset-0 z-150 bg-stone-50/95 backdrop-blur-sm"
+          onClick={closeTrainingTab}
+          role="button"
+          tabIndex={-1}
         >
-          <MayaTrainingTab 
-            userId={userId} 
-            setActiveTab={setActiveTab}
-            userName={user?.name || user?.email?.split('@')[0] || null}
-          />
+          <div
+            className="absolute inset-0 overflow-y-auto"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              onClick={closeTrainingTab}
+              className="absolute right-4 top-4 w-9 h-9 flex items-center justify-center rounded-full bg-white/90 border border-stone-200 text-stone-500 hover:text-stone-700 shadow-sm"
+              aria-label="Close training"
+            >
+              <X size={18} strokeWidth={2} />
+            </button>
+            <div className="pt-safe pb-24">
+              <MayaTrainingTab 
+                userId={userId} 
+                setActiveTab={setActiveTab}
+                userName={user?.name || user?.email?.split('@')[0] || null}
+              />
+            </div>
+          </div>
         </div>
       )}
 
