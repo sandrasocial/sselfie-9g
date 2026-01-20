@@ -53,6 +53,15 @@ interface MayaChatInterfaceProps {
   // Prompt Suggestions
   promptSuggestions: PromptSuggestion[]
   
+  // Generation Settings (Classic mode)
+  generationSettings?: {
+    styleStrength: number
+    promptAccuracy: number
+    aspectRatio: string
+    realismStrength: number
+  }
+  enhancedAuthenticity?: boolean
+  
 }
 
 /**
@@ -96,6 +105,8 @@ export default function MayaChatInterface({
   userId,
   user,
   promptSuggestions,
+  generationSettings,
+  enhancedAuthenticity,
 }: MayaChatInterfaceProps) {
   
   // Helper function to remove emojis from text
@@ -740,6 +751,8 @@ export default function MayaChatInterface({
                                     chatId={chatId}
                                     uploadedImages={uploadedImages}
                                     onCreditsUpdate={setCreditBalance}
+                                    generationSettings={generationSettings}
+                                    enhancedAuthenticity={enhancedAuthenticity}
                                     messages={messages}
                                     onPromptUpdate={(messageId, updatedConceptId, newFullPrompt) => {
                                       setMessages((prevMessages) => {

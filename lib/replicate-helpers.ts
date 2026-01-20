@@ -204,12 +204,9 @@ export function buildClassicModeReplicateInput(params: ClassicModeInputParams): 
     model: qualitySettings.model ?? "dev",
   }
 
-  // Only include extra_lora if scale > 0 (refined logic from concept cards)
-  // This prevents sending unnecessary parameters to Replicate
   if (
     qualitySettings.extra_lora && 
     qualitySettings.extra_lora_scale !== undefined &&
-    qualitySettings.extra_lora_scale > 0 && 
     !extraLoraDisabled
   ) {
     input.extra_lora = qualitySettings.extra_lora

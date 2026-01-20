@@ -2692,6 +2692,8 @@ export default function MayaChatScreen({
         userId={userId}
         user={user}
         promptSuggestions={promptSuggestions}
+        generationSettings={settings}
+        enhancedAuthenticity={enhancedAuthenticity}
       />
           {/* Empty State - Pro Features: Image Upload Flow, Classic: Welcome Screen */}
           {isEmpty && hasProFeatures && !isTyping && (

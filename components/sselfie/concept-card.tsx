@@ -28,6 +28,13 @@ interface ConceptCardProps {
   selectedGuideId?: number | null // Selected guide ID for saving
   adminUserId?: string // User ID for saving to guide (admin mode)
   onSaveToGuide?: (concept: ConceptData, imageUrl?: string) => void // Save handler from parent
+  generationSettings?: {
+    styleStrength: number
+    promptAccuracy: number
+    aspectRatio: string
+    realismStrength: number
+  }
+  enhancedAuthenticity?: boolean
 }
 
 export default function ConceptCard({ 
@@ -46,7 +53,9 @@ export default function ConceptCard({
   isAdmin = false,
   selectedGuideId = null,
   adminUserId,
-  onSaveToGuide
+  onSaveToGuide,
+  generationSettings,
+  enhancedAuthenticity: enhancedAuthenticityOverride,
 }: ConceptCardProps) {
   // CLASSIC MODE SAFETY: Normalize studioProMode to ensure it's explicitly boolean
   // This prevents undefined/null from accidentally triggering Pro logic
@@ -810,16 +819,17 @@ export default function ConceptCard({
       // Classic mode: Use Flux with user's LoRA
       const settingsStr = localStorage.getItem("mayaGenerationSettings")
       const parsedSettings = settingsStr ? JSON.parse(settingsStr) : null
+      const settingsSource = generationSettings || parsedSettings
 
-      const customSettings = parsedSettings
+      const customSettings = settingsSource
         ? {
-            ...parsedSettings,
+            ...settingsSource,
             // CRITICAL FIX: Map realismStrength to extraLoraScale for API
             // Use !== undefined check to preserve 0 values
             // If user sets realismStrength to 0, it should stay 0
             // If undefined, don't set extraLoraScale - let API use preset default
-            ...(parsedSettings.realismStrength !== undefined && {
-              extraLoraScale: parsedSettings.realismStrength,
+            ...(settingsSource.realismStrength !== undefined && {
+              extraLoraScale: settingsSource.realismStrength,
             }),
           }
         : null
@@ -834,7 +844,10 @@ export default function ConceptCard({
         : (concept as any).customSettings
 
       // CRITICAL: Get Enhanced Authenticity toggle from localStorage
-      const enhancedAuthenticity = localStorage.getItem('mayaEnhancedAuthenticity') === 'true'
+      const enhancedAuthenticity =
+        typeof enhancedAuthenticityOverride === "boolean"
+          ? enhancedAuthenticityOverride
+          : localStorage.getItem('mayaEnhancedAuthenticity') === 'true'
 
       const response = await fetch("/api/maya/generate-image", {
         method: "POST",

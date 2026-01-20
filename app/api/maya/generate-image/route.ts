@@ -208,7 +208,7 @@ export async function POST(request: NextRequest) {
     // The toggle explicitly overrides any user realismStrength setting
     // Priority: 1. Enhanced Authenticity toggle (if ON → force 0), 2. User's realismStrength, 3. Preset default
     const hasUserSetRealism = manualExtraLoraScale !== undefined
-    const shouldDisableExtraLora = enhancedAuthenticity === true || hasAuthenticAesthetic
+    const shouldDisableExtraLora = false
     
     const qualitySettings = {
       ...presetSettings,
@@ -226,11 +226,9 @@ export async function POST(request: NextRequest) {
       // 2. If prompt has authentic aesthetic keywords → force to 0
       // 3. If user explicitly set realismStrength/extraLoraScale → use that value
       // 4. Otherwise → use preset default
-      extra_lora_scale: shouldDisableExtraLora
-        ? 0  // Enhanced Authenticity toggle or authentic keywords → force disable ✅
-        : (hasUserSetRealism
-          ? manualExtraLoraScale  // User's explicit setting (if toggle is OFF)
-          : presetSettings.extra_lora_scale), // Preset default
+      extra_lora_scale: hasUserSetRealism
+        ? manualExtraLoraScale
+        : presetSettings.extra_lora_scale,
       num_inference_steps: presetSettings.num_inference_steps,
     }
     
@@ -272,13 +270,9 @@ export async function POST(request: NextRequest) {
       manualExtraLoraScale,
       shouldDisableExtraLora,
       finalExtraLoraScale: qualitySettings.extra_lora_scale,
-      reason: shouldDisableExtraLora
-        ? (enhancedAuthenticity 
-          ? "Disabled - Enhanced Authenticity toggle is ON (highest priority override)" 
-          : "Disabled - conflicts with authentic iPhone aesthetic keywords in prompt")
-        : (hasUserSetRealism
-          ? `Using user's explicit setting: ${manualExtraLoraScale}`
-          : "Using preset/default scale")
+      reason: hasUserSetRealism
+        ? `Using user's explicit setting: ${manualExtraLoraScale}`
+        : "Using preset/default scale"
     })
 
     let replicate
@@ -312,10 +306,10 @@ export async function POST(request: NextRequest) {
       extraLoraDisabled: shouldDisableExtraLora, // Pass the computed flag
     })
 
-    if (qualitySettings.extra_lora && qualitySettings.extra_lora_scale && qualitySettings.extra_lora_scale > 0 && !shouldDisableExtraLora) {
+    if (qualitySettings.extra_lora && qualitySettings.extra_lora_scale !== undefined && !shouldDisableExtraLora) {
       console.log("[v0] ✅ Super-Realism LoRA included:", qualitySettings.extra_lora_scale)
     } else {
-      console.log("[v0] ✅ Super-Realism LoRA disabled (scale = 0) for authentic aesthetic")
+      console.log("[v0] ✅ Super-Realism LoRA disabled")
     }
 
     if (referenceImageUrl) {

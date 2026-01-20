@@ -43,6 +43,15 @@ interface MayaConceptCardsProps {
   // User data
   userId?: string
   user?: any
+
+  // Generation settings (Classic mode)
+  generationSettings?: {
+    styleStrength: number
+    promptAccuracy: number
+    aspectRatio: string
+    realismStrength: number
+  }
+  enhancedAuthenticity?: boolean
 }
 
 /**
@@ -67,6 +76,8 @@ export default function MayaConceptCards({
   onSaveToGuide,
   userId,
   user,
+  generationSettings,
+  enhancedAuthenticity,
 }: MayaConceptCardsProps) {
   if (!concepts || concepts.length === 0) {
     return null
@@ -222,6 +233,8 @@ export default function MayaConceptCards({
               selfies={[]}
               products={[]}
               styleRefs={[]}
+              generationSettings={generationSettings}
+              enhancedAuthenticity={enhancedAuthenticity}
               isAdmin={isAdmin}
               selectedGuideId={selectedGuideId}
               adminUserId={user?.id?.toString()}
