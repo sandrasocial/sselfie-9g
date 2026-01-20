@@ -3,6 +3,7 @@ import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { neon } from "@neondatabase/serverless"
 import { getDBRevenueMetrics } from "@/lib/revenue/db-revenue-metrics"
+import { getStripeLiveMetrics } from "@/lib/stripe/stripe-live-metrics"
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "ssa@ssasocial.com"
 
@@ -90,6 +91,13 @@ export async function GET() {
     // Database revenue metrics (stripe_payments = primary source of truth)
     const dbRevenueMetrics = await getDBRevenueMetrics()
 
+    let stripeMetrics = null
+    try {
+      stripeMetrics = await getStripeLiveMetrics()
+    } catch (error: any) {
+      console.warn("[v0] Revenue dashboard: Stripe live metrics unavailable:", error?.message || error)
+    }
+
     const revenueTrend = await sql`
       SELECT 
         DATE_TRUNC('month', created_at) as month,
@@ -133,7 +141,7 @@ export async function GET() {
     const realCreditRevenue = Number(creditPurchasesResult[0]?.real_credit_revenue_cents || 0) / 100
 
     return NextResponse.json({
-      mrr: Math.round(mrr * 100) / 100, // Keep 2 decimal places for MRR
+      mrr: Math.round((stripeMetrics?.mrr ?? mrr) * 100) / 100, // Keep 2 decimal places for MRR
       totalRevenue: Math.round(dbRevenueMetrics.totalRevenue * 100) / 100,
       oneTimeRevenue: Math.round(dbRevenueMetrics.oneTimeRevenue * 100) / 100,
       realCreditRevenue: Math.round(dbRevenueMetrics.creditPurchaseRevenue * 100) / 100,

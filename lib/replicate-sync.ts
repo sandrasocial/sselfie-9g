@@ -51,6 +51,8 @@ export async function trySyncReplicateVersionToUserModel(
     }
 
     const versionId = latestVersion.id
+    const extractVersionHash = (id: string) => (id.includes(":") ? id.split(":")[1] : id)
+    const versionHash = extractVersionHash(versionId)
 
     // 2) Fetch the detailed version object (helps ensure files & metadata are present)
     const versionDetailResp = await fetch(
@@ -98,9 +100,6 @@ export async function trySyncReplicateVersionToUserModel(
 
     // 4) If no candidate URL found, try conservative constructed pbxt fallback using version hash
     // But verify any URL with a quick HEAD request before trusting it.
-    const extractVersionHash = (id: string) => (id.includes(":") ? id.split(":")[1] : id)
-    const versionHash = extractVersionHash(versionId)
-
     const tryVerify = async (url: string | null) => {
       if (!url) return false
       try {
@@ -145,7 +144,7 @@ export async function trySyncReplicateVersionToUserModel(
     const result = await sql`
       UPDATE user_models
       SET
-        replicate_version_id = ${versionId},
+        replicate_version_id = ${versionHash},
         lora_weights_url = ${loraUrl},
         training_status = 'completed',
         training_progress = 100,
@@ -162,7 +161,7 @@ export async function trySyncReplicateVersionToUserModel(
 
     console.log("[v0] Synced replicate version to user_models:", {
       id: userModelId,
-      replicate_version_id: versionId,
+      replicate_version_id: versionHash,
       lora_weights_url: loraUrl,
     })
 

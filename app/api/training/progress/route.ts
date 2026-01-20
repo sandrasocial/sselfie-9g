@@ -287,6 +287,26 @@ export async function GET(request: NextRequest) {
           if (!loraWeightsUrl) {
             console.error("[v0] ❌ CRITICAL ERROR: LoRA weights URL is NULL after all extraction methods!")
             console.error("[v0] This will cause image generation to fail!")
+            await sql`
+              UPDATE user_models
+              SET 
+                training_status = 'failed',
+                failure_reason = 'Missing LoRA weights URL after training',
+                updated_at = NOW()
+              WHERE id = ${modelId}
+            `
+
+            return NextResponse.json({
+              status: "failed",
+              progress: model.training_progress || 0,
+              model: {
+                ...model,
+                training_status: "failed",
+                failure_reason: "Missing LoRA weights URL after training",
+              },
+              debug: debugInfo,
+              error: "LoRA weights URL missing after training completion",
+            })
           }
 
           let versionHash = null

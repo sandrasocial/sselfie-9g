@@ -224,16 +224,19 @@ export default function ConversionsPage() {
                 value={emailFunnel.purchasesCompleted.toLocaleString()}
                 icon={<ShoppingCart className="w-5 h-5" />}
                 highlight
+                source="DB (stripe_payments)"
               />
               <MetricCard
                 label="Membership Conversions (7d)"
                 value={membershipConversions.toLocaleString()}
                 icon={<Users className="w-5 h-5" />}
+                source="DB (stripe_payments)"
               />
               <MetricCard
                 label="Top-up / One-time Purchases (7d)"
                 value={topupConversions.toLocaleString()}
                 icon={<DollarSign className="w-5 h-5" />}
+                source="Derived (DB)"
               />
             </div>
           </div>
@@ -268,17 +271,20 @@ export default function ConversionsPage() {
               label="Blueprint Completions"
               value={instagramFunnel.freeGuideDownloads.toLocaleString()}
               icon={<Download className="w-5 h-5" />}
+              source="DB (blueprint_subscribers)"
             />
             <MetricCard
               label="Blueprint → Paid Conversion Rate"
               value={`${instagramFunnel.guideToPurchaseRate.toFixed(2)}%`}
               icon={<TrendingUp className="w-5 h-5" />}
               highlight
+              source="Derived (DB)"
             />
             <MetricCard
               label="Blueprint → Paid Purchases"
               value={instagramFunnel.guideConversions.toLocaleString()}
               icon={<CheckCircle className="w-5 h-5" />}
+              source="DB (blueprint_subscribers)"
             />
           </div>
         </div>
@@ -356,21 +362,25 @@ export default function ConversionsPage() {
               value={`$${weeklyPerformance.revenue.toFixed(2)}`}
               icon={<DollarSign className="w-5 h-5" />}
               highlight
+              source="DB (stripe_payments)"
             />
             <MetricCard
               label="New Customers"
               value={weeklyPerformance.newCustomers.toLocaleString()}
               icon={<Users className="w-5 h-5" />}
+              source="DB (stripe_payments)"
             />
             <MetricCard
               label="Average Order Value"
               value={`$${weeklyPerformance.averageOrderValue.toFixed(2)}`}
               icon={<ShoppingCart className="w-5 h-5" />}
+              source="Derived (DB)"
             />
             <MetricCard
               label="Top Traffic Source"
               value={weeklyPerformance.topTrafficSource}
               icon={<TrendingUp className="w-5 h-5" />}
+              source="Static (default)"
             />
           </div>
         </div>
@@ -436,11 +446,13 @@ function MetricCard({
   value,
   icon,
   highlight = false,
+  source,
 }: {
   label: string
   value: string | number
   icon: React.ReactNode
   highlight?: boolean
+  source?: string
 }) {
   return (
     <div
@@ -460,6 +472,11 @@ function MetricCard({
       <div className={`text-xs tracking-[0.2em] uppercase ${highlight ? "text-stone-300" : "text-stone-500"}`}>
         {label}
       </div>
+      {source && (
+        <div className={`text-[10px] mt-2 ${highlight ? "text-stone-300" : "text-stone-400"}`}>
+          Source: {source}
+        </div>
+      )}
     </div>
   )
 }

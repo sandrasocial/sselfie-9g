@@ -7,6 +7,7 @@ import { getReplicateClient } from "@/lib/replicate-client"
 import { checkCredits, deductCredits } from "@/lib/credits"
 import { hasStudioMembership } from "@/lib/subscription"
 import { logger } from "@/lib/logger"
+import { extractReplicateVersionId } from "@/lib/replicate-helpers"
 
 const sql = getDbClient()
 
@@ -91,6 +92,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const replicateVersionId = extractReplicateVersionId(model.replicate_version_id)
+    if (!replicateVersionId) {
+      console.error("[v0] ❌ replicate_version_id is missing or invalid:", model.replicate_version_id)
+      return NextResponse.json(
+        { error: "Model version not found. Please retrain your model." },
+        { status: 400 },
+      )
+    }
+
     const replicate = getReplicateClient()
 
     const fullPrompt = `${model.trigger_word} ${prompt}`
@@ -112,7 +122,7 @@ export async function POST(request: NextRequest) {
 
     // Start generation using the trained model with quality presets
     const prediction = await replicate.predictions.create({
-      version: model.replicate_version_id,
+      version: replicateVersionId,
       input: {
         prompt: fullPrompt,
         guidance_scale: qualitySettings.guidance_scale,

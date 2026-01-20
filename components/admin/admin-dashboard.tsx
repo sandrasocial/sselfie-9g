@@ -246,24 +246,28 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
               icon={<DollarSign className="w-5 h-5" />}
               variant="primary"
               subtitle={stats?.stripeLive ? 'Live from Stripe' : 'Estimated from DB'}
+              source={stats?.stripeLive ? 'Stripe Live' : 'DB (subscriptions)'}
             />
             
             <AdminMetricCard
               label="Active Subscriptions"
               value={stats?.stripeLive?.activeSubscriptions || stats?.activeSubscriptions || 0}
               icon={<Users className="w-5 h-5" />}
+              source={stats?.stripeLive ? 'Stripe Live' : 'DB (subscriptions)'}
             />
             
             <AdminMetricCard
               label="Total Users"
               value={stats?.totalUsers || 0}
               icon={<Users className="w-5 h-5" />}
+              source="DB (users)"
             />
             
             <AdminMetricCard
               label="Conversion Rate"
               value={`${stats?.conversionRate || 0}%`}
               icon={<Percent className="w-5 h-5" />}
+              source="DB (users + subscriptions + credit_transactions)"
             />
           </div>
 
@@ -308,6 +312,7 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
                   <p className="text-[8px] sm:text-[10px] tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-400">
                     One-Time Revenue
                   </p>
+                  <p className="text-[8px] text-stone-400 mt-1">Source: Stripe Live</p>
                 </div>
                 
                 <div className="bg-white border border-stone-200 p-4 sm:p-6 rounded-none">
@@ -317,6 +322,7 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
                   <p className="text-[8px] sm:text-[10px] tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-400">
                     New Subscribers (30d)
                   </p>
+                  <p className="text-[8px] text-stone-400 mt-1">Source: Stripe Live</p>
                 </div>
                 
                 <div className="bg-white border border-stone-200 p-4 sm:p-6 rounded-none">
@@ -326,6 +332,7 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
                   <p className="text-[8px] sm:text-[10px] tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-400">
                     Total Revenue (All Time)
                   </p>
+                  <p className="text-[8px] text-stone-400 mt-1">Source: Stripe Live</p>
                 </div>
               </div>
               
@@ -338,6 +345,7 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
                   <p className="text-[8px] sm:text-[10px] tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-400">
                     Credit Purchases
                   </p>
+                  <p className="text-[8px] text-stone-400 mt-1">Source: Stripe Live</p>
                 </div>
                 
                 <div className="bg-white border border-stone-200 p-4 sm:p-6 rounded-none">
@@ -347,6 +355,7 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
                   <p className="text-[8px] sm:text-[10px] tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-400">
                     Total Subscriptions
                   </p>
+                  <p className="text-[8px] text-stone-400 mt-1">Source: Stripe Live</p>
                 </div>
                 
                 <div className="bg-white border border-stone-200 p-4 sm:p-6 rounded-none">
@@ -356,6 +365,7 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
                   <p className="text-[8px] sm:text-[10px] tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-400">
                     Canceled (30d)
                   </p>
+                  <p className="text-[8px] text-stone-400 mt-1">Source: Stripe Live</p>
                 </div>
               </div>
               
@@ -368,6 +378,7 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
                   <p className="text-[8px] sm:text-[10px] tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-500">
                     New One-Time Buyers (30d)
                   </p>
+                  <p className="text-[8px] text-stone-500 mt-1">Source: Stripe Live</p>
                 </div>
               </div>
             </div>

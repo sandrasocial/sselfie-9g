@@ -3,7 +3,6 @@ import { neon } from "@neondatabase/serverless"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { createServerClient } from "@/lib/supabase/server"
 import {
-  calculateTotalRevenue,
   calculateMRR,
   calculateCreditCost,
   calculateReferralBonusCost,
@@ -12,6 +11,8 @@ import {
   COST_PER_CREDIT,
   REFERRAL_BONUS_COST,
 } from "@/lib/admin/metrics"
+import { getDBRevenueMetrics } from "@/lib/revenue/db-revenue-metrics"
+import { getStripeLiveMetrics } from "@/lib/stripe/stripe-live-metrics"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -64,9 +65,20 @@ export async function GET(request: NextRequest) {
 
     console.log("[v0] [Growth Dashboard] Starting metrics aggregation...")
 
-    // 1. Revenue Metrics
-    const totalRevenue = await calculateTotalRevenue()
-    const mrr = await calculateMRR()
+    // 1. Revenue Metrics (standardized)
+    const dbRevenueMetrics = await getDBRevenueMetrics()
+
+    let stripeMetrics = null
+    try {
+      stripeMetrics = await getStripeLiveMetrics()
+    } catch (error: any) {
+      console.warn("[v0] [Growth Dashboard] Stripe live metrics unavailable:", error?.message || error)
+    }
+
+    const totalRevenue = dbRevenueMetrics.totalRevenue
+    const dbMrr = await calculateMRR()
+    const mrr = stripeMetrics?.mrr ?? dbMrr
+    const mrrSource = stripeMetrics ? "Stripe Live" : "DB (subscriptions)"
 
     // 2. User Metrics
     const [userStats] = await sql`
@@ -89,7 +101,8 @@ export async function GET(request: NextRequest) {
         AND (is_test_mode = FALSE OR is_test_mode IS NULL)
     `
 
-    const activeSubscriptions = subscriptionStats?.active_subscriptions || 0
+    const activeSubscriptions = stripeMetrics?.activeSubscriptions || subscriptionStats?.active_subscriptions || 0
+    const activeSubscriptionsSource = stripeMetrics ? "Stripe Live" : "DB (subscriptions)"
 
     // 4. Credit Metrics
     const [creditStats] = await sql`
@@ -202,6 +215,18 @@ export async function GET(request: NextRequest) {
         upsellEmails,
       },
       automation: automationStatus,
+      sources: {
+        totalRevenue: "DB (stripe_payments)",
+        mrr: mrrSource,
+        activeSubscriptions: activeSubscriptionsSource,
+        totalUsers: "DB (users)",
+        activeUsers: "DB (users)",
+        credits: "DB (credit_transactions)",
+        referrals: "DB (referrals)",
+        email: "DB (email_logs)",
+        costs: "DB (credit_transactions + referrals + estimates)",
+        automation: "Env flags",
+      },
       timestamp: new Date().toISOString(),
     }
 

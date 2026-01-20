@@ -9,6 +9,8 @@ import {
   DEFAULT_TRAINING_PARAMS,
   getAdaptiveTrainingParams,
 } from "@/lib/replicate-client"
+import { checkCredits, deductCredits, getUserCredits, CREDIT_COSTS } from "@/lib/credits"
+import { hasStudioMembership } from "@/lib/subscription"
 import { put } from "@vercel/blob"
 import { neon } from "@neondatabase/serverless"
 
@@ -107,6 +109,8 @@ export async function POST(request: Request) {
 
   // --- Main training flow ---
   let model: any | null = null
+  let creditsDeducted = false
+  let activeUserId: string | null = null
 
   try {
     // Get authenticated user
@@ -125,11 +129,37 @@ export async function POST(request: Request) {
     if (!neonUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
+    activeUserId = neonUser.id
 
     console.log("[v0] [TRAINING] Using effective user for training:", {
       userId: neonUser.id,
       email: neonUser.email,
     })
+
+    const hasMembership = await hasStudioMembership(neonUser.id)
+    if (!hasMembership) {
+      return NextResponse.json(
+        {
+          error: "Membership required",
+          message: "Training a model requires an active Studio Membership.",
+        },
+        { status: 403 },
+      )
+    }
+
+    const hasEnoughCredits = await checkCredits(neonUser.id, CREDIT_COSTS.TRAINING)
+    if (!hasEnoughCredits) {
+      const currentBalance = await getUserCredits(neonUser.id)
+      return NextResponse.json(
+        {
+          error: "Insufficient credits",
+          required: CREDIT_COSTS.TRAINING,
+          current: currentBalance,
+          message: `Training requires ${CREDIT_COSTS.TRAINING} credits. You currently have ${currentBalance} credits.`,
+        },
+        { status: 402 },
+      )
+    }
 
     // --- Retraining quality validation ---
     const existingModelForValidation = await sql`
@@ -344,6 +374,9 @@ export async function POST(request: Request) {
     }
 
     console.log("[v0] Starting Replicate training with SDK...")
+    await deductCredits(neonUser.id, CREDIT_COSTS.TRAINING, "training", "Training model (upload-zip)")
+    creditsDeducted = true
+
     const training = await replicate.trainings.create(
       FLUX_LORA_TRAINER.split("/")[0],
       FLUX_LORA_TRAINER.split("/")[1],
@@ -394,6 +427,15 @@ export async function POST(request: Request) {
       code: error?.code,
       constraint: error?.constraint,
     })
+
+    if (creditsDeducted && activeUserId) {
+      try {
+        await deductCredits(activeUserId, -CREDIT_COSTS.TRAINING, "refund", "Training failed to start - refund")
+        console.log("[v0] Refunded training credits after failure")
+      } catch (refundError: any) {
+        console.error("[v0] Failed to refund training credits:", refundError)
+      }
+    }
 
     // Best-effort: mark model as failed if it was created
     if (model?.id) {

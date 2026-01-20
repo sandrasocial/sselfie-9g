@@ -53,6 +53,18 @@ interface GrowthDashboardData {
     referralBonuses: boolean
     creditGifts: boolean
   }
+  sources?: {
+    totalRevenue: string
+    mrr: string
+    activeSubscriptions: string
+    totalUsers: string
+    activeUsers: string
+    credits: string
+    referrals: string
+    email: string
+    costs: string
+    automation: string
+  }
   timestamp: string
 }
 
@@ -137,12 +149,14 @@ function StatCard({
   subtitle,
   trend,
   isPrimary = false,
+  source,
 }: {
   title: string
   value: string | number
   subtitle?: string
   trend?: "up" | "down" | "neutral"
   isPrimary?: boolean
+  source?: string
 }) {
   const trendIcon =
     trend === "up" ? (
@@ -164,6 +178,7 @@ function StatCard({
           {value}
         </p>
         {subtitle && <p className="text-[8px] text-stone-400 mt-1">{subtitle}</p>}
+        {source && <p className="text-[8px] text-stone-500 mt-1">Source: {source}</p>}
       </div>
     )
   }
@@ -180,6 +195,7 @@ function StatCard({
         {value}
       </p>
       {subtitle && <p className="text-[8px] sm:text-[10px] text-stone-400 mt-1">{subtitle}</p>}
+      {source && <p className="text-[8px] text-stone-400 mt-1">Source: {source}</p>}
     </div>
   )
 }
@@ -297,9 +313,22 @@ export function GrowthDashboard() {
             Revenue Overview
           </h2>
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-            <StatCard title="Total Revenue" value={formatCurrency(data.summary.revenue)} isPrimary />
-            <StatCard title="Monthly Recurring Revenue" value={formatCurrency(data.metrics.mrr)} />
-            <StatCard title="Average Revenue Per User" value={formatCurrency(data.metrics.arpu)} />
+            <StatCard
+              title="Total Revenue"
+              value={formatCurrency(data.summary.revenue)}
+              isPrimary
+              source={data.sources?.totalRevenue}
+            />
+            <StatCard
+              title="Monthly Recurring Revenue"
+              value={formatCurrency(data.metrics.mrr)}
+              source={data.sources?.mrr}
+            />
+            <StatCard
+              title="Average Revenue Per User"
+              value={formatCurrency(data.metrics.arpu)}
+              source="Derived (DB)"
+            />
           </div>
         </section>
 
@@ -309,17 +338,27 @@ export function GrowthDashboard() {
             Credit Economics
           </h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            <StatCard title="Total Credits Issued" value={data.credits.totalIssued.toLocaleString()} />
-            <StatCard title="Total Credits Spent" value={data.credits.totalSpent.toLocaleString()} />
+            <StatCard
+              title="Total Credits Issued"
+              value={data.credits.totalIssued.toLocaleString()}
+              source={data.sources?.credits}
+            />
+            <StatCard
+              title="Total Credits Spent"
+              value={data.credits.totalSpent.toLocaleString()}
+              source={data.sources?.credits}
+            />
             <StatCard
               title="Credit Cost (USD)"
               value={formatCurrency(data.summary.creditCost)}
               subtitle={`${data.credits.totalSpent.toLocaleString()} credits × $${COST_PER_CREDIT.toFixed(2)}`}
+              source={data.sources?.costs}
             />
             <StatCard
               title="Avg Usage Per Active User"
               value={data.credits.avgUsagePerActiveUser.toFixed(1)}
               subtitle="credits"
+              source="Derived (DB)"
             />
           </div>
         </section>
@@ -330,22 +369,25 @@ export function GrowthDashboard() {
             Referral Performance
           </h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            <StatCard title="Total Referrals" value={data.referrals.total} />
+            <StatCard title="Total Referrals" value={data.referrals.total} source={data.sources?.referrals} />
             <StatCard
               title="Completed Referrals"
               value={data.referrals.completed}
               subtitle={`${formatPercent(data.referrals.conversionRate)} conversion rate`}
+              source="Derived (DB)"
             />
             <StatCard
               title="Referral Bonus Cost"
               value={formatCurrency(data.referrals.bonusCost)}
               subtitle={`${data.referrals.completed} × $${REFERRAL_BONUS_COST.toFixed(2)}`}
+              source={data.sources?.costs}
             />
             <StatCard
               title="Referral ROI"
               value={formatPercent(data.referrals.roi)}
               subtitle={`Revenue potential: ${formatCurrency(data.referrals.revenuePotential)}`}
               trend={data.referrals.roi > 0 ? "up" : "neutral"}
+              source="Derived (DB)"
             />
           </div>
         </section>
@@ -367,18 +409,21 @@ export function GrowthDashboard() {
               subtitle={`${formatCurrency(data.summary.revenue)} revenue - ${formatCurrency(data.summary.totalCosts)} costs`}
               trend={data.summary.grossMargin >= 30 ? "up" : data.summary.grossMargin >= 20 ? "neutral" : "down"}
               isPrimary
+              source="Derived (DB)"
             />
             <StatCard
               title="Total Costs"
               value={formatCurrency(data.summary.totalCosts)}
               subtitle="Credit + Referral + Claude"
+              source={data.sources?.costs}
             />
-            <StatCard title="Claude API Cost" value={formatCurrency(data.summary.claudeCost)} subtitle="Estimated" />
+            <StatCard title="Claude API Cost" value={formatCurrency(data.summary.claudeCost)} subtitle="Estimated" source="Derived (DB)" />
             <StatCard
               title="Net Profit"
               value={formatCurrency(data.summary.revenue - data.summary.totalCosts)}
               subtitle="Revenue - Total Costs"
               trend={data.summary.revenue > data.summary.totalCosts ? "up" : "down"}
+              source="Derived (DB)"
             />
           </div>
         </section>
@@ -389,17 +434,19 @@ export function GrowthDashboard() {
             User Metrics
           </h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            <StatCard title="Total Users" value={data.metrics.totalUsers.toLocaleString()} />
+            <StatCard title="Total Users" value={data.metrics.totalUsers.toLocaleString()} source={data.sources?.totalUsers} />
             <StatCard
               title="Active Users (30d)"
               value={data.metrics.activeUsers.toLocaleString()}
               subtitle={`${formatPercent((data.metrics.activeUsers / data.metrics.totalUsers) * 100)} of total`}
+              source={data.sources?.activeUsers}
             />
-            <StatCard title="Active Subscriptions" value={data.metrics.activeSubscriptions} />
+            <StatCard title="Active Subscriptions" value={data.metrics.activeSubscriptions} source={data.sources?.activeSubscriptions} />
             <StatCard
               title="Avg Claude Cost/User"
               value={formatCurrency(data.metrics.avgClaudeCost)}
               subtitle="Per month"
+              source="Derived (DB)"
             />
           </div>
         </section>
@@ -424,8 +471,12 @@ export function GrowthDashboard() {
             Email Metrics
           </h2>
           <div className="grid grid-cols-2 gap-3 sm:gap-4">
-            <StatCard title="Total Email Sends" value={data.email.totalSends.toLocaleString()} />
-            <StatCard title="Credit Exhaustion Signals (Upsell Emails)" value={data.email.upsellEmails.toLocaleString()} />
+            <StatCard title="Total Email Sends" value={data.email.totalSends.toLocaleString()} source={data.sources?.email} />
+            <StatCard
+              title="Credit Exhaustion Signals (Upsell Emails)"
+              value={data.email.upsellEmails.toLocaleString()}
+              source={data.sources?.email}
+            />
           </div>
         </section>
       </div>

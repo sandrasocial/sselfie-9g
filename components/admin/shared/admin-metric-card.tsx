@@ -16,6 +16,7 @@ interface AdminMetricCardProps {
   }
   variant?: 'default' | 'primary' | 'compact'
   subtitle?: string
+  source?: string
 }
 
 export function AdminMetricCard({
@@ -25,6 +26,7 @@ export function AdminMetricCard({
   trend,
   variant = 'default',
   subtitle,
+  source,
 }: AdminMetricCardProps) {
   const isPrimary = variant === 'primary'
   const isCompact = variant === 'compact'
@@ -94,6 +96,16 @@ export function AdminMetricCard({
           }`}
         >
           {subtitle}
+        </p>
+      )}
+
+      {source && (
+        <p
+          className={`text-[8px] mt-1 ${
+            isPrimary ? 'text-stone-500' : 'text-stone-400'
+          }`}
+        >
+          Source: {source}
         </p>
       )}
     </div>
