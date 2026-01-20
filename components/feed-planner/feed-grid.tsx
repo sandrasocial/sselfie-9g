@@ -14,6 +14,7 @@ interface FeedGridProps {
   isManualFeed?: boolean // Flag to identify manual feeds
   feedId: number // Feed ID for image generation
   access?: FeedPlannerAccess // Phase 5.1: Access control for image generation
+  generationMode?: "classic" | "pro"
   onPostClick: (post: any) => void
   onAddImage?: (postId: number) => void // Open gallery selector (upload + gallery)
   onGenerateImage?: (postId: number) => Promise<void> // Phase 5.1: Callback after image generation
@@ -32,6 +33,7 @@ export default function FeedGrid({
   isManualFeed = false,
   feedId,
   access,
+  generationMode = "pro",
   onPostClick,
   onAddImage,
   onGenerateImage,
@@ -62,7 +64,7 @@ export default function FeedGrid({
       const response = await fetch(`/api/feed/${feedId}/generate-single`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ postId }),
+        body: JSON.stringify({ postId, generationMode }),
       })
 
       if (!response.ok) {

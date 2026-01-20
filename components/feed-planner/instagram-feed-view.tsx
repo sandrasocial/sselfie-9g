@@ -66,7 +66,40 @@ export default function InstagramFeedView({ feedId, onBack, access, onOpenWizard
   const [isSavingBio, setIsSavingBio] = useState(false)
   const [showHighlightsModal, setShowHighlightsModal] = useState(false)
   const [brandColors, setBrandColors] = useState<string[]>([])
+  const [generationMode, setGenerationMode] = useState<"classic" | "pro">(() => {
+    if (typeof window === "undefined") return "pro"
+    return localStorage.getItem("mayaProMode") === "true" ? "pro" : "classic"
+  })
 
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === "mayaProMode") {
+        setGenerationMode(event.newValue === "true" ? "pro" : "classic")
+      }
+    }
+    const handleCustomEvent = (event: Event) => {
+      const detail = (event as CustomEvent).detail as { mode?: boolean }
+      if (typeof detail?.mode === "boolean") {
+        setGenerationMode(detail.mode ? "pro" : "classic")
+      }
+    }
+    window.addEventListener("storage", handleStorageChange)
+    window.addEventListener("feedPlannerModeChanged", handleCustomEvent as EventListener)
+    return () => {
+      window.removeEventListener("storage", handleStorageChange)
+      window.removeEventListener("feedPlannerModeChanged", handleCustomEvent as EventListener)
+    }
+  }, [])
+
+  const handleToggleGenerationMode = () => {
+    const nextMode = generationMode === "pro" ? "classic" : "pro"
+    setGenerationMode(nextMode)
+    if (typeof window !== "undefined") {
+      localStorage.setItem("mayaProMode", nextMode === "pro" ? "true" : "false")
+      window.dispatchEvent(new CustomEvent("feedPlannerModeChanged", { detail: { mode: nextMode === "pro" } }))
+    }
+  }
   // Helper function to get colors from theme ID
   const getColorsFromTheme = (theme: string | null): string[] => {
     const themeColors: Record<string, string[]> = {
@@ -516,6 +549,8 @@ export default function InstagramFeedView({ feedId, onBack, access, onOpenWizard
         onOpenWizard={onOpenWizard}
         onOpenWelcomeWizard={onOpenWelcomeWizard}
         access={access}
+        generationMode={generationMode}
+        onToggleGenerationMode={access?.isMembership ? handleToggleGenerationMode : undefined}
       />
       
       <FeedTabs
@@ -539,6 +574,7 @@ export default function InstagramFeedView({ feedId, onBack, access, onOpenWizard
                 onGenerateImage={() => mutate()} // Refresh feed data after generation
                 onRequireFeedStyle={onRequireFeedStyle}
                 onRequireOnboarding={onOpenWizard}
+                generationMode={generationMode}
               />
             ) : (
               <>
@@ -558,6 +594,7 @@ export default function InstagramFeedView({ feedId, onBack, access, onOpenWizard
                   onDragStart={dragDrop.handleDragStart}
                   onDragOver={dragDrop.handleDragOver}
                   onDragEnd={dragDrop.handleDragEnd}
+                  generationMode={generationMode}
                 />
                 {/* Helpful hint for empty posts */}
                 {displayPosts.some((p: any) => !p.image_url) && (

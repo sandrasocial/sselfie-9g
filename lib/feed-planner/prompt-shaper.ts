@@ -95,7 +95,7 @@ export function buildPromptFromScene(
   })
   
   // 🔴 PROMPT AUTHORITY LOCK-IN: Phase 5 - Validate prompt structure before return
-  validatePromptStructure(prompt, mode, allScenes)
+  validatePromptStructure(prompt, mode, allScenes, scene)
   
   return prompt
 }
@@ -268,18 +268,21 @@ function buildSingleScenePrompt(scene: FeedPlannerScene): string {
   }
   
   const parts: string[] = []
+  const isNoSubjectScene = scene.camera.framing === 'flatlay' || scene.position === 6
   
   // [IDENTITY ANCHOR - Required First] (25-35 words)
   // 🔴 PROMPT AUTHORITY LOCK-IN: Phase 3 - Always include identity anchor per spec
   // All prompts (including flatlay) MUST start with identity anchor per Nano Banana Pro spec
-  parts.push(
-    'A portrait photograph of the person from the reference images. ' +
-    'Use the uploaded photos as strict identity reference—preserve facial features, ' +
-    'skin tone, hair, and body proportions exactly.'
-  )
+  if (!isNoSubjectScene) {
+    parts.push(
+      'A portrait photograph of the person from the reference images. ' +
+      'Use the uploaded photos as strict identity reference—preserve facial features, ' +
+      'skin tone, hair, and body proportions exactly.'
+    )
+  }
   
   // [OUTFIT DETAILS - Natural Language] (40-60 words)
-  if (scene.camera.framing !== 'flatlay') {
+  if (scene.camera.framing !== 'flatlay' && !isNoSubjectScene) {
     const outfitDesc = formatOutfitDescription(scene.outfit)
     const outfitBlock = buildOutfitBlock(outfitDesc)
     parts.push(outfitBlock)
@@ -291,10 +294,16 @@ function buildSingleScenePrompt(scene: FeedPlannerScene): string {
         parts.push(`The person is ${objectsDesc}`)
       }
     }
-  } else {
+  } else if (scene.camera.framing === 'flatlay') {
     // Flatlay: Use flatlay description instead
     const flatlayDesc = buildFlatlayDescription(scene)
     parts.push(flatlayDesc)
+  } else {
+    const detailObjects = scene.objects.map(obj => obj.description).filter(Boolean)
+    const detailItems = detailObjects.length > 0 ? detailObjects.join(', ') : 'textured materials'
+    parts.push(
+      `A detail-focused close-up featuring ${detailItems}, emphasizing material texture, craftsmanship, and styling details.`
+    )
   }
   
   // [SETTING & ENVIRONMENT - Clear Context] (30-50 words)
@@ -315,7 +324,7 @@ function buildSingleScenePrompt(scene: FeedPlannerScene): string {
   }
   
   // [COMPOSITION & MOOD - Photographic Direction] (40-60 words)
-  if (scene.camera.framing !== 'flatlay') {
+  if (scene.camera.framing !== 'flatlay' && !isNoSubjectScene) {
     const compositionBlock = buildCompositionBlock(scene)
     parts.push(compositionBlock)
   }
@@ -325,7 +334,7 @@ function buildSingleScenePrompt(scene: FeedPlannerScene): string {
   parts.push(technicalBlock)
   
   // [CRITICAL REMINDER] (10-15 words)
-  if (scene.camera.framing !== 'flatlay') {
+  if (scene.camera.framing !== 'flatlay' && !isNoSubjectScene) {
     parts.push('Maintain exact facial identity and body proportions from reference images.')
   }
   
@@ -364,17 +373,25 @@ function buildSingleScenePrompt(scene: FeedPlannerScene): string {
 function validatePromptStructure(
   prompt: string,
   mode: PromptMode,
-  allScenes?: FeedPlannerScene[]
+  allScenes?: FeedPlannerScene[],
+  scene?: FeedPlannerScene
 ): void {
   const errors: string[] = []
   
   // 1. Identity Anchor Presence
+  const requiresSubjectIdentity = mode !== 'single_scene'
+    ? true
+    : !(scene?.camera?.framing === 'flatlay' || scene?.position === 6)
   const hasIdentityAnchor = 
     prompt.toLowerCase().includes('reference images') ||
     prompt.toLowerCase().includes('person from the reference images')
   
-  if (!hasIdentityAnchor) {
-    errors.push('Prompt missing required identity anchor (must contain "reference images" or "person from the reference images")')
+  if (requiresSubjectIdentity && !hasIdentityAnchor) {
+    if (mode === 'single_scene') {
+      console.warn('[PROMPT-SHAPER] ⚠️ Missing identity anchor for single scene prompt')
+    } else {
+      errors.push('Prompt missing required identity anchor (must contain "reference images" or "person from the reference images")')
+    }
   }
   
   // 2. Word Count Range
@@ -393,10 +410,9 @@ function validatePromptStructure(
       console.log(`[PROMPT-SHAPER] ℹ️ Preview prompt word count ${wordCount} outside optimal range [300-450] but acceptable [120-500]`)
     }
   } else {
-    // Single scene mode: Allow natural variation for quality prompts
-    // Range: 100-300 (target: 150-220)
+    // Single scene mode: Do NOT block on word count (safety for users)
     if (wordCount < 100 || wordCount > 300) {
-      errors.push(`Prompt word count ${wordCount} outside acceptable range [100-300] for single scene mode (optimal: 150-220)`)
+      console.warn(`[PROMPT-SHAPER] ⚠️ Single scene prompt word count ${wordCount} outside acceptable range [100-300] (optimal: 150-220)`)
     } else if (wordCount < 150 || wordCount > 220) {
       // Within tolerance but outside target - log info but don't fail
       console.log(`[PROMPT-SHAPER] ℹ️ Single scene prompt word count ${wordCount} outside target range [150-220] but within acceptable range [100-300]`)
@@ -426,14 +442,14 @@ function validatePromptStructure(
     const hasCamera = prompt.toLowerCase().includes('camera') || prompt.toLowerCase().includes('dslr') ||
                      prompt.toLowerCase().includes('focal length') || prompt.toLowerCase().includes('depth of field')
     
-    if (!hasOutfit) {
-      errors.push('Prompt missing required outfit description block')
+    if (requiresSubjectIdentity && !hasOutfit) {
+      console.warn('[PROMPT-SHAPER] ⚠️ Missing outfit description block for single scene prompt')
     }
-    if (!hasLocation) {
-      errors.push('Prompt missing required location/setting description block')
+    if (requiresSubjectIdentity && !hasLocation) {
+      console.warn('[PROMPT-SHAPER] ⚠️ Missing location/setting description block for single scene prompt')
     }
     if (!hasCamera) {
-      errors.push('Prompt missing required camera/technical specifications block')
+      console.warn('[PROMPT-SHAPER] ⚠️ Missing camera/technical specifications block for single scene prompt')
     }
   }
   
@@ -1127,6 +1143,8 @@ function buildFlatlayDescription(scene: FeedPlannerScene): string {
   } else if (category === 'beige') {
     flatlay += ' on a warm beige surface'
   }
+  
+  flatlay += '. The outfit pieces are arranged neatly with complementary accessories, showcasing textures, materials, and color harmony in a clean, curated layout.'
   
   return flatlay
 }

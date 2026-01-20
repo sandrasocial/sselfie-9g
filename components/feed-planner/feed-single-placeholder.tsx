@@ -17,6 +17,7 @@ interface FeedSinglePlaceholderProps {
   onGenerateImage?: () => void // Callback to refresh feed data after generation
   onRequireFeedStyle?: () => void
   onRequireOnboarding?: () => void
+  generationMode?: "classic" | "pro"
 }
 
 /**
@@ -33,6 +34,7 @@ export default function FeedSinglePlaceholder({
   onGenerateImage,
   onRequireFeedStyle,
   onRequireOnboarding,
+  generationMode = "pro",
 }: FeedSinglePlaceholderProps) {
   const [showBlueprintModal, setShowBlueprintModal] = useState(false)
   const [showUpsellModal, setShowUpsellModal] = useState(false)
@@ -150,7 +152,7 @@ export default function FeedSinglePlaceholder({
       const response = await fetch(`/api/feed/${feedId}/generate-single`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ postId: post.id }),
+        body: JSON.stringify({ postId: post.id, generationMode }),
       })
 
       if (!response.ok) {
@@ -249,6 +251,7 @@ export default function FeedSinglePlaceholder({
   // CRITICAL: Don't show generating if we already have an image
   const isPostGenerating = !displayImageUrl && (
     pollingStatus === "generating" || 
+    !!predictionId ||
     (post?.generation_status === "generating" && post?.prediction_id && !post?.image_url) ||
     (post?.prediction_id && !post?.image_url)
   )

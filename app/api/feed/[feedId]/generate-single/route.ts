@@ -207,7 +207,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       )
     }
 
-    const { postId } = await req.json()
+    const { postId, generationMode: requestedMode } = await req.json()
     
     console.log("[v0] [GENERATE-SINGLE] Request params:", { feedId, postId })
 
@@ -253,7 +253,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
     // Access was already fetched above, reuse it
     const forceProMode = Boolean(process.env.FEED_PLANNER_FORCE_PRO ?? true)
     let generationMode: 'pro' | 'classic' = post.generation_mode === 'classic' ? 'classic' : 'pro'
-    if (forceProMode) {
+    if (access.isMembership && (requestedMode === 'classic' || requestedMode === 'pro')) {
+      generationMode = requestedMode
+    }
+    if (!access.isMembership && forceProMode) {
       generationMode = 'pro'
     }
     const proModeType = post.pro_mode_type || null
@@ -378,6 +381,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       await sql`
         UPDATE feed_posts
         SET generation_status = 'generating',
+            generation_mode = ${generationMode},
             updated_at = NOW()
         WHERE id = ${postId}
       `

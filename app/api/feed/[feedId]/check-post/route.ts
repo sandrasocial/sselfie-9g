@@ -139,6 +139,7 @@ export async function GET(request: Request) {
       console.log("[v0] Prediction succeeded, uploading to Blob storage...")
 
       let blobUrl: string
+      let usedReplicateUrlFallback = false
       try {
         const imageResponse = await fetch(imageUrl)
         if (!imageResponse.ok) {
@@ -177,7 +178,10 @@ export async function GET(request: Request) {
         console.log("[v0] ✅ Image uploaded to Blob:", blobUrl)
       } catch (blobError: any) {
         console.error("[v0] ❌ Error uploading to Blob:", blobError)
-        throw blobError
+        // Fallback: use Replicate URL to avoid blocking completion
+        usedReplicateUrlFallback = true
+        blobUrl = imageUrl
+        console.warn("[v0] ⚠️ Using Replicate URL fallback (temporary):", blobUrl)
       }
 
       // Check if this is a preview feed (layout_type = 'preview')
@@ -316,6 +320,7 @@ export async function GET(request: Request) {
       return NextResponse.json({
         status: "succeeded",
         imageUrl: blobUrl,
+        usedReplicateUrlFallback,
       })
     } else if (prediction.status === "failed") {
       // 🔴 FIX: Handle content moderation errors gracefully (E005)

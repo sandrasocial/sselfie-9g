@@ -110,8 +110,15 @@ export default function SselfieApp({
       if (tabParam && validTabs.includes(tabParam)) {
         return tabParam
       }
-      // Default to feed-planner for free users (will be overridden if user has subscription)
-      return validTabs.includes(hash) ? hash : "feed-planner"
+      if (validTabs.includes(hash)) {
+        return hash
+      }
+
+      const isMembership =
+        (subscriptionStatus === "active" || subscriptionStatus === "trialing") &&
+        ["sselfie_studio_membership", "brand_studio_membership", "pro", "one_time_session"].includes(productType || "")
+
+      return isMembership ? "maya" : "feed-planner"
     }
     return "feed-planner"
   }
@@ -128,7 +135,11 @@ export default function SselfieApp({
   const [creditBalance, setCreditBalance] = useState<number>(0)
   const [isLoadingCredits, setIsLoadingCredits] = useState(true)
   const simpleFetcher = (url: string) => fetch(url).then((res) => res.json())
-  const { data: trainingStatus, isLoading: isTrainingStatusLoading } = useSWR(
+  const {
+    data: trainingStatus,
+    error: trainingStatusError,
+    isLoading: isTrainingStatusLoading,
+  } = useSWR(
     "/api/training/status",
     simpleFetcher,
     {
@@ -298,7 +309,10 @@ export default function SselfieApp({
       if (validTabs.includes(hash)) {
         setActiveTab(hash)
       } else {
-        setActiveTab("maya")
+        const isMembership =
+          (subscriptionStatus === "active" || subscriptionStatus === "trialing") &&
+          ["sselfie_studio_membership", "brand_studio_membership", "pro", "one_time_session"].includes(productType || "")
+        setActiveTab(isMembership ? "maya" : "feed-planner")
       }
     }
 
@@ -400,10 +414,10 @@ export default function SselfieApp({
   }, [refreshCredits])
 
   useEffect(() => {
-    if (!isTrainingStatusLoading) {
+    if (!isTrainingStatusLoading || trainingStatusError) {
       setIsLoadingTrainingStatus(false)
     }
-  }, [isTrainingStatusLoading])
+  }, [isTrainingStatusLoading, trainingStatusError])
 
   useEffect(() => {
     if (typeof trainingStatus?.hasTrainedModel === "boolean") {

@@ -7,6 +7,7 @@ import { ChevronLeft, MoreHorizontal, Plus, Settings, HelpCircle } from "lucide-
 import { toast } from "@/hooks/use-toast"
 import FeedStyleModal, { type FeedStyle, type FeedStyleModalData } from "./feed-style-modal"
 import useSWR, { mutate } from "swr"
+import MayaModeToggle from "@/components/sselfie/maya/maya-mode-toggle"
 
 interface FeedHeaderProps {
   feedData: any
@@ -18,6 +19,8 @@ interface FeedHeaderProps {
   onOpenWizard?: () => void // Callback to open wizard
   onOpenWelcomeWizard?: () => void // Callback to open welcome wizard (for paid blueprint users)
   access?: { isFree?: boolean; isPaidBlueprint?: boolean; isMembership?: boolean } // Access control to hide buttons for free users
+  generationMode?: "classic" | "pro"
+  onToggleGenerationMode?: () => void
 }
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
@@ -32,6 +35,8 @@ export default function FeedHeader({
   onOpenWizard,
   onOpenWelcomeWizard,
   access,
+  generationMode = "pro",
+  onToggleGenerationMode,
 }: FeedHeaderProps) {
   const router = useRouter()
   const [isCreatingFeed, setIsCreatingFeed] = useState(false)
@@ -498,6 +503,15 @@ export default function FeedHeader({
               <HelpCircle size={20} className="text-stone-600" strokeWidth={2} />
             </button>
           )}
+          {access?.isMembership && onToggleGenerationMode && (
+            <div className="px-1">
+              <MayaModeToggle
+                currentMode={generationMode}
+                onToggle={onToggleGenerationMode}
+                variant="compact"
+              />
+            </div>
+          )}
           <button className="p-2 -mr-2 hover:bg-stone-50 rounded-full transition-colors">
             <MoreHorizontal size={24} className="text-stone-900" strokeWidth={2} />
           </button>
@@ -508,7 +522,7 @@ export default function FeedHeader({
         <div className="flex flex-col md:flex-row md:items-start md:gap-12 mb-4">
           <button
             onClick={onProfileImageClick}
-            className="relative group w-20 h-20 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 p-[3px] mb-4 md:mb-0 flex-shrink-0 transition-opacity hover:opacity-90"
+            className="relative group w-20 h-20 md:w-32 md:h-32 rounded-full bg-linear-to-br from-purple-500 via-pink-500 to-orange-500 p-[3px] mb-4 md:mb-0 shrink-0 transition-opacity hover:opacity-90"
           >
             <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden relative">
               {hasProfileImage ? (
@@ -649,8 +663,8 @@ export default function FeedHeader({
                     const highlightColor = displayColor || availableColors[feedData.highlights.indexOf(highlight) % availableColors.length]
 
                     return (
-                      <div key={highlight.id || highlight.title} className="flex flex-col items-center gap-2 min-w-[64px] md:min-w-[70px] flex-shrink-0">
-                        <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-600 p-[2px]">
+                      <div key={highlight.id || highlight.title} className="flex flex-col items-center gap-2 min-w-[64px] md:min-w-[70px] shrink-0">
+                        <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-linear-to-tr from-yellow-400 via-pink-500 to-purple-600 p-[2px]">
                           <div className="w-full h-full rounded-full bg-white p-[2px]">
                             {isColorHighlight ? (
                               <div
