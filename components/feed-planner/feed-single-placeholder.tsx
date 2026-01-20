@@ -241,7 +241,7 @@ export default function FeedSinglePlaceholder({
 
   // Use image URL from polling if available, otherwise use post data
   // CRITICAL: Define this FIRST before using it in isPostGenerating
-  const displayImageUrl = pollingImageUrl || post?.image_url || null
+  const displayImageUrl = pollingImageUrl || post?.image_url || (post as any)?.preview_image_url || null
   const hasImage = !!displayImageUrl
 
   // FIX: Simplified loading state - single source of truth

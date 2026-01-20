@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest"
 import { resolveCoherentStyle } from "../style-coherence-resolver"
 
 describe("Style Coherence Resolver", () => {
-  it("adapts athletic + luxury to elevated_athleisure", () => {
+  it("adapts athletic + luxury and normalizes to athletic", () => {
     const result = resolveCoherentStyle({
       category: "luxury",
       mood: "luxury",
@@ -11,11 +11,11 @@ describe("Style Coherence Resolver", () => {
       feedId: "test-feed-1",
     })
 
-    expect(result.resolvedFashionStyle).toBe("elevated_athleisure")
+    expect(result.resolvedFashionStyle).toBe("athletic")
     expect(result.adaptationApplied).toBe(true)
   })
 
-  it("adapts bohemian + minimal to minimal_bohemian", () => {
+  it("adapts bohemian + minimal and normalizes to bohemian", () => {
     const result = resolveCoherentStyle({
       category: "minimal",
       mood: "minimal",
@@ -24,7 +24,7 @@ describe("Style Coherence Resolver", () => {
       feedId: "test-feed-2",
     })
 
-    expect(result.resolvedFashionStyle).toBe("minimal_bohemian")
+    expect(result.resolvedFashionStyle).toBe("bohemian")
     expect(result.adaptationApplied).toBe(true)
   })
 
@@ -67,7 +67,7 @@ describe("Style Coherence Resolver", () => {
     expect(result.adaptationApplied).toBe(false)
   })
 
-  it("adapts casual + luxury to elevated_casual", () => {
+  it("adapts casual + luxury and normalizes to casual", () => {
     const result = resolveCoherentStyle({
       category: "luxury",
       mood: "luxury",
@@ -76,7 +76,7 @@ describe("Style Coherence Resolver", () => {
       feedId: "test-feed-6",
     })
 
-    expect(result.resolvedFashionStyle).toBe("elevated_casual")
+    expect(result.resolvedFashionStyle).toBe("casual")
     expect(result.adaptationApplied).toBe(true)
   })
 

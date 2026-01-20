@@ -164,6 +164,27 @@ const ADAPTATION_RULES: Record<string, string> = {
   'trendy_professional': 'contemporary'
 }
 
+/**
+ * Map adapted styles back to supported vibe library styles.
+ * This prevents template injection failures when adapted styles don't exist.
+ */
+const VIBE_STYLE_FALLBACKS: Record<string, string> = {
+  elevated_athleisure: 'athletic',
+  cozy_active: 'athletic',
+  warm_active: 'athletic',
+  street_athletic: 'athletic',
+  minimal_bohemian: 'bohemian',
+  dark_bohemian: 'bohemian',
+  elevated_casual: 'casual',
+  smart_casual: 'casual',
+  minimal_professional: 'business',
+  soft_professional: 'business',
+  warm_professional: 'business',
+  modern_classic: 'classic',
+  soft_trendy: 'trendy',
+  contemporary: 'trendy',
+}
+
 // ============================================================================
 // CATEGORY DEFAULTS (FALLBACK HIERARCHY)
 // ============================================================================
@@ -251,26 +272,33 @@ export function resolveCoherentStyle(input: CoherenceResolverInput): CoherenceRe
   switch (action) {
     case 'allow': {
       // Fashion style is compatible as-is
+      const normalizedFashion = normalizeToSupportedStyle(fashionStyle)
       console.log(`[COHERENCE-RESOLVER] ✅ Fashion style compatible: ${fashionStyle} + ${resolvedCategory}`, {
         userId,
         feedId,
         category: resolvedCategory,
         mood: resolvedMood,
-        fashionStyle
+        fashionStyle: normalizedFashion.style,
+        normalizedFrom: normalizedFashion.mapped ? fashionStyle : null,
+        normalizedReason: normalizedFashion.reason || null,
       })
       
       return {
         resolvedCategory,
         resolvedMood,
-        resolvedFashionStyle: fashionStyle,
-        adaptationApplied: false
+        resolvedFashionStyle: normalizedFashion.style,
+        adaptationApplied: normalizedFashion.mapped,
+        adaptationReason: normalizedFashion.mapped ? normalizedFashion.reason : undefined,
       }
     }
     
     case 'adapt': {
       // Transform fashion style to fit aesthetic context
       const adaptedFashion = adaptFashionStyle(fashionStyle, resolvedCategory)
-      const reason = `Adapted "${fashionStyle}" to "${adaptedFashion}" for ${resolvedCategory} aesthetic`
+      const normalizedFashion = normalizeToSupportedStyle(adaptedFashion)
+      const reason = normalizedFashion.mapped
+        ? `Adapted "${fashionStyle}" to "${adaptedFashion}" for ${resolvedCategory} aesthetic, normalized to "${normalizedFashion.style}"`
+        : `Adapted "${fashionStyle}" to "${adaptedFashion}" for ${resolvedCategory} aesthetic`
       
       console.log(`[COHERENCE-RESOLVER] ⚠️ Adaptation applied: ${fashionStyle} → ${adaptedFashion}`, {
         userId,
@@ -278,14 +306,15 @@ export function resolveCoherentStyle(input: CoherenceResolverInput): CoherenceRe
         category: resolvedCategory,
         mood: resolvedMood,
         originalFashion: fashionStyle,
-        adaptedFashion,
+        adaptedFashion: normalizedFashion.style,
+        normalizedFrom: normalizedFashion.mapped ? adaptedFashion : null,
         reason
       })
       
       return {
         resolvedCategory,
         resolvedMood,
-        resolvedFashionStyle: adaptedFashion,
+        resolvedFashionStyle: normalizedFashion.style,
         adaptationApplied: true,
         adaptationReason: reason
       }
@@ -294,7 +323,10 @@ export function resolveCoherentStyle(input: CoherenceResolverInput): CoherenceRe
     case 'block': {
       // Fashion style is incompatible - use fallback
       const fallbackFashion = getFallbackFashion(resolvedCategory)
-      const reason = `Blocked "${fashionStyle}" (incompatible with ${resolvedCategory}), using fallback: ${fallbackFashion}`
+      const normalizedFashion = normalizeToSupportedStyle(fallbackFashion)
+      const reason = normalizedFashion.mapped
+        ? `Blocked "${fashionStyle}" (incompatible with ${resolvedCategory}), using fallback: ${fallbackFashion} → ${normalizedFashion.style}`
+        : `Blocked "${fashionStyle}" (incompatible with ${resolvedCategory}), using fallback: ${fallbackFashion}`
       
       console.warn(`[COHERENCE-RESOLVER] 🚫 Fashion style blocked: ${fashionStyle} + ${resolvedCategory}`, {
         userId,
@@ -302,14 +334,14 @@ export function resolveCoherentStyle(input: CoherenceResolverInput): CoherenceRe
         category: resolvedCategory,
         mood: resolvedMood,
         originalFashion: fashionStyle,
-        fallbackFashion,
+        fallbackFashion: normalizedFashion.style,
         reason
       })
       
       return {
         resolvedCategory,
         resolvedMood,
-        resolvedFashionStyle: fallbackFashion,
+        resolvedFashionStyle: normalizedFashion.style,
         adaptationApplied: true,
         adaptationReason: reason
       }
@@ -390,6 +422,22 @@ function adaptFashionStyle(fashionStyle: string, category: string): string {
   }
   
   return adapted
+}
+
+/**
+ * Normalize adapted fashion styles to supported vibe library styles.
+ */
+function normalizeToSupportedStyle(style: string): { style: string; mapped: boolean; reason?: string } {
+  const fallback = VIBE_STYLE_FALLBACKS[style]
+  if (!fallback) {
+    return { style, mapped: false }
+  }
+
+  return {
+    style: fallback,
+    mapped: true,
+    reason: `Mapped unsupported fashion style "${style}" to "${fallback}" for vibe library compatibility`,
+  }
 }
 
 /**

@@ -585,7 +585,13 @@ export async function injectAndValidateTemplate(
   category: "luxury" | "minimal" | "beige" | "warm" | "edgy" | "professional",
   mood: "luxury" | "minimal" | "beige",
   fashionStyle: string,
-  userId: string
+  userId: string,
+  options?: {
+    visualAesthetics?: string[]
+    fashionStyles?: string[]
+    feedStyle?: string
+    category?: string
+  }
 ): Promise<string> {
   // Validate template input
   if (!fullTemplate || typeof fullTemplate !== 'string') {
@@ -609,7 +615,13 @@ export async function injectAndValidateTemplate(
       fullTemplate,
       vibeKey,
       fashionStyle,
-      userId
+      userId,
+      {
+        visualAesthetics: options?.visualAesthetics,
+        fashionStyles: options?.fashionStyles,
+        feedStyle: options?.feedStyle,
+        category: options?.category || category,
+      }
     )
 
     // Validate injection worked - check for remaining placeholders
@@ -642,7 +654,13 @@ export async function injectAndValidateTemplate(
           fullTemplate,
           vibeKey,
           fallbackStyle,
-          userId
+          userId,
+          {
+            visualAesthetics: options?.visualAesthetics,
+            fashionStyles: options?.fashionStyles,
+            feedStyle: options?.feedStyle,
+            category: options?.category || category,
+          }
         )
 
         const { extractPlaceholderKeys } = await import("@/lib/feed-planner/template-placeholders")

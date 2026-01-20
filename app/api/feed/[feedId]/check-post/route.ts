@@ -62,8 +62,18 @@ export async function GET(request: Request) {
     }
 
     const [existingPost] = await sql`
-      SELECT image_url, generation_status, prediction_id FROM feed_posts WHERE id = ${Number.parseInt(postId)}
+      SELECT id, user_id, feed_layout_id, image_url, generation_status, prediction_id
+      FROM feed_posts
+      WHERE id = ${Number.parseInt(postId)}
     `
+
+    if (!existingPost) {
+      return NextResponse.json({ error: "Post not found" }, { status: 404 })
+    }
+
+    if (existingPost.user_id !== neonUser.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
+    }
 
     // If post is already completed with an image, return it
     if (existingPost?.generation_status === "completed" && existingPost?.image_url) {

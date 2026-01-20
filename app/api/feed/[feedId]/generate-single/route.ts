@@ -59,6 +59,8 @@ interface FeedLayout {
   photoshoot_base_seed?: number | null
   feed_style?: string | null
   layout_type?: string | null
+  visual_aesthetic?: string | unknown[] | null
+  fashion_style?: string | unknown[] | null
 }
 
 interface PersonalBrand {
@@ -249,7 +251,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
     // This includes free users, paid blueprint users, and Studio membership users
     // Force Pro Mode for all Feed Planner users, regardless of post.generation_mode or membership status
     // Access was already fetched above, reuse it
-    const generationMode = 'pro'
+    const forceProMode = Boolean(process.env.FEED_PLANNER_FORCE_PRO ?? true)
+    let generationMode: 'pro' | 'classic' = post.generation_mode === 'classic' ? 'classic' : 'pro'
+    if (forceProMode) {
+      generationMode = 'pro'
+    }
     const proModeType = post.pro_mode_type || null
     console.log("[v0] [GENERATE-SINGLE] Post generation mode:", { generationMode, proModeType, isFree: access.isFree, isPaidBlueprint: access.isPaidBlueprint, postGenerationMode: post.generation_mode })
 
@@ -272,7 +278,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
     let feedLayout: FeedLayout | undefined
     try {
       const result = await sql`
-        SELECT color_palette, brand_vibe, photoshoot_enabled, photoshoot_base_seed, feed_style, layout_type 
+        SELECT color_palette, brand_vibe, photoshoot_enabled, photoshoot_base_seed, feed_style, layout_type, visual_aesthetic, fashion_style
         FROM feed_layouts 
         WHERE id = ${feedIdInt}
       `
@@ -293,6 +299,32 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
         throw error // Re-throw if it's a different error
       }
     }
+
+    const parseArrayField = (value: unknown): string[] | null => {
+      if (Array.isArray(value)) {
+        const items = value.map((item) => String(item).trim()).filter(Boolean)
+        return items.length > 0 ? items : null
+      }
+      if (typeof value === "string") {
+        try {
+          const parsed = JSON.parse(value)
+          if (Array.isArray(parsed)) {
+            const items = parsed.map((item) => String(item).trim()).filter(Boolean)
+            return items.length > 0 ? items : null
+          }
+          if (parsed && typeof parsed === "object") {
+            const items = Object.keys(parsed).map((item) => String(item).trim()).filter(Boolean)
+            return items.length > 0 ? items : null
+          }
+        } catch {
+          return value.trim() ? [value.trim()] : null
+        }
+      }
+      return null
+    }
+
+    const visualAestheticOptions = parseArrayField(feedLayout?.visual_aesthetic)
+    const fashionStyleOptions = parseArrayField(feedLayout?.fashion_style)
 
     // Only fetch model for Classic Mode (Pro Mode doesn't need custom model)
     let model: Model | null = null
@@ -401,7 +433,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       // 🔴 CRITICAL: Check if this is a preview feed FIRST (before access checks)
       // Preview feeds use full template (all 9 scenes) for ALL users (free and paid)
       const isPreviewFeed = feedLayout?.layout_type === 'preview'
-      let chosenPromptSource: "template_injection" | "db_prompt" | "maya_fallback" | "preview_template" | null = null
+      let chosenPromptSource: "template_injection" | "db_prompt" | "maya_fallback" | "preview_template" | "canonical_preview_pipeline_fallback" | null = null
       let templateReferencePrompt: string | null = null
       let previewTemplate: string | null = null
       
@@ -419,10 +451,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       // 🔴 FIX: Removed redundant Path A (paid user scene extraction)
       // Paid users now go through Path B (Maya generation) which uses template injection
       
+      const isPromptUsable = (prompt: string | null): prompt is string =>
+        typeof prompt === "string" && prompt.trim().length >= 20
+
       // If scene extraction failed or not applicable, continue with original logic
       // For preview feeds, always generate full template (same for free and paid users)
       // For full feeds, generate based on user type
-      if (!finalPrompt || finalPrompt.trim().length < 20) {
+      if (!isPromptUsable(finalPrompt)) {
         console.log(`[v0] [GENERATE-SINGLE] ⚠️ Pro Mode post ${post.position} missing prompt. Generating based on feed type and user type...`)
         
         try {
@@ -459,7 +494,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
                 category,
                 mood,
                 resolvedFashionStyle,
-                user.id.toString()
+                user.id.toString(),
+                {
+                  visualAesthetics: visualAestheticOptions || undefined,
+                  fashionStyles: fashionStyleOptions || undefined,
+                  feedStyle: feedLayout?.feed_style || undefined,
+                  category
+                }
               )
               
               finalPrompt = injectedTemplate
@@ -1008,7 +1049,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
                   category,
                   mood,
                   resolvedFashionStyle,
-                  user.id.toString()
+                  user.id.toString(),
+                  {
+                    visualAesthetics: visualAestheticOptions || undefined,
+                    fashionStyles: fashionStyleOptions || undefined,
+                    feedStyle: feedLayout?.feed_style || undefined,
+                    category
+                  }
                 )
                 
                 // ✅ EXTRACT SINGLE SCENE (same as free users)
@@ -1033,17 +1080,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
                 
                 console.log(`[v0] [GENERATE-SINGLE] ✅ Extracted scene ${post.position} from injected template via Authority Layer (${templateReferencePrompt.split(/\s+/).length} words, fingerprint: ${authorityResult.metadata.fingerprint})`)
               } catch (templateError) {
-                console.error(`[v0] [GENERATE-SINGLE] ⚠️ Error with template injection:`, templateError)
-                // Fallback: use raw template if injection fails
-                const { BLUEPRINT_PHOTOSHOOT_TEMPLATES } = await import("@/lib/maya/blueprint-photoshoot-templates")
-                const templateKey = `${category}_${mood}` as keyof typeof BLUEPRINT_PHOTOSHOOT_TEMPLATES
-                templateReferencePrompt = BLUEPRINT_PHOTOSHOOT_TEMPLATES[templateKey] || null
-                if (templateReferencePrompt) {
-                  console.log(`[v0] [GENERATE-SINGLE] ⚠️ Using raw template as fallback: ${category}_${mood}`)
-                }
-                // No rotation tracking if injection failed
-                vibeKeyForRotation = null
-                fashionStyleForRotation = null
+                const errorMessage = templateError instanceof Error ? templateError.message : "Unknown template injection error"
+                console.error(`[v0] [GENERATE-SINGLE] ⚠️ Error with template injection:`, errorMessage)
+                return Response.json(
+                  {
+                    error: "TEMPLATE_INJECTION_FAILED",
+                    details: errorMessage,
+                    feedId: feedIdInt,
+                    postId,
+                    position: post.position,
+                  },
+                  { status: 500 }
+                )
               }
             }
             
@@ -1063,6 +1111,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
               }
               
               if (finalPrompt) {
+                if (finalPrompt.includes("{{")) {
+                  console.error(`[v0] [GENERATE-SINGLE] ❌ Prompt contains unresolved placeholders`)
+                  return Response.json(
+                    {
+                      error: "TEMPLATE_INJECTION_FAILED",
+                      details: "Prompt contains unresolved placeholders.",
+                      feedId: feedIdInt,
+                      postId,
+                      position: post.position,
+                    },
+                    { status: 500 }
+                  )
+                }
                 console.log(`[v0] [GENERATE-SINGLE] ✅ Skipping Maya enhancement for Pro Mode - using injected template directly (${finalPrompt.split(/\s+/).length} words)`)
                 console.log(`[v0] [GENERATE-SINGLE] Prompt preview:`, finalPrompt.substring(0, 200))
                 
@@ -1276,17 +1337,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
           // Fallback to simple prompt
           finalPrompt = post.content_pillar || `Feed post ${post.position}`
         }
-      } else { // Close if (!finalPrompt || finalPrompt.trim().length < 20) at line 341
+      } else { // Close if (!isPromptUsable(finalPrompt)) at line 453
         if (finalPrompt) {
-        console.log(`[v0] [GENERATE-SINGLE] ✅ Using pre-generated prompt (${finalPrompt.split(/\s+/).length} words)`)
+          const safePrompt = typeof finalPrompt === "string" ? finalPrompt : ""
+          console.log(`[v0] [GENERATE-SINGLE] ✅ Using pre-generated prompt (${safePrompt.split(/\s+/).length} words)`)
         }
       }
       
       // Ensure finalPrompt is not null before proceeding
-      if (!finalPrompt || finalPrompt.trim().length < 20) {
+      if (!isPromptUsable(finalPrompt)) {
+        const safePrompt = typeof finalPrompt === "string" ? finalPrompt : ""
         console.error(`[v0] [GENERATE-SINGLE] ❌ Final prompt validation failed`, {
-          promptLength: finalPrompt?.length || 0,
-          promptPreview: finalPrompt?.substring(0, 100) || '(empty)',
+          promptLength: safePrompt.length,
+          promptPreview: safePrompt.substring(0, 100) || '(empty)',
           postId,
           position: post.position,
           feedId: feedIdInt,

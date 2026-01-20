@@ -127,6 +127,21 @@ export default function SselfieApp({
   // showBlueprintOnboarding and existingBlueprintData removed - UnifiedOnboardingWizard is now handled by feed-planner-client.tsx
   const [creditBalance, setCreditBalance] = useState<number>(0)
   const [isLoadingCredits, setIsLoadingCredits] = useState(true)
+  const simpleFetcher = (url: string) => fetch(url).then((res) => res.json())
+  const { data: trainingStatus, isLoading: isTrainingStatusLoading } = useSWR(
+    "/api/training/status",
+    simpleFetcher,
+    {
+      refreshInterval: (data) => {
+        if (data?.model?.training_status === "training" || data?.model?.training_status === "processing") {
+          return 15000
+        }
+        return 0
+      },
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    },
+  )
   
   // Feed Planner Pro Mode state (shared with Maya via localStorage)
   const [feedPlannerProMode, setFeedPlannerProMode] = useState<boolean>(() => {
@@ -384,24 +399,32 @@ export default function SselfieApp({
     return () => window.removeEventListener("credits-updated", handleCreditsUpdated)
   }, [refreshCredits])
 
+  useEffect(() => {
+    if (!isTrainingStatusLoading) {
+      setIsLoadingTrainingStatus(false)
+    }
+  }, [isTrainingStatusLoading])
+
+  useEffect(() => {
+    if (typeof trainingStatus?.hasTrainedModel === "boolean") {
+      setHasTrainedModel(trainingStatus.hasTrainedModel)
+    }
+  }, [trainingStatus?.hasTrainedModel])
+
   // Decision 3: Fetch onboarding status and determine initial tab on mount and refresh
   useEffect(() => {
     let mounted = true
     
     const fetchTrainingStatus = async () => {
       try {
-        setIsLoadingTrainingStatus(true)
-        
-        // Fetch training status, onboarding status, and blueprint entitlement
-        const [trainingResponse, onboardingResponse, blueprintResponse] = await Promise.all([
-          fetch("/api/training/status"),
+        // Fetch onboarding status and blueprint entitlement
+        const [onboardingResponse, blueprintResponse] = await Promise.all([
           fetch("/api/user/onboarding-status"),
           fetch("/api/blueprint/state"),
         ])
 
         if (!mounted) return // Prevent state updates if component unmounted
 
-        const trainingData = await trainingResponse.json()
         const onboardingData = onboardingResponse.ok
           ? await onboardingResponse.json() 
           : { 
@@ -413,13 +436,10 @@ export default function SselfieApp({
             }
         const blueprintData = blueprintResponse.ok ? await blueprintResponse.json() : null
 
-        const hasModel = trainingData.hasTrainedModel || false
         const onboardingCompleted = onboardingData.onboarding_completed || false
         const blueprintWelcomeShown = !!onboardingData.blueprint_welcome_shown_at
         const hasBlueprintState = onboardingData.hasBlueprintState || false
         const hasBaseWizardData = onboardingData.hasBaseWizardData || false
-
-        setHasTrainedModel(hasModel)
 
         // Decision 3: Route new blueprint users to blueprint tab if they're not already there
         // Note: Sign-up already redirects to /studio?tab=blueprint, so initialTab should be set
@@ -431,7 +451,7 @@ export default function SselfieApp({
           blueprintWelcomeShown,
           hasBlueprintState,
           hasBaseWizardData,
-          hasModel,
+          hasModel: hasTrainedModel,
           isBlueprintUser,
           entitlementType: blueprintData?.entitlement?.type,
         })
@@ -509,7 +529,7 @@ export default function SselfieApp({
           }
           // Step 3: Show Training Wizard if all onboarding done but no trained model
           // SKIP training wizard for paid blueprint users (they don't need custom Flux LoRA models)
-          else if ((blueprintWelcomeShown || hasBlueprintState || hasBaseWizardData) && !hasModel && !isPaidBlueprintUser) {
+          else if ((blueprintWelcomeShown || hasBlueprintState || hasBaseWizardData) && !hasTrainedModel && !isPaidBlueprintUser) {
             console.log("[Onboarding] 🎓 Showing training onboarding wizard (onboarding done, no model, not paid blueprint)")
             setShowBlueprintWelcome(false)
             setShowOnboarding(true)
@@ -517,7 +537,7 @@ export default function SselfieApp({
           // No wizards to show
           else {
             console.log("[Wizard Debug] ⚠️ No wizard conditions matched - hiding all wizards")
-            if (isPaidBlueprintUser && !hasModel) {
+            if (isPaidBlueprintUser && !hasTrainedModel) {
               console.log("[Wizard Debug] ℹ️ Paid blueprint user - skipping training wizard (not needed for Feed Planner)")
             }
             setShowBlueprintWelcome(false)
@@ -531,14 +551,7 @@ export default function SselfieApp({
         }
       } catch (error) {
         console.error("[v0] Error fetching training/onboarding status:", error)
-        if (mounted) {
-          setHasTrainedModel(false)
-        }
         // Don't show onboarding on error - let user proceed to app
-      } finally {
-        if (mounted) {
-          setIsLoadingTrainingStatus(false)
-        }
       }
     }
 

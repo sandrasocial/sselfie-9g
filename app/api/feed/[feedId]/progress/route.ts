@@ -21,13 +21,33 @@ export async function GET(request: Request, { params }: { params: Promise<{ feed
 
     const { feedId } = await params
 
+    const feedIdInt = Number.parseInt(feedId, 10)
+    if (isNaN(feedIdInt)) {
+      return NextResponse.json({ error: "Invalid feed ID" }, { status: 400 })
+    }
+
     const sql = getDb()
+
+    const [feedLayout] = await sql`
+      SELECT id, user_id
+      FROM feed_layouts
+      WHERE id = ${feedIdInt}
+      LIMIT 1
+    `
+
+    if (!feedLayout) {
+      return NextResponse.json({ error: "Feed not found" }, { status: 404 })
+    }
+
+    if (feedLayout.user_id !== neonUser.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
+    }
 
     // Get all posts with their prediction IDs
     const posts = await sql`
       SELECT id, position, prediction_id, generation_status, image_url, text_overlay
       FROM feed_posts
-      WHERE feed_layout_id = ${feedId}
+      WHERE feed_layout_id = ${feedIdInt}
       ORDER BY position ASC
     `
 

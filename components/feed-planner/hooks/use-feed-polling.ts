@@ -211,6 +211,8 @@ export function useFeedPolling(feedId: number | null) {
           return 0 // Stop polling immediately
         }
         
+        const isPreviewFeed = data?.feed?.layout_type === 'preview'
+
         // Continue polling if generating or processing
         if (hasGeneratingPosts || isProcessing) {
           // Record start time on first poll
@@ -222,7 +224,7 @@ export function useFeedPolling(feedId: number | null) {
           // CRITICAL FIX: Always call progress endpoint when there are generating posts
           // This ensures database is updated even for single posts
           // Progress endpoint checks Replicate and updates image_url + generation_status
-          if (feedId && hasGeneratingPosts) {
+          if (feedId && hasGeneratingPosts && !isPreviewFeed) {
             // Silently call progress endpoint without logging on every poll
             fetch(`/api/feed/${feedId}/progress`)
               .then(res => {
@@ -255,7 +257,7 @@ export function useFeedPolling(feedId: number | null) {
                 console.error('[useFeedPolling] ❌ Error calling progress endpoint:', err)
                 // Don't fail polling if progress endpoint fails - just log and continue
               })
-          } else if (feedId && singlePost && singlePost.prediction_id && !singlePost.image_url) {
+          } else if (feedId && !isPreviewFeed && singlePost && singlePost.prediction_id && !singlePost.image_url) {
             // CRITICAL FIX: For single posts, also call progress endpoint even if hasGeneratingPosts is false
             // This handles edge cases where the post has prediction_id but polling condition didn't catch it
             fetch(`/api/feed/${feedId}/progress`)
@@ -360,6 +362,7 @@ export function useFeedPolling(feedId: number | null) {
     isLoading,
     isValidating,
     hasTimedOut, // FIX 4: Expose timeout state for UI
+    isTakingLonger,
   }
 }
 

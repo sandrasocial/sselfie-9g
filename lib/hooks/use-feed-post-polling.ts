@@ -52,18 +52,22 @@ export function useFeedPostPolling({
       )
 
       if (!response.ok) {
-        // Try to get error details from response
         let errorDetails = response.statusText
+        let errorData: any = null
         try {
-          const errorData = await response.json()
+          errorData = await response.json()
           errorDetails = errorData.details || errorData.error || response.statusText
         } catch {
           // If JSON parsing fails, use statusText
         }
         
-        // Don't throw for 503 (Service Unavailable) - allow retry
-        if (response.status === 503) {
-          console.warn(`[useFeedPostPolling] Service unavailable for post ${postId}, will retry:`, errorDetails)
+        // Don't throw for retryable errors
+        if (response.status === 503 || errorData?.retryable) {
+          console.warn(`[useFeedPostPolling] Retryable error for post ${postId}, will retry:`, {
+            status: response.status,
+            details: errorDetails,
+            errorData: errorData || "No JSON body",
+          })
           return // Don't throw, allow polling to continue
         }
         

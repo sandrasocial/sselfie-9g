@@ -98,6 +98,23 @@ export interface FeedPlannerScene {
   feedId: number
 }
 
+function parseAestheticList(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item).trim()).filter(Boolean)
+  }
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value)
+      if (Array.isArray(parsed)) {
+        return parsed.map((item) => String(item).trim()).filter(Boolean)
+      }
+    } catch {
+      return value.trim() ? [value.trim()] : []
+    }
+  }
+  return []
+}
+
 // ============================================================================
 // SCENE RESOLVER (SINGLE FUNCTION)
 // ============================================================================
@@ -193,7 +210,14 @@ export async function resolveFeedPlannerScene(
   // ========================================================================
   // STEP 3: Derive Location from Activity
   // ========================================================================
-  const location = deriveLocationFromActivity(activity, category)
+  const location = deriveLocationFromActivity(activity, category, resolvedFashionStyle)
+  const aestheticOptions = parseAestheticList(feedLayout?.visual_aesthetic)
+  const accentAesthetic = aestheticOptions
+    .map((value) => value.toLowerCase().trim())
+    .find((value) => value && value !== category)
+  if (accentAesthetic && !location.description.includes(accentAesthetic)) {
+    location.description = `${location.description} with subtle ${accentAesthetic} accents`
+  }
   
   // ========================================================================
   // STEP 4: Derive Outfit from Activity + Location + Fashion Style
@@ -304,42 +328,71 @@ function deriveActivityFromPosition(
   category: string,
   fashionStyle: string
 ): string {
-  // 🔴 STRATEGIC ACTIVITY ASSIGNMENT FOR DIVERSE CONTENT
-  // Override activities for positions that need specific content types
-  if (position === 2) {
-    // Position 2: Object flatlay - wellness/morning routine activity
-    console.log(`[SCENE RESOLVER] Position ${position}: Strategic activity assigned (morning_routine for flatlay)`)
-    return 'morning_routine' // Supports wellness objects
-  } else if (position === 4) {
-    // Position 4: Detail close-up - activity with tea/coffee
-    console.log(`[SCENE RESOLVER] Position ${position}: Strategic activity assigned (remote_work_break for detail close-up)`)
-    return 'remote_work_break' // Has tea cup objects
-  } else if (position === 6) {
-    // Position 6: Texture shot - athletic activity for fabric focus
-    console.log(`[SCENE RESOLVER] Position ${position}: Strategic activity assigned (gym_session for texture shot)`)
-    return 'gym_session' // Athletic wear has mesh fabric
-  } else if (position === 8) {
-    // Position 8: Overhead flatlay - workout preparation activity
-    console.log(`[SCENE RESOLVER] Position ${position}: Strategic activity assigned (morning_yoga for overhead flatlay)`)
-    return 'morning_yoga' // Has yoga mat and workout gear
+  const normalizedStyle = fashionStyle.toLowerCase()
+  const strategicPositions = [2, 4, 6, 8]
+  const strategicOverrides: Record<string, Record<number, string>> = {
+    athletic: {
+      2: 'post_workout_coffee',
+      4: 'wellness_break',
+      6: 'gym_session',
+      8: 'morning_yoga'
+    },
+    business: {
+      2: 'coffee_shop_work',
+      4: 'client_meeting',
+      6: 'after_work_drinks',
+      8: 'coffee_shop_work'
+    },
+    bohemian: {
+      2: 'weekend_market',
+      4: 'art_gallery_visit',
+      6: 'meditation_session',
+      8: 'weekend_market'
+    },
+    classic: {
+      2: 'travel_arrival',
+      4: 'evening_dinner',
+      6: 'hotel_checkin',
+      8: 'travel_arrival'
+    },
+    trendy: {
+      2: 'brunch_with_friends',
+      4: 'night_out',
+      6: 'city_exploration',
+      8: 'after_work_drinks'
+    },
+    casual: {
+      2: 'brunch_with_friends',
+      4: 'remote_work_break',
+      6: 'cozy_evening',
+      8: 'weekend_market'
+    }
+  }
+
+  if (strategicPositions.includes(position)) {
+    const override = strategicOverrides[normalizedStyle]?.[position]
+    if (override) {
+      console.log(`[SCENE RESOLVER] Position ${position}: Strategic activity assigned (${override}) for ${normalizedStyle}`)
+      return override
+    }
   }
   
   // Position-based activity patterns (human behavior, not aesthetic)
   const positionPatterns: Record<number, string[]> = {
-    1: ['morning_routine', 'coffee_shop_work', 'gym_session', 'travel_arrival'],
+    1: ['morning_routine', 'coffee_shop_work', 'gym_session', 'travel_arrival', 'outdoor_run'],
     2: ['post_workout_coffee', 'remote_work_break', 'brunch_with_friends', 'city_exploration'],
-    3: ['coffee_shop_work', 'wellness_break', 'evening_dinner', 'hotel_checkin'],
+    3: ['coffee_shop_work', 'wellness_break', 'evening_dinner', 'hotel_checkin', 'outdoor_run'],
     4: ['remote_work_break', 'meditation_session', 'art_gallery_visit', 'beach_day'],
     5: ['cozy_evening', 'cooking_at_home', 'weekend_market', 'airport_layover'],
     6: ['reading_session', 'self_care_evening', 'night_out', 'city_exploration'],
-    7: ['morning_yoga', 'client_meeting', 'evening_dinner', 'travel_arrival'],
+    7: ['morning_yoga', 'client_meeting', 'evening_dinner', 'travel_arrival', 'outdoor_run'],
     8: ['wellness_break', 'after_work_drinks', 'commute_home', 'hotel_checkin'],
-    9: ['cozy_evening', 'self_care_evening', 'night_out', 'beach_day']
+    9: ['cozy_evening', 'self_care_evening', 'night_out', 'beach_day', 'outdoor_run']
   }
   
   // Fashion style influences activity selection
   const styleActivityMap: Record<string, string[]> = {
-    'athletic': ['post_workout_coffee', 'gym_session', 'morning_yoga', 'wellness_break'],
+    'athletic': ['post_workout_coffee', 'gym_session', 'morning_yoga', 'wellness_break', 'outdoor_run'],
     'business': ['coffee_shop_work', 'client_meeting', 'remote_work_break', 'after_work_drinks'],
     'casual': ['coffee_shop_work', 'brunch_with_friends', 'cozy_evening', 'weekend_market'],
     'bohemian': ['art_gallery_visit', 'weekend_market', 'meditation_session', 'city_exploration'],
@@ -351,7 +404,7 @@ function deriveActivityFromPosition(
   const positionCandidates = positionPatterns[position] || positionPatterns[1]
   
   // Get style candidates
-  const styleCandidates = styleActivityMap[fashionStyle] || styleActivityMap['casual']
+  const styleCandidates = styleActivityMap[normalizedStyle] || styleActivityMap['casual']
   
   // Find intersection (activities that match both position and style)
   const matchingActivities = positionCandidates.filter(a => styleCandidates.includes(a))
@@ -377,156 +430,176 @@ function deriveActivityFromPosition(
  */
 function deriveLocationFromActivity(
   activity: string,
-  category: string
+  category: string,
+  fashionStyle: string
 ): FeedPlannerScene['location'] {
+  const styleKey = fashionStyle.toLowerCase()
+  const categoryDescriptorMap: Record<string, string> = {
+    luxury: 'upscale',
+    minimal: 'clean',
+    beige: 'warm beige',
+    warm: 'warm',
+    edgy: 'industrial',
+    professional: 'polished'
+  }
+  const categoryDescriptor = categoryDescriptorMap[category] || 'clean'
+  const decorate = (description: string) =>
+    description.includes(categoryDescriptor) ? description : `${categoryDescriptor} ${description}`
+
   const activityLocationMap: Record<string, FeedPlannerScene['location']> = {
     'post_workout_coffee': {
       type: 'coffee_shop',
-      description: 'local coffee shop with natural light',
+      description: decorate('local coffee shop with natural light'),
       indoor: true,
       public: true
     },
     'coffee_shop_work': {
       type: 'coffee_shop',
-      description: 'coffee shop with workspace atmosphere',
+      description: decorate('coffee shop with workspace atmosphere'),
       indoor: true,
       public: true
     },
     'remote_work_break': {
       type: 'home_living_room',
-      description: 'home living room with natural light',
+      description: decorate('home living room with natural light'),
       indoor: true,
       public: false
     },
     'gym_session': {
       type: 'gym',
-      description: 'modern gym with natural lighting',
+      description: decorate('modern gym with natural lighting'),
       indoor: true,
       public: true
     },
     'morning_yoga': {
       type: 'yoga_studio',
-      description: 'yoga studio with natural window light',
+      description: decorate('yoga studio with natural window light'),
       indoor: true,
       public: true
     },
     'wellness_break': {
       type: 'wellness_center',
-      description: 'wellness center with natural light',
+      description: decorate('wellness center with natural light'),
       indoor: true,
+      public: true
+    },
+    'outdoor_run': {
+      type: 'outdoor_path',
+      description: decorate('outdoor running path with open space'),
+      indoor: false,
       public: true
     },
     'brunch_with_friends': {
       type: 'restaurant',
-      description: 'brunch restaurant with natural light',
+      description: decorate('brunch restaurant with natural light'),
       indoor: true,
       public: true
     },
     'evening_dinner': {
       type: 'restaurant',
-      description: 'restaurant with warm lighting',
+      description: decorate('restaurant with warm lighting'),
       indoor: true,
       public: true
     },
     'night_out': {
       type: 'bar',
-      description: 'bar with ambient lighting',
+      description: decorate('bar with ambient lighting'),
       indoor: true,
       public: true
     },
     'travel_arrival': {
       type: 'hotel_lobby',
-      description: 'hotel lobby with natural light',
+      description: decorate('hotel lobby with natural light'),
       indoor: true,
       public: true
     },
     'hotel_checkin': {
       type: 'hotel_lobby',
-      description: 'hotel lobby with natural light',
+      description: decorate('hotel lobby with natural light'),
       indoor: true,
       public: true
     },
     'city_exploration': {
       type: 'city_street',
-      description: 'city street with natural daylight',
+      description: decorate('city street with natural daylight'),
       indoor: false,
       public: true
     },
     'beach_day': {
       type: 'beach',
-      description: 'beach with natural daylight',
+      description: decorate('beach with natural daylight'),
       indoor: false,
       public: true
     },
     'cozy_evening': {
       type: 'home_living_room',
-      description: 'home living room with warm lighting',
+      description: decorate('home living room with warm lighting'),
       indoor: true,
       public: false
     },
     'cooking_at_home': {
       type: 'home_kitchen',
-      description: 'home kitchen with natural light',
+      description: decorate('home kitchen with natural light'),
       indoor: true,
       public: false
     },
     'reading_session': {
       type: 'home_living_room',
-      description: 'home living room with natural light',
+      description: decorate('home living room with natural light'),
       indoor: true,
       public: false
     },
     'self_care_evening': {
       type: 'home_bathroom',
-      description: 'home bathroom with natural light',
+      description: decorate('home bathroom with natural light'),
       indoor: true,
       public: false
     },
     'morning_routine': {
       type: 'home_bathroom',
-      description: 'home bathroom with natural light',
+      description: decorate('home bathroom with natural light'),
       indoor: true,
       public: false
     },
     'client_meeting': {
       type: 'office',
-      description: 'office with natural light',
+      description: decorate('office with natural light'),
       indoor: true,
       public: true
     },
     'after_work_drinks': {
       type: 'bar',
-      description: 'bar with warm lighting',
+      description: decorate('bar with warm lighting'),
       indoor: true,
       public: true
     },
     'commute_home': {
       type: 'city_street',
-      description: 'city street with evening light',
+      description: decorate('city street with evening light'),
       indoor: false,
       public: true
     },
     'weekend_market': {
       type: 'market',
-      description: 'outdoor market with natural light',
+      description: decorate('outdoor market with natural light'),
       indoor: false,
       public: true
     },
     'art_gallery_visit': {
       type: 'art_gallery',
-      description: 'art gallery with natural light',
+      description: decorate('art gallery with natural light'),
       indoor: true,
       public: true
     },
     'meditation_session': {
       type: 'wellness_center',
-      description: 'wellness center with natural light',
+      description: decorate('wellness center with natural light'),
       indoor: true,
       public: true
     },
     'airport_layover': {
       type: 'airport',
-      description: 'airport with natural light',
+      description: decorate('airport with natural light'),
       indoor: true,
       public: true
     }
@@ -534,15 +607,47 @@ function deriveLocationFromActivity(
   
   // Get location from activity
   const location = activityLocationMap[activity] || activityLocationMap['coffee_shop_work']
-  
-  // Apply category aesthetic to location description (subtle, not overriding)
-  if (category === 'luxury') {
-    location.description = location.description.replace('coffee shop', 'luxury coffee shop')
-      .replace('restaurant', 'upscale restaurant')
-      .replace('hotel lobby', 'luxury hotel lobby')
-  } else if (category === 'minimal') {
-    location.description = location.description.replace('coffee shop', 'minimalist coffee shop')
-      .replace('restaurant', 'minimalist restaurant')
+
+  const styleOverrides: Record<string, Record<string, FeedPlannerScene['location']>> = {
+    athletic: {
+      remote_work_break: {
+        type: 'wellness_center',
+        description: decorate('wellness lounge with natural light'),
+        indoor: true,
+        public: true
+      },
+      cozy_evening: {
+        type: 'gym',
+        description: decorate('modern gym with evening lighting'),
+        indoor: true,
+        public: true
+      },
+      reading_session: {
+        type: 'outdoor_path',
+        description: decorate('outdoor path with open space'),
+        indoor: false,
+        public: true
+      },
+      cooking_at_home: {
+        type: 'juice_bar',
+        description: decorate('juice bar with bright natural light'),
+        indoor: true,
+        public: true
+      }
+    },
+    business: {
+      remote_work_break: {
+        type: 'office',
+        description: decorate('office lounge with polished details'),
+        indoor: true,
+        public: true
+      }
+    }
+  }
+
+  const override = styleOverrides[styleKey]?.[activity]
+  if (override) {
+    return override
   }
   
   return location
@@ -571,6 +676,7 @@ function deriveOutfitFromActivity(
     'gym_session': { base: 'athletic_base' },
     'morning_yoga': { base: 'athletic_base' },
     'wellness_break': { base: 'athletic_base', layer: 'casual_layer' },
+    'outdoor_run': { base: 'athletic_base', layer: 'outerwear' },
     'brunch_with_friends': { base: 'casual_base', layer: 'outerwear' },
     'evening_dinner': { base: 'dressy_base', layer: 'outerwear' },
     'night_out': { base: 'dressy_base', layer: 'outerwear' },
@@ -622,6 +728,7 @@ function deriveObjectsFromActivity(
   fashionStyle: string,
   position: number
 ): FeedPlannerScene['objects'] {
+  const styleKey = fashionStyle.toLowerCase()
   const activityObjectMap: Record<string, Array<{ type: string; description: string; position?: 'hand' | 'table' | 'bag' | 'ground' }>> = {
     'post_workout_coffee': [
       { type: 'coffee_cup', description: 'ceramic coffee cup', position: 'hand' },
@@ -648,6 +755,11 @@ function deriveObjectsFromActivity(
     ],
     'wellness_break': [
       { type: 'water_bottle', description: 'water bottle', position: 'hand' },
+      { type: 'phone', description: 'iPhone', position: 'hand' }
+    ],
+    'outdoor_run': [
+      { type: 'water_bottle', description: 'water bottle', position: 'hand' },
+      { type: 'headphones', description: 'wireless headphones', position: 'hand' },
       { type: 'phone', description: 'iPhone', position: 'hand' }
     ],
     'brunch_with_friends': [
@@ -735,44 +847,60 @@ function deriveObjectsFromActivity(
   // IMPORTANT: Objects must match fashion style/aesthetic (not hardcoded wellness)
   if (position === 2) {
     // Position 2: Object flatlay (NO person) - match fashion style
-    if (fashionStyle.includes('luxury') || fashionStyle.includes('elevated')) {
-      // Luxury: bags, jewelry, high-end accessories
-      objects = [
-        { type: 'luxury_bag', description: 'designer handbag with gold hardware', position: 'table' },
-        { type: 'jewelry', description: 'gold jewelry and watch', position: 'table' },
-        { type: 'sunglasses', description: 'designer sunglasses', position: 'table' }
-      ]
-    } else if (fashionStyle.includes('bohemian') || fashionStyle.includes('boho')) {
-      // Bohemian: natural materials, earthy objects
-      objects = [
-        { type: 'hat', description: 'woven straw hat with ribbon', position: 'table' },
-        { type: 'jewelry', description: 'layered gold necklaces and rings', position: 'table' },
-        { type: 'book', description: 'vintage book', position: 'table' }
-      ]
-    } else if (fashionStyle.includes('athletic') || fashionStyle.includes('wellness')) {
-      // Athletic/Wellness: smoothie bowls, yoga mats, fitness objects
-      objects = [
-        { type: 'smoothie_bowl', description: 'vibrant green smoothie bowl topped with fresh berries, granola, and coconut flakes', position: 'table' },
-        { type: 'yoga_mat', description: 'rolled yoga mat', position: 'table' },
-        { type: 'utensils', description: 'bamboo utensils', position: 'table' }
-      ]
-    } else {
-      // Default: coffee + lifestyle objects
-      objects = [
-        { type: 'coffee_cup', description: 'ceramic coffee cup on marble', position: 'table' },
-        { type: 'book', description: 'book', position: 'table' },
-        { type: 'phone', description: 'iPhone', position: 'table' }
-      ]
+    switch (styleKey) {
+      case 'business':
+        objects = [
+          { type: 'laptop', description: 'laptop', position: 'table' },
+          { type: 'notebook', description: 'leather notebook', position: 'table' },
+          { type: 'pen', description: 'minimal pen', position: 'table' }
+        ]
+        break
+      case 'bohemian':
+        objects = [
+          { type: 'hat', description: 'woven straw hat with ribbon', position: 'table' },
+          { type: 'jewelry', description: 'layered gold necklaces and rings', position: 'table' },
+          { type: 'book', description: 'vintage book', position: 'table' }
+        ]
+        break
+      case 'athletic':
+        objects = [
+          { type: 'smoothie_bowl', description: 'smoothie bowl topped with fresh berries and granola', position: 'table' },
+          { type: 'yoga_mat', description: 'rolled yoga mat', position: 'table' },
+          { type: 'water_bottle', description: 'sleek water bottle', position: 'table' }
+        ]
+        break
+      case 'classic':
+        objects = [
+          { type: 'handbag', description: 'structured handbag', position: 'table' },
+          { type: 'jewelry', description: 'gold jewelry and watch', position: 'table' },
+          { type: 'sunglasses', description: 'classic sunglasses', position: 'table' }
+        ]
+        break
+      case 'trendy':
+        objects = [
+          { type: 'sunglasses', description: 'statement sunglasses', position: 'table' },
+          { type: 'bag', description: 'mini bag', position: 'table' },
+          { type: 'phone', description: 'iPhone', position: 'table' }
+        ]
+        break
+      default:
+        objects = [
+          { type: 'coffee_cup', description: 'ceramic coffee cup on marble', position: 'table' },
+          { type: 'book', description: 'book', position: 'table' },
+          { type: 'phone', description: 'iPhone', position: 'table' }
+        ]
     }
     console.log(`[SCENE RESOLVER] Position ${position}: Strategic objects injected for ${fashionStyle}:`, objects.map(o => o.type))
   } else if (position === 4) {
     // Position 4: Detail close-up (hands holding tea) - keep tea-focused objects
     // Use existing objects but ensure tea/coffee cup is present
-    const hasCup = objects.some(obj => obj.type === 'coffee_cup' || obj.type === 'tea')
+    const cupType = styleKey === 'athletic' ? 'smoothie_cup' : 'tea'
+    const cupDescription = styleKey === 'athletic' ? 'smoothie cup' : 'warm ceramic tea cup'
+    const hasCup = objects.some(obj => obj.type === 'coffee_cup' || obj.type === 'tea' || obj.type === 'smoothie_cup')
     if (!hasCup) {
       objects.unshift({
-        type: 'tea',
-        description: 'warm ceramic tea cup',
+        type: cupType,
+        description: cupDescription,
         position: 'hand'
       })
     }
@@ -865,6 +993,7 @@ function deriveLightingFromActivity(
     'gym_session': { type: 'natural_window_light', quality: 'uneven' },
     'morning_yoga': { type: 'natural_window_light', quality: 'even' },
     'wellness_break': { type: 'natural_window_light', quality: 'even' },
+    'outdoor_run': { type: 'overcast_daylight', quality: 'uneven' },
     'brunch_with_friends': { type: 'natural_window_light', quality: 'even' },
     'evening_dinner': { type: 'artificial_warm', quality: 'dramatic' },
     'night_out': { type: 'artificial_warm', quality: 'dramatic' },
@@ -975,6 +1104,7 @@ function derivePoseFromActivity(
     'gym_session': { type: 'standing_relaxed', description: 'standing relaxed after workout' },
     'morning_yoga': { type: 'sitting_on_floor', description: 'sitting on floor in yoga pose' },
     'wellness_break': { type: 'standing_relaxed', description: 'standing relaxed' },
+    'outdoor_run': { type: 'walking_toward_camera', description: 'moving forward with athletic energy' },
     'brunch_with_friends': { type: 'sitting_at_table', description: 'sitting at table' },
     'evening_dinner': { type: 'sitting_at_table', description: 'sitting at table' },
     'night_out': { type: 'standing_relaxed', description: 'standing relaxed' },
@@ -1018,6 +1148,7 @@ function buildNarrative(
     'gym_session': 'At the gym',
     'morning_yoga': 'Morning yoga session',
     'wellness_break': 'Wellness break',
+    'outdoor_run': 'Outdoor run',
     'brunch_with_friends': 'Brunch with friends',
     'evening_dinner': 'Evening dinner',
     'night_out': 'Night out',
@@ -1054,12 +1185,19 @@ function buildBrandStatement(
   fashionStyle: string
 ): string {
   // Map category/mood/style to appropriate brand statements
-  if (fashionStyle.includes('luxury') || fashionStyle.includes('elevated')) {
-    return 'Live Luxuriously'
-  } else if (fashionStyle.includes('bohemian') || fashionStyle.includes('boho')) {
+  const styleKey = fashionStyle.toLowerCase()
+  if (styleKey === 'classic') {
+    return 'Timeless & Refined'
+  } else if (styleKey === 'business') {
+    return 'Lead with Confidence'
+  } else if (styleKey === 'trendy') {
+    return 'Bold & Current'
+  } else if (styleKey === 'bohemian') {
     return 'Free Spirit'
-  } else if (fashionStyle.includes('athletic') || fashionStyle.includes('wellness')) {
+  } else if (styleKey === 'athletic') {
     return 'Strong & Well'
+  } else if (fashionStyle.includes('luxury') || fashionStyle.includes('elevated')) {
+    return 'Live Luxuriously'
   } else if (category === 'minimal' || mood === 'minimal') {
     return 'Simply Elegant'
   } else if (category === 'beige' || mood === 'beige') {
