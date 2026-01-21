@@ -471,46 +471,21 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
           // Preview = Strategy Only (Position, Content Type, Framing, Visual Role)
           // Single Scene = Execution Only (Outfits, Locations, Poses, Activities)
           if (isPreviewFeed) {
-            console.log(`[v0] [GENERATE-SINGLE] ✅ Preview feed detected - using LEGACY template injection`)
+            console.log(`[v0] [GENERATE-SINGLE] ✅ Preview feed detected - using CANONICAL preview prompt builder`)
             
             try {
-              const { getCoherentStyleParameters } = await import("@/lib/feed-planner/generation-helpers")
-              const {
-                category,
-                mood,
-                fashionStyle: resolvedFashionStyle,
-                adaptationApplied,
-              } = await getCoherentStyleParameters(feedLayout, user, post.position, {
+              const { resolveConsistentScenes, buildPreviewPromptFromScenes } = await import("@/lib/feed-planner/scene-consistency")
+              
+              const scenes = await resolveConsistentScenes(feedLayout, user, {
                 checkSettingsPreference: false,
                 checkBlueprintSubscribers: false,
                 defaultCategory: 'minimal',
               })
               
-              if (adaptationApplied) {
-                console.log(`[v0] [GENERATE-SINGLE] ⚠️ Fashion style adapted for coherence: ${resolvedFashionStyle}`)
-              }
-              
-              const { getBlueprintPhotoshootPrompt } = await import("@/lib/maya/blueprint-photoshoot-templates")
-              const fullTemplate = await getBlueprintPhotoshootPrompt(category, mood, resolvedFashionStyle)
-              
-              const injectedTemplate = await injectAndValidateTemplate(
-                fullTemplate,
-                category,
-                mood,
-                resolvedFashionStyle,
-                user.id.toString(),
-                {
-                  visualAesthetics: visualAestheticOptions || undefined,
-                  fashionStyles: fashionStyleOptions || undefined,
-                  feedStyle: feedLayout?.feed_style || undefined,
-                  category
-                }
-              )
-              
-              finalPrompt = injectedTemplate
-              chosenPromptSource = "preview_template"
-              console.log("[v0] PROMPT_SOURCE=preview_template")
-              console.log(`[v0] [GENERATE-SINGLE] ✅ Preview feed - legacy injected template (${finalPrompt.split(/\s+/).length} words)`)
+              finalPrompt = buildPreviewPromptFromScenes(scenes)
+              chosenPromptSource = "canonical_preview_pipeline"
+              console.log("[v0] PROMPT_SOURCE=canonical_preview_pipeline")
+              console.log(`[v0] [GENERATE-SINGLE] ✅ Preview feed - canonical prompt (${finalPrompt.split(/\s+/).length} words)`)
               
               await sql`
                 UPDATE feed_posts
@@ -519,11 +494,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
               `
             } catch (templateError) {
               const errorMessage = templateError instanceof Error ? templateError.message : "Unknown error"
-              console.error(`[v0] [GENERATE-SINGLE] ❌ Preview template injection failed:`, errorMessage)
-              console.error(`[v0] [GENERATE-SINGLE] ❌ Template error stack:`, templateError instanceof Error ? templateError.stack : "No stack trace")
+              console.error(`[v0] [GENERATE-SINGLE] ❌ Preview prompt generation failed:`, errorMessage)
+              console.error(`[v0] [GENERATE-SINGLE] ❌ Error stack:`, templateError instanceof Error ? templateError.stack : "No stack trace")
               return Response.json(
                 {
-                  error: "PREVIEW_TEMPLATE_INJECTION_FAILED",
+                  error: "PREVIEW_PROMPT_GENERATION_FAILED",
                   details: errorMessage,
                   position: post.position,
                   feedId: feedIdInt,

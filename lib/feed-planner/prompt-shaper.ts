@@ -150,91 +150,173 @@ function getColorGradeDescription(visualAesthetic: string | null | undefined, ca
 /**
  * Build Preview Multi-Scene Prompt
  * 
- * Creates a comprehensive prompt for generating a 3×3 photo grid (9:16 aspect ratio)
+ * Creates a concise prompt for generating a 3×3 photo grid (9:16 aspect ratio)
  * containing all 9 scenes in a single image.
  * 
  * NANO BANANA PRO COMPLIANCE:
- * - Identity anchor at start (25-30 words)
- * - Explicit 3×3 grid layout specification (15-20 words)
- * - 9 scene blocks with execution data (25-35 words each)
- * - Technical specifications block (40-50 words)
- * - Cohesion statement (20-30 words)
- * - Final identity reminder (10-15 words)
- * - Total length: 500-700 words
+ * - Identity anchor at start
+ * - Clear aesthetic + visuals + setting + style
+ * - 9 concise frame lines
+ * - Color grade line
+ * - Total length: ~140-220 words (concise, high-signal)
  * 
  * @param scene - First scene (position 1) - used for aesthetic defaults
  * @param allScenes - Array of all 9 scenes (REQUIRED)
  * @returns Complete preview prompt ready for Nano Banana Pro
  */
 function buildPreviewMultiPrompt(scene: FeedPlannerScene, allScenes?: FeedPlannerScene[]): string {
-  const parts: string[] = []
-  
-  // [1] IDENTITY ANCHOR (25-30 words) - REQUIRED FIRST
-  parts.push(
-    'A professional 3x3 photo grid featuring the person from the reference images. ' +
-    'Preserve facial features, skin tone, and identity strictly from the uploaded photos ' +
-    'across all 9 frames.'
-  )
-  
-  // [2] GRID LAYOUT SPECIFICATION (15-20 words)
-  parts.push(
-    'The grid contains 9 distinct scenes arranged in 3 rows and 3 columns with subtle ' +
-    'separation lines. Each scene maintains the same person but varies in outfit, ' +
-    'location, and composition.'
-  )
-  
-  // [3] SCENE-BY-SCENE DESCRIPTIONS (25-35 words each × 9)
-  // CRITICAL: Use ACTUAL execution data from allScenes
-  if (allScenes && allScenes.length >= 9) {
-    const sortedScenes = [...allScenes].sort((a, b) => a.position - b.position)
-    
-    for (let i = 0; i < 9; i++) {
-      const sceneData = sortedScenes[i]
-      if (!sceneData) {
-        console.error(`[PROMPT-SHAPER] Missing scene at position ${i + 1}`)
-        continue
-      }
-      
-      // Validate position matches expected
-      if (sceneData.position !== i + 1) {
-        console.warn(`[PROMPT-SHAPER] Scene position mismatch: expected ${i + 1}, got ${sceneData.position}`)
-      }
-      
-      // Build full scene block with outfit + location + composition
-      const sceneBlock = buildSceneExecutionBlock(sceneData, i + 1)
-      parts.push(sceneBlock)
-    }
-  } else {
-    // 🔴 PROMPT AUTHORITY LOCK-IN: Phase 4 - Hard failure instead of placeholder fallback
-    // Preview mode requires exactly 9 scenes - no silent failures with placeholder prompts
+  if (!allScenes || allScenes.length < 9) {
     throw new Error(
       `Preview mode requires exactly 9 scenes. Got: ${allScenes ? allScenes.length : 0} scenes. ` +
       `Scene resolution failed - cannot generate preview prompt.`
     )
   }
-  
-  // [4] TECHNICAL SPECIFICATIONS (CONCISE: ~30-35 words for preview)
+
+  const sortedScenes = [...allScenes].sort((a, b) => a.position - b.position)
+  const firstScene = sortedScenes[0] || scene
+
+  const parts: string[] = []
+
+  // [1] IDENTITY ANCHOR (REQUIRED FIRST)
+  parts.push('Subject identity must exactly match reference images (face, body, skin, hair).')
+
+  // [2] AESTHETIC
+  parts.push(`Aesthetic: ${getPreviewAestheticDescriptor(firstScene)}.`)
+
+  // [3] VISUALS
   parts.push(
-    'Professional DSLR, 35-85mm focal length, f/2.0-2.8 depth of field. ' +
-    'High-resolution with natural skin texture. Color-graded for cohesion across all 9 frames.'
+    `Visuals: 3x3 Instagram-style grid (clean, symmetrical, framed). Authentic iPhone-style photography: ${getPreviewLightingDescriptor(firstScene)}.`
   )
-  
-  // [5] COHESION & COLOR GRADE (COMBINED: ~20-30 words)
-  // Use user's actual feed style selection for color grading
-  const firstScene = allScenes && allScenes.length > 0 ? allScenes[0] : scene
+
+  // [4] SETTING
+  parts.push(`Setting: ${getPreviewSettingDescriptor(sortedScenes)}.`)
+
+  // [5] STYLE
+  parts.push(`Style: ${getPreviewStyleDescriptor(firstScene)}.`)
+
+  // [6] FRAMES
+  parts.push('Frames:')
+  const frameLines = buildPreviewFrameLines(sortedScenes)
+  parts.push(...frameLines.map((line) => `- ${line}`))
+
+  // [7] COLOR GRADE
   const colorGrade = getColorGradeDescription(firstScene?.visualAesthetic, firstScene?.category)
-  
-  parts.push(
-    `${colorGrade} Maintain facial consistency from reference images.`
-  )
-  
-  const prompt = parts.join(' ')
+  parts.push(`Color Grade: ${colorGrade}.`)
+
+  const prompt = parts.join('\n')
   
   // Log prompt length for verification
   const wordCount = prompt.split(/\s+/).length
-  console.log(`[PROMPT-SHAPER] Preview prompt generated: ${wordCount} words (target: 300-450, optimized for Nano Banana Pro)`)
+  console.log(`[PROMPT-SHAPER] Preview prompt generated: ${wordCount} words (target: 140-220, optimized for Nano Banana Pro)`)
   
   return prompt
+}
+
+function getPreviewAestheticDescriptor(scene: FeedPlannerScene): string {
+  const aesthetic = getDetailedAestheticDescription(scene.category, scene.mood, scene.visualAesthetic)
+  const mood = getMoodDescription(scene.category, scene.pose?.description)
+  return `${aesthetic}, ${mood}`
+}
+
+function getPreviewLightingDescriptor(scene: FeedPlannerScene): string {
+  const category = scene.category
+  if (category === 'luxury' || category === 'edgy' || category === 'professional') {
+    return 'high-contrast, dramatic shadows, moody city lighting, natural film grain'
+  }
+  if (category === 'minimal') {
+    return 'soft diffused light, clean shadows, airy minimal lighting, subtle film grain'
+  }
+  if (category === 'beige' || category === 'warm') {
+    return 'warm golden light, gentle shadows, cozy atmosphere, subtle film grain'
+  }
+  return 'natural light, soft contrast, authentic film grain'
+}
+
+function getPreviewSettingDescriptor(scenes: FeedPlannerScene[]): string {
+  const uniqueLocations = Array.from(
+    new Set(
+      scenes
+        .map((scene) => scene.location?.description)
+        .filter((value): value is string => Boolean(value))
+        .map((value) => value.trim())
+        .filter(Boolean),
+    ),
+  )
+  const compactLocations = uniqueLocations.slice(0, 3).map((location) => shortenWords(location, 8))
+  return compactLocations.length > 0 ? compactLocations.join('; ') : 'varied lifestyle locations'
+}
+
+function getPreviewStyleDescriptor(scene: FeedPlannerScene): string {
+  const category = scene.category
+  const fashionStyle = scene.fashionStyle ? `${scene.fashionStyle} outfits` : 'editorial outfits'
+
+  const textureMap: Record<string, string> = {
+    luxury: 'luxury textures like velvet and leather',
+    edgy: 'bold textures and urban materials',
+    professional: 'tailored textures and polished fabrics',
+    minimal: 'clean textures and soft neutrals',
+    beige: 'warm textures and natural knits',
+    warm: 'cozy textures and soft layers',
+  }
+  const textureNote = textureMap[category] || 'refined textures and clean fabrics'
+
+  return `${fashionStyle}. Focus on ${textureNote}`
+}
+
+function buildPreviewFrameLines(scenes: FeedPlannerScene[]): string[] {
+  const sortedScenes = [...scenes].sort((a, b) => a.position - b.position)
+  const labels = [
+    'Seated',
+    'Flatlay (Overhead)',
+    'Full-Body',
+    'Close-up',
+    'Detail',
+    'Texture Detail',
+    'Walking',
+    'Flatlay (Overhead)',
+    'Mirror Selfie',
+  ]
+
+  return sortedScenes.map((scene, index) => {
+    const label = labels[index] || `Frame ${scene.position}`
+    const outfit = shortenWords(scene.outfit?.description || scene.outfit?.style || 'editorial outfit', 14)
+    const objects = scene.objects
+      .map((obj) => obj.description || obj.type)
+      .filter(Boolean)
+      .slice(0, 3)
+      .join(', ')
+    const lighting = scene.lighting?.description ? shortenWords(scene.lighting.description, 6) : null
+    const location = scene.location?.description ? shortenWords(scene.location.description, 6) : null
+    const narrative = scene.narrative ? shortenWords(scene.narrative, 4) : 'ICONIC'
+
+    if (scene.position === 5) {
+      return `${label}: Street sign "${narrative}" on ${location || 'a building'}, ${lighting ? `(${lighting})` : 'evening light'}`
+    }
+
+    if (label.includes('Flatlay')) {
+      return `${label}: ${objects || 'coffee, journal, phone'}${lighting ? ` (${lighting})` : ''}`
+    }
+
+    if (label === 'Close-up') {
+      return `${label}: ${objects || 'hand near collarbone'}, soft shadow`
+    }
+
+    if (label === 'Texture Detail') {
+      return `${label}: ${outfit}`
+    }
+
+    if (label === 'Mirror Selfie') {
+      return `${label}: ${outfit}${location ? `, ${location}` : ''}`
+    }
+
+    return `${label}: ${outfit}${location ? `, ${location}` : ''}`
+  })
+}
+
+function shortenWords(text: string, maxWords: number): string {
+  const words = text.split(/\s+/).filter(Boolean)
+  if (words.length <= maxWords) return text.trim()
+  return words.slice(0, maxWords).join(' ')
 }
 
 // ============================================================================
@@ -397,17 +479,17 @@ function validatePromptStructure(
   // 2. Word Count Range
   // 🔴 PROMPT AUTHORITY LOCK-IN: Validation with Nano Banana Pro-optimized thresholds
   // REVISED TARGETS (2026-01-19):
-  // - Preview mode: Brief scene blocks (~25-35 words × 9) + tech/cohesion = 120-500 words optimal
+  // - Preview mode: Concise structure with 9 short frames = 100-300 words optimal (target: 140-220)
   // - Single scene mode: Concise, focused description = 100-300 words (optimal: 150-220)
   // Nano Banana Pro performs better with concise, focused descriptions rather than verbose prompts
   const wordCount = prompt.split(/\s+/).length
   if (mode === 'preview_multi') {
-    // Optimal range: 120-500 (target: 300-450 for concise grid generation)
-    if (wordCount < 120 || wordCount > 500) {
-      errors.push(`Prompt word count ${wordCount} outside acceptable range [120-500] for preview mode (optimal: 300-450)`)
-    } else if (wordCount < 300 || wordCount > 450) {
+    // Optimal range: 100-300 (target: 140-220 for concise grid generation)
+    if (wordCount < 100 || wordCount > 300) {
+      errors.push(`Prompt word count ${wordCount} outside acceptable range [100-300] for preview mode (optimal: 140-220)`)
+    } else if (wordCount < 140 || wordCount > 220) {
       // Within tolerance but outside optimal - log info but don't fail
-      console.log(`[PROMPT-SHAPER] ℹ️ Preview prompt word count ${wordCount} outside optimal range [300-450] but acceptable [120-500]`)
+      console.log(`[PROMPT-SHAPER] ℹ️ Preview prompt word count ${wordCount} outside optimal range [140-220] but acceptable [100-300]`)
     }
   } else {
     // Single scene mode: Do NOT block on word count (safety for users)
