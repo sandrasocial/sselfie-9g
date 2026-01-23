@@ -12,7 +12,7 @@ import {
   REFERRAL_BONUS_COST,
 } from "@/lib/admin/metrics"
 import { getDBRevenueMetrics } from "@/lib/revenue/db-revenue-metrics"
-import { getStripeLiveMetrics } from "@/lib/stripe/stripe-live-metrics"
+import { getSingleSourceRevenueMetrics } from "@/lib/revenue/single-source"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -70,15 +70,15 @@ export async function GET(request: NextRequest) {
 
     let stripeMetrics = null
     try {
-      stripeMetrics = await getStripeLiveMetrics()
+      stripeMetrics = await getSingleSourceRevenueMetrics()
     } catch (error: any) {
-      console.warn("[v0] [Growth Dashboard] Stripe live metrics unavailable:", error?.message || error)
+      console.warn("[v0] [Growth Dashboard] Stripe metrics unavailable:", error?.message || error)
     }
 
     const totalRevenue = dbRevenueMetrics.totalRevenue
     const dbMrr = await calculateMRR()
     const mrr = stripeMetrics?.mrr ?? dbMrr
-    const mrrSource = stripeMetrics ? "Stripe Live" : "DB (subscriptions)"
+    const mrrSource = stripeMetrics ? "Stripe+DB" : "DB (subscriptions)"
 
     // 2. User Metrics
     const [userStats] = await sql`
@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
     `
 
     const activeSubscriptions = stripeMetrics?.activeSubscriptions || subscriptionStats?.active_subscriptions || 0
-    const activeSubscriptionsSource = stripeMetrics ? "Stripe Live" : "DB (subscriptions)"
+    const activeSubscriptionsSource = stripeMetrics ? "Stripe+DB" : "DB (subscriptions)"
 
     // 4. Credit Metrics
     const [creditStats] = await sql`

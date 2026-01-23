@@ -5,6 +5,7 @@ import { generateUpsellDay10Email } from "@/lib/email/templates/upsell-day-10"
 import { generateUpsellFreebieMembershipEmail } from "@/lib/email/templates/upsell-freebie-membership"
 import { sendMarketingBroadcast, syncMarketingContacts } from "@/lib/email/marketing-sender"
 import { MARKETING_SEGMENTS } from "@/lib/email/config"
+import { createCronLogger } from "@/lib/cron-logger"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -23,6 +24,9 @@ const EMAIL_PLACEHOLDER = "{{{EMAIL}}}"
  * Protected with CRON_SECRET verification
  */
 export async function GET(request: NextRequest) {
+  const cronLogger = createCronLogger("upsell-campaigns")
+  await cronLogger.start()
+
   try {
     // Verify cron secret
     const authHeader = request.headers.get("authorization")
@@ -30,11 +34,13 @@ export async function GET(request: NextRequest) {
 
     if (!cronSecret) {
       console.error("[v0] [CRON] CRON_SECRET not configured")
+      await cronLogger.error(new Error("Cron secret not configured"), { reason: "Missing CRON_SECRET" })
       return NextResponse.json({ error: "Cron secret not configured" }, { status: 500 })
     }
 
     if (authHeader !== `Bearer ${cronSecret}`) {
       console.error("[v0] [CRON] Unauthorized upsell-campaigns cron request")
+      await cronLogger.error(new Error("Unauthorized"), { reason: "Invalid CRON_SECRET" })
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -207,6 +213,12 @@ export async function GET(request: NextRequest) {
       `[v0] [CRON] Upsell campaigns processing complete: ${results.day10Sent} Day 10 sent, ${results.day20Sent} Day 20 sent, ${results.errors} errors`,
     )
 
+    await cronLogger.success({
+      day10Sent: results.day10Sent,
+      day20Sent: results.day20Sent,
+      errors: results.errors,
+    })
+
     return NextResponse.json({
       success: true,
       day10Sent: results.day10Sent,
@@ -216,6 +228,7 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error("[v0] [CRON] Error in upsell campaigns cron:", error)
+    await cronLogger.error(error, { reason: "Upsell campaigns cron failed" })
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to process upsell campaigns" },
       { status: 500 },

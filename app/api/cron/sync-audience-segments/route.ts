@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { getAllResendContacts, runSegmentationForEmails } from "@/lib/audience/segment-sync"
 import { syncMarketingContacts } from "@/lib/email/marketing-sender"
+import { createCronLogger } from "@/lib/cron-logger"
 import { neon } from "@neondatabase/serverless"
 
 const sql = neon(process.env.DATABASE_URL!)
@@ -16,6 +17,9 @@ const sql = neon(process.env.DATABASE_URL!)
  * Protected by CRON_SECRET environment variable
  */
 export async function GET(request: Request) {
+  const cronLogger = createCronLogger("sync-audience-segments")
+  await cronLogger.start()
+
   try {
     // Verify cron secret for security
     // Vercel automatically adds CRON_SECRET to Authorization header for cron jobs
@@ -28,6 +32,7 @@ export async function GET(request: Request) {
     if (isProduction && cronSecret) {
       if (authHeader !== `Bearer ${cronSecret}`) {
         console.error("[v0] [CRON] Unauthorized: Invalid or missing CRON_SECRET")
+        await cronLogger.error(new Error("Unauthorized"), { reason: "Invalid CRON_SECRET" })
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
       }
     } else if (!cronSecret && isProduction) {
@@ -403,6 +408,14 @@ export async function GET(request: Request) {
       }
     }
 
+    await cronLogger.success({
+      totalContacts,
+      processed: results.processed,
+      successful: results.successful,
+      failed: results.failed,
+      segmentsRefreshed: Object.keys(results.sequenceTags).length,
+    })
+
     return NextResponse.json({
       success: true,
       message: `Cron sync completed: ${results.successful} successful, ${results.failed} failed`,
@@ -419,6 +432,7 @@ export async function GET(request: Request) {
     })
   } catch (error: any) {
     console.error("[v0] [CRON] Error in cron sync:", error)
+    await cronLogger.error(error, { reason: "Cron sync failed" })
     return NextResponse.json(
       {
         success: false,

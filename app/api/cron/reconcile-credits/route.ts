@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import Stripe from "stripe"
+import { createCronLogger } from "@/lib/cron-logger"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -345,6 +346,9 @@ async function reconcileStripePayments(days: number) {
  * and optional Stripe payments backfill (recent window).
  */
 export async function GET(request: NextRequest) {
+  const cronLogger = createCronLogger("reconcile-credits")
+  await cronLogger.start()
+
   try {
     const meta = {
       path: request.nextUrl.pathname,
@@ -360,10 +364,12 @@ export async function GET(request: NextRequest) {
     const cronSecret = process.env.CRON_SECRET
 
     if (!cronSecret) {
+      await cronLogger.error(new Error("CRON_SECRET not configured"), { reason: "Missing CRON_SECRET" })
       return NextResponse.json({ error: "CRON_SECRET not configured" }, { status: 500 })
     }
 
     if (authHeader !== `Bearer ${cronSecret}`) {
+      await cronLogger.error(new Error("Unauthorized"), { reason: "Invalid CRON_SECRET" })
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -398,6 +404,8 @@ export async function GET(request: NextRequest) {
     }
     console.log(`[CRON_SUMMARY] ${JSON.stringify(summary)}`)
 
+    await cronLogger.success(summary)
+
     return NextResponse.json({
       success: true,
       welcomeMissing: missingWelcomeUsers.length,
@@ -408,6 +416,7 @@ export async function GET(request: NextRequest) {
     })
   } catch (error: any) {
     console.error("[v0] [CRON] reconcile-credits error:", error)
+    await cronLogger.error(error, { reason: "Reconcile credits failed" })
     return NextResponse.json({ error: error.message || "Failed" }, { status: 500 })
   }
 }

@@ -59,7 +59,12 @@ export async function GET(request: Request) {
     const scriptStartTime = Date.now()
     const { stdout, stderr } = await execAsync("npm run index-codebase", {
       cwd: process.cwd(),
-      env: process.env,
+      env: {
+        ...process.env,
+        HOME: process.env.HOME || "/tmp",
+        TMPDIR: process.env.TMPDIR || "/tmp",
+        npm_config_cache: process.env.npm_config_cache || "/tmp/.npm",
+      },
     })
     const scriptDuration = ((Date.now() - scriptStartTime) / 1000).toFixed(2)
 

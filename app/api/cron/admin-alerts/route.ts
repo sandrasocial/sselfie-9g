@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import { checkMarginAlerts, wasAlertSentRecently, recordAlertSent } from "@/lib/admin/alerts"
 import { sendEmail } from "@/lib/email/send-email"
+import { createCronLogger } from "@/lib/cron-logger"
 import {
   calculateTotalRevenue,
   calculateMRR,
@@ -24,6 +25,9 @@ const ADMIN_EMAILS = ["ssa@ssasocial.com", "hello@sselfie.ai"]
  * Protected with CRON_SECRET verification
  */
 export async function GET(request: NextRequest) {
+  const cronLogger = createCronLogger("admin-alerts")
+  await cronLogger.start()
+
   try {
     // Verify cron secret
     const authHeader = request.headers.get("authorization")
@@ -31,11 +35,13 @@ export async function GET(request: NextRequest) {
 
     if (!cronSecret) {
       console.error("[v0] [CRON] CRON_SECRET not configured")
+      await cronLogger.error(new Error("Cron secret not configured"), { reason: "Missing CRON_SECRET" })
       return NextResponse.json({ error: "Cron secret not configured" }, { status: 500 })
     }
 
     if (authHeader !== `Bearer ${cronSecret}`) {
       console.error("[v0] [CRON] Unauthorized admin-alerts cron request")
+      await cronLogger.error(new Error("Unauthorized"), { reason: "Invalid CRON_SECRET" })
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -73,6 +79,7 @@ export async function GET(request: NextRequest) {
 
     if (alerts.length === 0) {
       console.log("[v0] [CRON] No margin alerts detected")
+      await cronLogger.success({ alertsSent: 0, reason: "no_alerts" })
       return NextResponse.json({
         success: true,
         alertsSent: 0,
@@ -86,6 +93,7 @@ export async function GET(request: NextRequest) {
 
     if (wasSent) {
       console.log("[v0] [CRON] Alert summary already sent today (cooldown active)")
+      await cronLogger.success({ alertsSent: 0, reason: "cooldown" })
       return NextResponse.json({
         success: true,
         alertsSent: 0,
@@ -202,6 +210,8 @@ View dashboard: ${process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"}/admi
 
       console.log(`[v0] [CRON] ✅ Alert summary sent: ${alerts.length} alert(s)`)
 
+      await cronLogger.success({ alertsSent: 1, totalAlerts: alerts.length })
+
       return NextResponse.json({
         success: true,
         alertsSent: 1,
@@ -214,6 +224,7 @@ View dashboard: ${process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"}/admi
       })
     } catch (error: any) {
       console.error(`[v0] [CRON] ❌ Failed to send alert summary:`, error.message)
+      await cronLogger.error(error, { reason: "Send alert summary failed" })
       return NextResponse.json(
         { error: error instanceof Error ? error.message : "Failed to send alerts" },
         { status: 500 },
@@ -221,6 +232,7 @@ View dashboard: ${process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"}/admi
     }
   } catch (error) {
     console.error("[v0] [CRON] Error in admin alerts cron:", error)
+    await cronLogger.error(error, { reason: "Admin alerts cron failed" })
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to check alerts" },
       { status: 500 },

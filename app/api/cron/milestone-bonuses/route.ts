@@ -3,6 +3,7 @@ import { neon } from "@neondatabase/serverless"
 import { addCredits } from "@/lib/credits"
 import { sendEmail } from "@/lib/email/send-email"
 import { generateMilestoneBonusEmail } from "@/lib/email/templates/milestone-bonus"
+import { createCronLogger } from "@/lib/cron-logger"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -15,6 +16,9 @@ const sql = neon(process.env.DATABASE_URL!)
  * Protected with CRON_SECRET verification
  */
 export async function GET(request: NextRequest) {
+  const cronLogger = createCronLogger("milestone-bonuses")
+  await cronLogger.start()
+
   try {
     // Verify cron secret
     const authHeader = request.headers.get("authorization")
@@ -22,11 +26,13 @@ export async function GET(request: NextRequest) {
 
     if (!cronSecret) {
       console.error("[v0] [CRON] CRON_SECRET not configured")
+      await cronLogger.error(new Error("Cron secret not configured"), { reason: "Missing CRON_SECRET" })
       return NextResponse.json({ error: "Cron secret not configured" }, { status: 500 })
     }
 
     if (authHeader !== `Bearer ${cronSecret}`) {
       console.error("[v0] [CRON] Unauthorized milestone-bonuses cron request")
+      await cronLogger.error(new Error("Unauthorized"), { reason: "Invalid CRON_SECRET" })
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -37,6 +43,7 @@ export async function GET(request: NextRequest) {
 
     if (!milestoneBonusesEnabled) {
       console.log("[v0] [CRON] ⚠️ Milestone bonuses temporarily disabled (MILESTONE_BONUSES_ENABLED=false)")
+      await cronLogger.success({ processed: 0, errors: 0, reason: "disabled" })
       return NextResponse.json({
         success: true,
         enabled: false,
@@ -148,6 +155,8 @@ export async function GET(request: NextRequest) {
 
     console.log(`[v0] [CRON] Milestone bonuses processing complete: ${results.processed} processed, ${results.errors} errors`)
 
+    await cronLogger.success({ processed: results.processed, errors: results.errors })
+
     return NextResponse.json({
       success: true,
       processed: results.processed,
@@ -156,6 +165,7 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error("[v0] [CRON] Error in milestone bonuses cron:", error)
+    await cronLogger.error(error, { reason: "Milestone bonuses cron failed" })
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to process milestone bonuses" },
       { status: 500 },

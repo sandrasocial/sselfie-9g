@@ -275,7 +275,120 @@ export default function FeedHeader({
     if (isPreviewFeedModal) {
       await handlePreviewFeedStyleConfirm(data)
     } else {
-      await handleFullFeedStyleConfirm(data)
+      // Check if we're updating an existing feed or creating a new one
+      if (currentFeedId && feedData?.feed?.id) {
+        await handleUpdateFeedStyle(data)
+      } else {
+        await handleFullFeedStyleConfirm(data)
+      }
+    }
+  }
+
+  const handleUpdateFeedStyle = async (data: FeedStyleModalData) => {
+    setShowFeedStyleModal(false)
+    setIsCreatingFeed(true)
+    
+    try {
+      // Update personal brand first (same as create flow)
+      try {
+        const currentBrandResponse = await fetch('/api/profile/personal-brand', {
+          credentials: 'include',
+        })
+        let currentSettingsPreference: string[] | null = null
+        
+        if (currentBrandResponse.ok) {
+          const currentBrand = await currentBrandResponse.json()
+          if (currentBrand?.data?.settingsPreference) {
+            const rawSettings = Array.isArray(currentBrand.data.settingsPreference)
+              ? currentBrand.data.settingsPreference
+              : [currentBrand.data.settingsPreference].filter(Boolean)
+            
+            const validStyles = useFeedPlannerV2
+              ? [
+                  "Dark & Moody",
+                  "Beige Aesthetic",
+                  "Light & Minimalistic",
+                  "Luxury Future Self",
+                  "Casual Bohemian",
+                  "Athletic & Wellness",
+                  "Coastal Aesthetics",
+                ]
+              : ["luxury", "minimal", "beige"]
+
+            currentSettingsPreference = rawSettings
+              .filter((s: any) => {
+                if (typeof s !== 'string') return false
+                if (s.length > 100) return false
+                if (s.includes('{\\"') || s.includes('\\\\')) return false
+                return validStyles.some((style) => style.toLowerCase() === s.toLowerCase().trim())
+              })
+              .map((s: string) => {
+                const trimmed = s.trim()
+                if (!useFeedPlannerV2) return trimmed.toLowerCase()
+                return validStyles.find((style) => style.toLowerCase() === trimmed.toLowerCase()) || trimmed
+              })
+          }
+        }
+        
+        const updatedSettingsPreference = currentSettingsPreference 
+          ? [data.feedStyle, ...currentSettingsPreference.filter((s: string) => s !== data.feedStyle)]
+          : [data.feedStyle]
+        
+        const updatePayload: Record<string, any> = {
+          settingsPreference: updatedSettingsPreference,
+        }
+        
+        if (data.feedStyleVariationId !== undefined) {
+          updatePayload.feedStyleVariationId = data.feedStyleVariationId
+        }
+
+        if (data.visualAesthetic && Array.isArray(data.visualAesthetic) && data.visualAesthetic.length > 0) {
+          updatePayload.visualAesthetic = data.visualAesthetic
+        }
+        
+        await fetch('/api/profile/personal-brand', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(updatePayload),
+        })
+      } catch (error) {
+        console.error('[Feed Header] Error updating personal brand:', error)
+        // Continue with feed update even if personal brand fails
+      }
+
+      // Update the feed's style and variation
+      const updateResponse = await fetch(`/api/feed/${currentFeedId}/update-style`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          feedStyle: data.feedStyle,
+          feedStyleVariationId: data.feedStyleVariationId,
+        }),
+      })
+
+      if (!updateResponse.ok) {
+        const error = await updateResponse.json().catch(() => ({ error: 'Failed to update feed style' }))
+        throw new Error(error.error || 'Failed to update feed style')
+      }
+
+      // Refresh the feed data
+      router.refresh()
+      
+      toast({
+        title: "Feed style updated",
+        description: "Your feed style has been updated. Generate new images to see the changes!",
+      })
+    } catch (error) {
+      console.error("[v0] Error updating feed style:", error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to update feed style. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsCreatingFeed(false)
     }
   }
 
@@ -748,7 +861,8 @@ export default function FeedHeader({
           }
         }}
         onConfirm={handleFeedStyleConfirm}
-        defaultFeedStyle={lastFeedStyle}
+        defaultFeedStyle={feedData?.feed_style || lastFeedStyle}
+        defaultFeedStyleVariationId={feedData?.feed_style_variation_id ?? undefined}
         isLoading={isCreatingFeed || isCreatingPreviewFeed}
         isPreviewFeed={isPreviewFeedModal}
         useFeedPlannerV2={useFeedPlannerV2}

@@ -28,7 +28,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { subject, html, text, template } = body
+    const { subject, html, text, template, to } = body
 
     // Default test email content
     const emailSubject = subject || "Test Email from SSELFIE Admin"
@@ -45,9 +45,11 @@ export async function POST(request: Request) {
     `
     const emailText = text || "This is a test email sent from the SSELFIE Admin Email Control Center."
 
+    const recipient = typeof to === "string" && to.includes("@") ? to : ADMIN_EMAIL
+
     // Send test email
     const result = await sendEmail({
-      to: ADMIN_EMAIL,
+      to: recipient,
       subject: emailSubject,
       html: emailHtml,
       text: emailText,
@@ -57,7 +59,7 @@ export async function POST(request: Request) {
     if (result.success) {
       return NextResponse.json({
         success: true,
-        message: "Test email sent successfully",
+        message: `Test email sent successfully to ${recipient}`,
         messageId: result.messageId,
       })
     } else {

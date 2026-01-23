@@ -10,21 +10,11 @@ export function AdminNav() {
   
   const navItems = [
     { label: 'DASHBOARD', href: '/admin' },
-    { label: 'GROWTH', href: '/admin/growth-dashboard' },
-    { label: 'MISSION CONTROL', href: '/admin/mission-control' },
-    { label: 'HEALTH', href: '/admin/health' },
-    { label: 'FEED STYLES', href: '/admin/feed-styles' },
-    { label: 'FEED STYLES V2', href: '/admin/feed-styles-v2' },
-    { label: 'FASHION STYLES', href: '/admin/fashion-styles' },
-    { label: 'FEED POSITIONS', href: '/admin/feed-positions' },
-    { label: 'FEED LIBRARIES', href: '/admin/libraries' },
-    { label: 'FEED TEST', href: '/admin/test-feed-generation' },
-    { label: 'CRON HEALTH', href: '/admin/cron-health' },
-    { label: 'BLUEPRINT HEALTH', href: '/admin/blueprint-health' },
-    { label: 'JOURNAL', href: '/admin/journal' },
-    { label: 'ALEX', href: '/admin/alex' },
-    { label: 'EMAIL SEQUENCES', href: '/admin/email-sequences' },
-    { label: 'ANALYTICS', href: '/admin/conversions' }
+    { label: 'EMAIL', href: '/admin/email-control' },
+    { label: 'DIAGNOSTICS', href: '/admin/diagnostics/system' },
+    { label: 'CONTENT', href: '/admin/feed-styles' },
+    { label: 'USERS', href: '/admin/credits' },
+    { label: 'ALEX', href: '/admin/alex' }
   ]
   
   return (

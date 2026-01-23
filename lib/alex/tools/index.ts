@@ -6,6 +6,8 @@
 import type { Tool } from '../types'
 import { registerToolHandler } from '../handlers/tool-executor'
 
+const analyticsToolsEnabled = process.env.ALEX_ANALYTICS_TOOLS_ENABLED !== "false"
+
 // Email tools
 import { composeEmailDraftTool } from './email/compose-email-draft'
 import { editEmailTool } from './email/edit-email'
@@ -54,7 +56,7 @@ import { markEmailSentTool } from './historical/mark-email-sent'
 import { recordEmailAnalyticsTool } from './historical/record-email-analytics'
 
 // Collect all tools
-export const allTools: Tool[] = [
+const emailTools: Tool[] = [
   // Email tools
   composeEmailDraftTool,
   editEmailTool,
@@ -72,8 +74,9 @@ export const allTools: Tool[] = [
   scheduleResendAutomationTool,
   getResendAutomationStatusTool,
   analyzeEmailStrategyTool,
+]
 
-  // Analytics tools
+const analyticsTools: Tool[] = [
   getRevenueMetricsTool,
   getPlatformAnalyticsTool,
   getBusinessInsightsTool,
@@ -81,26 +84,39 @@ export const allTools: Tool[] = [
   getEmailRecommendationsTool,
   researchContentStrategyTool,
   getBrandStrategyTool,
+]
 
-  // Content tools
+const contentTools: Tool[] = [
   createInstagramCaptionTool,
   createContentCalendarTool,
   suggestMayaPromptsTool,
   readCodebaseFileTool,
+]
 
-  // Business tools
+const businessTools: Tool[] = [
   getTestimonialsTool,
   getPromptGuidesTool,
   updatePromptGuideTool,
   getSandraJournalTool,
+]
 
-  // Automation tools
+const automationTools: Tool[] = [
   createAutomationTool,
   webSearchTool,
+]
 
-  // Historical tools
+const historicalTools: Tool[] = [
   markEmailSentTool,
-  recordEmailAnalyticsTool
+  recordEmailAnalyticsTool,
+]
+
+export const allTools: Tool[] = [
+  ...emailTools,
+  ...(analyticsToolsEnabled ? analyticsTools : []),
+  ...contentTools,
+  ...businessTools,
+  ...automationTools,
+  ...historicalTools,
 ]
 
 // Register handlers for tool executor

@@ -264,6 +264,7 @@ export async function POST(req: NextRequest) {
               status,
               layout_type,
               feed_style,
+              feed_style_variation_id,
               created_by
             )
             VALUES (
@@ -274,6 +275,7 @@ export async function POST(req: NextRequest) {
               'saved',
               'preview',
               ${feedStyleToStore},
+              ${feedStyleVariationIdToStore},
               'manual'
             )
             RETURNING *
@@ -290,7 +292,8 @@ export async function POST(req: NextRequest) {
                 description,
                 status,
                 layout_type,
-                feed_style
+                feed_style,
+                feed_style_variation_id
               )
               VALUES (
                 ${user.id},
@@ -299,7 +302,8 @@ export async function POST(req: NextRequest) {
                 NULL,
                 'saved',
                 'preview',
-                ${feedStyleToStore}
+                ${feedStyleToStore},
+                ${feedStyleVariationIdToStore}
               )
               RETURNING *
             ` as any[]
@@ -318,6 +322,8 @@ export async function POST(req: NextRequest) {
 
     const feedLayout = feedResult[0]
     const feedId = feedLayout.id
+    
+    console.log(`[v0] Created preview feed ${feedId} with feedStyle=${feedStyleToStore}, variationId=${feedStyleVariationIdToStore}`)
 
     // Phase 5.3.2: Create ONE empty post (position 1) for free users
     const postResult = await sql`

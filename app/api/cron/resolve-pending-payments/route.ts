@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import { grantPaidBlueprintCredits } from "@/lib/credits"
+import { createCronLogger } from "@/lib/cron-logger"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -13,6 +14,9 @@ const sql = neon(process.env.DATABASE_URL!)
  * Protected with CRON_SECRET verification
  */
 export async function GET(request: NextRequest) {
+  const cronLogger = createCronLogger("resolve-pending-payments")
+  await cronLogger.start()
+
   try {
     const meta = {
       path: request.nextUrl.pathname,
@@ -30,11 +34,13 @@ export async function GET(request: NextRequest) {
 
     if (!cronSecret) {
       console.error("[v0] [CRON] CRON_SECRET not configured")
+      await cronLogger.error(new Error("Cron secret not configured"), { reason: "Missing CRON_SECRET" })
       return NextResponse.json({ error: "Cron secret not configured" }, { status: 500 })
     }
 
     if (authHeader !== `Bearer ${cronSecret}`) {
       console.error("[v0] [CRON] Unauthorized resolve-pending-payments cron request")
+      await cronLogger.error(new Error("Unauthorized"), { reason: "Invalid CRON_SECRET" })
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -65,6 +71,7 @@ export async function GET(request: NextRequest) {
         status: "ok",
       }
       console.log(`[CRON_SUMMARY] ${JSON.stringify(summary)}`)
+      await cronLogger.success({ processed: 0, resolved: 0, failed: 0, skipped: 0 })
       return NextResponse.json({ success: true, processed: 0 })
     }
 
@@ -269,6 +276,8 @@ export async function GET(request: NextRequest) {
     }
     console.log(`[CRON_SUMMARY] ${JSON.stringify(summary)}`)
 
+    await cronLogger.success({ processed: pendingPayments.length, resolved, failed, skipped })
+
     return NextResponse.json({
       success: true,
       processed: pendingPayments.length,
@@ -278,6 +287,7 @@ export async function GET(request: NextRequest) {
     })
   } catch (error: any) {
     console.error("[v0] [CRON] Error in resolve-pending-payments cron:", error)
+    await cronLogger.error(error, { reason: "Resolve pending payments failed" })
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to resolve pending payments" },
       { status: 500 }

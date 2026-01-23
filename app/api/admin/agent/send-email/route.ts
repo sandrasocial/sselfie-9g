@@ -27,6 +27,12 @@ export async function POST(request: Request) {
     const { type, campaignId, recipients, subject, html, text, scheduledFor } = body
 
     if (type === "single") {
+      if (!subject || !html) {
+        return NextResponse.json(
+          { error: "Subject and HTML are required for single sends" },
+          { status: 400 },
+        )
+      }
       // Send single email
       const result = await sendEmail({
         to: recipients,

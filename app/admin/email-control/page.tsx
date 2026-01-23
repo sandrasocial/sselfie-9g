@@ -14,6 +14,7 @@ interface EmailStats {
   failed: number
   skippedDisabled: number
   skippedTestMode: number
+  skippedDryRun: number
   total: number
 }
 
@@ -24,6 +25,79 @@ interface ScheduledCampaign {
   subject_line: string
   scheduled_for: string
   status: string
+}
+
+interface CronStat {
+  job_name: string
+  success_count: number
+  failed_count: number
+  last_run: string | null
+}
+
+interface ResendBroadcast {
+  id: string
+  name?: string | null
+  subject?: string | null
+  status?: string | null
+  sent_at?: string | null
+  scheduled_at?: string | null
+  created_at?: string | null
+  segment_id?: string | null
+  segmentName?: string | null
+  dashboardUrl?: string | null
+}
+
+interface EmailAnalyticsSummary {
+  overallStats: {
+    totalSent: number
+    totalOpened: number
+    totalClicked: number
+    totalConverted: number
+    openRate: number
+    clickRate: number
+    conversionRate: number
+    delivered: number
+    bounced: number
+    complained: number
+  }
+}
+
+interface ActiveSequence {
+  jobName: string
+  label: string
+  schedule: string | null
+  nextRun: string | null
+  eligibleCount: number
+  active: boolean
+  segments: Array<{
+    id: string
+    name: string
+    size: number
+    key: string
+  }>
+}
+
+interface SegmentSummary {
+  id: string
+  name: string
+  size: number
+}
+
+interface WebhookHealth {
+  webhooksReceived24h: number
+  webhookSecretSet: boolean
+  healthy: boolean
+}
+
+interface AudienceInfo {
+  count: number | null
+  status: "connected" | "missing" | "error"
+  error?: string | null
+}
+
+interface ResendConfigInfo {
+  apiKeyConfigured: boolean
+  audienceIdConfigured: boolean
 }
 
 export default function EmailControlPage() {
@@ -37,10 +111,26 @@ export default function EmailControlPage() {
   const [scheduledCampaigns, setScheduledCampaigns] = useState<ScheduledCampaign[]>([])
   const [testEmailSending, setTestEmailSending] = useState(false)
   const [testEmailResult, setTestEmailResult] = useState<string | null>(null)
+  const [testRecipient, setTestRecipient] = useState("")
+  const [emailAnalytics, setEmailAnalytics] = useState<EmailAnalyticsSummary | null>(null)
+  const [analyticsLoading, setAnalyticsLoading] = useState(false)
+  const [cronStats, setCronStats] = useState<CronStat[]>([])
+  const [dryRunEnabled, setDryRunEnabled] = useState(false)
+  const [lastBroadcast, setLastBroadcast] = useState<ResendBroadcast | null>(null)
+  const [broadcasts, setBroadcasts] = useState<ResendBroadcast[]>([])
+  const [activeSequences, setActiveSequences] = useState<ActiveSequence[]>([])
+  const [webhookHealth, setWebhookHealth] = useState<WebhookHealth | null>(null)
+  const [audienceInfo, setAudienceInfo] = useState<AudienceInfo>({
+    count: null,
+    status: "missing",
+  })
+  const [resendConfig, setResendConfig] = useState<ResendConfigInfo | null>(null)
+  const [segments, setSegments] = useState<SegmentSummary[]>([])
 
   useEffect(() => {
     fetchSettings()
     fetchStats()
+    fetchAnalytics()
   }, [])
 
   const fetchSettings = async () => {
@@ -64,9 +154,44 @@ export default function EmailControlPage() {
       if (data.success) {
         setEmailStats(data.emailStats)
         setScheduledCampaigns(data.scheduledCampaigns || [])
+        setCronStats(data.cronStats || [])
+        setDryRunEnabled(Boolean(data.dryRunEnabled))
+        setLastBroadcast(data.lastBroadcast || null)
+        setBroadcasts(Array.isArray(data.broadcasts) ? data.broadcasts : [])
+        if (data.audience) {
+          setAudienceInfo({
+            count: typeof data.audience.count === "number" ? data.audience.count : null,
+            status: data.audience.status || "missing",
+            error: data.audience.error || null,
+          })
+        }
+        if (data.resendConfig) {
+          setResendConfig({
+            apiKeyConfigured: Boolean(data.resendConfig.apiKeyConfigured),
+            audienceIdConfigured: Boolean(data.resendConfig.audienceIdConfigured),
+          })
+        }
+        setSegments(Array.isArray(data.segments) ? data.segments : [])
+        setActiveSequences(Array.isArray(data.activeSequences) ? data.activeSequences : [])
+        setWebhookHealth(data.webhookHealth || null)
       }
     } catch (error) {
       console.error("Error fetching stats:", error)
+    }
+  }
+
+  const fetchAnalytics = async () => {
+    setAnalyticsLoading(true)
+    try {
+      const response = await fetch("/api/admin/email-analytics")
+      if (response.ok) {
+        const data = await response.json()
+        setEmailAnalytics(data)
+      }
+    } catch (error) {
+      console.error("Error fetching email analytics:", error)
+    } finally {
+      setAnalyticsLoading(false)
     }
   }
 
@@ -101,6 +226,7 @@ export default function EmailControlPage() {
         body: JSON.stringify({
           subject: "Test Email from SSELFIE Admin",
           template: "test",
+          to: testRecipient || undefined,
         }),
       })
       const data = await response.json()
@@ -126,6 +252,30 @@ export default function EmailControlPage() {
       </div>
     )
   }
+  const webhookBadge = webhookHealth
+    ? webhookHealth.healthy
+      ? { label: "Healthy", className: "text-green-600" }
+      : webhookHealth.webhookSecretSet
+        ? { label: "No events", className: "text-amber-600" }
+        : { label: "Secret missing", className: "text-red-600" }
+    : { label: "Unknown", className: "text-stone-500" }
+
+  const missingSegments = activeSequences.flatMap((sequence) =>
+    sequence.segments
+      .filter((segment) => !segment.id)
+      .map((segment) => ({
+        sequenceLabel: sequence.label,
+        segmentName: segment.name,
+        segmentKey: segment.key,
+      })),
+  )
+
+  const audienceLabel =
+    audienceInfo.status === "connected"
+      ? `${audienceInfo.count ?? "—"}`
+      : audienceInfo.status === "missing"
+        ? "Not connected"
+        : "Check connection"
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -138,7 +288,7 @@ export default function EmailControlPage() {
                 Email Control Center
               </h1>
               <p className="text-xs sm:text-sm text-stone-600">
-                Control email sending globally and test safely
+                A simple view of what is sending, what is scheduled, and what needs setup
               </p>
             </div>
             <Link
@@ -147,6 +297,43 @@ export default function EmailControlPage() {
             >
               ← Back to Dashboard
             </Link>
+          </div>
+        </div>
+
+        {/* Status Strip */}
+        <div className="bg-white border border-stone-200 p-4 sm:p-6 rounded-none mb-6 sm:mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+            <div className="border border-stone-200 p-3">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-stone-500 mb-1">Sending</p>
+              <p className="text-xs text-stone-950">{settings.emailSendingEnabled ? "On" : "Off"}</p>
+            </div>
+            <div className="border border-stone-200 p-3">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-stone-500 mb-1">Test Mode</p>
+              <p className="text-xs text-stone-950">{settings.emailTestMode ? "Only admins" : "All recipients"}</p>
+            </div>
+            <div className="border border-stone-200 p-3">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-stone-500 mb-1">Dry Run</p>
+              <p className="text-xs text-stone-950">{dryRunEnabled ? "Preview only" : "Live sends"}</p>
+            </div>
+            <div className="border border-stone-200 p-3">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-stone-500 mb-1">Last Broadcast</p>
+              <p className="text-xs text-stone-950">
+                {lastBroadcast?.status || "None"}
+              </p>
+            </div>
+            <div className="border border-stone-200 p-3">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-stone-500 mb-1">Audience</p>
+              <p className="text-xs text-stone-950">
+                {audienceLabel}
+              </p>
+              {audienceInfo.error && (
+                <p className="text-[10px] text-amber-600 mt-1">{audienceInfo.error}</p>
+              )}
+            </div>
+            <div className="border border-stone-200 p-3">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-stone-500 mb-1">Webhooks</p>
+              <p className={`text-xs ${webhookBadge.className}`}>{webhookBadge.label}</p>
+            </div>
           </div>
         </div>
 
@@ -237,6 +424,16 @@ export default function EmailControlPage() {
           <p className="text-xs text-stone-500 mb-4">
             Send a test email to yourself to verify email sending is working
           </p>
+          <div className="mb-4">
+            <label className="text-xs text-stone-500 block mb-2">Send test to (optional)</label>
+            <input
+              type="email"
+              value={testRecipient}
+              onChange={(e) => setTestRecipient(e.target.value)}
+              placeholder="you@domain.com"
+              className="w-full border border-stone-200 px-3 py-2 text-xs text-stone-700 focus:outline-none focus:ring-1 focus:ring-stone-400"
+            />
+          </div>
           <button
             onClick={sendTestEmail}
             disabled={testEmailSending || saving}
@@ -248,6 +445,232 @@ export default function EmailControlPage() {
             <p className={`text-xs mt-3 ${testEmailResult.includes("✅") ? "text-green-600" : "text-red-600"}`}>
               {testEmailResult}
             </p>
+          )}
+        </div>
+
+        {/* Email Analytics Summary */}
+        <div className="bg-white border border-stone-200 p-6 sm:p-8 rounded-none mb-6 sm:mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg sm:text-xl font-['Times_New_Roman'] text-stone-950 tracking-[0.1em] uppercase">
+              Email Engagement (30d)
+            </h2>
+            <button
+              type="button"
+              onClick={fetchAnalytics}
+              className="text-xs tracking-[0.15em] uppercase text-stone-600 hover:text-stone-950 transition-colors"
+            >
+              Refresh
+            </button>
+          </div>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-stone-400 mb-4">
+            These numbers update when Resend webhooks arrive
+          </p>
+          {analyticsLoading ? (
+            <p className="text-xs text-stone-500">Loading analytics...</p>
+          ) : emailAnalytics?.overallStats ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="border border-stone-200 p-4">
+                <p className="text-xs text-stone-500 mb-1">Total Sent</p>
+                <p className="text-lg text-stone-950">{emailAnalytics.overallStats.totalSent}</p>
+              </div>
+              <div className="border border-stone-200 p-4">
+                <p className="text-xs text-stone-500 mb-1">Open Rate</p>
+                <p className="text-lg text-stone-950">{emailAnalytics.overallStats.openRate}%</p>
+              </div>
+              <div className="border border-stone-200 p-4">
+                <p className="text-xs text-stone-500 mb-1">Click Rate</p>
+                <p className="text-lg text-stone-950">{emailAnalytics.overallStats.clickRate}%</p>
+              </div>
+              <div className="border border-stone-200 p-4">
+                <p className="text-xs text-stone-500 mb-1">Conversion Rate</p>
+                <p className="text-lg text-stone-950">{emailAnalytics.overallStats.conversionRate}%</p>
+              </div>
+              <div className="border border-stone-200 p-4">
+                <p className="text-xs text-stone-500 mb-1">Delivered</p>
+                <p className="text-lg text-stone-950">{emailAnalytics.overallStats.delivered}</p>
+              </div>
+              <div className="border border-stone-200 p-4">
+                <p className="text-xs text-stone-500 mb-1">Bounced / Complained</p>
+                <p className="text-lg text-stone-950">
+                  {emailAnalytics.overallStats.bounced} / {emailAnalytics.overallStats.complained}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-stone-500">No analytics data available.</p>
+          )}
+        </div>
+
+        {/* Recent Broadcasts */}
+        <div className="bg-white border border-stone-200 p-6 sm:p-8 rounded-none mb-6 sm:mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg sm:text-xl font-['Times_New_Roman'] text-stone-950 tracking-[0.1em] uppercase">
+              Recent Broadcasts
+            </h2>
+            <button
+              type="button"
+              onClick={fetchStats}
+              className="text-xs tracking-[0.15em] uppercase text-stone-600 hover:text-stone-950 transition-colors"
+            >
+              Refresh
+            </button>
+          </div>
+          {broadcasts.length === 0 ? (
+            <p className="text-xs text-stone-500">No broadcasts yet. When a sequence sends, it will show here.</p>
+          ) : (
+            <div className="space-y-3">
+              {broadcasts.map((broadcast) => (
+                <div key={broadcast.id} className="border border-stone-200 p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-sm text-stone-950">
+                        {broadcast.subject || broadcast.name || "Untitled broadcast"}
+                      </p>
+                      <p className="text-[10px] text-stone-500 mt-1">
+                        Audience: {broadcast.segmentName || "All subscribers"}
+                      </p>
+                      <p className="text-[10px] text-stone-500 mt-1">
+                        Status: {broadcast.status || "unknown"}
+                      </p>
+                    </div>
+                    <div className="text-right text-[10px] text-stone-500">
+                      <p>
+                        {broadcast.sent_at
+                          ? `Sent: ${new Date(broadcast.sent_at).toLocaleString()}`
+                          : broadcast.scheduled_at
+                            ? `Scheduled: ${new Date(broadcast.scheduled_at).toLocaleString()}`
+                            : broadcast.created_at
+                              ? `Created: ${new Date(broadcast.created_at).toLocaleString()}`
+                              : "—"}
+                      </p>
+                      {broadcast.dashboardUrl ? (
+                        <a
+                          href={broadcast.dashboardUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-stone-600 hover:text-stone-950 transition-colors"
+                        >
+                          View in Resend
+                        </a>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Cron Status */}
+        <div className="bg-white border border-stone-200 p-6 sm:p-8 rounded-none mb-6 sm:mb-8">
+          <h2 className="text-lg sm:text-xl font-['Times_New_Roman'] text-stone-950 tracking-[0.1em] uppercase mb-4">
+            Email Cron Status (24h)
+          </h2>
+          {cronStats.length === 0 ? (
+            <p className="text-xs text-stone-500">No cron runs found in the last 24 hours.</p>
+          ) : (
+            <div className="space-y-3">
+              {cronStats.map((stat) => (
+                <div key={stat.job_name} className="flex items-center justify-between border border-stone-200 p-3">
+                  <div>
+                    <p className="text-xs text-stone-950">{stat.job_name.replace(/-/g, " ")}</p>
+                    <p className="text-[10px] text-stone-500">
+                      Last run: {stat.last_run ? new Date(stat.last_run).toLocaleString() : "—"}
+                    </p>
+                  </div>
+                  <div className="text-[10px] text-stone-500">
+                    {stat.success_count} ok • {stat.failed_count} failed
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Audience + Segment Health */}
+        <div className="bg-white border border-stone-200 p-6 sm:p-8 rounded-none mb-6 sm:mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg sm:text-xl font-['Times_New_Roman'] text-stone-950 tracking-[0.1em] uppercase">
+              Audience & Segments
+            </h2>
+            <button
+              type="button"
+              onClick={fetchStats}
+              className="text-xs tracking-[0.15em] uppercase text-stone-600 hover:text-stone-950 transition-colors"
+            >
+              Refresh
+            </button>
+          </div>
+          <p className="text-xs text-stone-500 mb-2">
+            Audience size: {audienceInfo.count ?? "—"}
+            {audienceInfo.status !== "connected" && " (not connected)"}
+          </p>
+          {resendConfig && (!resendConfig.apiKeyConfigured || !resendConfig.audienceIdConfigured) && (
+            <div className="border border-amber-200 bg-amber-50 p-3 mb-4">
+              <p className="text-xs text-amber-800">
+                Connection needed: {resendConfig.apiKeyConfigured ? "Audience ID" : "API key"} is missing in server settings.
+              </p>
+            </div>
+          )}
+          {segments.length === 0 ? (
+            <p className="text-xs text-stone-500">No segments found.</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {segments.slice(0, 6).map((segment) => (
+                <div key={segment.id} className="border border-stone-200 p-4">
+                  <p className="text-xs text-stone-950 mb-1">{segment.name}</p>
+                  <p className="text-[10px] text-stone-500">Size: {segment.size}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Active Sequences */}
+        <div className="bg-white border border-stone-200 p-6 sm:p-8 rounded-none mb-6 sm:mb-8">
+          <h2 className="text-lg sm:text-xl font-['Times_New_Roman'] text-stone-950 tracking-[0.1em] uppercase mb-4">
+            Automations
+          </h2>
+          {missingSegments.length > 0 && (
+            <div className="border border-amber-200 bg-amber-50 p-4 mb-4">
+              <p className="text-xs text-amber-800 mb-2">
+                Some automations are not connected to a Resend segment yet.
+              </p>
+              <div className="space-y-1">
+                {missingSegments.slice(0, 6).map((segment, index) => (
+                  <p key={`${segment.segmentKey}-${index}`} className="text-[10px] text-amber-700">
+                    {segment.sequenceLabel}: missing segment for {segment.segmentName} ({segment.segmentKey})
+                  </p>
+                ))}
+              </div>
+            </div>
+          )}
+          {activeSequences.length === 0 ? (
+            <p className="text-xs text-stone-500">No automations are configured yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {activeSequences.map((sequence) => (
+                <div key={sequence.jobName} className="border border-stone-200 p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm text-stone-950">{sequence.label}</p>
+                    <span
+                      className={`text-[10px] uppercase tracking-[0.2em] ${
+                        sequence.active ? "text-green-600" : "text-stone-500"
+                      }`}
+                    >
+                      {sequence.active ? "Active" : "Idle"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-stone-500">
+                    People ready to receive: {sequence.eligibleCount}
+                  </p>
+                  <p className="text-[10px] text-stone-400 mt-1">
+                    Next send: {sequence.nextRun ? new Date(sequence.nextRun).toLocaleString() : "—"} • Schedule:{" "}
+                    {sequence.schedule || "Not scheduled"}
+                  </p>
+                </div>
+              ))}
+            </div>
           )}
         </div>
 

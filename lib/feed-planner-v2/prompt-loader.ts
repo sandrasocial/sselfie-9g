@@ -136,15 +136,17 @@ export async function getDefaultVariationId(styleId: number): Promise<number | n
 
 export async function getApprovedPreviewPrompt(styleId: number, variationId?: number | null): Promise<string> {
   const resolvedVariationId = variationId ?? (await getDefaultVariationId(styleId))
+  console.log(`[v0] [PROMPT-LOADER] getApprovedPreviewPrompt: styleId=${styleId}, variationId=${variationId}, resolvedVariationId=${resolvedVariationId}`)
   const [preview] = await sql`
-    SELECT prompt_text, approved, is_primary
+    SELECT prompt_text, approved, is_primary, variation_id
     FROM feed_style_previews_v2
     WHERE feed_style_id = ${styleId}
       AND is_primary = true
-      AND (${resolvedVariationId}::int IS NULL OR variation_id = ${resolvedVariationId})
-    ORDER BY id ASC
+      AND (variation_id IS NULL OR variation_id = ${resolvedVariationId})
+    ORDER BY CASE WHEN variation_id = ${resolvedVariationId} THEN 0 ELSE 1 END ASC, id ASC
     LIMIT 1
   `
+  console.log(`[v0] [PROMPT-LOADER] Preview prompt found: variation_id=${preview?.variation_id}, hasPrompt=${!!preview?.prompt_text}`)
 
   if (preview && preview.prompt_text) {
     if (!preview.approved) {
@@ -174,13 +176,15 @@ export async function getApprovedScenePrompts(
   variationId?: number | null,
 ): Promise<ScenePromptV2[]> {
   const resolvedVariationId = variationId ?? (await getDefaultVariationId(styleId))
+  console.log(`[v0] [PROMPT-LOADER] getApprovedScenePrompts: styleId=${styleId}, variationId=${variationId}, resolvedVariationId=${resolvedVariationId}`)
   const rows = await sql`
     SELECT id, feed_style_id, position, prompt_text, is_primary, variation_name, variation_id, approved, test_image_url
     FROM scene_prompts_v2
     WHERE feed_style_id = ${styleId}
       AND approved = true
-      AND (${resolvedVariationId}::int IS NULL OR variation_id = ${resolvedVariationId})
-    ORDER BY position ASC, is_primary DESC, id ASC
+      AND (variation_id IS NULL OR variation_id = ${resolvedVariationId})
+    ORDER BY position ASC, CASE WHEN variation_id = ${resolvedVariationId} THEN 0 ELSE 1 END ASC, is_primary DESC, id ASC
   `
+  console.log(`[v0] [PROMPT-LOADER] Scene prompts found: ${rows.length} prompts, variation_ids=${rows.map((r: any) => r.variation_id).join(',')}`)
   return rows as ScenePromptV2[]
 }

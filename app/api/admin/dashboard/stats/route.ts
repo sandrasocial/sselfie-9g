@@ -3,7 +3,7 @@ import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { neon } from "@neondatabase/serverless"
 import { PRICING_PRODUCTS } from "@/lib/products"
-import { getStripeLiveMetrics } from "@/lib/stripe/stripe-live-metrics"
+import { getSingleSourceRevenueMetrics } from "@/lib/revenue/single-source"
 import { getDBRevenueMetrics } from "@/lib/revenue/db-revenue-metrics"
 
 const ADMIN_EMAIL = "ssa@ssasocial.com"
@@ -135,18 +135,12 @@ export async function GET() {
     // Get total revenue from database metrics (comprehensive, all payment types)
     const dbTotalRevenue = dbRevenueMetrics.totalRevenue
 
-    // Get Stripe live metrics (cached, 5-min TTL)
-    // Use Promise.race with timeout to prevent hanging
-    // Timeout is for external Stripe API calls (network latency), not database queries
+    // Get Stripe + DB single-source metrics (cached, 5-min TTL)
     let stripeMetrics
     try {
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Stripe metrics timeout")), 20000) // 20 second timeout for external Stripe API
-      )
-      stripeMetrics = await Promise.race([getStripeLiveMetrics(), timeoutPromise])
+      stripeMetrics = await getSingleSourceRevenueMetrics()
     } catch (error: any) {
-      console.error("[Dashboard Stats] Error fetching Stripe live metrics:", error.message || error)
-      // Don't block dashboard - return DB values only
+      console.error("[Dashboard Stats] Error fetching Stripe single-source metrics:", error.message || error)
       stripeMetrics = null
     }
 
@@ -179,15 +173,13 @@ export async function GET() {
     // Use Stripe live MRR as primary source (includes beta prices, discounts, etc.)
     // Fall back to DB calculation if Stripe data unavailable
     const finalMrr = stripeMetrics ? stripeMetrics.mrr : dbMrr
-    const finalActiveSubscriptions = stripeMetrics 
-      ? stripeMetrics.activeSubscriptions 
-      : dbActiveSubscriptions
+    const finalActiveSubscriptions = stripeMetrics ? stripeMetrics.activeSubscriptions : dbActiveSubscriptions
 
     const stats = {
       totalUsers: Number(usersResult[0]?.total_users || 0),
       activeSubscriptions: finalActiveSubscriptions,
       mrr: finalMrr, // Use Stripe live MRR (real-time) or DB fallback
-      totalRevenue: stripeMetrics?.totalRevenue || dbTotalRevenue, // Prioritize Stripe live, fallback to DB
+      totalRevenue: stripeMetrics?.totalRevenue || dbTotalRevenue,
       conversionRate,
       // Stripe live metrics (primary source of truth for revenue)
       stripeLive: stripeMetrics
@@ -196,11 +188,11 @@ export async function GET() {
             totalSubscriptions: stripeMetrics.totalSubscriptions,
             canceledSubscriptions30d: stripeMetrics.canceledSubscriptions30d,
             totalRevenue: stripeMetrics.totalRevenue,
-            mrr: stripeMetrics.mrr, // Real-time from Stripe (includes beta prices, discounts)
+            mrr: stripeMetrics.mrr,
             oneTimeRevenue: stripeMetrics.oneTimeRevenue,
             creditPurchaseRevenue: stripeMetrics.creditPurchaseRevenue,
             newSubscribers30d: stripeMetrics.newSubscribers30d,
-            newOneTimeBuyers30d: stripeMetrics.newOneTimeBuyers30d,
+            newOneTimeBuyers30d: 0,
             timestamp: stripeMetrics.timestamp,
             cached: stripeMetrics.cached,
           }

@@ -197,6 +197,26 @@ export async function sendEmail(
   const recipient = Array.isArray(options.to) ? options.to[0] : options.to
   const emailType = options.emailType || "general"
 
+  if (!options.subject || options.subject.trim().length === 0) {
+    const errorMessage = "Missing subject field"
+    await logEmailSend(recipient, emailType, "error", undefined, errorMessage, options.campaignId)
+    const { logAdminError } = await import("@/lib/admin-error-log")
+    await logAdminError({
+      toolName: "email-send",
+      error: new Error(errorMessage),
+      context: {
+        to: options.to,
+        subject: options.subject,
+        emailType: options.emailType,
+        campaignId: options.campaignId,
+      },
+    }).catch(() => {})
+    return {
+      success: false,
+      error: errorMessage,
+    }
+  }
+
   // Check email control flags
   const { isEmailSendingEnabled, isEmailTestMode, isEmailAllowedInTestMode } = await import("./email-control")
   const sendingEnabled = await isEmailSendingEnabled()

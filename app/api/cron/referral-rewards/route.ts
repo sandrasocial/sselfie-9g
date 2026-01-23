@@ -3,6 +3,7 @@ import { neon } from "@neondatabase/serverless"
 import { addCredits } from "@/lib/credits"
 import { sendEmail } from "@/lib/email/send-email"
 import { generateReferralRewardEmail } from "@/lib/email/templates/referral-reward"
+import { createCronLogger } from "@/lib/cron-logger"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -15,6 +16,9 @@ const sql = neon(process.env.DATABASE_URL!)
  * Protected with CRON_SECRET verification
  */
 export async function GET(request: NextRequest) {
+  const cronLogger = createCronLogger("referral-rewards")
+  await cronLogger.start()
+
   try {
     // Verify cron secret
     const authHeader = request.headers.get("authorization")
@@ -22,11 +26,13 @@ export async function GET(request: NextRequest) {
 
     if (!cronSecret) {
       console.error("[v0] [CRON] CRON_SECRET not configured")
+      await cronLogger.error(new Error("Cron secret not configured"), { reason: "Missing CRON_SECRET" })
       return NextResponse.json({ error: "Cron secret not configured" }, { status: 500 })
     }
 
     if (authHeader !== `Bearer ${cronSecret}`) {
       console.error("[v0] [CRON] Unauthorized referral-rewards cron request")
+      await cronLogger.error(new Error("Unauthorized"), { reason: "Invalid CRON_SECRET" })
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
@@ -37,6 +43,7 @@ export async function GET(request: NextRequest) {
 
     if (!referralBonusesEnabled) {
       console.log("[v0] [CRON] ⚠️ Referral bonuses temporarily disabled (REFERRAL_BONUSES_ENABLED=false)")
+      await cronLogger.success({ processed: 0, errors: 0, reason: "disabled" })
       return NextResponse.json({
         success: true,
         enabled: false,
@@ -167,6 +174,8 @@ export async function GET(request: NextRequest) {
 
     console.log(`[v0] [CRON] Referral rewards processing complete: ${results.processed} processed, ${results.errors} errors`)
 
+    await cronLogger.success({ processed: results.processed, errors: results.errors })
+
     return NextResponse.json({
       success: true,
       processed: results.processed,
@@ -175,6 +184,7 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error("[v0] [CRON] Error in referral rewards cron:", error)
+    await cronLogger.error(error, { reason: "Referral rewards cron failed" })
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Failed to process referral rewards" },
       { status: 500 },

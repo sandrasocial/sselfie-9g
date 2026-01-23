@@ -28,6 +28,9 @@ export async function getProactiveSuggestions(
   userId: string,
   userEmail?: string
 ): Promise<ProactiveSuggestion[]> {
+  if (process.env.ALEX_PROACTIVE_SUGGESTIONS_ENABLED === "false") {
+    return []
+  }
   const suggestions: ProactiveSuggestion[] = []
   
   try {

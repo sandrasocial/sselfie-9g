@@ -3,6 +3,7 @@ import { logger } from "@/lib/logger"
 import { getDb } from "@/lib/db"
 import { getUserCredits } from "@/lib/credits"
 import { getOrCreateNeonUser } from "@/lib/user-mapping"
+import { createCronLogger } from "@/lib/cron-logger"
 
 /**
  * E2E Health Check Endpoint
@@ -412,6 +413,9 @@ function getOverallStatus(flows: E2EHealthResult["flows"]): "healthy" | "degrade
  * Protected by CRON_SECRET.
  */
 export async function GET(request: Request) {
+  const cronLogger = createCronLogger("e2e")
+  await cronLogger.start()
+
   const overallStartTime = Date.now()
   const e2eRunId = generateE2ERunId()
 
@@ -426,6 +430,7 @@ export async function GET(request: Request) {
         logger.warn("E2E health check - Unauthorized access attempt", {
           e2eRunId,
         })
+        await cronLogger.error(new Error("Unauthorized"), { reason: "Invalid CRON_SECRET" })
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
       }
     }
@@ -492,6 +497,8 @@ export async function GET(request: Request) {
     // Return appropriate HTTP status
     const statusCode = overall === "unhealthy" ? 503 : overall === "degraded" ? 200 : 200
 
+    await cronLogger.success({ overall, durationMs: totalDuration })
+
     return NextResponse.json(result, { status: statusCode })
   } catch (error) {
     const totalDuration = Date.now() - overallStartTime
@@ -501,6 +508,8 @@ export async function GET(request: Request) {
       e2eRunId,
       duration: totalDuration,
     })
+
+    await cronLogger.error(error, { reason: "E2E health check failed", durationMs: totalDuration })
 
     return NextResponse.json(
       {

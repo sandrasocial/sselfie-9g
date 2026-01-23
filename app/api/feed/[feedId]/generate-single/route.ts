@@ -449,6 +449,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
                 )
               }
 
+              console.log(`[v0] [GENERATE-SINGLE] Loading prompt for feed: feedId=${feedIdInt}, styleId=${style.id}, feedStyle=${feedLayout?.feed_style}, variationId=${feedLayout?.feed_style_variation_id}, isPreviewFeed=${isPreviewFeed}, position=${post.position}`)
               if (isPreviewFeed) {
                 finalPrompt = await getPreviewPromptForStyle(style.id, feedLayout?.feed_style_variation_id ?? null)
                 chosenPromptSource = "v2_preview_prompt"
@@ -461,6 +462,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
                 finalPrompt = selected.prompt_text
                 chosenPromptSource = "v2_scene_prompt"
               }
+              console.log(`[v0] [GENERATE-SINGLE] Prompt loaded: source=${chosenPromptSource}, length=${finalPrompt?.length || 0}`)
 
               await sql`
                 UPDATE feed_posts

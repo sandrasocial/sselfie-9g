@@ -2,24 +2,35 @@ import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { neon } from "@neondatabase/serverless"
-import { readFileSync } from "fs"
+import { readFile } from "fs/promises"
 import { join } from "path"
 
 const sql = neon(process.env.DATABASE_URL!)
 const ADMIN_EMAIL = "ssa@ssasocial.com"
 
-// Cron job registry from vercel.json
-const CRON_JOBS: Record<string, { schedule: string; path: string }> = {
-  "sync-audience-segments": { schedule: "0 2 * * *", path: "/api/cron/sync-audience-segments" },
-  "refresh-segments": { schedule: "0 3 * * *", path: "/api/cron/refresh-segments" },
-  "send-blueprint-followups": { schedule: "0 10 * * *", path: "/api/cron/send-blueprint-followups" },
-  "blueprint-email-sequence": { schedule: "0 10 * * *", path: "/api/cron/blueprint-email-sequence" },
-  "welcome-sequence": { schedule: "0 10 * * *", path: "/api/cron/welcome-sequence" },
-  "nurture-sequence": { schedule: "0 11 * * *", path: "/api/cron/nurture-sequence" },
-  "welcome-back-sequence": { schedule: "0 11 * * *", path: "/api/cron/welcome-back-sequence" },
-  "reengagement-campaigns": { schedule: "0 12 * * *", path: "/api/cron/reengagement-campaigns" },
-  "send-scheduled-campaigns": { schedule: "*/15 * * * *", path: "/api/cron/send-scheduled-campaigns" },
-  "health-e2e": { schedule: "0 6 * * *", path: "/api/health/e2e" },
+async function loadCronJobsFromVercel() {
+  try {
+    const vercelPath = join(process.cwd(), "vercel.json")
+    const raw = await readFile(vercelPath, "utf-8")
+    const parsed = JSON.parse(raw)
+    const crons = Array.isArray(parsed?.crons) ? parsed.crons : []
+
+    const registry: Record<string, { schedule: string; path: string }> = {}
+
+    for (const cron of crons) {
+      const path = typeof cron?.path === "string" ? cron.path : null
+      const schedule = typeof cron?.schedule === "string" ? cron.schedule : null
+      if (!path || !schedule) continue
+
+      const jobName = path.split("/").pop() || path
+      registry[jobName] = { schedule, path }
+    }
+
+    return registry
+  } catch (error) {
+    console.error("[ADMIN-CRON] Failed to read vercel.json:", error)
+    return {}
+  }
 }
 
 /**
@@ -48,9 +59,11 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const sinceHours = parseInt(searchParams.get("since") || "24", 10)
 
+    const cronRegistry = await loadCronJobsFromVercel()
+
     // Get cron run stats for each job
     const jobs = await Promise.all(
-      Object.entries(CRON_JOBS).map(async ([jobName, config]) => {
+      Object.entries(cronRegistry).map(async ([jobName, config]) => {
         // Get last run
         const lastRun = await sql`
           SELECT status, started_at, finished_at, duration_ms, summary, error_id

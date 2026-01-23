@@ -15,6 +15,7 @@ import { toolDefinitions } from "@/lib/alex/tools"
 import { executeTool } from "@/lib/alex/handlers/tool-executor"
 import { stripHtml } from "@/lib/alex/shared/dependencies"
 import { ALEX_CONSTANTS } from "@/lib/alex/constants"
+import { checkAlexTokenBudget, recordAlexTokenUsage } from "@/lib/alex/token-budget"
 
 const ADMIN_EMAIL = ALEX_CONSTANTS.ADMIN_EMAIL
 
@@ -117,6 +118,17 @@ export async function POST(req: Request) {
     if (modelMessages.length === 0) {
       console.error("[Alex] No valid messages after filtering")
       return NextResponse.json({ error: "No valid messages to process" }, { status: 400 })
+    }
+
+    const budget = await checkAlexTokenBudget()
+    if (!budget.allowed) {
+      return NextResponse.json(
+        {
+          error: "Alex token budget exceeded",
+          details: `Daily limit reached (${budget.limit}). Try again tomorrow.`,
+        },
+        { status: 429 },
+      )
     }
 
     console.log(
@@ -970,6 +982,7 @@ IMPORTANT: When user asks to edit this email:
       async start(controller) {
         let isClosed = false
         let streamError: Error | null = null
+        let totalTokensUsed = 0
 
         const safeEnqueue = (data: string | Uint8Array) => {
           try {
@@ -1113,6 +1126,11 @@ IMPORTANT: When user asks to edit this email:
 
                 try {
                   const event = JSON.parse(line.slice(6))
+
+                  if (event.type === 'message_delta' && event.usage) {
+                    totalTokensUsed += Number(event.usage.input_tokens || 0)
+                    totalTokensUsed += Number(event.usage.output_tokens || 0)
+                  }
 
                   // Text delta - stream to frontend
                   if (event.type === 'content_block_delta' && event.delta?.type === 'text_delta') {
@@ -1401,6 +1419,7 @@ IMPORTANT: When user asks to edit this email:
           streamError = error instanceof Error ? error : new Error(error?.message || String(error))
           // The error will be sent via safeClose if no text was sent yet
         } finally {
+          await recordAlexTokenUsage(totalTokensUsed)
           safeClose()
           }
         },

@@ -205,6 +205,7 @@ export async function POST(req: NextRequest) {
               status,
               layout_type,
               feed_style,
+              feed_style_variation_id,
               created_by
             )
             VALUES (
@@ -215,6 +216,7 @@ export async function POST(req: NextRequest) {
               'saved',
               'grid_3x3',
               ${feedStyle},
+              ${feedStyleVariationIdToStore},
               'manual'
             )
             RETURNING *
@@ -231,7 +233,8 @@ export async function POST(req: NextRequest) {
                 description,
                 status,
                 layout_type,
-                feed_style
+                feed_style,
+                feed_style_variation_id
               )
               VALUES (
                 ${user.id},
@@ -240,7 +243,8 @@ export async function POST(req: NextRequest) {
                 NULL,
                 'saved',
                 'grid_3x3',
-                ${feedStyle}
+                ${feedStyle},
+                ${feedStyleVariationIdToStore}
               )
               RETURNING *
             ` as any[]
@@ -259,6 +263,8 @@ export async function POST(req: NextRequest) {
 
     const feedLayout = feedResult[0]
     const feedId = feedLayout.id
+    
+    console.log(`[v0] Created manual feed ${feedId} with feedStyle=${feedStyle}, variationId=${feedStyleVariationIdToStore}`)
 
     // Create 9 empty posts (position 1-9) for 3x3 grid
     const posts = []

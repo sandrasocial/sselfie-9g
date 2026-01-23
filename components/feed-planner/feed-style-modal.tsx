@@ -80,6 +80,7 @@ interface FeedStyleModalProps {
   onOpenChange: (open: boolean) => void
   onConfirm: (data: FeedStyleModalData) => void
   defaultFeedStyle?: FeedStyle | null
+  defaultFeedStyleVariationId?: number | null // Current feed's variation_id (for existing feeds)
   isLoading?: boolean
   isPreviewFeed?: boolean // Optional: true for preview feeds, false for full feeds
   useFeedPlannerV2?: boolean
@@ -100,6 +101,7 @@ export default function FeedStyleModal({
   onOpenChange,
   onConfirm,
   defaultFeedStyle,
+  defaultFeedStyleVariationId,
   isLoading = false,
   isPreviewFeed = false,
   useFeedPlannerV2 = false,
@@ -109,7 +111,7 @@ export default function FeedStyleModal({
   )
   const [showAdvanced, setShowAdvanced] = useState(true) // Show advanced options by default
   const [selfieImages, setSelfieImages] = useState<string[]>([])
-  const [selectedVariationId, setSelectedVariationId] = useState<number | null>(null)
+  const [selectedVariationId, setSelectedVariationId] = useState<number | null>(defaultFeedStyleVariationId ?? null)
 
   // Fetch user's current personal brand data
   const { data: personalBrandData, mutate: mutatePersonalBrand } = useSWR(
@@ -189,10 +191,15 @@ export default function FeedStyleModal({
         }
       }
 
-      if (useFeedPlannerV2 && personalBrandData.data.feedStyleVariationId !== undefined) {
+      // Priority: Use feed's variation_id if provided (existing feed), otherwise use personal brand
+      if (defaultFeedStyleVariationId !== undefined && defaultFeedStyleVariationId !== null) {
+        setSelectedVariationId(defaultFeedStyleVariationId)
+        console.log('[Feed Style Modal] Loaded variation from feed data:', defaultFeedStyleVariationId)
+      } else if (useFeedPlannerV2 && personalBrandData.data.feedStyleVariationId !== undefined) {
         const variationId = Number(personalBrandData.data.feedStyleVariationId)
         if (Number.isFinite(variationId)) {
           setSelectedVariationId(variationId)
+          console.log('[Feed Style Modal] Loaded variation from personal brand:', variationId)
         }
       }
       
@@ -218,21 +225,47 @@ export default function FeedStyleModal({
     }
   }, [defaultFeedStyle])
 
+  // Update selected variation when defaultFeedStyleVariationId changes (for existing feeds)
   useEffect(() => {
-    if (!useFeedPlannerV2) return
+    if (defaultFeedStyleVariationId !== undefined && defaultFeedStyleVariationId !== null) {
+      setSelectedVariationId(defaultFeedStyleVariationId)
+    }
+  }, [defaultFeedStyleVariationId])
+
+  useEffect(() => {
+    if (!useFeedPlannerV2 || !variationData) return
     const variations = (variationData?.variations || []) as FeedStyleVariationOption[]
     if (variations.length === 0) {
-      setSelectedVariationId(null)
+      // Only reset if we don't have a valid feed variation_id
+      if (!defaultFeedStyleVariationId) {
+        setSelectedVariationId(null)
+      }
       return
     }
-    const defaultId =
-      variationData?.defaultVariationId ||
-      variations.find((variation) => variation.is_default)?.id ||
-      variations[0]?.id
-    if (!selectedVariationId || !variations.some((variation) => variation.id === selectedVariationId)) {
-      setSelectedVariationId(defaultId ? Number(defaultId) : null)
+    
+    // Check if current selection is valid for this style
+    const currentSelectionIsValid = selectedVariationId && variations.some((variation) => variation.id === selectedVariationId)
+    
+    // Only set default if:
+    // 1. No variation is currently selected, OR
+    // 2. Current selection is invalid for this style (user switched styles)
+    if (!selectedVariationId || !currentSelectionIsValid) {
+      // Priority order:
+      // 1. Feed's variation_id (if provided and valid for this style)
+      // 2. Default variation for this style
+      const feedVariationIsValid = defaultFeedStyleVariationId && variations.some((v) => v.id === defaultFeedStyleVariationId)
+      if (feedVariationIsValid) {
+        setSelectedVariationId(defaultFeedStyleVariationId)
+      } else {
+        const defaultId =
+          variationData?.defaultVariationId ||
+          variations.find((variation) => variation.is_default)?.id ||
+          variations[0]?.id
+        setSelectedVariationId(defaultId ? Number(defaultId) : null)
+      }
     }
-  }, [variationData, useFeedPlannerV2, selectedStyle, selectedVariationId])
+    // If current selection is valid, keep it (don't reset)
+  }, [variationData, useFeedPlannerV2, selectedStyle, defaultFeedStyleVariationId])
 
   // Reset advanced section when modal closes
   useEffect(() => {
