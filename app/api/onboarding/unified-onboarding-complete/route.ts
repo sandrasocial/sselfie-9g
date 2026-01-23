@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
       futureVision,
       visualAesthetic,
       feedStyle,
+      feedStyleVariationId,
       selfieImages,
       fashionStyle,
       brandInspiration,
@@ -95,6 +96,10 @@ export async function POST(req: NextRequest) {
     const settingsPreferenceJson = settingsPreferenceArray.length > 0
       ? JSON.stringify(settingsPreferenceArray)
       : null
+    const parsedFeedStyleVariationId =
+      feedStyleVariationId !== null && feedStyleVariationId !== undefined
+        ? Number(feedStyleVariationId)
+        : null
 
     // Map fashion style array to JSONB
     const fashionStyleJson = Array.isArray(fashionStyle) && fashionStyle.length > 0
@@ -128,6 +133,7 @@ export async function POST(req: NextRequest) {
           future_vision = ${futureVision || null},
           visual_aesthetic = ${visualAestheticJson}::jsonb,
           settings_preference = ${settingsPreferenceJson}::jsonb,
+          feed_style_variation_id = ${Number.isFinite(parsedFeedStyleVariationId) ? parsedFeedStyleVariationId : null},
           fashion_style = ${fashionStyleJson}::jsonb,
           brand_inspiration = ${brandInspiration || null},
           inspiration_links = ${inspirationLinks || null},
@@ -152,6 +158,7 @@ export async function POST(req: NextRequest) {
           future_vision,
           visual_aesthetic,
           settings_preference,
+          feed_style_variation_id,
           fashion_style,
           brand_inspiration,
           inspiration_links,
@@ -172,6 +179,7 @@ export async function POST(req: NextRequest) {
           ${futureVision || null},
           ${visualAestheticJson}::jsonb,
           ${settingsPreferenceJson}::jsonb,
+          ${Number.isFinite(parsedFeedStyleVariationId) ? parsedFeedStyleVariationId : null},
           ${fashionStyleJson}::jsonb,
           ${brandInspiration || null},
           ${inspirationLinks || null},

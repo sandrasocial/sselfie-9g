@@ -52,18 +52,25 @@ export async function GET(request: NextRequest) {
     const hasBlueprintState = blueprintState.length > 0
 
     // Check if user has base wizard data (Decision 3: checks if base wizard completed)
-    // Unified wizard saves business, dreamClient, vibe to user_personal_brand
+    // Unified wizard saves business/audience/story fields to user_personal_brand
     const baseWizardData = await sql`
       SELECT id FROM user_personal_brand
       WHERE user_id = ${neonUser.id}
       AND (
         name IS NOT NULL OR
         business_type IS NOT NULL OR
-        color_theme IS NOT NULL OR
+        ideal_audience IS NOT NULL OR
+        audience_challenge IS NOT NULL OR
+        audience_transformation IS NOT NULL OR
+        transformation_story IS NOT NULL OR
+        current_situation IS NOT NULL OR
+        future_vision IS NOT NULL OR
+        settings_preference IS NOT NULL OR
+        feed_style_variation_id IS NOT NULL OR
         visual_aesthetic IS NOT NULL OR
-        brand_vibe IS NOT NULL OR
-        target_audience IS NOT NULL OR
-        current_situation IS NOT NULL
+        fashion_style IS NOT NULL OR
+        brand_inspiration IS NOT NULL OR
+        content_pillars IS NOT NULL
       )
       LIMIT 1
     `

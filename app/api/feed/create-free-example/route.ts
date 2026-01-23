@@ -3,8 +3,12 @@ import { NextResponse } from "next/server"
 import { getAuthenticatedUserWithRetry } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getDb } from "@/lib/db"
-import { getFeedPlannerAccess } from "@/lib/feed-planner/access-control"
-import { getCategoryAndMood } from '@/lib/feed-planner/generation-helpers'
+import { getFeedPlannerV2Flag } from "@/lib/feed-planner-v2/feature-flag"
+import {
+  getDefaultVariationId,
+  getFeedStyleV2ByName,
+  getFeedStyleVariationById,
+} from "@/lib/feed-planner-v2/prompt-loader"
 
 /**
  * Create Preview Feed
@@ -30,22 +34,42 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
+    const useFeedPlannerV2 = await getFeedPlannerV2Flag(user.id)
+    if (!useFeedPlannerV2) {
+      console.warn(
+        "[v0] Feed Planner V2 flag is off for user, but preview feeds are V2-only now. Proceeding."
+      )
+    }
+
     // Parse request body for feedStyle, visualAesthetic, and fashionStyle
     let requestedFeedStyle: string | null = null
     let requestedVisualAesthetic: any = null
     let requestedFashionStyle: any = null
+    let requestedVariationId: number | null = null
     
     try {
       const body = await req.json().catch(() => ({}))
       
       // Parse feedStyle
       if (body.feedStyle && typeof body.feedStyle === 'string') {
-        requestedFeedStyle = body.feedStyle.toLowerCase().trim()
-        // Validate feedStyle
-        const validStyles = ['luxury', 'minimal', 'beige']
-        if (!validStyles.includes(requestedFeedStyle)) {
-          console.warn(`[v0] Invalid feedStyle requested: ${requestedFeedStyle}, rejecting`)
+        const rawStyle = body.feedStyle.trim()
+        const validV2Styles = [
+          "Dark & Moody",
+          "Beige Aesthetic",
+          "Light & Minimalistic",
+          "Luxury Future Self",
+          "Casual Bohemian",
+          "Athletic & Wellness",
+          "Coastal Aesthetics",
+        ]
+        const match = validV2Styles.find(
+          (style) => style.toLowerCase() === rawStyle.toLowerCase()
+        )
+        if (!match) {
+          console.warn(`[v0] Invalid V2 feedStyle requested: ${rawStyle}, rejecting`)
           requestedFeedStyle = null
+        } else {
+          requestedFeedStyle = match
         }
       }
       
@@ -59,6 +83,11 @@ export async function POST(req: NextRequest) {
       if (body.fashionStyle && Array.isArray(body.fashionStyle) && body.fashionStyle.length > 0) {
         requestedFashionStyle = body.fashionStyle.map((v: string) => v.toLowerCase().trim())
         console.log(`[v0] Preview feed will use fashionStyle:`, requestedFashionStyle)
+      }
+
+      if (body.feedStyleVariationId !== undefined && body.feedStyleVariationId !== null) {
+        const numericVariation = Number(body.feedStyleVariationId)
+        requestedVariationId = Number.isFinite(numericVariation) ? numericVariation : null
       }
     } catch (e) {
       // No body or invalid JSON
@@ -75,23 +104,58 @@ export async function POST(req: NextRequest) {
     // This allows them to test different feed styles without losing previous work
 
     // Get wizard context using canonical category resolver
-    // Use template-based prompts from grid library based on user's current style choices
-    let templatePrompt = null
     let feedStyleToStore: string | null = requestedFeedStyle // Use requested feedStyle first
+    let feedStyleVariationIdToStore: number | null = null
+    let personalBrandVariationId: number | null = null
     
     try {
       // If no feedStyle provided, try to get from personal brand
       if (!feedStyleToStore) {
-        const { category, mood } = await getCategoryAndMood(
-          null,
-          { id: user.id },
-          {
-            checkSettingsPreference: true,
-            checkBlueprintSubscribers: true,
-            trackSource: true,
+        const [personalBrand] = await sql`
+          SELECT settings_preference, feed_style_variation_id
+          FROM user_personal_brand
+          WHERE user_id = ${user.id}
+          ORDER BY updated_at DESC
+          LIMIT 1
+        `
+        personalBrandVariationId = personalBrand?.feed_style_variation_id
+          ? Number(personalBrand.feed_style_variation_id)
+          : null
+        const settingsPreference = personalBrand?.settings_preference
+
+        if (settingsPreference) {
+          try {
+            const settings = typeof settingsPreference === "string"
+              ? JSON.parse(settingsPreference)
+              : settingsPreference
+            if (Array.isArray(settings) && settings.length > 0) {
+              const rawStyle = settings[0]?.trim?.() || null
+              feedStyleToStore = rawStyle
+            }
+          } catch {
+            // Ignore parse errors; fall through to validation
           }
-        )
-        feedStyleToStore = mood
+        }
+
+        if (!feedStyleToStore) {
+          return NextResponse.json(
+            { error: "FEED_STYLE_REQUIRED", details: "Feed style is required for V2 preview feeds." },
+            { status: 422 }
+          )
+        }
+      }
+
+      if (!requestedVariationId && !personalBrandVariationId) {
+        const [personalBrand] = await sql`
+          SELECT feed_style_variation_id
+          FROM user_personal_brand
+          WHERE user_id = ${user.id}
+          ORDER BY updated_at DESC
+          LIMIT 1
+        `
+        personalBrandVariationId = personalBrand?.feed_style_variation_id
+          ? Number(personalBrand.feed_style_variation_id)
+          : null
       }
       
       // REQUIRED VALIDATION: feedStyle must be provided or resolved
@@ -103,57 +167,39 @@ export async function POST(req: NextRequest) {
       }
       
       console.log(`[v0] Preview feed will use feedStyle: ${feedStyleToStore}`)
-      
-      // Phase 2E: Get template prompt via getBlueprintPhotoshootPrompt (includes subject identity override)
-      const { getBlueprintPhotoshootPrompt } = await import("@/lib/maya/blueprint-photoshoot-templates")
-      const { validateBlueprintTemplate } = await import("@/lib/feed-planner/extract-aesthetic-from-template")
-      
-      // Fetch fashionStyle from user_personal_brand if not provided in request
-      let fashionStyle: string | null = null
-      if (requestedFashionStyle && requestedFashionStyle.length > 0) {
-        fashionStyle = requestedFashionStyle[0]
-      } else {
-        // Try to fetch from user_personal_brand
-        try {
-          const brandResult = await sql`
-            SELECT fashion_style FROM user_personal_brand
-            WHERE user_id = ${user.id} AND is_completed = true
-            LIMIT 1
-          `
-          if (brandResult.length > 0 && brandResult[0].fashion_style) {
-            const fashionStyleArray = Array.isArray(brandResult[0].fashion_style) 
-              ? brandResult[0].fashion_style 
-              : [brandResult[0].fashion_style]
-            if (fashionStyleArray.length > 0) {
-              fashionStyle = fashionStyleArray[0]
-            }
+
+      if (feedStyleToStore) {
+        const style = await getFeedStyleV2ByName(feedStyleToStore)
+        if (!style) {
+          return NextResponse.json(
+            { error: "FEED_STYLE_NOT_READY", details: "Feed style is not available for V2." },
+            { status: 422 }
+          )
+        }
+
+        if (requestedVariationId) {
+          const variation = await getFeedStyleVariationById(requestedVariationId)
+          if (!variation || !variation.enabled || variation.feed_style_id !== style.id) {
+            return NextResponse.json(
+              { error: "FEED_STYLE_VARIATION_INVALID", details: "Selected variation is not valid for this style." },
+              { status: 422 }
+            )
           }
-        } catch (error) {
-          console.warn(`[v0] Could not fetch fashionStyle from user_personal_brand:`, error)
-        }
-      }
-      
-      // Use feedStyleToStore as mood for template generation
-      const moodForTemplate = feedStyleToStore as "luxury" | "minimal" | "beige"
-      
-      try {
-        templatePrompt = getBlueprintPhotoshootPrompt(category, moodForTemplate, fashionStyle)
-        
-        // Validate template can be properly extracted for NanoBanana structure
-        const validation = validateBlueprintTemplate(templatePrompt)
-        if (!validation.isValid) {
-          console.warn(`[v0] ⚠️ Template ${category}_${moodForTemplate} has missing fields:`, validation.missingFields)
-          console.warn(`[v0] ⚠️ Warnings:`, validation.warnings)
+          feedStyleVariationIdToStore = variation.id
+        } else if (personalBrandVariationId) {
+          const variation = await getFeedStyleVariationById(personalBrandVariationId)
+          if (variation && variation.enabled && variation.feed_style_id === style.id) {
+            feedStyleVariationIdToStore = variation.id
+          } else {
+            feedStyleVariationIdToStore = await getDefaultVariationId(style.id)
+          }
         } else {
-          console.log(`[v0] ✅ Template ${category}_${moodForTemplate} validated successfully`)
+          feedStyleVariationIdToStore = await getDefaultVariationId(style.id)
         }
-        console.log(`[v0] Using template prompt from canonical resolver with subject identity override: ${category}_${moodForTemplate} (${templatePrompt.split(/\s+/).length} words)`)
-      } catch (error) {
-        console.error(`[v0] Error getting template prompt:`, error)
-        templatePrompt = null
       }
+      
     } catch (error) {
-      console.error("[v0] Error getting template prompt for free example:", error)
+      console.error("[v0] Error resolving feed style for free example:", error)
       // If feedStyle is missing at this point, return error (should have been caught above)
       if (!feedStyleToStore) {
         return NextResponse.json(
@@ -161,7 +207,7 @@ export async function POST(req: NextRequest) {
           { status: 422 }
         )
       }
-      // Continue without prompt - it will be generated on first generation
+      // Continue without prompt - prompt will be generated during preview generation
     }
 
     // Create feed layout with layout_type: 'preview'
@@ -178,6 +224,7 @@ export async function POST(req: NextRequest) {
           status,
           layout_type,
           feed_style,
+          feed_style_variation_id,
           visual_aesthetic,
           fashion_style,
           created_by
@@ -190,6 +237,7 @@ export async function POST(req: NextRequest) {
           'saved',
           'preview',
           ${feedStyleToStore},
+          ${feedStyleVariationIdToStore},
           ${requestedVisualAesthetic ? requestedVisualAesthetic : null}::jsonb,
           ${requestedFashionStyle ? requestedFashionStyle : null}::jsonb,
           'manual'
@@ -198,7 +246,13 @@ export async function POST(req: NextRequest) {
       ` as any[]
     } catch (error: any) {
       // If created_by, visual_aesthetic, or fashion_style fields don't exist, try without them
-      if (error?.message?.includes('created_by') || error?.message?.includes('visual_aesthetic') || error?.message?.includes('fashion_style') || error?.code === '42703') {
+      if (
+        error?.message?.includes('created_by') ||
+        error?.message?.includes('visual_aesthetic') ||
+        error?.message?.includes('fashion_style') ||
+        error?.message?.includes('feed_style_variation_id') ||
+        error?.code === '42703'
+      ) {
         console.log("[v0] New columns not found, trying without visual_aesthetic/fashion_style")
         try {
           feedResult = await sql`
@@ -266,7 +320,6 @@ export async function POST(req: NextRequest) {
     const feedId = feedLayout.id
 
     // Phase 5.3.2: Create ONE empty post (position 1) for free users
-    // templatePrompt was already determined above (before feed layout creation)
     const postResult = await sql`
       INSERT INTO feed_posts (
         feed_layout_id,
@@ -289,13 +342,13 @@ export async function POST(req: NextRequest) {
         NULL,
         'pending',
         NULL,
-        ${templatePrompt},  -- Template prompt from grid library based on wizard context (or NULL if no wizard data yet)
+        NULL,
         'pro'  -- Use Pro Mode (Nano Banana Pro) for free example
       )
       RETURNING *
     ` as any[]
 
-    console.log(`[v0] Created preview feed ${feedId} with 1 post for user ${user.id} (layout_type: preview, Pro Mode, prompt: ${templatePrompt ? 'template' : 'pending'})`)
+    console.log(`[v0] Created preview feed ${feedId} with 1 post for user ${user.id} (layout_type: preview, Pro Mode, prompt: pending)`)
 
     return NextResponse.json({
       feedId,

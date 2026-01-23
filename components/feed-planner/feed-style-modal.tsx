@@ -8,28 +8,8 @@ import { Button } from "@/components/ui/button"
 import { BlueprintSelfieUpload } from "@/components/blueprint/blueprint-selfie-upload"
 import useSWR, { mutate } from "swr"
 
-// Visual aesthetics (from unified wizard)
-const VISUAL_AESTHETICS = [
-  { id: "minimal", name: "Minimal", description: "Clean, simple, uncluttered" },
-  { id: "luxury", name: "Luxury", description: "Elegant, sophisticated, premium" },
-  { id: "warm", name: "Warm", description: "Cozy, inviting, comfortable" },
-  { id: "edgy", name: "Edgy", description: "Bold, unconventional, daring" },
-  { id: "professional", name: "Professional", description: "Polished, corporate, refined" },
-  { id: "beige", name: "Beige Aesthetic", description: "Neutral, earthy, calm" },
-]
-
-// Fashion styles (from unified wizard)
-const FASHION_STYLES = [
-  { id: "casual", name: "Casual", description: "Everyday, relaxed, comfortable" },
-  { id: "business", name: "Business", description: "Professional, formal, polished" },
-  { id: "bohemian", name: "Bohemian", description: "Free-spirited, artistic, eclectic" },
-  { id: "classic", name: "Classic", description: "Timeless, elegant, enduring" },
-  { id: "trendy", name: "Trendy", description: "Fashion-forward, current, modern" },
-  { id: "athletic", name: "Athletic", description: "Sporty, active, functional" },
-]
-
-// Feed style examples (reused from unified wizard)
-const feedExamples = {
+// Feed style examples (V1)
+const FEED_EXAMPLES_V1 = {
   luxury: {
     name: "Dark & Moody",
     colors: ["#0a0a0a", "#2d2d2d", "#4a4a4a"],
@@ -47,12 +27,51 @@ const feedExamples = {
   },
 }
 
-export type FeedStyle = "luxury" | "minimal" | "beige"
+// Feed style examples (V2 - 7 curated styles)
+const FEED_EXAMPLES_V2 = {
+  "Dark & Moody": {
+    name: "Dark & Moody",
+    colors: ["#0b0b0f", "#2a2a2f", "#4a4a4f"],
+    grid: ["selfie", "selfie", "flatlay", "selfie", "selfie", "detail", "selfie", "flatlay", "selfie"],
+  },
+  "Beige Aesthetic": {
+    name: "Beige Aesthetic",
+    colors: ["#d2c2b0", "#b59f8a", "#8c7a67"],
+    grid: ["selfie", "flatlay", "selfie", "selfie", "detail", "selfie", "selfie", "flatlay", "selfie"],
+  },
+  "Light & Minimalistic": {
+    name: "Light & Minimalistic",
+    colors: ["#f7f7f5", "#e6e6e2", "#d6d6d0"],
+    grid: ["selfie", "selfie", "selfie", "flatlay", "selfie", "selfie", "selfie", "flatlay", "selfie"],
+  },
+  "Luxury Future Self": {
+    name: "Luxury Future Self",
+    colors: ["#1b1b1f", "#5a4d3f", "#c2b6a8"],
+    grid: ["selfie", "selfie", "flatlay", "selfie", "detail", "selfie", "selfie", "flatlay", "selfie"],
+  },
+  "Casual Bohemian": {
+    name: "Casual Bohemian",
+    colors: ["#c4a58c", "#9c7f63", "#6e5a45"],
+    grid: ["selfie", "flatlay", "selfie", "selfie", "detail", "selfie", "selfie", "flatlay", "selfie"],
+  },
+  "Athletic & Wellness": {
+    name: "Athletic & Wellness",
+    colors: ["#dfe6e3", "#9bb1a6", "#6b7a74"],
+    grid: ["selfie", "selfie", "flatlay", "selfie", "detail", "selfie", "selfie", "flatlay", "selfie"],
+  },
+  "Coastal Aesthetics": {
+    name: "Coastal Aesthetics",
+    colors: ["#f3e9df", "#c7d7dd", "#a8b9c2"],
+    grid: ["selfie", "selfie", "flatlay", "selfie", "detail", "selfie", "selfie", "flatlay", "selfie"],
+  },
+}
+
+export type FeedStyle = keyof typeof FEED_EXAMPLES_V1 | keyof typeof FEED_EXAMPLES_V2
 
 export interface FeedStyleModalData {
   feedStyle: FeedStyle
   visualAesthetic?: string[]
-  fashionStyle?: string[]
+  feedStyleVariationId?: number | null
   selfieImages?: string[]
 }
 
@@ -63,9 +82,18 @@ interface FeedStyleModalProps {
   defaultFeedStyle?: FeedStyle | null
   isLoading?: boolean
   isPreviewFeed?: boolean // Optional: true for preview feeds, false for full feeds
+  useFeedPlannerV2?: boolean
 }
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
+
+interface FeedStyleVariationOption {
+  id: number
+  name: string
+  description: string | null
+  is_default: boolean
+  sort_order: number
+}
 
 export default function FeedStyleModal({
   open,
@@ -74,12 +102,14 @@ export default function FeedStyleModal({
   defaultFeedStyle,
   isLoading = false,
   isPreviewFeed = false,
+  useFeedPlannerV2 = false,
 }: FeedStyleModalProps) {
-  const [selectedStyle, setSelectedStyle] = useState<FeedStyle>(defaultFeedStyle || "minimal")
+  const [selectedStyle, setSelectedStyle] = useState<FeedStyle>(
+    defaultFeedStyle || (useFeedPlannerV2 ? "Dark & Moody" : "minimal")
+  )
   const [showAdvanced, setShowAdvanced] = useState(true) // Show advanced options by default
-  const [selectedVisualAesthetic, setSelectedVisualAesthetic] = useState<string[]>([])
-  const [selectedFashionStyle, setSelectedFashionStyle] = useState<string[]>([])
   const [selfieImages, setSelfieImages] = useState<string[]>([])
+  const [selectedVariationId, setSelectedVariationId] = useState<number | null>(null)
 
   // Fetch user's current personal brand data
   const { data: personalBrandData, mutate: mutatePersonalBrand } = useSWR(
@@ -101,6 +131,15 @@ export default function FeedStyleModal({
     }
   )
 
+  const { data: variationData } = useSWR(
+    open && useFeedPlannerV2 ? `/api/feed-planner/v2/variations?style=${encodeURIComponent(selectedStyle)}` : null,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 30000,
+    }
+  )
+
   // Load current user values when modal opens
   useEffect(() => {
     if (open) {
@@ -114,10 +153,9 @@ export default function FeedStyleModal({
     if (open && personalBrandData?.data) {
       console.log('[Feed Style Modal] Loading personal brand data:', {
         settingsPreference: personalBrandData.data.settingsPreference,
-        visualAesthetic: personalBrandData.data.visualAesthetic,
-        fashionStyle: personalBrandData.data.fashionStyle,
       })
       
+      let feedStyleFromSettings: FeedStyle | null = null
       // Load feed style from settings_preference[0] (synced from previous selections)
       // This ensures the modal shows the user's last selected feed style
       if (personalBrandData.data.settingsPreference) {
@@ -129,128 +167,39 @@ export default function FeedStyleModal({
             : []
           
           if (Array.isArray(settings) && settings.length > 0) {
-            const feedStyleFromSettings = settings[0]?.toLowerCase().trim()
-            if (feedStyleFromSettings === 'luxury' || feedStyleFromSettings === 'minimal' || feedStyleFromSettings === 'beige') {
-              setSelectedStyle(feedStyleFromSettings as FeedStyle)
-              console.log('[Feed Style Modal] Loaded feed style from settings_preference:', feedStyleFromSettings)
+            const rawSettingsValue = String(settings[0] || '').trim()
+            const settingsValue = rawSettingsValue.toLowerCase()
+            if (useFeedPlannerV2) {
+              const v2Match = Object.keys(FEED_EXAMPLES_V2).find(
+                (style) => style.toLowerCase() === settingsValue
+              )
+              if (v2Match) {
+                feedStyleFromSettings = v2Match as FeedStyle
+                setSelectedStyle(feedStyleFromSettings)
+                console.log('[Feed Style Modal] Loaded V2 feed style from settings_preference:', v2Match)
+              }
+            } else if (settingsValue === 'luxury' || settingsValue === 'minimal' || settingsValue === 'beige') {
+              feedStyleFromSettings = settingsValue as FeedStyle
+              setSelectedStyle(feedStyleFromSettings)
+              console.log('[Feed Style Modal] Loaded feed style from settings_preference:', settingsValue)
             }
           }
         } catch (e) {
           console.warn('[Feed Style Modal] Failed to parse settingsPreference for feed style:', e)
         }
       }
-      
-      // Load visual aesthetic - handle both arrays and JSON strings
-      let visualAesthetic = personalBrandData.data.visualAesthetic
-      if (typeof visualAesthetic === 'string') {
-        try {
-          // Try to parse the JSON string
-          visualAesthetic = JSON.parse(visualAesthetic)
-          
-          // If still a string after parsing, try parsing again (double-stringified)
-          if (typeof visualAesthetic === 'string') {
-            try {
-              visualAesthetic = JSON.parse(visualAesthetic)
-            } catch (e2) {
-              // If second parse fails, it might be a malformed string like '{"luxury"}'
-              // Try to extract keys from the string directly
-              const keyMatch = visualAesthetic.match(/"([^"]+)"/)
-              if (keyMatch) {
-                visualAesthetic = [keyMatch[1]]
-                console.log('[Feed Style Modal] Extracted key from malformed JSON:', visualAesthetic)
-              } else {
-                throw e2
-              }
-            }
-          }
-          
-          // If it's an object (like {"luxury": true} or {"luxury": ""}), convert to array of keys
-          if (typeof visualAesthetic === 'object' && !Array.isArray(visualAesthetic) && visualAesthetic !== null) {
-            visualAesthetic = Object.keys(visualAesthetic)
-          }
-        } catch (e) {
-          console.warn('[Feed Style Modal] Failed to parse visualAesthetic:', e)
-          // Try to extract key from malformed string like '{"luxury"}'
-          const keyMatch = visualAesthetic.match(/"([^"]+)"/)
-          if (keyMatch) {
-            visualAesthetic = [keyMatch[1]]
-            console.log('[Feed Style Modal] Extracted key from malformed string:', visualAesthetic)
-          } else {
-            visualAesthetic = null
-          }
-        }
-      }
-      
-      // Also handle if it's an object (convert to array)
-      if (typeof visualAesthetic === 'object' && !Array.isArray(visualAesthetic) && visualAesthetic !== null) {
-        visualAesthetic = Object.keys(visualAesthetic)
-      }
-      
-      if (Array.isArray(visualAesthetic) && visualAesthetic.length > 0) {
-        setSelectedVisualAesthetic(visualAesthetic)
-        console.log('[Feed Style Modal] Set visual aesthetic:', visualAesthetic)
-      } else {
-        // Reset if no data or empty array
-        setSelectedVisualAesthetic([])
-      }
 
-      // Load fashion style - handle both arrays and JSON strings
-      let fashionStyle = personalBrandData.data.fashionStyle
-      if (typeof fashionStyle === 'string') {
-        try {
-          // Try to parse the JSON string
-          fashionStyle = JSON.parse(fashionStyle)
-          
-          // If still a string after parsing, try parsing again (double-stringified)
-          if (typeof fashionStyle === 'string') {
-            try {
-              fashionStyle = JSON.parse(fashionStyle)
-            } catch (e2) {
-              // If second parse fails, it might be a malformed string like '{"athletic"}'
-              // Try to extract keys from the string directly
-              const keyMatch = fashionStyle.match(/"([^"]+)"/)
-              if (keyMatch) {
-                fashionStyle = [keyMatch[1]]
-                console.log('[Feed Style Modal] Extracted key from malformed JSON:', fashionStyle)
-              } else {
-                throw e2
-              }
-            }
-          }
-          
-          // If it's an object (like {"athletic": true} or {"athletic": ""}), convert to array of keys
-          if (typeof fashionStyle === 'object' && !Array.isArray(fashionStyle) && fashionStyle !== null) {
-            fashionStyle = Object.keys(fashionStyle)
-          }
-        } catch (e) {
-          console.warn('[Feed Style Modal] Failed to parse fashionStyle:', e)
-          // Try to extract key from malformed string like '{"athletic"}'
-          const keyMatch = fashionStyle.match(/"([^"]+)"/)
-          if (keyMatch) {
-            fashionStyle = [keyMatch[1]]
-            console.log('[Feed Style Modal] Extracted key from malformed string:', fashionStyle)
-          } else {
-            fashionStyle = null
-          }
+      if (useFeedPlannerV2 && personalBrandData.data.feedStyleVariationId !== undefined) {
+        const variationId = Number(personalBrandData.data.feedStyleVariationId)
+        if (Number.isFinite(variationId)) {
+          setSelectedVariationId(variationId)
         }
       }
       
-      // Also handle if it's an object (convert to array)
-      if (typeof fashionStyle === 'object' && !Array.isArray(fashionStyle) && fashionStyle !== null) {
-        fashionStyle = Object.keys(fashionStyle)
-      }
-      
-      if (Array.isArray(fashionStyle) && fashionStyle.length > 0) {
-        setSelectedFashionStyle(fashionStyle)
-        console.log('[Feed Style Modal] Set fashion style:', fashionStyle)
-      } else {
-        // Reset if no data or empty array
-        setSelectedFashionStyle([])
-      }
+      // Fashion style selection removed for V2
     } else if (!open) {
       // Reset selections when modal closes
-      setSelectedVisualAesthetic([])
-      setSelectedFashionStyle([])
+      setSelectedVariationId(null)
     }
   }, [open, personalBrandData])
 
@@ -269,6 +218,22 @@ export default function FeedStyleModal({
     }
   }, [defaultFeedStyle])
 
+  useEffect(() => {
+    if (!useFeedPlannerV2) return
+    const variations = (variationData?.variations || []) as FeedStyleVariationOption[]
+    if (variations.length === 0) {
+      setSelectedVariationId(null)
+      return
+    }
+    const defaultId =
+      variationData?.defaultVariationId ||
+      variations.find((variation) => variation.is_default)?.id ||
+      variations[0]?.id
+    if (!selectedVariationId || !variations.some((variation) => variation.id === selectedVariationId)) {
+      setSelectedVariationId(defaultId ? Number(defaultId) : null)
+    }
+  }, [variationData, useFeedPlannerV2, selectedStyle, selectedVariationId])
+
   // Reset advanced section when modal closes
   useEffect(() => {
     if (!open) {
@@ -276,23 +241,10 @@ export default function FeedStyleModal({
     }
   }, [open])
 
-  const handleMultiSelectToggle = (type: "visualAesthetic" | "fashionStyle", id: string) => {
-    if (type === "visualAesthetic") {
-      setSelectedVisualAesthetic((prev) =>
-        prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-      )
-    } else {
-      setSelectedFashionStyle((prev) =>
-        prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-      )
-    }
-  }
-
   const handleConfirm = () => {
     onConfirm({
       feedStyle: selectedStyle,
-      visualAesthetic: selectedVisualAesthetic.length > 0 ? selectedVisualAesthetic : undefined,
-      fashionStyle: selectedFashionStyle.length > 0 ? selectedFashionStyle : undefined,
+      feedStyleVariationId: selectedVariationId,
       selfieImages: selfieImages.length > 0 ? selfieImages : undefined,
     })
   }
@@ -308,7 +260,7 @@ export default function FeedStyleModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-stone-950/60 backdrop-blur-sm z-[100]"
+            className="fixed inset-0 bg-stone-950/60 backdrop-blur-sm z-100"
             onClick={() => onOpenChange(false)}
           />
 
@@ -317,7 +269,7 @@ export default function FeedStyleModal({
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center p-4 pb-24 sm:pb-28 md:pb-32"
+            className="fixed inset-0 z-100 flex items-center justify-center p-4 pb-24 sm:pb-28 md:pb-32"
             onClick={(e) => e.stopPropagation()}
             style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 6rem)" }}
           >
@@ -354,7 +306,7 @@ export default function FeedStyleModal({
                       Feed Style
                     </label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
-                      {Object.entries(feedExamples).map(([key, style]) => {
+                      {Object.entries(useFeedPlannerV2 ? FEED_EXAMPLES_V2 : FEED_EXAMPLES_V1).map(([key, style]) => {
                         const feedStyle = key as FeedStyle
                         const isSelected = selectedStyle === feedStyle
                         const isDefault = defaultFeedStyle === feedStyle
@@ -432,6 +384,42 @@ export default function FeedStyleModal({
                     </div>
                   </div>
 
+                  {useFeedPlannerV2 && (
+                    <div>
+                      <label className="block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-stone-700 mb-4">
+                        Choose Variation
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {(variationData?.variations || []).map((variation: FeedStyleVariationOption) => {
+                          const isSelected = selectedVariationId === variation.id
+                          return (
+                            <button
+                              key={variation.id}
+                              onClick={() => setSelectedVariationId(variation.id)}
+                              className={`w-full text-left p-4 border transition-all duration-200 ${
+                                isSelected
+                                  ? "border-stone-950 bg-stone-950 text-stone-50"
+                                  : "border-stone-300 text-stone-700 hover:border-stone-950 bg-white"
+                              }`}
+                            >
+                              <div className="text-xs tracking-wider uppercase font-medium">{variation.name}</div>
+                              {variation.description ? (
+                                <p className={`text-xs mt-2 ${isSelected ? "text-stone-200" : "text-stone-500"}`}>
+                                  {variation.description}
+                                </p>
+                              ) : null}
+                            </button>
+                          )
+                        })}
+                      </div>
+                      {variationData?.variations?.length === 0 && (
+                        <p className="text-xs text-stone-500 mt-3">
+                          No variations are available yet for this style.
+                        </p>
+                      )}
+                    </div>
+                  )}
+
                   {/* Advanced Options Toggle */}
                   <div className="pt-4 border-t border-stone-200">
                     <button
@@ -457,60 +445,6 @@ export default function FeedStyleModal({
                           className="overflow-hidden"
                         >
                           <div className="pt-6 space-y-6">
-                            {/* Visual Aesthetic Selection */}
-                            <div>
-                              <label className="block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-stone-700 mb-4">
-                                Visual Aesthetic (Select all that apply)
-                              </label>
-                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                {VISUAL_AESTHETICS.map((aesthetic) => {
-                                  const isSelected = selectedVisualAesthetic.includes(aesthetic.id)
-                                  return (
-                                    <button
-                                      key={aesthetic.id}
-                                      onClick={() =>
-                                        handleMultiSelectToggle("visualAesthetic", aesthetic.id)
-                                      }
-                                      className={`py-3 px-4 text-[10px] sm:text-xs tracking-wider uppercase border transition-all duration-200 text-left ${
-                                        isSelected
-                                          ? "border-stone-950 bg-stone-950 text-stone-50"
-                                          : "border-stone-300 text-stone-700 hover:border-stone-950 bg-white"
-                                      }`}
-                                    >
-                                      {aesthetic.name}
-                                    </button>
-                                  )
-                                })}
-                              </div>
-                            </div>
-
-                            {/* Fashion Style Selection */}
-                            <div>
-                              <label className="block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-stone-700 mb-4">
-                                Fashion Style (Select all that apply)
-                              </label>
-                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                                {FASHION_STYLES.map((style) => {
-                                  const isSelected = selectedFashionStyle.includes(style.id)
-                                  return (
-                                    <button
-                                      key={style.id}
-                                      onClick={() =>
-                                        handleMultiSelectToggle("fashionStyle", style.id)
-                                      }
-                                      className={`py-3 px-4 text-[10px] sm:text-xs tracking-wider uppercase border transition-all duration-200 text-left ${
-                                        isSelected
-                                          ? "border-stone-950 bg-stone-950 text-stone-50"
-                                          : "border-stone-300 text-stone-700 hover:border-stone-950 bg-white"
-                                      }`}
-                                    >
-                                      {style.name}
-                                    </button>
-                                  )
-                                })}
-                              </div>
-                            </div>
-
                             {/* Selfie Upload */}
                             <div>
                               <label className="block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-stone-700 mb-4">

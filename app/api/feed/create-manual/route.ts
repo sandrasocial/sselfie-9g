@@ -3,6 +3,12 @@ import { NextResponse } from "next/server"
 import { getAuthenticatedUserWithRetry } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getDb } from "@/lib/db"
+import { getFeedPlannerV2Flag } from "@/lib/feed-planner-v2/feature-flag"
+import {
+  getDefaultVariationId,
+  getFeedStyleV2ByName,
+  getFeedStyleVariationById,
+} from "@/lib/feed-planner-v2/prompt-loader"
 
 /**
  * Create Manual Feed
@@ -26,6 +32,16 @@ export async function POST(req: NextRequest) {
     }
 
     const sql = getDb()
+    const useFeedPlannerV2 = await getFeedPlannerV2Flag(user.id)
+    if (!useFeedPlannerV2) {
+      return NextResponse.json(
+        {
+          error: "FEED_PLANNER_V2_REQUIRED",
+          details: "Feed Planner V2 is now required for manual feeds.",
+        },
+        { status: 410 },
+      )
+    }
 
     // Get optional title, feedStyle, visualAesthetic, and fashionStyle from request body
     let body: any = {}
@@ -42,6 +58,7 @@ export async function POST(req: NextRequest) {
     let feedStyle = body.feedStyle || null // "luxury", "minimal", or "beige"
     let visualAesthetic = body.visualAesthetic || null // Array of visual aesthetics
     let fashionStyle = body.fashionStyle || null // Array of fashion styles
+    const requestedVariationId = body.feedStyleVariationId ? Number(body.feedStyleVariationId) : null
 
     // Validate and prepare JSONB arrays
     const prepareJsonbArray = (value: any): any => {
@@ -59,22 +76,27 @@ export async function POST(req: NextRequest) {
     visualAesthetic = prepareJsonbArray(visualAesthetic)
     fashionStyle = prepareJsonbArray(fashionStyle)
 
-    if (!feedStyle) {
+    let personalBrandVariationId: number | null = null
+    if (!feedStyle || !requestedVariationId) {
       const [personalBrand] = await sql`
-        SELECT settings_preference
+        SELECT settings_preference, feed_style_variation_id
         FROM user_personal_brand
         WHERE user_id = ${user.id}
         ORDER BY updated_at DESC
         LIMIT 1
       `
       const settingsPreference = personalBrand?.settings_preference
-      if (settingsPreference) {
+      personalBrandVariationId = personalBrand?.feed_style_variation_id
+        ? Number(personalBrand.feed_style_variation_id)
+        : null
+      if (!feedStyle && settingsPreference) {
         try {
           const settings = typeof settingsPreference === "string"
             ? JSON.parse(settingsPreference)
             : settingsPreference
           if (Array.isArray(settings) && settings.length > 0) {
-            feedStyle = settings[0]?.toLowerCase?.().trim?.() || null
+            const rawStyle = settings[0]?.trim?.() || null
+            feedStyle = rawStyle
           }
         } catch {
           // Ignore parse errors; fall through to validation
@@ -97,6 +119,37 @@ export async function POST(req: NextRequest) {
       console.log(`[v0] Feed will be created with feed-specific fashionStyle:`, fashionStyle)
     }
 
+    let feedStyleVariationIdToStore: number | null = null
+    if (feedStyle) {
+      const style = await getFeedStyleV2ByName(feedStyle)
+      if (!style) {
+        return NextResponse.json(
+          { error: "FEED_STYLE_NOT_READY", details: "Feed style is not available for V2." },
+          { status: 422 }
+        )
+      }
+
+      if (requestedVariationId) {
+        const variation = await getFeedStyleVariationById(requestedVariationId)
+        if (!variation || !variation.enabled || variation.feed_style_id !== style.id) {
+          return NextResponse.json(
+            { error: "FEED_STYLE_VARIATION_INVALID", details: "Selected variation is not valid for this style." },
+            { status: 422 }
+          )
+        }
+        feedStyleVariationIdToStore = variation.id
+      } else if (personalBrandVariationId) {
+        const variation = await getFeedStyleVariationById(personalBrandVariationId)
+        if (variation && variation.enabled && variation.feed_style_id === style.id) {
+          feedStyleVariationIdToStore = variation.id
+        } else {
+          feedStyleVariationIdToStore = await getDefaultVariationId(style.id)
+        }
+      } else {
+        feedStyleVariationIdToStore = await getDefaultVariationId(style.id)
+      }
+    }
+
     // Create feed layout with layout_type: 'grid_3x3' for full feeds (3x3 grid = 9 posts)
     // Set status to 'saved' so feed appears immediately in Feed Planner
     // Include feed_style, visual_aesthetic, and fashion_style for feed-specific overrides
@@ -112,6 +165,7 @@ export async function POST(req: NextRequest) {
           status,
           layout_type,
           feed_style,
+          feed_style_variation_id,
           visual_aesthetic,
           fashion_style,
           created_by
@@ -124,6 +178,7 @@ export async function POST(req: NextRequest) {
           'saved',
           'grid_3x3',
           ${feedStyle},
+          ${feedStyleVariationIdToStore},
           ${visualAesthetic}::jsonb,
           ${fashionStyle}::jsonb,
           'manual'
@@ -132,7 +187,13 @@ export async function POST(req: NextRequest) {
       ` as any[]
     } catch (error: any) {
       // If created_by, visual_aesthetic, or fashion_style fields don't exist, try without them
-      if (error?.message?.includes('created_by') || error?.message?.includes('visual_aesthetic') || error?.message?.includes('fashion_style') || error?.code === '42703') {
+      if (
+        error?.message?.includes('created_by') ||
+        error?.message?.includes('visual_aesthetic') ||
+        error?.message?.includes('fashion_style') ||
+        error?.message?.includes('feed_style_variation_id') ||
+        error?.code === '42703'
+      ) {
         console.log("[v0] New columns not found, trying without visual_aesthetic/fashion_style")
         try {
           feedResult = await sql`

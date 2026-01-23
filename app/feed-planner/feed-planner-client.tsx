@@ -87,6 +87,7 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
     : (userName && !userName.includes('@') 
       ? userName 
       : "there")
+  const useFeedPlannerV2 = Boolean(userInfo?.use_feed_planner_v2)
 
   // Fetch existing personal brand data (always fetch, SWR handles caching)
   // This is the single source of truth - no localStorage needed
@@ -272,6 +273,7 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
     futureVision?: string
     visualAesthetic: string[]
     feedStyle: string
+    feedStyleVariationId?: number | null
     selfieImages: string[]
     fashionStyle?: string[]
     brandInspiration?: string
@@ -369,6 +371,7 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
             ? data.settingsPreference[0] || ""
             : "")
         : "",
+      feedStyleVariationId: data.feedStyleVariationId ?? null,
       fashionStyle: data.fashionStyle
         ? (typeof data.fashionStyle === "string"
             ? (() => {
@@ -439,6 +442,7 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
         userEmail={userInfo?.email || null}
         existingData={existingData}
         initialStep={wizardInitialStep} // Start at step 4 if user chose "Choose New Style"
+        useFeedPlannerV2={useFeedPlannerV2}
       />
     )
   }

@@ -76,7 +76,46 @@ export function useFeedPostPolling({
 
       const data = await response.json()
 
-      // Handle errors from API
+      console.log(`[useFeedPostPolling] Post ${postId} status:`, data.status)
+
+      if (data.status === "succeeded") {
+        // Generation completed
+        setStatus("completed")
+        setImageUrl(data.imageUrl)
+        setError(null)
+
+        // Stop polling
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current)
+          pollIntervalRef.current = null
+        }
+
+        // Call completion callback
+        if (onComplete && data.imageUrl) {
+          onComplete(data.imageUrl)
+        }
+        return
+      } else if (data.status === "failed") {
+        // Generation failed
+        const errorMessage = data.error || "Generation failed"
+        setStatus("failed")
+        setError(errorMessage)
+        setImageUrl(null)
+
+        // Stop polling
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current)
+          pollIntervalRef.current = null
+        }
+
+        // Call error callback
+        if (onError) {
+          onError(errorMessage)
+        }
+        return
+      }
+
+      // Handle errors from API without a terminal status
       if (data.error) {
         // 🔴 FIX: Handle content moderation errors gracefully (E005)
         const errorMessage = data.error || "Failed to check generation status"
@@ -105,43 +144,6 @@ export function useFeedPostPolling({
         
         // For other errors, throw as before
         throw new Error(errorMessage)
-      }
-
-      console.log(`[useFeedPostPolling] Post ${postId} status:`, data.status)
-
-      if (data.status === "succeeded") {
-        // Generation completed
-        setStatus("completed")
-        setImageUrl(data.imageUrl)
-        setError(null)
-
-        // Stop polling
-        if (pollIntervalRef.current) {
-          clearInterval(pollIntervalRef.current)
-          pollIntervalRef.current = null
-        }
-
-        // Call completion callback
-        if (onComplete && data.imageUrl) {
-          onComplete(data.imageUrl)
-        }
-      } else if (data.status === "failed") {
-        // Generation failed
-        const errorMessage = data.error || "Generation failed"
-        setStatus("failed")
-        setError(errorMessage)
-        setImageUrl(null)
-
-        // Stop polling
-        if (pollIntervalRef.current) {
-          clearInterval(pollIntervalRef.current)
-          pollIntervalRef.current = null
-        }
-
-        // Call error callback
-        if (onError) {
-          onError(errorMessage)
-        }
       } else {
         // Still processing (processing, starting, queued, etc.)
         setStatus("generating")
@@ -210,22 +212,11 @@ export function useFeedPostPolling({
                          errorMessage.includes("Service Unavailable") ||
                          errorMessage.includes("Network") ||
                          errorMessage.includes("fetch") ||
-                         errorMessage.includes("timeout") ||
-                         errorMessage.includes("canceled") ||
-                         errorMessage.includes("cancelled")
+                         errorMessage.includes("timeout")
       
       if (isRetryable) {
         // Retryable errors - log but don't stop polling
         console.warn(`[useFeedPostPolling] Retryable error for post ${postId}, will retry:`, errorMessage)
-        
-        // Show user-friendly message for canceled/queued errors
-        if (errorMessage.includes("cancel")) {
-          toast({
-            title: "Generation queued",
-            description: "Replicate is processing your request. This might take a few minutes.",
-            duration: 4000,
-          })
-        }
         
         setError(null) // Clear error for retryable issues
         return // Don't throw, allow polling to continue

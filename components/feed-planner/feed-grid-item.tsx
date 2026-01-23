@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import Image from "next/image"
 import { ImageIcon, Loader2 } from "lucide-react"
 import { useFeedPostPolling } from "@/lib/hooks/use-feed-post-polling"
+import { toast } from "@/hooks/use-toast"
 
 interface FeedGridItemProps {
   post: any
@@ -42,6 +43,7 @@ export default function FeedGridItem({
   const [predictionId, setPredictionId] = useState<string | null>(
     post?.prediction_id && !post?.image_url ? post.prediction_id : null
   )
+  const [isStopping, setIsStopping] = useState(false)
 
   // FIX: Use per-placeholder polling hook (matches concept card pattern)
   // CRITICAL: Only poll if we have predictionId AND no image_url yet
@@ -99,6 +101,48 @@ export default function FeedGridItem({
 
   // A post is complete if it has an image_url
   const isComplete = !!displayImageUrl
+  const canStop = !!predictionId && !predictionId.startsWith("temp-")
+
+  const handleStopGeneration = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation()
+
+    if (!canStop || isStopping) {
+      return
+    }
+
+    const confirmed = confirm("Stop this generation? If it doesn't complete, we'll refund your credit.")
+    if (!confirmed) return
+
+    setIsStopping(true)
+    try {
+      const response = await fetch(`/api/feed/post/${post.id}/cancel`, { method: "POST" })
+      const data = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to stop generation")
+      }
+
+      setPredictionId(null)
+      if (onGenerateImage) {
+        onGenerateImage(post.id).catch(() => {})
+      }
+
+      const refundNote = data.refunded ? "Credit refunded." : "No credit refund needed."
+      toast({
+        title: "Generation stopped",
+        description: refundNote,
+      })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Please try again"
+      toast({
+        title: "Could not stop generation",
+        description: message,
+        variant: "destructive",
+      })
+    } finally {
+      setIsStopping(false)
+    }
+  }
 
   const handleGenerateClick = async (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -153,6 +197,16 @@ export default function FeedGridItem({
           <div className="text-[10px] font-light text-stone-500 text-center">
             Creating...
           </div>
+          <button
+            type="button"
+            onClick={handleStopGeneration}
+            disabled={!canStop || isStopping}
+            className={`mt-2 text-[10px] font-light ${
+              !canStop || isStopping ? "text-stone-300" : "text-stone-600 hover:text-stone-800"
+            }`}
+          >
+            {isStopping ? "Stopping..." : "Stop generation"}
+          </button>
         </div>
       ) : (
         // Show generation button for paid users, gallery selector for others

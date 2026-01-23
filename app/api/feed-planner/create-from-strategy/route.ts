@@ -4,19 +4,13 @@ import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { deductCredits, checkCredits, getUserCredits, CREDIT_COSTS } from "@/lib/credits"
 import { getStudioProCreditCost } from "@/lib/nano-banana-client"
-import { generateInstagramCaption } from "@/lib/feed-planner/caption-writer"
-import { detectRequiredMode, detectProModeType } from "@/lib/feed-planner/mode-detection"
-import { generateVisualComposition } from "@/lib/feed-planner/visual-composition-expert"
-import { buildSophisticatedQuotePrompt } from "@/lib/maya/quote-graphic-prompt-builder"
-import { generateFeedPlannerProModePromptViaAuthority } from "@/lib/maya/prompt-authority"
-import { 
-  generateFeedPrompt,
-  validateFeedPrompt,
-  getColorPaletteByPreference,
-  ensureFeedCohesion,
-  getPostTypeDistribution,
-  type ColorPalette
-} from '@/lib/feed-planner/feed-prompt-expert'
+import { detectProModeType } from "@/lib/feed-planner/mode-detection"
+import {
+  getDefaultVariationId,
+  getFeedStyleV2ByName,
+  getFeedStyleVariationById,
+  normalizeFeedStyleV2Name,
+} from "@/lib/feed-planner-v2/prompt-loader"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -330,50 +324,147 @@ export async function POST(request: NextRequest) {
     console.log("[FEED-FROM-STRATEGY] Layout type label:", safeLayoutTypeLabel)
     console.log("[FEED-FROM-STRATEGY] Full grid pattern length:", fullGridPattern.length)
     
+    // Resolve feed style + variation from personal brand for V2 prompt mapping
+    let feedStyle: string | null = null
+    let feedStyleVariationId: number | null = null
+    try {
+      const [personalBrand] = await sql`
+        SELECT settings_preference, feed_style_variation_id
+        FROM user_personal_brand
+        WHERE user_id = ${neonUser.id}
+        ORDER BY updated_at DESC
+        LIMIT 1
+      `
+      const settingsPreference = personalBrand?.settings_preference
+      const personalBrandVariationId = personalBrand?.feed_style_variation_id
+        ? Number(personalBrand.feed_style_variation_id)
+        : null
+
+      if (settingsPreference) {
+        const settings = typeof settingsPreference === "string"
+          ? JSON.parse(settingsPreference)
+          : settingsPreference
+        if (Array.isArray(settings) && settings.length > 0) {
+          feedStyle = normalizeFeedStyleV2Name(String(settings[0]).trim())
+        }
+      }
+
+      if (feedStyle) {
+        const style = await getFeedStyleV2ByName(feedStyle)
+        if (style?.enabled) {
+          if (personalBrandVariationId) {
+            const variation = await getFeedStyleVariationById(personalBrandVariationId)
+            if (variation && variation.enabled && variation.feed_style_id === style.id) {
+              feedStyleVariationId = variation.id
+            }
+          }
+          if (!feedStyleVariationId) {
+            feedStyleVariationId = await getDefaultVariationId(style.id)
+          }
+        }
+      }
+    } catch (error) {
+      console.warn("[FEED-FROM-STRATEGY] Unable to resolve feed style/variation:", error)
+      feedStyle = null
+      feedStyleVariationId = null
+    }
+
     // Enable photoshoot mode for consistency (like Maya's photoshoot feature)
     // This ensures all 9 images use consistent styling, lighting, and colors
     const photoshootBaseSeed = Math.floor(Math.random() * 1000000)
     console.log("[FEED-FROM-STRATEGY] ✅ Enabling photoshoot mode with base seed:", photoshootBaseSeed)
     
     // Create feed_layouts entry with photoshoot consistency enabled
-    const [feedLayout] = await sql`
-      INSERT INTO feed_layouts (
-        user_id,
-        title,
-        description,
-        business_type,
-        brand_vibe,
-        layout_type,
-        visual_rhythm,
-        feed_story,
-        username,
-        brand_name,
-        status,
-        color_palette,
-        photoshoot_enabled,
-        photoshoot_base_seed,
-        created_at,
-        updated_at
-      ) VALUES (
-        ${neonUser.id},
-        'Instagram Feed Strategy',
-        ${strategy.strategyDocument || truncate(fullGridPattern, 5000, 'Feed strategy')},
-        ${truncate(brandProfile?.business_type, 255, 'Personal Brand')},
-        ${truncate(brandProfile?.brand_vibe, 255, 'Strategic')},
-        ${safeLayoutTypeLabel},
-        ${fullGridPattern},
-        ${strategy.userRequest || 'Conversational feed creation'},
-        ${truncate('user' + neonUser.id, 255)},
-        ${truncate(brandProfile?.brand_name, 255, 'Personal Brand')},
-        ${feedStatus},
-        ${brandProfile?.color_palette || null},
-        true,
-        ${photoshootBaseSeed},
-        NOW(),
-        NOW()
-      )
-      RETURNING id
-    `
+    let feedLayout: { id: number }
+    try {
+      const [result] = await sql`
+        INSERT INTO feed_layouts (
+          user_id,
+          title,
+          description,
+          business_type,
+          brand_vibe,
+          layout_type,
+          visual_rhythm,
+          feed_story,
+          username,
+          brand_name,
+          status,
+          color_palette,
+          photoshoot_enabled,
+          photoshoot_base_seed,
+          feed_style,
+          feed_style_variation_id,
+          created_at,
+          updated_at
+        ) VALUES (
+          ${neonUser.id},
+          'Instagram Feed Strategy',
+          ${strategy.strategyDocument || truncate(fullGridPattern, 5000, 'Feed strategy')},
+          ${truncate(brandProfile?.business_type, 255, 'Personal Brand')},
+          ${truncate(brandProfile?.brand_vibe, 255, 'Strategic')},
+          ${safeLayoutTypeLabel},
+          ${fullGridPattern},
+          ${strategy.userRequest || 'Conversational feed creation'},
+          ${truncate('user' + neonUser.id, 255)},
+          ${truncate(brandProfile?.brand_name, 255, 'Personal Brand')},
+          ${feedStatus},
+          ${brandProfile?.color_palette || null},
+          true,
+          ${photoshootBaseSeed},
+          ${feedStyle},
+          ${feedStyleVariationId},
+          NOW(),
+          NOW()
+        )
+        RETURNING id
+      `
+      feedLayout = result
+    } catch (error: any) {
+      if (error?.code === '42703') {
+        const [result] = await sql`
+          INSERT INTO feed_layouts (
+            user_id,
+            title,
+            description,
+            business_type,
+            brand_vibe,
+            layout_type,
+            visual_rhythm,
+            feed_story,
+            username,
+            brand_name,
+            status,
+            color_palette,
+            photoshoot_enabled,
+            photoshoot_base_seed,
+            created_at,
+            updated_at
+          ) VALUES (
+            ${neonUser.id},
+            'Instagram Feed Strategy',
+            ${strategy.strategyDocument || truncate(fullGridPattern, 5000, 'Feed strategy')},
+            ${truncate(brandProfile?.business_type, 255, 'Personal Brand')},
+            ${truncate(brandProfile?.brand_vibe, 255, 'Strategic')},
+            ${safeLayoutTypeLabel},
+            ${fullGridPattern},
+            ${strategy.userRequest || 'Conversational feed creation'},
+            ${truncate('user' + neonUser.id, 255)},
+            ${truncate(brandProfile?.brand_name, 255, 'Personal Brand')},
+            ${feedStatus},
+            ${brandProfile?.color_palette || null},
+            true,
+            ${photoshootBaseSeed},
+            NOW(),
+            NOW()
+          )
+          RETURNING id
+        `
+        feedLayout = result
+      } else {
+        throw error
+      }
+    }
 
     console.log("[FEED-FROM-STRATEGY] Feed layout created:", feedLayout.id)
 
@@ -754,25 +845,7 @@ export async function POST(request: NextRequest) {
             throw new Error(`Failed to generate Pro Mode prompt for post ${post.position}: ${promptError instanceof Error ? promptError.message : 'Unknown error'}`)
           }
         } else {
-          // Generate FLUX prompt for Classic Mode
-          try {
-            // Use post.description as visualDirection (input), NOT as the prompt itself
-            const visualComposition = await generateVisualComposition({
-              postPosition: post.position,
-              shotType: post.type || 'portrait',
-              purpose: post.purpose || 'general',
-              visualDirection: post.description || `Post ${post.position}`, // ← Input: visual direction
-              brandVibe: brandProfile?.brand_vibe || 'authentic',
-              authUserId: authUser.id,
-              triggerWord: triggerWord || undefined,
-            })
-            finalPrompt = visualComposition.fluxPrompt // ← Output: proper FLUX prompt
-            console.log(`[FEED-FROM-STRATEGY] ✅ Generated FLUX prompt for post ${post.position}`)
-          } catch (promptError) {
-            console.error(`[FEED-FROM-STRATEGY] ❌ Error generating FLUX prompt for post ${post.position}:`, promptError)
-            // Don't fallback to description - throw error to surface the issue
-            throw new Error(`Failed to generate Classic Mode prompt for post ${post.position}: ${promptError instanceof Error ? promptError.message : 'Unknown error'}`)
-          }
+          throw new Error(`CLASSIC_MODE_DEPRECATED: Feed Planner uses Pro Mode only (post ${post.position})`)
         }
         
         // Validate that we have a proper prompt (not just description)

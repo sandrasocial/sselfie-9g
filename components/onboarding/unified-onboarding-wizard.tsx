@@ -25,6 +25,7 @@ interface UnifiedOnboardingWizardProps {
     futureVision?: string
     visualAesthetic: string[]
     feedStyle: string
+    feedStyleVariationId?: number | null
     selfieImages: string[]
     fashionStyle?: string[]
     brandInspiration?: string
@@ -47,6 +48,7 @@ interface UnifiedOnboardingWizardProps {
     futureVision?: string
     visualAesthetic?: string[]
     feedStyle?: string
+    feedStyleVariationId?: number | null
     selfieImages?: string[]
     fashionStyle?: string[]
     brandInspiration?: string
@@ -59,20 +61,11 @@ interface UnifiedOnboardingWizardProps {
   }
   userEmail?: string | null
   initialStep?: number // Optional: Start wizard at a specific step (0-based index)
+  useFeedPlannerV2?: boolean
 }
 
-// Visual aesthetics (from brand profile wizard)
-const VISUAL_AESTHETICS = [
-  { id: "minimal", name: "Minimal", description: "Clean, simple, uncluttered" },
-  { id: "luxury", name: "Luxury", description: "Elegant, sophisticated, premium" },
-  { id: "warm", name: "Warm", description: "Cozy, inviting, comfortable" },
-  { id: "edgy", name: "Edgy", description: "Bold, unconventional, daring" },
-  { id: "professional", name: "Professional", description: "Polished, corporate, refined" },
-  { id: "beige", name: "Beige Aesthetic", description: "Neutral, earthy, calm" },
-]
-
-// Feed style examples (from blueprint wizard)
-const feedExamples = {
+// Feed style examples (V1)
+const FEED_EXAMPLES_V1 = {
   luxury: {
     name: "Dark & Moody",
     colors: ["#0a0a0a", "#2d2d2d", "#4a4a4a"],
@@ -90,15 +83,53 @@ const feedExamples = {
   },
 }
 
-// Fashion styles (from brand profile wizard)
-const FASHION_STYLES = [
-  { id: "casual", name: "Casual", description: "Everyday, relaxed, comfortable" },
-  { id: "business", name: "Business", description: "Professional, formal, polished" },
-  { id: "bohemian", name: "Bohemian", description: "Free-spirited, artistic, eclectic" },
-  { id: "classic", name: "Classic", description: "Timeless, elegant, enduring" },
-  { id: "trendy", name: "Trendy", description: "Fashion-forward, current, modern" },
-  { id: "athletic", name: "Athletic", description: "Sporty, active, functional" },
-]
+// Feed style examples (V2 - 7 curated styles)
+const FEED_EXAMPLES_V2 = {
+  "Dark & Moody": {
+    name: "Dark & Moody",
+    colors: ["#0b0b0f", "#2a2a2f", "#4a4a4f"],
+    grid: ["selfie", "selfie", "flatlay", "selfie", "selfie", "detail", "selfie", "flatlay", "selfie"],
+  },
+  "Beige Aesthetic": {
+    name: "Beige Aesthetic",
+    colors: ["#d2c2b0", "#b59f8a", "#8c7a67"],
+    grid: ["selfie", "flatlay", "selfie", "selfie", "detail", "selfie", "selfie", "flatlay", "selfie"],
+  },
+  "Light & Minimalistic": {
+    name: "Light & Minimalistic",
+    colors: ["#f7f7f5", "#e6e6e2", "#d6d6d0"],
+    grid: ["selfie", "selfie", "selfie", "flatlay", "selfie", "selfie", "selfie", "flatlay", "selfie"],
+  },
+  "Luxury Future Self": {
+    name: "Luxury Future Self",
+    colors: ["#1b1b1f", "#5a4d3f", "#c2b6a8"],
+    grid: ["selfie", "selfie", "flatlay", "selfie", "detail", "selfie", "selfie", "flatlay", "selfie"],
+  },
+  "Casual Bohemian": {
+    name: "Casual Bohemian",
+    colors: ["#c4a58c", "#9c7f63", "#6e5a45"],
+    grid: ["selfie", "flatlay", "selfie", "selfie", "detail", "selfie", "selfie", "flatlay", "selfie"],
+  },
+  "Athletic & Wellness": {
+    name: "Athletic & Wellness",
+    colors: ["#dfe6e3", "#9bb1a6", "#6b7a74"],
+    grid: ["selfie", "selfie", "flatlay", "selfie", "detail", "selfie", "selfie", "flatlay", "selfie"],
+  },
+  "Coastal Aesthetics": {
+    name: "Coastal Aesthetics",
+    colors: ["#f3e9df", "#c7d7dd", "#a8b9c2"],
+    grid: ["selfie", "selfie", "flatlay", "selfie", "detail", "selfie", "selfie", "flatlay", "selfie"],
+  },
+}
+
+interface FeedStyleVariationOption {
+  id: number
+  name: string
+  description: string | null
+  is_default: boolean
+  sort_order: number
+}
+
 
 const UNIFIED_STEPS = [
   {
@@ -159,6 +190,7 @@ export default function UnifiedOnboardingWizard({
   existingData,
   userEmail,
   initialStep = 0, // Default to step 0 (welcome), but allow starting at any step
+  useFeedPlannerV2 = false,
 }: UnifiedOnboardingWizardProps) {
   // SIMPLIFIED: Use existingData (from SWR cache) as single source of truth
   // No localStorage needed - SWR handles caching and persistence
@@ -189,6 +221,9 @@ export default function UnifiedOnboardingWizard({
   const [formData, setFormData] = useState(() => {
     // Initialize from existingData if available, otherwise empty
     if (existingData && Object.keys(existingData).length > 0) {
+      const normalizedVisualAesthetic = Array.isArray(existingData.visualAesthetic)
+        ? existingData.visualAesthetic
+        : []
       return {
         businessType: existingData.businessType || "",
         idealAudience: existingData.idealAudience || "",
@@ -197,8 +232,9 @@ export default function UnifiedOnboardingWizard({
         transformationStory: existingData.transformationStory || "",
         currentSituation: existingData.currentSituation || "",
         futureVision: existingData.futureVision || "",
-        visualAesthetic: Array.isArray(existingData.visualAesthetic) ? existingData.visualAesthetic : [],
+        visualAesthetic: normalizedVisualAesthetic,
         feedStyle: existingData.feedStyle || "",
+        feedStyleVariationId: existingData.feedStyleVariationId ?? null,
         selfieImages: existingData.selfieImages || [],
         fashionStyle: Array.isArray(existingData.fashionStyle) ? existingData.fashionStyle : [],
         brandInspiration: existingData.brandInspiration || "",
@@ -216,6 +252,7 @@ export default function UnifiedOnboardingWizard({
       futureVision: "",
       visualAesthetic: [],
       feedStyle: "",
+      feedStyleVariationId: null,
       selfieImages: [],
       fashionStyle: [],
       brandInspiration: "",
@@ -261,6 +298,7 @@ export default function UnifiedOnboardingWizard({
         futureVision: existingData.futureVision || "",
         visualAesthetic: Array.isArray(existingData.visualAesthetic) ? existingData.visualAesthetic : [],
         feedStyle: existingData.feedStyle || "",
+        feedStyleVariationId: existingData.feedStyleVariationId ?? null,
         selfieImages: existingData.selfieImages || [],
         fashionStyle: Array.isArray(existingData.fashionStyle) ? existingData.fashionStyle : [],
         brandInspiration: existingData.brandInspiration || "",
@@ -287,6 +325,7 @@ export default function UnifiedOnboardingWizard({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]) // Only run when wizard opens/closes - existingData changes are handled via dataKey comparison
+
   const [isSaving, setIsSaving] = useState(false)
   const [isGeneratingPillars, setIsGeneratingPillars] = useState(false)
   const [pillarExplanation, setPillarExplanation] = useState("")
@@ -297,6 +336,36 @@ export default function UnifiedOnboardingWizard({
     revalidateOnFocus: false,
     dedupingInterval: 60000,
   })
+
+  const { data: variationData } = useSWR(
+    useFeedPlannerV2 && formData.feedStyle
+      ? `/api/feed-planner/v2/variations?style=${encodeURIComponent(formData.feedStyle)}`
+      : null,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 30000,
+    }
+  )
+
+  useEffect(() => {
+    if (!useFeedPlannerV2) return
+    const variations = (variationData?.variations || []) as FeedStyleVariationOption[]
+    if (variations.length === 0) {
+      if (formData.feedStyleVariationId !== null) {
+        setFormData((prev) => ({ ...prev, feedStyleVariationId: null }))
+      }
+      return
+    }
+    const defaultId =
+      variationData?.defaultVariationId ||
+      variations.find((variation) => variation.is_default)?.id ||
+      variations[0]?.id
+    if (!defaultId) return
+    if (!variations.some((variation) => variation.id === formData.feedStyleVariationId)) {
+      setFormData((prev) => ({ ...prev, feedStyleVariationId: Number(defaultId) }))
+    }
+  }, [variationData, useFeedPlannerV2, formData.feedStyle, formData.feedStyleVariationId])
 
   // Load images from API on mount (replace, don't merge)
   // Only update if images actually changed to prevent overwriting formData
@@ -343,7 +412,7 @@ export default function UnifiedOnboardingWizard({
     
     // Visual selector step
     if (step.isVisualSelector) {
-      return formData.visualAesthetic.length > 0 && formData.feedStyle.length > 0
+      return formData.feedStyle.length > 0
     }
     
     // Audience builder step
@@ -408,7 +477,9 @@ export default function UnifiedOnboardingWizard({
       // Data is saved to database via API endpoint
       // SWR cache will automatically update when parent component calls mutatePersonalBrand()
       // When wizard reopens, existingData (from SWR) will have the latest data
-      onComplete(formData)
+      onComplete({
+        ...formData,
+      })
     } catch (error) {
       console.error("[Unified Onboarding] Error saving data:", error)
       alert(error instanceof Error ? error.message : "Failed to save. Please try again.")
@@ -587,38 +658,13 @@ export default function UnifiedOnboardingWizard({
                       Pick a vibe that feels like you. Don\u0027t worry, you can always switch things up later!
                     </p>
 
-                    {/* Visual Aesthetic Selection */}
-                    <div>
-                      <label className="block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-stone-700 mb-4">
-                        Visual Aesthetic (Select all that apply)
-                      </label>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        {VISUAL_AESTHETICS.map((aesthetic) => {
-                          const isSelected = formData.visualAesthetic.includes(aesthetic.id)
-                          return (
-                            <button
-                              key={aesthetic.id}
-                              onClick={() => handleMultiSelectToggle("visualAesthetic", aesthetic.id)}
-                              className={`py-3 px-4 text-[10px] sm:text-xs tracking-wider uppercase border transition-all duration-200 text-left ${
-                                isSelected
-                                  ? "border-stone-950 bg-stone-950 text-stone-50"
-                                  : "border-stone-300 text-stone-700 hover:border-stone-950 bg-white"
-                              }`}
-                            >
-                              {aesthetic.name}
-                            </button>
-                          )
-                        })}
-                      </div>
-                    </div>
-
                     {/* Feed Style Selection (from blueprint wizard) */}
                     <div>
                       <label className="block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-stone-700 mb-4">
                         Feed Style
                       </label>
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
-                        {Object.entries(feedExamples).map(([key, style]) => (
+                        {Object.entries(useFeedPlannerV2 ? FEED_EXAMPLES_V2 : FEED_EXAMPLES_V1).map(([key, style]) => (
                           <div
                             key={key}
                             onClick={() => setFormData({ ...formData, feedStyle: key })}
@@ -668,6 +714,44 @@ export default function UnifiedOnboardingWizard({
                         ))}
                       </div>
                     </div>
+
+                    {useFeedPlannerV2 && (
+                      <div>
+                        <label className="block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-stone-700 mb-4">
+                          Choose Variation
+                        </label>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {(variationData?.variations || []).map((variation: FeedStyleVariationOption) => {
+                            const isSelected = formData.feedStyleVariationId === variation.id
+                            return (
+                              <button
+                                key={variation.id}
+                                onClick={() =>
+                                  setFormData({ ...formData, feedStyleVariationId: variation.id })
+                                }
+                                className={`w-full text-left p-4 border transition-all duration-200 ${
+                                  isSelected
+                                    ? "border-stone-950 bg-stone-950 text-stone-50"
+                                    : "border-stone-300 text-stone-700 hover:border-stone-950 bg-white"
+                                }`}
+                              >
+                                <div className="text-xs tracking-wider uppercase font-medium">{variation.name}</div>
+                                {variation.description ? (
+                                  <p className={`text-xs mt-2 ${isSelected ? "text-stone-200" : "text-stone-500"}`}>
+                                    {variation.description}
+                                  </p>
+                                ) : null}
+                              </button>
+                            )
+                          })}
+                        </div>
+                        {variationData?.variations?.length === 0 && (
+                          <p className="text-xs text-stone-500 mt-3">
+                            No variations are available yet for this style.
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -702,31 +786,6 @@ export default function UnifiedOnboardingWizard({
                     <p className="text-sm font-light text-stone-600 mb-6">
                       These are optional, but they help us create even more personalized content for you.
                     </p>
-
-                    {/* Fashion Style */}
-                    <div>
-                      <label className="block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-stone-700 mb-4">
-                        Fashion Style (Optional - Select all that apply)
-                      </label>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                        {FASHION_STYLES.map((style) => {
-                          const isSelected = (formData.fashionStyle || []).includes(style.id)
-                          return (
-                            <button
-                              key={style.id}
-                              onClick={() => handleMultiSelectToggle("fashionStyle", style.id)}
-                              className={`py-3 px-4 text-[10px] sm:text-xs tracking-wider uppercase border transition-all duration-200 text-left ${
-                                isSelected
-                                  ? "border-stone-950 bg-stone-950 text-stone-50"
-                                  : "border-stone-300 text-stone-700 hover:border-stone-950 bg-white"
-                              }`}
-                            >
-                              {style.name}
-                            </button>
-                          )
-                        })}
-                      </div>
-                    </div>
 
                     {/* Brand Inspiration */}
                     <div>
@@ -842,7 +901,6 @@ export default function UnifiedOnboardingWizard({
                                   audienceChallenge: formData.audienceChallenge,
                                   audienceTransformation: formData.audienceTransformation,
                                   transformationStory: formData.transformationStory,
-                                  visualAesthetic: formData.visualAesthetic.join(", "),
                                   feedStyle: formData.feedStyle,
                                 }
 

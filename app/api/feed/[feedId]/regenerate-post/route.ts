@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server"
 import { getAuthenticatedUserWithRetry } from "@/lib/auth-helper"
 import { neon } from "@neondatabase/serverless"
-import { getReplicateClient } from "@/lib/replicate-client"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { extractReplicateVersionId, ensureTriggerWordPrefix, buildClassicModeReplicateInput } from "@/lib/replicate-helpers"
-import { checkCredits, deductCredits, CREDIT_COSTS } from "@/lib/credits"
+import { checkCredits, deductCredits } from "@/lib/credits"
 import { generateWithNanoBanana, getStudioProCreditCost } from "@/lib/nano-banana-client"
-import { getFeedPlannerAccess } from "@/lib/feed-planner/access-control"
-import { getCategoryAndMood } from '@/lib/feed-planner/generation-helpers'
+import { getFeedPlannerV2Flag } from "@/lib/feed-planner-v2/feature-flag"
+import { getFeedStyleV2ByName } from "@/lib/feed-planner-v2/prompt-loader"
+import { getPreviewPromptForStyle, selectPromptForPosition } from "@/lib/feed-planner-v2/generation"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -22,6 +21,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ fee
     const neonUser = await getUserByAuthId(user.id)
     if (!neonUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
+    }
+
+    const useFeedPlannerV2 = await getFeedPlannerV2Flag(neonUser.id)
+    if (!useFeedPlannerV2) {
+      return NextResponse.json(
+        {
+          error: "FEED_PLANNER_V2_REQUIRED",
+          details: "Feed Planner V2 is required for regeneration.",
+        },
+        { status: 410 },
+      )
     }
 
     const { postId } = await request.json()
@@ -61,7 +71,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ fee
 
     // Get feed layout for context
     const [feedLayout] = await sql`
-      SELECT color_palette, brand_vibe FROM feed_layouts WHERE id = ${post.feed_layout_id}
+      SELECT color_palette, brand_vibe, feed_style, feed_style_variation_id, layout_type, visual_aesthetic, fashion_style
+      FROM feed_layouts
+      WHERE id = ${post.feed_layout_id}
     `
 
     // Route to Pro Mode or Classic Mode based on generation_mode
@@ -101,59 +113,41 @@ export async function POST(request: Request, { params }: { params: Promise<{ fee
         LIMIT 1
       `
       
-      // Use stored prompt (should already be a template prompt from feed creation)
+      // Use stored prompt if present, otherwise resolve from V2 prompts
       let finalPrompt = post.prompt
       
       if (!finalPrompt || finalPrompt.trim().length < 20) {
-        // Regenerate prompt using templates if missing
-        console.warn(`[v0] [REGENERATE-POST] ⚠️ Pro Mode post ${postId} missing prompt, using template...`)
-        
-        // Check if user is free or paid blueprint (both use templates)
-        const access = await getFeedPlannerAccess(neonUser.id.toString())
-        
-        if (access.isFree || access.isPaidBlueprint) {
-          // Use blueprint templates (same logic as generate-single)
-          // Use canonical category resolver (Phase 1C/1D)
-          const { category, mood } = await getCategoryAndMood(
-            null,
-            { id: neonUser.id },
-            {
-              checkSettingsPreference: true,
-              checkBlueprintSubscribers: true,
-              trackSource: true,
-            }
+        console.warn(`[v0] [REGENERATE-POST] ⚠️ Pro Mode post ${postId} missing prompt, regenerating via V2 prompts...`)
+
+        if (!feedLayout?.feed_style) {
+          return NextResponse.json(
+            { error: "FEED_STYLE_REQUIRED", details: "Feed style is required for V2 regeneration." },
+            { status: 422 },
           )
-          
-          // Phase 2E: Fetch fashionStyle for subject identity override
-          let fashionStyle: string | null = null
-          try {
-            const brandResult = await sql`
-              SELECT fashion_style FROM user_personal_brand
-              WHERE user_id = ${neonUser.id} AND is_completed = true
-              LIMIT 1
-            `
-            if (brandResult.length > 0 && brandResult[0].fashion_style) {
-              const fashionStyleArray = Array.isArray(brandResult[0].fashion_style) 
-                ? brandResult[0].fashion_style 
-                : [brandResult[0].fashion_style]
-              if (fashionStyleArray.length > 0) {
-                fashionStyle = fashionStyleArray[0]
-              }
-            }
-          } catch (error) {
-            console.warn(`[v0] [REGENERATE-POST] Could not fetch fashionStyle:`, error)
-          }
-          
-          const { getBlueprintPhotoshootPrompt } = await import("@/lib/maya/blueprint-photoshoot-templates")
-          finalPrompt = await getBlueprintPhotoshootPrompt(category, mood, fashionStyle)
-          console.log(`[v0] [REGENERATE-POST] ✅ Using blueprint template prompt from canonical resolver: ${category}_${mood}`)
-        } else {
-          // Membership users: Keep Maya AI (Classic Mode uses Maya, Pro Mode uses templates if needed)
-          // This path should not be hit for Pro Mode regeneration, but keeping for safety
-          console.warn(`[v0] [REGENERATE-POST] ⚠️ Membership user Pro Mode regeneration - using default template`)
-          const { getBlueprintPhotoshootPrompt } = await import("@/lib/maya/blueprint-photoshoot-templates")
-          finalPrompt = await getBlueprintPhotoshootPrompt("professional", "minimal", null)
         }
+
+        const style = await getFeedStyleV2ByName(feedLayout.feed_style)
+        if (!style || !style.enabled) {
+          return NextResponse.json(
+            { error: "FEED_STYLE_NOT_READY", details: "Feed style is not available for V2." },
+            { status: 422 },
+          )
+        }
+
+        const variationId = feedLayout.feed_style_variation_id ?? null
+        if (feedLayout.layout_type === 'preview') {
+          finalPrompt = await getPreviewPromptForStyle(style.id, variationId)
+        } else {
+          const selected = await selectPromptForPosition(style.id, post.position, variationId)
+          finalPrompt = selected.prompt_text
+        }
+
+        await sql`
+          UPDATE feed_posts
+          SET prompt = ${finalPrompt}
+          WHERE id = ${postId}
+        `
+        console.log(`[v0] [REGENERATE-POST] ✅ Regenerated prompt via V2 (${feedLayout.layout_type || 'grid_3x3'})`)
       }
       
       // Generate with Nano Banana Pro
@@ -199,118 +193,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ fee
       })
     }
 
-    // Classic Mode path (existing logic)
-    // Get user's trained model
-    const [model] = await sql`
-      SELECT replicate_model_url, trigger_word, replicate_version_id, lora_weights_url, lora_scale
-      FROM user_models 
-      WHERE user_id = ${neonUser.id} 
-      AND training_status = 'completed'
-      AND (is_test = false OR is_test IS NULL)
-      ORDER BY created_at DESC 
-      LIMIT 1
-    `
-
-    if (!model) {
-      return NextResponse.json({ error: "No trained model found" }, { status: 400 })
-    }
-
-    // Always enhance prompt using Maya's expertise (same as generate-single route)
-    let finalPrompt = post.prompt || ""
-    try {
-      const origin = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-      const mayaResponse = await fetch(`${origin}/api/maya/generate-feed-prompt`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          postType: post.post_type || "portrait",
-          caption: post.caption,
-          feedPosition: post.position,
-          colorTheme: feedLayout?.color_palette,
-          brandVibe: feedLayout?.brand_vibe,
-          referencePrompt: post.prompt, // Use stored prompt as reference
-        }),
-      })
-
-      if (mayaResponse.ok) {
-        const mayaData = await mayaResponse.json()
-        finalPrompt = mayaData.prompt || finalPrompt
-        console.log("[v0] [REGENERATE] ✅ Enhanced prompt from Maya:", finalPrompt?.substring(0, 100))
-      } else {
-        console.warn("[v0] [REGENERATE] ⚠️ Maya enhancement failed, using stored prompt")
-      }
-    } catch (mayaError) {
-      console.error("[v0] [REGENERATE] ⚠️ Maya enhancement error:", mayaError)
-      // Continue with stored prompt but log warning
-    }
-
-    // Ensure trigger word is present
-    finalPrompt = ensureTriggerWordPrefix(finalPrompt, model.trigger_word)
-
-    // Create Replicate prediction with enhanced prompt
-    const replicate = getReplicateClient()
-    const { MAYA_QUALITY_PRESETS } = await import("@/lib/maya/quality-settings")
-    const qualitySettings = MAYA_QUALITY_PRESETS[post.post_type as keyof typeof MAYA_QUALITY_PRESETS] || MAYA_QUALITY_PRESETS.default
-    
-    if (model.lora_scale !== null && model.lora_scale !== undefined) {
-      qualitySettings.lora_scale = Number(model.lora_scale)
-    }
-
-    // Extract version ID using shared helper
-    const replicateVersionId = extractReplicateVersionId(model.replicate_version_id)
-    
-    if (!replicateVersionId) {
-      return NextResponse.json(
-        { error: "Model version not found. Please retrain your model." },
-        { status: 400 }
-      )
-    }
-
-    // Build Replicate input using shared helper
-    const generationInput = buildClassicModeReplicateInput({
-      prompt: finalPrompt,
-      qualitySettings,
-      loraWeightsUrl: model.lora_weights_url,
-    })
-
-    const prediction = await replicate.predictions.create({
-      version: replicateVersionId,
-      input: generationInput,
-    })
-
-    // Update post with new prediction (consolidated single UPDATE statement)
-    await sql`
-      UPDATE feed_posts
-      SET 
-        prediction_id = ${prediction.id},
-        generation_status = 'generating',
-        prompt = ${finalPrompt},
-        image_url = NULL,
-        updated_at = NOW()
-      WHERE id = ${postId}
-    `
-
-    // Deduct Classic Mode credits (1 credit)
-    const deduction = await deductCredits(
-      neonUser.id.toString(),
-      CREDIT_COSTS.IMAGE,
-      "image",
-      `Feed post regeneration (Classic Mode) - ${post.post_type}`,
-      prediction.id,
+    return NextResponse.json(
+      {
+        error: "UNSUPPORTED_GENERATION_MODE",
+        details: "Feed Planner V2 supports Pro Mode regeneration only.",
+      },
+      { status: 400 },
     )
-    
-    if (!deduction.success) {
-      console.error("[v0] [REGENERATE-POST] Failed to deduct credits:", deduction.error)
-    } else {
-      console.log("[v0] [REGENERATE-POST] ✅ Credits deducted:", deduction.newBalance)
-    }
-
-    console.log("[v0] Regenerating post", postId, "with prediction", prediction.id)
-
-    return NextResponse.json({
-      success: true,
-      predictionId: prediction.id,
-    })
   } catch (error: any) {
     console.error("[v0] Error regenerating post:", error)
     return NextResponse.json({ error: "Failed to regenerate post", details: error?.message }, { status: 500 })

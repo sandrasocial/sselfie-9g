@@ -4,8 +4,8 @@
  * ✅ SINGLE SOURCE OF TRUTH: All Feed Planner prompt text generation happens here.
  * 
  * NANO BANANA PRO COMPLIANCE:
- * - Preview prompts: 300-450 words with 9 concise scene execution blocks
- * - Single scene prompts: 200-270 words with explicit block structure
+ * - Preview prompts: 140-220 words with 9 concise scene execution blocks
+ * - Single scene prompts: 150-220 words with explicit block structure
  * - Both include identity anchors at start and end
  * - Both use execution data (outfits, locations, poses) for scene descriptions
  * 
@@ -48,14 +48,14 @@ export type PromptMode = 'preview_multi' | 'single_scene'
  * Everything else must either call it or be frozen.
  * 
  * FEED PLANNER MODES:
- * 1. PREVIEW = 3×3 grid prompt (300-450 words)
+ * 1. PREVIEW = 3×3 grid prompt (140-220 words)
  *    - Identity anchor at start
  *    - Explicit grid layout specification
  *    - 9 scene execution blocks (25-35 words each)
  *    - Technical specifications block
  *    - Final identity reminder
  * 
- * 2. SINGLE SCENE = One scene prompt (200-270 words)
+ * 2. SINGLE SCENE = One scene prompt (150-220 words)
  *    - Identity anchor at start
  *    - Outfit block (natural language)
  *    - Setting block (specific environment)
@@ -76,24 +76,13 @@ export function buildPromptFromScene(
   mode: PromptMode = 'single_scene',
   allScenes?: FeedPlannerScene[]
 ): string {
-  // Debug logging (temporary - for Sandra to see prompt creation)
-  const position = scene.position || (allScenes?.[0]?.position || 0)
-  
   let prompt: string
   if (mode === 'preview_multi') {
     prompt = buildPreviewMultiPrompt(scene, allScenes)
   } else {
     prompt = buildSingleScenePrompt(scene)
   }
-  
-  // Debug logging (temporary - for Sandra to see prompt creation)
-  console.log('[FEED PROMPT]', {
-    mode,
-    position,
-    promptLength: prompt.length,
-    promptPreview: prompt.slice(0, 120)
-  })
-  
+
   // 🔴 PROMPT AUTHORITY LOCK-IN: Phase 5 - Validate prompt structure before return
   validatePromptStructure(prompt, mode, allScenes, scene)
   
@@ -174,149 +163,221 @@ function buildPreviewMultiPrompt(scene: FeedPlannerScene, allScenes?: FeedPlanne
 
   const sortedScenes = [...allScenes].sort((a, b) => a.position - b.position)
   const firstScene = sortedScenes[0] || scene
+  const previewData = buildPreviewPromptDataFromScenes(sortedScenes)
 
   const parts: string[] = []
 
-  // [1] IDENTITY ANCHOR (REQUIRED FIRST)
-  parts.push('Subject identity must exactly match reference images (face, body, skin, hair).')
-
-  // [2] AESTHETIC
-  parts.push(`Aesthetic: ${getPreviewAestheticDescriptor(firstScene)}.`)
-
-  // [3] VISUALS
+  // [1] BASE PROMPT (REQUIRED FIRST)
   parts.push(
-    `Visuals: 3x3 Instagram-style grid (clean, symmetrical, framed). Authentic iPhone-style photography: ${getPreviewLightingDescriptor(firstScene)}.`
+    '3x3 photo grid featuring the same model from the reference images shown in nine distinct photographic compositions, maintaining perfect facial and body consistency.'
   )
 
-  // [4] SETTING
-  parts.push(`Setting: ${getPreviewSettingDescriptor(sortedScenes)}.`)
+  // [2] VISUALS (GRID + CONSISTENCY)
+  parts.push(
+    'Visuals: 3x3 Instagram-style grid (clean, symmetrical, framed). Photorealistic editorial photography with high contrast, moody lighting, natural film grain. No device frames or UI.'
+  )
 
-  // [5] STYLE
-  parts.push(`Style: ${getPreviewStyleDescriptor(firstScene)}.`)
+  // [3] VIBE
+  parts.push(`Vibe: ${getPreviewAestheticDescriptor(firstScene)}.`)
+
+  // [4] SETTING
+  parts.push(`Setting: ${previewData.settings.join(', ')}.`)
+
+  // [5] STYLE (palette + textures only)
+  parts.push(`Style: ${previewData.styleSummary}.`)
 
   // [6] FRAMES
   parts.push('Frames:')
-  const frameLines = buildPreviewFrameLines(sortedScenes)
-  parts.push(...frameLines.map((line) => `- ${line}`))
+  const frameLines = buildPreviewFrameLinesFromScenes(sortedScenes)
+  parts.push(...frameLines.map((line, index) => `${index + 1}. ${line}`))
 
   // [7] COLOR GRADE
-  const colorGrade = getColorGradeDescription(firstScene?.visualAesthetic, firstScene?.category)
-  parts.push(`Color Grade: ${colorGrade}.`)
+  const colorGrade = getPreviewColorGradeDescriptor(firstScene)
+  parts.push(`Color grade: ${colorGrade}.`)
 
-  const prompt = parts.join('\n')
-  
-  // Log prompt length for verification
-  const wordCount = prompt.split(/\s+/).length
-  console.log(`[PROMPT-SHAPER] Preview prompt generated: ${wordCount} words (target: 140-220, optimized for Nano Banana Pro)`)
+  const prompt = parts.join('\n\n')
   
   return prompt
 }
 
 function getPreviewAestheticDescriptor(scene: FeedPlannerScene): string {
   const aesthetic = getDetailedAestheticDescription(scene.category, scene.mood, scene.visualAesthetic)
-  const mood = getMoodDescription(scene.category, scene.pose?.description)
-  return `${aesthetic}, ${mood}`
+  const moodMap: Record<string, string> = {
+    luxury: 'dark luxury editorial, urban sophistication',
+    minimal: 'clean minimal aesthetic, calm presence',
+    beige: 'warm beige aesthetic, soft editorial mood',
+    warm: 'warm inviting aesthetic, relaxed presence',
+    edgy: 'edgy urban aesthetic, confident presence',
+    professional: 'polished editorial aesthetic, composed presence',
+  }
+  const mood = moodMap[scene.category] || 'editorial aesthetic, composed presence'
+  const normalizedAesthetic = aesthetic.toLowerCase()
+  const normalizedMood = mood.toLowerCase()
+  const moodPhrase = normalizedAesthetic.includes(normalizedMood)
+    ? ''
+    : normalizedAesthetic.includes('luxury editorial') && scene.category === 'luxury'
+      ? 'dark moody editorial, urban sophistication'
+      : mood
+  const rawDescriptor = `${aesthetic}${moodPhrase ? `, ${moodPhrase}` : ''}, authentic/expressive presence`
+  const uniqueParts = Array.from(
+    new Set(
+      rawDescriptor
+        .split(',')
+        .map((part) => part.trim())
+        .filter(Boolean)
+    )
+  )
+  return uniqueParts.slice(0, 3).join(', ')
 }
 
 function getPreviewLightingDescriptor(scene: FeedPlannerScene): string {
   const category = scene.category
-  if (category === 'luxury' || category === 'edgy' || category === 'professional') {
+  if (scene.mood === 'luxury' || category === 'luxury' || category === 'edgy' || category === 'professional') {
     return 'high-contrast, dramatic shadows, moody city lighting, natural film grain'
   }
-  if (category === 'minimal') {
+  if (scene.mood === 'minimal' || category === 'minimal') {
     return 'soft diffused light, clean shadows, airy minimal lighting, subtle film grain'
   }
-  if (category === 'beige' || category === 'warm') {
+  if (scene.mood === 'beige' || category === 'beige' || category === 'warm') {
     return 'warm golden light, gentle shadows, cozy atmosphere, subtle film grain'
   }
   return 'natural light, soft contrast, authentic film grain'
-}
-
-function getPreviewSettingDescriptor(scenes: FeedPlannerScene[]): string {
-  const uniqueLocations = Array.from(
-    new Set(
-      scenes
-        .map((scene) => scene.location?.description)
-        .filter((value): value is string => Boolean(value))
-        .map((value) => value.trim())
-        .filter(Boolean),
-    ),
-  )
-  const compactLocations = uniqueLocations.slice(0, 3).map((location) => shortenWords(location, 8))
-  return compactLocations.length > 0 ? compactLocations.join('; ') : 'varied lifestyle locations'
-}
-
-function getPreviewStyleDescriptor(scene: FeedPlannerScene): string {
-  const category = scene.category
-  const fashionStyle = scene.fashionStyle ? `${scene.fashionStyle} outfits` : 'editorial outfits'
-
-  const textureMap: Record<string, string> = {
-    luxury: 'luxury textures like velvet and leather',
-    edgy: 'bold textures and urban materials',
-    professional: 'tailored textures and polished fabrics',
-    minimal: 'clean textures and soft neutrals',
-    beige: 'warm textures and natural knits',
-    warm: 'cozy textures and soft layers',
-  }
-  const textureNote = textureMap[category] || 'refined textures and clean fabrics'
-
-  return `${fashionStyle}. Focus on ${textureNote}`
-}
-
-function buildPreviewFrameLines(scenes: FeedPlannerScene[]): string[] {
-  const sortedScenes = [...scenes].sort((a, b) => a.position - b.position)
-  const labels = [
-    'Seated',
-    'Flatlay (Overhead)',
-    'Full-Body',
-    'Close-up',
-    'Detail',
-    'Texture Detail',
-    'Walking',
-    'Flatlay (Overhead)',
-    'Mirror Selfie',
-  ]
-
-  return sortedScenes.map((scene, index) => {
-    const label = labels[index] || `Frame ${scene.position}`
-    const outfit = shortenWords(scene.outfit?.description || scene.outfit?.style || 'editorial outfit', 14)
-    const objects = scene.objects
-      .map((obj) => obj.description || obj.type)
-      .filter(Boolean)
-      .slice(0, 3)
-      .join(', ')
-    const lighting = scene.lighting?.description ? shortenWords(scene.lighting.description, 6) : null
-    const location = scene.location?.description ? shortenWords(scene.location.description, 6) : null
-    const narrative = scene.narrative ? shortenWords(scene.narrative, 4) : 'ICONIC'
-
-    if (scene.position === 5) {
-      return `${label}: Street sign "${narrative}" on ${location || 'a building'}, ${lighting ? `(${lighting})` : 'evening light'}`
-    }
-
-    if (label.includes('Flatlay')) {
-      return `${label}: ${objects || 'coffee, journal, phone'}${lighting ? ` (${lighting})` : ''}`
-    }
-
-    if (label === 'Close-up') {
-      return `${label}: ${objects || 'hand near collarbone'}, soft shadow`
-    }
-
-    if (label === 'Texture Detail') {
-      return `${label}: ${outfit}`
-    }
-
-    if (label === 'Mirror Selfie') {
-      return `${label}: ${outfit}${location ? `, ${location}` : ''}`
-    }
-
-    return `${label}: ${outfit}${location ? `, ${location}` : ''}`
-  })
 }
 
 function shortenWords(text: string, maxWords: number): string {
   const words = text.split(/\s+/).filter(Boolean)
   if (words.length <= maxWords) return text.trim()
   return words.slice(0, maxWords).join(' ')
+}
+
+type PreviewPromptData = {
+  settings: string[]
+  outfits: string[]
+  flatlayItems: string[]
+  textureDetail: string
+  lighting: string
+  styleSummary: string
+}
+
+function buildPreviewPromptDataFromScenes(scenes: FeedPlannerScene[]): PreviewPromptData {
+  const settings = Array.from(
+    new Set(
+      scenes
+        .map((scene) => scene.location?.description)
+        .filter((value): value is string => Boolean(value))
+        .map((value) => shortenWords(value.trim(), 8)),
+    ),
+  ).slice(0, 3)
+
+  const outfits = Array.from(
+    new Set(
+      scenes
+        .map((scene) => scene.outfit?.description || scene.outfit?.style)
+        .filter((value): value is string => Boolean(value))
+        .map((value) => shortenWords(value.trim(), 10)),
+    ),
+  ).slice(0, 4)
+
+  const flatlayItems = Array.from(
+    new Set(
+      scenes
+        .filter((scene) => scene.camera?.framing === 'flatlay' || scene.objects.length > 0)
+        .flatMap((scene) =>
+          scene.objects.map((obj) => obj.description || obj.type),
+        )
+        .filter((value): value is string => Boolean(value))
+        .map((value) => value.replace(/\s+on\s+.*/i, '').trim())
+        .filter(Boolean),
+    ),
+  ).slice(0, 6)
+
+  const textureDetail = outfits[0] ? outfits[0] : 'textured fabric detail'
+  const lighting = getPreviewLightingDescriptor(scenes[0])
+  const styleSummary = 'Cohesive editorial styling with consistent textures'
+
+  return {
+    settings: settings.length > 0 ? settings : ['lifestyle setting', 'editorial interior', 'urban exterior'],
+    outfits: outfits.length > 0 ? outfits : ['editorial outfit'],
+    flatlayItems: flatlayItems.length > 0 ? flatlayItems : ['curated lifestyle items'],
+    textureDetail,
+    lighting,
+    styleSummary,
+  }
+}
+
+function buildPreviewFrameLinesFromScenes(scenes: FeedPlannerScene[]): string[] {
+  const sortedScenes = [...scenes].sort((a, b) => a.position - b.position)
+
+  return sortedScenes.map((scene) => {
+    const lighting = scene.lighting?.description
+      ? scene.lighting.description.split(',')[0]?.replace(/_/g, ' ').trim()
+      : null
+    const activity = scene.activity ? scene.activity.replace(/_/g, ' ').trim() : null
+
+    // Position 5: Use actual brand statement
+    if (scene.position === 5) {
+      const narrative = scene.narrative || 'Brand statement'
+      const location = scene.location?.description
+        ? shortenWords(scene.location.description, 6)
+        : 'lifestyle setting'
+      const lightingNote = lighting ? `, ${lighting}` : ''
+      return `Sign: "${narrative}" in bold typography, ${location}${lightingNote}`
+    }
+
+    // Flatlays: Use actual objects from scene
+    if (scene.camera.framing === 'flatlay') {
+      const objects = scene.objects
+        .slice(0, 3)
+        .map((obj) => obj.description || obj.type)
+        .filter(Boolean)
+        .join(', ')
+      return `Flatlay (Overhead): ${objects || 'lifestyle items'}, ${lighting || 'natural light'}`
+    }
+
+    // Close-ups: distinguish texture vs detail shots
+    if (scene.camera.framing === 'close_up') {
+      const hasTexture = scene.objects.some((obj) => {
+        const type = (obj.type || '').toLowerCase()
+        const desc = (obj.description || '').toLowerCase()
+        return type.includes('fabric') || type.includes('texture') || desc.includes('fabric') || desc.includes('texture')
+      })
+      if (hasTexture) {
+        const textureDetail = scene.objects[0]?.description || scene.outfit?.description || 'fabric texture'
+        const lightingNote = lighting ? `, ${lighting}` : ''
+        return `Texture Detail: ${shortenWords(textureDetail, 8)}${lightingNote}`
+      }
+      const mainObject = scene.objects[0]?.type || 'object'
+      const pose = scene.pose?.description ? shortenWords(scene.pose.description, 4) : 'natural pose'
+      const lightingNote = lighting ? `, ${lighting}` : ''
+      return `Close-up: ${pose}, ${mainObject}${lightingNote}`
+    }
+
+    // Default portraits: Use resolved outfit, pose, location
+    const outfit = scene.outfit?.description || scene.outfit?.style || 'editorial outfit'
+    const location = scene.location?.description
+      ? shortenWords(scene.location.description, 2)
+      : 'lifestyle setting'
+    const pose = scene.pose?.description ? scene.pose.description.split(' ')[0] : 'standing'
+    const activityNote = activity ? `, ${shortenWords(activity, 3)}` : ''
+    const lightingNote = lighting ? `, ${lighting}` : ''
+    return `${pose}: ${outfit}, ${location}${activityNote}${lightingNote}`
+  })
+}
+
+function getPreviewColorGradeDescriptor(scene: FeedPlannerScene): string {
+  const category = scene.category
+  const mood = scene.mood
+
+  if (mood === 'luxury' || category === 'luxury' || category === 'edgy' || category === 'professional') {
+    return 'deep blacks, cool grays, concrete tones; preserved warm skin tones, subtle gold highlights'
+  }
+  if (mood === 'minimal' || category === 'minimal') {
+    return 'clean whites, soft grays, bright highlights; preserved warm skin tones'
+  }
+  if (mood === 'beige' || category === 'beige' || category === 'warm') {
+    return 'warm beiges, soft creams, gentle shadows; preserved warm skin tones'
+  }
+  return getColorGradeDescription(scene.visualAesthetic, scene.category)
 }
 
 // ============================================================================
@@ -335,104 +396,51 @@ function shortenWords(text: string, maxWords: number): string {
  * - Composition & mood block (40-60 words)
  * - Technical photography block (50-70 words)
  * - Final identity reminder (10-15 words)
- * - Total length: 200-270 words
+ * - Total length: 150-220 words
  * 
  * @param scene - Structured scene data
  * @returns Complete prompt for single scene ready for Nano Banana Pro
  */
 function buildSingleScenePrompt(scene: FeedPlannerScene): string {
-  // 🔴 POSITION 5: SIGN/TEXT CLOSE-UP (SPECIAL HANDLING)
-  // Position 5 is the CENTER ANCHOR and should ALWAYS be a sign/text close-up with brand statement
-  // This is a special content type that does NOT include the person or identity anchor
-  if (scene.position === 5) {
-    console.log(`[SINGLE SCENE] Position 5: Routing to SIGN/TEXT builder (no person, no identity anchor)`)
-    return buildSignTextBlock(scene, scene.position, getPositionLabel(scene.position))
-  }
-  
   const parts: string[] = []
-  const isNoSubjectScene = scene.camera.framing === 'flatlay' || scene.position === 6
-  
-  // [IDENTITY ANCHOR - Required First] (25-35 words)
-  // 🔴 PROMPT AUTHORITY LOCK-IN: Phase 3 - Always include identity anchor per spec
-  // All prompts (including flatlay) MUST start with identity anchor per Nano Banana Pro spec
-  if (!isNoSubjectScene) {
-    parts.push(
-      'A portrait photograph of the person from the reference images. ' +
-      'Use the uploaded photos as strict identity reference—preserve facial features, ' +
-      'skin tone, hair, and body proportions exactly.'
-    )
+
+  if (scene.finalPromptOverride) {
+    return scene.finalPromptOverride.trim()
   }
-  
-  // [OUTFIT DETAILS - Natural Language] (40-60 words)
-  if (scene.camera.framing !== 'flatlay' && !isNoSubjectScene) {
-    const outfitDesc = formatOutfitDescription(scene.outfit)
-    const outfitBlock = buildOutfitBlock(outfitDesc)
-    parts.push(outfitBlock)
-    
-    // Add objects in context if present
-    if (scene.objects.length > 0) {
-      const objectsDesc = buildObjectsDescription(scene.objects)
-      if (objectsDesc) {
-        parts.push(`The person is ${objectsDesc}`)
-      }
-    }
-  } else if (scene.camera.framing === 'flatlay') {
-    // Flatlay: Use flatlay description instead
-    const flatlayDesc = buildFlatlayDescription(scene)
-    parts.push(flatlayDesc)
-  } else {
-    const detailObjects = scene.objects.map(obj => obj.description).filter(Boolean)
-    const detailItems = detailObjects.length > 0 ? detailObjects.join(', ') : 'textured materials'
-    parts.push(
-      `A detail-focused close-up featuring ${detailItems}, emphasizing material texture, craftsmanship, and styling details.`
-    )
+
+  const framingMap: Record<string, string> = {
+    close_up: 'Close-up',
+    midshot: 'Mid-shot',
+    full_body: 'Full-body',
+    environmental: 'Environmental',
+    flatlay: 'Overhead',
   }
-  
-  // [SETTING & ENVIRONMENT - Clear Context] (30-50 words)
-  // Only add location if NOT flatlay (flatlays focus on objects, not location)
-  if (scene.camera.framing !== 'flatlay') {
-    const settingBlock = buildSettingBlock(scene.location.description, scene.lighting.description)
-    parts.push(settingBlock)
-  } else {
-    // Flatlay: Add surface/background context
-    const surfaceDesc = scene.category === 'minimal' 
-      ? 'on a clean minimal surface'
-      : scene.category === 'luxury'
-      ? 'on a luxurious surface'
-      : scene.category === 'beige'
-      ? 'on a warm beige surface'
-      : 'on an editorial surface'
-    parts.push(`Setting: ${surfaceDesc}`)
+  const framingLabel = framingMap[scene.camera?.framing] || 'Portrait'
+  const pose = scene.pose?.description || 'natural pose'
+  const setting = scene.location?.description || 'lifestyle setting'
+  const styling = scene.outfit?.description || scene.outfit?.style || 'cohesive editorial styling'
+  const objects = scene.objects
+    .map((obj) => obj.description || obj.type)
+    .filter(Boolean)
+    .slice(0, 3)
+    .join(', ')
+
+  parts.push('Subject identity must exactly match reference images (face, body, skin, hair).')
+  parts.push(`Aesthetic: ${getPreviewAestheticDescriptor(scene)}.`)
+  parts.push(`Composition: ${framingLabel} framing with ${pose}. Authentic iPhone-style photography.`)
+  parts.push(`Setting: ${setting}.`)
+  parts.push(`Styling: ${styling}.`)
+  if (objects) {
+    parts.push(`Details: ${objects}.`)
   }
-  
-  // [COMPOSITION & MOOD - Photographic Direction] (40-60 words)
-  if (scene.camera.framing !== 'flatlay' && !isNoSubjectScene) {
-    const compositionBlock = buildCompositionBlock(scene)
-    parts.push(compositionBlock)
-  }
-  
-  // [TECHNICAL SPECIFICATIONS - Photography Quality] (50-70 words)
-  const technicalBlock = buildTechnicalBlock(scene.category)
-  parts.push(technicalBlock)
-  
-  // [CRITICAL REMINDER] (10-15 words)
-  if (scene.camera.framing !== 'flatlay' && !isNoSubjectScene) {
-    parts.push('Maintain exact facial identity and body proportions from reference images.')
-  }
-  
-  // Assemble final prompt
+  parts.push(`Color grade: ${getPreviewColorGradeDescriptor(scene)}.`)
+
   const prompt = parts
-    .filter(p => p && p.trim())
-    .join(' ')
-    .replace(/\.\s*\./g, '.') // Clean up double periods
-    .replace(/\s+/g, ' ') // Normalize spaces
+    .filter((p) => p && p.trim())
+    .join('\n')
+    .replace(/\.\s*\./g, '.')
     .trim()
-  
-  // Log prompt length for verification
-  const wordCount = prompt.split(/\s+/).length
-  console.log(`[PROMPT-SHAPER] Single scene prompt generated: ${wordCount} words (target: 200-270)`)
-  
-  // Ensure proper capitalization
+
   return prompt.charAt(0).toUpperCase() + prompt.slice(1)
 }
 
@@ -469,36 +477,18 @@ function validatePromptStructure(
     prompt.toLowerCase().includes('person from the reference images')
   
   if (requiresSubjectIdentity && !hasIdentityAnchor) {
-    if (mode === 'single_scene') {
-      console.warn('[PROMPT-SHAPER] ⚠️ Missing identity anchor for single scene prompt')
-    } else {
+    if (mode !== 'single_scene') {
       errors.push('Prompt missing required identity anchor (must contain "reference images" or "person from the reference images")')
     }
   }
   
   // 2. Word Count Range
-  // 🔴 PROMPT AUTHORITY LOCK-IN: Validation with Nano Banana Pro-optimized thresholds
-  // REVISED TARGETS (2026-01-19):
-  // - Preview mode: Concise structure with 9 short frames = 100-300 words optimal (target: 140-220)
-  // - Single scene mode: Concise, focused description = 100-300 words (optimal: 150-220)
-  // Nano Banana Pro performs better with concise, focused descriptions rather than verbose prompts
-  const wordCount = prompt.split(/\s+/).length
+  // Word count is informational only and must NOT block generation.
+  // Users should never fail due to length; we only log guidance for tuning.
   if (mode === 'preview_multi') {
-    // Optimal range: 100-300 (target: 140-220 for concise grid generation)
-    if (wordCount < 100 || wordCount > 300) {
-      errors.push(`Prompt word count ${wordCount} outside acceptable range [100-300] for preview mode (optimal: 140-220)`)
-    } else if (wordCount < 140 || wordCount > 220) {
-      // Within tolerance but outside optimal - log info but don't fail
-      console.log(`[PROMPT-SHAPER] ℹ️ Preview prompt word count ${wordCount} outside optimal range [140-220] but acceptable [100-300]`)
-    }
+    // Word count is informational only for preview mode.
   } else {
-    // Single scene mode: Do NOT block on word count (safety for users)
-    if (wordCount < 100 || wordCount > 300) {
-      console.warn(`[PROMPT-SHAPER] ⚠️ Single scene prompt word count ${wordCount} outside acceptable range [100-300] (optimal: 150-220)`)
-    } else if (wordCount < 150 || wordCount > 220) {
-      // Within tolerance but outside target - log info but don't fail
-      console.log(`[PROMPT-SHAPER] ℹ️ Single scene prompt word count ${wordCount} outside target range [150-220] but within acceptable range [100-300]`)
-    }
+    // Word count is informational only for single scene mode.
   }
   
   // 3. Scene Count (Preview Mode Only)
@@ -525,13 +515,13 @@ function validatePromptStructure(
                      prompt.toLowerCase().includes('focal length') || prompt.toLowerCase().includes('depth of field')
     
     if (requiresSubjectIdentity && !hasOutfit) {
-      console.warn('[PROMPT-SHAPER] ⚠️ Missing outfit description block for single scene prompt')
+      // Missing outfit block is non-blocking; keep validation soft.
     }
     if (requiresSubjectIdentity && !hasLocation) {
-      console.warn('[PROMPT-SHAPER] ⚠️ Missing location/setting description block for single scene prompt')
+      // Missing setting block is non-blocking; keep validation soft.
     }
     if (!hasCamera) {
-      console.warn('[PROMPT-SHAPER] ⚠️ Missing camera/technical specifications block for single scene prompt')
+      // Missing camera block is non-blocking; keep validation soft.
     }
   }
   
@@ -543,480 +533,8 @@ function validatePromptStructure(
   // Throw error if any validation failed
   if (errors.length > 0) {
     const errorMessage = `Prompt validation failed:\n${errors.map(e => `  - ${e}`).join('\n')}\n\nPrompt preview: ${prompt.substring(0, 200)}...`
-    console.error('[PROMPT-SHAPER] ❌ VALIDATION FAILED:', errorMessage)
     throw new Error(errorMessage)
   }
-  
-  console.log(`[PROMPT-SHAPER] ✅ Prompt validation passed (${wordCount} words, mode: ${mode})`)
-}
-
-// ============================================================================
-// HELPER FUNCTIONS (PROMPT BUILDING ONLY)
-// ============================================================================
-
-/**
- * Get Position Label for Grid Layout
- * 
- * Converts position number (1-9) to grid position label (Top-Left, Top-Center, etc.)
- */
-function getPositionLabel(position: number): string {
-  const row = Math.floor((position - 1) / 3) + 1
-  const col = ((position - 1) % 3) + 1
-  
-  if (row === 1 && col === 1) return 'Top-Left'
-  if (row === 1 && col === 2) return 'Top-Center'
-  if (row === 1 && col === 3) return 'Top-Right'
-  if (row === 2 && col === 1) return 'Middle-Left'
-  if (row === 2 && col === 2) return 'Middle-Center'
-  if (row === 2 && col === 3) return 'Middle-Right'
-  if (row === 3 && col === 1) return 'Bottom-Left'
-  if (row === 3 && col === 2) return 'Bottom-Center'
-  if (row === 3 && col === 3) return 'Bottom-Right'
-  return `Position ${position}`
-}
-
-/**
- * Build Scene Execution Block for Preview Prompt
- * 
- * Creates a 40-60 word scene block with diverse content types:
- * - Portraits (person visible)
- * - Object flatlays (no person)
- * - Detail close-ups (cropped person)
- * - Texture shots (no person)
- * - Overhead flatlays (arms/partial person)
- * 
- * Used in preview prompts to describe each of the 9 scenes following Instagram feed layout principles.
- */
-function buildSceneExecutionBlock(scene: FeedPlannerScene, position: number): string {
-  const positionLabel = getPositionLabel(position)
-  
-  // 🔴 DIAGNOSTIC: Log actual scene data to understand routing
-  console.log(`[SCENE DATA] Position ${position}:`, {
-    framing: scene.camera.framing,
-    activity: scene.activity,
-    objects: scene.objects.map(obj => ({ type: obj.type, description: obj.description, position: obj.position })),
-    location: scene.location.type,
-    narrative: scene.narrative?.substring(0, 100),
-  })
-  
-  // 🔴 POSITION 5: SIGN/TEXT CLOSE-UP (ALWAYS - HIGHEST PRIORITY)
-  // Position 5 is the CENTER ANCHOR and should ALWAYS be a sign/text close-up with brand statement
-  if (position === 5) {
-    console.log(`[SCENE EXECUTION] Position 5: Routing to SIGN/TEXT block`)
-    return buildSignTextBlockPreview(scene, position, positionLabel)
-  }
-  
-  // Determine content type based on framing, objects, and activity
-  const isFlatlay = scene.camera.framing === 'flatlay'
-  const isCloseUp = scene.camera.framing === 'close_up'
-  const activityLower = scene.activity?.toLowerCase() || ''
-  const narrativeLower = scene.narrative?.toLowerCase() || ''
-  
-  // Check object descriptions (more flexible matching)
-  const objectTypes = scene.objects.map(obj => (obj.type || '').toLowerCase()).join(' ')
-  const objectDescriptions = scene.objects.map(obj => (obj.description || '').toLowerCase()).join(' ')
-  const allObjectText = `${objectTypes} ${objectDescriptions}`.toLowerCase()
-  
-  // OBJECT FLATLAY (no person) - flatlay with food/wellness objects
-  if (isFlatlay && (
-    allObjectText.includes('smoothie') || allObjectText.includes('bowl') ||
-    allObjectText.includes('yoga mat') || allObjectText.includes('granola') ||
-    allObjectText.includes('berry') || allObjectText.includes('coconut') ||
-    activityLower.includes('smoothie') || narrativeLower.includes('smoothie') ||
-    (position === 2 && isFlatlay) // Strategic position 2 often object flatlay
-  )) {
-    return buildObjectFlatlayBlockPreview(scene, position, positionLabel)
-  }
-  
-  // TEXTURE SHOT (no person) - close-up of fabric/material
-  if (isCloseUp && (
-    allObjectText.includes('fabric') || allObjectText.includes('texture') ||
-    allObjectText.includes('mesh') || allObjectText.includes('material') ||
-    activityLower.includes('fabric') || narrativeLower.includes('texture') ||
-    (position === 6 && isCloseUp) // Strategic position 6 often texture shot
-  )) {
-    return buildTextureShotBlockPreview(scene, position, positionLabel)
-  }
-  
-  // DETAIL CLOSE-UP (cropped person) - hands holding objects
-  if (isCloseUp && (
-    scene.objects.some(obj => obj.position === 'hand') ||
-    allObjectText.includes('cup') || allObjectText.includes('tea') ||
-    allObjectText.includes('coffee') || allObjectText.includes('ceramic') ||
-    activityLower.includes('tea') || activityLower.includes('coffee') ||
-    (position === 4 && isCloseUp) // Strategic position 4 often detail close-up
-  )) {
-    return buildDetailCloseUpBlockPreview(scene, position, positionLabel)
-  }
-  
-  // OVERHEAD FLATLAY (arms only) - person's hands arranging workout gear
-  if (isFlatlay && (
-    allObjectText.includes('mat') || allObjectText.includes('bottle') ||
-    allObjectText.includes('band') || allObjectText.includes('headphone') ||
-    allObjectText.includes('resistance') || allObjectText.includes('workout') ||
-    activityLower.includes('arrang') || activityLower.includes('prepar') ||
-    (position === 8 && isFlatlay) // Strategic position 8 often overhead flatlay
-  )) {
-    return buildOverheadFlatlayBlockPreview(scene, position, positionLabel)
-  }
-  
-  // DEFAULT: PORTRAIT (full person visible)
-  return buildPortraitBlockPreview(scene, position, positionLabel)
-}
-
-/**
- * Build Object Flatlay Block - PREVIEW MODE (CONCISE: ~25-30 words)
- * Example: Smoothie bowl, yoga mat, wellness objects
- */
-function buildObjectFlatlayBlockPreview(scene: FeedPlannerScene, position: number, positionLabel: string): string {
-  const objects = scene.objects.slice(0, 2).map(obj => obj.type).join(', ') // Limit to 2 objects
-  return `Position ${position} (${positionLabel}): Overhead flatlay of ${objects}, natural light, clean aesthetic.`
-}
-
-/**
- * Build Object Flatlay Block - SINGLE SCENE MODE (DETAILED)
- * Example: Smoothie bowl, yoga mat, wellness objects
- * @deprecated Kept for reference - currently unused
- */
-function _buildObjectFlatlayBlock(scene: FeedPlannerScene, position: number, positionLabel: string): string {
-  const objects = scene.objects.map(obj => obj.description || obj.type).join(', ')
-  const surface = scene.location.description.includes('marble') ? 'marble countertop' :
-                  scene.location.description.includes('wood') ? 'wooden surface' :
-                  scene.location.description.includes('white') ? 'clean white surface' :
-                  'clean minimal surface'
-  const aestheticDesc = getDetailedAestheticDescription(scene.category, scene.mood, scene.visualAesthetic)
-  
-  return `Position ${position} (${positionLabel}): A minimalist flatlay photograph featuring ${objects} on a ${surface}. Shot from directly overhead with soft natural light creating clean shadows across the surface texture, emphasizing ${aestheticDesc} aesthetic and wellness ritual.`
-}
-
-/**
- * Build Texture Shot Block - PREVIEW MODE (CONCISE: ~20-25 words)
- * Example: Athletic fabric close-up, material texture
- */
-function buildTextureShotBlockPreview(scene: FeedPlannerScene, position: number, positionLabel: string): string {
-  const fabricType = scene.outfit.style || 'athletic fabric'
-  return `Position ${position} (${positionLabel}): Macro close-up of ${fabricType} texture, natural lighting.`
-}
-
-/**
- * Build Texture Shot Block - SINGLE SCENE MODE (DETAILED)
- * Example: Athletic fabric close-up, material texture
- * @deprecated Kept for reference - currently unused
- */
-function _buildTextureShotBlock(scene: FeedPlannerScene, position: number, positionLabel: string): string {
-  const fabricDesc = scene.outfit.description || scene.outfit.style
-  const textureDesc = scene.objects.find(obj => obj.description?.includes('fabric') || obj.description?.includes('texture'))?.description || 
-                     `${fabricDesc} fabric with geometric pattern texture`
-  
-  return `Position ${position} (${positionLabel}): An extreme close-up detail photograph of ${textureDesc} with subtle sheen. The frame fills with the technical fabric's diagonal mesh weave, emphasizing quality craftsmanship. Shot macro with shallow depth of field creating soft background blur while maintaining razor focus on mesh pattern. Natural light grazes the surface highlighting dimensional texture.`
-}
-
-/**
- * Build Detail Close-Up Block - PREVIEW MODE (CONCISE: ~25-30 words)
- * Example: Hands holding tea cup, partial body visible
- */
-function buildDetailCloseUpBlockPreview(scene: FeedPlannerScene, position: number, positionLabel: string): string {
-  const mainObject = scene.objects[0]?.type || 'object'
-  const outfit = scene.outfit.style || scene.outfit.base
-  return `Position ${position} (${positionLabel}): Close-up of hands holding ${mainObject}, ${outfit} visible, soft window light.`
-}
-
-/**
- * Build Detail Close-Up Block - SINGLE SCENE MODE (DETAILED)
- * Example: Hands holding tea cup, partial body visible
- * @deprecated Kept for reference - currently unused
- */
-function _buildDetailCloseUpBlock(scene: FeedPlannerScene, position: number, positionLabel: string): string {
-  const objects = scene.objects.map(obj => obj.description || obj.type).join(' and ')
-  const outfitDesc = formatOutfitDescription(scene.outfit)
-  const aestheticDesc = getDetailedAestheticDescription(scene.category, scene.mood, scene.visualAesthetic)
-  
-  return `Position ${position} (${positionLabel}): An intimate close-up detail shot focused on the person's hands holding ${objects}, with ${outfitDesc} visible in the cropped frame. Only hands and ${objects.split(' and ')[0]} are visible, emphasizing the mindful moment. Soft natural window light creates gentle shadows on skin texture, conveying ${aestheticDesc} aesthetic.`
-}
-
-/**
- * Build Overhead Flatlay Block - PREVIEW MODE (CONCISE: ~25-30 words)
- * Example: Person's hands arranging workout gear
- */
-function buildOverheadFlatlayBlockPreview(scene: FeedPlannerScene, position: number, positionLabel: string): string {
-  const objects = scene.objects.slice(0, 2).map(obj => obj.type).join(', ')
-  return `Position ${position} (${positionLabel}): Overhead view of hands arranging ${objects}, arms only, bright natural light.`
-}
-
-/**
- * Build Overhead Flatlay Block - SINGLE SCENE MODE (DETAILED)
- * Example: Person's hands arranging workout gear
- * @deprecated Kept for reference - currently unused
- */
-function _buildOverheadFlatlayBlock(scene: FeedPlannerScene, position: number, positionLabel: string): string {
-  const objects = scene.objects.map(obj => obj.description || obj.type).join(', ')
-  const outfitDesc = formatOutfitDescription(scene.outfit)
-  const surface = scene.location.description.includes('white') ? 'clean white flooring' :
-                  scene.location.description.includes('wood') ? 'wooden floor' :
-                  'clean surface'
-  
-  return `Position ${position} (${positionLabel}): An overhead flatlay photograph showing the person's hands arranging ${objects} on ${surface}. Face is cropped out, showing only arms in ${outfitDesc} preparing for workout. Shot directly above with bright even natural lighting creating clean shadows, emphasizing organized fitness lifestyle and intentional workout preparation ritual.`
-}
-
-/**
- * Build Portrait Block - PREVIEW MODE (CONCISE: ~25-35 words)
- * 
- * Creates brief descriptions suitable for 3x3 grid generation.
- * Focuses on essential elements: outfit, pose, location, lighting.
- */
-function buildPortraitBlockPreview(scene: FeedPlannerScene, position: number, positionLabel: string): string {
-  const outfit = scene.outfit.style || scene.outfit.base
-  const location = scene.location.description.split(' ')[0] // First word only (e.g., "gym", "coffee", "home")
-  const framing = scene.camera.framing === 'full_body' ? 'full-body' : 
-                  scene.camera.framing === 'midshot' ? 'mid-shot' : 'portrait'
-  const pose = scene.pose?.description || 'standing'
-  const lighting = scene.lighting?.description || 'natural light'
-  
-  return `Position ${position} (${positionLabel}): ${outfit} outfit, ${pose.split(' ')[0]} in ${location}, ${framing} angle, ${lighting.replace(/_/g, ' ')}.`
-}
-
-/**
- * Build Sign/Text Block - PREVIEW MODE (CONCISE)
- * 
- * For position 5 (center anchor): Creates a close-up of a street sign or wall sign
- * displaying the brand statement. NO person holding the sign - the sign itself is the focus.
- */
-function buildSignTextBlockPreview(scene: FeedPlannerScene, position: number, positionLabel: string): string {
-  const narrative = scene.narrative || 'Brand statement'
-  const aesthetic = getDetailedAestheticDescription(scene.category, scene.mood || '', scene.visualAesthetic)
-  const location = scene.location.description || 'urban street'
-  
-  return `Position ${position} (${positionLabel}): Close-up of a vintage street sign or wall-mounted sign displaying "${narrative}" in bold typography, ${location} background softly blurred, natural daylight, modern editorial lifestyle photography, ${aesthetic}.`
-}
-
-/**
- * Build Sign/Text Block - SINGLE SCENE MODE (DETAILED)
- * 
- * For position 5 (center anchor): Creates a detailed close-up description of a sign/text
- * with the brand statement. NO person holding it - environmental/lifestyle context.
- */
-function buildSignTextBlock(scene: FeedPlannerScene, position: number, _positionLabel: string): string {
-  const narrative = scene.narrative || 'Brand statement'
-  const location = scene.location.description || 'urban street corner'
-  const lightingDesc = scene.lighting?.description || 'natural daylight'
-  const lighting = expandLightingDescription(lightingDesc, position)
-  const aesthetic = getDetailedAestheticDescription(scene.category, scene.mood || '', scene.visualAesthetic)
-  
-  // Create natural prose for sign/text scene
-  const openings = [
-    'A close-up photograph of a vintage street sign reading',
-    'An eye-level shot of a wall-mounted sign displaying',
-    'A detailed close-up of an elegant sign showcasing',
-    'A lifestyle photograph of a street sign featuring'
-  ]
-  const opening = openings[position % openings.length]
-  
-  return `${opening} "${narrative}" in bold, modern typography. The sign is positioned at eye level in ${location}, creating an authentic lifestyle aesthetic. ${lighting}. The background is softly blurred with natural bokeh, keeping focus on the crisp lettering of the sign. ${aesthetic} across the frame. Shot on iPhone 15 Pro with shallow depth of field, the sign's text remains sharp while the environment provides context without distraction.`
-}
-
-/**
- * Build Portrait Block - SINGLE SCENE MODE (DETAILED)
- * 
- * Creates natural flowing prose (40-60 words) with variation across positions.
- * Avoids robotic repetition and fragmented sentences.
- * @deprecated Kept for reference - currently unused
- */
-function _buildPortraitBlock(scene: FeedPlannerScene, position: number, positionLabel: string): string {
-  // Opening variations (avoid repetition)
-  const openings = [
-    'The person wears',
-    'Wearing',
-    'The person appears in',
-    'Dressed in',
-    'Outfitted in'
-  ]
-  const opening = openings[position % openings.length]
-  
-  // Build natural flowing paragraph components
-  const outfitDesc = formatOutfitDescription(scene.outfit)
-  const locationDetail = expandLocationDescription(scene.location.description)
-  const poseDetail = expandPoseDescription(scene.pose?.description, scene.camera.framing)
-  const cameraAngle = getCameraAngle(scene.camera.framing)
-  const moodDesc = getMoodDescription(scene.category, scene.pose?.description)
-  const lightingDetail = expandLightingDescription(scene.lighting?.description || '', position)
-  const aestheticDesc = getDetailedAestheticDescription(scene.category, scene.mood, scene.visualAesthetic)
-  
-  // Assemble as natural prose (40-60 words)
-  return (
-    `Position ${position} (${positionLabel}): ${opening} ${outfitDesc}, ` +
-    `${poseDetail} in ${locationDetail}. Shot from ${cameraAngle} ` +
-    `capturing ${moodDesc}. ${lightingDetail}, emphasizing the ${aestheticDesc} aesthetic.`
-  )
-}
-
-/**
- * Expand location description with environmental details
- */
-function expandLocationDescription(locationDesc: string): string {
-  const descLower = locationDesc.toLowerCase()
-  
-  // Add architectural/environmental details to basic locations
-  if (descLower.includes('gym')) {
-    return 'a modern gym with floor-to-ceiling windows providing natural daylight'
-  }
-  if (descLower.includes('coffee shop') || descLower.includes('coffeeshop')) {
-    return 'a minimalist coffee shop interior with large storefront windows'
-  }
-  if (descLower.includes('living room')) {
-    return 'a home living room with minimalist decor and abundant natural light'
-  }
-  if (descLower.includes('yoga studio')) {
-    return 'a peaceful yoga studio with blonde wood floors and natural window light'
-  }
-  if (descLower.includes('wellness center')) {
-    return 'a bright wellness center featuring abundant natural light from skylights'
-  }
-  if (descLower.includes('home') && !descLower.includes('living room')) {
-    return 'a bright home space with minimalist decor and natural lighting'
-  }
-  
-  // Fallback: return as-is
-  return locationDesc
-}
-
-/**
- * Expand pose description with energy/mood context
- */
-function expandPoseDescription(poseDesc: string | undefined, framing: string): string {
-  if (!poseDesc) {
-    return framing === 'full_body' ? 'standing confidently' : 
-           framing === 'midshot' ? 'positioned naturally' : 
-           'captured in close-up'
-  }
-  
-  const descLower = poseDesc.toLowerCase()
-  
-  // Add context to basic pose descriptions
-  if (descLower.includes('standing')) {
-    return 'standing confidently with natural posture'
-  }
-  if (descLower.includes('sitting')) {
-    return 'seated comfortably in a relaxed pose'
-  }
-  if (descLower.includes('walking')) {
-    return 'walking naturally with confident stride'
-  }
-  if (descLower.includes('yoga') || descLower.includes('stretch')) {
-    return 'in a serene yoga pose with focused energy'
-  }
-  if (descLower.includes('relaxed')) {
-    return 'positioned in a relaxed, natural stance'
-  }
-  if (descLower.includes('meditation') || descLower.includes('meditative')) {
-    return 'seated in a centered meditation pose with peaceful expression'
-  }
-  
-  return poseDesc
-}
-
-/**
- * Expand lighting description with variety (avoid repetition)
- * Also fixes underscore issue: "window_light" → "window light"
- */
-function expandLightingDescription(lightingDesc: string, position: number): string {
-  // Normalize underscores (fix "window_light" → "window light")
-  const normalized = lightingDesc.replace(/_/g, ' ')
-  const descLower = normalized.toLowerCase()
-  
-  // Base lighting type detection
-  const isNatural = descLower.includes('natural') || descLower.includes('window') || descLower.includes('daylight')
-  const isWarm = descLower.includes('warm') || descLower.includes('artificial') || descLower.includes('evening')
-  const isOvercast = descLower.includes('overcast')
-  
-  // Varied descriptions to avoid "natural window light with dramatic shadows" × 7
-  const naturalVariations = [
-    'Natural window light streams across the space creating soft directional shadows',
-    'Soft natural light from large windows creates even, flattering illumination',
-    'Natural daylight floods the space with bright, clean lighting',
-    'Window light provides gentle side lighting that emphasizes form',
-    'Natural light creates a bright, uplifting atmosphere with subtle shadows',
-    'Diffused natural light from skylights provides even, soft illumination',
-    'Natural window light casts long dramatic shadows across the floor',
-    'Bright natural light through large windows creates clean, minimal lighting'
-  ]
-  
-  const warmVariations = [
-    'Warm artificial lighting creates an evening ambiance with golden glow',
-    'Soft artificial lighting provides intimate atmosphere with gentle shadows',
-    'Warm table lamps create cozy lighting with amber tones',
-    'Artificial warm lighting casts soft shadows creating an inviting atmosphere'
-  ]
-  
-  const overcastVariations = [
-    'Overcast daylight provides soft, even illumination with minimal shadows',
-    'Diffused overcast light creates a calm, neutral atmosphere',
-    'Soft overcast lighting eliminates harsh shadows for even exposure'
-  ]
-  
-  if (isNatural) {
-    return naturalVariations[position % naturalVariations.length]
-  }
-  if (isWarm) {
-    return warmVariations[position % warmVariations.length]
-  }
-  if (isOvercast) {
-    return overcastVariations[position % overcastVariations.length]
-  }
-  
-  // Fallback: return normalized description
-  return normalized
-}
-
-/**
- * Get camera angle from framing type
- */
-function getCameraAngle(framing: string): string {
-  const framingMap: Record<string, string> = {
-    'close_up': 'eye-level close-up angle',
-    'midshot': 'eye-level mid-shot angle',
-    'full_body': 'eye-level full-body angle',
-    'environmental': 'wide environmental angle',
-    'flatlay': 'overhead flatlay angle'
-  }
-  return framingMap[framing] || 'eye-level angle'
-}
-
-/**
- * Get mood description from category and pose
- */
-function getMoodDescription(category: string, poseDesc?: string): string {
-  const poseLower = poseDesc?.toLowerCase() || ''
-  
-  if (poseLower.includes('relaxed')) {
-    return 'relaxed, natural energy'
-  }
-  if (poseLower.includes('confident')) {
-    return 'confident, strong presence'
-  }
-  if (poseLower.includes('yoga') || poseLower.includes('meditation')) {
-    return 'serene, meditative focus'
-  }
-  if (poseLower.includes('walking')) {
-    return 'dynamic forward movement and relaxed energy'
-  }
-  if (poseLower.includes('standing')) {
-    return 'post-workout energy and strong athletic posture'
-  }
-  if (poseLower.includes('sitting')) {
-    return 'centered, grounded meditation pose with peaceful expression'
-  }
-  
-  // Default based on category
-  const moodMap: Record<string, string> = {
-    'luxury': 'editorial sophistication and refined presence',
-    'minimal': 'clean, minimalist aesthetic and calm energy',
-    'beige': 'warm, inviting atmosphere and cozy comfort',
-    'warm': 'welcoming, authentic warmth',
-    'edgy': 'confident, bold attitude',
-    'professional': 'polished, professional presence'
-  }
-  
-  return moodMap[category] || 'natural, authentic energy'
 }
 
 /**
@@ -1070,344 +588,9 @@ function getAestheticDescription(category: string): string {
   return aestheticMap[category] || 'editorial'
 }
 
-/**
- * Build Outfit Block for Single Scene
- * 
- * Formats outfit description into natural language sentence block.
- */
-function buildOutfitBlock(outfitDescription: string): string {
-  return `The person is wearing ${outfitDescription}.`
-}
-
-/**
- * Build Setting Block for Single Scene
- * 
- * Formats location and lighting into setting block.
- */
-function buildSettingBlock(locationDesc: string, lightingDesc?: string): string {
-  const parts: string[] = []
-  
-  parts.push(`Setting: ${locationDesc}`)
-  
-  if (lightingDesc) {
-    // Normalize underscores (fix "window_light" → "window light")
-    const normalized = lightingDesc.replace(/_/g, ' ')
-    parts.push(normalized)
-  }
-  
-  return parts.join('. ') + '.'
-}
-
-/**
- * Build Composition Block for Single Scene
- * 
- * Formats camera angle, pose, and mood into composition block.
- */
-function buildCompositionBlock(scene: FeedPlannerScene): string {
-  const parts: string[] = []
-  
-  // Camera angle from framing
-  const framingToAngle: Record<string, string> = {
-    'close_up': 'Close-up',
-    'midshot': 'Eye-level',
-    'full_body': 'Eye-level',
-    'environmental': 'Eye-level',
-    'flatlay': 'Overhead'
-  }
-  const cameraAngle = framingToAngle[scene.camera.framing] || 'Eye-level'
-  parts.push(`Camera angle: ${cameraAngle}`)
-  
-  // Framing
-  const framingDesc = scene.camera.framing === 'close_up' ? 'close-up' : 
-                      scene.camera.framing === 'midshot' ? 'mid-shot' : 
-                      scene.camera.framing === 'full_body' ? 'full-body' : 
-                      scene.camera.framing === 'environmental' ? 'environmental' : 
-                      'overhead'
-  parts.push(`${framingDesc} framing`)
-  
-  // Pose
-  if (scene.pose?.description) {
-    parts.push(`Pose: ${scene.pose.description}`)
-  }
-  
-  // Mood/atmosphere (derive from category or use default)
-  const moodMap: Record<string, string> = {
-    'luxury': 'Editorial and sophisticated',
-    'minimal': 'Clean and minimalistic',
-    'beige': 'Warm and cozy',
-    'warm': 'Warm and inviting',
-    'edgy': 'Confident and bold',
-    'professional': 'Professional and polished'
-  }
-  const mood = moodMap[scene.category] || 'Natural and authentic'
-  parts.push(`Mood: ${mood}`)
-  
-  return parts.join('. ') + '.'
-}
-
-/**
- * Build Technical Block for Single Scene
- * 
- * Formats technical photography specifications.
- */
-function buildTechnicalBlock(category: string): string {
-  const aestheticMap: Record<string, string> = {
-    'luxury': 'cool tones with desaturated urban palette',
-    'minimal': 'warm neutral editorial tones',
-    'beige': 'warm beige and camel tones',
-    'warm': 'warm golden tones',
-    'edgy': 'cool desaturated tones',
-    'professional': 'neutral professional tones'
-  }
-  
-  const colorGrade = aestheticMap[category] || 'warm neutral editorial tones'
-  
-  return (
-    'Shot with professional DSLR, 35-85mm focal length range, f/2.0-2.8 depth of field ' +
-    'creating soft background blur while maintaining sharp subject focus. Natural skin ' +
-    'texture showing visible pores and authentic detail. Film grain aesthetic for organic ' +
-    'photographic quality. High-resolution output. Color-graded for ' +
-    `${colorGrade} with consistent lighting quality.`
-  )
-}
-
-/**
- * Build Subject + Outfit Description
- * 
- * Formats subject and outfit into natural language.
- * Handles flatlays differently (no "subject wearing" phrasing).
- */
-function _buildSubjectOutfitDescription(scene: FeedPlannerScene): string {
-  const { camera, outfit, pose } = scene
-  
-  // Flatlays: No subject phrasing
-  if (camera.framing === 'flatlay') {
-    return buildFlatlayDescription(scene)
-  }
-  
-  // Portrait/Movement scenes: Use subject phrasing
-  const outfitDesc = formatOutfitDescription(outfit)
-  const poseDesc = pose.description
-  
-  return `The subject is ${poseDesc} wearing ${outfitDesc}`
-}
-
-/**
- * Build Flatlay Description
- * 
- * Flatlays are lifestyle detail photos, not portraits.
- * No "subject wearing" phrasing.
- * Focus on objects and styling.
- */
-function buildFlatlayDescription(scene: FeedPlannerScene): string {
-  const { objects, outfit, category } = scene
-  
-  // Build flatlay from objects + outfit context
-  const objectDescs = objects.map(obj => obj.description)
-  const items = objectDescs.length > 0 
-    ? objectDescs.join(', ')
-    : 'lifestyle items'
-  
-  let flatlay = `An overhead lifestyle detail photo featuring ${items}`
-  
-  // Add outfit context if relevant (e.g., "athletic wear folded")
-  if (outfit.base.includes('athletic')) {
-    flatlay += ` with ${outfit.style} activewear arranged naturally`
-  } else if (outfit.base.includes('lounge')) {
-    flatlay += ` with cozy ${outfit.style} items arranged naturally`
-  }
-  
-  // Add category aesthetic
-  if (category === 'minimal') {
-    flatlay += ' on a clean minimal surface'
-  } else if (category === 'luxury') {
-    flatlay += ' on a luxurious surface'
-  } else if (category === 'beige') {
-    flatlay += ' on a warm beige surface'
-  }
-  
-  flatlay += '. The outfit pieces are arranged neatly with complementary accessories, showcasing textures, materials, and color harmony in a clean, curated layout.'
-  
-  return flatlay
-}
-
-/**
- * Format Outfit Description
- * 
- * Converts structured outfit data to natural language.
- */
-function formatOutfitDescription(outfit: FeedPlannerScene['outfit']): string {
-  const parts: string[] = []
-  
-  // Base outfit
-  if (outfit.base === 'athletic_base') {
-    parts.push(`${outfit.style} activewear`)
-  } else if (outfit.base === 'casual_base') {
-    parts.push(`${outfit.style} casual outfit`)
-  } else if (outfit.base === 'lounge_base') {
-    parts.push(`${outfit.style} lounge wear`)
-  } else if (outfit.base === 'professional_base') {
-    parts.push(`${outfit.style} professional outfit`)
-  } else if (outfit.base === 'dressy_base') {
-    parts.push(`${outfit.style} dressy outfit`)
-  } else {
-    parts.push(`${outfit.style} outfit`)
-  }
-  
-  // Layer (if present)
-  if (outfit.layer) {
-    if (outfit.layer === 'casual_layer') {
-      parts.push('with a casual layer')
-    } else if (outfit.layer === 'outerwear') {
-      parts.push('with outerwear')
-    } else {
-      parts.push(`with ${outfit.layer}`)
-    }
-  }
-  
-  return parts.join(' ')
-}
-
-/**
- * Build Objects Description
- * 
- * Formats objects into natural language context.
- */
-function buildObjectsDescription(objects: FeedPlannerScene['objects']): string {
-  if (objects.length === 0) return ''
-  
-  const inHand: string[] = []
-  const onTable: string[] = []
-  const inBag: string[] = []
-  
-  objects.forEach(obj => {
-    if (obj.position === 'hand') {
-      inHand.push(obj.description)
-    } else if (obj.position === 'table') {
-      onTable.push(obj.description)
-    } else if (obj.position === 'bag') {
-      inBag.push(obj.description)
-    }
-  })
-  
-  const parts: string[] = []
-  
-  if (inHand.length > 0) {
-    if (inHand.length === 1) {
-      parts.push(`holding ${inHand[0]}`)
-    } else {
-      parts.push(`holding ${inHand.join(' and ')}`)
-    }
-  }
-  
-  if (onTable.length > 0) {
-    if (onTable.length === 1) {
-      parts.push(`with ${onTable[0]} on the table`)
-    } else {
-      parts.push(`with ${onTable.join(' and ')} on the table`)
-    }
-  }
-  
-  if (inBag.length > 0) {
-    parts.push(`with ${inBag.join(' and ')} in bag`)
-  }
-  
-  return parts.join(', ')
-}
-
-/**
- * Build Position Strategy (Strategy Only, NOT Execution)
- * 
- * Creates a strategy description for preview layout.
- * Contains ONLY: content type, framing, visual role, composition hints.
- * 
- * NO outfits, NO locations, NO poses, NO activities, NO people descriptions.
- * 
- * @param scene - Scene data (used to derive strategy, NOT execution)
- * @returns Strategy description (e.g., "Portrait anchor — urban lifestyle, strong opening image")
- */
-function _buildPositionStrategy(scene: FeedPlannerScene): string {
-  const position = scene.position
-  const framing = scene.camera.framing
-  const contentType = framing === 'flatlay' ? 'overhead' : 'portrait'
-  
-  // Derive visual role from position (strategy pattern)
-  let visualRole: string
-  let compositionHint: string
-  
-  if (position === 1 || position === 7) {
-    visualRole = 'anchor'
-    compositionHint = 'strong opening image'
-  } else if (position === 2 || position === 4 || position === 6) {
-    visualRole = 'breathing space'
-    compositionHint = 'visual pause'
-  } else if (position === 3 || position === 5) {
-    visualRole = 'statement'
-    compositionHint = 'bold composition'
-  } else if (position === 8) {
-    visualRole = 'texture'
-    compositionHint = 'lifestyle detail'
-  } else {
-    visualRole = 'closing'
-    compositionHint = 'calm closing image'
-  }
-  
-  // Build strategy description (NO execution data)
-  if (contentType === 'overhead') {
-    return `Overhead — ${visualRole}, ${compositionHint}, lifestyle detail focus`
-  } else {
-    const framingDesc = framing === 'close_up' ? 'close-up' : framing === 'midshot' ? 'mid-shot' : 'full-body'
-    return `Portrait ${visualRole} — ${framingDesc} framing, ${compositionHint}`
-  }
-}
-
-/**
- * Build Single Scene Description (Execution Only)
- * 
- * ❌ DO NOT USE FOR PREVIEW
- * This function contains execution data (outfits, locations, poses).
- * Use buildPositionStrategy() for preview instead.
- * 
- * Creates a brief scene description for single-scene execution.
- * Target: 18-25 words (compressed) or 80-130 words (full)
- */
-function _buildSingleSceneDescription(scene: FeedPlannerScene, compressed: boolean = false): string {
-  if (compressed) {
-    // Compressed version for single scene execution (18-25 words)
-    // ❌ BUG: This contains execution data - DO NOT use for preview
-    const outfitDesc = formatOutfitDescription(scene.outfit)
-    const locationDesc = scene.location.description
-    const poseDesc = scene.pose.description
-    
-    return `the subject ${poseDesc} wearing ${outfitDesc} in ${locationDesc}`
-  } else {
-    // Full version for single scene execution (80-130 words)
-    return buildSingleScenePrompt(scene)
-  }
-}
-
 // ============================================================================
 // VALIDATION (NO MUTATION, JUST VALIDATION)
 // ============================================================================
-
-/**
- * Validate Preview Strategy Prompt (DEPRECATED)
- * 
- * ⚠️ DEPRECATED: This validation is no longer used.
- * Preview prompts now use execution data per Nano Banana Pro spec.
- * 
- * This function is kept for reference but is not called.
- */
-function _validatePreviewStrategy(_prompt: string): {
-  valid: boolean
-  errors: string[]
-} {
-  // Always return valid - validation removed per Nano Banana Pro compliance
-  return {
-    valid: true,
-    errors: []
-  }
-}
 
 /**
  * Validate Prompt
@@ -1427,18 +610,18 @@ export function validateFeedPlannerPrompt(prompt: string, mode: PromptMode): {
   
   // Check length
   if (mode === 'preview_multi') {
-    // Preview should be 300-450 words per Nano Banana Pro optimization
+    // Preview should be 140-220 words per Nano Banana Pro optimization
     if (wordCount < 120) {
-      warnings.push(`Preview prompt is short (${wordCount} words, target: 300-450)`)
+      warnings.push(`Preview prompt is short (${wordCount} words, target: 140-220)`)
     } else if (wordCount > 500) {
-      warnings.push(`Preview prompt is long (${wordCount} words, target: 300-450)`)
+      warnings.push(`Preview prompt is long (${wordCount} words, target: 140-220)`)
     }
   } else {
-    // Single scene should be 200-270 words per Nano Banana Pro spec
+    // Single scene should be 150-220 words per Nano Banana Pro spec
     if (wordCount < 150) {
-      warnings.push(`Single scene prompt is short (${wordCount} words, target: 200-270)`)
+      warnings.push(`Single scene prompt is short (${wordCount} words, target: 150-220)`)
     } else if (wordCount > 300) {
-      warnings.push(`Single scene prompt is long (${wordCount} words, target: 200-270)`)
+      warnings.push(`Single scene prompt is long (${wordCount} words, target: 150-220)`)
     }
   }
   
@@ -1447,9 +630,7 @@ export function validateFeedPlannerPrompt(prompt: string, mode: PromptMode): {
                            prompt.toLowerCase().includes('reference images')
   
   if (!hasIdentityAnchor && mode === 'single_scene') {
-    // Not an error - flatlays don't need identity anchor
-    // But log for visibility
-    console.log('[PROMPT-SHAPER] No identity anchor found (may be flatlay)')
+    // Not an error - flatlays don't need identity anchor.
   }
   
   // Check for camera specs (preview uses DSLR, single scene may use iPhone)

@@ -53,6 +53,17 @@ export default function FeedHeader({
       dedupingInterval: 60000, // Cache for 1 minute
     }
   )
+
+  const { data: userInfo } = useSWR(
+    showFeedStyleModal ? "/api/user/info" : null,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 60000,
+    }
+  )
+
+  const useFeedPlannerV2 = Boolean(userInfo?.use_feed_planner_v2)
   
   // Extract last feed style from settings_preference[0]
   const lastFeedStyle: FeedStyle | null = personalBrandData?.data?.settingsPreference?.[0] || null
@@ -68,8 +79,8 @@ export default function FeedHeader({
     setIsCreatingPreviewFeed(true)
     
     try {
-      // Always update personal brand to sync feedStyle, visualAesthetic, and fashionStyle
-      // This ensures all style selections are saved to personal brand
+      // Always update personal brand to sync feedStyle and visualAesthetic
+      // This ensures style selections are saved to personal brand
       try {
         // Fetch current personal brand to preserve existing settings_preference
         const currentBrandResponse = await fetch('/api/profile/personal-brand', {
@@ -88,6 +99,17 @@ export default function FeedHeader({
             // Sanitize: filter out corrupted nested JSON strings, keep only valid simple strings
             // Corrupted data looks like: '{"luxury","{\\"luxury\\"...' (contains nested JSON)
             // Valid data looks like: 'luxury', 'minimal', 'beige' (simple strings)
+            const validStyles = useFeedPlannerV2
+              ? [
+                  "Dark & Moody",
+                  "Beige Aesthetic",
+                  "Light & Minimalistic",
+                  "Luxury Future Self",
+                  "Casual Bohemian",
+                  "Athletic & Wellness",
+                  "Coastal Aesthetics",
+                ]
+              : ["luxury", "minimal", "beige"]
             currentSettingsPreference = rawSettings
               .filter((s: any) => {
                 if (typeof s !== 'string') return false
@@ -95,10 +117,13 @@ export default function FeedHeader({
                 if (s.length > 100) return false
                 if (s.includes('{\\"') || s.includes('\\\\')) return false
                 // Only keep simple strings that match valid feed styles
-                const validStyles = ['luxury', 'minimal', 'beige']
-                return validStyles.includes(s.toLowerCase().trim())
+                return validStyles.some((style) => style.toLowerCase() === s.toLowerCase().trim())
               })
-              .map((s: string) => s.toLowerCase().trim())
+              .map((s: string) => {
+                const trimmed = s.trim()
+                if (!useFeedPlannerV2) return trimmed.toLowerCase()
+                return validStyles.find((style) => style.toLowerCase() === trimmed.toLowerCase()) || trimmed
+              })
           }
         }
         
@@ -112,14 +137,13 @@ export default function FeedHeader({
           settingsPreference: updatedSettingsPreference,
         }
         
+        if (data.feedStyleVariationId !== undefined) {
+          updatePayload.feedStyleVariationId = data.feedStyleVariationId
+        }
+
         // Only include visualAesthetic if it's provided and not empty
         if (data.visualAesthetic && Array.isArray(data.visualAesthetic) && data.visualAesthetic.length > 0) {
           updatePayload.visualAesthetic = data.visualAesthetic
-        }
-        
-        // Only include fashionStyle if it's provided and not empty
-        if (data.fashionStyle && Array.isArray(data.fashionStyle) && data.fashionStyle.length > 0) {
-          updatePayload.fashionStyle = data.fashionStyle
         }
         
         console.log('[Feed Header] Sending personal brand update payload:', updatePayload)
@@ -209,7 +233,7 @@ export default function FeedHeader({
         body: JSON.stringify({ 
           feedStyle: data.feedStyle,
           visualAesthetic: data.visualAesthetic,
-          fashionStyle: data.fashionStyle,
+          feedStyleVariationId: data.feedStyleVariationId,
         }),
       })
 
@@ -260,13 +284,12 @@ export default function FeedHeader({
     setIsCreatingFeed(true)
     
     try {
-      // Always update personal brand to sync feedStyle, visualAesthetic, and fashionStyle
-      // This ensures all style selections are saved to personal brand
+      // Always update personal brand to sync feedStyle and visualAesthetic
+      // This ensures style selections are saved to personal brand
       try {
         console.log('[Feed Header] Syncing personal brand with feed style selection:', {
           feedStyle: data.feedStyle,
           visualAesthetic: data.visualAesthetic,
-          fashionStyle: data.fashionStyle,
         })
         
         // Fetch current personal brand to preserve existing settings_preference
@@ -286,6 +309,18 @@ export default function FeedHeader({
             // Sanitize: filter out corrupted nested JSON strings, keep only valid simple strings
             // Corrupted data looks like: '{"luxury","{\\"luxury\\"...' (contains nested JSON)
             // Valid data looks like: 'luxury', 'minimal', 'beige' (simple strings)
+            const validStyles = useFeedPlannerV2
+              ? [
+                  "Dark & Moody",
+                  "Beige Aesthetic",
+                  "Light & Minimalistic",
+                  "Luxury Future Self",
+                  "Casual Bohemian",
+                  "Athletic & Wellness",
+                  "Coastal Aesthetics",
+                ]
+              : ["luxury", "minimal", "beige"]
+
             currentSettingsPreference = rawSettings
               .filter((s: any) => {
                 if (typeof s !== 'string') return false
@@ -293,10 +328,13 @@ export default function FeedHeader({
                 if (s.length > 100) return false
                 if (s.includes('{\\"') || s.includes('\\\\')) return false
                 // Only keep simple strings that match valid feed styles
-                const validStyles = ['luxury', 'minimal', 'beige']
-                return validStyles.includes(s.toLowerCase().trim())
+                return validStyles.some((style) => style.toLowerCase() === s.toLowerCase().trim())
               })
-              .map((s: string) => s.toLowerCase().trim())
+              .map((s: string) => {
+                const trimmed = s.trim()
+                if (!useFeedPlannerV2) return trimmed.toLowerCase()
+                return validStyles.find((style) => style.toLowerCase() === trimmed.toLowerCase()) || trimmed
+              })
           }
         }
         
@@ -310,14 +348,13 @@ export default function FeedHeader({
           settingsPreference: updatedSettingsPreference,
         }
         
+        if (data.feedStyleVariationId !== undefined) {
+          updatePayload.feedStyleVariationId = data.feedStyleVariationId
+        }
+
         // Only include visualAesthetic if it's provided and not empty
         if (data.visualAesthetic && Array.isArray(data.visualAesthetic) && data.visualAesthetic.length > 0) {
           updatePayload.visualAesthetic = data.visualAesthetic
-        }
-        
-        // Only include fashionStyle if it's provided and not empty
-        if (data.fashionStyle && Array.isArray(data.fashionStyle) && data.fashionStyle.length > 0) {
-          updatePayload.fashionStyle = data.fashionStyle
         }
         
         console.log('[Feed Header] Sending personal brand update payload:', updatePayload)
@@ -412,7 +449,7 @@ export default function FeedHeader({
         body: JSON.stringify({ 
           feedStyle: data.feedStyle,
           visualAesthetic: data.visualAesthetic,
-          fashionStyle: data.fashionStyle,
+          feedStyleVariationId: data.feedStyleVariationId,
         }),
       })
 
@@ -714,6 +751,7 @@ export default function FeedHeader({
         defaultFeedStyle={lastFeedStyle}
         isLoading={isCreatingFeed || isCreatingPreviewFeed}
         isPreviewFeed={isPreviewFeedModal}
+        useFeedPlannerV2={useFeedPlannerV2}
       />
     </div>
   )

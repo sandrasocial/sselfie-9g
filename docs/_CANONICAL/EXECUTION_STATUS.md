@@ -198,6 +198,10 @@
     - `app/api/admin/agent/analyze-content/route.ts`
     - `app/api/admin/journal/enhance/route.ts`
     - `app/api/training/start-training/route.ts`
+ - What was done (Phase FP-V2):
+  - Archived V1 prompt-generation helpers by deleting legacy Feed Planner files (git history is the rollback).
+  - Updated admin feed test route to use V2 prompt sources (preview + scene prompts).
+  - Removed Classic-mode prompt generation path in feed strategy creation (V2 Pro Mode only).
  - What was done (Phase Z):
   - Added feature-flag gating for guest blueprint routes:
     - `app/api/blueprint/generate-concepts/route.ts` gated by `ENABLE_BLUEPRINT_GUEST` and requires email or access token.
@@ -361,3 +365,9 @@
   - Route exists in prod functions list; HTTP 400 likely due to edge/platform request rejection or auth header mismatch.
  - STOP recommendation (Phase AO-4D-3):
   - STOP: escalate to platform-level inspection (WAF/edge) or validate CRON_SECRET header delivery from external client.
+
+- What was done (Phase FP-V2):
+  - Enforced Feed Planner V2-only prompt sourcing in feed generation + regeneration.
+  - Switched blueprint grid generation to V2 preview prompts (legacy mood mapped to V2 styles).
+  - Deprecated V1 concept refresh/add-more endpoints (410 responses).
+  - Ran migration to enable `use_feed_planner_v2 = true` for all users.

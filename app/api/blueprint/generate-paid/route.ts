@@ -2,13 +2,38 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createHash } from "crypto"
 import { neon } from "@neondatabase/serverless"
 import { generateWithNanoBanana } from "@/lib/nano-banana-client"
-import { getBlueprintPhotoshootPrompt, type BlueprintCategory, type BlueprintMood } from "@/lib/maya/blueprint-photoshoot-templates"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { getCategoryAndMood, getFashionStyleForPosition, injectAndValidateTemplate } from "@/lib/feed-planner/generation-helpers"
+import { getDefaultVariationId, getFeedStyleV2ByName, getFeedStyleVariationById } from "@/lib/feed-planner-v2/prompt-loader"
+import { getPreviewPromptForStyle } from "@/lib/feed-planner-v2/generation"
 
 const sql = neon(process.env.DATABASE_URL!)
 const ADMIN_EMAIL = "ssa@ssasocial.com"
+
+const V2_STYLES = [
+  "Dark & Moody",
+  "Beige Aesthetic",
+  "Light & Minimalistic",
+  "Luxury Future Self",
+  "Casual Bohemian",
+  "Athletic & Wellness",
+  "Coastal Aesthetics",
+]
+
+const LEGACY_STYLE_MAP: Record<string, string> = {
+  luxury: "Dark & Moody",
+  minimal: "Light & Minimalistic",
+  beige: "Beige Aesthetic",
+}
+
+const normalizeV2Style = (value: string | null | undefined): string | null => {
+  if (!value || typeof value !== "string") return null
+  const raw = value.trim()
+  if (!raw) return null
+  const legacyMatch = LEGACY_STYLE_MAP[raw.toLowerCase()]
+  if (legacyMatch) return legacyMatch
+  return V2_STYLES.find((style) => style.toLowerCase() === raw.toLowerCase()) || null
+}
 
 /**
  * Check if current user is admin
@@ -105,40 +130,6 @@ export async function POST(req: NextRequest) {
     const data = subscriber[0]
     const email = data.email
 
-    const parseArrayField = (value: unknown): string[] | null => {
-      if (Array.isArray(value)) {
-        const items = value.map((item) => String(item).trim()).filter(Boolean)
-        return items.length > 0 ? items : null
-      }
-      if (typeof value === "string") {
-        try {
-          const parsed = JSON.parse(value)
-          if (Array.isArray(parsed)) {
-            const items = parsed.map((item) => String(item).trim()).filter(Boolean)
-            return items.length > 0 ? items : null
-          }
-          if (parsed && typeof parsed === "object") {
-            const items = Object.keys(parsed).map((item) => String(item).trim()).filter(Boolean)
-            return items.length > 0 ? items : null
-          }
-        } catch {
-          const cleaned = value.replace(/[\[\]{}"]/g, "")
-          const items = cleaned
-            .split(",")
-            .map((item) => item.trim())
-            .filter(Boolean)
-          return items.length > 0 ? items : null
-        }
-      }
-      if (value && typeof value === "object") {
-        const items = Object.keys(value as Record<string, unknown>)
-          .map((item) => String(item).trim())
-          .filter(Boolean)
-        return items.length > 0 ? items : null
-      }
-      return null
-    }
-
     const featureEnabled = process.env.ENABLE_BLUEPRINT_PAID === "true"
     if (!featureEnabled && !data.paid_blueprint_purchased && !userIsAdmin) {
       return NextResponse.json({ error: "Endpoint disabled" }, { status: 410 })
@@ -216,85 +207,66 @@ export async function POST(req: NextRequest) {
       validSelfieUrls = validSelfieUrls.slice(0, 3) // Keep only first 3
     }
 
-    // Guard 3: Get category/mood using unified helper (checks feed_layouts and user_personal_brand first, falls back to blueprint_subscribers)
-    let category: BlueprintCategory
-    let mood: BlueprintMood
-    
+    // Guard 3: Resolve V2 style (feed_layout → blueprint_subscribers → personal brand)
+    let feedStyleName: string | null = null
+    let preferredVariationId: number | null = null
+
     if (userId) {
       const [personalBrand] = await sql`
-        SELECT visual_aesthetic, fashion_style
+        SELECT settings_preference, feed_style_variation_id
         FROM user_personal_brand
         WHERE user_id = ${userId}
         ORDER BY updated_at DESC
         LIMIT 1
       `
 
-      const visualAestheticValues = parseArrayField(personalBrand?.visual_aesthetic)
-      const fashionStyleValues = parseArrayField(personalBrand?.fashion_style)
-
-      // User has converted - use unified helper to check feed_layouts and user_personal_brand first
-      // Try to get feedLayout if user has a feed
-      let feedLayout: { feed_style?: string | null } | null = null
       const [userFeedLayout] = await sql`
-        SELECT feed_style
+        SELECT feed_style, feed_style_variation_id
         FROM feed_layouts
         WHERE user_id = ${userId}
         ORDER BY created_at DESC
         LIMIT 1
       `
-      if (userFeedLayout) {
-        feedLayout = userFeedLayout
-        console.log(`[v0][paid-blueprint] Found feed_layout for user, feed_style: ${userFeedLayout.feed_style || 'none'}`)
+
+      if (userFeedLayout?.feed_style) {
+        feedStyleName = normalizeV2Style(userFeedLayout.feed_style)
+        preferredVariationId = userFeedLayout.feed_style_variation_id
+          ? Number(userFeedLayout.feed_style_variation_id)
+          : null
       }
 
-      const missing: string[] = []
-      if (!feedLayout?.feed_style) {
-        missing.push("feed_style")
-      }
-      if (!visualAestheticValues || visualAestheticValues.length === 0) {
-        missing.push("visual_aesthetic")
-      }
-      if (!fashionStyleValues || fashionStyleValues.length === 0) {
-        missing.push("fashion_style")
+      if (!feedStyleName && data.feed_style) {
+        feedStyleName = normalizeV2Style(data.feed_style)
       }
 
-      if (missing.length > 0) {
-        const userIdHash = createHash("sha256").update(String(userId)).digest("hex")
-        console.log("[v0] CONTRACT_MISSING", { missing, route: "generate-paid", userIdHash })
-        return NextResponse.json(
-          {
-            error: missing.includes("feed_style") ? "FEED_STYLE_REQUIRED" : "CANONICAL_FIELDS_REQUIRED",
-            missing,
-          },
-          { status: 422 }
-        )
+      if (!feedStyleName && personalBrand?.settings_preference) {
+        try {
+          const settings = typeof personalBrand.settings_preference === "string"
+            ? JSON.parse(personalBrand.settings_preference)
+            : personalBrand.settings_preference
+          if (Array.isArray(settings) && settings.length > 0) {
+            feedStyleName = normalizeV2Style(settings[0])
+          }
+        } catch {
+          // Ignore parse errors
+        }
       }
 
-      // Use unified helper (feed_layouts + user_personal_brand only for paid blueprint)
-      const result = await getCategoryAndMood(feedLayout, { id: userId }, {
-        checkSettingsPreference: false,
-        checkBlueprintSubscribers: false,
-        trackSource: true
-      })
-      category = result.category as BlueprintCategory
-      mood = result.mood as BlueprintMood
-    } else {
-      const userIdHash = createHash("sha256").update(String(accessToken)).digest("hex")
-      console.log("[v0] CONTRACT_MISSING", {
-        missing: ["feed_style", "visual_aesthetic", "fashion_style"],
-        route: "generate-paid",
-        userIdHash,
-      })
+      if (!preferredVariationId && personalBrand?.feed_style_variation_id) {
+        preferredVariationId = Number(personalBrand.feed_style_variation_id)
+      }
+    }
+
+    if (!feedStyleName) {
+      const userIdHash = createHash("sha256").update(String(userId || accessToken)).digest("hex")
+      console.log("[v0] CONTRACT_MISSING", { missing: ["feed_style"], route: "generate-paid", userIdHash })
       return NextResponse.json(
-        {
-          error: "CANONICAL_FIELDS_REQUIRED",
-          missing: ["feed_style", "visual_aesthetic", "fashion_style"],
-        },
+        { error: "FEED_STYLE_REQUIRED", missing: ["feed_style"] },
         { status: 422 }
       )
     }
 
-    console.log(`[v0][paid-blueprint] Using category: ${category}, mood: ${mood}`)
+    console.log(`[v0][paid-blueprint] Using V2 style: ${feedStyleName}`)
 
     // Get existing photo URLs
     const existingPhotoUrls = Array.isArray(data.paid_blueprint_photo_urls) ? data.paid_blueprint_photo_urls : []
@@ -314,55 +286,41 @@ export async function POST(req: NextRequest) {
 
     console.log(`[v0][paid-blueprint] Generating Grid ${gridNumber}/30 for ${email.substring(0, 3)}*** (${validSelfieUrls.length} selfies)`)
 
-    // Phase 2E: Get fashionStyle for subject identity override (before template)
-    // Get user's fashion style for dynamic injection
-    // For full 9-grid images, use position 1 for consistency (all 9 scenes use same style)
-    // Alternatively, could use ((gridNumber - 1) % 9) + 1 to rotate styles across grids
-    // If userId doesn't exist, default to 'business'
-    const fashionStyle = userId ? await getFashionStyleForPosition({ id: userId }, 1) : 'business'
-
-    // Get prompt from template library (Phase 2E: includes subject identity override)
-    let fullTemplate: string
-    try {
-      fullTemplate = await getBlueprintPhotoshootPrompt(category, mood, fashionStyle)
-      console.log(`[v0][paid-blueprint] Prompt template: ${category}_${mood} (${fullTemplate.split(/\s+/).length} words)`)
-    } catch (error) {
-      console.error("[v0][paid-blueprint] Template error:", error)
-      return NextResponse.json(
-        {
-          error: error instanceof Error
-            ? error.message
-            : "Prompt template not available. Please contact support.",
-        },
-        { status: 500 },
-      )
-    }
-
-    // Inject dynamic content into template and validate (same as preview feeds)
+    // Build V2 preview prompt
     let injectedTemplate: string
     try {
-      injectedTemplate = await injectAndValidateTemplate(
-        fullTemplate,
-        category,
-        mood,
-        fashionStyle,
-        userId ? userId.toString() : email // Use userId if available, otherwise email as fallback for rotation tracking
-      )
-      console.log(`[v0][paid-blueprint] ✅ Injection successful - all placeholders replaced (${injectedTemplate.split(/\s+/).length} words)`)
-    } catch (injectionError: any) {
-      console.error(`[v0][paid-blueprint] ❌ Injection error:`, injectionError)
+      const style = await getFeedStyleV2ByName(feedStyleName)
+      if (!style || !style.enabled) {
+        return NextResponse.json(
+          { error: "FEED_STYLE_NOT_READY", details: "Feed style is not available for V2." },
+          { status: 422 },
+        )
+      }
+
+      let variationId = await getDefaultVariationId(style.id)
+      if (preferredVariationId) {
+        const variation = await getFeedStyleVariationById(preferredVariationId)
+        if (variation && variation.enabled && variation.feed_style_id === style.id) {
+          variationId = variation.id
+        }
+      }
+
+      injectedTemplate = await getPreviewPromptForStyle(style.id, variationId)
+      console.log(`[v0][paid-blueprint] ✅ V2 preview prompt generated (${injectedTemplate.split(/\s+/).length} words)`)
+    } catch (sceneError: any) {
+      console.error(`[v0][paid-blueprint] ❌ V2 preview prompt generation failed:`, sceneError)
       return NextResponse.json(
         {
-          error: "Failed to inject dynamic content",
-          details: injectionError.message || "Template injection failed. Please contact support.",
+          error: "PREVIEW_PROMPT_GENERATION_FAILED",
+          details: sceneError.message || "V2 preview prompt generation failed. Please contact support.",
         },
         { status: 500 },
       )
     }
 
-    // Generate ONE grid with Nano Banana Pro using INJECTED template (not raw template)
+    // Generate ONE grid with Nano Banana Pro using canonical preview prompt
     const result = await generateWithNanoBanana({
-      prompt: injectedTemplate, // Use injected template instead of raw template
+      prompt: injectedTemplate,
       image_input: validSelfieUrls,
       aspect_ratio: "1:1",
       resolution: "2K",  // Match free blueprint

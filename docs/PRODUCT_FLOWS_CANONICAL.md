@@ -93,8 +93,8 @@ The goal isn't perfection. The goal is **continuity**.
 **Step 1: Landing Page (`/`)**
 - Visitor sees landing page with pricing
 - Two products available:
-  - **One-Time Session:** $47 (50 credits, one-time grant)
-  - **Creator Studio Membership:** $47/month (200 credits/month, recurring)
+  - **One-Time Session:** $49 (50 credits, one-time grant)
+  - **Creator Studio Membership:** $97/month (200 credits/month, recurring)
 
 **Step 2: Purchase Initiation**
 - User clicks "Get Started" or pricing CTA

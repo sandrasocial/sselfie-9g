@@ -45,6 +45,7 @@ export default function FeedSinglePlaceholder({
   const [predictionId, setPredictionId] = useState<string | null>(
     post?.prediction_id && !post?.image_url ? post.prediction_id : null
   )
+  const [isStopping, setIsStopping] = useState(false)
 
   // Track generation start time for "taking longer" message
   const generationStartTimeRef = useRef<number | null>(null)
@@ -255,6 +256,43 @@ export default function FeedSinglePlaceholder({
     (post?.generation_status === "generating" && post?.prediction_id && !post?.image_url) ||
     (post?.prediction_id && !post?.image_url)
   )
+  const canStop = !!predictionId && !predictionId.startsWith("temp-")
+
+  const handleStopGeneration = async () => {
+    if (!post?.id || !canStop || isStopping) return
+    const confirmed = confirm("Stop this generation? If it doesn't complete, we'll refund your credit.")
+    if (!confirmed) return
+
+    setIsStopping(true)
+    try {
+      const response = await fetch(`/api/feed/post/${post.id}/cancel`, { method: "POST" })
+      const data = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to stop generation")
+      }
+
+      setPredictionId(null)
+      if (onGenerateImage) {
+        onGenerateImage().catch(() => {})
+      }
+
+      const refundNote = data.refunded ? "Credit refunded." : "No credit refund needed."
+      toast({
+        title: "Generation stopped",
+        description: refundNote,
+      })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Please try again"
+      toast({
+        title: "Could not stop generation",
+        description: message,
+        variant: "destructive",
+      })
+    } finally {
+      setIsStopping(false)
+    }
+  }
 
   // Memoized values for useEffect dependencies
   const postId = useMemo(() => post?.id || null, [post?.id])
@@ -527,8 +565,8 @@ export default function FeedSinglePlaceholder({
           <div className="relative">
             <div className="aspect-9/16 bg-white border-2 border-dashed border-stone-300 rounded-lg"></div>
 
-            {/* Generation button overlay - only show if NOT generating */}
-            {!isPostGenerating && (
+            {/* Generation button overlay - only show if NOT generating and post is ready */}
+            {!isPostGenerating && post?.id && (
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center space-y-4 px-4">
                   <Button
@@ -545,6 +583,15 @@ export default function FeedSinglePlaceholder({
               </div>
             )}
 
+            {!isPostGenerating && !post?.id && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center space-y-2 px-4">
+                  <Loader2 className="w-6 h-6 text-stone-500 animate-spin mx-auto" />
+                  <div className="text-xs font-light text-stone-600">Preparing your preview...</div>
+                </div>
+              </div>
+            )}
+
             {/* Loading state - show when generating (from API call OR from post data) */}
             {isPostGenerating && (
               <div className="absolute inset-0 bg-white/90 backdrop-blur-sm flex items-center justify-center rounded-lg">
@@ -552,6 +599,17 @@ export default function FeedSinglePlaceholder({
                   <Loader2 className="w-8 h-8 text-stone-600 animate-spin mx-auto" />
                   <div className="text-sm font-medium text-stone-900">Generating your preview feed</div>
                   <div className="text-xs font-light text-stone-600">This usually takes 1-2 minutes...</div>
+                  <Button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleStopGeneration()
+                    }}
+                    disabled={!canStop || isStopping}
+                    size="sm"
+                    className="bg-stone-100 text-stone-700 hover:bg-stone-200"
+                  >
+                    {isStopping ? "Stopping..." : "Stop generation"}
+                  </Button>
                   {isTakingLonger && (
                     <div className="mt-4 pt-4 border-t border-stone-200">
                       <p className="text-xs font-light text-stone-600 leading-relaxed">

@@ -100,6 +100,7 @@ export async function generateWithNanoBanana(
     console.log("[NANO-BANANA] Final prompt length:", finalPrompt.length, "chars,", wordCount, "words")
     console.log("[NANO-BANANA] Final prompt preview:", finalPrompt.substring(0, 200) + "...")
     
+    console.log("[NANO-BANANA] Final prompt sent to Replicate:", finalPrompt)
     const replicateInput = {
       prompt: finalPrompt,
       image_input: input.image_input || [],

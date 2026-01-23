@@ -54,6 +54,19 @@ export async function GET(request: NextRequest) {
 
     // Sanitize settingsPreference to remove corrupted nested JSON strings
     const sanitizeSettingsPreference = (settings: any): string[] | null => {
+      const validStyles = [
+        "luxury",
+        "minimal",
+        "beige",
+        "Dark & Moody",
+        "Beige Aesthetic",
+        "Light & Minimalistic",
+        "Luxury Future Self",
+        "Casual Bohemian",
+        "Athletic & Wellness",
+        "Coastal Aesthetics",
+      ]
+
       if (!settings) return null
       if (!Array.isArray(settings)) {
         // Try to parse if it's a string
@@ -65,9 +78,9 @@ export async function GET(request: NextRequest) {
             }
           } catch {
             // Not valid JSON, might be a plain string
-            const validStyles = ['luxury', 'minimal', 'beige']
-            if (validStyles.includes(settings.toLowerCase().trim())) {
-              return [settings.toLowerCase().trim()]
+            const match = validStyles.find((style) => style.toLowerCase() === settings.toLowerCase().trim())
+            if (match) {
+              return [match]
             }
             return null
           }
@@ -75,7 +88,6 @@ export async function GET(request: NextRequest) {
         return null
       }
       
-      const validStyles = ['luxury', 'minimal', 'beige']
       const sanitized = settings
         .filter((s: any) => {
           if (typeof s !== 'string') return false
@@ -83,9 +95,13 @@ export async function GET(request: NextRequest) {
           if (s.length > 100) return false
           if (s.includes('{\\"') || s.includes('\\\\')) return false
           // Only keep valid feed style strings
-          return validStyles.includes(s.toLowerCase().trim())
+          return validStyles.some((style) => style.toLowerCase() === s.toLowerCase().trim())
         })
-        .map((s: string) => s.toLowerCase().trim())
+        .map((s: string) => {
+          const trimmed = s.trim()
+          const match = validStyles.find((style) => style.toLowerCase() === trimmed.toLowerCase())
+          return match || trimmed
+        })
         // Remove duplicates
         .filter((s: string, index: number, arr: string[]) => arr.indexOf(s) === index)
       
@@ -169,6 +185,7 @@ export async function GET(request: NextRequest) {
         visualAesthetic: parseJsonb(brand.visual_aesthetic, true), // Convert objects to arrays
         settingsPreference: sanitizeSettingsPreference(brand.settings_preference) || parseJsonb(brand.settings_preference),
         fashionStyle: parseJsonb(brand.fashion_style, true), // Convert objects to arrays
+        feedStyleVariationId: brand.feed_style_variation_id ? Number(brand.feed_style_variation_id) : null,
         idealAudience: brand.ideal_audience,
         audienceChallenge: brand.audience_challenge,
         audienceTransformation: brand.audience_transformation,
@@ -214,6 +231,7 @@ export async function POST(request: NextRequest) {
       visualAesthetic: body.visualAesthetic,
       fashionStyle: body.fashionStyle,
       settingsPreference: body.settingsPreference,
+      feedStyleVariationId: body.feedStyleVariationId,
       visualAestheticType: typeof body.visualAesthetic,
       fashionStyleType: typeof body.fashionStyle,
       settingsPreferenceType: typeof body.settingsPreference,
@@ -273,7 +291,18 @@ export async function POST(request: NextRequest) {
         if (!settings) return null
         if (!Array.isArray(settings)) return null
         
-        const validStyles = ['luxury', 'minimal', 'beige']
+        const validStyles = [
+          "luxury",
+          "minimal",
+          "beige",
+          "Dark & Moody",
+          "Beige Aesthetic",
+          "Light & Minimalistic",
+          "Luxury Future Self",
+          "Casual Bohemian",
+          "Athletic & Wellness",
+          "Coastal Aesthetics",
+        ]
         const sanitized = settings
           .filter((s: any) => {
             if (typeof s !== 'string') return false
@@ -281,9 +310,13 @@ export async function POST(request: NextRequest) {
             if (s.length > 100) return false
             if (s.includes('{\\"') || s.includes('\\\\')) return false
             // Only keep valid feed style strings
-            return validStyles.includes(s.toLowerCase().trim())
+            return validStyles.some((style) => style.toLowerCase() === s.toLowerCase().trim())
           })
-          .map((s: string) => s.toLowerCase().trim())
+          .map((s: string) => {
+            const trimmed = s.trim()
+            const match = validStyles.find((style) => style.toLowerCase() === trimmed.toLowerCase())
+            return match || trimmed
+          })
           // Remove duplicates
           .filter((s: string, index: number, arr: string[]) => arr.indexOf(s) === index)
         
@@ -294,6 +327,10 @@ export async function POST(request: NextRequest) {
       const fashionStyleJson = prepareJsonbValue(body.fashionStyle, true)
       const settingsPreferenceJson = sanitizeSettingsPreference(body.settingsPreference) || prepareJsonbValue(body.settingsPreference)
       const contentPillarsJson = prepareJsonbValue(body.contentPillars)
+      const hasFeedStyleVariationId = Object.prototype.hasOwnProperty.call(body, "feedStyleVariationId")
+      const feedStyleVariationId = hasFeedStyleVariationId && body.feedStyleVariationId !== null && body.feedStyleVariationId !== undefined
+        ? Number(body.feedStyleVariationId)
+        : null
       
       console.log("[v0] Prepared JSONB values:", {
         visualAestheticJson: visualAestheticJson ? JSON.stringify(visualAestheticJson).substring(0, 100) : null,
@@ -326,6 +363,10 @@ export async function POST(request: NextRequest) {
           visual_aesthetic = COALESCE(${visualAestheticJson !== null && visualAestheticJson !== undefined ? JSON.stringify(visualAestheticJson) : null}::jsonb, visual_aesthetic::jsonb),
           settings_preference = COALESCE(${settingsPreferenceJson !== null && settingsPreferenceJson !== undefined ? JSON.stringify(settingsPreferenceJson) : null}::jsonb, settings_preference::jsonb),
           fashion_style = COALESCE(${fashionStyleJson !== null && fashionStyleJson !== undefined ? JSON.stringify(fashionStyleJson) : null}::jsonb, fashion_style::jsonb),
+          feed_style_variation_id = CASE
+            WHEN ${hasFeedStyleVariationId} THEN ${Number.isFinite(feedStyleVariationId) ? feedStyleVariationId : null}
+            ELSE feed_style_variation_id
+          END,
           ideal_audience = COALESCE(${body.idealAudience ?? null}, ideal_audience),
           audience_challenge = COALESCE(${body.audienceChallenge ?? null}, audience_challenge),
           audience_transformation = COALESCE(${body.audienceTransformation ?? null}, audience_transformation),
@@ -370,6 +411,9 @@ export async function POST(request: NextRequest) {
       const fashionStyleJson = prepareJsonbValue(body.fashionStyle, true)
       const settingsPreferenceJson = prepareJsonbValue(body.settingsPreference)
       const contentPillarsJson = prepareJsonbValue(body.contentPillars)
+      const feedStyleVariationId = body.feedStyleVariationId !== null && body.feedStyleVariationId !== undefined
+        ? Number(body.feedStyleVariationId)
+        : null
       
       const result = await sql`
         INSERT INTO user_personal_brand (
@@ -392,6 +436,7 @@ export async function POST(request: NextRequest) {
           content_pillars,
           visual_aesthetic,
           settings_preference,
+          feed_style_variation_id,
           fashion_style,
           ideal_audience,
           audience_challenge,
@@ -423,6 +468,7 @@ export async function POST(request: NextRequest) {
           ${contentPillarsJson !== null && contentPillarsJson !== undefined ? JSON.stringify(contentPillarsJson) : null}::jsonb,
           ${visualAestheticJson !== null && visualAestheticJson !== undefined ? JSON.stringify(visualAestheticJson) : null}::jsonb,
           ${settingsPreferenceJson !== null && settingsPreferenceJson !== undefined ? JSON.stringify(settingsPreferenceJson) : null}::jsonb,
+          ${Number.isFinite(feedStyleVariationId) ? feedStyleVariationId : null},
           ${fashionStyleJson !== null && fashionStyleJson !== undefined ? JSON.stringify(fashionStyleJson) : null}::jsonb,
           ${body.idealAudience || ""},
           ${body.audienceChallenge || ""},

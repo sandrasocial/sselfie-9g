@@ -502,6 +502,7 @@ export default function SselfieApp({
 
         // Check if user is a paid blueprint user (doesn't need training wizard)
         const isPaidBlueprintUser = productType === "paid_blueprint" || blueprintData?.entitlement?.type === "paid"
+        const shouldSkipTrainingWizard = isBlueprintUser
 
         console.log("[Wizard Debug] 🔍 Extension Data Check:", {
           hasExtensionData,
@@ -509,6 +510,7 @@ export default function SselfieApp({
           dreamClient: blueprintData?.blueprint?.formData?.dreamClient,
           feedStyle: blueprintData?.blueprint?.feedStyle,
           isPaidBlueprintUser,
+          shouldSkipTrainingWizard,
         })
 
         // For blueprint users, check if onboarding is actually complete (has all required data)
@@ -542,17 +544,17 @@ export default function SselfieApp({
             }
           }
           // Step 3: Show Training Wizard if all onboarding done but no trained model
-          // SKIP training wizard for paid blueprint users (they don't need custom Flux LoRA models)
-          else if ((blueprintWelcomeShown || hasBlueprintState || hasBaseWizardData) && !hasTrainedModel && !isPaidBlueprintUser) {
-            console.log("[Onboarding] 🎓 Showing training onboarding wizard (onboarding done, no model, not paid blueprint)")
+          // SKIP training wizard for blueprint users (free or paid) since Feed Planner doesn't require LoRA training
+          else if ((blueprintWelcomeShown || hasBlueprintState || hasBaseWizardData) && !hasTrainedModel && !shouldSkipTrainingWizard) {
+            console.log("[Onboarding] 🎓 Showing training onboarding wizard (onboarding done, no model, non-blueprint user)")
             setShowBlueprintWelcome(false)
             setShowOnboarding(true)
           }
           // No wizards to show
           else {
             console.log("[Wizard Debug] ⚠️ No wizard conditions matched - hiding all wizards")
-            if (isPaidBlueprintUser && !hasTrainedModel) {
-              console.log("[Wizard Debug] ℹ️ Paid blueprint user - skipping training wizard (not needed for Feed Planner)")
+            if (shouldSkipTrainingWizard && !hasTrainedModel) {
+              console.log("[Wizard Debug] ℹ️ Blueprint user - skipping training wizard (not needed for Feed Planner)")
             }
             setShowBlueprintWelcome(false)
             setShowOnboarding(false)

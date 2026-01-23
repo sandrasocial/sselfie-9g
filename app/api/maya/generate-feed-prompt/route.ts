@@ -7,12 +7,22 @@ import { getMayaSystemPrompt, MAYA_CLASSIC_CONFIG, MAYA_PRO_CONFIG } from "@/lib
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getFluxPromptingPrinciples } from "@/lib/maya/flux-prompting-principles"
 import { getNanoBananaPromptingPrinciples } from "@/lib/maya/nano-banana-prompt-builder"
-import { extractAestheticFromTemplate, type LockedAesthetic } from "@/lib/feed-planner/extract-aesthetic-from-template"
 import Anthropic from "@anthropic-ai/sdk"
 import { generateMayaFeedPromptSystemPrompt, auditLogMayaChatGeneration } from "@/lib/maya/prompt-authority"
 
 const sql = neon(process.env.DATABASE_URL || "")
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+
+type LockedAesthetic = {
+  vibe: string
+  colorGrade: string
+  setting: string
+  outfit: string
+  lightingQuality: string
+  baseIdentityPrompt: string
+  assembly: string
+  qualityModifiers: string
+}
 
 export async function POST(request: NextRequest) {
   try {

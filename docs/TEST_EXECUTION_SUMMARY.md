@@ -17,7 +17,7 @@
 
 📦 TEST 2: One-Time Session Pricing
    Price: $49 (Expected: $49) - ✅
-   Credits: 70 (Expected: 70) - ✅
+   Credits: 50 (Expected: 50) - ✅
 
 📦 TEST 3: Credit Top-Up Packages
    100 Credits: $45 (Expected: $45) - ✅

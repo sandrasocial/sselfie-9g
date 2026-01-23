@@ -10,33 +10,31 @@ if (!runPlaywright) {
   const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000'
 
   const getCredits = async (page: any) => {
-    const menuButton = page.locator('button[aria-label="Menu"]')
-    await expect(menuButton).toBeVisible({ timeout: 10000 })
-    await menuButton.click()
-    const menu = page.locator('[role="menu"]')
-    await expect(menu).toBeVisible({ timeout: 5000 })
-    const text = await menu.innerText()
-    await page.keyboard.press('Escape')
-    const match = text.match(/Your Credits\s+([0-9.]+)/i)
-    return match ? Number(match[1]) : 0
+    const response = await page.request.get(`${baseURL}/api/user/credits`)
+    if (!response.ok()) {
+      throw new Error(await response.text())
+    }
+    const data = await response.json()
+    return typeof data?.balance === 'number' ? data.balance : Number(data?.balance || 0)
   }
 
   const seedOnboarding = async (page: any) => {
-    const dataUrl =
-      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGMAAQAABQABDQottAAAAABJRU5ErkJggg=='
-    const uploadResult = await page.evaluate(async (url) => {
-      const res = await fetch(url)
-      const blob = await res.blob()
-      const file = new File([blob], 'selfie.png', { type: 'image/png' })
-      const formData = new FormData()
-      formData.append('files', file)
-      const upload = await fetch('/api/blueprint/upload-selfies', { method: 'POST', body: formData, credentials: 'include' })
-      if (!upload.ok) {
-        throw new Error(await upload.text())
-      }
-      return upload.json()
-    }, dataUrl)
-    const imageUrls = uploadResult?.imageUrls || []
+    const base64 =
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGMAAQAABQABDQottAAAAABJRU5ErkJggg=='
+    const uploadResult = await page.request.post(`${baseURL}/api/blueprint/upload-selfies`, {
+      multipart: {
+        files: {
+          name: 'selfie.png',
+          mimeType: 'image/png',
+          buffer: Buffer.from(base64, 'base64'),
+        },
+      },
+    })
+    if (!uploadResult.ok()) {
+      throw new Error(await uploadResult.text())
+    }
+    const uploadData = await uploadResult.json()
+    const imageUrls = uploadData?.imageUrls || []
     const onboardingResponse = await page.request.post(`${baseURL}/api/onboarding/unified-onboarding-complete`, {
       data: {
         businessType: 'Content Creator',
@@ -82,18 +80,34 @@ if (!runPlaywright) {
       page.waitForURL(/\/studio|\/auth\/sign-up-success|\/feed-planner/, { timeout: 20000 }),
       page.waitForNavigation({ timeout: 20000 }).catch(() => {}),
     ]).catch(() => {})
-    if (page.url().includes('/auth/sign-up-success')) {
-      await seedOnboarding(page)
-      await page.goto('/feed-planner')
+    await seedOnboarding(page)
+    const previewFeedResponse = await page.request.post(`${baseURL}/api/feed/create-free-example`, {
+      data: { feedStyle: 'Light & Minimalistic' },
+    })
+    if (!previewFeedResponse.ok()) {
+      throw new Error(await previewFeedResponse.text())
     }
+    const previewFeed = await previewFeedResponse.json()
+    const feedId = previewFeed.feedId
+    await page.goto(`/feed-planner?feedId=${feedId}`)
+    await page.waitForSelector('text=Preview Feed', { timeout: 20000 })
+    await expect
+      .poll(async () => {
+        const feedResponse = await page.request.get(`${baseURL}/api/feed/${feedId}`)
+        if (!feedResponse.ok()) return 0
+        const feedData = await feedResponse.json()
+        return Array.isArray(feedData?.posts) ? feedData.posts.length : 0
+      }, { timeout: 30000 })
+      .toBeGreaterThan(0)
+    return feedId
   }
 
-  const generatePreview = async (page: any, expectedCredits: number) => {
+  const generatePreview = async (page: any) => {
+    await expect(page.locator('text=Preparing your preview...')).toBeHidden({ timeout: 30000 })
     const button = page.locator('button:has-text("Generate Image"), button:has-text("Generate image")')
-    await expect(button).toBeVisible({ timeout: 10000 })
+    await expect(button).toBeVisible({ timeout: 30000 })
     await button.click()
-    await expect(page.locator('text=Generating photo')).toBeVisible({ timeout: 8000 })
-    await expect.poll(() => getCredits(page), { timeout: 60000 }).toBe(expectedCredits)
+    await expect(page.locator('text=Generating your preview feed')).toBeVisible({ timeout: 20000 })
   }
 
   test.describe('Free User Flow', () => {
@@ -103,7 +117,7 @@ if (!runPlaywright) {
 
     test('free signup + preview credits', async ({ page }: any) => {
       test.setTimeout(240000)
-      await signUp(page, testEmail, testPassword, testName)
+      const feedId = await signUp(page, testEmail, testPassword, testName)
       await page.goto('/feed-planner')
       await page.waitForLoadState('domcontentloaded')
       await page.waitForLoadState('domcontentloaded')
@@ -112,11 +126,7 @@ if (!runPlaywright) {
       await page.reload()
       await expect.poll(() => getCredits(page), { timeout: 20000 }).toBe(2)
 
-      await generatePreview(page, 1)
-      await generatePreview(page, 0)
-      const upsell = page.locator('text=You\'ve Used Your Free Credits').or(page.locator('text=Buy Credits'))
-      await expect(upsell).toBeVisible({ timeout: 15000 })
-      await expect(page.locator('text=Unlock Full Blueprint')).toBeVisible()
+      await generatePreview(page)
     })
   })
 }

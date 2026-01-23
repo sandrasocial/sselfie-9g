@@ -250,6 +250,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
           
           // Refresh feed data to show the new feed
           router.push(`/feed-planner?feedId=${data.feedId}`)
+          setIsCreatingFreeExample(false)
         } catch (error) {
           console.error('[Feed Planner] Error creating free example feed:', error)
           setIsCreatingFreeExample(false)
@@ -301,7 +302,10 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ feedStyle: modalData.feedStyle }),
+        body: JSON.stringify({
+          feedStyle: modalData.feedStyle,
+          feedStyleVariationId: modalData.feedStyleVariationId,
+        }),
       })
 
       if (!response.ok) {
