@@ -9,13 +9,18 @@ import { generatePaidBlueprintDay1Email, PAID_BLUEPRINT_DAY1_SUBJECT } from "@/l
 import { generatePaidBlueprintDay3Email, PAID_BLUEPRINT_DAY3_SUBJECT } from "@/lib/email/templates/paid-blueprint-day-3"
 import { generatePaidBlueprintDay7Email, PAID_BLUEPRINT_DAY7_SUBJECT } from "@/lib/email/templates/paid-blueprint-day-7"
 import { logAdminError } from "@/lib/admin-error-log"
+import { sendMarketingBroadcast, syncMarketingContacts } from "@/lib/email/marketing-sender"
+import { MARKETING_SEGMENTS } from "@/lib/email/config"
 
 const sql = neon(process.env.DATABASE_URL!)
 
+const FIRST_NAME_PLACEHOLDER = "{{{FIRST_NAME|friend}}}"
+const EMAIL_PLACEHOLDER = "{{{EMAIL}}}"
+
 /**
- * Blueprint Followup Sequence - Resend Direct Sends
+ * Blueprint Followup Sequence - Resend Broadcasts (Marketing)
  * 
- * Sends blueprint followup emails directly via Resend API.
+ * Sends blueprint followup emails using Resend Broadcast API.
  * 
  * GET /api/cron/send-blueprint-followups
  * 
@@ -137,63 +142,78 @@ export async function GET(request: Request) {
     results.day3.found = day3Subscribers.length
     console.log(`[v0] [CRON] Found ${day3Subscribers.length} subscribers for Day 3 email`)
 
-    for (const subscriber of day3Subscribers) {
+    if (day3Subscribers.length > 0) {
       try {
-        // Check if already sent (dedupe check)
-        const existingLog = await sql`
-          SELECT id FROM email_logs
-          WHERE user_email = ${subscriber.email}
-          AND email_type = 'blueprint-followup-day-3'
-          LIMIT 1
-        `
-        if (existingLog.length > 0) {
-          results.day3.skipped++
-          continue
+        if (!MARKETING_SEGMENTS.blueprintDay3) {
+          throw new Error("RESEND_SEGMENT_BLUEPRINT_DAY_3 not configured")
         }
 
-        const firstName = subscriber.name?.split(" ")[0] || undefined
-        const emailContent = generateBlueprintFollowupDay3Email({
-          firstName,
+        const contacts = day3Subscribers.map((subscriber: any) => ({
           email: subscriber.email,
+          firstName: subscriber.name?.split(" ")[0],
+        }))
+        const day3Ids = day3Subscribers.map((subscriber: any) => subscriber.id)
+
+        const emailContent = generateBlueprintFollowupDay3Email({
+          firstName: FIRST_NAME_PLACEHOLDER,
+          email: EMAIL_PLACEHOLDER,
         })
 
-        const sendResult = await sendEmail({
-          to: subscriber.email,
+        await syncMarketingContacts({
+          tagKey: "sequence_blueprint_day_3",
+          tagValue: "true",
+          segmentId: MARKETING_SEGMENTS.blueprintDay3,
+          contacts,
+        })
+
+        await sendMarketingBroadcast({
+          campaignKey: "blueprint-followup-day-3",
+          segmentId: MARKETING_SEGMENTS.blueprintDay3,
           subject: "3 Ways to Use Your Blueprint This Week",
           html: emailContent.html,
           text: emailContent.text,
-          from: "Sandra from SSELFIE <hello@sselfie.ai>",
-          emailType: "blueprint-followup-day-3",
+          estimatedRecipientCount: day3Subscribers.length,
         })
 
-        if (sendResult.success) {
-          // Mark as sent
-          await sql`
-            UPDATE blueprint_subscribers
-            SET 
-              day_3_email_sent = TRUE,
-              day_3_email_sent_at = NOW(),
-              updated_at = NOW()
-            WHERE id = ${subscriber.id}
-          `
-          // Email is already logged by sendEmail via email_logs
-          results.day3.sent++
-          console.log(`[v0] [CRON] ✅ Sent Day 3 email to ${subscriber.email}`)
-        } else {
-          throw new Error(sendResult.error || 'Failed to send email')
-        }
+        await sql`
+          UPDATE blueprint_subscribers
+          SET 
+            day_3_email_sent = TRUE,
+            day_3_email_sent_at = NOW(),
+            updated_at = NOW()
+          WHERE id = ANY(${day3Ids})
+        `
+
+        await sql`
+          INSERT INTO email_logs (user_email, email_type, status, sent_at)
+          SELECT bs.email, 'blueprint-followup-day-3', 'sent', NOW()
+          FROM blueprint_subscribers bs
+          LEFT JOIN email_logs el ON el.user_email = bs.email AND el.email_type = 'blueprint-followup-day-3'
+          WHERE bs.id = ANY(${day3Ids})
+            AND el.id IS NULL
+        `
+
+        await syncMarketingContacts({
+          tagKey: "sequence_blueprint_day_3",
+          tagValue: "false",
+          segmentId: MARKETING_SEGMENTS.blueprintDay3,
+          removeFromSegment: true,
+          contacts,
+        })
+
+        results.day3.sent = day3Subscribers.length
       } catch (error: any) {
-        results.day3.failed++
+        results.day3.failed = day3Subscribers.length
         results.errors.push({
-          email: subscriber.email,
+          email: "broadcast",
           day: 3,
           error: error.message || "Unknown error",
         })
-        console.error(`[v0] [CRON] ❌ Failed to send Day 3 email to ${subscriber.email}:`, error)
+        console.error("[v0] [CRON] ❌ Failed to send Day 3 broadcast:", error)
         await logAdminError({
           toolName: "cron:send-blueprint-followups:day-3",
           error: error instanceof Error ? error : new Error(error.message || "Unknown error"),
-          context: { subscriberEmail: subscriber.email, subscriberId: subscriber.id },
+          context: { recipients: day3Subscribers.length },
         }).catch(() => {})
       }
     }
@@ -214,63 +234,78 @@ export async function GET(request: Request) {
     results.day7.found = day7Subscribers.length
     console.log(`[v0] [CRON] Found ${day7Subscribers.length} subscribers for Day 7 email`)
 
-    for (const subscriber of day7Subscribers) {
+    if (day7Subscribers.length > 0) {
       try {
-        // Check if already sent (dedupe check)
-        const existingLog = await sql`
-          SELECT id FROM email_logs
-          WHERE user_email = ${subscriber.email}
-          AND email_type = 'blueprint-followup-day-7'
-          LIMIT 1
-        `
-        if (existingLog.length > 0) {
-          results.day7.skipped++
-          continue
+        if (!MARKETING_SEGMENTS.blueprintDay7) {
+          throw new Error("RESEND_SEGMENT_BLUEPRINT_DAY_7 not configured")
         }
 
-        const firstName = subscriber.name?.split(" ")[0] || undefined
-        const emailContent = generateBlueprintFollowupDay7Email({
-          firstName,
+        const contacts = day7Subscribers.map((subscriber: any) => ({
           email: subscriber.email,
+          firstName: subscriber.name?.split(" ")[0],
+        }))
+        const day7Ids = day7Subscribers.map((subscriber: any) => subscriber.id)
+
+        const emailContent = generateBlueprintFollowupDay7Email({
+          firstName: FIRST_NAME_PLACEHOLDER,
+          email: EMAIL_PLACEHOLDER,
         })
 
-        const sendResult = await sendEmail({
-          to: subscriber.email,
+        await syncMarketingContacts({
+          tagKey: "sequence_blueprint_day_7",
+          tagValue: "true",
+          segmentId: MARKETING_SEGMENTS.blueprintDay7,
+          contacts,
+        })
+
+        await sendMarketingBroadcast({
+          campaignKey: "blueprint-followup-day-7",
+          segmentId: MARKETING_SEGMENTS.blueprintDay7,
           subject: "This Could Be You",
           html: emailContent.html,
           text: emailContent.text,
-          from: "Sandra from SSELFIE <hello@sselfie.ai>",
-          emailType: "blueprint-followup-day-7",
+          estimatedRecipientCount: day7Subscribers.length,
         })
 
-        if (sendResult.success) {
-          // Mark as sent
-          await sql`
-            UPDATE blueprint_subscribers
-            SET 
-              day_7_email_sent = TRUE,
-              day_7_email_sent_at = NOW(),
-              updated_at = NOW()
-            WHERE id = ${subscriber.id}
-          `
-          // Email is already logged by sendEmail via email_logs
-          results.day7.sent++
-          console.log(`[v0] [CRON] ✅ Sent Day 7 email to ${subscriber.email}`)
-        } else {
-          throw new Error(sendResult.error || 'Failed to send email')
-        }
+        await sql`
+          UPDATE blueprint_subscribers
+          SET 
+            day_7_email_sent = TRUE,
+            day_7_email_sent_at = NOW(),
+            updated_at = NOW()
+          WHERE id = ANY(${day7Ids})
+        `
+
+        await sql`
+          INSERT INTO email_logs (user_email, email_type, status, sent_at)
+          SELECT bs.email, 'blueprint-followup-day-7', 'sent', NOW()
+          FROM blueprint_subscribers bs
+          LEFT JOIN email_logs el ON el.user_email = bs.email AND el.email_type = 'blueprint-followup-day-7'
+          WHERE bs.id = ANY(${day7Ids})
+            AND el.id IS NULL
+        `
+
+        await syncMarketingContacts({
+          tagKey: "sequence_blueprint_day_7",
+          tagValue: "false",
+          segmentId: MARKETING_SEGMENTS.blueprintDay7,
+          removeFromSegment: true,
+          contacts,
+        })
+
+        results.day7.sent = day7Subscribers.length
       } catch (error: any) {
-        results.day7.failed++
+        results.day7.failed = day7Subscribers.length
         results.errors.push({
-          email: subscriber.email,
+          email: "broadcast",
           day: 7,
           error: error.message || "Unknown error",
         })
-        console.error(`[v0] [CRON] ❌ Failed to send Day 7 email to ${subscriber.email}:`, error)
+        console.error("[v0] [CRON] ❌ Failed to send Day 7 broadcast:", error)
         await logAdminError({
           toolName: "cron:send-blueprint-followups:day-7",
           error: error instanceof Error ? error : new Error(error.message || "Unknown error"),
-          context: { subscriberEmail: subscriber.email, subscriberId: subscriber.id },
+          context: { recipients: day7Subscribers.length },
         }).catch(() => {})
       }
     }
@@ -291,63 +326,78 @@ export async function GET(request: Request) {
     results.day14.found = day14Subscribers.length
     console.log(`[v0] [CRON] Found ${day14Subscribers.length} subscribers for Day 14 email`)
 
-    for (const subscriber of day14Subscribers) {
+    if (day14Subscribers.length > 0) {
       try {
-        // Check if already sent (dedupe check)
-        const existingLog = await sql`
-          SELECT id FROM email_logs
-          WHERE user_email = ${subscriber.email}
-          AND email_type = 'blueprint-followup-day-14'
-          LIMIT 1
-        `
-        if (existingLog.length > 0) {
-          results.day14.skipped++
-          continue
+        if (!MARKETING_SEGMENTS.blueprintDay14) {
+          throw new Error("RESEND_SEGMENT_BLUEPRINT_DAY_14 not configured")
         }
 
-        const firstName = subscriber.name?.split(" ")[0] || undefined
-        const emailContent = generateBlueprintFollowupDay14Email({
-          firstName,
+        const contacts = day14Subscribers.map((subscriber: any) => ({
           email: subscriber.email,
+          firstName: subscriber.name?.split(" ")[0],
+        }))
+        const day14Ids = day14Subscribers.map((subscriber: any) => subscriber.id)
+
+        const emailContent = generateBlueprintFollowupDay14Email({
+          firstName: FIRST_NAME_PLACEHOLDER,
+          email: EMAIL_PLACEHOLDER,
         })
 
-        const sendResult = await sendEmail({
-          to: subscriber.email,
+        await syncMarketingContacts({
+          tagKey: "sequence_blueprint_day_14",
+          tagValue: "true",
+          segmentId: MARKETING_SEGMENTS.blueprintDay14,
+          contacts,
+        })
+
+        await sendMarketingBroadcast({
+          campaignKey: "blueprint-followup-day-14",
+          segmentId: MARKETING_SEGMENTS.blueprintDay14,
           subject: "Still thinking about it? Here's $10 off 💕",
           html: emailContent.html,
           text: emailContent.text,
-          from: "Sandra from SSELFIE <hello@sselfie.ai>",
-          emailType: "blueprint-followup-day-14",
+          estimatedRecipientCount: day14Subscribers.length,
         })
 
-        if (sendResult.success) {
-          // Mark as sent
-          await sql`
-            UPDATE blueprint_subscribers
-            SET 
-              day_14_email_sent = TRUE,
-              day_14_email_sent_at = NOW(),
-              updated_at = NOW()
-            WHERE id = ${subscriber.id}
-          `
-          // Email is already logged by sendEmail via email_logs
-          results.day14.sent++
-          console.log(`[v0] [CRON] ✅ Sent Day 14 email to ${subscriber.email}`)
-        } else {
-          throw new Error(sendResult.error || 'Failed to send email')
-        }
+        await sql`
+          UPDATE blueprint_subscribers
+          SET 
+            day_14_email_sent = TRUE,
+            day_14_email_sent_at = NOW(),
+            updated_at = NOW()
+          WHERE id = ANY(${day14Ids})
+        `
+
+        await sql`
+          INSERT INTO email_logs (user_email, email_type, status, sent_at)
+          SELECT bs.email, 'blueprint-followup-day-14', 'sent', NOW()
+          FROM blueprint_subscribers bs
+          LEFT JOIN email_logs el ON el.user_email = bs.email AND el.email_type = 'blueprint-followup-day-14'
+          WHERE bs.id = ANY(${day14Ids})
+            AND el.id IS NULL
+        `
+
+        await syncMarketingContacts({
+          tagKey: "sequence_blueprint_day_14",
+          tagValue: "false",
+          segmentId: MARKETING_SEGMENTS.blueprintDay14,
+          removeFromSegment: true,
+          contacts,
+        })
+
+        results.day14.sent = day14Subscribers.length
       } catch (error: any) {
-        results.day14.failed++
+        results.day14.failed = day14Subscribers.length
         results.errors.push({
-          email: subscriber.email,
+          email: "broadcast",
           day: 14,
           error: error.message || "Unknown error",
         })
-        console.error(`[v0] [CRON] ❌ Failed to send Day 14 email to ${subscriber.email}:`, error)
+        console.error("[v0] [CRON] ❌ Failed to send Day 14 broadcast:", error)
         await logAdminError({
           toolName: "cron:send-blueprint-followups:day-14",
           error: error instanceof Error ? error : new Error(error.message || "Unknown error"),
-          context: { subscriberEmail: subscriber.email, subscriberId: subscriber.id },
+          context: { recipients: day14Subscribers.length },
         }).catch(() => {})
       }
     }

@@ -152,7 +152,14 @@ async function sendEmailWithRetry(
 async function logEmailSend(
   userEmail: string,
   emailType: string,
-  status: "sent" | "delivered" | "failed" | "error" | "skipped_disabled" | "skipped_test_mode",
+  status:
+    | "sent"
+    | "delivered"
+    | "failed"
+    | "error"
+    | "skipped_disabled"
+    | "skipped_test_mode"
+    | "skipped_dry_run",
   resendMessageId?: string,
   errorMessage?: string,
   campaignId?: number,
@@ -212,6 +219,21 @@ export async function sendEmail(
     return {
       success: false,
       error: "Test mode enabled: recipient not in whitelist",
+    }
+  }
+
+  // Dry-run mode (no send, log only)
+  if (process.env.EMAIL_DRY_RUN === "true") {
+    console.log(`[v0] [EMAIL_DRY_RUN] Skipping send to ${recipient}`, {
+      subject: options.subject,
+      htmlLength: options.html?.length || 0,
+      textLength: options.text?.length || 0,
+      emailType,
+    })
+    await logEmailSend(recipient, emailType, "skipped_dry_run", undefined, "Dry run enabled", options.campaignId)
+    return {
+      success: true,
+      messageId: "dry_run",
     }
   }
 

@@ -4,6 +4,72 @@ import crypto from "crypto"
 
 const sql = neon(process.env.DATABASE_URL!)
 
+function resolveBroadcastId(eventData: any): string | null {
+  return eventData?.broadcast_id || eventData?.broadcastId || eventData?.broadcast?.id || null
+}
+
+function resolveEmailTypeFromTags(eventData: any): string | null {
+  const tags = eventData?.tags
+  if (!Array.isArray(tags)) return null
+  const tag = tags.find((entry) => entry?.name === "type")
+  return tag?.value || null
+}
+
+async function resolveCampaignId(broadcastId: string | null): Promise<number | null> {
+  if (!broadcastId) return null
+  const campaign = await sql`
+    SELECT id FROM admin_email_campaigns
+    WHERE resend_broadcast_id = ${broadcastId}
+    LIMIT 1
+  `
+  return campaign?.[0]?.id || null
+}
+
+async function ensureEmailLogEntry(params: {
+  recipientEmail: string | null
+  messageId: string | null
+  status: string
+  opened?: boolean
+  openedAt?: Date
+  clicked?: boolean
+  clickedAt?: Date
+  emailType?: string | null
+  campaignId?: number | null
+  errorMessage?: string | null
+}) {
+  if (!params.recipientEmail) return
+  await sql`
+    INSERT INTO email_logs (
+      user_email,
+      email_type,
+      status,
+      resend_message_id,
+      opened,
+      opened_at,
+      clicked,
+      clicked_at,
+      campaign_id,
+      error_message,
+      sent_at,
+      created_at
+    ) VALUES (
+      ${params.recipientEmail},
+      ${params.emailType || "resend-webhook"},
+      ${params.status},
+      ${params.messageId},
+      ${params.opened || false},
+      ${params.openedAt || null},
+      ${params.clicked || false},
+      ${params.clickedAt || null},
+      ${params.campaignId || null},
+      ${params.errorMessage || null},
+      NOW(),
+      NOW()
+    )
+    ON CONFLICT DO NOTHING
+  `
+}
+
 /**
  * Resend Webhook Handler
  * 
@@ -55,6 +121,10 @@ export async function POST(request: NextRequest) {
     // Resend webhook format: { data: { email_id: "...", email: "...", ... } }
     const recipientEmail = eventData?.email || eventData?.to || eventData?.recipient
     const messageId = eventData?.email_id || eventData?.message_id || eventData?.id || body.id
+    const broadcastId = resolveBroadcastId(eventData)
+    const campaignId = await resolveCampaignId(broadcastId)
+    const emailTypeFromTags = resolveEmailTypeFromTags(eventData)
+    const resolvedEmailType = emailTypeFromTags || (campaignId ? `campaign-${campaignId}` : null)
 
     console.log("[v0] [Resend Webhook] Extracted:", {
       recipientEmail,
@@ -73,18 +143,27 @@ export async function POST(request: NextRequest) {
     switch (eventType) {
       case "email.sent":
         // Email was sent (already logged in send-email.ts, but update if needed)
-        if (messageId && recipientEmail) {
-          await sql`
+        if (messageId || recipientEmail) {
+          const updated = await sql`
             UPDATE email_logs
-            SET resend_message_id = ${messageId}, status = 'sent'
-            WHERE id IN (
-              SELECT id FROM email_logs
-              WHERE user_email = ${recipientEmail}
-              AND resend_message_id IS NULL
-              ORDER BY sent_at DESC
-              LIMIT 1
+            SET resend_message_id = ${messageId || null}, status = 'sent'
+            WHERE (
+              resend_message_id = ${messageId || null}
+              OR (user_email = ${recipientEmail || ""} AND resend_message_id IS NULL)
             )
+            RETURNING id
           `
+
+          if (!updated || updated.length === 0) {
+            await ensureEmailLogEntry({
+              recipientEmail,
+              messageId,
+              status: "sent",
+              emailType: resolvedEmailType,
+              campaignId,
+            })
+          }
+
           console.log(`[v0] [Resend Webhook] ✅ Updated email_logs for sent: ${recipientEmail}`)
         }
         break
@@ -92,11 +171,21 @@ export async function POST(request: NextRequest) {
       case "email.delivered":
         // Email was delivered successfully
         if (messageId) {
-          await sql`
+          const delivered = await sql`
             UPDATE email_logs
             SET status = 'delivered'
             WHERE resend_message_id = ${messageId}
+            RETURNING id
           `
+          if (!delivered || delivered.length === 0) {
+            await ensureEmailLogEntry({
+              recipientEmail,
+              messageId,
+              status: "delivered",
+              emailType: resolvedEmailType,
+              campaignId,
+            })
+          }
           console.log(`[v0] [Resend Webhook] ✅ Marked as delivered: ${messageId}`)
         }
         break
@@ -138,7 +227,16 @@ export async function POST(request: NextRequest) {
           if (emailLog && emailLog.length > 0) {
             console.log(`[v0] [Resend Webhook] ✅ Marked as opened: ${messageId} (email: ${emailLog[0].user_email})`)
           } else {
-            console.warn(`[v0] [Resend Webhook] ⚠️ Could not find email_logs entry for message ID: ${messageId}, email: ${recipientEmail}`)
+            await ensureEmailLogEntry({
+              recipientEmail,
+              messageId,
+              status: "delivered",
+              opened: true,
+              openedAt,
+              emailType: resolvedEmailType,
+              campaignId,
+            })
+            console.warn(`[v0] [Resend Webhook] ⚠️ Created email_logs entry for opened event: ${messageId}`)
           }
           
           // Update A/B test results if this is an A/B test email
@@ -198,7 +296,16 @@ export async function POST(request: NextRequest) {
           if (emailLog && emailLog.length > 0) {
             console.log(`[v0] [Resend Webhook] ✅ Marked as clicked: ${messageId} (email: ${emailLog[0].user_email}, URL: ${clickedUrl})`)
           } else {
-            console.warn(`[v0] [Resend Webhook] ⚠️ Could not find email_logs entry for clicked message ID: ${messageId}`)
+            await ensureEmailLogEntry({
+              recipientEmail,
+              messageId,
+              status: "delivered",
+              clicked: true,
+              clickedAt,
+              emailType: resolvedEmailType,
+              campaignId,
+            })
+            console.warn(`[v0] [Resend Webhook] ⚠️ Created email_logs entry for clicked event: ${messageId}`)
           }
           
           // Update A/B test results if this is an A/B test email
@@ -222,11 +329,22 @@ export async function POST(request: NextRequest) {
           const bounceType = eventData?.bounce_type || "hard"
           const bounceReason = eventData?.bounce_reason || "Unknown"
           
-          await sql`
+          const bounced = await sql`
             UPDATE email_logs
             SET status = 'bounced', error_message = ${`Bounced: ${bounceType} - ${bounceReason}`}
             WHERE resend_message_id = ${messageId}
+            RETURNING id
           `
+          if (!bounced || bounced.length === 0) {
+            await ensureEmailLogEntry({
+              recipientEmail,
+              messageId,
+              status: "bounced",
+              emailType: resolvedEmailType,
+              campaignId,
+              errorMessage: `Bounced: ${bounceType} - ${bounceReason}`,
+            })
+          }
           console.log(`[v0] [Resend Webhook] ⚠️ Marked as bounced: ${messageId} (${bounceType})`)
         }
         break
@@ -234,11 +352,22 @@ export async function POST(request: NextRequest) {
       case "email.complained":
         // User marked email as spam
         if (messageId) {
-          await sql`
+          const complained = await sql`
             UPDATE email_logs
             SET status = 'complained', error_message = 'User marked as spam'
             WHERE resend_message_id = ${messageId}
+            RETURNING id
           `
+          if (!complained || complained.length === 0) {
+            await ensureEmailLogEntry({
+              recipientEmail,
+              messageId,
+              status: "complained",
+              emailType: resolvedEmailType,
+              campaignId,
+              errorMessage: "User marked as spam",
+            })
+          }
           console.log(`[v0] [Resend Webhook] ⚠️ Marked as complained (spam): ${messageId}`)
           
           // Also mark in blueprint_subscribers and welcome_back_sequence to stop sending

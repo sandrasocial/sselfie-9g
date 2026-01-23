@@ -1,5 +1,3 @@
-import { completeStripeCheckout } from './helpers/stripe-mock'
-
 const runPlaywright = process.env.PLAYWRIGHT_TEST === '1'
 
 if (!runPlaywright) {
@@ -22,9 +20,16 @@ if (!runPlaywright) {
       page.waitForURL(/\/studio|\/auth\/sign-up-success|\/feed-planner/, { timeout: 20000 }),
       page.waitForNavigation({ timeout: 20000 }).catch(() => {}),
     ]).catch(() => {})
-    if (page.url().includes('/auth/sign-up-success')) {
-      await page.goto('/feed-planner')
-    }
+    await page.goto('/auth/login')
+    await page.fill('input#email', email)
+    await page.fill('input#password', password)
+    const loginSubmit = page.locator('button[type="submit"]')
+    await expect(loginSubmit).toBeEnabled({ timeout: 10000 })
+    await loginSubmit.click()
+    await Promise.race([
+      page.waitForURL(/\/studio|\/feed-planner/, { timeout: 20000 }),
+      page.waitForNavigation({ timeout: 20000 }).catch(() => {}),
+    ]).catch(() => {})
   }
 
   const completeWizardIfVisible = async (page: any) => {
@@ -71,13 +76,13 @@ if (!runPlaywright) {
     test('membership unlocks full app + credits', async ({ page }: any) => {
       test.setTimeout(300000)
       await signUp(page, testEmail, testPassword, testName)
-      const session = await page.request.post(`${baseURL}/api/landing/checkout`, {
-        data: { productId: 'sselfie_studio_membership' },
+      const mockResponse = await page.request.post(`${baseURL}/api/testing/stripe-mock`, {
+        headers: { 'x-playwright-test': '1' },
+        data: { productType: 'sselfie_studio_membership' },
       })
-      const sessionData = await session.json()
-      expect(sessionData?.clientSecret).toBeTruthy()
-      await page.goto(`/checkout?client_secret=${sessionData.clientSecret}&product_type=sselfie_studio_membership`)
-      await completeStripeCheckout(page, testEmail)
+      if (!mockResponse.ok()) {
+        throw new Error(`Mock checkout failed: ${mockResponse.status()} ${await mockResponse.text()}`)
+      }
 
       await expect.poll(async () => {
         const access = await getAccess(page)

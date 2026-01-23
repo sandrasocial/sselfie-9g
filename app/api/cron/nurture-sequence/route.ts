@@ -8,13 +8,18 @@ import { generateNurtureDay3Email } from "@/lib/email/templates/nurture-day-3"
 import { generateNurtureDay7Email } from "@/lib/email/templates/nurture-day-7"
 import { generateUpsellDay10Email } from "@/lib/email/templates/upsell-day-10"
 import { logAdminError } from "@/lib/admin-error-log"
+import { sendMarketingBroadcast, syncMarketingContacts } from "@/lib/email/marketing-sender"
+import { MARKETING_SEGMENTS } from "@/lib/email/config"
 
 const sql = neon(process.env.DATABASE_URL!)
 
+const FIRST_NAME_PLACEHOLDER = "{{{FIRST_NAME|friend}}}"
+const EMAIL_PLACEHOLDER = "{{{EMAIL}}}"
+
 /**
- * Freebie Nurture Sequence - Resend Direct Sends
+ * Freebie Nurture Sequence - Resend Broadcasts (Marketing)
  * 
- * Sends nurture sequence emails to freebie subscribers directly via Resend API.
+ * Sends nurture sequence emails to freebie subscribers using Broadcast API.
  * 
  * GET /api/cron/nurture-sequence
  * 
@@ -73,54 +78,69 @@ export async function GET(request: Request) {
     results.day1.found = day1Subscribers.length
     console.log(`[v0] [CRON] Found ${day1Subscribers.length} subscribers for Day 1 email`)
 
-    for (const subscriber of day1Subscribers) {
+    if (day1Subscribers.length > 0) {
       try {
-        // Freebie Nurture Automation - Check if already sent (dedupe check)
-        const existingLog = await sql`
-          SELECT id FROM email_logs
-          WHERE user_email = ${subscriber.email}
-          AND email_type = 'nurture-day-1'
-          LIMIT 1
-        `
-        if (existingLog.length > 0) {
-          results.day1.skipped++
-          continue
+        if (!MARKETING_SEGMENTS.nurtureDay1) {
+          throw new Error("RESEND_SEGMENT_NURTURE_DAY_1 not configured")
         }
 
-        const firstName = subscriber.name?.split(" ")[0] || undefined
+        const contacts = day1Subscribers.map((subscriber: any) => ({
+          email: subscriber.email,
+          firstName: subscriber.name?.split(" ")[0],
+        }))
+        const day1Ids = day1Subscribers.map((subscriber: any) => subscriber.id)
+
         const emailContent = generateNurtureDay1Email({
-          firstName,
-          recipientEmail: subscriber.email,
+          firstName: FIRST_NAME_PLACEHOLDER,
+          recipientEmail: EMAIL_PLACEHOLDER,
         })
 
-        const sendResult = await sendEmail({
-          to: subscriber.email,
+        await syncMarketingContacts({
+          tagKey: "sequence_nurture_day_1",
+          tagValue: "true",
+          segmentId: MARKETING_SEGMENTS.nurtureDay1,
+          contacts,
+        })
+
+        await sendMarketingBroadcast({
+          campaignKey: "nurture-day-1",
+          segmentId: MARKETING_SEGMENTS.nurtureDay1,
           subject: "Your First Day with SSELFIE",
           html: emailContent.html,
           text: emailContent.text,
-          from: "Sandra from SSELFIE <hello@sselfie.ai>",
-          emailType: "nurture-day-1",
+          estimatedRecipientCount: day1Subscribers.length,
         })
 
-        if (sendResult.success) {
-          // Email is already logged by sendEmail via email_logs
-          results.day1.sent++
-          console.log(`[v0] [CRON] ✅ Sent Day 1 email to ${subscriber.email}`)
-        } else {
-          throw new Error(sendResult.error || 'Failed to send email')
-        }
+        await sql`
+          INSERT INTO email_logs (user_email, email_type, status, sent_at)
+          SELECT fs.email, 'nurture-day-1', 'sent', NOW()
+          FROM freebie_subscribers fs
+          LEFT JOIN email_logs el ON el.user_email = fs.email AND el.email_type = 'nurture-day-1'
+          WHERE fs.id = ANY(${day1Ids})
+            AND el.id IS NULL
+        `
+
+        await syncMarketingContacts({
+          tagKey: "sequence_nurture_day_1",
+          tagValue: "false",
+          segmentId: MARKETING_SEGMENTS.nurtureDay1,
+          removeFromSegment: true,
+          contacts,
+        })
+
+        results.day1.sent = day1Subscribers.length
       } catch (error: any) {
-        results.day1.failed++
+        results.day1.failed = day1Subscribers.length
         results.errors.push({
-          email: subscriber.email,
+          email: "broadcast",
           day: 1,
           error: error.message || "Unknown error",
         })
-        console.error(`[v0] [CRON] ❌ Failed to send Day 1 email to ${subscriber.email}:`, error)
+        console.error("[v0] [CRON] ❌ Failed to send Day 1 broadcast:", error)
         await logAdminError({
           toolName: "cron:nurture-sequence:day-1",
           error: error instanceof Error ? error : new Error(error.message || "Unknown error"),
-          context: { subscriberEmail: subscriber.email, subscriberId: subscriber.id },
+          context: { recipients: day1Subscribers.length },
         }).catch(() => {})
       }
     }
@@ -140,54 +160,69 @@ export async function GET(request: Request) {
     results.day3.found = day3Subscribers.length
     console.log(`[v0] [CRON] Found ${day3Subscribers.length} subscribers for Day 3 email`)
 
-    for (const subscriber of day3Subscribers) {
+    if (day3Subscribers.length > 0) {
       try {
-        // Freebie Nurture Automation - Check if already sent (dedupe check)
-        const existingLog = await sql`
-          SELECT id FROM email_logs
-          WHERE user_email = ${subscriber.email}
-          AND email_type = 'nurture-day-3'
-          LIMIT 1
-        `
-        if (existingLog.length > 0) {
-          results.day3.skipped++
-          continue
+        if (!MARKETING_SEGMENTS.nurtureDay3) {
+          throw new Error("RESEND_SEGMENT_NURTURE_DAY_3 not configured")
         }
 
-        const firstName = subscriber.name?.split(" ")[0] || undefined
+        const contacts = day3Subscribers.map((subscriber: any) => ({
+          email: subscriber.email,
+          firstName: subscriber.name?.split(" ")[0],
+        }))
+        const day3Ids = day3Subscribers.map((subscriber: any) => subscriber.id)
+
         const emailContent = generateNurtureDay3Email({
-          firstName,
-          recipientEmail: subscriber.email,
+          firstName: FIRST_NAME_PLACEHOLDER,
+          recipientEmail: EMAIL_PLACEHOLDER,
         })
 
-        const sendResult = await sendEmail({
-          to: subscriber.email,
+        await syncMarketingContacts({
+          tagKey: "sequence_nurture_day_3",
+          tagValue: "true",
+          segmentId: MARKETING_SEGMENTS.nurtureDay3,
+          contacts,
+        })
+
+        await sendMarketingBroadcast({
+          campaignKey: "nurture-day-3",
+          segmentId: MARKETING_SEGMENTS.nurtureDay3,
           subject: "How's It Going?",
           html: emailContent.html,
           text: emailContent.text,
-          from: "Sandra from SSELFIE <hello@sselfie.ai>",
-          emailType: "nurture-day-3",
+          estimatedRecipientCount: day3Subscribers.length,
         })
 
-        if (sendResult.success) {
-          // Email is already logged by sendEmail via email_logs
-          results.day3.sent++
-          console.log(`[v0] [CRON] ✅ Sent Day 3 email to ${subscriber.email}`)
-        } else {
-          throw new Error(sendResult.error || 'Failed to send email')
-        }
+        await sql`
+          INSERT INTO email_logs (user_email, email_type, status, sent_at)
+          SELECT fs.email, 'nurture-day-3', 'sent', NOW()
+          FROM freebie_subscribers fs
+          LEFT JOIN email_logs el ON el.user_email = fs.email AND el.email_type = 'nurture-day-3'
+          WHERE fs.id = ANY(${day3Ids})
+            AND el.id IS NULL
+        `
+
+        await syncMarketingContacts({
+          tagKey: "sequence_nurture_day_3",
+          tagValue: "false",
+          segmentId: MARKETING_SEGMENTS.nurtureDay3,
+          removeFromSegment: true,
+          contacts,
+        })
+
+        results.day3.sent = day3Subscribers.length
       } catch (error: any) {
-        results.day3.failed++
+        results.day3.failed = day3Subscribers.length
         results.errors.push({
-          email: subscriber.email,
+          email: "broadcast",
           day: 3,
           error: error.message || "Unknown error",
         })
-        console.error(`[v0] [CRON] ❌ Failed to send Day 3 email to ${subscriber.email}:`, error)
+        console.error("[v0] [CRON] ❌ Failed to send Day 3 broadcast:", error)
         await logAdminError({
           toolName: "cron:nurture-sequence:day-3",
           error: error instanceof Error ? error : new Error(error.message || "Unknown error"),
-          context: { subscriberEmail: subscriber.email, subscriberId: subscriber.id },
+          context: { recipients: day3Subscribers.length },
         }).catch(() => {})
       }
     }
@@ -207,54 +242,69 @@ export async function GET(request: Request) {
     results.day7.found = day7Subscribers.length
     console.log(`[v0] [CRON] Found ${day7Subscribers.length} subscribers for Day 7 email`)
 
-    for (const subscriber of day7Subscribers) {
+    if (day7Subscribers.length > 0) {
       try {
-        // Freebie Nurture Automation - Check if already sent (dedupe check)
-        const existingLog = await sql`
-          SELECT id FROM email_logs
-          WHERE user_email = ${subscriber.email}
-          AND email_type = 'nurture-day-7'
-          LIMIT 1
-        `
-        if (existingLog.length > 0) {
-          results.day7.skipped++
-          continue
+        if (!MARKETING_SEGMENTS.nurtureDay7) {
+          throw new Error("RESEND_SEGMENT_NURTURE_DAY_7 not configured")
         }
 
-        const firstName = subscriber.name?.split(" ")[0] || undefined
+        const contacts = day7Subscribers.map((subscriber: any) => ({
+          email: subscriber.email,
+          firstName: subscriber.name?.split(" ")[0],
+        }))
+        const day7Ids = day7Subscribers.map((subscriber: any) => subscriber.id)
+
         const emailContent = generateNurtureDay7Email({
-          firstName,
-          recipientEmail: subscriber.email,
+          firstName: FIRST_NAME_PLACEHOLDER,
+          recipientEmail: EMAIL_PLACEHOLDER,
         })
 
-        const sendResult = await sendEmail({
-          to: subscriber.email,
+        await syncMarketingContacts({
+          tagKey: "sequence_nurture_day_7",
+          tagValue: "true",
+          segmentId: MARKETING_SEGMENTS.nurtureDay7,
+          contacts,
+        })
+
+        await sendMarketingBroadcast({
+          campaignKey: "nurture-day-7",
+          segmentId: MARKETING_SEGMENTS.nurtureDay7,
           subject: "One Week In",
           html: emailContent.html,
           text: emailContent.text,
-          from: "Sandra from SSELFIE <hello@sselfie.ai>",
-          emailType: "nurture-day-7",
+          estimatedRecipientCount: day7Subscribers.length,
         })
 
-        if (sendResult.success) {
-          // Email is already logged by sendEmail via email_logs
-          results.day7.sent++
-          console.log(`[v0] [CRON] ✅ Sent Day 7 email to ${subscriber.email}`)
-        } else {
-          throw new Error(sendResult.error || 'Failed to send email')
-        }
+        await sql`
+          INSERT INTO email_logs (user_email, email_type, status, sent_at)
+          SELECT fs.email, 'nurture-day-7', 'sent', NOW()
+          FROM freebie_subscribers fs
+          LEFT JOIN email_logs el ON el.user_email = fs.email AND el.email_type = 'nurture-day-7'
+          WHERE fs.id = ANY(${day7Ids})
+            AND el.id IS NULL
+        `
+
+        await syncMarketingContacts({
+          tagKey: "sequence_nurture_day_7",
+          tagValue: "false",
+          segmentId: MARKETING_SEGMENTS.nurtureDay7,
+          removeFromSegment: true,
+          contacts,
+        })
+
+        results.day7.sent = day7Subscribers.length
       } catch (error: any) {
-        results.day7.failed++
+        results.day7.failed = day7Subscribers.length
         results.errors.push({
-          email: subscriber.email,
+          email: "broadcast",
           day: 7,
           error: error.message || "Unknown error",
         })
-        console.error(`[v0] [CRON] ❌ Failed to send Day 7 email to ${subscriber.email}:`, error)
+        console.error("[v0] [CRON] ❌ Failed to send Day 7 broadcast:", error)
         await logAdminError({
           toolName: "cron:nurture-sequence:day-7",
           error: error instanceof Error ? error : new Error(error.message || "Unknown error"),
-          context: { subscriberEmail: subscriber.email, subscriberId: subscriber.id },
+          context: { recipients: day7Subscribers.length },
         }).catch(() => {})
       }
     }
@@ -274,54 +324,69 @@ export async function GET(request: Request) {
     results.day10.found = day10Subscribers.length
     console.log(`[v0] [CRON] Found ${day10Subscribers.length} subscribers for Day 10 email`)
 
-    for (const subscriber of day10Subscribers) {
+    if (day10Subscribers.length > 0) {
       try {
-        // Freebie Nurture Automation - Check if already sent (dedupe check)
-        const existingLog = await sql`
-          SELECT id FROM email_logs
-          WHERE user_email = ${subscriber.email}
-          AND email_type = 'nurture-day-10'
-          LIMIT 1
-        `
-        if (existingLog.length > 0) {
-          results.day10.skipped++
-          continue
+        if (!MARKETING_SEGMENTS.nurtureDay10) {
+          throw new Error("RESEND_SEGMENT_NURTURE_DAY_10 not configured")
         }
 
-        const firstName = subscriber.name?.split(" ")[0] || undefined
+        const contacts = day10Subscribers.map((subscriber: any) => ({
+          email: subscriber.email,
+          firstName: subscriber.name?.split(" ")[0],
+        }))
+        const day10Ids = day10Subscribers.map((subscriber: any) => subscriber.id)
+
         const emailContent = generateUpsellDay10Email({
-          firstName,
-          recipientEmail: subscriber.email,
+          firstName: FIRST_NAME_PLACEHOLDER,
+          recipientEmail: EMAIL_PLACEHOLDER,
         })
 
-        const sendResult = await sendEmail({
-          to: subscriber.email,
+        await syncMarketingContacts({
+          tagKey: "sequence_nurture_day_10",
+          tagValue: "true",
+          segmentId: MARKETING_SEGMENTS.nurtureDay10,
+          contacts,
+        })
+
+        await sendMarketingBroadcast({
+          campaignKey: "nurture-day-10",
+          segmentId: MARKETING_SEGMENTS.nurtureDay10,
           subject: "Ready for the Next Level?",
           html: emailContent.html,
           text: emailContent.text,
-          from: "Sandra from SSELFIE <hello@sselfie.ai>",
-          emailType: "nurture-day-10",
+          estimatedRecipientCount: day10Subscribers.length,
         })
 
-        if (sendResult.success) {
-          // Email is already logged by sendEmail via email_logs
-          results.day10.sent++
-          console.log(`[v0] [CRON] ✅ Sent Day 10 email to ${subscriber.email}`)
-        } else {
-          throw new Error(sendResult.error || 'Failed to send email')
-        }
+        await sql`
+          INSERT INTO email_logs (user_email, email_type, status, sent_at)
+          SELECT fs.email, 'nurture-day-10', 'sent', NOW()
+          FROM freebie_subscribers fs
+          LEFT JOIN email_logs el ON el.user_email = fs.email AND el.email_type = 'nurture-day-10'
+          WHERE fs.id = ANY(${day10Ids})
+            AND el.id IS NULL
+        `
+
+        await syncMarketingContacts({
+          tagKey: "sequence_nurture_day_10",
+          tagValue: "false",
+          segmentId: MARKETING_SEGMENTS.nurtureDay10,
+          removeFromSegment: true,
+          contacts,
+        })
+
+        results.day10.sent = day10Subscribers.length
       } catch (error: any) {
-        results.day10.failed++
+        results.day10.failed = day10Subscribers.length
         results.errors.push({
-          email: subscriber.email,
+          email: "broadcast",
           day: 10,
           error: error.message || "Unknown error",
         })
-        console.error(`[v0] [CRON] ❌ Failed to send Day 10 email to ${subscriber.email}:`, error)
+        console.error("[v0] [CRON] ❌ Failed to send Day 10 broadcast:", error)
         await logAdminError({
           toolName: "cron:nurture-sequence:day-10",
           error: error instanceof Error ? error : new Error(error.message || "Unknown error"),
-          context: { subscriberEmail: subscriber.email, subscriberId: subscriber.id },
+          context: { recipients: day10Subscribers.length },
         }).catch(() => {})
       }
     }

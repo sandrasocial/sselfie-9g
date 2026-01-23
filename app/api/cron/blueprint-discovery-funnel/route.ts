@@ -12,11 +12,16 @@ import {
   generateBlueprintDiscovery5Email,
 } from "@/lib/email/templates/blueprint-discovery-sequence"
 import { logAdminError } from "@/lib/admin-error-log"
+import { sendMarketingBroadcast, syncMarketingContacts } from "@/lib/email/marketing-sender"
+import { MARKETING_SEGMENTS } from "@/lib/email/config"
 
 const sql = neon(process.env.DATABASE_URL!)
 
+const FIRST_NAME_PLACEHOLDER = "{{{FIRST_NAME|friend}}}"
+const EMAIL_PLACEHOLDER = "{{{EMAIL}}}"
+
 /**
- * Blueprint Discovery Funnel - Resend Direct Sends
+ * Blueprint Discovery Funnel - Resend Broadcasts (Marketing)
  * 
  * Sends discovery funnel emails to ALL subscribers (except blueprint_subscribers).
  * These users have NOT completed the blueprint yet.
@@ -212,55 +217,65 @@ export async function GET(request: Request) {
     results.email1.found = email1Eligible.length
     console.log(`[v0] [CRON] Found ${email1Eligible.length} users for Email 1`)
 
-    for (const row of email1Eligible) {
-      const email = row.user_email
+    if (email1Eligible.length > 0) {
       try {
-        // Double-check deduplication
-        const existingLog = await sql`
-          SELECT id FROM email_logs
-          WHERE user_email = ${email}
-          AND email_type = 'blueprint-discovery-1'
-          LIMIT 1
-        `
-        if (existingLog.length > 0) {
-          results.email1.skipped++
-          continue
+        if (!MARKETING_SEGMENTS.discoveryDay0) {
+          throw new Error("RESEND_SEGMENT_DISCOVERY_DAY_0 not configured")
         }
 
-        const user = emailToUser.get(email)
-        const firstName = user?.display_name?.split(" ")[0] || undefined
+        const email1Emails = email1Eligible.map((row: any) => row.user_email)
+        const contacts = email1Emails.map((email: string) => ({
+          email,
+          firstName: emailToUser.get(email)?.display_name?.split(" ")[0],
+        }))
+
         const emailContent = generateBlueprintDiscovery1Email({
-          firstName,
-          recipientEmail: email,
+          firstName: FIRST_NAME_PLACEHOLDER,
+          recipientEmail: EMAIL_PLACEHOLDER,
         })
 
-        const sendResult = await sendEmail({
-          to: email,
+        await syncMarketingContacts({
+          tagKey: "sequence_discovery_day_0",
+          tagValue: "true",
+          segmentId: MARKETING_SEGMENTS.discoveryDay0,
+          contacts,
+        })
+
+        await sendMarketingBroadcast({
+          campaignKey: "blueprint-discovery-1",
+          segmentId: MARKETING_SEGMENTS.discoveryDay0,
           subject: emailContent.subject || "Remember the selfie guide? Here's what's next.",
           html: emailContent.html,
           text: emailContent.text,
-          from: "Sandra from SSELFIE <hello@sselfie.ai>",
-          emailType: "blueprint-discovery-1",
+          estimatedRecipientCount: email1Eligible.length,
         })
 
-        if (sendResult.success) {
-          results.email1.sent++
-          console.log(`[v0] [CRON] ✅ Sent Email 1 to ${email}`)
-        } else {
-          throw new Error(sendResult.error || "Failed to send email")
-        }
+        await sql`
+          INSERT INTO email_logs (user_email, email_type, status, sent_at)
+          SELECT unnest(${email1Emails}::text[]), 'blueprint-discovery-1', 'sent', NOW()
+        `
+
+        await syncMarketingContacts({
+          tagKey: "sequence_discovery_day_0",
+          tagValue: "false",
+          segmentId: MARKETING_SEGMENTS.discoveryDay0,
+          removeFromSegment: true,
+          contacts,
+        })
+
+        results.email1.sent = email1Eligible.length
       } catch (error: any) {
-        results.email1.failed++
+        results.email1.failed = email1Eligible.length
         results.errors.push({
-          email,
+          email: "broadcast",
           emailNum: 1,
           error: error.message || "Unknown error",
         })
-        console.error(`[v0] [CRON] ❌ Failed to send Email 1 to ${email}:`, error)
+        console.error(`[v0] [CRON] ❌ Failed to send Email 1 broadcast:`, error)
         await logAdminError({
           toolName: "cron:blueprint-discovery-funnel:email-1",
           error: error instanceof Error ? error : new Error(error.message || "Unknown error"),
-          context: { email },
+          context: { recipients: email1Eligible.length },
         }).catch(() => {})
       }
     }
@@ -284,54 +299,65 @@ export async function GET(request: Request) {
     results.email2.found = email2Eligible.length
     console.log(`[v0] [CRON] Found ${email2Eligible.length} users for Email 2`)
 
-    for (const row of email2Eligible) {
-      const email = row.email
+    if (email2Eligible.length > 0) {
       try {
-        const existingLog = await sql`
-          SELECT id FROM email_logs
-          WHERE user_email = ${email}
-          AND email_type = 'blueprint-discovery-2'
-          LIMIT 1
-        `
-        if (existingLog.length > 0) {
-          results.email2.skipped++
-          continue
+        if (!MARKETING_SEGMENTS.discoveryDay3) {
+          throw new Error("RESEND_SEGMENT_DISCOVERY_DAY_3 not configured")
         }
 
-        const user = emailToUser.get(email)
-        const firstName = user?.display_name?.split(" ")[0] || undefined
+        const email2Emails = email2Eligible.map((row: any) => row.email)
+        const contacts = email2Emails.map((email: string) => ({
+          email,
+          firstName: emailToUser.get(email)?.display_name?.split(" ")[0],
+        }))
+
         const emailContent = generateBlueprintDiscovery2Email({
-          firstName,
-          recipientEmail: email,
+          firstName: FIRST_NAME_PLACEHOLDER,
+          recipientEmail: EMAIL_PLACEHOLDER,
         })
 
-        const sendResult = await sendEmail({
-          to: email,
+        await syncMarketingContacts({
+          tagKey: "sequence_discovery_day_3",
+          tagValue: "true",
+          segmentId: MARKETING_SEGMENTS.discoveryDay3,
+          contacts,
+        })
+
+        await sendMarketingBroadcast({
+          campaignKey: "blueprint-discovery-2",
+          segmentId: MARKETING_SEGMENTS.discoveryDay3,
           subject: emailContent.subject || "Your blueprint is ready — here's what you can do with it.",
           html: emailContent.html,
           text: emailContent.text,
-          from: "Sandra from SSELFIE <hello@sselfie.ai>",
-          emailType: "blueprint-discovery-2",
+          estimatedRecipientCount: email2Eligible.length,
         })
 
-        if (sendResult.success) {
-          results.email2.sent++
-          console.log(`[v0] [CRON] ✅ Sent Email 2 to ${email}`)
-        } else {
-          throw new Error(sendResult.error || "Failed to send email")
-        }
+        await sql`
+          INSERT INTO email_logs (user_email, email_type, status, sent_at)
+          SELECT unnest(${email2Emails}::text[]), 'blueprint-discovery-2', 'sent', NOW()
+        `
+
+        await syncMarketingContacts({
+          tagKey: "sequence_discovery_day_3",
+          tagValue: "false",
+          segmentId: MARKETING_SEGMENTS.discoveryDay3,
+          removeFromSegment: true,
+          contacts,
+        })
+
+        results.email2.sent = email2Eligible.length
       } catch (error: any) {
-        results.email2.failed++
+        results.email2.failed = email2Eligible.length
         results.errors.push({
-          email,
+          email: "broadcast",
           emailNum: 2,
           error: error.message || "Unknown error",
         })
-        console.error(`[v0] [CRON] ❌ Failed to send Email 2 to ${email}:`, error)
+        console.error(`[v0] [CRON] ❌ Failed to send Email 2 broadcast:`, error)
         await logAdminError({
           toolName: "cron:blueprint-discovery-funnel:email-2",
           error: error instanceof Error ? error : new Error(error.message || "Unknown error"),
-          context: { email },
+          context: { recipients: email2Eligible.length },
         }).catch(() => {})
       }
     }
@@ -354,54 +380,65 @@ export async function GET(request: Request) {
     results.email3.found = email3Eligible.length
     console.log(`[v0] [CRON] Found ${email3Eligible.length} users for Email 3`)
 
-    for (const row of email3Eligible) {
-      const email = row.email
+    if (email3Eligible.length > 0) {
       try {
-        const existingLog = await sql`
-          SELECT id FROM email_logs
-          WHERE user_email = ${email}
-          AND email_type = 'blueprint-discovery-3'
-          LIMIT 1
-        `
-        if (existingLog.length > 0) {
-          results.email3.skipped++
-          continue
+        if (!MARKETING_SEGMENTS.discoveryDay5) {
+          throw new Error("RESEND_SEGMENT_DISCOVERY_DAY_5 not configured")
         }
 
-        const user = emailToUser.get(email)
-        const firstName = user?.display_name?.split(" ")[0] || undefined
+        const email3Emails = email3Eligible.map((row: any) => row.email)
+        const contacts = email3Emails.map((email: string) => ({
+          email,
+          firstName: emailToUser.get(email)?.display_name?.split(" ")[0],
+        }))
+
         const emailContent = generateBlueprintDiscovery3Email({
-          firstName,
-          recipientEmail: email,
+          firstName: FIRST_NAME_PLACEHOLDER,
+          recipientEmail: EMAIL_PLACEHOLDER,
         })
 
-        const sendResult = await sendEmail({
-          to: email,
+        await syncMarketingContacts({
+          tagKey: "sequence_discovery_day_5",
+          tagValue: "true",
+          segmentId: MARKETING_SEGMENTS.discoveryDay5,
+          contacts,
+        })
+
+        await sendMarketingBroadcast({
+          campaignKey: "blueprint-discovery-3",
+          segmentId: MARKETING_SEGMENTS.discoveryDay5,
           subject: emailContent.subject || "Meet Maya — your AI creative director.",
           html: emailContent.html,
           text: emailContent.text,
-          from: "Sandra from SSELFIE <hello@sselfie.ai>",
-          emailType: "blueprint-discovery-3",
+          estimatedRecipientCount: email3Eligible.length,
         })
 
-        if (sendResult.success) {
-          results.email3.sent++
-          console.log(`[v0] [CRON] ✅ Sent Email 3 to ${email}`)
-        } else {
-          throw new Error(sendResult.error || "Failed to send email")
-        }
+        await sql`
+          INSERT INTO email_logs (user_email, email_type, status, sent_at)
+          SELECT unnest(${email3Emails}::text[]), 'blueprint-discovery-3', 'sent', NOW()
+        `
+
+        await syncMarketingContacts({
+          tagKey: "sequence_discovery_day_5",
+          tagValue: "false",
+          segmentId: MARKETING_SEGMENTS.discoveryDay5,
+          removeFromSegment: true,
+          contacts,
+        })
+
+        results.email3.sent = email3Eligible.length
       } catch (error: any) {
-        results.email3.failed++
+        results.email3.failed = email3Eligible.length
         results.errors.push({
-          email,
+          email: "broadcast",
           emailNum: 3,
           error: error.message || "Unknown error",
         })
-        console.error(`[v0] [CRON] ❌ Failed to send Email 3 to ${email}:`, error)
+        console.error(`[v0] [CRON] ❌ Failed to send Email 3 broadcast:`, error)
         await logAdminError({
           toolName: "cron:blueprint-discovery-funnel:email-3",
           error: error instanceof Error ? error : new Error(error.message || "Unknown error"),
-          context: { email },
+          context: { recipients: email3Eligible.length },
         }).catch(() => {})
       }
     }
@@ -425,54 +462,65 @@ export async function GET(request: Request) {
     results.email4.found = email4Eligible.length
     console.log(`[v0] [CRON] Found ${email4Eligible.length} users for Email 4`)
 
-    for (const row of email4Eligible) {
-      const email = row.email
+    if (email4Eligible.length > 0) {
       try {
-        const existingLog = await sql`
-          SELECT id FROM email_logs
-          WHERE user_email = ${email}
-          AND email_type = 'blueprint-discovery-4'
-          LIMIT 1
-        `
-        if (existingLog.length > 0) {
-          results.email4.skipped++
-          continue
+        if (!MARKETING_SEGMENTS.discoveryDay7) {
+          throw new Error("RESEND_SEGMENT_DISCOVERY_DAY_7 not configured")
         }
 
-        const user = emailToUser.get(email)
-        const firstName = user?.display_name?.split(" ")[0] || undefined
+        const email4Emails = email4Eligible.map((row: any) => row.email)
+        const contacts = email4Emails.map((email: string) => ({
+          email,
+          firstName: emailToUser.get(email)?.display_name?.split(" ")[0],
+        }))
+
         const emailContent = generateBlueprintDiscovery4Email({
-          firstName,
-          recipientEmail: email,
+          firstName: FIRST_NAME_PLACEHOLDER,
+          recipientEmail: EMAIL_PLACEHOLDER,
         })
 
-        const sendResult = await sendEmail({
-          to: email,
+        await syncMarketingContacts({
+          tagKey: "sequence_discovery_day_7",
+          tagValue: "true",
+          segmentId: MARKETING_SEGMENTS.discoveryDay7,
+          contacts,
+        })
+
+        await sendMarketingBroadcast({
+          campaignKey: "blueprint-discovery-4",
+          segmentId: MARKETING_SEGMENTS.discoveryDay7,
           subject: emailContent.subject || "See how creators use Maya to plan their feeds.",
           html: emailContent.html,
           text: emailContent.text,
-          from: "Sandra from SSELFIE <hello@sselfie.ai>",
-          emailType: "blueprint-discovery-4",
+          estimatedRecipientCount: email4Eligible.length,
         })
 
-        if (sendResult.success) {
-          results.email4.sent++
-          console.log(`[v0] [CRON] ✅ Sent Email 4 to ${email}`)
-        } else {
-          throw new Error(sendResult.error || "Failed to send email")
-        }
+        await sql`
+          INSERT INTO email_logs (user_email, email_type, status, sent_at)
+          SELECT unnest(${email4Emails}::text[]), 'blueprint-discovery-4', 'sent', NOW()
+        `
+
+        await syncMarketingContacts({
+          tagKey: "sequence_discovery_day_7",
+          tagValue: "false",
+          segmentId: MARKETING_SEGMENTS.discoveryDay7,
+          removeFromSegment: true,
+          contacts,
+        })
+
+        results.email4.sent = email4Eligible.length
       } catch (error: any) {
-        results.email4.failed++
+        results.email4.failed = email4Eligible.length
         results.errors.push({
-          email,
+          email: "broadcast",
           emailNum: 4,
           error: error.message || "Unknown error",
         })
-        console.error(`[v0] [CRON] ❌ Failed to send Email 4 to ${email}:`, error)
+        console.error(`[v0] [CRON] ❌ Failed to send Email 4 broadcast:`, error)
         await logAdminError({
           toolName: "cron:blueprint-discovery-funnel:email-4",
           error: error instanceof Error ? error : new Error(error.message || "Unknown error"),
-          context: { email },
+          context: { recipients: email4Eligible.length },
         }).catch(() => {})
       }
     }
@@ -501,54 +549,65 @@ export async function GET(request: Request) {
     results.email5.found = email5Eligible.length
     console.log(`[v0] [CRON] Found ${email5Eligible.length} users for Email 5`)
 
-    for (const row of email5Eligible) {
-      const email = row.email
+    if (email5Eligible.length > 0) {
       try {
-        const existingLog = await sql`
-          SELECT id FROM email_logs
-          WHERE user_email = ${email}
-          AND email_type = 'blueprint-discovery-5'
-          LIMIT 1
-        `
-        if (existingLog.length > 0) {
-          results.email5.skipped++
-          continue
+        if (!MARKETING_SEGMENTS.discoveryDay10) {
+          throw new Error("RESEND_SEGMENT_DISCOVERY_DAY_10 not configured")
         }
 
-        const user = emailToUser.get(email)
-        const firstName = user?.display_name?.split(" ")[0] || undefined
+        const email5Emails = email5Eligible.map((row: any) => row.email)
+        const contacts = email5Emails.map((email: string) => ({
+          email,
+          firstName: emailToUser.get(email)?.display_name?.split(" ")[0],
+        }))
+
         const emailContent = generateBlueprintDiscovery5Email({
-          firstName,
-          recipientEmail: email,
+          firstName: FIRST_NAME_PLACEHOLDER,
+          recipientEmail: EMAIL_PLACEHOLDER,
         })
 
-        const sendResult = await sendEmail({
-          to: email,
+        await syncMarketingContacts({
+          tagKey: "sequence_discovery_day_10",
+          tagValue: "true",
+          segmentId: MARKETING_SEGMENTS.discoveryDay10,
+          contacts,
+        })
+
+        await sendMarketingBroadcast({
+          campaignKey: "blueprint-discovery-5",
+          segmentId: MARKETING_SEGMENTS.discoveryDay10,
           subject: emailContent.subject || "Your free grid is ready — want to generate more?",
           html: emailContent.html,
           text: emailContent.text,
-          from: "Sandra from SSELFIE <hello@sselfie.ai>",
-          emailType: "blueprint-discovery-5",
+          estimatedRecipientCount: email5Eligible.length,
         })
 
-        if (sendResult.success) {
-          results.email5.sent++
-          console.log(`[v0] [CRON] ✅ Sent Email 5 to ${email}`)
-        } else {
-          throw new Error(sendResult.error || "Failed to send email")
-        }
+        await sql`
+          INSERT INTO email_logs (user_email, email_type, status, sent_at)
+          SELECT unnest(${email5Emails}::text[]), 'blueprint-discovery-5', 'sent', NOW()
+        `
+
+        await syncMarketingContacts({
+          tagKey: "sequence_discovery_day_10",
+          tagValue: "false",
+          segmentId: MARKETING_SEGMENTS.discoveryDay10,
+          removeFromSegment: true,
+          contacts,
+        })
+
+        results.email5.sent = email5Eligible.length
       } catch (error: any) {
-        results.email5.failed++
+        results.email5.failed = email5Eligible.length
         results.errors.push({
-          email,
+          email: "broadcast",
           emailNum: 5,
           error: error.message || "Unknown error",
         })
-        console.error(`[v0] [CRON] ❌ Failed to send Email 5 to ${email}:`, error)
+        console.error(`[v0] [CRON] ❌ Failed to send Email 5 broadcast:`, error)
         await logAdminError({
           toolName: "cron:blueprint-discovery-funnel:email-5",
           error: error instanceof Error ? error : new Error(error.message || "Unknown error"),
-          context: { email },
+          context: { recipients: email5Eligible.length },
         }).catch(() => {})
       }
     }

@@ -5,8 +5,12 @@ import { createCronLogger } from "@/lib/cron-logger"
 import { logAdminError } from "@/lib/admin-error-log"
 import { generateWelcomeDay0, generateWelcomeDay3, generateWelcomeDay7 } from "@/lib/email/templates/welcome-sequence"
 import { generateBlueprintFollowupDay0Email } from "@/lib/email/templates/blueprint-followup-day-0"
+import { sendMarketingBroadcast, syncMarketingContacts } from "@/lib/email/marketing-sender"
+import { MARKETING_SEGMENTS } from "@/lib/email/config"
 
 const FREE_BLUEPRINT_WELCOME_SUBJECT = "Your Brand Blueprint is Here!"
+const FIRST_NAME_PLACEHOLDER = "{{{FIRST_NAME|friend}}}"
+const EMAIL_PLACEHOLDER = "{{{EMAIL}}}"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -113,92 +117,170 @@ export async function GET(request: Request) {
       const day7CampaignId = await getCampaignId("welcome-day-7")
 
       // Send Day 0 emails (paid members only)
-      for (const user of day0Users) {
+      if (day0Users.length > 0) {
         try {
+          if (!MARKETING_SEGMENTS.welcomeDay0) {
+            throw new Error("RESEND_SEGMENT_WELCOME_DAY_0 not configured")
+          }
+
+          const contacts = day0Users.map((user: any) => ({
+            email: user.email,
+            firstName: user.first_name,
+          }))
+          const day0Emails = day0Users.map((user: any) => user.email)
+
           const emailContent = generateWelcomeDay0({
-            firstName: user.first_name || undefined,
+            firstName: FIRST_NAME_PLACEHOLDER,
             campaignId: day0CampaignId,
           })
 
-          const result = await sendEmail({
-            to: user.email,
+          await syncMarketingContacts({
+            tagKey: "sequence_welcome_day_0",
+            tagValue: "true",
+            segmentId: MARKETING_SEGMENTS.welcomeDay0,
+            contacts,
+          })
+
+          await sendMarketingBroadcast({
+            campaignKey: "welcome-day-0",
+            segmentId: MARKETING_SEGMENTS.welcomeDay0,
             subject: emailContent.subject,
             html: emailContent.html,
             text: emailContent.text,
-            from: "Sandra from SSELFIE <hello@sselfie.ai>",
-            emailType: "welcome-day-0",
-            campaignId: day0CampaignId,
+            estimatedRecipientCount: day0Users.length,
           })
 
-          if (result.success) {
-            // Email is already logged by sendEmail function via email_logs
-            results.day0.sent++
-          } else {
-            results.day0.failed++
-          }
+          await sql`
+            INSERT INTO email_logs (user_email, email_type, status, sent_at, campaign_id)
+            SELECT u.email, 'welcome-day-0', 'sent', NOW(), ${day0CampaignId}
+            FROM users u
+            WHERE u.email = ANY(${day0Emails})
+          `
+
+          await syncMarketingContacts({
+            tagKey: "sequence_welcome_day_0",
+            tagValue: "false",
+            segmentId: MARKETING_SEGMENTS.welcomeDay0,
+            removeFromSegment: true,
+            contacts,
+          })
+
+          results.day0.sent = day0Users.length
         } catch (error) {
-          console.error(`Failed to send Day 0 to ${user.email}:`, error)
-          results.day0.failed++
+          console.error("[Welcome Sequence] Failed to send Day 0 broadcast:", error)
+          results.day0.failed = day0Users.length
         }
       }
 
       // Send Day 3 emails
-      for (const user of day3Users) {
+      if (day3Users.length > 0) {
         try {
+          if (!MARKETING_SEGMENTS.welcomeDay3) {
+            throw new Error("RESEND_SEGMENT_WELCOME_DAY_3 not configured")
+          }
+
+          const contacts = day3Users.map((user: any) => ({
+            email: user.email,
+            firstName: user.first_name,
+          }))
+          const day3Emails = day3Users.map((user: any) => user.email)
+
           const emailContent = generateWelcomeDay3({
-            firstName: user.first_name || undefined,
+            firstName: FIRST_NAME_PLACEHOLDER,
             campaignId: day3CampaignId,
           })
 
-          const result = await sendEmail({
-            to: user.email,
+          await syncMarketingContacts({
+            tagKey: "sequence_welcome_day_3",
+            tagValue: "true",
+            segmentId: MARKETING_SEGMENTS.welcomeDay3,
+            contacts,
+          })
+
+          await sendMarketingBroadcast({
+            campaignKey: "welcome-day-3",
+            segmentId: MARKETING_SEGMENTS.welcomeDay3,
             subject: emailContent.subject,
             html: emailContent.html,
             text: emailContent.text,
-            from: "Sandra from SSELFIE <hello@sselfie.ai>",
-            emailType: "welcome-day-3",
-            campaignId: day3CampaignId,
+            estimatedRecipientCount: day3Users.length,
           })
 
-          if (result.success) {
-            // Email is already logged by sendEmail function via email_logs
-            results.day3.sent++
-          } else {
-            results.day3.failed++
-          }
+          await sql`
+            INSERT INTO email_logs (user_email, email_type, status, sent_at, campaign_id)
+            SELECT u.email, 'welcome-day-3', 'sent', NOW(), ${day3CampaignId}
+            FROM users u
+            WHERE u.email = ANY(${day3Emails})
+          `
+
+          await syncMarketingContacts({
+            tagKey: "sequence_welcome_day_3",
+            tagValue: "false",
+            segmentId: MARKETING_SEGMENTS.welcomeDay3,
+            removeFromSegment: true,
+            contacts,
+          })
+
+          results.day3.sent = day3Users.length
         } catch (error) {
-          console.error(`Failed to send Day 3 to ${user.email}:`, error)
-          results.day3.failed++
+          console.error("[Welcome Sequence] Failed to send Day 3 broadcast:", error)
+          results.day3.failed = day3Users.length
         }
       }
 
       // Send Day 7 emails
-      for (const user of day7Users) {
+      if (day7Users.length > 0) {
         try {
+          if (!MARKETING_SEGMENTS.welcomeDay7) {
+            throw new Error("RESEND_SEGMENT_WELCOME_DAY_7 not configured")
+          }
+
+          const contacts = day7Users.map((user: any) => ({
+            email: user.email,
+            firstName: user.first_name,
+          }))
+          const day7Emails = day7Users.map((user: any) => user.email)
+
           const emailContent = generateWelcomeDay7({
-            firstName: user.first_name || undefined,
+            firstName: FIRST_NAME_PLACEHOLDER,
             campaignId: day7CampaignId,
           })
 
-          const result = await sendEmail({
-            to: user.email,
+          await syncMarketingContacts({
+            tagKey: "sequence_welcome_day_7",
+            tagValue: "true",
+            segmentId: MARKETING_SEGMENTS.welcomeDay7,
+            contacts,
+          })
+
+          await sendMarketingBroadcast({
+            campaignKey: "welcome-day-7",
+            segmentId: MARKETING_SEGMENTS.welcomeDay7,
             subject: emailContent.subject,
             html: emailContent.html,
             text: emailContent.text,
-            from: "Sandra from SSELFIE <hello@sselfie.ai>",
-            emailType: "welcome-day-7",
-            campaignId: day7CampaignId,
+            estimatedRecipientCount: day7Users.length,
           })
 
-          if (result.success) {
-            // Email is already logged by sendEmail function via email_logs
-            results.day7.sent++
-          } else {
-            results.day7.failed++
-          }
+          await sql`
+            INSERT INTO email_logs (user_email, email_type, status, sent_at, campaign_id)
+            SELECT u.email, 'welcome-day-7', 'sent', NOW(), ${day7CampaignId}
+            FROM users u
+            WHERE u.email = ANY(${day7Emails})
+          `
+
+          await syncMarketingContacts({
+            tagKey: "sequence_welcome_day_7",
+            tagValue: "false",
+            segmentId: MARKETING_SEGMENTS.welcomeDay7,
+            removeFromSegment: true,
+            contacts,
+          })
+
+          results.day7.sent = day7Users.length
         } catch (error) {
-          console.error(`Failed to send Day 7 to ${user.email}:`, error)
-          results.day7.failed++
+          console.error("[Welcome Sequence] Failed to send Day 7 broadcast:", error)
+          results.day7.failed = day7Users.length
         }
       }
 

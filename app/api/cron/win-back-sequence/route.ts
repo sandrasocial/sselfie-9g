@@ -5,11 +5,16 @@ import { sendEmail } from "@/lib/email/send-email"
 import { createCronLogger } from "@/lib/cron-logger"
 import { generateWinBackOfferEmail } from "@/lib/email/templates/win-back-offer"
 import { logAdminError } from "@/lib/admin-error-log"
+import { sendMarketingBroadcast, syncMarketingContacts } from "@/lib/email/marketing-sender"
+import { MARKETING_SEGMENTS } from "@/lib/email/config"
 
 const sql = neon(process.env.DATABASE_URL!)
 
+const FIRST_NAME_PLACEHOLDER = "{{{FIRST_NAME|friend}}}"
+const EMAIL_PLACEHOLDER = "{{{EMAIL}}}"
+
 /**
- * Win-Back Sequence - Resend Direct Sends
+ * Win-Back Sequence - Resend Broadcasts (Marketing)
  * 
  * Sends win-back offer emails to canceled subscribers directly via Resend API.
  * 
@@ -89,84 +94,75 @@ export async function GET(request: Request) {
     results.found = canceledSubscriptions.length
     console.log(`[v0] [CRON] Found ${canceledSubscriptions.length} canceled subscriptions for win-back email`)
 
-    for (const subscription of canceledSubscriptions) {
+    if (canceledSubscriptions.length > 0) {
       try {
-        // Win-Back Automation - Check if already sent (dedupe check)
-        const existingLog = await sql`
-          SELECT id FROM email_logs
-          WHERE user_email = ${subscription.email}
-          AND email_type = 'win-back-offer'
-          LIMIT 1
-        `
-        if (existingLog.length > 0) {
-          results.skipped++
-          continue
+        if (!MARKETING_SEGMENTS.winBackOffer) {
+          throw new Error("RESEND_SEGMENT_WIN_BACK_OFFER not configured")
         }
 
-        // Win-Back Automation - Double-check user hasn't reactivated
-        const activeSubscription = await sql`
-          SELECT id FROM subscriptions
-          WHERE user_id = ${subscription.user_id}
-          AND status = 'active'
-          LIMIT 1
-        `
-        if (activeSubscription.length > 0) {
-          results.skipped++
-          console.log(`[v0] [CRON] ⏭️ Skipping ${subscription.email} - user has reactivated subscription`)
-          continue
-        }
+        const winBackEmails = canceledSubscriptions.map((subscription: any) => subscription.email)
+        const contacts = canceledSubscriptions.map((subscription: any) => ({
+          email: subscription.email,
+          firstName: subscription.display_name?.split(" ")[0],
+        }))
 
-        const firstName = subscription.display_name?.split(" ")[0] || undefined
-        
-        // Win-Back Automation - Generate win-back email with default offer
-        // Default: 20% off first month (can be customized via environment variables)
         const offerDiscount = parseInt(process.env.WIN_BACK_DISCOUNT_PERCENT || "20", 10)
         const offerCode = process.env.WIN_BACK_PROMO_CODE || "COMEBACK20"
-        const offerExpiry = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', {
-          month: 'long',
-          day: 'numeric',
-          year: 'numeric'
+        const offerExpiry = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString("en-US", {
+          month: "long",
+          day: "numeric",
+          year: "numeric",
         })
 
         const emailContent = generateWinBackOfferEmail({
-          firstName,
-          recipientEmail: subscription.email,
+          firstName: FIRST_NAME_PLACEHOLDER,
+          recipientEmail: EMAIL_PLACEHOLDER,
           offerDiscount,
           offerCode,
           offerExpiry,
         })
 
-        const sendResult = await sendEmail({
-          to: subscription.email,
+        await syncMarketingContacts({
+          tagKey: "sequence_win_back_offer",
+          tagValue: "true",
+          segmentId: MARKETING_SEGMENTS.winBackOffer,
+          contacts,
+        })
+
+        await sendMarketingBroadcast({
+          campaignKey: "win-back-offer",
+          segmentId: MARKETING_SEGMENTS.winBackOffer,
           subject: "We Miss You - Here's Something Special",
           html: emailContent.html,
           text: emailContent.text,
-          from: "Sandra from SSELFIE <hello@sselfie.ai>",
-          emailType: "win-back-offer",
+          estimatedRecipientCount: canceledSubscriptions.length,
         })
 
-        if (sendResult.success) {
-          // Email is already logged by sendEmail via email_logs
-          results.sent++
-          console.log(`[v0] [CRON] ✅ Sent win-back email to ${subscription.email}`)
-        } else {
-          throw new Error(sendResult.error || 'Failed to send email')
-        }
+        await sql`
+          INSERT INTO email_logs (user_email, email_type, status, sent_at)
+          SELECT unnest(${winBackEmails}::text[]), 'win-back-offer', 'sent', NOW()
+        `
+
+        await syncMarketingContacts({
+          tagKey: "sequence_win_back_offer",
+          tagValue: "false",
+          segmentId: MARKETING_SEGMENTS.winBackOffer,
+          removeFromSegment: true,
+          contacts,
+        })
+
+        results.sent = canceledSubscriptions.length
       } catch (error: any) {
-        results.failed++
+        results.failed = canceledSubscriptions.length
         results.errors.push({
-          email: subscription.email,
+          email: "broadcast",
           error: error.message || "Unknown error",
         })
-        console.error(`[v0] [CRON] ❌ Failed to send win-back email to ${subscription.email}:`, error)
+        console.error("[v0] [CRON] ❌ Failed to send win-back broadcast:", error)
         await logAdminError({
           toolName: "cron:win-back-sequence",
           error: error instanceof Error ? error : new Error(error.message || "Unknown error"),
-          context: { 
-            subscriberEmail: subscription.email, 
-            subscriptionId: subscription.id,
-            userId: subscription.user_id,
-          },
+          context: { recipients: canceledSubscriptions.length },
         }).catch(() => {})
       }
     }

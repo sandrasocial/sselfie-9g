@@ -198,6 +198,12 @@
     - `app/api/admin/agent/analyze-content/route.ts`
     - `app/api/admin/journal/enhance/route.ts`
     - `app/api/training/start-training/route.ts`
+ - What was done (Phase Z):
+  - Split marketing vs transactional email paths with Resend Broadcasts for marketing sequences.
+  - Added marketing contact sync + segment tag updates and broadcast-based cron sends.
+  - Added email_events migration + logging for broadcasts and transactional sends.
+  - Added dry-run guard, broadcast recipient limits, and routing tests for marketing vs transactional.
+  - Ran lint, tests, and build; noted existing warnings and build warning.
  - What was done (Phase FP-V2):
   - Archived V1 prompt-generation helpers by deleting legacy Feed Planner files (git history is the rollback).
   - Updated admin feed test route to use V2 prompt sources (preview + scene prompts).

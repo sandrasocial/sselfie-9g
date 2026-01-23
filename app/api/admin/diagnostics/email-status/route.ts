@@ -42,6 +42,7 @@ export async function GET(request: Request) {
         COUNT(*) FILTER (WHERE status = 'complained') as complained_count,
         COUNT(*) FILTER (WHERE status = 'skipped_disabled') as skipped_disabled_count,
         COUNT(*) FILTER (WHERE status = 'skipped_test_mode') as skipped_test_mode_count,
+        COUNT(*) FILTER (WHERE status = 'skipped_dry_run') as skipped_dry_run_count,
         COUNT(*) FILTER (WHERE opened = true) as opened_count,
         COUNT(*) FILTER (WHERE clicked = true) as clicked_count,
         COUNT(*) FILTER (WHERE status = 'delivered') as delivered_count,
@@ -91,7 +92,13 @@ export async function GET(request: Request) {
         complained: parseInt(stat.complained_count || 0),
         skippedDisabled: parseInt(stat.skipped_disabled_count || 0),
         skippedTestMode: parseInt(stat.skipped_test_mode_count || 0),
-        total: sent + parseInt(stat.failed_count || 0) + parseInt(stat.skipped_disabled_count || 0) + parseInt(stat.skipped_test_mode_count || 0),
+        skippedDryRun: parseInt(stat.skipped_dry_run_count || 0),
+        total:
+          sent +
+          parseInt(stat.failed_count || 0) +
+          parseInt(stat.skipped_disabled_count || 0) +
+          parseInt(stat.skipped_test_mode_count || 0) +
+          parseInt(stat.skipped_dry_run_count || 0),
         openRate: sent > 0 ? ((opened / sent) * 100).toFixed(1) : "0.0",
         clickRate: sent > 0 ? ((clicked / sent) * 100).toFixed(1) : "0.0",
         lastSentAt: stat.last_sent_at,
@@ -126,9 +133,22 @@ export async function GET(request: Request) {
         complained: acc.complained + stat.complained,
         skippedDisabled: acc.skippedDisabled + stat.skippedDisabled,
         skippedTestMode: acc.skippedTestMode + stat.skippedTestMode,
+        skippedDryRun: acc.skippedDryRun + stat.skippedDryRun,
         total: acc.total + stat.total,
       }),
-      { sent: 0, delivered: 0, opened: 0, clicked: 0, failed: 0, bounced: 0, complained: 0, skippedDisabled: 0, skippedTestMode: 0, total: 0 }
+      {
+        sent: 0,
+        delivered: 0,
+        opened: 0,
+        clicked: 0,
+        failed: 0,
+        bounced: 0,
+        complained: 0,
+        skippedDisabled: 0,
+        skippedTestMode: 0,
+        skippedDryRun: 0,
+        total: 0,
+      }
     )
     
     // Calculate overall rates

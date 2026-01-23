@@ -34,6 +34,7 @@ export async function GET(request: Request) {
         COUNT(*) FILTER (WHERE status = 'failed') as failed_count,
         COUNT(*) FILTER (WHERE status = 'skipped_disabled') as skipped_disabled_count,
         COUNT(*) FILTER (WHERE status = 'skipped_test_mode') as skipped_test_mode_count,
+        COUNT(*) FILTER (WHERE status = 'skipped_dry_run') as skipped_dry_run_count,
         COUNT(*) as total_count
       FROM email_logs
       WHERE sent_at >= NOW() - INTERVAL '24 hours'
@@ -70,6 +71,7 @@ export async function GET(request: Request) {
         failed: Number(emailStats[0]?.failed_count || 0),
         skippedDisabled: Number(emailStats[0]?.skipped_disabled_count || 0),
         skippedTestMode: Number(emailStats[0]?.skipped_test_mode_count || 0),
+        skippedDryRun: Number(emailStats[0]?.skipped_dry_run_count || 0),
         total: Number(emailStats[0]?.total_count || 0),
       },
       scheduledCampaigns: scheduledCampaigns || [],

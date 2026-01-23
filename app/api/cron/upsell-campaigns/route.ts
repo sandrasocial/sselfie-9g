@@ -3,8 +3,13 @@ import { neon } from "@neondatabase/serverless"
 import { sendEmail } from "@/lib/email/send-email"
 import { generateUpsellDay10Email } from "@/lib/email/templates/upsell-day-10"
 import { generateUpsellFreebieMembershipEmail } from "@/lib/email/templates/upsell-freebie-membership"
+import { sendMarketingBroadcast, syncMarketingContacts } from "@/lib/email/marketing-sender"
+import { MARKETING_SEGMENTS } from "@/lib/email/config"
 
 const sql = neon(process.env.DATABASE_URL!)
+
+const FIRST_NAME_PLACEHOLDER = "{{{FIRST_NAME|friend}}}"
+const EMAIL_PLACEHOLDER = "{{{EMAIL}}}"
 
 /**
  * GET /api/cron/upsell-campaigns
@@ -61,42 +66,62 @@ export async function GET(request: NextRequest) {
 
     console.log(`[v0] [CRON] Found ${day10Subscribers.length} subscribers for Day 10 upsell`)
 
-    for (const subscriber of day10Subscribers) {
+    if (day10Subscribers.length > 0) {
       try {
+        if (!MARKETING_SEGMENTS.upsellDay10) {
+          throw new Error("RESEND_SEGMENT_UPSELL_DAY_10 not configured")
+        }
+
+        const day10Emails = day10Subscribers.map((subscriber: any) => subscriber.email)
+        const contacts = day10Subscribers.map((subscriber: any) => ({
+          email: subscriber.email,
+          firstName: subscriber.name?.split(" ")[0],
+        }))
+
         const emailContent = generateUpsellDay10Email({
-          firstName: subscriber.name?.split(" ")[0] || undefined,
-          recipientEmail: subscriber.email,
+          firstName: FIRST_NAME_PLACEHOLDER,
+          recipientEmail: EMAIL_PLACEHOLDER,
         })
 
-        const emailResult = await sendEmail({
-          to: subscriber.email,
+        await syncMarketingContacts({
+          tagKey: "sequence_upsell_day_10",
+          tagValue: "true",
+          segmentId: MARKETING_SEGMENTS.upsellDay10,
+          contacts,
+        })
+
+        await sendMarketingBroadcast({
+          campaignKey: "upsell-day-10",
+          segmentId: MARKETING_SEGMENTS.upsellDay10,
           subject: emailContent.subject,
           html: emailContent.html,
           text: emailContent.text,
-          from: "Sandra from SSELFIE <hello@sselfie.ai>",
-          emailType: "upsell-day-10",
+          estimatedRecipientCount: day10Subscribers.length,
         })
 
-        if (emailResult.success) {
-          results.day10Sent++
-          results.details.push({
-            email: subscriber.email,
-            day: 10,
-            success: true,
-          })
-          console.log(`[v0] [CRON] ✅ Day 10 upsell sent to ${subscriber.email}`)
-        } else {
-          throw new Error(emailResult.error || "Email send failed")
-        }
+        await sql`
+          INSERT INTO email_logs (user_email, email_type, status, sent_at)
+          SELECT unnest(${day10Emails}::text[]), 'upsell-day-10', 'sent', NOW()
+        `
+
+        await syncMarketingContacts({
+          tagKey: "sequence_upsell_day_10",
+          tagValue: "false",
+          segmentId: MARKETING_SEGMENTS.upsellDay10,
+          removeFromSegment: true,
+          contacts,
+        })
+
+        results.day10Sent = day10Subscribers.length
       } catch (error: any) {
-        results.errors++
+        results.errors += day10Subscribers.length
         results.details.push({
-          email: subscriber.email,
+          email: "broadcast",
           day: 10,
           success: false,
           error: error.message,
         })
-        console.error(`[v0] [CRON] ❌ Error sending Day 10 upsell to ${subscriber.email}:`, error.message)
+        console.error("[v0] [CRON] ❌ Error sending Day 10 broadcast:", error.message)
       }
     }
 
@@ -119,42 +144,62 @@ export async function GET(request: NextRequest) {
 
     console.log(`[v0] [CRON] Found ${day20Subscribers.length} subscribers for Day 20 upsell`)
 
-    for (const subscriber of day20Subscribers) {
+    if (day20Subscribers.length > 0) {
       try {
+        if (!MARKETING_SEGMENTS.upsellFreebieMembership) {
+          throw new Error("RESEND_SEGMENT_UPSELL_FREEBIE_MEMBERSHIP not configured")
+        }
+
+        const day20Emails = day20Subscribers.map((subscriber: any) => subscriber.email)
+        const contacts = day20Subscribers.map((subscriber: any) => ({
+          email: subscriber.email,
+          firstName: subscriber.name?.split(" ")[0],
+        }))
+
         const emailContent = generateUpsellFreebieMembershipEmail({
-          firstName: subscriber.name?.split(" ")[0] || undefined,
-          recipientEmail: subscriber.email,
+          firstName: FIRST_NAME_PLACEHOLDER,
+          recipientEmail: EMAIL_PLACEHOLDER,
         })
 
-        const emailResult = await sendEmail({
-          to: subscriber.email,
+        await syncMarketingContacts({
+          tagKey: "sequence_upsell_freebie_membership",
+          tagValue: "true",
+          segmentId: MARKETING_SEGMENTS.upsellFreebieMembership,
+          contacts,
+        })
+
+        await sendMarketingBroadcast({
+          campaignKey: "upsell-freebie-membership",
+          segmentId: MARKETING_SEGMENTS.upsellFreebieMembership,
           subject: emailContent.subject,
           html: emailContent.html,
           text: emailContent.text,
-          from: "Sandra from SSELFIE <hello@sselfie.ai>",
-          emailType: "upsell-freebie-membership",
+          estimatedRecipientCount: day20Subscribers.length,
         })
 
-        if (emailResult.success) {
-          results.day20Sent++
-          results.details.push({
-            email: subscriber.email,
-            day: 20,
-            success: true,
-          })
-          console.log(`[v0] [CRON] ✅ Day 20 upsell sent to ${subscriber.email}`)
-        } else {
-          throw new Error(emailResult.error || "Email send failed")
-        }
+        await sql`
+          INSERT INTO email_logs (user_email, email_type, status, sent_at)
+          SELECT unnest(${day20Emails}::text[]), 'upsell-freebie-membership', 'sent', NOW()
+        `
+
+        await syncMarketingContacts({
+          tagKey: "sequence_upsell_freebie_membership",
+          tagValue: "false",
+          segmentId: MARKETING_SEGMENTS.upsellFreebieMembership,
+          removeFromSegment: true,
+          contacts,
+        })
+
+        results.day20Sent = day20Subscribers.length
       } catch (error: any) {
-        results.errors++
+        results.errors += day20Subscribers.length
         results.details.push({
-          email: subscriber.email,
+          email: "broadcast",
           day: 20,
           success: false,
           error: error.message,
         })
-        console.error(`[v0] [CRON] ❌ Error sending Day 20 upsell to ${subscriber.email}:`, error.message)
+        console.error("[v0] [CRON] ❌ Error sending Day 20 broadcast:", error.message)
       }
     }
 

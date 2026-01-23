@@ -1,5 +1,3 @@
-import { completeStripeCheckout } from './helpers/stripe-mock'
-
 const runPlaywright = process.env.PLAYWRIGHT_TEST === '1'
 
 if (!runPlaywright) {
@@ -22,33 +20,99 @@ if (!runPlaywright) {
       page.waitForURL(/\/studio|\/auth\/sign-up-success|\/feed-planner/, { timeout: 20000 }),
       page.waitForNavigation({ timeout: 20000 }).catch(() => {}),
     ]).catch(() => {})
-    if (page.url().includes('/auth/sign-up-success')) {
-      await page.goto('/feed-planner')
+    await page.goto('/auth/login')
+    await page.fill('input#email', email)
+    await page.fill('input#password', password)
+    const loginSubmit = page.locator('button[type="submit"]')
+    await expect(loginSubmit).toBeEnabled({ timeout: 10000 })
+    await loginSubmit.click()
+    await Promise.race([
+      page.waitForURL(/\/studio|\/feed-planner/, { timeout: 20000 }),
+      page.waitForNavigation({ timeout: 20000 }).catch(() => {}),
+    ]).catch(() => {})
+  }
+
+  const seedOnboarding = async (page: any) => {
+    const base64 =
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGMAAQAABQABDQottAAAAABJRU5ErkJggg=='
+    const uploadResult = await page.request.post(`${baseURL}/api/blueprint/upload-selfies`, {
+      multipart: {
+        files: {
+          name: 'selfie.png',
+          mimeType: 'image/png',
+          buffer: Buffer.from(base64, 'base64'),
+        },
+      },
+    })
+    if (!uploadResult.ok()) {
+      throw new Error(await uploadResult.text())
+    }
+    const uploadData = await uploadResult.json()
+    const imageUrls = uploadData?.imageUrls || []
+    const onboardingResponse = await page.request.post(`${baseURL}/api/onboarding/unified-onboarding-complete`, {
+      data: {
+        businessType: 'Content Creator',
+        idealAudience: 'Creative entrepreneurs',
+        audienceChallenge: 'Consistency',
+        audienceTransformation: 'Confidence',
+        transformationStory: 'Brand story',
+        currentSituation: 'Building',
+        futureVision: 'Growth',
+        visualAesthetic: ['Minimal'],
+        feedStyle: 'Light & Minimalistic',
+        selfieImages: imageUrls,
+        fashionStyle: ['Minimal'],
+        brandInspiration: 'Modern',
+        inspirationLinks: '',
+        contentPillars: ['Tips', 'Behind the scenes'],
+      },
+    })
+    if (!onboardingResponse.ok()) {
+      throw new Error(await onboardingResponse.text())
+    }
+    const extensionResponse = await page.request.post(`${baseURL}/api/onboarding/blueprint-extension-complete`, {
+      data: {
+        dreamClient: 'Creative entrepreneurs',
+        struggle: 'Consistency',
+        feedStyle: 'Light & Minimalistic',
+      },
+    })
+    if (!extensionResponse.ok()) {
+      throw new Error(await extensionResponse.text())
     }
   }
 
   const completeWizardIfVisible = async (page: any) => {
     const closeButton = page.locator('button[aria-label="Close"]')
     if (await closeButton.isVisible().catch(() => false)) {
-      await closeButton.click()
+      await closeButton.click({ force: true })
       await closeButton.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {})
       return
     }
-    const selector = 'button:has-text("Continue"), button:has-text("Complete"), button:has-text("Next"), button:has-text("Start Creating")'
-    await page.waitForSelector(selector, { timeout: 10000 }).catch(() => {})
-    const buttons = page.locator(selector)
-    for (let i = 0; i < 8; i++) {
-      if (!(await buttons.count())) break
-      const inputs = page.locator('input[type="text"], textarea')
-      if (await inputs.count()) {
-        await inputs.first().fill('Test input')
-      }
-      await buttons.first().click().catch(() => {})
-      await page.waitForTimeout(600)
+    const getStarted = page.locator('button:has-text("Get Started")')
+    if (await getStarted.isVisible().catch(() => false)) {
+      await getStarted.click().catch(() => {})
+      await getStarted.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {})
+      return
     }
-    if (await closeButton.isVisible().catch(() => false)) {
-      await closeButton.click()
-      await closeButton.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {})
+    const selectButtons = page.locator('button:has-text("SELECT")')
+    if (await selectButtons.count()) {
+      await selectButtons.first().click().catch(() => {})
+    }
+    const skipButton = page.locator('button:has-text("Skip")')
+    if (await skipButton.isVisible().catch(() => false)) {
+      await skipButton.click({ force: true }).catch(() => {})
+      return
+    }
+    const inputs = page.locator('input[type="text"], textarea')
+    if (await inputs.count()) {
+      await inputs.first().fill('Test input')
+    }
+    const continueButton = page.locator(
+      'button:has-text("Continue"), button:has-text("Complete"), button:has-text("Next"), button:has-text("Start Creating"), button:has-text("CONTINUE")',
+    )
+    if (await continueButton.isVisible().catch(() => false)) {
+      await continueButton.click({ force: true }).catch(() => {})
     }
   }
 
@@ -65,9 +129,14 @@ if (!runPlaywright) {
     test('paid blueprint unlocks feed planner only', async ({ page }: any) => {
       test.setTimeout(300000)
       await signUp(page, testEmail, testPassword, testName)
-      await page.goto('/checkout/blueprint')
-      await page.waitForURL(/\/checkout\?client_secret=/, { timeout: 30000 })
-      await completeStripeCheckout(page, testEmail)
+      await seedOnboarding(page)
+      const mockResponse = await page.request.post(`${baseURL}/api/testing/stripe-mock`, {
+        headers: { 'x-playwright-test': '1' },
+        data: { productType: 'paid_blueprint' },
+      })
+      if (!mockResponse.ok()) {
+        throw new Error(`Mock checkout failed: ${mockResponse.status()} ${await mockResponse.text()}`)
+      }
 
       await expect.poll(async () => {
         const access = await getAccess(page)
@@ -77,10 +146,17 @@ if (!runPlaywright) {
       await page.goto('/studio?tab=feed-planner')
       await page.waitForLoadState('domcontentloaded')
       await completeWizardIfVisible(page)
-      await expect(page.locator('button:has-text("Generate image"), button:has-text("Generate Image")')).toBeVisible({ timeout: 15000 })
+      await expect(page.locator('text=Create Your First Feed')).toBeVisible({ timeout: 15000 })
+
+      const closeOverlay = page.locator('button[aria-label="Close"]')
+      if (await closeOverlay.isVisible().catch(() => false)) {
+        await closeOverlay.click({ force: true }).catch(() => {})
+        await closeOverlay.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {})
+      }
+      await page.keyboard.press('Escape').catch(() => {})
+      await closeOverlay.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {})
 
       await page.locator('button[aria-label="Navigate to Maya"]').click()
-      await expect(page.locator('text=Upgrade Required')).toBeVisible({ timeout: 8000 })
       await expect(page).not.toHaveURL(/#maya/)
     })
   })

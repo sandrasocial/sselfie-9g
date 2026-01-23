@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { getAllResendContacts, runSegmentationForEmails } from "@/lib/audience/segment-sync"
+import { syncMarketingContacts } from "@/lib/email/marketing-sender"
 import { neon } from "@neondatabase/serverless"
 
 const sql = neon(process.env.DATABASE_URL!)
@@ -66,6 +67,10 @@ export async function GET(request: Request) {
         paid_users: 0,
         cold_users: 0,
       },
+      sequenceTags: {} as Record<
+        string,
+        { eligible: number; synced: number; skipped: number; errors: number }
+      >,
     }
 
     // Process each batch
@@ -128,6 +133,276 @@ export async function GET(request: Request) {
 
     console.log(`[v0] [CRON] Sync completed: ${results.successful} successful, ${results.failed} failed`)
 
+    const sequenceJobs: Array<{
+      tagKey: string
+      query: typeof sql
+    }> = [
+      {
+        tagKey: "sequence_blueprint_day_3",
+        query: sql`
+          SELECT bs.email, bs.name
+          FROM blueprint_subscribers bs
+          LEFT JOIN email_logs el ON el.user_email = bs.email AND el.email_type = 'blueprint-followup-day-3'
+          WHERE bs.day_3_email_sent = FALSE
+            AND bs.created_at <= NOW() - INTERVAL '3 days'
+            AND bs.created_at > NOW() - INTERVAL '4 days'
+            AND bs.welcome_email_sent = TRUE
+            AND el.id IS NULL
+        `,
+      },
+      {
+        tagKey: "sequence_blueprint_day_7",
+        query: sql`
+          SELECT bs.email, bs.name
+          FROM blueprint_subscribers bs
+          LEFT JOIN email_logs el ON el.user_email = bs.email AND el.email_type = 'blueprint-followup-day-7'
+          WHERE bs.day_7_email_sent = FALSE
+            AND bs.created_at <= NOW() - INTERVAL '7 days'
+            AND bs.created_at > NOW() - INTERVAL '8 days'
+            AND bs.welcome_email_sent = TRUE
+            AND el.id IS NULL
+        `,
+      },
+      {
+        tagKey: "sequence_blueprint_day_14",
+        query: sql`
+          SELECT bs.email, bs.name
+          FROM blueprint_subscribers bs
+          LEFT JOIN email_logs el ON el.user_email = bs.email AND el.email_type = 'blueprint-followup-day-14'
+          WHERE bs.day_14_email_sent = FALSE
+            AND bs.created_at <= NOW() - INTERVAL '14 days'
+            AND bs.created_at > NOW() - INTERVAL '15 days'
+            AND bs.welcome_email_sent = TRUE
+            AND el.id IS NULL
+        `,
+      },
+      {
+        tagKey: "sequence_paid_blueprint_day_1",
+        query: sql`
+          SELECT bs.email, bs.name
+          FROM blueprint_subscribers bs
+          LEFT JOIN email_logs el ON el.user_email = bs.email AND el.email_type = 'paid-blueprint-day-1'
+          LEFT JOIN users u ON u.email = bs.email
+          LEFT JOIN subscriptions s ON s.user_id = u.id
+            AND s.product_type = 'sselfie_studio_membership'
+            AND s.status = 'active'
+          WHERE bs.paid_blueprint_purchased = TRUE
+            AND bs.day_1_paid_email_sent = FALSE
+            AND bs.paid_blueprint_purchased_at <= NOW() - INTERVAL '1 day'
+            AND bs.paid_blueprint_purchased_at > NOW() - INTERVAL '2 days'
+            AND el.id IS NULL
+            AND s.id IS NULL
+        `,
+      },
+      {
+        tagKey: "sequence_paid_blueprint_day_3",
+        query: sql`
+          SELECT bs.email, bs.name
+          FROM blueprint_subscribers bs
+          LEFT JOIN email_logs el ON el.user_email = bs.email AND el.email_type = 'paid-blueprint-day-3'
+          LEFT JOIN users u ON u.email = bs.email
+          LEFT JOIN subscriptions s ON s.user_id = u.id
+            AND s.product_type = 'sselfie_studio_membership'
+            AND s.status = 'active'
+          WHERE bs.paid_blueprint_purchased = TRUE
+            AND bs.day_3_paid_email_sent = FALSE
+            AND bs.paid_blueprint_purchased_at <= NOW() - INTERVAL '3 days'
+            AND bs.paid_blueprint_purchased_at > NOW() - INTERVAL '4 days'
+            AND el.id IS NULL
+            AND s.id IS NULL
+        `,
+      },
+      {
+        tagKey: "sequence_paid_blueprint_day_7",
+        query: sql`
+          SELECT bs.email, bs.name
+          FROM blueprint_subscribers bs
+          LEFT JOIN email_logs el ON el.user_email = bs.email AND el.email_type = 'paid-blueprint-day-7'
+          LEFT JOIN users u ON u.email = bs.email
+          LEFT JOIN subscriptions s ON s.user_id = u.id
+            AND s.product_type = 'sselfie_studio_membership'
+            AND s.status = 'active'
+          WHERE bs.paid_blueprint_purchased = TRUE
+            AND bs.day_7_paid_email_sent = FALSE
+            AND bs.paid_blueprint_purchased_at <= NOW() - INTERVAL '7 days'
+            AND bs.paid_blueprint_purchased_at > NOW() - INTERVAL '8 days'
+            AND el.id IS NULL
+            AND s.id IS NULL
+        `,
+      },
+      {
+        tagKey: "sequence_nurture_day_1",
+        query: sql`
+          SELECT fs.email, fs.name
+          FROM freebie_subscribers fs
+          LEFT JOIN email_logs el ON el.user_email = fs.email AND el.email_type = 'nurture-day-1'
+          WHERE fs.converted_to_user = FALSE
+            AND fs.created_at < NOW() - INTERVAL '1 day'
+            AND fs.created_at >= NOW() - INTERVAL '2 days'
+            AND el.id IS NULL
+        `,
+      },
+      {
+        tagKey: "sequence_nurture_day_3",
+        query: sql`
+          SELECT fs.email, fs.name
+          FROM freebie_subscribers fs
+          LEFT JOIN email_logs el ON el.user_email = fs.email AND el.email_type = 'nurture-day-3'
+          WHERE fs.converted_to_user = FALSE
+            AND fs.created_at < NOW() - INTERVAL '3 days'
+            AND fs.created_at >= NOW() - INTERVAL '4 days'
+            AND el.id IS NULL
+        `,
+      },
+      {
+        tagKey: "sequence_nurture_day_7",
+        query: sql`
+          SELECT fs.email, fs.name
+          FROM freebie_subscribers fs
+          LEFT JOIN email_logs el ON el.user_email = fs.email AND el.email_type = 'nurture-day-7'
+          WHERE fs.converted_to_user = FALSE
+            AND fs.created_at < NOW() - INTERVAL '7 days'
+            AND fs.created_at >= NOW() - INTERVAL '8 days'
+            AND el.id IS NULL
+        `,
+      },
+      {
+        tagKey: "sequence_nurture_day_10",
+        query: sql`
+          SELECT fs.email, fs.name
+          FROM freebie_subscribers fs
+          LEFT JOIN email_logs el ON el.user_email = fs.email AND el.email_type = 'nurture-day-10'
+          WHERE fs.converted_to_user = FALSE
+            AND fs.created_at < NOW() - INTERVAL '10 days'
+            AND fs.created_at >= NOW() - INTERVAL '11 days'
+            AND el.id IS NULL
+        `,
+      },
+      {
+        tagKey: "sequence_welcome_day_0",
+        query: sql`
+          SELECT DISTINCT u.email, u.display_name as name
+          FROM users u
+          INNER JOIN subscriptions s ON u.id = s.user_id::varchar
+          LEFT JOIN email_logs el ON el.user_email = u.email AND el.email_type = 'welcome-day-0'
+          WHERE u.created_at >= NOW() - INTERVAL '2 hours'
+            AND u.created_at < NOW()
+            AND s.status = 'active'
+            AND s.product_type IN ('sselfie_studio_membership', 'brand_studio_membership')
+            AND s.is_test_mode = FALSE
+            AND el.id IS NULL
+        `,
+      },
+      {
+        tagKey: "sequence_welcome_day_3",
+        query: sql`
+          SELECT DISTINCT u.email, u.display_name as name
+          FROM users u
+          INNER JOIN subscriptions s ON u.id = s.user_id::varchar
+          LEFT JOIN email_logs el ON el.user_email = u.email AND el.email_type = 'welcome-day-3'
+          WHERE u.created_at >= NOW() - INTERVAL '3 days 2 hours'
+            AND u.created_at < NOW() - INTERVAL '3 days'
+            AND s.status = 'active'
+            AND s.product_type IN ('sselfie_studio_membership', 'brand_studio_membership')
+            AND s.is_test_mode = FALSE
+            AND el.id IS NULL
+        `,
+      },
+      {
+        tagKey: "sequence_welcome_day_7",
+        query: sql`
+          SELECT DISTINCT u.email, u.display_name as name
+          FROM users u
+          INNER JOIN subscriptions s ON u.id = s.user_id::varchar
+          LEFT JOIN email_logs el ON el.user_email = u.email AND el.email_type = 'welcome-day-7'
+          WHERE u.created_at >= NOW() - INTERVAL '7 days 2 hours'
+            AND u.created_at < NOW() - INTERVAL '7 days'
+            AND s.status = 'active'
+            AND s.product_type IN ('sselfie_studio_membership', 'brand_studio_membership')
+            AND s.is_test_mode = FALSE
+            AND el.id IS NULL
+        `,
+      },
+      {
+        tagKey: "sequence_onboarding_day_0",
+        query: sql`
+          SELECT DISTINCT u.email, u.display_name as name
+          FROM users u
+          INNER JOIN subscriptions s ON u.id = s.user_id::varchar
+          LEFT JOIN email_logs el ON el.user_email = u.email AND el.email_type = 'onboarding-day-0'
+          WHERE s.status = 'active'
+            AND s.product_type = 'sselfie_studio_membership'
+            AND s.is_test_mode = FALSE
+            AND s.created_at >= NOW() - INTERVAL '2 hours'
+            AND s.created_at < NOW()
+            AND u.email IS NOT NULL
+            AND u.email != ''
+            AND el.id IS NULL
+        `,
+      },
+      {
+        tagKey: "sequence_onboarding_day_2",
+        query: sql`
+          SELECT DISTINCT u.email, u.display_name as name
+          FROM users u
+          INNER JOIN subscriptions s ON u.id = s.user_id::varchar
+          LEFT JOIN email_logs el ON el.user_email = u.email AND el.email_type = 'onboarding-day-2'
+          WHERE s.status = 'active'
+            AND s.product_type = 'sselfie_studio_membership'
+            AND s.is_test_mode = FALSE
+            AND s.created_at <= NOW() - INTERVAL '2 days'
+            AND s.created_at > NOW() - INTERVAL '3 days'
+            AND u.email IS NOT NULL
+            AND u.email != ''
+            AND el.id IS NULL
+        `,
+      },
+      {
+        tagKey: "sequence_onboarding_day_7",
+        query: sql`
+          SELECT DISTINCT u.email, u.display_name as name
+          FROM users u
+          INNER JOIN subscriptions s ON u.id = s.user_id::varchar
+          LEFT JOIN email_logs el ON el.user_email = u.email AND el.email_type = 'onboarding-day-7'
+          WHERE s.status = 'active'
+            AND s.product_type = 'sselfie_studio_membership'
+            AND s.is_test_mode = FALSE
+            AND s.created_at <= NOW() - INTERVAL '7 days'
+            AND s.created_at > NOW() - INTERVAL '8 days'
+            AND u.email IS NOT NULL
+            AND u.email != ''
+            AND el.id IS NULL
+        `,
+      },
+    ]
+
+    for (const job of sequenceJobs) {
+      const rows = await job.query
+      if (rows.length === 0) {
+        results.sequenceTags[job.tagKey] = { eligible: 0, synced: 0, skipped: 0, errors: 0 }
+        continue
+      }
+
+      const contacts = rows.map((row: any) => ({
+        email: row.email,
+        firstName: row.name?.split(" ")[0],
+      }))
+
+      const syncResult = await syncMarketingContacts({
+        tagKey: job.tagKey,
+        tagValue: "true",
+        contacts,
+        existingContacts: allContacts,
+      })
+
+      results.sequenceTags[job.tagKey] = {
+        eligible: contacts.length,
+        synced: syncResult.synced,
+        skipped: syncResult.skipped,
+        errors: syncResult.errors,
+      }
+    }
+
     return NextResponse.json({
       success: true,
       message: `Cron sync completed: ${results.successful} successful, ${results.failed} failed`,
@@ -137,6 +412,7 @@ export async function GET(request: Request) {
         successful: results.successful,
         failed: results.failed,
         segmentCounts: results.segmentCounts,
+        sequenceTags: results.sequenceTags,
       },
       errors: results.errors.slice(0, 10), // Limit errors in response
       totalErrors: results.errors.length,

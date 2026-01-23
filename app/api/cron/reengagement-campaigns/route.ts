@@ -5,11 +5,15 @@ import { sendEmail } from "@/lib/email/send-email"
 import { createCronLogger } from "@/lib/cron-logger"
 import { generateReengagementDay0, generateReengagementDay7, generateReengagementDay14 } from "@/lib/email/templates/reengagement-sequence"
 import { logAdminError } from "@/lib/admin-error-log"
+import { sendMarketingBroadcast, syncMarketingContacts } from "@/lib/email/marketing-sender"
+import { MARKETING_SEGMENTS } from "@/lib/email/config"
 
 const sql = neon(process.env.DATABASE_URL!)
 
+const FIRST_NAME_PLACEHOLDER = "{{{FIRST_NAME|friend}}}"
+
 /**
- * Re-Engagement Campaigns - Resend Direct Sends
+ * Re-Engagement Campaigns - Resend Broadcasts (Marketing)
  * 
  * Sends re-engagement emails directly via Resend API.
  * Targets inactive users based on segments and sends Day 0, 7, 14 sequence.
@@ -61,52 +65,64 @@ export async function GET(request: Request) {
     results.day0.found = day0Users.length
     console.log(`[v0] [Re-Engagement] Found ${day0Users.length} users for Day 0 email`)
 
-    for (const user of day0Users) {
+    if (day0Users.length > 0) {
       try {
-        // Check if already sent (dedupe)
-        const existingLog = await sql`
-          SELECT id FROM email_logs
-          WHERE user_email = ${user.email}
-          AND email_type = 'reengagement-day-0'
-          LIMIT 1
-        `
-        if (existingLog.length > 0) {
-          results.day0.skipped++
-          continue
+        if (!MARKETING_SEGMENTS.reengagementDay0) {
+          throw new Error("RESEND_SEGMENT_REENGAGEMENT_DAY_0 not configured")
         }
 
+        const contacts = day0Users.map((user: any) => ({
+          email: user.email,
+          firstName: user.first_name,
+        }))
+        const day0Emails = day0Users.map((user: any) => user.email)
+
         const emailContent = generateReengagementDay0({
-          firstName: user.first_name || undefined,
+          firstName: FIRST_NAME_PLACEHOLDER,
         })
 
-        const sendResult = await sendEmail({
-          to: user.email,
+        await syncMarketingContacts({
+          tagKey: "sequence_reengagement_day_0",
+          tagValue: "true",
+          segmentId: MARKETING_SEGMENTS.reengagementDay0,
+          contacts,
+        })
+
+        await sendMarketingBroadcast({
+          campaignKey: "reengagement-day-0",
+          segmentId: MARKETING_SEGMENTS.reengagementDay0,
           subject: emailContent.subject || "Haven't seen you in a while... 👀",
           html: emailContent.html,
           text: emailContent.text,
-          from: "Sandra from SSELFIE <hello@sselfie.ai>",
-          emailType: "reengagement-day-0",
+          estimatedRecipientCount: day0Users.length,
         })
 
-        if (sendResult.success) {
-          // Email is already logged by sendEmail via email_logs
-          results.day0.sent++
-          console.log(`[v0] [Re-Engagement] ✅ Sent Day 0 email to ${user.email}`)
-        } else {
-          throw new Error(sendResult.error || 'Failed to send email')
-        }
+        await sql`
+          INSERT INTO email_logs (user_email, email_type, status, sent_at)
+          SELECT unnest(${day0Emails}::text[]), 'reengagement-day-0', 'sent', NOW()
+        `
+
+        await syncMarketingContacts({
+          tagKey: "sequence_reengagement_day_0",
+          tagValue: "false",
+          segmentId: MARKETING_SEGMENTS.reengagementDay0,
+          removeFromSegment: true,
+          contacts,
+        })
+
+        results.day0.sent = day0Users.length
       } catch (error: any) {
-        results.day0.failed++
+        results.day0.failed = day0Users.length
         results.errors.push({
-          email: user.email,
+          email: "broadcast",
           day: 0,
           error: error.message || "Unknown error",
         })
-        console.error(`[v0] [Re-Engagement] ❌ Failed to send Day 0 email to ${user.email}:`, error)
+        console.error("[v0] [Re-Engagement] ❌ Failed to send Day 0 broadcast:", error)
         await logAdminError({
           toolName: "cron:reengagement-campaigns:day-0",
           error: error instanceof Error ? error : new Error(error.message || "Unknown error"),
-          context: { userEmail: user.email, userId: user.id },
+          context: { recipients: day0Users.length },
         }).catch(() => {})
       }
     }
@@ -130,39 +146,64 @@ export async function GET(request: Request) {
     results.day7.found = day7Users.length
     console.log(`[v0] [Re-Engagement] Found ${day7Users.length} users for Day 7 email`)
 
-    for (const user of day7Users) {
+    if (day7Users.length > 0) {
       try {
+        if (!MARKETING_SEGMENTS.reengagementDay7) {
+          throw new Error("RESEND_SEGMENT_REENGAGEMENT_DAY_7 not configured")
+        }
+
+        const contacts = day7Users.map((user: any) => ({
+          email: user.email,
+          firstName: user.first_name,
+        }))
+        const day7Emails = day7Users.map((user: any) => user.email)
+
         const emailContent = generateReengagementDay7({
-          firstName: user.first_name || undefined,
+          firstName: FIRST_NAME_PLACEHOLDER,
         })
 
-        const sendResult = await sendEmail({
-          to: user.email,
+        await syncMarketingContacts({
+          tagKey: "sequence_reengagement_day_7",
+          tagValue: "true",
+          segmentId: MARKETING_SEGMENTS.reengagementDay7,
+          contacts,
+        })
+
+        await sendMarketingBroadcast({
+          campaignKey: "reengagement-day-7",
+          segmentId: MARKETING_SEGMENTS.reengagementDay7,
           subject: emailContent.subject || "What You're Missing",
           html: emailContent.html,
           text: emailContent.text,
-          from: "Sandra from SSELFIE <hello@sselfie.ai>",
-          emailType: "reengagement-day-7",
+          estimatedRecipientCount: day7Users.length,
         })
 
-        if (sendResult.success) {
-          results.day7.sent++
-          console.log(`[v0] [Re-Engagement] ✅ Sent Day 7 email to ${user.email}`)
-        } else {
-          throw new Error(sendResult.error || 'Failed to send email')
-        }
+        await sql`
+          INSERT INTO email_logs (user_email, email_type, status, sent_at)
+          SELECT unnest(${day7Emails}::text[]), 'reengagement-day-7', 'sent', NOW()
+        `
+
+        await syncMarketingContacts({
+          tagKey: "sequence_reengagement_day_7",
+          tagValue: "false",
+          segmentId: MARKETING_SEGMENTS.reengagementDay7,
+          removeFromSegment: true,
+          contacts,
+        })
+
+        results.day7.sent = day7Users.length
       } catch (error: any) {
-        results.day7.failed++
+        results.day7.failed = day7Users.length
         results.errors.push({
-          email: user.email,
+          email: "broadcast",
           day: 7,
           error: error.message || "Unknown error",
         })
-        console.error(`[v0] [Re-Engagement] ❌ Failed to send Day 7 email to ${user.email}:`, error)
+        console.error("[v0] [Re-Engagement] ❌ Failed to send Day 7 broadcast:", error)
         await logAdminError({
           toolName: "cron:reengagement-campaigns:day-7",
           error: error instanceof Error ? error : new Error(error.message || "Unknown error"),
-          context: { userEmail: user.email, userId: user.id },
+          context: { recipients: day7Users.length },
         }).catch(() => {})
       }
     }
@@ -186,39 +227,64 @@ export async function GET(request: Request) {
     results.day14.found = day14Users.length
     console.log(`[v0] [Re-Engagement] Found ${day14Users.length} users for Day 14 email`)
 
-    for (const user of day14Users) {
+    if (day14Users.length > 0) {
       try {
+        if (!MARKETING_SEGMENTS.reengagementDay14) {
+          throw new Error("RESEND_SEGMENT_REENGAGEMENT_DAY_14 not configured")
+        }
+
+        const contacts = day14Users.map((user: any) => ({
+          email: user.email,
+          firstName: user.first_name,
+        }))
+        const day14Emails = day14Users.map((user: any) => user.email)
+
         const emailContent = generateReengagementDay14({
-          firstName: user.first_name || undefined,
+          firstName: FIRST_NAME_PLACEHOLDER,
         })
 
-        const sendResult = await sendEmail({
-          to: user.email,
+        await syncMarketingContacts({
+          tagKey: "sequence_reengagement_day_14",
+          tagValue: "true",
+          segmentId: MARKETING_SEGMENTS.reengagementDay14,
+          contacts,
+        })
+
+        await sendMarketingBroadcast({
+          campaignKey: "reengagement-day-14",
+          segmentId: MARKETING_SEGMENTS.reengagementDay14,
           subject: emailContent.subject || "Comeback Offer: 50% Off",
           html: emailContent.html,
           text: emailContent.text,
-          from: "Sandra from SSELFIE <hello@sselfie.ai>",
-          emailType: "reengagement-day-14",
+          estimatedRecipientCount: day14Users.length,
         })
 
-        if (sendResult.success) {
-          results.day14.sent++
-          console.log(`[v0] [Re-Engagement] ✅ Sent Day 14 email to ${user.email}`)
-        } else {
-          throw new Error(sendResult.error || 'Failed to send email')
-        }
+        await sql`
+          INSERT INTO email_logs (user_email, email_type, status, sent_at)
+          SELECT unnest(${day14Emails}::text[]), 'reengagement-day-14', 'sent', NOW()
+        `
+
+        await syncMarketingContacts({
+          tagKey: "sequence_reengagement_day_14",
+          tagValue: "false",
+          segmentId: MARKETING_SEGMENTS.reengagementDay14,
+          removeFromSegment: true,
+          contacts,
+        })
+
+        results.day14.sent = day14Users.length
       } catch (error: any) {
-        results.day14.failed++
+        results.day14.failed = day14Users.length
         results.errors.push({
-          email: user.email,
+          email: "broadcast",
           day: 14,
           error: error.message || "Unknown error",
         })
-        console.error(`[v0] [Re-Engagement] ❌ Failed to send Day 14 email to ${user.email}:`, error)
+        console.error("[v0] [Re-Engagement] ❌ Failed to send Day 14 broadcast:", error)
         await logAdminError({
           toolName: "cron:reengagement-campaigns:day-14",
           error: error instanceof Error ? error : new Error(error.message || "Unknown error"),
-          context: { userEmail: user.email, userId: user.id },
+          context: { recipients: day14Users.length },
         }).catch(() => {})
       }
     }

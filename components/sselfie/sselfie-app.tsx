@@ -134,6 +134,7 @@ export default function SselfieApp({
   // showBlueprintOnboarding and existingBlueprintData removed - UnifiedOnboardingWizard is now handled by feed-planner-client.tsx
   const [creditBalance, setCreditBalance] = useState<number>(0)
   const [isLoadingCredits, setIsLoadingCredits] = useState(true)
+  const [blueprintEntitlementType, setBlueprintEntitlementType] = useState<string | null>(null)
   const simpleFetcher = (url: string) => fetch(url).then((res) => res.json())
   const {
     data: trainingStatus,
@@ -348,12 +349,14 @@ export default function SselfieApp({
     productType,
     userEmail,
   })
+  const isPaidBlueprintUserForAccess =
+    (access.isPaidBlueprintOnly || blueprintEntitlementType === "paid") && !access.isMember
   const isOneTimeSession = productType === "one_time_session"
   const academyBlocked = !access.hasFullAccess
 
   const handleTabChange = (tabId: string) => {
-    // Prevent paid blueprint users from accessing Maya
-    if (tabId === "maya" && access.isPaidBlueprintOnly) {
+    // Prevent non-members from accessing Maya
+    if (tabId === "maya" && !access.canUseGenerators) {
       toast({
         title: "Upgrade Required",
         description: "Maya is available with Studio Membership. Upgrade to unlock all features.",
@@ -449,6 +452,9 @@ export default function SselfieApp({
               hasExtensionData: false
             }
         const blueprintData = blueprintResponse.ok ? await blueprintResponse.json() : null
+        if (mounted) {
+          setBlueprintEntitlementType(blueprintData?.entitlement?.type ?? null)
+        }
 
         const onboardingCompleted = onboardingData.onboarding_completed || false
         const blueprintWelcomeShown = !!onboardingData.blueprint_welcome_shown_at
@@ -974,7 +980,7 @@ export default function SselfieApp({
 
             <AnimatePresence mode="wait">
               {activeTab === "maya" &&
-            (!access.canUseGenerators || access.isPaidBlueprintOnly) ? (
+            (!access.canUseGenerators || isPaidBlueprintUserForAccess) ? (
                 <motion.div
                   key="upgrade-or-credits"
                   initial={{ opacity: 0 }}
@@ -984,7 +990,7 @@ export default function SselfieApp({
                 >
               <UpgradeOrCredits
                     feature={activeTab === "maya" ? "Maya" : "Training"}
-                    isPaidBlueprintUser={access.isPaidBlueprintOnly}
+                    isPaidBlueprintUser={isPaidBlueprintUserForAccess}
                     requiresMembership={true}
               />
                 </motion.div>
@@ -1008,7 +1014,7 @@ export default function SselfieApp({
                 )}
                 {activeTab === "gallery" && (
                   !access.canUseGenerators ? (
-                    <UpgradeOrCredits feature="Gallery" isPaidBlueprintUser={access.isPaidBlueprintOnly} requiresMembership={true} />
+                    <UpgradeOrCredits feature="Gallery" isPaidBlueprintUser={isPaidBlueprintUserForAccess} requiresMembership={true} />
                   ) : (
                     <GalleryScreen user={user} userId={userId} />
                   )
@@ -1016,7 +1022,7 @@ export default function SselfieApp({
                 {activeTab === "feed-planner" && <FeedPlannerClient userId={userId.toString()} userName={userName} />}
                 {activeTab === "academy" && (
                   (!access.canUseGenerators || academyBlocked) ? (
-                    <UpgradeOrCredits feature="Academy" isPaidBlueprintUser={access.isPaidBlueprintOnly} requiresMembership={true} />
+                    <UpgradeOrCredits feature="Academy" isPaidBlueprintUser={isPaidBlueprintUserForAccess} requiresMembership={true} />
                   ) : (
                     <AcademyScreen />
                   )

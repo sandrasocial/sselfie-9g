@@ -15,11 +15,16 @@ import {
   generateReactivationDay25Email,
 } from "@/lib/email/templates/reactivation-sequence"
 import { logAdminError } from "@/lib/admin-error-log"
+import { sendMarketingBroadcast, syncMarketingContacts } from "@/lib/email/marketing-sender"
+import { MARKETING_SEGMENTS } from "@/lib/email/config"
 
 const sql = neon(process.env.DATABASE_URL!)
 
+const FIRST_NAME_PLACEHOLDER = "{{{FIRST_NAME|friend}}}"
+const EMAIL_PLACEHOLDER = "{{{EMAIL}}}"
+
 /**
- * Reactivation Campaigns - Resend Direct Sends
+ * Reactivation Campaigns - Resend Broadcasts (Marketing)
  * 
  * Sends reactivation emails to cold_users tagged subscribers in Resend.
  * These are users from last year's selfie guide who are NOT app customers.
@@ -201,6 +206,59 @@ export async function GET(request: Request) {
       errors: [] as Array<{ email: string; day: number; error: string }>,
     }
 
+    const sendReactivationBroadcast = async (params: {
+      dayKey: keyof typeof results
+      dayNumber: number
+      emails: string[]
+      tagKey: string
+      segmentId: string
+      emailType: string
+      emailContent: { html: string; text: string; subject?: string }
+      subjectFallback: string
+    }) => {
+      if (params.emails.length === 0) return
+
+      if (!params.segmentId) {
+        throw new Error(`Missing segment id for ${params.emailType}`)
+      }
+
+      const contacts = params.emails.map((email) => ({
+        email,
+        firstName: emailToUser.get(email)?.display_name?.split(" ")[0],
+      }))
+
+      await syncMarketingContacts({
+        tagKey: params.tagKey,
+        tagValue: "true",
+        segmentId: params.segmentId,
+        contacts,
+      })
+
+      await sendMarketingBroadcast({
+        campaignKey: params.emailType,
+        segmentId: params.segmentId,
+        subject: params.emailContent.subject || params.subjectFallback,
+        html: params.emailContent.html,
+        text: params.emailContent.text,
+        estimatedRecipientCount: params.emails.length,
+      })
+
+      await sql`
+        INSERT INTO email_logs (user_email, email_type, status, sent_at)
+        SELECT unnest(${params.emails}::text[]), ${params.emailType}, 'sent', NOW()
+      `
+
+      await syncMarketingContacts({
+        tagKey: params.tagKey,
+        tagValue: "false",
+        segmentId: params.segmentId,
+        removeFromSegment: true,
+        contacts,
+      })
+
+      results[params.dayKey].sent = params.emails.length
+    }
+
     // Day 0: Find users who haven't received Day 0 email
     const day0Eligible = await sql`
       SELECT DISTINCT el.user_email
@@ -215,55 +273,36 @@ export async function GET(request: Request) {
     results.day0.found = day0Eligible.length
     console.log(`[v0] [CRON] Found ${day0Eligible.length} users for Day 0 email`)
 
-    for (const row of day0Eligible) {
-      const email = row.user_email
+    if (day0Eligible.length > 0) {
       try {
-        // Double-check deduplication
-        const existingLog = await sql`
-          SELECT id FROM email_logs
-          WHERE user_email = ${email}
-          AND email_type = 'reactivation-day-0'
-          LIMIT 1
-        `
-        if (existingLog.length > 0) {
-          results.day0.skipped++
-          continue
-        }
-
-        const user = emailToUser.get(email)
-        const firstName = user?.display_name?.split(" ")[0] || undefined
+        const day0Emails = day0Eligible.map((row: any) => row.user_email)
         const emailContent = generateReactivationDay0Email({
-          firstName,
-          recipientEmail: email,
+          firstName: FIRST_NAME_PLACEHOLDER,
+          recipientEmail: EMAIL_PLACEHOLDER,
         })
 
-        const sendResult = await sendEmail({
-          to: email,
-          subject: emailContent.subject || "It's been a while — here's what I've been building",
-          html: emailContent.html,
-          text: emailContent.text,
-          from: "Sandra from SSELFIE <hello@sselfie.ai>",
+        await sendReactivationBroadcast({
+          dayKey: "day0",
+          dayNumber: 0,
+          emails: day0Emails,
+          tagKey: "sequence_reactivation_day_0",
+          segmentId: MARKETING_SEGMENTS.reactivationDay0,
           emailType: "reactivation-day-0",
+          emailContent,
+          subjectFallback: "It's been a while — here's what I've been building",
         })
-
-        if (sendResult.success) {
-          results.day0.sent++
-          console.log(`[v0] [CRON] ✅ Sent Day 0 email to ${email}`)
-        } else {
-          throw new Error(sendResult.error || "Failed to send email")
-        }
       } catch (error: any) {
-        results.day0.failed++
+        results.day0.failed = day0Eligible.length
         results.errors.push({
-          email,
+          email: "broadcast",
           day: 0,
           error: error.message || "Unknown error",
         })
-        console.error(`[v0] [CRON] ❌ Failed to send Day 0 email to ${email}:`, error)
+        console.error("[v0] [CRON] ❌ Failed to send Day 0 broadcast:", error)
         await logAdminError({
           toolName: "cron:reactivation-campaigns:day-0",
           error: error instanceof Error ? error : new Error(error.message || "Unknown error"),
-          context: { email },
+          context: { recipients: day0Eligible.length },
         }).catch(() => {})
       }
     }
@@ -284,54 +323,36 @@ export async function GET(request: Request) {
     results.day2.found = day2Eligible.length
     console.log(`[v0] [CRON] Found ${day2Eligible.length} users for Day 2 email`)
 
-    for (const row of day2Eligible) {
-      const email = row.user_email
+    if (day2Eligible.length > 0) {
       try {
-        const existingLog = await sql`
-          SELECT id FROM email_logs
-          WHERE user_email = ${email}
-          AND email_type = 'reactivation-day-2'
-          LIMIT 1
-        `
-        if (existingLog.length > 0) {
-          results.day2.skipped++
-          continue
-        }
-
-        const user = emailToUser.get(email)
-        const firstName = user?.display_name?.split(" ")[0] || undefined
+        const day2Emails = day2Eligible.map((row: any) => row.user_email)
         const emailContent = generateReactivationDay2Email({
-          firstName,
-          recipientEmail: email,
+          firstName: FIRST_NAME_PLACEHOLDER,
+          recipientEmail: EMAIL_PLACEHOLDER,
         })
 
-        const sendResult = await sendEmail({
-          to: email,
-          subject: emailContent.subject || "Why professional selfies just got an upgrade",
-          html: emailContent.html,
-          text: emailContent.text,
-          from: "Sandra from SSELFIE <hello@sselfie.ai>",
+        await sendReactivationBroadcast({
+          dayKey: "day2",
+          dayNumber: 2,
+          emails: day2Emails,
+          tagKey: "sequence_reactivation_day_2",
+          segmentId: MARKETING_SEGMENTS.reactivationDay2,
           emailType: "reactivation-day-2",
+          emailContent,
+          subjectFallback: "Why professional selfies just got an upgrade",
         })
-
-        if (sendResult.success) {
-          results.day2.sent++
-          console.log(`[v0] [CRON] ✅ Sent Day 2 email to ${email}`)
-        } else {
-          throw new Error(sendResult.error || "Failed to send email")
-        }
       } catch (error: any) {
-        results.day2.failed++
+        results.day2.failed = day2Eligible.length
         results.errors.push({
-          email,
+          email: "broadcast",
           day: 2,
           error: error.message || "Unknown error",
         })
-        console.error(`[v0] [CRON] ❌ Failed to send Day 2 email to ${email}:`, error)
+        console.error("[v0] [CRON] ❌ Failed to send Day 2 broadcast:", error)
         await logAdminError({
           toolName: "cron:reactivation-campaigns:day-2",
           error: error instanceof Error ? error : new Error(error.message || "Unknown error"),
-          context: { email },
+          context: { recipients: day2Eligible.length },
         }).catch(() => {})
       }
     }
@@ -352,54 +373,36 @@ export async function GET(request: Request) {
     results.day5.found = day5Eligible.length
     console.log(`[v0] [CRON] Found ${day5Eligible.length} users for Day 5 email`)
 
-    for (const row of day5Eligible) {
-      const email = row.user_email
+    if (day5Eligible.length > 0) {
       try {
-        const existingLog = await sql`
-          SELECT id FROM email_logs
-          WHERE user_email = ${email}
-          AND email_type = 'reactivation-day-5'
-          LIMIT 1
-        `
-        if (existingLog.length > 0) {
-          results.day5.skipped++
-          continue
-        }
-
-        const user = emailToUser.get(email)
-        const firstName = user?.display_name?.split(" ")[0] || undefined
+        const day5Emails = day5Eligible.map((row: any) => row.user_email)
         const emailContent = generateReactivationDay5Email({
-          firstName,
-          recipientEmail: email,
+          firstName: FIRST_NAME_PLACEHOLDER,
+          recipientEmail: EMAIL_PLACEHOLDER,
         })
 
-        const sendResult = await sendEmail({
-          to: email,
-          subject: emailContent.subject || "See how creators are building their brand visuals in minutes",
-          html: emailContent.html,
-          text: emailContent.text,
-          from: "Sandra from SSELFIE <hello@sselfie.ai>",
+        await sendReactivationBroadcast({
+          dayKey: "day5",
+          dayNumber: 5,
+          emails: day5Emails,
+          tagKey: "sequence_reactivation_day_5",
+          segmentId: MARKETING_SEGMENTS.reactivationDay5,
           emailType: "reactivation-day-5",
+          emailContent,
+          subjectFallback: "See how creators are building their brand visuals in minutes",
         })
-
-        if (sendResult.success) {
-          results.day5.sent++
-          console.log(`[v0] [CRON] ✅ Sent Day 5 email to ${email}`)
-        } else {
-          throw new Error(sendResult.error || "Failed to send email")
-        }
       } catch (error: any) {
-        results.day5.failed++
+        results.day5.failed = day5Eligible.length
         results.errors.push({
-          email,
+          email: "broadcast",
           day: 5,
           error: error.message || "Unknown error",
         })
-        console.error(`[v0] [CRON] ❌ Failed to send Day 5 email to ${email}:`, error)
+        console.error("[v0] [CRON] ❌ Failed to send Day 5 broadcast:", error)
         await logAdminError({
           toolName: "cron:reactivation-campaigns:day-5",
           error: error instanceof Error ? error : new Error(error.message || "Unknown error"),
-          context: { email },
+          context: { recipients: day5Eligible.length },
         }).catch(() => {})
       }
     }
@@ -420,54 +423,36 @@ export async function GET(request: Request) {
     results.day7.found = day7Eligible.length
     console.log(`[v0] [CRON] Found ${day7Eligible.length} users for Day 7 email`)
 
-    for (const row of day7Eligible) {
-      const email = row.user_email
+    if (day7Eligible.length > 0) {
       try {
-        const existingLog = await sql`
-          SELECT id FROM email_logs
-          WHERE user_email = ${email}
-          AND email_type = 'reactivation-day-7'
-          LIMIT 1
-        `
-        if (existingLog.length > 0) {
-          results.day7.skipped++
-          continue
-        }
-
-        const user = emailToUser.get(email)
-        const firstName = user?.display_name?.split(" ")[0] || undefined
+        const day7Emails = day7Eligible.map((row: any) => row.user_email)
         const emailContent = generateReactivationDay7Email({
-          firstName,
-          recipientEmail: email,
+          firstName: FIRST_NAME_PLACEHOLDER,
+          recipientEmail: EMAIL_PLACEHOLDER,
         })
 
-        const sendResult = await sendEmail({
-          to: email,
-          subject: emailContent.subject || "Real photos. Real you. No filters.",
-          html: emailContent.html,
-          text: emailContent.text,
-          from: "Sandra from SSELFIE <hello@sselfie.ai>",
+        await sendReactivationBroadcast({
+          dayKey: "day7",
+          dayNumber: 7,
+          emails: day7Emails,
+          tagKey: "sequence_reactivation_day_7",
+          segmentId: MARKETING_SEGMENTS.reactivationDay7,
           emailType: "reactivation-day-7",
+          emailContent,
+          subjectFallback: "Real photos. Real you. No filters.",
         })
-
-        if (sendResult.success) {
-          results.day7.sent++
-          console.log(`[v0] [CRON] ✅ Sent Day 7 email to ${email}`)
-        } else {
-          throw new Error(sendResult.error || "Failed to send email")
-        }
       } catch (error: any) {
-        results.day7.failed++
+        results.day7.failed = day7Eligible.length
         results.errors.push({
-          email,
+          email: "broadcast",
           day: 7,
           error: error.message || "Unknown error",
         })
-        console.error(`[v0] [CRON] ❌ Failed to send Day 7 email to ${email}:`, error)
+        console.error("[v0] [CRON] ❌ Failed to send Day 7 broadcast:", error)
         await logAdminError({
           toolName: "cron:reactivation-campaigns:day-7",
           error: error instanceof Error ? error : new Error(error.message || "Unknown error"),
-          context: { email },
+          context: { recipients: day7Eligible.length },
         }).catch(() => {})
       }
     }
@@ -488,54 +473,36 @@ export async function GET(request: Request) {
     results.day10.found = day10Eligible.length
     console.log(`[v0] [CRON] Found ${day10Eligible.length} users for Day 10 email`)
 
-    for (const row of day10Eligible) {
-      const email = row.user_email
+    if (day10Eligible.length > 0) {
       try {
-        const existingLog = await sql`
-          SELECT id FROM email_logs
-          WHERE user_email = ${email}
-          AND email_type = 'reactivation-day-10'
-          LIMIT 1
-        `
-        if (existingLog.length > 0) {
-          results.day10.skipped++
-          continue
-        }
-
-        const user = emailToUser.get(email)
-        const firstName = user?.display_name?.split(" ")[0] || undefined
+        const day10Emails = day10Eligible.map((row: any) => row.user_email)
         const emailContent = generateReactivationDay10Email({
-          firstName,
-          recipientEmail: email,
+          firstName: FIRST_NAME_PLACEHOLDER,
+          recipientEmail: EMAIL_PLACEHOLDER,
         })
 
-        const sendResult = await sendEmail({
-          to: email,
-          subject: emailContent.subject || "What creators are making inside SSELFIE Studio.",
-          html: emailContent.html,
-          text: emailContent.text,
-          from: "Sandra from SSELFIE <hello@sselfie.ai>",
+        await sendReactivationBroadcast({
+          dayKey: "day10",
+          dayNumber: 10,
+          emails: day10Emails,
+          tagKey: "sequence_reactivation_day_10",
+          segmentId: MARKETING_SEGMENTS.reactivationDay10,
           emailType: "reactivation-day-10",
+          emailContent,
+          subjectFallback: "What creators are making inside SSELFIE Studio.",
         })
-
-        if (sendResult.success) {
-          results.day10.sent++
-          console.log(`[v0] [CRON] ✅ Sent Day 10 email to ${email}`)
-        } else {
-          throw new Error(sendResult.error || "Failed to send email")
-        }
       } catch (error: any) {
-        results.day10.failed++
+        results.day10.failed = day10Eligible.length
         results.errors.push({
-          email,
+          email: "broadcast",
           day: 10,
           error: error.message || "Unknown error",
         })
-        console.error(`[v0] [CRON] ❌ Failed to send Day 10 email to ${email}:`, error)
+        console.error("[v0] [CRON] ❌ Failed to send Day 10 broadcast:", error)
         await logAdminError({
           toolName: "cron:reactivation-campaigns:day-10",
           error: error instanceof Error ? error : new Error(error.message || "Unknown error"),
-          context: { email },
+          context: { recipients: day10Eligible.length },
         }).catch(() => {})
       }
     }
@@ -556,54 +523,36 @@ export async function GET(request: Request) {
     results.day14.found = day14Eligible.length
     console.log(`[v0] [CRON] Found ${day14Eligible.length} users for Day 14 email`)
 
-    for (const row of day14Eligible) {
-      const email = row.user_email
+    if (day14Eligible.length > 0) {
       try {
-        const existingLog = await sql`
-          SELECT id FROM email_logs
-          WHERE user_email = ${email}
-          AND email_type = 'reactivation-day-14'
-          LIMIT 1
-        `
-        if (existingLog.length > 0) {
-          results.day14.skipped++
-          continue
-        }
-
-        const user = emailToUser.get(email)
-        const firstName = user?.display_name?.split(" ")[0] || undefined
+        const day14Emails = day14Eligible.map((row: any) => row.user_email)
         const emailContent = generateReactivationDay14Email({
-          firstName,
-          recipientEmail: email,
+          firstName: FIRST_NAME_PLACEHOLDER,
+          recipientEmail: EMAIL_PLACEHOLDER,
         })
 
-        const sendResult = await sendEmail({
-          to: email,
-          subject: emailContent.subject || "You're invited — 25 credits to explore SSELFIE Studio.",
-          html: emailContent.html,
-          text: emailContent.text,
-          from: "Sandra from SSELFIE <hello@sselfie.ai>",
+        await sendReactivationBroadcast({
+          dayKey: "day14",
+          dayNumber: 14,
+          emails: day14Emails,
+          tagKey: "sequence_reactivation_day_14",
+          segmentId: MARKETING_SEGMENTS.reactivationDay14,
           emailType: "reactivation-day-14",
+          emailContent,
+          subjectFallback: "You're invited — 25 credits to explore SSELFIE Studio.",
         })
-
-        if (sendResult.success) {
-          results.day14.sent++
-          console.log(`[v0] [CRON] ✅ Sent Day 14 email to ${email}`)
-        } else {
-          throw new Error(sendResult.error || "Failed to send email")
-        }
       } catch (error: any) {
-        results.day14.failed++
+        results.day14.failed = day14Eligible.length
         results.errors.push({
-          email,
+          email: "broadcast",
           day: 14,
           error: error.message || "Unknown error",
         })
-        console.error(`[v0] [CRON] ❌ Failed to send Day 14 email to ${email}:`, error)
+        console.error("[v0] [CRON] ❌ Failed to send Day 14 broadcast:", error)
         await logAdminError({
           toolName: "cron:reactivation-campaigns:day-14",
           error: error instanceof Error ? error : new Error(error.message || "Unknown error"),
-          context: { email },
+          context: { recipients: day14Eligible.length },
         }).catch(() => {})
       }
     }
@@ -624,54 +573,36 @@ export async function GET(request: Request) {
     results.day20.found = day20Eligible.length
     console.log(`[v0] [CRON] Found ${day20Eligible.length} users for Day 20 email`)
 
-    for (const row of day20Eligible) {
-      const email = row.user_email
+    if (day20Eligible.length > 0) {
       try {
-        const existingLog = await sql`
-          SELECT id FROM email_logs
-          WHERE user_email = ${email}
-          AND email_type = 'reactivation-day-20'
-          LIMIT 1
-        `
-        if (existingLog.length > 0) {
-          results.day20.skipped++
-          continue
-        }
-
-        const user = emailToUser.get(email)
-        const firstName = user?.display_name?.split(" ")[0] || undefined
+        const day20Emails = day20Eligible.map((row: any) => row.user_email)
         const emailContent = generateReactivationDay20Email({
-          firstName,
-          recipientEmail: email,
+          firstName: FIRST_NAME_PLACEHOLDER,
+          recipientEmail: EMAIL_PLACEHOLDER,
         })
 
-        const sendResult = await sendEmail({
-          to: email,
-          subject: emailContent.subject || "Your studio is ready — come see it.",
-          html: emailContent.html,
-          text: emailContent.text,
-          from: "Sandra from SSELFIE <hello@sselfie.ai>",
+        await sendReactivationBroadcast({
+          dayKey: "day20",
+          dayNumber: 20,
+          emails: day20Emails,
+          tagKey: "sequence_reactivation_day_20",
+          segmentId: MARKETING_SEGMENTS.reactivationDay20,
           emailType: "reactivation-day-20",
+          emailContent,
+          subjectFallback: "Your studio is ready — come see it.",
         })
-
-        if (sendResult.success) {
-          results.day20.sent++
-          console.log(`[v0] [CRON] ✅ Sent Day 20 email to ${email}`)
-        } else {
-          throw new Error(sendResult.error || "Failed to send email")
-        }
       } catch (error: any) {
-        results.day20.failed++
+        results.day20.failed = day20Eligible.length
         results.errors.push({
-          email,
+          email: "broadcast",
           day: 20,
           error: error.message || "Unknown error",
         })
-        console.error(`[v0] [CRON] ❌ Failed to send Day 20 email to ${email}:`, error)
+        console.error("[v0] [CRON] ❌ Failed to send Day 20 broadcast:", error)
         await logAdminError({
           toolName: "cron:reactivation-campaigns:day-20",
           error: error instanceof Error ? error : new Error(error.message || "Unknown error"),
-          context: { email },
+          context: { recipients: day20Eligible.length },
         }).catch(() => {})
       }
     }
@@ -692,54 +623,36 @@ export async function GET(request: Request) {
     results.day25.found = day25Eligible.length
     console.log(`[v0] [CRON] Found ${day25Eligible.length} users for Day 25 email`)
 
-    for (const row of day25Eligible) {
-      const email = row.user_email
+    if (day25Eligible.length > 0) {
       try {
-        const existingLog = await sql`
-          SELECT id FROM email_logs
-          WHERE user_email = ${email}
-          AND email_type = 'reactivation-day-25'
-          LIMIT 1
-        `
-        if (existingLog.length > 0) {
-          results.day25.skipped++
-          continue
-        }
-
-        const user = emailToUser.get(email)
-        const firstName = user?.display_name?.split(" ")[0] || undefined
+        const day25Emails = day25Eligible.map((row: any) => row.user_email)
         const emailContent = generateReactivationDay25Email({
-          firstName,
-          recipientEmail: email,
+          firstName: FIRST_NAME_PLACEHOLDER,
+          recipientEmail: EMAIL_PLACEHOLDER,
         })
 
-        const sendResult = await sendEmail({
-          to: email,
-          subject: emailContent.subject || "50% off your first month — this week only.",
-          html: emailContent.html,
-          text: emailContent.text,
-          from: "Sandra from SSELFIE <hello@sselfie.ai>",
+        await sendReactivationBroadcast({
+          dayKey: "day25",
+          dayNumber: 25,
+          emails: day25Emails,
+          tagKey: "sequence_reactivation_day_25",
+          segmentId: MARKETING_SEGMENTS.reactivationDay25,
           emailType: "reactivation-day-25",
+          emailContent,
+          subjectFallback: "50% off your first month — this week only.",
         })
-
-        if (sendResult.success) {
-          results.day25.sent++
-          console.log(`[v0] [CRON] ✅ Sent Day 25 email to ${email}`)
-        } else {
-          throw new Error(sendResult.error || "Failed to send email")
-        }
       } catch (error: any) {
-        results.day25.failed++
+        results.day25.failed = day25Eligible.length
         results.errors.push({
-          email,
+          email: "broadcast",
           day: 25,
           error: error.message || "Unknown error",
         })
-        console.error(`[v0] [CRON] ❌ Failed to send Day 25 email to ${email}:`, error)
+        console.error("[v0] [CRON] ❌ Failed to send Day 25 broadcast:", error)
         await logAdminError({
           toolName: "cron:reactivation-campaigns:day-25",
           error: error instanceof Error ? error : new Error(error.message || "Unknown error"),
-          context: { email },
+          context: { recipients: day25Eligible.length },
         }).catch(() => {})
       }
     }

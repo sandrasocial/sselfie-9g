@@ -32,6 +32,7 @@ import { neon } from "@neondatabase/serverless"
 import { sendEmail } from "./send-email"
 import { checkEmailRateLimit } from "@/lib/rate-limit"
 import { isEmailTestMode, isEmailSendingEnabled } from "./email-control"
+import { sendMarketingBroadcast } from "./marketing-sender"
 import { generateLaunchFollowupEmail } from "./templates/archived/launch-followup-email-beta"
 import { generateBetaTestimonialEmail } from "./templates/beta-testimonial-request"
 import { generateNurtureDay1Email } from "./templates/nurture-day-1"
@@ -45,6 +46,8 @@ import { generateWinBackOfferEmail } from "./templates/win-back-offer"
 
 const sql = neon(process.env.DATABASE_URL!)
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "ssa@ssasocial.com"
+const FIRST_NAME_PLACEHOLDER = "{{{FIRST_NAME|friend}}}"
+const EMAIL_PLACEHOLDER = "{{{EMAIL}}}"
 
 export interface RunScheduledCampaignsConfig {
   mode: "live" | "test"
@@ -341,6 +344,10 @@ async function executeCampaign(
 
   console.log(`[v0] Executing campaign ${campaign.id} (${campaign.campaign_name}) in ${mode} mode`)
 
+  const usesBroadcast =
+    mode === "live" &&
+    (campaign?.target_audience?.resend_segment_id || campaign?.target_audience?.resend_audience_id)
+
   // Resolve recipients
   let recipientEmails: string[] = []
 
@@ -349,7 +356,7 @@ async function executeCampaign(
     recipientEmails = [ADMIN_EMAIL]
     result.recipients.testEmail = ADMIN_EMAIL
     console.log(`[v0] TEST MODE: Sending to admin email only: ${ADMIN_EMAIL}`)
-  } else {
+  } else if (!usesBroadcast) {
     // In live mode, resolve from target_audience
     recipientEmails = await resolveRecipients(campaign.target_audience)
     if (recipientEmails.length === 0) {
@@ -357,10 +364,18 @@ async function executeCampaign(
       console.error(`[v0] No recipients found for campaign ${campaign.id}`)
       return result
     }
+  } else {
+    // Broadcast campaigns rely on Resend audience/segment targeting
+    recipientEmails = []
   }
 
-  result.recipients.total = recipientEmails.length
-  console.log(`[v0] Campaign ${campaign.id} has ${recipientEmails.length} recipients`)
+  const totalRecipients =
+    recipientEmails.length ||
+    Number(campaign.total_recipients || 0) ||
+    Number(campaign.metrics?.estimated_recipients || 0)
+
+  result.recipients.total = totalRecipients
+  console.log(`[v0] Campaign ${campaign.id} has ${totalRecipients} recipients`)
 
   // Update campaign status to 'sending' (only in live mode)
   if (mode === "live") {
@@ -369,6 +384,55 @@ async function executeCampaign(
       SET status = 'sending', total_recipients = ${recipientEmails.length}, updated_at = NOW()
       WHERE id = ${campaign.id}
     `
+  }
+
+  // Send broadcast when targeting Resend segments/audience
+  if (usesBroadcast && mode === "live") {
+    try {
+      const emailContent = getEmailContent(
+        campaign,
+        EMAIL_PLACEHOLDER,
+        FIRST_NAME_PLACEHOLDER,
+      )
+
+      await sendMarketingBroadcast({
+        campaignKey: `campaign-${campaign.id}`,
+        segmentId: campaign.target_audience?.resend_segment_id,
+        audienceId: campaign.target_audience?.resend_audience_id,
+        subject: campaign.subject_line,
+        html: emailContent.html,
+        text: emailContent.text,
+        estimatedRecipientCount: totalRecipients,
+      })
+
+      result.recipients.sent = totalRecipients
+      console.log(`[v0] Broadcast campaign ${campaign.id} sent successfully`)
+    } catch (error: any) {
+      const errorMsg = error?.message || "Broadcast send failed"
+      result.recipients.failed = totalRecipients
+      result.errors.push(errorMsg)
+      console.error(`[v0] Broadcast campaign ${campaign.id} failed:`, error)
+    }
+
+    if (mode === "live") {
+      const finalStatus = result.recipients.failed === 0 ? "sent" : "failed"
+      await sql`
+        UPDATE admin_email_campaigns
+        SET 
+          status = ${finalStatus},
+          sent_at = NOW(),
+          total_recipients = ${result.recipients.total},
+          metrics = ${JSON.stringify({
+            sent: result.recipients.sent,
+            failed: result.recipients.failed,
+            errors: result.errors.slice(0, 10),
+          })},
+          updated_at = NOW()
+        WHERE id = ${campaign.id}
+      `
+    }
+
+    return result
   }
 
   // Send emails to each recipient

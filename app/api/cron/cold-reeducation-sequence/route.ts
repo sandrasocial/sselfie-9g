@@ -8,11 +8,16 @@ import { generateColdEduDay1Email } from "@/lib/email/templates/cold-edu-day-1"
 import { generateColdEduDay3Email } from "@/lib/email/templates/cold-edu-day-3"
 import { generateColdEduDay7Email } from "@/lib/email/templates/cold-edu-day-7"
 import { logAdminError } from "@/lib/admin-error-log"
+import { sendMarketingBroadcast, syncMarketingContacts } from "@/lib/email/marketing-sender"
+import { MARKETING_SEGMENTS } from "@/lib/email/config"
 
 const sql = neon(process.env.DATABASE_URL!)
 
+const FIRST_NAME_PLACEHOLDER = "{{{FIRST_NAME|friend}}}"
+const EMAIL_PLACEHOLDER = "{{{EMAIL}}}"
+
 /**
- * Cold Re-education Sequence - Resend Direct Sends
+ * Cold Re-education Sequence - Resend Broadcasts (Marketing)
  * 
  * Sends re-introduction emails to cold_users tagged subscribers in Resend.
  * These are users from last year's selfie guide who are NOT app customers.
@@ -176,55 +181,65 @@ export async function GET(request: Request) {
     results.day1.found = day1Eligible.length
     console.log(`[v0] [CRON] Found ${day1Eligible.length} users for Day 1 email`)
 
-    for (const row of day1Eligible) {
-      const email = row.user_email
+    if (day1Eligible.length > 0) {
       try {
-        // Double-check deduplication
-        const existingLog = await sql`
-          SELECT id FROM email_logs
-          WHERE user_email = ${email}
-          AND email_type = 'cold-edu-day-1'
-          LIMIT 1
-        `
-        if (existingLog.length > 0) {
-          results.day1.skipped++
-          continue
+        if (!MARKETING_SEGMENTS.coldEduDay1) {
+          throw new Error("RESEND_SEGMENT_COLD_EDU_DAY_1 not configured")
         }
 
-        const user = emailToUser.get(email)
-        const firstName = user?.display_name?.split(" ")[0] || undefined
+        const day1Emails = day1Eligible.map((row: any) => row.user_email)
+        const contacts = day1Emails.map((email: string) => ({
+          email,
+          firstName: emailToUser.get(email)?.display_name?.split(" ")[0],
+        }))
+
         const emailContent = generateColdEduDay1Email({
-          firstName,
-          recipientEmail: email,
+          firstName: FIRST_NAME_PLACEHOLDER,
+          recipientEmail: EMAIL_PLACEHOLDER,
         })
 
-        const sendResult = await sendEmail({
-          to: email,
+        await syncMarketingContacts({
+          tagKey: "sequence_cold_edu_day_1",
+          tagValue: "true",
+          segmentId: MARKETING_SEGMENTS.coldEduDay1,
+          contacts,
+        })
+
+        await sendMarketingBroadcast({
+          campaignKey: "cold-edu-day-1",
+          segmentId: MARKETING_SEGMENTS.coldEduDay1,
           subject: emailContent.subject || "I disappeared for a while — here's why.",
           html: emailContent.html,
           text: emailContent.text,
-          from: "Sandra from SSELFIE <hello@sselfie.ai>",
-          emailType: "cold-edu-day-1",
+          estimatedRecipientCount: day1Eligible.length,
         })
 
-        if (sendResult.success) {
-          results.day1.sent++
-          console.log(`[v0] [CRON] ✅ Sent Day 1 email to ${email}`)
-        } else {
-          throw new Error(sendResult.error || "Failed to send email")
-        }
+        await sql`
+          INSERT INTO email_logs (user_email, email_type, status, sent_at)
+          SELECT unnest(${day1Emails}::text[]), 'cold-edu-day-1', 'sent', NOW()
+        `
+
+        await syncMarketingContacts({
+          tagKey: "sequence_cold_edu_day_1",
+          tagValue: "false",
+          segmentId: MARKETING_SEGMENTS.coldEduDay1,
+          removeFromSegment: true,
+          contacts,
+        })
+
+        results.day1.sent = day1Eligible.length
       } catch (error: any) {
-        results.day1.failed++
+        results.day1.failed = day1Eligible.length
         results.errors.push({
-          email,
+          email: "broadcast",
           day: 1,
           error: error.message || "Unknown error",
         })
-        console.error(`[v0] [CRON] ❌ Failed to send Day 1 email to ${email}:`, error)
+        console.error("[v0] [CRON] ❌ Failed to send Day 1 broadcast:", error)
         await logAdminError({
           toolName: "cron:cold-reeducation-sequence:day-1",
           error: error instanceof Error ? error : new Error(error.message || "Unknown error"),
-          context: { email },
+          context: { recipients: day1Eligible.length },
         }).catch(() => {})
       }
     }
@@ -245,54 +260,65 @@ export async function GET(request: Request) {
     results.day3.found = day3Eligible.length
     console.log(`[v0] [CRON] Found ${day3Eligible.length} users for Day 3 email`)
 
-    for (const row of day3Eligible) {
-      const email = row.user_email
+    if (day3Eligible.length > 0) {
       try {
-        const existingLog = await sql`
-          SELECT id FROM email_logs
-          WHERE user_email = ${email}
-          AND email_type = 'cold-edu-day-3'
-          LIMIT 1
-        `
-        if (existingLog.length > 0) {
-          results.day3.skipped++
-          continue
+        if (!MARKETING_SEGMENTS.coldEduDay3) {
+          throw new Error("RESEND_SEGMENT_COLD_EDU_DAY_3 not configured")
         }
 
-        const user = emailToUser.get(email)
-        const firstName = user?.display_name?.split(" ")[0] || undefined
+        const day3Emails = day3Eligible.map((row: any) => row.user_email)
+        const contacts = day3Emails.map((email: string) => ({
+          email,
+          firstName: emailToUser.get(email)?.display_name?.split(" ")[0],
+        }))
+
         const emailContent = generateColdEduDay3Email({
-          firstName,
-          recipientEmail: email,
+          firstName: FIRST_NAME_PLACEHOLDER,
+          recipientEmail: EMAIL_PLACEHOLDER,
         })
 
-        const sendResult = await sendEmail({
-          to: email,
+        await syncMarketingContacts({
+          tagKey: "sequence_cold_edu_day_3",
+          tagValue: "true",
+          segmentId: MARKETING_SEGMENTS.coldEduDay3,
+          contacts,
+        })
+
+        await sendMarketingBroadcast({
+          campaignKey: "cold-edu-day-3",
+          segmentId: MARKETING_SEGMENTS.coldEduDay3,
           subject: emailContent.subject || "From selfies to Studio — this is how it works.",
           html: emailContent.html,
           text: emailContent.text,
-          from: "Sandra from SSELFIE <hello@sselfie.ai>",
-          emailType: "cold-edu-day-3",
+          estimatedRecipientCount: day3Eligible.length,
         })
 
-        if (sendResult.success) {
-          results.day3.sent++
-          console.log(`[v0] [CRON] ✅ Sent Day 3 email to ${email}`)
-        } else {
-          throw new Error(sendResult.error || "Failed to send email")
-        }
+        await sql`
+          INSERT INTO email_logs (user_email, email_type, status, sent_at)
+          SELECT unnest(${day3Emails}::text[]), 'cold-edu-day-3', 'sent', NOW()
+        `
+
+        await syncMarketingContacts({
+          tagKey: "sequence_cold_edu_day_3",
+          tagValue: "false",
+          segmentId: MARKETING_SEGMENTS.coldEduDay3,
+          removeFromSegment: true,
+          contacts,
+        })
+
+        results.day3.sent = day3Eligible.length
       } catch (error: any) {
-        results.day3.failed++
+        results.day3.failed = day3Eligible.length
         results.errors.push({
-          email,
+          email: "broadcast",
           day: 3,
           error: error.message || "Unknown error",
         })
-        console.error(`[v0] [CRON] ❌ Failed to send Day 3 email to ${email}:`, error)
+        console.error("[v0] [CRON] ❌ Failed to send Day 3 broadcast:", error)
         await logAdminError({
           toolName: "cron:cold-reeducation-sequence:day-3",
           error: error instanceof Error ? error : new Error(error.message || "Unknown error"),
-          context: { email },
+          context: { recipients: day3Eligible.length },
         }).catch(() => {})
       }
     }
@@ -313,54 +339,65 @@ export async function GET(request: Request) {
     results.day7.found = day7Eligible.length
     console.log(`[v0] [CRON] Found ${day7Eligible.length} users for Day 7 email`)
 
-    for (const row of day7Eligible) {
-      const email = row.user_email
+    if (day7Eligible.length > 0) {
       try {
-        const existingLog = await sql`
-          SELECT id FROM email_logs
-          WHERE user_email = ${email}
-          AND email_type = 'cold-edu-day-7'
-          LIMIT 1
-        `
-        if (existingLog.length > 0) {
-          results.day7.skipped++
-          continue
+        if (!MARKETING_SEGMENTS.coldEduDay7) {
+          throw new Error("RESEND_SEGMENT_COLD_EDU_DAY_7 not configured")
         }
 
-        const user = emailToUser.get(email)
-        const firstName = user?.display_name?.split(" ")[0] || undefined
+        const day7Emails = day7Eligible.map((row: any) => row.user_email)
+        const contacts = day7Emails.map((email: string) => ({
+          email,
+          firstName: emailToUser.get(email)?.display_name?.split(" ")[0],
+        }))
+
         const emailContent = generateColdEduDay7Email({
-          firstName,
-          recipientEmail: email,
+          firstName: FIRST_NAME_PLACEHOLDER,
+          recipientEmail: EMAIL_PLACEHOLDER,
         })
 
-        const sendResult = await sendEmail({
-          to: email,
+        await syncMarketingContacts({
+          tagKey: "sequence_cold_edu_day_7",
+          tagValue: "true",
+          segmentId: MARKETING_SEGMENTS.coldEduDay7,
+          contacts,
+        })
+
+        await sendMarketingBroadcast({
+          campaignKey: "cold-edu-day-7",
+          segmentId: MARKETING_SEGMENTS.coldEduDay7,
           subject: emailContent.subject || "You're invited — your 30% creator restart.",
           html: emailContent.html,
           text: emailContent.text,
-          from: "Sandra from SSELFIE <hello@sselfie.ai>",
-          emailType: "cold-edu-day-7",
+          estimatedRecipientCount: day7Eligible.length,
         })
 
-        if (sendResult.success) {
-          results.day7.sent++
-          console.log(`[v0] [CRON] ✅ Sent Day 7 email to ${email}`)
-        } else {
-          throw new Error(sendResult.error || "Failed to send email")
-        }
+        await sql`
+          INSERT INTO email_logs (user_email, email_type, status, sent_at)
+          SELECT unnest(${day7Emails}::text[]), 'cold-edu-day-7', 'sent', NOW()
+        `
+
+        await syncMarketingContacts({
+          tagKey: "sequence_cold_edu_day_7",
+          tagValue: "false",
+          segmentId: MARKETING_SEGMENTS.coldEduDay7,
+          removeFromSegment: true,
+          contacts,
+        })
+
+        results.day7.sent = day7Eligible.length
       } catch (error: any) {
-        results.day7.failed++
+        results.day7.failed = day7Eligible.length
         results.errors.push({
-          email,
+          email: "broadcast",
           day: 7,
           error: error.message || "Unknown error",
         })
-        console.error(`[v0] [CRON] ❌ Failed to send Day 7 email to ${email}:`, error)
+        console.error("[v0] [CRON] ❌ Failed to send Day 7 broadcast:", error)
         await logAdminError({
           toolName: "cron:cold-reeducation-sequence:day-7",
           error: error instanceof Error ? error : new Error(error.message || "Unknown error"),
-          context: { email },
+          context: { recipients: day7Eligible.length },
         }).catch(() => {})
       }
     }

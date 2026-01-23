@@ -25,7 +25,7 @@ export function getAccessState({
   }
 
   const isMember = subscriptionStatus === "active" || subscriptionStatus === "trialing"
-  const isPaidBlueprintOnly = isMember && productType === "paid_blueprint"
+  const isPaidBlueprintOnly = productType === "paid_blueprint"
   const isMembership = isMember && ["sselfie_studio_membership", "brand_studio_membership", "pro", "one_time_session"].includes(productType || "")
 
   if (isMembership) {
