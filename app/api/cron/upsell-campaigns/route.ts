@@ -3,7 +3,7 @@ import { neon } from "@neondatabase/serverless"
 import { sendEmail } from "@/lib/email/send-email"
 import { generateUpsellDay10Email } from "@/lib/email/templates/upsell-day-10"
 import { generateUpsellFreebieMembershipEmail } from "@/lib/email/templates/upsell-freebie-membership"
-import { sendMarketingBroadcast, syncMarketingContacts } from "@/lib/email/marketing-sender"
+import { enqueueAndProcessMarketingRun } from "@/lib/email/marketing-runner"
 import { MARKETING_SEGMENTS } from "@/lib/email/config"
 import { createCronLogger } from "@/lib/cron-logger"
 
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
       AND fs.converted_to_user = FALSE
       AND el.id IS NULL
       AND u.id IS NULL
-      LIMIT 100
+      
     `
 
     console.log(`[v0] [CRON] Found ${day10Subscribers.length} subscribers for Day 10 upsell`)
@@ -78,7 +78,6 @@ export async function GET(request: NextRequest) {
           throw new Error("RESEND_SEGMENT_UPSELL_DAY_10 not configured")
         }
 
-        const day10Emails = day10Subscribers.map((subscriber: any) => subscriber.email)
         const contacts = day10Subscribers.map((subscriber: any) => ({
           email: subscriber.email,
           firstName: subscriber.name?.split(" ")[0],
@@ -89,33 +88,16 @@ export async function GET(request: NextRequest) {
           recipientEmail: EMAIL_PLACEHOLDER,
         })
 
-        await syncMarketingContacts({
+        await enqueueAndProcessMarketingRun({
+          sequenceKey: "upsell-day-10",
+          emailType: "upsell-day-10",
           tagKey: "sequence_upsell_day_10",
-          tagValue: "true",
           segmentId: MARKETING_SEGMENTS.upsellDay10,
-          contacts,
-        })
-
-        await sendMarketingBroadcast({
           campaignKey: "upsell-day-10",
-          segmentId: MARKETING_SEGMENTS.upsellDay10,
           subject: emailContent.subject,
           html: emailContent.html,
           text: emailContent.text,
-          estimatedRecipientCount: day10Subscribers.length,
-        })
-
-        await sql`
-          INSERT INTO email_logs (user_email, email_type, status, sent_at)
-          SELECT unnest(${day10Emails}::text[]), 'upsell-day-10', 'sent', NOW()
-        `
-
-        await syncMarketingContacts({
-          tagKey: "sequence_upsell_day_10",
-          tagValue: "false",
-          segmentId: MARKETING_SEGMENTS.upsellDay10,
-          removeFromSegment: true,
-          contacts,
+          recipients: contacts,
         })
 
         results.day10Sent = day10Subscribers.length
@@ -145,7 +127,7 @@ export async function GET(request: NextRequest) {
       AND fs.converted_to_user = FALSE
       AND el.id IS NULL
       AND u.id IS NULL
-      LIMIT 100
+      
     `
 
     console.log(`[v0] [CRON] Found ${day20Subscribers.length} subscribers for Day 20 upsell`)
@@ -167,33 +149,16 @@ export async function GET(request: NextRequest) {
           recipientEmail: EMAIL_PLACEHOLDER,
         })
 
-        await syncMarketingContacts({
+        await enqueueAndProcessMarketingRun({
+          sequenceKey: "upsell-freebie-membership",
+          emailType: "upsell-freebie-membership",
           tagKey: "sequence_upsell_freebie_membership",
-          tagValue: "true",
           segmentId: MARKETING_SEGMENTS.upsellFreebieMembership,
-          contacts,
-        })
-
-        await sendMarketingBroadcast({
           campaignKey: "upsell-freebie-membership",
-          segmentId: MARKETING_SEGMENTS.upsellFreebieMembership,
           subject: emailContent.subject,
           html: emailContent.html,
           text: emailContent.text,
-          estimatedRecipientCount: day20Subscribers.length,
-        })
-
-        await sql`
-          INSERT INTO email_logs (user_email, email_type, status, sent_at)
-          SELECT unnest(${day20Emails}::text[]), 'upsell-freebie-membership', 'sent', NOW()
-        `
-
-        await syncMarketingContacts({
-          tagKey: "sequence_upsell_freebie_membership",
-          tagValue: "false",
-          segmentId: MARKETING_SEGMENTS.upsellFreebieMembership,
-          removeFromSegment: true,
-          contacts,
+          recipients: contacts,
         })
 
         results.day20Sent = day20Subscribers.length

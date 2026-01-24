@@ -26,7 +26,7 @@ interface ContactSyncInput {
   removeFromSegment?: boolean
 }
 
-const CONTACT_UPDATE_DELAY_MS = 250
+const CONTACT_UPDATE_DELAY_MS = 600
 
 function ensureComplianceHtml(html: string): string {
   if (html.includes("RESEND_UNSUBSCRIBE_URL")) {
@@ -58,40 +58,27 @@ function formatTags(tags: Record<string, string>): Array<{ name: string; value: 
   return Object.entries(tags).map(([name, value]) => ({ name, value }))
 }
 
-async function addContactToSegmentById(audienceId: string, contactId: string, segmentId: string) {
-  const response = await fetch(
-    `https://api.resend.com/audiences/${audienceId}/contacts/${contactId}/segments`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ segment_id: segmentId }),
-    },
-  )
+async function addContactToSegmentById(contactId: string, segmentId: string, email?: string) {
+  const { error } = await resend.contacts.segments.add({
+    contactId,
+    email,
+    segmentId,
+  })
 
-  if (!response.ok) {
-    const errorText = await response.text()
-    throw new Error(`Resend API error: ${response.status} ${errorText}`)
+  if (error) {
+    throw new Error(error.message || "Failed to add contact to segment")
   }
 }
 
-async function removeContactFromSegmentById(audienceId: string, contactId: string, segmentId: string) {
-  const response = await fetch(
-    `https://api.resend.com/audiences/${audienceId}/contacts/${contactId}/segments/${segmentId}`,
-    {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-    },
-  )
+async function removeContactFromSegmentById(contactId: string, segmentId: string, email?: string) {
+  const { error } = await resend.contacts.segments.remove({
+    contactId,
+    email,
+    segmentId,
+  })
 
-  if (!response.ok) {
-    const errorText = await response.text()
-    throw new Error(`Resend API error: ${response.status} ${errorText}`)
+  if (error) {
+    throw new Error(error.message || "Failed to remove contact from segment")
   }
 }
 
@@ -295,6 +282,7 @@ export async function syncMarketingContacts(input: ContactSyncInput) {
         }
 
         synced++
+        await new Promise((resolve) => setTimeout(resolve, CONTACT_UPDATE_DELAY_MS))
       } else {
         const { data, error } = await resend.contacts.create({
           audienceId,
@@ -309,21 +297,21 @@ export async function syncMarketingContacts(input: ContactSyncInput) {
 
         contactId = data?.id
         synced++
+        await new Promise((resolve) => setTimeout(resolve, CONTACT_UPDATE_DELAY_MS))
       }
 
       if (input.segmentId && contactId) {
         if (input.removeFromSegment) {
-          await removeContactFromSegmentById(audienceId, contactId, input.segmentId)
+          await removeContactFromSegmentById(contactId, input.segmentId, email)
         } else {
-          await addContactToSegmentById(audienceId, contactId, input.segmentId)
+          await addContactToSegmentById(contactId, input.segmentId, email)
         }
+        await new Promise((resolve) => setTimeout(resolve, CONTACT_UPDATE_DELAY_MS))
       }
     } catch (error) {
       errors++
       console.error("[v0] Failed to sync marketing contact:", { email, error })
     }
-
-    await new Promise((resolve) => setTimeout(resolve, CONTACT_UPDATE_DELAY_MS))
   }
 
   return { success: errors === 0, synced, skipped, errors }

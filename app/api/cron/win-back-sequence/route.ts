@@ -5,7 +5,7 @@ import { sendEmail } from "@/lib/email/send-email"
 import { createCronLogger } from "@/lib/cron-logger"
 import { generateWinBackOfferEmail } from "@/lib/email/templates/win-back-offer"
 import { logAdminError } from "@/lib/admin-error-log"
-import { sendMarketingBroadcast, syncMarketingContacts } from "@/lib/email/marketing-sender"
+import { enqueueAndProcessMarketingRun } from "@/lib/email/marketing-runner"
 import { MARKETING_SEGMENTS } from "@/lib/email/config"
 
 const sql = neon(process.env.DATABASE_URL!)
@@ -122,33 +122,16 @@ export async function GET(request: Request) {
           offerExpiry,
         })
 
-        await syncMarketingContacts({
+        await enqueueAndProcessMarketingRun({
+          sequenceKey: "win-back-offer",
+          emailType: "win-back-offer",
           tagKey: "sequence_win_back_offer",
-          tagValue: "true",
           segmentId: MARKETING_SEGMENTS.winBackOffer,
-          contacts,
-        })
-
-        await sendMarketingBroadcast({
           campaignKey: "win-back-offer",
-          segmentId: MARKETING_SEGMENTS.winBackOffer,
           subject: "We Miss You - Here's Something Special",
           html: emailContent.html,
           text: emailContent.text,
-          estimatedRecipientCount: canceledSubscriptions.length,
-        })
-
-        await sql`
-          INSERT INTO email_logs (user_email, email_type, status, sent_at)
-          SELECT unnest(${winBackEmails}::text[]), 'win-back-offer', 'sent', NOW()
-        `
-
-        await syncMarketingContacts({
-          tagKey: "sequence_win_back_offer",
-          tagValue: "false",
-          segmentId: MARKETING_SEGMENTS.winBackOffer,
-          removeFromSegment: true,
-          contacts,
+          recipients: contacts,
         })
 
         results.sent = canceledSubscriptions.length

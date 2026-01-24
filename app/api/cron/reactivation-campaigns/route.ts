@@ -15,7 +15,7 @@ import {
   generateReactivationDay25Email,
 } from "@/lib/email/templates/reactivation-sequence"
 import { logAdminError } from "@/lib/admin-error-log"
-import { sendMarketingBroadcast, syncMarketingContacts } from "@/lib/email/marketing-sender"
+import { enqueueAndProcessMarketingRun } from "@/lib/email/marketing-runner"
 import { MARKETING_SEGMENTS } from "@/lib/email/config"
 
 const sql = neon(process.env.DATABASE_URL!)
@@ -227,33 +227,16 @@ export async function GET(request: Request) {
         firstName: emailToUser.get(email)?.display_name?.split(" ")[0],
       }))
 
-      await syncMarketingContacts({
+      await enqueueAndProcessMarketingRun({
+        sequenceKey: params.emailType,
+        emailType: params.emailType,
         tagKey: params.tagKey,
-        tagValue: "true",
         segmentId: params.segmentId,
-        contacts,
-      })
-
-      await sendMarketingBroadcast({
         campaignKey: params.emailType,
-        segmentId: params.segmentId,
         subject: params.emailContent.subject || params.subjectFallback,
         html: params.emailContent.html,
         text: params.emailContent.text,
-        estimatedRecipientCount: params.emails.length,
-      })
-
-      await sql`
-        INSERT INTO email_logs (user_email, email_type, status, sent_at)
-        SELECT unnest(${params.emails}::text[]), ${params.emailType}, 'sent', NOW()
-      `
-
-      await syncMarketingContacts({
-        tagKey: params.tagKey,
-        tagValue: "false",
-        segmentId: params.segmentId,
-        removeFromSegment: true,
-        contacts,
+        recipients: contacts,
       })
 
       results[params.dayKey].sent = params.emails.length
@@ -267,7 +250,7 @@ export async function GET(request: Request) {
       LEFT JOIN email_logs el_old ON el_old.user_email = el.user_email AND el_old.email_type IN ('cold-edu-day-1', 'cold-edu-day-3', 'cold-edu-day-7')
       WHERE el_day0.id IS NULL
         AND el_old.id IS NULL
-      LIMIT 100
+      
     `
 
     results.day0.found = day0Eligible.length
@@ -317,7 +300,7 @@ export async function GET(request: Request) {
         AND el_day0.sent_at <= NOW() - INTERVAL '2 days'
         AND el_day0.sent_at > NOW() - INTERVAL '3 days'
         AND el_day2.id IS NULL
-      LIMIT 100
+      
     `
 
     results.day2.found = day2Eligible.length
@@ -367,7 +350,7 @@ export async function GET(request: Request) {
         AND el_day0.sent_at <= NOW() - INTERVAL '5 days'
         AND el_day0.sent_at > NOW() - INTERVAL '6 days'
         AND el_day5.id IS NULL
-      LIMIT 100
+      
     `
 
     results.day5.found = day5Eligible.length
@@ -417,7 +400,7 @@ export async function GET(request: Request) {
         AND el_day0.sent_at <= NOW() - INTERVAL '7 days'
         AND el_day0.sent_at > NOW() - INTERVAL '8 days'
         AND el_day7.id IS NULL
-      LIMIT 100
+      
     `
 
     results.day7.found = day7Eligible.length
@@ -467,7 +450,7 @@ export async function GET(request: Request) {
         AND el_day0.sent_at <= NOW() - INTERVAL '10 days'
         AND el_day0.sent_at > NOW() - INTERVAL '11 days'
         AND el_day10.id IS NULL
-      LIMIT 100
+      
     `
 
     results.day10.found = day10Eligible.length
@@ -517,7 +500,7 @@ export async function GET(request: Request) {
         AND el_day0.sent_at <= NOW() - INTERVAL '14 days'
         AND el_day0.sent_at > NOW() - INTERVAL '15 days'
         AND el_day14.id IS NULL
-      LIMIT 100
+      
     `
 
     results.day14.found = day14Eligible.length
@@ -567,7 +550,7 @@ export async function GET(request: Request) {
         AND el_day0.sent_at <= NOW() - INTERVAL '20 days'
         AND el_day0.sent_at > NOW() - INTERVAL '21 days'
         AND el_day20.id IS NULL
-      LIMIT 100
+      
     `
 
     results.day20.found = day20Eligible.length
@@ -617,7 +600,7 @@ export async function GET(request: Request) {
         AND el_day0.sent_at <= NOW() - INTERVAL '25 days'
         AND el_day0.sent_at > NOW() - INTERVAL '26 days'
         AND el_day25.id IS NULL
-      LIMIT 100
+      
     `
 
     results.day25.found = day25Eligible.length

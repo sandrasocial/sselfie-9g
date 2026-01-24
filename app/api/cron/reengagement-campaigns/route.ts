@@ -5,7 +5,7 @@ import { sendEmail } from "@/lib/email/send-email"
 import { createCronLogger } from "@/lib/cron-logger"
 import { generateReengagementDay0, generateReengagementDay7, generateReengagementDay14 } from "@/lib/email/templates/reengagement-sequence"
 import { logAdminError } from "@/lib/admin-error-log"
-import { sendMarketingBroadcast, syncMarketingContacts } from "@/lib/email/marketing-sender"
+import { enqueueAndProcessMarketingRun } from "@/lib/email/marketing-runner"
 import { MARKETING_SEGMENTS } from "@/lib/email/config"
 
 const sql = neon(process.env.DATABASE_URL!)
@@ -59,7 +59,7 @@ export async function GET(request: Request) {
       AND s.is_test_mode = false
       AND (u.last_login_at < NOW() - INTERVAL '30 days' OR u.last_login_at IS NULL)
       AND el_day0.id IS NULL
-      LIMIT 100
+      
     `
 
     results.day0.found = day0Users.length
@@ -75,39 +75,20 @@ export async function GET(request: Request) {
           email: user.email,
           firstName: user.first_name,
         }))
-        const day0Emails = day0Users.map((user: any) => user.email)
-
         const emailContent = generateReengagementDay0({
           firstName: FIRST_NAME_PLACEHOLDER,
         })
 
-        await syncMarketingContacts({
+        await enqueueAndProcessMarketingRun({
+          sequenceKey: "reengagement-day-0",
+          emailType: "reengagement-day-0",
           tagKey: "sequence_reengagement_day_0",
-          tagValue: "true",
           segmentId: MARKETING_SEGMENTS.reengagementDay0,
-          contacts,
-        })
-
-        await sendMarketingBroadcast({
           campaignKey: "reengagement-day-0",
-          segmentId: MARKETING_SEGMENTS.reengagementDay0,
           subject: emailContent.subject || "Haven't seen you in a while... 👀",
           html: emailContent.html,
           text: emailContent.text,
-          estimatedRecipientCount: day0Users.length,
-        })
-
-        await sql`
-          INSERT INTO email_logs (user_email, email_type, status, sent_at)
-          SELECT unnest(${day0Emails}::text[]), 'reengagement-day-0', 'sent', NOW()
-        `
-
-        await syncMarketingContacts({
-          tagKey: "sequence_reengagement_day_0",
-          tagValue: "false",
-          segmentId: MARKETING_SEGMENTS.reengagementDay0,
-          removeFromSegment: true,
-          contacts,
+          recipients: contacts,
         })
 
         results.day0.sent = day0Users.length
@@ -140,7 +121,7 @@ export async function GET(request: Request) {
       AND el_day0.sent_at <= NOW() - INTERVAL '7 days'
       AND el_day0.sent_at > NOW() - INTERVAL '8 days'
       AND el_day7.id IS NULL
-      LIMIT 100
+      
     `
 
     results.day7.found = day7Users.length
@@ -156,39 +137,20 @@ export async function GET(request: Request) {
           email: user.email,
           firstName: user.first_name,
         }))
-        const day7Emails = day7Users.map((user: any) => user.email)
-
         const emailContent = generateReengagementDay7({
           firstName: FIRST_NAME_PLACEHOLDER,
         })
 
-        await syncMarketingContacts({
+        await enqueueAndProcessMarketingRun({
+          sequenceKey: "reengagement-day-7",
+          emailType: "reengagement-day-7",
           tagKey: "sequence_reengagement_day_7",
-          tagValue: "true",
           segmentId: MARKETING_SEGMENTS.reengagementDay7,
-          contacts,
-        })
-
-        await sendMarketingBroadcast({
           campaignKey: "reengagement-day-7",
-          segmentId: MARKETING_SEGMENTS.reengagementDay7,
           subject: emailContent.subject || "What You're Missing",
           html: emailContent.html,
           text: emailContent.text,
-          estimatedRecipientCount: day7Users.length,
-        })
-
-        await sql`
-          INSERT INTO email_logs (user_email, email_type, status, sent_at)
-          SELECT unnest(${day7Emails}::text[]), 'reengagement-day-7', 'sent', NOW()
-        `
-
-        await syncMarketingContacts({
-          tagKey: "sequence_reengagement_day_7",
-          tagValue: "false",
-          segmentId: MARKETING_SEGMENTS.reengagementDay7,
-          removeFromSegment: true,
-          contacts,
+          recipients: contacts,
         })
 
         results.day7.sent = day7Users.length
@@ -221,7 +183,7 @@ export async function GET(request: Request) {
       AND el_day0.sent_at <= NOW() - INTERVAL '14 days'
       AND el_day0.sent_at > NOW() - INTERVAL '15 days'
       AND el_day14.id IS NULL
-      LIMIT 100
+      
     `
 
     results.day14.found = day14Users.length
@@ -237,39 +199,20 @@ export async function GET(request: Request) {
           email: user.email,
           firstName: user.first_name,
         }))
-        const day14Emails = day14Users.map((user: any) => user.email)
-
         const emailContent = generateReengagementDay14({
           firstName: FIRST_NAME_PLACEHOLDER,
         })
 
-        await syncMarketingContacts({
+        await enqueueAndProcessMarketingRun({
+          sequenceKey: "reengagement-day-14",
+          emailType: "reengagement-day-14",
           tagKey: "sequence_reengagement_day_14",
-          tagValue: "true",
           segmentId: MARKETING_SEGMENTS.reengagementDay14,
-          contacts,
-        })
-
-        await sendMarketingBroadcast({
           campaignKey: "reengagement-day-14",
-          segmentId: MARKETING_SEGMENTS.reengagementDay14,
           subject: emailContent.subject || "Comeback Offer: 50% Off",
           html: emailContent.html,
           text: emailContent.text,
-          estimatedRecipientCount: day14Users.length,
-        })
-
-        await sql`
-          INSERT INTO email_logs (user_email, email_type, status, sent_at)
-          SELECT unnest(${day14Emails}::text[]), 'reengagement-day-14', 'sent', NOW()
-        `
-
-        await syncMarketingContacts({
-          tagKey: "sequence_reengagement_day_14",
-          tagValue: "false",
-          segmentId: MARKETING_SEGMENTS.reengagementDay14,
-          removeFromSegment: true,
-          contacts,
+          recipients: contacts,
         })
 
         results.day14.sent = day14Users.length

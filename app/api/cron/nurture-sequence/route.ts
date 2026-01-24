@@ -8,7 +8,7 @@ import { generateNurtureDay3Email } from "@/lib/email/templates/nurture-day-3"
 import { generateNurtureDay7Email } from "@/lib/email/templates/nurture-day-7"
 import { generateUpsellDay10Email } from "@/lib/email/templates/upsell-day-10"
 import { logAdminError } from "@/lib/admin-error-log"
-import { sendMarketingBroadcast, syncMarketingContacts } from "@/lib/email/marketing-sender"
+import { enqueueAndProcessMarketingRun } from "@/lib/email/marketing-runner"
 import { MARKETING_SEGMENTS } from "@/lib/email/config"
 
 const sql = neon(process.env.DATABASE_URL!)
@@ -95,37 +95,16 @@ export async function GET(request: Request) {
           recipientEmail: EMAIL_PLACEHOLDER,
         })
 
-        await syncMarketingContacts({
+        await enqueueAndProcessMarketingRun({
+          sequenceKey: "nurture-day-1",
+          emailType: "nurture-day-1",
           tagKey: "sequence_nurture_day_1",
-          tagValue: "true",
           segmentId: MARKETING_SEGMENTS.nurtureDay1,
-          contacts,
-        })
-
-        await sendMarketingBroadcast({
           campaignKey: "nurture-day-1",
-          segmentId: MARKETING_SEGMENTS.nurtureDay1,
           subject: "Your First Day with SSELFIE",
           html: emailContent.html,
           text: emailContent.text,
-          estimatedRecipientCount: day1Subscribers.length,
-        })
-
-        await sql`
-          INSERT INTO email_logs (user_email, email_type, status, sent_at)
-          SELECT fs.email, 'nurture-day-1', 'sent', NOW()
-          FROM freebie_subscribers fs
-          LEFT JOIN email_logs el ON el.user_email = fs.email AND el.email_type = 'nurture-day-1'
-          WHERE fs.id = ANY(${day1Ids})
-            AND el.id IS NULL
-        `
-
-        await syncMarketingContacts({
-          tagKey: "sequence_nurture_day_1",
-          tagValue: "false",
-          segmentId: MARKETING_SEGMENTS.nurtureDay1,
-          removeFromSegment: true,
-          contacts,
+          recipients: contacts,
         })
 
         results.day1.sent = day1Subscribers.length
@@ -177,37 +156,16 @@ export async function GET(request: Request) {
           recipientEmail: EMAIL_PLACEHOLDER,
         })
 
-        await syncMarketingContacts({
+        await enqueueAndProcessMarketingRun({
+          sequenceKey: "nurture-day-3",
+          emailType: "nurture-day-3",
           tagKey: "sequence_nurture_day_3",
-          tagValue: "true",
           segmentId: MARKETING_SEGMENTS.nurtureDay3,
-          contacts,
-        })
-
-        await sendMarketingBroadcast({
           campaignKey: "nurture-day-3",
-          segmentId: MARKETING_SEGMENTS.nurtureDay3,
           subject: "How's It Going?",
           html: emailContent.html,
           text: emailContent.text,
-          estimatedRecipientCount: day3Subscribers.length,
-        })
-
-        await sql`
-          INSERT INTO email_logs (user_email, email_type, status, sent_at)
-          SELECT fs.email, 'nurture-day-3', 'sent', NOW()
-          FROM freebie_subscribers fs
-          LEFT JOIN email_logs el ON el.user_email = fs.email AND el.email_type = 'nurture-day-3'
-          WHERE fs.id = ANY(${day3Ids})
-            AND el.id IS NULL
-        `
-
-        await syncMarketingContacts({
-          tagKey: "sequence_nurture_day_3",
-          tagValue: "false",
-          segmentId: MARKETING_SEGMENTS.nurtureDay3,
-          removeFromSegment: true,
-          contacts,
+          recipients: contacts,
         })
 
         results.day3.sent = day3Subscribers.length
@@ -259,37 +217,16 @@ export async function GET(request: Request) {
           recipientEmail: EMAIL_PLACEHOLDER,
         })
 
-        await syncMarketingContacts({
+        await enqueueAndProcessMarketingRun({
+          sequenceKey: "nurture-day-7",
+          emailType: "nurture-day-7",
           tagKey: "sequence_nurture_day_7",
-          tagValue: "true",
           segmentId: MARKETING_SEGMENTS.nurtureDay7,
-          contacts,
-        })
-
-        await sendMarketingBroadcast({
           campaignKey: "nurture-day-7",
-          segmentId: MARKETING_SEGMENTS.nurtureDay7,
           subject: "One Week In",
           html: emailContent.html,
           text: emailContent.text,
-          estimatedRecipientCount: day7Subscribers.length,
-        })
-
-        await sql`
-          INSERT INTO email_logs (user_email, email_type, status, sent_at)
-          SELECT fs.email, 'nurture-day-7', 'sent', NOW()
-          FROM freebie_subscribers fs
-          LEFT JOIN email_logs el ON el.user_email = fs.email AND el.email_type = 'nurture-day-7'
-          WHERE fs.id = ANY(${day7Ids})
-            AND el.id IS NULL
-        `
-
-        await syncMarketingContacts({
-          tagKey: "sequence_nurture_day_7",
-          tagValue: "false",
-          segmentId: MARKETING_SEGMENTS.nurtureDay7,
-          removeFromSegment: true,
-          contacts,
+          recipients: contacts,
         })
 
         results.day7.sent = day7Subscribers.length
@@ -341,37 +278,16 @@ export async function GET(request: Request) {
           recipientEmail: EMAIL_PLACEHOLDER,
         })
 
-        await syncMarketingContacts({
+        await enqueueAndProcessMarketingRun({
+          sequenceKey: "nurture-day-10",
+          emailType: "nurture-day-10",
           tagKey: "sequence_nurture_day_10",
-          tagValue: "true",
           segmentId: MARKETING_SEGMENTS.nurtureDay10,
-          contacts,
-        })
-
-        await sendMarketingBroadcast({
           campaignKey: "nurture-day-10",
-          segmentId: MARKETING_SEGMENTS.nurtureDay10,
           subject: "Ready for the Next Level?",
           html: emailContent.html,
           text: emailContent.text,
-          estimatedRecipientCount: day10Subscribers.length,
-        })
-
-        await sql`
-          INSERT INTO email_logs (user_email, email_type, status, sent_at)
-          SELECT fs.email, 'nurture-day-10', 'sent', NOW()
-          FROM freebie_subscribers fs
-          LEFT JOIN email_logs el ON el.user_email = fs.email AND el.email_type = 'nurture-day-10'
-          WHERE fs.id = ANY(${day10Ids})
-            AND el.id IS NULL
-        `
-
-        await syncMarketingContacts({
-          tagKey: "sequence_nurture_day_10",
-          tagValue: "false",
-          segmentId: MARKETING_SEGMENTS.nurtureDay10,
-          removeFromSegment: true,
-          contacts,
+          recipients: contacts,
         })
 
         results.day10.sent = day10Subscribers.length

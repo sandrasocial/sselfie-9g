@@ -7,7 +7,7 @@ import { generateOnboardingDay0Email } from "@/lib/email/templates/onboarding-da
 import { generateOnboardingDay2Email } from "@/lib/email/templates/onboarding-day-2"
 import { generateOnboardingDay7Email } from "@/lib/email/templates/onboarding-day-7"
 import { logAdminError } from "@/lib/admin-error-log"
-import { sendMarketingBroadcast, syncMarketingContacts } from "@/lib/email/marketing-sender"
+import { enqueueAndProcessMarketingRun } from "@/lib/email/marketing-runner"
 import { MARKETING_SEGMENTS } from "@/lib/email/config"
 
 const sql = neon(process.env.DATABASE_URL!)
@@ -104,35 +104,16 @@ export async function GET(request: Request) {
           firstName: FIRST_NAME_PLACEHOLDER,
         })
 
-        await syncMarketingContacts({
+        await enqueueAndProcessMarketingRun({
+          sequenceKey: "onboarding-day-0",
+          emailType: "onboarding-day-0",
           tagKey: "sequence_onboarding_day_0",
-          tagValue: "true",
           segmentId: MARKETING_SEGMENTS.onboardingDay0,
-          contacts,
-        })
-
-        await sendMarketingBroadcast({
           campaignKey: "onboarding-day-0",
-          segmentId: MARKETING_SEGMENTS.onboardingDay0,
           subject: emailContent.subject,
           html: emailContent.html,
           text: emailContent.text,
-          estimatedRecipientCount: day0Users.length,
-        })
-
-        await sql`
-          INSERT INTO email_logs (user_email, email_type, status, sent_at)
-          SELECT u.email, 'onboarding-day-0', 'sent', NOW()
-          FROM users u
-          WHERE u.email = ANY(${day0Emails})
-        `
-
-        await syncMarketingContacts({
-          tagKey: "sequence_onboarding_day_0",
-          tagValue: "false",
-          segmentId: MARKETING_SEGMENTS.onboardingDay0,
-          removeFromSegment: true,
-          contacts,
+          recipients: contacts,
         })
 
         results.day0.sent = day0Users.length
@@ -192,35 +173,16 @@ export async function GET(request: Request) {
           firstName: FIRST_NAME_PLACEHOLDER,
         })
 
-        await syncMarketingContacts({
+        await enqueueAndProcessMarketingRun({
+          sequenceKey: "onboarding-day-2",
+          emailType: "onboarding-day-2",
           tagKey: "sequence_onboarding_day_2",
-          tagValue: "true",
           segmentId: MARKETING_SEGMENTS.onboardingDay2,
-          contacts,
-        })
-
-        await sendMarketingBroadcast({
           campaignKey: "onboarding-day-2",
-          segmentId: MARKETING_SEGMENTS.onboardingDay2,
           subject: emailContent.subject,
           html: emailContent.html,
           text: emailContent.text,
-          estimatedRecipientCount: day2Users.length,
-        })
-
-        await sql`
-          INSERT INTO email_logs (user_email, email_type, status, sent_at)
-          SELECT u.email, 'onboarding-day-2', 'sent', NOW()
-          FROM users u
-          WHERE u.email = ANY(${day2Emails})
-        `
-
-        await syncMarketingContacts({
-          tagKey: "sequence_onboarding_day_2",
-          tagValue: "false",
-          segmentId: MARKETING_SEGMENTS.onboardingDay2,
-          removeFromSegment: true,
-          contacts,
+          recipients: contacts,
         })
 
         results.day2.sent = day2Users.length
@@ -280,35 +242,16 @@ export async function GET(request: Request) {
           firstName: FIRST_NAME_PLACEHOLDER,
         })
 
-        await syncMarketingContacts({
+        await enqueueAndProcessMarketingRun({
+          sequenceKey: "onboarding-day-7",
+          emailType: "onboarding-day-7",
           tagKey: "sequence_onboarding_day_7",
-          tagValue: "true",
           segmentId: MARKETING_SEGMENTS.onboardingDay7,
-          contacts,
-        })
-
-        await sendMarketingBroadcast({
           campaignKey: "onboarding-day-7",
-          segmentId: MARKETING_SEGMENTS.onboardingDay7,
           subject: emailContent.subject,
           html: emailContent.html,
           text: emailContent.text,
-          estimatedRecipientCount: day7Users.length,
-        })
-
-        await sql`
-          INSERT INTO email_logs (user_email, email_type, status, sent_at)
-          SELECT u.email, 'onboarding-day-7', 'sent', NOW()
-          FROM users u
-          WHERE u.email = ANY(${day7Emails})
-        `
-
-        await syncMarketingContacts({
-          tagKey: "sequence_onboarding_day_7",
-          tagValue: "false",
-          segmentId: MARKETING_SEGMENTS.onboardingDay7,
-          removeFromSegment: true,
-          contacts,
+          recipients: contacts,
         })
 
         results.day7.sent = day7Users.length

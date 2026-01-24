@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { runScheduledCampaigns } from "@/lib/email/run-scheduled-campaigns"
 import { createCronLogger } from "@/lib/cron-logger"
 import { isEmailTestMode } from "@/lib/email/email-control"
+import { processPendingMarketingRuns } from "@/lib/email/marketing-runner"
 
 /**
  * Cron Job: Send Scheduled Campaigns
@@ -51,6 +52,8 @@ export async function GET(request: Request) {
     const totalEmails = result.reduce((sum, r) => sum + (r.recipients?.total || 0), 0)
     const emailsSent = result.reduce((sum, r) => sum + (r.recipients?.sent || 0), 0)
     const emailsFailed = result.reduce((sum, r) => sum + (r.recipients?.failed || 0), 0)
+
+    await processPendingMarketingRuns()
 
     await cronLogger.success({
       campaignsProcessed: result.length,

@@ -12,7 +12,7 @@ import {
   generateBlueprintDiscovery5Email,
 } from "@/lib/email/templates/blueprint-discovery-sequence"
 import { logAdminError } from "@/lib/admin-error-log"
-import { sendMarketingBroadcast, syncMarketingContacts } from "@/lib/email/marketing-sender"
+import { enqueueAndProcessMarketingRun } from "@/lib/email/marketing-runner"
 import { MARKETING_SEGMENTS } from "@/lib/email/config"
 
 const sql = neon(process.env.DATABASE_URL!)
@@ -211,7 +211,7 @@ export async function GET(request: Request) {
       LEFT JOIN blueprint_subscribers bs ON bs.email = el.user_email
       WHERE el_email1.id IS NULL
         AND bs.id IS NULL
-      LIMIT 100
+      
     `
 
     results.email1.found = email1Eligible.length
@@ -234,33 +234,16 @@ export async function GET(request: Request) {
           recipientEmail: EMAIL_PLACEHOLDER,
         })
 
-        await syncMarketingContacts({
+        await enqueueAndProcessMarketingRun({
+          sequenceKey: "blueprint-discovery-1",
+          emailType: "blueprint-discovery-1",
           tagKey: "sequence_discovery_day_0",
-          tagValue: "true",
           segmentId: MARKETING_SEGMENTS.discoveryDay0,
-          contacts,
-        })
-
-        await sendMarketingBroadcast({
           campaignKey: "blueprint-discovery-1",
-          segmentId: MARKETING_SEGMENTS.discoveryDay0,
           subject: emailContent.subject || "Remember the selfie guide? Here's what's next.",
           html: emailContent.html,
           text: emailContent.text,
-          estimatedRecipientCount: email1Eligible.length,
-        })
-
-        await sql`
-          INSERT INTO email_logs (user_email, email_type, status, sent_at)
-          SELECT unnest(${email1Emails}::text[]), 'blueprint-discovery-1', 'sent', NOW()
-        `
-
-        await syncMarketingContacts({
-          tagKey: "sequence_discovery_day_0",
-          tagValue: "false",
-          segmentId: MARKETING_SEGMENTS.discoveryDay0,
-          removeFromSegment: true,
-          contacts,
+          recipients: contacts,
         })
 
         results.email1.sent = email1Eligible.length
@@ -293,7 +276,7 @@ export async function GET(request: Request) {
         AND bs.blueprint_completed_at <= NOW() - INTERVAL '3 days'
         AND bs.blueprint_completed_at > NOW() - INTERVAL '4 days'
         AND el_email2.id IS NULL
-      LIMIT 100
+      
     `
 
     results.email2.found = email2Eligible.length
@@ -316,33 +299,16 @@ export async function GET(request: Request) {
           recipientEmail: EMAIL_PLACEHOLDER,
         })
 
-        await syncMarketingContacts({
+        await enqueueAndProcessMarketingRun({
+          sequenceKey: "blueprint-discovery-2",
+          emailType: "blueprint-discovery-2",
           tagKey: "sequence_discovery_day_3",
-          tagValue: "true",
           segmentId: MARKETING_SEGMENTS.discoveryDay3,
-          contacts,
-        })
-
-        await sendMarketingBroadcast({
           campaignKey: "blueprint-discovery-2",
-          segmentId: MARKETING_SEGMENTS.discoveryDay3,
           subject: emailContent.subject || "Your blueprint is ready — here's what you can do with it.",
           html: emailContent.html,
           text: emailContent.text,
-          estimatedRecipientCount: email2Eligible.length,
-        })
-
-        await sql`
-          INSERT INTO email_logs (user_email, email_type, status, sent_at)
-          SELECT unnest(${email2Emails}::text[]), 'blueprint-discovery-2', 'sent', NOW()
-        `
-
-        await syncMarketingContacts({
-          tagKey: "sequence_discovery_day_3",
-          tagValue: "false",
-          segmentId: MARKETING_SEGMENTS.discoveryDay3,
-          removeFromSegment: true,
-          contacts,
+          recipients: contacts,
         })
 
         results.email2.sent = email2Eligible.length
@@ -374,7 +340,7 @@ export async function GET(request: Request) {
         AND bs.grid_generated_at <= NOW() - INTERVAL '5 days'
         AND bs.grid_generated_at > NOW() - INTERVAL '6 days'
         AND el_email3.id IS NULL
-      LIMIT 100
+      
     `
 
     results.email3.found = email3Eligible.length
@@ -397,33 +363,16 @@ export async function GET(request: Request) {
           recipientEmail: EMAIL_PLACEHOLDER,
         })
 
-        await syncMarketingContacts({
+        await enqueueAndProcessMarketingRun({
+          sequenceKey: "blueprint-discovery-3",
+          emailType: "blueprint-discovery-3",
           tagKey: "sequence_discovery_day_5",
-          tagValue: "true",
           segmentId: MARKETING_SEGMENTS.discoveryDay5,
-          contacts,
-        })
-
-        await sendMarketingBroadcast({
           campaignKey: "blueprint-discovery-3",
-          segmentId: MARKETING_SEGMENTS.discoveryDay5,
           subject: emailContent.subject || "Meet Maya — your AI creative director.",
           html: emailContent.html,
           text: emailContent.text,
-          estimatedRecipientCount: email3Eligible.length,
-        })
-
-        await sql`
-          INSERT INTO email_logs (user_email, email_type, status, sent_at)
-          SELECT unnest(${email3Emails}::text[]), 'blueprint-discovery-3', 'sent', NOW()
-        `
-
-        await syncMarketingContacts({
-          tagKey: "sequence_discovery_day_5",
-          tagValue: "false",
-          segmentId: MARKETING_SEGMENTS.discoveryDay5,
-          removeFromSegment: true,
-          contacts,
+          recipients: contacts,
         })
 
         results.email3.sent = email3Eligible.length
@@ -456,7 +405,7 @@ export async function GET(request: Request) {
         AND bs.converted_at <= NOW() - INTERVAL '7 days'
         AND bs.converted_at > NOW() - INTERVAL '8 days'
         AND el_email4.id IS NULL
-      LIMIT 100
+      
     `
 
     results.email4.found = email4Eligible.length
@@ -479,33 +428,16 @@ export async function GET(request: Request) {
           recipientEmail: EMAIL_PLACEHOLDER,
         })
 
-        await syncMarketingContacts({
+        await enqueueAndProcessMarketingRun({
+          sequenceKey: "blueprint-discovery-4",
+          emailType: "blueprint-discovery-4",
           tagKey: "sequence_discovery_day_7",
-          tagValue: "true",
           segmentId: MARKETING_SEGMENTS.discoveryDay7,
-          contacts,
-        })
-
-        await sendMarketingBroadcast({
           campaignKey: "blueprint-discovery-4",
-          segmentId: MARKETING_SEGMENTS.discoveryDay7,
           subject: emailContent.subject || "See how creators use Maya to plan their feeds.",
           html: emailContent.html,
           text: emailContent.text,
-          estimatedRecipientCount: email4Eligible.length,
-        })
-
-        await sql`
-          INSERT INTO email_logs (user_email, email_type, status, sent_at)
-          SELECT unnest(${email4Emails}::text[]), 'blueprint-discovery-4', 'sent', NOW()
-        `
-
-        await syncMarketingContacts({
-          tagKey: "sequence_discovery_day_7",
-          tagValue: "false",
-          segmentId: MARKETING_SEGMENTS.discoveryDay7,
-          removeFromSegment: true,
-          contacts,
+          recipients: contacts,
         })
 
         results.email4.sent = email4Eligible.length
@@ -543,7 +475,7 @@ export async function GET(request: Request) {
         AND el_email5.id IS NULL
       GROUP BY u.email
       HAVING COUNT(mcm.id) > 0
-      LIMIT 100
+      
     `
 
     results.email5.found = email5Eligible.length
@@ -566,33 +498,16 @@ export async function GET(request: Request) {
           recipientEmail: EMAIL_PLACEHOLDER,
         })
 
-        await syncMarketingContacts({
+        await enqueueAndProcessMarketingRun({
+          sequenceKey: "blueprint-discovery-5",
+          emailType: "blueprint-discovery-5",
           tagKey: "sequence_discovery_day_10",
-          tagValue: "true",
           segmentId: MARKETING_SEGMENTS.discoveryDay10,
-          contacts,
-        })
-
-        await sendMarketingBroadcast({
           campaignKey: "blueprint-discovery-5",
-          segmentId: MARKETING_SEGMENTS.discoveryDay10,
           subject: emailContent.subject || "Your free grid is ready — want to generate more?",
           html: emailContent.html,
           text: emailContent.text,
-          estimatedRecipientCount: email5Eligible.length,
-        })
-
-        await sql`
-          INSERT INTO email_logs (user_email, email_type, status, sent_at)
-          SELECT unnest(${email5Emails}::text[]), 'blueprint-discovery-5', 'sent', NOW()
-        `
-
-        await syncMarketingContacts({
-          tagKey: "sequence_discovery_day_10",
-          tagValue: "false",
-          segmentId: MARKETING_SEGMENTS.discoveryDay10,
-          removeFromSegment: true,
-          contacts,
+          recipients: contacts,
         })
 
         results.email5.sent = email5Eligible.length

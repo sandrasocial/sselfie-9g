@@ -5,7 +5,7 @@ import { createCronLogger } from "@/lib/cron-logger"
 import { logAdminError } from "@/lib/admin-error-log"
 import { generateWelcomeDay0, generateWelcomeDay3, generateWelcomeDay7 } from "@/lib/email/templates/welcome-sequence"
 import { generateBlueprintFollowupDay0Email } from "@/lib/email/templates/blueprint-followup-day-0"
-import { sendMarketingBroadcast, syncMarketingContacts } from "@/lib/email/marketing-sender"
+import { enqueueAndProcessMarketingRun } from "@/lib/email/marketing-runner"
 import { MARKETING_SEGMENTS } from "@/lib/email/config"
 
 const FREE_BLUEPRINT_WELCOME_SUBJECT = "Your Brand Blueprint is Here!"
@@ -134,35 +134,17 @@ export async function GET(request: Request) {
             campaignId: day0CampaignId,
           })
 
-          await syncMarketingContacts({
+          await enqueueAndProcessMarketingRun({
+            sequenceKey: "welcome-day-0",
+            emailType: "welcome-day-0",
             tagKey: "sequence_welcome_day_0",
-            tagValue: "true",
             segmentId: MARKETING_SEGMENTS.welcomeDay0,
-            contacts,
-          })
-
-          await sendMarketingBroadcast({
             campaignKey: "welcome-day-0",
-            segmentId: MARKETING_SEGMENTS.welcomeDay0,
             subject: emailContent.subject,
             html: emailContent.html,
             text: emailContent.text,
-            estimatedRecipientCount: day0Users.length,
-          })
-
-          await sql`
-            INSERT INTO email_logs (user_email, email_type, status, sent_at, campaign_id)
-            SELECT u.email, 'welcome-day-0', 'sent', NOW(), ${day0CampaignId}
-            FROM users u
-            WHERE u.email = ANY(${day0Emails})
-          `
-
-          await syncMarketingContacts({
-            tagKey: "sequence_welcome_day_0",
-            tagValue: "false",
-            segmentId: MARKETING_SEGMENTS.welcomeDay0,
-            removeFromSegment: true,
-            contacts,
+            campaignId: day0CampaignId,
+            recipients: contacts,
           })
 
           results.day0.sent = day0Users.length
@@ -190,35 +172,17 @@ export async function GET(request: Request) {
             campaignId: day3CampaignId,
           })
 
-          await syncMarketingContacts({
+          await enqueueAndProcessMarketingRun({
+            sequenceKey: "welcome-day-3",
+            emailType: "welcome-day-3",
             tagKey: "sequence_welcome_day_3",
-            tagValue: "true",
             segmentId: MARKETING_SEGMENTS.welcomeDay3,
-            contacts,
-          })
-
-          await sendMarketingBroadcast({
             campaignKey: "welcome-day-3",
-            segmentId: MARKETING_SEGMENTS.welcomeDay3,
             subject: emailContent.subject,
             html: emailContent.html,
             text: emailContent.text,
-            estimatedRecipientCount: day3Users.length,
-          })
-
-          await sql`
-            INSERT INTO email_logs (user_email, email_type, status, sent_at, campaign_id)
-            SELECT u.email, 'welcome-day-3', 'sent', NOW(), ${day3CampaignId}
-            FROM users u
-            WHERE u.email = ANY(${day3Emails})
-          `
-
-          await syncMarketingContacts({
-            tagKey: "sequence_welcome_day_3",
-            tagValue: "false",
-            segmentId: MARKETING_SEGMENTS.welcomeDay3,
-            removeFromSegment: true,
-            contacts,
+            campaignId: day3CampaignId,
+            recipients: contacts,
           })
 
           results.day3.sent = day3Users.length
@@ -239,42 +203,23 @@ export async function GET(request: Request) {
             email: user.email,
             firstName: user.first_name,
           }))
-          const day7Emails = day7Users.map((user: any) => user.email)
 
           const emailContent = generateWelcomeDay7({
             firstName: FIRST_NAME_PLACEHOLDER,
             campaignId: day7CampaignId,
           })
 
-          await syncMarketingContacts({
+          await enqueueAndProcessMarketingRun({
+            sequenceKey: "welcome-day-7",
+            emailType: "welcome-day-7",
             tagKey: "sequence_welcome_day_7",
-            tagValue: "true",
             segmentId: MARKETING_SEGMENTS.welcomeDay7,
-            contacts,
-          })
-
-          await sendMarketingBroadcast({
             campaignKey: "welcome-day-7",
-            segmentId: MARKETING_SEGMENTS.welcomeDay7,
             subject: emailContent.subject,
             html: emailContent.html,
             text: emailContent.text,
-            estimatedRecipientCount: day7Users.length,
-          })
-
-          await sql`
-            INSERT INTO email_logs (user_email, email_type, status, sent_at, campaign_id)
-            SELECT u.email, 'welcome-day-7', 'sent', NOW(), ${day7CampaignId}
-            FROM users u
-            WHERE u.email = ANY(${day7Emails})
-          `
-
-          await syncMarketingContacts({
-            tagKey: "sequence_welcome_day_7",
-            tagValue: "false",
-            segmentId: MARKETING_SEGMENTS.welcomeDay7,
-            removeFromSegment: true,
-            contacts,
+            campaignId: day7CampaignId,
+            recipients: contacts,
           })
 
           results.day7.sent = day7Users.length

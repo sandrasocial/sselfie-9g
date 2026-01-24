@@ -8,7 +8,7 @@ import { generateColdEduDay1Email } from "@/lib/email/templates/cold-edu-day-1"
 import { generateColdEduDay3Email } from "@/lib/email/templates/cold-edu-day-3"
 import { generateColdEduDay7Email } from "@/lib/email/templates/cold-edu-day-7"
 import { logAdminError } from "@/lib/admin-error-log"
-import { sendMarketingBroadcast, syncMarketingContacts } from "@/lib/email/marketing-sender"
+import { enqueueAndProcessMarketingRun } from "@/lib/email/marketing-runner"
 import { MARKETING_SEGMENTS } from "@/lib/email/config"
 
 const sql = neon(process.env.DATABASE_URL!)
@@ -175,7 +175,7 @@ export async function GET(request: Request) {
       FROM (SELECT unnest(${eligibleEmails}::text[]) as user_email) el
       LEFT JOIN email_logs el_day1 ON el_day1.user_email = el.user_email AND el_day1.email_type = 'cold-edu-day-1'
       WHERE el_day1.id IS NULL
-      LIMIT 100
+      
     `
 
     results.day1.found = day1Eligible.length
@@ -198,33 +198,16 @@ export async function GET(request: Request) {
           recipientEmail: EMAIL_PLACEHOLDER,
         })
 
-        await syncMarketingContacts({
+        await enqueueAndProcessMarketingRun({
+          sequenceKey: "cold-edu-day-1",
+          emailType: "cold-edu-day-1",
           tagKey: "sequence_cold_edu_day_1",
-          tagValue: "true",
           segmentId: MARKETING_SEGMENTS.coldEduDay1,
-          contacts,
-        })
-
-        await sendMarketingBroadcast({
           campaignKey: "cold-edu-day-1",
-          segmentId: MARKETING_SEGMENTS.coldEduDay1,
           subject: emailContent.subject || "I disappeared for a while — here's why.",
           html: emailContent.html,
           text: emailContent.text,
-          estimatedRecipientCount: day1Eligible.length,
-        })
-
-        await sql`
-          INSERT INTO email_logs (user_email, email_type, status, sent_at)
-          SELECT unnest(${day1Emails}::text[]), 'cold-edu-day-1', 'sent', NOW()
-        `
-
-        await syncMarketingContacts({
-          tagKey: "sequence_cold_edu_day_1",
-          tagValue: "false",
-          segmentId: MARKETING_SEGMENTS.coldEduDay1,
-          removeFromSegment: true,
-          contacts,
+          recipients: contacts,
         })
 
         results.day1.sent = day1Eligible.length
@@ -254,7 +237,7 @@ export async function GET(request: Request) {
         AND el_day1.sent_at <= NOW() - INTERVAL '3 days'
         AND el_day1.sent_at > NOW() - INTERVAL '4 days'
         AND el_day3.id IS NULL
-      LIMIT 100
+      
     `
 
     results.day3.found = day3Eligible.length
@@ -277,33 +260,16 @@ export async function GET(request: Request) {
           recipientEmail: EMAIL_PLACEHOLDER,
         })
 
-        await syncMarketingContacts({
+        await enqueueAndProcessMarketingRun({
+          sequenceKey: "cold-edu-day-3",
+          emailType: "cold-edu-day-3",
           tagKey: "sequence_cold_edu_day_3",
-          tagValue: "true",
           segmentId: MARKETING_SEGMENTS.coldEduDay3,
-          contacts,
-        })
-
-        await sendMarketingBroadcast({
           campaignKey: "cold-edu-day-3",
-          segmentId: MARKETING_SEGMENTS.coldEduDay3,
           subject: emailContent.subject || "From selfies to Studio — this is how it works.",
           html: emailContent.html,
           text: emailContent.text,
-          estimatedRecipientCount: day3Eligible.length,
-        })
-
-        await sql`
-          INSERT INTO email_logs (user_email, email_type, status, sent_at)
-          SELECT unnest(${day3Emails}::text[]), 'cold-edu-day-3', 'sent', NOW()
-        `
-
-        await syncMarketingContacts({
-          tagKey: "sequence_cold_edu_day_3",
-          tagValue: "false",
-          segmentId: MARKETING_SEGMENTS.coldEduDay3,
-          removeFromSegment: true,
-          contacts,
+          recipients: contacts,
         })
 
         results.day3.sent = day3Eligible.length
@@ -333,7 +299,7 @@ export async function GET(request: Request) {
         AND el_day1.sent_at <= NOW() - INTERVAL '7 days'
         AND el_day1.sent_at > NOW() - INTERVAL '8 days'
         AND el_day7.id IS NULL
-      LIMIT 100
+      
     `
 
     results.day7.found = day7Eligible.length
@@ -356,33 +322,16 @@ export async function GET(request: Request) {
           recipientEmail: EMAIL_PLACEHOLDER,
         })
 
-        await syncMarketingContacts({
+        await enqueueAndProcessMarketingRun({
+          sequenceKey: "cold-edu-day-7",
+          emailType: "cold-edu-day-7",
           tagKey: "sequence_cold_edu_day_7",
-          tagValue: "true",
           segmentId: MARKETING_SEGMENTS.coldEduDay7,
-          contacts,
-        })
-
-        await sendMarketingBroadcast({
           campaignKey: "cold-edu-day-7",
-          segmentId: MARKETING_SEGMENTS.coldEduDay7,
           subject: emailContent.subject || "You're invited — your 30% creator restart.",
           html: emailContent.html,
           text: emailContent.text,
-          estimatedRecipientCount: day7Eligible.length,
-        })
-
-        await sql`
-          INSERT INTO email_logs (user_email, email_type, status, sent_at)
-          SELECT unnest(${day7Emails}::text[]), 'cold-edu-day-7', 'sent', NOW()
-        `
-
-        await syncMarketingContacts({
-          tagKey: "sequence_cold_edu_day_7",
-          tagValue: "false",
-          segmentId: MARKETING_SEGMENTS.coldEduDay7,
-          removeFromSegment: true,
-          contacts,
+          recipients: contacts,
         })
 
         results.day7.sent = day7Eligible.length

@@ -32,14 +32,14 @@ describe("Email routing separation", () => {
     for (const route of broadcastOnlyRoutes) {
       const contents = fs.readFileSync(path.join(ROOT, route), "utf8")
       expect(contents).not.toContain("sendEmail(")
-      expect(contents).toContain("sendMarketingBroadcast")
+      expect(contents).toContain("enqueueAndProcessMarketingRun")
     }
   })
 
   it("mixed routes should include broadcast path", () => {
     for (const route of mixedRoutes) {
       const contents = fs.readFileSync(path.join(ROOT, route), "utf8")
-      expect(contents).toContain("sendMarketingBroadcast")
+      expect(contents).toContain("enqueueAndProcessMarketingRun")
     }
   })
 

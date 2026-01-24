@@ -9,7 +9,7 @@ import { generatePaidBlueprintDay1Email, PAID_BLUEPRINT_DAY1_SUBJECT } from "@/l
 import { generatePaidBlueprintDay3Email, PAID_BLUEPRINT_DAY3_SUBJECT } from "@/lib/email/templates/paid-blueprint-day-3"
 import { generatePaidBlueprintDay7Email, PAID_BLUEPRINT_DAY7_SUBJECT } from "@/lib/email/templates/paid-blueprint-day-7"
 import { logAdminError } from "@/lib/admin-error-log"
-import { sendMarketingBroadcast, syncMarketingContacts } from "@/lib/email/marketing-sender"
+import { enqueueAndProcessMarketingRun } from "@/lib/email/marketing-runner"
 import { MARKETING_SEGMENTS } from "@/lib/email/config"
 
 const sql = neon(process.env.DATABASE_URL!)
@@ -159,20 +159,16 @@ export async function GET(request: Request) {
           email: EMAIL_PLACEHOLDER,
         })
 
-        await syncMarketingContacts({
+        await enqueueAndProcessMarketingRun({
+          sequenceKey: "blueprint-followup-day-3",
+          emailType: "blueprint-followup-day-3",
           tagKey: "sequence_blueprint_day_3",
-          tagValue: "true",
           segmentId: MARKETING_SEGMENTS.blueprintDay3,
-          contacts,
-        })
-
-        await sendMarketingBroadcast({
           campaignKey: "blueprint-followup-day-3",
-          segmentId: MARKETING_SEGMENTS.blueprintDay3,
           subject: "3 Ways to Use Your Blueprint This Week",
           html: emailContent.html,
           text: emailContent.text,
-          estimatedRecipientCount: day3Subscribers.length,
+          recipients: contacts,
         })
 
         await sql`
@@ -183,23 +179,6 @@ export async function GET(request: Request) {
             updated_at = NOW()
           WHERE id = ANY(${day3Ids})
         `
-
-        await sql`
-          INSERT INTO email_logs (user_email, email_type, status, sent_at)
-          SELECT bs.email, 'blueprint-followup-day-3', 'sent', NOW()
-          FROM blueprint_subscribers bs
-          LEFT JOIN email_logs el ON el.user_email = bs.email AND el.email_type = 'blueprint-followup-day-3'
-          WHERE bs.id = ANY(${day3Ids})
-            AND el.id IS NULL
-        `
-
-        await syncMarketingContacts({
-          tagKey: "sequence_blueprint_day_3",
-          tagValue: "false",
-          segmentId: MARKETING_SEGMENTS.blueprintDay3,
-          removeFromSegment: true,
-          contacts,
-        })
 
         results.day3.sent = day3Subscribers.length
       } catch (error: any) {
@@ -251,20 +230,16 @@ export async function GET(request: Request) {
           email: EMAIL_PLACEHOLDER,
         })
 
-        await syncMarketingContacts({
+        await enqueueAndProcessMarketingRun({
+          sequenceKey: "blueprint-followup-day-7",
+          emailType: "blueprint-followup-day-7",
           tagKey: "sequence_blueprint_day_7",
-          tagValue: "true",
           segmentId: MARKETING_SEGMENTS.blueprintDay7,
-          contacts,
-        })
-
-        await sendMarketingBroadcast({
           campaignKey: "blueprint-followup-day-7",
-          segmentId: MARKETING_SEGMENTS.blueprintDay7,
           subject: "This Could Be You",
           html: emailContent.html,
           text: emailContent.text,
-          estimatedRecipientCount: day7Subscribers.length,
+          recipients: contacts,
         })
 
         await sql`
@@ -275,23 +250,6 @@ export async function GET(request: Request) {
             updated_at = NOW()
           WHERE id = ANY(${day7Ids})
         `
-
-        await sql`
-          INSERT INTO email_logs (user_email, email_type, status, sent_at)
-          SELECT bs.email, 'blueprint-followup-day-7', 'sent', NOW()
-          FROM blueprint_subscribers bs
-          LEFT JOIN email_logs el ON el.user_email = bs.email AND el.email_type = 'blueprint-followup-day-7'
-          WHERE bs.id = ANY(${day7Ids})
-            AND el.id IS NULL
-        `
-
-        await syncMarketingContacts({
-          tagKey: "sequence_blueprint_day_7",
-          tagValue: "false",
-          segmentId: MARKETING_SEGMENTS.blueprintDay7,
-          removeFromSegment: true,
-          contacts,
-        })
 
         results.day7.sent = day7Subscribers.length
       } catch (error: any) {
@@ -343,20 +301,16 @@ export async function GET(request: Request) {
           email: EMAIL_PLACEHOLDER,
         })
 
-        await syncMarketingContacts({
+        await enqueueAndProcessMarketingRun({
+          sequenceKey: "blueprint-followup-day-14",
+          emailType: "blueprint-followup-day-14",
           tagKey: "sequence_blueprint_day_14",
-          tagValue: "true",
           segmentId: MARKETING_SEGMENTS.blueprintDay14,
-          contacts,
-        })
-
-        await sendMarketingBroadcast({
           campaignKey: "blueprint-followup-day-14",
-          segmentId: MARKETING_SEGMENTS.blueprintDay14,
           subject: "Still thinking about it? Here's $10 off 💕",
           html: emailContent.html,
           text: emailContent.text,
-          estimatedRecipientCount: day14Subscribers.length,
+          recipients: contacts,
         })
 
         await sql`
@@ -367,23 +321,6 @@ export async function GET(request: Request) {
             updated_at = NOW()
           WHERE id = ANY(${day14Ids})
         `
-
-        await sql`
-          INSERT INTO email_logs (user_email, email_type, status, sent_at)
-          SELECT bs.email, 'blueprint-followup-day-14', 'sent', NOW()
-          FROM blueprint_subscribers bs
-          LEFT JOIN email_logs el ON el.user_email = bs.email AND el.email_type = 'blueprint-followup-day-14'
-          WHERE bs.id = ANY(${day14Ids})
-            AND el.id IS NULL
-        `
-
-        await syncMarketingContacts({
-          tagKey: "sequence_blueprint_day_14",
-          tagValue: "false",
-          segmentId: MARKETING_SEGMENTS.blueprintDay14,
-          removeFromSegment: true,
-          contacts,
-        })
 
         results.day14.sent = day14Subscribers.length
       } catch (error: any) {
