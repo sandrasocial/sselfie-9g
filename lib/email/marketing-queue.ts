@@ -18,6 +18,7 @@ export interface MarketingRecipient {
 
 export async function createMarketingSendRun(input: {
   sequenceKey: string
+  emailType?: string
   tagKey?: string
   segmentId?: string
   campaignKey?: string
@@ -32,6 +33,7 @@ export async function createMarketingSendRun(input: {
     INSERT INTO marketing_send_runs (
       run_id,
       sequence_key,
+      email_type,
       tag_key,
       segment_id,
       campaign_key,
@@ -45,6 +47,7 @@ export async function createMarketingSendRun(input: {
     VALUES (
       ${runId},
       ${input.sequenceKey},
+      ${input.emailType || null},
       ${input.tagKey || null},
       ${input.segmentId || null},
       ${input.campaignKey || null},
@@ -76,6 +79,22 @@ export async function updateMarketingRunStatus(input: {
       error_message = COALESCE(${input.errorMessage || null}, error_message),
       started_at = CASE WHEN ${input.startedAt || false} THEN NOW() ELSE started_at END,
       finished_at = CASE WHEN ${input.finishedAt || false} THEN NOW() ELSE finished_at END
+    WHERE run_id = ${input.runId}
+  `
+}
+
+export async function updateMarketingRunContent(input: {
+  runId: string
+  subject?: string | null
+  html?: string | null
+  text?: string | null
+}): Promise<void> {
+  await sql`
+    UPDATE marketing_send_runs
+    SET
+      subject = COALESCE(${input.subject || null}, subject),
+      body_html = COALESCE(${input.html || null}, body_html),
+      body_text = COALESCE(${input.text || null}, body_text)
     WHERE run_id = ${input.runId}
   `
 }

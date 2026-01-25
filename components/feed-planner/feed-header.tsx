@@ -43,6 +43,7 @@ export default function FeedHeader({
   const [isCreatingPreviewFeed, setIsCreatingPreviewFeed] = useState(false)
   const [showFeedStyleModal, setShowFeedStyleModal] = useState(false)
   const [isPreviewFeedModal, setIsPreviewFeedModal] = useState(false) // Track if modal is for preview or full feed
+  const [isCreatingNewFeed, setIsCreatingNewFeed] = useState(false) // Track if user explicitly wants to create NEW feed (vs update existing)
   
   // Fetch user's last feed style from personal brand
   const { data: personalBrandData } = useSWR(
@@ -267,6 +268,7 @@ export default function FeedHeader({
   const handleCreateNewFeedClick = () => {
     // Show feed style modal first
     setIsPreviewFeedModal(false)
+    setIsCreatingNewFeed(true) // Explicitly mark as "create new" (not update)
     setShowFeedStyleModal(true)
   }
 
@@ -275,13 +277,17 @@ export default function FeedHeader({
     if (isPreviewFeedModal) {
       await handlePreviewFeedStyleConfirm(data)
     } else {
-      // Check if we're updating an existing feed or creating a new one
-      if (currentFeedId && feedData?.feed?.id) {
-        await handleUpdateFeedStyle(data)
-      } else {
+      // Check if user explicitly wants to create NEW feed (not update existing)
+      // OR if there's no existing feed to update
+      if (isCreatingNewFeed || !currentFeedId || !feedData?.feed?.id) {
         await handleFullFeedStyleConfirm(data)
+      } else {
+        // User is updating existing feed
+        await handleUpdateFeedStyle(data)
       }
     }
+    // Reset the flag after handling
+    setIsCreatingNewFeed(false)
   }
 
   const handleUpdateFeedStyle = async (data: FeedStyleModalData) => {
@@ -858,6 +864,7 @@ export default function FeedHeader({
           setShowFeedStyleModal(open)
           if (!open) {
             setIsPreviewFeedModal(false)
+            setIsCreatingNewFeed(false) // Reset flag when modal closes
           }
         }}
         onConfirm={handleFeedStyleConfirm}

@@ -1,6 +1,7 @@
 import { sendMarketingBroadcast, syncMarketingContacts } from "@/lib/email/marketing-sender"
 import { neon } from "@neondatabase/serverless"
 import { logAdminError } from "@/lib/admin-error-log"
+import { resolveMarketingTemplateContent } from "@/lib/email/marketing-template-overrides"
 import { getAudienceContacts } from "@/lib/resend/get-audience-contacts"
 import {
   claimQueueBatch,
@@ -13,6 +14,7 @@ import {
   updateQueueBatchStatus,
   updateRunProcessedCount,
   MarketingRecipient,
+  updateMarketingRunContent,
 } from "@/lib/email/marketing-queue"
 
 const sql = neon(process.env.DATABASE_URL!)
@@ -34,14 +36,22 @@ export interface MarketingRunInput {
 }
 
 export async function enqueueAndProcessMarketingRun(input: MarketingRunInput) {
+  const resolvedContent = await resolveMarketingTemplateContent({
+    emailType: input.emailType,
+    subject: input.subject,
+    html: input.html,
+    text: input.text || "",
+  })
+
   const runId = await createMarketingSendRun({
     sequenceKey: input.sequenceKey,
+    emailType: input.emailType,
     tagKey: input.tagKey,
     segmentId: input.segmentId,
     campaignKey: input.campaignKey,
-    subject: input.subject,
-    html: input.html,
-    text: input.text,
+    subject: resolvedContent.subject,
+    html: resolvedContent.html,
+    text: resolvedContent.text,
     totalRecipients: input.recipients.length,
   })
 
@@ -62,9 +72,10 @@ export async function enqueueAndProcessMarketingRun(input: MarketingRunInput) {
     tagKey: input.tagKey,
     segmentId: input.segmentId,
     campaignKey: input.campaignKey,
-    subject: input.subject,
-    html: input.html,
-    text: input.text,
+    subject: resolvedContent.subject,
+    html: resolvedContent.html,
+    text: resolvedContent.text,
+    emailType: input.emailType,
   })
 
   return runId
@@ -100,7 +111,7 @@ export async function processMarketingRun(input: {
   const tagKey = input.tagKey || run.tag_key || run.sequence_key
   const segmentId = input.segmentId || run.segment_id
   const campaignKey = input.campaignKey || run.campaign_key
-  const emailType = input.emailType || run.sequence_key
+  const emailType = input.emailType || run.email_type || run.sequence_key
   const subject = input.subject || run.subject
   const html = input.html || run.body_html
   const text = input.text || run.body_text
@@ -212,15 +223,29 @@ export async function processMarketingRun(input: {
 
     const currentRun = await getRunDetails(input.runId)
     if (currentRun?.status !== "broadcasting" && currentRun?.status !== "cleanup") {
+      const overrideContent = await resolveMarketingTemplateContent({
+        emailType,
+        subject: subject || undefined,
+        html: html || "",
+        text: text || "",
+      })
+
+      await updateMarketingRunContent({
+        runId: input.runId,
+        subject: overrideContent.subject || subject || null,
+        html: overrideContent.html || html || null,
+        text: overrideContent.text || text || null,
+      })
+
       await updateMarketingRunStatus({ runId: input.runId, status: "broadcasting" })
 
       try {
         const broadcastResult = await sendMarketingBroadcast({
           campaignKey,
           segmentId,
-          subject,
-          html,
-          text,
+          subject: overrideContent.subject || subject || "",
+          html: overrideContent.html || html || "",
+          text: overrideContent.text || text || undefined,
           estimatedRecipientCount: run.total_recipients,
         })
 

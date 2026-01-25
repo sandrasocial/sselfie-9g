@@ -561,6 +561,25 @@ export default function EmailControlPage() {
           )}
         </div>
 
+        <div className="bg-white border border-stone-200 p-6 sm:p-8 rounded-none mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h2 className="text-lg sm:text-xl font-['Times_New_Roman'] text-stone-950 tracking-widest uppercase">
+                Edit Marketing Emails
+              </h2>
+              <p className="text-xs text-stone-500 mt-2">
+                Update the content for all live marketing sequences and broadcasts.
+              </p>
+            </div>
+            <a
+              href="/admin/email-templates"
+              className="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-stone-900 text-white text-xs tracking-[0.15em] uppercase"
+            >
+              Open Template Editor
+            </a>
+          </div>
+        </div>
+
         {/* Cron Status */}
         <div className="bg-white border border-stone-200 p-6 sm:p-8 rounded-none mb-6 sm:mb-8">
           <h2 className="text-lg sm:text-xl font-['Times_New_Roman'] text-stone-950 tracking-[0.1em] uppercase mb-4">
