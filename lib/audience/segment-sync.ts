@@ -7,7 +7,7 @@
 
 import { neon } from "@neondatabase/serverless"
 import { Resend } from "resend"
-import { updateContactTags as updateResendContactTags, type ContactTags, addContactToSegment } from "@/lib/resend/manage-contact"
+import { updateContactTags as updateResendContactTags, type ContactTags, addContactToSegment, removeContactFromSegment } from "@/lib/resend/manage-contact"
 import { getAudienceContacts } from "@/lib/resend/get-audience-contacts"
 
 const sql = neon(process.env.DATABASE_URL!)
@@ -265,12 +265,27 @@ export async function updateContactTags(email: string, segments: {
       await new Promise((resolve) => setTimeout(resolve, 500))
     }
 
+    if (!segments.all_subscribers) {
+      const result = await removeContactFromSegment(email, allSubscribersSegmentId)
+      if (!result.success) {
+        errors.push(`all_subscribers_remove: ${result.error}`)
+      }
+      await new Promise((resolve) => setTimeout(resolve, 500))
+    }
+
     if (segments.beta_users) {
       const result = await addContactToSegment(email, betaUsersSegmentId)
       if (result.success) {
         successes.push("beta_users")
       } else {
         errors.push(`beta_users: ${result.error}`)
+      }
+      await new Promise((resolve) => setTimeout(resolve, 500))
+    }
+    if (!segments.beta_users) {
+      const result = await removeContactFromSegment(email, betaUsersSegmentId)
+      if (!result.success) {
+        errors.push(`beta_users_remove: ${result.error}`)
       }
       await new Promise((resolve) => setTimeout(resolve, 500))
     }
@@ -284,6 +299,13 @@ export async function updateContactTags(email: string, segments: {
       }
       await new Promise((resolve) => setTimeout(resolve, 500))
     }
+    if (!segments.paid_users) {
+      const result = await removeContactFromSegment(email, paidUsersSegmentId)
+      if (!result.success) {
+        errors.push(`paid_users_remove: ${result.error}`)
+      }
+      await new Promise((resolve) => setTimeout(resolve, 500))
+    }
 
     if (segments.cold_users) {
       const result = await addContactToSegment(email, coldUsersSegmentId)
@@ -291,6 +313,13 @@ export async function updateContactTags(email: string, segments: {
         successes.push("cold_users")
       } else {
         errors.push(`cold_users: ${result.error}`)
+      }
+      await new Promise((resolve) => setTimeout(resolve, 500))
+    }
+    if (!segments.cold_users) {
+      const result = await removeContactFromSegment(email, coldUsersSegmentId)
+      if (!result.success) {
+        errors.push(`cold_users_remove: ${result.error}`)
       }
       await new Promise((resolve) => setTimeout(resolve, 500))
     }

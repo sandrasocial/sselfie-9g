@@ -272,6 +272,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
         WHERE id = ${feedIdInt}
       `
       feedLayout = result[0] as FeedLayout | undefined
+      
+      // Log what we retrieved from database for debugging
+      console.log(`[v0] [GENERATE-SINGLE] Feed layout retrieved: feedStyle=${feedLayout?.feed_style}, variationId=${feedLayout?.feed_style_variation_id}, layoutType=${feedLayout?.layout_type}`)
+      
+      // Validate variation_id is a valid number if present
+      if (feedLayout?.feed_style_variation_id !== null && feedLayout?.feed_style_variation_id !== undefined) {
+        const numericVariationId = Number(feedLayout.feed_style_variation_id)
+        if (!Number.isFinite(numericVariationId) || numericVariationId <= 0) {
+          console.warn(`[v0] [GENERATE-SINGLE] ⚠️ Invalid variation_id in database: ${feedLayout.feed_style_variation_id}, setting to null`)
+          feedLayout.feed_style_variation_id = null
+        } else {
+          feedLayout.feed_style_variation_id = numericVariationId
+        }
+      }
     } catch (error: unknown) {
       // If feed_style column doesn't exist, query without it
       const errorObj = error as { message?: string; code?: string }
@@ -449,20 +463,32 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
                 )
               }
 
-              console.log(`[v0] [GENERATE-SINGLE] Loading prompt for feed: feedId=${feedIdInt}, styleId=${style.id}, feedStyle=${feedLayout?.feed_style}, variationId=${feedLayout?.feed_style_variation_id}, isPreviewFeed=${isPreviewFeed}, position=${post.position}`)
+              const feedVariationId = feedLayout?.feed_style_variation_id ?? null
+              console.log(`[v0] [GENERATE-SINGLE] Loading prompt for feed: feedId=${feedIdInt}, styleId=${style.id}, feedStyle=${feedLayout?.feed_style}, variationId=${feedVariationId}, isPreviewFeed=${isPreviewFeed}, position=${post.position}`)
+              
+              // Validate variation_id is a valid number if provided
+              if (feedVariationId !== null && feedVariationId !== undefined) {
+                const numericVariationId = Number(feedVariationId)
+                if (!Number.isFinite(numericVariationId) || numericVariationId <= 0) {
+                  console.warn(`[v0] [GENERATE-SINGLE] Invalid variation_id in feed_layouts: ${feedVariationId}, using null`)
+                  feedLayout.feed_style_variation_id = null
+                }
+              }
+              
               if (isPreviewFeed) {
-                finalPrompt = await getPreviewPromptForStyle(style.id, feedLayout?.feed_style_variation_id ?? null)
+                finalPrompt = await getPreviewPromptForStyle(style.id, feedVariationId)
                 chosenPromptSource = "v2_preview_prompt"
+                console.log(`[v0] [GENERATE-SINGLE] Preview prompt loaded: variationId=${feedVariationId}, length=${finalPrompt?.length || 0}`)
               } else {
                 const selected = await selectPromptForPosition(
                   style.id,
                   post.position,
-                  feedLayout?.feed_style_variation_id ?? null,
+                  feedVariationId,
                 )
                 finalPrompt = selected.prompt_text
                 chosenPromptSource = "v2_scene_prompt"
+                console.log(`[v0] [GENERATE-SINGLE] Scene prompt loaded: position=${post.position}, variationId=${feedVariationId}, selectedVariationId=${selected.variation_id}, length=${finalPrompt?.length || 0}`)
               }
-              console.log(`[v0] [GENERATE-SINGLE] Prompt loaded: source=${chosenPromptSource}, length=${finalPrompt?.length || 0}`)
 
               await sql`
                 UPDATE feed_posts

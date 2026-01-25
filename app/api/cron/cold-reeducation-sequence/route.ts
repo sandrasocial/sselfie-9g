@@ -235,7 +235,6 @@ export async function GET(request: Request) {
       WHERE el_day1.email_type = 'cold-edu-day-1'
         AND el_day1.user_email = ANY(${eligibleEmails})
         AND el_day1.sent_at <= NOW() - INTERVAL '3 days'
-        AND el_day1.sent_at > NOW() - INTERVAL '4 days'
         AND el_day3.id IS NULL
       
     `
@@ -297,7 +296,6 @@ export async function GET(request: Request) {
       WHERE el_day1.email_type = 'cold-edu-day-1'
         AND el_day1.user_email = ANY(${eligibleEmails})
         AND el_day1.sent_at <= NOW() - INTERVAL '7 days'
-        AND el_day1.sent_at > NOW() - INTERVAL '8 days'
         AND el_day7.id IS NULL
       
     `

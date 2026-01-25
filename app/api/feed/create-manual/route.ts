@@ -58,7 +58,25 @@ export async function POST(req: NextRequest) {
     let feedStyle = body.feedStyle || null // "luxury", "minimal", or "beige"
     let visualAesthetic = body.visualAesthetic || null // Array of visual aesthetics
     let fashionStyle = body.fashionStyle || null // Array of fashion styles
-    const requestedVariationId = body.feedStyleVariationId ? Number(body.feedStyleVariationId) : null
+    // CRITICAL: Accept feedStyleVariationId even if it's null (user explicitly selected "no variation")
+    // Only treat as "not provided" if it's truly undefined
+    let requestedVariationId: number | null | undefined = undefined
+    if (body.feedStyleVariationId !== undefined) {
+      if (body.feedStyleVariationId === null) {
+        requestedVariationId = null
+        console.log(`[v0] Manual feed: User explicitly selected null variation (no variation)`)
+      } else {
+        requestedVariationId = Number(body.feedStyleVariationId)
+        if (Number.isFinite(requestedVariationId)) {
+          console.log(`[v0] Manual feed: User selected variationId=${requestedVariationId}`)
+        } else {
+          requestedVariationId = null
+          console.warn(`[v0] Manual feed: Invalid variationId in body, using null`)
+        }
+      }
+    } else {
+      console.log(`[v0] Manual feed: feedStyleVariationId not provided in request body`)
+    }
 
     // Validate and prepare JSONB arrays
     const prepareJsonbArray = (value: any): any => {
@@ -129,15 +147,23 @@ export async function POST(req: NextRequest) {
         )
       }
 
-      if (requestedVariationId) {
+      // CRITICAL: Prioritize requestedVariationId (from user's modal selection)
+      // Only fall back to personalBrandVariationId if requestedVariationId is not provided (undefined)
+      // If requestedVariationId is explicitly null, use default (user selected "no variation")
+      if (requestedVariationId !== null && requestedVariationId !== undefined) {
+        // User provided a specific variation ID - use it
         const variation = await getFeedStyleVariationById(requestedVariationId)
         if (!variation || !variation.enabled || variation.feed_style_id !== style.id) {
-          return NextResponse.json(
-            { error: "FEED_STYLE_VARIATION_INVALID", details: "Selected variation is not valid for this style." },
-            { status: 422 }
-          )
+          console.warn(`[v0] Invalid variationId=${requestedVariationId} for styleId=${style.id}, falling back to default`)
+          feedStyleVariationIdToStore = await getDefaultVariationId(style.id)
+        } else {
+          feedStyleVariationIdToStore = variation.id
+          console.log(`[v0] Using requested variationId=${feedStyleVariationIdToStore} for styleId=${style.id}`)
         }
-        feedStyleVariationIdToStore = variation.id
+      } else if (requestedVariationId === null) {
+        // User explicitly selected null (no variation) - use default
+        console.log(`[v0] User selected null variation, using default for styleId=${style.id}`)
+        feedStyleVariationIdToStore = await getDefaultVariationId(style.id)
       } else if (personalBrandVariationId) {
         const variation = await getFeedStyleVariationById(personalBrandVariationId)
         if (variation && variation.enabled && variation.feed_style_id === style.id) {
@@ -264,7 +290,18 @@ export async function POST(req: NextRequest) {
     const feedLayout = feedResult[0]
     const feedId = feedLayout.id
     
-    console.log(`[v0] Created manual feed ${feedId} with feedStyle=${feedStyle}, variationId=${feedStyleVariationIdToStore}`)
+    // Verify the stored values match what we intended
+    const storedVariationId = feedLayout.feed_style_variation_id
+    const storedFeedStyle = feedLayout.feed_style
+    console.log(`[v0] Created manual feed ${feedId}: feedStyle=${storedFeedStyle} (requested: ${feedStyle}), variationId=${storedVariationId} (requested: ${feedStyleVariationIdToStore})`)
+    
+    // Validation: Ensure stored values match requested
+    if (storedFeedStyle !== feedStyle) {
+      console.error(`[v0] ⚠️ Feed style mismatch! Stored: ${storedFeedStyle}, Requested: ${feedStyle}`)
+    }
+    if (storedVariationId !== feedStyleVariationIdToStore) {
+      console.error(`[v0] ⚠️ Variation ID mismatch! Stored: ${storedVariationId}, Requested: ${feedStyleVariationIdToStore}`)
+    }
 
     // Create 9 empty posts (position 1-9) for 3x3 grid
     const posts = []

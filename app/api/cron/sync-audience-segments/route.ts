@@ -150,7 +150,6 @@ export async function GET(request: Request) {
           LEFT JOIN email_logs el ON el.user_email = bs.email AND el.email_type = 'blueprint-followup-day-3'
           WHERE bs.day_3_email_sent = FALSE
             AND bs.created_at <= NOW() - INTERVAL '3 days'
-            AND bs.created_at > NOW() - INTERVAL '4 days'
             AND bs.welcome_email_sent = TRUE
             AND el.id IS NULL
         `,
@@ -163,7 +162,6 @@ export async function GET(request: Request) {
           LEFT JOIN email_logs el ON el.user_email = bs.email AND el.email_type = 'blueprint-followup-day-7'
           WHERE bs.day_7_email_sent = FALSE
             AND bs.created_at <= NOW() - INTERVAL '7 days'
-            AND bs.created_at > NOW() - INTERVAL '8 days'
             AND bs.welcome_email_sent = TRUE
             AND el.id IS NULL
         `,
@@ -176,7 +174,6 @@ export async function GET(request: Request) {
           LEFT JOIN email_logs el ON el.user_email = bs.email AND el.email_type = 'blueprint-followup-day-14'
           WHERE bs.day_14_email_sent = FALSE
             AND bs.created_at <= NOW() - INTERVAL '14 days'
-            AND bs.created_at > NOW() - INTERVAL '15 days'
             AND bs.welcome_email_sent = TRUE
             AND el.id IS NULL
         `,
@@ -242,8 +239,7 @@ export async function GET(request: Request) {
           FROM freebie_subscribers fs
           LEFT JOIN email_logs el ON el.user_email = fs.email AND el.email_type = 'nurture-day-1'
           WHERE fs.converted_to_user = FALSE
-            AND fs.created_at < NOW() - INTERVAL '1 day'
-            AND fs.created_at >= NOW() - INTERVAL '2 days'
+            AND fs.created_at <= NOW() - INTERVAL '1 day'
             AND el.id IS NULL
         `,
       },
@@ -254,8 +250,7 @@ export async function GET(request: Request) {
           FROM freebie_subscribers fs
           LEFT JOIN email_logs el ON el.user_email = fs.email AND el.email_type = 'nurture-day-3'
           WHERE fs.converted_to_user = FALSE
-            AND fs.created_at < NOW() - INTERVAL '3 days'
-            AND fs.created_at >= NOW() - INTERVAL '4 days'
+            AND fs.created_at <= NOW() - INTERVAL '3 days'
             AND el.id IS NULL
         `,
       },
@@ -266,8 +261,7 @@ export async function GET(request: Request) {
           FROM freebie_subscribers fs
           LEFT JOIN email_logs el ON el.user_email = fs.email AND el.email_type = 'nurture-day-7'
           WHERE fs.converted_to_user = FALSE
-            AND fs.created_at < NOW() - INTERVAL '7 days'
-            AND fs.created_at >= NOW() - INTERVAL '8 days'
+            AND fs.created_at <= NOW() - INTERVAL '7 days'
             AND el.id IS NULL
         `,
       },
@@ -278,8 +272,7 @@ export async function GET(request: Request) {
           FROM freebie_subscribers fs
           LEFT JOIN email_logs el ON el.user_email = fs.email AND el.email_type = 'nurture-day-10'
           WHERE fs.converted_to_user = FALSE
-            AND fs.created_at < NOW() - INTERVAL '10 days'
-            AND fs.created_at >= NOW() - INTERVAL '11 days'
+            AND fs.created_at <= NOW() - INTERVAL '10 days'
             AND el.id IS NULL
         `,
       },
@@ -290,8 +283,7 @@ export async function GET(request: Request) {
           FROM users u
           INNER JOIN subscriptions s ON u.id = s.user_id::varchar
           LEFT JOIN email_logs el ON el.user_email = u.email AND el.email_type = 'welcome-day-0'
-          WHERE u.created_at >= NOW() - INTERVAL '2 hours'
-            AND u.created_at < NOW()
+          WHERE u.created_at <= NOW()
             AND s.status = 'active'
             AND s.product_type IN ('sselfie_studio_membership', 'brand_studio_membership')
             AND s.is_test_mode = FALSE
@@ -305,8 +297,7 @@ export async function GET(request: Request) {
           FROM users u
           INNER JOIN subscriptions s ON u.id = s.user_id::varchar
           LEFT JOIN email_logs el ON el.user_email = u.email AND el.email_type = 'welcome-day-3'
-          WHERE u.created_at >= NOW() - INTERVAL '3 days 2 hours'
-            AND u.created_at < NOW() - INTERVAL '3 days'
+          WHERE u.created_at <= NOW() - INTERVAL '3 days'
             AND s.status = 'active'
             AND s.product_type IN ('sselfie_studio_membership', 'brand_studio_membership')
             AND s.is_test_mode = FALSE
@@ -320,8 +311,7 @@ export async function GET(request: Request) {
           FROM users u
           INNER JOIN subscriptions s ON u.id = s.user_id::varchar
           LEFT JOIN email_logs el ON el.user_email = u.email AND el.email_type = 'welcome-day-7'
-          WHERE u.created_at >= NOW() - INTERVAL '7 days 2 hours'
-            AND u.created_at < NOW() - INTERVAL '7 days'
+          WHERE u.created_at <= NOW() - INTERVAL '7 days'
             AND s.status = 'active'
             AND s.product_type IN ('sselfie_studio_membership', 'brand_studio_membership')
             AND s.is_test_mode = FALSE
@@ -338,8 +328,7 @@ export async function GET(request: Request) {
           WHERE s.status = 'active'
             AND s.product_type = 'sselfie_studio_membership'
             AND s.is_test_mode = FALSE
-            AND s.created_at >= NOW() - INTERVAL '2 hours'
-            AND s.created_at < NOW()
+            AND s.created_at <= NOW()
             AND u.email IS NOT NULL
             AND u.email != ''
             AND el.id IS NULL
@@ -356,7 +345,7 @@ export async function GET(request: Request) {
             AND s.product_type = 'sselfie_studio_membership'
             AND s.is_test_mode = FALSE
             AND s.created_at <= NOW() - INTERVAL '2 days'
-            AND s.created_at > NOW() - INTERVAL '3 days'
+            AND s.created_at <= NOW() - INTERVAL '3 days'
             AND u.email IS NOT NULL
             AND u.email != ''
             AND el.id IS NULL
@@ -373,7 +362,7 @@ export async function GET(request: Request) {
             AND s.product_type = 'sselfie_studio_membership'
             AND s.is_test_mode = FALSE
             AND s.created_at <= NOW() - INTERVAL '7 days'
-            AND s.created_at > NOW() - INTERVAL '8 days'
+            AND s.created_at <= NOW() - INTERVAL '7 days'
             AND u.email IS NOT NULL
             AND u.email != ''
             AND el.id IS NULL

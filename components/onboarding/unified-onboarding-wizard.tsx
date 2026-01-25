@@ -61,30 +61,11 @@ interface UnifiedOnboardingWizardProps {
   }
   userEmail?: string | null
   initialStep?: number // Optional: Start wizard at a specific step (0-based index)
-  useFeedPlannerV2?: boolean
-}
-
-// Feed style examples (V1)
-const FEED_EXAMPLES_V1 = {
-  luxury: {
-    name: "Dark & Moody",
-    colors: ["#0a0a0a", "#2d2d2d", "#4a4a4a"],
-    grid: ["selfie", "selfie", "flatlay", "selfie", "selfie", "selfie", "flatlay", "selfie", "selfie"],
-  },
-  minimal: {
-    name: "Light & Minimalistic",
-    colors: ["#f5f5f5", "#e5e5e5", "#d4d4d4"],
-    grid: ["selfie", "selfie", "selfie", "flatlay", "selfie", "selfie", "selfie", "flatlay", "selfie"],
-  },
-  beige: {
-    name: "Beige Aesthetic",
-    colors: ["#c9b8a8", "#a89384", "#8a7968"],
-    grid: ["selfie", "flatlay", "selfie", "selfie", "selfie", "selfie", "selfie", "flatlay", "selfie"],
-  },
 }
 
 // Feed style examples (V2 - 7 curated styles)
-const FEED_EXAMPLES_V2 = {
+// V1 code removed - V2 is always enabled
+const FEED_EXAMPLES = {
   "Dark & Moody": {
     name: "Dark & Moody",
     colors: ["#0b0b0f", "#2a2a2f", "#4a4a4f"],
@@ -190,7 +171,6 @@ export default function UnifiedOnboardingWizard({
   existingData,
   userEmail,
   initialStep = 0, // Default to step 0 (welcome), but allow starting at any step
-  useFeedPlannerV2 = false,
 }: UnifiedOnboardingWizardProps) {
   // SIMPLIFIED: Use existingData (from SWR cache) as single source of truth
   // No localStorage needed - SWR handles caching and persistence
@@ -338,7 +318,7 @@ export default function UnifiedOnboardingWizard({
   })
 
   const { data: variationData } = useSWR(
-    useFeedPlannerV2 && formData.feedStyle
+    formData.feedStyle
       ? `/api/feed-planner/v2/variations?style=${encodeURIComponent(formData.feedStyle)}`
       : null,
     fetcher,
@@ -348,24 +328,44 @@ export default function UnifiedOnboardingWizard({
     }
   )
 
+  // Track if user explicitly selected a variation (prevents auto-reset)
+  const userExplicitlySelectedVariationRef = useRef(false)
+  const previousStyleRef = useRef<string | null>(formData.feedStyle)
+  const hasInitializedVariationRef = useRef(false)
+  
+  // SIMPLIFIED: Set default variation when variationData loads (only if no variation set yet)
   useEffect(() => {
-    if (!useFeedPlannerV2) return
+    if (!variationData || userExplicitlySelectedVariationRef.current) return
+    
     const variations = (variationData?.variations || []) as FeedStyleVariationOption[]
-    if (variations.length === 0) {
-      if (formData.feedStyleVariationId !== null) {
-        setFormData((prev) => ({ ...prev, feedStyleVariationId: null }))
+    if (variations.length === 0) return
+
+    // Only set default if no variation is currently selected
+    if (formData.feedStyleVariationId === null || formData.feedStyleVariationId === undefined) {
+      const defaultId =
+        variationData?.defaultVariationId ||
+        variations.find((variation) => variation.is_default)?.id ||
+        variations[0]?.id
+      if (defaultId) {
+        console.log('[Onboarding Wizard] Setting default variation:', defaultId)
+        setFormData((prev) => ({ ...prev, feedStyleVariationId: Number(defaultId) }))
+        hasInitializedVariationRef.current = true
       }
-      return
     }
-    const defaultId =
-      variationData?.defaultVariationId ||
-      variations.find((variation) => variation.is_default)?.id ||
-      variations[0]?.id
-    if (!defaultId) return
-    if (!variations.some((variation) => variation.id === formData.feedStyleVariationId)) {
-      setFormData((prev) => ({ ...prev, feedStyleVariationId: Number(defaultId) }))
+  }, [variationData, formData.feedStyleVariationId])
+
+  // Handle style change - reset variation to default for new style
+  useEffect(() => {
+    
+    const styleChanged = previousStyleRef.current !== formData.feedStyle && previousStyleRef.current !== null
+    if (styleChanged) {
+      console.log('[Onboarding Wizard] Style changed, resetting variation')
+      previousStyleRef.current = formData.feedStyle
+      userExplicitlySelectedVariationRef.current = false // Allow auto-selection for new style
+      setFormData((prev) => ({ ...prev, feedStyleVariationId: null })) // Will be set by variationData effect
+      hasInitializedVariationRef.current = false
     }
-  }, [variationData, useFeedPlannerV2, formData.feedStyle, formData.feedStyleVariationId])
+  }, [formData.feedStyle])
 
   // Load images from API on mount (replace, don't merge)
   // Only update if images actually changed to prevent overwriting formData
@@ -451,6 +451,10 @@ export default function UnifiedOnboardingWizard({
     setIsSaving(true)
     try {
       // Save data via API endpoint
+      console.log('[Onboarding Wizard] Completing with data:', {
+        feedStyle: formData.feedStyle,
+        feedStyleVariationId: formData.feedStyleVariationId,
+      })
       const payload = {
         ...formData,
         selfieImages: Array.isArray(formData.selfieImages) ? formData.selfieImages : [],
@@ -664,7 +668,7 @@ export default function UnifiedOnboardingWizard({
                         Feed Style
                       </label>
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
-                        {Object.entries(useFeedPlannerV2 ? FEED_EXAMPLES_V2 : FEED_EXAMPLES_V1).map(([key, style]) => (
+                        {Object.entries(FEED_EXAMPLES).map(([key, style]) => (
                           <div
                             key={key}
                             onClick={() => setFormData({ ...formData, feedStyle: key })}
@@ -715,7 +719,7 @@ export default function UnifiedOnboardingWizard({
                       </div>
                     </div>
 
-                    {useFeedPlannerV2 && (
+                    {(
                       <div>
                         <label className="block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-stone-700 mb-4">
                           Choose Variation
@@ -726,9 +730,11 @@ export default function UnifiedOnboardingWizard({
                             return (
                               <button
                                 key={variation.id}
-                                onClick={() =>
-                                  setFormData({ ...formData, feedStyleVariationId: variation.id })
-                                }
+                                onClick={() => {
+                                  console.log('[Onboarding Wizard] User explicitly selected variation:', variation.id, variation.name)
+                                  userExplicitlySelectedVariationRef.current = true // Prevent auto-reset
+                                  setFormData((prev) => ({ ...prev, feedStyleVariationId: variation.id }))
+                                }}
                                 className={`w-full text-left p-4 border transition-all duration-200 ${
                                   isSelected
                                     ? "border-stone-950 bg-stone-950 text-stone-50"

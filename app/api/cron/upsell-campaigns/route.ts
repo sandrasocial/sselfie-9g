@@ -62,8 +62,7 @@ export async function GET(request: NextRequest) {
       FROM freebie_subscribers fs
       LEFT JOIN email_logs el ON el.user_email = fs.email AND el.email_type = 'upsell-day-10'
       LEFT JOIN users u ON u.email = fs.email
-      WHERE fs.created_at < NOW() - INTERVAL '10 days'
-      AND fs.created_at >= NOW() - INTERVAL '11 days'
+      WHERE fs.created_at <= NOW() - INTERVAL '10 days'
       AND fs.converted_to_user = FALSE
       AND el.id IS NULL
       AND u.id IS NULL
@@ -122,8 +121,7 @@ export async function GET(request: NextRequest) {
       FROM freebie_subscribers fs
       LEFT JOIN email_logs el ON el.user_email = fs.email AND el.email_type = 'upsell-freebie-membership'
       LEFT JOIN users u ON u.email = fs.email
-      WHERE fs.created_at < NOW() - INTERVAL '20 days'
-      AND fs.created_at >= NOW() - INTERVAL '21 days'
+      WHERE fs.created_at <= NOW() - INTERVAL '20 days'
       AND fs.converted_to_user = FALSE
       AND el.id IS NULL
       AND u.id IS NULL

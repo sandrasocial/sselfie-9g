@@ -133,7 +133,6 @@ export async function GET(request: Request) {
       LEFT JOIN email_logs el ON el.user_email = bs.email AND el.email_type = 'blueprint-followup-day-3'
       WHERE bs.day_3_email_sent = FALSE
         AND bs.created_at <= NOW() - INTERVAL '3 days'
-        AND bs.created_at > NOW() - INTERVAL '4 days'
         AND bs.welcome_email_sent = TRUE
         AND el.id IS NULL
       ORDER BY bs.created_at ASC
@@ -204,7 +203,6 @@ export async function GET(request: Request) {
       LEFT JOIN email_logs el ON el.user_email = bs.email AND el.email_type = 'blueprint-followup-day-7'
       WHERE bs.day_7_email_sent = FALSE
         AND bs.created_at <= NOW() - INTERVAL '7 days'
-        AND bs.created_at > NOW() - INTERVAL '8 days'
         AND bs.welcome_email_sent = TRUE
         AND el.id IS NULL
       ORDER BY bs.created_at ASC
@@ -275,7 +273,6 @@ export async function GET(request: Request) {
       LEFT JOIN email_logs el ON el.user_email = bs.email AND el.email_type = 'blueprint-followup-day-14'
       WHERE bs.day_14_email_sent = FALSE
         AND bs.created_at <= NOW() - INTERVAL '14 days'
-        AND bs.created_at > NOW() - INTERVAL '15 days'
         AND bs.welcome_email_sent = TRUE
         AND el.id IS NULL
       ORDER BY bs.created_at ASC
@@ -356,7 +353,6 @@ export async function GET(request: Request) {
       WHERE bs.paid_blueprint_purchased = TRUE
         AND bs.day_1_paid_email_sent = FALSE
         AND bs.paid_blueprint_purchased_at <= NOW() - INTERVAL '1 day'
-        AND bs.paid_blueprint_purchased_at > NOW() - INTERVAL '2 days'
         AND el.id IS NULL
         AND s.id IS NULL
       ORDER BY bs.paid_blueprint_purchased_at ASC
@@ -449,7 +445,6 @@ export async function GET(request: Request) {
       WHERE bs.paid_blueprint_purchased = TRUE
         AND bs.day_3_paid_email_sent = FALSE
         AND bs.paid_blueprint_purchased_at <= NOW() - INTERVAL '3 days'
-        AND bs.paid_blueprint_purchased_at > NOW() - INTERVAL '4 days'
         AND el.id IS NULL
         AND s.id IS NULL
       ORDER BY bs.paid_blueprint_purchased_at ASC
@@ -542,7 +537,6 @@ export async function GET(request: Request) {
       WHERE bs.paid_blueprint_purchased = TRUE
         AND bs.day_7_paid_email_sent = FALSE
         AND bs.paid_blueprint_purchased_at <= NOW() - INTERVAL '7 days'
-        AND bs.paid_blueprint_purchased_at > NOW() - INTERVAL '8 days'
         AND el.id IS NULL
         AND s.id IS NULL
       ORDER BY bs.paid_blueprint_purchased_at ASC

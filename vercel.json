@@ -33,6 +33,10 @@
       "schedule": "*/15 * * * *"
     },
     {
+      "path": "/api/cron/backfill-resend-audience",
+      "schedule": "30 * * * *"
+    },
+    {
       "path": "/api/cron/welcome-sequence",
       "schedule": "0 10 * * *"
     },

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { X, ChevronDown, ChevronUp } from "lucide-react"
 import { DesignClasses, ComponentClasses } from "@/lib/design-tokens"
@@ -8,27 +8,9 @@ import { Button } from "@/components/ui/button"
 import { BlueprintSelfieUpload } from "@/components/blueprint/blueprint-selfie-upload"
 import useSWR, { mutate } from "swr"
 
-// Feed style examples (V1)
-const FEED_EXAMPLES_V1 = {
-  luxury: {
-    name: "Dark & Moody",
-    colors: ["#0a0a0a", "#2d2d2d", "#4a4a4a"],
-    grid: ["selfie", "selfie", "flatlay", "selfie", "selfie", "selfie", "flatlay", "selfie", "selfie"],
-  },
-  minimal: {
-    name: "Light & Minimalistic",
-    colors: ["#f5f5f5", "#e5e5e5", "#d4d4d4"],
-    grid: ["selfie", "selfie", "selfie", "flatlay", "selfie", "selfie", "selfie", "flatlay", "selfie"],
-  },
-  beige: {
-    name: "Beige Aesthetic",
-    colors: ["#c9b8a8", "#a89384", "#8a7968"],
-    grid: ["selfie", "flatlay", "selfie", "selfie", "selfie", "selfie", "selfie", "flatlay", "selfie"],
-  },
-}
-
 // Feed style examples (V2 - 7 curated styles)
-const FEED_EXAMPLES_V2 = {
+// V1 code removed - V2 is always enabled
+const FEED_EXAMPLES = {
   "Dark & Moody": {
     name: "Dark & Moody",
     colors: ["#0b0b0f", "#2a2a2f", "#4a4a4f"],
@@ -66,7 +48,7 @@ const FEED_EXAMPLES_V2 = {
   },
 }
 
-export type FeedStyle = keyof typeof FEED_EXAMPLES_V1 | keyof typeof FEED_EXAMPLES_V2
+export type FeedStyle = keyof typeof FEED_EXAMPLES
 
 export interface FeedStyleModalData {
   feedStyle: FeedStyle
@@ -83,7 +65,7 @@ interface FeedStyleModalProps {
   defaultFeedStyleVariationId?: number | null // Current feed's variation_id (for existing feeds)
   isLoading?: boolean
   isPreviewFeed?: boolean // Optional: true for preview feeds, false for full feeds
-  useFeedPlannerV2?: boolean
+  // V2 is always enabled - useFeedPlannerV2 prop removed
 }
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
@@ -104,10 +86,11 @@ export default function FeedStyleModal({
   defaultFeedStyleVariationId,
   isLoading = false,
   isPreviewFeed = false,
-  useFeedPlannerV2 = false,
 }: FeedStyleModalProps) {
+  // V2 is always enabled
+  
   const [selectedStyle, setSelectedStyle] = useState<FeedStyle>(
-    defaultFeedStyle || (useFeedPlannerV2 ? "Dark & Moody" : "minimal")
+    defaultFeedStyle || "Dark & Moody"
   )
   const [showAdvanced, setShowAdvanced] = useState(true) // Show advanced options by default
   const [selfieImages, setSelfieImages] = useState<string[]>([])
@@ -134,7 +117,7 @@ export default function FeedStyleModal({
   )
 
   const { data: variationData } = useSWR(
-    open && useFeedPlannerV2 ? `/api/feed-planner/v2/variations?style=${encodeURIComponent(selectedStyle)}` : null,
+    open ? `/api/feed-planner/v2/variations?style=${encodeURIComponent(selectedStyle)}` : null,
     fetcher,
     {
       revalidateOnFocus: false,
@@ -142,73 +125,103 @@ export default function FeedStyleModal({
     }
   )
 
-  // Load current user values when modal opens
-  useEffect(() => {
-    if (open) {
-      // Revalidate when modal opens to get latest data
-      mutatePersonalBrand()
-    }
-  }, [open, mutatePersonalBrand])
+  // Track if user explicitly selected variation (prevents auto-reset)
+  const userExplicitlySelectedVariationRef = useRef(false)
+  const previousStyleRef = useRef<FeedStyle | null>(selectedStyle)
+  const hasInitializedRef = useRef(false)
 
-  // Update selections when data loads
+  // SIMPLIFIED: ONE useEffect for initialization only (runs once when modal opens)
   useEffect(() => {
-    if (open && personalBrandData?.data) {
-      console.log('[Feed Style Modal] Loading personal brand data:', {
-        settingsPreference: personalBrandData.data.settingsPreference,
-      })
-      
-      let feedStyleFromSettings: FeedStyle | null = null
-      // Load feed style from settings_preference[0] (synced from previous selections)
-      // This ensures the modal shows the user's last selected feed style
-      if (personalBrandData.data.settingsPreference) {
-        try {
-          const settings = Array.isArray(personalBrandData.data.settingsPreference)
-            ? personalBrandData.data.settingsPreference
-            : typeof personalBrandData.data.settingsPreference === 'string'
-            ? JSON.parse(personalBrandData.data.settingsPreference)
-            : []
-          
-          if (Array.isArray(settings) && settings.length > 0) {
-            const rawSettingsValue = String(settings[0] || '').trim()
-            const settingsValue = rawSettingsValue.toLowerCase()
-            if (useFeedPlannerV2) {
-              const v2Match = Object.keys(FEED_EXAMPLES_V2).find(
-                (style) => style.toLowerCase() === settingsValue
-              )
-              if (v2Match) {
-                feedStyleFromSettings = v2Match as FeedStyle
-                setSelectedStyle(feedStyleFromSettings)
-                console.log('[Feed Style Modal] Loaded V2 feed style from settings_preference:', v2Match)
-              }
-            } else if (settingsValue === 'luxury' || settingsValue === 'minimal' || settingsValue === 'beige') {
-              feedStyleFromSettings = settingsValue as FeedStyle
-              setSelectedStyle(feedStyleFromSettings)
-              console.log('[Feed Style Modal] Loaded feed style from settings_preference:', settingsValue)
-            }
-          }
-        } catch (e) {
-          console.warn('[Feed Style Modal] Failed to parse settingsPreference for feed style:', e)
-        }
-      }
-
-      // Priority: Use feed's variation_id if provided (existing feed), otherwise use personal brand
-      if (defaultFeedStyleVariationId !== undefined && defaultFeedStyleVariationId !== null) {
-        setSelectedVariationId(defaultFeedStyleVariationId)
-        console.log('[Feed Style Modal] Loaded variation from feed data:', defaultFeedStyleVariationId)
-      } else if (useFeedPlannerV2 && personalBrandData.data.feedStyleVariationId !== undefined) {
-        const variationId = Number(personalBrandData.data.feedStyleVariationId)
-        if (Number.isFinite(variationId)) {
-          setSelectedVariationId(variationId)
-          console.log('[Feed Style Modal] Loaded variation from personal brand:', variationId)
-        }
-      }
-      
-      // Fashion style selection removed for V2
-    } else if (!open) {
-      // Reset selections when modal closes
+    if (!open) {
+      // Reset everything when modal closes
       setSelectedVariationId(null)
+      userExplicitlySelectedVariationRef.current = false
+      previousStyleRef.current = null
+      hasInitializedRef.current = false
+      mutatePersonalBrand() // Refresh for next open
+      return
     }
-  }, [open, personalBrandData])
+
+    // Only initialize once when modal opens (not on every data change)
+    if (hasInitializedRef.current) {
+      return // Already initialized, don't override user's selections
+    }
+
+    hasInitializedRef.current = true
+    previousStyleRef.current = selectedStyle
+
+    // Load feed style from personal brand (if no defaultFeedStyle provided)
+    if (!defaultFeedStyle && personalBrandData?.data?.settingsPreference) {
+      try {
+        const settings = Array.isArray(personalBrandData.data.settingsPreference)
+          ? personalBrandData.data.settingsPreference
+          : typeof personalBrandData.data.settingsPreference === 'string'
+          ? JSON.parse(personalBrandData.data.settingsPreference)
+          : []
+        
+        if (Array.isArray(settings) && settings.length > 0) {
+          const rawSettingsValue = String(settings[0] || '').trim()
+          const settingsValue = rawSettingsValue.toLowerCase()
+          const v2Match = Object.keys(FEED_EXAMPLES).find(
+            (style) => style.toLowerCase() === settingsValue
+          )
+          if (v2Match) {
+            setSelectedStyle(v2Match as FeedStyle)
+            previousStyleRef.current = v2Match as FeedStyle
+            console.log('[Feed Style Modal] Initialized style from personal brand:', v2Match)
+          }
+        }
+      } catch (e) {
+        console.warn('[Feed Style Modal] Failed to parse settingsPreference:', e)
+      }
+    }
+
+    // Load variation (priority: feed data > personal brand > default)
+    if (defaultFeedStyleVariationId !== undefined && defaultFeedStyleVariationId !== null) {
+      setSelectedVariationId(defaultFeedStyleVariationId)
+      console.log('[Feed Style Modal] Initialized variation from feed data:', defaultFeedStyleVariationId)
+    } else if (personalBrandData?.data?.feedStyleVariationId !== undefined) {
+      const variationId = Number(personalBrandData.data.feedStyleVariationId)
+      if (Number.isFinite(variationId)) {
+        setSelectedVariationId(variationId)
+        console.log('[Feed Style Modal] Initialized variation from personal brand:', variationId)
+      }
+    }
+    // If no variation found, wait for variationData to load and set default
+  }, [open]) // ONLY run when modal opens/closes
+
+  // Set default variation when variationData loads (only if no variation is set yet)
+  useEffect(() => {
+    if (!open || !variationData || userExplicitlySelectedVariationRef.current) return
+    
+    const variations = (variationData?.variations || []) as FeedStyleVariationOption[]
+    if (variations.length === 0) return
+
+    // Only set default if no variation is currently selected
+    if (selectedVariationId === null) {
+      const defaultId =
+        variationData?.defaultVariationId ||
+        variations.find((variation) => variation.is_default)?.id ||
+        variations[0]?.id
+      if (defaultId) {
+        console.log('[Feed Style Modal] Setting default variation on load:', defaultId)
+        setSelectedVariationId(Number(defaultId))
+      }
+    }
+  }, [open, variationData, selectedVariationId]) // Only set default if null
+
+  // Handle style change - reset variation to default for new style
+  useEffect(() => {
+    if (!open) return
+    
+    const styleChanged = previousStyleRef.current !== selectedStyle && previousStyleRef.current !== null
+    if (styleChanged) {
+      console.log('[Feed Style Modal] Style changed, resetting variation')
+      previousStyleRef.current = selectedStyle
+      userExplicitlySelectedVariationRef.current = false // Allow auto-selection for new style
+      setSelectedVariationId(null) // Will be set by variationData effect
+    }
+  }, [open, selectedStyle])
 
   // Load current avatar images
   useEffect(() => {
@@ -218,55 +231,6 @@ export default function FeedStyleModal({
     }
   }, [open, avatarImagesData])
 
-  // Update selected style when default changes
-  useEffect(() => {
-    if (defaultFeedStyle) {
-      setSelectedStyle(defaultFeedStyle)
-    }
-  }, [defaultFeedStyle])
-
-  // Update selected variation when defaultFeedStyleVariationId changes (for existing feeds)
-  useEffect(() => {
-    if (defaultFeedStyleVariationId !== undefined && defaultFeedStyleVariationId !== null) {
-      setSelectedVariationId(defaultFeedStyleVariationId)
-    }
-  }, [defaultFeedStyleVariationId])
-
-  useEffect(() => {
-    if (!useFeedPlannerV2 || !variationData) return
-    const variations = (variationData?.variations || []) as FeedStyleVariationOption[]
-    if (variations.length === 0) {
-      // Only reset if we don't have a valid feed variation_id
-      if (!defaultFeedStyleVariationId) {
-        setSelectedVariationId(null)
-      }
-      return
-    }
-    
-    // Check if current selection is valid for this style
-    const currentSelectionIsValid = selectedVariationId && variations.some((variation) => variation.id === selectedVariationId)
-    
-    // Only set default if:
-    // 1. No variation is currently selected, OR
-    // 2. Current selection is invalid for this style (user switched styles)
-    if (!selectedVariationId || !currentSelectionIsValid) {
-      // Priority order:
-      // 1. Feed's variation_id (if provided and valid for this style)
-      // 2. Default variation for this style
-      const feedVariationIsValid = defaultFeedStyleVariationId && variations.some((v) => v.id === defaultFeedStyleVariationId)
-      if (feedVariationIsValid) {
-        setSelectedVariationId(defaultFeedStyleVariationId)
-      } else {
-        const defaultId =
-          variationData?.defaultVariationId ||
-          variations.find((variation) => variation.is_default)?.id ||
-          variations[0]?.id
-        setSelectedVariationId(defaultId ? Number(defaultId) : null)
-      }
-    }
-    // If current selection is valid, keep it (don't reset)
-  }, [variationData, useFeedPlannerV2, selectedStyle, defaultFeedStyleVariationId])
-
   // Reset advanced section when modal closes
   useEffect(() => {
     if (!open) {
@@ -275,6 +239,11 @@ export default function FeedStyleModal({
   }, [open])
 
   const handleConfirm = () => {
+    console.log('[Feed Style Modal] Confirming selection:', {
+      feedStyle: selectedStyle,
+      feedStyleVariationId: selectedVariationId,
+      userExplicitlySelected: userExplicitlySelectedVariationRef.current,
+    })
     onConfirm({
       feedStyle: selectedStyle,
       feedStyleVariationId: selectedVariationId,
@@ -339,7 +308,7 @@ export default function FeedStyleModal({
                       Feed Style
                     </label>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
-                      {Object.entries(useFeedPlannerV2 ? FEED_EXAMPLES_V2 : FEED_EXAMPLES_V1).map(([key, style]) => {
+                      {Object.entries(FEED_EXAMPLES).map(([key, style]) => {
                         const feedStyle = key as FeedStyle
                         const isSelected = selectedStyle === feedStyle
                         const isDefault = defaultFeedStyle === feedStyle
@@ -417,7 +386,7 @@ export default function FeedStyleModal({
                     </div>
                   </div>
 
-                  {useFeedPlannerV2 && (
+                  {(
                     <div>
                       <label className="block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-stone-700 mb-4">
                         Choose Variation
@@ -428,7 +397,12 @@ export default function FeedStyleModal({
                           return (
                             <button
                               key={variation.id}
-                              onClick={() => setSelectedVariationId(variation.id)}
+                              onClick={() => {
+                                console.log('[Feed Style Modal] User explicitly selected variation:', variation.id, variation.name)
+                                // Mark as user selection to prevent auto-reset
+                                userExplicitlySelectedVariationRef.current = true
+                                setSelectedVariationId(variation.id)
+                              }}
                               className={`w-full text-left p-4 border transition-all duration-200 ${
                                 isSelected
                                   ? "border-stone-950 bg-stone-950 text-stone-50"

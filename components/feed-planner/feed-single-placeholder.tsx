@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo, useRef } from "react"
+import { flushSync } from "react-dom"
 import { Loader2, ArrowRight, Download } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { ToastAction } from "@/components/ui/toast"
@@ -144,11 +145,14 @@ export default function FeedSinglePlaceholder({
       return
     }
 
-    // OPTIMISTIC UI: Set temporary predictionId immediately to show loading state
-    // This makes the UI feel instant even though API call takes a few seconds
+    // CRITICAL: Use flushSync to force immediate render of loading state
+    // This ensures users see instant feedback, even if API call takes 5-10 seconds
     const tempPredictionId = `temp-${Date.now()}`
-    setPredictionId(tempPredictionId)
+    flushSync(() => {
+      setPredictionId(tempPredictionId)
+    })
 
+    // Make API call (non-blocking, UI already shows loading state)
     try {
       const response = await fetch(`/api/feed/${feedId}/generate-single`, {
         method: "POST",

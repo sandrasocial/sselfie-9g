@@ -186,6 +186,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ feed
       hasBio: !!response.bio,
       highlightsCount: response.highlights.length,
       feedKeys: Object.keys(response.feed),
+      feedStyle: response.feed.feed_style,
+      feedStyleVariationId: response.feed.feed_style_variation_id,
     })
 
     // Final validation before returning

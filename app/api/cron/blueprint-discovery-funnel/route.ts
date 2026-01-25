@@ -274,7 +274,6 @@ export async function GET(request: Request) {
         AND bs.email = ANY(${allEmails})
         AND (s.status IS NULL OR s.status != 'active' OR s.is_test_mode = true)
         AND bs.blueprint_completed_at <= NOW() - INTERVAL '3 days'
-        AND bs.blueprint_completed_at > NOW() - INTERVAL '4 days'
         AND el_email2.id IS NULL
       
     `
@@ -471,7 +470,6 @@ export async function GET(request: Request) {
         AND mcm.role = 'user'
         AND (s.status IS NULL OR s.status != 'active' OR s.is_test_mode = true)
         AND mcm.created_at <= NOW() - INTERVAL '10 days'
-        AND mcm.created_at > NOW() - INTERVAL '11 days'
         AND el_email5.id IS NULL
       GROUP BY u.email
       HAVING COUNT(mcm.id) > 0

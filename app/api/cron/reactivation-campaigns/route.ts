@@ -297,8 +297,7 @@ export async function GET(request: Request) {
       LEFT JOIN email_logs el_day2 ON el_day2.user_email = el_day0.user_email AND el_day2.email_type = 'reactivation-day-2'
       WHERE el_day0.email_type = 'reactivation-day-0'
         AND el_day0.user_email = ANY(${eligibleEmails})
-        AND el_day0.sent_at <= NOW() - INTERVAL '2 days'
-        AND el_day0.sent_at > NOW() - INTERVAL '3 days'
+      AND el_day0.sent_at <= NOW() - INTERVAL '2 days'
         AND el_day2.id IS NULL
       
     `
@@ -347,8 +346,7 @@ export async function GET(request: Request) {
       LEFT JOIN email_logs el_day5 ON el_day5.user_email = el_day0.user_email AND el_day5.email_type = 'reactivation-day-5'
       WHERE el_day0.email_type = 'reactivation-day-0'
         AND el_day0.user_email = ANY(${eligibleEmails})
-        AND el_day0.sent_at <= NOW() - INTERVAL '5 days'
-        AND el_day0.sent_at > NOW() - INTERVAL '6 days'
+      AND el_day0.sent_at <= NOW() - INTERVAL '5 days'
         AND el_day5.id IS NULL
       
     `
@@ -397,8 +395,7 @@ export async function GET(request: Request) {
       LEFT JOIN email_logs el_day7 ON el_day7.user_email = el_day0.user_email AND el_day7.email_type = 'reactivation-day-7'
       WHERE el_day0.email_type = 'reactivation-day-0'
         AND el_day0.user_email = ANY(${eligibleEmails})
-        AND el_day0.sent_at <= NOW() - INTERVAL '7 days'
-        AND el_day0.sent_at > NOW() - INTERVAL '8 days'
+      AND el_day0.sent_at <= NOW() - INTERVAL '7 days'
         AND el_day7.id IS NULL
       
     `
@@ -447,8 +444,7 @@ export async function GET(request: Request) {
       LEFT JOIN email_logs el_day10 ON el_day10.user_email = el_day0.user_email AND el_day10.email_type = 'reactivation-day-10'
       WHERE el_day0.email_type = 'reactivation-day-0'
         AND el_day0.user_email = ANY(${eligibleEmails})
-        AND el_day0.sent_at <= NOW() - INTERVAL '10 days'
-        AND el_day0.sent_at > NOW() - INTERVAL '11 days'
+      AND el_day0.sent_at <= NOW() - INTERVAL '10 days'
         AND el_day10.id IS NULL
       
     `
@@ -497,8 +493,7 @@ export async function GET(request: Request) {
       LEFT JOIN email_logs el_day14 ON el_day14.user_email = el_day0.user_email AND el_day14.email_type = 'reactivation-day-14'
       WHERE el_day0.email_type = 'reactivation-day-0'
         AND el_day0.user_email = ANY(${eligibleEmails})
-        AND el_day0.sent_at <= NOW() - INTERVAL '14 days'
-        AND el_day0.sent_at > NOW() - INTERVAL '15 days'
+      AND el_day0.sent_at <= NOW() - INTERVAL '14 days'
         AND el_day14.id IS NULL
       
     `
@@ -547,8 +542,7 @@ export async function GET(request: Request) {
       LEFT JOIN email_logs el_day20 ON el_day20.user_email = el_day0.user_email AND el_day20.email_type = 'reactivation-day-20'
       WHERE el_day0.email_type = 'reactivation-day-0'
         AND el_day0.user_email = ANY(${eligibleEmails})
-        AND el_day0.sent_at <= NOW() - INTERVAL '20 days'
-        AND el_day0.sent_at > NOW() - INTERVAL '21 days'
+      AND el_day0.sent_at <= NOW() - INTERVAL '20 days'
         AND el_day20.id IS NULL
       
     `
@@ -597,8 +591,7 @@ export async function GET(request: Request) {
       LEFT JOIN email_logs el_day25 ON el_day25.user_email = el_day0.user_email AND el_day25.email_type = 'reactivation-day-25'
       WHERE el_day0.email_type = 'reactivation-day-0'
         AND el_day0.user_email = ANY(${eligibleEmails})
-        AND el_day0.sent_at <= NOW() - INTERVAL '25 days'
-        AND el_day0.sent_at > NOW() - INTERVAL '26 days'
+      AND el_day0.sent_at <= NOW() - INTERVAL '25 days'
         AND el_day25.id IS NULL
       
     `

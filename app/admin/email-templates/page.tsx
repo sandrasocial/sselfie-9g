@@ -32,6 +32,8 @@ export default function MarketingTemplateEditorPage() {
   const [html, setHtml] = useState("")
   const [text, setText] = useState("")
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
+  const [sampleName, setSampleName] = useState("Sandra")
+  const [sampleEmail, setSampleEmail] = useState("sandra@sselfie.ai")
 
   useEffect(() => {
     loadTemplates()
@@ -80,6 +82,14 @@ export default function MarketingTemplateEditorPage() {
     setText(baseText)
     setStatusMessage(null)
   }, [selectedTemplate])
+
+  const renderPreview = (rawHtml: string) => {
+    const name = sampleName.trim() || "friend"
+    const email = sampleEmail.trim() || "hello@sselfie.ai"
+    return rawHtml
+      .replaceAll("{{{FIRST_NAME|friend}}}", name)
+      .replaceAll("{{{EMAIL}}}", email)
+  }
 
   const handleSave = async () => {
     if (!selectedTemplate) return
@@ -273,9 +283,31 @@ export default function MarketingTemplateEditorPage() {
 
                 <div>
                   <p className="text-xs uppercase tracking-[0.15em] text-stone-500 mb-2">Preview</p>
+                  <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                    <div className="flex-1">
+                      <label className="block text-[10px] tracking-[0.15em] uppercase text-stone-400 mb-1">
+                        Sample name
+                      </label>
+                      <input
+                        value={sampleName}
+                        onChange={(event) => setSampleName(event.target.value)}
+                        className="w-full border border-stone-200 px-3 py-2 text-xs"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-[10px] tracking-[0.15em] uppercase text-stone-400 mb-1">
+                        Sample email
+                      </label>
+                      <input
+                        value={sampleEmail}
+                        onChange={(event) => setSampleEmail(event.target.value)}
+                        className="w-full border border-stone-200 px-3 py-2 text-xs"
+                      />
+                    </div>
+                  </div>
                   <div
                     className="border border-stone-200 rounded-md p-4 text-sm"
-                    dangerouslySetInnerHTML={{ __html: html }}
+                    dangerouslySetInnerHTML={{ __html: renderPreview(html) }}
                   />
                 </div>
               </div>

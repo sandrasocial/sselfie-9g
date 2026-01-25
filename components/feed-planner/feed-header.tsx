@@ -64,7 +64,8 @@ export default function FeedHeader({
     }
   )
 
-  const useFeedPlannerV2 = Boolean(userInfo?.use_feed_planner_v2)
+  // V2 is always enabled - no need to check flag
+  const useFeedPlannerV2 = true
   
   // Extract last feed style from settings_preference[0]
   const lastFeedStyle: FeedStyle | null = personalBrandData?.data?.settingsPreference?.[0] || null
@@ -80,162 +81,35 @@ export default function FeedHeader({
     setIsCreatingPreviewFeed(true)
     
     try {
-      // Always update personal brand to sync feedStyle and visualAesthetic
-      // This ensures style selections are saved to personal brand
-      try {
-        // Fetch current personal brand to preserve existing settings_preference
-        const currentBrandResponse = await fetch('/api/profile/personal-brand', {
-          credentials: 'include',
-        })
-        let currentSettingsPreference: string[] | null = null
-        
-        if (currentBrandResponse.ok) {
-          const currentBrand = await currentBrandResponse.json()
-          if (currentBrand?.data?.settingsPreference) {
-            // Preserve existing settings_preference array, but sanitize corrupted data
-            const rawSettings = Array.isArray(currentBrand.data.settingsPreference)
-              ? currentBrand.data.settingsPreference
-              : [currentBrand.data.settingsPreference].filter(Boolean)
-            
-            // Sanitize: filter out corrupted nested JSON strings, keep only valid simple strings
-            // Corrupted data looks like: '{"luxury","{\\"luxury\\"...' (contains nested JSON)
-            // Valid data looks like: 'luxury', 'minimal', 'beige' (simple strings)
-            const validStyles = useFeedPlannerV2
-              ? [
-                  "Dark & Moody",
-                  "Beige Aesthetic",
-                  "Light & Minimalistic",
-                  "Luxury Future Self",
-                  "Casual Bohemian",
-                  "Athletic & Wellness",
-                  "Coastal Aesthetics",
-                ]
-              : ["luxury", "minimal", "beige"]
-            currentSettingsPreference = rawSettings
-              .filter((s: any) => {
-                if (typeof s !== 'string') return false
-                // If it's a very long string (>100 chars) or contains nested JSON patterns, it's corrupted
-                if (s.length > 100) return false
-                if (s.includes('{\\"') || s.includes('\\\\')) return false
-                // Only keep simple strings that match valid feed styles
-                return validStyles.some((style) => style.toLowerCase() === s.toLowerCase().trim())
-              })
-              .map((s: string) => {
-                const trimmed = s.trim()
-                if (!useFeedPlannerV2) return trimmed.toLowerCase()
-                return validStyles.find((style) => style.toLowerCase() === trimmed.toLowerCase()) || trimmed
-              })
-          }
-        }
-        
-        // Update settings_preference: set feedStyle as first element, preserve rest (now sanitized)
-        const updatedSettingsPreference = currentSettingsPreference 
-          ? [data.feedStyle, ...currentSettingsPreference.filter((s: string) => s !== data.feedStyle)]
-          : [data.feedStyle]
-        
-        // Build update payload - only include fields that have values
-        const updatePayload: Record<string, any> = {
-          settingsPreference: updatedSettingsPreference,
-        }
-        
-        if (data.feedStyleVariationId !== undefined) {
-          updatePayload.feedStyleVariationId = data.feedStyleVariationId
-        }
+      // Update personal brand in background (non-blocking) - don't await it
+      fetch('/api/profile/personal-brand', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          settingsPreference: [data.feedStyle],
+          feedStyleVariationId: data.feedStyleVariationId,
+        }),
+      }).catch((error) => {
+        console.error('[Feed Header] Background personal brand update failed (non-blocking):', error)
+      })
 
-        // Only include visualAesthetic if it's provided and not empty
-        if (data.visualAesthetic && Array.isArray(data.visualAesthetic) && data.visualAesthetic.length > 0) {
-          updatePayload.visualAesthetic = data.visualAesthetic
-        }
-        
-        console.log('[Feed Header] Sending personal brand update payload:', updatePayload)
-        
-        const updateResponse = await fetch('/api/profile/personal-brand', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify(updatePayload),
-        })
-        
-        if (updateResponse.ok) {
-          const updateResult = await updateResponse.json()
-          console.log('[Feed Header] Personal brand synced successfully:', updateResult)
-          // Revalidate SWR cache to refresh the modal data
-          await mutate('/api/profile/personal-brand')
-          console.log('[Feed Header] SWR cache revalidated')
-        } else {
-          // Try to get error details from response
-          const status = updateResponse?.status ?? 'unknown'
-          const statusText = updateResponse?.statusText ?? 'Unknown error'
-          let errorMessage = `HTTP ${status}: ${statusText}`
-          let errorData: any = null
-          let responseText: string = ''
-          
-          try {
-            responseText = await updateResponse.text()
-            console.log('[Feed Header] Error response text:', responseText.substring(0, 500))
-            
-            if (responseText && responseText.trim()) {
-              try {
-                errorData = JSON.parse(responseText)
-                errorMessage = errorData.details || errorData.error || errorData.message || errorMessage
-                console.log('[Feed Header] Parsed error data:', errorData)
-              } catch (parseErr) {
-                // Not JSON, use text as error message
-                errorMessage = responseText.substring(0, 500) || errorMessage
-                console.log('[Feed Header] Error response is not JSON, using text:', errorMessage)
-              }
-            } else {
-              // Empty response body - use status-based message
-              if (status === 500) {
-                errorMessage = 'Internal server error - please check server logs'
-              } else if (status === 400) {
-                errorMessage = 'Invalid data format - please check your selections'
-              } else if (status === 401) {
-                errorMessage = 'Unauthorized - please refresh and try again'
-              } else if (status === 404) {
-                errorMessage = 'User not found - please refresh and try again'
-              } else if (status === 413) {
-                errorMessage = 'Request too large - data may be corrupted, please try again'
-              }
-            }
-          } catch (parseError) {
-            console.error('[Feed Header] Error reading response:', parseError)
-            errorMessage = `Failed to read error response: ${parseError instanceof Error ? parseError.message : String(parseError)}`
-          }
-          
-          console.error('[Feed Header] Failed to update personal brand:', {
-            status,
-            statusText,
-            error: errorMessage,
-            errorData: errorData || 'No error data',
-            responseText: responseText.substring(0, 200) || 'Empty response',
-            url: '/api/profile/personal-brand',
-            payload: updatePayload,
-          })
-        }
-      } catch (error) {
-        // Network error or fetch failure
-        const errorMessage = error instanceof Error ? error.message : String(error)
-        const errorStack = error instanceof Error ? error.stack : undefined
-        console.error('[Feed Header] Network error updating personal brand:', {
-          error: errorMessage,
-          errorType: error instanceof Error ? error.constructor.name : typeof error,
-          stack: errorStack,
-          url: '/api/profile/personal-brand',
-        })
-        // Continue with feed creation even if personal brand update fails
-        // This is intentional - feed creation should succeed even if personal brand sync fails
+      // CRITICAL: Always pass feedStyleVariationId to feed creation (even if null)
+      const feedCreationPayload = {
+        feedStyle: data.feedStyle,
+        visualAesthetic: data.visualAesthetic,
+        feedStyleVariationId: data.feedStyleVariationId,
       }
-
+      console.log('[Feed Header] Creating preview feed with:', {
+        feedStyle: feedCreationPayload.feedStyle,
+        feedStyleVariationId: feedCreationPayload.feedStyleVariationId,
+      })
+      
       const response = await fetch('/api/feed/create-free-example', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ 
-          feedStyle: data.feedStyle,
-          visualAesthetic: data.visualAesthetic,
-          feedStyleVariationId: data.feedStyleVariationId,
-        }),
+        body: JSON.stringify(feedCreationPayload),
       })
 
       if (!response.ok) {
@@ -561,15 +435,23 @@ export default function FeedHeader({
         // This is intentional - feed creation should succeed even if personal brand sync fails
       }
 
+      // CRITICAL: Always pass feedStyleVariationId to feed creation (even if null)
+      // This ensures the feed uses the user's selection, not a fallback
+      const feedCreationPayload = {
+        feedStyle: data.feedStyle,
+        visualAesthetic: data.visualAesthetic,
+        feedStyleVariationId: data.feedStyleVariationId, // Explicitly pass (can be null)
+      }
+      console.log('[Feed Header] Creating full feed with:', {
+        feedStyle: feedCreationPayload.feedStyle,
+        feedStyleVariationId: feedCreationPayload.feedStyleVariationId,
+      })
+      
       const response = await fetch('/api/feed/create-manual', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ 
-          feedStyle: data.feedStyle,
-          visualAesthetic: data.visualAesthetic,
-          feedStyleVariationId: data.feedStyleVariationId,
-        }),
+        body: JSON.stringify(feedCreationPayload),
       })
 
       if (!response.ok) {
@@ -868,11 +750,10 @@ export default function FeedHeader({
           }
         }}
         onConfirm={handleFeedStyleConfirm}
-        defaultFeedStyle={feedData?.feed_style || lastFeedStyle}
-        defaultFeedStyleVariationId={feedData?.feed_style_variation_id ?? undefined}
+        defaultFeedStyle={feedData?.feed?.feed_style || lastFeedStyle}
+        defaultFeedStyleVariationId={feedData?.feed?.feed_style_variation_id ?? undefined}
         isLoading={isCreatingFeed || isCreatingPreviewFeed}
         isPreviewFeed={isPreviewFeedModal}
-        useFeedPlannerV2={useFeedPlannerV2}
       />
     </div>
   )

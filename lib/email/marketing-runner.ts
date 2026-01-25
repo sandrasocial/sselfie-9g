@@ -2,6 +2,7 @@ import { sendMarketingBroadcast, syncMarketingContacts } from "@/lib/email/marke
 import { neon } from "@neondatabase/serverless"
 import { logAdminError } from "@/lib/admin-error-log"
 import { resolveMarketingTemplateContent } from "@/lib/email/marketing-template-overrides"
+import { addContactsToHistorySegment } from "@/lib/resend/segment-history"
 import { getAudienceContacts } from "@/lib/resend/get-audience-contacts"
 import {
   claimQueueBatch,
@@ -203,6 +204,12 @@ export async function processMarketingRun(input: {
         contacts,
         existingContacts,
       })
+
+      if (tagKey.startsWith("sequence_")) {
+        await addContactsToHistorySegment(tagKey, contacts).catch((error) => {
+          console.error("[v0] Failed to update history segment:", error)
+        })
+      }
 
       if (syncResult.success) {
         await updateQueueBatchStatus({

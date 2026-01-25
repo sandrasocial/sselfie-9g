@@ -272,3 +272,47 @@ export async function addContactToSegment(
     }
   }
 }
+
+/**
+ * Remove a contact from a specific segment
+ */
+export async function removeContactFromSegment(
+  email: string,
+  segmentId: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    if (!process.env.RESEND_API_KEY) {
+      console.log("[v0] RESEND_API_KEY not configured, skipping segment removal")
+      return { success: false, error: "Resend not configured" }
+    }
+
+    if (!audienceId) {
+      console.log("[v0] RESEND_AUDIENCE_ID not configured, skipping segment removal")
+      return { success: false, error: "Audience not configured" }
+    }
+
+    console.log(`[v0] Removing contact ${email} from segment ${segmentId}`)
+
+    const { error } = await resend.contacts.segments.remove({
+      email,
+      segmentId,
+    })
+
+    if (error) {
+      if (error.message?.includes("not found") || error.message?.includes("missing")) {
+        return { success: true }
+      }
+      console.error(`[v0] Error removing contact from segment:`, error)
+      return { success: false, error: error.message }
+    }
+
+    console.log(`[v0] Successfully removed ${email} from segment`)
+    return { success: true }
+  } catch (error) {
+    console.error(`[v0] Exception removing contact from segment:`, error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    }
+  }
+}

@@ -177,6 +177,8 @@ export async function getApprovedScenePrompts(
 ): Promise<ScenePromptV2[]> {
   const resolvedVariationId = variationId ?? (await getDefaultVariationId(styleId))
   console.log(`[v0] [PROMPT-LOADER] getApprovedScenePrompts: styleId=${styleId}, variationId=${variationId}, resolvedVariationId=${resolvedVariationId}`)
+  
+  // Query with proper NULL handling
   const rows = await sql`
     SELECT id, feed_style_id, position, prompt_text, is_primary, variation_name, variation_id, approved, test_image_url
     FROM scene_prompts_v2
@@ -185,6 +187,32 @@ export async function getApprovedScenePrompts(
       AND (variation_id IS NULL OR variation_id = ${resolvedVariationId})
     ORDER BY position ASC, CASE WHEN variation_id = ${resolvedVariationId} THEN 0 ELSE 1 END ASC, is_primary DESC, id ASC
   `
-  console.log(`[v0] [PROMPT-LOADER] Scene prompts found: ${rows.length} prompts, variation_ids=${rows.map((r: any) => r.variation_id).join(',')}`)
+  
+  // Log detailed breakdown for debugging
+  const specificPrompts = rows.filter((r: any) => r.variation_id === resolvedVariationId)
+  const genericPrompts = rows.filter((r: any) => r.variation_id === null)
+  console.log(`[v0] [PROMPT-LOADER] Scene prompts found: ${rows.length} total (${specificPrompts.length} specific for variationId=${resolvedVariationId}, ${genericPrompts.length} generic)`)
+  
+  // Group by position for detailed logging
+  const byPosition = new Map<number, { specific: number; generic: number }>()
+  for (const row of rows) {
+    const pos = row.position
+    const current = byPosition.get(pos) || { specific: 0, generic: 0 }
+    if (row.variation_id === resolvedVariationId) {
+      current.specific++
+    } else {
+      current.generic++
+    }
+    byPosition.set(pos, current)
+  }
+  
+  // Log per-position breakdown
+  for (let pos = 1; pos <= 9; pos++) {
+    const counts = byPosition.get(pos)
+    if (counts) {
+      console.log(`[v0] [PROMPT-LOADER] Position ${pos}: ${counts.specific} specific, ${counts.generic} generic`)
+    }
+  }
+  
   return rows as ScenePromptV2[]
 }

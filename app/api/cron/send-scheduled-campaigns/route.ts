@@ -3,6 +3,7 @@ import { runScheduledCampaigns } from "@/lib/email/run-scheduled-campaigns"
 import { createCronLogger } from "@/lib/cron-logger"
 import { isEmailTestMode } from "@/lib/email/email-control"
 import { processPendingMarketingRuns } from "@/lib/email/marketing-runner"
+import { processAudienceBackfillBatch } from "@/lib/resend/audience-backfill"
 
 /**
  * Cron Job: Send Scheduled Campaigns
@@ -53,6 +54,7 @@ export async function GET(request: Request) {
     const emailsSent = result.reduce((sum, r) => sum + (r.recipients?.sent || 0), 0)
     const emailsFailed = result.reduce((sum, r) => sum + (r.recipients?.failed || 0), 0)
 
+    await processAudienceBackfillBatch(40)
     await processPendingMarketingRuns()
 
     await cronLogger.success({

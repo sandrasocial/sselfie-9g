@@ -119,7 +119,6 @@ export async function GET(request: Request) {
       AND s.product_type IN ('sselfie_studio_membership', 'brand_studio_membership')
       AND s.is_test_mode = false
       AND el_day0.sent_at <= NOW() - INTERVAL '7 days'
-      AND el_day0.sent_at > NOW() - INTERVAL '8 days'
       AND el_day7.id IS NULL
       
     `
@@ -181,7 +180,6 @@ export async function GET(request: Request) {
       AND s.product_type IN ('sselfie_studio_membership', 'brand_studio_membership')
       AND s.is_test_mode = false
       AND el_day0.sent_at <= NOW() - INTERVAL '14 days'
-      AND el_day0.sent_at > NOW() - INTERVAL '15 days'
       AND el_day14.id IS NULL
       
     `

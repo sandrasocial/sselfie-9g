@@ -77,8 +77,7 @@ export async function GET(request: Request) {
       WHERE s.status = 'active'
         AND s.product_type = 'sselfie_studio_membership'
         AND s.is_test_mode = false
-        AND s.created_at >= NOW() - INTERVAL '2 hours'
-        AND s.created_at < NOW()
+        AND s.created_at <= NOW()
         AND u.email IS NOT NULL
         AND u.email != ''
         AND el.id IS NULL
@@ -147,7 +146,6 @@ export async function GET(request: Request) {
         AND s.product_type = 'sselfie_studio_membership'
         AND s.is_test_mode = false
         AND s.created_at <= NOW() - INTERVAL '2 days'
-        AND s.created_at > NOW() - INTERVAL '3 days'
         AND u.email IS NOT NULL
         AND u.email != ''
         AND el.id IS NULL
@@ -216,7 +214,6 @@ export async function GET(request: Request) {
         AND s.product_type = 'sselfie_studio_membership'
         AND s.is_test_mode = false
         AND s.created_at <= NOW() - INTERVAL '7 days'
-        AND s.created_at > NOW() - INTERVAL '8 days'
         AND u.email IS NOT NULL
         AND u.email != ''
         AND el.id IS NULL

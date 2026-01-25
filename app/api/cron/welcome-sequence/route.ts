@@ -56,8 +56,7 @@ export async function GET(request: Request) {
         FROM users u
         INNER JOIN subscriptions s ON u.id = s.user_id::varchar
         LEFT JOIN email_logs el ON el.user_email = u.email AND el.email_type = 'welcome-day-0'
-        WHERE u.created_at >= NOW() - INTERVAL '2 hours'
-        AND u.created_at < NOW()
+        WHERE u.created_at <= NOW()
         AND s.status = 'active'
         AND s.product_type IN ('sselfie_studio_membership', 'brand_studio_membership')
         AND s.is_test_mode = false
@@ -70,8 +69,7 @@ export async function GET(request: Request) {
         FROM users u
         INNER JOIN subscriptions s ON u.id = s.user_id::varchar
         LEFT JOIN email_logs el ON el.user_email = u.email AND el.email_type = 'welcome-day-3'
-        WHERE u.created_at >= NOW() - INTERVAL '3 days 2 hours'
-        AND u.created_at < NOW() - INTERVAL '3 days'
+        WHERE u.created_at <= NOW() - INTERVAL '3 days'
         AND s.status = 'active'
         AND s.product_type IN ('sselfie_studio_membership', 'brand_studio_membership')
         AND s.is_test_mode = false
@@ -84,8 +82,7 @@ export async function GET(request: Request) {
         FROM users u
         INNER JOIN subscriptions s ON u.id = s.user_id::varchar
         LEFT JOIN email_logs el ON el.user_email = u.email AND el.email_type = 'welcome-day-7'
-        WHERE u.created_at >= NOW() - INTERVAL '7 days 2 hours'
-        AND u.created_at < NOW() - INTERVAL '7 days'
+        WHERE u.created_at <= NOW() - INTERVAL '7 days'
         AND s.status = 'active'
         AND s.product_type IN ('sselfie_studio_membership', 'brand_studio_membership')
         AND s.is_test_mode = false
@@ -253,8 +250,7 @@ export async function GET(request: Request) {
             WHERE (bs.is_paid = FALSE OR bs.is_paid IS NULL)
               AND (bs.paid_blueprint_purchased IS NULL OR bs.paid_blueprint_purchased = FALSE)
               AND (bs.welcome_email_sent = FALSE OR bs.welcome_email_sent IS NULL)
-              AND bs.created_at >= NOW() - INTERVAL '2 hours'
-              AND bs.created_at < NOW()
+              AND bs.created_at <= NOW()
               AND s.id IS NULL
               AND el.id IS NULL
             ORDER BY bs.created_at ASC
@@ -272,8 +268,7 @@ export async function GET(request: Request) {
             LEFT JOIN email_logs el ON el.user_email = bs.email AND el.email_type = 'blueprint-followup-day-0'
             WHERE (bs.paid_blueprint_purchased IS NULL OR bs.paid_blueprint_purchased = FALSE)
               AND (bs.welcome_email_sent = FALSE OR bs.welcome_email_sent IS NULL)
-              AND bs.created_at >= NOW() - INTERVAL '2 hours'
-              AND bs.created_at < NOW()
+              AND bs.created_at <= NOW()
               AND s.id IS NULL
               AND el.id IS NULL
             ORDER BY bs.created_at ASC

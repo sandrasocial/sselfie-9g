@@ -69,8 +69,7 @@ export async function GET(request: Request) {
       FROM freebie_subscribers fs
       LEFT JOIN email_logs el ON el.user_email = fs.email AND el.email_type = 'nurture-day-1'
       WHERE fs.converted_to_user = FALSE
-        AND fs.created_at < NOW() - INTERVAL '1 day'
-        AND fs.created_at >= NOW() - INTERVAL '2 days'
+        AND fs.created_at <= NOW() - INTERVAL '1 day'
         AND el.id IS NULL
       ORDER BY fs.created_at ASC
     `
@@ -130,8 +129,7 @@ export async function GET(request: Request) {
       FROM freebie_subscribers fs
       LEFT JOIN email_logs el ON el.user_email = fs.email AND el.email_type = 'nurture-day-3'
       WHERE fs.converted_to_user = FALSE
-        AND fs.created_at < NOW() - INTERVAL '3 days'
-        AND fs.created_at >= NOW() - INTERVAL '4 days'
+        AND fs.created_at <= NOW() - INTERVAL '3 days'
         AND el.id IS NULL
       ORDER BY fs.created_at ASC
     `
@@ -191,8 +189,7 @@ export async function GET(request: Request) {
       FROM freebie_subscribers fs
       LEFT JOIN email_logs el ON el.user_email = fs.email AND el.email_type = 'nurture-day-7'
       WHERE fs.converted_to_user = FALSE
-        AND fs.created_at < NOW() - INTERVAL '7 days'
-        AND fs.created_at >= NOW() - INTERVAL '8 days'
+        AND fs.created_at <= NOW() - INTERVAL '7 days'
         AND el.id IS NULL
       ORDER BY fs.created_at ASC
     `
@@ -252,8 +249,7 @@ export async function GET(request: Request) {
       FROM freebie_subscribers fs
       LEFT JOIN email_logs el ON el.user_email = fs.email AND el.email_type = 'nurture-day-10'
       WHERE fs.converted_to_user = FALSE
-        AND fs.created_at < NOW() - INTERVAL '10 days'
-        AND fs.created_at >= NOW() - INTERVAL '11 days'
+        AND fs.created_at <= NOW() - INTERVAL '10 days'
         AND el.id IS NULL
       ORDER BY fs.created_at ASC
     `
