@@ -59,7 +59,7 @@ Return ONLY a valid JSON object with this structure:
 }`
 
     const { text } = await generateText({
-      model: "anthropic/claude-sonnet-4",
+      model: "anthropic/claude-sonnet-4-20250514",
       prompt,
       maxOutputTokens: 2000,
     })
