@@ -39,6 +39,19 @@ import {
 import { generateUpsellDay10Email } from "@/lib/email/templates/upsell-day-10"
 import { generateUpsellFreebieMembershipEmail } from "@/lib/email/templates/upsell-freebie-membership"
 import { generateWinBackOfferEmail } from "@/lib/email/templates/win-back-offer"
+import { 
+  generatePreviewReadyEmail,
+  generateEngagementCheckEmail,
+  generateUrgencyConversionEmail
+} from "@/lib/email/templates/enhanced-conversion-sequence"
+import {
+  generateLaurieStoryEmail,
+  generateTransformationEmail
+} from "@/lib/email/templates/social-proof-sequence"
+import {
+  generatePaymentUpdateEmail,
+  generateWeMissYouEmail
+} from "@/lib/email/templates/payment-recovery"
 
 const FIRST_NAME_PLACEHOLDER = "{{{FIRST_NAME|friend}}}"
 const EMAIL_PLACEHOLDER = "{{{EMAIL}}}"
@@ -288,5 +301,55 @@ export const MARKETING_TEMPLATE_CATALOG: MarketingTemplateDefinition[] = [
         offerCode: "COMEBACK50",
         offerExpiry: "48 hours",
       }),
+  },
+  // NEW HIGH-CONVERTING SEQUENCES (2026-01-28)
+  {
+    emailType: "preview-ready-enhanced",
+    label: "Preview Ready (Enhanced)",
+    description: "Enhanced preview delivery with engagement focus",
+    getDefault: () =>
+      generatePreviewReadyEmail({ firstName: FIRST_NAME_PLACEHOLDER, email: EMAIL_PLACEHOLDER }),
+  },
+  {
+    emailType: "engagement-check",
+    label: "Engagement Check",
+    description: "Day 1 follow-up with personal touch",
+    getDefault: () =>
+      generateEngagementCheckEmail({ firstName: FIRST_NAME_PLACEHOLDER, email: EMAIL_PLACEHOLDER }),
+  },
+  {
+    emailType: "urgency-conversion",
+    label: "Urgency Conversion",
+    description: "48-hour urgency offer for Blueprint",
+    getDefault: () =>
+      generateUrgencyConversionEmail({ firstName: FIRST_NAME_PLACEHOLDER, email: EMAIL_PLACEHOLDER }),
+  },
+  {
+    emailType: "laurie-story",
+    label: "Laurie's Success Story",
+    description: "Social proof email featuring Laurie Garcia testimonial",
+    getDefault: () =>
+      generateLaurieStoryEmail({ firstName: FIRST_NAME_PLACEHOLDER, email: EMAIL_PLACEHOLDER }),
+  },
+  {
+    emailType: "transformation-showcase",
+    label: "Transformation Showcase",
+    description: "Before/after social proof with multiple testimonials",
+    getDefault: () =>
+      generateTransformationEmail({ firstName: FIRST_NAME_PLACEHOLDER, email: EMAIL_PLACEHOLDER }),
+  },
+  {
+    emailType: "payment-update-needed",
+    label: "Payment Update Needed",
+    description: "Immediate payment recovery email",
+    getDefault: () =>
+      generatePaymentUpdateEmail({ firstName: FIRST_NAME_PLACEHOLDER, email: EMAIL_PLACEHOLDER }),
+  },
+  {
+    emailType: "we-miss-you",
+    label: "We Miss You",
+    description: "Day 3 payment recovery with discount offer",
+    getDefault: () =>
+      generateWeMissYouEmail({ firstName: FIRST_NAME_PLACEHOLDER, email: EMAIL_PLACEHOLDER }),
   },
 ]
