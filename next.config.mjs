@@ -31,24 +31,6 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: '/(.*)',
-        headers: [
-          {
-            key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://va.vercel-scripts.com",
-              "connect-src 'self' https://api.v0.app https://va.vercel-scripts.com https://vercel.live https://*.pusher.com wss://*.pusher.com https://blob.vercel-storage.com https://*.blob.vercel-storage.com https://ai-gateway.vercel.sh https://*.vercel.sh https://gateway.ai.cloudflare.com https://api.anthropic.com https://api.openai.com https://*.vercel-ai.com https://*.vercel.app https://replicate.com https://*.replicate.com https://replicate.delivery https://api.replicate.com https://*.anthropic.com https://*.supabase.co https://api.stripe.com https://js.stripe.com https://*.stripe.com https://*.upstash.io https://*.neon.tech https://*.sentry.io https://o4510612788346880.ingest.us.sentry.io https://*.postimg.cc https://i.postimg.cc https://www.google-analytics.com https://*.google-analytics.com https://*.googletagmanager.com",
-              "img-src 'self' data: blob: https://*.vercel-storage.com https://images.unsplash.com https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com",
-              "style-src 'self' 'unsafe-inline'",
-              "font-src 'self' data:",
-              "frame-src 'self' https://js.stripe.com",
-              "media-src 'self' data: blob:",
-            ].join('; '),
-          },
-        ],
-      },
-      {
         source: '/sw.js',
         headers: [
           {
