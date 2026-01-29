@@ -29,6 +29,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // Skip auth for Brand Engine API (used by Make.com automation)
+  if (request.nextUrl.pathname.startsWith("/api/brand-engine/")) {
+    console.log("[v0] Skipping auth middleware for Brand Engine API")
+    return NextResponse.next()
+  }
+
   // Skip middleware for Sentry monitoring tunnel route
   if (request.nextUrl.pathname === "/monitoring") {
     return NextResponse.next()
