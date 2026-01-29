@@ -1,0 +1,344 @@
+{
+  "scenarios": [
+    {
+      "id": "weekly_engine",
+      "name": "Brand Engine - Weekly Planning",
+      "description": "Runs every Sunday at 8pm to generate the weekly brief, content calendar, and experiments",
+      "trigger": {
+        "type": "schedule",
+        "schedule": "0 20 * * 0",
+        "timezone": "America/New_York"
+      },
+      "modules": [
+        {
+          "order": 1,
+          "name": "Get Brand Brain",
+          "type": "http",
+          "config": {
+            "method": "GET",
+            "url": "{{YOUR_APP_URL}}/api/brand-engine/brand-brain"
+          },
+          "output": "brand_brain"
+        },
+        {
+          "order": 2,
+          "name": "Get Signals Data",
+          "type": "http",
+          "config": {
+            "method": "GET",
+            "url": "{{YOUR_APP_URL}}/api/brand-engine/signals"
+          },
+          "output": "signals_data",
+          "parallel_with": 3
+        },
+        {
+          "order": 3,
+          "name": "Get Performance Data",
+          "type": "http",
+          "config": {
+            "method": "GET",
+            "url": "{{YOUR_APP_URL}}/api/brand-engine/performance"
+          },
+          "output": "performance_data",
+          "parallel_with": 2
+        },
+        {
+          "order": 4,
+          "name": "Run Competitor Intel Agent",
+          "type": "openai",
+          "config": {
+            "model": "gpt-4",
+            "system_prompt": "{{COMPETITOR_INTEL_SYSTEM_PROMPT}}",
+            "user_prompt": "Generate weekly competitor intel report based on: {{signals_data.competitors}}"
+          },
+          "output": "competitor_report"
+        },
+        {
+          "order": 5,
+          "name": "Run Brand Reasoner Agent",
+          "type": "openai",
+          "config": {
+            "model": "gpt-4",
+            "system_prompt": "{{BRAND_REASONER_SYSTEM_PROMPT}}",
+            "user_prompt": "Generate weekly brief using:\n\nBrand Brain: {{brand_brain}}\nSignals: {{signals_data}}\nPerformance: {{performance_data}}\nCompetitor Intel: {{competitor_report}}"
+          },
+          "output": "weekly_brief"
+        },
+        {
+          "order": 6,
+          "name": "Run Scheduler Agent",
+          "type": "openai",
+          "config": {
+            "model": "gpt-4",
+            "system_prompt": "{{SCHEDULER_SYSTEM_PROMPT}}",
+            "user_prompt": "Generate weekly content calendar based on: {{weekly_brief}}"
+          },
+          "output": "weekly_calendar"
+        },
+        {
+          "order": 7,
+          "name": "Save to Database",
+          "type": "http",
+          "config": {
+            "method": "POST",
+            "url": "{{YOUR_APP_URL}}/api/brand-engine/runs",
+            "body": {
+              "type": "weekly",
+              "weekly_brief": "{{weekly_brief}}",
+              "weekly_calendar": "{{weekly_calendar}}",
+              "competitor_report": "{{competitor_report}}"
+            }
+          }
+        },
+        {
+          "order": 8,
+          "name": "Send Notification",
+          "type": "email",
+          "config": {
+            "to": "{{USER_EMAIL}}",
+            "subject": "Your Weekly Brand Brief is Ready",
+            "body": "Your Brand Engine has generated this week's plan. Review and approve: {{YOUR_APP_URL}}/admin/brand-engine"
+          }
+        }
+      ]
+    },
+    {
+      "id": "daily_engine",
+      "name": "Brand Engine - Daily Planning",
+      "description": "Runs every morning at 7am to generate today's content plan",
+      "trigger": {
+        "type": "schedule",
+        "schedule": "0 7 * * *",
+        "timezone": "America/New_York"
+      },
+      "modules": [
+        {
+          "order": 1,
+          "name": "Get Weekly Brief",
+          "type": "http",
+          "config": {
+            "method": "GET",
+            "url": "{{YOUR_APP_URL}}/api/brand-engine/weekly-brief/current"
+          },
+          "output": "weekly_brief"
+        },
+        {
+          "order": 2,
+          "name": "Get Brand Brain",
+          "type": "http",
+          "config": {
+            "method": "GET",
+            "url": "{{YOUR_APP_URL}}/api/brand-engine/brand-brain"
+          },
+          "output": "brand_brain"
+        },
+        {
+          "order": 3,
+          "name": "Run Brand Reasoner - Today's Plan",
+          "type": "openai",
+          "config": {
+            "model": "gpt-4",
+            "system_prompt": "{{BRAND_REASONER_SYSTEM_PROMPT}}",
+            "user_prompt": "Generate today's content plan. Today is {{formatDate(now; 'dddd, MMMM D')}}.\n\nWeekly Brief: {{weekly_brief}}\nBrand Brain: {{brand_brain}}"
+          },
+          "output": "todays_plan"
+        },
+        {
+          "order": 4,
+          "name": "Run Voice & Copy - Draft Captions",
+          "type": "openai",
+          "config": {
+            "model": "gpt-4",
+            "system_prompt": "{{VOICE_COPY_SYSTEM_PROMPT}}",
+            "user_prompt": "Write caption drafts for today's planned content: {{todays_plan}}"
+          },
+          "output": "caption_drafts"
+        },
+        {
+          "order": 5,
+          "name": "Save Daily Plan",
+          "type": "http",
+          "config": {
+            "method": "POST",
+            "url": "{{YOUR_APP_URL}}/api/brand-engine/daily-plans",
+            "body": {
+              "date": "{{formatDate(now; 'YYYY-MM-DD')}}",
+              "todays_plan": "{{todays_plan}}",
+              "caption_drafts": "{{caption_drafts}}"
+            }
+          }
+        },
+        {
+          "order": 6,
+          "name": "Send Morning Brief",
+          "type": "email",
+          "config": {
+            "to": "{{USER_EMAIL}}",
+            "subject": "Your Daily Content Plan - {{formatDate(now; 'dddd')}}",
+            "body": "Here's what to focus on today:\n\n{{todays_plan}}\n\n---\n\nCaption drafts ready in your dashboard."
+          }
+        }
+      ]
+    },
+    {
+      "id": "content_creation",
+      "name": "Brand Engine - Create Content (On Demand)",
+      "description": "Triggered when you need to create a specific piece of content",
+      "trigger": {
+        "type": "webhook",
+        "path": "/brand-engine/create-content"
+      },
+      "modules": [
+        {
+          "order": 1,
+          "name": "Parse Request",
+          "type": "json_parse",
+          "config": {
+            "fields": ["pillar", "angle", "format", "platform", "context"]
+          },
+          "output": "request"
+        },
+        {
+          "order": 2,
+          "name": "Get Brand Brain",
+          "type": "http",
+          "config": {
+            "method": "GET",
+            "url": "{{YOUR_APP_URL}}/api/brand-engine/brand-brain"
+          },
+          "output": "brand_brain"
+        },
+        {
+          "order": 3,
+          "name": "Run Creative Director",
+          "type": "openai",
+          "config": {
+            "model": "gpt-4",
+            "system_prompt": "{{CREATIVE_DIRECTOR_SYSTEM_PROMPT}}",
+            "user_prompt": "Create a creative brief for:\nPillar: {{request.pillar}}\nAngle: {{request.angle}}\nFormat: {{request.format}}\nPlatform: {{request.platform}}\nContext: {{request.context}}"
+          },
+          "output": "creative_brief"
+        },
+        {
+          "order": 4,
+          "name": "Run Voice & Copy",
+          "type": "openai",
+          "config": {
+            "model": "gpt-4",
+            "system_prompt": "{{VOICE_COPY_SYSTEM_PROMPT}}",
+            "user_prompt": "Write the content based on this creative brief: {{creative_brief}}"
+          },
+          "output": "content_draft"
+        },
+        {
+          "order": 5,
+          "name": "Voice Check",
+          "type": "code",
+          "config": {
+            "language": "javascript",
+            "code": "// Check for banned words and voice consistency\nconst bannedWords = ['reinvention', 'hustle', 'girlboss', 'grind'];\nconst content = input.content_draft.toLowerCase();\nconst warnings = [];\nbannedWords.forEach(word => {\n  if (content.includes(word)) warnings.push(`Contains banned word: ${word}`);\n});\nreturn { passed: warnings.length === 0, warnings };"
+          },
+          "output": "voice_check"
+        },
+        {
+          "order": 6,
+          "name": "Run Scheduler - Repurposing",
+          "type": "openai",
+          "config": {
+            "model": "gpt-4",
+            "system_prompt": "{{SCHEDULER_SYSTEM_PROMPT}}",
+            "user_prompt": "Create a repurposing plan for this content: {{content_draft}}"
+          },
+          "output": "repurposing_plan"
+        },
+        {
+          "order": 7,
+          "name": "Return Result",
+          "type": "webhook_response",
+          "config": {
+            "body": {
+              "creative_brief": "{{creative_brief}}",
+              "content_draft": "{{content_draft}}",
+              "voice_check": "{{voice_check}}",
+              "repurposing_plan": "{{repurposing_plan}}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "competitor_scan",
+      "name": "Brand Engine - Competitor Scan",
+      "description": "Daily quick scan for new competitor content",
+      "trigger": {
+        "type": "schedule",
+        "schedule": "0 6 * * *",
+        "timezone": "America/New_York"
+      },
+      "modules": [
+        {
+          "order": 1,
+          "name": "Get Competitor List",
+          "type": "http",
+          "config": {
+            "method": "GET",
+            "url": "{{YOUR_APP_URL}}/api/brand-engine/competitors"
+          },
+          "output": "competitors"
+        },
+        {
+          "order": 2,
+          "name": "Iterator - For Each Competitor",
+          "type": "iterator",
+          "config": {
+            "array": "{{competitors}}"
+          },
+          "modules": [
+            {
+              "order": 1,
+              "name": "Fetch Recent Posts (Manual Option)",
+              "type": "note",
+              "description": "Option A: Manual - Export from Instagram/TikTok and upload CSV. Option B: Use Phantombuster or Apify for automated scraping (requires additional setup)."
+            }
+          ]
+        },
+        {
+          "order": 3,
+          "name": "Run Competitor Intel Agent",
+          "type": "openai",
+          "config": {
+            "model": "gpt-4",
+            "system_prompt": "{{COMPETITOR_INTEL_SYSTEM_PROMPT}}",
+            "user_prompt": "Analyze these competitor observations and identify patterns: {{competitor_data}}"
+          },
+          "output": "competitor_insights"
+        },
+        {
+          "order": 4,
+          "name": "Save Insights",
+          "type": "http",
+          "config": {
+            "method": "POST",
+            "url": "{{YOUR_APP_URL}}/api/brand-engine/signals/competitors",
+            "body": "{{competitor_insights}}"
+          }
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "YOUR_APP_URL": "https://your-sselfie-app.vercel.app",
+    "USER_EMAIL": "ssa@ssasocial.com",
+    "OPENAI_API_KEY": "{{connection.openai}}"
+  },
+  "connections": {
+    "openai": {
+      "type": "openai",
+      "name": "OpenAI GPT-4"
+    },
+    "email": {
+      "type": "email",
+      "provider": "gmail_or_resend"
+    }
+  }
+}
