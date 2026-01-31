@@ -10,11 +10,9 @@ export function AdminNav() {
   
   const navItems = [
     { label: 'DASHBOARD', href: '/admin' },
-    { label: 'EMAIL', href: '/admin/email-control' },
-    { label: 'DIAGNOSTICS', href: '/admin/diagnostics/system' },
-    { label: 'CONTENT', href: '/admin/feed-styles' },
-    { label: 'USERS', href: '/admin/credits' },
-    { label: 'ALEX', href: '/admin/alex' }
+    { label: 'AGENTS', href: '/admin/agents' },
+    { label: 'ANALYTICS', href: '/admin/analytics' },
+    { label: 'USERS', href: '/admin/credits' }
   ]
   
   return (

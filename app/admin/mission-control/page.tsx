@@ -257,11 +257,11 @@ export default function MissionControlPage() {
                             {issue.action_type === 'alex' && (
                               <Button
                                 size="sm"
-                                onClick={() => window.location.href = '/admin/alex'}
+                                onClick={() => window.location.href = '/admin/agents'}
                                 variant="outline"
                                 className="w-full sm:w-auto text-xs min-h-[44px]"
                               >
-                                Ask Alex
+                                Ask Agent
                               </Button>
                             )}
                             {issue.action_type === 'manual' && (

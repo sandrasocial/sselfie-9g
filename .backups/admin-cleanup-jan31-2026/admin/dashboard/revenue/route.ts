@@ -1,0 +1,175 @@
+import { NextResponse } from "next/server"
+import { createServerClient } from "@/lib/supabase/server"
+import { getUserByAuthId } from "@/lib/user-mapping"
+import { neon } from "@neondatabase/serverless"
+import { getDBRevenueMetrics } from "@/lib/revenue/db-revenue-metrics"
+import { getSingleSourceRevenueMetrics } from "@/lib/revenue/single-source"
+
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "ssa@ssasocial.com"
+
+export async function GET() {
+  try {
+    const supabase = await createServerClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const neonUser = await getUserByAuthId(user.id)
+    if (!neonUser || neonUser.email !== ADMIN_EMAIL) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
+    const sql = neon(process.env.DATABASE_URL || "")
+
+    // Get actual subscription prices from products config
+    const { PRICING_PRODUCTS } = await import("@/lib/products")
+    
+    const subscriptionsResult = await sql`
+      SELECT 
+        product_type,
+        COUNT(*) as count
+      FROM subscriptions
+      WHERE status = 'active'
+      AND is_test_mode = FALSE
+      GROUP BY product_type
+    `
+
+    // Calculate MRR (Monthly Recurring Revenue) using correct prices
+    let mrr = 0
+    const subscriptionBreakdown = subscriptionsResult.map((sub) => {
+      // Get actual price from products config
+      const product = PRICING_PRODUCTS.find((p) => p.type === sub.product_type)
+      
+      // Handle legacy brand_studio_membership (no longer in PRICING_PRODUCTS)
+      let priceCents: number
+      if (sub.product_type === "brand_studio_membership") {
+        // Legacy Brand Studio: $149/month (14900 cents)
+        priceCents = 14900
+      } else {
+        priceCents = product?.priceInCents || 0
+      }
+      
+      const revenue = (Number(sub.count) * priceCents) / 100
+      
+      // MRR only includes recurring subscriptions (not one-time sessions)
+      if (sub.product_type === "sselfie_studio_membership" || sub.product_type === "brand_studio_membership") {
+        mrr += revenue
+      }
+      
+      // Map product type to display tier name
+      const tierMap: Record<string, string> = {
+        sselfie_studio_membership: "Creator Studio",
+        brand_studio_membership: "Brand Studio (Legacy)",
+        one_time_session: "Starter Photoshoot",
+      }
+      const tier = tierMap[sub.product_type] || sub.product_type
+      
+      return {
+        productType: sub.product_type,
+        tier: tier, // Add tier for frontend compatibility
+        count: Number(sub.count),
+        revenue: revenue,
+        priceCents: priceCents,
+      }
+    })
+
+    const creditPurchasesResult = await sql`
+      SELECT 
+        COUNT(*) as total_purchases,
+        SUM(amount) as total_credits_sold,
+        SUM(amount) FILTER (WHERE stripe_payment_id IS NOT NULL) as real_credit_revenue_cents
+      FROM credit_transactions
+      WHERE transaction_type = 'purchase'
+      AND stripe_payment_id IS NOT NULL
+      AND is_test_mode = FALSE
+    `
+
+    // Database revenue metrics (stripe_payments = primary source of truth)
+    const dbRevenueMetrics = await getDBRevenueMetrics()
+
+    let stripeMetrics = null
+    try {
+      stripeMetrics = await getSingleSourceRevenueMetrics()
+    } catch (error: any) {
+      console.warn("[v0] Revenue dashboard: Stripe metrics unavailable:", error?.message || error)
+    }
+
+    const revenueTrend = await sql`
+      SELECT 
+        DATE_TRUNC('month', created_at) as month,
+        COUNT(*) as purchases,
+        SUM(amount) as credits_sold
+      FROM credit_transactions
+      WHERE transaction_type = 'purchase'
+      AND created_at > NOW() - INTERVAL '6 months'
+      AND is_test_mode = FALSE
+      GROUP BY DATE_TRUNC('month', created_at)
+      ORDER BY month DESC
+    `
+
+    const recentTransactions = await sql`
+      SELECT 
+        ct.amount,
+        ct.transaction_type,
+        ct.description,
+        ct.created_at,
+        ct.stripe_payment_id,
+        ct.is_test_mode,
+        u.email as user_email
+      FROM credit_transactions ct
+      JOIN users u ON ct.user_id = u.id
+      WHERE ct.stripe_payment_id IS NOT NULL
+      AND ct.is_test_mode = FALSE
+      ORDER BY ct.created_at DESC
+      LIMIT 10
+    `
+
+    const userStats = await sql`
+      SELECT 
+        COUNT(DISTINCT u.id) as total_users,
+        COUNT(DISTINCT um.id) FILTER (WHERE um.training_status = 'completed') as users_with_models,
+        COUNT(DISTINCT s.id) FILTER (WHERE s.status = 'active' AND s.is_test_mode = FALSE) as active_subscribers
+      FROM users u
+      LEFT JOIN user_models um ON um.user_id = u.id
+      LEFT JOIN subscriptions s ON s.user_id = u.id
+    `
+
+    const realCreditRevenue = Number(creditPurchasesResult[0]?.real_credit_revenue_cents || 0) / 100
+
+    return NextResponse.json({
+      mrr: Math.round((stripeMetrics?.mrr ?? mrr) * 100) / 100,
+      totalRevenue: Math.round(dbRevenueMetrics.totalRevenue * 100) / 100,
+      oneTimeRevenue: Math.round(dbRevenueMetrics.oneTimeRevenue * 100) / 100,
+      realCreditRevenue: Math.round(dbRevenueMetrics.creditPurchaseRevenue * 100) / 100,
+      subscriptionBreakdown,
+      totalPurchases: Number(creditPurchasesResult[0]?.total_purchases || 0),
+      totalCreditsSold: Number(creditPurchasesResult[0]?.total_credits_sold || 0),
+      userStats: {
+        totalUsers: Number(userStats[0]?.total_users || 0),
+        usersWithModels: Number(userStats[0]?.users_with_models || 0),
+        activeSubscribers: Number(userStats[0]?.active_subscribers || 0),
+      },
+      revenueTrend: revenueTrend.map((item) => ({
+        month: item.month,
+        purchases: Number(item.purchases),
+        creditsSold: Number(item.credits_sold),
+      })),
+      recentTransactions: recentTransactions.map((tx) => ({
+        amount: Number(tx.amount),
+        type: tx.transaction_type,
+        description: tx.description,
+        userEmail: tx.user_email,
+        stripePaymentId: tx.stripe_payment_id,
+        timestamp: tx.created_at,
+        isTestMode: tx.is_test_mode || false,
+      })),
+    })
+  } catch (error) {
+    console.error("[v0] Error fetching revenue data:", error)
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+  }
+}

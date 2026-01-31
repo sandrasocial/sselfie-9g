@@ -176,7 +176,7 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
               </p>
             </Link>
             <Link
-              href="/admin/email-control"
+              href="/admin/email-analytics"
               className="bg-white border border-stone-200 p-4 sm:p-6 rounded-none hover:bg-stone-50 transition-colors"
             >
               <h3 className="text-sm sm:text-base font-['Times_New_Roman'] text-stone-950 mb-1 tracking-[0.1em] uppercase">
@@ -282,7 +282,7 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
           </h2>
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             <Link
-              href="/admin/email-control"
+              href="/admin/email-analytics"
               className="bg-white border border-stone-200 p-4 sm:p-6 hover:border-stone-400 transition-all rounded-none min-h-[100px] sm:min-h-[120px] flex flex-col justify-between"
             >
               <p className="text-xs sm:text-sm tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-950 mb-1">
@@ -326,14 +326,14 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
               </p>
             </Link>
             <Link
-              href="/admin/alex"
+              href="/admin/agents"
               className="bg-white border border-stone-200 p-4 sm:p-6 hover:border-stone-400 transition-all rounded-none min-h-[100px] sm:min-h-[120px] flex flex-col justify-between"
             >
               <p className="text-xs sm:text-sm tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-950 mb-1">
-                Alex
+                Agents
               </p>
               <p className="text-[10px] sm:text-xs text-stone-400">
-                AI assistant
+                AI control center
               </p>
             </Link>
             <Link
