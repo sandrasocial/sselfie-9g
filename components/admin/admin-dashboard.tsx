@@ -165,36 +165,36 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8 sm:mb-12">
             <Link
-              href="/admin/growth-dashboard"
+              href="/admin/analytics"
               className="bg-white border border-stone-200 p-4 sm:p-6 rounded-none hover:bg-stone-50 transition-colors"
             >
               <h3 className="text-sm sm:text-base font-['Times_New_Roman'] text-stone-950 mb-1 tracking-[0.1em] uppercase">
-                Growth Dashboard
+                Analytics
               </h3>
               <p className="text-[10px] sm:text-xs text-stone-400 tracking-[0.1em] uppercase">
-                Revenue, costs, ROI
+                Revenue, metrics, growth
               </p>
             </Link>
             <Link
-              href="/admin/email-analytics"
+              href="/admin/mission-control"
               className="bg-white border border-stone-200 p-4 sm:p-6 rounded-none hover:bg-stone-50 transition-colors"
             >
               <h3 className="text-sm sm:text-base font-['Times_New_Roman'] text-stone-950 mb-1 tracking-[0.1em] uppercase">
-                Email Control
+                Mission Control
               </h3>
               <p className="text-[10px] sm:text-xs text-stone-400 tracking-[0.1em] uppercase">
-                Send, test, analytics
+                Daily tasks, health checks
               </p>
             </Link>
             <Link
-              href="/admin/diagnostics/system"
+              href="/admin/agents"
               className="bg-white border border-stone-200 p-4 sm:p-6 rounded-none hover:bg-stone-50 transition-colors"
             >
               <h3 className="text-sm sm:text-base font-['Times_New_Roman'] text-stone-950 mb-1 tracking-[0.1em] uppercase">
-                Diagnostics
+                AI Agents
               </h3>
               <p className="text-[10px] sm:text-xs text-stone-400 tracking-[0.1em] uppercase">
-                Cron + email health
+                Gumloop control center
               </p>
             </Link>
           </div>
@@ -282,25 +282,25 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
           </h2>
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             <Link
-              href="/admin/email-analytics"
+              href="/admin/mission-control"
               className="bg-white border border-stone-200 p-4 sm:p-6 hover:border-stone-400 transition-all rounded-none min-h-[100px] sm:min-h-[120px] flex flex-col justify-between"
             >
               <p className="text-xs sm:text-sm tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-950 mb-1">
-                Email
+                Mission Control
               </p>
               <p className="text-[10px] sm:text-xs text-stone-400">
-                Control + analytics
+                Daily tasks + health
               </p>
             </Link>
             <Link
-              href="/admin/diagnostics/system"
+              href="/admin/analytics"
               className="bg-white border border-stone-200 p-4 sm:p-6 hover:border-stone-400 transition-all rounded-none min-h-[100px] sm:min-h-[120px] flex flex-col justify-between"
             >
               <p className="text-xs sm:text-sm tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-950 mb-1">
-                Diagnostics
+                Analytics
               </p>
               <p className="text-[10px] sm:text-xs text-stone-400">
-                Cron + email health
+                Metrics + growth
               </p>
             </Link>
             <Link
@@ -315,7 +315,7 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
               </p>
             </Link>
             <Link
-              href="/admin/feed-styles"
+              href="/admin/feed-styles-v2"
               className="bg-white border border-stone-200 p-4 sm:p-6 hover:border-stone-400 transition-all rounded-none min-h-[100px] sm:min-h-[120px] flex flex-col justify-between"
             >
               <p className="text-xs sm:text-sm tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-950 mb-1">
@@ -337,14 +337,14 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
               </p>
             </Link>
             <Link
-              href="/admin/growth-dashboard"
+              href="/admin/maya-studio"
               className="bg-white border border-stone-200 p-4 sm:p-6 hover:border-stone-400 transition-all rounded-none min-h-[100px] sm:min-h-[120px] flex flex-col justify-between"
             >
               <p className="text-xs sm:text-sm tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-950 mb-1">
-                Growth
+                Maya Studio
               </p>
               <p className="text-[10px] sm:text-xs text-stone-400">
-                ROI + margins
+                AI image generation
               </p>
             </Link>
           </div>

@@ -156,7 +156,7 @@ export async function GET(request: NextRequest) {
                 <div class="alert-box">
                   <pre style="white-space: pre-wrap; font-family: inherit; margin: 0;">${recommendedActions || "- No specific actions recommended"}</pre>
                 </div>
-                <a href="${process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"}/admin/growth-dashboard" class="dashboard-link">
+                <a href="${process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"}/admin/analytics" class="dashboard-link">
                   View Growth Dashboard →
                 </a>
               </div>
@@ -174,7 +174,7 @@ ${alertSummary}
 Recommended actions:
 ${recommendedActions || "- No specific actions recommended"}
 
-View dashboard: ${process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"}/admin/growth-dashboard
+View dashboard: ${process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"}/admin/analytics
       `
 
       // Send to all admin emails
