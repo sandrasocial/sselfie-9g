@@ -11,7 +11,8 @@ const AGENTS = [
     description: "Writes captions, stories, carousel copy",
     type: "conversational",
     icon: "✍️",
-    color: "emerald"
+    color: "emerald",
+    flowId: "9aftKi7RHgGbDFCAxoj2J8"
   },
   {
     id: "competitor-research",
@@ -19,7 +20,8 @@ const AGENTS = [
     description: "Monitors creators, finds content gaps",
     type: "conversational",
     icon: "🔍",
-    color: "blue"
+    color: "blue",
+    flowId: "4BhzzbASzfVvCWW5sFGj6C"
   },
   {
     id: "audience-analyst",
@@ -27,7 +29,8 @@ const AGENTS = [
     description: "Studies followers, tracks preferences",
     type: "conversational",
     icon: "👥",
-    color: "purple"
+    color: "purple",
+    flowId: "pHUwNZbqdFGgSRCkoaKvRU"
   },
   {
     id: "content-strategist",
@@ -35,7 +38,8 @@ const AGENTS = [
     description: "Analyzes performance, recommends content",
     type: "conversational",
     icon: "📊",
-    color: "orange"
+    color: "orange",
+    flowId: "mx4pA4ePJgSabpJDbZh6Uz"
   },
   {
     id: "email-campaign",
@@ -108,28 +112,39 @@ export default function AgentsPage() {
     setLoading(true)
 
     try {
-      // TODO: Replace with actual Gumloop API call
+      // Call Gumloop API with the flow ID
       const response = await fetch("/api/admin/chat-with-agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          agentId: selectedAgent.id,
+          agentId: selectedAgent.flowId || selectedAgent.id,
           message: input
         })
       })
 
       const data = await response.json()
 
-      setMessages([
-        ...messages,
-        userMessage,
-        { role: "agent", content: data.response || "Agent response will appear here once Gumloop API is connected." }
-      ])
+      if (!response.ok) {
+        // API returned an error
+        setMessages([
+          ...messages,
+          userMessage,
+          { role: "agent", content: `⚠️ Error: ${data.error || data.message || 'Failed to get response from agent'}\n\nCheck the browser console (F12) for more details.` }
+        ])
+      } else {
+        // Success - show agent response
+        setMessages([
+          ...messages,
+          userMessage,
+          { role: "agent", content: data.response || "Agent response received (but empty). Check your Gumloop flow's output format." }
+        ])
+      }
     } catch (error) {
+      console.error("Error calling agent:", error)
       setMessages([
         ...messages,
         userMessage,
-        { role: "agent", content: "⚠️ Connect Gumloop API to enable agent responses. See CLEAN_ADMIN_ARCHITECTURE.md for setup." }
+        { role: "agent", content: `⚠️ Network error: ${error instanceof Error ? error.message : 'Unknown error'}\n\nMake sure your dev server is running and Gumloop API key is configured.` }
       ])
     } finally {
       setLoading(false)
