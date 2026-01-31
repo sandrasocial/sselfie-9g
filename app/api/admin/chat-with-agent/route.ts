@@ -4,56 +4,77 @@ export async function POST(req: NextRequest) {
   try {
     const { agentId, message } = await req.json()
 
-    // TODO: Replace with actual Gumloop API call
-    // For now, return a placeholder response
+    // Validate inputs
+    if (!agentId || !message) {
+      return NextResponse.json(
+        { error: "Missing agentId or message" },
+        { status: 400 }
+      )
+    }
 
-    // When you're ready to connect Gumloop:
-    /*
-    const response = await fetch(`https://api.gumloop.com/v1/agents/${agentId}/chat`, {
+    // Check for API key
+    const apiKey = process.env.GUMLOOP_API_KEY
+    if (!apiKey) {
+      console.error("[Admin] GUMLOOP_API_KEY not configured")
+      return NextResponse.json({
+        error: "Gumloop API key not configured",
+        message: "Please add GUMLOOP_API_KEY to your environment variables",
+        placeholder: true
+      }, { status: 500 })
+    }
+
+    console.log(`[Admin] Calling Gumloop agent: ${agentId}`)
+
+    // Call Gumloop API
+    // Note: Gumloop uses flow IDs, not agent names
+    // You'll need to map agent names to flow IDs in your Gumloop dashboard
+    const response = await fetch(`https://api.gumloop.com/api/v1/flow/${agentId}/run`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.GUMLOOP_API_KEY}`,
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        message,
-        session_id: 'admin-session-' + Date.now()
+        input_data: {
+          message: message
+        }
       })
     })
 
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error(`[Admin] Gumloop API error (${response.status}):`, errorText)
+
+      return NextResponse.json({
+        error: `Gumloop API error: ${response.status}`,
+        details: errorText,
+        agentId,
+        message: "Check that your agent ID matches your Gumloop flow ID"
+      }, { status: response.status })
+    }
+
     const data = await response.json()
+    console.log(`[Admin] Gumloop response:`, data)
+
+    // Extract the response from Gumloop's data structure
+    // Gumloop returns: { run_id, status, output_data, ... }
+    const agentResponse = data.output_data?.response || data.output_data?.message || JSON.stringify(data.output_data)
 
     return NextResponse.json({
-      response: data.message,
-      agentId,
-      timestamp: new Date().toISOString()
-    })
-    */
-
-    // Placeholder response
-    return NextResponse.json({
-      response: `🤖 This is a placeholder response from ${agentId}.
-
-To enable live agent responses:
-
-1. Get your Gumloop API key from https://gumloop.com
-2. Add to your .env file:
-   GUMLOOP_API_KEY=your_key_here
-3. Uncomment the Gumloop API call code in this file
-4. Test the connection
-
-Your message was: "${message}"
-
-See CLEAN_ADMIN_ARCHITECTURE.md for detailed setup instructions.`,
+      response: agentResponse,
       agentId,
       timestamp: new Date().toISOString(),
-      placeholder: true
+      runId: data.run_id,
+      status: data.status
     })
 
   } catch (error) {
     console.error("[Admin] Error in chat-with-agent:", error)
     return NextResponse.json(
-      { error: "Failed to chat with agent" },
+      {
+        error: "Failed to chat with agent",
+        message: error instanceof Error ? error.message : "Unknown error"
+      },
       { status: 500 }
     )
   }
