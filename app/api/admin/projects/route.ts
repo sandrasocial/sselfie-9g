@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      project: result[0]
+      project: (result as any)[0]
     })
   } catch (error) {
     console.error("[Projects API] Create error:", error)

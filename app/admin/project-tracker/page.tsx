@@ -12,6 +12,48 @@ export const revalidate = 0
 export default async function ProjectTrackerPage() {
   const sql = getDb()
 
+  // Check if tables exist, if not show setup page
+  let tablesExist = false
+  try {
+    await sql`SELECT 1 FROM projects LIMIT 1`
+    tablesExist = true
+  } catch (error) {
+    // Tables don't exist yet, show setup UI
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+        <AdminNav />
+        <div className="p-8 flex items-center justify-center min-h-[80vh]">
+          <div className="max-w-2xl mx-auto text-center">
+            <div className="bg-white rounded-3xl shadow-2xl p-12">
+              <div className="text-6xl mb-6">🎨</div>
+              <h1 className="text-4xl font-bold text-gray-900 mb-4">
+                Welcome to Your Project Tracker!
+              </h1>
+              <p className="text-gray-600 text-lg mb-8">
+                Let's set up your beautiful ADHD-friendly task management system.
+                This will create the database tables you need.
+              </p>
+
+              <form action="/api/admin/run-migration" method="POST">
+                <button
+                  type="submit"
+                  className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full text-xl font-semibold hover:scale-105 transition-transform shadow-lg"
+                >
+                  ✨ Set Up Project Tracker
+                </button>
+              </form>
+
+              <p className="text-sm text-gray-500 mt-6">
+                This will create your projects, tasks, and tracking tables.
+                It's safe to run multiple times!
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   // Fetch all active projects with progress
   const projects = await sql`
     SELECT
@@ -70,20 +112,21 @@ export default async function ProjectTrackerPage() {
   `
 
   // Calculate stats
+  const todayResult = await sql`
+    SELECT COUNT(*) as count
+    FROM project_tasks
+    WHERE DATE(completed_at) = CURRENT_DATE
+  `
+  const weekResult = await sql`
+    SELECT COUNT(*) as count
+    FROM project_tasks
+    WHERE completed_at >= DATE_TRUNC('week', CURRENT_DATE)
+  `
+
   const stats = {
-    todayCompleted: await sql`
-      SELECT COUNT(*) as count
-      FROM project_tasks
-      WHERE DATE(completed_at) = CURRENT_DATE
-    `.then(r => parseInt(r[0].count)),
-
-    weekCompleted: await sql`
-      SELECT COUNT(*) as count
-      FROM project_tasks
-      WHERE completed_at >= DATE_TRUNC('week', CURRENT_DATE)
-    `.then(r => parseInt(r[0].count)),
-
-    totalActive: allTasks.filter(t => t.status !== 'done').length
+    todayCompleted: parseInt(((todayResult as any[])[0] as any).count),
+    weekCompleted: parseInt(((weekResult as any[])[0] as any).count),
+    totalActive: (allTasks as any[]).filter((t: any) => t.status !== 'done').length
   }
 
   return (
@@ -92,9 +135,9 @@ export default async function ProjectTrackerPage() {
 
       <div className="p-8">
         <ProjectTrackerClient
-          initialProjects={projects}
-          initialTodayTasks={todayTasks}
-          initialAllTasks={allTasks}
+          initialProjects={projects as any}
+          initialTodayTasks={todayTasks as any}
+          initialAllTasks={allTasks as any}
           stats={stats}
         />
       </div>

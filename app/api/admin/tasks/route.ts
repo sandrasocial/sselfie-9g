@@ -151,7 +151,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      task: result[0]
+      task: (result as any)[0]
     })
   } catch (error) {
     console.error("[Tasks API] Create error:", error)

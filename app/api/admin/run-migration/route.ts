@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
+import { redirect } from 'next/navigation'
 
 /**
  * POST /api/admin/run-migration
@@ -93,7 +94,7 @@ export async function POST(req: NextRequest) {
     // Insert default "High-Ticket Offer" project
     const existing = await sql`SELECT id FROM projects WHERE title = 'High-Ticket Offer Launch'`
 
-    if (existing.length === 0) {
+    if ((existing as any[]).length === 0) {
       await sql`
         INSERT INTO projects (title, description, emoji, color, vision_image_url, goal_date)
         VALUES (
@@ -107,10 +108,8 @@ export async function POST(req: NextRequest) {
       `
     }
 
-    return NextResponse.json({
-      success: true,
-      message: "Migration completed successfully"
-    })
+    // Redirect back to project tracker
+    return NextResponse.redirect(new URL('/admin/project-tracker', req.url))
   } catch (error) {
     console.error("[Migration] Error:", error)
     return NextResponse.json({

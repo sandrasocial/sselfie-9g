@@ -56,18 +56,30 @@ export async function PATCH(
     }
 
     updates.push(`updated_at = NOW()`)
-    values.push(taskId)
 
-    const query = `
+    // Build the query dynamically
+    const updateFields = []
+    for (const field of allowedFields) {
+      if (body[field] !== undefined) {
+        updateFields.push(`${field} = ` + (typeof body[field] === 'string' ? `'${body[field]}'` : body[field]))
+      }
+    }
+
+    if (body.status === 'done' && body.completed_at === undefined) {
+      updateFields.push(`completed_at = NOW()`)
+      updateFields.push(`celebration_seen = false`)
+    }
+
+    updateFields.push(`updated_at = NOW()`)
+
+    const result = await sql`
       UPDATE project_tasks
-      SET ${updates.join(', ')}
-      WHERE id = $${paramCount}
+      SET ${sql.unsafe(updateFields.join(', '))}
+      WHERE id = ${taskId}
       RETURNING *
     `
 
-    const result = await sql.unsafe(query, values)
-
-    if (result.length === 0) {
+    if ((result as any[]).length === 0) {
       return NextResponse.json({
         success: false,
         error: "Task not found"
@@ -76,7 +88,7 @@ export async function PATCH(
 
     return NextResponse.json({
       success: true,
-      task: result[0]
+      task: (result as any)[0]
     })
   } catch (error) {
     console.error("[Tasks API] Update error:", error)
@@ -113,7 +125,7 @@ export async function DELETE(
       RETURNING id
     `
 
-    if (result.length === 0) {
+    if ((result as any[]).length === 0) {
       return NextResponse.json({
         success: false,
         error: "Task not found"
