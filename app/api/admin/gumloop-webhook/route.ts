@@ -2,6 +2,31 @@ import { NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
 
 /**
+ * Convert HTML to plain text by stripping tags
+ */
+function htmlToPlainText(html: string): string {
+  return html
+    // Remove script and style tags and their content
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+    // Replace <br> and </p> with newlines
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n\n')
+    // Remove all remaining HTML tags
+    .replace(/<[^>]+>/g, '')
+    // Decode HTML entities
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    // Clean up extra whitespace
+    .replace(/\n\s*\n/g, '\n\n')
+    .trim()
+}
+
+/**
  * Gumloop Webhook Handler
  *
  * Receives AI-generated newsletter content from Gumloop flow and saves to database
@@ -64,10 +89,14 @@ export async function POST(req: NextRequest) {
     // Default to next Monday at 9am if not specified
     const scheduledFor = metadata.scheduled_for || getNextMonday9am()
 
+    // Convert HTML to plain text
+    const body_text = htmlToPlainText(body_html)
+
     console.log('[Gumloop Webhook] Creating newsletter campaign:', {
       name: campaignName,
       subject_length: subject.length,
       body_length: body_html.length,
+      body_text_length: body_text.length,
       scheduled_for: scheduledFor
     })
 
@@ -80,6 +109,7 @@ export async function POST(req: NextRequest) {
         campaign_type,
         subject_line,
         body_html,
+        body_text,
         status,
         approval_status,
         target_audience,
@@ -93,6 +123,7 @@ export async function POST(req: NextRequest) {
         'newsletter',
         ${subject},
         ${body_html},
+        ${body_text},
         'draft',
         'pending',
         ${{ segment: 'Main Audience', source: 'gumloop' }}::jsonb,

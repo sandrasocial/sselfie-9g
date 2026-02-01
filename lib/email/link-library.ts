@@ -32,23 +32,39 @@ export const EMAIL_LINKS: Record<string, LinkConfig> = {
     url: `${BASE_URL}/blueprint`,
     utmSource: 'email',
     utmMedium: 'newsletter',
-    description: 'Main blueprint/brand strategy offering'
+    description: 'Blueprint landing page (free offering - educational)'
+  },
+
+  blueprintCheckout: {
+    id: 'blueprint-checkout',
+    url: `${BASE_URL}/checkout/blueprint`,
+    utmSource: 'email',
+    utmMedium: 'newsletter',
+    description: 'Blueprint checkout (direct purchase intent)'
+  },
+
+  studio: {
+    id: 'studio',
+    url: `${BASE_URL}/studio`,
+    utmSource: 'email',
+    utmMedium: 'newsletter',
+    description: 'Studio landing/features page or dashboard (for logged-in users)'
+  },
+
+  whyStudio: {
+    id: 'why-studio',
+    url: `${BASE_URL}/why-studio`,
+    utmSource: 'email',
+    utmMedium: 'newsletter',
+    description: 'Why Studio page (overcome objections, detailed benefits)'
   },
 
   membership: {
     id: 'membership',
-    url: `${BASE_URL}/membership`,
+    url: `${BASE_URL}/checkout/membership`,
     utmSource: 'email',
     utmMedium: 'newsletter',
-    description: 'Paid membership upgrade'
-  },
-
-  freebie: {
-    id: 'freebie',
-    url: `${BASE_URL}/freebie`,
-    utmSource: 'email',
-    utmMedium: 'newsletter',
-    description: 'Free lead magnet/resource'
+    description: 'Membership checkout (direct purchase intent)'
   },
 
   // Content pages
@@ -79,10 +95,10 @@ export const EMAIL_LINKS: Record<string, LinkConfig> = {
   // Account/Settings
   dashboard: {
     id: 'dashboard',
-    url: `${BASE_URL}/dashboard`,
+    url: `${BASE_URL}/studio`,
     utmSource: 'email',
     utmMedium: 'transactional',
-    description: 'User dashboard'
+    description: 'User dashboard/app (logged-in users)'
   },
 
   preferences: {

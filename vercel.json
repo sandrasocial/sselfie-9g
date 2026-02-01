@@ -33,6 +33,10 @@
       "schedule": "*/15 * * * *"
     },
     {
+      "path": "/api/cron/send-scheduled-newsletters",
+      "schedule": "*/15 * * * *"
+    },
+    {
       "path": "/api/cron/backfill-resend-audience",
       "schedule": "30 * * * *"
     },
