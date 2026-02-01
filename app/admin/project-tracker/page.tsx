@@ -14,11 +14,23 @@ export default async function ProjectTrackerPage() {
 
   // Check if tables exist, if not show setup page
   let tablesExist = false
+  let projects: any = []
+  let todayTasks: any = []
+  let allTasks: any = []
+  let stats = {
+    todayCompleted: 0,
+    weekCompleted: 0,
+    totalActive: 0
+  }
+
   try {
     await sql`SELECT 1 FROM projects LIMIT 1`
     tablesExist = true
   } catch (error) {
-    // Tables don't exist yet, show setup UI
+    // Tables don't exist yet - show setup UI
+  }
+
+  if (!tablesExist) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
         <AdminNav />
@@ -55,7 +67,7 @@ export default async function ProjectTrackerPage() {
   }
 
   // Fetch all active projects with progress
-  const projects = await sql`
+  projects = await sql`
     SELECT
       p.*,
       COUNT(DISTINCT t.id) FILTER (WHERE t.status != 'done') as tasks_remaining,
@@ -75,7 +87,7 @@ export default async function ProjectTrackerPage() {
   `
 
   // Fetch today's focus tasks
-  const todayTasks = await sql`
+  todayTasks = await sql`
     SELECT
       t.*,
       p.title as project_title,
@@ -98,7 +110,7 @@ export default async function ProjectTrackerPage() {
   `
 
   // Fetch all tasks for Kanban board
-  const allTasks = await sql`
+  allTasks = await sql`
     SELECT
       t.*,
       p.title as project_title,
@@ -123,7 +135,7 @@ export default async function ProjectTrackerPage() {
     WHERE completed_at >= DATE_TRUNC('week', CURRENT_DATE)
   `
 
-  const stats = {
+  stats = {
     todayCompleted: parseInt(((todayResult as any[])[0] as any).count),
     weekCompleted: parseInt(((weekResult as any[])[0] as any).count),
     totalActive: (allTasks as any[]).filter((t: any) => t.status !== 'done').length
