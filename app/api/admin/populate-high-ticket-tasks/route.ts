@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
 
     // Get the High-Ticket Offer project
     const projects = await sql`
-      SELECT id FROM projects
+      SELECT id FROM tracker_projects
       WHERE title = 'High-Ticket Offer Launch'
       LIMIT 1
     `
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     // Check if tasks already exist
     const existingTasks = await sql`
       SELECT COUNT(*) as count
-      FROM project_tasks
+      FROM tracker_tasks
       WHERE project_id = ${projectId}
     `
 
@@ -188,7 +188,7 @@ export async function POST(req: NextRequest) {
     let insertedCount = 0
     for (const task of tasks) {
       await sql`
-        INSERT INTO project_tasks (
+        INSERT INTO tracker_tasks (
           project_id,
           title,
           description,

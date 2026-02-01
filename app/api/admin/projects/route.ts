@@ -15,8 +15,8 @@ export async function GET() {
         COUNT(DISTINCT t.id) FILTER (WHERE t.status != 'done') as tasks_remaining,
         COUNT(DISTINCT t.id) FILTER (WHERE t.status = 'done') as tasks_completed,
         COUNT(DISTINCT t.id) as total_tasks
-      FROM projects p
-      LEFT JOIN project_tasks t ON t.project_id = p.id
+      FROM tracker_projects p
+      LEFT JOIN tracker_tasks t ON t.project_id = p.id
       WHERE p.status != 'archived'
       GROUP BY p.id
       ORDER BY
@@ -65,8 +65,8 @@ export async function POST(req: NextRequest) {
     const sql = getDb()
 
     const result = await sql`
-      INSERT INTO projects (title, description, emoji, color, vision_image_url, goal_date)
-      VALUES (${title}, ${description}, ${emoji}, ${color}, ${vision_image_url}, ${goal_date})
+      INSERT INTO tracker_projects (title, description, emoji, color, vision_image_url, goal_date, user_id)
+      VALUES (${title}, ${description}, ${emoji}, ${color}, ${vision_image_url}, ${goal_date}, 'ssa@ssasocial.com')
       RETURNING *
     `
 

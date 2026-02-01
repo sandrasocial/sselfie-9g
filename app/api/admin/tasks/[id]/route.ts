@@ -73,7 +73,7 @@ export async function PATCH(
     updateFields.push(`updated_at = NOW()`)
 
     const result = await sql`
-      UPDATE project_tasks
+      UPDATE tracker_tasks
       SET ${sql.unsafe(updateFields.join(', '))}
       WHERE id = ${taskId}
       RETURNING *
@@ -120,7 +120,7 @@ export async function DELETE(
     const sql = getDb()
 
     const result = await sql`
-      DELETE FROM project_tasks
+      DELETE FROM tracker_tasks
       WHERE id = ${taskId}
       RETURNING id
     `

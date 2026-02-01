@@ -1,16 +1,28 @@
-import { NextRequest, NextResponse } from "next/server"
-import { getDb } from "@/lib/db"
-import { redirect } from 'next/navigation'
+import { neon } from "@neondatabase/serverless"
+import * as dotenv from "dotenv"
+import * as path from "path"
 
-/**
- * Run the project tracker database migration
- * Supports both GET and POST for easier access
- */
-async function runMigration(req: NextRequest) {
+// Load environment variables
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local') })
+
+async function fixTables() {
+  console.log("🔧 Fixing Project Tracker tables (renaming to avoid conflicts)...\n")
+
+  const sql = neon(process.env.DATABASE_URL!)
+
   try {
-    const sql = getDb()
+    // Drop the incorrectly created tables if they exist
+    console.log("Cleaning up conflicting tables...")
+    
+    await sql`DROP TABLE IF EXISTS daily_focus CASCADE`
+    await sql`DROP TABLE IF EXISTS task_subtasks CASCADE`
+    await sql`DROP TABLE IF EXISTS project_tasks CASCADE`
+    await sql`DROP TABLE IF EXISTS achievements CASCADE`
+    
+    console.log("✅ Cleaned up\n")
 
-    // Run all the CREATE TABLE statements with tracker_ prefix
+    // Create tracker_projects table (renamed from projects)
+    console.log("Creating tracker_projects table...")
     await sql`
       CREATE TABLE IF NOT EXISTS tracker_projects (
         id SERIAL PRIMARY KEY,
@@ -27,7 +39,10 @@ async function runMigration(req: NextRequest) {
         updated_at TIMESTAMP DEFAULT NOW()
       )
     `
+    console.log("✅ tracker_projects table created")
 
+    // Create tracker_tasks table
+    console.log("Creating tracker_tasks table...")
     await sql`
       CREATE TABLE IF NOT EXISTS tracker_tasks (
         id SERIAL PRIMARY KEY,
@@ -50,7 +65,10 @@ async function runMigration(req: NextRequest) {
         updated_at TIMESTAMP DEFAULT NOW()
       )
     `
+    console.log("✅ tracker_tasks table created")
 
+    // Create tracker_subtasks table
+    console.log("Creating tracker_subtasks table...")
     await sql`
       CREATE TABLE IF NOT EXISTS tracker_subtasks (
         id SERIAL PRIMARY KEY,
@@ -61,7 +79,10 @@ async function runMigration(req: NextRequest) {
         created_at TIMESTAMP DEFAULT NOW()
       )
     `
+    console.log("✅ tracker_subtasks table created")
 
+    // Create tracker_daily_focus table
+    console.log("Creating tracker_daily_focus table...")
     await sql`
       CREATE TABLE IF NOT EXISTS tracker_daily_focus (
         id SERIAL PRIMARY KEY,
@@ -73,7 +94,10 @@ async function runMigration(req: NextRequest) {
         UNIQUE(date, priority_rank)
       )
     `
+    console.log("✅ tracker_daily_focus table created")
 
+    // Create tracker_achievements table
+    console.log("Creating tracker_achievements table...")
     await sql`
       CREATE TABLE IF NOT EXISTS tracker_achievements (
         id SERIAL PRIMARY KEY,
@@ -85,48 +109,48 @@ async function runMigration(req: NextRequest) {
         celebration_seen BOOLEAN DEFAULT FALSE
       )
     `
+    console.log("✅ tracker_achievements table created")
 
     // Create indexes
+    console.log("Creating indexes...")
     await sql`CREATE INDEX IF NOT EXISTS idx_tracker_tasks_project ON tracker_tasks(project_id)`
     await sql`CREATE INDEX IF NOT EXISTS idx_tracker_tasks_status ON tracker_tasks(status)`
     await sql`CREATE INDEX IF NOT EXISTS idx_tracker_tasks_scheduled ON tracker_tasks(scheduled_for)`
     await sql`CREATE INDEX IF NOT EXISTS idx_tracker_subtasks_task ON tracker_subtasks(task_id)`
     await sql`CREATE INDEX IF NOT EXISTS idx_tracker_daily_focus_date ON tracker_daily_focus(date)`
+    console.log("✅ Indexes created")
 
-    // Insert default "High-Ticket Offer" project
-    const existing = await sql`SELECT id FROM tracker_projects WHERE title = 'High-Ticket Offer Launch'`
+    // Insert default project
+    console.log("\nCreating default High-Ticket Offer project...")
+    const adminUserId = 'ssa@ssasocial.com' // Sandra's user ID
+    
+    await sql`
+      INSERT INTO tracker_projects (user_id, title, description, emoji, color, vision_image_url, goal_date)
+      VALUES (
+        ${adminUserId},
+        'High-Ticket Offer Launch',
+        'Create and launch premium service offering with landing page, booking system, and checkout flow',
+        '💎',
+        '#EC4899',
+        '/images/img-4801.jpg',
+        ${new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)}
+      )
+    `
+    console.log("✅ Default project created")
 
-    if ((existing as any[]).length === 0) {
-      await sql`
-        INSERT INTO tracker_projects (user_id, title, description, emoji, color, vision_image_url, goal_date)
-        VALUES (
-          'ssa@ssasocial.com',
-          'High-Ticket Offer Launch',
-          'Create and launch premium service offering with landing page, booking system, and checkout flow',
-          '💎',
-          '#EC4899',
-          '/images/img-4801.jpg',
-          ${new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)}
-        )
-      `
-    }
+    console.log("\n🎉 Project Tracker tables fixed successfully!")
+    console.log("All tables renamed with 'tracker_' prefix to avoid conflicts\n")
 
-    // Redirect back to project tracker
-    return NextResponse.redirect(new URL('/admin/project-tracker', req.url))
   } catch (error) {
-    console.error("[Migration] Error:", error)
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown error"
-    }, { status: 500 })
+    console.error("❌ Migration failed:", error)
+    throw error
   }
 }
 
-// Support both GET and POST
-export async function GET(req: NextRequest) {
-  return runMigration(req)
-}
-
-export async function POST(req: NextRequest) {
-  return runMigration(req)
-}
+// Run migration
+fixTables()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error)
+    process.exit(1)
+  })

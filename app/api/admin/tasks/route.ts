@@ -24,13 +24,13 @@ export async function GET(req: NextRequest) {
           p.title as project_title,
           p.emoji as project_emoji,
           p.color as project_color,
-          (SELECT COUNT(*) FROM task_subtasks WHERE task_id = t.id) as subtask_count,
-          (SELECT COUNT(*) FROM task_subtasks WHERE task_id = t.id AND completed = true) as subtasks_completed
-        FROM project_tasks t
-        LEFT JOIN projects p ON p.id = t.project_id
+          (SELECT COUNT(*) FROM tracker_subtasks WHERE task_id = t.id) as subtask_count,
+          (SELECT COUNT(*) FROM tracker_subtasks WHERE task_id = t.id AND completed = true) as subtasks_completed
+        FROM tracker_tasks t
+        LEFT JOIN tracker_projects p ON p.id = t.project_id
         WHERE (
           t.scheduled_for = CURRENT_DATE
-          OR t.id IN (SELECT task_id FROM daily_focus WHERE date = CURRENT_DATE)
+          OR t.id IN (SELECT task_id FROM tracker_daily_focus WHERE date = CURRENT_DATE)
         )
         AND t.status != 'done'
         ORDER BY
@@ -64,10 +64,10 @@ export async function GET(req: NextRequest) {
           p.title as project_title,
           p.emoji as project_emoji,
           p.color as project_color,
-          (SELECT COUNT(*) FROM task_subtasks WHERE task_id = t.id) as subtask_count,
-          (SELECT COUNT(*) FROM task_subtasks WHERE task_id = t.id AND completed = true) as subtasks_completed
-        FROM project_tasks t
-        LEFT JOIN projects p ON p.id = t.project_id
+          (SELECT COUNT(*) FROM tracker_subtasks WHERE task_id = t.id) as subtask_count,
+          (SELECT COUNT(*) FROM tracker_subtasks WHERE task_id = t.id AND completed = true) as subtasks_completed
+        FROM tracker_tasks t
+        LEFT JOIN tracker_projects p ON p.id = t.project_id
         ${whereClause ? sql.unsafe(whereClause) : sql``}
         ORDER BY
           t.order_index ASC,
@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
     const sql = getDb()
 
     const result = await sql`
-      INSERT INTO project_tasks (
+      INSERT INTO tracker_tasks (
         project_id,
         title,
         description,
