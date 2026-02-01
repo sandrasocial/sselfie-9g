@@ -41,21 +41,53 @@ export function NewsletterReviewClient({
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
-  const handleApprove = async (campaignId: number) => {
-    if (!confirm('Approve this newsletter for sending?')) return
+  // Schedule picker state
+  const [showSchedulePicker, setShowSchedulePicker] = useState(false)
+  const [campaignToApprove, setCampaignToApprove] = useState<number | null>(null)
+  const [scheduleOption, setScheduleOption] = useState<'immediate' | 'scheduled'>('immediate')
+  const [scheduledDateTime, setScheduledDateTime] = useState('')
+
+  const handleApprove = (campaignId: number) => {
+    // Show schedule picker modal
+    setCampaignToApprove(campaignId)
+    setScheduleOption('immediate')
+    setScheduledDateTime('')
+    setShowSchedulePicker(true)
+  }
+
+  const handleScheduleSubmit = async () => {
+    if (!campaignToApprove) return
+
+    // Validate scheduled time if option is 'scheduled'
+    if (scheduleOption === 'scheduled' && !scheduledDateTime) {
+      setMessage({ type: 'error', text: 'Please select a date and time' })
+      return
+    }
 
     setLoading(true)
     setMessage(null)
+    setShowSchedulePicker(false)
 
     try {
-      const response = await fetch(`/api/admin/email-campaigns/${campaignId}/approve`, {
+      const payload: any = {}
+
+      if (scheduleOption === 'scheduled') {
+        payload.scheduled_for = new Date(scheduledDateTime).toISOString()
+      }
+
+      const response = await fetch(`/api/admin/email-campaigns/${campaignToApprove}/approve`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       })
 
       if (!response.ok) throw new Error('Failed to approve')
 
-      setMessage({ type: 'success', text: '✅ Newsletter approved and scheduled for sending!' })
+      const successText = scheduleOption === 'immediate'
+        ? '✅ Newsletter approved! Will send within 15 minutes.'
+        : `✅ Newsletter scheduled for ${new Date(scheduledDateTime).toLocaleString()}`
+
+      setMessage({ type: 'success', text: successText })
 
       // Refresh page after 2 seconds
       setTimeout(() => window.location.reload(), 2000)
@@ -64,6 +96,7 @@ export function NewsletterReviewClient({
       setMessage({ type: 'error', text: '❌ Failed to approve newsletter' })
     } finally {
       setLoading(false)
+      setCampaignToApprove(null)
     }
   }
 
@@ -116,6 +149,32 @@ export function NewsletterReviewClient({
     }
   }
 
+  const handleUnreject = async (campaignId: number) => {
+    if (!confirm('Move this newsletter back to pending review?')) return
+
+    setLoading(true)
+    setMessage(null)
+
+    try {
+      const response = await fetch(`/api/admin/email-campaigns/${campaignId}/unreject`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+
+      if (!response.ok) throw new Error('Failed to unreject')
+
+      setMessage({ type: 'success', text: '✅ Newsletter moved back to pending review' })
+
+      // Refresh page after 2 seconds
+      setTimeout(() => window.location.reload(), 2000)
+
+    } catch (error) {
+      setMessage({ type: 'error', text: '❌ Failed to unreject newsletter' })
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div>
       {/* Message banner */}
@@ -124,6 +183,84 @@ export function NewsletterReviewClient({
           message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
         }`}>
           {message.text}
+        </div>
+      )}
+
+      {/* Schedule Picker Modal */}
+      {showSchedulePicker && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">
+              📅 Schedule Newsletter
+            </h3>
+
+            <div className="space-y-4 mb-6">
+              {/* Immediate option */}
+              <label className="flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                style={{ borderColor: scheduleOption === 'immediate' ? '#3b82f6' : '#e5e7eb' }}>
+                <input
+                  type="radio"
+                  name="schedule"
+                  value="immediate"
+                  checked={scheduleOption === 'immediate'}
+                  onChange={(e) => setScheduleOption(e.target.value as 'immediate')}
+                  className="mt-1"
+                />
+                <div className="flex-1">
+                  <div className="font-semibold text-gray-900">Send Immediately</div>
+                  <div className="text-sm text-gray-600">
+                    Newsletter will be sent within the next 15 minutes
+                  </div>
+                </div>
+              </label>
+
+              {/* Scheduled option */}
+              <label className="flex items-start gap-3 p-4 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                style={{ borderColor: scheduleOption === 'scheduled' ? '#3b82f6' : '#e5e7eb' }}>
+                <input
+                  type="radio"
+                  name="schedule"
+                  value="scheduled"
+                  checked={scheduleOption === 'scheduled'}
+                  onChange={(e) => setScheduleOption(e.target.value as 'scheduled')}
+                  className="mt-1"
+                />
+                <div className="flex-1">
+                  <div className="font-semibold text-gray-900 mb-2">Schedule for Later</div>
+                  {scheduleOption === 'scheduled' && (
+                    <input
+                      type="datetime-local"
+                      value={scheduledDateTime}
+                      onChange={(e) => setScheduledDateTime(e.target.value)}
+                      min={new Date().toISOString().slice(0, 16)}
+                      className="w-full px-3 py-2 border rounded"
+                    />
+                  )}
+                </div>
+              </label>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowSchedulePicker(false)
+                  setCampaignToApprove(null)
+                }}
+                disabled={loading}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleScheduleSubmit}
+                disabled={loading}
+                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 font-semibold"
+              >
+                {loading ? 'Approving...' : '✅ Approve'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -300,6 +437,73 @@ export function NewsletterReviewClient({
           </table>
         </div>
       </div>
+
+      {/* Rejected Campaigns */}
+      {rejectedCampaigns.length > 0 && (
+        <div className="mb-12">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            🚫 Rejected Campaigns
+          </h2>
+
+          <div className="space-y-4">
+            {rejectedCampaigns.map((campaign) => (
+              <div key={campaign.id} className="bg-white p-6 rounded-lg shadow border-l-4 border-red-500">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                      {campaign.campaign_name}
+                    </h3>
+                    <p className="text-gray-600 mb-2">
+                      <strong>Subject:</strong> {campaign.subject_line}
+                    </p>
+                    <div className="text-sm text-gray-500">
+                      Created: {campaign.created_at_formatted}
+                    </div>
+                    {campaign.metrics?.rejection?.reason && (
+                      <div className="mt-2 text-sm text-red-600">
+                        <strong>Rejection reason:</strong> {campaign.metrics.rejection.reason}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setSelectedCampaign(
+                        selectedCampaign?.id === campaign.id ? null : campaign
+                      )}
+                      className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+                    >
+                      {selectedCampaign?.id === campaign.id ? 'Hide' : 'View'}
+                    </button>
+                    <button
+                      onClick={() => handleUnreject(campaign.id)}
+                      disabled={loading}
+                      className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+                    >
+                      🔄 Unreject
+                    </button>
+                  </div>
+                </div>
+
+                {/* Preview (collapsible) */}
+                {selectedCampaign?.id === campaign.id && (
+                  <div className="border-t pt-4 mt-4">
+                    <div className="border rounded-lg overflow-hidden">
+                      <div className="bg-gray-100 p-3 border-b">
+                        <div className="text-sm text-gray-600">Preview:</div>
+                      </div>
+                      <div
+                        className="p-6 max-h-96 overflow-y-auto bg-white"
+                        dangerouslySetInnerHTML={{ __html: campaign.body_html || '' }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

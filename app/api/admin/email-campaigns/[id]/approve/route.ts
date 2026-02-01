@@ -20,21 +20,40 @@ export async function POST(
       )
     }
 
+    // Get optional scheduled_for from request body
+    const body = await req.json().catch(() => ({}))
+    const scheduledFor = body.scheduled_for || null
+
     const sql = getDb()
 
     // Update campaign status
-    const result = await sql`
-      UPDATE admin_email_campaigns
-      SET
-        approval_status = 'approved',
-        status = 'scheduled',
-        approved_by = 'sandra@ssasocial.com',
-        approved_at = NOW(),
-        updated_at = NOW()
-      WHERE id = ${campaignId}
-        AND approval_status IN ('pending', 'draft')
-      RETURNING id, campaign_name, status, approval_status, scheduled_for
-    `
+    const result = scheduledFor
+      ? await sql`
+          UPDATE admin_email_campaigns
+          SET
+            approval_status = 'approved',
+            status = 'scheduled',
+            scheduled_for = ${scheduledFor},
+            approved_by = 'sandra@ssasocial.com',
+            approved_at = NOW(),
+            updated_at = NOW()
+          WHERE id = ${campaignId}
+            AND approval_status IN ('pending', 'draft')
+          RETURNING id, campaign_name, status, approval_status, scheduled_for
+        `
+      : await sql`
+          UPDATE admin_email_campaigns
+          SET
+            approval_status = 'approved',
+            status = 'scheduled',
+            scheduled_for = NOW(),
+            approved_by = 'sandra@ssasocial.com',
+            approved_at = NOW(),
+            updated_at = NOW()
+          WHERE id = ${campaignId}
+            AND approval_status IN ('pending', 'draft')
+          RETURNING id, campaign_name, status, approval_status, scheduled_for
+        `
 
     if (result.length === 0) {
       return NextResponse.json(

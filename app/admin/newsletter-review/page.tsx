@@ -77,11 +77,12 @@ export default async function NewsletterReviewPage() {
   }))
 
   // Fetch rejected campaigns (for reference)
-  const rejectedCampaigns = await sql`
+  const rejectedCampaignsRaw = await sql`
     SELECT
       id,
       campaign_name,
       subject_line,
+      body_html,
       approval_status,
       created_at,
       metrics
@@ -91,6 +92,12 @@ export default async function NewsletterReviewPage() {
     ORDER BY created_at DESC
     LIMIT 5
   `
+
+  // Format dates on server to prevent hydration mismatches
+  const rejectedCampaigns = rejectedCampaignsRaw.map((c: any) => ({
+    ...c,
+    created_at_formatted: new Date(c.created_at).toLocaleString('en-US', { timeZone: 'UTC' })
+  }))
 
   // Calculate stats
   const stats = {
