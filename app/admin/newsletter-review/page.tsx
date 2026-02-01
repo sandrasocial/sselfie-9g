@@ -1,6 +1,10 @@
 import { getDb } from "@/lib/db"
 import { NewsletterReviewClient } from "./newsletter-review-client"
 
+// Disable caching for this page
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 /**
  * Newsletter Review Dashboard
  *
