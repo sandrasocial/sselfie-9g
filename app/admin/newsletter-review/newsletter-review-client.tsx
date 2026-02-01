@@ -18,6 +18,11 @@ interface Campaign {
   total_opened?: number
   total_clicked?: number
   sent_at?: string
+  // Pre-formatted dates from server to prevent hydration mismatches
+  created_at_formatted?: string
+  scheduled_for_formatted?: string | null
+  test_email_sent_at_formatted?: string | null
+  sent_at_formatted?: string | null
 }
 
 interface Props {
@@ -146,9 +151,9 @@ export function NewsletterReviewClient({
                       <strong>Subject:</strong> {campaign.subject_line}
                     </p>
                     <div className="text-sm text-gray-500">
-                      Created: {new Date(campaign.created_at).toLocaleString()}
-                      {campaign.scheduled_for && (
-                        <> • Scheduled for: {new Date(campaign.scheduled_for).toLocaleString()}</>
+                      Created: {campaign.created_at_formatted}
+                      {campaign.scheduled_for_formatted && (
+                        <> • Scheduled for: {campaign.scheduled_for_formatted}</>
                       )}
                     </div>
                   </div>
@@ -186,10 +191,10 @@ export function NewsletterReviewClient({
                       </button>
                     </div>
 
-                    {campaign.test_email_sent_to && (
+                    {campaign.test_email_sent_to && campaign.test_email_sent_at_formatted && (
                       <div className="mb-4 text-sm text-gray-600">
                         Last test sent to {campaign.test_email_sent_to} on{' '}
-                        {new Date(campaign.test_email_sent_at!).toLocaleString()}
+                        {campaign.test_email_sent_at_formatted}
                       </div>
                     )}
 
@@ -276,7 +281,7 @@ export function NewsletterReviewClient({
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                    {campaign.sent_at ? new Date(campaign.sent_at).toLocaleDateString() : '-'}
+                    {campaign.sent_at_formatted || '-'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                     {campaign.total_recipients || 0}

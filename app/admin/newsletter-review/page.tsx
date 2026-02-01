@@ -15,7 +15,7 @@ export default async function NewsletterReviewPage() {
   const sql = getDb()
 
   // Fetch pending newsletters (drafts awaiting approval)
-  const pendingCampaigns = await sql`
+  const pendingCampaignsRaw = await sql`
     SELECT
       id,
       campaign_name,
@@ -38,8 +38,16 @@ export default async function NewsletterReviewPage() {
     ORDER BY created_at DESC
   `
 
+  // Format dates on server to prevent hydration mismatches
+  const pendingCampaigns = pendingCampaignsRaw.map((c: any) => ({
+    ...c,
+    created_at_formatted: new Date(c.created_at).toLocaleString('en-US', { timeZone: 'UTC' }),
+    scheduled_for_formatted: c.scheduled_for ? new Date(c.scheduled_for).toLocaleString('en-US', { timeZone: 'UTC' }) : null,
+    test_email_sent_at_formatted: c.test_email_sent_at ? new Date(c.test_email_sent_at).toLocaleString('en-US', { timeZone: 'UTC' }) : null
+  }))
+
   // Fetch recent approved/sent newsletters
-  const recentCampaigns = await sql`
+  const recentCampaignsRaw = await sql`
     SELECT
       id,
       campaign_name,
@@ -61,6 +69,12 @@ export default async function NewsletterReviewPage() {
     ORDER BY COALESCE(sent_at, approved_at, created_at) DESC
     LIMIT 10
   `
+
+  // Format dates on server to prevent hydration mismatches
+  const recentCampaigns = recentCampaignsRaw.map((c: any) => ({
+    ...c,
+    sent_at_formatted: c.sent_at ? new Date(c.sent_at).toLocaleDateString('en-US', { timeZone: 'UTC' }) : null
+  }))
 
   // Fetch rejected campaigns (for reference)
   const rejectedCampaigns = await sql`
