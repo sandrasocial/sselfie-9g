@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import type { DragEvent } from 'react'
 
 interface Project {
   id: number
@@ -59,6 +60,8 @@ export function ProjectTrackerClient({
   const [showCelebration, setShowCelebration] = useState(false)
   const [isPopulating, setIsPopulating] = useState(false)
   const [showAddTask, setShowAddTask] = useState(false)
+  const [showAddProject, setShowAddProject] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
   const [newTask, setNewTask] = useState({
     title: '',
     description: '',
@@ -66,6 +69,17 @@ export function ProjectTrackerClient({
     is_quick_win: false,
     estimated_minutes: 30
   })
+  const [newProject, setNewProject] = useState({
+    title: '',
+    description: '',
+    emoji: '🎯',
+    color: '#57534e' // stone-700
+  })
+  const [draggedTask, setDraggedTask] = useState<number | null>(null)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   const handleToggleTask = async (taskId: number, currentStatus: string) => {
     const newStatus = currentStatus === 'done' ? 'todo' : 'done'
@@ -86,6 +100,70 @@ export function ProjectTrackerClient({
       }
 
       // Refresh data
+      window.location.reload()
+    } catch (error) {
+      console.error('Error updating task:', error)
+    }
+  }
+
+  const handleDragStart = (e: DragEvent, taskId: number) => {
+    setDraggedTask(taskId)
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
+  const handleDragOver = (e: DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+  }
+
+  const handleDrop = async (e: DragEvent, newStatus: string) => {
+    e.preventDefault()
+    
+    if (!draggedTask) return
+
+    try {
+      const response = await fetch(`/api/admin/tasks/${draggedTask}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('API Error:', errorData)
+        throw new Error(errorData.error || 'Failed to update task')
+      }
+
+      // Show celebration if completing
+      if (newStatus === 'done') {
+        setShowCelebration(true)
+        setTimeout(() => setShowCelebration(false), 3000)
+      }
+
+      window.location.reload()
+    } catch (error) {
+      console.error('Error updating task:', error)
+      alert(`Failed to update task: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    } finally {
+      setDraggedTask(null)
+    }
+  }
+
+  const handleUpdateTaskStatus = async (taskId: number, newStatus: string) => {
+    try {
+      const response = await fetch(`/api/admin/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      })
+
+      if (!response.ok) throw new Error('Failed to update task')
+
+      if (newStatus === 'done') {
+        setShowCelebration(true)
+        setTimeout(() => setShowCelebration(false), 3000)
+      }
+
       window.location.reload()
     } catch (error) {
       console.error('Error updating task:', error)
@@ -166,6 +244,41 @@ export function ProjectTrackerClient({
     }
   }
 
+  const handleAddProject = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!newProject.title.trim()) {
+      alert('Project title is required')
+      return
+    }
+
+    try {
+      const response = await fetch('/api/admin/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newProject)
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setShowAddProject(false)
+        setNewProject({
+          title: '',
+          description: '',
+          emoji: '🎯',
+          color: '#57534e'
+        })
+        window.location.reload()
+      } else {
+        alert(`Error: ${data.error}`)
+      }
+    } catch (error) {
+      console.error('Error adding project:', error)
+      alert('Failed to add project')
+    }
+  }
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'urgent': return 'bg-red-50 text-red-900 border-red-200'
@@ -199,14 +312,24 @@ export function ProjectTrackerClient({
               ADHD-friendly task management system
             </p>
           </div>
-          {allTasks.length === 0 && (
-            <button
-              onClick={handlePopulateTasks}
-              disabled={isPopulating}
-              className="px-4 py-2 bg-stone-950 text-stone-50 text-xs tracking-[0.15em] uppercase hover:bg-stone-800 transition-colors disabled:opacity-50"
-            >
-              {isPopulating ? 'Loading...' : '💎 Add High-Ticket Tasks'}
-            </button>
+          {isMounted && (
+            <div className="flex gap-2">
+              {allTasks.length === 0 && (
+                <button
+                  onClick={handlePopulateTasks}
+                  disabled={isPopulating}
+                  className="px-4 py-2 bg-stone-950 text-stone-50 text-xs tracking-[0.15em] uppercase hover:bg-stone-800 transition-colors disabled:opacity-50"
+                >
+                  {isPopulating ? 'Loading...' : '💎 Add High-Ticket Tasks'}
+                </button>
+              )}
+              <button
+                onClick={() => setShowAddProject(true)}
+                className="px-4 py-2 border border-stone-300 text-stone-700 text-xs tracking-[0.15em] uppercase hover:border-stone-950 transition-colors"
+              >
+                + New Project
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -432,7 +555,12 @@ export function ProjectTrackerClient({
             }[status] || { title: status, bg: 'bg-stone-50' }
 
             return (
-              <div key={status} className={`p-4 ${statusConfig.bg} border border-stone-200`}>
+              <div 
+                key={status} 
+                className={`p-4 ${statusConfig.bg} border-2 ${draggedTask ? 'border-stone-400 border-dashed' : 'border-stone-200'} transition-colors min-h-[400px]`}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, status)}
+              >
                 <h3 className="text-xs tracking-[0.15em] uppercase text-stone-950 mb-4 flex items-center justify-between">
                   {statusConfig.title}
                   <span className="text-stone-500">
@@ -444,14 +572,56 @@ export function ProjectTrackerClient({
                   {statusTasks.map(task => (
                     <div
                       key={task.id}
-                      className="p-3 bg-white border border-stone-200 hover:border-stone-300 transition-colors cursor-pointer"
-                      onClick={() => handleToggleTask(task.id, task.status)}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, task.id)}
+                      className={`p-3 bg-white border border-stone-200 hover:border-stone-300 transition-all cursor-move ${
+                        draggedTask === task.id ? 'opacity-50' : 'opacity-100'
+                      }`}
                     >
                       <div className="flex items-start gap-2 mb-2">
                         <span className="text-lg">{task.project_emoji}</span>
-                        <h4 className="text-sm font-medium text-stone-950 flex-1">
-                          {task.title}
-                        </h4>
+                        <div className="flex-1">
+                          <h4 className="text-sm font-medium text-stone-950 mb-2">
+                            {task.title}
+                          </h4>
+                          
+                          {/* Status Quick Change Buttons */}
+                          <div className="flex gap-1 mb-2">
+                            {status !== 'todo' && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleUpdateTaskStatus(task.id, 'todo')
+                                }}
+                                className="px-2 py-0.5 text-xs border border-stone-300 hover:bg-stone-100 transition-colors"
+                              >
+                                → Todo
+                              </button>
+                            )}
+                            {status !== 'in_progress' && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleUpdateTaskStatus(task.id, 'in_progress')
+                                }}
+                                className="px-2 py-0.5 text-xs border border-stone-300 hover:bg-stone-100 transition-colors"
+                              >
+                                → In Progress
+                              </button>
+                            )}
+                            {status !== 'done' && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleUpdateTaskStatus(task.id, 'done')
+                                }}
+                                className="px-2 py-0.5 text-xs border border-stone-300 hover:bg-stone-100 transition-colors"
+                              >
+                                → Done
+                              </button>
+                            )}
+                          </div>
+                        </div>
                       </div>
 
                       <span className={`inline-block px-2 py-0.5 text-xs tracking-wider uppercase ${getPriorityColor(task.priority)}`}>
@@ -622,6 +792,99 @@ export function ProjectTrackerClient({
                 <button
                   type="button"
                   onClick={() => setShowAddTask(false)}
+                  className="px-4 py-2 border border-stone-300 text-stone-700 text-xs tracking-[0.15em] uppercase hover:border-stone-950 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Project Modal */}
+      {showAddProject && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white border border-stone-200 max-w-lg w-full p-6">
+            <div className="flex items-center justify-between mb-6 pb-4 border-b border-stone-200">
+              <h2 className="text-lg font-['Times_New_Roman'] text-stone-950 tracking-[0.1em] uppercase">
+                Add New Project
+              </h2>
+              <button
+                onClick={() => setShowAddProject(false)}
+                className="text-stone-500 hover:text-stone-950 text-xl"
+              >
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleAddProject} className="space-y-4">
+              <div>
+                <label className="block text-xs tracking-[0.15em] uppercase text-stone-700 mb-2">
+                  Project Title *
+                </label>
+                <input
+                  type="text"
+                  value={newProject.title}
+                  onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
+                  className="w-full px-3 py-2 border border-stone-300 text-sm focus:outline-none focus:border-stone-950"
+                  placeholder="e.g., Launch New Course"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs tracking-[0.15em] uppercase text-stone-700 mb-2">
+                  Description
+                </label>
+                <textarea
+                  value={newProject.description}
+                  onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
+                  className="w-full px-3 py-2 border border-stone-300 text-sm focus:outline-none focus:border-stone-950"
+                  placeholder="Project description..."
+                  rows={3}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs tracking-[0.15em] uppercase text-stone-700 mb-2">
+                    Emoji
+                  </label>
+                  <input
+                    type="text"
+                    value={newProject.emoji}
+                    onChange={(e) => setNewProject({ ...newProject, emoji: e.target.value })}
+                    className="w-full px-3 py-2 border border-stone-300 text-sm focus:outline-none focus:border-stone-950"
+                    placeholder="🎯"
+                    maxLength={2}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs tracking-[0.15em] uppercase text-stone-700 mb-2">
+                    Color (Hex)
+                  </label>
+                  <input
+                    type="text"
+                    value={newProject.color}
+                    onChange={(e) => setNewProject({ ...newProject, color: e.target.value })}
+                    className="w-full px-3 py-2 border border-stone-300 text-sm focus:outline-none focus:border-stone-950"
+                    placeholder="#57534e"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-stone-950 text-stone-50 text-xs tracking-[0.15em] uppercase hover:bg-stone-800 transition-colors"
+                >
+                  Add Project
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAddProject(false)}
                   className="px-4 py-2 border border-stone-300 text-stone-700 text-xs tracking-[0.15em] uppercase hover:border-stone-950 transition-colors"
                 >
                   Cancel

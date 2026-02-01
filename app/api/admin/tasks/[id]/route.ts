@@ -7,9 +7,11 @@ import { getDb } from "@/lib/db"
  */
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
+    // Handle both Next.js 14 and 15 params format
+    const params = await Promise.resolve(context.params)
     const taskId = parseInt(params.id)
 
     if (isNaN(taskId)) {
@@ -22,62 +24,63 @@ export async function PATCH(
     const body = await req.json()
     const sql = getDb()
 
-    // Build dynamic update based on provided fields
-    const updates: string[] = []
-    const values: any[] = []
-    let paramCount = 1
-
-    const allowedFields = [
-      'title', 'description', 'priority', 'status',
-      'is_quick_win', 'is_deep_work', 'energy_level',
-      'estimated_minutes', 'actual_minutes',
-      'due_date', 'scheduled_for', 'order_index'
-    ]
-
-    for (const field of allowedFields) {
-      if (body[field] !== undefined) {
-        updates.push(`${field} = $${paramCount}`)
-        values.push(body[field])
-        paramCount++
+    // For simple status updates, use a direct approach
+    let result
+    
+    if (body.status && Object.keys(body).length === 1) {
+      // Simple status change only
+      if (body.status === 'done') {
+        result = await sql`
+          UPDATE tracker_tasks
+          SET status = ${body.status}, completed_at = NOW(), updated_at = NOW()
+          WHERE id = ${taskId}
+          RETURNING *
+        `
+      } else {
+        result = await sql`
+          UPDATE tracker_tasks
+          SET status = ${body.status}, updated_at = NOW()
+          WHERE id = ${taskId}
+          RETURNING *
+        `
       }
-    }
+    } else {
+      // Get current task for complex updates
+      const currentTask = await sql`
+        SELECT * FROM tracker_tasks WHERE id = ${taskId}
+      `
 
-    // Handle task completion
-    if (body.status === 'done' && body.completed_at === undefined) {
-      updates.push(`completed_at = NOW()`)
-      updates.push(`celebration_seen = false`) // Show celebration animation
-    }
-
-    if (updates.length === 0) {
-      return NextResponse.json({
-        success: false,
-        error: "No fields to update"
-      }, { status: 400 })
-    }
-
-    updates.push(`updated_at = NOW()`)
-
-    // Build the query dynamically
-    const updateFields = []
-    for (const field of allowedFields) {
-      if (body[field] !== undefined) {
-        updateFields.push(`${field} = ` + (typeof body[field] === 'string' ? `'${body[field]}'` : body[field]))
+      if (currentTask.length === 0) {
+        return NextResponse.json({
+          success: false,
+          error: "Task not found"
+        }, { status: 404 })
       }
+
+      const task = currentTask[0] as any
+
+      // Update all fields
+      result = await sql`
+        UPDATE tracker_tasks
+        SET
+          title = ${body.title !== undefined ? body.title : task.title},
+          description = ${body.description !== undefined ? body.description : task.description},
+          priority = ${body.priority !== undefined ? body.priority : task.priority},
+          status = ${body.status !== undefined ? body.status : task.status},
+          is_quick_win = ${body.is_quick_win !== undefined ? body.is_quick_win : task.is_quick_win},
+          is_deep_work = ${body.is_deep_work !== undefined ? body.is_deep_work : task.is_deep_work},
+          energy_level = ${body.energy_level !== undefined ? body.energy_level : task.energy_level},
+          estimated_minutes = ${body.estimated_minutes !== undefined ? body.estimated_minutes : task.estimated_minutes},
+          actual_minutes = ${body.actual_minutes !== undefined ? body.actual_minutes : task.actual_minutes},
+          due_date = ${body.due_date !== undefined ? body.due_date : task.due_date},
+          scheduled_for = ${body.scheduled_for !== undefined ? body.scheduled_for : task.scheduled_for},
+          order_index = ${body.order_index !== undefined ? body.order_index : task.order_index},
+          completed_at = ${body.status === 'done' && !task.completed_at ? new Date() : task.completed_at},
+          updated_at = NOW()
+        WHERE id = ${taskId}
+        RETURNING *
+      `
     }
-
-    if (body.status === 'done' && body.completed_at === undefined) {
-      updateFields.push(`completed_at = NOW()`)
-      updateFields.push(`celebration_seen = false`)
-    }
-
-    updateFields.push(`updated_at = NOW()`)
-
-    const result = await sql`
-      UPDATE tracker_tasks
-      SET ${sql.unsafe(updateFields.join(', '))}
-      WHERE id = ${taskId}
-      RETURNING *
-    `
 
     if ((result as any[]).length === 0) {
       return NextResponse.json({
@@ -105,9 +108,11 @@ export async function PATCH(
  */
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> | { id: string } }
 ) {
   try {
+    // Handle both Next.js 14 and 15 params format
+    const params = await Promise.resolve(context.params)
     const taskId = parseInt(params.id)
 
     if (isNaN(taskId)) {

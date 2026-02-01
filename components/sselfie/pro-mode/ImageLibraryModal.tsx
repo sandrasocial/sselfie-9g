@@ -67,12 +67,21 @@ export default function ImageLibraryModal({
 }: ImageLibraryModalProps) {
   const [showStartFreshConfirm, setShowStartFreshConfirm] = useState(false)
 
-  // Memoize library to prevent unnecessary re-renders and blinking
-  const memoizedLibrary = useMemo(() => library, [
-    library.selfies.join(','),
-    library.products.join(','),
-    library.people.join(','),
-    library.vibes.join(','),
+  // Memoize library with stable references to prevent image blinking
+  // Only update when actual image URLs change, not when object reference changes
+  const memoizedLibrary = useMemo(() => {
+    return {
+      selfies: [...library.selfies],
+      products: [...library.products],
+      people: [...library.people],
+      vibes: [...library.vibes],
+      intent: library.intent,
+    }
+  }, [
+    library.selfies.sort().join('|'),
+    library.products.sort().join('|'),
+    library.people.sort().join('|'),
+    library.vibes.sort().join('|'),
     library.intent,
   ])
 
@@ -157,26 +166,31 @@ export default function ImageLibraryModal({
 
         {/* Image grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
-          {images.map((imageUrl, index) => (
-            <div
-              key={`${category}-${imageUrl}`}
-              className="aspect-square rounded-lg overflow-hidden border bg-stone-50"
-              style={{
-                borderRadius: BorderRadius.image,
-                borderColor: Colors.border,
-              }}
-            >
-              <img
-                src={getOptimizedImageUrl(imageUrl, 300, 70)}
-                alt={`${title} ${index + 1}`}
-                className="w-full h-full object-cover"
-                loading="lazy"
-                onError={(e) => {
-                  e.currentTarget.src = '/placeholder.svg'
+          {images.map((imageUrl, index) => {
+            // Create stable key using URL hash to prevent re-mounting
+            const stableKey = `${category}-${imageUrl.split('/').pop()?.split('?')[0] || index}`
+            
+            return (
+              <div
+                key={stableKey}
+                className="aspect-square rounded-lg overflow-hidden border bg-stone-50"
+                style={{
+                  borderRadius: BorderRadius.image,
+                  borderColor: Colors.border,
                 }}
-              />
-            </div>
-          ))}
+              >
+                <img
+                  src={getOptimizedImageUrl(imageUrl, 300, 70)}
+                  alt={`${title} ${index + 1}`}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                  onError={(e) => {
+                    e.currentTarget.src = '/placeholder.svg'
+                  }}
+                />
+              </div>
+            )
+          })}
         </div>
       </div>
     )

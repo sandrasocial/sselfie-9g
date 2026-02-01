@@ -207,15 +207,26 @@ export function useImageLibrary(): UseImageLibraryReturn {
       setError(null)
 
       try {
-        // Merge updates with current library
+        // Merge updates with current library - create stable copy
         const updatedLibrary: ImageLibrary = {
-          ...library,
-          ...updates,
+          selfies: [...(updates.selfies !== undefined ? updates.selfies : library.selfies)],
+          products: [...(updates.products !== undefined ? updates.products : library.products)],
+          people: [...(updates.people !== undefined ? updates.people : library.people)],
+          vibes: [...(updates.vibes !== undefined ? updates.vibes : library.vibes)],
+          intent: updates.intent !== undefined ? updates.intent : library.intent,
         }
 
-        // Update state immediately (optimistic update)
-        setLibrary(updatedLibrary)
-        saveLibraryToLocalStorage(updatedLibrary)
+        // Update state immediately (optimistic update) - only if data actually changed
+        const currentLibraryString = JSON.stringify(library)
+        const updatedLibraryString = JSON.stringify(updatedLibrary)
+        
+        if (currentLibraryString !== updatedLibraryString) {
+          setLibrary(updatedLibrary)
+          saveLibraryToLocalStorage(updatedLibrary)
+        } else {
+          console.log('[useImageLibrary] No changes detected, skipping state update')
+          return
+        }
 
         // Save to database (API handles authentication server-side)
         const response = await fetch(`${API_BASE}/update`, {
@@ -240,8 +251,11 @@ export function useImageLibrary(): UseImageLibraryReturn {
           throw new Error(errorData.error || `Failed to save library: ${response.statusText}`)
         }
 
-        // Reload from database to ensure sync
-        await loadLibrary()
+        // ✅ FIX: Don't reload from database after save - we already have the updated data
+        // This prevents unnecessary re-renders and image blinking
+        // await loadLibrary() // REMOVED: Causes image blinking due to new object references
+        
+        console.log('[useImageLibrary] ✅ Library saved successfully')
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to save library'
         console.error('[useImageLibrary] Error saving library:', err)
