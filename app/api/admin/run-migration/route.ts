@@ -86,12 +86,34 @@ async function runMigration(req: NextRequest) {
       )
     `
 
-    // Create waitlist table for AI Brand OS™
+    // Create waitlist table (deprecated - using applications now)
     await sql`
       CREATE TABLE IF NOT EXISTS waitlist_signups (
         id SERIAL PRIMARY KEY,
         email VARCHAR(255) NOT NULL UNIQUE,
         name VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `
+
+    // Create Brand Engine applications table
+    await sql`
+      CREATE TABLE IF NOT EXISTS brand_engine_applications (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) NOT NULL UNIQUE,
+        website TEXT,
+        revenue VARCHAR(50),
+        current_spend VARCHAR(50),
+        biggest_bottleneck TEXT,
+        hours_per_week VARCHAR(50),
+        business_description TEXT,
+        why_interested TEXT,
+        ready_to_invest VARCHAR(50),
+        qualified BOOLEAN DEFAULT TRUE,
+        status VARCHAR(50) DEFAULT 'pending',
+        calendly_sent BOOLEAN DEFAULT FALSE,
+        notes TEXT,
         created_at TIMESTAMP DEFAULT NOW()
       )
     `
