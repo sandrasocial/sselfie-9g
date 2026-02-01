@@ -32,16 +32,24 @@ function htmlToPlainText(html: string): string {
  * Receives AI-generated newsletter content from Gumloop flow and saves to database
  * for review and approval before sending.
  *
- * Expected payload from Gumloop:
+ * Accepts two payload formats:
+ *
+ * Format 1 (Simple):
  * {
  *   subject: string,           // Email subject line
  *   body_html: string,          // Email body (HTML)
- *   metadata: {                 // Optional metadata
- *     campaign_name?: string,
- *     instagram_insights?: string,
- *     strategy?: string,
- *     content_type?: string
- *   }
+ *   metadata?: {...}            // Optional metadata
+ * }
+ *
+ * Format 2 (Content Writer Agent):
+ * {
+ *   subject_options: string[], // Array of subject line options
+ *   body_html: string,          // Email body (HTML)
+ *   body_text?: string,         // Plain text version (optional)
+ *   offer_mentioned?: string,   // Which offer was mentioned
+ *   cta?: string,               // Call to action text
+ *   strategy_used?: string,     // Strategy description
+ *   metadata?: {...}            // Optional metadata
  * }
  */
 export async function POST(req: NextRequest) {
@@ -68,14 +76,36 @@ export async function POST(req: NextRequest) {
 
     // 2. Parse and validate payload
     const payload = await req.json()
-    const { subject, body_html, metadata = {} } = payload
+
+    // Handle both simple format and Content Writer agent format
+    let subject: string
+    let body_html: string
+    let metadata: any = {}
+
+    if (payload.subject_options && Array.isArray(payload.subject_options)) {
+      // Gumloop Content Writer format
+      subject = payload.subject_options[0] || 'Newsletter'
+      body_html = payload.body_html
+      metadata = {
+        subject_options: payload.subject_options,
+        offer_mentioned: payload.offer_mentioned,
+        cta: payload.cta,
+        strategy_used: payload.strategy_used,
+        ...payload.metadata
+      }
+    } else {
+      // Simple format
+      subject = payload.subject
+      body_html = payload.body_html
+      metadata = payload.metadata || {}
+    }
 
     if (!subject || !body_html) {
-      console.error('[Gumloop Webhook] Missing required fields:', { subject: !!subject, body_html: !!body_html })
+      console.error('[Gumloop Webhook] Missing required fields:', { subject: !!subject, body_html: !!body_html, payload })
       return NextResponse.json(
         {
           error: "Missing required fields",
-          required: ["subject", "body_html"],
+          required: ["subject or subject_options", "body_html"],
           received: Object.keys(payload)
         },
         { status: 400 }
@@ -84,7 +114,8 @@ export async function POST(req: NextRequest) {
 
     // 3. Prepare campaign data
     const now = new Date()
-    const campaignName = metadata.campaign_name || `Weekly Newsletter - ${now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+    const defaultName = `Weekly Newsletter - ${now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+    const campaignName = metadata.campaign_name || defaultName
 
     // Default to next Monday at 9am if not specified
     const scheduledFor = metadata.scheduled_for || getNextMonday9am()
