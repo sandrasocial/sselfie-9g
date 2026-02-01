@@ -86,6 +86,16 @@ async function runMigration(req: NextRequest) {
       )
     `
 
+    // Create waitlist table for AI Brand OS™
+    await sql`
+      CREATE TABLE IF NOT EXISTS waitlist_signups (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) NOT NULL UNIQUE,
+        name VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `
+
     // Create indexes
     await sql`CREATE INDEX IF NOT EXISTS idx_tracker_tasks_project ON tracker_tasks(project_id)`
     await sql`CREATE INDEX IF NOT EXISTS idx_tracker_tasks_status ON tracker_tasks(status)`
