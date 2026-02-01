@@ -10,25 +10,27 @@ export const revalidate = 0
  * Beautiful, ADHD-friendly task management with vision board aesthetic
  */
 export default async function ProjectTrackerPage() {
-  const sql = getDb()
-
-  // Check if tables exist, if not show setup page
-  let tablesExist = false
-  let projects: any = []
-  let todayTasks: any = []
-  let allTasks: any = []
-  let stats = {
-    todayCompleted: 0,
-    weekCompleted: 0,
-    totalActive: 0
-  }
-
   try {
-    await sql`SELECT 1 FROM projects LIMIT 1`
-    tablesExist = true
-  } catch (error) {
-    // Tables don't exist yet - show setup UI
-  }
+    const sql = getDb()
+
+    // Check if tables exist, if not show setup page
+    let tablesExist = false
+    let projects: any = []
+    let todayTasks: any = []
+    let allTasks: any = []
+    let stats = {
+      todayCompleted: 0,
+      weekCompleted: 0,
+      totalActive: 0
+    }
+
+    try {
+      await sql`SELECT 1 FROM projects LIMIT 1`
+      tablesExist = true
+    } catch (error) {
+      // Tables don't exist yet - show setup UI
+      tablesExist = false
+    }
 
   if (!tablesExist) {
     return (
@@ -155,4 +157,42 @@ export default async function ProjectTrackerPage() {
       </div>
     </div>
   )
+  } catch (error) {
+    // Catch all errors and show friendly error page
+    console.error("[Project Tracker] Error:", error)
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+        <AdminNav />
+        <div className="p-8 flex items-center justify-center min-h-[80vh]">
+          <div className="max-w-2xl mx-auto text-center">
+            <div className="bg-white rounded-3xl shadow-2xl p-12">
+              <div className="text-6xl mb-6">⚠️</div>
+              <h1 className="text-4xl font-bold text-gray-900 mb-4">
+                Oops! Something went wrong
+              </h1>
+              <p className="text-gray-600 text-lg mb-8">
+                The project tracker encountered an error. This might be a database connection issue.
+              </p>
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                <p className="text-sm text-red-800 font-mono">
+                  {error instanceof Error ? error.message : "Unknown error"}
+                </p>
+              </div>
+              <div className="space-y-4">
+                <a
+                  href="/api/admin/run-migration"
+                  className="inline-block px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-full text-xl font-semibold hover:scale-105 transition-transform shadow-lg"
+                >
+                  🔧 Try Running Migration
+                </a>
+                <p className="text-sm text-gray-500">
+                  Or contact support if the issue persists
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 }
