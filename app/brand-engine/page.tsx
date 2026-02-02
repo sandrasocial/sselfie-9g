@@ -1,5 +1,6 @@
 "use client"
 
+// Force rebuild - updated Jan 29 2026
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import Image from "next/image"
@@ -111,14 +112,14 @@ export default function BrandEnginePage() {
           <div
             className="absolute inset-0 bg-cover bg-center"
             style={{
-              backgroundImage: "url('/images/luxury-portrait.png')",
-              backgroundPosition: "50% 30%",
+              backgroundImage: "url('https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/maya-pro-generations/6sb8n7v1g9rmr0cvhyjr95kg5g-5IoNZKlXP8Umw6U040gkJeTer43jLY.png')",
+              backgroundPosition: "50% 25%",
             }}
           />
           <div
             className="absolute inset-0"
             style={{
-              background: "radial-gradient(circle at center, rgba(0,0,0,0) 40%, rgba(0,0,0,0.4) 100%)",
+              background: "radial-gradient(circle at center, rgba(0,0,0,0) 40%, rgba(0,0,0,0.3) 100%)",
             }}
           />
 
@@ -131,14 +132,14 @@ export default function BrandEnginePage() {
               style={{
                 fontStyle: "normal",
                 fontWeight: 300,
-                textShadow: "0 2px 20px rgba(0,0,0,0.5)",
+                textShadow: "0 2px 20px rgba(0,0,0,0.3)",
                 fontFamily: "'Times New Roman', serif",
               }}
             >
               Your 24/7 Marketing System That Gets You Seen
             </h1>
             <p className="description fade-up mx-auto max-w-sm" style={{ textShadow: "0 1px 5px rgba(0,0,0,0.3)" }}>
-              I'll build you a marketing system that works while you sleep—no content headaches required.
+              I'll build you a marketing system that works while you sleep - no content headaches required.
             </p>
             <div className="fade-up" style={{ transitionDelay: "0.2s", marginTop: "10px", display: "flex", flexDirection: "column", gap: "12px", alignItems: "center" }}>
               <a
@@ -347,12 +348,12 @@ export default function BrandEnginePage() {
                 Your Complete Brand Engine
               </h2>
               <div className="description fade-up text-sm md:text-base space-y-3" style={{ color: "#d6d3d1" }}>
-                <p><strong>Your AI Content Twin</strong> — trained specifically on your voice and content</p>
-                <p><strong>Custom GPT</strong> — knows your exact methodology and stories</p>
-                <p><strong>Automated Distribution</strong> — posts across all platforms in your name</p>
-                <p><strong>Lead Nurture Workflows</strong> — welcome sequences that actually convert</p>
-                <p><strong>Content Repurposing</strong> — one piece becomes ten</p>
-                <p><strong>90 Days Scheduled</strong> — 150+ pieces ready to go from day 1</p>
+                <p><strong>Your AI Content Twin</strong> - trained specifically on your voice and content</p>
+                <p><strong>Custom GPT</strong> - knows your exact methodology and stories</p>
+                <p><strong>Automated Distribution</strong> - posts across all platforms in your name</p>
+                <p><strong>Lead Nurture Workflows</strong> - welcome sequences that actually convert</p>
+                <p><strong>Content Repurposing</strong> - one piece becomes ten</p>
+                <p><strong>90 Days Scheduled</strong> - 150+ pieces ready to go from day 1</p>
               </div>
               <div className="fade-up mt-6">
                 <a
@@ -725,12 +726,26 @@ export default function BrandEnginePage() {
 
       <style jsx>{`
         .content {
-          padding: 20px;
+          position: relative;
+          z-index: 10;
+          margin-top: auto;
+          padding: 24px 20px;
+          padding-bottom: calc(32px + env(safe-area-inset-bottom));
+          width: 100%;
+          max-width: 600px;
+          margin-left: auto;
+          margin-right: auto;
           display: flex;
           flex-direction: column;
           align-items: center;
-          position: relative;
-          z-index: 10;
+        }
+
+        @media (min-width: 768px) {
+          .content {
+            padding: 64px;
+            max-width: 800px;
+            justify-content: center;
+          }
         }
 
         .label {

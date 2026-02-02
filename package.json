@@ -127,6 +127,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.3",
+    "@next/bundle-analyzer": "^16.1.6",
     "@playwright/test": "^1.57.0",
     "@tailwindcss/postcss": "^4.1.9",
     "@testing-library/jest-dom": "^6.1.5",
@@ -144,8 +145,11 @@
     "eslint": "^8.57.1",
     "eslint-config-next": "15.1.0",
     "jsdom": "^23.0.1",
+    "knip": "^5.82.1",
+    "madge": "^8.0.0",
     "postcss": "^8.5",
     "tailwindcss": "^4.1.9",
+    "ts-prune": "^0.10.3",
     "typescript": "^5",
     "vitest": "^1.1.3"
   }
