@@ -3,7 +3,6 @@
 // Force rebuild - updated Jan 29 2026
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
-import Image from "next/image"
 
 export default function BrandEnginePage() {
   const [activeScene, setActiveScene] = useState(0)
@@ -11,7 +10,7 @@ export default function BrandEnginePage() {
   const containerRef = useRef<HTMLDivElement>(null)
   const scenesRef = useRef<(HTMLDivElement | null)[]>([])
 
-  const totalScenes = 7
+  const totalScenes = 8
 
   // Update active scene based on scroll
   useEffect(() => {
@@ -116,15 +115,29 @@ export default function BrandEnginePage() {
               backgroundPosition: "50% 25%",
             }}
           />
+          {/* Subtle overlay for readability */}
           <div
             className="absolute inset-0"
             style={{
-              background: "radial-gradient(circle at center, rgba(0,0,0,0) 40%, rgba(0,0,0,0.3) 100%)",
+              background: "rgba(0, 0, 0, 0.3)",
+            }}
+          />
+          <div
+            className="absolute inset-0"
+            style={{
+              background: "radial-gradient(circle at center, rgba(0,0,0,0) 35%, rgba(0,0,0,0.25) 100%)",
             }}
           />
 
-          <div className="content text-center h-full justify-center">
-            <span className="label fade-up" style={{ color: "#ffffff", textShadow: "0 2px 10px rgba(0,0,0,0.3)" }}>
+          <div className="content text-center flex-1 flex flex-col justify-center">
+            <span className="label fade-up" style={{
+              color: "#ffffff",
+              textShadow: "0 2px 10px rgba(0,0,0,0.3)",
+              fontSize: "11px",
+              letterSpacing: "0.25em",
+              textTransform: "uppercase",
+              fontWeight: "400"
+            }}>
               Brand Engine
             </span>
             <h1
@@ -134,26 +147,31 @@ export default function BrandEnginePage() {
                 fontWeight: 300,
                 textShadow: "0 2px 20px rgba(0,0,0,0.3)",
                 fontFamily: "'Times New Roman', serif",
+                fontSize: "clamp(36px, 7vw, 68px)",
+                lineHeight: "1.1",
+                letterSpacing: "-0.02em",
+                marginTop: "16px",
+                marginBottom: "20px"
               }}
             >
-              Your 24/7 Marketing System That Gets You Seen
+              I&apos;ll Build Your AI Twin That Creates 90 Days of Content in Your Voice — While You Sleep
             </h1>
-            <p className="description fade-up mx-auto max-w-sm" style={{ textShadow: "0 1px 5px rgba(0,0,0,0.3)" }}>
-              I'll build you a marketing system that works while you sleep - no content headaches required.
+            <p className="description fade-up mx-auto max-w-md" style={{ textShadow: "0 1px 5px rgba(0,0,0,0.3)" }}>
+              Your voice. Your methodology. Fully automated. No content hamster wheel.
             </p>
             <div className="fade-up" style={{ transitionDelay: "0.2s", marginTop: "10px", display: "flex", flexDirection: "column", gap: "12px", alignItems: "center" }}>
               <a
                 href="#pricing"
                 onClick={(e) => {
                   e.preventDefault()
-                  scrollToScene(5)
+                  scrollToScene(6)
                 }}
                 className="btn shadow-xl"
               >
                 Apply Now →
               </a>
             </div>
-            <p className="description fade-up mx-auto max-w-sm mt-4" style={{ textShadow: "0 1px 5px rgba(0,0,0,0.3)", fontSize: "14px", marginTop: "16px" }}>
+            <p className="description fade-up mx-auto max-w-md mt-4" style={{ textShadow: "0 1px 5px rgba(0,0,0,0.3)", fontSize: "14px", marginTop: "16px" }}>
               Turn 2 hours into 90 days of content. Distributed automatically.
             </p>
           </div>
@@ -169,6 +187,9 @@ export default function BrandEnginePage() {
             backgroundColor: "#000000",
             color: "white",
             position: "relative",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
           <div
@@ -176,7 +197,6 @@ export default function BrandEnginePage() {
               maxWidth: "900px",
               margin: "0 auto",
               padding: "0 24px",
-              height: "100%",
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
@@ -184,30 +204,38 @@ export default function BrandEnginePage() {
               textAlign: "center",
             }}
           >
-            <span className="label fade-up">The Real Problem</span>
+            <span className="label fade-up" style={{
+              fontSize: "11px",
+              letterSpacing: "0.25em",
+              textTransform: "uppercase",
+              color: "#a8a29e"
+            }}>The Real Problem</span>
             <h2
               className="hero-title fade-up"
               style={{
-                fontSize: "40px",
-                marginBottom: "24px",
+                fontSize: "clamp(32px, 6vw, 56px)",
+                marginBottom: "32px",
+                marginTop: "16px",
                 fontFamily: "'Times New Roman', serif",
-                fontWeight: "normal",
+                fontWeight: 300,
+                lineHeight: "1.2",
+                letterSpacing: "-0.01em"
               }}
             >
               Most AI Tools Just Give You More Work
             </h2>
             <div className="description fade-up text-base space-y-4" style={{ color: "#d6d3d1", maxWidth: "600px" }}>
-              <p>Look, I'll be straight with you.</p>
+              <p>Look, I&apos;ll be straight with you.</p>
               <p>Most AI tools just give you more work. You still need to:</p>
               <ul style={{ textAlign: "left", paddingLeft: "20px", marginTop: "16px", lineHeight: "1.8" }}>
                 <li>Figure out what to create</li>
                 <li>Edit everything (because it sounds nothing like you)</li>
                 <li>Format and schedule across platforms</li>
-                <li>Track what's working</li>
+                <li>Track what&apos;s working</li>
                 <li>Start over when algorithms change</li>
               </ul>
               <p style={{ marginTop: "24px", fontWeight: "bold", color: "white" }}>
-                That's why I don't sell content. I build complete marketing systems that work for you.
+                That&apos;s why I don&apos;t sell content. I build complete marketing systems that work for you.
               </p>
             </div>
           </div>
@@ -223,109 +251,28 @@ export default function BrandEnginePage() {
             backgroundColor: "#1c1917",
             color: "white",
             position: "relative",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
           <div
+            className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-12"
             style={{
               maxWidth: "1280px",
               margin: "0 auto",
               padding: "0 24px",
-              height: "100%",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "48px",
+              width: "100%",
             }}
-            className="md:flex-row"
           >
-            {/* Visual Container */}
-            <div
-              className="w-full md:w-1/2 relative fade-in-up md:h-[600px]"
-              style={{
-                height: "400px",
-              }}
-            >
-              {/* Layer 1: Before */}
-              <div
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  width: "75%",
-                  height: "75%",
-                  backgroundColor: "rgba(28, 25, 23, 0.2)",
-                  overflow: "hidden",
-                  border: "1px solid rgba(255, 255, 255, 0.05)",
-                  filter: "grayscale(100%)",
-                  transition: "filter 0.7s",
-                }}
-                className="hover:grayscale-0"
-              >
-                <img
-                  src="/professional-woman-entrepreneur-in-stylish-outfit-.jpg"
-                  className="w-full h-full object-cover"
-                  alt="Before"
-                  loading="lazy"
-                  style={{ opacity: 0.6 }}
-                />
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "16px",
-                    left: "16px",
-                    backgroundColor: "rgba(0, 0, 0, 0.6)",
-                    backdropFilter: "blur(8px)",
-                    padding: "4px 12px",
-                    fontSize: "10px",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.1em",
-                    border: "1px solid rgba(255, 255, 255, 0.1)",
-                  }}
-                >
-                  Before: Manual Content
-                </div>
-              </div>
-
-              {/* Layer 2: After */}
-              <div
-                style={{
-                  position: "absolute",
-                  bottom: 0,
-                  right: 0,
-                  width: "75%",
-                  height: "75%",
-                  backgroundColor: "#1c1917",
-                  overflow: "hidden",
-                  boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
-                  zIndex: 10,
-                  border: "1px solid rgba(255, 255, 255, 0.2)",
-                }}
-                className="group"
-              >
-                <img
-                  src="/images/img-4785.jpg"
-                  className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-                  alt="After"
-                  loading="lazy"
-                />
-                <div
-                  style={{
-                    position: "absolute",
-                    bottom: "16px",
-                    right: "16px",
-                    backgroundColor: "white",
-                    color: "#1c1917",
-                    padding: "6px 16px",
-                    fontSize: "10px",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.1em",
-                    fontWeight: "bold",
-                  }}
-                >
-                  After: Automated 24/7
-                </div>
-              </div>
+            {/* Visual Container: single image */}
+            <div className="w-full md:w-1/2 fade-in-up" style={{ maxHeight: "min(500px, 60vh)" }}>
+              <img
+                src="https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/feed-posts/4157-2y8eKw9iheAA5WZ9nsyPJAZYoPkaqj.png"
+                className="w-full h-full object-cover rounded-sm"
+                alt="Brand Engine content example"
+                loading="lazy"
+              />
             </div>
 
             {/* Text Container */}
@@ -335,14 +282,22 @@ export default function BrandEnginePage() {
                 padding: "24px",
               }}
             >
-              <span className="label fade-up">What I Actually Build</span>
+              <span className="label fade-up" style={{
+                fontSize: "11px",
+                letterSpacing: "0.25em",
+                textTransform: "uppercase",
+                color: "#a8a29e"
+              }}>What I Actually Build</span>
               <h2
                 className="hero-title fade-up"
                 style={{
-                  fontSize: "32px",
-                  marginBottom: "12px",
+                  fontSize: "clamp(28px, 5vw, 48px)",
+                  marginBottom: "20px",
+                  marginTop: "16px",
                   fontFamily: "'Times New Roman', serif",
-                  fontWeight: "normal",
+                  fontWeight: 300,
+                  lineHeight: "1.2",
+                  letterSpacing: "-0.01em"
                 }}
               >
                 Your Complete Brand Engine
@@ -360,7 +315,7 @@ export default function BrandEnginePage() {
                   href="#pricing"
                   onClick={(e) => {
                     e.preventDefault()
-                    scrollToScene(5)
+                    scrollToScene(6)
                   }}
                   className="btn"
                 >
@@ -381,6 +336,9 @@ export default function BrandEnginePage() {
             backgroundColor: "#000000",
             color: "white",
             position: "relative",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
           <div
@@ -395,15 +353,23 @@ export default function BrandEnginePage() {
               justifyContent: "center",
             }}
           >
-            <span className="label fade-up">Timeline</span>
+            <span className="label fade-up" style={{
+              fontSize: "11px",
+              letterSpacing: "0.25em",
+              textTransform: "uppercase",
+              color: "#a8a29e"
+            }}>Timeline</span>
             <h2
               className="hero-title fade-up"
               style={{
-                fontSize: "40px",
-                marginBottom: "48px",
+                fontSize: "clamp(32px, 6vw, 56px)",
+                marginBottom: "56px",
+                marginTop: "16px",
                 fontFamily: "'Times New Roman', serif",
-                fontWeight: "normal",
+                fontWeight: 300,
                 textAlign: "center",
+                lineHeight: "1.2",
+                letterSpacing: "-0.01em"
               }}
             >
               How It Works
@@ -411,10 +377,10 @@ export default function BrandEnginePage() {
             <div className="w-full space-y-8 fade-up">
               {/* Week 1-2 */}
               <div style={{ borderLeft: "2px solid white", paddingLeft: "24px" }}>
-                <div style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.15em", color: "#a8a29e", marginBottom: "8px" }}>
-                  Weeks 1-2
+                <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.25em", color: "#a8a29e", marginBottom: "12px" }}>
+                  <span style={{ marginRight: "12px", fontWeight: "bold" }}>01</span>Weeks 1-2
                 </div>
-                <h3 style={{ fontSize: "24px", fontFamily: "'Times New Roman', serif", marginBottom: "12px" }}>
+                <h3 style={{ fontSize: "28px", fontFamily: "'Times New Roman', serif", marginBottom: "12px", fontWeight: 300 }}>
                   Foundation
                 </h3>
                 <p style={{ color: "#d6d3d1", lineHeight: "1.6" }}>
@@ -424,10 +390,10 @@ export default function BrandEnginePage() {
 
               {/* Week 3-4 */}
               <div style={{ borderLeft: "2px solid white", paddingLeft: "24px" }}>
-                <div style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.15em", color: "#a8a29e", marginBottom: "8px" }}>
-                  Weeks 3-4
+                <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.25em", color: "#a8a29e", marginBottom: "12px" }}>
+                  <span style={{ marginRight: "12px", fontWeight: "bold" }}>02</span>Weeks 3-4
                 </div>
-                <h3 style={{ fontSize: "24px", fontFamily: "'Times New Roman', serif", marginBottom: "12px" }}>
+                <h3 style={{ fontSize: "28px", fontFamily: "'Times New Roman', serif", marginBottom: "12px", fontWeight: 300 }}>
                   Building Your System
                 </h3>
                 <p style={{ color: "#d6d3d1", lineHeight: "1.6" }}>
@@ -437,10 +403,10 @@ export default function BrandEnginePage() {
 
               {/* Week 5-6 */}
               <div style={{ borderLeft: "2px solid white", paddingLeft: "24px" }}>
-                <div style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.15em", color: "#a8a29e", marginBottom: "8px" }}>
-                  Weeks 5-6
+                <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.25em", color: "#a8a29e", marginBottom: "12px" }}>
+                  <span style={{ marginRight: "12px", fontWeight: "bold" }}>03</span>Weeks 5-6
                 </div>
-                <h3 style={{ fontSize: "24px", fontFamily: "'Times New Roman', serif", marginBottom: "12px" }}>
+                <h3 style={{ fontSize: "28px", fontFamily: "'Times New Roman', serif", marginBottom: "12px", fontWeight: 300 }}>
                   Launch
                 </h3>
                 <p style={{ color: "#d6d3d1", lineHeight: "1.6" }}>
@@ -461,6 +427,9 @@ export default function BrandEnginePage() {
             backgroundColor: "#1c1917",
             color: "white",
             position: "relative",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
           <div
@@ -476,14 +445,22 @@ export default function BrandEnginePage() {
               textAlign: "center",
             }}
           >
-            <span className="label fade-up">ROI</span>
+            <span className="label fade-up" style={{
+              fontSize: "11px",
+              letterSpacing: "0.25em",
+              textTransform: "uppercase",
+              color: "#a8a29e"
+            }}>ROI</span>
             <h2
               className="hero-title fade-up"
               style={{
-                fontSize: "40px",
-                marginBottom: "24px",
+                fontSize: "clamp(32px, 6vw, 56px)",
+                marginBottom: "32px",
+                marginTop: "16px",
                 fontFamily: "'Times New Roman', serif",
-                fontWeight: "normal",
+                fontWeight: 300,
+                lineHeight: "1.2",
+                letterSpacing: "-0.01em"
               }}
             >
               Why This Works
@@ -524,9 +501,68 @@ export default function BrandEnginePage() {
           </div>
         </section>
 
-        {/* SCENE 6: PRICING */}
+        {/* SCENE 5.5: SOCIAL PROOF */}
         <section
           ref={(el) => (scenesRef.current[5] = el)}
+          className="scene"
+          style={{
+            minHeight: "100vh",
+            minHeight: "100dvh",
+            backgroundColor: "#000000",
+            color: "white",
+            position: "relative",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            style={{
+              maxWidth: "900px",
+              margin: "0 auto",
+              padding: "0 24px",
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              textAlign: "center",
+            }}
+          >
+            <span className="label fade-up" style={{
+              fontSize: "11px",
+              letterSpacing: "0.25em",
+              textTransform: "uppercase",
+              color: "#a8a29e"
+            }}>Why Trust This</span>
+            <h2
+              className="hero-title fade-up"
+              style={{
+                fontSize: "clamp(32px, 6vw, 56px)",
+                marginBottom: "40px",
+                marginTop: "16px",
+                fontFamily: "'Times New Roman', serif",
+                fontWeight: 300,
+                lineHeight: "1.2",
+                letterSpacing: "-0.01em"
+              }}
+            >
+              Built by Someone Who&apos;s Done It
+            </h2>
+            <div className="description fade-up text-base space-y-6" style={{ color: "#d6d3d1", maxWidth: "600px" }}>
+              <p><strong style={{ color: "white" }}>158K+ followers</strong> — I know what gets seen and what gets skipped.</p>
+              <p><strong style={{ color: "white" }}>SSELFIE Studio</strong> — a real product with paying users and systems that run 24/7.</p>
+              <p><strong style={{ color: "white" }}>My own marketing</strong> — runs on the same AI twin and workflows I build for you.</p>
+            </div>
+            <p className="fade-up mt-6" style={{ fontSize: "14px", color: "#a8a29e", fontStyle: "italic" }}>
+              This isn&apos;t theory. It&apos;s the system I use every day.
+            </p>
+          </div>
+        </section>
+
+        {/* SCENE 6: PRICING */}
+        <section
+          ref={(el) => (scenesRef.current[6] = el)}
           id="pricing"
           className="scene"
           style={{
@@ -535,6 +571,9 @@ export default function BrandEnginePage() {
             backgroundColor: "#000000",
             color: "white",
             position: "relative",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
           <div
@@ -549,18 +588,26 @@ export default function BrandEnginePage() {
               justifyContent: "center",
             }}
           >
-            <span className="label fade-up">Packages</span>
+            <span className="label fade-up" style={{
+              fontSize: "11px",
+              letterSpacing: "0.25em",
+              textTransform: "uppercase",
+              color: "#a8a29e"
+            }}>Packages</span>
             <h2
               className="hero-title fade-up"
               style={{
-                fontSize: "40px",
-                marginBottom: "48px",
+                fontSize: "clamp(32px, 6vw, 56px)",
+                marginBottom: "56px",
+                marginTop: "16px",
                 fontFamily: "'Times New Roman', serif",
-                fontWeight: "normal",
+                fontWeight: 300,
                 textAlign: "center",
+                lineHeight: "1.2",
+                letterSpacing: "-0.01em"
               }}
             >
-              Let's Build Your Marketing System
+              Let&apos;s Build Your Marketing System
             </h2>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "24px", width: "100%", maxWidth: "500px" }} className="md:grid-cols-1">
@@ -617,10 +664,13 @@ export default function BrandEnginePage() {
                   className="btn"
                   style={{ marginTop: "32px", width: "100%" }}
                 >
-                  Apply Now for February →
+                  Apply Now for {new Date().toLocaleString("en-US", { month: "long" })} →
                 </a>
-                <p style={{ fontSize: "12px", color: "#a8a29e", marginTop: "16px" }}>
+                <p style={{ fontSize: "12px", color: "#a8a29e", marginTop: "12px" }}>
                   Spots filling quickly
+                </p>
+                <p style={{ fontSize: "13px", color: "#d6d3d1", marginTop: "12px", maxWidth: "380px", marginLeft: "auto", marginRight: "auto" }}>
+                  After you apply, I&apos;ll personally review your business and reach out within 48 hours if we&apos;re a fit.
                 </p>
               </div>
             </div>
@@ -633,7 +683,7 @@ export default function BrandEnginePage() {
 
         {/* SCENE 7: STORY */}
         <section
-          ref={(el) => (scenesRef.current[6] = el)}
+          ref={(el) => (scenesRef.current[7] = el)}
           className="scene"
           style={{
             minHeight: "100vh",
@@ -641,6 +691,9 @@ export default function BrandEnginePage() {
             backgroundColor: "#1c1917",
             color: "white",
             position: "relative",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
           <div
@@ -656,24 +709,31 @@ export default function BrandEnginePage() {
               textAlign: "center",
             }}
           >
-            <span className="label fade-up">My Story</span>
+            <span className="label fade-up" style={{
+              fontSize: "11px",
+              letterSpacing: "0.25em",
+              textTransform: "uppercase",
+              color: "#a8a29e"
+            }}>My Story</span>
             <h2
               className="hero-title fade-up"
               style={{
-                fontSize: "40px",
-                marginBottom: "24px",
+                fontSize: "clamp(32px, 6vw, 56px)",
+                marginBottom: "32px",
+                marginTop: "16px",
                 fontFamily: "'Times New Roman', serif",
-                fontWeight: "normal",
+                fontWeight: 300,
+                lineHeight: "1.2",
+                letterSpacing: "-0.01em"
               }}
             >
               I Built This Because I Needed It First
             </h2>
             <div className="description fade-up text-base space-y-4" style={{ color: "#d6d3d1", maxWidth: "600px", textAlign: "left" }}>
-              <p>As a single mom building SSELFIE Studio, I was down to my last dollars when I realized I could use AI to build systems that run 24/7.</p>
-              <p>I spent 8 months in isolation perfecting these workflows, and now I'm sharing them with other coaches and creators.</p>
-              <p>This works because it's not theory. It's the same system I use to run my own marketing.</p>
+              <p>I built SSELFIE Studio from scratch as a single mom. When I couldn&apos;t afford a content team, I built one with AI. Now I&apos;m building the same systems for other creators.</p>
+              <p>This works because it&apos;s not theory. It&apos;s the same system I use to run my own marketing.</p>
               <p style={{ marginTop: "32px", fontStyle: "italic", color: "#a8a29e" }}>
-                No pressure, but if you're tired of being stuck on the content hamster wheel, let's talk.
+                No pressure — but if you&apos;re tired of the content hamster wheel, let&apos;s talk.
               </p>
             </div>
 
@@ -728,7 +788,6 @@ export default function BrandEnginePage() {
         .content {
           position: relative;
           z-index: 10;
-          margin-top: auto;
           padding: 24px 20px;
           padding-bottom: calc(32px + env(safe-area-inset-bottom));
           width: 100%;
