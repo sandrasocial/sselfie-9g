@@ -3,7 +3,8 @@ import { stellaReply, parseStellaMode } from "@/lib/stella/runtime"
 
 export async function POST(req: NextRequest) {
   try {
-    const token = process.env.STELLA_BRIDGE_TOKEN
+    const rawToken = (process.env.STELLA_BRIDGE_TOKEN || "").trim()
+    const token = rawToken.replace(/^['"]|['"]$/g, "")
     if (!token) {
       return NextResponse.json(
         { error: "STELLA_BRIDGE_TOKEN not configured" },
