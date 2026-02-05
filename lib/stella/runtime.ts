@@ -10,7 +10,8 @@ export async function stellaReply(params: { message: string; mode?: StellaMode }
     throw new Error("OPENAI_API_KEY not configured")
   }
 
-  const model = process.env.STELLA_MODEL || "gpt-4.1-mini"
+  const rawModel = (process.env.STELLA_MODEL || "").trim()
+  const model = rawModel === "gpt-4.1-min" || rawModel === "" ? "gpt-4.1-mini" : rawModel
   const mode = params.mode && STELLA_MODES[params.mode] ? params.mode : "general"
   const modeText = mode === "general" ? "General" : STELLA_MODES[mode]
 
