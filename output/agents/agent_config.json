@@ -1,0 +1,19 @@
+{
+  "agents": {
+    "ux-ui": "UI/UX friction, inconsistencies, layout issues, quick wins.",
+    "dev-architecture": "Architecture, dependencies, code health risks.",
+    "qa": "Test coverage gaps, reliability risks, monitoring gaps.",
+    "content": "Content quality, clarity, tone, content gaps.",
+    "voice-brand": "Brand voice consistency across UI and copy.",
+    "marketing": "Growth opportunities, funnel gaps, conversion blockers.",
+    "email": "Email flows, templates, triggers, deliverability risks.",
+    "product": "Feature gaps, user journey breaks, retention risks.",
+    "prompt-engineer-maya": "Prompt system, persona consistency, prompt reliability.",
+    "image-video-pipeline": "Generation pipelines, quality controls, cost and failure points.",
+    "admin-business-ops": "Admin tooling, operational risks, business controls.",
+    "scaling-opportunities": "Revenue/expansion ideas tied to repo evidence.",
+    "automations": "Smart, low-cost 24/7 automations (monitoring, retries, QA, growth ops)."
+  },
+  "output_dir": "output/agents/reports",
+  "report_template": "output/agents/REPORT_TEMPLATE.md"
+}

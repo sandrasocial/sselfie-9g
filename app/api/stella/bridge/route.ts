@@ -3,13 +3,23 @@ import { stellaReply, parseStellaMode } from "@/lib/stella/runtime"
 
 export async function POST(req: NextRequest) {
   try {
-    const { mode, message } = await req.json()
-
-    if (!message) {
+    const token = process.env.STELLA_BRIDGE_TOKEN
+    if (!token) {
       return NextResponse.json(
-        { error: "Missing message" },
-        { status: 400 }
+        { error: "STELLA_BRIDGE_TOKEN not configured" },
+        { status: 500 }
       )
+    }
+
+    const authHeader = req.headers.get("authorization") || ""
+    const provided = authHeader.replace(/^Bearer\\s+/i, "").trim()
+    if (provided !== token) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const { message, mode } = await req.json()
+    if (!message) {
+      return NextResponse.json({ error: "Missing message" }, { status: 400 })
     }
 
     const parsed = parseStellaMode(message)
@@ -24,10 +34,10 @@ export async function POST(req: NextRequest) {
       timestamp: new Date().toISOString()
     })
   } catch (error) {
-    console.error("[Stella] Error in chat-with-agent:", error)
+    console.error("[Stella] Bridge error:", error)
     return NextResponse.json(
       {
-        error: "Failed to chat with Stella",
+        error: "Bridge failure",
         message: error instanceof Error ? error.message : "Unknown error"
       },
       { status: 500 }
