@@ -12,12 +12,18 @@ export async function POST(req: NextRequest) {
     }
 
     const authHeader = req.headers.get("authorization") || ""
-    const provided = authHeader.replace(/^Bearer\\s+/i, "").trim()
-    if (provided !== token) {
+    const headerToken = authHeader.replace(/^Bearer\\s+/i, "").trim()
+    const altHeaderToken = (req.headers.get("x-stella-token") || "").trim()
+
+    const body = await req.json().catch(() => ({} as { message?: string; mode?: string; token?: string }))
+    const bodyToken = typeof body?.token === "string" ? body.token.trim() : ""
+
+    const provided = headerToken || altHeaderToken || bodyToken
+    if (!provided || provided !== token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { message, mode } = await req.json()
+    const { message, mode } = body as { message?: string; mode?: string }
     if (!message) {
       return NextResponse.json({ error: "Missing message" }, { status: 400 })
     }
