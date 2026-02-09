@@ -20,16 +20,19 @@ import Stripe from "stripe"
 const sql = neon(process.env.DATABASE_URL!)
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2024-12-18.acacia" })
 
-const MEMBERSHIP_PRICE_IDS: Record<string, string> = {
-  [process.env.STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID || ""]: "sselfie_studio_membership",
-  [process.env.STRIPE_ONE_TIME_SESSION_PRICE_ID || ""]: "one_time_session",
-  [process.env.STRIPE_PAID_BLUEPRINT_PRICE_ID || ""]: "paid_blueprint",
-  [process.env.STRIPE_BRAND_STUDIO_MEMBERSHIP_PRICE_ID || ""]: "brand_studio_membership",
+function buildPriceToProductMap(): Record<string, string> {
+  const m: Record<string, string> = {}
+  const studioId = process.env.STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID
+  const brandId = process.env.STRIPE_BRAND_STUDIO_MEMBERSHIP_PRICE_ID
+  const oneTimeId = process.env.STRIPE_ONE_TIME_SESSION_PRICE_ID
+  const paidId = process.env.STRIPE_PAID_BLUEPRINT_PRICE_ID
+  if (studioId) m[studioId] = "sselfie_studio_membership"
+  if (brandId) m[brandId] = "brand_studio_membership"
+  if (oneTimeId) m[oneTimeId] = "one_time_session"
+  if (paidId) m[paidId] = "paid_blueprint"
+  return m
 }
 
-function productTypeFromPriceId(priceId: string): string {
-  return MEMBERSHIP_PRICE_IDS[priceId] || "unknown"
-}
 
 async function main() {
   const query = process.argv[2]
@@ -113,7 +116,8 @@ async function main() {
         const stripeSub = await stripe.subscriptions.retrieve(activeSub.stripe_subscription_id, { expand: ["items.data.price"] })
         const priceId = (stripeSub.items.data[0] as any)?.price?.id
         const metadataType = (stripeSub.metadata as any)?.product_type
-        const productType = metadataType || (priceId ? productTypeFromPriceId(priceId) : null)
+        const priceToProduct = buildPriceToProductMap()
+        const productType = metadataType || (priceId ? priceToProduct[priceId] || null : null)
         const periodStart = stripeSub.current_period_start ? new Date(stripeSub.current_period_start * 1000) : null
         const periodEnd = stripeSub.current_period_end ? new Date(stripeSub.current_period_end * 1000) : null
 

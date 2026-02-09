@@ -58,6 +58,12 @@ export async function assertStripePricingConfig(): Promise<void> {
       expectedRecurring: true,
     },
     {
+      envVarName: "STRIPE_BRAND_STUDIO_MEMBERSHIP_PRICE_ID",
+      productType: "brand_studio_membership",
+      expectedAmount: 0, // validate presence + recurring only (amount may vary)
+      expectedRecurring: true,
+    },
+    {
       envVarName: "STRIPE_ONE_TIME_SESSION_PRICE_ID",
       productType: "one_time_session",
       expectedAmount: 4900, // $49
@@ -82,8 +88,12 @@ export async function assertStripePricingConfig(): Promise<void> {
       errors: [],
     }
     
-    // Check 1: Environment variable is set
+    // Check 1: Environment variable is set (Brand Studio is optional — skip if unset)
     if (!validation.priceId) {
+      if (config.envVarName === "STRIPE_BRAND_STUDIO_MEMBERSHIP_PRICE_ID") {
+        validations.push(validation)
+        continue
+      }
       validation.isValid = false
       validation.errors.push(`Environment variable ${config.envVarName} is not set`)
       criticalErrors.push(`❌ ${config.envVarName} is not set`)
@@ -104,8 +114,8 @@ export async function assertStripePricingConfig(): Promise<void> {
         )
       }
       
-      // Check 4: Amount matches expected
-      if (priceObj.unit_amount !== config.expectedAmount) {
+      // Check 4: Amount matches expected (skip when expectedAmount is 0, e.g. Brand Studio)
+      if (config.expectedAmount > 0 && priceObj.unit_amount !== config.expectedAmount) {
         validation.isValid = false
         const actual = priceObj.unit_amount || 0
         const expected = config.expectedAmount
@@ -173,6 +183,7 @@ export async function assertStripePricingConfig(): Promise<void> {
       "",
       "Expected configuration:",
       "  STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID = Active price for $97/month subscription",
+      "  STRIPE_BRAND_STUDIO_MEMBERSHIP_PRICE_ID = Active price for Brand Studio subscription",
       "  STRIPE_ONE_TIME_SESSION_PRICE_ID = Active price for $49 one-time payment",
       "  STRIPE_PAID_BLUEPRINT_PRICE_ID = Active price for $47 one-time payment",
       "",
