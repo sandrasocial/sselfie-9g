@@ -4,6 +4,7 @@ import { createCronLogger } from "@/lib/cron-logger"
 import { isEmailTestMode } from "@/lib/email/email-control"
 import { processPendingMarketingRuns } from "@/lib/email/marketing-runner"
 import { processAudienceBackfillBatch } from "@/lib/resend/audience-backfill"
+import { acquireCronLock } from "@/lib/cron-lock"
 
 /**
  * Cron Job: Send Scheduled Campaigns
@@ -19,6 +20,8 @@ export async function GET(request: Request) {
   const cronLogger = createCronLogger("send-scheduled-campaigns")
   await cronLogger.start()
 
+  const lock = await acquireCronLock("send-scheduled-campaigns", 20 * 60)
+
   try {
     // Verify cron secret
     const authHeader = request.headers.get("authorization")
@@ -31,6 +34,11 @@ export async function GET(request: Request) {
         console.error("[v0] [Scheduled Campaigns] Unauthorized")
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
       }
+    }
+
+    if (!lock.acquired) {
+      await cronLogger.success({ skipped: true, reason: "lock_not_acquired" })
+      return NextResponse.json({ success: true, skipped: true, reason: "lock_not_acquired" })
     }
 
     // Check global email test mode setting
@@ -82,6 +90,7 @@ export async function GET(request: Request) {
       }, 
       { status: 500 }
     )
+  } finally {
+    await lock.release()
   }
 }
-

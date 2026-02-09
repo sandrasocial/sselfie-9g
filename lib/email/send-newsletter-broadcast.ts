@@ -39,6 +39,9 @@ export async function sendNewsletterBroadcast(campaignId: number): Promise<strin
   }
 
   const campaign = campaigns[0]
+  if (campaign.resend_broadcast_id) {
+    throw new Error(`Campaign ${campaignId} already has a Resend broadcast ID (${campaign.resend_broadcast_id}). Refusing to create a duplicate broadcast.`)
+  }
 
   console.log(`[Newsletter Broadcast] Campaign loaded:`, {
     id: campaign.id,
@@ -101,6 +104,7 @@ export async function sendNewsletterBroadcast(campaignId: number): Promise<strin
     SET status = 'sending',
         updated_at = NOW()
     WHERE id = ${campaignId}
+      AND resend_broadcast_id IS NULL
   `
 
   // 6. Create broadcast in Resend
@@ -141,7 +145,7 @@ export async function sendNewsletterBroadcast(campaignId: number): Promise<strin
       UPDATE admin_email_campaigns
       SET resend_broadcast_id = ${broadcast.id},
           status = ${sendImmediately ? 'sent' : 'scheduled'},
-          sent_at = ${sendImmediately ? 'NOW()' : null},
+          sent_at = ${sendImmediately ? new Date() : null},
           updated_at = NOW()
       WHERE id = ${campaignId}
     `

@@ -2,15 +2,19 @@ import { Redis } from "@upstash/redis"
 
 // Initialize Upstash Redis client
 export function getRedisClient() {
-  const url = process.env.UPSTASH_KV_KV_REST_API_URL
-  const token = process.env.UPSTASH_KV_KV_REST_API_TOKEN
+  const url =
+    process.env.UPSTASH_KV_REST_API_URL ||
+    // Legacy / misnamed env vars seen in this repo
+    process.env.UPSTASH_KV_KV_REST_API_URL
+  const token =
+    process.env.UPSTASH_KV_REST_API_TOKEN ||
+    // Legacy / misnamed env vars seen in this repo
+    process.env.UPSTASH_KV_KV_REST_API_TOKEN
 
   if (!url || !token) {
     console.error("[v0] Upstash Redis environment variables not set")
-    throw new Error("UPSTASH_KV_KV_REST_API_URL and UPSTASH_KV_KV_REST_API_TOKEN must be set")
+    throw new Error("UPSTASH_KV_REST_API_URL and UPSTASH_KV_REST_API_TOKEN must be set")
   }
-
-  console.log("[v0] Redis client initialized with URL:", url.substring(0, 30) + "...")
 
   return new Redis({
     url,
@@ -26,6 +30,9 @@ export const CacheKeys = {
   mayaPersonalMemory: (userId: string) => `maya:user:${userId}:memory`,
   mayaPersonalBrand: (userId: string) => `maya:user:${userId}:brand`,
 
+  // Academy caching
+  academyCourses: (filtersKey: string) => `academy:courses:${filtersKey}`,
+
   // Rate limiting
   rateLimitTraining: (userId: string) => `rate:limit:${userId}:training`,
   rateLimitGeneration: (userId: string) => `rate:limit:${userId}:generation`,
@@ -40,6 +47,7 @@ export const CacheTTL = {
   userContext: 600, // 10 minutes
   personalMemory: 600, // 10 minutes
   personalBrand: 600, // 10 minutes
+  courses: 3600, // 1 hour
 }
 
 // Rate limit configurations

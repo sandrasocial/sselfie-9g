@@ -377,13 +377,21 @@ async function executeCampaign(
   result.recipients.total = totalRecipients
   console.log(`[v0] Campaign ${campaign.id} has ${totalRecipients} recipients`)
 
-  // Update campaign status to 'sending' (only in live mode)
+  // Claim campaign execution (only in live mode). This prevents double-sends if
+  // the cron overlaps or multiple invocations happen.
   if (mode === "live") {
-    await sql`
+    const claimed = await sql`
       UPDATE admin_email_campaigns
-      SET status = 'sending', total_recipients = ${recipientEmails.length}, updated_at = NOW()
+      SET status = 'sending', total_recipients = ${totalRecipients}, updated_at = NOW()
       WHERE id = ${campaign.id}
+        AND status = 'scheduled'
+      RETURNING id
     `
+    if (claimed.length === 0) {
+      console.warn(`[v0] Campaign ${campaign.id} not claimed (status changed). Skipping execution.`)
+      result.errors.push("Skipped: campaign already claimed or no longer scheduled")
+      return result
+    }
   }
 
   // Send broadcast when targeting Resend segments/audience
@@ -580,6 +588,8 @@ export async function runScheduledCampaigns(
     mode = "test"
   }
 
+  const effectiveConfig: RunScheduledCampaignsConfig = { ...config, mode }
+
   // Also check if email sending is disabled
   const sendingEnabled = await isEmailSendingEnabled()
   if (!sendingEnabled) {
@@ -647,7 +657,7 @@ export async function runScheduledCampaigns(
   const results: CampaignExecutionResult[] = []
   for (const campaign of campaigns) {
     try {
-      const result = await executeCampaign(campaign, config)
+      const result = await executeCampaign(campaign, effectiveConfig)
       results.push(result)
     } catch (error: any) {
       console.error(`[v0] Error executing campaign ${campaign.id}:`, error)
@@ -663,4 +673,3 @@ export async function runScheduledCampaigns(
 
   return results
 }
-
