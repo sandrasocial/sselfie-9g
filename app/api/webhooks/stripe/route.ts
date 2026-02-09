@@ -2637,6 +2637,24 @@ export async function POST(request: NextRequest) {
 
         const stripeStatus = sub.status // active, trialing, past_due, unpaid, canceled
         const currentPeriodEnd = sub.current_period_end ? new Date(sub.current_period_end * 1000) : null
+        const currentPeriodStart = sub.current_period_start ? new Date(sub.current_period_start * 1000) : null
+
+        // Derive product_type so upgrades (e.g. old product → membership) are reflected in our DB
+        let productType: string | null = (sub.metadata as any)?.product_type || null
+        if (!productType && sub.items?.data?.[0]) {
+          const priceId = typeof sub.items.data[0].price === "string"
+            ? sub.items.data[0].price
+            : (sub.items.data[0].price as any)?.id
+          if (priceId) {
+            const priceToProduct: Record<string, string> = {
+              [process.env.STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID || ""]: "sselfie_studio_membership",
+              [process.env.STRIPE_BRAND_STUDIO_MEMBERSHIP_PRICE_ID || ""]: "brand_studio_membership",
+              [process.env.STRIPE_ONE_TIME_SESSION_PRICE_ID || ""]: "one_time_session",
+            }
+            productType = priceToProduct[priceId] || null
+          }
+        }
+        if (!productType) productType = "sselfie_studio_membership" // safe default for membership
 
         // Get customer email for Flodesk sync
         let customerEmail: string | null = null
@@ -2659,12 +2677,16 @@ export async function POST(request: NextRequest) {
         await sql`
           UPDATE subscriptions
           SET 
+            product_type = ${productType},
+            plan = ${productType},
             status = ${stripeStatus},
-            current_period_end = ${currentPeriodEnd}
+            current_period_start = ${currentPeriodStart},
+            current_period_end = ${currentPeriodEnd},
+            updated_at = NOW()
           WHERE stripe_subscription_id = ${sub.id}
         `
 
-        console.log(`[v0] 📝 Subscription ${sub.id} updated to status: ${stripeStatus}`)
+        console.log(`[v0] 📝 Subscription ${sub.id} updated to status: ${stripeStatus}, product_type: ${productType}`)
 
         // Update subscription status in Flodesk custom fields
         if (customerEmail) {
