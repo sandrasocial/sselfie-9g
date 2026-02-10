@@ -1,7 +1,6 @@
 import { Resend } from "resend"
 import { neon } from "@neondatabase/serverless"
 import { EMAIL_CONFIG, EMAIL_ENV } from "./config"
-import { getAudienceContacts } from "@/lib/resend/get-audience-contacts"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const sql = neon(process.env.DATABASE_URL!)
@@ -26,7 +25,40 @@ interface ContactSyncInput {
   removeFromSegment?: boolean
 }
 
-const CONTACT_UPDATE_DELAY_MS = 600
+const CONTACT_UPDATE_DELAY_MS = 650
+
+async function sleep(ms: number) {
+  await new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function resendFetchWithRetry(
+  url: string,
+  init: RequestInit,
+  opts?: { maxRetries?: number; baseDelayMs?: number },
+): Promise<Response> {
+  const maxRetries = opts?.maxRetries ?? 5
+  const baseDelayMs = opts?.baseDelayMs ?? 650
+
+  let lastErr: unknown = null
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const res = await fetch(url, init)
+      if (res.status !== 429) return res
+
+      const retryAfter = res.headers.get("retry-after")
+      const retryAfterMs = retryAfter && !Number.isNaN(Number(retryAfter)) ? Number(retryAfter) * 1000 : null
+      const backoffMs = Math.min(10_000, retryAfterMs ?? baseDelayMs * Math.pow(2, attempt))
+      await sleep(backoffMs)
+      continue
+    } catch (err) {
+      lastErr = err
+      const backoffMs = Math.min(10_000, baseDelayMs * Math.pow(2, attempt))
+      await sleep(backoffMs)
+    }
+  }
+
+  throw lastErr instanceof Error ? lastErr : new Error("Resend fetch failed after retries")
+}
 
 function ensureComplianceHtml(html: string): string {
   if (html.includes("RESEND_UNSUBSCRIBE_URL")) {
@@ -229,18 +261,6 @@ export async function syncMarketingContacts(input: ContactSyncInput) {
     return { success: true, synced: 0, skipped: input.contacts.length, errors: 0 }
   }
 
-  const audienceContacts =
-    input.existingContacts || (await getAudienceContacts(audienceId))
-  const contactMap = new Map(
-    audienceContacts.map((contact: any) => [
-      String(contact.email || "").toLowerCase(),
-      {
-        id: contact.id,
-        tags: contact.tags || [],
-      },
-    ]),
-  )
-
   let synced = 0
   let skipped = 0
   let errors = 0
@@ -250,63 +270,73 @@ export async function syncMarketingContacts(input: ContactSyncInput) {
     if (!email) continue
 
     try {
-      const existing = contactMap.get(email)
-      let contactId = existing?.id
-      if (contactId) {
-        const tagMap = toTagMap(existing.tags)
-        if (tagMap[input.tagKey] === input.tagValue) {
+      // Avoid loading the full audience contact list (large + frequently 429s).
+      // Instead, best-effort upsert by email, then add/remove the segment membership by email.
+      //
+      // We intentionally do not try to mutate tags for existing contacts here; the primary objective
+      // is reliable segment-based delivery without exceeding Resend's strict rate limits.
+      const created = await resend.contacts.create({
+        audienceId,
+        email,
+        firstName: contact.firstName || undefined,
+        tags: formatTags({ [input.tagKey]: input.tagValue }),
+      })
+
+      if (created?.error) {
+        const msg = String(created.error.message || "")
+        // Ignore "already exists" style errors, otherwise count it.
+        if (!/already/i.test(msg) && !/exist/i.test(msg) && !/409/.test(msg)) {
+          errors++
+          console.error("[v0] Failed to upsert marketing contact:", { email, error: msg })
+        } else {
           skipped++
-          if (!input.segmentId) {
-            continue
-          }
         }
-        tagMap[input.tagKey] = input.tagValue
-
-        const response = await fetch(
-          `https://api.resend.com/audiences/${audienceId}/contacts/${contactId}`,
-          {
-            method: "PATCH",
-            headers: {
-              Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              tags: formatTags(tagMap),
-            }),
-          },
-        )
-
-        if (!response.ok) {
-          const errorText = await response.text()
-          throw new Error(`Resend API error: ${response.status} ${errorText}`)
-        }
-
-        synced++
-        await new Promise((resolve) => setTimeout(resolve, CONTACT_UPDATE_DELAY_MS))
       } else {
-        const { data, error } = await resend.contacts.create({
-          audienceId,
-          email,
-          firstName: contact.firstName || undefined,
-          tags: formatTags({ [input.tagKey]: input.tagValue }),
-        })
-
-        if (error) {
-          throw new Error(error.message || "Failed to create contact")
-        }
-
-        contactId = data?.id
         synced++
-        await new Promise((resolve) => setTimeout(resolve, CONTACT_UPDATE_DELAY_MS))
       }
 
-      if (input.segmentId && contactId) {
-        if (input.removeFromSegment) {
-          await removeContactFromSegmentById(contactId, input.segmentId, email)
-        } else {
-          await addContactToSegmentById(contactId, input.segmentId, email)
+      await sleep(CONTACT_UPDATE_DELAY_MS)
+
+      if (input.segmentId) {
+        const segId = String(input.segmentId || "").trim()
+        if (segId) {
+          if (input.removeFromSegment) {
+            // Resend API supports identifier=contactId OR email.
+            const res = await resendFetchWithRetry(
+              `https://api.resend.com/contacts/${encodeURIComponent(email)}/segments/${encodeURIComponent(segId)}`,
+              {
+                method: "DELETE",
+                headers: {
+                  Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+                  "Content-Type": "application/json",
+                },
+              },
+            )
+            if (!res.ok) {
+              const text = await res.text().catch(() => "")
+              errors++
+              console.error("[v0] Failed to remove contact from segment:", { email, segmentId: segId, status: res.status, text: text.slice(0, 240) })
+            }
+          } else {
+            const res = await resendFetchWithRetry(
+              `https://api.resend.com/contacts/${encodeURIComponent(email)}/segments/${encodeURIComponent(segId)}`,
+              {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+                  "Content-Type": "application/json",
+                },
+              },
+            )
+            if (!res.ok) {
+              const text = await res.text().catch(() => "")
+              errors++
+              console.error("[v0] Failed to add contact to segment:", { email, segmentId: segId, status: res.status, text: text.slice(0, 240) })
+            }
+          }
+
+          await sleep(CONTACT_UPDATE_DELAY_MS)
         }
-        await new Promise((resolve) => setTimeout(resolve, CONTACT_UPDATE_DELAY_MS))
       }
     } catch (error) {
       errors++
@@ -316,4 +346,3 @@ export async function syncMarketingContacts(input: ContactSyncInput) {
 
   return { success: errors === 0, synced, skipped, errors }
 }
-

@@ -149,6 +149,7 @@ export async function claimQueueBatch(input: {
 }): Promise<
   Array<{ id: number; email: string; first_name: string | null; segment_id: string | null }>
 > {
+  const maxAgeDays = Number(process.env.MARKETING_QUEUE_MAX_AGE_DAYS || 7)
   const rows = await sql`
     WITH cte AS (
       SELECT id
@@ -156,6 +157,7 @@ export async function claimQueueBatch(input: {
       WHERE run_id = ${input.runId}
         AND status = ANY(${input.statuses})
         AND attempts < ${input.maxAttempts}
+        AND created_at > NOW() - ${maxAgeDays} * INTERVAL '1 day'
       ORDER BY id ASC
       LIMIT ${input.batchSize}
       FOR UPDATE SKIP LOCKED
@@ -285,6 +287,92 @@ export async function resetStuckMarketingQueueItems(input?: {
   return {
     resetProcessing: (resetProcessingRows as any[])?.length || 0,
     resetCleanupProcessing: (resetCleanupRows as any[])?.length || 0,
+  }
+}
+
+export async function failQueueForRun(input: {
+  runId: string
+  reason: string
+  statuses?: string[]
+}): Promise<{ updated: number }> {
+  const statuses = input.statuses || ["queued", "failed", "processing", "synced", "cleanup_failed", "cleanup_processing"]
+  const rows = await sql`
+    UPDATE marketing_send_queue
+    SET
+      status = 'failed',
+      last_error = ${input.reason},
+      updated_at = NOW()
+    WHERE run_id = ${input.runId}
+      AND status = ANY(${statuses})
+    RETURNING id
+  `
+  return { updated: (rows as any[])?.length || 0 }
+}
+
+export async function expireOldMarketingQueueItems(input?: {
+  maxAgeDays?: number
+  limitRuns?: number
+}): Promise<{ expiredQueueRows: number; expiredEmailLogs: number; affectedRuns: number }> {
+  const maxAgeDays = input?.maxAgeDays ?? Number(process.env.MARKETING_QUEUE_MAX_AGE_DAYS || 7)
+  const limitRuns = input?.limitRuns ?? 200
+
+  const runRows = (await sql`
+    SELECT run_id, COALESCE(email_type, sequence_key) AS email_type
+    FROM marketing_send_runs
+    WHERE created_at < NOW() - ${maxAgeDays} * INTERVAL '1 day'
+      AND status IN ('queued', 'syncing', 'broadcasting', 'cleanup', 'failed', 'completed')
+    ORDER BY created_at ASC
+    LIMIT ${limitRuns}
+  `) as Array<{ run_id: string; email_type: string | null }>
+
+  if (runRows.length === 0) return { expiredQueueRows: 0, expiredEmailLogs: 0, affectedRuns: 0 }
+
+  const runIds = runRows.map((r) => r.run_id)
+
+  const queueUpdated = await sql`
+    UPDATE marketing_send_queue
+    SET
+      status = 'failed',
+      last_error = COALESCE(last_error, 'Expired: queue item too old'),
+      updated_at = NOW()
+    WHERE run_id = ANY(${runIds}::text[])
+      AND status IN ('queued', 'failed', 'processing', 'synced', 'cleanup_failed', 'cleanup_processing')
+      AND created_at < NOW() - ${maxAgeDays} * INTERVAL '1 day'
+    RETURNING id
+  `
+
+  // Best-effort: mark monitoring logs as failed so reports don't show an infinite queued backlog.
+  // email_logs does not have run_id; we update by type + age only.
+  const emailUpdated = await sql`
+    UPDATE email_logs
+    SET
+      status = 'failed',
+      error_message = COALESCE(error_message, 'Expired: queued email too old'),
+      sent_at = NOW()
+    WHERE status = 'queued'
+      AND sent_at < NOW() - ${maxAgeDays} * INTERVAL '1 day'
+    RETURNING id
+  `
+
+  // Close long-running runs so they don't keep showing up as pending work.
+  await sql`
+    UPDATE marketing_send_runs
+    SET
+      status = CASE
+        WHEN status IN ('queued', 'syncing', 'broadcasting', 'cleanup') THEN 'failed'
+        ELSE status
+      END,
+      error_message = COALESCE(error_message, 'Expired: run too old'),
+      started_at = COALESCE(started_at, NOW()),
+      finished_at = COALESCE(finished_at, NOW())
+    WHERE run_id = ANY(${runIds}::text[])
+      AND created_at < NOW() - ${maxAgeDays} * INTERVAL '1 day'
+  `
+
+  return {
+    expiredQueueRows: (queueUpdated as any[])?.length || 0,
+    expiredEmailLogs: (emailUpdated as any[])?.length || 0,
+    affectedRuns: runIds.length,
   }
 }
 

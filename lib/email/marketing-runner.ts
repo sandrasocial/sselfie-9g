@@ -3,7 +3,6 @@ import { neon } from "@neondatabase/serverless"
 import { logAdminError } from "@/lib/admin-error-log"
 import { resolveMarketingTemplateContent } from "@/lib/email/marketing-template-overrides"
 import { addContactsToHistorySegment } from "@/lib/resend/segment-history"
-import { getAudienceContacts } from "@/lib/resend/get-audience-contacts"
 import { acquireKvLock, releaseKvLock } from "@/lib/cache"
 import {
   claimQueueBatch,
@@ -18,6 +17,8 @@ import {
   updateRunProcessedCount,
   MarketingRecipient,
   updateMarketingRunContent,
+  expireOldMarketingQueueItems,
+  failQueueForRun,
 } from "@/lib/email/marketing-queue"
 
 const sql = neon(process.env.DATABASE_URL!)
@@ -90,6 +91,7 @@ export async function processPendingMarketingRuns(limit = 3) {
   // from blocking future sends.
   await resetStuckMarketingQueueItems().catch(() => {})
   await failStaleMarketingRuns().catch(() => {})
+  await expireOldMarketingQueueItems().catch(() => {})
 
   const runs = await getNextPendingRuns(limit)
   for (const run of runs) {
@@ -139,6 +141,7 @@ export async function processMarketingRun(input: {
         startedAt: true,
         finishedAt: true,
       })
+      await failQueueForRun({ runId: input.runId, reason: "Failed: missing broadcast metadata" }).catch(() => {})
     }
     return
   }
@@ -166,6 +169,7 @@ export async function processMarketingRun(input: {
       startedAt: true,
       finishedAt: true,
     })
+    await failQueueForRun({ runId: input.runId, reason: "Failed: RESEND_AUDIENCE_ID not configured" }).catch(() => {})
     await releaseKvLock({ key: "lock:marketing:resend:global", value: lock.value }).catch(() => {})
     return
   }
@@ -185,33 +189,6 @@ export async function processMarketingRun(input: {
         status: "completed",
         finishedAt: true,
       })
-      return
-    }
-
-    let existingContacts: Array<{ email: string; id: string; tags?: any[] }> = []
-    try {
-      existingContacts = await getAudienceContacts(process.env.RESEND_AUDIENCE_ID)
-    } catch (error) {
-      // Ensure we don't leave the system looking "stuck queued" forever.
-      await markEmailLogsFailed({
-        runId: input.runId,
-        emailType,
-        errorMessage: error instanceof Error ? error.message : "Failed to load Resend contacts",
-      }).catch(() => {})
-
-      // Treat this as retryable: keep the run pending so processPendingMarketingRuns()
-      // (called by other cron jobs) can try again.
-      await updateMarketingRunStatus({
-        runId: input.runId,
-        status: run.started_at ? (run.status as any) : "queued",
-        errorMessage: error instanceof Error ? error.message : "Failed to load Resend contacts",
-        startedAt: !run.started_at,
-      })
-      await logAdminError({
-        toolName: "marketing-runner:load-contacts",
-        error: error instanceof Error ? error : new Error("Failed to load Resend contacts"),
-        context: { runId: input.runId },
-      }).catch(() => {})
       return
     }
 
@@ -253,7 +230,6 @@ export async function processMarketingRun(input: {
           tagValue: "true",
           segmentId,
           contacts,
-          existingContacts,
         })
 
         if (tagKey.startsWith("sequence_")) {
@@ -326,6 +302,10 @@ export async function processMarketingRun(input: {
             errorMessage: error instanceof Error ? error.message : "Broadcast failed",
             finishedAt: true,
           })
+          await failQueueForRun({
+            runId: input.runId,
+            reason: error instanceof Error ? `Broadcast failed: ${error.message}` : "Broadcast failed",
+          }).catch(() => {})
           await logAdminError({
             toolName: "marketing-runner:broadcast",
             error: error instanceof Error ? error : new Error("Broadcast failed"),
@@ -366,7 +346,6 @@ export async function processMarketingRun(input: {
           segmentId,
           removeFromSegment: true,
           contacts: cleanupContacts,
-          existingContacts,
         })
 
         if (cleanupResult.success) {
