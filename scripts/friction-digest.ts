@@ -48,6 +48,8 @@ async function safe<T>(label: string, fn: () => Promise<T>): Promise<{ ok: true;
 async function main() {
   const now = new Date()
   const hours = Number(process.env.FRICTION_DIGEST_WINDOW_HOURS || 24)
+  const recentHours = Number(process.env.FRICTION_DIGEST_RECENT_HOURS || 2)
+  const stuckRecentHours = Number(process.env.FRICTION_DIGEST_STUCK_RECENT_HOURS || 48)
 
   const cronFailures = await safe("cron_failures", async () => {
     return await sql`
@@ -109,11 +111,69 @@ async function main() {
     `
   })
 
+  const genStuckRecent = await safe("generation_trackers_stuck_recent", async () => {
+    return await sql`
+      SELECT status, COUNT(*)::int AS count, MIN(created_at) AS oldest
+      FROM generation_trackers
+      WHERE created_at < NOW() - INTERVAL '30 minutes'
+        AND created_at > NOW() - ${stuckRecentHours} * INTERVAL '1 hour'
+        AND status IN ('queued', 'starting', 'processing', 'running', 'in_progress', 'pending')
+      GROUP BY status
+      ORDER BY count DESC
+      LIMIT 10
+    `
+  })
+
+  const genStuckAncient = await safe("generation_trackers_stuck_ancient", async () => {
+    return await sql`
+      SELECT status, COUNT(*)::int AS count, MIN(created_at) AS oldest
+      FROM generation_trackers
+      WHERE created_at < NOW() - INTERVAL '30 minutes'
+        AND created_at <= NOW() - ${stuckRecentHours} * INTERVAL '1 hour'
+        AND status IN ('queued', 'starting', 'processing', 'running', 'in_progress', 'pending')
+      GROUP BY status
+      ORDER BY count DESC
+      LIMIT 10
+    `
+  })
+
   const lines: string[] = []
   lines.push(`# Friction digest`)
   lines.push(``)
   lines.push(`- Generated at: ${now.toISOString()}`)
   lines.push(`- Window: last ${hours} hour(s)`)
+  lines.push(`- Recent threshold: last ${recentHours} hour(s)`)
+  lines.push(``)
+
+  // Active-only view (reduces noise from already-fixed incidents inside the 24h window).
+  lines.push(`## Active incidents (last ${recentHours}h)`)
+  if (cronFailures.ok && topAdminErrors.ok && webhookErrors.ok) {
+    const activeCron = (cronFailures.value as any[]).filter((r) => r.last_seen && new Date(r.last_seen).getTime() > now.getTime() - recentHours * 60 * 60 * 1000)
+    const activeAdmin = (topAdminErrors.value as any[]).filter((r) => r.last_seen && new Date(r.last_seen).getTime() > now.getTime() - recentHours * 60 * 60 * 1000)
+    const activeWebhook = (webhookErrors.value as any[]).filter((r) => r.last_seen && new Date(r.last_seen).getTime() > now.getTime() - recentHours * 60 * 60 * 1000)
+
+    const totalActive = activeCron.length + activeAdmin.length + activeWebhook.length
+    if (totalActive === 0) {
+      lines.push(`No active incidents found.`)
+    } else {
+      if (activeCron.length > 0) {
+        lines.push(`Cron failures:`)
+        for (const r of activeCron) lines.push(`- ${r.job_name}: ${r.count} (last: ${iso(r.last_seen)})`)
+      }
+      if (activeAdmin.length > 0) {
+        lines.push(`Admin errors:`)
+        for (const r of activeAdmin) lines.push(`- ${r.tool_name}: ${r.count} (last: ${iso(r.last_seen)})`)
+      }
+      if (activeWebhook.length > 0) {
+        lines.push(`Webhook errors:`)
+        for (const r of activeWebhook) lines.push(`- ${r.event_type}: ${r.count} (last: ${iso(r.last_seen)})`)
+      }
+    }
+  } else {
+    if (!cronFailures.ok) lines.push(`- Error: ${cronFailures.error}`)
+    if (!topAdminErrors.ok) lines.push(`- Error: ${topAdminErrors.error}`)
+    if (!webhookErrors.ok) lines.push(`- Error: ${webhookErrors.error}`)
+  }
   lines.push(``)
 
   lines.push(`## Cron failures`)
@@ -173,6 +233,36 @@ async function main() {
   lines.push(``)
 
   lines.push(`## Stuck generations (>30m, best-effort)`)
+  lines.push(`Recent (created in last ${stuckRecentHours}h):`)
+  if (genStuckRecent.ok) {
+    if ((genStuckRecent.value as any[]).length === 0) {
+      lines.push(`No stuck generations found (recent).`)
+    } else {
+      for (const r of genStuckRecent.value as any[]) {
+        lines.push(`- ${r.status}: ${r.count} (oldest_created_at: ${iso(r.oldest)})`)
+      }
+    }
+  } else {
+    lines.push(`- Error: ${genStuckRecent.error}`)
+  }
+  lines.push(``)
+
+  lines.push(`Ancient (older than ${stuckRecentHours}h):`)
+  if (genStuckAncient.ok) {
+    if ((genStuckAncient.value as any[]).length === 0) {
+      lines.push(`No stuck generations found (ancient).`)
+    } else {
+      for (const r of genStuckAncient.value as any[]) {
+        lines.push(`- ${r.status}: ${r.count} (oldest_created_at: ${iso(r.oldest)})`)
+      }
+    }
+  } else {
+    lines.push(`- Error: ${genStuckAncient.error}`)
+  }
+  lines.push(``)
+
+  // Keep the raw query result at the bottom for debugging (but separated from the actionable sections above).
+  lines.push(`## Stuck generations raw (debug)`)
   if (genStuck.ok) {
     if ((genStuck.value as any[]).length === 0) {
       lines.push(`No stuck generations found.`)
