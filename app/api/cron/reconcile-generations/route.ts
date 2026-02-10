@@ -10,28 +10,48 @@ const sql = neon(process.env.DATABASE_URL!)
 type SourceHint = "maya_chat" | "studio" | "unknown"
 
 function parsePredictionRef(imageUrlsRaw: string | null | undefined): {
+  kind: "prediction" | "urls" | "none"
   predictionId: string | null
+  urls: string[]
   sourceHint: SourceHint
 } {
   const v = (imageUrlsRaw || "").trim()
-  if (!v) return { predictionId: null, sourceHint: "unknown" }
+  if (!v) return { kind: "none", predictionId: null, urls: [], sourceHint: "unknown" }
 
   // Completed: single or comma-separated blob URLs.
-  if (v.startsWith("https://")) return { predictionId: null, sourceHint: "unknown" }
+  if (v.startsWith("https://")) {
+    const urls = v.split(",").map((s) => s.trim()).filter((s) => s.startsWith("https://"))
+    return { kind: "urls", predictionId: null, urls, sourceHint: "unknown" }
+  }
+
+  // Some legacy records store a JSON array of URLs (not a Replicate prediction id).
+  if (v.startsWith("[")) {
+    try {
+      const parsed = JSON.parse(v)
+      if (Array.isArray(parsed)) {
+        const urls = parsed.filter((x) => typeof x === "string" && x.startsWith("https://")) as string[]
+        if (urls.length > 0) {
+          return { kind: "urls", predictionId: null, urls, sourceHint: "unknown" }
+        }
+      }
+    } catch {
+      // fall through
+    }
+  }
 
   // Maya classic mode stores JSON in generated_images.image_urls.
   if (v.startsWith("{")) {
     try {
       const parsed = JSON.parse(v)
       const predictionId = typeof parsed?.prediction_id === "string" ? parsed.prediction_id : null
-      return { predictionId, sourceHint: "maya_chat" }
+      return { kind: predictionId ? "prediction" : "none", predictionId, urls: [], sourceHint: "maya_chat" }
     } catch {
-      return { predictionId: null, sourceHint: "unknown" }
+      return { kind: "none", predictionId: null, urls: [], sourceHint: "unknown" }
     }
   }
 
   // Otherwise treat it as a Replicate prediction id (older studio flow).
-  return { predictionId: v, sourceHint: "studio" }
+  return { kind: "prediction", predictionId: v, urls: [], sourceHint: "studio" }
 }
 
 async function uploadImageFromUrlToBlob(input: { url: string; key: string }) {
@@ -77,7 +97,47 @@ async function reconcileGeneratedImages(limit: number) {
   for (const row of rows as any[]) {
     attempted += 1
 
-    const { predictionId, sourceHint } = parsePredictionRef(row.image_urls)
+    const parsed = parsePredictionRef(row.image_urls)
+    const { predictionId, sourceHint } = parsed
+
+    if (parsed.kind === "urls") {
+      try {
+        const urls: string[] = []
+        const srcUrls = parsed.urls
+        for (let i = 0; i < Math.min(srcUrls.length, 6); i++) {
+          const u = srcUrls[i]
+          const blobUrl = await uploadImageFromUrlToBlob({
+            url: u,
+            key: `reconciled/legacy/${row.id}-${i}.png`,
+          })
+          urls.push(blobUrl)
+        }
+
+        if (urls.length === 0) {
+          skipped += 1
+          continue
+        }
+
+        const stored = urls.length === 1 ? urls[0] : urls.join(",")
+        await sql`
+          UPDATE generated_images
+          SET image_urls = ${stored},
+              selected_url = ${urls[0]}
+          WHERE id = ${row.id}
+        `
+        completed += 1
+        continue
+      } catch (err) {
+        failed += 1
+        await logAdminError({
+          toolName: "cron:reconcile-generations:generated-images",
+          error: err instanceof Error ? err : new Error(String(err)),
+          context: { generatedImageId: row.id, predictionId: null, legacyUrls: parsed.urls.slice(0, 2) },
+        }).catch(() => {})
+        continue
+      }
+    }
+
     if (!predictionId) {
       skipped += 1
       continue
@@ -111,7 +171,7 @@ async function reconcileGeneratedImages(limit: number) {
         await sql`
           UPDATE generated_images
           SET image_urls = ${stored},
-              selected_url = ${urls[0]},
+              selected_url = ${urls[0]}
           WHERE id = ${row.id}
         `
 
