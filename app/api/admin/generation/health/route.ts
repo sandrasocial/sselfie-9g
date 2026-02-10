@@ -69,6 +69,34 @@ export async function GET(request: NextRequest) {
       LIMIT ${limit}
     `
 
+    const [aiStuck15m] = await sql`
+      SELECT COUNT(*)::int AS count
+      FROM ai_images
+      WHERE prediction_id IS NOT NULL
+        AND (generation_status IS NULL OR generation_status IN ('generating', 'processing'))
+        AND (image_url IS NULL OR BTRIM(image_url) = '' OR image_url NOT LIKE 'http%')
+        AND created_at < NOW() - INTERVAL '15 minutes'
+    `
+
+    const [aiStuck60m] = await sql`
+      SELECT COUNT(*)::int AS count
+      FROM ai_images
+      WHERE prediction_id IS NOT NULL
+        AND (generation_status IS NULL OR generation_status IN ('generating', 'processing'))
+        AND (image_url IS NULL OR BTRIM(image_url) = '' OR image_url NOT LIKE 'http%')
+        AND created_at < NOW() - INTERVAL '60 minutes'
+    `
+
+    const recentAiStuck = await sql`
+      SELECT id, user_id, source, category, generation_status, prediction_id, created_at
+      FROM ai_images
+      WHERE prediction_id IS NOT NULL
+        AND (generation_status IS NULL OR generation_status IN ('generating', 'processing'))
+        AND (image_url IS NULL OR BTRIM(image_url) = '' OR image_url NOT LIKE 'http%')
+      ORDER BY created_at ASC
+      LIMIT ${limit}
+    `
+
     return NextResponse.json({
       now: new Date().toISOString(),
       feedPosts: {
@@ -77,8 +105,14 @@ export async function GET(request: NextRequest) {
         inconsistentCompleted: Number((inconsistentCompleted as any)?.count || 0),
         oldestPending: recentStuck,
       },
+      aiImages: {
+        stuckOver15m: Number((aiStuck15m as any)?.count || 0),
+        stuckOver60m: Number((aiStuck60m as any)?.count || 0),
+        oldestPending: recentAiStuck,
+      },
       recommendations: [
         "If stuck counts grow, verify Replicate availability and check Vercel logs for reconcile-feed-posts.",
+        "If Pro Mode images are stuck, run reconcile-ai-images to finalize predictions into Blob URLs.",
         "If inconsistentCompleted is non-zero, running reconciliation will normalize statuses.",
       ],
     })
@@ -93,4 +127,3 @@ export async function GET(request: NextRequest) {
     )
   }
 }
-

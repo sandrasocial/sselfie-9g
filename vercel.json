@@ -85,6 +85,10 @@
       "schedule": "*/15 * * * *"
     },
     {
+      "path": "/api/cron/reconcile-ai-images",
+      "schedule": "*/15 * * * *"
+    },
+    {
       "path": "/api/cron/reconcile-generations",
       "schedule": "*/30 * * * *"
     },

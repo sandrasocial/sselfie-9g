@@ -16,6 +16,11 @@ type GenerationHealthResponse = {
     inconsistentCompleted: number
     oldestPending: Array<any>
   }
+  aiImages: {
+    stuckOver15m: number
+    stuckOver60m: number
+    oldestPending: Array<any>
+  }
   recommendations: string[]
 }
 
@@ -107,6 +112,23 @@ export function GenerationHealthDashboard() {
     }
   }
 
+  const runReconcileAiImages = async () => {
+    setActionMessage(null)
+    setActionLoading(true)
+    try {
+      const result = await postJson("/api/admin/generation/reconcile-ai-images", { limit: 25, minAgeMinutes: 2 })
+      const s = result?.summary
+      setActionMessage(
+        `AI Images reconcile complete. Scanned ${Number(s?.scanned || 0)}. Completed ${Number(s?.completed || 0)}. Failed ${Number(s?.failed || 0)}. Still processing ${Number(s?.stillProcessing || 0)}. Errors ${Number(s?.errors || 0)}.`,
+      )
+      await mutate()
+    } catch (e: any) {
+      setActionMessage(`AI Images reconcile failed: ${String(e?.message || e)}`)
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-stone-50">
       <AdminNav />
@@ -167,6 +189,13 @@ export function GenerationHealthDashboard() {
               >
                 Run Reconcile
               </button>
+              <button
+                onClick={runReconcileAiImages}
+                disabled={actionLoading}
+                className="inline-flex items-center justify-center gap-2 border border-stone-200 bg-white px-4 py-3 text-xs tracking-[0.2em] uppercase text-stone-700 hover:bg-stone-50 transition-colors rounded-none disabled:opacity-60"
+              >
+                Reconcile AI Images
+              </button>
             </div>
           </div>
           {actionMessage && (
@@ -201,6 +230,28 @@ export function GenerationHealthDashboard() {
             value={data.feedPosts.oldestPending.length || 0}
             subtitle="oldest rows returned"
             source="feed_posts"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-10 sm:mb-14">
+          <AdminMetricCard
+            label="AI Images Stuck (15m+)"
+            value={data.aiImages.stuckOver15m || 0}
+            variant={data.aiImages.stuckOver15m > 0 ? "primary" : "default"}
+            subtitle="prediction_id + empty image_url"
+            source="ai_images"
+          />
+          <AdminMetricCard
+            label="AI Images Stuck (60m+)"
+            value={data.aiImages.stuckOver60m || 0}
+            subtitle="oldest backlog"
+            source="ai_images"
+          />
+          <AdminMetricCard
+            label="AI Images Pending (Sample)"
+            value={data.aiImages.oldestPending.length || 0}
+            subtitle="oldest rows returned"
+            source="ai_images"
           />
         </div>
 
@@ -244,6 +295,45 @@ export function GenerationHealthDashboard() {
 
           <div className="bg-white border border-stone-200 p-6 rounded-none">
             <h2 className="font-['Times_New_Roman'] text-xl sm:text-2xl font-extralight tracking-[0.2em] uppercase text-stone-950 mb-4">
+              AI IMAGES PENDING
+            </h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-stone-200">
+                    <th className="py-2 pr-4 text-[10px] tracking-[0.2em] uppercase text-stone-500">Image</th>
+                    <th className="py-2 pr-4 text-[10px] tracking-[0.2em] uppercase text-stone-500">Status</th>
+                    <th className="py-2 pr-4 text-[10px] tracking-[0.2em] uppercase text-stone-500">Created</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(data.aiImages.oldestPending || []).slice(0, 20).map((row: any) => (
+                    <tr key={row.id} className="border-b border-stone-100">
+                      <td className="py-2 pr-4 text-xs text-stone-900 whitespace-nowrap">
+                        {row.source || "unknown"} / {row.id}
+                      </td>
+                      <td className="py-2 pr-4 text-xs text-stone-700 whitespace-nowrap">
+                        {row.generation_status || "generating"}
+                      </td>
+                      <td className="py-2 pr-4 text-xs text-stone-700 whitespace-nowrap">
+                        {formatAdminDate(row.created_at, "relative")}
+                      </td>
+                    </tr>
+                  ))}
+                  {(data.aiImages.oldestPending || []).length === 0 && (
+                    <tr>
+                      <td className="py-3 text-xs text-stone-600" colSpan={3}>
+                        No pending AI images found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="bg-white border border-stone-200 p-6 rounded-none">
+            <h2 className="font-['Times_New_Roman'] text-xl sm:text-2xl font-extralight tracking-[0.2em] uppercase text-stone-950 mb-4">
               RECOMMENDATIONS
             </h2>
             {data.recommendations.length === 0 ? (
@@ -263,4 +353,3 @@ export function GenerationHealthDashboard() {
     </div>
   )
 }
-
