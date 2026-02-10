@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useState } from "react"
+import { sanitizeRedirect } from "@/lib/security/url-validator"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -18,7 +19,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
-  const returnTo = searchParams.get("returnTo") || "/studio"
+  const returnTo = sanitizeRedirect(searchParams.get("returnTo"), "/studio")
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()

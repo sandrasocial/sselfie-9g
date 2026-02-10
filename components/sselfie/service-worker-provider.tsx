@@ -5,7 +5,10 @@ import { toast } from "sonner"
 
 export function ServiceWorkerProvider() {
   useEffect(() => {
-    const isPreview = typeof window !== "undefined" && window.location.hostname.includes("vusercontent.net")
+    const host = typeof window !== "undefined" ? window.location.hostname : ""
+    const isV0Preview = !!host && host.includes("vusercontent.net")
+    const isVercelPreview = !!host && host.endsWith(".vercel.app")
+    const isProductionHost = host === "sselfie.ai" || host.endsWith(".sselfie.ai")
     const isSecure =
       typeof window !== "undefined" &&
       (window.location.protocol === "https:" || window.location.hostname === "localhost")
@@ -15,7 +18,7 @@ export function ServiceWorkerProvider() {
       return
     }
 
-    if (isPreview) {
+    if (isV0Preview || isVercelPreview || !isProductionHost) {
       console.log("[v0] Preview environment detected - skipping service worker registration")
       console.log("[v0] PWA installation will work properly in production (sselfie.ai)")
       return // Exit early in preview environments

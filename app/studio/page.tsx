@@ -13,13 +13,18 @@ export default async function StudioPage({
 }) {
   // Await searchParams in Next.js 15+
   const params = await searchParams
+  const qs = new URLSearchParams()
+  for (const [k, v] of Object.entries(params || {})) {
+    if (typeof v === "string" && v) qs.set(k, v)
+  }
+  const returnTo = `/studio${qs.toString() ? `?${qs.toString()}` : ""}`
 
   let supabase
   try {
     supabase = await createServerClient()
   } catch (error) {
     console.error("[v0] Error creating Supabase client:", error)
-    redirect("/auth/login?error=supabase_config&returnTo=/studio")
+    redirect(`/auth/login?error=supabase_config&returnTo=${encodeURIComponent(returnTo)}`)
   }
 
   const {
@@ -27,7 +32,7 @@ export default async function StudioPage({
   } = await supabase.auth.getUser()
 
   if (!user) {
-    redirect("/auth/login?returnTo=/studio")
+    redirect(`/auth/login?returnTo=${encodeURIComponent(returnTo)}`)
   }
 
   // Check if admin is impersonating (simple cookie check)
@@ -72,7 +77,7 @@ export default async function StudioPage({
 
   if (!neonUser || userError) {
     console.error("[v0] User authenticated but could not be synced with database")
-    redirect("/auth/login?returnTo=/studio")
+    redirect(`/auth/login?returnTo=${encodeURIComponent(returnTo)}`)
   }
 
   console.log("[v0] [STUDIO PAGE] Starting credit grant check for user:", neonUser.email, neonUser.id)
