@@ -108,7 +108,8 @@ async function reconcileGeneratedImages(limit: number) {
       AND (
         image_urls NOT LIKE 'https://%'
       )
-    ORDER BY created_at DESC
+    -- Process oldest pending rows first to prevent starvation when volume exceeds per-run limit.
+    ORDER BY created_at ASC
     LIMIT ${limit}
   `
 
