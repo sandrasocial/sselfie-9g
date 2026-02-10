@@ -4,6 +4,7 @@ import { logAdminError } from "@/lib/admin-error-log"
 import { resolveMarketingTemplateContent } from "@/lib/email/marketing-template-overrides"
 import { addContactsToHistorySegment } from "@/lib/resend/segment-history"
 import { getAudienceContacts } from "@/lib/resend/get-audience-contacts"
+import { acquireKvLock, releaseKvLock } from "@/lib/cache"
 import {
   claimQueueBatch,
   createMarketingSendRun,
@@ -135,6 +136,16 @@ export async function processMarketingRun(input: {
     return
   }
 
+  // Single-flight lock around Resend operations to avoid concurrent cron executions
+  // tripping Resend's strict rate limits (2 req/sec).
+  const lock = await acquireKvLock({
+    key: "lock:marketing:resend:global",
+    ttlMs: 90_000,
+  })
+  if (!lock.acquired) {
+    return
+  }
+
   if (!process.env.RESEND_AUDIENCE_ID) {
     await markEmailLogsFailed({
       runId: input.runId,
@@ -148,225 +159,230 @@ export async function processMarketingRun(input: {
       startedAt: true,
       finishedAt: true,
     })
+    await releaseKvLock({ key: "lock:marketing:resend:global", value: lock.value }).catch(() => {})
     return
   }
 
-  if (!run.started_at) {
-    await updateMarketingRunStatus({ runId: input.runId, status: "syncing", startedAt: true })
-  }
-
-  // If we previously marked these recipients failed (e.g. due to retryable Resend API errors),
-  // revive them back to queued so a later successful broadcast can mark them as sent.
-  await reviveEmailLogsForRun({ runId: input.runId, emailType }).catch(() => {})
-
-  if (Number(run.total_recipients || 0) === 0) {
-    await updateMarketingRunStatus({
-      runId: input.runId,
-      status: "completed",
-      finishedAt: true,
-    })
-    return
-  }
-
-  let existingContacts: Array<{ email: string; id: string; tags?: any[] }> = []
   try {
-    existingContacts = await getAudienceContacts(process.env.RESEND_AUDIENCE_ID)
-  } catch (error) {
-    // Ensure we don't leave the system looking "stuck queued" forever.
-    await markEmailLogsFailed({
-      runId: input.runId,
-      emailType,
-      errorMessage: error instanceof Error ? error.message : "Failed to load Resend contacts",
-    }).catch(() => {})
-
-    // Treat this as retryable: keep the run pending so processPendingMarketingRuns()
-    // (called by other cron jobs) can try again.
-    await updateMarketingRunStatus({
-      runId: input.runId,
-      status: run.started_at ? (run.status as any) : "queued",
-      errorMessage: error instanceof Error ? error.message : "Failed to load Resend contacts",
-      startedAt: !run.started_at,
-    })
-    await logAdminError({
-      toolName: "marketing-runner:load-contacts",
-      error: error instanceof Error ? error : new Error("Failed to load Resend contacts"),
-      context: { runId: input.runId },
-    }).catch(() => {})
-    return
-  }
-
-  const startTime = Date.now()
-  let keepRunning = true
-  while (keepRunning && Date.now() - startTime < maxRuntimeMs) {
-    // Only consider items that are still claimable; otherwise a handful of
-    // permanently-failed rows (attempts >= maxAttempts) can block broadcast forever.
-    const [claimable] = await sql`
-      SELECT COUNT(*)::int AS count
-      FROM marketing_send_queue
-      WHERE run_id = ${input.runId}
-        AND status IN ('queued', 'failed')
-        AND attempts < ${maxAttempts}
-    `
-    const queuedRemaining = Number((claimable as any)?.count || 0)
-
-    if (queuedRemaining > 0) {
-      const batch = await claimQueueBatch({
-        runId: input.runId,
-        batchSize,
-        maxAttempts,
-        statuses: ["queued", "failed"],
-        nextStatus: "processing",
-      })
-
-      if (batch.length === 0) {
-        keepRunning = false
-        break
-      }
-
-      const contacts = batch.map((item) => ({
-        email: item.email,
-        firstName: item.first_name,
-      }))
-
-      const syncResult = await syncMarketingContacts({
-        tagKey,
-        tagValue: "true",
-        segmentId,
-        contacts,
-        existingContacts,
-      })
-
-      if (tagKey.startsWith("sequence_")) {
-        await addContactsToHistorySegment(tagKey, contacts).catch((error) => {
-          console.error("[v0] Failed to update history segment:", error)
-        })
-      }
-
-      if (syncResult.success) {
-        await updateQueueBatchStatus({
-          ids: batch.map((item) => item.id),
-          status: "synced",
-        })
-      } else {
-        await updateQueueBatchStatus({
-          ids: batch.map((item) => item.id),
-          status: "failed",
-          errorMessage: `Sync errors: ${syncResult.errors}`,
-        })
-      }
-
-      await updateRunProcessedCount(input.runId)
-      continue
+    if (!run.started_at) {
+      await updateMarketingRunStatus({ runId: input.runId, status: "syncing", startedAt: true })
     }
 
-    const currentRun = await getRunDetails(input.runId)
-    if (currentRun?.status !== "broadcasting" && currentRun?.status !== "cleanup") {
-      const overrideContent = await resolveMarketingTemplateContent({
+    // If we previously marked these recipients failed (e.g. due to retryable Resend API errors),
+    // revive them back to queued so a later successful broadcast can mark them as sent.
+    await reviveEmailLogsForRun({ runId: input.runId, emailType }).catch(() => {})
+
+    if (Number(run.total_recipients || 0) === 0) {
+      await updateMarketingRunStatus({
+        runId: input.runId,
+        status: "completed",
+        finishedAt: true,
+      })
+      return
+    }
+
+    let existingContacts: Array<{ email: string; id: string; tags?: any[] }> = []
+    try {
+      existingContacts = await getAudienceContacts(process.env.RESEND_AUDIENCE_ID)
+    } catch (error) {
+      // Ensure we don't leave the system looking "stuck queued" forever.
+      await markEmailLogsFailed({
+        runId: input.runId,
         emailType,
-        subject: subject || undefined,
-        html: html || "",
-        text: text || "",
-      })
+        errorMessage: error instanceof Error ? error.message : "Failed to load Resend contacts",
+      }).catch(() => {})
 
-      await updateMarketingRunContent({
+      // Treat this as retryable: keep the run pending so processPendingMarketingRuns()
+      // (called by other cron jobs) can try again.
+      await updateMarketingRunStatus({
         runId: input.runId,
-        subject: overrideContent.subject || subject || null,
-        html: overrideContent.html || html || null,
-        text: overrideContent.text || text || null,
+        status: run.started_at ? (run.status as any) : "queued",
+        errorMessage: error instanceof Error ? error.message : "Failed to load Resend contacts",
+        startedAt: !run.started_at,
       })
+      await logAdminError({
+        toolName: "marketing-runner:load-contacts",
+        error: error instanceof Error ? error : new Error("Failed to load Resend contacts"),
+        context: { runId: input.runId },
+      }).catch(() => {})
+      return
+    }
 
-      await updateMarketingRunStatus({ runId: input.runId, status: "broadcasting" })
+    const startTime = Date.now()
+    let keepRunning = true
+    while (keepRunning && Date.now() - startTime < maxRuntimeMs) {
+      // Only consider items that are still claimable; otherwise a handful of
+      // permanently-failed rows (attempts >= maxAttempts) can block broadcast forever.
+      const [claimable] = await sql`
+        SELECT COUNT(*)::int AS count
+        FROM marketing_send_queue
+        WHERE run_id = ${input.runId}
+          AND status IN ('queued', 'failed')
+          AND attempts < ${maxAttempts}
+      `
+      const queuedRemaining = Number((claimable as any)?.count || 0)
 
-      try {
-        const broadcastResult = await sendMarketingBroadcast({
-          campaignKey,
+      if (queuedRemaining > 0) {
+        const batch = await claimQueueBatch({
+          runId: input.runId,
+          batchSize,
+          maxAttempts,
+          statuses: ["queued", "failed"],
+          nextStatus: "processing",
+        })
+
+        if (batch.length === 0) {
+          keepRunning = false
+          break
+        }
+
+        const contacts = batch.map((item) => ({
+          email: item.email,
+          firstName: item.first_name,
+        }))
+
+        const syncResult = await syncMarketingContacts({
+          tagKey,
+          tagValue: "true",
           segmentId,
-          subject: overrideContent.subject || subject || "",
-          html: overrideContent.html || html || "",
-          text: overrideContent.text || text || undefined,
-          estimatedRecipientCount: run.total_recipients,
+          contacts,
+          existingContacts,
         })
 
-        await markEmailLogsSent({ runId: input.runId, emailType })
+        if (tagKey.startsWith("sequence_")) {
+          await addContactsToHistorySegment(tagKey, contacts).catch((error) => {
+            console.error("[v0] Failed to update history segment:", error)
+          })
+        }
 
-        await updateMarketingRunStatus({
-          runId: input.runId,
-          status: "cleanup",
-          broadcastId: broadcastResult.broadcastId || null,
-        })
-      } catch (error) {
-        await markEmailLogsFailed({
-          runId: input.runId,
+        if (syncResult.success) {
+          await updateQueueBatchStatus({
+            ids: batch.map((item) => item.id),
+            status: "synced",
+          })
+        } else {
+          await updateQueueBatchStatus({
+            ids: batch.map((item) => item.id),
+            status: "failed",
+            errorMessage: `Sync errors: ${syncResult.errors}`,
+          })
+        }
+
+        await updateRunProcessedCount(input.runId)
+        continue
+      }
+
+      const currentRun = await getRunDetails(input.runId)
+      if (currentRun?.status !== "broadcasting" && currentRun?.status !== "cleanup") {
+        const overrideContent = await resolveMarketingTemplateContent({
           emailType,
-          errorMessage: error instanceof Error ? error.message : "Broadcast failed",
+          subject: subject || undefined,
+          html: html || "",
+          text: text || "",
         })
-        await updateMarketingRunStatus({
+
+        await updateMarketingRunContent({
           runId: input.runId,
-          status: "failed",
-          errorMessage: error instanceof Error ? error.message : "Broadcast failed",
-          finishedAt: true,
+          subject: overrideContent.subject || subject || null,
+          html: overrideContent.html || html || null,
+          text: overrideContent.text || text || null,
         })
-        await logAdminError({
-          toolName: "marketing-runner:broadcast",
-          error: error instanceof Error ? error : new Error("Broadcast failed"),
-          context: { runId: input.runId, campaignKey },
-        }).catch(() => {})
-        keepRunning = false
-        break
+
+        await updateMarketingRunStatus({ runId: input.runId, status: "broadcasting" })
+
+        try {
+          const broadcastResult = await sendMarketingBroadcast({
+            campaignKey,
+            segmentId,
+            subject: overrideContent.subject || subject || "",
+            html: overrideContent.html || html || "",
+            text: overrideContent.text || text || undefined,
+            estimatedRecipientCount: run.total_recipients,
+          })
+
+          await markEmailLogsSent({ runId: input.runId, emailType })
+
+          await updateMarketingRunStatus({
+            runId: input.runId,
+            status: "cleanup",
+            broadcastId: broadcastResult.broadcastId || null,
+          })
+        } catch (error) {
+          await markEmailLogsFailed({
+            runId: input.runId,
+            emailType,
+            errorMessage: error instanceof Error ? error.message : "Broadcast failed",
+          })
+          await updateMarketingRunStatus({
+            runId: input.runId,
+            status: "failed",
+            errorMessage: error instanceof Error ? error.message : "Broadcast failed",
+            finishedAt: true,
+          })
+          await logAdminError({
+            toolName: "marketing-runner:broadcast",
+            error: error instanceof Error ? error : new Error("Broadcast failed"),
+            context: { runId: input.runId, campaignKey },
+          }).catch(() => {})
+          keepRunning = false
+          break
+        }
       }
-    }
 
-    if ((await getRunDetails(input.runId))?.status === "cleanup") {
-      const cleanupBatch = await claimQueueBatch({
-        runId: input.runId,
-        batchSize,
-        maxAttempts,
-        statuses: ["synced", "cleanup_failed"],
-        nextStatus: "cleanup_processing",
-      })
-
-      if (cleanupBatch.length === 0) {
-        await updateMarketingRunStatus({
+      if ((await getRunDetails(input.runId))?.status === "cleanup") {
+        const cleanupBatch = await claimQueueBatch({
           runId: input.runId,
-          status: "completed",
-          finishedAt: true,
+          batchSize,
+          maxAttempts,
+          statuses: ["synced", "cleanup_failed"],
+          nextStatus: "cleanup_processing",
         })
-        keepRunning = false
-        break
+
+        if (cleanupBatch.length === 0) {
+          await updateMarketingRunStatus({
+            runId: input.runId,
+            status: "completed",
+            finishedAt: true,
+          })
+          keepRunning = false
+          break
+        }
+
+        const cleanupContacts = cleanupBatch.map((item) => ({
+          email: item.email,
+          firstName: item.first_name,
+        }))
+
+        const cleanupResult = await syncMarketingContacts({
+          tagKey,
+          tagValue: "false",
+          segmentId,
+          removeFromSegment: true,
+          contacts: cleanupContacts,
+          existingContacts,
+        })
+
+        if (cleanupResult.success) {
+          await updateQueueBatchStatus({
+            ids: cleanupBatch.map((item) => item.id),
+            status: "removed",
+          })
+        } else {
+          await updateQueueBatchStatus({
+            ids: cleanupBatch.map((item) => item.id),
+            status: "cleanup_failed",
+            errorMessage: `Cleanup errors: ${cleanupResult.errors}`,
+          })
+        }
+
+        await updateRunProcessedCount(input.runId)
+        continue
       }
 
-      const cleanupContacts = cleanupBatch.map((item) => ({
-        email: item.email,
-        firstName: item.first_name,
-      }))
-
-      const cleanupResult = await syncMarketingContacts({
-        tagKey,
-        tagValue: "false",
-        segmentId,
-        removeFromSegment: true,
-        contacts: cleanupContacts,
-        existingContacts,
-      })
-
-      if (cleanupResult.success) {
-        await updateQueueBatchStatus({
-          ids: cleanupBatch.map((item) => item.id),
-          status: "removed",
-        })
-      } else {
-        await updateQueueBatchStatus({
-          ids: cleanupBatch.map((item) => item.id),
-          status: "cleanup_failed",
-          errorMessage: `Cleanup errors: ${cleanupResult.errors}`,
-        })
-      }
-
-      await updateRunProcessedCount(input.runId)
-      continue
+      keepRunning = false
     }
-
-    keepRunning = false
+  } finally {
+    await releaseKvLock({ key: "lock:marketing:resend:global", value: lock.value }).catch(() => {})
   }
 }
 
