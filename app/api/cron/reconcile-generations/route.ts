@@ -9,6 +9,17 @@ const sql = neon(process.env.DATABASE_URL!)
 
 type SourceHint = "maya_chat" | "studio" | "unknown"
 
+function tryParseUrlArray(raw: string): string[] | null {
+  try {
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return null
+    const urls = parsed.filter((x) => typeof x === "string" && x.startsWith("https://")) as string[]
+    return urls.length > 0 ? urls : null
+  } catch {
+    return null
+  }
+}
+
 function parsePredictionRef(imageUrlsRaw: string | null | undefined): {
   kind: "prediction" | "urls" | "none"
   predictionId: string | null
@@ -26,14 +37,16 @@ function parsePredictionRef(imageUrlsRaw: string | null | undefined): {
 
   // Some legacy records store a JSON array of URLs (not a Replicate prediction id).
   if (v.startsWith("[")) {
+    const urls = tryParseUrlArray(v)
+    if (urls) return { kind: "urls", predictionId: null, urls, sourceHint: "unknown" }
+  }
+
+  // Some rows appear to store a URL-encoded JSON array, e.g. `[%22https://...%22]`.
+  if (v.startsWith("[") && v.includes("%22")) {
     try {
-      const parsed = JSON.parse(v)
-      if (Array.isArray(parsed)) {
-        const urls = parsed.filter((x) => typeof x === "string" && x.startsWith("https://")) as string[]
-        if (urls.length > 0) {
-          return { kind: "urls", predictionId: null, urls, sourceHint: "unknown" }
-        }
-      }
+      const decoded = decodeURIComponent(v)
+      const urls = decoded.startsWith("[") ? tryParseUrlArray(decoded) : null
+      if (urls) return { kind: "urls", predictionId: null, urls, sourceHint: "unknown" }
     } catch {
       // fall through
     }
@@ -70,17 +83,17 @@ async function uploadImageFromUrlToBlob(input: { url: string; key: string }) {
 
   let res = await fetch(input.url, { headers: baseHeaders, redirect: "follow", cache: "no-store" })
   if (!res.ok && (res.status === 401 || res.status === 403)) {
-    // Some CDNs block non-browser UAs; retry once with a common browser UA.
+    // Some CDNs block non-browser UAs; retry once with a common browser UA + browser-like headers.
     res = await fetch(input.url, {
-<<<<<<< HEAD
-      headers: { ...baseHeaders, "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36" },
-=======
       headers: {
         ...baseHeaders,
         "User-Agent":
           "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+        // Some hosts gate image delivery by referer/origin.
+        Referer: "https://replicate.com/",
+        Origin: "https://replicate.com",
+        "Accept-Language": "en-US,en;q=0.9",
       },
->>>>>>> codex/phase3-funnel-reports-2026-02-10
       redirect: "follow",
       cache: "no-store",
     })
