@@ -242,6 +242,17 @@ export async function getRunDetails(runId: string): Promise<any | null> {
   return row || null
 }
 
+export async function markMarketingRunForCleanupRetry(runId: string): Promise<void> {
+  await sql`
+    UPDATE marketing_send_runs
+    SET
+      status = 'cleanup',
+      error_message = NULL,
+      finished_at = NULL
+    WHERE run_id = ${runId}
+  `
+}
+
 export async function resetStuckMarketingQueueItems(input?: {
   processingStuckMins?: number
   cleanupProcessingStuckMins?: number

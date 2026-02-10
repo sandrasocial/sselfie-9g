@@ -278,6 +278,7 @@ export async function GET(request: Request) {
               AND (bs.paid_blueprint_purchased IS NULL OR bs.paid_blueprint_purchased = FALSE)
               AND (bs.welcome_email_sent = FALSE OR bs.welcome_email_sent IS NULL)
               AND bs.created_at <= NOW()
+              AND bs.created_at > NOW() - INTERVAL '7 days'
               AND s.id IS NULL
               AND el.id IS NULL
             ORDER BY bs.created_at ASC
@@ -302,6 +303,7 @@ export async function GET(request: Request) {
             WHERE (bs.paid_blueprint_purchased IS NULL OR bs.paid_blueprint_purchased = FALSE)
               AND (bs.welcome_email_sent = FALSE OR bs.welcome_email_sent IS NULL)
               AND bs.created_at <= NOW()
+              AND bs.created_at > NOW() - INTERVAL '7 days'
               AND s.id IS NULL
               AND el.id IS NULL
             ORDER BY bs.created_at ASC

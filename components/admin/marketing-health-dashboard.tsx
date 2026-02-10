@@ -51,8 +51,24 @@ function statusLabel(ok: boolean) {
   return ok ? "OK" : "NEEDS ATTENTION"
 }
 
+async function postJson(url: string, body?: any) {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body || {}),
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    const msg = String(data?.error || data?.details || `Request failed (${res.status})`)
+    throw new Error(msg)
+  }
+  return data
+}
+
 export function MarketingHealthDashboard() {
   const [days, setDays] = useState(7)
+  const [actionMessage, setActionMessage] = useState<string | null>(null)
+  const [actionLoading, setActionLoading] = useState(false)
 
   const { data, error, isLoading, mutate, isValidating } = useSWR<MarketingHealthResponse>(
     `/api/admin/marketing/health?days=${days}&limitRuns=50&limitErrors=40`,
@@ -120,6 +136,53 @@ export function MarketingHealthDashboard() {
   const reportTime = data.now ? new Date(data.now) : new Date()
   const isOk = problemCount === 0 && data.config.resendAudienceIdConfigured && data.config.resendApiKeyConfigured
 
+  const runRecovery = async () => {
+    setActionMessage(null)
+    setActionLoading(true)
+    try {
+      const result = await postJson("/api/admin/marketing/recover")
+      const resetProcessing = Number(result?.reset?.resetProcessing || 0)
+      const resetCleanup = Number(result?.reset?.resetCleanupProcessing || 0)
+      const failedRuns = Number(result?.stale?.failedRuns || 0)
+      setActionMessage(
+        `Recovery complete. Queue resets: ${resetProcessing} processing, ${resetCleanup} cleanup. Stale runs failed: ${failedRuns}.`,
+      )
+      await mutate()
+    } catch (e: any) {
+      setActionMessage(`Recovery failed: ${String(e?.message || e)}`)
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const processRun = async (runId: string) => {
+    setActionMessage(null)
+    setActionLoading(true)
+    try {
+      await postJson("/api/admin/marketing/runs/process", { runId })
+      setActionMessage("Run processed. Refreshing report.")
+      await mutate()
+    } catch (e: any) {
+      setActionMessage(`Run process failed: ${String(e?.message || e)}`)
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const retryCleanup = async (runId: string) => {
+    setActionMessage(null)
+    setActionLoading(true)
+    try {
+      await postJson("/api/admin/marketing/runs/retry-cleanup", { runId })
+      setActionMessage("Cleanup retry started. Refreshing report.")
+      await mutate()
+    } catch (e: any) {
+      setActionMessage(`Cleanup retry failed: ${String(e?.message || e)}`)
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-stone-50">
       <AdminNav />
@@ -179,6 +242,33 @@ export function MarketingHealthDashboard() {
               </>
             )}
           </div>
+        </div>
+
+        <div className="bg-white border border-stone-200 p-6 rounded-none mb-10 sm:mb-14">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h2 className="font-['Times_New_Roman'] text-xl sm:text-2xl font-extralight tracking-[0.2em] uppercase text-stone-950">
+                OPERATIONS
+              </h2>
+              <p className="text-[10px] tracking-[0.15em] uppercase text-stone-400 mt-2">
+                Recovery is safe and idempotent.
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={runRecovery}
+                disabled={actionLoading}
+                className="inline-flex items-center justify-center gap-2 bg-stone-950 text-white px-4 py-3 text-xs tracking-[0.2em] uppercase hover:bg-stone-800 transition-colors rounded-none disabled:opacity-60"
+              >
+                Run Recovery
+              </button>
+            </div>
+          </div>
+          {actionMessage && (
+            <div className="mt-4 border border-stone-200 bg-stone-50 p-4 rounded-none">
+              <p className="text-xs text-stone-700 leading-relaxed">{actionMessage}</p>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-10 sm:mb-14">
@@ -274,6 +364,7 @@ export function MarketingHealthDashboard() {
                   <th className="py-2 pr-4 text-[10px] tracking-[0.2em] uppercase text-stone-500">Status</th>
                   <th className="py-2 pr-4 text-[10px] tracking-[0.2em] uppercase text-stone-500">Recipients</th>
                   <th className="py-2 pr-4 text-[10px] tracking-[0.2em] uppercase text-stone-500">Created</th>
+                  <th className="py-2 pr-4 text-[10px] tracking-[0.2em] uppercase text-stone-500">Actions</th>
                   <th className="py-2 pr-4 text-[10px] tracking-[0.2em] uppercase text-stone-500">Error</th>
                 </tr>
               </thead>
@@ -290,6 +381,35 @@ export function MarketingHealthDashboard() {
                     <td className="py-2 pr-4 text-xs text-stone-700 whitespace-nowrap">
                       {formatAdminDate(row.created_at, "relative")}
                     </td>
+                    <td className="py-2 pr-4 text-xs text-stone-700 whitespace-nowrap">
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        {["queued", "syncing", "broadcasting", "cleanup"].includes(String(row.status || "")) && (
+                          <button
+                            onClick={() => processRun(String(row.run_id))}
+                            disabled={actionLoading}
+                            className="border border-stone-200 bg-white px-3 py-2 text-[10px] tracking-[0.2em] uppercase text-stone-700 hover:bg-stone-50 transition-colors rounded-none disabled:opacity-60"
+                          >
+                            Process
+                          </button>
+                        )}
+                        {String(row.status || "") === "failed" && String(row.broadcast_id || "").trim().length > 0 && (
+                          <button
+                            onClick={() => retryCleanup(String(row.run_id))}
+                            disabled={actionLoading}
+                            className="border border-stone-200 bg-white px-3 py-2 text-[10px] tracking-[0.2em] uppercase text-stone-700 hover:bg-stone-50 transition-colors rounded-none disabled:opacity-60"
+                          >
+                            Retry Cleanup
+                          </button>
+                        )}
+                        {String(row.status || "") !== "failed" &&
+                          !["queued", "syncing", "broadcasting", "cleanup"].includes(String(row.status || "")) && (
+                            <span className="text-[10px] tracking-[0.15em] uppercase text-stone-400">None</span>
+                          )}
+                        {String(row.status || "") === "failed" && String(row.broadcast_id || "").trim().length === 0 && (
+                          <span className="text-[10px] tracking-[0.15em] uppercase text-stone-400">None</span>
+                        )}
+                      </div>
+                    </td>
                     <td className="py-2 pr-4 text-xs text-stone-600 max-w-[420px] truncate">
                       {row.error_message ? String(row.error_message) : ""}
                     </td>
@@ -297,7 +417,7 @@ export function MarketingHealthDashboard() {
                 ))}
                 {(data.runs.latestByEmailType || []).length === 0 && (
                   <tr>
-                    <td className="py-3 text-xs text-stone-600" colSpan={5}>
+                    <td className="py-3 text-xs text-stone-600" colSpan={6}>
                       No runs found in this range.
                     </td>
                   </tr>
@@ -368,4 +488,3 @@ export function MarketingHealthDashboard() {
     </div>
   )
 }
-
