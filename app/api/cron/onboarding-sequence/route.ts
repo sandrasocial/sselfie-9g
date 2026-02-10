@@ -83,6 +83,7 @@ export async function GET(request: Request) {
         AND s.product_type = 'sselfie_studio_membership'
         AND s.is_test_mode = false
         AND s.created_at <= NOW()
+        AND s.created_at > NOW() - INTERVAL '2 hours'
         AND u.email IS NOT NULL
         AND u.email != ''
         AND el.id IS NULL
@@ -137,7 +138,7 @@ export async function GET(request: Request) {
       }
     }
 
-    // Onboarding Email Sequence Automation - Day 2 emails: subscription created 2 days ago
+    // Onboarding Email Sequence Automation - Day 2 emails: subscription created ~2 days ago (cap window to avoid very-late sends)
     const day2Users = await sql`
       SELECT DISTINCT 
         u.id,
@@ -156,6 +157,7 @@ export async function GET(request: Request) {
         AND s.product_type = 'sselfie_studio_membership'
         AND s.is_test_mode = false
         AND s.created_at <= NOW() - INTERVAL '2 days'
+        AND s.created_at > NOW() - INTERVAL '10 days'
         AND u.email IS NOT NULL
         AND u.email != ''
         AND el.id IS NULL
@@ -210,7 +212,7 @@ export async function GET(request: Request) {
       }
     }
 
-    // Onboarding Email Sequence Automation - Day 7 emails: subscription created 7 days ago
+    // Onboarding Email Sequence Automation - Day 7 emails: subscription created ~7 days ago (cap window to avoid very-late sends)
     const day7Users = await sql`
       SELECT DISTINCT 
         u.id,
@@ -229,6 +231,7 @@ export async function GET(request: Request) {
         AND s.product_type = 'sselfie_studio_membership'
         AND s.is_test_mode = false
         AND s.created_at <= NOW() - INTERVAL '7 days'
+        AND s.created_at > NOW() - INTERVAL '21 days'
         AND u.email IS NOT NULL
         AND u.email != ''
         AND el.id IS NULL

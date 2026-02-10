@@ -11,6 +11,8 @@ import {
   enqueueMarketingRecipients,
   getRunDetails,
   getNextPendingRuns,
+  failStaleMarketingRuns,
+  resetStuckMarketingQueueItems,
   updateMarketingRunStatus,
   updateQueueBatchStatus,
   updateRunProcessedCount,
@@ -84,6 +86,11 @@ export async function enqueueAndProcessMarketingRun(input: MarketingRunInput) {
 }
 
 export async function processPendingMarketingRuns(limit = 3) {
+  // Recovery pass: safe/idempotent, prevents "stuck" queue rows and stale runs
+  // from blocking future sends.
+  await resetStuckMarketingQueueItems().catch(() => {})
+  await failStaleMarketingRuns().catch(() => {})
+
   const runs = await getNextPendingRuns(limit)
   for (const run of runs) {
     await processMarketingRun({ runId: run.run_id })

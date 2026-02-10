@@ -63,6 +63,7 @@ export async function GET(request: Request) {
            OR (el.status = 'queued' AND el.sent_at > NOW() - INTERVAL '2 hours')
          )
         WHERE u.created_at <= NOW()
+        AND u.created_at > NOW() - INTERVAL '2 hours'
         AND s.status = 'active'
         AND s.product_type IN ('sselfie_studio_membership', 'brand_studio_membership')
         AND s.is_test_mode = false
@@ -82,6 +83,7 @@ export async function GET(request: Request) {
            OR (el.status = 'queued' AND el.sent_at > NOW() - INTERVAL '2 hours')
          )
         WHERE u.created_at <= NOW() - INTERVAL '3 days'
+        AND u.created_at > NOW() - INTERVAL '10 days'
         AND s.status = 'active'
         AND s.product_type IN ('sselfie_studio_membership', 'brand_studio_membership')
         AND s.is_test_mode = false
@@ -101,6 +103,7 @@ export async function GET(request: Request) {
            OR (el.status = 'queued' AND el.sent_at > NOW() - INTERVAL '2 hours')
          )
         WHERE u.created_at <= NOW() - INTERVAL '7 days'
+        AND u.created_at > NOW() - INTERVAL '21 days'
         AND s.status = 'active'
         AND s.product_type IN ('sselfie_studio_membership', 'brand_studio_membership')
         AND s.is_test_mode = false
