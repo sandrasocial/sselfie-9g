@@ -255,7 +255,9 @@ export async function getAudienceContacts(audienceId: string) {
         }
       
         // Small delay between requests to respect rate limits
-        await sleep(500)
+        // Resend enforces a strict 2 req/sec limit. Use a bit of slack to avoid 429s,
+        // especially when other cron routes also hit the API around the same minute.
+        await sleep(650)
       }
     
       // If we stopped early but have a total, warn
@@ -300,7 +302,8 @@ export async function getAudienceContacts(audienceId: string) {
     
       return activeContacts
     },
-    CACHE_TTL.SHORT,
+    // Cache contact lists longer than 60s to avoid re-fetching large audiences every cron tick.
+    CACHE_TTL.LONG,
   )
 }
 
