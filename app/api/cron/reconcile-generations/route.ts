@@ -177,14 +177,40 @@ async function reconcileGeneratedImages(limit: number) {
 
         // Best-effort gallery write.
         try {
-          for (const imageUrl of urls) {
-            const [existing] = await sql`
+          // If there's an existing row (common in Pro / gallery-first flows) with this prediction_id but no URL yet,
+          // update it rather than skipping. This helps prevent "stuck generating" rows.
+          const [existingByPrediction] = await sql`
+            SELECT id, image_url, generation_status
+            FROM ai_images
+            WHERE prediction_id = ${predictionId}
+            ORDER BY created_at ASC
+            LIMIT 1
+          `
+
+          for (let i = 0; i < urls.length; i++) {
+            const imageUrl = urls[i]
+
+            const [existingByUrl] = await sql`
               SELECT id FROM ai_images
               WHERE image_url = ${imageUrl}
-                 OR prediction_id = ${predictionId}
               LIMIT 1
             `
-            if (existing) continue
+            if (existingByUrl) continue
+
+            if (
+              i === 0 &&
+              existingByPrediction &&
+              (!existingByPrediction.image_url || !String(existingByPrediction.image_url || "").startsWith("http")) &&
+              String(existingByPrediction.generation_status || "") !== "completed"
+            ) {
+              await sql`
+                UPDATE ai_images
+                SET image_url = ${imageUrl},
+                    generation_status = 'completed'
+                WHERE id = ${existingByPrediction.id}
+              `
+              continue
+            }
 
             await sql`
               INSERT INTO ai_images (
@@ -234,136 +260,6 @@ async function reconcileGeneratedImages(limit: number) {
         toolName: "cron:reconcile-generations:generated-images",
         error: err instanceof Error ? err : new Error(String(err)),
         context: { generatedImageId: row.id, predictionId },
-      }).catch(() => {})
-    }
-  }
-
-  return { attempted, completed, failed, skipped }
-}
-
-async function reconcileFeedPosts(limit: number) {
-  const rows = await sql`
-    SELECT id, user_id, prediction_id, text_overlay
-    FROM feed_posts
-    WHERE prediction_id IS NOT NULL
-      AND (image_url IS NULL OR image_url = '')
-      AND generation_status IN ('pending', 'generating', 'processing')
-      AND updated_at < NOW() - INTERVAL '5 minutes'
-    ORDER BY updated_at ASC
-    LIMIT ${limit}
-  `
-
-  const replicate = getReplicateClient()
-  let attempted = 0
-  let completed = 0
-  let failed = 0
-  let skipped = 0
-
-  for (const row of rows as any[]) {
-    attempted += 1
-    const predictionId = String(row.prediction_id || "")
-    if (!predictionId) {
-      skipped += 1
-      continue
-    }
-
-    // Avoid heavy canvas work in cron for now; the normal polling endpoints handle overlays.
-    if (row.text_overlay) {
-      skipped += 1
-      continue
-    }
-
-    try {
-      const prediction = await replicate.predictions.get(predictionId)
-      if (prediction.status === "succeeded" && prediction.output) {
-        const imageUrl = Array.isArray(prediction.output) ? prediction.output[0] : prediction.output
-        if (!imageUrl || typeof imageUrl !== "string") {
-          skipped += 1
-          continue
-        }
-
-        let finalUrl = imageUrl
-        try {
-          finalUrl = await uploadImageFromUrlToBlob({
-            url: imageUrl,
-            key: `reconciled/feed-posts/${row.id}.png`,
-          })
-        } catch (blobErr) {
-          // Fallback: keep Replicate URL (temporary) rather than blocking completion.
-          await logAdminError({
-            toolName: "cron:reconcile-generations:feed-posts:blob",
-            error: blobErr instanceof Error ? blobErr : new Error(String(blobErr)),
-            context: { postId: row.id, predictionId },
-          }).catch(() => {})
-        }
-
-        await sql`
-          UPDATE feed_posts
-          SET image_url = ${finalUrl},
-              generation_status = 'completed',
-              updated_at = NOW()
-          WHERE id = ${row.id}
-        `
-
-        // Best-effort gallery write.
-        try {
-          const [existing] = await sql`
-            SELECT id FROM ai_images
-            WHERE prediction_id = ${predictionId}
-               OR image_url = ${finalUrl}
-            LIMIT 1
-          `
-          if (!existing) {
-            await sql`
-              INSERT INTO ai_images (
-                user_id,
-                image_url,
-                prompt,
-                generated_prompt,
-                prediction_id,
-                generation_status,
-                source,
-                category,
-                created_at
-              ) VALUES (
-                ${row.user_id},
-                ${finalUrl},
-                ${""},
-                ${""},
-                ${predictionId},
-                'completed',
-                'feed_planner',
-                'feed_post',
-                NOW()
-              )
-            `
-          }
-        } catch (galleryErr) {
-          await logAdminError({
-            toolName: "cron:reconcile-generations:feed-posts:gallery",
-            error: galleryErr instanceof Error ? galleryErr : new Error(String(galleryErr)),
-            context: { postId: row.id, predictionId },
-          }).catch(() => {})
-        }
-
-        completed += 1
-      } else if (prediction.status === "failed" || prediction.status === "canceled") {
-        await sql`
-          UPDATE feed_posts
-          SET generation_status = 'failed',
-              updated_at = NOW()
-          WHERE id = ${row.id}
-        `
-        failed += 1
-      } else {
-        skipped += 1
-      }
-    } catch (err) {
-      failed += 1
-      await logAdminError({
-        toolName: "cron:reconcile-generations:feed-posts",
-        error: err instanceof Error ? err : new Error(String(err)),
-        context: { postId: row.id, predictionId },
       }).catch(() => {})
     }
   }
@@ -449,7 +345,7 @@ async function reconcileLegacyGenerationTrackers(limit: number) {
  * Background reconciliation so users don't lose generations if they close the tab:
  * - Persist Replicate outputs to Vercel Blob for:
  *   - generated_images rows that still store prediction IDs (studio + maya classic)
- *   - feed_posts rows still generating (best-effort, no text overlay)
+ * - Feed planner reconciliation is handled by /api/cron/reconcile-feed-posts to avoid duplicate Replicate polling.
  * - Optionally: clean up legacy generation_trackers (best-effort)
  */
 export async function GET(request: NextRequest) {
@@ -471,14 +367,13 @@ export async function GET(request: NextRequest) {
     }
 
     const generatedImages = await reconcileGeneratedImages(Number(process.env.RECONCILE_GENERATIONS_LIMIT || 4))
-    const feedPosts = await reconcileFeedPosts(Number(process.env.RECONCILE_FEED_POSTS_LIMIT || 4))
 
     const legacyEnabled = process.env.RECONCILE_LEGACY_GENERATION_TRACKERS === "true"
     const legacy = legacyEnabled
       ? await reconcileLegacyGenerationTrackers(Number(process.env.RECONCILE_LEGACY_LIMIT || 3))
       : { attempted: 0, completed: 0, failed: 0, skipped: 0 }
 
-    const summary = { generatedImages, feedPosts, legacyEnabled, legacy }
+    const summary = { generatedImages, legacyEnabled, legacy }
     await cronLogger.success(summary)
     return NextResponse.json({ success: true, ...summary })
   } catch (error) {

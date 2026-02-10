@@ -125,12 +125,24 @@ export async function reconcileFeedPosts(input?: {
 
           try {
             const [existing] = await sql`
-              SELECT id FROM ai_images
+              SELECT id, image_url, generation_status FROM ai_images
               WHERE prediction_id = ${predictionId}
                  OR image_url = ${finalized.finalUrl}
               LIMIT 1
             `
-            if (!existing) {
+            if (existing) {
+              if (
+                (!existing.image_url || !String(existing.image_url || "").startsWith("http")) &&
+                String(existing.generation_status || "") !== "completed"
+              ) {
+                await sql`
+                  UPDATE ai_images
+                  SET image_url = ${finalized.finalUrl},
+                      generation_status = 'completed'
+                  WHERE id = ${existing.id}
+                `
+              }
+            } else {
               const displayCaption = String(post.caption || `Feed post ${post.position || ""}`) || null
               const fluxPrompt = String(post.prompt || "") || null
               await sql`
@@ -194,4 +206,3 @@ export async function reconcileFeedPosts(input?: {
     errors,
   }
 }
-
