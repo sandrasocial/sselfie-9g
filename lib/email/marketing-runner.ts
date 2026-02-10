@@ -36,6 +36,7 @@ export interface MarketingRunInput {
 }
 
 export async function enqueueAndProcessMarketingRun(input: MarketingRunInput) {
+  const normalizedSegmentId = String(input.segmentId || "").trim()
   const resolvedContent = await resolveMarketingTemplateContent({
     emailType: input.emailType,
     subject: input.subject,
@@ -47,7 +48,7 @@ export async function enqueueAndProcessMarketingRun(input: MarketingRunInput) {
     sequenceKey: input.sequenceKey,
     emailType: input.emailType,
     tagKey: input.tagKey,
-    segmentId: input.segmentId,
+    segmentId: normalizedSegmentId,
     campaignKey: input.campaignKey,
     subject: resolvedContent.subject,
     html: resolvedContent.html,
@@ -57,7 +58,7 @@ export async function enqueueAndProcessMarketingRun(input: MarketingRunInput) {
 
   await enqueueMarketingRecipients({
     runId,
-    segmentId: input.segmentId,
+    segmentId: normalizedSegmentId,
     recipients: input.recipients,
   })
 
@@ -109,7 +110,7 @@ export async function processMarketingRun(input: {
   if (!run) return
 
   const tagKey = input.tagKey || run.tag_key || run.sequence_key
-  const segmentId = input.segmentId || run.segment_id
+  const segmentId = String(input.segmentId || run.segment_id || "").trim() || null
   const campaignKey = input.campaignKey || run.campaign_key
   const emailType = input.emailType || run.email_type || run.sequence_key
   const subject = input.subject || run.subject
@@ -154,6 +155,10 @@ export async function processMarketingRun(input: {
     await updateMarketingRunStatus({ runId: input.runId, status: "syncing", startedAt: true })
   }
 
+  // If we previously marked these recipients failed (e.g. due to retryable Resend API errors),
+  // revive them back to queued so a later successful broadcast can mark them as sent.
+  await reviveEmailLogsForRun({ runId: input.runId, emailType }).catch(() => {})
+
   if (Number(run.total_recipients || 0) === 0) {
     await updateMarketingRunStatus({
       runId: input.runId,
@@ -167,6 +172,13 @@ export async function processMarketingRun(input: {
   try {
     existingContacts = await getAudienceContacts(process.env.RESEND_AUDIENCE_ID)
   } catch (error) {
+    // Ensure we don't leave the system looking "stuck queued" forever.
+    await markEmailLogsFailed({
+      runId: input.runId,
+      emailType,
+      errorMessage: error instanceof Error ? error.message : "Failed to load Resend contacts",
+    }).catch(() => {})
+
     // Treat this as retryable: keep the run pending so processPendingMarketingRuns()
     // (called by other cron jobs) can try again.
     await updateMarketingRunStatus({
@@ -363,7 +375,18 @@ async function insertQueuedEmailLogs(input: {
   emailType: string
   campaignId?: number | null
 }) {
-  // Allow retries: if a prior attempt exists as failed/error, revive it back to queued.
+  await sql`
+    INSERT INTO email_logs (user_email, email_type, status, sent_at, campaign_id)
+    SELECT q.email, ${input.emailType}, 'queued', NOW(), ${input.campaignId || null}
+    FROM marketing_send_queue q
+    LEFT JOIN email_logs el
+      ON el.user_email = q.email AND el.email_type = ${input.emailType}
+    WHERE q.run_id = ${input.runId}
+      AND el.id IS NULL
+  `
+}
+
+async function reviveEmailLogsForRun(input: { runId: string; emailType: string }) {
   await sql`
     UPDATE email_logs
     SET status = 'queued',
@@ -374,16 +397,6 @@ async function insertQueuedEmailLogs(input: {
       AND user_email IN (
         SELECT email FROM marketing_send_queue WHERE run_id = ${input.runId}
       )
-  `
-
-  await sql`
-    INSERT INTO email_logs (user_email, email_type, status, sent_at, campaign_id)
-    SELECT q.email, ${input.emailType}, 'queued', NOW(), ${input.campaignId || null}
-    FROM marketing_send_queue q
-    LEFT JOIN email_logs el
-      ON el.user_email = q.email AND el.email_type = ${input.emailType}
-    WHERE q.run_id = ${input.runId}
-      AND el.id IS NULL
   `
 }
 
