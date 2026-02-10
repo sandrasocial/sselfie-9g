@@ -73,7 +73,12 @@ export async function GET(request: Request) {
         s.created_at as subscription_created_at
       FROM users u
       INNER JOIN subscriptions s ON u.id = s.user_id::varchar
-      LEFT JOIN email_logs el ON el.user_email = u.email AND el.email_type = 'onboarding-day-0'
+      LEFT JOIN email_logs el ON el.user_email = u.email
+        AND el.email_type = 'onboarding-day-0'
+        AND (
+          el.status IN ('sent', 'delivered')
+          OR (el.status = 'queued' AND el.sent_at > NOW() - INTERVAL '2 hours')
+        )
       WHERE s.status = 'active'
         AND s.product_type = 'sselfie_studio_membership'
         AND s.is_test_mode = false
@@ -141,7 +146,12 @@ export async function GET(request: Request) {
         s.created_at as subscription_created_at
       FROM users u
       INNER JOIN subscriptions s ON u.id = s.user_id::varchar
-      LEFT JOIN email_logs el ON el.user_email = u.email AND el.email_type = 'onboarding-day-2'
+      LEFT JOIN email_logs el ON el.user_email = u.email
+        AND el.email_type = 'onboarding-day-2'
+        AND (
+          el.status IN ('sent', 'delivered')
+          OR (el.status = 'queued' AND el.sent_at > NOW() - INTERVAL '2 hours')
+        )
       WHERE s.status = 'active'
         AND s.product_type = 'sselfie_studio_membership'
         AND s.is_test_mode = false
@@ -209,7 +219,12 @@ export async function GET(request: Request) {
         s.created_at as subscription_created_at
       FROM users u
       INNER JOIN subscriptions s ON u.id = s.user_id::varchar
-      LEFT JOIN email_logs el ON el.user_email = u.email AND el.email_type = 'onboarding-day-7'
+      LEFT JOIN email_logs el ON el.user_email = u.email
+        AND el.email_type = 'onboarding-day-7'
+        AND (
+          el.status IN ('sent', 'delivered')
+          OR (el.status = 'queued' AND el.sent_at > NOW() - INTERVAL '2 hours')
+        )
       WHERE s.status = 'active'
         AND s.product_type = 'sselfie_studio_membership'
         AND s.is_test_mode = false

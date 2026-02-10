@@ -55,7 +55,13 @@ export async function GET(request: Request) {
         SELECT DISTINCT u.email, u.display_name as first_name, u.id, u.created_at
         FROM users u
         INNER JOIN subscriptions s ON u.id = s.user_id::varchar
-        LEFT JOIN email_logs el ON el.user_email = u.email AND el.email_type = 'welcome-day-0'
+        LEFT JOIN email_logs el
+          ON el.user_email = u.email
+         AND el.email_type = 'welcome-day-0'
+         AND (
+           el.status IN ('sent', 'delivered')
+           OR (el.status = 'queued' AND el.sent_at > NOW() - INTERVAL '2 hours')
+         )
         WHERE u.created_at <= NOW()
         AND s.status = 'active'
         AND s.product_type IN ('sselfie_studio_membership', 'brand_studio_membership')
@@ -68,7 +74,13 @@ export async function GET(request: Request) {
         SELECT DISTINCT u.email, u.display_name as first_name, u.id, u.created_at
         FROM users u
         INNER JOIN subscriptions s ON u.id = s.user_id::varchar
-        LEFT JOIN email_logs el ON el.user_email = u.email AND el.email_type = 'welcome-day-3'
+        LEFT JOIN email_logs el
+          ON el.user_email = u.email
+         AND el.email_type = 'welcome-day-3'
+         AND (
+           el.status IN ('sent', 'delivered')
+           OR (el.status = 'queued' AND el.sent_at > NOW() - INTERVAL '2 hours')
+         )
         WHERE u.created_at <= NOW() - INTERVAL '3 days'
         AND s.status = 'active'
         AND s.product_type IN ('sselfie_studio_membership', 'brand_studio_membership')
@@ -81,7 +93,13 @@ export async function GET(request: Request) {
         SELECT DISTINCT u.email, u.display_name as first_name, u.id, u.created_at
         FROM users u
         INNER JOIN subscriptions s ON u.id = s.user_id::varchar
-        LEFT JOIN email_logs el ON el.user_email = u.email AND el.email_type = 'welcome-day-7'
+        LEFT JOIN email_logs el
+          ON el.user_email = u.email
+         AND el.email_type = 'welcome-day-7'
+         AND (
+           el.status IN ('sent', 'delivered')
+           OR (el.status = 'queued' AND el.sent_at > NOW() - INTERVAL '2 hours')
+         )
         WHERE u.created_at <= NOW() - INTERVAL '7 days'
         AND s.status = 'active'
         AND s.product_type IN ('sselfie_studio_membership', 'brand_studio_membership')
@@ -246,7 +264,13 @@ export async function GET(request: Request) {
             FROM blueprint_subscribers bs
             LEFT JOIN users u ON (u.id = bs.user_id OR LOWER(u.email) = LOWER(bs.email))
             LEFT JOIN subscriptions s ON s.user_id = u.id AND s.status = 'active'
-            LEFT JOIN email_logs el ON el.user_email = bs.email AND el.email_type = 'blueprint-followup-day-0'
+            LEFT JOIN email_logs el
+              ON el.user_email = bs.email
+             AND el.email_type = 'blueprint-followup-day-0'
+             AND (
+               el.status IN ('sent', 'delivered')
+               OR (el.status = 'queued' AND el.sent_at > NOW() - INTERVAL '2 hours')
+             )
             WHERE (bs.is_paid = FALSE OR bs.is_paid IS NULL)
               AND (bs.paid_blueprint_purchased IS NULL OR bs.paid_blueprint_purchased = FALSE)
               AND (bs.welcome_email_sent = FALSE OR bs.welcome_email_sent IS NULL)
@@ -265,7 +289,13 @@ export async function GET(request: Request) {
             FROM blueprint_subscribers bs
             LEFT JOIN users u ON (u.id = bs.user_id OR LOWER(u.email) = LOWER(bs.email))
             LEFT JOIN subscriptions s ON s.user_id = u.id AND s.status = 'active'
-            LEFT JOIN email_logs el ON el.user_email = bs.email AND el.email_type = 'blueprint-followup-day-0'
+            LEFT JOIN email_logs el
+              ON el.user_email = bs.email
+             AND el.email_type = 'blueprint-followup-day-0'
+             AND (
+               el.status IN ('sent', 'delivered')
+               OR (el.status = 'queued' AND el.sent_at > NOW() - INTERVAL '2 hours')
+             )
             WHERE (bs.paid_blueprint_purchased IS NULL OR bs.paid_blueprint_purchased = FALSE)
               AND (bs.welcome_email_sent = FALSE OR bs.welcome_email_sent IS NULL)
               AND bs.created_at <= NOW()
@@ -372,4 +402,3 @@ export async function GET(request: Request) {
     )
   }
 }
-

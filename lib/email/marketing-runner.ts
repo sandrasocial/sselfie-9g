@@ -8,7 +8,6 @@ import {
   claimQueueBatch,
   createMarketingSendRun,
   enqueueMarketingRecipients,
-  getQueueCounts,
   getRunDetails,
   getNextPendingRuns,
   updateMarketingRunStatus,
@@ -119,6 +118,11 @@ export async function processMarketingRun(input: {
 
   if (!segmentId || !campaignKey || !subject || !html) {
     if (!run.started_at) {
+      await markEmailLogsFailed({
+        runId: input.runId,
+        emailType,
+        errorMessage: "Missing required broadcast metadata",
+      })
       await updateMarketingRunStatus({
         runId: input.runId,
         status: "failed",
@@ -131,6 +135,11 @@ export async function processMarketingRun(input: {
   }
 
   if (!process.env.RESEND_AUDIENCE_ID) {
+    await markEmailLogsFailed({
+      runId: input.runId,
+      emailType,
+      errorMessage: "RESEND_AUDIENCE_ID not configured",
+    })
     await updateMarketingRunStatus({
       runId: input.runId,
       status: "failed",
@@ -158,11 +167,13 @@ export async function processMarketingRun(input: {
   try {
     existingContacts = await getAudienceContacts(process.env.RESEND_AUDIENCE_ID)
   } catch (error) {
+    // Treat this as retryable: keep the run pending so processPendingMarketingRuns()
+    // (called by other cron jobs) can try again.
     await updateMarketingRunStatus({
       runId: input.runId,
-      status: "failed",
+      status: run.started_at ? (run.status as any) : "queued",
       errorMessage: error instanceof Error ? error.message : "Failed to load Resend contacts",
-      finishedAt: true,
+      startedAt: !run.started_at,
     })
     await logAdminError({
       toolName: "marketing-runner:load-contacts",
@@ -175,8 +186,16 @@ export async function processMarketingRun(input: {
   const startTime = Date.now()
   let keepRunning = true
   while (keepRunning && Date.now() - startTime < maxRuntimeMs) {
-    const counts = await getQueueCounts(input.runId)
-    const queuedRemaining = (counts.queued || 0) + (counts.failed || 0)
+    // Only consider items that are still claimable; otherwise a handful of
+    // permanently-failed rows (attempts >= maxAttempts) can block broadcast forever.
+    const [claimable] = await sql`
+      SELECT COUNT(*)::int AS count
+      FROM marketing_send_queue
+      WHERE run_id = ${input.runId}
+        AND status IN ('queued', 'failed')
+        AND attempts < ${maxAttempts}
+    `
+    const queuedRemaining = Number((claimable as any)?.count || 0)
 
     if (queuedRemaining > 0) {
       const batch = await claimQueueBatch({
@@ -264,7 +283,11 @@ export async function processMarketingRun(input: {
           broadcastId: broadcastResult.broadcastId || null,
         })
       } catch (error) {
-        await markEmailLogsFailed({ runId: input.runId, emailType })
+        await markEmailLogsFailed({
+          runId: input.runId,
+          emailType,
+          errorMessage: error instanceof Error ? error.message : "Broadcast failed",
+        })
         await updateMarketingRunStatus({
           runId: input.runId,
           status: "failed",
@@ -340,6 +363,19 @@ async function insertQueuedEmailLogs(input: {
   emailType: string
   campaignId?: number | null
 }) {
+  // Allow retries: if a prior attempt exists as failed/error, revive it back to queued.
+  await sql`
+    UPDATE email_logs
+    SET status = 'queued',
+        error_message = NULL,
+        sent_at = NOW()
+    WHERE email_type = ${input.emailType}
+      AND status IN ('failed', 'error')
+      AND user_email IN (
+        SELECT email FROM marketing_send_queue WHERE run_id = ${input.runId}
+      )
+  `
+
   await sql`
     INSERT INTO email_logs (user_email, email_type, status, sent_at, campaign_id)
     SELECT q.email, ${input.emailType}, 'queued', NOW(), ${input.campaignId || null}
@@ -364,10 +400,12 @@ async function markEmailLogsSent(input: { runId: string; emailType: string }) {
   `
 }
 
-async function markEmailLogsFailed(input: { runId: string; emailType: string }) {
+async function markEmailLogsFailed(input: { runId: string; emailType: string; errorMessage?: string }) {
   await sql`
     UPDATE email_logs
-    SET status = 'failed'
+    SET status = 'failed',
+        error_message = COALESCE(${input.errorMessage || null}, error_message),
+        sent_at = NOW()
     WHERE email_type = ${input.emailType}
       AND status = 'queued'
       AND user_email IN (

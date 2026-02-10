@@ -67,7 +67,13 @@ export async function GET(request: Request) {
     const day1Subscribers = await sql`
       SELECT fs.id, fs.email, fs.name, fs.created_at
       FROM freebie_subscribers fs
-      LEFT JOIN email_logs el ON el.user_email = fs.email AND el.email_type = 'nurture-day-1'
+      LEFT JOIN email_logs el
+        ON el.user_email = fs.email
+       AND el.email_type = 'nurture-day-1'
+       AND (
+         el.status IN ('sent', 'delivered')
+         OR (el.status = 'queued' AND el.sent_at > NOW() - INTERVAL '2 hours')
+       )
       WHERE fs.converted_to_user = FALSE
         AND fs.created_at <= NOW() - INTERVAL '1 day'
         AND el.id IS NULL
@@ -127,7 +133,13 @@ export async function GET(request: Request) {
     const day3Subscribers = await sql`
       SELECT fs.id, fs.email, fs.name, fs.created_at
       FROM freebie_subscribers fs
-      LEFT JOIN email_logs el ON el.user_email = fs.email AND el.email_type = 'nurture-day-3'
+      LEFT JOIN email_logs el
+        ON el.user_email = fs.email
+       AND el.email_type = 'nurture-day-3'
+       AND (
+         el.status IN ('sent', 'delivered')
+         OR (el.status = 'queued' AND el.sent_at > NOW() - INTERVAL '2 hours')
+       )
       WHERE fs.converted_to_user = FALSE
         AND fs.created_at <= NOW() - INTERVAL '3 days'
         AND el.id IS NULL
@@ -187,7 +199,13 @@ export async function GET(request: Request) {
     const day7Subscribers = await sql`
       SELECT fs.id, fs.email, fs.name, fs.created_at
       FROM freebie_subscribers fs
-      LEFT JOIN email_logs el ON el.user_email = fs.email AND el.email_type = 'nurture-day-7'
+      LEFT JOIN email_logs el
+        ON el.user_email = fs.email
+       AND el.email_type = 'nurture-day-7'
+       AND (
+         el.status IN ('sent', 'delivered')
+         OR (el.status = 'queued' AND el.sent_at > NOW() - INTERVAL '2 hours')
+       )
       WHERE fs.converted_to_user = FALSE
         AND fs.created_at <= NOW() - INTERVAL '7 days'
         AND el.id IS NULL
@@ -247,7 +265,13 @@ export async function GET(request: Request) {
     const day10Subscribers = await sql`
       SELECT fs.id, fs.email, fs.name, fs.created_at
       FROM freebie_subscribers fs
-      LEFT JOIN email_logs el ON el.user_email = fs.email AND el.email_type = 'nurture-day-10'
+      LEFT JOIN email_logs el
+        ON el.user_email = fs.email
+       AND el.email_type = 'nurture-day-10'
+       AND (
+         el.status IN ('sent', 'delivered')
+         OR (el.status = 'queued' AND el.sent_at > NOW() - INTERVAL '2 hours')
+       )
       WHERE fs.converted_to_user = FALSE
         AND fs.created_at <= NOW() - INTERVAL '10 days'
         AND el.id IS NULL
@@ -362,5 +386,4 @@ export async function GET(request: Request) {
     )
   }
 }
-
 

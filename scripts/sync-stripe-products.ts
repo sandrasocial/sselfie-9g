@@ -1,14 +1,5 @@
 import Stripe from "stripe"
 
-// Check for required environment variable
-if (!process.env.STRIPE_SECRET_KEY) {
-  console.error("❌ Error: STRIPE_SECRET_KEY environment variable is required")
-  console.error("Please set it in your .env file or environment")
-  process.exit(1)
-}
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
-
 // Define products inline to avoid import issues
 const PRICING_PRODUCTS = [
   {
@@ -61,10 +52,20 @@ const CREDIT_PACKAGES = [
   },
 ]
 
+function getStripeClient() {
+  const key = (process.env.STRIPE_SECRET_KEY || "").trim()
+  if (!key) {
+    throw new Error("STRIPE_SECRET_KEY environment variable is required")
+  }
+  return new Stripe(key)
+}
+
 async function syncStripeProducts() {
   console.log("🔄 Syncing Stripe products...")
 
   try {
+    const stripe = getStripeClient()
+
     console.log("\n📋 Checking for existing products...")
     const existingProducts = await stripe.products.list({ limit: 100 })
     const existingProductMap = new Map(
@@ -205,14 +206,22 @@ async function syncStripeProducts() {
   }
 }
 
-syncStripeProducts()
-  .then(() => {
-    console.log("\n✅ Done!")
-    process.exit(0)
-  })
-  .catch((error) => {
-    console.error("\n❌ Failed:", error)
-    process.exit(1)
-  })
+function shouldRunCli() {
+  const entry = process.argv[1] || ""
+  return entry.endsWith("/scripts/sync-stripe-products.ts") || entry.endsWith("\\scripts\\sync-stripe-products.ts")
+}
+
+// Only run automatically when executed as a script (CLI), never on import.
+if (shouldRunCli()) {
+  syncStripeProducts()
+    .then(() => {
+      console.log("\n✅ Done!")
+      process.exit(0)
+    })
+    .catch((error) => {
+      console.error("\n❌ Failed:", error)
+      process.exit(1)
+    })
+}
 
 export { syncStripeProducts }

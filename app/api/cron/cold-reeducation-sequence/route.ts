@@ -149,6 +149,7 @@ export async function GET(request: Request) {
       FROM email_logs
       WHERE user_email = ANY(${coldEmails})
         AND email_type IN ('reengagement-day-0', 'reengagement-day-7', 'reengagement-day-14')
+        AND status IN ('sent', 'delivered')
         AND sent_at > NOW() - INTERVAL '90 days'
     `
     const reengagementEmails = new Set(reengagementRecipients.map((r: any) => r.user_email))
@@ -173,7 +174,12 @@ export async function GET(request: Request) {
     const day1Eligible = await sql`
       SELECT DISTINCT el.user_email
       FROM (SELECT unnest(${eligibleEmails}::text[]) as user_email) el
-      LEFT JOIN email_logs el_day1 ON el_day1.user_email = el.user_email AND el_day1.email_type = 'cold-edu-day-1'
+      LEFT JOIN email_logs el_day1 ON el_day1.user_email = el.user_email
+        AND el_day1.email_type = 'cold-edu-day-1'
+        AND (
+          el_day1.status IN ('sent', 'delivered')
+          OR (el_day1.status = 'queued' AND el_day1.sent_at > NOW() - INTERVAL '2 hours')
+        )
       WHERE el_day1.id IS NULL
       
     `
@@ -231,8 +237,14 @@ export async function GET(request: Request) {
     const day3Eligible = await sql`
       SELECT DISTINCT el_day1.user_email, el_day1.sent_at as day1_sent_at
       FROM email_logs el_day1
-      LEFT JOIN email_logs el_day3 ON el_day3.user_email = el_day1.user_email AND el_day3.email_type = 'cold-edu-day-3'
+      LEFT JOIN email_logs el_day3 ON el_day3.user_email = el_day1.user_email
+        AND el_day3.email_type = 'cold-edu-day-3'
+        AND (
+          el_day3.status IN ('sent', 'delivered')
+          OR (el_day3.status = 'queued' AND el_day3.sent_at > NOW() - INTERVAL '2 hours')
+        )
       WHERE el_day1.email_type = 'cold-edu-day-1'
+        AND el_day1.status IN ('sent', 'delivered')
         AND el_day1.user_email = ANY(${eligibleEmails})
         AND el_day1.sent_at <= NOW() - INTERVAL '3 days'
         AND el_day3.id IS NULL
@@ -292,8 +304,14 @@ export async function GET(request: Request) {
     const day7Eligible = await sql`
       SELECT DISTINCT el_day1.user_email, el_day1.sent_at as day1_sent_at
       FROM email_logs el_day1
-      LEFT JOIN email_logs el_day7 ON el_day7.user_email = el_day1.user_email AND el_day7.email_type = 'cold-edu-day-7'
+      LEFT JOIN email_logs el_day7 ON el_day7.user_email = el_day1.user_email
+        AND el_day7.email_type = 'cold-edu-day-7'
+        AND (
+          el_day7.status IN ('sent', 'delivered')
+          OR (el_day7.status = 'queued' AND el_day7.sent_at > NOW() - INTERVAL '2 hours')
+        )
       WHERE el_day1.email_type = 'cold-edu-day-1'
+        AND el_day1.status IN ('sent', 'delivered')
         AND el_day1.user_email = ANY(${eligibleEmails})
         AND el_day1.sent_at <= NOW() - INTERVAL '7 days'
         AND el_day7.id IS NULL

@@ -60,7 +60,12 @@ export async function GET(request: NextRequest) {
         fs.name,
         fs.created_at
       FROM freebie_subscribers fs
-      LEFT JOIN email_logs el ON el.user_email = fs.email AND el.email_type = 'upsell-day-10'
+      LEFT JOIN email_logs el ON el.user_email = fs.email
+        AND el.email_type = 'upsell-day-10'
+        AND (
+          el.status IN ('sent', 'delivered')
+          OR (el.status = 'queued' AND el.sent_at > NOW() - INTERVAL '2 hours')
+        )
       LEFT JOIN users u ON u.email = fs.email
       WHERE fs.created_at <= NOW() - INTERVAL '10 days'
       AND fs.converted_to_user = FALSE
@@ -119,7 +124,12 @@ export async function GET(request: NextRequest) {
         fs.name,
         fs.created_at
       FROM freebie_subscribers fs
-      LEFT JOIN email_logs el ON el.user_email = fs.email AND el.email_type = 'upsell-freebie-membership'
+      LEFT JOIN email_logs el ON el.user_email = fs.email
+        AND el.email_type = 'upsell-freebie-membership'
+        AND (
+          el.status IN ('sent', 'delivered')
+          OR (el.status = 'queued' AND el.sent_at > NOW() - INTERVAL '2 hours')
+        )
       LEFT JOIN users u ON u.email = fs.email
       WHERE fs.created_at <= NOW() - INTERVAL '20 days'
       AND fs.converted_to_user = FALSE

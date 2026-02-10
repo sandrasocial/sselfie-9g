@@ -53,7 +53,12 @@ export async function GET(request: Request) {
       SELECT DISTINCT u.email, u.display_name as first_name, u.id
       FROM users u
       INNER JOIN subscriptions s ON u.id = s.user_id::varchar
-      LEFT JOIN email_logs el_day0 ON el_day0.user_email = u.email AND el_day0.email_type = 'reengagement-day-0'
+      LEFT JOIN email_logs el_day0 ON el_day0.user_email = u.email
+        AND el_day0.email_type = 'reengagement-day-0'
+        AND (
+          el_day0.status IN ('sent', 'delivered')
+          OR (el_day0.status = 'queued' AND el_day0.sent_at > NOW() - INTERVAL '2 hours')
+        )
       WHERE s.status = 'active'
       AND s.product_type IN ('sselfie_studio_membership', 'brand_studio_membership')
       AND s.is_test_mode = false
@@ -113,8 +118,15 @@ export async function GET(request: Request) {
       SELECT DISTINCT u.email, u.display_name as first_name, u.id, el_day0.sent_at as day0_sent_at
       FROM users u
       INNER JOIN subscriptions s ON u.id = s.user_id::varchar
-      INNER JOIN email_logs el_day0 ON el_day0.user_email = u.email AND el_day0.email_type = 'reengagement-day-0'
-      LEFT JOIN email_logs el_day7 ON el_day7.user_email = u.email AND el_day7.email_type = 'reengagement-day-7'
+      INNER JOIN email_logs el_day0 ON el_day0.user_email = u.email
+        AND el_day0.email_type = 'reengagement-day-0'
+        AND el_day0.status IN ('sent', 'delivered')
+      LEFT JOIN email_logs el_day7 ON el_day7.user_email = u.email
+        AND el_day7.email_type = 'reengagement-day-7'
+        AND (
+          el_day7.status IN ('sent', 'delivered')
+          OR (el_day7.status = 'queued' AND el_day7.sent_at > NOW() - INTERVAL '2 hours')
+        )
       WHERE s.status = 'active'
       AND s.product_type IN ('sselfie_studio_membership', 'brand_studio_membership')
       AND s.is_test_mode = false
@@ -174,8 +186,15 @@ export async function GET(request: Request) {
       SELECT DISTINCT u.email, u.display_name as first_name, u.id, el_day0.sent_at as day0_sent_at
       FROM users u
       INNER JOIN subscriptions s ON u.id = s.user_id::varchar
-      INNER JOIN email_logs el_day0 ON el_day0.user_email = u.email AND el_day0.email_type = 'reengagement-day-0'
-      LEFT JOIN email_logs el_day14 ON el_day14.user_email = u.email AND el_day14.email_type = 'reengagement-day-14'
+      INNER JOIN email_logs el_day0 ON el_day0.user_email = u.email
+        AND el_day0.email_type = 'reengagement-day-0'
+        AND el_day0.status IN ('sent', 'delivered')
+      LEFT JOIN email_logs el_day14 ON el_day14.user_email = u.email
+        AND el_day14.email_type = 'reengagement-day-14'
+        AND (
+          el_day14.status IN ('sent', 'delivered')
+          OR (el_day14.status = 'queued' AND el_day14.sent_at > NOW() - INTERVAL '2 hours')
+        )
       WHERE s.status = 'active'
       AND s.product_type IN ('sselfie_studio_membership', 'brand_studio_membership')
       AND s.is_test_mode = false

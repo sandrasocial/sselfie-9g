@@ -168,6 +168,7 @@ export async function GET(request: Request) {
       FROM email_logs
       WHERE user_email = ANY(${coldEmails})
         AND email_type IN ('reengagement-day-0', 'reengagement-day-7', 'reengagement-day-14')
+        AND status IN ('sent', 'delivered')
         AND sent_at > NOW() - INTERVAL '90 days'
     `
     const reengagementEmails = new Set(reengagementRecipients.map((r: any) => r.user_email))
@@ -178,6 +179,7 @@ export async function GET(request: Request) {
       FROM email_logs
       WHERE user_email = ANY(${coldEmails})
         AND email_type = 'win-back-offer'
+        AND status IN ('sent', 'delivered')
         AND sent_at > NOW() - INTERVAL '90 days'
     `
     const winbackEmails = new Set(winbackRecipients.map((r: any) => r.user_email))
@@ -243,15 +245,22 @@ export async function GET(request: Request) {
     }
 
     // Day 0: Find users who haven't received Day 0 email
-    const day0Eligible = await sql`
-      SELECT DISTINCT el.user_email
-      FROM (SELECT unnest(${eligibleEmails}::text[]) as user_email) el
-      LEFT JOIN email_logs el_day0 ON el_day0.user_email = el.user_email AND el_day0.email_type = 'reactivation-day-0'
-      LEFT JOIN email_logs el_old ON el_old.user_email = el.user_email AND el_old.email_type IN ('cold-edu-day-1', 'cold-edu-day-3', 'cold-edu-day-7')
-      WHERE el_day0.id IS NULL
-        AND el_old.id IS NULL
-      
-    `
+	    const day0Eligible = await sql`
+	      SELECT DISTINCT el.user_email
+	      FROM (SELECT unnest(${eligibleEmails}::text[]) as user_email) el
+	      LEFT JOIN email_logs el_day0 ON el_day0.user_email = el.user_email
+	        AND el_day0.email_type = 'reactivation-day-0'
+	        AND (
+	          el_day0.status IN ('sent', 'delivered')
+	          OR (el_day0.status = 'queued' AND el_day0.sent_at > NOW() - INTERVAL '2 hours')
+	        )
+	      LEFT JOIN email_logs el_old ON el_old.user_email = el.user_email
+	        AND el_old.email_type IN ('cold-edu-day-1', 'cold-edu-day-3', 'cold-edu-day-7')
+	        AND el_old.status IN ('sent', 'delivered')
+	      WHERE el_day0.id IS NULL
+	        AND el_old.id IS NULL
+	      
+	    `
 
     results.day0.found = day0Eligible.length
     console.log(`[v0] [CRON] Found ${day0Eligible.length} users for Day 0 email`)
@@ -291,16 +300,22 @@ export async function GET(request: Request) {
     }
 
     // Day 2: Find users who received Day 0 email 2 days ago
-    const day2Eligible = await sql`
-      SELECT DISTINCT el_day0.user_email, el_day0.sent_at as day0_sent_at
-      FROM email_logs el_day0
-      LEFT JOIN email_logs el_day2 ON el_day2.user_email = el_day0.user_email AND el_day2.email_type = 'reactivation-day-2'
-      WHERE el_day0.email_type = 'reactivation-day-0'
-        AND el_day0.user_email = ANY(${eligibleEmails})
-      AND el_day0.sent_at <= NOW() - INTERVAL '2 days'
-        AND el_day2.id IS NULL
-      
-    `
+	    const day2Eligible = await sql`
+	      SELECT DISTINCT el_day0.user_email, el_day0.sent_at as day0_sent_at
+	      FROM email_logs el_day0
+	      LEFT JOIN email_logs el_day2 ON el_day2.user_email = el_day0.user_email
+	        AND el_day2.email_type = 'reactivation-day-2'
+	        AND (
+	          el_day2.status IN ('sent', 'delivered')
+	          OR (el_day2.status = 'queued' AND el_day2.sent_at > NOW() - INTERVAL '2 hours')
+	        )
+	      WHERE el_day0.email_type = 'reactivation-day-0'
+	        AND el_day0.status IN ('sent', 'delivered')
+	        AND el_day0.user_email = ANY(${eligibleEmails})
+	      AND el_day0.sent_at <= NOW() - INTERVAL '2 days'
+	        AND el_day2.id IS NULL
+	      
+	    `
 
     results.day2.found = day2Eligible.length
     console.log(`[v0] [CRON] Found ${day2Eligible.length} users for Day 2 email`)
@@ -340,16 +355,22 @@ export async function GET(request: Request) {
     }
 
     // Day 5: Find users who received Day 0 email 5 days ago
-    const day5Eligible = await sql`
-      SELECT DISTINCT el_day0.user_email, el_day0.sent_at as day0_sent_at
-      FROM email_logs el_day0
-      LEFT JOIN email_logs el_day5 ON el_day5.user_email = el_day0.user_email AND el_day5.email_type = 'reactivation-day-5'
-      WHERE el_day0.email_type = 'reactivation-day-0'
-        AND el_day0.user_email = ANY(${eligibleEmails})
-      AND el_day0.sent_at <= NOW() - INTERVAL '5 days'
-        AND el_day5.id IS NULL
-      
-    `
+	    const day5Eligible = await sql`
+	      SELECT DISTINCT el_day0.user_email, el_day0.sent_at as day0_sent_at
+	      FROM email_logs el_day0
+	      LEFT JOIN email_logs el_day5 ON el_day5.user_email = el_day0.user_email
+	        AND el_day5.email_type = 'reactivation-day-5'
+	        AND (
+	          el_day5.status IN ('sent', 'delivered')
+	          OR (el_day5.status = 'queued' AND el_day5.sent_at > NOW() - INTERVAL '2 hours')
+	        )
+	      WHERE el_day0.email_type = 'reactivation-day-0'
+	        AND el_day0.status IN ('sent', 'delivered')
+	        AND el_day0.user_email = ANY(${eligibleEmails})
+	      AND el_day0.sent_at <= NOW() - INTERVAL '5 days'
+	        AND el_day5.id IS NULL
+	      
+	    `
 
     results.day5.found = day5Eligible.length
     console.log(`[v0] [CRON] Found ${day5Eligible.length} users for Day 5 email`)
@@ -389,16 +410,22 @@ export async function GET(request: Request) {
     }
 
     // Day 7: Find users who received Day 0 email 7 days ago
-    const day7Eligible = await sql`
-      SELECT DISTINCT el_day0.user_email, el_day0.sent_at as day0_sent_at
-      FROM email_logs el_day0
-      LEFT JOIN email_logs el_day7 ON el_day7.user_email = el_day0.user_email AND el_day7.email_type = 'reactivation-day-7'
-      WHERE el_day0.email_type = 'reactivation-day-0'
-        AND el_day0.user_email = ANY(${eligibleEmails})
-      AND el_day0.sent_at <= NOW() - INTERVAL '7 days'
-        AND el_day7.id IS NULL
-      
-    `
+	    const day7Eligible = await sql`
+	      SELECT DISTINCT el_day0.user_email, el_day0.sent_at as day0_sent_at
+	      FROM email_logs el_day0
+	      LEFT JOIN email_logs el_day7 ON el_day7.user_email = el_day0.user_email
+	        AND el_day7.email_type = 'reactivation-day-7'
+	        AND (
+	          el_day7.status IN ('sent', 'delivered')
+	          OR (el_day7.status = 'queued' AND el_day7.sent_at > NOW() - INTERVAL '2 hours')
+	        )
+	      WHERE el_day0.email_type = 'reactivation-day-0'
+	        AND el_day0.status IN ('sent', 'delivered')
+	        AND el_day0.user_email = ANY(${eligibleEmails})
+	      AND el_day0.sent_at <= NOW() - INTERVAL '7 days'
+	        AND el_day7.id IS NULL
+	      
+	    `
 
     results.day7.found = day7Eligible.length
     console.log(`[v0] [CRON] Found ${day7Eligible.length} users for Day 7 email`)
@@ -438,16 +465,22 @@ export async function GET(request: Request) {
     }
 
     // Day 10: Find users who received Day 0 email 10 days ago
-    const day10Eligible = await sql`
-      SELECT DISTINCT el_day0.user_email, el_day0.sent_at as day0_sent_at
-      FROM email_logs el_day0
-      LEFT JOIN email_logs el_day10 ON el_day10.user_email = el_day0.user_email AND el_day10.email_type = 'reactivation-day-10'
-      WHERE el_day0.email_type = 'reactivation-day-0'
-        AND el_day0.user_email = ANY(${eligibleEmails})
-      AND el_day0.sent_at <= NOW() - INTERVAL '10 days'
-        AND el_day10.id IS NULL
-      
-    `
+	    const day10Eligible = await sql`
+	      SELECT DISTINCT el_day0.user_email, el_day0.sent_at as day0_sent_at
+	      FROM email_logs el_day0
+	      LEFT JOIN email_logs el_day10 ON el_day10.user_email = el_day0.user_email
+	        AND el_day10.email_type = 'reactivation-day-10'
+	        AND (
+	          el_day10.status IN ('sent', 'delivered')
+	          OR (el_day10.status = 'queued' AND el_day10.sent_at > NOW() - INTERVAL '2 hours')
+	        )
+	      WHERE el_day0.email_type = 'reactivation-day-0'
+	        AND el_day0.status IN ('sent', 'delivered')
+	        AND el_day0.user_email = ANY(${eligibleEmails})
+	      AND el_day0.sent_at <= NOW() - INTERVAL '10 days'
+	        AND el_day10.id IS NULL
+	      
+	    `
 
     results.day10.found = day10Eligible.length
     console.log(`[v0] [CRON] Found ${day10Eligible.length} users for Day 10 email`)
@@ -487,16 +520,22 @@ export async function GET(request: Request) {
     }
 
     // Day 14: Find users who received Day 0 email 14 days ago
-    const day14Eligible = await sql`
-      SELECT DISTINCT el_day0.user_email, el_day0.sent_at as day0_sent_at
-      FROM email_logs el_day0
-      LEFT JOIN email_logs el_day14 ON el_day14.user_email = el_day0.user_email AND el_day14.email_type = 'reactivation-day-14'
-      WHERE el_day0.email_type = 'reactivation-day-0'
-        AND el_day0.user_email = ANY(${eligibleEmails})
-      AND el_day0.sent_at <= NOW() - INTERVAL '14 days'
-        AND el_day14.id IS NULL
-      
-    `
+	    const day14Eligible = await sql`
+	      SELECT DISTINCT el_day0.user_email, el_day0.sent_at as day0_sent_at
+	      FROM email_logs el_day0
+	      LEFT JOIN email_logs el_day14 ON el_day14.user_email = el_day0.user_email
+	        AND el_day14.email_type = 'reactivation-day-14'
+	        AND (
+	          el_day14.status IN ('sent', 'delivered')
+	          OR (el_day14.status = 'queued' AND el_day14.sent_at > NOW() - INTERVAL '2 hours')
+	        )
+	      WHERE el_day0.email_type = 'reactivation-day-0'
+	        AND el_day0.status IN ('sent', 'delivered')
+	        AND el_day0.user_email = ANY(${eligibleEmails})
+	      AND el_day0.sent_at <= NOW() - INTERVAL '14 days'
+	        AND el_day14.id IS NULL
+	      
+	    `
 
     results.day14.found = day14Eligible.length
     console.log(`[v0] [CRON] Found ${day14Eligible.length} users for Day 14 email`)
@@ -536,16 +575,22 @@ export async function GET(request: Request) {
     }
 
     // Day 20: Find users who received Day 0 email 20 days ago
-    const day20Eligible = await sql`
-      SELECT DISTINCT el_day0.user_email, el_day0.sent_at as day0_sent_at
-      FROM email_logs el_day0
-      LEFT JOIN email_logs el_day20 ON el_day20.user_email = el_day0.user_email AND el_day20.email_type = 'reactivation-day-20'
-      WHERE el_day0.email_type = 'reactivation-day-0'
-        AND el_day0.user_email = ANY(${eligibleEmails})
-      AND el_day0.sent_at <= NOW() - INTERVAL '20 days'
-        AND el_day20.id IS NULL
-      
-    `
+	    const day20Eligible = await sql`
+	      SELECT DISTINCT el_day0.user_email, el_day0.sent_at as day0_sent_at
+	      FROM email_logs el_day0
+	      LEFT JOIN email_logs el_day20 ON el_day20.user_email = el_day0.user_email
+	        AND el_day20.email_type = 'reactivation-day-20'
+	        AND (
+	          el_day20.status IN ('sent', 'delivered')
+	          OR (el_day20.status = 'queued' AND el_day20.sent_at > NOW() - INTERVAL '2 hours')
+	        )
+	      WHERE el_day0.email_type = 'reactivation-day-0'
+	        AND el_day0.status IN ('sent', 'delivered')
+	        AND el_day0.user_email = ANY(${eligibleEmails})
+	      AND el_day0.sent_at <= NOW() - INTERVAL '20 days'
+	        AND el_day20.id IS NULL
+	      
+	    `
 
     results.day20.found = day20Eligible.length
     console.log(`[v0] [CRON] Found ${day20Eligible.length} users for Day 20 email`)
@@ -585,16 +630,22 @@ export async function GET(request: Request) {
     }
 
     // Day 25: Find users who received Day 0 email 25 days ago
-    const day25Eligible = await sql`
-      SELECT DISTINCT el_day0.user_email, el_day0.sent_at as day0_sent_at
-      FROM email_logs el_day0
-      LEFT JOIN email_logs el_day25 ON el_day25.user_email = el_day0.user_email AND el_day25.email_type = 'reactivation-day-25'
-      WHERE el_day0.email_type = 'reactivation-day-0'
-        AND el_day0.user_email = ANY(${eligibleEmails})
-      AND el_day0.sent_at <= NOW() - INTERVAL '25 days'
-        AND el_day25.id IS NULL
-      
-    `
+	    const day25Eligible = await sql`
+	      SELECT DISTINCT el_day0.user_email, el_day0.sent_at as day0_sent_at
+	      FROM email_logs el_day0
+	      LEFT JOIN email_logs el_day25 ON el_day25.user_email = el_day0.user_email
+	        AND el_day25.email_type = 'reactivation-day-25'
+	        AND (
+	          el_day25.status IN ('sent', 'delivered')
+	          OR (el_day25.status = 'queued' AND el_day25.sent_at > NOW() - INTERVAL '2 hours')
+	        )
+	      WHERE el_day0.email_type = 'reactivation-day-0'
+	        AND el_day0.status IN ('sent', 'delivered')
+	        AND el_day0.user_email = ANY(${eligibleEmails})
+	      AND el_day0.sent_at <= NOW() - INTERVAL '25 days'
+	        AND el_day25.id IS NULL
+	      
+	    `
 
     results.day25.found = day25Eligible.length
     console.log(`[v0] [CRON] Found ${day25Eligible.length} users for Day 25 email`)
