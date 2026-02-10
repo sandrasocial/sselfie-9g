@@ -220,6 +220,31 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
               </p>
             </Link>
           </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-8 sm:mb-12">
+            <Link
+              href="/admin/marketing"
+              className="bg-white border border-stone-200 p-4 sm:p-6 rounded-none hover:bg-stone-50 transition-colors"
+            >
+              <h3 className="text-sm sm:text-base font-['Times_New_Roman'] text-stone-950 mb-1 tracking-[0.1em] uppercase">
+                Marketing Health
+              </h3>
+              <p className="text-[10px] sm:text-xs text-stone-400 tracking-[0.1em] uppercase">
+                Broadcasts, sequences, queue
+              </p>
+            </Link>
+            <Link
+              href="/admin/generation"
+              className="bg-white border border-stone-200 p-4 sm:p-6 rounded-none hover:bg-stone-50 transition-colors"
+            >
+              <h3 className="text-sm sm:text-base font-['Times_New_Roman'] text-stone-950 mb-1 tracking-[0.1em] uppercase">
+                Generation Health
+              </h3>
+              <p className="text-[10px] sm:text-xs text-stone-400 tracking-[0.1em] uppercase">
+                Stuck jobs, reconciliation
+              </p>
+            </Link>
+          </div>
         </div>
 
         <div className="mb-12 sm:mb-16">

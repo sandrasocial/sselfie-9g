@@ -3,8 +3,8 @@ import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getDb } from "@/lib/db"
 import { getReplicateClient } from "@/lib/replicate-client"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { put } from "@vercel/blob"
 import { hookFeedPostGeneration } from "@/lib/quality/hooks"
+import { finalizeReplicateImageToBlob } from "@/lib/feed/finalize-replicate-image"
 
 export async function GET(request: Request, { params }: { params: Promise<{ feedId: string }> }) {
   try {
@@ -85,24 +85,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ feed
           // Upload to Blob storage for permanent URL (Replicate URLs are temporary)
           let finalImageUrl = imageUrl
           try {
-            // Apply text overlay if needed (this already uploads to Blob)
-            if (post.text_overlay) {
-              finalImageUrl = await applyTextOverlay(imageUrl, post.text_overlay)
-              console.log(`[v0] [PROGRESS] ✅ Image with text overlay uploaded to Blob storage for post ${post.position}`)
-            } else {
-              // Upload to Blob storage for permanent URL (no text overlay)
-              const imageResponse = await fetch(imageUrl)
-              if (imageResponse.ok) {
-                const imageBlob = await imageResponse.blob()
-                const blob = await put(`feed-posts/${post.id}.png`, imageBlob, {
-                  access: "public",
-                  contentType: "image/png",
-                  addRandomSuffix: true,
-                })
-                finalImageUrl = blob.url
-                console.log(`[v0] [PROGRESS] ✅ Image uploaded to Blob storage for post ${post.position}`)
-              }
-            }
+            const finalized = await finalizeReplicateImageToBlob({
+              imageUrl,
+              blobPath: `feed-posts/${post.id}.png`,
+              textOverlay: post.text_overlay || null,
+            })
+            finalImageUrl = finalized.finalUrl
+            console.log(
+              `[v0] [PROGRESS] ✅ Image stored for post ${post.position} (fallback: ${finalized.usedFallback ? "yes" : "no"})`,
+            )
           } catch (blobError: any) {
             console.error(`[v0] [PROGRESS] ❌ Failed to upload to Blob, using Replicate URL (temporary):`, blobError?.message)
             // Note: Using Replicate URL is temporary - it will expire after a few hours
@@ -234,74 +225,5 @@ export async function GET(request: Request, { params }: { params: Promise<{ feed
   } catch (error) {
     console.error("[v0] Error checking feed progress:", error)
     return NextResponse.json({ error: "Failed to check progress" }, { status: 500 })
-  }
-}
-
-async function applyTextOverlay(imageUrl: string, text: string): Promise<string> {
-  try {
-    // Fetch the image
-    const response = await fetch(imageUrl)
-    const imageBlob = await response.blob()
-    const imageBuffer = await imageBlob.arrayBuffer()
-
-    // Use canvas to apply text overlay
-    const { createCanvas, loadImage } = await import("canvas")
-    const image = await loadImage(Buffer.from(imageBuffer))
-
-    const canvas = createCanvas(image.width, image.height)
-    const ctx = canvas.getContext("2d")
-
-    // Draw original image
-    ctx.drawImage(image, 0, 0)
-
-    // Apply semi-transparent overlay for text readability
-    ctx.fillStyle = "rgba(0, 0, 0, 0.3)"
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
-
-    // Configure text style
-    const fontSize = Math.floor(canvas.width / 15)
-    ctx.font = `bold ${fontSize}px "Playfair Display", serif`
-    ctx.fillStyle = "#FFFFFF"
-    ctx.textAlign = "center"
-    ctx.textBaseline = "middle"
-
-    // Word wrap text
-    const maxWidth = canvas.width * 0.8
-    const words = text.split(" ")
-    const lines: string[] = []
-    let currentLine = words[0]
-
-    for (let i = 1; i < words.length; i++) {
-      const testLine = currentLine + " " + words[i]
-      const metrics = ctx.measureText(testLine)
-      if (metrics.width > maxWidth) {
-        lines.push(currentLine)
-        currentLine = words[i]
-      } else {
-        currentLine = testLine
-      }
-    }
-    lines.push(currentLine)
-
-    // Draw text lines
-    const lineHeight = fontSize * 1.4
-    const startY = canvas.height / 2 - ((lines.length - 1) * lineHeight) / 2
-
-    lines.forEach((line, index) => {
-      ctx.fillText(line, canvas.width / 2, startY + index * lineHeight)
-    })
-
-    // Convert to buffer and upload to Blob storage
-    const buffer = canvas.toBuffer("image/jpeg", { quality: 0.9 })
-    const blob = await put(`feed-images/${Date.now()}-overlay.jpg`, buffer, {
-      access: "public",
-      contentType: "image/jpeg",
-    })
-
-    return blob.url
-  } catch (error) {
-    console.error("[v0] Error applying text overlay:", error)
-    // Return original image if overlay fails
-    return imageUrl
   }
 }
