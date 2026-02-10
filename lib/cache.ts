@@ -2,15 +2,33 @@ import { Redis } from "@upstash/redis"
 
 let redisInstance: Redis | null = null
 
+function getUpstashConfig(): { url: string; token: string } | null {
+  // Support multiple env var naming conventions (Vercel integrations differ).
+  const url =
+    process.env.UPSTASH_KV_REST_API_URL ||
+    process.env.UPSTASH_KV_KV_REST_API_URL ||
+    process.env.UPSTASH_REDIS_REST_URL ||
+    process.env.UPSTASH_KV_REST_URL
+  const token =
+    process.env.UPSTASH_KV_REST_API_TOKEN ||
+    process.env.UPSTASH_KV_KV_REST_API_TOKEN ||
+    process.env.UPSTASH_REDIS_REST_TOKEN ||
+    process.env.UPSTASH_KV_REST_TOKEN
+
+  if (!url || !token) return null
+  return { url, token }
+}
+
 function getRedis() {
   if (!redisInstance) {
-    if (!process.env.UPSTASH_KV_REST_API_URL || !process.env.UPSTASH_KV_REST_API_TOKEN) {
+    const cfg = getUpstashConfig()
+    if (!cfg) {
       console.warn("[v0] Redis not configured - caching disabled")
       return null
     }
     redisInstance = new Redis({
-      url: process.env.UPSTASH_KV_REST_API_URL,
-      token: process.env.UPSTASH_KV_REST_API_TOKEN,
+      url: cfg.url,
+      token: cfg.token,
     })
   }
   return redisInstance
@@ -37,6 +55,14 @@ export async function getCache<T>(key: string): Promise<T | null> {
 
   try {
     const data = await redis.get(key)
+    if (typeof data === "string") {
+      try {
+        return JSON.parse(data) as T
+      } catch {
+        // Some keys may be raw strings; allow callers to type accordingly.
+        return data as T
+      }
+    }
     return data as T
   } catch (error) {
     console.error(`[v0] Cache get error for ${key}:`, error)
