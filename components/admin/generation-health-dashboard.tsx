@@ -21,6 +21,11 @@ type GenerationHealthResponse = {
     stuckOver60m: number
     oldestPending: Array<any>
   }
+  proPhotoshoot: {
+    stuckOver15m: number
+    stuckOver60m: number
+    oldestPending: Array<any>
+  }
   recommendations: string[]
 }
 
@@ -129,6 +134,23 @@ export function GenerationHealthDashboard() {
     }
   }
 
+  const runReconcileProPhotoshoot = async () => {
+    setActionMessage(null)
+    setActionLoading(true)
+    try {
+      const result = await postJson("/api/admin/generation/reconcile-pro-photoshoot-grids", { limit: 6, minAgeMinutes: 2 })
+      const s = result?.summary
+      setActionMessage(
+        `Pro Photoshoot reconcile complete. Scanned ${Number(s?.scanned || 0)}. Completed ${Number(s?.completed || 0)}. Failed ${Number(s?.failed || 0)}. Still processing ${Number(s?.stillProcessing || 0)}. Frames created ${Number(s?.framesCreated || 0)}. Errors ${Number(s?.errors || 0)}.`,
+      )
+      await mutate()
+    } catch (e: any) {
+      setActionMessage(`Pro Photoshoot reconcile failed: ${String(e?.message || e)}`)
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-stone-50">
       <AdminNav />
@@ -196,6 +218,13 @@ export function GenerationHealthDashboard() {
               >
                 Reconcile AI Images
               </button>
+              <button
+                onClick={runReconcileProPhotoshoot}
+                disabled={actionLoading}
+                className="inline-flex items-center justify-center gap-2 border border-stone-200 bg-white px-4 py-3 text-xs tracking-[0.2em] uppercase text-stone-700 hover:bg-stone-50 transition-colors rounded-none disabled:opacity-60"
+              >
+                Reconcile Pro Photoshoot
+              </button>
             </div>
           </div>
           {actionMessage && (
@@ -252,6 +281,28 @@ export function GenerationHealthDashboard() {
             value={data.aiImages.oldestPending.length || 0}
             subtitle="oldest rows returned"
             source="ai_images"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-10 sm:mb-14">
+          <AdminMetricCard
+            label="Pro Grids Stuck (15m+)"
+            value={data.proPhotoshoot.stuckOver15m || 0}
+            variant={data.proPhotoshoot.stuckOver15m > 0 ? "primary" : "default"}
+            subtitle="prediction_id + missing grid_url"
+            source="pro_photoshoot_grids"
+          />
+          <AdminMetricCard
+            label="Pro Grids Stuck (60m+)"
+            value={data.proPhotoshoot.stuckOver60m || 0}
+            subtitle="oldest backlog"
+            source="pro_photoshoot_grids"
+          />
+          <AdminMetricCard
+            label="Pro Grids Pending (Sample)"
+            value={data.proPhotoshoot.oldestPending.length || 0}
+            subtitle="oldest rows returned"
+            source="pro_photoshoot_grids"
           />
         </div>
 
@@ -324,6 +375,45 @@ export function GenerationHealthDashboard() {
                     <tr>
                       <td className="py-3 text-xs text-stone-600" colSpan={3}>
                         No pending AI images found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="bg-white border border-stone-200 p-6 rounded-none">
+            <h2 className="font-['Times_New_Roman'] text-xl sm:text-2xl font-extralight tracking-[0.2em] uppercase text-stone-950 mb-4">
+              PRO GRIDS PENDING
+            </h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-stone-200">
+                    <th className="py-2 pr-4 text-[10px] tracking-[0.2em] uppercase text-stone-500">Grid</th>
+                    <th className="py-2 pr-4 text-[10px] tracking-[0.2em] uppercase text-stone-500">Status</th>
+                    <th className="py-2 pr-4 text-[10px] tracking-[0.2em] uppercase text-stone-500">Updated</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(data.proPhotoshoot.oldestPending || []).slice(0, 20).map((row: any) => (
+                    <tr key={row.id} className="border-b border-stone-100">
+                      <td className="py-2 pr-4 text-xs text-stone-900 whitespace-nowrap">
+                        {row.session_id} / {row.grid_number}
+                      </td>
+                      <td className="py-2 pr-4 text-xs text-stone-700 whitespace-nowrap">
+                        {row.generation_status || "generating"}
+                      </td>
+                      <td className="py-2 pr-4 text-xs text-stone-700 whitespace-nowrap">
+                        {formatAdminDate(row.updated_at, "relative")}
+                      </td>
+                    </tr>
+                  ))}
+                  {(data.proPhotoshoot.oldestPending || []).length === 0 && (
+                    <tr>
+                      <td className="py-3 text-xs text-stone-600" colSpan={3}>
+                        No pending Pro Photoshoot grids found.
                       </td>
                     </tr>
                   )}

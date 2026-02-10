@@ -97,6 +97,34 @@ export async function GET(request: NextRequest) {
       LIMIT ${limit}
     `
 
+    const [proGridStuck15m] = await sql`
+      SELECT COUNT(*)::int AS count
+      FROM pro_photoshoot_grids
+      WHERE prediction_id IS NOT NULL
+        AND grid_url IS NULL
+        AND generation_status = 'generating'
+        AND updated_at < NOW() - INTERVAL '15 minutes'
+    `
+
+    const [proGridStuck60m] = await sql`
+      SELECT COUNT(*)::int AS count
+      FROM pro_photoshoot_grids
+      WHERE prediction_id IS NOT NULL
+        AND grid_url IS NULL
+        AND generation_status = 'generating'
+        AND updated_at < NOW() - INTERVAL '60 minutes'
+    `
+
+    const recentProGrids = await sql`
+      SELECT id, session_id, grid_number, generation_status, prediction_id, updated_at
+      FROM pro_photoshoot_grids
+      WHERE prediction_id IS NOT NULL
+        AND grid_url IS NULL
+        AND generation_status = 'generating'
+      ORDER BY updated_at ASC
+      LIMIT ${limit}
+    `
+
     return NextResponse.json({
       now: new Date().toISOString(),
       feedPosts: {
@@ -110,9 +138,15 @@ export async function GET(request: NextRequest) {
         stuckOver60m: Number((aiStuck60m as any)?.count || 0),
         oldestPending: recentAiStuck,
       },
+      proPhotoshoot: {
+        stuckOver15m: Number((proGridStuck15m as any)?.count || 0),
+        stuckOver60m: Number((proGridStuck60m as any)?.count || 0),
+        oldestPending: recentProGrids,
+      },
       recommendations: [
         "If stuck counts grow, verify Replicate availability and check Vercel logs for reconcile-feed-posts.",
         "If Pro Mode images are stuck, run reconcile-ai-images to finalize predictions into Blob URLs.",
+        "If Pro Photoshoot grids are stuck, run reconcile-pro-photoshoot-grids to finalize and split frames.",
         "If inconsistentCompleted is non-zero, running reconciliation will normalize statuses.",
       ],
     })
