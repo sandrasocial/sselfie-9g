@@ -28,7 +28,10 @@ function getProductTypeFromEnvPrice(priceId: string | null | undefined): Product
   return map[priceId] || null
 }
 
-function deriveProductType(sub: Stripe.Subscription): ProductType | null {
+async function deriveProductType(
+  sub: Stripe.Subscription,
+  opts: { productTypeByProductId: Map<string, ProductType | null> },
+): Promise<ProductType | null> {
   const metaType = (sub.metadata as any)?.product_type
   if (metaType === "sselfie_studio_membership" || metaType === "brand_studio_membership" || metaType === "pro") {
     return metaType
@@ -44,6 +47,25 @@ function deriveProductType(sub: Stripe.Subscription): ProductType | null {
   const fromProductMeta = productAny?.metadata?.product_type
   if (fromProductMeta === "sselfie_studio_membership" || fromProductMeta === "brand_studio_membership" || fromProductMeta === "pro") {
     return fromProductMeta
+  }
+
+  const productId: string | null = typeof priceAny?.product === "string" ? priceAny.product : null
+  if (productId) {
+    const cached = opts.productTypeByProductId.get(productId)
+    if (cached !== undefined) return cached
+
+    try {
+      const product = await stripe.products.retrieve(productId)
+      const t = (product.metadata as any)?.product_type
+      const resolved: ProductType | null =
+        t === "sselfie_studio_membership" || t === "brand_studio_membership" || t === "pro" ? t : null
+      opts.productTypeByProductId.set(productId, resolved)
+      return resolved
+    } catch {
+      // If Stripe fetch fails (permissions, deleted product), don't fail the whole job.
+      opts.productTypeByProductId.set(productId, null)
+      return null
+    }
   }
 
   return null
@@ -125,12 +147,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Schema mismatch: subscriptions.stripe_customer_id missing" }, { status: 500 })
     }
 
-    // Expand customer + price.product so we can derive email + product_type cheaply.
+    // Stripe restricts expand depth; expand the price (not price.product) and fetch products only if needed.
     const subs = await stripe.subscriptions.list({
       status: "all",
       limit,
       created: { gte: startTs },
-      expand: ["data.customer", "data.items.data.price.product"],
+      expand: ["data.customer", "data.items.data.price"],
     })
 
     let processed = 0
@@ -138,11 +160,12 @@ export async function GET(request: NextRequest) {
     let skippedNoUser = 0
     let skippedNoProduct = 0
     let userStripeLinked = 0
+    const productTypeByProductId = new Map<string, ProductType | null>()
 
     for (const sub of subs.data) {
       processed += 1
 
-      const productType = deriveProductType(sub as any)
+      const productType = await deriveProductType(sub as any, { productTypeByProductId })
       if (!productType || productType === "pro") {
         skippedNoProduct += 1
         continue
@@ -354,4 +377,3 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Cron failure" }, { status: 500 })
   }
 }
-
