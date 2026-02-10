@@ -3,10 +3,33 @@ import { getUserByAuthId, getOrCreateNeonUser } from "@/lib/user-mapping"
 import { redirect } from "next/navigation"
 import { headers } from "next/headers"
 import LandingPage from "@/components/sselfie/landing-page-new"
+import { sanitizeRedirect } from "@/lib/security/url-validator"
 
 export const dynamic = "force-dynamic"
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    returnTo?: string
+    redirect_to?: string
+    redirect?: string
+    next?: string
+    tab?: string
+  }>
+}) {
+  const params = await searchParams
+  const requestedTab = typeof params.tab === "string" ? params.tab : ""
+  const redirectParam =
+    (typeof params.redirect_to === "string" && params.redirect_to) ||
+    (typeof params.returnTo === "string" && params.returnTo) ||
+    (typeof params.next === "string" && params.next) ||
+    (typeof params.redirect === "string" && params.redirect) ||
+    ""
+  const requestedRedirect =
+    redirectParam || (requestedTab ? `/studio?tab=${encodeURIComponent(requestedTab)}` : "")
+  const safeRedirect = sanitizeRedirect(requestedRedirect || null, "/studio")
+
   const supabaseConfigured = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   // If Supabase isn't configured (V0 preview), just show landing page
@@ -41,6 +64,12 @@ export default async function Home() {
   }
 
   if (user) {
+    // Deep link support: if the user is already logged in and came in via a redirect param,
+    // honor it (sanitized) instead of forcing /studio.
+    if (requestedRedirect && safeRedirect !== "/studio" && !safeRedirect.startsWith("/studio")) {
+      redirect(safeRedirect)
+    }
+
     const headersList = await headers()
     const referer = headersList.get("referer")
     const refererPath = referer ? new URL(referer).pathname : null
@@ -71,6 +100,9 @@ export default async function Home() {
 
       // Only redirect if user is properly synced to database
       if (neonUser) {
+        if (requestedRedirect && safeRedirect.startsWith("/studio")) {
+          redirect(safeRedirect)
+        }
         redirect("/studio")
       }
     }

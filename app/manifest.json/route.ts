@@ -8,7 +8,8 @@ export async function GET() {
     short_name: "SSELFIE",
     description:
       "Create stunning professional brand photos every month with AI. No photographer needed. Built by Sandra, a single mom who turned selfies into a business.",
-    start_url: "/",
+    // Add a stable start url for installed launches (useful for attribution + debugging).
+    start_url: "/?source=pwa",
     display: "standalone",
     background_color: "#000000",
     theme_color: "#000000",
@@ -63,14 +64,14 @@ export async function GET() {
         name: "Gallery",
         short_name: "Gallery",
         description: "View your photos",
-        url: "/gallery",
+        url: "/studio?tab=gallery",
         icons: [{ src: "/icon-192.png", sizes: "192x192" }],
       },
       {
         name: "Maya",
         short_name: "Maya",
         description: "Chat with Maya AI",
-        url: "/maya",
+        url: "/studio?tab=maya",
         icons: [{ src: "/icon-192.png", sizes: "192x192" }],
       },
     ],

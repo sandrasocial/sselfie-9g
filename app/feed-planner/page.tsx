@@ -11,13 +11,20 @@ export default async function FeedPlannerPage({
 }: {
   searchParams: Promise<{ purchase?: string; tab?: string }>
 }) {
+  const params = await searchParams
+  const qs = new URLSearchParams()
+  for (const [k, v] of Object.entries(params || {})) {
+    if (typeof v === "string" && v) qs.set(k, v)
+  }
+  const returnTo = `/feed-planner${qs.toString() ? `?${qs.toString()}` : ""}`
+
   const supabase = await createServerClient()
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
   if (!user) {
-    redirect("/auth/login?returnTo=/feed-planner")
+    redirect(`/auth/login?returnTo=${encodeURIComponent(returnTo)}`)
   }
 
   let neonUser = null
@@ -36,11 +43,10 @@ export default async function FeedPlannerPage({
   }
 
   if (!neonUser) {
-    redirect("/auth/login?returnTo=/feed-planner")
+    redirect(`/auth/login?returnTo=${encodeURIComponent(returnTo)}`)
   }
 
   const subscription = await getUserSubscription(neonUser.id)
-  const params = await searchParams
   const purchaseSuccess = params.purchase === "success"
   const initialTab = params.tab || "feed-planner" // Default to feed-planner tab
 
