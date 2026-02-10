@@ -176,6 +176,17 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
               </p>
             </Link>
             <Link
+              href="/admin/marketing"
+              className="bg-white border border-stone-200 p-4 sm:p-6 rounded-none hover:bg-stone-50 transition-colors"
+            >
+              <h3 className="text-sm sm:text-base font-['Times_New_Roman'] text-stone-950 mb-1 tracking-[0.1em] uppercase">
+                Marketing Health
+              </h3>
+              <p className="text-[10px] sm:text-xs text-stone-400 tracking-[0.1em] uppercase">
+                Email sequences, errors, runs
+              </p>
+            </Link>
+            <Link
               href="/admin/mission-control"
               className="bg-white border border-stone-200 p-4 sm:p-6 rounded-none hover:bg-stone-50 transition-colors"
             >
@@ -376,4 +387,3 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
     </div>
   )
 }
-
