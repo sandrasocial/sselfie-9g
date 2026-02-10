@@ -40,6 +40,7 @@ import { useToast } from "@/hooks/use-toast"
 import { SmartUpgradeBanner } from "@/components/upgrade/smart-upgrade-banner"
 import { UpgradeModal } from "@/components/upgrade/upgrade-modal"
 import type { UpgradeOpportunity } from "@/lib/upgrade-detection"
+import { trackAnalyticsEvent } from "@/lib/analytics/client"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -198,6 +199,28 @@ export default function SselfieApp({
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
+  const hasTrackedStudioOpenRef = useRef(false)
+
+  useEffect(() => {
+    if (hasTrackedStudioOpenRef.current) return
+    hasTrackedStudioOpenRef.current = true
+    trackAnalyticsEvent({
+      event: "studio_opened",
+      properties: {
+        product_type: productType || null,
+        subscription_status: subscriptionStatus || null,
+      },
+    })
+  }, [productType, subscriptionStatus])
+
+  useEffect(() => {
+    trackAnalyticsEvent({
+      event: "tab_opened",
+      properties: {
+        tab: activeTab,
+      },
+    })
+  }, [activeTab])
   
   // Fetch feed list for feed planner header
   const fetcher = async (url: string) => {

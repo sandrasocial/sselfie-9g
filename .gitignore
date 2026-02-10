@@ -33,6 +33,7 @@ next-env.d.ts
 
 # Local automation outputs
 /output/automation/
+/output/ios-deeplinks/
 
 # Local scratch
 /.tmp/

@@ -72,13 +72,20 @@ async function uploadImageFromUrlToBlob(input: { url: string; key: string }) {
   if (!res.ok && (res.status === 401 || res.status === 403)) {
     // Some CDNs block non-browser UAs; retry once with a common browser UA.
     res = await fetch(input.url, {
+<<<<<<< HEAD
       headers: { ...baseHeaders, "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36" },
+=======
+      headers: {
+        ...baseHeaders,
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+      },
+>>>>>>> codex/phase3-funnel-reports-2026-02-10
       redirect: "follow",
       cache: "no-store",
     })
   }
   if (!res.ok) throw new Error(`Failed to fetch image (${res.status} ${res.statusText}) host=${host}`)
-
   const blob = await res.blob()
   if (blob.size === 0) throw new Error("Fetched image blob is empty (0 bytes)")
 
@@ -105,7 +112,8 @@ async function reconcileGeneratedImages(limit: number) {
       AND (
         image_urls NOT LIKE 'https://%'
       )
-    ORDER BY created_at DESC
+    -- Process oldest pending rows first to prevent starvation when volume exceeds per-run limit.
+    ORDER BY created_at ASC
     LIMIT ${limit}
   `
 

@@ -99,6 +99,9 @@ export const trackPricingView = () => {
     content_name: "Pricing Section",
     content_category: "Pricing",
   })
+  import("./analytics/client")
+    .then(({ trackAnalyticsEvent }) => trackAnalyticsEvent({ event: "pricing_view" }))
+    .catch(() => {})
 }
 
 /**
@@ -115,6 +118,11 @@ export const trackCheckoutStart = (productType: string, value?: number) => {
     value: value,
     currency: "USD",
   })
+  import("./analytics/client")
+    .then(({ trackAnalyticsEvent }) =>
+      trackAnalyticsEvent({ event: "checkout_start", properties: { product_type: productType, value: value ?? null } }),
+    )
+    .catch(() => {})
 }
 
 /**
@@ -154,4 +162,16 @@ export const trackPurchase = (value: number, currency: string = "USD", items?: a
     value: value,
     currency: currency,
   })
+  import("./analytics/client")
+    .then(({ trackAnalyticsEvent }) => trackAnalyticsEvent({ event: "purchase", properties: { value, currency } }))
+    .catch(() => {})
+}
+
+export const trackLandingView = () => {
+  trackEvent("landing_view", {
+    page: "home",
+  })
+  import("./analytics/client")
+    .then(({ trackAnalyticsEvent }) => trackAnalyticsEvent({ event: "landing_view" }))
+    .catch(() => {})
 }

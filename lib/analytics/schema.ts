@@ -1,0 +1,51 @@
+import "server-only"
+
+import { getDb } from "@/lib/db"
+
+let ensured = false
+
+export async function ensureAnalyticsSchema(): Promise<void> {
+  if (ensured) return
+  ensured = true
+
+  const sql = getDb()
+
+  // Lightweight internal analytics store.
+  // This is intentionally minimal and append-only to avoid breaking production flows.
+  await sql`
+    CREATE TABLE IF NOT EXISTS analytics_events (
+      id BIGSERIAL PRIMARY KEY,
+      user_id TEXT,
+      anon_id TEXT,
+      event_name TEXT NOT NULL,
+      path TEXT,
+      referrer TEXT,
+      utm_source TEXT,
+      utm_medium TEXT,
+      utm_campaign TEXT,
+      utm_content TEXT,
+      utm_term TEXT,
+      properties JSONB NOT NULL DEFAULT '{}'::jsonb,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `
+
+  await sql`CREATE INDEX IF NOT EXISTS analytics_events_created_at_idx ON analytics_events (created_at DESC);`
+  await sql`CREATE INDEX IF NOT EXISTS analytics_events_event_created_at_idx ON analytics_events (event_name, created_at DESC);`
+  await sql`CREATE INDEX IF NOT EXISTS analytics_events_user_created_at_idx ON analytics_events (user_id, created_at DESC);`
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS analytics_reports (
+      id BIGSERIAL PRIMARY KEY,
+      report_type TEXT NOT NULL,
+      period_start TIMESTAMPTZ NOT NULL,
+      period_end TIMESTAMPTZ NOT NULL,
+      payload JSONB NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (report_type, period_start, period_end)
+    );
+  `
+
+  await sql`CREATE INDEX IF NOT EXISTS analytics_reports_type_created_at_idx ON analytics_reports (report_type, created_at DESC);`
+}
+
