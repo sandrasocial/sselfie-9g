@@ -1,19 +1,83 @@
 import { Redis } from "@upstash/redis"
+import crypto from "crypto"
 
 let redisInstance: Redis | null = null
 
+function getUpstashConfig(): { url: string; token: string } | null {
+  // Support multiple env var naming conventions (Vercel integrations differ).
+  const url =
+    process.env.UPSTASH_KV_REST_API_URL ||
+    process.env.UPSTASH_KV_KV_REST_API_URL ||
+    process.env.UPSTASH_REDIS_REST_URL ||
+    process.env.UPSTASH_KV_REST_URL
+  const token =
+    process.env.UPSTASH_KV_REST_API_TOKEN ||
+    process.env.UPSTASH_KV_KV_REST_API_TOKEN ||
+    process.env.UPSTASH_REDIS_REST_TOKEN ||
+    process.env.UPSTASH_KV_REST_TOKEN
+
+  if (!url || !token) return null
+  return { url, token }
+}
+
 function getRedis() {
   if (!redisInstance) {
-    if (!process.env.UPSTASH_KV_REST_API_URL || !process.env.UPSTASH_KV_REST_API_TOKEN) {
+    const cfg = getUpstashConfig()
+    if (!cfg) {
       console.warn("[v0] Redis not configured - caching disabled")
       return null
     }
     redisInstance = new Redis({
-      url: process.env.UPSTASH_KV_REST_API_URL,
-      token: process.env.UPSTASH_KV_REST_API_TOKEN,
+      url: cfg.url,
+      token: cfg.token,
     })
   }
   return redisInstance
+}
+
+const RELEASE_LOCK_LUA = `
+if redis.call("get", KEYS[1]) == ARGV[1] then
+  return redis.call("del", KEYS[1])
+else
+  return 0
+end
+`
+
+let releaseLockScript: ReturnType<Redis["createScript"]> | null = null
+
+function getReleaseLockScript(redis: Redis) {
+  if (!releaseLockScript) {
+    // `createScript` caches server-side via sha and retries with EVAL if needed.
+    releaseLockScript = redis.createScript<number>(RELEASE_LOCK_LUA)
+  }
+  return releaseLockScript
+}
+
+export async function acquireKvLock(input: {
+  key: string
+  ttlMs: number
+  value?: string
+}): Promise<{ acquired: boolean; value: string; locked: boolean }> {
+  const redis = getRedis()
+  const value = input.value || `lock_${crypto.randomUUID()}`
+
+  // If Redis isn't configured, allow the caller to proceed (best-effort).
+  if (!redis) return { acquired: true, value, locked: false }
+
+  const res = await redis.set(input.key, value, { nx: true, px: input.ttlMs })
+  return { acquired: res === "OK", value, locked: true }
+}
+
+export async function releaseKvLock(input: { key: string; value: string }): Promise<void> {
+  const redis = getRedis()
+  if (!redis) return
+
+  try {
+    const script = getReleaseLockScript(redis)
+    await script.exec([input.key], [input.value])
+  } catch (error) {
+    console.warn("[v0] Failed to release KV lock:", { key: input.key, error })
+  }
 }
 
 // Cache durations in seconds
@@ -37,6 +101,14 @@ export async function getCache<T>(key: string): Promise<T | null> {
 
   try {
     const data = await redis.get(key)
+    if (typeof data === "string") {
+      try {
+        return JSON.parse(data) as T
+      } catch {
+        // Some keys may be raw strings; allow callers to type accordingly.
+        return data as T
+      }
+    }
     return data as T
   } catch (error) {
     console.error(`[v0] Cache get error for ${key}:`, error)

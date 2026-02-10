@@ -73,11 +73,17 @@ export async function GET(request: Request) {
         s.created_at as subscription_created_at
       FROM users u
       INNER JOIN subscriptions s ON u.id = s.user_id::varchar
-      LEFT JOIN email_logs el ON el.user_email = u.email AND el.email_type = 'onboarding-day-0'
+      LEFT JOIN email_logs el ON el.user_email = u.email
+        AND el.email_type = 'onboarding-day-0'
+        AND (
+          el.status IN ('sent', 'delivered')
+          OR (el.status = 'queued' AND el.sent_at > NOW() - INTERVAL '2 hours')
+        )
       WHERE s.status = 'active'
         AND s.product_type = 'sselfie_studio_membership'
         AND s.is_test_mode = false
         AND s.created_at <= NOW()
+        AND s.created_at > NOW() - INTERVAL '2 hours'
         AND u.email IS NOT NULL
         AND u.email != ''
         AND el.id IS NULL
@@ -132,7 +138,7 @@ export async function GET(request: Request) {
       }
     }
 
-    // Onboarding Email Sequence Automation - Day 2 emails: subscription created 2 days ago
+    // Onboarding Email Sequence Automation - Day 2 emails: subscription created ~2 days ago (cap window to avoid very-late sends)
     const day2Users = await sql`
       SELECT DISTINCT 
         u.id,
@@ -141,11 +147,17 @@ export async function GET(request: Request) {
         s.created_at as subscription_created_at
       FROM users u
       INNER JOIN subscriptions s ON u.id = s.user_id::varchar
-      LEFT JOIN email_logs el ON el.user_email = u.email AND el.email_type = 'onboarding-day-2'
+      LEFT JOIN email_logs el ON el.user_email = u.email
+        AND el.email_type = 'onboarding-day-2'
+        AND (
+          el.status IN ('sent', 'delivered')
+          OR (el.status = 'queued' AND el.sent_at > NOW() - INTERVAL '2 hours')
+        )
       WHERE s.status = 'active'
         AND s.product_type = 'sselfie_studio_membership'
         AND s.is_test_mode = false
         AND s.created_at <= NOW() - INTERVAL '2 days'
+        AND s.created_at > NOW() - INTERVAL '10 days'
         AND u.email IS NOT NULL
         AND u.email != ''
         AND el.id IS NULL
@@ -200,7 +212,7 @@ export async function GET(request: Request) {
       }
     }
 
-    // Onboarding Email Sequence Automation - Day 7 emails: subscription created 7 days ago
+    // Onboarding Email Sequence Automation - Day 7 emails: subscription created ~7 days ago (cap window to avoid very-late sends)
     const day7Users = await sql`
       SELECT DISTINCT 
         u.id,
@@ -209,11 +221,17 @@ export async function GET(request: Request) {
         s.created_at as subscription_created_at
       FROM users u
       INNER JOIN subscriptions s ON u.id = s.user_id::varchar
-      LEFT JOIN email_logs el ON el.user_email = u.email AND el.email_type = 'onboarding-day-7'
+      LEFT JOIN email_logs el ON el.user_email = u.email
+        AND el.email_type = 'onboarding-day-7'
+        AND (
+          el.status IN ('sent', 'delivered')
+          OR (el.status = 'queued' AND el.sent_at > NOW() - INTERVAL '2 hours')
+        )
       WHERE s.status = 'active'
         AND s.product_type = 'sselfie_studio_membership'
         AND s.is_test_mode = false
         AND s.created_at <= NOW() - INTERVAL '7 days'
+        AND s.created_at > NOW() - INTERVAL '21 days'
         AND u.email IS NOT NULL
         AND u.email != ''
         AND el.id IS NULL

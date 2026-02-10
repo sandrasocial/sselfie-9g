@@ -76,7 +76,12 @@ export async function GET(request: Request) {
         u.display_name
       FROM subscriptions s
       INNER JOIN users u ON u.id = s.user_id
-      LEFT JOIN email_logs el ON el.user_email = u.email AND el.email_type = 'win-back-offer'
+      LEFT JOIN email_logs el ON el.user_email = u.email
+        AND el.email_type = 'win-back-offer'
+        AND (
+          el.status IN ('sent', 'delivered')
+          OR (el.status = 'queued' AND el.sent_at > NOW() - INTERVAL '2 hours')
+        )
       WHERE s.status = 'canceled'
         AND s.updated_at <= NOW() - INTERVAL '10 days'
         AND u.email IS NOT NULL

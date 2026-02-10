@@ -1,10 +1,30 @@
 import { Redis } from "@upstash/redis"
 import type { NextRequest } from "next/server"
 
-const redis = new Redis({
-  url: process.env.UPSTASH_KV_REST_API_URL!,
-  token: process.env.UPSTASH_KV_REST_API_TOKEN!,
-})
+let redis: Redis | null = null
+
+function getUpstashConfig(): { url: string; token: string } | null {
+  const url =
+    process.env.UPSTASH_KV_REST_API_URL ||
+    process.env.UPSTASH_KV_KV_REST_API_URL ||
+    process.env.UPSTASH_REDIS_REST_URL ||
+    process.env.UPSTASH_KV_REST_URL
+  const token =
+    process.env.UPSTASH_KV_REST_API_TOKEN ||
+    process.env.UPSTASH_KV_KV_REST_API_TOKEN ||
+    process.env.UPSTASH_REDIS_REST_TOKEN ||
+    process.env.UPSTASH_KV_REST_TOKEN
+  if (!url || !token) return null
+  return { url, token }
+}
+
+function getRedis(): Redis | null {
+  if (redis) return redis
+  const cfg = getUpstashConfig()
+  if (!cfg) return null
+  redis = new Redis({ url: cfg.url, token: cfg.token })
+  return redis
+}
 
 export interface RateLimitConfig {
   interval: number // Time window in seconds
@@ -33,11 +53,24 @@ export async function checkRateLimit(
   const key = `ratelimit:${type}:${identifier}`
 
   try {
+    const client = getRedis()
+    if (!client) {
+      // Fail open if Redis isn't configured (avoid breaking production traffic).
+      const now = Date.now()
+      const reset = Math.ceil((now + config.interval * 1000) / 1000)
+      return {
+        success: true,
+        limit: config.limit,
+        remaining: config.limit,
+        reset,
+      }
+    }
+
     const now = Date.now()
     const windowStart = now - config.interval * 1000
 
     // Use Redis sorted set for sliding window rate limiting
-    const pipeline = redis.pipeline()
+    const pipeline = client.pipeline()
 
     // Remove old entries outside the window
     pipeline.zremrangebyscore(key, 0, windowStart)

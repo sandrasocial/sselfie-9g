@@ -11,6 +11,8 @@ export function AdminNav() {
   const navItems = [
     { label: 'DASHBOARD', href: '/admin' },
     { label: 'AGENTS', href: '/admin/agents' },
+    { label: 'MARKETING', href: '/admin/marketing' },
+    { label: 'GENERATION', href: '/admin/generation' },
     { label: 'ANALYTICS', href: '/admin/analytics' },
     { label: 'USERS', href: '/admin/credits' }
   ]

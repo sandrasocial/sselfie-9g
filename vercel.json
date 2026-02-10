@@ -79,7 +79,26 @@
     {
       "path": "/api/cron/cron-health-check",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/reconcile-feed-posts",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/reconcile-ai-images",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/reconcile-pro-photoshoot-grids",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/reconcile-generations",
+      "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/cron/reconcile-subscriptions",
+      "schedule": "*/30 * * * *"
     }
   ]
 }
-

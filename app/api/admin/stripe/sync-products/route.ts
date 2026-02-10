@@ -4,6 +4,8 @@ import { createServerClient } from "@/lib/supabase/server"
 
 export async function POST() {
   try {
+    const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "ssa@ssasocial.com").trim().toLowerCase()
+
     // Verify admin access
     const supabase = await createServerClient()
     const {
@@ -14,8 +16,9 @@ export async function POST() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Check if user is admin (you can add your own admin check logic here)
-    // For now, we'll just check if they're authenticated
+    if ((user.email || "").trim().toLowerCase() !== ADMIN_EMAIL) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
 
     // Sync products
     await syncStripeProducts()

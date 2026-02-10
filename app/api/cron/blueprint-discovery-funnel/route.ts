@@ -148,35 +148,38 @@ export async function GET(request: Request) {
     console.log(`[v0] [CRON] Excluded ${activeSubscriberEmails.size} active subscribers`)
 
     // Exclude users who received reactivation emails in last 90 days
-    const reactivationRecipients = await sql`
-      SELECT DISTINCT user_email
-      FROM email_logs
-      WHERE user_email = ANY(${allEmails})
-        AND email_type LIKE 'reactivation-day-%'
-        AND sent_at > NOW() - INTERVAL '90 days'
-    `
+	    const reactivationRecipients = await sql`
+	      SELECT DISTINCT user_email
+	      FROM email_logs
+	      WHERE user_email = ANY(${allEmails})
+	        AND email_type LIKE 'reactivation-day-%'
+	        AND status IN ('sent', 'delivered')
+	        AND sent_at > NOW() - INTERVAL '90 days'
+	    `
     const reactivationEmails = new Set(reactivationRecipients.map((r: any) => r.user_email))
     console.log(`[v0] [CRON] Excluded ${reactivationEmails.size} reactivation recipients`)
 
     // Exclude users who received re-engagement emails in last 90 days
-    const reengagementRecipients = await sql`
-      SELECT DISTINCT user_email
-      FROM email_logs
-      WHERE user_email = ANY(${allEmails})
-        AND email_type IN ('reengagement-day-0', 'reengagement-day-7', 'reengagement-day-14')
-        AND sent_at > NOW() - INTERVAL '90 days'
-    `
+	    const reengagementRecipients = await sql`
+	      SELECT DISTINCT user_email
+	      FROM email_logs
+	      WHERE user_email = ANY(${allEmails})
+	        AND email_type IN ('reengagement-day-0', 'reengagement-day-7', 'reengagement-day-14')
+	        AND status IN ('sent', 'delivered')
+	        AND sent_at > NOW() - INTERVAL '90 days'
+	    `
     const reengagementEmails = new Set(reengagementRecipients.map((r: any) => r.user_email))
     console.log(`[v0] [CRON] Excluded ${reengagementEmails.size} re-engagement recipients`)
 
     // Exclude users who received win-back emails in last 90 days
-    const winbackRecipients = await sql`
-      SELECT DISTINCT user_email
-      FROM email_logs
-      WHERE user_email = ANY(${allEmails})
-        AND email_type = 'win-back-offer'
-        AND sent_at > NOW() - INTERVAL '90 days'
-    `
+	    const winbackRecipients = await sql`
+	      SELECT DISTINCT user_email
+	      FROM email_logs
+	      WHERE user_email = ANY(${allEmails})
+	        AND email_type = 'win-back-offer'
+	        AND status IN ('sent', 'delivered')
+	        AND sent_at > NOW() - INTERVAL '90 days'
+	    `
     const winbackEmails = new Set(winbackRecipients.map((r: any) => r.user_email))
     console.log(`[v0] [CRON] Excluded ${winbackEmails.size} win-back recipients`)
 
@@ -204,13 +207,18 @@ export async function GET(request: Request) {
     }
 
     // Email 1: Find users who haven't received Email 1 and haven't completed blueprint
-    const email1Eligible = await sql`
-      SELECT DISTINCT el.user_email
-      FROM (SELECT unnest(${eligibleEmails}::text[]) as user_email) el
-      LEFT JOIN email_logs el_email1 ON el_email1.user_email = el.user_email AND el_email1.email_type = 'blueprint-discovery-1'
-      LEFT JOIN blueprint_subscribers bs ON bs.email = el.user_email
-      WHERE el_email1.id IS NULL
-        AND bs.id IS NULL
+	    const email1Eligible = await sql`
+	      SELECT DISTINCT el.user_email
+	      FROM (SELECT unnest(${eligibleEmails}::text[]) as user_email) el
+	      LEFT JOIN email_logs el_email1 ON el_email1.user_email = el.user_email
+	        AND el_email1.email_type = 'blueprint-discovery-1'
+	        AND (
+	          el_email1.status IN ('sent', 'delivered')
+	          OR (el_email1.status = 'queued' AND el_email1.sent_at > NOW() - INTERVAL '2 hours')
+	        )
+	      LEFT JOIN blueprint_subscribers bs ON bs.email = el.user_email
+	      WHERE el_email1.id IS NULL
+	        AND bs.id IS NULL
       
     `
 
@@ -265,12 +273,17 @@ export async function GET(request: Request) {
 
     // Email 2: Find blueprint_subscribers who completed blueprint 3 days ago, haven't received Email 2
     // Note: These users ARE in blueprint_subscribers (they completed it), so we query that table directly
-    const email2Eligible = await sql`
-      SELECT DISTINCT bs.email, bs.blueprint_completed_at
-      FROM blueprint_subscribers bs
-      LEFT JOIN email_logs el_email2 ON el_email2.user_email = bs.email AND el_email2.email_type = 'blueprint-discovery-2'
-      LEFT JOIN subscriptions s ON s.user_id = (SELECT id::varchar FROM users WHERE email = bs.email LIMIT 1)
-      WHERE bs.blueprint_completed = true
+	    const email2Eligible = await sql`
+	      SELECT DISTINCT bs.email, bs.blueprint_completed_at
+	      FROM blueprint_subscribers bs
+	      LEFT JOIN email_logs el_email2 ON el_email2.user_email = bs.email
+	        AND el_email2.email_type = 'blueprint-discovery-2'
+	        AND (
+	          el_email2.status IN ('sent', 'delivered')
+	          OR (el_email2.status = 'queued' AND el_email2.sent_at > NOW() - INTERVAL '2 hours')
+	        )
+	      LEFT JOIN subscriptions s ON s.user_id = (SELECT id::varchar FROM users WHERE email = bs.email LIMIT 1)
+	      WHERE bs.blueprint_completed = true
         AND bs.email = ANY(${allEmails})
         AND (s.status IS NULL OR s.status != 'active' OR s.is_test_mode = true)
         AND bs.blueprint_completed_at <= NOW() - INTERVAL '3 days'
@@ -328,12 +341,17 @@ export async function GET(request: Request) {
     }
 
     // Email 3: Find blueprint_subscribers who generated grid 5 days ago, haven't received Email 3
-    const email3Eligible = await sql`
-      SELECT DISTINCT bs.email, bs.grid_generated_at
-      FROM blueprint_subscribers bs
-      LEFT JOIN email_logs el_email3 ON el_email3.user_email = bs.email AND el_email3.email_type = 'blueprint-discovery-3'
-      LEFT JOIN subscriptions s ON s.user_id = (SELECT id::varchar FROM users WHERE email = bs.email LIMIT 1)
-      WHERE bs.grid_generated = true
+	    const email3Eligible = await sql`
+	      SELECT DISTINCT bs.email, bs.grid_generated_at
+	      FROM blueprint_subscribers bs
+	      LEFT JOIN email_logs el_email3 ON el_email3.user_email = bs.email
+	        AND el_email3.email_type = 'blueprint-discovery-3'
+	        AND (
+	          el_email3.status IN ('sent', 'delivered')
+	          OR (el_email3.status = 'queued' AND el_email3.sent_at > NOW() - INTERVAL '2 hours')
+	        )
+	      LEFT JOIN subscriptions s ON s.user_id = (SELECT id::varchar FROM users WHERE email = bs.email LIMIT 1)
+	      WHERE bs.grid_generated = true
         AND bs.email = ANY(${allEmails})
         AND (s.status IS NULL OR s.status != 'active' OR s.is_test_mode = true)
         AND bs.grid_generated_at <= NOW() - INTERVAL '5 days'
@@ -392,15 +410,20 @@ export async function GET(request: Request) {
     }
 
     // Email 4: Find blueprint_subscribers who signed up (converted_to_user) 7 days ago, haven't received Email 4
-    const email4Eligible = await sql`
-      SELECT DISTINCT bs.email, bs.converted_at
-      FROM blueprint_subscribers bs
-      INNER JOIN users u ON u.email = bs.email
-      LEFT JOIN email_logs el_email4 ON el_email4.user_email = bs.email AND el_email4.email_type = 'blueprint-discovery-4'
-      LEFT JOIN subscriptions s ON s.user_id = u.id::varchar
-      WHERE bs.converted_to_user = true
-        AND bs.email = ANY(${allEmails})
-        AND (s.status IS NULL OR s.status != 'active' OR s.is_test_mode = true)
+	    const email4Eligible = await sql`
+	      SELECT DISTINCT bs.email, bs.converted_at
+	      FROM blueprint_subscribers bs
+	      INNER JOIN users u ON u.email = bs.email
+	      LEFT JOIN email_logs el_email4 ON el_email4.user_email = bs.email
+	        AND el_email4.email_type = 'blueprint-discovery-4'
+	        AND (
+	          el_email4.status IN ('sent', 'delivered')
+	          OR (el_email4.status = 'queued' AND el_email4.sent_at > NOW() - INTERVAL '2 hours')
+	        )
+	      LEFT JOIN subscriptions s ON s.user_id = u.id::varchar
+	      WHERE bs.converted_to_user = true
+	        AND bs.email = ANY(${allEmails})
+	        AND (s.status IS NULL OR s.status != 'active' OR s.is_test_mode = true)
         AND bs.converted_at <= NOW() - INTERVAL '7 days'
         AND bs.converted_at > NOW() - INTERVAL '8 days'
         AND el_email4.id IS NULL
@@ -461,14 +484,19 @@ export async function GET(request: Request) {
     const email5Eligible = await sql`
       SELECT DISTINCT u.email, MIN(mcm.created_at) as first_message_at
       FROM users u
-      INNER JOIN blueprint_subscribers bs ON bs.email = u.email
-      INNER JOIN maya_chats mc ON mc.user_id = u.id::varchar
-      INNER JOIN maya_chat_messages mcm ON mcm.chat_id = mc.id
-      LEFT JOIN email_logs el_email5 ON el_email5.user_email = u.email AND el_email5.email_type = 'blueprint-discovery-5'
-      LEFT JOIN subscriptions s ON s.user_id = u.id::varchar
-      WHERE u.email = ANY(${allEmails})
-        AND mcm.role = 'user'
-        AND (s.status IS NULL OR s.status != 'active' OR s.is_test_mode = true)
+	      INNER JOIN blueprint_subscribers bs ON bs.email = u.email
+	      INNER JOIN maya_chats mc ON mc.user_id = u.id::varchar
+	      INNER JOIN maya_chat_messages mcm ON mcm.chat_id = mc.id
+	      LEFT JOIN email_logs el_email5 ON el_email5.user_email = u.email
+	        AND el_email5.email_type = 'blueprint-discovery-5'
+	        AND (
+	          el_email5.status IN ('sent', 'delivered')
+	          OR (el_email5.status = 'queued' AND el_email5.sent_at > NOW() - INTERVAL '2 hours')
+	        )
+	      LEFT JOIN subscriptions s ON s.user_id = u.id::varchar
+	      WHERE u.email = ANY(${allEmails})
+	        AND mcm.role = 'user'
+	        AND (s.status IS NULL OR s.status != 'active' OR s.is_test_mode = true)
         AND mcm.created_at <= NOW() - INTERVAL '10 days'
         AND el_email5.id IS NULL
       GROUP BY u.email

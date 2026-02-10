@@ -1,0 +1,197 @@
+/**
+ * Top friction digest (read-only).
+ *
+ * Clusters operational issues that directly kill conversion:
+ * - cron failures
+ * - admin_email_errors (includes email + other tool errors)
+ * - webhook_errors
+ * - generation failures / stuck generations (best-effort)
+ *
+ * Writes: output/automation/friction-digest-YYYY-MM-DD.md
+ */
+import { neon } from "@neondatabase/serverless"
+import * as dotenv from "dotenv"
+import { mkdirSync, writeFileSync } from "node:fs"
+import { resolve } from "node:path"
+
+dotenv.config({ path: resolve(process.cwd(), ".env.local") })
+
+const sql = neon(process.env.DATABASE_URL!)
+
+function pad2(n: number) {
+  return String(n).padStart(2, "0")
+}
+
+function outPath(now: Date) {
+  const dir = resolve(process.cwd(), "output", "automation")
+  mkdirSync(dir, { recursive: true })
+  const name = `friction-digest-${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}.md`
+  return resolve(dir, name)
+}
+
+function iso(x: any) {
+  try {
+    return new Date(x).toISOString()
+  } catch {
+    return String(x ?? "")
+  }
+}
+
+async function safe<T>(label: string, fn: () => Promise<T>): Promise<{ ok: true; value: T } | { ok: false; error: string }> {
+  try {
+    return { ok: true, value: await fn() }
+  } catch (err: any) {
+    return { ok: false, error: `${label}: ${err?.message || String(err)}` }
+  }
+}
+
+async function main() {
+  const now = new Date()
+  const hours = Number(process.env.FRICTION_DIGEST_WINDOW_HOURS || 24)
+
+  const cronFailures = await safe("cron_failures", async () => {
+    return await sql`
+      SELECT job_name, COUNT(*)::int AS count, MAX(started_at) AS last_seen
+      FROM admin_cron_runs
+      WHERE status = 'failed'
+        AND started_at > NOW() - ${hours} * INTERVAL '1 hour'
+      GROUP BY job_name
+      ORDER BY count DESC, last_seen DESC
+      LIMIT 25
+    `
+  })
+
+  const topAdminErrors = await safe("admin_email_errors", async () => {
+    return await sql`
+      SELECT tool_name, COUNT(*)::int AS count, MAX(created_at) AS last_seen
+      FROM admin_email_errors
+      WHERE created_at > NOW() - ${hours} * INTERVAL '1 hour'
+      GROUP BY tool_name
+      ORDER BY count DESC, last_seen DESC
+      LIMIT 25
+    `
+  })
+
+  const webhookErrors = await safe("webhook_errors", async () => {
+    return await sql`
+      SELECT event_type, COUNT(*)::int AS count, MAX(created_at) AS last_seen
+      FROM webhook_errors
+      WHERE created_at > NOW() - ${hours} * INTERVAL '1 hour'
+      GROUP BY event_type
+      ORDER BY count DESC, last_seen DESC
+      LIMIT 25
+    `
+  })
+
+  const genFailures = await safe("generation_trackers_failures", async () => {
+    // Try common status names.
+    return await sql`
+      SELECT status, COUNT(*)::int AS count, MAX(created_at) AS last_seen
+      FROM generation_trackers
+      WHERE created_at > NOW() - ${hours} * INTERVAL '1 hour'
+        AND status IN ('failed', 'error', 'canceled')
+      GROUP BY status
+      ORDER BY count DESC
+      LIMIT 10
+    `
+  })
+
+  const genStuck = await safe("generation_trackers_stuck", async () => {
+    // Any generation older than 30 minutes and still "in progress" buckets.
+    return await sql`
+      SELECT status, COUNT(*)::int AS count, MIN(created_at) AS oldest
+      FROM generation_trackers
+      WHERE created_at < NOW() - INTERVAL '30 minutes'
+        AND status IN ('queued', 'starting', 'processing', 'running', 'in_progress', 'pending')
+      GROUP BY status
+      ORDER BY count DESC
+      LIMIT 10
+    `
+  })
+
+  const lines: string[] = []
+  lines.push(`# Friction digest`)
+  lines.push(``)
+  lines.push(`- Generated at: ${now.toISOString()}`)
+  lines.push(`- Window: last ${hours} hour(s)`)
+  lines.push(``)
+
+  lines.push(`## Cron failures`)
+  if (cronFailures.ok) {
+    if ((cronFailures.value as any[]).length === 0) {
+      lines.push(`No cron failures found.`)
+    } else {
+      for (const r of cronFailures.value as any[]) {
+        lines.push(`- ${r.job_name}: ${r.count} (last: ${iso(r.last_seen)})`)
+      }
+    }
+  } else {
+    lines.push(`- Error: ${cronFailures.error}`)
+  }
+  lines.push(``)
+
+  lines.push(`## Top admin errors`)
+  if (topAdminErrors.ok) {
+    if ((topAdminErrors.value as any[]).length === 0) {
+      lines.push(`No admin errors found.`)
+    } else {
+      for (const r of topAdminErrors.value as any[]) {
+        lines.push(`- ${r.tool_name}: ${r.count} (last: ${iso(r.last_seen)})`)
+      }
+    }
+  } else {
+    lines.push(`- Error: ${topAdminErrors.error}`)
+  }
+  lines.push(``)
+
+  lines.push(`## Webhook errors`)
+  if (webhookErrors.ok) {
+    if ((webhookErrors.value as any[]).length === 0) {
+      lines.push(`No webhook errors found.`)
+    } else {
+      for (const r of webhookErrors.value as any[]) {
+        lines.push(`- ${r.event_type}: ${r.count} (last: ${iso(r.last_seen)})`)
+      }
+    }
+  } else {
+    lines.push(`- Error: ${webhookErrors.error}`)
+  }
+  lines.push(``)
+
+  lines.push(`## Generation failures (best-effort)`)
+  if (genFailures.ok) {
+    if ((genFailures.value as any[]).length === 0) {
+      lines.push(`No generation failures found.`)
+    } else {
+      for (const r of genFailures.value as any[]) {
+        lines.push(`- ${r.status}: ${r.count} (last: ${iso(r.last_seen)})`)
+      }
+    }
+  } else {
+    lines.push(`- Error: ${genFailures.error}`)
+  }
+  lines.push(``)
+
+  lines.push(`## Stuck generations (>30m, best-effort)`)
+  if (genStuck.ok) {
+    if ((genStuck.value as any[]).length === 0) {
+      lines.push(`No stuck generations found.`)
+    } else {
+      for (const r of genStuck.value as any[]) {
+        lines.push(`- ${r.status}: ${r.count} (oldest_created_at: ${iso(r.oldest)})`)
+      }
+    }
+  } else {
+    lines.push(`- Error: ${genStuck.error}`)
+  }
+  lines.push(``)
+
+  const path = outPath(now)
+  writeFileSync(path, lines.join("\n"), "utf8")
+  console.log(`[friction-digest] wrote ${path}`)
+}
+
+main().catch((err) => {
+  console.error("[friction-digest] failed:", err)
+  process.exitCode = 1
+})

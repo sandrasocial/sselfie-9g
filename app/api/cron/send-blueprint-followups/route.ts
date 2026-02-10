@@ -130,9 +130,15 @@ export async function GET(request: Request) {
     const day3Subscribers = await sql`
       SELECT bs.id, bs.email, bs.name, bs.form_data, bs.created_at
       FROM blueprint_subscribers bs
-      LEFT JOIN email_logs el ON el.user_email = bs.email AND el.email_type = 'blueprint-followup-day-3'
+      LEFT JOIN email_logs el ON el.user_email = bs.email
+        AND el.email_type = 'blueprint-followup-day-3'
+        AND (
+          el.status IN ('sent', 'delivered')
+          OR (el.status = 'queued' AND el.sent_at > NOW() - INTERVAL '2 hours')
+        )
       WHERE bs.day_3_email_sent = FALSE
         AND bs.created_at <= NOW() - INTERVAL '3 days'
+        AND bs.created_at > NOW() - INTERVAL '10 days'
         AND bs.welcome_email_sent = TRUE
         AND el.id IS NULL
       ORDER BY bs.created_at ASC
@@ -200,9 +206,15 @@ export async function GET(request: Request) {
     const day7Subscribers = await sql`
       SELECT bs.id, bs.email, bs.name, bs.form_data, bs.created_at
       FROM blueprint_subscribers bs
-      LEFT JOIN email_logs el ON el.user_email = bs.email AND el.email_type = 'blueprint-followup-day-7'
+      LEFT JOIN email_logs el ON el.user_email = bs.email
+        AND el.email_type = 'blueprint-followup-day-7'
+        AND (
+          el.status IN ('sent', 'delivered')
+          OR (el.status = 'queued' AND el.sent_at > NOW() - INTERVAL '2 hours')
+        )
       WHERE bs.day_7_email_sent = FALSE
         AND bs.created_at <= NOW() - INTERVAL '7 days'
+        AND bs.created_at > NOW() - INTERVAL '21 days'
         AND bs.welcome_email_sent = TRUE
         AND el.id IS NULL
       ORDER BY bs.created_at ASC
@@ -270,9 +282,15 @@ export async function GET(request: Request) {
     const day14Subscribers = await sql`
       SELECT bs.id, bs.email, bs.name, bs.form_data, bs.created_at
       FROM blueprint_subscribers bs
-      LEFT JOIN email_logs el ON el.user_email = bs.email AND el.email_type = 'blueprint-followup-day-14'
+      LEFT JOIN email_logs el ON el.user_email = bs.email
+        AND el.email_type = 'blueprint-followup-day-14'
+        AND (
+          el.status IN ('sent', 'delivered')
+          OR (el.status = 'queued' AND el.sent_at > NOW() - INTERVAL '2 hours')
+        )
       WHERE bs.day_14_email_sent = FALSE
         AND bs.created_at <= NOW() - INTERVAL '14 days'
+        AND bs.created_at > NOW() - INTERVAL '35 days'
         AND bs.welcome_email_sent = TRUE
         AND el.id IS NULL
       ORDER BY bs.created_at ASC
@@ -345,7 +363,12 @@ export async function GET(request: Request) {
         bs.access_token,
         bs.paid_blueprint_purchased_at
       FROM blueprint_subscribers bs
-      LEFT JOIN email_logs el ON el.user_email = bs.email AND el.email_type = 'paid-blueprint-day-1'
+      LEFT JOIN email_logs el ON el.user_email = bs.email
+        AND el.email_type = 'paid-blueprint-day-1'
+        AND (
+          el.status IN ('sent', 'delivered')
+          OR (el.status = 'queued' AND el.sent_at > NOW() - INTERVAL '2 hours')
+        )
       LEFT JOIN users u ON u.email = bs.email
       LEFT JOIN subscriptions s ON s.user_id = u.id 
         AND s.product_type = 'sselfie_studio_membership' 
@@ -353,6 +376,7 @@ export async function GET(request: Request) {
       WHERE bs.paid_blueprint_purchased = TRUE
         AND bs.day_1_paid_email_sent = FALSE
         AND bs.paid_blueprint_purchased_at <= NOW() - INTERVAL '1 day'
+        AND bs.paid_blueprint_purchased_at > NOW() - INTERVAL '10 days'
         AND el.id IS NULL
         AND s.id IS NULL
       ORDER BY bs.paid_blueprint_purchased_at ASC
@@ -368,6 +392,10 @@ export async function GET(request: Request) {
           SELECT id FROM email_logs
           WHERE user_email = ${subscriber.email}
           AND email_type = 'paid-blueprint-day-1'
+          AND (
+            status IN ('sent', 'delivered')
+            OR (status = 'queued' AND sent_at > NOW() - INTERVAL '2 hours')
+          )
           LIMIT 1
         `
         if (existingLog.length > 0) {
@@ -437,7 +465,12 @@ export async function GET(request: Request) {
         bs.access_token,
         bs.paid_blueprint_purchased_at
       FROM blueprint_subscribers bs
-      LEFT JOIN email_logs el ON el.user_email = bs.email AND el.email_type = 'paid-blueprint-day-3'
+      LEFT JOIN email_logs el ON el.user_email = bs.email
+        AND el.email_type = 'paid-blueprint-day-3'
+        AND (
+          el.status IN ('sent', 'delivered')
+          OR (el.status = 'queued' AND el.sent_at > NOW() - INTERVAL '2 hours')
+        )
       LEFT JOIN users u ON u.email = bs.email
       LEFT JOIN subscriptions s ON s.user_id = u.id 
         AND s.product_type = 'sselfie_studio_membership' 
@@ -445,6 +478,7 @@ export async function GET(request: Request) {
       WHERE bs.paid_blueprint_purchased = TRUE
         AND bs.day_3_paid_email_sent = FALSE
         AND bs.paid_blueprint_purchased_at <= NOW() - INTERVAL '3 days'
+        AND bs.paid_blueprint_purchased_at > NOW() - INTERVAL '21 days'
         AND el.id IS NULL
         AND s.id IS NULL
       ORDER BY bs.paid_blueprint_purchased_at ASC
@@ -460,6 +494,10 @@ export async function GET(request: Request) {
           SELECT id FROM email_logs
           WHERE user_email = ${subscriber.email}
           AND email_type = 'paid-blueprint-day-3'
+          AND (
+            status IN ('sent', 'delivered')
+            OR (status = 'queued' AND sent_at > NOW() - INTERVAL '2 hours')
+          )
           LIMIT 1
         `
         if (existingLog.length > 0) {
@@ -529,7 +567,12 @@ export async function GET(request: Request) {
         bs.access_token,
         bs.paid_blueprint_purchased_at
       FROM blueprint_subscribers bs
-      LEFT JOIN email_logs el ON el.user_email = bs.email AND el.email_type = 'paid-blueprint-day-7'
+      LEFT JOIN email_logs el ON el.user_email = bs.email
+        AND el.email_type = 'paid-blueprint-day-7'
+        AND (
+          el.status IN ('sent', 'delivered')
+          OR (el.status = 'queued' AND el.sent_at > NOW() - INTERVAL '2 hours')
+        )
       LEFT JOIN users u ON u.email = bs.email
       LEFT JOIN subscriptions s ON s.user_id = u.id 
         AND s.product_type = 'sselfie_studio_membership' 
@@ -537,6 +580,7 @@ export async function GET(request: Request) {
       WHERE bs.paid_blueprint_purchased = TRUE
         AND bs.day_7_paid_email_sent = FALSE
         AND bs.paid_blueprint_purchased_at <= NOW() - INTERVAL '7 days'
+        AND bs.paid_blueprint_purchased_at > NOW() - INTERVAL '35 days'
         AND el.id IS NULL
         AND s.id IS NULL
       ORDER BY bs.paid_blueprint_purchased_at ASC
@@ -552,6 +596,10 @@ export async function GET(request: Request) {
           SELECT id FROM email_logs
           WHERE user_email = ${subscriber.email}
           AND email_type = 'paid-blueprint-day-7'
+          AND (
+            status IN ('sent', 'delivered')
+            OR (status = 'queued' AND sent_at > NOW() - INTERVAL '2 hours')
+          )
           LIMIT 1
         `
         if (existingLog.length > 0) {

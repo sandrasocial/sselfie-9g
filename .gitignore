@@ -30,3 +30,9 @@ next-env.d.ts
 .alex-backups/
 *.backup
 *.backup.*
+
+# Local automation outputs
+/output/automation/
+
+# Local scratch
+/.tmp/

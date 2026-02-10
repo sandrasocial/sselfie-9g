@@ -124,6 +124,7 @@ export async function GET(request: Request) {
             SELECT id FROM email_logs
             WHERE user_email = ${userRecord.email}
               AND email_type = ${emailType}
+              AND status IN ('sent', 'delivered')
               AND sent_at >= NOW() - INTERVAL '7 days'
             LIMIT 1
           `
@@ -132,6 +133,7 @@ export async function GET(request: Request) {
             SELECT id FROM email_logs
             WHERE user_email = ${userRecord.email}
               AND email_type = ${emailType}
+              AND status IN ('sent', 'delivered')
               AND sent_at >= NOW() - INTERVAL '3 days'
             LIMIT 1
           `
@@ -140,6 +142,7 @@ export async function GET(request: Request) {
             SELECT id FROM email_logs
             WHERE user_email = ${userRecord.email}
               AND email_type = ${emailType}
+              AND status IN ('sent', 'delivered')
               AND sent_at >= NOW() - INTERVAL '1 day'
             LIMIT 1
           `
