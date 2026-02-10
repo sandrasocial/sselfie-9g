@@ -11,6 +11,7 @@ import {
   getRunDetails,
   getNextPendingRuns,
   failStaleMarketingRuns,
+  failQueuedItemsForClosedRuns,
   resetStuckMarketingQueueItems,
   updateMarketingRunStatus,
   updateQueueBatchStatus,
@@ -91,6 +92,7 @@ export async function processPendingMarketingRuns(limit = 3) {
   // from blocking future sends.
   await resetStuckMarketingQueueItems().catch(() => {})
   await failStaleMarketingRuns().catch(() => {})
+  await failQueuedItemsForClosedRuns().catch(() => {})
   await expireOldMarketingQueueItems().catch(() => {})
 
   const runs = await getNextPendingRuns(limit)

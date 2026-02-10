@@ -46,6 +46,9 @@ async function safe<T>(label: string, fn: () => Promise<T>): Promise<{ ok: true;
 async function main() {
   const now = new Date()
   const hours = Number(process.env.EMAIL_REPORT_WINDOW_HOURS || 24)
+  const expiredPrefix = "Expired:"
+  const closedPrefix = "Closed:"
+  const resetPrefix = "Reset:"
 
   const byType = await safe("email_logs_by_type", async () => {
     return await sql`
@@ -74,10 +77,50 @@ async function main() {
       SELECT email_type, COUNT(*)::int AS count, MAX(sent_at) AS last_seen
       FROM email_logs
       WHERE status IN ('failed', 'error')
+        AND (error_message IS NULL OR (
+          error_message NOT LIKE ${expiredPrefix + "%"}
+          AND error_message NOT LIKE ${closedPrefix + "%"}
+          AND error_message NOT LIKE ${resetPrefix + "%"}
+        ))
         AND sent_at > NOW() - ${hours} * INTERVAL '1 hour'
       GROUP BY email_type
       ORDER BY count DESC, last_seen DESC
       LIMIT 25
+    `
+  })
+
+  const cleanupActions = await safe("cleanup_actions", async () => {
+    return await sql`
+      SELECT
+        CASE
+          WHEN error_message LIKE ${expiredPrefix + "%"} THEN 'expired'
+          WHEN error_message LIKE ${closedPrefix + "%"} THEN 'closed_run'
+          WHEN error_message LIKE ${resetPrefix + "%"} THEN 'reset'
+          ELSE 'other'
+        END AS kind,
+        COUNT(*)::int AS count,
+        MAX(sent_at) AS last_seen
+      FROM email_logs
+      WHERE status IN ('failed', 'error')
+        AND error_message IS NOT NULL
+        AND (
+          error_message LIKE ${expiredPrefix + "%"}
+          OR error_message LIKE ${closedPrefix + "%"}
+          OR error_message LIKE ${resetPrefix + "%"}
+        )
+        AND sent_at > NOW() - ${hours} * INTERVAL '1 hour'
+      GROUP BY 1
+      ORDER BY count DESC
+    `
+  })
+
+  const rateLimitFailures = await safe("rate_limit_failures", async () => {
+    return await sql`
+      SELECT COUNT(*)::int AS count, MAX(sent_at) AS last_seen
+      FROM email_logs
+      WHERE status IN ('failed', 'error')
+        AND error_message ILIKE '%429%'
+        AND sent_at > NOW() - ${hours} * INTERVAL '1 hour'
     `
   })
 
@@ -101,6 +144,7 @@ async function main() {
   lines.push(``)
 
   lines.push(`## Recent failures (by type)`)
+  lines.push(`(Excludes automated cleanup: expired backlog, closed runs, resets)`)
   if (recentFailures.ok) {
     if ((recentFailures.value as any[]).length === 0) {
       lines.push(`No failures found.`)
@@ -111,6 +155,34 @@ async function main() {
     }
   } else {
     lines.push(`- Error: ${recentFailures.error}`)
+  }
+  lines.push(``)
+
+  lines.push(`## Cleanup actions (last ${hours}h)`)
+  if (cleanupActions.ok) {
+    if ((cleanupActions.value as any[]).length === 0) {
+      lines.push(`No cleanup actions recorded.`)
+    } else {
+      for (const r of cleanupActions.value as any[]) {
+        lines.push(`- ${r.kind}: ${r.count} (last: ${iso(r.last_seen)})`)
+      }
+    }
+  } else {
+    lines.push(`- Error: ${cleanupActions.error}`)
+  }
+  lines.push(``)
+
+  lines.push(`## Resend rate-limit signals (last ${hours}h)`)
+  if (rateLimitFailures.ok) {
+    const row = (rateLimitFailures.value as any[])[0]
+    const count = Number(row?.count || 0)
+    if (count === 0) {
+      lines.push(`No 429 failures found in email_logs.`)
+    } else {
+      lines.push(`- 429 failures: ${count} (last: ${iso(row?.last_seen)})`)
+    }
+  } else {
+    lines.push(`- Error: ${rateLimitFailures.error}`)
   }
   lines.push(``)
 
@@ -167,4 +239,3 @@ main().catch((err) => {
   console.error("[email-performance] failed:", err)
   process.exitCode = 1
 })
-

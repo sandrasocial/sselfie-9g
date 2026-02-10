@@ -376,6 +376,69 @@ export async function expireOldMarketingQueueItems(input?: {
   }
 }
 
+/**
+ * If a run is already closed (failed/completed), any remaining queued items will never be processed.
+ * Clean them up so email reports and queue health reflect reality.
+ */
+export async function failQueuedItemsForClosedRuns(input?: {
+  minFinishedMins?: number
+  limitRuns?: number
+}): Promise<{ affectedRuns: number; updatedQueueRows: number; updatedEmailLogs: number }> {
+  const minFinishedMins = input?.minFinishedMins ?? 10
+  const limitRuns = input?.limitRuns ?? 50
+
+  const runs = (await sql`
+    SELECT run_id, COALESCE(email_type, sequence_key) AS email_type
+    FROM marketing_send_runs
+    WHERE status IN ('failed', 'completed')
+      AND finished_at IS NOT NULL
+      AND finished_at < NOW() - make_interval(mins => ${minFinishedMins})
+    ORDER BY finished_at DESC
+    LIMIT ${limitRuns}
+  `) as Array<{ run_id: string; email_type: string | null }>
+
+  if (runs.length === 0) return { affectedRuns: 0, updatedQueueRows: 0, updatedEmailLogs: 0 }
+
+  const runIds = runs.map((r) => r.run_id)
+
+  const queueUpdated = await sql`
+    UPDATE marketing_send_queue
+    SET
+      status = 'failed',
+      last_error = COALESCE(last_error, 'Closed: run finished'),
+      updated_at = NOW()
+    WHERE run_id = ANY(${runIds}::text[])
+      AND status IN ('queued', 'processing', 'synced', 'failed', 'cleanup_failed', 'cleanup_processing')
+    RETURNING id
+  `
+
+  // Best-effort: email_logs doesn't have run_id, so update by email_type + recipients.
+  let updatedEmailLogs = 0
+  for (const run of runs) {
+    const emailType = String(run.email_type || "").trim()
+    if (!emailType) continue
+
+    const rows = await sql`
+      UPDATE email_logs
+      SET
+        status = 'failed',
+        error_message = COALESCE(error_message, 'Closed: run finished'),
+        sent_at = NOW()
+      WHERE status = 'queued'
+        AND email_type = ${emailType}
+        AND user_email IN (SELECT email FROM marketing_send_queue WHERE run_id = ${run.run_id})
+      RETURNING id
+    `
+    updatedEmailLogs += (rows as any[])?.length || 0
+  }
+
+  return {
+    affectedRuns: runs.length,
+    updatedQueueRows: (queueUpdated as any[])?.length || 0,
+    updatedEmailLogs,
+  }
+}
+
 export async function failStaleMarketingRuns(input?: {
   staleRunMins?: number
   limit?: number
