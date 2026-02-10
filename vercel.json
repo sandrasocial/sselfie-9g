@@ -99,6 +99,14 @@
     {
       "path": "/api/cron/reconcile-subscriptions",
       "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/cron/funnel-report-daily",
+      "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/cron/cohort-report-weekly",
+      "schedule": "15 8 * * 1"
     }
   ]
 }

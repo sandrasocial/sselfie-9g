@@ -9,6 +9,7 @@ import { sendEmail } from "@/lib/email/send-email"
 import { generateWelcomeEmail } from "@/lib/email/templates/welcome-email"
 import { generatePaidBlueprintDeliveryEmail, PAID_BLUEPRINT_DELIVERY_SUBJECT } from "@/lib/email/templates/paid-blueprint-delivery"
 import { generatePaymentFailedEmail } from "@/lib/email/templates/payment-failed"
+import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { checkWebhookRateLimit } from "@/lib/rate-limit"
 import { logWebhookError, alertWebhookError, isCriticalError } from "@/lib/webhook-monitoring"
 import {
@@ -800,6 +801,26 @@ export async function POST(request: NextRequest) {
                     updated_at = NOW()
                 `
                 console.log(`[v0] ✅ Stored payment in stripe_payments table`)
+
+                // Internal funnel analytics (best-effort; never fail webhook).
+                try {
+                  await logAnalyticsEvent({
+                    eventName: "purchase",
+                    userId: String(userId),
+                    properties: {
+                      source: "stripe_webhook",
+                      payment_type: "one_time_session",
+                      product_type: "one_time_session",
+                      value: paymentAmountCents / 100,
+                      currency: "usd",
+                      stripe_payment_id: paymentIntentId,
+                      stripe_session_id: session.id,
+                      is_test_mode: isTestMode,
+                    },
+                  })
+                } catch {
+                  // ignore
+                }
               } catch (paymentError: any) {
                 console.error(`[v0] Error storing payment in stripe_payments:`, paymentError.message)
                 // Don't fail webhook if payment storage fails
@@ -929,6 +950,27 @@ export async function POST(request: NextRequest) {
                     updated_at = NOW()
                 `
                 console.log(`[v0] ✅ Stored payment in stripe_payments table`)
+
+                // Internal funnel analytics (best-effort; never fail webhook).
+                try {
+                  await logAnalyticsEvent({
+                    eventName: "purchase",
+                    userId: String(userId),
+                    properties: {
+                      source: "stripe_webhook",
+                      payment_type: "credit_topup",
+                      product_type: "credit_topup",
+                      value: paymentAmountCents / 100,
+                      currency: "usd",
+                      credits: credits ?? null,
+                      stripe_payment_id: paymentIntentId,
+                      stripe_session_id: session.id,
+                      is_test_mode: isTestMode,
+                    },
+                  })
+                } catch {
+                  // ignore
+                }
               } catch (paymentError: any) {
                 console.error(`[v0] Error storing payment in stripe_payments:`, paymentError.message)
                 // Don't fail webhook if payment storage fails
@@ -1066,6 +1108,26 @@ export async function POST(request: NextRequest) {
                       updated_at = NOW()
                   `
                   console.log(`[v0] ✅ Stored paid blueprint payment in stripe_payments table (amount: $${(amountForStorage / 100).toFixed(2)}, payment_id: ${paymentIdForStorage})`)
+
+                  // Internal funnel analytics (best-effort; never fail webhook).
+                  try {
+                    await logAnalyticsEvent({
+                      eventName: "purchase",
+                      userId: userId ? String(userId) : null,
+                      properties: {
+                        source: "stripe_webhook",
+                        payment_type: "paid_blueprint",
+                        product_type: "paid_blueprint",
+                        value: amountForStorage / 100,
+                        currency: "usd",
+                        stripe_payment_id: paymentIdForStorage,
+                        stripe_session_id: session.id,
+                        is_test_mode: isTestMode,
+                      },
+                    })
+                  } catch {
+                    // ignore
+                  }
                 } catch (paymentError: any) {
                   console.error(`[v0] Error storing paid blueprint payment:`, paymentError.message)
                   // Don't fail webhook if payment storage fails
@@ -2284,6 +2346,27 @@ export async function POST(request: NextRequest) {
                 updated_at = NOW()
             `
             console.log(`[v0] ✅ Stored subscription payment in stripe_payments table: $${(invoice.amount_paid / 100).toFixed(2)}`)
+
+            // Internal funnel analytics (best-effort; never fail webhook).
+            try {
+              await logAnalyticsEvent({
+                eventName: "purchase",
+                userId: sub?.user_id ? String(sub.user_id) : null,
+                properties: {
+                  source: "stripe_webhook",
+                  payment_type: "subscription",
+                  product_type: sub?.product_type || null,
+                  value: invoice.amount_paid / 100,
+                  currency: (invoice.currency || "usd").toLowerCase(),
+                  stripe_payment_id: paymentId,
+                  stripe_invoice_id: invoice.id,
+                  stripe_subscription_id: subscriptionId,
+                  is_test_mode: isTestMode,
+                },
+              })
+            } catch {
+              // ignore
+            }
           } catch (paymentError: any) {
             console.error(`[v0] Error storing subscription payment in stripe_payments:`, paymentError.message)
             // Don't fail webhook if payment storage fails

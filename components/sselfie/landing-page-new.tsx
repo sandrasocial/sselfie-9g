@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { trackCTAClick, trackPricingView, trackCheckoutStart } from "@/lib/analytics"
+import { trackCTAClick, trackPricingView, trackCheckoutStart, trackLandingView } from "@/lib/analytics"
 import { startEmbeddedCheckout } from "@/lib/start-embedded-checkout"
 import TestimonialCarousel from "@/components/testimonials/testimonial-carousel"
 import { formatPriceFromCents, getProductById } from "@/lib/products"
@@ -21,6 +21,10 @@ export default function LandingPageNew() {
   const membershipPrice = membershipProduct ? formatPriceFromCents(membershipProduct.priceInCents) : "$97"
 
   const totalScenes = 9
+
+  useEffect(() => {
+    trackLandingView()
+  }, [])
 
   // Track pricing section view
   useEffect(() => {
@@ -1097,4 +1101,3 @@ export default function LandingPageNew() {
     </div>
   )
 }
-
