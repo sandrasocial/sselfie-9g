@@ -5,11 +5,13 @@ import Link from 'next/link'
 import { AdminNav } from './admin-nav'
 import { AdminMetricCard, AdminLoadingState } from './shared'
 import { formatCurrency, formatAdminDate } from '@/lib/admin/format-utils'
-import { Users, DollarSign, TrendingUp, Percent } from 'lucide-react'
+import { Users, DollarSign, TrendingUp } from 'lucide-react'
 
 interface DashboardStats {
   totalUsers: number
   activeSubscriptions: number
+  activeRecurringSubscriptions?: number
+  activeBlueprintEntitlements?: number
   mrr: number
   totalRevenue: number
   conversionRate: number
@@ -134,7 +136,7 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
             {formatAdminDate(new Date(), 'full')}
           </p>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8 sm:mb-12">
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-8 sm:mb-12">
             <AdminMetricCard
               label="MRR (Stripe)"
               value={formatCurrency(stats?.stripeLive?.mrr || stats?.mrr || 0)}
@@ -144,10 +146,17 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
               source={stats?.stripeLive ? 'Stripe Live' : 'DB (subscriptions)'}
             />
             <AdminMetricCard
-              label="Active Subscriptions"
-              value={stats?.stripeLive?.activeSubscriptions || stats?.activeSubscriptions || 0}
+              label="Recurring Subscriptions"
+              value={stats?.activeRecurringSubscriptions || stats?.stripeLive?.activeSubscriptions || stats?.activeSubscriptions || 0}
               icon={<Users className="w-5 h-5" />}
               source={stats?.stripeLive ? 'Stripe Live' : 'DB (subscriptions)'}
+            />
+            <AdminMetricCard
+              label="Blueprint Entitlements"
+              value={stats?.activeBlueprintEntitlements || 0}
+              icon={<Users className="w-5 h-5" />}
+              subtitle="active paid_blueprint rows"
+              source="DB (subscriptions)"
             />
             <AdminMetricCard
               label="Total Revenue"
@@ -307,14 +316,18 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
           <h2 className="font-['Times_New_Roman'] text-2xl sm:text-3xl font-extralight tracking-[0.2em] sm:tracking-[0.3em] uppercase text-stone-950 mb-4 sm:mb-6">
             GROWTH SNAPSHOT (30D)
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
             <div className="bg-white border border-stone-200 p-4 sm:p-6 rounded-none">
               <p className="text-xs text-stone-500 mb-1">Total Users</p>
               <p className="text-lg text-stone-950">{stats?.totalUsers || 0}</p>
             </div>
             <div className="bg-white border border-stone-200 p-4 sm:p-6 rounded-none">
-              <p className="text-xs text-stone-500 mb-1">Active Subscriptions</p>
-              <p className="text-lg text-stone-950">{stats?.stripeLive?.activeSubscriptions || stats?.activeSubscriptions || 0}</p>
+              <p className="text-xs text-stone-500 mb-1">Recurring Subscriptions</p>
+              <p className="text-lg text-stone-950">{stats?.activeRecurringSubscriptions || stats?.stripeLive?.activeSubscriptions || stats?.activeSubscriptions || 0}</p>
+            </div>
+            <div className="bg-white border border-stone-200 p-4 sm:p-6 rounded-none">
+              <p className="text-xs text-stone-500 mb-1">Blueprint Entitlements</p>
+              <p className="text-lg text-stone-950">{stats?.activeBlueprintEntitlements || 0}</p>
             </div>
             <div className="bg-white border border-stone-200 p-4 sm:p-6 rounded-none">
               <p className="text-xs text-stone-500 mb-1">Conversion Rate</p>

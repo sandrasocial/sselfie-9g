@@ -13,18 +13,24 @@ type GenerationHealthResponse = {
   feedPosts: {
     stuckOver15m: number
     stuckOver60m: number
+    legacyOverDays: number
     inconsistentCompleted: number
     oldestPending: Array<any>
   }
   aiImages: {
     stuckOver15m: number
     stuckOver60m: number
+    legacyOverDays: number
     oldestPending: Array<any>
   }
   proPhotoshoot: {
     stuckOver15m: number
     stuckOver60m: number
+    legacyOverDays: number
     oldestPending: Array<any>
+  }
+  thresholds?: {
+    legacyDays?: number
   }
   recommendations: string[]
 }
@@ -96,8 +102,11 @@ export function GenerationHealthDashboard() {
   }
 
   const reportTime = data.now ? new Date(data.now) : new Date()
+  const feedActionable = Math.max(0, Number(data.feedPosts.stuckOver15m || 0) - Number(data.feedPosts.legacyOverDays || 0))
+  const aiActionable = Math.max(0, Number(data.aiImages.stuckOver15m || 0) - Number(data.aiImages.legacyOverDays || 0))
+  const proActionable = Math.max(0, Number(data.proPhotoshoot.stuckOver15m || 0) - Number(data.proPhotoshoot.legacyOverDays || 0))
   const problemCount =
-    Number(data.feedPosts.stuckOver15m || 0) + Number(data.feedPosts.stuckOver60m || 0) + Number(data.feedPosts.inconsistentCompleted || 0)
+    feedActionable + aiActionable + proActionable + Number(data.feedPosts.inconsistentCompleted || 0)
   const isOk = problemCount === 0
 
   const runReconcile = async () => {
@@ -146,6 +155,26 @@ export function GenerationHealthDashboard() {
       await mutate()
     } catch (e: any) {
       setActionMessage(`Pro Photoshoot reconcile failed: ${String(e?.message || e)}`)
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const runLegacyCleanup = async () => {
+    setActionMessage(null)
+    setActionLoading(true)
+    const legacyDays = Number(data.thresholds?.legacyDays || 30)
+    try {
+      const result = await postJson("/api/admin/generation/cleanup-legacy", {
+        daysOld: legacyDays,
+        dryRun: false,
+      })
+      setActionMessage(
+        `Legacy cleanup complete (${legacyDays}d+). Feed updated ${Number(result?.updated?.feedPosts || 0)} of ${Number(result?.candidates?.feedPosts || 0)}. AI updated ${Number(result?.updated?.aiImages || 0)} of ${Number(result?.candidates?.aiImages || 0)}. Pro updated ${Number(result?.updated?.proPhotoshootGrids || 0)} of ${Number(result?.candidates?.proPhotoshootGrids || 0)}.`,
+      )
+      await mutate()
+    } catch (e: any) {
+      setActionMessage(`Legacy cleanup failed: ${String(e?.message || e)}`)
     } finally {
       setActionLoading(false)
     }
@@ -225,6 +254,13 @@ export function GenerationHealthDashboard() {
               >
                 Reconcile Pro Photoshoot
               </button>
+              <button
+                onClick={runLegacyCleanup}
+                disabled={actionLoading}
+                className="inline-flex items-center justify-center gap-2 border border-stone-200 bg-white px-4 py-3 text-xs tracking-[0.2em] uppercase text-stone-700 hover:bg-stone-50 transition-colors rounded-none disabled:opacity-60"
+              >
+                Clean Legacy Backlog
+              </button>
             </div>
           </div>
           {actionMessage && (
@@ -234,7 +270,7 @@ export function GenerationHealthDashboard() {
           )}
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-10 sm:mb-14">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-10 sm:mb-14">
           <AdminMetricCard
             label="Stuck (15m+)"
             value={data.feedPosts.stuckOver15m || 0}
@@ -246,6 +282,12 @@ export function GenerationHealthDashboard() {
             label="Stuck (60m+)"
             value={data.feedPosts.stuckOver60m || 0}
             subtitle="oldest backlog"
+            source="feed_posts"
+          />
+          <AdminMetricCard
+            label={`Legacy (${Number(data.thresholds?.legacyDays || 30)}d+)`}
+            value={data.feedPosts.legacyOverDays || 0}
+            subtitle="old stuck rows"
             source="feed_posts"
           />
           <AdminMetricCard
@@ -277,6 +319,12 @@ export function GenerationHealthDashboard() {
             source="ai_images"
           />
           <AdminMetricCard
+            label={`AI Legacy (${Number(data.thresholds?.legacyDays || 30)}d+)`}
+            value={data.aiImages.legacyOverDays || 0}
+            subtitle="old stuck rows"
+            source="ai_images"
+          />
+          <AdminMetricCard
             label="AI Images Pending (Sample)"
             value={data.aiImages.oldestPending.length || 0}
             subtitle="oldest rows returned"
@@ -296,6 +344,12 @@ export function GenerationHealthDashboard() {
             label="Pro Grids Stuck (60m+)"
             value={data.proPhotoshoot.stuckOver60m || 0}
             subtitle="oldest backlog"
+            source="pro_photoshoot_grids"
+          />
+          <AdminMetricCard
+            label={`Pro Legacy (${Number(data.thresholds?.legacyDays || 30)}d+)`}
+            value={data.proPhotoshoot.legacyOverDays || 0}
+            subtitle="old stuck rows"
             source="pro_photoshoot_grids"
           />
           <AdminMetricCard

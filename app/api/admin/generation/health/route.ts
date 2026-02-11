@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
 
     const url = new URL(request.url)
     const limit = clampInt(url.searchParams.get("limit"), 50, 1, 200)
+    const legacyDays = clampInt(url.searchParams.get("legacyDays"), 30, 7, 365)
 
     const sql = getDb()
 
@@ -41,6 +42,15 @@ export async function GET(request: NextRequest) {
         AND image_url IS NULL
         AND (generation_status IS NULL OR generation_status IN ('pending', 'generating'))
         AND updated_at < NOW() - INTERVAL '15 minutes'
+    `
+
+    const [feedLegacy] = await sql`
+      SELECT COUNT(*)::int AS count
+      FROM feed_posts
+      WHERE prediction_id IS NOT NULL
+        AND image_url IS NULL
+        AND (generation_status IS NULL OR generation_status IN ('pending', 'generating'))
+        AND updated_at < NOW() - make_interval(days => ${legacyDays})
     `
 
     const [stuck60m] = await sql`
@@ -78,6 +88,15 @@ export async function GET(request: NextRequest) {
         AND created_at < NOW() - INTERVAL '15 minutes'
     `
 
+    const [aiLegacy] = await sql`
+      SELECT COUNT(*)::int AS count
+      FROM ai_images
+      WHERE prediction_id IS NOT NULL
+        AND (generation_status IS NULL OR generation_status IN ('generating', 'processing'))
+        AND (image_url IS NULL OR BTRIM(image_url) = '' OR image_url NOT LIKE 'http%')
+        AND created_at < NOW() - make_interval(days => ${legacyDays})
+    `
+
     const [aiStuck60m] = await sql`
       SELECT COUNT(*)::int AS count
       FROM ai_images
@@ -106,6 +125,15 @@ export async function GET(request: NextRequest) {
         AND updated_at < NOW() - INTERVAL '15 minutes'
     `
 
+    const [proLegacy] = await sql`
+      SELECT COUNT(*)::int AS count
+      FROM pro_photoshoot_grids
+      WHERE prediction_id IS NOT NULL
+        AND grid_url IS NULL
+        AND generation_status = 'generating'
+        AND updated_at < NOW() - make_interval(days => ${legacyDays})
+    `
+
     const [proGridStuck60m] = await sql`
       SELECT COUNT(*)::int AS count
       FROM pro_photoshoot_grids
@@ -130,23 +158,30 @@ export async function GET(request: NextRequest) {
       feedPosts: {
         stuckOver15m: Number((stuck15m as any)?.count || 0),
         stuckOver60m: Number((stuck60m as any)?.count || 0),
+        legacyOverDays: Number((feedLegacy as any)?.count || 0),
         inconsistentCompleted: Number((inconsistentCompleted as any)?.count || 0),
         oldestPending: recentStuck,
       },
       aiImages: {
         stuckOver15m: Number((aiStuck15m as any)?.count || 0),
         stuckOver60m: Number((aiStuck60m as any)?.count || 0),
+        legacyOverDays: Number((aiLegacy as any)?.count || 0),
         oldestPending: recentAiStuck,
       },
       proPhotoshoot: {
         stuckOver15m: Number((proGridStuck15m as any)?.count || 0),
         stuckOver60m: Number((proGridStuck60m as any)?.count || 0),
+        legacyOverDays: Number((proLegacy as any)?.count || 0),
         oldestPending: recentProGrids,
+      },
+      thresholds: {
+        legacyDays,
       },
       recommendations: [
         "If stuck counts grow, verify Replicate availability and check Vercel logs for reconcile-feed-posts.",
         "If Pro Mode images are stuck, run reconcile-ai-images to finalize predictions into Blob URLs.",
         "If Pro Photoshoot grids are stuck, run reconcile-pro-photoshoot-grids to finalize and split frames.",
+        `Use 'Clean Legacy Backlog' for records older than ${legacyDays} days to keep health dashboards actionable.`,
         "If inconsistentCompleted is non-zero, running reconciliation will normalize statuses.",
       ],
     })

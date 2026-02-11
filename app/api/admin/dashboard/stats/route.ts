@@ -6,7 +6,9 @@ import { PRICING_PRODUCTS } from "@/lib/products"
 import { getSingleSourceRevenueMetrics } from "@/lib/revenue/single-source"
 import { getDBRevenueMetrics } from "@/lib/revenue/db-revenue-metrics"
 
-const ADMIN_EMAIL = "ssa@ssasocial.com"
+function getAdminEmail() {
+  return String(process.env.ADMIN_EMAIL || "ssa@ssasocial.com").trim().toLowerCase()
+}
 
 export async function GET() {
   try {
@@ -20,7 +22,7 @@ export async function GET() {
     }
 
     const neonUser = await getUserByAuthId(user.id)
-    if (!neonUser || neonUser.email !== ADMIN_EMAIL) {
+    if (!neonUser || String(neonUser.email || "").trim().toLowerCase() !== getAdminEmail()) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
@@ -47,8 +49,13 @@ export async function GET() {
 
     let mrr = 0
     let activeSubscriptions = 0
+    let activeBlueprintEntitlements = 0
 
     subscriptionsResult.forEach((sub: any) => {
+      if (sub.product_type === "paid_blueprint") {
+        activeBlueprintEntitlements += Number(sub.count || 0)
+      }
+
       // Handle legacy brand_studio_membership (no longer in PRICING_PRODUCTS)
       let priceCents: number
       if (sub.product_type === "brand_studio_membership") {
@@ -182,6 +189,8 @@ export async function GET() {
     const stats = {
       totalUsers: Number(usersResult[0]?.total_users || 0),
       activeSubscriptions: finalActiveSubscriptions,
+      activeRecurringSubscriptions: finalActiveSubscriptions,
+      activeBlueprintEntitlements,
       mrr: finalMrr, // Use Stripe live MRR (real-time) or DB fallback
       totalRevenue: stripeMetrics?.totalRevenue || dbTotalRevenue,
       conversionRate,
