@@ -44,6 +44,8 @@ export async function GET() {
       FROM subscriptions
       WHERE status = 'active'
         AND (is_test_mode = FALSE OR is_test_mode IS NULL)
+        AND stripe_subscription_id IS NOT NULL
+        AND BTRIM(stripe_subscription_id) <> ''
       GROUP BY product_type
     `
 
