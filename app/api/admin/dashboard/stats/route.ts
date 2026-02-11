@@ -64,11 +64,15 @@ export async function GET() {
         const revenue = Number(sub.count) * priceDollars
         
         // MRR only includes recurring subscriptions (not one-time sessions)
-        if (sub.product_type === "sselfie_studio_membership" || sub.product_type === "brand_studio_membership") {
+        const isRecurringMembership =
+          sub.product_type === "sselfie_studio_membership" ||
+          sub.product_type === "brand_studio_membership" ||
+          sub.product_type === "pro"
+
+        if (isRecurringMembership) {
           mrr += revenue
+          activeSubscriptions += Number(sub.count)
         }
-        
-        activeSubscriptions += Number(sub.count)
       }
     })
 

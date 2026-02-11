@@ -100,29 +100,47 @@ async function resolveUserId(params: { customerId: string | null; email: string 
 }
 
 async function listSubscriptionsWithFallback(input: {
-  limit: number
-  startTs: number
-}): Promise<{ data: Stripe.Subscription[]; listMode: "expanded" | "fallback_no_expand" }> {
-  try {
-    const expanded = await stripe.subscriptions.list({
-      status: "all",
-      limit: input.limit,
-      created: { gte: input.startTs },
-      expand: ["data.customer"],
-    })
-    return { data: expanded.data as Stripe.Subscription[], listMode: "expanded" }
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : String(error)
-    if (!/expand more than 4 levels/i.test(msg)) {
+  pageLimit: number
+  maxRecords: number
+}): Promise<{ data: Stripe.Subscription[]; listMode: "expanded" | "fallback_no_expand"; truncated: boolean }> {
+  const pageLimit = Math.max(1, Math.min(100, input.pageLimit))
+  const maxRecords = Math.max(1, Math.min(5000, input.maxRecords))
+
+  let listMode: "expanded" | "fallback_no_expand" = "expanded"
+  let rows: Stripe.Subscription[] = []
+  let hasMore = true
+  let startingAfter: string | undefined
+
+  while (hasMore && rows.length < maxRecords) {
+    try {
+      const page = await stripe.subscriptions.list({
+        status: "all",
+        limit: Math.min(pageLimit, maxRecords - rows.length),
+        ...(startingAfter ? { starting_after: startingAfter } : {}),
+        ...(listMode === "expanded" ? { expand: ["data.customer"] } : {}),
+      })
+
+      rows.push(...(page.data as Stripe.Subscription[]))
+      hasMore = page.has_more
+      startingAfter = page.data.length > 0 ? page.data[page.data.length - 1].id : undefined
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error)
+      if (listMode === "expanded" && /expand more than 4 levels/i.test(msg)) {
+        // Retry end-to-end without expand to avoid Stripe depth failures.
+        listMode = "fallback_no_expand"
+        rows = []
+        hasMore = true
+        startingAfter = undefined
+        continue
+      }
       throw error
     }
+  }
 
-    const fallback = await stripe.subscriptions.list({
-      status: "all",
-      limit: input.limit,
-      created: { gte: input.startTs },
-    })
-    return { data: fallback.data as Stripe.Subscription[], listMode: "fallback_no_expand" }
+  return {
+    data: rows,
+    listMode,
+    truncated: hasMore && rows.length >= maxRecords,
   }
 }
 
@@ -176,9 +194,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Stripe not configured" }, { status: 500 })
     }
 
-    const windowHours = Number(process.env.RECONCILE_SUBSCRIPTIONS_WINDOW_HOURS || 72)
-    const limit = Number(process.env.RECONCILE_SUBSCRIPTIONS_LIMIT || 50)
-    const startTs = Math.floor((Date.now() - windowHours * 60 * 60 * 1000) / 1000)
+    const pageLimit = Math.max(1, Math.min(100, Number(process.env.RECONCILE_SUBSCRIPTIONS_LIMIT || 100)))
+    const maxRecords = Math.max(
+      pageLimit,
+      Math.min(5000, Number(process.env.RECONCILE_SUBSCRIPTIONS_MAX_RECORDS || 500)),
+    )
 
     // Schema guardrails for safety across environments.
     const [hasUsersStripeCustomerId, hasSubsStripeCustomerId, hasSubsIsTestMode] = await Promise.all([
@@ -196,7 +216,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Schema mismatch: subscriptions.stripe_customer_id missing" }, { status: 500 })
     }
 
-    const { data: subs, listMode } = await listSubscriptionsWithFallback({ limit, startTs })
+    const { data: subs, listMode, truncated } = await listSubscriptionsWithFallback({ pageLimit, maxRecords })
 
     let processed = 0
     let upserted = 0
@@ -418,10 +438,19 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    if (truncated) {
+      await logAdminError({
+        toolName: "cron:reconcile-subscriptions:truncated",
+        error: new Error("Stripe subscription list truncated by maxRecords"),
+        context: { pageLimit, maxRecords, processed },
+      }).catch(() => {})
+    }
+
     const summary = {
-      windowHours,
-      limit,
+      pageLimit,
+      maxRecords,
       listMode,
+      truncated,
       processed,
       upserted,
       skippedNoUser,
