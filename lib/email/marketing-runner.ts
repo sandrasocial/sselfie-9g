@@ -28,6 +28,7 @@ const DEFAULT_MAX_ATTEMPTS = Number.parseInt(process.env.MARKETING_SYNC_MAX_ATTE
 const DEFAULT_MAX_RUNTIME_MS = Number.parseInt(process.env.MARKETING_RUN_MAX_MS || "20000", 10)
 const REQUIRE_UPSTASH_LOCKS =
   String(process.env.MARKETING_REQUIRE_UPSTASH_LOCKS || "true").toLowerCase() !== "false"
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export interface MarketingRunInput {
   sequenceKey: string
@@ -78,7 +79,7 @@ export async function enqueueAndProcessMarketingRun(input: MarketingRunInput) {
   await processMarketingRun({
     runId,
     tagKey: input.tagKey,
-    segmentId: input.segmentId,
+    segmentId: normalizedSegmentId,
     campaignKey: input.campaignKey,
     subject: resolvedContent.subject,
     html: resolvedContent.html,
@@ -130,22 +131,42 @@ export async function processMarketingRun(input: {
   const subject = input.subject || run.subject
   const html = input.html || run.body_html
   const text = input.text || run.body_text
+  const missingFields = [
+    !segmentId ? "segmentId" : "",
+    !campaignKey ? "campaignKey" : "",
+    !subject ? "subject" : "",
+    !html ? "html" : "",
+  ].filter(Boolean)
+  const segmentLooksInvalid = !!segmentId && !UUID_RE.test(segmentId)
 
-  if (!segmentId || !campaignKey || !subject || !html) {
+  if (missingFields.length > 0 || segmentLooksInvalid) {
+    const metadataError = segmentLooksInvalid
+      ? `Invalid segmentId format: ${segmentId}`
+      : `Missing required broadcast metadata: ${missingFields.join(", ")}`
     if (!run.started_at) {
       await markEmailLogsFailed({
         runId: input.runId,
         emailType,
-        errorMessage: "Missing required broadcast metadata",
+        errorMessage: metadataError,
       })
       await updateMarketingRunStatus({
         runId: input.runId,
         status: "failed",
-        errorMessage: "Missing required broadcast metadata",
+        errorMessage: metadataError,
         startedAt: true,
         finishedAt: true,
       })
-      await failQueueForRun({ runId: input.runId, reason: "Failed: missing broadcast metadata" }).catch(() => {})
+      await failQueueForRun({ runId: input.runId, reason: `Failed: ${metadataError}` }).catch(() => {})
+      await logAdminError({
+        toolName: "marketing-runner:metadata",
+        error: new Error(metadataError),
+        context: {
+          runId: input.runId,
+          emailType,
+          segmentId,
+          campaignKey: campaignKey || null,
+        },
+      }).catch(() => {})
     }
     return
   }
@@ -168,7 +189,8 @@ export async function processMarketingRun(input: {
     return
   }
 
-  if (!process.env.RESEND_AUDIENCE_ID) {
+  const resendAudienceId = String(process.env.RESEND_AUDIENCE_ID || "").trim()
+  if (!resendAudienceId) {
     await markEmailLogsFailed({
       runId: input.runId,
       emailType,

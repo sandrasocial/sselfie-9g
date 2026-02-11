@@ -26,9 +26,61 @@ interface ContactSyncInput {
 }
 
 const CONTACT_UPDATE_DELAY_MS = 650
+const RESEND_RETRY_MAX_ATTEMPTS = Number.parseInt(process.env.RESEND_RETRY_MAX_ATTEMPTS || "5", 10)
+const RESEND_RETRY_BASE_DELAY_MS = Number.parseInt(process.env.RESEND_RETRY_BASE_DELAY_MS || "700", 10)
 
 async function sleep(ms: number) {
   await new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function normalizeValue(value?: string | null): string {
+  return String(value || "").trim()
+}
+
+function isLikelyResendRateLimit(message: string): boolean {
+  const m = message.toLowerCase()
+  return m.includes("too many requests") || m.includes("rate limit") || m.includes("429")
+}
+
+async function withResendRetry<T>(input: {
+  label: string
+  execute: () => Promise<{ data?: T; error?: { message?: string | null } | null }>
+  maxAttempts?: number
+  baseDelayMs?: number
+}): Promise<{ data?: T; error?: { message?: string | null } | null }> {
+  const maxAttempts = Math.max(1, input.maxAttempts || RESEND_RETRY_MAX_ATTEMPTS)
+  const baseDelayMs = Math.max(100, input.baseDelayMs || RESEND_RETRY_BASE_DELAY_MS)
+  let lastResult: { data?: T; error?: { message?: string | null } | null } | null = null
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const result = await input.execute()
+    lastResult = result
+    const message = String(result.error?.message || "").trim()
+    const retryable = !!message && isLikelyResendRateLimit(message)
+
+    if (!retryable || attempt >= maxAttempts) {
+      if (retryable && attempt >= maxAttempts) {
+        console.warn("[v0] Resend retry exhausted:", {
+          label: input.label,
+          attempts: maxAttempts,
+          message,
+        })
+      }
+      return result
+    }
+
+    const backoffMs = Math.min(12_000, baseDelayMs * Math.pow(2, attempt - 1))
+    console.warn("[v0] Resend rate limit, retrying:", {
+      label: input.label,
+      attempt,
+      maxAttempts,
+      waitMs: backoffMs,
+      message,
+    })
+    await sleep(backoffMs)
+  }
+
+  return lastResult || { error: { message: "Unknown Resend retry failure" } }
 }
 
 async function resendFetchWithRetry(
@@ -152,10 +204,11 @@ async function logEmailEvent(input: {
 }
 
 export async function sendMarketingBroadcast(input: MarketingBroadcastInput) {
-  const audienceId = input.audienceId || EMAIL_ENV.resendAudienceId
+  const audienceId = normalizeValue(input.audienceId || EMAIL_ENV.resendAudienceId)
+  const segmentId = normalizeValue(input.segmentId)
   const recipientCount = input.estimatedRecipientCount || 0
 
-  if (!input.segmentId && !audienceId) {
+  if (!segmentId && !audienceId) {
     throw new Error("No segmentId or RESEND_AUDIENCE_ID configured for marketing broadcast")
   }
 
@@ -176,7 +229,7 @@ export async function sendMarketingBroadcast(input: MarketingBroadcastInput) {
     console.log("[v0] [EMAIL_DRY_RUN] Marketing broadcast suppressed:", {
       campaignKey: input.campaignKey,
       recipientCount,
-      segmentId: input.segmentId,
+      segmentId,
       audienceId,
       subject: input.subject,
       htmlLength: html.length,
@@ -185,25 +238,34 @@ export async function sendMarketingBroadcast(input: MarketingBroadcastInput) {
     return { success: true, dryRun: true }
   }
 
-  const broadcast = await resend.broadcasts.create({
-    ...(input.segmentId ? { segmentId: input.segmentId } : { audienceId }),
-    from: EMAIL_CONFIG.marketing.from,
-    reply_to: EMAIL_CONFIG.marketing.replyTo,
-    subject: input.subject,
-    html,
-    ...(text ? { text } : {}),
+  const broadcast = await withResendRetry({
+    label: "broadcast.create",
+    execute: () =>
+      resend.broadcasts.create({
+        ...(segmentId ? { segmentId } : { audienceId }),
+        from: EMAIL_CONFIG.marketing.from,
+        replyTo: EMAIL_CONFIG.marketing.replyTo,
+        subject: input.subject,
+        html,
+        ...(text ? { text } : {}),
+      }),
   })
 
   if (broadcast.error) {
+    const errorMessage = broadcast.error.message || "Failed to create broadcast"
     await logEmailEvent({
       eventType: "broadcast_failed",
       campaignKey: input.campaignKey,
       status: "failed",
       recipientCount,
-      errorMessage: broadcast.error.message,
-      metadata: { phase: "create" },
+      errorMessage,
+      metadata: {
+        phase: "create",
+        segmentId: segmentId || null,
+        audienceId: audienceId || null,
+      },
     })
-    throw new Error(broadcast.error.message || "Failed to create broadcast")
+    throw new Error(errorMessage)
   }
 
   const broadcastId = broadcast.data?.id
@@ -215,22 +277,31 @@ export async function sendMarketingBroadcast(input: MarketingBroadcastInput) {
     recipientCount,
   })
 
-  const sendResult = await resend.broadcasts.send(
-    broadcastId!,
-    input.scheduledAt ? { scheduledAt: input.scheduledAt } : {},
-  )
+  const sendResult = await withResendRetry({
+    label: "broadcast.send",
+    execute: () =>
+      resend.broadcasts.send(
+        broadcastId!,
+        input.scheduledAt ? { scheduledAt: input.scheduledAt } : {},
+      ),
+  })
 
   if (sendResult.error) {
+    const errorMessage = sendResult.error.message || "Failed to send broadcast"
     await logEmailEvent({
       eventType: "broadcast_failed",
       campaignKey: input.campaignKey,
       providerId: broadcastId,
       status: "failed",
       recipientCount,
-      errorMessage: sendResult.error.message,
-      metadata: { phase: "send" },
+      errorMessage,
+      metadata: {
+        phase: "send",
+        segmentId: segmentId || null,
+        audienceId: audienceId || null,
+      },
     })
-    throw new Error(sendResult.error.message || "Failed to send broadcast")
+    throw new Error(errorMessage)
   }
 
   await logEmailEvent({

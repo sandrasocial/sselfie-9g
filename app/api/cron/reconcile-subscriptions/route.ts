@@ -108,7 +108,7 @@ async function listSubscriptionsWithFallback(input: {
       status: "all",
       limit: input.limit,
       created: { gte: input.startTs },
-      expand: ["data.customer", "data.items.data.price"],
+      expand: ["data.customer"],
     })
     return { data: expanded.data as Stripe.Subscription[], listMode: "expanded" }
   } catch (error) {

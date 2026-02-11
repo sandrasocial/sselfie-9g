@@ -161,6 +161,14 @@ function tryParseUrlArray(raw: string): string[] | null {
   }
 }
 
+function isInvalidLegacyImageUrl(url: string): boolean {
+  const v = String(url || "").trim().toLowerCase()
+  if (!v.startsWith("https://")) return true
+  if (v.includes("/undefined/")) return true
+  if (v.includes("undefined_")) return true
+  return false
+}
+
 function parsePredictionRef(imageUrlsRaw: string | null | undefined): {
   kind: "prediction" | "urls" | "none"
   predictionId: string | null
@@ -309,8 +317,29 @@ async function reconcileGeneratedImages(limit: number) {
 
     if (parsed.kind === "urls") {
       try {
+        const legacyUrls = parsed.urls.map((u) => String(u || "").trim()).filter(Boolean)
+        const validLegacyUrls = legacyUrls.filter((u) => !isInvalidLegacyImageUrl(u))
+        if (legacyUrls.length > 0 && validLegacyUrls.length === 0) {
+          terminalized += 1
+          await upsertReconcileFailureState({
+            generatedImageId,
+            reason: "legacy_url_invalid_source",
+            errorMessage: "All legacy URLs are invalid placeholders (undefined path values).",
+            httpStatus: null,
+            terminal: true,
+            maxRetries,
+            enabled: stateEnabled,
+          }).catch(() => {})
+          await logAdminError({
+            toolName: "cron:reconcile-generations:generated-images",
+            error: new Error("Invalid legacy image URLs (undefined placeholders)"),
+            context: { generatedImageId, predictionId: null, legacyUrls: legacyUrls.slice(0, 2), terminal: true },
+          }).catch(() => {})
+          continue
+        }
+
         const urls: string[] = []
-        const srcUrls = parsed.urls
+        const srcUrls = validLegacyUrls.length > 0 ? validLegacyUrls : legacyUrls
         for (let i = 0; i < Math.min(srcUrls.length, 6); i++) {
           const u = srcUrls[i]
           const blobUrl = await uploadImageFromUrlToBlob({
