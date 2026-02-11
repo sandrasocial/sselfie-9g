@@ -1,0 +1,59 @@
+{
+  "$schema": "./node_modules/knip/schema.json",
+  "entry": [
+    "app/**/*.{js,jsx,ts,tsx,mdx}",
+    "components/**/*.{js,jsx,ts,tsx}",
+    "lib/**/*.{js,jsx,ts,tsx}",
+    "scripts/**/*.{js,cjs,mjs,ts,cts,mts}"
+  ],
+  "project": [
+    "app/**/*.{js,jsx,ts,tsx,mdx}",
+    "components/**/*.{js,jsx,ts,tsx}",
+    "hooks/**/*.{js,jsx,ts,tsx}",
+    "lib/**/*.{js,jsx,ts,tsx}",
+    "scripts/**/*.{js,cjs,mjs,ts,cts,mts}",
+    "tests/**/*.{js,jsx,ts,tsx}",
+    "*.{js,cjs,mjs,ts,cts,mts}"
+  ],
+  "ignore": [
+    ".backups/**",
+    ".next/**",
+    "backup-before-cleanup/**",
+    "backups/**",
+    "coverage/**",
+    "node_modules/**",
+    "output/**"
+  ],
+  "ignoreFiles": [
+    ".next/types/**",
+    "app/**/apple-icon.tsx",
+    "app/**/default.tsx",
+    "app/**/error.tsx",
+    "app/**/icon.tsx",
+    "app/**/layout.tsx",
+    "app/**/loading.tsx",
+    "app/**/manifest.ts",
+    "app/**/manifest.json/route.ts",
+    "app/**/not-found.tsx",
+    "app/**/opengraph-image.tsx",
+    "app/**/page.tsx",
+    "app/**/robots.ts",
+    "app/**/route.ts",
+    "app/**/sitemap.ts",
+    "app/**/sw.js/route.ts",
+    "app/**/template.tsx",
+    "app/**/twitter-image.tsx",
+    "app/instrumentation.ts",
+    "middleware.ts"
+  ],
+  "ignoreExportsUsedInFile": {
+    "interface": true,
+    "type": true
+  },
+  "exclude": [
+    "classMembers",
+    "enumMembers",
+    "nsExports",
+    "nsTypes"
+  ]
+}
