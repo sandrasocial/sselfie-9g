@@ -4,7 +4,10 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 import { neon } from "@neondatabase/serverless"
 
 const sql = neon(process.env.DATABASE_URL!)
-const ADMIN_EMAIL = "ssa@ssasocial.com"
+
+function getAdminEmail() {
+  return String(process.env.ADMIN_EMAIL || "ssa@ssasocial.com").trim().toLowerCase()
+}
 
 /**
  * GET /api/admin/diagnostics/errors
@@ -26,7 +29,7 @@ export async function GET(request: Request) {
     }
 
     const user = await getUserByAuthId(authUser.id)
-    if (!user || user.email !== ADMIN_EMAIL) {
+    if (!user || String(user.email || "").trim().toLowerCase() !== getAdminEmail()) {
       return NextResponse.json({ error: "Admin access required" }, { status: 403 })
     }
 
@@ -98,4 +101,3 @@ export async function GET(request: Request) {
     )
   }
 }
-

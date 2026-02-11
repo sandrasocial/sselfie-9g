@@ -48,6 +48,12 @@ export async function GET(request: NextRequest) {
     const days = clampInt(url.searchParams.get("days"), 7, 1, 30)
     const limitRuns = clampInt(url.searchParams.get("limitRuns"), 50, 1, 200)
     const limitErrors = clampInt(url.searchParams.get("limitErrors"), 30, 1, 200)
+    const staleRunMins = clampInt(
+      url.searchParams.get("staleMins"),
+      Number.parseInt(process.env.MARKETING_STALE_RUN_MINS || "180", 10),
+      30,
+      24 * 60,
+    )
 
     const sql = neon(process.env.DATABASE_URL!)
 
@@ -57,12 +63,21 @@ export async function GET(request: NextRequest) {
         (SELECT COUNT(*)::int FROM marketing_send_queue WHERE status = 'cleanup_processing' AND updated_at < NOW() - INTERVAL '15 minutes') AS cleanup_processing_over_15m
     `
     const [staleRuns] = await sql`
+      WITH run_activity AS (
+        SELECT
+          r.run_id,
+          r.started_at,
+          MAX(q.updated_at) AS last_queue_activity_at
+        FROM marketing_send_runs r
+        LEFT JOIN marketing_send_queue q ON q.run_id = r.run_id
+        WHERE r.status IN ('syncing', 'broadcasting', 'cleanup')
+          AND r.finished_at IS NULL
+          AND r.started_at IS NOT NULL
+        GROUP BY r.run_id, r.started_at
+      )
       SELECT COUNT(*)::int AS count
-      FROM marketing_send_runs
-      WHERE status IN ('syncing', 'broadcasting', 'cleanup')
-        AND finished_at IS NULL
-        AND started_at IS NOT NULL
-        AND started_at < NOW() - INTERVAL '30 minutes'
+      FROM run_activity
+      WHERE COALESCE(last_queue_activity_at, started_at) < NOW() - make_interval(mins => ${staleRunMins})
     `
 
     const runCounts = await sql`
@@ -215,6 +230,7 @@ export async function GET(request: NextRequest) {
           cleanupProcessingOver15m: Number(queueStuck?.cleanup_processing_over_15m || 0),
         },
         staleRunsOver30m: Number(staleRuns?.count || 0),
+        staleRunThresholdMinutes: staleRunMins,
         segmentIdWhitespaceInRuns: {
           count: Number((segmentIdWhitespace as any[])[0]?.count || 0),
           emailTypes: ((segmentIdWhitespace as any[])[0]?.email_types || []) as string[],
@@ -242,4 +258,3 @@ export async function GET(request: NextRequest) {
     )
   }
 }
-

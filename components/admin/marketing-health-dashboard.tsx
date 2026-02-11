@@ -28,6 +28,7 @@ type MarketingHealthResponse = {
       cleanupProcessingOver15m: number
     }
     staleRunsOver30m: number
+    staleRunThresholdMinutes?: number
     segmentIdWhitespaceInRuns: {
       count: number
       emailTypes: string[]
@@ -88,8 +89,7 @@ export function MarketingHealthDashboard() {
     (data?.health?.stuckQueue?.cleanupProcessingOver15m || 0) +
     (data?.health?.staleRunsOver30m || 0) +
     (data?.health?.segmentIdWhitespaceInRuns?.count || 0) +
-    segmentStats.missing +
-    segmentStats.whitespace
+    segmentStats.missing
 
   if (isLoading) {
     return (
@@ -280,7 +280,7 @@ export function MarketingHealthDashboard() {
             source="marketing_send_queue"
           />
           <AdminMetricCard
-            label="Stale Runs (30m+)"
+            label={`Stale Runs (${data.health.staleRunThresholdMinutes || 30}m+)`}
             value={data.health.staleRunsOver30m || 0}
             subtitle="syncing/broadcasting/cleanup"
             source="marketing_send_runs"

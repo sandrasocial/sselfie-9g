@@ -450,19 +450,27 @@ export async function failStaleMarketingRuns(input?: {
   staleRunMins?: number
   limit?: number
 }): Promise<{ failedRuns: number; affectedQueuedEmailLogs: number }> {
-  const staleRunMins = input?.staleRunMins ?? 30
+  const staleRunMins = input?.staleRunMins ?? Number(process.env.MARKETING_STALE_RUN_MINS || 180)
   const limit = input?.limit ?? 25
 
   const staleRuns = (await sql`
-    SELECT
-      run_id,
-      COALESCE(email_type, sequence_key) AS email_type
-    FROM marketing_send_runs
-    WHERE status IN ('syncing', 'broadcasting', 'cleanup')
-      AND finished_at IS NULL
-      AND started_at IS NOT NULL
-      AND started_at < NOW() - make_interval(mins => ${staleRunMins})
-    ORDER BY started_at ASC
+    WITH run_activity AS (
+      SELECT
+        r.run_id,
+        COALESCE(r.email_type, r.sequence_key) AS email_type,
+        r.started_at,
+        MAX(q.updated_at) AS last_queue_activity_at
+      FROM marketing_send_runs r
+      LEFT JOIN marketing_send_queue q ON q.run_id = r.run_id
+      WHERE r.status IN ('syncing', 'broadcasting', 'cleanup')
+        AND r.finished_at IS NULL
+        AND r.started_at IS NOT NULL
+      GROUP BY r.run_id, COALESCE(r.email_type, r.sequence_key), r.started_at
+    )
+    SELECT run_id, email_type
+    FROM run_activity
+    WHERE COALESCE(last_queue_activity_at, started_at) < NOW() - make_interval(mins => ${staleRunMins})
+    ORDER BY COALESCE(last_queue_activity_at, started_at) ASC
     LIMIT ${limit}
   `) as Array<{ run_id: string; email_type: string | null }>
 
