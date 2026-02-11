@@ -320,18 +320,20 @@ export async function GET(request: NextRequest) {
           continue
         }
 
-        // If the user already has a membership row, attach this Stripe subscription to it
-        // instead of creating multiple membership rows.
-        const existingMembership = await sql`
+        // Attach to a legacy/unlinked membership row only.
+        // Never overwrite a different existing stripe_subscription_id, otherwise we can
+        // lose track of active Stripe subscriptions for users with multiple subs.
+        const existingUnlinkedMembership = await sql`
           SELECT id
           FROM subscriptions
           WHERE user_id = ${resolved.userId}
             AND product_type IN ('sselfie_studio_membership', 'brand_studio_membership', 'pro')
+            AND (stripe_subscription_id IS NULL OR BTRIM(stripe_subscription_id) = '')
           ORDER BY created_at DESC
           LIMIT 1
         `
 
-        if (existingMembership.length > 0) {
+        if (existingUnlinkedMembership.length > 0) {
           if (hasSubsIsTestMode) {
             await sql`
               UPDATE subscriptions
@@ -345,7 +347,7 @@ export async function GET(request: NextRequest) {
                 current_period_end = ${cpe},
                 is_test_mode = ${isTestMode},
                 updated_at = NOW()
-              WHERE id = ${existingMembership[0].id}
+              WHERE id = ${existingUnlinkedMembership[0].id}
             `
           } else {
             await sql`
@@ -359,7 +361,7 @@ export async function GET(request: NextRequest) {
                 current_period_start = ${cps},
                 current_period_end = ${cpe},
                 updated_at = NOW()
-              WHERE id = ${existingMembership[0].id}
+              WHERE id = ${existingUnlinkedMembership[0].id}
             `
           }
           upserted += 1
