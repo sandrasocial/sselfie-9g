@@ -57,12 +57,14 @@ export async function acquireKvLock(input: {
   key: string
   ttlMs: number
   value?: string
+  requireLockWhenNoRedis?: boolean
 }): Promise<{ acquired: boolean; value: string; locked: boolean }> {
   const redis = getRedis()
   const value = input.value || `lock_${crypto.randomUUID()}`
+  const requireLockWhenNoRedis = input.requireLockWhenNoRedis || false
 
-  // If Redis isn't configured, allow the caller to proceed (best-effort).
-  if (!redis) return { acquired: true, value, locked: false }
+  // If Redis isn't configured, callers can opt into strict mode and fail closed.
+  if (!redis) return { acquired: !requireLockWhenNoRedis, value, locked: false }
 
   const res = await redis.set(input.key, value, { nx: true, px: input.ttlMs })
   return { acquired: res === "OK", value, locked: true }

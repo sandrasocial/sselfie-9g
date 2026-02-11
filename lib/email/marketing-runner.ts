@@ -26,6 +26,8 @@ const sql = neon(process.env.DATABASE_URL!)
 const DEFAULT_BATCH_SIZE = Number.parseInt(process.env.MARKETING_SYNC_BATCH_SIZE || "25", 10)
 const DEFAULT_MAX_ATTEMPTS = Number.parseInt(process.env.MARKETING_SYNC_MAX_ATTEMPTS || "3", 10)
 const DEFAULT_MAX_RUNTIME_MS = Number.parseInt(process.env.MARKETING_RUN_MAX_MS || "20000", 10)
+const REQUIRE_UPSTASH_LOCKS =
+  String(process.env.MARKETING_REQUIRE_UPSTASH_LOCKS || "true").toLowerCase() !== "false"
 
 export interface MarketingRunInput {
   sequenceKey: string
@@ -153,8 +155,16 @@ export async function processMarketingRun(input: {
   const lock = await acquireKvLock({
     key: "lock:marketing:resend:global",
     ttlMs: 90_000,
+    requireLockWhenNoRedis: REQUIRE_UPSTASH_LOCKS,
   })
   if (!lock.acquired) {
+    if (!lock.locked && REQUIRE_UPSTASH_LOCKS) {
+      await logAdminError({
+        toolName: "marketing-runner:lock",
+        error: new Error("Upstash KV lock required but not configured"),
+        context: { runId: input.runId, reason: "MARKETING_REQUIRE_UPSTASH_LOCKS=true" },
+      }).catch(() => {})
+    }
     return
   }
 

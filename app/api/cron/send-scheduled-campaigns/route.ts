@@ -6,6 +6,20 @@ import { processPendingMarketingRuns } from "@/lib/email/marketing-runner"
 import { processAudienceBackfillBatch } from "@/lib/resend/audience-backfill"
 import { acquireCronLock } from "@/lib/cron-lock"
 
+function isUpstashKvConfigured() {
+  const url =
+    process.env.UPSTASH_KV_REST_API_URL ||
+    process.env.UPSTASH_KV_KV_REST_API_URL ||
+    process.env.UPSTASH_REDIS_REST_URL ||
+    process.env.UPSTASH_KV_REST_URL
+  const token =
+    process.env.UPSTASH_KV_REST_API_TOKEN ||
+    process.env.UPSTASH_KV_KV_REST_API_TOKEN ||
+    process.env.UPSTASH_REDIS_REST_TOKEN ||
+    process.env.UPSTASH_KV_REST_TOKEN
+  return Boolean(url && token)
+}
+
 /**
  * Cron Job: Send Scheduled Campaigns
  * 
@@ -28,12 +42,22 @@ export async function GET(request: Request) {
     const cronSecret = process.env.CRON_SECRET
 
     const isProduction = process.env.VERCEL_ENV === "production" || process.env.NODE_ENV === "production"
+    const requireUpstashLocks = String(process.env.MARKETING_REQUIRE_UPSTASH_LOCKS || "true").toLowerCase() !== "false"
 
     if (isProduction && cronSecret) {
       if (authHeader !== `Bearer ${cronSecret}`) {
         console.error("[v0] [Scheduled Campaigns] Unauthorized")
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
       }
+    }
+
+    if (isProduction && requireUpstashLocks && !isUpstashKvConfigured()) {
+      const err = new Error("Upstash KV not configured in production while MARKETING_REQUIRE_UPSTASH_LOCKS=true")
+      await cronLogger.error(err, { cronJob: "send-scheduled-campaigns", reason: "missing_upstash_kv" })
+      return NextResponse.json(
+        { success: false, error: "Upstash KV is required for production marketing crons" },
+        { status: 503 },
+      )
     }
 
     if (!lock.acquired) {

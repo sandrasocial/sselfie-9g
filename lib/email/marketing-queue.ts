@@ -2,6 +2,13 @@ import { neon } from "@neondatabase/serverless"
 import crypto from "crypto"
 
 const sql = neon(process.env.DATABASE_URL!)
+const MARKETING_CLEANUP_MARK_QUEUED_AS_FAILURE =
+  String(process.env.MARKETING_CLEANUP_MARK_QUEUED_AS_FAILURE || "false").toLowerCase() === "true"
+
+function resolveCleanupEmailLogStatus(kind: "expired" | "closed" | "abandoned"): string {
+  if (MARKETING_CLEANUP_MARK_QUEUED_AS_FAILURE) return "failed"
+  return kind
+}
 
 export type MarketingRunStatus =
   | "queued"
@@ -346,7 +353,7 @@ export async function expireOldMarketingQueueItems(input?: {
   const emailUpdated = await sql`
     UPDATE email_logs
     SET
-      status = 'failed',
+      status = ${resolveCleanupEmailLogStatus("expired")},
       error_message = COALESCE(error_message, 'Expired: queued email too old'),
       sent_at = NOW()
     WHERE status = 'queued'
@@ -421,7 +428,7 @@ export async function failQueuedItemsForClosedRuns(input?: {
     const rows = await sql`
       UPDATE email_logs
       SET
-        status = 'failed',
+        status = ${resolveCleanupEmailLogStatus("closed")},
         error_message = COALESCE(error_message, 'Closed: run finished'),
         sent_at = NOW()
       WHERE status = 'queued'
@@ -501,7 +508,7 @@ export async function failStaleMarketingRuns(input?: {
       const updated = await sql`
         UPDATE email_logs
         SET
-          status = 'failed',
+          status = ${resolveCleanupEmailLogStatus("abandoned")},
           error_message = COALESCE(error_message, 'Reset: stale run cleanup'),
           sent_at = NOW()
         WHERE status = 'queued'
