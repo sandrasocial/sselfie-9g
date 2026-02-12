@@ -15,6 +15,52 @@ function resolveEmailTypeFromTags(eventData: any): string | null {
   return tag?.value || null
 }
 
+function looksLikeEmail(value: string): boolean {
+  const v = value.trim().toLowerCase()
+  return v.includes("@") && !v.includes(" ") && !v.startsWith("{") && !v.startsWith("[")
+}
+
+function normalizeRecipientEmail(raw: any): string | null {
+  if (!raw) return null
+
+  if (typeof raw === "string") {
+    const s = raw.trim()
+    if (looksLikeEmail(s)) return s
+    if ((s.startsWith("{") || s.startsWith("[")) && s.length < 512) {
+      try {
+        return normalizeRecipientEmail(JSON.parse(s))
+      } catch {
+        return null
+      }
+    }
+    return null
+  }
+
+  if (Array.isArray(raw)) {
+    for (const entry of raw) {
+      const normalized = normalizeRecipientEmail(entry)
+      if (normalized) return normalized
+    }
+    return null
+  }
+
+  if (typeof raw === "object") {
+    if (typeof raw.email === "string" && looksLikeEmail(raw.email)) return raw.email.trim()
+    if (typeof raw.address === "string" && looksLikeEmail(raw.address)) return raw.address.trim()
+    if (typeof raw.value === "string" && looksLikeEmail(raw.value)) return raw.value.trim()
+
+    const keys = Object.keys(raw)
+    if (keys.length === 1 && looksLikeEmail(keys[0])) return keys[0]
+
+    for (const key of keys) {
+      const normalized = normalizeRecipientEmail((raw as any)[key])
+      if (normalized) return normalized
+    }
+  }
+
+  return null
+}
+
 async function resolveCampaignId(broadcastId: string | null): Promise<number | null> {
   if (!broadcastId) return null
   const campaign = await sql`
@@ -119,7 +165,11 @@ export async function POST(request: NextRequest) {
 
     // Extract email and message ID from event data
     // Resend webhook format: { data: { email_id: "...", email: "...", ... } }
-    const recipientEmail = eventData?.email || eventData?.to || eventData?.recipient
+    const recipientEmail =
+      normalizeRecipientEmail(eventData?.email) ||
+      normalizeRecipientEmail(eventData?.to) ||
+      normalizeRecipientEmail(eventData?.recipient) ||
+      normalizeRecipientEmail(eventData?.delivered_to)
     const messageId = eventData?.email_id || eventData?.message_id || eventData?.id || body.id
     const broadcastId = resolveBroadcastId(eventData)
     const campaignId = await resolveCampaignId(broadcastId)
@@ -408,4 +458,3 @@ export async function GET() {
     timestamp: new Date().toISOString(),
   })
 }
-

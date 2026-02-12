@@ -45,11 +45,36 @@ async function main() {
   `
 
   const subscriptionChanges = await sql`
-    SELECT user_id, plan, status, created_at, updated_at, stripe_subscription_id, product_type
+    SELECT status, COUNT(*)::int AS count
+    FROM subscriptions
+    WHERE COALESCE(is_test_mode, FALSE) = FALSE
+    GROUP BY status
+    ORDER BY count DESC
+  `
+
+  const subscriptionUpdateTouches = await sql`
+    SELECT
+      DATE_TRUNC('minute', updated_at) AS minute_bucket,
+      COUNT(*)::int AS count,
+      COUNT(*) FILTER (WHERE status = 'canceled')::int AS canceled_count,
+      COUNT(*) FILTER (WHERE status = 'past_due')::int AS past_due_count,
+      COUNT(*) FILTER (WHERE status = 'active')::int AS active_count
     FROM subscriptions
     WHERE updated_at > NOW() - ${hours} * INTERVAL '1 hour'
+      AND COALESCE(is_test_mode, FALSE) = FALSE
+    GROUP BY minute_bucket
+    ORDER BY minute_bucket DESC
+    LIMIT 5
+  `
+
+  const atRiskSubscriptionTouches = await sql`
+    SELECT user_id, plan, status, updated_at, stripe_subscription_id, product_type
+    FROM subscriptions
+    WHERE updated_at > NOW() - ${hours} * INTERVAL '1 hour'
+      AND COALESCE(is_test_mode, FALSE) = FALSE
+      AND status IN ('canceled', 'past_due')
     ORDER BY updated_at DESC
-    LIMIT 50
+    LIMIT 20
   `
 
   const cronFailures = await sql`
@@ -89,9 +114,34 @@ async function main() {
     SELECT email_type, status, COUNT(*)::int AS count, MAX(sent_at) AS last_sent
     FROM email_logs
     WHERE sent_at > NOW() - ${hours} * INTERVAL '1 hour'
+      AND (
+        user_email IS NULL
+        OR (
+          LOWER(user_email) NOT LIKE '%@playwright.test%'
+          AND LOWER(user_email) NOT LIKE '%@example.com%'
+          AND user_email NOT LIKE '{%'
+          AND user_email NOT LIKE '[%'
+        )
+      )
     GROUP BY email_type, status
     ORDER BY count DESC
     LIMIT 50
+  `
+
+  const testEmailStats = await sql`
+    SELECT email_type, status, COUNT(*)::int AS count, MAX(sent_at) AS last_sent
+    FROM email_logs
+    WHERE sent_at > NOW() - ${hours} * INTERVAL '1 hour'
+      AND user_email IS NOT NULL
+      AND (
+        LOWER(user_email) LIKE '%@playwright.test%'
+        OR LOWER(user_email) LIKE '%@example.com%'
+        OR user_email LIKE '{%'
+        OR user_email LIKE '[%'
+      )
+    GROUP BY email_type, status
+    ORDER BY count DESC
+    LIMIT 25
   `
 
   const lines: string[] = []
@@ -108,10 +158,36 @@ async function main() {
   }
   lines.push(``)
 
-  lines.push(`## Subscription updates`)
-  lines.push(`Count: ${(subscriptionChanges as any[]).length}`)
+  lines.push(`## Subscription health`)
+  lines.push(`Current snapshot (non-test):`)
   for (const s of subscriptionChanges as any[]) {
-    lines.push(`- user_id=${s.user_id} plan=${s.plan || "n/a"} product=${s.product_type || "n/a"} status=${s.status} updated=${iso(s.updated_at)} stripe_sub=${s.stripe_subscription_id || "n/a"}`)
+    lines.push(`- ${s.status}: ${s.count}`)
+  }
+  lines.push(``)
+
+  const touches = subscriptionUpdateTouches as any[]
+  const touchesTotal = touches.reduce((sum, row) => sum + Number(row.count || 0), 0)
+  const likelyBulkReconcile =
+    touches.length > 0 && Number(touches[0].count || 0) === touchesTotal && touchesTotal >= 20
+  lines.push(`Recent sync touches (updated_at writes, not direct churn events): ${touchesTotal}`)
+  for (const t of touches) {
+    lines.push(
+      `- minute=${iso(t.minute_bucket)} total=${t.count} (active=${t.active_count}, past_due=${t.past_due_count}, canceled=${t.canceled_count})`,
+    )
+  }
+  lines.push(``)
+
+  if (likelyBulkReconcile) {
+    lines.push(
+      `At-risk rows touched in window: ${(atRiskSubscriptionTouches as any[]).length} (bulk reconcile pattern detected; treat as state refresh, not churn spike).`,
+    )
+  } else {
+    lines.push(`At-risk subscription rows touched in window (status canceled/past_due): ${(atRiskSubscriptionTouches as any[]).length}`)
+    for (const s of atRiskSubscriptionTouches as any[]) {
+      lines.push(
+        `- user_id=${s.user_id} plan=${s.plan || "n/a"} product=${s.product_type || "n/a"} status=${s.status} updated=${iso(s.updated_at)} stripe_sub=${s.stripe_subscription_id || "n/a"}`,
+      )
+    }
   }
   lines.push(``)
 
@@ -148,9 +224,19 @@ async function main() {
 
   lines.push(`## Email logs (by type/status)`)
   if ((emailStats as any[]).length === 0) {
-    lines.push(`No email logs found.`)
+    lines.push(`No non-test email logs found.`)
   } else {
     for (const row of emailStats as any[]) {
+      lines.push(`- ${row.email_type} / ${row.status}: ${row.count} (last: ${iso(row.last_sent)})`)
+    }
+  }
+  lines.push(``)
+
+  lines.push(`## Email logs (test/synthetic addresses)`)
+  if ((testEmailStats as any[]).length === 0) {
+    lines.push(`No test/synthetic email logs found.`)
+  } else {
+    for (const row of testEmailStats as any[]) {
       lines.push(`- ${row.email_type} / ${row.status}: ${row.count} (last: ${iso(row.last_sent)})`)
     }
   }

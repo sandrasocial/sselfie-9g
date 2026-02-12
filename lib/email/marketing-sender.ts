@@ -28,6 +28,7 @@ interface ContactSyncInput {
 const CONTACT_UPDATE_DELAY_MS = 650
 const RESEND_RETRY_MAX_ATTEMPTS = Number.parseInt(process.env.RESEND_RETRY_MAX_ATTEMPTS || "5", 10)
 const RESEND_RETRY_BASE_DELAY_MS = Number.parseInt(process.env.RESEND_RETRY_BASE_DELAY_MS || "700", 10)
+const RESEND_BROADCAST_SEND_DELAY_MS = Number.parseInt(process.env.RESEND_BROADCAST_SEND_DELAY_MS || "1200", 10)
 
 async function sleep(ms: number) {
   await new Promise((resolve) => setTimeout(resolve, ms))
@@ -276,6 +277,12 @@ export async function sendMarketingBroadcast(input: MarketingBroadcastInput) {
     status: "success",
     recipientCount,
   })
+
+  // Resend's API limit is strict (2 req/s). Creating and sending immediately can
+  // occasionally burst over limit when multiple flows run close together.
+  if (RESEND_BROADCAST_SEND_DELAY_MS > 0) {
+    await sleep(RESEND_BROADCAST_SEND_DELAY_MS)
+  }
 
   const sendResult = await withResendRetry({
     label: "broadcast.send",

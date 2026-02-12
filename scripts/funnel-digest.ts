@@ -3,10 +3,10 @@
  *
  * Membership-first funnel (approx, DB-based):
  * - New users
- * - Welcome credit grants / usage (if tables present)
- * - Generation attempts/success (from generation_trackers / ai_images if present)
+ * - Freebie activation (welcome bonus grants, first output)
+ * - Generation attempts/success
  * - Checkout abandons (abandoned_checkouts)
- * - New subscriptions / payments
+ * - Paid conversion (subscriptions / payments / paid credit purchases)
  *
  * Writes: output/automation/funnel-digest-YYYY-MM-DD.md
  */
@@ -36,6 +36,11 @@ function iso(x: any) {
   } catch {
     return String(x ?? "")
   }
+}
+
+function pct(num: number, den: number) {
+  if (!den) return "0.0%"
+  return `${((num / den) * 100).toFixed(1)}%`
 }
 
 async function safeQuery<T = any>(label: string, q: () => Promise<T>): Promise<{ ok: true; value: T } | { ok: false; error: string }> {
@@ -71,9 +76,12 @@ async function main() {
       SELECT
         COUNT(*)::int AS count,
         COUNT(*) FILTER (WHERE status = 'active')::int AS active,
+        COUNT(*) FILTER (WHERE status = 'past_due')::int AS past_due,
+        COUNT(*) FILTER (WHERE stripe_subscription_id IS NOT NULL AND TRIM(stripe_subscription_id) <> '')::int AS linked_to_stripe_sub,
         MAX(created_at) AS last_created
       FROM subscriptions
       WHERE created_at > NOW() - ${hours} * INTERVAL '1 hour'
+        AND COALESCE(is_test_mode, FALSE) = FALSE
     `
     return rows[0]
   })
@@ -92,21 +100,103 @@ async function main() {
       SELECT
         COUNT(*)::int AS count,
         SUM(COALESCE(amount_cents, 0))::bigint AS amount_cents_sum,
-        MAX(created_at) AS last_created
+        MAX(created_at) AS last_created,
+        COUNT(*) FILTER (WHERE payment_type = 'subscription')::int AS subscription_payment_count
       FROM stripe_payments
       WHERE created_at > NOW() - ${hours} * INTERVAL '1 hour'
+        AND COALESCE(is_test_mode, FALSE) = FALSE
+        AND status = 'succeeded'
     `
     return rows[0]
   })
 
-  const creditGrants = await safeQuery("credit_transactions", async () => {
+  const freebieBonus = await safeQuery("freebie_bonus_grants", async () => {
     const rows = await sql`
       SELECT
         COUNT(*)::int AS count,
-        SUM(COALESCE(amount, 0))::bigint AS amount_sum,
+        COUNT(DISTINCT user_id)::int AS users_count,
+        SUM(COALESCE(amount, 0))::bigint AS credits_sum,
+        MAX(created_at) AS last_created
+      FROM credit_transactions
+      WHERE transaction_type = 'bonus'
+        AND description = 'Free blueprint credits (welcome bonus)'
+        AND created_at > NOW() - ${hours} * INTERVAL '1 hour'
+        AND COALESCE(is_test_mode, FALSE) = FALSE
+    `
+    return rows[0]
+  })
+
+  const freebieUsage = await safeQuery("freebie_bonus_usage", async () => {
+    const rows = await sql`
+      WITH bonus_users AS (
+        SELECT DISTINCT user_id
+        FROM credit_transactions
+        WHERE transaction_type = 'bonus'
+          AND description = 'Free blueprint credits (welcome bonus)'
+          AND created_at > NOW() - ${hours} * INTERVAL '1 hour'
+          AND COALESCE(is_test_mode, FALSE) = FALSE
+      )
+      SELECT
+        COUNT(DISTINCT bu.user_id)::int AS bonus_users,
+        COUNT(DISTINCT ct.user_id)::int AS users_who_spent,
+        COUNT(ct.id)::int AS spend_events,
+        ABS(SUM(COALESCE(ct.amount, 0)))::bigint AS credits_spent
+      FROM bonus_users bu
+      LEFT JOIN credit_transactions ct
+        ON ct.user_id = bu.user_id
+       AND ct.created_at > NOW() - ${hours} * INTERVAL '1 hour'
+       AND ct.amount < 0
+       AND ct.transaction_type IN ('image', 'training', 'animation')
+       AND COALESCE(ct.is_test_mode, FALSE) = FALSE
+    `
+    return rows[0]
+  })
+
+  const paidCreditPurchases = await safeQuery("paid_credit_purchases", async () => {
+    const rows = await sql`
+      SELECT
+        COUNT(*)::int AS count,
+        COUNT(*) FILTER (WHERE stripe_payment_id IS NOT NULL AND TRIM(stripe_payment_id) <> '')::int AS linked_count,
+        SUM(COALESCE(payment_amount_cents, 0))::bigint AS payment_amount_cents_sum,
+        SUM(COALESCE(amount, 0))::bigint AS credits_sum,
         MAX(created_at) AS last_created
       FROM credit_transactions
       WHERE created_at > NOW() - ${hours} * INTERVAL '1 hour'
+        AND transaction_type = 'purchase'
+        AND COALESCE(is_test_mode, FALSE) = FALSE
+    `
+    return rows[0]
+  })
+
+  const activation = await safeQuery("activation_first_output", async () => {
+    const rows = await sql`
+      WITH cohort AS (
+        SELECT id::text AS user_id, created_at
+        FROM users
+        WHERE created_at > NOW() - ${hours} * INTERVAL '1 hour'
+      ),
+      outputs AS (
+        SELECT user_id::text AS user_id, created_at FROM ai_images
+        UNION ALL
+        SELECT user_id::text AS user_id, created_at FROM generation_trackers
+      ),
+      first_output AS (
+        SELECT c.user_id, MIN(o.created_at) AS first_output_at
+        FROM cohort c
+        JOIN outputs o ON o.user_id = c.user_id
+        WHERE o.created_at >= c.created_at
+        GROUP BY c.user_id
+      )
+      SELECT
+        COUNT(*)::int AS signups_in_window,
+        COUNT(*) FILTER (WHERE c.created_at <= NOW() - INTERVAL '24 hours')::int AS matured_signups,
+        COUNT(*) FILTER (WHERE f.user_id IS NOT NULL)::int AS activated_any_time,
+        COUNT(*) FILTER (
+          WHERE f.first_output_at IS NOT NULL
+            AND f.first_output_at < c.created_at + INTERVAL '24 hours'
+        )::int AS activated_within_24h
+      FROM cohort c
+      LEFT JOIN first_output f ON f.user_id = c.user_id
     `
     return rows[0]
   })
@@ -147,13 +237,19 @@ async function main() {
     lines.push(`- Error: ${abandons.error}`)
   }
   if (newSubs.ok) {
-    lines.push(`- New subscriptions: ${newSubs.value.count} (active: ${newSubs.value.active}) (last: ${newSubs.value.last_created ? iso(newSubs.value.last_created) : "n/a"})`)
+    lines.push(
+      `- New subscriptions: ${newSubs.value.count} (active: ${newSubs.value.active}, past_due: ${newSubs.value.past_due}, linked_to_stripe_sub: ${newSubs.value.linked_to_stripe_sub}) (last: ${
+        newSubs.value.last_created ? iso(newSubs.value.last_created) : "n/a"
+      })`,
+    )
   } else {
     lines.push(`- Error: ${newSubs.error}`)
   }
   if (payments.ok) {
     lines.push(
-      `- Stripe payments: ${payments.value.count} (sum_cents: ${payments.value.amount_cents_sum ?? 0}) (last: ${
+      `- Stripe payments (succeeded): ${payments.value.count} (subscription payments: ${payments.value.subscription_payment_count}, sum_cents: ${
+        payments.value.amount_cents_sum ?? 0
+      }) (last: ${
         payments.value.last_created ? iso(payments.value.last_created) : "n/a"
       })`,
     )
@@ -162,11 +258,60 @@ async function main() {
   }
   lines.push(``)
 
-  lines.push(`## Credits (all transaction types)`)
-  if (creditGrants.ok) {
-    lines.push(`- Credit transactions: ${creditGrants.value.count} (sum: ${creditGrants.value.amount_sum ?? 0}) (last: ${creditGrants.value.last_created ? iso(creditGrants.value.last_created) : "n/a"})`)
+  lines.push(`## Freebie activation (welcome bonus)`)
+  if (freebieBonus.ok) {
+    lines.push(
+      `- Welcome bonus grants: ${freebieBonus.value.count} tx to ${freebieBonus.value.users_count} user(s), credits: ${freebieBonus.value.credits_sum ?? 0} (last: ${
+        freebieBonus.value.last_created ? iso(freebieBonus.value.last_created) : "n/a"
+      })`,
+    )
   } else {
-    lines.push(`- Error: ${creditGrants.error}`)
+    lines.push(`- Error: ${freebieBonus.error}`)
+  }
+  if (freebieUsage.ok) {
+    lines.push(
+      `- Bonus users who spent credits: ${freebieUsage.value.users_who_spent}/${freebieUsage.value.bonus_users} (${pct(
+        Number(freebieUsage.value.users_who_spent ?? 0),
+        Number(freebieUsage.value.bonus_users ?? 0),
+      )}) (spend events: ${freebieUsage.value.spend_events}, credits_spent: ${freebieUsage.value.credits_spent ?? 0})`,
+    )
+  } else {
+    lines.push(`- Error: ${freebieUsage.error}`)
+  }
+  if (activation.ok) {
+    lines.push(
+      `- First output activation (new users in window): ${activation.value.activated_any_time}/${activation.value.signups_in_window} (${pct(
+        Number(activation.value.activated_any_time ?? 0),
+        Number(activation.value.signups_in_window ?? 0),
+      )})`,
+    )
+    const maturedSignups = Number(activation.value.matured_signups ?? 0)
+    const d1ActivationLabel =
+      maturedSignups > 0
+        ? `${activation.value.activated_within_24h}/${activation.value.matured_signups} (${pct(
+            Number(activation.value.activated_within_24h ?? 0),
+            maturedSignups,
+          )})`
+        : `n/a (no signups are 24h old yet)`
+    lines.push(
+      `- D1 first-output activation (matured signups only): ${d1ActivationLabel}`,
+    )
+  } else {
+    lines.push(`- Error: ${activation.error}`)
+  }
+  lines.push(``)
+
+  lines.push(`## Paid conversion via credits`)
+  if (paidCreditPurchases.ok) {
+    lines.push(
+      `- Paid credit purchases: ${paidCreditPurchases.value.count} (linked stripe_payment_id: ${paidCreditPurchases.value.linked_count}, payment_sum_cents: ${
+        paidCreditPurchases.value.payment_amount_cents_sum ?? 0
+      }, credits_granted: ${paidCreditPurchases.value.credits_sum ?? 0}) (last: ${
+        paidCreditPurchases.value.last_created ? iso(paidCreditPurchases.value.last_created) : "n/a"
+      })`,
+    )
+  } else {
+    lines.push(`- Error: ${paidCreditPurchases.error}`)
   }
   lines.push(``)
 
@@ -183,6 +328,13 @@ async function main() {
     lines.push(`- AI images created: ${aiImages.value.count} (last: ${aiImages.value.last_created ? iso(aiImages.value.last_created) : "n/a"})`)
   } else {
     lines.push(`- Error: ${aiImages.error}`)
+  }
+  lines.push(``)
+
+  lines.push(`## Notes`)
+  lines.push(`- Welcome bonus credits are top-of-funnel activation credits and are not cash revenue.`)
+  if (newSubs.ok && payments.ok && Number(newSubs.value.count ?? 0) > 0 && Number(payments.value.count ?? 0) === 0) {
+    lines.push(`- New subscriptions with zero succeeded Stripe payments in the same window usually indicate webhook timing lag, non-active/past_due subscription rows, or manual/backfilled records.`)
   }
   lines.push(``)
 

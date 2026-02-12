@@ -287,7 +287,7 @@ export async function GET(request: NextRequest) {
 
         if (existingByStripe.length > 0) {
           if (hasSubsIsTestMode) {
-            await sql`
+            const updated = await sql`
               UPDATE subscriptions
               SET
                 user_id = ${resolved.userId},
@@ -300,9 +300,21 @@ export async function GET(request: NextRequest) {
                 is_test_mode = ${isTestMode},
                 updated_at = NOW()
               WHERE stripe_subscription_id = ${sub.id}
+                AND (
+                  user_id IS DISTINCT FROM ${resolved.userId}
+                  OR product_type IS DISTINCT FROM ${productType}
+                  OR plan IS DISTINCT FROM ${productType}
+                  OR status IS DISTINCT FROM ${stripeStatus}
+                  OR stripe_customer_id IS DISTINCT FROM ${customerId}
+                  OR current_period_start IS DISTINCT FROM ${cps}
+                  OR current_period_end IS DISTINCT FROM ${cpe}
+                  OR is_test_mode IS DISTINCT FROM ${isTestMode}
+                )
+              RETURNING id
             `
+            upserted += updated.length
           } else {
-            await sql`
+            const updated = await sql`
               UPDATE subscriptions
               SET
                 user_id = ${resolved.userId},
@@ -314,9 +326,19 @@ export async function GET(request: NextRequest) {
                 current_period_end = ${cpe},
                 updated_at = NOW()
               WHERE stripe_subscription_id = ${sub.id}
+                AND (
+                  user_id IS DISTINCT FROM ${resolved.userId}
+                  OR product_type IS DISTINCT FROM ${productType}
+                  OR plan IS DISTINCT FROM ${productType}
+                  OR status IS DISTINCT FROM ${stripeStatus}
+                  OR stripe_customer_id IS DISTINCT FROM ${customerId}
+                  OR current_period_start IS DISTINCT FROM ${cps}
+                  OR current_period_end IS DISTINCT FROM ${cpe}
+                )
+              RETURNING id
             `
+            upserted += updated.length
           }
-          upserted += 1
           continue
         }
 
@@ -335,7 +357,7 @@ export async function GET(request: NextRequest) {
 
         if (existingUnlinkedMembership.length > 0) {
           if (hasSubsIsTestMode) {
-            await sql`
+            const updated = await sql`
               UPDATE subscriptions
               SET
                 product_type = ${productType},
@@ -348,9 +370,21 @@ export async function GET(request: NextRequest) {
                 is_test_mode = ${isTestMode},
                 updated_at = NOW()
               WHERE id = ${existingUnlinkedMembership[0].id}
+                AND (
+                  product_type IS DISTINCT FROM ${productType}
+                  OR plan IS DISTINCT FROM ${productType}
+                  OR status IS DISTINCT FROM ${stripeStatus}
+                  OR stripe_subscription_id IS DISTINCT FROM ${sub.id}
+                  OR stripe_customer_id IS DISTINCT FROM ${customerId}
+                  OR current_period_start IS DISTINCT FROM ${cps}
+                  OR current_period_end IS DISTINCT FROM ${cpe}
+                  OR is_test_mode IS DISTINCT FROM ${isTestMode}
+                )
+              RETURNING id
             `
+            upserted += updated.length
           } else {
-            await sql`
+            const updated = await sql`
               UPDATE subscriptions
               SET
                 product_type = ${productType},
@@ -362,9 +396,19 @@ export async function GET(request: NextRequest) {
                 current_period_end = ${cpe},
                 updated_at = NOW()
               WHERE id = ${existingUnlinkedMembership[0].id}
+                AND (
+                  product_type IS DISTINCT FROM ${productType}
+                  OR plan IS DISTINCT FROM ${productType}
+                  OR status IS DISTINCT FROM ${stripeStatus}
+                  OR stripe_subscription_id IS DISTINCT FROM ${sub.id}
+                  OR stripe_customer_id IS DISTINCT FROM ${customerId}
+                  OR current_period_start IS DISTINCT FROM ${cps}
+                  OR current_period_end IS DISTINCT FROM ${cpe}
+                )
+              RETURNING id
             `
+            upserted += updated.length
           }
-          upserted += 1
           continue
         }
 

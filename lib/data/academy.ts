@@ -528,15 +528,6 @@ export async function getUserCourseProgress(userId: string, courseId: number) {
   }
 }
 
-/**
- * Alias for updateVideoWatchTime - updates lesson progress
- */
-export const updateLessonProgress = updateVideoWatchTime
-
-/**
- * Alias for completeLesson - marks lesson as complete
- */
-export const markLessonComplete = completeLesson
 
 /**
  * @deprecated Use getCoursesForMembership() instead

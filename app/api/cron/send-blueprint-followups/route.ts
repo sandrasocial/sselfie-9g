@@ -17,6 +17,23 @@ const sql = neon(process.env.DATABASE_URL!)
 const FIRST_NAME_PLACEHOLDER = "{{{FIRST_NAME|friend}}}"
 const EMAIL_PLACEHOLDER = "{{{EMAIL}}}"
 
+async function assertMarketingRunDidNotFail(runId: string, emailType: string) {
+  const [run] = await sql`
+    SELECT status, error_message
+    FROM marketing_send_runs
+    WHERE run_id = ${runId}
+    LIMIT 1
+  `
+
+  if (!run) {
+    throw new Error(`${emailType} marketing run missing after enqueue (${runId})`)
+  }
+
+  if (String(run.status || "") === "failed") {
+    throw new Error(run.error_message || `${emailType} marketing run failed`)
+  }
+}
+
 /**
  * Blueprint Followup Sequence - Resend Broadcasts (Marketing)
  * 
@@ -164,7 +181,7 @@ export async function GET(request: Request) {
           email: EMAIL_PLACEHOLDER,
         })
 
-        await enqueueAndProcessMarketingRun({
+        const runId = await enqueueAndProcessMarketingRun({
           sequenceKey: "blueprint-followup-day-3",
           emailType: "blueprint-followup-day-3",
           tagKey: "sequence_blueprint_day_3",
@@ -175,6 +192,7 @@ export async function GET(request: Request) {
           text: emailContent.text,
           recipients: contacts,
         })
+        await assertMarketingRunDidNotFail(runId, "blueprint-followup-day-3")
 
         await sql`
           UPDATE blueprint_subscribers
@@ -240,7 +258,7 @@ export async function GET(request: Request) {
           email: EMAIL_PLACEHOLDER,
         })
 
-        await enqueueAndProcessMarketingRun({
+        const runId = await enqueueAndProcessMarketingRun({
           sequenceKey: "blueprint-followup-day-7",
           emailType: "blueprint-followup-day-7",
           tagKey: "sequence_blueprint_day_7",
@@ -251,6 +269,7 @@ export async function GET(request: Request) {
           text: emailContent.text,
           recipients: contacts,
         })
+        await assertMarketingRunDidNotFail(runId, "blueprint-followup-day-7")
 
         await sql`
           UPDATE blueprint_subscribers
@@ -316,7 +335,7 @@ export async function GET(request: Request) {
           email: EMAIL_PLACEHOLDER,
         })
 
-        await enqueueAndProcessMarketingRun({
+        const runId = await enqueueAndProcessMarketingRun({
           sequenceKey: "blueprint-followup-day-14",
           emailType: "blueprint-followup-day-14",
           tagKey: "sequence_blueprint_day_14",
@@ -327,6 +346,7 @@ export async function GET(request: Request) {
           text: emailContent.text,
           recipients: contacts,
         })
+        await assertMarketingRunDidNotFail(runId, "blueprint-followup-day-14")
 
         await sql`
           UPDATE blueprint_subscribers

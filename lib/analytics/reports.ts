@@ -142,10 +142,12 @@ export async function generateCohortWeeklyReport(input?: {
     cohortWeek: string
     signups: number
     uploadedSelfies: number
+    plannerStarted: number
     trainedModel: number
     generatedAny: number
     paidActive: number
     retainedD1Proxy: number
+    retainedD1ActivityProxy: number
   }>
 }> {
   const weeks = input?.weeks ?? 8
@@ -179,6 +181,11 @@ export async function generateCohortWeeklyReport(input?: {
       FROM selfie_uploads su
       JOIN keys k ON k.key = su.user_id::text
     ),
+    planner AS (
+      SELECT DISTINCT k.user_id
+      FROM feed_posts fp
+      JOIN keys k ON k.key = fp.user_id::text
+    ),
     trained AS (
       SELECT DISTINCT k.user_id
       FROM user_models um
@@ -198,15 +205,49 @@ export async function generateCohortWeeklyReport(input?: {
       FROM subscriptions s
       JOIN keys k ON k.key = s.user_id::text
       WHERE s.status = 'active'
+    ),
+    d1_activity AS (
+      SELECT DISTINCT b.user_id
+      FROM base b
+      WHERE EXISTS (
+        SELECT 1
+        FROM feed_posts fp
+        WHERE fp.user_id::text IN (b.user_id, b.stack_auth_user_id)
+          AND fp.created_at >= b.created_at
+          AND fp.created_at < b.created_at + INTERVAL '24 hours'
+      )
+      OR EXISTS (
+        SELECT 1
+        FROM ai_images ai
+        WHERE ai.user_id::text IN (b.user_id, b.stack_auth_user_id)
+          AND ai.created_at >= b.created_at
+          AND ai.created_at < b.created_at + INTERVAL '24 hours'
+      )
+      OR EXISTS (
+        SELECT 1
+        FROM user_models um
+        WHERE um.user_id::text IN (b.user_id, b.stack_auth_user_id)
+          AND um.created_at >= b.created_at
+          AND um.created_at < b.created_at + INTERVAL '24 hours'
+      )
+      OR EXISTS (
+        SELECT 1
+        FROM generation_trackers gt
+        WHERE gt.user_id::text IN (b.user_id, b.stack_auth_user_id)
+          AND gt.created_at >= b.created_at
+          AND gt.created_at < b.created_at + INTERVAL '24 hours'
+      )
     )
     SELECT
       to_char(cohort_week, 'YYYY-MM-DD') AS cohort_week,
       COUNT(*)::int AS signups,
       COUNT(*) FILTER (WHERE user_id IN (SELECT user_id FROM selfie))::int AS uploaded_selfies,
+      COUNT(*) FILTER (WHERE user_id IN (SELECT user_id FROM planner))::int AS planner_started,
       COUNT(*) FILTER (WHERE user_id IN (SELECT user_id FROM trained))::int AS trained_model,
       COUNT(*) FILTER (WHERE user_id IN (SELECT user_id FROM gen1))::int AS generated_any,
       COUNT(*) FILTER (WHERE user_id IN (SELECT user_id FROM paid))::int AS paid_active,
-      COUNT(*) FILTER (WHERE last_login_at IS NOT NULL AND last_login_at >= created_at + INTERVAL '24 hours')::int AS retained_d1_proxy
+      COUNT(*) FILTER (WHERE last_login_at IS NOT NULL AND last_login_at >= created_at + INTERVAL '24 hours')::int AS retained_d1_proxy,
+      COUNT(*) FILTER (WHERE user_id IN (SELECT user_id FROM d1_activity))::int AS retained_d1_activity_proxy
     FROM base
     GROUP BY cohort_week
     ORDER BY cohort_week DESC
@@ -218,10 +259,12 @@ export async function generateCohortWeeklyReport(input?: {
       cohortWeek: String(r.cohort_week),
       signups: asInt(r.signups),
       uploadedSelfies: asInt(r.uploaded_selfies),
+      plannerStarted: asInt(r.planner_started),
       trainedModel: asInt(r.trained_model),
       generatedAny: asInt(r.generated_any),
       paidActive: asInt(r.paid_active),
       retainedD1Proxy: asInt(r.retained_d1_proxy),
+      retainedD1ActivityProxy: asInt(r.retained_d1_activity_proxy),
     })),
   }
 }
@@ -256,4 +299,3 @@ export async function getLatestAnalyticsReports(input: { reportType: string; lim
   `
   return rows as any[]
 }
-

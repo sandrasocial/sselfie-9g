@@ -48,6 +48,23 @@ const sql = neon(process.env.DATABASE_URL!)
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "ssa@ssasocial.com"
 const FIRST_NAME_PLACEHOLDER = "{{{FIRST_NAME|friend}}}"
 const EMAIL_PLACEHOLDER = "{{{EMAIL}}}"
+const STALE_DRAFT_SENDING_HOURS = Number.parseInt(process.env.EMAIL_STALE_DRAFT_SENDING_HOURS || "24", 10)
+
+async function resetStaleDraftSendingCampaigns(staleHours: number): Promise<number> {
+  const staleRows = await sql`
+    UPDATE admin_email_campaigns
+    SET
+      status = 'draft',
+      updated_at = NOW()
+    WHERE status = 'sending'
+      AND approval_status = 'draft'
+      AND sent_at IS NULL
+      AND scheduled_for IS NOT NULL
+      AND scheduled_for < NOW() - make_interval(hours => ${staleHours})
+    RETURNING id
+  `
+  return (staleRows as any[])?.length || 0
+}
 
 export interface RunScheduledCampaignsConfig {
   mode: "live" | "test"
@@ -618,6 +635,13 @@ export async function runScheduledCampaigns(
     }
   } else {
     // Live mode: only process scheduled campaigns
+    const staleResetCount = await resetStaleDraftSendingCampaigns(STALE_DRAFT_SENDING_HOURS)
+    if (staleResetCount > 0) {
+      console.log(
+        `[v0] Reset ${staleResetCount} stale draft campaigns from sending -> draft (>${STALE_DRAFT_SENDING_HOURS}h old)`,
+      )
+    }
+
     if (campaignId) {
       // Specific campaign requested
       campaigns = await sql`

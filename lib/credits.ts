@@ -35,6 +35,11 @@ export type TransactionType =
   | "refund"
   | "bonus"
 
+export type AddCreditsOptions = {
+  allowUnlinkedPurchase?: boolean
+  source?: string
+}
+
 /**
  * Check if user has enough credits for an action
  */
@@ -137,10 +142,23 @@ export async function addCredits(
   description: string,
   stripePaymentId?: string,
   isTestMode = false,
+  options?: AddCreditsOptions,
 ): Promise<{ success: boolean; newBalance: number; error?: string }> {
   if (!sql) {
     console.log("[v0] [CREDITS] Database not available - skipping add credits")
     return { success: false, newBalance: 0, error: "Database not available" }
+  }
+
+  const normalizedStripePaymentId = typeof stripePaymentId === "string" ? stripePaymentId.trim() : ""
+  if (type === "purchase" && !normalizedStripePaymentId && !options?.allowUnlinkedPurchase) {
+    const error = "Missing stripe_payment_id for purchase credit grant"
+    console.error("[v0] [CREDITS] ❌ Refusing unlinked purchase credit grant:", {
+      userId,
+      amount,
+      description,
+      source: options?.source || "unknown",
+    })
+    return { success: false, newBalance: 0, error }
   }
 
   try {
@@ -149,8 +167,9 @@ export async function addCredits(
       amount,
       type,
       description,
-      stripePaymentId,
+      stripePaymentId: normalizedStripePaymentId || null,
       isTestMode,
+      options,
     })
 
     let currentBalance = 0
@@ -184,7 +203,7 @@ export async function addCredits(
       )
       VALUES (
         ${userId}, ${amount}, ${type}, ${description},
-        ${stripePaymentId || null}, ${newBalance}, ${isTestMode}, NOW()
+        ${normalizedStripePaymentId || null}, ${newBalance}, ${isTestMode}, NOW()
       )
     `
 
@@ -429,7 +448,8 @@ export async function grantMonthlyCredits(
 export async function grantOneTimeSessionCredits(
   userId: string,
   stripePaymentId?: string,
-  isTestMode = false
+  isTestMode = false,
+  options?: AddCreditsOptions,
 ) {
   const credits = SUBSCRIPTION_CREDITS.one_time_session
 
@@ -437,7 +457,15 @@ export async function grantOneTimeSessionCredits(
     console.warn('[Credits] ⚠️ grantOneTimeSessionCredits called without stripe_payment_id')
   }
 
-  return await addCredits(userId, credits, "purchase", "One-Time SSELFIE Session purchase", stripePaymentId, isTestMode)
+  return await addCredits(
+    userId,
+    credits,
+    "purchase",
+    "One-Time SSELFIE Session purchase",
+    stripePaymentId,
+    isTestMode,
+    options,
+  )
 }
 
 /**
@@ -469,7 +497,8 @@ export async function grantFreeUserCredits(userId: string): Promise<{ success: b
 export async function grantPaidBlueprintCredits(
   userId: string,
   stripePaymentId?: string,
-  isTestMode = false
+  isTestMode = false,
+  options?: AddCreditsOptions,
 ): Promise<{ success: boolean; newBalance: number; error?: string }> {
   const credits = 60 // Paid blueprint users get 60 credits (30 images × 2 credits per image)
 
@@ -486,5 +515,6 @@ export async function grantPaidBlueprintCredits(
     "Paid Blueprint purchase (60 credits - 30 images)",
     stripePaymentId,
     isTestMode,
+    options,
   )
 }

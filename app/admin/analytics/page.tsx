@@ -25,6 +25,17 @@ type FunnelReport = {
   }
 }
 
+type CohortRow = {
+  cohortWeek: string
+  signups: number
+  uploadedSelfies: number
+  plannerStarted?: number
+  generatedAny: number
+  paidActive: number
+  retainedD1Proxy?: number
+  retainedD1ActivityProxy?: number
+}
+
 type StoredReportRow = {
   id: number
   report_type: string
@@ -254,18 +265,22 @@ export default function AnalyticsPage() {
                       <th className="text-left py-2 pr-3">Week</th>
                       <th className="text-right py-2 px-2">Signups</th>
                       <th className="text-right py-2 px-2">Selfies</th>
+                      <th className="text-right py-2 px-2">Planner</th>
                       <th className="text-right py-2 px-2">Generated</th>
                       <th className="text-right py-2 px-2">Paid</th>
+                      <th className="text-right py-2 px-2">D1 Active</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {(cohortReports[0].payload.rows as any[]).slice(0, 8).map((r, idx) => (
+                    {(cohortReports[0].payload.rows as CohortRow[]).slice(0, 8).map((r, idx) => (
                       <tr key={idx} className="border-b border-stone-100 text-stone-700">
                         <td className="py-2 pr-3 font-mono text-[11px]">{r.cohortWeek}</td>
                         <td className="py-2 px-2 text-right font-mono text-[11px]">{r.signups}</td>
                         <td className="py-2 px-2 text-right font-mono text-[11px]">{r.uploadedSelfies}</td>
+                        <td className="py-2 px-2 text-right font-mono text-[11px]">{r.plannerStarted ?? 0}</td>
                         <td className="py-2 px-2 text-right font-mono text-[11px]">{r.generatedAny}</td>
                         <td className="py-2 px-2 text-right font-mono text-[11px]">{r.paidActive}</td>
+                        <td className="py-2 px-2 text-right font-mono text-[11px]">{r.retainedD1ActivityProxy ?? 0}</td>
                       </tr>
                     ))}
                   </tbody>

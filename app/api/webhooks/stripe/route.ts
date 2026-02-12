@@ -827,19 +827,23 @@ export async function POST(request: NextRequest) {
               }
             }
             
+            const paymentIdForSessionCredits = paymentIntentId || session.id
+
             // Pass payment ID to track the purchase
-            await grantOneTimeSessionCredits(userId, paymentIntentId, isTestMode)
-            console.log(`[v0] ✅ Granted one-time session credits with payment ID: ${paymentIntentId}`)
+            await grantOneTimeSessionCredits(userId, paymentIdForSessionCredits, isTestMode, {
+              source: "stripe_webhook:one_time_session",
+            })
+            console.log(`[v0] ✅ Granted one-time session credits with payment ID: ${paymentIdForSessionCredits}`)
             
             // Update the credit_transaction record to store product_type and payment amount
-            if (paymentIntentId) {
+            if (paymentIdForSessionCredits) {
               await sql`
                 UPDATE credit_transactions
                 SET 
                   product_type = 'one_time_session',
                   payment_amount_cents = ${paymentAmountCents}
                 WHERE user_id = ${userId}
-                  AND stripe_payment_id = ${paymentIntentId}
+                  AND stripe_payment_id = ${paymentIdForSessionCredits}
                   AND (product_type IS NULL OR payment_amount_cents IS NULL)
               `
             }
@@ -977,26 +981,29 @@ export async function POST(request: NextRequest) {
               }
             }
             
+            const paymentIdForTopupCredits = paymentIntentId || session.id
+
             // Pass payment ID to track the purchase
             await addCredits(
               userId,
               credits,
               "purchase",
               `Credit top-up purchase (${credits} credits)`,
-              paymentIntentId,
-              isTestMode
+              paymentIdForTopupCredits,
+              isTestMode,
+              { source: "stripe_webhook:credit_topup" },
             )
-            console.log(`[v0] ✅ Granted top-up credits with payment ID: ${paymentIntentId}`)
+            console.log(`[v0] ✅ Granted top-up credits with payment ID: ${paymentIdForTopupCredits}`)
             
             // Update to store product_type and payment amount
-            if (paymentIntentId) {
+            if (paymentIdForTopupCredits) {
               await sql`
                 UPDATE credit_transactions
                 SET 
                   product_type = 'credit_topup',
                   payment_amount_cents = ${paymentAmountCents}
                 WHERE user_id = ${userId}
-                  AND stripe_payment_id = ${paymentIntentId}
+                  AND stripe_payment_id = ${paymentIdForTopupCredits}
                   AND (product_type IS NULL OR payment_amount_cents IS NULL)
               `
             }
@@ -1211,7 +1218,9 @@ export async function POST(request: NextRequest) {
                       console.log(`[v0] ⏭️ Credits already granted for payment ${paymentIdForCredits} - skipping (idempotency)`)
                     } else {
                       // Grant credits (not already granted)
-                      const creditResult = await grantPaidBlueprintCredits(userId, paymentIdForCredits, isTestMode)
+                      const creditResult = await grantPaidBlueprintCredits(userId, paymentIdForCredits, isTestMode, {
+                        source: "stripe_webhook:paid_blueprint",
+                      })
                       if (creditResult.success) {
                         console.log(`[v0] ✅ Granted 60 credits for paid blueprint purchase to user ${userId} (30 images × 2 credits per image)`)
                       } else {
@@ -1219,14 +1228,11 @@ export async function POST(request: NextRequest) {
                       }
                     }
                   } else {
-                    // No payment ID - grant credits anyway (legacy support)
-                    console.warn(`[v0] ⚠️ No payment ID for credit grant (idempotency check skipped)`)
-                    const creditResult = await grantPaidBlueprintCredits(userId, undefined, isTestMode)
-                    if (creditResult.success) {
-                      console.log(`[v0] ✅ Granted 60 credits for paid blueprint purchase to user ${userId}`)
-                    } else {
-                      console.error(`[v0] ⚠️ Failed to grant paid blueprint credits: ${creditResult.error}`)
-                    }
+                    console.error(`[v0] ❌ Missing payment/session identifier for paid blueprint credit grant`, {
+                      userId,
+                      sessionId: session.id,
+                      paymentIntentId,
+                    })
                   }
                 } catch (creditError: any) {
                   console.error(`[v0] ⚠️ Error granting paid blueprint credits (non-critical):`, creditError.message)

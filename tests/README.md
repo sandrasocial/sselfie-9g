@@ -106,10 +106,6 @@ npx playwright test -g "should complete onboarding"
    - `cleanupTestUser(email)` - Removes test subscriptions and resets credits
    - `setUserCredits(email, balance, totalUsed)` - Sets credit amounts for testing
 
-2. **`helpers/stripe-mock.ts`**
-   - `mockStripeCheckout(page)` - Mocks Stripe checkout APIs
-   - `simulateStripeWebhook(page, userId)` - Simulates successful payment webhook
-
 ---
 
 ## TEST SETUP REQUIREMENTS

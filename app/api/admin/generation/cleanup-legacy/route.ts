@@ -68,9 +68,17 @@ export async function POST(request: Request) {
         AND updated_at < NOW() - make_interval(days => ${daysOld})
     `
 
+    const [trackerCandidates] = await sql`
+      SELECT COUNT(*)::int AS count
+      FROM generation_trackers
+      WHERE created_at < NOW() - make_interval(days => ${daysOld})
+        AND status IN ('queued', 'starting', 'processing', 'running', 'in_progress', 'pending')
+    `
+
     let updatedFeed = 0
     let updatedAi = 0
     let updatedPro = 0
+    let updatedTrackers = 0
 
     if (!dryRun) {
       const feedRows = await sql`
@@ -109,6 +117,17 @@ export async function POST(request: Request) {
         RETURNING id
       `
       updatedPro = (proRows as any[])?.length || 0
+
+      const trackerRows = await sql`
+        UPDATE generation_trackers
+        SET
+          status = 'failed',
+          updated_at = NOW()
+        WHERE created_at < NOW() - make_interval(days => ${daysOld})
+          AND status IN ('queued', 'starting', 'processing', 'running', 'in_progress', 'pending')
+        RETURNING id
+      `
+      updatedTrackers = (trackerRows as any[])?.length || 0
     }
 
     return NextResponse.json({
@@ -119,11 +138,13 @@ export async function POST(request: Request) {
         feedPosts: Number((feedCandidates as any)?.count || 0),
         aiImages: Number((aiCandidates as any)?.count || 0),
         proPhotoshootGrids: Number((proCandidates as any)?.count || 0),
+        generationTrackers: Number((trackerCandidates as any)?.count || 0),
       },
       updated: {
         feedPosts: updatedFeed,
         aiImages: updatedAi,
         proPhotoshootGrids: updatedPro,
+        generationTrackers: updatedTrackers,
       },
     })
   } catch (error) {

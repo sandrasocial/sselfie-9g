@@ -124,13 +124,28 @@ async function main() {
     `
   })
 
-  const campaigns = await safe("campaigns_due", async () => {
+  const campaignsActionable = await safe("campaigns_due_actionable", async () => {
     return await sql`
       SELECT id, campaign_name, campaign_type, status, approval_status, scheduled_for, resend_broadcast_id
       FROM admin_email_campaigns
       WHERE scheduled_for IS NOT NULL
         AND scheduled_for <= NOW()
+        AND approval_status = 'approved'
         AND status IN ('scheduled', 'sending', 'failed')
+      ORDER BY scheduled_for ASC
+      LIMIT 25
+    `
+  })
+
+  const campaignsStaleDraft = await safe("campaigns_stale_draft_sending", async () => {
+    return await sql`
+      SELECT id, campaign_name, campaign_type, status, approval_status, scheduled_for, resend_broadcast_id
+      FROM admin_email_campaigns
+      WHERE status = 'sending'
+        AND approval_status = 'draft'
+        AND sent_at IS NULL
+        AND scheduled_for IS NOT NULL
+        AND scheduled_for <= NOW() - INTERVAL '24 hours'
       ORDER BY scheduled_for ASC
       LIMIT 25
     `
@@ -214,19 +229,35 @@ async function main() {
   }
   lines.push(``)
 
-  lines.push(`## Campaigns due/sending/failed (best-effort)`)
-  if (campaigns.ok) {
-    if ((campaigns.value as any[]).length === 0) {
-      lines.push(`No due/sending/failed campaigns found.`)
+  lines.push(`## Campaigns due/sending/failed (approved only)`)
+  if (campaignsActionable.ok) {
+    if ((campaignsActionable.value as any[]).length === 0) {
+      lines.push(`No approved due/sending/failed campaigns found.`)
     } else {
-      for (const c of campaigns.value as any[]) {
+      for (const c of campaignsActionable.value as any[]) {
         lines.push(
           `- ${c.id}: ${c.campaign_name} (${c.campaign_type}) status=${c.status} approval=${c.approval_status ?? "n/a"} scheduled_for=${c.scheduled_for ? iso(c.scheduled_for) : "n/a"} resend_broadcast_id=${c.resend_broadcast_id || "n/a"}`,
         )
       }
     }
   } else {
-    lines.push(`- Error: ${campaigns.error}`)
+    lines.push(`- Error: ${campaignsActionable.error}`)
+  }
+  lines.push(``)
+
+  lines.push(`## Stale draft campaigns stuck in sending (best-effort)`)
+  if (campaignsStaleDraft.ok) {
+    if ((campaignsStaleDraft.value as any[]).length === 0) {
+      lines.push(`No stale draft/sending campaigns found.`)
+    } else {
+      for (const c of campaignsStaleDraft.value as any[]) {
+        lines.push(
+          `- ${c.id}: ${c.campaign_name} (${c.campaign_type}) status=${c.status} approval=${c.approval_status ?? "n/a"} scheduled_for=${c.scheduled_for ? iso(c.scheduled_for) : "n/a"} resend_broadcast_id=${c.resend_broadcast_id || "n/a"}`,
+        )
+      }
+    }
+  } else {
+    lines.push(`- Error: ${campaignsStaleDraft.error}`)
   }
   lines.push(``)
 

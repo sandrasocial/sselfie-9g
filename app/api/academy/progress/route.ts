@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { updateLessonProgress, markLessonComplete } from "@/lib/data/academy"
+import { completeLesson, updateVideoWatchTime } from "@/lib/data/academy"
 
 // POST - Update watch time for video lessons
 export async function POST(req: NextRequest) {
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Update progress
-    const progress = await updateLessonProgress(neonUser.id, Number.parseInt(lessonId), watchTimeSeconds)
+    const progress = await updateVideoWatchTime(neonUser.id, Number.parseInt(lessonId), watchTimeSeconds)
 
     console.log("[v0] Progress updated:", progress)
 
@@ -77,7 +77,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     // Mark as complete
-    const progress = await markLessonComplete(neonUser.id, Number.parseInt(lessonId))
+    const progress = await completeLesson(neonUser.id, Number.parseInt(lessonId))
 
     console.log("[v0] Lesson marked complete:", progress)
 

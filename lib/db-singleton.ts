@@ -3,11 +3,11 @@ import { neon } from "@neondatabase/serverless"
 let dbInstance: ReturnType<typeof neon> | null = null
 
 /**
- * Get or create a singleton database connection
+ * Get or create a singleton database connection.
  * This prevents creating new connections on every API request
  * which would exhaust the connection pool under load
  */
-export function getDb() {
+function getOrCreateDb() {
   if (!dbInstance) {
     if (!process.env.DATABASE_URL) {
       throw new Error("DATABASE_URL environment variable is not set")
@@ -20,7 +20,9 @@ export function getDb() {
   return dbInstance
 }
 
-export const getDbClient = getDb
+export function getDbClient() {
+  return getOrCreateDb()
+}
 
-// Export for backwards compatibility
-export const sql = getDb()
+// Shared singleton sql client for modules that import `sql` directly.
+export const sql = getDbClient()

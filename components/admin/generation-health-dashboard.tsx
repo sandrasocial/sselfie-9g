@@ -170,7 +170,7 @@ export function GenerationHealthDashboard() {
         dryRun: false,
       })
       setActionMessage(
-        `Legacy cleanup complete (${legacyDays}d+). Feed updated ${Number(result?.updated?.feedPosts || 0)} of ${Number(result?.candidates?.feedPosts || 0)}. AI updated ${Number(result?.updated?.aiImages || 0)} of ${Number(result?.candidates?.aiImages || 0)}. Pro updated ${Number(result?.updated?.proPhotoshootGrids || 0)} of ${Number(result?.candidates?.proPhotoshootGrids || 0)}.`,
+        `Legacy cleanup complete (${legacyDays}d+). Feed updated ${Number(result?.updated?.feedPosts || 0)} of ${Number(result?.candidates?.feedPosts || 0)}. AI updated ${Number(result?.updated?.aiImages || 0)} of ${Number(result?.candidates?.aiImages || 0)}. Pro updated ${Number(result?.updated?.proPhotoshootGrids || 0)} of ${Number(result?.candidates?.proPhotoshootGrids || 0)}. Trackers updated ${Number(result?.updated?.generationTrackers || 0)} of ${Number(result?.candidates?.generationTrackers || 0)}.`,
       )
       await mutate()
     } catch (e: any) {

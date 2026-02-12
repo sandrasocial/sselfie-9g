@@ -6,9 +6,29 @@ dotenv.config({ path: '.env.local' })
 
 const sql = neon(process.env.DATABASE_URL!)
 
+function fmtDate(value: any) {
+  if (!value) return 'unknown'
+  const d = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(d.getTime())) return String(value)
+  return d.toISOString().slice(0, 10)
+}
+
+async function hasTable(tableName: string) {
+  const rows = await sql`
+    SELECT EXISTS (
+      SELECT 1
+      FROM information_schema.tables
+      WHERE table_schema = 'public'
+        AND table_name = ${tableName}
+    ) AS exists
+  `
+  return Boolean(rows[0]?.exists)
+}
+
 async function auditRevenueSources() {
   console.log('💰 REVENUE SOURCES AUDIT\n')
   console.log('='.repeat(60))
+  const stripePaymentsTableExists = await hasTable('stripe_payments')
   
   // 1. Credit Transactions Schema
   console.log('\n1. CREDIT_TRANSACTIONS TABLE SCHEMA:')
@@ -53,19 +73,89 @@ async function auditRevenueSources() {
         COUNT(*) as total_purchases,
         COUNT(DISTINCT user_id) as unique_buyers,
         SUM(amount) as total_credits_purchased,
-        COUNT(*) FILTER (WHERE stripe_payment_id IS NOT NULL) as with_stripe_id,
-        COUNT(*) FILTER (WHERE is_test_mode = TRUE OR is_test_mode IS NULL) as test_mode,
-        COUNT(*) FILTER (WHERE is_test_mode = FALSE) as live_mode
+        COUNT(*) FILTER (WHERE stripe_payment_id IS NOT NULL AND btrim(stripe_payment_id) <> '') as with_stripe_id,
+        COUNT(*) FILTER (WHERE stripe_payment_id IS NULL OR btrim(stripe_payment_id) = '') as missing_stripe_id,
+        COUNT(*) FILTER (WHERE is_test_mode = TRUE) as test_mode,
+        COUNT(*) FILTER (WHERE is_test_mode = FALSE) as live_mode,
+        COUNT(*) FILTER (WHERE is_test_mode IS NULL) as unknown_mode
       FROM credit_transactions
       WHERE transaction_type = 'purchase'
     `
-    const p = purchases[0]
+    const p: any = purchases[0]
     console.log(`   Total purchase transactions: ${p.total_purchases}`)
     console.log(`   Unique buyers: ${p.unique_buyers}`)
     console.log(`   Total credits purchased: ${p.total_credits_purchased}`)
     console.log(`   With Stripe payment ID: ${p.with_stripe_id}`)
+    console.log(`   Missing Stripe payment ID: ${p.missing_stripe_id}`)
     console.log(`   Test mode: ${p.test_mode}`)
     console.log(`   Live mode: ${p.live_mode}`)
+    console.log(`   Unknown mode: ${p.unknown_mode}`)
+  } catch (error: any) {
+    console.log('   ERROR:', error.message)
+  }
+
+  console.log('\n3b. PURCHASE LINKAGE QUALITY:')
+  try {
+    const missingByProduct = await sql`
+      SELECT
+        COALESCE(product_type, 'NULL') as product_type,
+        COUNT(*) as total,
+        COUNT(*) FILTER (WHERE stripe_payment_id IS NULL OR btrim(stripe_payment_id) = '') as missing_stripe_id
+      FROM credit_transactions
+      WHERE transaction_type = 'purchase'
+      GROUP BY COALESCE(product_type, 'NULL')
+      ORDER BY total DESC
+    `
+    console.log('   Missing stripe_payment_id by product_type:')
+    missingByProduct.forEach((row: any) => {
+      console.log(`   - ${row.product_type}: ${row.missing_stripe_id}/${row.total}`)
+    })
+
+    const weeklyLinkage = await sql`
+      SELECT
+        date_trunc('week', created_at)::date as week,
+        COUNT(*) as purchases,
+        COUNT(*) FILTER (WHERE stripe_payment_id IS NOT NULL AND btrim(stripe_payment_id) <> '') as with_stripe_id,
+        COUNT(*) FILTER (WHERE stripe_payment_id IS NULL OR btrim(stripe_payment_id) = '') as missing_stripe_id
+      FROM credit_transactions
+      WHERE transaction_type = 'purchase'
+      GROUP BY week
+      ORDER BY week DESC
+      LIMIT 12
+    `
+    console.log('   Weekly purchase linkage (latest 12 weeks):')
+    weeklyLinkage.forEach((row: any) => {
+      console.log(`   - ${fmtDate(row.week)}: ${row.with_stripe_id}/${row.purchases} linked, ${row.missing_stripe_id} missing`)
+    })
+
+    if (stripePaymentsTableExists) {
+      const linkageToStripeTable = await sql`
+        SELECT
+          COUNT(*) FILTER (WHERE ct.stripe_payment_id IS NOT NULL AND btrim(ct.stripe_payment_id) <> '') as with_id,
+          COUNT(*) FILTER (
+            WHERE ct.stripe_payment_id IS NOT NULL
+              AND btrim(ct.stripe_payment_id) <> ''
+              AND EXISTS (
+                SELECT 1 FROM stripe_payments sp
+                WHERE sp.stripe_payment_id = ct.stripe_payment_id
+              )
+          ) as matched,
+          COUNT(*) FILTER (
+            WHERE ct.stripe_payment_id IS NOT NULL
+              AND btrim(ct.stripe_payment_id) <> ''
+              AND NOT EXISTS (
+                SELECT 1 FROM stripe_payments sp
+                WHERE sp.stripe_payment_id = ct.stripe_payment_id
+              )
+          ) as orphan
+        FROM credit_transactions ct
+        WHERE ct.transaction_type = 'purchase'
+      `
+      const l: any = linkageToStripeTable[0]
+      console.log(`   Purchases with stripe_payment_id: ${l.with_id}`)
+      console.log(`   Matching stripe_payments rows: ${l.matched}`)
+      console.log(`   Orphan stripe_payment_id rows: ${l.orphan}`)
+    }
   } catch (error: any) {
     console.log('   ERROR:', error.message)
   }
@@ -202,4 +292,3 @@ async function auditRevenueSources() {
 }
 
 auditRevenueSources().catch(console.error)
-
