@@ -103,6 +103,7 @@ async function runMigration(req: NextRequest) {
         name VARCHAR(255) NOT NULL,
         email VARCHAR(255) NOT NULL UNIQUE,
         website TEXT,
+        offer_type VARCHAR(50) DEFAULT 'cohort',
         revenue VARCHAR(50),
         current_spend VARCHAR(50),
         biggest_bottleneck TEXT,
@@ -112,11 +113,45 @@ async function runMigration(req: NextRequest) {
         ready_to_invest VARCHAR(50),
         qualified BOOLEAN DEFAULT TRUE,
         status VARCHAR(50) DEFAULT 'pending',
+        pipeline_stage VARCHAR(50) DEFAULT 'applied',
+        qualification_score INTEGER DEFAULT 0,
+        qualification_notes TEXT,
+        priority_tier VARCHAR(20) DEFAULT 'low',
+        source_channel VARCHAR(80) DEFAULT 'unknown',
+        source_detail TEXT,
+        lead_tags JSONB DEFAULT '[]'::jsonb,
+        draft_mode BOOLEAN DEFAULT TRUE,
         calendly_sent BOOLEAN DEFAULT FALSE,
+        call_booked_at TIMESTAMP,
+        call_completed_at TIMESTAMP,
+        offer_sent_at TIMESTAMP,
+        closed_at TIMESTAMP,
+        closed_reason TEXT,
+        expected_value_cents INTEGER DEFAULT 0,
+        cash_collected_cents INTEGER DEFAULT 0,
         notes TEXT,
-        created_at TIMESTAMP DEFAULT NOW()
+        created_at TIMESTAMP DEFAULT NOW(),
+        updated_at TIMESTAMP DEFAULT NOW()
       )
     `
+
+    await sql`ALTER TABLE brand_engine_applications ADD COLUMN IF NOT EXISTS offer_type VARCHAR(50) DEFAULT 'cohort'`
+    await sql`ALTER TABLE brand_engine_applications ADD COLUMN IF NOT EXISTS pipeline_stage VARCHAR(50) DEFAULT 'applied'`
+    await sql`ALTER TABLE brand_engine_applications ADD COLUMN IF NOT EXISTS qualification_score INTEGER DEFAULT 0`
+    await sql`ALTER TABLE brand_engine_applications ADD COLUMN IF NOT EXISTS qualification_notes TEXT`
+    await sql`ALTER TABLE brand_engine_applications ADD COLUMN IF NOT EXISTS priority_tier VARCHAR(20) DEFAULT 'low'`
+    await sql`ALTER TABLE brand_engine_applications ADD COLUMN IF NOT EXISTS source_channel VARCHAR(80) DEFAULT 'unknown'`
+    await sql`ALTER TABLE brand_engine_applications ADD COLUMN IF NOT EXISTS source_detail TEXT`
+    await sql`ALTER TABLE brand_engine_applications ADD COLUMN IF NOT EXISTS lead_tags JSONB DEFAULT '[]'::jsonb`
+    await sql`ALTER TABLE brand_engine_applications ADD COLUMN IF NOT EXISTS draft_mode BOOLEAN DEFAULT TRUE`
+    await sql`ALTER TABLE brand_engine_applications ADD COLUMN IF NOT EXISTS call_booked_at TIMESTAMP`
+    await sql`ALTER TABLE brand_engine_applications ADD COLUMN IF NOT EXISTS call_completed_at TIMESTAMP`
+    await sql`ALTER TABLE brand_engine_applications ADD COLUMN IF NOT EXISTS offer_sent_at TIMESTAMP`
+    await sql`ALTER TABLE brand_engine_applications ADD COLUMN IF NOT EXISTS closed_at TIMESTAMP`
+    await sql`ALTER TABLE brand_engine_applications ADD COLUMN IF NOT EXISTS closed_reason TEXT`
+    await sql`ALTER TABLE brand_engine_applications ADD COLUMN IF NOT EXISTS expected_value_cents INTEGER DEFAULT 0`
+    await sql`ALTER TABLE brand_engine_applications ADD COLUMN IF NOT EXISTS cash_collected_cents INTEGER DEFAULT 0`
+    await sql`ALTER TABLE brand_engine_applications ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW()`
 
     // Create indexes
     await sql`CREATE INDEX IF NOT EXISTS idx_tracker_tasks_project ON tracker_tasks(project_id)`
@@ -124,6 +159,9 @@ async function runMigration(req: NextRequest) {
     await sql`CREATE INDEX IF NOT EXISTS idx_tracker_tasks_scheduled ON tracker_tasks(scheduled_for)`
     await sql`CREATE INDEX IF NOT EXISTS idx_tracker_subtasks_task ON tracker_subtasks(task_id)`
     await sql`CREATE INDEX IF NOT EXISTS idx_tracker_daily_focus_date ON tracker_daily_focus(date)`
+    await sql`CREATE INDEX IF NOT EXISTS idx_brand_engine_applications_pipeline_stage ON brand_engine_applications(pipeline_stage)`
+    await sql`CREATE INDEX IF NOT EXISTS idx_brand_engine_applications_score ON brand_engine_applications(qualification_score DESC)`
+    await sql`CREATE INDEX IF NOT EXISTS idx_brand_engine_applications_created_at ON brand_engine_applications(created_at DESC)`
 
     // Insert default "High-Ticket Offer" project
     const existing = await sql`SELECT id FROM tracker_projects WHERE title = 'High-Ticket Offer Launch'`

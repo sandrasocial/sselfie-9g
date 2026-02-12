@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 
 export default function BrandEngineApplicationPage() {
@@ -8,6 +8,7 @@ export default function BrandEngineApplicationPage() {
     name: "",
     email: "",
     website: "",
+    offerType: "cohort",
     revenue: "",
     currentSpend: "",
     biggestBottleneck: "",
@@ -15,12 +16,40 @@ export default function BrandEngineApplicationPage() {
     businessDescription: "",
     whyInterested: "",
     readyToInvest: "",
+    sourceChannel: "",
+    sourceDetail: "",
+    utmSource: "",
+    utmMedium: "",
+    utmCampaign: "",
+    referrer: "",
   })
 
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [qualified, setQualified] = useState(true)
+  const [score, setScore] = useState<number | null>(null)
   const [error, setError] = useState("")
+
+  useEffect(() => {
+    const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : new URLSearchParams()
+    const utmSource = params.get("utm_source") || ""
+    const utmMedium = params.get("utm_medium") || ""
+    const utmCampaign = params.get("utm_campaign") || ""
+    const source = params.get("source") || utmSource || "unknown"
+    const sourceDetail = params.get("source_detail") || ""
+    const referrer = typeof document !== "undefined" ? document.referrer || "" : ""
+    const utmDetail = [utmSource, utmMedium, utmCampaign].filter(Boolean).join("/")
+
+    setFormData((prev) => ({
+      ...prev,
+      sourceChannel: source.toLowerCase(),
+      sourceDetail: sourceDetail || utmDetail,
+      utmSource,
+      utmMedium,
+      utmCampaign,
+      referrer,
+    }))
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -39,6 +68,7 @@ export default function BrandEngineApplicationPage() {
       if (response.ok) {
         setSubmitted(true)
         setQualified(data.qualified !== false)
+        setScore(typeof data.score === "number" ? data.score : null)
       } else {
         setError(data.error || "Something went wrong. Try again.")
       }
@@ -85,11 +115,16 @@ export default function BrandEngineApplicationPage() {
             Thanks for applying, {formData.name}.
           </p>
           <p className="text-base text-stone-400 mb-12">
-            I'll review your application within 24 hours. If you're a good fit, I'll send you a Calendly link to book a 30-minute discovery call.
+            I'll review your application within 24 hours. If you're a good fit, I'll send you a booking link for the next step.
           </p>
           <p className="text-sm text-stone-500">
             Check your email: {formData.email}
           </p>
+          {score !== null && (
+            <p className="text-xs text-stone-600 mt-3">
+              Internal qualification score logged: {score}
+            </p>
+          )}
         </div>
       </div>
     )
@@ -181,6 +216,24 @@ export default function BrandEngineApplicationPage() {
                 className="w-full bg-transparent border border-white/20 p-4 text-white focus:outline-none focus:border-white transition-colors"
                 placeholder="https://instagram.com/yourhandle"
               />
+            </div>
+
+            <div>
+              <label htmlFor="offerType" className="block text-xs uppercase tracking-[0.15em] text-stone-400 mb-2">
+                Which offer are you applying for? *
+              </label>
+              <select
+                id="offerType"
+                name="offerType"
+                value={formData.offerType}
+                onChange={handleChange}
+                required
+                className="w-full bg-transparent border border-white/20 p-4 text-white focus:outline-none focus:border-white transition-colors"
+              >
+                <option value="cohort" style={{ backgroundColor: "#000" }}>Brand Engine Cohort</option>
+                <option value="vip" style={{ backgroundColor: "#000" }}>Brand Engine VIP</option>
+                <option value="both" style={{ backgroundColor: "#000" }}>Not sure yet (help me choose)</option>
+              </select>
             </div>
           </div>
 
@@ -297,7 +350,7 @@ export default function BrandEngineApplicationPage() {
 
             <div>
               <label htmlFor="readyToInvest" className="block text-xs uppercase tracking-[0.15em] text-stone-400 mb-2">
-                Are you ready to invest $5,000 setup + $497/mo if accepted? *
+                Are you ready to invest in this cycle? (Cohort: €2,000-€2,497, VIP: €3,500-€4,997) *
               </label>
               <select
                 id="readyToInvest"

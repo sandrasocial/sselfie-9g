@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
+import { ensureBrandEngineApplicationsSchema } from "@/lib/brand-engine/applications"
 
 /**
  * POST /api/admin/brand-engine-calendly
@@ -17,10 +18,16 @@ export async function POST(req: NextRequest) {
     }
 
     const sql = getDb()
+    await ensureBrandEngineApplicationsSchema(sql)
 
     await sql`
       UPDATE brand_engine_applications
-      SET calendly_sent = TRUE
+      SET
+        calendly_sent = TRUE,
+        pipeline_stage = 'call_booked',
+        status = 'calendly_sent',
+        call_booked_at = COALESCE(call_booked_at, NOW()),
+        updated_at = NOW()
       WHERE id = ${applicationId}
     `
 

@@ -1,6 +1,7 @@
 import { getDb } from "@/lib/db"
 import Link from "next/link"
 import BrandEngineApplicationsClient from "./applications-client"
+import { ensureBrandEngineApplicationsSchema } from "@/lib/brand-engine/applications"
 
 export const dynamic = "force-dynamic"
 
@@ -33,6 +34,8 @@ export default async function BrandEngineApplicationsPage() {
         </div>
       )
     }
+
+    await ensureBrandEngineApplicationsSchema(sql)
 
     // Get all applications, ordered by newest first
     const applications = await sql`

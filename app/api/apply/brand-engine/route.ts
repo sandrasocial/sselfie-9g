@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
+import {
+  calculateQualificationScore,
+  ensureBrandEngineApplicationsSchema,
+  expectedOfferValueCents,
+  resolveLeadSource,
+} from "@/lib/brand-engine/applications"
 
 /**
  * POST /api/apply/brand-engine
  * Handle Brand Engine application submissions
- * Auto-disqualify if revenue < $100k or spending < $1,500/mo
+ * Assign source tags, qualification score, and initial pipeline stage
  */
 export async function POST(req: NextRequest) {
   try {
@@ -14,27 +20,69 @@ export async function POST(req: NextRequest) {
       name,
       email,
       website,
+      offerType,
       revenue,
       currentSpend,
       biggestBottleneck,
       hoursPerWeek,
       businessDescription,
       whyInterested,
-      readyToInvest
+      readyToInvest,
+      sourceChannel,
+      sourceDetail,
+      utmSource,
+      utmMedium,
+      utmCampaign,
+      referrer,
     } = data
 
     // Validate required fields
-    if (!name || !email || !website || !revenue || !currentSpend || !biggestBottleneck || !hoursPerWeek || !businessDescription || !whyInterested || !readyToInvest) {
+    if (
+      !name ||
+      !email ||
+      !website ||
+      !offerType ||
+      !revenue ||
+      !currentSpend ||
+      !biggestBottleneck ||
+      !hoursPerWeek ||
+      !businessDescription ||
+      !whyInterested ||
+      !readyToInvest
+    ) {
       return NextResponse.json({
         success: false,
         error: "All fields are required."
       }, { status: 400 })
     }
 
-    // Auto-disqualify logic
-    const isQualified = revenue !== "<50k" && revenue !== "50-100k"
-
     const sql = getDb()
+    await ensureBrandEngineApplicationsSchema(sql)
+
+    const qualification = calculateQualificationScore({
+      revenue,
+      currentSpend,
+      hoursPerWeek,
+      readyToInvest,
+      offerType,
+      biggestBottleneck,
+      businessDescription,
+      whyInterested,
+    })
+
+    const { channel, detail } = resolveLeadSource(sourceChannel, sourceDetail)
+    const normalizedOfferType = typeof offerType === "string" ? offerType.toLowerCase() : "cohort"
+    const leadTags = [
+      "brand-engine",
+      "application",
+      `offer:${normalizedOfferType}`,
+      `source:${channel}`,
+      utmSource ? `utm_source:${String(utmSource).toLowerCase()}` : null,
+      utmMedium ? `utm_medium:${String(utmMedium).toLowerCase()}` : null,
+      utmCampaign ? `utm_campaign:${String(utmCampaign).toLowerCase()}` : null,
+      qualification.qualified ? "qualified" : "nurture",
+      `priority:${qualification.priorityTier}`,
+    ].filter(Boolean)
 
     // Check if email already applied
     const existing = await sql`
@@ -56,6 +104,7 @@ export async function POST(req: NextRequest) {
         name,
         email,
         website,
+        offer_type,
         revenue,
         current_spend,
         biggest_bottleneck,
@@ -65,12 +114,23 @@ export async function POST(req: NextRequest) {
         ready_to_invest,
         qualified,
         status,
+        pipeline_stage,
+        qualification_score,
+        qualification_notes,
+        priority_tier,
+        source_channel,
+        source_detail,
+        lead_tags,
+        expected_value_cents,
+        draft_mode,
+        notes,
         created_at
       )
       VALUES (
         ${name},
         ${email.toLowerCase()},
         ${website},
+        ${normalizedOfferType},
         ${revenue},
         ${currentSpend},
         ${biggestBottleneck},
@@ -78,18 +138,31 @@ export async function POST(req: NextRequest) {
         ${businessDescription},
         ${whyInterested},
         ${readyToInvest},
-        ${isQualified},
-        ${isQualified ? 'pending' : 'disqualified'},
+        ${qualification.qualified},
+        ${qualification.qualified ? "pending_review" : "nurture"},
+        ${qualification.pipelineStage},
+        ${qualification.score},
+        ${qualification.notes},
+        ${qualification.priorityTier},
+        ${channel},
+        ${detail || [utmSource, utmMedium, utmCampaign, referrer].filter(Boolean).join(" | ") || null},
+        ${JSON.stringify(leadTags)}::jsonb,
+        ${expectedOfferValueCents(normalizedOfferType)},
+        ${true},
+        ${`draft_mode=true; referrer=${referrer || "unknown"}`},
         NOW()
       )
     `
 
     return NextResponse.json({
       success: true,
-      qualified: isQualified,
-      message: isQualified
+      qualified: qualification.qualified,
+      score: qualification.score,
+      pipelineStage: qualification.pipelineStage,
+      priorityTier: qualification.priorityTier,
+      message: qualification.qualified
         ? "Application received! I'll review it within 24 hours."
-        : "Thank you for your interest. Based on our requirements, Brand Engine may not be the right fit at this time."
+        : "Application received. We will review your details and follow up with the best next step."
     })
 
   } catch (error) {
