@@ -66,10 +66,10 @@ export default function BrandEngineApplicationPage() {
       if (response.ok) {
         setSubmitted(true)
       } else {
-        setError(data.error || "Something went wrong. Try again.")
+        setError(data.error || "Something went wrong. Please try again in a minute.")
       }
     } catch {
-      setError("Something went wrong. Try again.")
+      setError("Something went wrong. Please try again in a minute.")
     } finally {
       setLoading(false)
     }
@@ -87,15 +87,20 @@ export default function BrandEngineApplicationPage() {
       <div className="min-h-screen bg-black text-white flex items-center justify-center p-6">
         <div className="max-w-2xl w-full text-center" style={{ fontFamily: "'Times New Roman', serif" }}>
           <div className="text-6xl mb-6">✓</div>
-          <h2 className="text-4xl mb-6">Application Received</h2>
+          <h2 className="text-4xl mb-6">You&apos;re in.</h2>
           <p className="text-lg text-stone-300 mb-4">
-            Thanks for applying, {formData.name}.
+            Got your application, {formData.name}.
           </p>
           <p className="text-base text-stone-400 mb-12">
-            I&apos;ll review this within 24 hours. If it&apos;s a fit, I&apos;ll send your booking link for the next step.
+            No pressure. I&apos;ll review this personally within 24 hours.
+            <br />
+            If it&apos;s a fit, I&apos;ll send your booking link.
           </p>
           <p className="text-sm text-stone-500">
             Check your email: {formData.email}
+          </p>
+          <p className="text-sm text-stone-500 mt-2">
+            You&apos;ve got this.
           </p>
         </div>
       </div>
@@ -115,7 +120,7 @@ export default function BrandEngineApplicationPage() {
           href="/brand-engine"
           className="text-[10px] uppercase tracking-[0.2em] opacity-90 hover:opacity-100 transition-opacity"
         >
-          ← Back
+          ← Back to Cohort
         </Link>
       </nav>
 
@@ -126,10 +131,12 @@ export default function BrandEngineApplicationPage() {
             Application
           </span>
           <h1 className="text-5xl mb-6" style={{ fontFamily: "'Times New Roman', serif" }}>
-            Brand Engine
+            Apply for Cohort
           </h1>
           <p className="text-stone-400 text-sm">
-            Cohort-first launch. This takes about 4 minutes. Let&apos;s make this easy.
+            This takes about 4 minutes.
+            <br />
+            Let&apos;s make this easy.
           </p>
         </div>
 
@@ -144,7 +151,7 @@ export default function BrandEngineApplicationPage() {
           <div className="space-y-6">
             <div>
               <label htmlFor="name" className="block text-xs uppercase tracking-[0.15em] text-stone-400 mb-2">
-                Your Name *
+                Your name *
               </label>
               <input
                 type="text"
@@ -160,7 +167,7 @@ export default function BrandEngineApplicationPage() {
 
             <div>
               <label htmlFor="email" className="block text-xs uppercase tracking-[0.15em] text-stone-400 mb-2">
-                Email Address *
+                Best email *
               </label>
               <input
                 type="email"
@@ -176,7 +183,7 @@ export default function BrandEngineApplicationPage() {
 
             <div>
               <label htmlFor="website" className="block text-xs uppercase tracking-[0.15em] text-stone-400 mb-2">
-                Website / Instagram *
+                Instagram or website *
               </label>
               <input
                 type="text"
@@ -192,7 +199,7 @@ export default function BrandEngineApplicationPage() {
 
             <div>
               <label htmlFor="offerType" className="block text-xs uppercase tracking-[0.15em] text-stone-400 mb-2">
-                Which offer are you applying for? *
+                Which path feels right? *
               </label>
               <select
                 id="offerType"
@@ -202,9 +209,9 @@ export default function BrandEngineApplicationPage() {
                 required
                 className="w-full bg-transparent border border-white/20 p-4 text-white focus:outline-none focus:border-white transition-colors"
               >
-                <option value="cohort" style={{ backgroundColor: "#000" }}>Brand Engine Cohort</option>
-                <option value="vip" style={{ backgroundColor: "#000" }}>Brand Engine VIP</option>
-                <option value="both" style={{ backgroundColor: "#000" }}>Not sure yet (help me choose after application)</option>
+                <option value="cohort" style={{ backgroundColor: "#000" }}>Cohort (main path)</option>
+                <option value="vip" style={{ backgroundColor: "#000" }}>VIP (1:1)</option>
+                <option value="both" style={{ backgroundColor: "#000" }}>Not sure yet</option>
               </select>
             </div>
           </div>
@@ -213,7 +220,7 @@ export default function BrandEngineApplicationPage() {
           <div className="border-t border-white/10 pt-8 space-y-6">
             <div>
               <label htmlFor="revenue" className="block text-xs uppercase tracking-[0.15em] text-stone-400 mb-2">
-                Current Annual Revenue *
+                Where are you at in yearly revenue? *
               </label>
               <select
                 id="revenue"
@@ -234,7 +241,7 @@ export default function BrandEngineApplicationPage() {
 
             <div>
               <label htmlFor="currentSpend" className="block text-xs uppercase tracking-[0.15em] text-stone-400 mb-2">
-                What do you currently spend per month on marketing/content/tools? *
+                Monthly spend on content/marketing/tools? *
               </label>
               <select
                 id="currentSpend"
@@ -254,7 +261,7 @@ export default function BrandEngineApplicationPage() {
 
             <div>
               <label htmlFor="hoursPerWeek" className="block text-xs uppercase tracking-[0.15em] text-stone-400 mb-2">
-                How many hours per week do you spend on content creation and social media? *
+                Hours per week on content right now? *
               </label>
               <select
                 id="hoursPerWeek"
@@ -274,7 +281,7 @@ export default function BrandEngineApplicationPage() {
 
             <div>
               <label htmlFor="biggestBottleneck" className="block text-xs uppercase tracking-[0.15em] text-stone-400 mb-2">
-                What&apos;s your biggest content bottleneck right now? *
+                Biggest bottleneck right now? *
               </label>
               <textarea
                 id="biggestBottleneck"
@@ -284,13 +291,13 @@ export default function BrandEngineApplicationPage() {
                 required
                 rows={4}
                 className="w-full bg-transparent border border-white/20 p-4 text-white focus:outline-none focus:border-white transition-colors resize-none"
-                placeholder="Be specific..."
+                placeholder="Be real. One short paragraph is enough."
               />
             </div>
 
             <div>
               <label htmlFor="businessDescription" className="block text-xs uppercase tracking-[0.15em] text-stone-400 mb-2">
-                Tell me about your business and offer (2-3 sentences) *
+                What do you do and who do you help? (2-3 lines) *
               </label>
               <textarea
                 id="businessDescription"
@@ -300,13 +307,13 @@ export default function BrandEngineApplicationPage() {
                 required
                 rows={4}
                 className="w-full bg-transparent border border-white/20 p-4 text-white focus:outline-none focus:border-white transition-colors resize-none"
-                placeholder="What do you do? Who do you serve? What do you sell?"
+                placeholder="Simple is good."
               />
             </div>
 
             <div>
               <label htmlFor="whyInterested" className="block text-xs uppercase tracking-[0.15em] text-stone-400 mb-2">
-                Why are you interested in Brand Engine? *
+                Why now? *
               </label>
               <textarea
                 id="whyInterested"
@@ -316,13 +323,13 @@ export default function BrandEngineApplicationPage() {
                 required
                 rows={4}
                 className="w-full bg-transparent border border-white/20 p-4 text-white focus:outline-none focus:border-white transition-colors resize-none"
-                placeholder="What outcome are you aiming for in the next 90 days?"
+                placeholder="What result do you want in the next 90 days?"
               />
             </div>
 
             <div>
               <label htmlFor="readyToInvest" className="block text-xs uppercase tracking-[0.15em] text-stone-400 mb-2">
-                Are you ready to invest in this cycle? (Cohort: €2,000-€2,497, VIP: €3,500-€4,997) *
+                Ready to invest this cycle? (Cohort €2,000-€2,497 | VIP €3,500-€4,997) *
               </label>
               <select
                 id="readyToInvest"
@@ -333,9 +340,9 @@ export default function BrandEngineApplicationPage() {
                 className="w-full bg-transparent border border-white/20 p-4 text-white focus:outline-none focus:border-white transition-colors"
               >
                 <option value="" style={{ backgroundColor: "#000" }}>Select one...</option>
-                <option value="yes" style={{ backgroundColor: "#000" }}>Yes, I am ready for this cycle</option>
-                <option value="maybe" style={{ backgroundColor: "#000" }}>Maybe, I need details first</option>
-                <option value="no" style={{ backgroundColor: "#000" }}>Not yet, but I want updates</option>
+                <option value="yes" style={{ backgroundColor: "#000" }}>Yes, I&apos;m ready</option>
+                <option value="maybe" style={{ backgroundColor: "#000" }}>Maybe, I need details</option>
+                <option value="no" style={{ backgroundColor: "#000" }}>Not yet</option>
               </select>
             </div>
           </div>
@@ -347,10 +354,12 @@ export default function BrandEngineApplicationPage() {
               disabled={loading}
               className="w-full bg-white text-black py-4 uppercase text-xs tracking-[0.15em] hover:bg-stone-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? "Submitting..." : "Submit Application"}
+              {loading ? "Sending..." : "Apply here"}
             </button>
             <p className="text-xs text-stone-500 mt-4 text-center">
-              Cohort starts March 16, 2026. You&apos;ll hear from me within 24 hours.
+              No pressure. Cohort starts March 16, 2026.
+              <br />
+              You&apos;ll hear from me within 24 hours.
             </p>
           </div>
         </form>
