@@ -154,10 +154,10 @@ export default function BrandEnginePage() {
                 marginBottom: "20px"
               }}
             >
-              I&apos;ll Build Your AI Twin That Creates 90 Days of Content in Your Voice — While You Sleep
+              Build Your Content and Sales System in 4 Weeks
             </h1>
             <p className="description fade-up mx-auto max-w-md" style={{ textShadow: "0 1px 5px rgba(0,0,0,0.3)" }}>
-              Your voice. Your methodology. Fully automated. No content hamster wheel.
+              This is the Brand Engine Cohort. Small group. Clear plan. One system that keeps you visible and helps you sell.
             </p>
             <div className="fade-up" style={{ transitionDelay: "0.2s", marginTop: "10px", display: "flex", flexDirection: "column", gap: "12px", alignItems: "center" }}>
               <a
@@ -168,11 +168,11 @@ export default function BrandEnginePage() {
                 }}
                 className="btn shadow-xl"
               >
-                Apply Now →
+                Apply for Cohort →
               </a>
             </div>
             <p className="description fade-up mx-auto max-w-md mt-4" style={{ textShadow: "0 1px 5px rgba(0,0,0,0.3)", fontSize: "14px", marginTop: "16px" }}>
-              Turn 2 hours into 90 days of content. Distributed automatically.
+              Starts March 16, 2026. 12 seats.
             </p>
           </div>
         </section>
@@ -222,20 +222,20 @@ export default function BrandEnginePage() {
                 letterSpacing: "-0.01em"
               }}
             >
-              Most AI Tools Just Give You More Work
+              You Do Not Need More Tools
             </h2>
             <div className="description fade-up text-base space-y-4" style={{ color: "#d6d3d1", maxWidth: "600px" }}>
-              <p>Look, I&apos;ll be straight with you.</p>
-              <p>Most AI tools just give you more work. You still need to:</p>
+              <p>I&apos;ll be honest.</p>
+              <p>Most tools still leave you doing everything alone. You still have to:</p>
               <ul style={{ textAlign: "left", paddingLeft: "20px", marginTop: "16px", lineHeight: "1.8" }}>
                 <li>Figure out what to create</li>
-                <li>Edit everything (because it sounds nothing like you)</li>
-                <li>Format and schedule across platforms</li>
+                <li>Rewrite content so it sounds like you</li>
+                <li>Post and manage every channel manually</li>
                 <li>Track what&apos;s working</li>
                 <li>Start over when algorithms change</li>
               </ul>
               <p style={{ marginTop: "24px", fontWeight: "bold", color: "white" }}>
-                That&apos;s why I don&apos;t sell content. I build complete marketing systems that work for you.
+                That is why this is a system, not just content.
               </p>
             </div>
           </div>
@@ -300,15 +300,15 @@ export default function BrandEnginePage() {
                   letterSpacing: "-0.01em"
                 }}
               >
-                Your Complete Brand Engine
+                What You Walk Away With
               </h2>
               <div className="description fade-up text-sm md:text-base space-y-3" style={{ color: "#d6d3d1" }}>
-                <p><strong>Your AI Content Twin</strong> - trained specifically on your voice and content</p>
-                <p><strong>Custom GPT</strong> - knows your exact methodology and stories</p>
-                <p><strong>Automated Distribution</strong> - posts across all platforms in your name</p>
-                <p><strong>Lead Nurture Workflows</strong> - welcome sequences that actually convert</p>
-                <p><strong>Content Repurposing</strong> - one piece becomes ten</p>
-                <p><strong>90 Days Scheduled</strong> - 150+ pieces ready to go from day 1</p>
+                <p><strong>Clear offer message</strong> so people know exactly what you sell.</p>
+                <p><strong>Simple content system</strong> you can keep up with every week.</p>
+                <p><strong>Practical funnel path</strong> from attention to inquiry.</p>
+                <p><strong>Agent-supported workflow</strong> for repeated tasks in the background.</p>
+                <p><strong>Weekly plan</strong> with one clear next step at a time.</p>
+                <p><strong>Ready-to-use assets</strong> so you can execute right away.</p>
               </div>
               <div className="fade-up mt-6">
                 <a
@@ -319,7 +319,7 @@ export default function BrandEnginePage() {
                   }}
                   className="btn"
                 >
-                  See Packages →
+                  Apply for Cohort →
                 </a>
               </div>
             </div>
@@ -372,45 +372,45 @@ export default function BrandEnginePage() {
                 letterSpacing: "-0.01em"
               }}
             >
-              How It Works
+              Here&apos;s What We Do
             </h2>
             <div className="w-full space-y-8 fade-up">
-              {/* Week 1-2 */}
+              {/* Week 1 */}
               <div style={{ borderLeft: "2px solid white", paddingLeft: "24px" }}>
                 <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.25em", color: "#a8a29e", marginBottom: "12px" }}>
-                  <span style={{ marginRight: "12px", fontWeight: "bold" }}>01</span>Weeks 1-2
+                  <span style={{ marginRight: "12px", fontWeight: "bold" }}>01</span>Week 1
                 </div>
                 <h3 style={{ fontSize: "28px", fontFamily: "'Times New Roman', serif", marginBottom: "12px", fontWeight: 300 }}>
-                  Foundation
+                  Positioning and Offer
                 </h3>
                 <p style={{ color: "#d6d3d1", lineHeight: "1.6" }}>
-                  Deep dive on your content, voice, and positioning. Train your custom AI model with your face and voice. Create your 15-20 page voice blueprint document.
+                  We simplify your message so your audience understands you fast.
                 </p>
               </div>
 
-              {/* Week 3-4 */}
+              {/* Week 2-3 */}
               <div style={{ borderLeft: "2px solid white", paddingLeft: "24px" }}>
                 <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.25em", color: "#a8a29e", marginBottom: "12px" }}>
-                  <span style={{ marginRight: "12px", fontWeight: "bold" }}>02</span>Weeks 3-4
+                  <span style={{ marginRight: "12px", fontWeight: "bold" }}>02</span>Weeks 2-3
                 </div>
                 <h3 style={{ fontSize: "28px", fontFamily: "'Times New Roman', serif", marginBottom: "12px", fontWeight: 300 }}>
-                  Building Your System
+                  Build the Engine
                 </h3>
                 <p style={{ color: "#d6d3d1", lineHeight: "1.6" }}>
-                  Set up content generation workflows. Create distribution automations. Build lead nurture sequences. Set up content repurposing engine.
+                  We build your content flow and conversion path so you can stay consistent without chaos.
                 </p>
               </div>
 
-              {/* Week 5-6 */}
+              {/* Week 4 */}
               <div style={{ borderLeft: "2px solid white", paddingLeft: "24px" }}>
                 <div style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.25em", color: "#a8a29e", marginBottom: "12px" }}>
-                  <span style={{ marginRight: "12px", fontWeight: "bold" }}>03</span>Weeks 5-6
+                  <span style={{ marginRight: "12px", fontWeight: "bold" }}>03</span>Week 4
                 </div>
                 <h3 style={{ fontSize: "28px", fontFamily: "'Times New Roman', serif", marginBottom: "12px", fontWeight: 300 }}>
-                  Launch
+                  Launch and Close
                 </h3>
                 <p style={{ color: "#d6d3d1", lineHeight: "1.6" }}>
-                  Generate and schedule 90 days of content. Train you on the system. Document everything in your custom playbook. System goes live.
+                  You launch with support, work your lead queue, and leave with a simple weekly rhythm.
                 </p>
               </div>
             </div>
@@ -466,34 +466,34 @@ export default function BrandEnginePage() {
               Why This Works
             </h2>
             <p className="description fade-up" style={{ fontSize: "20px", marginBottom: "48px" }}>
-              This replaces a $3K-6K/month marketing team with a $497/month system.
+              You do not need to do everything. You need a simple system you can follow.
             </p>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "48px", width: "100%", maxWidth: "700px" }} className="fade-up">
               <div style={{ textAlign: "left" }}>
                 <h3 style={{ fontSize: "14px", textTransform: "uppercase", letterSpacing: "0.15em", color: "#a8a29e", marginBottom: "16px" }}>
-                  Instead of Hiring:
+                  What Usually Happens:
                 </h3>
                 <div style={{ color: "#d6d3d1", lineHeight: "1.8", fontSize: "14px" }}>
-                  <div>Content writer: $1,000-2,000/mo</div>
-                  <div>Social media manager: $1,500-3,000/mo</div>
-                  <div>VA for scheduling: $500-1,000/mo</div>
+                  <div>Too many tools</div>
+                  <div>Inconsistent posting</div>
+                  <div>No clear conversion path</div>
                   <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", marginTop: "12px", paddingTop: "12px", fontWeight: "bold", color: "white" }}>
-                    Total: $3,000-6,000/mo
+                    High effort. Low momentum.
                   </div>
                 </div>
               </div>
 
               <div style={{ textAlign: "left" }}>
                 <h3 style={{ fontSize: "14px", textTransform: "uppercase", letterSpacing: "0.15em", color: "white", marginBottom: "16px" }}>
-                  You Get:
+                  Inside the Cohort:
                 </h3>
                 <div style={{ color: "#d6d3d1", lineHeight: "1.8", fontSize: "14px" }}>
-                  <div>Complete marketing system</div>
-                  <div>Works while you sleep</div>
-                  <div>Your authentic voice</div>
+                  <div>Clear offer and message</div>
+                  <div>Weekly execution structure</div>
+                  <div>Content + funnel operating system</div>
                   <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", marginTop: "12px", paddingTop: "12px", fontWeight: "bold", fontSize: "20px", color: "white" }}>
-                    $497/month
+                    Clarity. Consistency. Progress.
                   </div>
                 </div>
               </div>
@@ -550,12 +550,12 @@ export default function BrandEnginePage() {
               Built by Someone Who&apos;s Done It
             </h2>
             <div className="description fade-up text-base space-y-6" style={{ color: "#d6d3d1", maxWidth: "600px" }}>
-              <p><strong style={{ color: "white" }}>158K+ followers</strong> — I know what gets seen and what gets skipped.</p>
+              <p><strong style={{ color: "white" }}>180K+ followers</strong> — I know what gets seen and what gets skipped.</p>
               <p><strong style={{ color: "white" }}>SSELFIE Studio</strong> — a real product with paying users and systems that run 24/7.</p>
-              <p><strong style={{ color: "white" }}>My own marketing</strong> — runs on the same AI twin and workflows I build for you.</p>
+              <p><strong style={{ color: "white" }}>Eight months building this</strong> — tested in real life, not theory.</p>
             </div>
             <p className="fade-up mt-6" style={{ fontSize: "14px", color: "#a8a29e", fontStyle: "italic" }}>
-              This isn&apos;t theory. It&apos;s the system I use every day.
+              I built this because I needed this.
             </p>
           </div>
         </section>
@@ -593,7 +593,7 @@ export default function BrandEnginePage() {
               letterSpacing: "0.25em",
               textTransform: "uppercase",
               color: "#a8a29e"
-            }}>Packages</span>
+            }}>Offer</span>
             <h2
               className="hero-title fade-up"
               style={{
@@ -607,11 +607,11 @@ export default function BrandEnginePage() {
                 letterSpacing: "-0.01em"
               }}
             >
-              Let&apos;s Build Your Marketing System
+              Cohort First, VIP Optional
             </h2>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "24px", width: "100%", maxWidth: "500px" }} className="md:grid-cols-1">
-              {/* Main Package */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "24px", width: "100%", maxWidth: "860px" }} className="md:grid-cols-2">
+              {/* Cohort Package */}
               <div
                 style={{
                   border: "2px solid white",
@@ -621,41 +621,33 @@ export default function BrandEnginePage() {
                 className="fade-up"
               >
                 <h3 style={{ fontSize: "24px", fontFamily: "'Times New Roman', serif", marginBottom: "8px" }}>
-                  Complete Brand Engine
+                  Brand Engine Cohort
                 </h3>
                 <div style={{ fontSize: "48px", fontFamily: "'Times New Roman', serif", marginBottom: "8px" }}>
-                  $5,000
+                  €2,497
                 </div>
                 <div style={{ fontSize: "14px", color: "#a8a29e", marginBottom: "24px" }}>
-                  setup (or 3 payments of $1,667)
-                </div>
-                <div style={{ fontSize: "32px", fontFamily: "'Times New Roman', serif", marginBottom: "24px" }}>
-                  + $497/month
+                  launch target · floor €2,000
                 </div>
 
                 <div style={{ borderTop: "1px solid rgba(255,255,255,0.2)", paddingTop: "24px", marginTop: "24px", textAlign: "left", fontSize: "14px", lineHeight: "1.8", color: "#d6d3d1" }}>
-                  <div>✓ Your AI Content Twin</div>
-                  <div>✓ Custom GPT with your frameworks</div>
-                  <div>✓ Automated distribution system</div>
-                  <div>✓ Lead nurture workflows</div>
-                  <div>✓ Content repurposing engine</div>
-                  <div>✓ 90 days of scheduled content</div>
-                  <div>✓ Custom voice blueprint (15-20 pages)</div>
-                  <div>✓ Monthly management & optimization</div>
+                  <div>✓ 4-week live cohort</div>
+                  <div>✓ Starts March 16, 2026</div>
+                  <div>✓ 12 seats total</div>
+                  <div>✓ Offer + content + funnel system</div>
+                  <div>✓ Weekly implementation support</div>
+                  <div>✓ Clear next-step plan after cohort</div>
                 </div>
 
                 <div style={{ marginTop: "32px", padding: "16px", backgroundColor: "#1c1917" }}>
                   <div style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.15em", color: "#a8a29e", marginBottom: "8px" }}>
-                    BETA PRICING (First 3 Clients Only)
+                    Launch Terms
                   </div>
                   <div style={{ fontSize: "32px", fontFamily: "'Times New Roman', serif" }}>
-                    $4,997 setup
+                    12 seats
                   </div>
                   <div style={{ fontSize: "20px", fontFamily: "'Times New Roman', serif" }}>
-                    $397/month for 12 months
-                  </div>
-                  <div style={{ fontSize: "12px", color: "#a8a29e", marginTop: "8px" }}>
-                    (locked-in rate)
+                    starts March 16, 2026
                   </div>
                 </div>
 
@@ -664,19 +656,55 @@ export default function BrandEnginePage() {
                   className="btn"
                   style={{ marginTop: "32px", width: "100%" }}
                 >
-                  Apply Now for {new Date().toLocaleString("en-US", { month: "long" })} →
+                  Apply for Cohort →
                 </a>
                 <p style={{ fontSize: "12px", color: "#a8a29e", marginTop: "12px" }}>
-                  Spots filling quickly
+                  Applications reviewed within 24 hours
                 </p>
                 <p style={{ fontSize: "13px", color: "#d6d3d1", marginTop: "12px", maxWidth: "380px", marginLeft: "auto", marginRight: "auto" }}>
-                  After you apply, I&apos;ll personally review your business and reach out within 48 hours if we&apos;re a fit.
+                  If it&apos;s a fit, I&apos;ll send your booking link for next step.
                 </p>
+              </div>
+
+              {/* VIP Package */}
+              <div
+                style={{
+                  border: "1px solid rgba(255,255,255,0.35)",
+                  padding: "48px 32px",
+                  textAlign: "center",
+                }}
+                className="fade-up"
+              >
+                <h3 style={{ fontSize: "24px", fontFamily: "'Times New Roman', serif", marginBottom: "8px" }}>
+                  Brand Engine VIP
+                </h3>
+                <div style={{ fontSize: "48px", fontFamily: "'Times New Roman', serif", marginBottom: "8px" }}>
+                  €4,997
+                </div>
+                <div style={{ fontSize: "14px", color: "#a8a29e", marginBottom: "24px" }}>
+                  launch target · floor €3,500
+                </div>
+                <div style={{ borderTop: "1px solid rgba(255,255,255,0.2)", paddingTop: "24px", marginTop: "24px", textAlign: "left", fontSize: "14px", lineHeight: "1.8", color: "#d6d3d1" }}>
+                  <div>✓ 1:1 implementation with Sandra</div>
+                  <div>✓ Fast-track build path</div>
+                  <div>✓ Priority support and decisions</div>
+                  <div>✓ Best for founders needing speed</div>
+                </div>
+                <div style={{ marginTop: "32px", padding: "16px", backgroundColor: "#1c1917", fontSize: "14px", color: "#d6d3d1" }}>
+                  VIP is offered after fit review.
+                </div>
+                <a
+                  href="/apply/brand-engine"
+                  className="btn"
+                  style={{ marginTop: "32px", width: "100%" }}
+                >
+                  Apply for Cohort →
+                </a>
               </div>
             </div>
 
             <p style={{ marginTop: "32px", fontSize: "14px", color: "#a8a29e", textAlign: "center", maxWidth: "500px" }} className="fade-up">
-              I take just 3 clients per month. This is white-glove service.
+              Cohort is the main path. VIP is for founders who need speed.
             </p>
           </div>
         </section>
@@ -727,13 +755,14 @@ export default function BrandEnginePage() {
                 letterSpacing: "-0.01em"
               }}
             >
-              I Built This Because I Needed It First
+              Why I Built This
             </h2>
             <div className="description fade-up text-base space-y-4" style={{ color: "#d6d3d1", maxWidth: "600px", textAlign: "left" }}>
-              <p>I built SSELFIE Studio from scratch as a single mom. When I couldn&apos;t afford a content team, I built one with AI. Now I&apos;m building the same systems for other creators.</p>
-              <p>This works because it&apos;s not theory. It&apos;s the same system I use to run my own marketing.</p>
+              <p>I built SSELFIE from scratch in a hard season of life.</p>
+              <p>I needed a way to stay visible, keep going, and create real income without burning out.</p>
+              <p>This is the same system I use in my own business.</p>
               <p style={{ marginTop: "32px", fontStyle: "italic", color: "#a8a29e" }}>
-                No pressure — but if you&apos;re tired of the content hamster wheel, let&apos;s talk.
+                If you want support building this with me, apply for the cohort.
               </p>
             </div>
 
@@ -742,7 +771,7 @@ export default function BrandEnginePage() {
                 href="/apply/brand-engine"
                 className="btn"
               >
-                Apply Now →
+                Apply for Cohort →
               </a>
             </div>
 
@@ -770,7 +799,7 @@ export default function BrandEnginePage() {
                 Brand Engine
               </div>
               <div style={{ fontSize: "12px", color: "#a8a29e" }}>
-                $4,997 + $397/mo (Beta Pricing)
+                Cohort €2,000-€2,497 · Starts March 16
               </div>
             </div>
             <a
@@ -778,7 +807,7 @@ export default function BrandEnginePage() {
               className="btn"
               style={{ fontSize: "12px", padding: "12px 24px" }}
             >
-              Apply Now →
+              Apply for Cohort →
             </a>
           </div>
         </div>

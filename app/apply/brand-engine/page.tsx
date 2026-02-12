@@ -26,8 +26,6 @@ export default function BrandEngineApplicationPage() {
 
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
-  const [qualified, setQualified] = useState(true)
-  const [score, setScore] = useState<number | null>(null)
   const [error, setError] = useState("")
 
   useEffect(() => {
@@ -67,12 +65,10 @@ export default function BrandEngineApplicationPage() {
 
       if (response.ok) {
         setSubmitted(true)
-        setQualified(data.qualified !== false)
-        setScore(typeof data.score === "number" ? data.score : null)
       } else {
         setError(data.error || "Something went wrong. Try again.")
       }
-    } catch (err) {
+    } catch {
       setError("Something went wrong. Try again.")
     } finally {
       setLoading(false)
@@ -86,26 +82,7 @@ export default function BrandEngineApplicationPage() {
     })
   }
 
-  if (submitted && !qualified) {
-    return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center p-6">
-        <div className="max-w-2xl w-full text-center" style={{ fontFamily: "'Times New Roman', serif" }}>
-          <h2 className="text-4xl mb-6">Not Quite Ready Yet</h2>
-          <p className="text-lg text-stone-300 mb-8">
-            Brand Engine is designed for coaches and creators making $100k+ annually who are currently spending $2k+/month on marketing.
-          </p>
-          <p className="text-base text-stone-400 mb-12">
-            You might be a better fit for <Link href="/" className="underline hover:text-white transition-colors">SSELFIE Studio</Link> — our DIY platform that helps you create authentic content on your own.
-          </p>
-          <Link href="/" className="inline-block bg-white text-black px-8 py-4 uppercase text-xs tracking-[0.15em] hover:bg-stone-200 transition-colors">
-            Explore SSELFIE Studio
-          </Link>
-        </div>
-      </div>
-    )
-  }
-
-  if (submitted && qualified) {
+  if (submitted) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center p-6">
         <div className="max-w-2xl w-full text-center" style={{ fontFamily: "'Times New Roman', serif" }}>
@@ -115,16 +92,11 @@ export default function BrandEngineApplicationPage() {
             Thanks for applying, {formData.name}.
           </p>
           <p className="text-base text-stone-400 mb-12">
-            I'll review your application within 24 hours. If you're a good fit, I'll send you a booking link for the next step.
+            I&apos;ll review this within 24 hours. If it&apos;s a fit, I&apos;ll send your booking link for the next step.
           </p>
           <p className="text-sm text-stone-500">
             Check your email: {formData.email}
           </p>
-          {score !== null && (
-            <p className="text-xs text-stone-600 mt-3">
-              Internal qualification score logged: {score}
-            </p>
-          )}
         </div>
       </div>
     )
@@ -157,7 +129,7 @@ export default function BrandEngineApplicationPage() {
             Brand Engine
           </h1>
           <p className="text-stone-400 text-sm">
-            This takes about 5 minutes. I review every application personally.
+            Cohort-first launch. This takes about 4 minutes. Let&apos;s make this easy.
           </p>
         </div>
 
@@ -232,7 +204,7 @@ export default function BrandEngineApplicationPage() {
               >
                 <option value="cohort" style={{ backgroundColor: "#000" }}>Brand Engine Cohort</option>
                 <option value="vip" style={{ backgroundColor: "#000" }}>Brand Engine VIP</option>
-                <option value="both" style={{ backgroundColor: "#000" }}>Not sure yet (help me choose)</option>
+                <option value="both" style={{ backgroundColor: "#000" }}>Not sure yet (help me choose after application)</option>
               </select>
             </div>
           </div>
@@ -252,17 +224,17 @@ export default function BrandEngineApplicationPage() {
                 className="w-full bg-transparent border border-white/20 p-4 text-white focus:outline-none focus:border-white transition-colors"
               >
                 <option value="" style={{ backgroundColor: "#000" }}>Select one...</option>
-                <option value="<50k" style={{ backgroundColor: "#000" }}>Less than $50k</option>
-                <option value="50-100k" style={{ backgroundColor: "#000" }}>$50k - $100k</option>
-                <option value="100-250k" style={{ backgroundColor: "#000" }}>$100k - $250k</option>
-                <option value="250-500k" style={{ backgroundColor: "#000" }}>$250k - $500k</option>
-                <option value="500k+" style={{ backgroundColor: "#000" }}>$500k+</option>
+                <option value="<50k" style={{ backgroundColor: "#000" }}>Below €50k</option>
+                <option value="50-100k" style={{ backgroundColor: "#000" }}>€50k - €100k</option>
+                <option value="100-250k" style={{ backgroundColor: "#000" }}>€100k - €250k</option>
+                <option value="250-500k" style={{ backgroundColor: "#000" }}>€250k - €500k</option>
+                <option value="500k+" style={{ backgroundColor: "#000" }}>€500k+</option>
               </select>
             </div>
 
             <div>
               <label htmlFor="currentSpend" className="block text-xs uppercase tracking-[0.15em] text-stone-400 mb-2">
-                What do you currently spend per month on content and social media? *
+                What do you currently spend per month on marketing/content/tools? *
               </label>
               <select
                 id="currentSpend"
@@ -273,10 +245,10 @@ export default function BrandEngineApplicationPage() {
                 className="w-full bg-transparent border border-white/20 p-4 text-white focus:outline-none focus:border-white transition-colors"
               >
                 <option value="" style={{ backgroundColor: "#000" }}>Select one...</option>
-                <option value="0-500" style={{ backgroundColor: "#000" }}>$0 - $500</option>
-                <option value="500-1500" style={{ backgroundColor: "#000" }}>$500 - $1,500</option>
-                <option value="1500-3000" style={{ backgroundColor: "#000" }}>$1,500 - $3,000</option>
-                <option value="3000+" style={{ backgroundColor: "#000" }}>$3,000+</option>
+                <option value="0-500" style={{ backgroundColor: "#000" }}>€0 - €500</option>
+                <option value="500-1500" style={{ backgroundColor: "#000" }}>€500 - €1,500</option>
+                <option value="1500-3000" style={{ backgroundColor: "#000" }}>€1,500 - €3,000</option>
+                <option value="3000+" style={{ backgroundColor: "#000" }}>€3,000+</option>
               </select>
             </div>
 
@@ -302,7 +274,7 @@ export default function BrandEngineApplicationPage() {
 
             <div>
               <label htmlFor="biggestBottleneck" className="block text-xs uppercase tracking-[0.15em] text-stone-400 mb-2">
-                What's your biggest content bottleneck right now? *
+                What&apos;s your biggest content bottleneck right now? *
               </label>
               <textarea
                 id="biggestBottleneck"
@@ -318,7 +290,7 @@ export default function BrandEngineApplicationPage() {
 
             <div>
               <label htmlFor="businessDescription" className="block text-xs uppercase tracking-[0.15em] text-stone-400 mb-2">
-                Tell me about your business and offers (2-3 sentences) *
+                Tell me about your business and offer (2-3 sentences) *
               </label>
               <textarea
                 id="businessDescription"
@@ -344,7 +316,7 @@ export default function BrandEngineApplicationPage() {
                 required
                 rows={4}
                 className="w-full bg-transparent border border-white/20 p-4 text-white focus:outline-none focus:border-white transition-colors resize-none"
-                placeholder="What are you hoping to get out of this?"
+                placeholder="What outcome are you aiming for in the next 90 days?"
               />
             </div>
 
@@ -361,9 +333,9 @@ export default function BrandEngineApplicationPage() {
                 className="w-full bg-transparent border border-white/20 p-4 text-white focus:outline-none focus:border-white transition-colors"
               >
                 <option value="" style={{ backgroundColor: "#000" }}>Select one...</option>
-                <option value="yes" style={{ backgroundColor: "#000" }}>Yes, I'm ready</option>
-                <option value="maybe" style={{ backgroundColor: "#000" }}>I need to think about it</option>
-                <option value="no" style={{ backgroundColor: "#000" }}>No, just exploring</option>
+                <option value="yes" style={{ backgroundColor: "#000" }}>Yes, I am ready for this cycle</option>
+                <option value="maybe" style={{ backgroundColor: "#000" }}>Maybe, I need details first</option>
+                <option value="no" style={{ backgroundColor: "#000" }}>Not yet, but I want updates</option>
               </select>
             </div>
           </div>
@@ -378,7 +350,7 @@ export default function BrandEngineApplicationPage() {
               {loading ? "Submitting..." : "Submit Application"}
             </button>
             <p className="text-xs text-stone-500 mt-4 text-center">
-              I review every application personally within 24 hours.
+              Cohort starts March 16, 2026. You&apos;ll hear from me within 24 hours.
             </p>
           </div>
         </form>
