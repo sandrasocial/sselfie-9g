@@ -22,6 +22,7 @@ type PipelineStage =
   | "nurture"
 
 type PriorityTier = "high" | "medium" | "low"
+type ActionKind = "Call" | "Offer" | "Follow-up"
 
 interface Application {
   id: number
@@ -55,6 +56,14 @@ interface Application {
   cash_collected_cents: number | null
   notes: string | null
   created_at: string
+}
+
+type NormalizedApplication = Application & {
+  pipeline_stage: PipelineStage
+  qualification_score: number
+  priority_tier: PriorityTier
+  cash_collected_cents: number
+  expected_value_cents: number
 }
 
 const PIPELINE_OPTIONS: { value: PipelineStage; label: string }[] = [
@@ -97,11 +106,40 @@ function isSameUtcDay(dateString: string | null | undefined, refDate: Date) {
   )
 }
 
+function hoursSince(dateString: string | null | undefined) {
+  if (!dateString) return 0
+  const ms = Date.now() - new Date(dateString).getTime()
+  return Math.max(0, Math.round(ms / (1000 * 60 * 60)))
+}
+
+function getLeadAction(app: NormalizedApplication): ActionKind | null {
+  if (app.pipeline_stage === "qualified_queue" || app.pipeline_stage === "contacted") {
+    return "Call"
+  }
+  if (app.pipeline_stage === "call_completed") {
+    return "Offer"
+  }
+  if (app.pipeline_stage === "call_booked" || app.pipeline_stage === "offer_sent") {
+    return "Follow-up"
+  }
+  return null
+}
+
+function getActionAgeHours(app: NormalizedApplication, action: ActionKind) {
+  if (action === "Call") {
+    return hoursSince(app.created_at)
+  }
+  if (action === "Offer") {
+    return hoursSince(app.call_completed_at || app.call_booked_at || app.created_at)
+  }
+  return hoursSince(app.offer_sent_at || app.call_booked_at || app.created_at)
+}
+
 export default function BrandEngineApplicationsClient({ applications }: { applications: Application[] }) {
   const [selectedApp, setSelectedApp] = useState<Application | null>(null)
   const [updating, setUpdating] = useState<number | null>(null)
 
-  const normalized = useMemo(
+  const normalized = useMemo<NormalizedApplication[]>(
     () =>
       applications.map((app) => ({
         ...app,
@@ -110,7 +148,7 @@ export default function BrandEngineApplicationsClient({ applications }: { applic
         priority_tier: (app.priority_tier || "low") as PriorityTier,
         cash_collected_cents: app.cash_collected_cents ?? 0,
         expected_value_cents: app.expected_value_cents ?? 0,
-      })),
+      })) as NormalizedApplication[],
     [applications],
   )
 
@@ -140,6 +178,24 @@ export default function BrandEngineApplicationsClient({ applications }: { applic
     acc[key] = (acc[key] || 0) + 1
     return acc
   }, {})
+
+  const actionBoard = useMemo(() => {
+    const calls: Array<{ app: NormalizedApplication; ageHours: number }> = []
+    const offers: Array<{ app: NormalizedApplication; ageHours: number }> = []
+    const followUps: Array<{ app: NormalizedApplication; ageHours: number }> = []
+
+    for (const app of qualifiedQueue) {
+      const action = getLeadAction(app)
+      if (!action) continue
+
+      const item = { app, ageHours: getActionAgeHours(app, action) }
+      if (action === "Call") calls.push(item)
+      if (action === "Offer") offers.push(item)
+      if (action === "Follow-up") followUps.push(item)
+    }
+
+    return { calls, offers, followUps }
+  }, [qualifiedQueue])
 
   async function handleUpdate(appId: number, payload: Record<string, unknown>) {
     setUpdating(appId)
@@ -194,6 +250,16 @@ export default function BrandEngineApplicationsClient({ applications }: { applic
     }
 
     await handleUpdate(appId, payload)
+  }
+
+  async function handleFollowUpNote(app: NormalizedApplication) {
+    const note = prompt("Follow-up note", "")
+    if (note === null) return
+
+    const stamp = new Date().toISOString()
+    const line = `[follow-up ${stamp}] ${note.trim() || "Checked in"}`
+    const mergedNotes = [app.notes?.trim(), line].filter(Boolean).join("\n")
+    await handleUpdate(app.id, { notes: mergedNotes })
   }
 
   return (
@@ -300,6 +366,115 @@ export default function BrandEngineApplicationsClient({ applications }: { applic
 
         <div className="mb-8">
           <h2 className="text-lg font-['Times_New_Roman'] tracking-[0.05em] text-stone-950 mb-4">
+            Today Action Board
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white border border-stone-200 p-6">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm uppercase tracking-[0.15em] text-stone-700">Call</h3>
+                <span className="text-xs text-stone-500">{actionBoard.calls.length}</span>
+              </div>
+              <div className="space-y-2">
+                {actionBoard.calls.length === 0 ? (
+                  <p className="text-sm text-stone-500">No call tasks right now.</p>
+                ) : (
+                  actionBoard.calls.map(({ app, ageHours }) => (
+                    <div key={`call-${app.id}`} className="border border-stone-200 p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <button
+                          onClick={() => setSelectedApp(selectedApp?.id === app.id ? null : app)}
+                          className="text-sm text-stone-900 hover:underline text-left"
+                        >
+                          {app.name}
+                        </button>
+                        <span className="text-xs text-stone-500">{ageHours}h</span>
+                      </div>
+                      <div className="text-xs text-stone-500 mb-2">Score {app.qualification_score}</div>
+                      <button
+                        onClick={() => handleStageChange(app.id, "call_booked")}
+                        disabled={updating === app.id}
+                        className="w-full border border-stone-300 px-2 py-2 text-xs uppercase tracking-[0.12em] hover:bg-stone-100 transition-colors"
+                      >
+                        Mark Call Booked
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="bg-white border border-stone-200 p-6">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm uppercase tracking-[0.15em] text-stone-700">Offer</h3>
+                <span className="text-xs text-stone-500">{actionBoard.offers.length}</span>
+              </div>
+              <div className="space-y-2">
+                {actionBoard.offers.length === 0 ? (
+                  <p className="text-sm text-stone-500">No offer tasks right now.</p>
+                ) : (
+                  actionBoard.offers.map(({ app, ageHours }) => (
+                    <div key={`offer-${app.id}`} className="border border-stone-200 p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <button
+                          onClick={() => setSelectedApp(selectedApp?.id === app.id ? null : app)}
+                          className="text-sm text-stone-900 hover:underline text-left"
+                        >
+                          {app.name}
+                        </button>
+                        <span className="text-xs text-stone-500">{ageHours}h</span>
+                      </div>
+                      <div className="text-xs text-stone-500 mb-2">Call done, offer pending</div>
+                      <button
+                        onClick={() => handleStageChange(app.id, "offer_sent")}
+                        disabled={updating === app.id}
+                        className="w-full border border-stone-300 px-2 py-2 text-xs uppercase tracking-[0.12em] hover:bg-stone-100 transition-colors"
+                      >
+                        Mark Offer Sent
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div className="bg-white border border-stone-200 p-6">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm uppercase tracking-[0.15em] text-stone-700">Follow-up</h3>
+                <span className="text-xs text-stone-500">{actionBoard.followUps.length}</span>
+              </div>
+              <div className="space-y-2">
+                {actionBoard.followUps.length === 0 ? (
+                  <p className="text-sm text-stone-500">No follow-up tasks right now.</p>
+                ) : (
+                  actionBoard.followUps.map(({ app, ageHours }) => (
+                    <div key={`followup-${app.id}`} className="border border-stone-200 p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <button
+                          onClick={() => setSelectedApp(selectedApp?.id === app.id ? null : app)}
+                          className="text-sm text-stone-900 hover:underline text-left"
+                        >
+                          {app.name}
+                        </button>
+                        <span className="text-xs text-stone-500">{ageHours}h</span>
+                      </div>
+                      <div className="text-xs text-stone-500 mb-2">{app.pipeline_stage.replace("_", " ")}</div>
+                      <button
+                        onClick={() => handleFollowUpNote(app)}
+                        disabled={updating === app.id}
+                        className="w-full border border-stone-300 px-2 py-2 text-xs uppercase tracking-[0.12em] hover:bg-stone-100 transition-colors"
+                      >
+                        Log Follow-up
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mb-8">
+          <h2 className="text-lg font-['Times_New_Roman'] tracking-[0.05em] text-stone-950 mb-4">
             Qualification Queue ({qualifiedQueue.length})
           </h2>
           <div className="space-y-4">
@@ -366,11 +541,26 @@ export default function BrandEngineApplicationsClient({ applications }: { applic
                       ))}
                     </select>
                     <button
-                      onClick={() => handleUpdate(app.id, { calendlySent: true, callBookedAt: new Date().toISOString(), pipelineStage: "call_booked", status: "calendly_sent" })}
+                      onClick={() => {
+                        const action = getLeadAction(app)
+                        if (action === "Call") {
+                          handleStageChange(app.id, "call_booked")
+                          return
+                        }
+                        if (action === "Offer") {
+                          handleStageChange(app.id, "offer_sent")
+                          return
+                        }
+                        handleFollowUpNote(app)
+                      }}
                       disabled={updating === app.id}
                       className="border border-stone-300 px-3 py-2 text-xs uppercase tracking-[0.15em] hover:bg-stone-100 transition-colors"
                     >
-                      Mark Call Booked
+                      {getLeadAction(app) === "Call"
+                        ? "Mark Call Booked"
+                        : getLeadAction(app) === "Offer"
+                          ? "Mark Offer Sent"
+                          : "Log Follow-up"}
                     </button>
                     <button
                       onClick={() => setSelectedApp(selectedApp?.id === app.id ? null : app)}
@@ -378,6 +568,24 @@ export default function BrandEngineApplicationsClient({ applications }: { applic
                     >
                       {selectedApp?.id === app.id ? "Hide Details ▲" : "Show Details ▼"}
                     </button>
+                  </div>
+
+                  <div className="flex gap-2 mb-3">
+                    {(["Call", "Offer", "Follow-up"] as ActionKind[]).map((chip) => {
+                      const active = getLeadAction(app) === chip
+                      return (
+                        <span
+                          key={`${app.id}-${chip}`}
+                          className={`px-2 py-1 text-[11px] uppercase tracking-[0.12em] border ${
+                            active
+                              ? "bg-stone-950 text-white border-stone-950"
+                              : "bg-white text-stone-500 border-stone-300"
+                          }`}
+                        >
+                          {chip}
+                        </span>
+                      )
+                    })}
                   </div>
 
                   {selectedApp?.id === app.id && (
