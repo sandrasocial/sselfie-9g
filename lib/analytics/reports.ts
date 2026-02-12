@@ -1,6 +1,12 @@
 import "server-only"
 
 import { ensureAnalyticsSchema } from "@/lib/analytics/schema"
+import {
+  BRAND_ENGINE_COHORT_START_DATE,
+  BRAND_ENGINE_SEAT_CAP,
+  BRAND_ENGINE_TARGET_CALLS_PER_DAY,
+  getDaysUntilCohortStart,
+} from "@/lib/brand-engine/launch-config"
 import { getDb } from "@/lib/db"
 
 function asInt(v: any) {
@@ -269,8 +275,159 @@ export async function generateCohortWeeklyReport(input?: {
   }
 }
 
+export async function generateBrandEngineLaunchDailyReport(input?: {
+  hours?: number
+}): Promise<{
+  periodStart: string
+  periodEnd: string
+  config: {
+    cohortStartDate: string
+    seatCap: number
+    targetCallsPerDay: number
+  }
+  metrics: {
+    applications24h: number
+    qualifiedQueueTotal: number
+    callsBooked24h: number
+    callsBookedToday: number
+    offersSent24h: number
+    closesWon24h: number
+    closesWonTotal: number
+    cashCollected24hCents: string
+    cashCollectedTotalCents: string
+  }
+  pacing: {
+    daysToCohortStart: number
+    seatsFilled: number
+    seatsRemaining: number
+    historicalCloseRate: number
+    closesPerDayNeeded: number
+    callsPerDayNeeded: number
+    onTrackCallsToday: boolean
+  }
+  topQueue: Array<{
+    id: number
+    name: string
+    email: string
+    pipelineStage: string
+    score: number
+    priorityTier: string
+    sourceChannel: string
+    createdAt: string
+  }>
+}> {
+  const hours = input?.hours ?? 24
+
+  await ensureAnalyticsSchema()
+  const sql = getDb()
+
+  const [period] = await sql`
+    SELECT
+      NOW() - ${hours} * INTERVAL '1 hour' AS period_start,
+      NOW() AS period_end
+  `
+
+  const periodStart = new Date(period.period_start).toISOString()
+  const periodEnd = new Date(period.period_end).toISOString()
+
+  const [funnelCounts] = await sql`
+    SELECT
+      COUNT(*) FILTER (WHERE created_at > NOW() - ${hours} * INTERVAL '1 hour')::int AS applications_24h,
+      COUNT(*) FILTER (
+        WHERE pipeline_stage IN ('qualified_queue', 'contacted', 'call_booked', 'call_completed', 'offer_sent')
+      )::int AS qualified_queue_total,
+      COUNT(*) FILTER (WHERE call_booked_at > NOW() - ${hours} * INTERVAL '1 hour')::int AS calls_booked_24h,
+      COUNT(*) FILTER (WHERE offer_sent_at > NOW() - ${hours} * INTERVAL '1 hour')::int AS offers_sent_24h,
+      COUNT(*) FILTER (WHERE closed_at > NOW() - ${hours} * INTERVAL '1 hour' AND pipeline_stage = 'closed_won')::int AS closes_won_24h,
+      COUNT(*) FILTER (WHERE pipeline_stage = 'closed_won')::int AS closes_won_total,
+      COALESCE(SUM(cash_collected_cents) FILTER (WHERE closed_at > NOW() - ${hours} * INTERVAL '1 hour'), 0)::bigint AS cash_24h_cents,
+      COALESCE(SUM(cash_collected_cents), 0)::bigint AS cash_total_cents
+    FROM brand_engine_applications
+  `
+
+  const [callsToday] = await sql`
+    SELECT COUNT(*)::int AS calls_booked_today
+    FROM brand_engine_applications
+    WHERE call_booked_at >= date_trunc('day', NOW())
+      AND call_booked_at < date_trunc('day', NOW()) + INTERVAL '1 day'
+  `
+
+  const [callTotals] = await sql`
+    SELECT
+      COUNT(*) FILTER (WHERE call_booked_at IS NOT NULL)::int AS total_calls,
+      COUNT(*) FILTER (WHERE pipeline_stage = 'closed_won')::int AS total_wins
+    FROM brand_engine_applications
+  `
+
+  const topQueueRows = await sql`
+    SELECT
+      id,
+      name,
+      email,
+      COALESCE(pipeline_stage, 'applied') AS pipeline_stage,
+      COALESCE(qualification_score, 0)::int AS qualification_score,
+      COALESCE(priority_tier, 'low') AS priority_tier,
+      COALESCE(source_channel, 'unknown') AS source_channel,
+      created_at
+    FROM brand_engine_applications
+    WHERE pipeline_stage IN ('qualified_queue', 'contacted', 'call_booked', 'call_completed', 'offer_sent')
+    ORDER BY qualification_score DESC, created_at ASC
+    LIMIT 10
+  `
+
+  const closesWonTotal = asInt(funnelCounts?.closes_won_total)
+  const seatsFilled = closesWonTotal
+  const seatsRemaining = Math.max(0, BRAND_ENGINE_SEAT_CAP - seatsFilled)
+  const daysToCohortStart = getDaysUntilCohortStart(new Date(periodEnd))
+  const historicalCloseRateRaw =
+    asInt(callTotals?.total_calls) > 0 ? asInt(callTotals?.total_wins) / asInt(callTotals?.total_calls) : 0.2
+  const historicalCloseRate = Number(historicalCloseRateRaw.toFixed(3))
+  const closesPerDayNeeded = daysToCohortStart > 0 ? seatsRemaining / daysToCohortStart : seatsRemaining
+  const callsPerDayNeeded = closesPerDayNeeded > 0 ? closesPerDayNeeded / Math.max(historicalCloseRate, 0.1) : 0
+
+  return {
+    periodStart,
+    periodEnd,
+    config: {
+      cohortStartDate: BRAND_ENGINE_COHORT_START_DATE,
+      seatCap: BRAND_ENGINE_SEAT_CAP,
+      targetCallsPerDay: BRAND_ENGINE_TARGET_CALLS_PER_DAY,
+    },
+    metrics: {
+      applications24h: asInt(funnelCounts?.applications_24h),
+      qualifiedQueueTotal: asInt(funnelCounts?.qualified_queue_total),
+      callsBooked24h: asInt(funnelCounts?.calls_booked_24h),
+      callsBookedToday: asInt(callsToday?.calls_booked_today),
+      offersSent24h: asInt(funnelCounts?.offers_sent_24h),
+      closesWon24h: asInt(funnelCounts?.closes_won_24h),
+      closesWonTotal,
+      cashCollected24hCents: asBigInt(funnelCounts?.cash_24h_cents).toString(),
+      cashCollectedTotalCents: asBigInt(funnelCounts?.cash_total_cents).toString(),
+    },
+    pacing: {
+      daysToCohortStart,
+      seatsFilled,
+      seatsRemaining,
+      historicalCloseRate,
+      closesPerDayNeeded: Number(closesPerDayNeeded.toFixed(2)),
+      callsPerDayNeeded: Number(callsPerDayNeeded.toFixed(2)),
+      onTrackCallsToday: asInt(callsToday?.calls_booked_today) >= BRAND_ENGINE_TARGET_CALLS_PER_DAY,
+    },
+    topQueue: (topQueueRows as any[]).map((row) => ({
+      id: asInt(row.id),
+      name: String(row.name || ""),
+      email: String(row.email || ""),
+      pipelineStage: String(row.pipeline_stage || "applied"),
+      score: asInt(row.qualification_score),
+      priorityTier: String(row.priority_tier || "low"),
+      sourceChannel: String(row.source_channel || "unknown"),
+      createdAt: new Date(row.created_at).toISOString(),
+    })),
+  }
+}
+
 export async function storeAnalyticsReport(input: {
-  reportType: "funnel_daily" | "cohorts_weekly"
+  reportType: "funnel_daily" | "cohorts_weekly" | "brand_engine_launch_daily"
   periodStart: Date
   periodEnd: Date
   payload: any

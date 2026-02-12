@@ -107,6 +107,10 @@
     {
       "path": "/api/cron/cohort-report-weekly",
       "schedule": "15 8 * * 1"
+    },
+    {
+      "path": "/api/cron/brand-engine-launch-digest",
+      "schedule": "20 8 * * *"
     }
   ]
 }

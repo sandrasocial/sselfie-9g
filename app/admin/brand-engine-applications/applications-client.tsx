@@ -2,6 +2,13 @@
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
+import {
+  BRAND_ENGINE_APPLICATION_SPRINT_DAYS,
+  BRAND_ENGINE_COHORT_START_DATE,
+  BRAND_ENGINE_SEAT_CAP,
+  BRAND_ENGINE_TARGET_CALLS_PER_DAY,
+  getDaysUntilCohortStart,
+} from "@/lib/brand-engine/launch-config"
 
 type PipelineStage =
   | "applied"
@@ -80,6 +87,16 @@ function formatEuro(cents: number) {
   }).format((cents || 0) / 100)
 }
 
+function isSameUtcDay(dateString: string | null | undefined, refDate: Date) {
+  if (!dateString) return false
+  const value = new Date(dateString)
+  return (
+    value.getUTCFullYear() === refDate.getUTCFullYear() &&
+    value.getUTCMonth() === refDate.getUTCMonth() &&
+    value.getUTCDate() === refDate.getUTCDate()
+  )
+}
+
 export default function BrandEngineApplicationsClient({ applications }: { applications: Application[] }) {
   const [selectedApp, setSelectedApp] = useState<Application | null>(null)
   const [updating, setUpdating] = useState<number | null>(null)
@@ -107,6 +124,16 @@ export default function BrandEngineApplicationsClient({ applications }: { applic
   const cashCollectedCents = normalized.reduce((sum, app) => sum + (app.cash_collected_cents || 0), 0)
   const expectedPipelineCents = qualifiedQueue.reduce((sum, app) => sum + (app.expected_value_cents || 0), 0)
   const closeRate = callsBooked.length > 0 ? Math.round((closedWon.length / callsBooked.length) * 100) : 0
+  const now = new Date()
+  const callsBookedToday = normalized.filter((app) => isSameUtcDay(app.call_booked_at, now)).length
+  const applicationsToday = normalized.filter((app) => isSameUtcDay(app.created_at, now)).length
+  const closesToday = normalized.filter((app) => isSameUtcDay(app.closed_at, now) && app.pipeline_stage === "closed_won").length
+  const seatsFilled = closedWon.length
+  const seatsRemaining = Math.max(0, BRAND_ENGINE_SEAT_CAP - seatsFilled)
+  const daysUntilCohort = getDaysUntilCohortStart(now)
+  const closesPerDayNeeded = daysUntilCohort > 0 ? seatsRemaining / daysUntilCohort : seatsRemaining
+  const historicalCloseRate = callsBooked.length > 0 ? closedWon.length / callsBooked.length : 0.2
+  const callsPerDayNeeded = closesPerDayNeeded > 0 ? closesPerDayNeeded / Math.max(historicalCloseRate, 0.1) : 0
 
   const sourceBreakdown = normalized.reduce<Record<string, number>>((acc, app) => {
     const key = (app.source_channel || "unknown").toLowerCase()
@@ -215,11 +242,45 @@ export default function BrandEngineApplicationsClient({ applications }: { applic
           </div>
         </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+          <div className="bg-white border border-stone-200 p-6">
+            <div className="text-xs tracking-[0.2em] uppercase text-stone-400 mb-2">Cohort Start</div>
+            <div className="text-2xl font-['Times_New_Roman'] text-stone-950">{BRAND_ENGINE_COHORT_START_DATE}</div>
+            <div className="text-xs text-stone-500 mt-2">{daysUntilCohort} days to launch</div>
+          </div>
+          <div className="bg-white border border-stone-200 p-6">
+            <div className="text-xs tracking-[0.2em] uppercase text-stone-400 mb-2">Seats</div>
+            <div className="text-2xl font-['Times_New_Roman'] text-stone-950">
+              {seatsFilled}/{BRAND_ENGINE_SEAT_CAP}
+            </div>
+            <div className="text-xs text-stone-500 mt-2">{seatsRemaining} remaining</div>
+          </div>
+          <div className="bg-white border border-stone-200 p-6">
+            <div className="text-xs tracking-[0.2em] uppercase text-stone-400 mb-2">Calls Today</div>
+            <div className="text-2xl font-['Times_New_Roman'] text-stone-950">
+              {callsBookedToday}/{BRAND_ENGINE_TARGET_CALLS_PER_DAY}
+            </div>
+            <div className="text-xs text-stone-500 mt-2">Target per day</div>
+          </div>
+          <div className="bg-white border border-stone-200 p-6">
+            <div className="text-xs tracking-[0.2em] uppercase text-stone-400 mb-2">Pace Needed</div>
+            <div className="text-2xl font-['Times_New_Roman'] text-stone-950">{closesPerDayNeeded.toFixed(1)} closes/day</div>
+            <div className="text-xs text-stone-500 mt-2">{callsPerDayNeeded.toFixed(1)} calls/day estimated</div>
+          </div>
+          <div className="bg-white border border-stone-200 p-6">
+            <div className="text-xs tracking-[0.2em] uppercase text-stone-400 mb-2">Today Flow</div>
+            <div className="text-2xl font-['Times_New_Roman'] text-stone-950">{applicationsToday} apps</div>
+            <div className="text-xs text-stone-500 mt-2">{closesToday} closes won today</div>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
           <div className="bg-white border border-stone-200 p-6">
             <div className="text-xs tracking-[0.2em] uppercase text-stone-400 mb-3">Qualified Pipeline Value</div>
             <div className="text-4xl font-['Times_New_Roman'] text-stone-950">{formatEuro(expectedPipelineCents)}</div>
-            <div className="text-xs text-stone-500 mt-2">From active qualified queue (expected values).</div>
+            <div className="text-xs text-stone-500 mt-2">
+              Launch sprint: {BRAND_ENGINE_APPLICATION_SPRINT_DAYS} days, one CTA "Apply for Cohort".
+            </div>
           </div>
           <div className="bg-white border border-stone-200 p-6">
             <div className="text-xs tracking-[0.2em] uppercase text-stone-400 mb-3">Lead Sources</div>

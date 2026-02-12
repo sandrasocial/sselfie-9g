@@ -21,6 +21,7 @@
     "tag-engagement": "tsx scripts/add-engagement-tags.ts",
     "audit-subscriptions": "tsx scripts/audit-subscription-data.ts",
     "audit-revenue": "tsx scripts/audit-revenue-sources.ts",
+    "launch-digest": "node scripts/brand-engine-launch-digest.mjs",
     "cleanup-legacy-generation-trackers": "node scripts/cleanup-legacy-generation-trackers.mjs",
     "retry-blueprint-followups": "tsx scripts/retry-blueprint-followup-failures.ts",
     "backfill-payment-ids": "tsx scripts/backfill-payment-ids.ts",
