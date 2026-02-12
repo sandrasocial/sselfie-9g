@@ -75,6 +75,10 @@ export async function calculateMRR(): Promise<number> {
       FROM subscriptions
       WHERE status = 'active'
         AND (is_test_mode = FALSE OR is_test_mode IS NULL)
+        AND (
+          product_type NOT IN ('sselfie_studio_membership', 'brand_studio_membership', 'pro')
+          OR (stripe_subscription_id IS NOT NULL AND BTRIM(stripe_subscription_id) <> '')
+        )
       GROUP BY product_type
     `
 

@@ -180,18 +180,40 @@ async function main() {
           COUNT(*) FILTER (
             WHERE product_type = 'sselfie_studio_membership'
               AND status = 'active'
+              AND (is_test_mode = FALSE OR is_test_mode IS NULL)
               AND (stripe_subscription_id IS NULL OR btrim(stripe_subscription_id) = '')
-          )::int AS active_membership_missing_id,
+          )::int AS live_active_membership_missing_id,
+          COUNT(*) FILTER (
+            WHERE product_type = 'sselfie_studio_membership'
+              AND status = 'active'
+              AND is_test_mode = TRUE
+              AND (stripe_subscription_id IS NULL OR btrim(stripe_subscription_id) = '')
+          )::int AS test_active_membership_missing_id,
+          COUNT(*) FILTER (
+            WHERE product_type = 'sselfie_studio_membership'
+              AND status = 'active'
+              AND (is_test_mode = FALSE OR is_test_mode IS NULL)
+          )::int AS live_active_membership_total,
+          COUNT(*) FILTER (
+            WHERE product_type = 'sselfie_studio_membership'
+              AND status = 'active'
+              AND (is_test_mode = FALSE OR is_test_mode IS NULL)
+              AND stripe_subscription_id IS NOT NULL
+              AND btrim(stripe_subscription_id) <> ''
+          )::int AS live_active_membership_with_id,
           COUNT(*) FILTER (
             WHERE product_type = 'paid_blueprint'
               AND status = 'active'
+              AND (is_test_mode = FALSE OR is_test_mode IS NULL)
               AND (stripe_subscription_id IS NULL OR btrim(stripe_subscription_id) = '')
-          )::int AS active_paid_blueprint_missing_id
+          )::int AS live_active_paid_blueprint_missing_id
         FROM subscriptions
       `
       const risk = highRisk[0] || {}
-      lines.push(`- Active membership rows missing Stripe id (high risk): ${risk.active_membership_missing_id ?? 0}`)
-      lines.push(`- Active paid_blueprint rows missing Stripe id (often expected for one-time entitlement rows): ${risk.active_paid_blueprint_missing_id ?? 0}`)
+      lines.push(`- Live active membership rows missing Stripe id (high risk): ${risk.live_active_membership_missing_id ?? 0}`)
+      lines.push(`- Test active membership rows missing Stripe id (lower risk): ${risk.test_active_membership_missing_id ?? 0}`)
+      lines.push(`- Live active memberships with Stripe id: ${risk.live_active_membership_with_id ?? 0}/${risk.live_active_membership_total ?? 0}`)
+      lines.push(`- Live active paid_blueprint rows missing Stripe id (usually expected one-time entitlement rows): ${risk.live_active_paid_blueprint_missing_id ?? 0}`)
     }
   } else {
     lines.push(`- Stripe subscription id coverage: unavailable (subscriptions.stripe_subscription_id not in schema)`)

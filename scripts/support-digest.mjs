@@ -42,6 +42,7 @@ function outPath(now) {
 async function main() {
   const now = new Date()
   const hours = Number(process.env.SUPPORT_DIGEST_WINDOW_HOURS || 24)
+  const recurringProductTypes = ["sselfie_studio_membership", "brand_studio_membership", "pro"]
 
   const newUsers = await sql`
     SELECT id, email, plan, created_at, last_login_at
@@ -52,11 +53,43 @@ async function main() {
   `
 
   const subscriptionChanges = await sql`
-    SELECT status, COUNT(*)::int AS count
+    SELECT product_type, status, COUNT(*)::int AS count
     FROM subscriptions
     WHERE COALESCE(is_test_mode, FALSE) = FALSE
-    GROUP BY status
-    ORDER BY count DESC
+    GROUP BY product_type, status
+    ORDER BY product_type ASC, count DESC
+  `
+
+  const recurringSubscriptionSnapshot = await sql`
+    SELECT
+      COUNT(*) FILTER (
+        WHERE status = 'active'
+          AND product_type = ANY(${recurringProductTypes})
+          AND stripe_subscription_id IS NOT NULL
+          AND BTRIM(stripe_subscription_id) <> ''
+      )::int AS active_recurring,
+      COUNT(*) FILTER (
+        WHERE status = 'past_due'
+          AND product_type = ANY(${recurringProductTypes})
+          AND stripe_subscription_id IS NOT NULL
+          AND BTRIM(stripe_subscription_id) <> ''
+      )::int AS past_due_recurring,
+      COUNT(*) FILTER (
+        WHERE status = 'canceled'
+          AND product_type = ANY(${recurringProductTypes})
+          AND stripe_subscription_id IS NOT NULL
+          AND BTRIM(stripe_subscription_id) <> ''
+      )::int AS canceled_recurring
+    FROM subscriptions
+    WHERE COALESCE(is_test_mode, FALSE) = FALSE
+  `
+
+  const activeBlueprintEntitlements = await sql`
+    SELECT COUNT(*)::int AS active_blueprint
+    FROM subscriptions
+    WHERE COALESCE(is_test_mode, FALSE) = FALSE
+      AND product_type = 'paid_blueprint'
+      AND status = 'active'
   `
 
   const subscriptionUpdateTouches = await sql`
@@ -69,6 +102,9 @@ async function main() {
     FROM subscriptions
     WHERE updated_at > NOW() - ${hours} * INTERVAL '1 hour'
       AND COALESCE(is_test_mode, FALSE) = FALSE
+      AND product_type = ANY(${recurringProductTypes})
+      AND stripe_subscription_id IS NOT NULL
+      AND BTRIM(stripe_subscription_id) <> ''
     GROUP BY minute_bucket
     ORDER BY minute_bucket DESC
     LIMIT 5
@@ -79,6 +115,9 @@ async function main() {
     FROM subscriptions
     WHERE updated_at > NOW() - ${hours} * INTERVAL '1 hour'
       AND COALESCE(is_test_mode, FALSE) = FALSE
+      AND product_type = ANY(${recurringProductTypes})
+      AND stripe_subscription_id IS NOT NULL
+      AND BTRIM(stripe_subscription_id) <> ''
       AND status IN ('canceled', 'past_due')
     ORDER BY updated_at DESC
     LIMIT 20
@@ -166,9 +205,18 @@ async function main() {
   lines.push(``)
 
   lines.push(`## Subscription health`)
-  lines.push(`Current snapshot (non-test):`)
+  lines.push(`Recurring snapshot (non-test, linked to Stripe):`)
+  lines.push(`- active: ${recurringSubscriptionSnapshot[0]?.active_recurring || 0}`)
+  lines.push(`- past_due: ${recurringSubscriptionSnapshot[0]?.past_due_recurring || 0}`)
+  lines.push(`- canceled: ${recurringSubscriptionSnapshot[0]?.canceled_recurring || 0}`)
+  lines.push(``)
+  lines.push(`Entitlements (not recurring revenue):`)
+  lines.push(`- paid_blueprint active rows: ${activeBlueprintEntitlements[0]?.active_blueprint || 0}`)
+  lines.push(``)
+
+  lines.push(`Subscription rows by product/status (non-test):`)
   for (const s of subscriptionChanges) {
-    lines.push(`- ${s.status}: ${s.count}`)
+    lines.push(`- ${s.product_type || "unknown"} / ${s.status}: ${s.count}`)
   }
   lines.push(``)
 

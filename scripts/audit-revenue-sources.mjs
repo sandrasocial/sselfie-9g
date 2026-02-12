@@ -103,6 +103,14 @@ async function main() {
         SUM(amount)::bigint as total_credits_purchased,
         COUNT(*) FILTER (WHERE stripe_payment_id IS NOT NULL AND btrim(stripe_payment_id) <> '')::int as with_stripe_id,
         COUNT(*) FILTER (WHERE stripe_payment_id IS NULL OR btrim(stripe_payment_id) = '')::int as missing_stripe_id,
+        COUNT(*) FILTER (
+          WHERE (stripe_payment_id IS NULL OR btrim(stripe_payment_id) = '')
+            AND COALESCE(reference_id, '') LIKE 'legacy_unlinked_non_stripe%'
+        )::int as tagged_legacy_missing,
+        COUNT(*) FILTER (
+          WHERE (stripe_payment_id IS NULL OR btrim(stripe_payment_id) = '')
+            AND COALESCE(reference_id, '') NOT LIKE 'legacy_unlinked_non_stripe%'
+        )::int as active_missing_unlinked,
         COUNT(*) FILTER (WHERE is_test_mode = TRUE)::int as test_mode,
         COUNT(*) FILTER (WHERE is_test_mode = FALSE)::int as live_mode,
         COUNT(*) FILTER (WHERE is_test_mode IS NULL)::int as unknown_mode
@@ -115,9 +123,31 @@ async function main() {
     lines.push(`- Total credits purchased: ${p.total_credits_purchased ?? 0}`)
     lines.push(`- With stripe_payment_id: ${p.with_stripe_id ?? 0}`)
     lines.push(`- Missing stripe_payment_id: ${p.missing_stripe_id ?? 0}`)
+    lines.push(`- Missing stripe_payment_id (tagged legacy non-stripe): ${p.tagged_legacy_missing ?? 0}`)
+    lines.push(`- Missing stripe_payment_id (active unresolved): ${p.active_missing_unlinked ?? 0}`)
     lines.push(`- Test mode rows: ${p.test_mode ?? 0}`)
     lines.push(`- Live mode rows: ${p.live_mode ?? 0}`)
     lines.push(`- Unknown mode rows: ${p.unknown_mode ?? 0}`)
+
+    const recentLinkage = await sql`
+      SELECT
+        COUNT(*) FILTER (
+          WHERE created_at >= NOW() - INTERVAL '30 days'
+            AND (is_test_mode = FALSE OR is_test_mode IS NULL)
+            AND stripe_payment_id IS NOT NULL
+            AND btrim(stripe_payment_id) <> ''
+        )::int AS live_linked_30d,
+        COUNT(*) FILTER (
+          WHERE created_at >= NOW() - INTERVAL '30 days'
+            AND (is_test_mode = FALSE OR is_test_mode IS NULL)
+            AND (stripe_payment_id IS NULL OR btrim(stripe_payment_id) = '')
+            AND COALESCE(reference_id, '') NOT LIKE 'legacy_unlinked_non_stripe%'
+        )::int AS live_missing_30d
+      FROM credit_transactions
+      WHERE transaction_type = 'purchase'
+    `
+    const rl = recentLinkage[0] || {}
+    lines.push(`- Live purchase linkage (30d): ${rl.live_linked_30d ?? 0} linked / ${rl.live_missing_30d ?? 0} missing`)
   } catch (err) {
     lines.push(`- Error: ${err?.message || String(err)}`)
   }

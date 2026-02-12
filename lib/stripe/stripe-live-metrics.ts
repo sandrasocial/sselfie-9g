@@ -51,6 +51,10 @@ async function getMRRFromDatabase(): Promise<number> {
       FROM subscriptions
       WHERE status = 'active'
         AND (is_test_mode = FALSE OR is_test_mode IS NULL)
+        AND (
+          product_type NOT IN ('sselfie_studio_membership', 'brand_studio_membership', 'pro')
+          OR (stripe_subscription_id IS NOT NULL AND BTRIM(stripe_subscription_id) <> '')
+        )
       GROUP BY product_type
     `
 
@@ -144,6 +148,7 @@ async function getActiveSubscriptionsFromDatabase(): Promise<number> {
       FROM subscriptions
       WHERE status = 'active'
         AND (is_test_mode = FALSE OR is_test_mode IS NULL)
+        AND (stripe_subscription_id IS NOT NULL AND BTRIM(stripe_subscription_id) <> '')
     `
     return result?.count || 0
   } catch (error: any) {
@@ -161,6 +166,7 @@ async function getTotalSubscriptionsFromDatabase(): Promise<number> {
       SELECT COUNT(*)::int as count
       FROM subscriptions
       WHERE (is_test_mode = FALSE OR is_test_mode IS NULL)
+        AND (stripe_subscription_id IS NOT NULL AND BTRIM(stripe_subscription_id) <> '')
     `
     return result?.count || 0
   } catch (error: any) {
@@ -179,6 +185,7 @@ async function getCanceledSubscriptions30dFromDatabase(): Promise<number> {
       FROM subscriptions
       WHERE status = 'canceled'
         AND (is_test_mode = FALSE OR is_test_mode IS NULL)
+        AND (stripe_subscription_id IS NOT NULL AND BTRIM(stripe_subscription_id) <> '')
         AND updated_at >= NOW() - INTERVAL '30 days'
     `
     return result?.count || 0
@@ -197,6 +204,7 @@ async function getNewSubscribers30dFromDatabase(): Promise<number> {
       SELECT COUNT(*)::int as count
       FROM subscriptions
       WHERE (is_test_mode = FALSE OR is_test_mode IS NULL)
+        AND (stripe_subscription_id IS NOT NULL AND BTRIM(stripe_subscription_id) <> '')
         AND created_at >= NOW() - INTERVAL '30 days'
     `
     return result?.count || 0
@@ -307,4 +315,3 @@ export async function getStripeLiveMetrics(): Promise<StripeLiveMetrics> {
     CACHE_TTL_SECONDS,
   )
 }
-

@@ -75,6 +75,14 @@ async function auditRevenueSources() {
         SUM(amount) as total_credits_purchased,
         COUNT(*) FILTER (WHERE stripe_payment_id IS NOT NULL AND btrim(stripe_payment_id) <> '') as with_stripe_id,
         COUNT(*) FILTER (WHERE stripe_payment_id IS NULL OR btrim(stripe_payment_id) = '') as missing_stripe_id,
+        COUNT(*) FILTER (
+          WHERE (stripe_payment_id IS NULL OR btrim(stripe_payment_id) = '')
+            AND COALESCE(reference_id, '') LIKE 'legacy_unlinked_non_stripe%'
+        ) as tagged_legacy_missing,
+        COUNT(*) FILTER (
+          WHERE (stripe_payment_id IS NULL OR btrim(stripe_payment_id) = '')
+            AND COALESCE(reference_id, '') NOT LIKE 'legacy_unlinked_non_stripe%'
+        ) as active_missing_unlinked,
         COUNT(*) FILTER (WHERE is_test_mode = TRUE) as test_mode,
         COUNT(*) FILTER (WHERE is_test_mode = FALSE) as live_mode,
         COUNT(*) FILTER (WHERE is_test_mode IS NULL) as unknown_mode
@@ -87,9 +95,30 @@ async function auditRevenueSources() {
     console.log(`   Total credits purchased: ${p.total_credits_purchased}`)
     console.log(`   With Stripe payment ID: ${p.with_stripe_id}`)
     console.log(`   Missing Stripe payment ID: ${p.missing_stripe_id}`)
+    console.log(`   Missing Stripe payment ID (tagged legacy non-stripe): ${p.tagged_legacy_missing}`)
+    console.log(`   Missing Stripe payment ID (active unresolved): ${p.active_missing_unlinked}`)
     console.log(`   Test mode: ${p.test_mode}`)
     console.log(`   Live mode: ${p.live_mode}`)
     console.log(`   Unknown mode: ${p.unknown_mode}`)
+
+    const recentMissing = await sql`
+      SELECT
+        COUNT(*) FILTER (
+          WHERE created_at >= NOW() - INTERVAL '30 days'
+            AND (stripe_payment_id IS NULL OR btrim(stripe_payment_id) = '')
+            AND (is_test_mode = FALSE OR is_test_mode IS NULL)
+            AND COALESCE(reference_id, '') NOT LIKE 'legacy_unlinked_non_stripe%'
+        ) AS live_missing_30d,
+        COUNT(*) FILTER (
+          WHERE created_at >= NOW() - INTERVAL '30 days'
+            AND stripe_payment_id IS NOT NULL
+            AND btrim(stripe_payment_id) <> ''
+            AND (is_test_mode = FALSE OR is_test_mode IS NULL)
+        ) AS live_linked_30d
+      FROM credit_transactions
+      WHERE transaction_type = 'purchase'
+    `
+    console.log(`   Live purchase linkage (30d): ${recentMissing[0].live_linked_30d} linked / ${recentMissing[0].live_missing_30d} missing`)
   } catch (error: any) {
     console.log('   ERROR:', error.message)
   }

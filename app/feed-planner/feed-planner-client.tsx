@@ -1,12 +1,15 @@
 "use client"
 
 import { useState, useEffect, useMemo, useRef } from "react"
+import { useRouter } from "next/navigation"
 import useSWR, { useSWRConfig } from "swr"
 import FeedViewScreen from "@/components/feed-planner/feed-view-screen"
 import UnifiedOnboardingWizard from "@/components/onboarding/unified-onboarding-wizard"
 import WelcomeWizard from "@/components/feed-planner/welcome-wizard"
 import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 import UnifiedLoading from "@/components/sselfie/unified-loading"
+import { trackAnalyticsEvent } from "@/lib/analytics/client"
+import { getActivationChecklist, getFreeUserWizardDecision } from "@/lib/onboarding/activation"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -25,9 +28,11 @@ interface FeedPlannerClientProps {
  * - Paid returning users: Skip wizard
  */
 export default function FeedPlannerClient({ access: accessProp, userId, userName }: FeedPlannerClientProps) {
+  const router = useRouter()
   const [showWizard, setShowWizard] = useState(false)
   const [showWelcomeWizard, setShowWelcomeWizard] = useState(false)
   const [isCheckingWizard, setIsCheckingWizard] = useState(true)
+  const [wizardMode, setWizardMode] = useState<"selfie_first" | "none">("none")
   // State to track if we should open wizard at step 4 (visual style selection)
   const [wizardInitialStep, setWizardInitialStep] = useState<number | undefined>(undefined)
   // State to track user's choice from preview feed step (must be before conditional returns)
@@ -38,9 +43,12 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
   // 🔴 CRITICAL: Track if welcome wizard has been auto-shown in this session
   // This prevents showing it multiple times on refresh before the API updates
   const welcomeWizardAutoShownRef = useRef(false)
+  const activationJumpstartTrackedRef = useRef(false)
 
   // Handler to open wizard from header button
   const handleOpenWizard = () => {
+    setWizardMode("none")
+    setWizardInitialStep(undefined)
     setShowWizard(true)
   }
 
@@ -87,7 +95,6 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
     : (userName && !userName.includes('@') 
       ? userName 
       : "there")
-  const useFeedPlannerV2 = Boolean(userInfo?.use_feed_planner_v2)
 
   // Fetch existing personal brand data (always fetch, SWR handles caching)
   // This is the single source of truth - no localStorage needed
@@ -111,6 +118,43 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
       revalidateOnFocus: false,
       dedupingInterval: 60000,
     }
+  )
+
+  const { data: setupStatus } = useSWR(
+    showWizard ? null : "/api/user/setup-status",
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 60000,
+    },
+  )
+
+  const { data: latestFeedData } = useSWR(
+    showWizard ? null : "/api/feed/latest",
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 30000,
+    },
+  )
+
+  const hasGeneratedAny = useMemo(() => {
+    const posts = Array.isArray(latestFeedData?.posts)
+      ? latestFeedData.posts
+      : Array.isArray(latestFeedData?.feed?.posts)
+        ? latestFeedData.feed.posts
+        : []
+    return posts.some((post: any) => Boolean(post?.image_url))
+  }, [latestFeedData])
+
+  const activationChecklist = useMemo(
+    () =>
+      getActivationChecklist({
+        hasSelfies: Boolean(onboardingStatus?.hasSelfies),
+        hasTrainedModel: Boolean(setupStatus?.hasTrainedModel),
+        hasGeneratedAny,
+      }),
+    [hasGeneratedAny, onboardingStatus?.hasSelfies, setupStatus?.hasTrainedModel],
   )
 
   // Determine if wizard is needed
@@ -169,31 +213,48 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
     const hasBaseWizardData = onboardingStatus.hasBaseWizardData || false
     const hasExtensionData = onboardingStatus.hasExtensionData || false
     const onboardingCompleted = onboardingStatus.onboarding_completed || false
+    const hasSelfies = onboardingStatus.hasSelfies || false
 
     // If onboarding is completed, don't show wizard (even if data seems missing - API is source of truth)
     if (onboardingCompleted) {
+      setWizardMode("none")
       setShowWizard(false)
       setIsCheckingWizard(false)
       return
     }
 
-    // Free users: Show wizard if not completed (missing base or extension data OR onboarding not marked complete)
+    // Free users: activation jumpstart prioritizes first selfie upload.
     if (access.isFree) {
-      // Wizard should show if:
-      // 1. Missing base wizard data, OR
-      // 2. Missing extension data, OR
-      // 3. Onboarding not marked complete
-      // Note: We check onboarding_completed as the final gate (set when wizard completes)
-      // Don't check hasSelfies here - that's handled in the wizard itself (step 4 validation)
-      const needsWizard = !hasBaseWizardData || !hasExtensionData || !onboardingCompleted
-      console.log('[FeedPlannerClient] Free user wizard check:', {
+      const decision = getFreeUserWizardDecision({
+        onboardingCompleted,
+        hasSelfies,
+      })
+
+      console.log("[FeedPlannerClient] Free user wizard check:", {
         hasBaseWizardData,
         hasExtensionData,
         onboardingCompleted,
-        needsWizard,
+        hasSelfies,
+        decision,
       })
-      setShowWizard(needsWizard)
+
+      setWizardMode(decision.mode)
+      setWizardInitialStep(decision.initialStep)
+      setShowWizard(decision.showWizard)
       setIsCheckingWizard(false)
+
+      if (decision.mode === "selfie_first" && !activationJumpstartTrackedRef.current) {
+        activationJumpstartTrackedRef.current = true
+        trackAnalyticsEvent({
+          event: "activation_jumpstart_opened",
+          properties: {
+            flow: "free_user_selfie_first",
+            has_base_data: hasBaseWizardData,
+            has_extension_data: hasExtensionData,
+          },
+        }).catch(() => {})
+      }
+
       return
     }
 
@@ -203,12 +264,14 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
       // First-time paid users need wizard if missing extension data
       // Returning paid users skip wizard if onboarding completed
       const needsWizard = !hasExtensionData && !onboardingCompleted
+      setWizardMode("none")
       setShowWizard(needsWizard)
       setIsCheckingWizard(false)
       return
     }
 
     // One-time and membership users: Skip wizard (not needed)
+    setWizardMode("none")
     setShowWizard(false)
     setIsCheckingWizard(false)
   }, [isLoadingOnboarding, isLoadingAccess, onboardingStatus, access, accessProp]) // React to access and onboardingStatus changes
@@ -280,6 +343,16 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
     inspirationLinks?: string
   }) => {
     console.log("[Feed Planner Wizard] ✅ Unified wizard completed with data:", data)
+
+    if (!(onboardingStatus?.hasSelfies) && Array.isArray(data.selfieImages) && data.selfieImages.length > 0) {
+      trackAnalyticsEvent({
+        event: "activation_selfie_uploaded",
+        properties: {
+          flow: wizardMode,
+          selfie_count: data.selfieImages.length,
+        },
+      }).catch(() => {})
+    }
     
     // Close wizard immediately BEFORE cache invalidation
     // This prevents the useEffect from re-opening it while cache is refreshing
@@ -442,7 +515,6 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
         userEmail={userInfo?.email || null}
         existingData={existingData}
         initialStep={wizardInitialStep} // Start at step 4 if user chose "Choose New Style"
-        useFeedPlannerV2={useFeedPlannerV2}
       />
     )
   }
@@ -510,9 +582,79 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
     setShowWelcomeWizard(true)
   }
 
+  const shouldShowActivationChecklist = Boolean(
+    access?.isFree &&
+      !showWizard &&
+      onboardingStatus &&
+      !onboardingStatus.onboarding_completed &&
+      activationChecklist.nextAction !== "none",
+  )
+
+  const handleActivationContinue = () => {
+    trackAnalyticsEvent({
+      event: "activation_continue_clicked",
+      properties: {
+        next_action: activationChecklist.nextAction,
+      },
+    }).catch(() => {})
+
+    if (activationChecklist.nextAction === "upload_selfie") {
+      setWizardMode("selfie_first")
+      setWizardInitialStep(5)
+      setShowWizard(true)
+      return
+    }
+
+    if (activationChecklist.nextAction === "train_model") {
+      router.push("/studio?tab=maya")
+      return
+    }
+
+    if (activationChecklist.nextAction === "generate_first_image") {
+      router.push("/feed-planner")
+    }
+  }
+
   // Show Feed Planner with welcome wizard overlay if needed
   return (
     <>
+      {shouldShowActivationChecklist && (
+        <div className="mx-auto w-full max-w-6xl px-4 pt-6">
+          <div className="border border-stone-200 bg-white px-5 py-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="font-['Times_New_Roman'] text-xl font-light tracking-[0.14em] uppercase text-stone-950">
+                  Activation Checklist
+                </h3>
+                <p className="mt-2 text-sm text-stone-600">
+                  Complete these three steps to get your first result faster.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleActivationContinue}
+                className="h-11 min-w-[160px] border border-stone-950 bg-stone-950 px-6 text-xs font-medium tracking-[0.22em] uppercase text-white transition-colors hover:bg-stone-800"
+              >
+                Continue
+              </button>
+            </div>
+            <div className="mt-4 grid gap-2 sm:grid-cols-3">
+              {activationChecklist.steps.map((step) => (
+                <div key={step.key} className="flex items-center gap-2 border border-stone-200 px-3 py-3 text-sm text-stone-700">
+                  <span
+                    className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[11px] ${
+                      step.done ? "bg-stone-950 text-white" : "bg-stone-100 text-stone-500"
+                    }`}
+                  >
+                    {step.done ? "✓" : "•"}
+                  </span>
+                  <span>{step.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
       <FeedViewScreen 
         access={access} 
         onOpenWizard={handleOpenWizard}

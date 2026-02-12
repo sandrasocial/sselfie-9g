@@ -165,6 +165,26 @@ async function auditSubscriptionData() {
     missingByProduct.forEach((row: any) => {
       console.log(`   - ${row.product_type}: ${row.missing_id}/${row.total}`)
     })
+
+    const recurringLiveCoverage = await sql`
+      SELECT
+        COUNT(*) FILTER (
+          WHERE product_type = 'sselfie_studio_membership'
+            AND status = 'active'
+            AND (is_test_mode = FALSE OR is_test_mode IS NULL)
+        ) AS live_active_memberships,
+        COUNT(*) FILTER (
+          WHERE product_type = 'sselfie_studio_membership'
+            AND status = 'active'
+            AND (is_test_mode = FALSE OR is_test_mode IS NULL)
+            AND stripe_subscription_id IS NOT NULL
+            AND btrim(stripe_subscription_id) <> ''
+        ) AS live_active_with_stripe_id
+      FROM subscriptions
+    `
+    console.log(
+      `   Live active memberships with Stripe ID: ${recurringLiveCoverage[0].live_active_with_stripe_id}/${recurringLiveCoverage[0].live_active_memberships}`,
+    )
   } else {
     console.log('\n8. STRIPE SUBSCRIPTION ID COLUMN: Not in subscriptions schema')
   }

@@ -1,5 +1,3 @@
-import { generateTrackedCheckoutLink } from "@/lib/email/generate-tracked-link"
-
 export interface UpsellFreebieMembershipParams {
   firstName?: string
   recipientEmail: string
@@ -8,6 +6,7 @@ export interface UpsellFreebieMembershipParams {
 }
 
 export function generateUpsellFreebieMembershipEmail(params: UpsellFreebieMembershipParams): {
+  subject: string
   html: string
   text: string
 } {
@@ -20,6 +19,8 @@ export function generateUpsellFreebieMembershipEmail(params: UpsellFreebieMember
   const landingPageUrl = campaignId && campaignName
     ? `${siteUrl}/?utm_source=email&utm_medium=email&utm_campaign=${campaignName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}&utm_content=cta_button&campaign_id=${campaignId}&product=studio_membership`
     : `${siteUrl}/?utm_source=email&utm_medium=email&utm_content=cta_button&product=studio_membership`
+
+  const subject = "Ready for the Next Level?"
 
   const html = `
 <!DOCTYPE html>
@@ -132,6 +133,5 @@ XoXo Sandra 💋
 © ${new Date().getFullYear()} SSELFIE. All rights reserved.
   `
 
-  return { html, text }
+  return { subject, html, text }
 }
-

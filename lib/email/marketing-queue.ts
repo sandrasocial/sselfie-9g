@@ -229,14 +229,27 @@ export async function updateRunProcessedCount(runId: string): Promise<void> {
   `
 }
 
-export async function getNextPendingRuns(limit = 5): Promise<Array<{ run_id: string; status: string }>> {
-  const rows = await sql`
-    SELECT run_id, status
-    FROM marketing_send_runs
-    WHERE status IN ('queued', 'syncing', 'broadcasting', 'cleanup')
-    ORDER BY created_at ASC
-    LIMIT ${limit}
-  `
+export async function getNextPendingRuns(
+  limit = 5,
+  excludeRunIds: string[] = [],
+): Promise<Array<{ run_id: string; status: string }>> {
+  const hasExclusions = excludeRunIds.length > 0
+  const rows = hasExclusions
+    ? await sql`
+        SELECT run_id, status
+        FROM marketing_send_runs
+        WHERE status IN ('queued', 'syncing', 'broadcasting', 'cleanup')
+          AND NOT (run_id = ANY(${excludeRunIds}))
+        ORDER BY created_at ASC
+        LIMIT ${limit}
+      `
+    : await sql`
+        SELECT run_id, status
+        FROM marketing_send_runs
+        WHERE status IN ('queued', 'syncing', 'broadcasting', 'cleanup')
+        ORDER BY created_at ASC
+        LIMIT ${limit}
+      `
 
   return rows as Array<{ run_id: string; status: string }>
 }

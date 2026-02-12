@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json().catch(() => ({}))
-    const daysOld = clampInt(body?.daysOld, 30, 7, 365)
+    const daysOld = clampInt(body?.daysOld, 14, 7, 365)
     const dryRun = String(body?.dryRun || "").toLowerCase() === "true"
 
     const sql = getDb()

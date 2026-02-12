@@ -10,12 +10,22 @@ const sql = neon(process.env.DATABASE_URL!)
 const ALLOWED_PRODUCT_TYPES = ["paid_blueprint", "sselfie_studio_membership"] as const
 
 function isTestModeEnabled(req: NextRequest) {
+  const isProduction = process.env.VERCEL_ENV === "production" || process.env.NODE_ENV === "production"
   const hasPlaywrightHeader = req.headers.get("x-playwright-test") === "1"
+  const allowMock = process.env.ALLOW_TEST_STRIPE_MOCK === "1"
+  const configuredSecret = String(process.env.STRIPE_MOCK_SECRET || "").trim()
+  const providedSecret = String(req.headers.get("x-stripe-mock-secret") || "").trim()
+  const secretValid = configuredSecret.length === 0 || providedSecret === configuredSecret
+
+  if (isProduction) {
+    // Never allow header-only bypass in production.
+    return allowMock && secretValid
+  }
+
   return (
-    process.env.NODE_ENV !== "production" ||
     process.env.PLAYWRIGHT_TEST === "1" ||
     process.env.NODE_ENV === "test" ||
-    process.env.ALLOW_TEST_STRIPE_MOCK === "1" ||
+    allowMock ||
     hasPlaywrightHeader
   )
 }
@@ -108,6 +118,7 @@ export async function POST(req: NextRequest) {
             plan,
             status,
             stripe_customer_id,
+            is_test_mode,
             created_at,
             updated_at
           )
@@ -117,6 +128,7 @@ export async function POST(req: NextRequest) {
             'paid_blueprint',
             'active',
             ${null},
+            TRUE,
             NOW(),
             NOW()
           )
@@ -140,6 +152,7 @@ export async function POST(req: NextRequest) {
             plan,
             status,
             stripe_customer_id,
+            is_test_mode,
             created_at,
             updated_at
           )
@@ -149,6 +162,7 @@ export async function POST(req: NextRequest) {
             'sselfie_studio_membership',
             'active',
             ${null},
+            TRUE,
             NOW(),
             NOW()
           )

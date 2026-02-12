@@ -23,6 +23,7 @@
 
 ## Current focus areas
 
+- **14-day AI operations sprint**: Track execution in `docs/AI_OPERATIONS_EXECUTION_BOARD.md` and baseline evidence in `output/automation/day1-kickoff-2026-02-12.md`.
 - **Marketing automation**: Resend segments + broadcast loops (restrictions: 2 req/sec, `marketing_send_queue`, Upstash locks). Fix 429s, missing segments, email performance reporting, and ensure daily funnel + weekly cohort automation outputs stay accurate.
 - **Reconciliation pipelines**: `reconcile-generations`, `reconcile-subscriptions`, `reconcile-feed-posts` – ensure they log cleanly, handle Vercel Blob/Replicate transitions, and surface errors on the admin dashboard.
 - **Executive visibility**: The dashboards under `app/(admin|diagnostics)` use cron output files; keep the instrumentation (funnel, cohort, triage) running and accurate.

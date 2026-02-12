@@ -34,7 +34,9 @@ export async function GET() {
         COUNT(*) as count
       FROM subscriptions
       WHERE status = 'active'
-      AND is_test_mode = FALSE
+      AND (is_test_mode = FALSE OR is_test_mode IS NULL)
+      AND stripe_subscription_id IS NOT NULL
+      AND BTRIM(stripe_subscription_id) <> ''
       GROUP BY product_type
     `
 
@@ -132,7 +134,12 @@ export async function GET() {
       SELECT 
         COUNT(DISTINCT u.id) as total_users,
         COUNT(DISTINCT um.id) FILTER (WHERE um.training_status = 'completed') as users_with_models,
-        COUNT(DISTINCT s.id) FILTER (WHERE s.status = 'active' AND s.is_test_mode = FALSE) as active_subscribers
+        COUNT(DISTINCT s.id) FILTER (
+          WHERE s.status = 'active'
+            AND (s.is_test_mode = FALSE OR s.is_test_mode IS NULL)
+            AND s.stripe_subscription_id IS NOT NULL
+            AND BTRIM(s.stripe_subscription_id) <> ''
+        ) as active_subscribers
       FROM users u
       LEFT JOIN user_models um ON um.user_id = u.id
       LEFT JOIN subscriptions s ON s.user_id = u.id

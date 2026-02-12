@@ -1,6 +1,7 @@
 import { Resend } from "resend"
 import { neon } from "@neondatabase/serverless"
 import { EMAIL_CONFIG, EMAIL_ENV } from "./config"
+import { normalizeEmailIdentifier } from "./normalize-identifier"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 const sql = neon(process.env.DATABASE_URL!)
@@ -32,10 +33,6 @@ const RESEND_BROADCAST_SEND_DELAY_MS = Number.parseInt(process.env.RESEND_BROADC
 
 async function sleep(ms: number) {
   await new Promise((resolve) => setTimeout(resolve, ms))
-}
-
-function normalizeValue(value?: string | null): string {
-  return String(value || "").trim()
 }
 
 function isLikelyResendRateLimit(message: string): boolean {
@@ -205,8 +202,8 @@ async function logEmailEvent(input: {
 }
 
 export async function sendMarketingBroadcast(input: MarketingBroadcastInput) {
-  const audienceId = normalizeValue(input.audienceId || EMAIL_ENV.resendAudienceId)
-  const segmentId = normalizeValue(input.segmentId)
+  const audienceId = normalizeEmailIdentifier(input.audienceId || EMAIL_ENV.resendAudienceId)
+  const segmentId = normalizeEmailIdentifier(input.segmentId)
   const recipientCount = input.estimatedRecipientCount || 0
 
   if (!segmentId && !audienceId) {
@@ -376,7 +373,7 @@ export async function syncMarketingContacts(input: ContactSyncInput) {
       await sleep(CONTACT_UPDATE_DELAY_MS)
 
       if (input.segmentId) {
-        const segId = String(input.segmentId || "").trim()
+        const segId = normalizeEmailIdentifier(input.segmentId)
         if (segId) {
           if (input.removeFromSegment) {
             // Resend API supports identifier=contactId OR email.

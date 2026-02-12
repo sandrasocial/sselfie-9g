@@ -4,6 +4,7 @@ import { logAdminError } from "@/lib/admin-error-log"
 import { resolveMarketingTemplateContent } from "@/lib/email/marketing-template-overrides"
 import { addContactsToHistorySegment } from "@/lib/resend/segment-history"
 import { acquireKvLock, releaseKvLock } from "@/lib/cache"
+import { normalizeEmailIdentifier } from "@/lib/email/normalize-identifier"
 import {
   claimQueueBatch,
   createMarketingSendRun,
@@ -25,7 +26,23 @@ import {
 const sql = neon(process.env.DATABASE_URL!)
 const DEFAULT_BATCH_SIZE = Number.parseInt(process.env.MARKETING_SYNC_BATCH_SIZE || "25", 10)
 const DEFAULT_MAX_ATTEMPTS = Number.parseInt(process.env.MARKETING_SYNC_MAX_ATTEMPTS || "3", 10)
-const DEFAULT_MAX_RUNTIME_MS = Number.parseInt(process.env.MARKETING_RUN_MAX_MS || "20000", 10)
+const DEFAULT_MAX_RUNTIME_MS = Number.parseInt(process.env.MARKETING_RUN_MAX_MS || "60000", 10)
+const DEFAULT_PENDING_RUN_LIMIT = Math.max(
+  1,
+  Number.parseInt(process.env.MARKETING_PENDING_RUN_LIMIT || "5", 10) || 5,
+)
+const DEFAULT_PENDING_RUN_MAX = Math.max(
+  DEFAULT_PENDING_RUN_LIMIT,
+  Number.parseInt(process.env.MARKETING_PENDING_RUN_MAX || "15", 10) || 15,
+)
+const DEFAULT_PENDING_WINDOW_MS = Math.max(
+  5_000,
+  Number.parseInt(process.env.MARKETING_PENDING_WINDOW_MS || "90000", 10) || 90_000,
+)
+const DEFAULT_PENDING_PER_RUN_MAX_MS = Math.max(
+  7_000,
+  Number.parseInt(process.env.MARKETING_PENDING_PER_RUN_MAX_MS || "20000", 10) || 20_000,
+)
 const REQUIRE_UPSTASH_LOCKS =
   String(process.env.MARKETING_REQUIRE_UPSTASH_LOCKS || "true").toLowerCase() !== "false"
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -44,7 +61,7 @@ export interface MarketingRunInput {
 }
 
 export async function enqueueAndProcessMarketingRun(input: MarketingRunInput) {
-  const normalizedSegmentId = String(input.segmentId || "").trim()
+  const normalizedSegmentId = normalizeEmailIdentifier(input.segmentId)
   const resolvedContent = await resolveMarketingTemplateContent({
     emailType: input.emailType,
     subject: input.subject,
@@ -90,7 +107,7 @@ export async function enqueueAndProcessMarketingRun(input: MarketingRunInput) {
   return runId
 }
 
-export async function processPendingMarketingRuns(limit = 3) {
+export async function processPendingMarketingRuns(limit = DEFAULT_PENDING_RUN_LIMIT) {
   // Recovery pass: safe/idempotent, prevents "stuck" queue rows and stale runs
   // from blocking future sends.
   await resetStuckMarketingQueueItems().catch(() => {})
@@ -98,9 +115,26 @@ export async function processPendingMarketingRuns(limit = 3) {
   await failQueuedItemsForClosedRuns().catch(() => {})
   await expireOldMarketingQueueItems().catch(() => {})
 
-  const runs = await getNextPendingRuns(limit)
-  for (const run of runs) {
-    await processMarketingRun({ runId: run.run_id })
+  const safeLimit = Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : DEFAULT_PENDING_RUN_LIMIT
+  const startTime = Date.now()
+  const processedRunIds: string[] = []
+  let remaining = DEFAULT_PENDING_RUN_MAX
+
+  while (remaining > 0 && Date.now() - startTime < DEFAULT_PENDING_WINDOW_MS) {
+    const batchSize = Math.min(safeLimit, remaining)
+    const runs = await getNextPendingRuns(batchSize, processedRunIds)
+    if (runs.length === 0) break
+
+    for (const run of runs) {
+      if (Date.now() - startTime >= DEFAULT_PENDING_WINDOW_MS) break
+      processedRunIds.push(run.run_id)
+      remaining -= 1
+      if (remaining < 0) break
+      await processMarketingRun({
+        runId: run.run_id,
+        maxRuntimeMs: DEFAULT_PENDING_PER_RUN_MAX_MS,
+      })
+    }
   }
 }
 
@@ -125,7 +159,7 @@ export async function processMarketingRun(input: {
   if (!run) return
 
   const tagKey = input.tagKey || run.tag_key || run.sequence_key
-  const segmentId = String(input.segmentId || run.segment_id || "").trim() || null
+  const segmentId = normalizeEmailIdentifier(input.segmentId || run.segment_id) || null
   const campaignKey = input.campaignKey || run.campaign_key
   const emailType = input.emailType || run.email_type || run.sequence_key
   const subject = input.subject || run.subject
@@ -189,7 +223,7 @@ export async function processMarketingRun(input: {
     return
   }
 
-  const resendAudienceId = String(process.env.RESEND_AUDIENCE_ID || "").trim()
+  const resendAudienceId = normalizeEmailIdentifier(process.env.RESEND_AUDIENCE_ID)
   if (!resendAudienceId) {
     await markEmailLogsFailed({
       runId: input.runId,

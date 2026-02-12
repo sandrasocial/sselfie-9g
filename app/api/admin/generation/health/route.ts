@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
 
     const url = new URL(request.url)
     const limit = clampInt(url.searchParams.get("limit"), 50, 1, 200)
-    const legacyDays = clampInt(url.searchParams.get("legacyDays"), 30, 7, 365)
+    const legacyDays = clampInt(url.searchParams.get("legacyDays"), 14, 7, 365)
 
     const sql = getDb()
 

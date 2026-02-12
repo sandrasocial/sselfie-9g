@@ -30,6 +30,7 @@ function outPath(now: Date) {
 }
 
 function iso(x: any) {
+  if (x === null || x === undefined) return "n/a"
   try {
     return new Date(x).toISOString()
   } catch {
@@ -137,6 +138,84 @@ async function main() {
     `
   })
 
+  const feedBacklog = await safe("feed_posts_backlog", async () => {
+    const [row] = await sql`
+      SELECT
+        COUNT(*) FILTER (
+          WHERE prediction_id IS NOT NULL
+            AND image_url IS NULL
+            AND (generation_status IS NULL OR generation_status IN ('pending', 'generating'))
+            AND updated_at < NOW() - INTERVAL '15 minutes'
+        )::int AS stuck_15m,
+        COUNT(*) FILTER (
+          WHERE prediction_id IS NOT NULL
+            AND image_url IS NULL
+            AND (generation_status IS NULL OR generation_status IN ('pending', 'generating'))
+            AND updated_at < NOW() - ${stuckRecentHours} * INTERVAL '1 hour'
+        )::int AS ancient,
+        MIN(updated_at) FILTER (
+          WHERE prediction_id IS NOT NULL
+            AND image_url IS NULL
+            AND (generation_status IS NULL OR generation_status IN ('pending', 'generating'))
+            AND updated_at < NOW() - INTERVAL '15 minutes'
+        ) AS oldest
+      FROM feed_posts
+    `
+    return row || { stuck_15m: 0, ancient: 0, oldest: null }
+  })
+
+  const aiBacklog = await safe("ai_images_backlog", async () => {
+    const [row] = await sql`
+      SELECT
+        COUNT(*) FILTER (
+          WHERE prediction_id IS NOT NULL
+            AND (generation_status IS NULL OR generation_status IN ('generating', 'processing'))
+            AND (image_url IS NULL OR BTRIM(image_url) = '' OR image_url NOT LIKE 'http%')
+            AND created_at < NOW() - INTERVAL '15 minutes'
+        )::int AS stuck_15m,
+        COUNT(*) FILTER (
+          WHERE prediction_id IS NOT NULL
+            AND (generation_status IS NULL OR generation_status IN ('generating', 'processing'))
+            AND (image_url IS NULL OR BTRIM(image_url) = '' OR image_url NOT LIKE 'http%')
+            AND created_at < NOW() - ${stuckRecentHours} * INTERVAL '1 hour'
+        )::int AS ancient,
+        MIN(created_at) FILTER (
+          WHERE prediction_id IS NOT NULL
+            AND (generation_status IS NULL OR generation_status IN ('generating', 'processing'))
+            AND (image_url IS NULL OR BTRIM(image_url) = '' OR image_url NOT LIKE 'http%')
+            AND created_at < NOW() - INTERVAL '15 minutes'
+        ) AS oldest
+      FROM ai_images
+    `
+    return row || { stuck_15m: 0, ancient: 0, oldest: null }
+  })
+
+  const proBacklog = await safe("pro_photoshoot_backlog", async () => {
+    const [row] = await sql`
+      SELECT
+        COUNT(*) FILTER (
+          WHERE prediction_id IS NOT NULL
+            AND grid_url IS NULL
+            AND generation_status = 'generating'
+            AND updated_at < NOW() - INTERVAL '15 minutes'
+        )::int AS stuck_15m,
+        COUNT(*) FILTER (
+          WHERE prediction_id IS NOT NULL
+            AND grid_url IS NULL
+            AND generation_status = 'generating'
+            AND updated_at < NOW() - ${stuckRecentHours} * INTERVAL '1 hour'
+        )::int AS ancient,
+        MIN(updated_at) FILTER (
+          WHERE prediction_id IS NOT NULL
+            AND grid_url IS NULL
+            AND generation_status = 'generating'
+            AND updated_at < NOW() - INTERVAL '15 minutes'
+        ) AS oldest
+      FROM pro_photoshoot_grids
+    `
+    return row || { stuck_15m: 0, ancient: 0, oldest: null }
+  })
+
   const lines: string[] = []
   lines.push(`# Friction digest`)
   lines.push(``)
@@ -152,7 +231,11 @@ async function main() {
     const activeAdmin = (topAdminErrors.value as any[]).filter((r) => r.last_seen && new Date(r.last_seen).getTime() > now.getTime() - recentHours * 60 * 60 * 1000)
     const activeWebhook = (webhookErrors.value as any[]).filter((r) => r.last_seen && new Date(r.last_seen).getTime() > now.getTime() - recentHours * 60 * 60 * 1000)
 
-    const totalActive = activeCron.length + activeAdmin.length + activeWebhook.length
+    const feedStuck = Number((feedBacklog.ok ? (feedBacklog.value as any).stuck_15m : 0) || 0)
+    const aiStuck = Number((aiBacklog.ok ? (aiBacklog.value as any).stuck_15m : 0) || 0)
+    const proStuck = Number((proBacklog.ok ? (proBacklog.value as any).stuck_15m : 0) || 0)
+
+    const totalActive = activeCron.length + activeAdmin.length + activeWebhook.length + (feedStuck + aiStuck + proStuck > 0 ? 1 : 0)
     if (totalActive === 0) {
       lines.push(`No active incidents found.`)
     } else {
@@ -167,6 +250,12 @@ async function main() {
       if (activeWebhook.length > 0) {
         lines.push(`Webhook errors:`)
         for (const r of activeWebhook) lines.push(`- ${r.event_type}: ${r.count} (last: ${iso(r.last_seen)})`)
+      }
+      if (feedStuck + aiStuck + proStuck > 0) {
+        lines.push(`Generation backlog (15m+):`)
+        lines.push(`- feed_posts: ${feedStuck}`)
+        lines.push(`- ai_images: ${aiStuck}`)
+        lines.push(`- pro_photoshoot_grids: ${proStuck}`)
       }
     }
   } else {
@@ -258,6 +347,24 @@ async function main() {
     }
   } else {
     lines.push(`- Error: ${genStuckAncient.error}`)
+  }
+  lines.push(``)
+
+  lines.push(`## Generation backlog (feed/ai/pro)`)
+  if (feedBacklog.ok && aiBacklog.ok && proBacklog.ok) {
+    lines.push(
+      `- feed_posts: ${Number((feedBacklog.value as any).stuck_15m || 0)} stuck (15m+), ${Number((feedBacklog.value as any).ancient || 0)} ancient (> ${stuckRecentHours}h), oldest: ${iso((feedBacklog.value as any).oldest)}`,
+    )
+    lines.push(
+      `- ai_images: ${Number((aiBacklog.value as any).stuck_15m || 0)} stuck (15m+), ${Number((aiBacklog.value as any).ancient || 0)} ancient (> ${stuckRecentHours}h), oldest: ${iso((aiBacklog.value as any).oldest)}`,
+    )
+    lines.push(
+      `- pro_photoshoot_grids: ${Number((proBacklog.value as any).stuck_15m || 0)} stuck (15m+), ${Number((proBacklog.value as any).ancient || 0)} ancient (> ${stuckRecentHours}h), oldest: ${iso((proBacklog.value as any).oldest)}`,
+    )
+  } else {
+    if (!feedBacklog.ok) lines.push(`- Error: ${feedBacklog.error}`)
+    if (!aiBacklog.ok) lines.push(`- Error: ${aiBacklog.error}`)
+    if (!proBacklog.ok) lines.push(`- Error: ${proBacklog.error}`)
   }
   lines.push(``)
 

@@ -3,6 +3,7 @@ import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { neon } from "@neondatabase/serverless"
 import { MARKETING_SEGMENTS } from "@/lib/email/config"
+import { normalizeEmailIdentifier } from "@/lib/email/normalize-identifier"
 
 function clampInt(v: string | null, def: number, min: number, max: number) {
   const n = Number.parseInt(String(v ?? ""), 10)
@@ -219,7 +220,7 @@ export async function GET(request: NextRequest) {
       now: new Date().toISOString(),
       range: { days },
       config: {
-        resendAudienceIdConfigured: Boolean(process.env.RESEND_AUDIENCE_ID),
+        resendAudienceIdConfigured: Boolean(normalizeEmailIdentifier(process.env.RESEND_AUDIENCE_ID)),
         resendApiKeyConfigured: Boolean(process.env.RESEND_API_KEY),
         upstashConfigured: isUpstashConfigured(),
         segments,

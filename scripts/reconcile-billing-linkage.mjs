@@ -117,6 +117,7 @@ async function classifyMembershipRows() {
     LEFT JOIN users u ON u.id = s.user_id
     WHERE s.product_type = 'sselfie_studio_membership'
       AND s.status = 'active'
+      AND (s.is_test_mode = FALSE OR s.is_test_mode IS NULL)
       AND (s.stripe_subscription_id IS NULL OR btrim(s.stripe_subscription_id) = '')
     ORDER BY s.created_at DESC
   `
@@ -246,6 +247,7 @@ async function analyzePurchaseLinkage() {
       AND created_at >= ${JAN_START}::timestamptz
       AND created_at < ${JAN_END}::timestamptz
       AND (stripe_payment_id IS NULL OR btrim(stripe_payment_id) = '')
+      AND COALESCE(reference_id, '') NOT LIKE 'legacy_unlinked_non_stripe%'
     ORDER BY created_at ASC
   `
 
