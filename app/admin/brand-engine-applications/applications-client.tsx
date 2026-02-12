@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useMemo, useState, type FormEvent } from "react"
 import Link from "next/link"
 import {
   BRAND_ENGINE_APPLICATION_SPRINT_DAYS,
@@ -138,6 +138,16 @@ function getActionAgeHours(app: NormalizedApplication, action: ActionKind) {
 export default function BrandEngineApplicationsClient({ applications }: { applications: Application[] }) {
   const [selectedApp, setSelectedApp] = useState<Application | null>(null)
   const [updating, setUpdating] = useState<number | null>(null)
+  const [addingLead, setAddingLead] = useState(false)
+  const [quickAddMessage, setQuickAddMessage] = useState<string | null>(null)
+  const [quickLead, setQuickLead] = useState({
+    name: "",
+    email: "",
+    instagramHandle: "",
+    sourceCampaign: "ig_day1_dm_cohort",
+    notes: "",
+    offerType: "cohort",
+  })
 
   const normalized = useMemo<NormalizedApplication[]>(
     () =>
@@ -262,6 +272,45 @@ export default function BrandEngineApplicationsClient({ applications }: { applic
     await handleUpdate(app.id, { notes: mergedNotes })
   }
 
+  async function handleQuickAddLead(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!quickLead.name.trim()) {
+      setQuickAddMessage("Name is required.")
+      return
+    }
+
+    if (!quickLead.email.trim() && !quickLead.instagramHandle.trim()) {
+      setQuickAddMessage("Add email or Instagram handle.")
+      return
+    }
+
+    setAddingLead(true)
+    setQuickAddMessage(null)
+    try {
+      const response = await fetch("/api/admin/brand-engine-applications/quick-add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(quickLead),
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data?.error || "Failed to add DM lead")
+
+      setQuickAddMessage(`Lead added: ${data.lead?.name} (${data.lead?.email})`)
+      setQuickLead((prev) => ({
+        ...prev,
+        name: "",
+        email: "",
+        instagramHandle: "",
+        notes: "",
+      }))
+      window.location.reload()
+    } catch (error) {
+      setQuickAddMessage(error instanceof Error ? error.message : "Failed to add lead")
+    } finally {
+      setAddingLead(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-stone-50">
       <div className="border-b border-stone-200 bg-white">
@@ -362,6 +411,62 @@ export default function BrandEngineApplicationsClient({ applications }: { applic
                 ))}
             </div>
           </div>
+        </div>
+
+        <div className="bg-white border border-stone-200 p-6 mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-['Times_New_Roman'] tracking-[0.05em] text-stone-950">Quick Add DM Lead</h2>
+            <span className="text-xs uppercase tracking-[0.12em] text-stone-500">Instagram DM bridge</span>
+          </div>
+
+          <form onSubmit={handleQuickAddLead} className="grid grid-cols-1 md:grid-cols-6 gap-3">
+            <input
+              type="text"
+              value={quickLead.name}
+              onChange={(e) => setQuickLead((prev) => ({ ...prev, name: e.target.value }))}
+              placeholder="Name"
+              className="bg-white border border-stone-300 px-3 py-2 text-sm text-stone-900 focus:outline-none"
+            />
+            <input
+              type="email"
+              value={quickLead.email}
+              onChange={(e) => setQuickLead((prev) => ({ ...prev, email: e.target.value }))}
+              placeholder="Email (optional)"
+              className="bg-white border border-stone-300 px-3 py-2 text-sm text-stone-900 focus:outline-none"
+            />
+            <input
+              type="text"
+              value={quickLead.instagramHandle}
+              onChange={(e) => setQuickLead((prev) => ({ ...prev, instagramHandle: e.target.value }))}
+              placeholder="@instagram"
+              className="bg-white border border-stone-300 px-3 py-2 text-sm text-stone-900 focus:outline-none"
+            />
+            <input
+              type="text"
+              value={quickLead.sourceCampaign}
+              onChange={(e) => setQuickLead((prev) => ({ ...prev, sourceCampaign: e.target.value }))}
+              placeholder="Campaign tag"
+              className="bg-white border border-stone-300 px-3 py-2 text-sm text-stone-900 focus:outline-none"
+            />
+            <input
+              type="text"
+              value={quickLead.notes}
+              onChange={(e) => setQuickLead((prev) => ({ ...prev, notes: e.target.value }))}
+              placeholder="DM context (optional)"
+              className="bg-white border border-stone-300 px-3 py-2 text-sm text-stone-900 focus:outline-none"
+            />
+            <button
+              type="submit"
+              disabled={addingLead}
+              className="border border-stone-900 bg-stone-900 text-white px-3 py-2 text-xs uppercase tracking-[0.15em] hover:bg-stone-800 transition-colors disabled:opacity-60"
+            >
+              {addingLead ? "Adding..." : "Add DM Lead"}
+            </button>
+          </form>
+
+          {quickAddMessage && (
+            <p className="mt-3 text-sm text-stone-600">{quickAddMessage}</p>
+          )}
         </div>
 
         <div className="mb-8">

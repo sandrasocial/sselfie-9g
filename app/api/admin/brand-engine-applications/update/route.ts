@@ -4,6 +4,7 @@ import {
   BRAND_ENGINE_PIPELINE_STAGES,
   ensureBrandEngineApplicationsSchema,
 } from "@/lib/brand-engine/applications"
+import { requireAdmin } from "@/lib/admin-feature-flags"
 
 function isValidStage(value: string) {
   return BRAND_ENGINE_PIPELINE_STAGES.includes(value as (typeof BRAND_ENGINE_PIPELINE_STAGES)[number])
@@ -11,6 +12,14 @@ function isValidStage(value: string) {
 
 export async function POST(req: NextRequest) {
   try {
+    const adminCheck = await requireAdmin()
+    if (!adminCheck.isAdmin) {
+      return NextResponse.json(
+        { success: false, error: adminCheck.error || "Unauthorized" },
+        { status: adminCheck.error === "Not authenticated" ? 401 : 403 },
+      )
+    }
+
     const payload = await req.json()
     const {
       applicationId,
