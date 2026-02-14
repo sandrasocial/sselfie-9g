@@ -19,6 +19,7 @@ import {
 } from "@/lib/resend/manage-contact"
 import { syncContactToFlodesk, tagFlodeskContact } from '@/lib/flodesk'
 import { hasStudioMembership } from "@/lib/subscription"
+import { isBrandEngineCheckoutProductType } from "@/lib/brand-engine/offer-checkout-config"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -373,6 +374,161 @@ export async function POST(request: NextRequest) {
             console.error(`[v0] ⚠️ WARNING: product_type is missing from session metadata!`)
             console.error(`[v0] Available metadata keys:`, Object.keys(session.metadata || {}))
             console.error(`[v0] ❌ This will cause the webhook to skip processing paid_blueprint!`)
+          }
+
+          if (isBrandEngineCheckoutProductType(productType)) {
+            console.log(`[v0] 💎 Brand Engine payment detected for product_type=${productType}`)
+
+            const applicationIdRaw = session.metadata.brand_engine_application_id || session.metadata.application_id
+            const applicationId = Number.parseInt(String(applicationIdRaw || ""), 10)
+            const checkoutMode = String(session.metadata.checkout_mode || "payment_link")
+            const paymentIntentId =
+              typeof session.payment_intent === "string"
+                ? session.payment_intent
+                : session.payment_intent?.id || null
+            const paymentIdForStorage = paymentIntentId || session.id
+            const isTestMode = !event.livemode
+
+            let paymentAmountCents = session.amount_total || 0
+            let stripeCustomerId =
+              typeof session.customer === "string" ? session.customer : session.customer?.id || null
+
+            if (paymentIntentId) {
+              try {
+                const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
+                paymentAmountCents = paymentIntent.amount || paymentAmountCents
+                stripeCustomerId =
+                  typeof paymentIntent.customer === "string"
+                    ? paymentIntent.customer
+                    : paymentIntent.customer?.id || stripeCustomerId
+              } catch (piError: any) {
+                console.error(`[v0] Failed to retrieve payment intent for Brand Engine payment:`, piError.message)
+              }
+            }
+
+            if (stripeCustomerId) {
+              try {
+                await sql`
+                  INSERT INTO stripe_payments (
+                    stripe_payment_id,
+                    stripe_customer_id,
+                    user_id,
+                    amount_cents,
+                    currency,
+                    status,
+                    payment_type,
+                    product_type,
+                    description,
+                    metadata,
+                    payment_date,
+                    is_test_mode,
+                    created_at,
+                    updated_at
+                  )
+                  VALUES (
+                    ${paymentIdForStorage},
+                    ${stripeCustomerId},
+                    NULL,
+                    ${paymentAmountCents},
+                    'usd',
+                    ${isPaymentPaid ? 'succeeded' : 'pending'},
+                    'brand_engine_offer',
+                    ${productType},
+                    ${'Brand Engine offer payment'},
+                    ${JSON.stringify({
+                      ...session.metadata,
+                      session_id: session.id,
+                      customer_email: customerEmail,
+                    })},
+                    NOW(),
+                    ${isTestMode},
+                    NOW(),
+                    NOW()
+                  )
+                  ON CONFLICT (stripe_payment_id) 
+                  DO UPDATE SET
+                    status = ${isPaymentPaid ? 'succeeded' : 'pending'},
+                    amount_cents = ${paymentAmountCents},
+                    updated_at = NOW()
+                `
+              } catch (paymentError: any) {
+                console.error(`[v0] Failed to store Brand Engine payment in stripe_payments:`, paymentError.message)
+              }
+            }
+
+            if (Number.isFinite(applicationId) && applicationId > 0 && isPaymentPaid) {
+              const paymentNote = `[payment ${new Date().toISOString()}] stripe_session=${session.id}; stripe_payment=${paymentIdForStorage}; mode=${checkoutMode}; amount_cents=${paymentAmountCents}`
+              const updated = await sql`
+                UPDATE brand_engine_applications
+                SET
+                  pipeline_stage = 'closed_won',
+                  status = 'closed_won',
+                  next_action = 'follow_up',
+                  call_required = FALSE,
+                  closed_at = COALESCE(closed_at, NOW()),
+                  closed_reason = COALESCE(closed_reason, 'paid_via_checkout'),
+                  cash_collected_cents = CASE
+                    WHEN COALESCE(cash_collected_cents, 0) <= 0 THEN ${paymentAmountCents}
+                    ELSE cash_collected_cents
+                  END,
+                  checkout_mode = CASE
+                    WHEN checkout_mode IS NULL OR checkout_mode = 'none' THEN ${checkoutMode}
+                    ELSE checkout_mode
+                  END,
+                  checkout_mode_reason = COALESCE(checkout_mode_reason, 'checkout_completed'),
+                  notes = CASE
+                    WHEN notes IS NULL OR notes = '' THEN ${paymentNote}
+                    ELSE notes || E'\n' || ${paymentNote}
+                  END,
+                  updated_at = NOW()
+                WHERE id = ${applicationId}
+                RETURNING id
+              `
+
+              if (updated.length === 0) {
+                console.warn(`[v0] Brand Engine application not found for payment reconciliation: ${applicationId}`)
+              } else {
+                console.log(`[v0] ✅ Brand Engine application ${applicationId} marked closed_won from checkout`)
+              }
+            } else if (!isPaymentPaid) {
+              console.log(`[v0] Brand Engine payment pending; will wait for confirmed payment status`)
+            } else {
+              console.warn(`[v0] Brand Engine payment missing application ID in metadata`)
+            }
+
+            if (customerEmail && isPaymentPaid) {
+              try {
+                const firstName = customerEmail.split("@")[0]
+                const receiptText = [
+                  `Hi ${firstName},`,
+                  "",
+                  "Payment received. You're confirmed for Brand Engine.",
+                  "You'll receive onboarding steps shortly.",
+                  "",
+                  "— Sandra",
+                ].join("\n")
+                const receiptHtml = `
+                  <div style="font-family: 'Helvetica Neue', Arial, sans-serif; color: #1c1917; line-height: 1.5;">
+                    <p>Hi ${firstName},</p>
+                    <p>Payment received. You're confirmed for Brand Engine.</p>
+                    <p>You'll receive onboarding steps shortly.</p>
+                    <p>— Sandra</p>
+                  </div>
+                `
+                await sendEmail({
+                  to: customerEmail,
+                  subject: "Payment received — Brand Engine",
+                  html: receiptHtml,
+                  text: receiptText,
+                  emailType: "brand_engine_payment_confirmation",
+                  tags: ["brand-engine", "payment-confirmation"],
+                })
+              } catch (receiptError: any) {
+                console.error(`[v0] Failed to send Brand Engine payment confirmation email:`, receiptError.message)
+              }
+            }
+
+            break
           }
 
           if (!userId && customerEmail) {

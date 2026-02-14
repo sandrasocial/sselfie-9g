@@ -129,6 +129,8 @@ async function runMigration(req: NextRequest) {
         closed_reason TEXT,
         expected_value_cents INTEGER DEFAULT 0,
         cash_collected_cents INTEGER DEFAULT 0,
+        checkout_mode VARCHAR(40) DEFAULT 'none',
+        checkout_mode_reason VARCHAR(120),
         notes TEXT,
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
@@ -151,6 +153,8 @@ async function runMigration(req: NextRequest) {
     await sql`ALTER TABLE brand_engine_applications ADD COLUMN IF NOT EXISTS closed_reason TEXT`
     await sql`ALTER TABLE brand_engine_applications ADD COLUMN IF NOT EXISTS expected_value_cents INTEGER DEFAULT 0`
     await sql`ALTER TABLE brand_engine_applications ADD COLUMN IF NOT EXISTS cash_collected_cents INTEGER DEFAULT 0`
+    await sql`ALTER TABLE brand_engine_applications ADD COLUMN IF NOT EXISTS checkout_mode VARCHAR(40) DEFAULT 'none'`
+    await sql`ALTER TABLE brand_engine_applications ADD COLUMN IF NOT EXISTS checkout_mode_reason VARCHAR(120)`
     await sql`ALTER TABLE brand_engine_applications ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW()`
 
     // Create indexes
@@ -162,6 +166,7 @@ async function runMigration(req: NextRequest) {
     await sql`CREATE INDEX IF NOT EXISTS idx_brand_engine_applications_pipeline_stage ON brand_engine_applications(pipeline_stage)`
     await sql`CREATE INDEX IF NOT EXISTS idx_brand_engine_applications_score ON brand_engine_applications(qualification_score DESC)`
     await sql`CREATE INDEX IF NOT EXISTS idx_brand_engine_applications_created_at ON brand_engine_applications(created_at DESC)`
+    await sql`CREATE INDEX IF NOT EXISTS idx_brand_engine_applications_checkout_mode ON brand_engine_applications(checkout_mode)`
 
     // Insert default "High-Ticket Offer" project
     const existing = await sql`SELECT id FROM tracker_projects WHERE title = 'High-Ticket Offer Launch'`

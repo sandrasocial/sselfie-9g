@@ -12,6 +12,15 @@ export const BRAND_ENGINE_PIPELINE_STAGES = [
 
 export type BrandEnginePipelineStage = (typeof BRAND_ENGINE_PIPELINE_STAGES)[number]
 
+export const BRAND_ENGINE_ROUTING_PATHS = ["direct_offer", "fit_call", "nurture"] as const
+export type BrandEngineRoutingPath = (typeof BRAND_ENGINE_ROUTING_PATHS)[number]
+
+export const BRAND_ENGINE_NEXT_ACTIONS = ["send_offer", "book_call", "follow_up", "nurture_followup"] as const
+export type BrandEngineNextAction = (typeof BRAND_ENGINE_NEXT_ACTIONS)[number]
+
+export const BRAND_ENGINE_CHECKOUT_MODES = ["embedded_checkout", "payment_link", "none"] as const
+export type BrandEngineCheckoutMode = (typeof BRAND_ENGINE_CHECKOUT_MODES)[number]
+
 type QualificationInput = {
   revenue: string
   currentSpend: string
@@ -28,7 +37,35 @@ type QualificationResult = {
   qualified: boolean
   priorityTier: "high" | "medium" | "low"
   pipelineStage: BrandEnginePipelineStage
+  routingPath: BrandEngineRoutingPath
+  nextAction: BrandEngineNextAction
+  callRequired: boolean
   notes: string
+}
+
+type RoutingDecisionInput = {
+  offerType: string
+  readyToInvest: string
+  qualificationScore: number
+  qualified: boolean
+}
+
+type RoutingDecision = {
+  pipelineStage: BrandEnginePipelineStage
+  routingPath: BrandEngineRoutingPath
+  nextAction: BrandEngineNextAction
+  callRequired: boolean
+  reason: string
+}
+
+type CheckoutExperienceInput = {
+  routingPath: BrandEngineRoutingPath
+  sourceChannel?: string | null
+}
+
+type CheckoutExperienceDecision = {
+  checkoutMode: BrandEngineCheckoutMode
+  reason: string
 }
 
 const REVENUE_SCORE: Record<string, number> = {
@@ -59,6 +96,19 @@ const HOURS_SCORE: Record<string, number> = {
   "20+": 80,
 }
 
+const EMBEDDED_CHECKOUT_SOURCE_CHANNELS = new Set([
+  "website",
+  "landing_page",
+  "organic",
+  "seo",
+  "direct",
+  "google_ads",
+  "instagram_ads",
+  "facebook_ads",
+  "tiktok_ads",
+  "youtube_ads",
+])
+
 function scoreTextIntent(...parts: string[]): number {
   const text = parts.join(" ").toLowerCase()
   if (!text.trim()) return 20
@@ -86,6 +136,66 @@ function scoreTextIntent(...parts: string[]): number {
   return Math.min(100, 20 + matched * 10)
 }
 
+function normalize(value: string | undefined | null) {
+  return String(value || "").trim().toLowerCase()
+}
+
+export function deriveLaunchRoutingDecision(input: RoutingDecisionInput): RoutingDecision {
+  const offerType = normalize(input.offerType)
+  const readyToInvest = normalize(input.readyToInvest)
+  const score = Number.isFinite(input.qualificationScore) ? input.qualificationScore : 0
+
+  if (!input.qualified || readyToInvest === "no") {
+    return {
+      pipelineStage: "nurture",
+      routingPath: "nurture",
+      nextAction: "nurture_followup",
+      callRequired: false,
+      reason: "not_qualified_or_not_ready",
+    }
+  }
+
+  if (offerType === "cohort" && readyToInvest === "yes" && score >= 78) {
+    return {
+      pipelineStage: "qualified_queue",
+      routingPath: "direct_offer",
+      nextAction: "send_offer",
+      callRequired: false,
+      reason: "high_fit_cohort_direct_offer",
+    }
+  }
+
+  return {
+    pipelineStage: "qualified_queue",
+    routingPath: "fit_call",
+    nextAction: "book_call",
+    callRequired: true,
+    reason: "fit_call_required",
+  }
+}
+
+export function deriveCheckoutExperienceDecision(input: CheckoutExperienceInput): CheckoutExperienceDecision {
+  if (input.routingPath !== "direct_offer") {
+    return {
+      checkoutMode: "none",
+      reason: "non_direct_offer_route",
+    }
+  }
+
+  const source = normalize(input.sourceChannel)
+  if (EMBEDDED_CHECKOUT_SOURCE_CHANNELS.has(source)) {
+    return {
+      checkoutMode: "embedded_checkout",
+      reason: "self_serve_web_source",
+    }
+  }
+
+  return {
+    checkoutMode: "payment_link",
+    reason: "assisted_or_offsite_source",
+  }
+}
+
 export function calculateQualificationScore(input: QualificationInput): QualificationResult {
   const revenueScore = REVENUE_SCORE[input.revenue] ?? 20
   const spendScore = SPEND_SCORE[input.currentSpend] ?? 20
@@ -110,7 +220,12 @@ export function calculateQualificationScore(input: QualificationInput): Qualific
   const qualified = score >= 55 && input.readyToInvest !== "no"
   const priorityTier: "high" | "medium" | "low" =
     score >= 80 ? "high" : score >= 60 ? "medium" : "low"
-  const pipelineStage: BrandEnginePipelineStage = qualified ? "qualified_queue" : "nurture"
+  const routing = deriveLaunchRoutingDecision({
+    offerType: input.offerType,
+    readyToInvest: input.readyToInvest,
+    qualificationScore: score,
+    qualified,
+  })
 
   const notes = [
     `revenue_score=${revenueScore}`,
@@ -120,13 +235,19 @@ export function calculateQualificationScore(input: QualificationInput): Qualific
     `intent_score=${intentScore}`,
     `offer_fit_bonus=${offerFitBonus}`,
     `final_score=${score}`,
+    `routing_path=${routing.routingPath}`,
+    `next_action=${routing.nextAction}`,
+    `routing_reason=${routing.reason}`,
   ].join("; ")
 
   return {
     score,
     qualified,
     priorityTier,
-    pipelineStage,
+    pipelineStage: routing.pipelineStage,
+    routingPath: routing.routingPath,
+    nextAction: routing.nextAction,
+    callRequired: routing.callRequired,
     notes,
   }
 }
@@ -214,11 +335,33 @@ export async function ensureBrandEngineApplicationsSchema(sql: any) {
     ALTER TABLE brand_engine_applications
     ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT NOW()
   `
+  await sql`
+    ALTER TABLE brand_engine_applications
+    ADD COLUMN IF NOT EXISTS routing_path VARCHAR(40) DEFAULT 'fit_call'
+  `
+  await sql`
+    ALTER TABLE brand_engine_applications
+    ADD COLUMN IF NOT EXISTS next_action VARCHAR(40) DEFAULT 'book_call'
+  `
+  await sql`
+    ALTER TABLE brand_engine_applications
+    ADD COLUMN IF NOT EXISTS call_required BOOLEAN DEFAULT TRUE
+  `
+  await sql`
+    ALTER TABLE brand_engine_applications
+    ADD COLUMN IF NOT EXISTS checkout_mode VARCHAR(40) DEFAULT 'none'
+  `
+  await sql`
+    ALTER TABLE brand_engine_applications
+    ADD COLUMN IF NOT EXISTS checkout_mode_reason VARCHAR(120)
+  `
 
   await sql`CREATE INDEX IF NOT EXISTS idx_brand_engine_applications_pipeline_stage ON brand_engine_applications(pipeline_stage)`
   await sql`CREATE INDEX IF NOT EXISTS idx_brand_engine_applications_score ON brand_engine_applications(qualification_score DESC)`
   await sql`CREATE INDEX IF NOT EXISTS idx_brand_engine_applications_source ON brand_engine_applications(source_channel)`
   await sql`CREATE INDEX IF NOT EXISTS idx_brand_engine_applications_created_at ON brand_engine_applications(created_at DESC)`
+  await sql`CREATE INDEX IF NOT EXISTS idx_brand_engine_applications_routing_path ON brand_engine_applications(routing_path)`
+  await sql`CREATE INDEX IF NOT EXISTS idx_brand_engine_applications_checkout_mode ON brand_engine_applications(checkout_mode)`
 }
 
 export function expectedOfferValueCents(offerType: string) {

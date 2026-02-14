@@ -131,11 +131,22 @@ export default function BrandEnginePage() {
           </div>
         </section>
 
+        {/* 2.5. SOCIAL PROOF */}
+        <section className="scene section-alt">
+          <div className="section-wrap text-center">
+            <p className="description fade-up max-w-md mx-auto text-stone-400 italic">
+              &quot;I went from posting when I could to having a system I actually follow.
+              Sandra made this simple.&quot;
+            </p>
+            <p className="fade-up text-xs text-stone-500 mt-2">— Lisa, coach</p>
+          </div>
+        </section>
+
         {/* 3. WHAT YOU GET */}
         <section className="scene section-alt">
           <div className="section-wrap text-center">
             <span className="label fade-up">What You Get</span>
-            <h2 className="hero-title fade-up">Here&apos;s what we build together.</h2>
+            <h2 className="hero-title fade-up">Here&apos;s what we build, you and me.</h2>
             <div className="description fade-up max-w-xl mx-auto text-left">
               <p>
                 <strong>Your offer. Your funnel. Your automations.</strong>
@@ -148,6 +159,24 @@ export default function BrandEnginePage() {
                 <li>Agent support for repeated background tasks</li>
                 <li>A next-step plan you can follow after week four</li>
               </ul>
+            </div>
+          </div>
+        </section>
+
+        {/* 3.5. THIS IS FOR YOU IF */}
+        <section className="scene section-dark">
+          <div className="section-wrap text-center">
+            <span className="label fade-up">This is for you if</span>
+            <h2 className="hero-title fade-up">You want structure, not more noise.</h2>
+            <div className="description fade-up max-w-xl mx-auto text-left">
+              <p>You&apos;re ready if:</p>
+              <ul className="list">
+                <li>You&apos;re serious about your business, not dabbling</li>
+                <li>You want support, not just another course</li>
+                <li>You&apos;re willing to show up and build this with me</li>
+                <li>You want results in 4 weeks, not 4 months</li>
+              </ul>
+              <p>If that&apos;s you, apply.</p>
             </div>
           </div>
         </section>
@@ -181,8 +210,9 @@ export default function BrandEnginePage() {
         <section className="scene section-alt">
           <div className="section-wrap text-center">
             <span className="label fade-up">Price</span>
-            <h2 className="hero-title fade-up">€2,497. 12 spots. March 16.</h2>
+            <h2 className="hero-title fade-up">€2,497. 12 spots only. March 16.</h2>
             <div className="description fade-up max-w-xl mx-auto">
+              <p>Small group by design. I want to work with you directly.</p>
               <p>No pressure.</p>
               <p>If you want, we can map your next step.</p>
             </div>
@@ -215,7 +245,7 @@ export default function BrandEnginePage() {
           <div className="max-w-6xl mx-auto flex justify-between items-center">
             <div>
               <div style={{ fontSize: "18px", fontFamily: "'Times New Roman', serif" }}>Brand Engine Cohort</div>
-              <div style={{ fontSize: "12px", color: "#a8a29e" }}>€2,497. 12 spots. March 16.</div>
+              <div style={{ fontSize: "12px", color: "#a8a29e" }}>€2,497. 12 spots only. March 16.</div>
             </div>
             <a href="/apply/brand-engine" className="btn" style={{ fontSize: "12px", padding: "12px 24px" }}>
               Apply here

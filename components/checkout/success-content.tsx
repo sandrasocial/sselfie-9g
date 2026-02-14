@@ -17,6 +17,7 @@ interface SuccessContentProps {
 export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: SuccessContentProps) {
   const router = useRouter()
   const [userInfo, setUserInfo] = useState(initialUserInfo)
+  const isBrandEnginePurchase = String(purchaseType || "").startsWith("brand_engine_")
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [name, setName] = useState("")
   const [password, setPassword] = useState("")
@@ -29,7 +30,7 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
     // Decision 2: Paid blueprint now uses same flow as other products
     // User info polling is only needed for unauthenticated users (account creation)
 
-    if (initialEmail) {
+    if (initialEmail && !isBrandEnginePurchase) {
       let attempts = 0
       const MAX_ATTEMPTS = 40 // Increased to 80 seconds total
 
@@ -73,7 +74,7 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
         clearInterval(pollInterval)
       }
     }
-  }, [initialEmail, purchaseType])
+  }, [initialEmail, isBrandEnginePurchase, purchaseType])
 
   // FIX 3: Poll access status before redirecting (wait for webhook to complete)
   const [isPollingAccess, setIsPollingAccess] = useState(false)
@@ -342,6 +343,46 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
               Back to Studio
             </button>
           </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (isBrandEnginePurchase) {
+    return (
+      <div className="min-h-screen bg-stone-50">
+        <div className="relative h-[40vh] sm:h-[50vh] overflow-hidden">
+          <Image
+            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2842%29-7c6UXso773x523qKCiuawGNpuzsx8n.jpeg"
+            fill
+            alt="Brand Engine Confirmation"
+            className="object-cover object-center"
+            priority
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-stone-50" />
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+            <div className="font-serif text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extralight tracking-[0.3em] uppercase text-white mb-3">
+              PAYMENT CONFIRMED
+            </div>
+            <p className="text-sm sm:text-base text-white/90 font-light max-w-md">
+              You&apos;re confirmed for Brand Engine.
+            </p>
+          </div>
+        </div>
+
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12 md:py-16 text-center">
+          <h1 className="font-serif text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extralight tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-900 mb-4">
+            YOU&apos;RE IN
+          </h1>
+          <p className="text-sm sm:text-base text-stone-600 font-light leading-relaxed max-w-xl mx-auto mb-8">
+            We&apos;ve received your payment. You&apos;ll get onboarding details by email soon.
+          </p>
+          <button
+            onClick={() => router.push("/brand-engine")}
+            className="bg-stone-950 text-stone-50 px-8 sm:px-12 py-3 sm:py-4 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200 min-h-[44px]"
+          >
+            Back to Brand Engine
+          </button>
         </div>
       </div>
     )

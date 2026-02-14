@@ -22,6 +22,9 @@ type PipelineStage =
   | "nurture"
 
 type PriorityTier = "high" | "medium" | "low"
+type RoutingPath = "direct_offer" | "fit_call" | "nurture"
+type NextAction = "send_offer" | "book_call" | "follow_up" | "nurture_followup"
+type CheckoutMode = "embedded_checkout" | "payment_link" | "none"
 type ActionKind = "Call" | "Offer" | "Follow-up"
 
 interface Application {
@@ -54,6 +57,11 @@ interface Application {
   closed_reason: string | null
   expected_value_cents: number | null
   cash_collected_cents: number | null
+  routing_path: RoutingPath | null
+  next_action: NextAction | null
+  call_required: boolean | null
+  checkout_mode: CheckoutMode | null
+  checkout_mode_reason: string | null
   notes: string | null
   created_at: string
 }
@@ -64,6 +72,11 @@ type NormalizedApplication = Application & {
   priority_tier: PriorityTier
   cash_collected_cents: number
   expected_value_cents: number
+  routing_path: RoutingPath
+  next_action: NextAction
+  call_required: boolean
+  checkout_mode: CheckoutMode
+  checkout_mode_reason: string | null
 }
 
 const PIPELINE_OPTIONS: { value: PipelineStage; label: string }[] = [
@@ -77,6 +90,22 @@ const PIPELINE_OPTIONS: { value: PipelineStage; label: string }[] = [
   { value: "closed_lost", label: "Closed Lost" },
   { value: "nurture", label: "Nurture" },
 ]
+
+const VALID_ROUTING_PATHS: RoutingPath[] = ["direct_offer", "fit_call", "nurture"]
+const VALID_NEXT_ACTIONS: NextAction[] = ["send_offer", "book_call", "follow_up", "nurture_followup"]
+const VALID_CHECKOUT_MODES: CheckoutMode[] = ["embedded_checkout", "payment_link", "none"]
+const EMBEDDED_CHECKOUT_SOURCE_CHANNELS = new Set([
+  "website",
+  "landing_page",
+  "organic",
+  "seo",
+  "direct",
+  "google_ads",
+  "instagram_ads",
+  "facebook_ads",
+  "tiktok_ads",
+  "youtube_ads",
+])
 
 function formatDate(dateString: string | null | undefined) {
   if (!dateString) return "n/a"
@@ -112,14 +141,58 @@ function hoursSince(dateString: string | null | undefined) {
   return Math.max(0, Math.round(ms / (1000 * 60 * 60)))
 }
 
+function deriveRoutingPath(app: Application): RoutingPath {
+  if (app.routing_path && VALID_ROUTING_PATHS.includes(app.routing_path)) {
+    return app.routing_path
+  }
+  if ((app.pipeline_stage || "applied") === "nurture") return "nurture"
+  const offerType = String(app.offer_type || "cohort").toLowerCase()
+  const ready = String(app.ready_to_invest || "").toLowerCase()
+  if (offerType === "cohort" && ready === "yes" && (app.qualification_score ?? 0) >= 78) {
+    return "direct_offer"
+  }
+  return app.qualified ? "fit_call" : "nurture"
+}
+
+function deriveNextAction(stage: PipelineStage, routingPath: RoutingPath, current?: NextAction | null): NextAction {
+  if (current && VALID_NEXT_ACTIONS.includes(current)) return current
+  if (stage === "nurture") return "nurture_followup"
+  if (stage === "call_completed") return "send_offer"
+  if (stage === "call_booked" || stage === "offer_sent") return "follow_up"
+  if (stage === "closed_won" || stage === "closed_lost") return "follow_up"
+  return routingPath === "direct_offer" ? "send_offer" : "book_call"
+}
+
+function defaultCheckoutMode(routingPath: RoutingPath, sourceChannel: string | null | undefined): CheckoutMode {
+  if (routingPath !== "direct_offer") return "none"
+  const source = String(sourceChannel || "").trim().toLowerCase()
+  return EMBEDDED_CHECKOUT_SOURCE_CHANNELS.has(source) ? "embedded_checkout" : "payment_link"
+}
+
+function deriveCheckoutMode(app: Application, routingPath: RoutingPath): CheckoutMode {
+  if (app.checkout_mode && VALID_CHECKOUT_MODES.includes(app.checkout_mode)) {
+    return app.checkout_mode
+  }
+  return defaultCheckoutMode(routingPath, app.source_channel)
+}
+
+function checkoutModeLabel(mode: CheckoutMode) {
+  if (mode === "embedded_checkout") return "Embedded checkout"
+  if (mode === "payment_link") return "Payment link"
+  return "None"
+}
+
 function getLeadAction(app: NormalizedApplication): ActionKind | null {
-  if (app.pipeline_stage === "qualified_queue" || app.pipeline_stage === "contacted") {
+  if (app.pipeline_stage === "closed_won" || app.pipeline_stage === "closed_lost" || app.pipeline_stage === "nurture") {
+    return null
+  }
+  if (app.next_action === "book_call") {
     return "Call"
   }
-  if (app.pipeline_stage === "call_completed") {
+  if (app.next_action === "send_offer" || app.pipeline_stage === "call_completed") {
     return "Offer"
   }
-  if (app.pipeline_stage === "call_booked" || app.pipeline_stage === "offer_sent") {
+  if (app.next_action === "follow_up" || app.pipeline_stage === "call_booked" || app.pipeline_stage === "offer_sent") {
     return "Follow-up"
   }
   return null
@@ -151,19 +224,30 @@ export default function BrandEngineApplicationsClient({ applications }: { applic
 
   const normalized = useMemo<NormalizedApplication[]>(
     () =>
-      applications.map((app) => ({
-        ...app,
-        pipeline_stage: (app.pipeline_stage || (app.qualified ? "qualified_queue" : "nurture")) as PipelineStage,
-        qualification_score: app.qualification_score ?? 0,
-        priority_tier: (app.priority_tier || "low") as PriorityTier,
-        cash_collected_cents: app.cash_collected_cents ?? 0,
-        expected_value_cents: app.expected_value_cents ?? 0,
-      })) as NormalizedApplication[],
+      applications.map((app) => {
+        const pipelineStage = (app.pipeline_stage || (app.qualified ? "qualified_queue" : "nurture")) as PipelineStage
+        const routingPath = deriveRoutingPath(app)
+        return {
+          ...app,
+          pipeline_stage: pipelineStage,
+          qualification_score: app.qualification_score ?? 0,
+          priority_tier: (app.priority_tier || "low") as PriorityTier,
+          cash_collected_cents: app.cash_collected_cents ?? 0,
+          expected_value_cents: app.expected_value_cents ?? 0,
+          routing_path: routingPath,
+          next_action: deriveNextAction(pipelineStage, routingPath, app.next_action),
+          call_required: app.call_required ?? routingPath === "fit_call",
+          checkout_mode: deriveCheckoutMode(app, routingPath),
+          checkout_mode_reason: app.checkout_mode_reason ?? null,
+        }
+      }) as NormalizedApplication[],
     [applications],
   )
 
   const qualifiedQueue = normalized
-    .filter((app) => ["qualified_queue", "contacted", "call_booked", "call_completed", "offer_sent"].includes(app.pipeline_stage))
+    .filter((app) =>
+      ["applied", "qualified_queue", "contacted", "call_booked", "call_completed", "offer_sent"].includes(app.pipeline_stage),
+    )
     .sort((a, b) => (b.qualification_score || 0) - (a.qualification_score || 0))
 
   const closedWon = normalized.filter((app) => app.pipeline_stage === "closed_won")
@@ -172,6 +256,13 @@ export default function BrandEngineApplicationsClient({ applications }: { applic
   const cashCollectedCents = normalized.reduce((sum, app) => sum + (app.cash_collected_cents || 0), 0)
   const expectedPipelineCents = qualifiedQueue.reduce((sum, app) => sum + (app.expected_value_cents || 0), 0)
   const closeRate = callsBooked.length > 0 ? Math.round((closedWon.length / callsBooked.length) * 100) : 0
+  const directOfferQueue = qualifiedQueue.filter((app) => app.routing_path === "direct_offer")
+  const embeddedOffersSent = normalized.filter((app) => app.checkout_mode === "embedded_checkout" && !!app.offer_sent_at).length
+  const paymentLinkOffersSent = normalized.filter((app) => app.checkout_mode === "payment_link" && !!app.offer_sent_at).length
+  const embeddedWins = closedWon.filter((app) => app.checkout_mode === "embedded_checkout").length
+  const paymentLinkWins = closedWon.filter((app) => app.checkout_mode === "payment_link").length
+  const embeddedWinRate = embeddedOffersSent > 0 ? Math.round((embeddedWins / embeddedOffersSent) * 100) : 0
+  const paymentLinkWinRate = paymentLinkOffersSent > 0 ? Math.round((paymentLinkWins / paymentLinkOffersSent) * 100) : 0
   const now = new Date()
   const callsBookedToday = normalized.filter((app) => isSameUtcDay(app.call_booked_at, now)).length
   const applicationsToday = normalized.filter((app) => isSameUtcDay(app.created_at, now)).length
@@ -230,10 +321,64 @@ export default function BrandEngineApplicationsClient({ applications }: { applic
   }
 
   async function handleStageChange(appId: number, stage: PipelineStage) {
+    const app = normalized.find((entry) => entry.id === appId)
+    if (!app) return
     const timestamp = new Date().toISOString()
+    let routingPath: RoutingPath = app.routing_path
+    let nextAction: NextAction = app.next_action
+    let callRequired = app.call_required
+    let checkoutMode: CheckoutMode = app.checkout_mode
+    let checkoutModeReason = app.checkout_mode_reason
+
+    if (stage === "nurture") {
+      routingPath = "nurture"
+      nextAction = "nurture_followup"
+      callRequired = false
+      checkoutMode = "none"
+      checkoutModeReason = "non_direct_offer_route"
+    } else if (stage === "call_booked") {
+      routingPath = "fit_call"
+      nextAction = "follow_up"
+      callRequired = true
+      checkoutMode = "none"
+      checkoutModeReason = "non_direct_offer_route"
+    } else if (stage === "call_completed") {
+      routingPath = "fit_call"
+      nextAction = "send_offer"
+      callRequired = true
+      checkoutMode = "none"
+      checkoutModeReason = "non_direct_offer_route"
+    } else if (stage === "offer_sent") {
+      nextAction = "follow_up"
+    } else if (stage === "closed_won" || stage === "closed_lost") {
+      nextAction = "follow_up"
+    } else if (stage === "applied" || stage === "qualified_queue" || stage === "contacted") {
+      if (routingPath === "direct_offer") {
+        nextAction = "send_offer"
+        callRequired = false
+        checkoutMode = app.checkout_mode === "none" ? defaultCheckoutMode("direct_offer", app.source_channel) : app.checkout_mode
+        checkoutModeReason = app.checkout_mode_reason || "stage_sync"
+      } else if (routingPath === "fit_call") {
+        nextAction = "book_call"
+        callRequired = true
+        checkoutMode = "none"
+        checkoutModeReason = "non_direct_offer_route"
+      } else {
+        nextAction = "nurture_followup"
+        callRequired = false
+        checkoutMode = "none"
+        checkoutModeReason = "non_direct_offer_route"
+      }
+    }
+
     const payload: Record<string, unknown> = {
       pipelineStage: stage,
       status: stage,
+      routingPath,
+      nextAction,
+      callRequired,
+      checkoutMode,
+      checkoutModeReason,
     }
 
     if (stage === "call_booked") {
@@ -270,6 +415,31 @@ export default function BrandEngineApplicationsClient({ applications }: { applic
     const line = `[follow-up ${stamp}] ${note.trim() || "Checked in"}`
     const mergedNotes = [app.notes?.trim(), line].filter(Boolean).join("\n")
     await handleUpdate(app.id, { notes: mergedNotes })
+  }
+
+  async function handleSendOffer(app: NormalizedApplication) {
+    setUpdating(app.id)
+    try {
+      const response = await fetch("/api/admin/brand-engine-applications/send-offer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ applicationId: app.id }),
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data?.error || "Failed to send offer")
+
+      const modeLabel = data?.checkoutMode === "embedded_checkout" ? "embedded checkout" : "payment link"
+      if (data?.emailSent === false) {
+        alert(`Offer prepared via ${modeLabel}, but email send failed: ${data?.emailError || "unknown error"}`)
+      } else {
+        alert(`Offer sent via ${modeLabel} to ${app.email}`)
+      }
+      window.location.reload()
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Failed to send offer")
+    } finally {
+      setUpdating(null)
+    }
   }
 
   async function handleQuickAddLead(event: FormEvent<HTMLFormElement>) {
@@ -334,7 +504,7 @@ export default function BrandEngineApplicationsClient({ applications }: { applic
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-8">
           <div className="bg-white border border-stone-200 p-6">
             <div className="text-xs tracking-[0.2em] uppercase text-stone-400 mb-2">Applications</div>
             <div className="text-3xl font-['Times_New_Roman'] text-stone-950">{normalized.length}</div>
@@ -354,6 +524,10 @@ export default function BrandEngineApplicationsClient({ applications }: { applic
           <div className="bg-white border border-stone-200 p-6">
             <div className="text-xs tracking-[0.2em] uppercase text-stone-400 mb-2">Close Rate</div>
             <div className="text-3xl font-['Times_New_Roman'] text-stone-950">{closeRate}%</div>
+          </div>
+          <div className="bg-white border border-stone-200 p-6">
+            <div className="text-xs tracking-[0.2em] uppercase text-stone-400 mb-2">Direct Offer Queue</div>
+            <div className="text-3xl font-['Times_New_Roman'] text-stone-950">{directOfferQueue.length}</div>
           </div>
         </div>
 
@@ -389,12 +563,12 @@ export default function BrandEngineApplicationsClient({ applications }: { applic
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <div className="bg-white border border-stone-200 p-6">
             <div className="text-xs tracking-[0.2em] uppercase text-stone-400 mb-3">Qualified Pipeline Value</div>
             <div className="text-4xl font-['Times_New_Roman'] text-stone-950">{formatEuro(expectedPipelineCents)}</div>
             <div className="text-xs text-stone-500 mt-2">
-              Launch sprint: {BRAND_ENGINE_APPLICATION_SPRINT_DAYS} days, one CTA "Apply for Cohort".
+              Launch sprint: {BRAND_ENGINE_APPLICATION_SPRINT_DAYS} days, one CTA &quot;Apply for Cohort&quot;.
             </div>
           </div>
           <div className="bg-white border border-stone-200 p-6">
@@ -528,13 +702,17 @@ export default function BrandEngineApplicationsClient({ applications }: { applic
                         </button>
                         <span className="text-xs text-stone-500">{ageHours}h</span>
                       </div>
-                      <div className="text-xs text-stone-500 mb-2">Call done, offer pending</div>
+                      <div className="text-xs text-stone-500 mb-2">
+                        {app.routing_path === "direct_offer"
+                          ? `Direct offer · ${checkoutModeLabel(app.checkout_mode)}`
+                          : "Call done, offer pending"}
+                      </div>
                       <button
-                        onClick={() => handleStageChange(app.id, "offer_sent")}
+                        onClick={() => handleSendOffer(app)}
                         disabled={updating === app.id}
                         className="w-full border border-stone-300 px-2 py-2 text-xs uppercase tracking-[0.12em] hover:bg-stone-100 transition-colors"
                       >
-                        Mark Offer Sent
+                        Send Offer Link
                       </button>
                     </div>
                   ))
@@ -576,6 +754,23 @@ export default function BrandEngineApplicationsClient({ applications }: { applic
               </div>
             </div>
           </div>
+          <div className="bg-white border border-stone-200 p-6">
+            <div className="text-xs tracking-[0.2em] uppercase text-stone-400 mb-3">Checkout Mode Conversion</div>
+            <div className="space-y-3">
+              <div>
+                <div className="text-xs uppercase tracking-[0.12em] text-stone-500">Embedded</div>
+                <div className="text-sm text-stone-900">
+                  {embeddedWins}/{embeddedOffersSent} won ({embeddedWinRate}%)
+                </div>
+              </div>
+              <div>
+                <div className="text-xs uppercase tracking-[0.12em] text-stone-500">Payment Link</div>
+                <div className="text-sm text-stone-900">
+                  {paymentLinkWins}/{paymentLinkOffersSent} won ({paymentLinkWinRate}%)
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="mb-8">
@@ -612,7 +807,7 @@ export default function BrandEngineApplicationsClient({ applications }: { applic
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs uppercase tracking-[0.1em] text-stone-500 mb-4">
+                  <div className="grid grid-cols-2 md:grid-cols-6 gap-3 text-xs uppercase tracking-[0.1em] text-stone-500 mb-4">
                     <div>
                       <div>Offer</div>
                       <div className="text-sm text-stone-900 normal-case tracking-normal">{app.offer_type || "cohort"}</div>
@@ -628,6 +823,14 @@ export default function BrandEngineApplicationsClient({ applications }: { applic
                     <div>
                       <div>Source</div>
                       <div className="text-sm text-stone-900 normal-case tracking-normal">{app.source_channel || "unknown"}</div>
+                    </div>
+                    <div>
+                      <div>Route</div>
+                      <div className="text-sm text-stone-900 normal-case tracking-normal">{app.routing_path.replace("_", " ")}</div>
+                    </div>
+                    <div>
+                      <div>Checkout</div>
+                      <div className="text-sm text-stone-900 normal-case tracking-normal">{checkoutModeLabel(app.checkout_mode)}</div>
                     </div>
                   </div>
 
@@ -653,7 +856,7 @@ export default function BrandEngineApplicationsClient({ applications }: { applic
                           return
                         }
                         if (action === "Offer") {
-                          handleStageChange(app.id, "offer_sent")
+                          handleSendOffer(app)
                           return
                         }
                         handleFollowUpNote(app)
@@ -664,7 +867,7 @@ export default function BrandEngineApplicationsClient({ applications }: { applic
                       {getLeadAction(app) === "Call"
                         ? "Mark Call Booked"
                         : getLeadAction(app) === "Offer"
-                          ? "Mark Offer Sent"
+                          ? "Send Offer Link"
                           : "Log Follow-up"}
                     </button>
                     <button
@@ -673,6 +876,10 @@ export default function BrandEngineApplicationsClient({ applications }: { applic
                     >
                       {selectedApp?.id === app.id ? "Hide Details ▲" : "Show Details ▼"}
                     </button>
+                  </div>
+
+                  <div className="text-xs text-stone-500 mb-3">
+                    Next action: {app.next_action.replace("_", " ")}
                   </div>
 
                   <div className="flex gap-2 mb-3">
@@ -706,6 +913,43 @@ export default function BrandEngineApplicationsClient({ applications }: { applic
                       <div>
                         <div className="text-xs uppercase tracking-[0.15em] text-stone-500 mb-1">Why Interested</div>
                         <p className="text-stone-700">{app.why_interested}</p>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <div className="text-xs uppercase tracking-[0.15em] text-stone-500 mb-1">Checkout Mode</div>
+                          <p className="text-stone-700">{checkoutModeLabel(app.checkout_mode)}</p>
+                          {app.checkout_mode_reason && (
+                            <p className="text-xs text-stone-500 mt-1">{app.checkout_mode_reason.replaceAll("_", " ")}</p>
+                          )}
+                        </div>
+                        {app.routing_path === "direct_offer" && (
+                          <div className="flex flex-wrap gap-2 items-start">
+                            <button
+                              onClick={() =>
+                                handleUpdate(app.id, {
+                                  checkoutMode: "embedded_checkout",
+                                  checkoutModeReason: "admin_override_embedded",
+                                })
+                              }
+                              disabled={updating === app.id || app.checkout_mode === "embedded_checkout"}
+                              className="border border-stone-300 px-3 py-2 text-xs uppercase tracking-[0.12em] hover:bg-stone-100 transition-colors disabled:opacity-50"
+                            >
+                              Use Embedded
+                            </button>
+                            <button
+                              onClick={() =>
+                                handleUpdate(app.id, {
+                                  checkoutMode: "payment_link",
+                                  checkoutModeReason: "admin_override_payment_link",
+                                })
+                              }
+                              disabled={updating === app.id || app.checkout_mode === "payment_link"}
+                              className="border border-stone-300 px-3 py-2 text-xs uppercase tracking-[0.12em] hover:bg-stone-100 transition-colors disabled:opacity-50"
+                            >
+                              Use Payment Link
+                            </button>
+                          </div>
+                        )}
                       </div>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
                         <div>

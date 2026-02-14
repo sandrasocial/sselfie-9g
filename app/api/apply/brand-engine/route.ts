@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
 import {
   calculateQualificationScore,
+  deriveCheckoutExperienceDecision,
   ensureBrandEngineApplicationsSchema,
   expectedOfferValueCents,
   resolveLeadSource,
@@ -71,6 +72,10 @@ export async function POST(req: NextRequest) {
     })
 
     const { channel, detail } = resolveLeadSource(sourceChannel, sourceDetail)
+    const checkoutExperience = deriveCheckoutExperienceDecision({
+      routingPath: qualification.routingPath,
+      sourceChannel: channel,
+    })
     const normalizedOfferType = typeof offerType === "string" ? offerType.toLowerCase() : "cohort"
     const leadTags = [
       "brand-engine",
@@ -82,6 +87,9 @@ export async function POST(req: NextRequest) {
       utmCampaign ? `utm_campaign:${String(utmCampaign).toLowerCase()}` : null,
       qualification.qualified ? "qualified" : "nurture",
       `priority:${qualification.priorityTier}`,
+      `route:${qualification.routingPath}`,
+      `next_action:${qualification.nextAction}`,
+      `checkout:${checkoutExperience.checkoutMode}`,
     ].filter(Boolean)
 
     // Check if email already applied
@@ -118,10 +126,15 @@ export async function POST(req: NextRequest) {
         qualification_score,
         qualification_notes,
         priority_tier,
+        routing_path,
+        next_action,
+        call_required,
         source_channel,
         source_detail,
         lead_tags,
         expected_value_cents,
+        checkout_mode,
+        checkout_mode_reason,
         draft_mode,
         notes,
         created_at
@@ -144,10 +157,15 @@ export async function POST(req: NextRequest) {
         ${qualification.score},
         ${qualification.notes},
         ${qualification.priorityTier},
+        ${qualification.routingPath},
+        ${qualification.nextAction},
+        ${qualification.callRequired},
         ${channel},
         ${detail || [utmSource, utmMedium, utmCampaign, referrer].filter(Boolean).join(" | ") || null},
         ${JSON.stringify(leadTags)}::jsonb,
         ${expectedOfferValueCents(normalizedOfferType)},
+        ${checkoutExperience.checkoutMode},
+        ${checkoutExperience.reason},
         ${true},
         ${`draft_mode=true; referrer=${referrer || "unknown"}`},
         NOW()
@@ -159,9 +177,16 @@ export async function POST(req: NextRequest) {
       qualified: qualification.qualified,
       score: qualification.score,
       pipelineStage: qualification.pipelineStage,
+      routingPath: qualification.routingPath,
+      nextAction: qualification.nextAction,
+      checkoutMode: checkoutExperience.checkoutMode,
       priorityTier: qualification.priorityTier,
       message: qualification.qualified
-        ? "Application received! I'll review it within 24 hours."
+        ? qualification.routingPath === "direct_offer"
+          ? checkoutExperience.checkoutMode === "embedded_checkout"
+            ? "Application received! If it's a fit, I'll send your checkout link within 24 hours."
+            : "Application received! If it's a fit, I'll send your payment link within 24 hours."
+          : "Application received! If it's a fit, I'll send your booking link within 24 hours."
         : "Application received. We will review your details and follow up with the best next step."
     })
 

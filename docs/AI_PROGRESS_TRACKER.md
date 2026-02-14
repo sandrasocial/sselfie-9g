@@ -25,11 +25,13 @@
 | M-03 | Monetization | Implement qualification scoring + priority queue | Codex | Done | 100% leads scored, top queue visible daily | 2026-02-17 | `app/admin/brand-engine-applications/applications-client.tsx`, `app/api/admin/brand-engine-applications/update/route.ts`, `tests/brand-engine-applications.test.ts` | Low | Work queue daily in admin |
 | M-04 | Monetization | Run Cohort launch sprint ops + daily launch digest | Codex + Sandra | In Progress | 3 calls/day pace and seat-fill visibility to March 16 cohort | 2026-02-19 | `app/admin/brand-engine-applications/applications-client.tsx`, `app/api/cron/brand-engine-launch-digest/route.ts`, `scripts/brand-engine-launch-digest.mjs`, `docs/brand/COHORT_LAUNCH_SPRINT_2026-03-16.md`, `vercel.json` | Medium | Execute daily call-booking and close workflow |
 | M-05 | Monetization | Bridge IG DM intent into launch pipeline | Codex + Sandra | In Progress | Every DM lead either applies via tracked link or is captured into admin queue | 2026-02-20 | `app/api/admin/brand-engine-applications/quick-add/route.ts`, `app/admin/brand-engine-applications/applications-client.tsx`, `docs/brand/MANYCHAT_DM_TO_COHORT_SETUP.md` | Medium | Wire ManyChat keyword flow and monitor tagged lead volume |
+| M-06 | Monetization | Rewrite Brand Engine landing + application copy to cohort-first offer and aligned pricing | Codex | Done | Public offer copy aligned to DEC-003/DEC-004 and single CTA is consistent | 2026-02-13 | `app/brand-engine/page.tsx`, `app/apply/brand-engine/page.tsx` | Low | Complete Voice Bible hard-pass and QA |
+| M-07 | Monetization | Voice Bible hard rewrite for landing + questionnaire and deploy to production | Codex + Sandra | Done | Copy is short-form, non-corporate, and aligned to Sandra voice before launch sends | 2026-02-13 | `app/brand-engine/page.tsx`, `app/apply/brand-engine/page.tsx`, `f1dd1e4d` | Low | Sandra runs final voice QA in Claude and confirms no further copy edits |
 | R-01 | Reliability | Keep cron fleet stable during launch window | Codex + Stella-Ops | In Progress | 7-day cron success >= 98% | 2026-02-26 | `output/automation/triage-*.md` | High | Monitor and triage daily |
 | R-02 | Reliability | Keep lifecycle email failures under threshold | Codex + Stella-Ops | In Progress | Failures < 2% for active sends | 2026-02-26 | `output/automation/email-performance-*.md` | High | Monitor follow-up edge cases |
 | R-03 | Reliability | Keep dashboard trust variance within bounds | Codex | In Progress | Key metrics within 3% of Stripe/DB | 2026-02-22 | `output/automation/revenue-audit-*.md` | High | Validate live vs test separation |
 | V-01 | Voice | Ingest MyNotes and extract canonical voice/style rules | Sandra + Codex + Claude | In Review | Intake complete with approved canonical rules | 2026-02-14 | `docs/MYNOTES_VOICE_STYLE_INTAKE.md`, `docs/brand/VOICE_BIBLE.md`, `docs/brand/ORIGIN_STORY_LONGFORM.md` | Medium | Sandra approves canonical docs |
-| V-02 | Voice | Build brand voice QA rubric and scoring gate | Codex + Claude | Planned | All outbound drafts scored pre-send | 2026-02-20 | pending | Medium | Finalize rubric weights |
+| V-02 | Voice | Build brand voice QA rubric and scoring gate | Codex + Claude | Done | All outbound drafts scored pre-send | 2026-02-20 | `docs/brand/VOICE_BIBLE.md`, `docs/brand/DO_DONT.md`, `docs/brand/MESSAGING_PILLARS.md`, `app/brand-engine/page.tsx`, `app/apply/brand-engine/page.tsx` | Low | Keep draft-only approval gate active |
 | V-03 | Voice | Enable draft-only outbound for launch period | Stella-Ops + Sandra | Done | 100% outbound launch copy human-approved | 2026-02-20 | `docs/AI_OPERATIONS_EXECUTION_BOARD.md`, `docs/MYNOTES_VOICE_STYLE_INTAKE.md` | Low | Maintain until explicit upgrade |
 
 ## Decision Log (Sandra approvals)
@@ -42,12 +44,14 @@
 | 2026-02-12 | DEC-004 | First offer focus | Cohort, VIP, Hybrid | Cohort-first | Faster execution and group delivery leverage | M-01, M-02, M-03 |
 | 2026-02-12 | DEC-005 | Cohort sprint operating targets | Multiple start dates, seat caps, call targets | Cohort start 2026-03-16, 12 seats, 3 calls/day | Forces measurable execution and pacing accountability | M-04 |
 | 2026-02-12 | DEC-006 | DM bridge path | Manual only, ManyChat only, hybrid | Hybrid: ManyChat tracked apply link + admin quick-add fallback | Capture intent fast without blocking on API complexity | M-05 |
+| 2026-02-13 | DEC-007 | Landing and questionnaire voice direction | Partial polish vs full rewrite | Full rewrite to Sandra Voice Bible with simple 6-part landing structure | Removes corporate tone risk before launch traffic | M-07, V-02 |
 
 ## Blockers Log
 
 | Opened | Blocker ID | Task ID | Blocker | Owner | Escalation needed | Status |
 | --- | --- | --- | --- | --- | --- | --- |
 | 2026-02-12 | BLK-001 | V-01 | `MyNotes` source path not yet provided | Sandra | Yes | Closed |
+| 2026-02-13 | BLK-002 | M-04 | Public launch pages had stale pricing/messaging and non-aligned questionnaire copy | Codex | Yes | Closed |
 
 ## Daily Summary Template
 

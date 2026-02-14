@@ -27,6 +27,7 @@ export default function BrandEngineApplicationPage() {
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState("")
+  const [followUpPath, setFollowUpPath] = useState<"checkout" | "payment" | "booking" | "next_step">("next_step")
 
   useEffect(() => {
     const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : new URLSearchParams()
@@ -64,6 +65,13 @@ export default function BrandEngineApplicationPage() {
       const data = await response.json()
 
       if (response.ok) {
+        if (data?.routingPath === "direct_offer") {
+          setFollowUpPath(data?.checkoutMode === "embedded_checkout" ? "checkout" : "payment")
+        } else if (data?.qualified) {
+          setFollowUpPath("booking")
+        } else {
+          setFollowUpPath("next_step")
+        }
         setSubmitted(true)
       } else {
         setError(data.error || "Something went wrong. Please try again in a minute.")
@@ -94,7 +102,13 @@ export default function BrandEngineApplicationPage() {
           <p className="text-base text-stone-400 mb-12">
             No pressure. I&apos;ll review this personally within 24 hours.
             <br />
-            If it&apos;s a fit, I&apos;ll send your booking link.
+            {followUpPath === "checkout"
+              ? "If it's a fit, I'll send your checkout link."
+              : followUpPath === "payment"
+              ? "If it's a fit, I'll send your payment link."
+              : followUpPath === "booking"
+                ? "If it's a fit, I'll send your booking link."
+                : "If it's a fit, I'll send your next step."}
           </p>
           <p className="text-sm text-stone-500">
             Check your email: {formData.email}
@@ -218,6 +232,9 @@ export default function BrandEngineApplicationPage() {
 
           {/* Qualification Questions */}
           <div className="border-t border-white/10 pt-8 space-y-6">
+            <p className="text-xs text-stone-500 mb-4">
+              These questions help me see if this is the right fit for you right now.
+            </p>
             <div>
               <label htmlFor="revenue" className="block text-xs uppercase tracking-[0.15em] text-stone-400 mb-2">
                 Where are you at in yearly revenue? *
@@ -349,6 +366,16 @@ export default function BrandEngineApplicationPage() {
 
           {/* Submit */}
           <div className="border-t border-white/10 pt-8">
+            <div className="bg-stone-900/50 border border-white/10 p-6 mb-6">
+              <p className="text-sm text-stone-300 mb-2">
+                <strong>Not sure if you&apos;re ready?</strong>
+              </p>
+              <p className="text-xs text-stone-400 leading-relaxed">
+                Apply anyway. The application itself will give you clarity.
+                If it&apos;s not the right fit or timing, I&apos;ll tell you honestly.
+                No weird sales pressure.
+              </p>
+            </div>
             <button
               type="submit"
               disabled={loading}

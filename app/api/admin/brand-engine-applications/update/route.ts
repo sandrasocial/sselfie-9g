@@ -1,13 +1,28 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
 import {
+  BRAND_ENGINE_CHECKOUT_MODES,
+  BRAND_ENGINE_NEXT_ACTIONS,
   BRAND_ENGINE_PIPELINE_STAGES,
+  BRAND_ENGINE_ROUTING_PATHS,
   ensureBrandEngineApplicationsSchema,
 } from "@/lib/brand-engine/applications"
 import { requireAdmin } from "@/lib/admin-feature-flags"
 
 function isValidStage(value: string) {
   return BRAND_ENGINE_PIPELINE_STAGES.includes(value as (typeof BRAND_ENGINE_PIPELINE_STAGES)[number])
+}
+
+function isValidRoutingPath(value: string) {
+  return BRAND_ENGINE_ROUTING_PATHS.includes(value as (typeof BRAND_ENGINE_ROUTING_PATHS)[number])
+}
+
+function isValidNextAction(value: string) {
+  return BRAND_ENGINE_NEXT_ACTIONS.includes(value as (typeof BRAND_ENGINE_NEXT_ACTIONS)[number])
+}
+
+function isValidCheckoutMode(value: string) {
+  return BRAND_ENGINE_CHECKOUT_MODES.includes(value as (typeof BRAND_ENGINE_CHECKOUT_MODES)[number])
 }
 
 export async function POST(req: NextRequest) {
@@ -29,6 +44,11 @@ export async function POST(req: NextRequest) {
       cashCollectedCents,
       expectedValueCents,
       closeReason,
+      routingPath,
+      nextAction,
+      callRequired,
+      checkoutMode,
+      checkoutModeReason,
       calendlySent,
       callBookedAt,
       callCompletedAt,
@@ -67,6 +87,40 @@ export async function POST(req: NextRequest) {
     if (typeof closeReason === "string") {
       updates.push(`closed_reason = $${updates.length + 1}`)
       values.push(closeReason)
+    }
+
+    if (typeof routingPath === "string") {
+      if (!isValidRoutingPath(routingPath)) {
+        return NextResponse.json({ success: false, error: "Invalid routing path." }, { status: 400 })
+      }
+      updates.push(`routing_path = $${updates.length + 1}`)
+      values.push(routingPath)
+    }
+
+    if (typeof nextAction === "string") {
+      if (!isValidNextAction(nextAction)) {
+        return NextResponse.json({ success: false, error: "Invalid next action." }, { status: 400 })
+      }
+      updates.push(`next_action = $${updates.length + 1}`)
+      values.push(nextAction)
+    }
+
+    if (typeof callRequired === "boolean") {
+      updates.push(`call_required = $${updates.length + 1}`)
+      values.push(callRequired)
+    }
+
+    if (typeof checkoutMode === "string") {
+      if (!isValidCheckoutMode(checkoutMode)) {
+        return NextResponse.json({ success: false, error: "Invalid checkout mode." }, { status: 400 })
+      }
+      updates.push(`checkout_mode = $${updates.length + 1}`)
+      values.push(checkoutMode)
+    }
+
+    if (typeof checkoutModeReason === "string") {
+      updates.push(`checkout_mode_reason = $${updates.length + 1}`)
+      values.push(checkoutModeReason.trim() || null)
     }
 
     if (typeof cashCollectedCents === "number") {
