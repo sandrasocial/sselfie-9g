@@ -99,6 +99,7 @@ async function buildSourceDocs(sourceDir: string | null): Promise<SourceDoc[]> {
           absolutePath,
           found: true,
           preview,
+          fullContent: raw,
         }
       } catch {
         return {
@@ -107,6 +108,7 @@ async function buildSourceDocs(sourceDir: string | null): Promise<SourceDoc[]> {
           absolutePath,
           found: false,
           preview: "File not found",
+          fullContent: "",
         }
       }
     }),

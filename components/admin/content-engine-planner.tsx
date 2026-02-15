@@ -26,6 +26,7 @@ export interface SourceDoc {
   absolutePath: string
   found: boolean
   preview: string
+  fullContent: string
 }
 
 interface GalleryImage {
@@ -88,8 +89,10 @@ export function ContentEnginePlanner({
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([])
   const [galleryLoading, setGalleryLoading] = useState(false)
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle")
+  const [libraryCopyState, setLibraryCopyState] = useState<"idle" | "copied" | "failed">("idle")
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle")
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null)
+  const [selectedDocName, setSelectedDocName] = useState<string>(sourceDocs.find((doc) => doc.found)?.fileName || sourceDocs[0]?.fileName || "")
 
   const selectedPost = useMemo(
     () => posts.find((post) => post.id === selectedPostId) || posts[0],
@@ -109,6 +112,10 @@ export function ContentEnginePlanner({
   }, [posts])
 
   const composerText = selectedPost ? buildPlatformCopy(selectedPost, selectedPlatform) : ""
+  const selectedDoc =
+    sourceDocs.find((doc) => doc.fileName === selectedDocName) ||
+    sourceDocs.find((doc) => doc.found) ||
+    sourceDocs[0]
 
   const persistPlanner = async (currentPosts: PlannerPostState[]) => {
     setSaveState("saving")
@@ -205,6 +212,14 @@ export function ContentEnginePlanner({
     window.setTimeout(() => setCopyState("idle"), 1800)
   }
 
+  const handleLibraryCopy = async () => {
+    if (!selectedDoc?.fullContent) return
+
+    const ok = await copyToClipboard(selectedDoc.fullContent)
+    setLibraryCopyState(ok ? "copied" : "failed")
+    window.setTimeout(() => setLibraryCopyState("idle"), 1800)
+  }
+
   return (
     <main className="mx-auto max-w-[1400px] px-4 pb-8 pt-6 sm:px-6 lg:px-8 lg:pt-8">
       <section className="mb-6 rounded-2xl border border-stone-800 bg-gradient-to-br from-stone-950 via-[#101010] to-[#171717] p-5 shadow-[0_0_60px_rgba(0,0,0,0.45)] sm:p-8">
@@ -273,6 +288,46 @@ export function ContentEnginePlanner({
               <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-stone-300">{doc.preview}</p>
             </article>
           ))}
+        </div>
+      </section>
+
+      <section className="mb-6 rounded-2xl border border-stone-800 bg-[#0b0b0b] p-4 sm:p-6">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="font-['Times_New_Roman'] text-xl uppercase tracking-[0.16em] text-stone-100">Full Strategy Library</h2>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-stone-500">Complete Claude handoff files</p>
+        </div>
+
+        <div className="mb-3 flex flex-wrap gap-2">
+          {sourceDocs.map((doc) => (
+            <button
+              key={doc.fileName}
+              onClick={() => setSelectedDocName(doc.fileName)}
+              className={`rounded-full px-3 py-2 text-[10px] uppercase tracking-[0.18em] transition ${
+                selectedDoc?.fileName === doc.fileName
+                  ? "bg-stone-100 text-stone-900"
+                  : "bg-stone-800 text-stone-300 hover:bg-stone-700"
+              }`}
+            >
+              {doc.title}
+            </button>
+          ))}
+        </div>
+
+        <div className="rounded-xl border border-stone-800 bg-stone-950 p-3">
+          <p className="mb-2 text-[10px] uppercase tracking-[0.2em] text-stone-500">
+            {selectedDoc?.absolutePath || "Source path unavailable"}
+          </p>
+          <textarea
+            readOnly
+            value={selectedDoc?.fullContent || "No content loaded for this file."}
+            className="h-72 w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-xs leading-relaxed text-stone-100"
+          />
+          <button
+            onClick={handleLibraryCopy}
+            className="mt-3 rounded-lg border border-stone-200 bg-stone-100 px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-stone-900 transition hover:bg-white"
+          >
+            {libraryCopyState === "copied" ? "Copied" : libraryCopyState === "failed" ? "Copy failed" : "Copy full document"}
+          </button>
         </div>
       </section>
 
