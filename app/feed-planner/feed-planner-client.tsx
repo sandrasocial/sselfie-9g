@@ -9,7 +9,7 @@ import WelcomeWizard from "@/components/feed-planner/welcome-wizard"
 import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 import UnifiedLoading from "@/components/sselfie/unified-loading"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
-import { getActivationChecklist, getFreeUserWizardDecision } from "@/lib/onboarding/activation"
+import { getActivationChecklist, getActivationContinueHref, getFreeUserWizardDecision } from "@/lib/onboarding/activation"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -153,8 +153,9 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
         hasSelfies: Boolean(onboardingStatus?.hasSelfies),
         hasTrainedModel: Boolean(setupStatus?.hasTrainedModel),
         hasGeneratedAny,
+        requiresModelTraining: !Boolean(access?.isFree),
       }),
-    [hasGeneratedAny, onboardingStatus?.hasSelfies, setupStatus?.hasTrainedModel],
+    [access?.isFree, hasGeneratedAny, onboardingStatus?.hasSelfies, setupStatus?.hasTrainedModel],
   )
 
   // Determine if wizard is needed
@@ -605,13 +606,9 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
       return
     }
 
-    if (activationChecklist.nextAction === "train_model") {
-      router.push("/studio?tab=maya")
-      return
-    }
-
-    if (activationChecklist.nextAction === "generate_first_image") {
-      router.push("/feed-planner")
+    const nextHref = getActivationContinueHref(activationChecklist.nextAction)
+    if (nextHref) {
+      router.push(nextHref)
     }
   }
 

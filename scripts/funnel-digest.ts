@@ -201,6 +201,20 @@ async function main() {
     return rows[0]
   })
 
+  const activationGenerateClicks = await safeQuery("activation_generate_clicks", async () => {
+    const rows = await sql`
+      SELECT
+        COUNT(*)::int AS count,
+        COUNT(DISTINCT user_id)::int AS users_count,
+        MAX(created_at) AS last_created
+      FROM analytics_events
+      WHERE created_at > NOW() - ${hours} * INTERVAL '1 hour'
+        AND event_name = 'activation_continue_clicked'
+        AND COALESCE(properties->>'next_action', '') = 'generate_first_image'
+    `
+    return rows[0]
+  })
+
   const genTrackers = await safeQuery("generation_trackers", async () => {
     const rows = await sql`
       SELECT status, COUNT(*)::int AS count, MAX(created_at) AS last_created
@@ -298,6 +312,15 @@ async function main() {
     )
   } else {
     lines.push(`- Error: ${activation.error}`)
+  }
+  if (activationGenerateClicks.ok) {
+    lines.push(
+      `- Activation continue clicks (to first generation): ${activationGenerateClicks.value.count} (${activationGenerateClicks.value.users_count} users) (last: ${
+        activationGenerateClicks.value.last_created ? iso(activationGenerateClicks.value.last_created) : "n/a"
+      })`,
+    )
+  } else {
+    lines.push(`- Error: ${activationGenerateClicks.error}`)
   }
   lines.push(``)
 

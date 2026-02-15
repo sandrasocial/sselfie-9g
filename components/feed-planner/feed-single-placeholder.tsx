@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react"
 import { flushSync } from "react-dom"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { Loader2, ArrowRight, Download } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { ToastAction } from "@/components/ui/toast"
@@ -19,6 +20,7 @@ interface FeedSinglePlaceholderProps {
   onRequireFeedStyle?: () => void
   onRequireOnboarding?: () => void
   generationMode?: "classic" | "pro"
+  autoGenerateOnce?: boolean
 }
 
 /**
@@ -36,7 +38,11 @@ export default function FeedSinglePlaceholder({
   onRequireFeedStyle,
   onRequireOnboarding,
   generationMode = "pro",
+  autoGenerateOnce = false,
 }: FeedSinglePlaceholderProps) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const [showBlueprintModal, setShowBlueprintModal] = useState(false)
   const [showUpsellModal, setShowUpsellModal] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
@@ -47,6 +53,8 @@ export default function FeedSinglePlaceholder({
     post?.prediction_id && !post?.image_url ? post.prediction_id : null
   )
   const [isStopping, setIsStopping] = useState(false)
+  const autoGenerateTriggeredRef = useRef(false)
+  const activationQueryClearedRef = useRef(false)
 
   // Track generation start time for "taking longer" message
   const generationStartTimeRef = useRef<number | null>(null)
@@ -261,6 +269,24 @@ export default function FeedSinglePlaceholder({
     (post?.prediction_id && !post?.image_url)
   )
   const canStop = !!predictionId && !predictionId.startsWith("temp-")
+
+  useEffect(() => {
+    if (!autoGenerateOnce || activationQueryClearedRef.current) return
+    activationQueryClearedRef.current = true
+
+    const params = new URLSearchParams(searchParams.toString())
+    params.delete("activation")
+    const next = params.toString() ? `${pathname}?${params.toString()}` : pathname
+    router.replace(next, { scroll: false })
+  }, [autoGenerateOnce, pathname, router, searchParams])
+
+  useEffect(() => {
+    if (!autoGenerateOnce || autoGenerateTriggeredRef.current) return
+    if (!post?.id || hasImage || isPostGenerating) return
+
+    autoGenerateTriggeredRef.current = true
+    void handleGenerateImage()
+  }, [autoGenerateOnce, hasImage, isPostGenerating, post?.id])
 
   const handleStopGeneration = async () => {
     if (!post?.id || !canStop || isStopping) return

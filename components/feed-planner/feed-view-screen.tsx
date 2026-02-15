@@ -89,6 +89,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
   
   // Get feedId from prop, query param, or null
   const feedIdFromQuery = feedIdProp ?? (searchParams.get('feedId') ? parseInt(searchParams.get('feedId')!, 10) : null)
+  const activationAction = searchParams.get("activation") === "generate" ? "generate" : null
 
   useEffect(() => {
     if (!didOpenFeedStyleFromQuery.current && searchParams.get("openFeedStyle") === "1") {
@@ -475,6 +476,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
           onOpenWizard={onOpenWizard} // Pass wizard handler for header button
           onOpenWelcomeWizard={onOpenWelcomeWizard} // Pass welcome wizard handler for header button
           onRequireFeedStyle={() => setShowFeedStyleModal(true)}
+          activationAction={activationAction}
         />
       </div>
 

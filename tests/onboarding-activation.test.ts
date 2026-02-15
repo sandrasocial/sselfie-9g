@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { getActivationChecklist, getFreeUserWizardDecision } from "@/lib/onboarding/activation"
+import { getActivationChecklist, getActivationContinueHref, getFreeUserWizardDecision } from "@/lib/onboarding/activation"
 
 describe("getFreeUserWizardDecision", () => {
   it("opens wizard at selfie step for incomplete users without selfies", () => {
@@ -80,5 +80,28 @@ describe("getActivationChecklist", () => {
     })
     expect(result.nextAction).toBe("none")
     expect(result.steps.map((step) => step.done)).toEqual([true, true, true])
+  })
+
+  it("skips model training step when it is not required", () => {
+    const result = getActivationChecklist({
+      hasSelfies: true,
+      hasTrainedModel: false,
+      hasGeneratedAny: false,
+      requiresModelTraining: false,
+    })
+
+    expect(result.nextAction).toBe("generate_first_image")
+    expect(result.steps.map((step) => step.key)).toEqual(["selfie", "generate"])
+    expect(result.steps.map((step) => step.done)).toEqual([true, false])
+  })
+})
+
+describe("getActivationContinueHref", () => {
+  it("routes first-generation activation to feed planner generate mode", () => {
+    expect(getActivationContinueHref("generate_first_image")).toBe("/feed-planner?activation=generate")
+  })
+
+  it("returns null for upload step because UI should open wizard in place", () => {
+    expect(getActivationContinueHref("upload_selfie")).toBeNull()
   })
 })

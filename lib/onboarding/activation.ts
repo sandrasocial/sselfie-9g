@@ -29,6 +29,7 @@ export type ActivationChecklistInput = {
   hasSelfies: boolean
   hasTrainedModel: boolean
   hasGeneratedAny: boolean
+  requiresModelTraining?: boolean
 }
 
 export type ActivationNextAction = "upload_selfie" | "train_model" | "generate_first_image" | "none"
@@ -37,14 +38,25 @@ export function getActivationChecklist(input: ActivationChecklistInput): {
   steps: Array<{ key: string; label: string; done: boolean }>
   nextAction: ActivationNextAction
 } {
-  const steps = [
+  const requiresModelTraining = input.requiresModelTraining ?? true
+  const steps: Array<{ key: string; label: string; done: boolean }> = [
     { key: "selfie", label: "Upload first selfie", done: Boolean(input.hasSelfies) },
-    { key: "model", label: "Train model", done: Boolean(input.hasTrainedModel) },
-    { key: "generate", label: "Generate first image", done: Boolean(input.hasGeneratedAny) },
   ]
 
+  if (requiresModelTraining) {
+    steps.push({ key: "model", label: "Train model", done: Boolean(input.hasTrainedModel) })
+  }
+
+  steps.push({ key: "generate", label: "Generate first image", done: Boolean(input.hasGeneratedAny) })
+
   if (!steps[0].done) return { steps, nextAction: "upload_selfie" }
-  if (!steps[1].done) return { steps, nextAction: "train_model" }
-  if (!steps[2].done) return { steps, nextAction: "generate_first_image" }
+  if (requiresModelTraining && !Boolean(input.hasTrainedModel)) return { steps, nextAction: "train_model" }
+  if (!Boolean(input.hasGeneratedAny)) return { steps, nextAction: "generate_first_image" }
   return { steps, nextAction: "none" }
+}
+
+export function getActivationContinueHref(nextAction: ActivationNextAction): string | null {
+  if (nextAction === "train_model") return "/studio?tab=maya"
+  if (nextAction === "generate_first_image") return "/feed-planner?activation=generate"
+  return null
 }

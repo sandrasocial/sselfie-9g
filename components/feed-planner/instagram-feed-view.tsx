@@ -33,9 +33,18 @@ interface InstagramFeedViewProps {
   onOpenWizard?: () => void // Callback to open wizard
   onOpenWelcomeWizard?: () => void // Callback to open welcome wizard (for paid blueprint users)
   onRequireFeedStyle?: () => void
+  activationAction?: "generate" | null
 }
 
-export default function InstagramFeedView({ feedId, onBack, access, onOpenWizard, onOpenWelcomeWizard, onRequireFeedStyle }: InstagramFeedViewProps) {
+export default function InstagramFeedView({
+  feedId,
+  onBack,
+  access,
+  onOpenWizard,
+  onOpenWelcomeWizard,
+  onRequireFeedStyle,
+  activationAction = null,
+}: InstagramFeedViewProps) {
   // Use custom hooks for all complex logic
   const { feedData, feedError, mutate, isLoading: isFeedLoading, isValidating, isTakingLonger } = useFeedPolling(feedId)
   const { selectedPost, setSelectedPost, showGallery, setShowGallery, showProfileGallery, setShowProfileGallery } = useFeedModals()
@@ -575,6 +584,7 @@ export default function InstagramFeedView({ feedId, onBack, access, onOpenWizard
                 onRequireFeedStyle={onRequireFeedStyle}
                 onRequireOnboarding={onOpenWizard}
                 generationMode={generationMode}
+                autoGenerateOnce={activationAction === "generate"}
               />
             ) : (
               <>
