@@ -48,7 +48,7 @@ export default function FeedGrid({
     if (!access?.canGenerateImages) {
       toast({
         title: "Access restricted",
-        description: "Image generation is only available for paid users.",
+        description: "Image generation requires available credits.",
         variant: "destructive",
       })
       return { error: "Access restricted" }
@@ -172,4 +172,3 @@ export default function FeedGrid({
     </div>
   )
 }
-

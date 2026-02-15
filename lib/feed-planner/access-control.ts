@@ -13,6 +13,8 @@ export interface FeedPlannerAccess {
   isPaidBlueprint: boolean
   isOneTime: boolean
   isMembership: boolean
+  creditBalance: number
+  canGenerateWithCredits: boolean
   hasGalleryAccess: boolean
   canGenerateImages: boolean
   canGenerateCaptions: boolean
@@ -27,7 +29,7 @@ export interface FeedPlannerAccess {
  * Get Feed Planner access control for a user
  * 
  * Determines what features are available based on user's subscription type:
- * - Free: One 9:16 placeholder, no generation buttons, no gallery access
+ * - Free: One 9:16 placeholder, generation allowed only while credits > 0, no gallery access
  * - Paid Blueprint: Full 3x3 grid, all generation buttons, gallery access, 3 feed planners max
  * - One-Time Session: Full 3x3 grid, all generation buttons, gallery access, unlimited feed planners
  * - Membership: Full 3x3 grid, all generation buttons, gallery access, unlimited feed planners
@@ -69,11 +71,18 @@ export async function getFeedPlannerAccess(userId: string): Promise<FeedPlannerA
       isOneTime,
       isMembership,
       
+      // Free users can generate while credits remain, but gallery remains paid-only.
+      // This keeps freebie behavior aligned with API contract.
+      creditBalance: Number(credits || 0),
+      canGenerateWithCredits: isFree && Number(credits || 0) > 0,
+
       // Gallery access: Paid blueprint, membership, or one-time session
       hasGalleryAccess: isPaidBlueprint || isMembership || isOneTime,
       
-      // Generation features: Paid blueprint, membership, or one-time session
-      canGenerateImages: isPaidBlueprint || isMembership || isOneTime,
+      // Generation features:
+      // - Paid and membership users always can generate
+      // - Free users can generate while they still have credits
+      canGenerateImages: isPaidBlueprint || isMembership || isOneTime || (isFree && Number(credits || 0) > 0),
       canGenerateCaptions: isPaidBlueprint || isMembership || isOneTime,
       canGenerateStrategy: isPaidBlueprint || isMembership || isOneTime,
       canGenerateBio: isPaidBlueprint || isMembership || isOneTime,
@@ -88,6 +97,8 @@ export async function getFeedPlannerAccess(userId: string): Promise<FeedPlannerA
 
     console.log(`[Feed Planner Access] Access control determined:`, {
       userId,
+      creditBalance: access.creditBalance,
+      canGenerateWithCredits: access.canGenerateWithCredits,
       hasGalleryAccess: access.hasGalleryAccess,
       canGenerateImages: access.canGenerateImages,
       canGenerateCaptions: access.canGenerateCaptions,
@@ -108,6 +119,8 @@ export async function getFeedPlannerAccess(userId: string): Promise<FeedPlannerA
       isPaidBlueprint: false,
       isOneTime: false,
       isMembership: false,
+      creditBalance: 0,
+      canGenerateWithCredits: false,
       hasGalleryAccess: false,
       canGenerateImages: false,
       canGenerateCaptions: false,

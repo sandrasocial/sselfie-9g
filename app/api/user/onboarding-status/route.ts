@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
+import { deriveHasExtensionData, deriveHasSelfies } from "@/lib/onboarding/status"
 import { neon } from "@neondatabase/serverless"
 
 const sql = neon(process.env.DATABASE_URL!)
@@ -79,9 +80,15 @@ export async function GET(request: NextRequest) {
 
     // Check if user has extension data (Decision 3: checks if blueprint extension completed)
     // Unified wizard saves dreamClient, feedStyle to blueprint_subscribers
-    // Also check if selfies are uploaded (required for image generation)
     let hasExtensionData = false
-    let hasSelfies = false
+    // Avatar images are canonical selfie source for onboarding, regardless of blueprint state.
+    const avatarImages = await sql`
+      SELECT COUNT(*)::int AS count
+      FROM user_avatar_images
+      WHERE user_id = ${neonUser.id} AND is_active = true
+    `
+    const hasSelfies = deriveHasSelfies(Number(avatarImages[0]?.count || 0))
+
     if (hasBlueprintState) {
       const blueprintRecord = await sql`
         SELECT form_data, dream_client, feed_style
@@ -89,25 +96,16 @@ export async function GET(request: NextRequest) {
         WHERE user_id = ${neonUser.id}
         LIMIT 1
       `
-      if (blueprintRecord.length > 0) {
-        const record = blueprintRecord[0]
-        // Check for extension data: dreamClient (in form_data or dream_client column) and feedStyle
-        const formData = typeof record.form_data === 'string' 
-          ? JSON.parse(record.form_data) 
-          : record.form_data
-        hasExtensionData = !!(
-          (formData?.dreamClient || record.dream_client) && 
-          record.feed_style
-        )
-      }
-      
-      // Check if user has uploaded selfies (required for Pro Mode image generation)
-      const avatarImages = await sql`
-        SELECT id FROM user_avatar_images
-        WHERE user_id = ${neonUser.id} AND is_active = true
-        LIMIT 1
-      `
-      hasSelfies = avatarImages.length > 0
+      const record = blueprintRecord[0]
+      hasExtensionData = deriveHasExtensionData(
+        record
+          ? {
+              formData: record.form_data,
+              dreamClient: record.dream_client,
+              feedStyle: record.feed_style,
+            }
+          : null,
+      )
     }
 
     return NextResponse.json({

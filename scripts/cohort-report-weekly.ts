@@ -3,7 +3,7 @@
  *
  * Cohorts by signup week:
  * - signups
- * - uploaded selfies (selfie_uploads)
+ * - uploaded selfies (selfie_uploads OR user_avatar_images)
  * - planner started (feed_posts)
  * - trained a model (training_runs)
  * - first generation (ai_images OR generation_trackers)
@@ -79,6 +79,11 @@ async function main() {
         SELECT DISTINCT k.user_id
         FROM selfie_uploads su
         JOIN keys k ON k.key = su.user_id::text
+        UNION
+        SELECT DISTINCT k.user_id
+        FROM user_avatar_images uai
+        JOIN keys k ON k.key = uai.user_id::text
+        WHERE COALESCE(uai.is_active, TRUE) = TRUE
       ),
       planner AS (
         SELECT DISTINCT k.user_id

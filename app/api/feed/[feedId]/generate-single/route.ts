@@ -154,20 +154,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
     // Free users can generate ONE image (they have 2 credits), others can generate unlimited
     // Also used later to determine default generation mode
     const access = await getFeedPlannerAccess(user.id.toString())
-    const { getUserCredits } = await import("@/lib/credits")
-    const creditBalance = await getUserCredits(user.id.toString())
     const useFeedPlannerV2 = await getFeedPlannerV2Flag(user.id)
-    
-    // Allow generation if:
-    // 1. User has canGenerateImages access (paid/membership), OR
-    // 2. User is free AND has credits (free users with credits can generate one image)
-    const hasGenerationAccess = access.canGenerateImages || (access.isFree && creditBalance > 0)
-    
-    if (!hasGenerationAccess) {
+
+    if (!access.canGenerateImages) {
       console.error("[v0] [GENERATE-SINGLE] User does not have generation access", {
         canGenerateImages: access.canGenerateImages,
         isFree: access.isFree,
-        creditBalance,
+        creditBalance: access.creditBalance,
       })
       return Response.json(
         {
