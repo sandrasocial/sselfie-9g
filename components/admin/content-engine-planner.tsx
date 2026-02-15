@@ -1,13 +1,12 @@
 "use client"
 /* eslint-disable @next/next/no-img-element */
 
-import { useMemo, useState, useEffect } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 type PostStatus = "draft" | "ready" | "scheduled" | "posted"
+type DraftType = "caption" | "story" | "carousel" | "reel"
 
-type Platform = "instagram" | "tiktok" | "linkedin"
-
-export interface PlannerPost {
+interface PlannerPost {
   id: string
   dayLabel: string
   format: string
@@ -18,15 +17,17 @@ export interface PlannerPost {
   postingTime: string
   captionTheme: string
   status: PostStatus
+  assignedAssetUrl?: string
 }
 
-export interface SourceDoc {
-  title: string
-  fileName: string
-  absolutePath: string
-  found: boolean
-  preview: string
-  fullContent: string
+interface BrainEntry {
+  id: string
+  topic: string
+  brainDump: string
+  happenedWeek: string
+  painPoint: string
+  desiredOutcome: string
+  createdAt: string
 }
 
 interface GalleryImage {
@@ -36,74 +37,15 @@ interface GalleryImage {
   prompt?: string
 }
 
-interface PlannerPostState extends PlannerPost {
-  assignedAssetUrl?: string
-}
-
-interface GeneratedReelBeat {
-  beat: string
-  script: string
-}
-
-interface GeneratedCarouselSlide {
-  slide: number
+interface DraftResult {
   title: string
   body: string
-}
-
-interface AssetSuggestion {
-  id: number
-  image_url: string
-  prompt?: string
-}
-
-interface GeneratedPack {
-  caption: string
-  storySequence: string[]
-  carouselOutline: GeneratedCarouselSlide[]
-  reelScript: GeneratedReelBeat[]
-  hashtags: string[]
   cta: string
-  suggestions: {
-    caption: AssetSuggestion[]
-    story: AssetSuggestion[]
-    carousel: AssetSuggestion[]
-    reel: AssetSuggestion[]
-  }
-}
-
-const STATUS_STYLES: Record<PostStatus, string> = {
-  draft: "bg-stone-700/60 text-stone-200",
-  ready: "bg-emerald-500/20 text-emerald-200",
-  scheduled: "bg-sky-500/20 text-sky-200",
-  posted: "bg-violet-500/20 text-violet-200",
-}
-
-function buildPlatformCopy(post: PlannerPostState, platform: Platform) {
-  const base = `${post.hook}\n\n${post.captionTheme || post.productionNotes}\n\nCTA: ${post.cta}`
-
-  if (platform === "instagram") {
-    return `${base}\n\n#personalbrand #femaleentrepreneur #contentstrategy #selfiemarketing`
-  }
-
-  if (platform === "tiktok") {
-    return `${post.hook}\n\n${post.productionNotes}\n\nOn-screen CTA: ${post.cta}\n\n#tiktokmarketing #womeninbusiness #aitools`
-  }
-
-  return `${post.hook}\n\nKey takeaway: ${post.captionTheme || "Consistency compounds."}\n\n${post.cta}`
-}
-
-async function copyToClipboard(value: string) {
-  if (typeof navigator === "undefined" || !navigator.clipboard) {
-    return false
-  }
-
-  try {
-    await navigator.clipboard.writeText(value)
-    return true
-  } catch {
-    return false
-  }
+  hashtags: string[]
+  storyFrames: string[]
+  carouselSlides: Array<{ slide: number; title: string; body: string }>
+  reelBeats: Array<{ beat: string; script: string }>
+  claudePrompt: string
 }
 
 function tokenize(value: string) {
@@ -113,772 +55,423 @@ function tokenize(value: string) {
     .filter((token) => token.length > 3)
 }
 
-function suggestAssetsForText(text: string, galleryImages: GalleryImage[], limit = 4): AssetSuggestion[] {
-  if (!galleryImages.length) return []
+function suggestAssets(text: string, images: GalleryImage[], limit = 6) {
+  if (!images.length) return [] as GalleryImage[]
   const tokens = tokenize(text)
 
-  const scored = galleryImages.map((image) => {
+  const scored = images.map((image) => {
     const haystack = `${image.prompt || ""} ${image.content_category || ""}`.toLowerCase()
     const score = tokens.reduce((total, token) => (haystack.includes(token) ? total + 1 : total), 0)
     return { image, score }
   })
 
   scored.sort((a, b) => b.score - a.score)
-  const selected = scored.slice(0, limit).map((entry) => ({
-    id: entry.image.id,
-    image_url: entry.image.image_url,
-    prompt: entry.image.prompt,
-  }))
+  const top = scored.slice(0, limit)
 
-  if (selected.every((item, index) => scored[index]?.score === 0)) {
-    return galleryImages.slice(0, limit).map((image) => ({
-      id: image.id,
-      image_url: image.image_url,
-      prompt: image.prompt,
-    }))
+  if (top.every((item) => item.score === 0)) {
+    return images.slice(0, limit)
   }
 
-  return selected
+  return top.map((item) => item.image)
 }
 
-export function ContentEnginePlanner({
-  initialPosts,
-  sourceDocs,
-  sourceDirectory,
-}: {
-  initialPosts: PlannerPost[]
-  sourceDocs: SourceDoc[]
-  sourceDirectory: string | null
-}) {
-  const [posts, setPosts] = useState<PlannerPostState[]>(initialPosts)
-  const [selectedPostId, setSelectedPostId] = useState<string>(initialPosts[0]?.id ?? "")
-  const [selectedPlatform, setSelectedPlatform] = useState<Platform>("instagram")
+async function copyToClipboard(text: string) {
+  if (typeof navigator === "undefined" || !navigator.clipboard) return false
+  try {
+    await navigator.clipboard.writeText(text)
+    return true
+  } catch {
+    return false
+  }
+}
+
+function buildDraftDisplay(draftType: DraftType, draft: DraftResult) {
+  if (draftType === "caption") {
+    return `${draft.title}\n\n${draft.body}\n\n${draft.hashtags.join(" ")}\n\nCTA: ${draft.cta}`
+  }
+
+  if (draftType === "story") {
+    return draft.storyFrames.map((line, index) => `Frame ${index + 1}: ${line}`).join("\n")
+  }
+
+  if (draftType === "carousel") {
+    return draft.carouselSlides.map((slide) => `${slide.slide}. ${slide.title}\n${slide.body}`).join("\n\n")
+  }
+
+  return draft.reelBeats.map((beat) => `${beat.beat}: ${beat.script}`).join("\n")
+}
+
+function draftToPost(draftType: DraftType, draft: DraftResult, date: string, assetUrl?: string): PlannerPost {
+  const nowId = typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `post-${Date.now()}`
+
+  const hook =
+    draftType === "carousel"
+      ? draft.carouselSlides[0]?.title || draft.title
+      : draftType === "reel"
+        ? draft.reelBeats[0]?.script || draft.title
+        : draftType === "story"
+          ? draft.storyFrames[0] || draft.title
+          : draft.title
+
+  const body = buildDraftDisplay(draftType, draft)
+
+  return {
+    id: nowId,
+    dayLabel: date,
+    format: draftType.toUpperCase(),
+    pillar: "Story",
+    hook,
+    cta: draft.cta,
+    productionNotes: body,
+    postingTime: "09:00",
+    captionTheme: draft.body,
+    status: "draft",
+    assignedAssetUrl: assetUrl,
+  }
+}
+
+export function ContentEnginePlanner() {
+  const [posts, setPosts] = useState<PlannerPost[]>([])
+  const [brainEntries, setBrainEntries] = useState<BrainEntry[]>([])
   const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([])
-  const [galleryLoading, setGalleryLoading] = useState(false)
-  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle")
-  const [libraryCopyState, setLibraryCopyState] = useState<"idle" | "copied" | "failed">("idle")
-  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle")
-  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null)
-  const [rewriteState, setRewriteState] = useState<"idle" | "running" | "done" | "error">("idle")
-  const [clearState, setClearState] = useState<"idle" | "clearing" | "done" | "error">("idle")
+
+  const [topic, setTopic] = useState("")
+  const [brainDump, setBrainDump] = useState("")
+  const [happenedWeek, setHappenedWeek] = useState("")
+  const [painPoint, setPainPoint] = useState("")
+  const [desiredOutcome, setDesiredOutcome] = useState("")
+  const [draftType, setDraftType] = useState<DraftType>("caption")
+  const [calendarDate, setCalendarDate] = useState(() => new Date().toISOString().slice(0, 10))
+
+  const [selectedAssetUrl, setSelectedAssetUrl] = useState<string | undefined>(undefined)
+  const [draft, setDraft] = useState<DraftResult | null>(null)
+
+  const [workspaceState, setWorkspaceState] = useState<"idle" | "loading" | "saving" | "saved" | "error">("loading")
   const [generateState, setGenerateState] = useState<"idle" | "running" | "done" | "error">("idle")
-  const [packDate, setPackDate] = useState<string>(() => new Date().toISOString().slice(0, 10))
-  const [topicInput, setTopicInput] = useState("")
-  const [brainDumpInput, setBrainDumpInput] = useState("")
-  const [currentContextInput, setCurrentContextInput] = useState("")
-  const [shareGoalInput, setShareGoalInput] = useState("")
-  const [generatedPack, setGeneratedPack] = useState<GeneratedPack | null>(null)
-  const [persistedLoaded, setPersistedLoaded] = useState(false)
-  const [selectedDocName, setSelectedDocName] = useState<string>(sourceDocs.find((doc) => doc.found)?.fileName || sourceDocs[0]?.fileName || "")
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle")
 
-  const selectedPost = useMemo(
-    () => posts.find((post) => post.id === selectedPostId) || posts[0],
-    [posts, selectedPostId],
-  )
+  const draftText = useMemo(() => (draft ? buildDraftDisplay(draftType, draft) : ""), [draft, draftType])
+  const suggestedAssets = useMemo(() => suggestAssets(draftText, galleryImages, 6), [draftText, galleryImages])
 
-  const weeklyBuckets = useMemo(() => {
-    const grouped = new Map<string, PlannerPostState[]>()
-
-    posts.forEach((post) => {
-      const weekKey = post.dayLabel.split(" ").slice(-1)[0] || "WEEK"
-      const existing = grouped.get(weekKey) || []
-      grouped.set(weekKey, [...existing, post])
-    })
-
-    return Array.from(grouped.entries()).slice(0, 5)
-  }, [posts])
-
-  const composerText = selectedPost ? buildPlatformCopy(selectedPost, selectedPlatform) : ""
-  const selectedDoc =
-    sourceDocs.find((doc) => doc.fileName === selectedDocName) ||
-    sourceDocs.find((doc) => doc.found) ||
-    sourceDocs[0]
-
-  const persistPlanner = async (currentPosts: PlannerPostState[]) => {
-    setSaveState("saving")
+  const loadWorkspace = async () => {
+    setWorkspaceState("loading")
     try {
-      const response = await fetch("/api/admin/content-engine/planner", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({ posts: currentPosts }),
-      })
+      const [workspaceRes, galleryRes] = await Promise.all([
+        fetch("/api/admin/content-engine/workspace", { cache: "no-store" }),
+        fetch("/api/admin/agent/gallery-images?limit=80", { cache: "no-store" }),
+      ])
 
-      if (!response.ok) {
-        throw new Error("Failed to save planner")
+      if (!workspaceRes.ok) throw new Error("workspace load failed")
+      const workspaceData = await workspaceRes.json()
+      const workspace = workspaceData?.workspace
+
+      setPosts(Array.isArray(workspace?.posts) ? workspace.posts : [])
+      setBrainEntries(Array.isArray(workspace?.brainEntries) ? workspace.brainEntries : [])
+
+      if (galleryRes.ok) {
+        const galleryData = await galleryRes.json()
+        setGalleryImages(Array.isArray(galleryData?.images) ? galleryData.images : [])
       }
 
-      const data = await response.json()
-      setLastSavedAt(data?.planner?.updatedAt || new Date().toISOString())
-      setSaveState("saved")
-      window.setTimeout(() => {
-        setSaveState((prev) => (prev === "saved" ? "idle" : prev))
-      }, 1200)
-      return true
+      setWorkspaceState("idle")
     } catch {
-      setSaveState("error")
-      return false
+      setWorkspaceState("error")
     }
   }
 
   useEffect(() => {
-    const loadGallery = async () => {
-      setGalleryLoading(true)
-      try {
-        const response = await fetch("/api/admin/agent/gallery-images?limit=40", { cache: "no-store" })
-        if (!response.ok) {
-          setGalleryImages([])
-          return
-        }
-
-        const data = await response.json()
-        setGalleryImages(Array.isArray(data.images) ? data.images : [])
-      } catch {
-        setGalleryImages([])
-      } finally {
-        setGalleryLoading(false)
-      }
-    }
-
-    loadGallery()
+    void loadWorkspace()
   }, [])
 
-  useEffect(() => {
-    const loadPersistedPlanner = async () => {
-      try {
-        const response = await fetch("/api/admin/content-engine/planner", { cache: "no-store" })
-        if (!response.ok) return
-
-        const data = await response.json()
-        if (!data?.planner) return
-
-        const persistedPosts = Array.isArray(data?.planner?.posts) ? data.planner.posts : []
-        setPosts(persistedPosts)
-        setSelectedPostId(persistedPosts[0]?.id || "")
-        if (data.planner.updatedAt) {
-          setLastSavedAt(data.planner.updatedAt)
-        }
-      } catch {
-        // Keep current in-memory state if persistence load fails.
-      } finally {
-        setPersistedLoaded(true)
-      }
-    }
-
-    loadPersistedPlanner()
-  }, [])
-
-  const updatePost = (postId: string, patch: Partial<PlannerPostState>) => {
-    setPosts((prev) => prev.map((post) => (post.id === postId ? { ...post, ...patch } : post)))
-  }
-
-  useEffect(() => {
-    if (!persistedLoaded) return
-    if (posts.length === 0) return
-
-    const timeout = window.setTimeout(() => {
-      void persistPlanner(posts)
-    }, 900)
-
-    return () => window.clearTimeout(timeout)
-  }, [posts, persistedLoaded])
-
-  const handleCopy = async () => {
-    if (!composerText) return
-
-    const ok = await copyToClipboard(composerText)
-    setCopyState(ok ? "copied" : "failed")
-    window.setTimeout(() => setCopyState("idle"), 1800)
-  }
-
-  const handleLibraryCopy = async () => {
-    if (!selectedDoc?.fullContent) return
-
-    const ok = await copyToClipboard(selectedDoc.fullContent)
-    setLibraryCopyState(ok ? "copied" : "failed")
-    window.setTimeout(() => setLibraryCopyState("idle"), 1800)
-  }
-
-  const handleClearPlanner = async () => {
-    const proceed = window.confirm("Clear current content engine planner? This removes saved planner content.")
-    if (!proceed) return
-
-    setClearState("clearing")
+  const saveWorkspace = async (nextPosts: PlannerPost[], nextBrainEntries: BrainEntry[]) => {
+    setWorkspaceState("saving")
     try {
-      const response = await fetch("/api/admin/content-engine/planner", { method: "DELETE" })
-      if (!response.ok) {
-        throw new Error("Failed to clear")
-      }
-
-      const data = await response.json()
-      const clearedPosts = Array.isArray(data?.planner?.posts) ? data.planner.posts : []
-      setPosts(clearedPosts)
-      setSelectedPostId(clearedPosts[0]?.id || "")
-      setLastSavedAt(data?.planner?.updatedAt || new Date().toISOString())
-      setClearState("done")
-      window.setTimeout(() => setClearState("idle"), 1500)
-    } catch {
-      setClearState("error")
-    }
-  }
-
-  const handleRewriteInVoice = async () => {
-    if (posts.length === 0) return
-
-    setRewriteState("running")
-    try {
-      const response = await fetch("/api/admin/content-engine/planner/rewrite", {
+      const response = await fetch("/api/admin/content-engine/workspace", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ posts }),
+        body: JSON.stringify({ posts: nextPosts, brainEntries: nextBrainEntries }),
       })
-
-      if (!response.ok) {
-        throw new Error("Rewrite failed")
-      }
-
-      const data = await response.json()
-      const rewrittenPosts = Array.isArray(data?.posts) ? data.posts : []
-      if (rewrittenPosts.length > 0) {
-        setPosts(rewrittenPosts)
-        setSelectedPostId(rewrittenPosts[0]?.id || "")
-      }
-      setRewriteState("done")
-      window.setTimeout(() => setRewriteState("idle"), 1800)
+      if (!response.ok) throw new Error("save failed")
+      setWorkspaceState("saved")
+      window.setTimeout(() => setWorkspaceState("idle"), 1200)
     } catch {
-      setRewriteState("error")
+      setWorkspaceState("error")
     }
   }
 
-  const handleGeneratePack = async () => {
-    if (!topicInput.trim()) return
+  const handleSaveMemory = async () => {
+    const trimmedTopic = topic.trim()
+    if (!trimmedTopic) return
+
+    const entry: BrainEntry = {
+      id: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `memory-${Date.now()}`,
+      topic: trimmedTopic,
+      brainDump: brainDump.trim(),
+      happenedWeek: happenedWeek.trim(),
+      painPoint: painPoint.trim(),
+      desiredOutcome: desiredOutcome.trim(),
+      createdAt: new Date().toISOString(),
+    }
+
+    const nextBrain = [entry, ...brainEntries].slice(0, 100)
+    setBrainEntries(nextBrain)
+    await saveWorkspace(posts, nextBrain)
+  }
+
+  const handleGenerateDraft = async () => {
+    const trimmedTopic = topic.trim()
+    if (!trimmedTopic) return
 
     setGenerateState("running")
     try {
-      const response = await fetch("/api/admin/content-engine/generate-pack", {
+      const response = await fetch("/api/admin/content-engine/draft", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          topic: topicInput,
-          brainDump: brainDumpInput,
-          currentContext: currentContextInput,
-          shareGoal: shareGoalInput,
+          draftType,
+          topic: trimmedTopic,
+          brainDump,
+          happenedWeek,
+          painPoint,
+          desiredOutcome,
+          memories: brainEntries,
         }),
       })
 
-      if (!response.ok) {
-        throw new Error("Generation failed")
-      }
+      if (!response.ok) throw new Error("draft failed")
 
       const data = await response.json()
-      const pack = data?.pack
-      if (!pack) {
-        throw new Error("No pack returned")
-      }
-
-      const captionText = typeof pack.caption === "string" ? pack.caption : ""
-      const storySequence = Array.isArray(pack.storySequence) ? pack.storySequence : []
-      const carouselOutline = Array.isArray(pack.carouselOutline) ? pack.carouselOutline : []
-      const reelScript = Array.isArray(pack.reelScript) ? pack.reelScript : []
-      const hashtags = Array.isArray(pack.hashtags) ? pack.hashtags : []
-      const cta = typeof pack.cta === "string" ? pack.cta : ""
-
-      const suggestions = {
-        caption: suggestAssetsForText(captionText, galleryImages, 4),
-        story: suggestAssetsForText(storySequence.join(" "), galleryImages, 4),
-        carousel: suggestAssetsForText(JSON.stringify(carouselOutline), galleryImages, 4),
-        reel: suggestAssetsForText(JSON.stringify(reelScript), galleryImages, 4),
-      }
-
-      setGeneratedPack({
-        caption: captionText,
-        storySequence,
-        carouselOutline,
-        reelScript,
-        hashtags,
-        cta,
-        suggestions,
-      })
+      setDraft(data?.draft || null)
+      setSelectedAssetUrl(undefined)
       setGenerateState("done")
-      window.setTimeout(() => setGenerateState("idle"), 1800)
+      window.setTimeout(() => setGenerateState("idle"), 1200)
     } catch {
       setGenerateState("error")
     }
   }
 
-  const handleAddPackToCalendar = () => {
-    if (!generatedPack) return
+  const handleCopyDraft = async () => {
+    if (!draftText) return
+    const ok = await copyToClipboard(draftText)
+    setCopyState(ok ? "copied" : "failed")
+    window.setTimeout(() => setCopyState("idle"), 1000)
+  }
 
-    const makeId = () =>
-      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
-        ? crypto.randomUUID()
-        : `generated-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+  const handleAddToCalendar = async () => {
+    if (!draft) return
 
-    const carouselHook =
-      generatedPack.carouselOutline.find((slide) => slide.slide === 1)?.title ||
-      generatedPack.caption.split("\n")[0] ||
-      `Carousel: ${topicInput}`
-    const reelHook = generatedPack.reelScript[0]?.script || `Reel: ${topicInput}`
-    const storyHook = generatedPack.storySequence[0] || `Story sequence: ${topicInput}`
+    const newPost = draftToPost(draftType, draft, calendarDate, selectedAssetUrl)
+    const nextPosts = [newPost, ...posts]
+    setPosts(nextPosts)
+    await saveWorkspace(nextPosts, brainEntries)
+  }
 
-    const sharedHashtags = generatedPack.hashtags.join(" ")
+  const handleClearAll = async () => {
+    const proceed = window.confirm("Clear all memory and calendar entries in Content Engine?")
+    if (!proceed) return
 
-    const newPosts: PlannerPostState[] = [
-      {
-        id: makeId(),
-        dayLabel: packDate,
-        format: "CAROUSEL",
-        pillar: "Educational",
-        hook: carouselHook,
-        cta: generatedPack.cta,
-        productionNotes: `${generatedPack.carouselOutline
-          .map((slide) => `${slide.slide}. ${slide.title}: ${slide.body}`)
-          .join("\n")}\n\nHashtags: ${sharedHashtags}`,
-        postingTime: "08:00",
-        captionTheme: generatedPack.caption,
-        status: "draft",
-        assignedAssetUrl: generatedPack.suggestions.carousel[0]?.image_url,
-      },
-      {
-        id: makeId(),
-        dayLabel: packDate,
-        format: "REEL",
-        pillar: "Story",
-        hook: reelHook,
-        cta: generatedPack.cta,
-        productionNotes: `${generatedPack.reelScript.map((beat) => `${beat.beat}: ${beat.script}`).join("\n")}\n\nHashtags: ${sharedHashtags}`,
-        postingTime: "12:00",
-        captionTheme: generatedPack.caption,
-        status: "draft",
-        assignedAssetUrl: generatedPack.suggestions.reel[0]?.image_url,
-      },
-      {
-        id: makeId(),
-        dayLabel: packDate,
-        format: "STORY",
-        pillar: "Engagement",
-        hook: storyHook,
-        cta: generatedPack.cta,
-        productionNotes: `${generatedPack.storySequence.map((line, index) => `Frame ${index + 1}: ${line}`).join("\n")}\n\nHashtags: ${sharedHashtags}`,
-        postingTime: "18:00",
-        captionTheme: generatedPack.caption,
-        status: "draft",
-        assignedAssetUrl: generatedPack.suggestions.story[0]?.image_url,
-      },
-    ]
-
-    setPosts((prev) => [...newPosts, ...prev])
-    setSelectedPostId(newPosts[0].id)
+    setWorkspaceState("saving")
+    try {
+      const response = await fetch("/api/admin/content-engine/workspace", { method: "DELETE" })
+      if (!response.ok) throw new Error("clear failed")
+      setPosts([])
+      setBrainEntries([])
+      setDraft(null)
+      setWorkspaceState("saved")
+      window.setTimeout(() => setWorkspaceState("idle"), 1200)
+    } catch {
+      setWorkspaceState("error")
+    }
   }
 
   return (
-    <main className="mx-auto max-w-[1400px] px-4 pb-8 pt-6 sm:px-6 lg:px-8 lg:pt-8">
-      <section className="mb-6 rounded-2xl border border-stone-800 bg-gradient-to-br from-stone-950 via-[#101010] to-[#171717] p-5 shadow-[0_0_60px_rgba(0,0,0,0.45)] sm:p-8">
-        <p className="text-[11px] uppercase tracking-[0.34em] text-stone-400">Sselfie Content Engine</p>
-        <h1 className="mt-3 font-['Times_New_Roman'] text-3xl font-light uppercase tracking-[0.18em] text-white sm:text-4xl">
-          Dark Feed Planner
-        </h1>
-        <p className="mt-4 max-w-3xl text-sm text-stone-300">
-          Visual planning board with strategy import, gallery asset assignment, and one-click copy blocks per social platform.
+    <main className="mx-auto max-w-6xl px-4 pb-10 pt-6 sm:px-6 lg:px-8">
+      <section className="mb-6 rounded-2xl border border-stone-800 bg-gradient-to-br from-stone-950 via-[#121212] to-[#191919] p-6">
+        <h1 className="font-['Times_New_Roman'] text-3xl uppercase tracking-[0.16em] text-white">Content Engine</h1>
+        <p className="mt-3 max-w-3xl text-sm text-stone-300">
+          One place to capture your story, generate one strong draft, and add it to your calendar.
         </p>
-
-        <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="rounded-xl border border-stone-700 bg-stone-900/70 p-4">
-            <p className="text-[10px] uppercase tracking-[0.25em] text-stone-500">Source folder</p>
-            <p className="mt-2 break-all text-xs text-stone-200">{sourceDirectory || "Not detected"}</p>
-          </div>
-          <div className="rounded-xl border border-stone-700 bg-stone-900/70 p-4">
-            <p className="text-[10px] uppercase tracking-[0.25em] text-stone-500">Planned posts</p>
-            <p className="mt-2 font-mono text-2xl text-stone-100">{posts.length}</p>
-          </div>
-          <div className="rounded-xl border border-stone-700 bg-stone-900/70 p-4">
-            <p className="text-[10px] uppercase tracking-[0.25em] text-stone-500">Gallery assets loaded</p>
-            <p className="mt-2 font-mono text-2xl text-stone-100">{galleryImages.length}</p>
-          </div>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <span className="rounded-full bg-stone-900 px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-stone-300">Second Brain</span>
+          <span className="rounded-full bg-stone-900 px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-stone-300">One-click draft</span>
+          <span className="rounded-full bg-stone-900 px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-stone-300">Add to calendar</span>
+          <button
+            onClick={handleClearAll}
+            className="rounded-full border border-amber-400/60 bg-amber-500/10 px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-amber-100"
+          >
+            Clear all
+          </button>
         </div>
-        <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-stone-800 bg-black/30 px-4 py-3">
-          <p className="text-xs text-stone-300">
-            {saveState === "saving" && "Saving planner..."}
-            {saveState === "saved" && "Planner saved"}
-            {saveState === "error" && "Save failed, retrying on next edit"}
-            {saveState === "idle" && "Planner autosaves after edits"}
-          </p>
-          <div className="flex items-center gap-3">
-            {lastSavedAt ? (
-              <p className="text-[11px] text-stone-500">Last save: {new Date(lastSavedAt).toLocaleTimeString()}</p>
-            ) : null}
-            <button
-              onClick={() => void persistPlanner(posts)}
-              className="rounded-lg border border-stone-600 bg-stone-900 px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-stone-100 transition hover:border-stone-400"
-            >
-              Save now
-            </button>
-            <button
-              onClick={handleRewriteInVoice}
-              disabled={rewriteState === "running" || posts.length === 0}
-              className="rounded-lg border border-emerald-500/60 bg-emerald-500/10 px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-emerald-200 transition hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {rewriteState === "running"
-                ? "Improving..."
-                : rewriteState === "done"
-                  ? "Improved"
-                  : rewriteState === "error"
-                    ? "Improve failed"
-                    : "Improve in my voice"}
-            </button>
-            <button
-              onClick={handleClearPlanner}
-              disabled={clearState === "clearing"}
-              className="rounded-lg border border-amber-500/60 bg-amber-500/10 px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-amber-200 transition hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {clearState === "clearing"
-                ? "Clearing..."
-                : clearState === "done"
-                  ? "Cleared"
-                  : clearState === "error"
-                    ? "Clear failed"
-                    : "Clear engine"}
-            </button>
-          </div>
-        </div>
+        <p className="mt-3 text-xs text-stone-400">
+          {workspaceState === "loading" && "Loading workspace..."}
+          {workspaceState === "saving" && "Saving..."}
+          {workspaceState === "saved" && "Saved"}
+          {workspaceState === "error" && "Save/load failed"}
+          {workspaceState === "idle" && "Ready"}
+        </p>
       </section>
 
-      <section className="mb-6 rounded-2xl border border-stone-800 bg-[#0b0b0b] p-4 sm:p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-['Times_New_Roman'] text-xl uppercase tracking-[0.16em] text-stone-100">Topic + Brain Dump</h2>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-stone-500">Generate complete content pack in your voice</p>
-        </div>
-
-        <div className="grid gap-4 lg:grid-cols-2">
-          <div className="space-y-3">
-            <label className="block text-[10px] uppercase tracking-[0.2em] text-stone-500">Topic</label>
+      <section className="mb-6 grid gap-6 lg:grid-cols-[1.2fr,1fr]">
+        <article className="rounded-2xl border border-stone-800 bg-[#0c0c0c] p-5">
+          <h2 className="font-['Times_New_Roman'] text-xl uppercase tracking-[0.14em] text-stone-100">Topic + Brain Dump</h2>
+          <div className="mt-4 space-y-3">
             <input
-              value={topicInput}
-              onChange={(event) => setTopicInput(event.target.value)}
-              placeholder="Example: showing up online after divorce"
+              value={topic}
+              onChange={(event) => setTopic(event.target.value)}
+              placeholder="Topic"
               className="w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100"
             />
-
-            <label className="block text-[10px] uppercase tracking-[0.2em] text-stone-500">Brain dump</label>
             <textarea
-              value={brainDumpInput}
-              onChange={(event) => setBrainDumpInput(event.target.value)}
-              placeholder="What happened, what you felt, what you learned..."
+              value={brainDump}
+              onChange={(event) => setBrainDump(event.target.value)}
+              placeholder="Your raw thoughts"
               className="h-24 w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100"
             />
-
-            <label className="block text-[10px] uppercase tracking-[0.2em] text-stone-500">What I have been doing</label>
             <textarea
-              value={currentContextInput}
-              onChange={(event) => setCurrentContextInput(event.target.value)}
-              placeholder="Recent actions, client work, launches, updates..."
+              value={happenedWeek}
+              onChange={(event) => setHappenedWeek(event.target.value)}
+              placeholder="What happened this week"
               className="h-20 w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100"
             />
-
-            <label className="block text-[10px] uppercase tracking-[0.2em] text-stone-500">What I want to share</label>
-            <textarea
-              value={shareGoalInput}
-              onChange={(event) => setShareGoalInput(event.target.value)}
-              placeholder="The point I want my audience to feel or do next..."
-              className="h-20 w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100"
+            <input
+              value={painPoint}
+              onChange={(event) => setPainPoint(event.target.value)}
+              placeholder="Audience pain point"
+              className="w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100"
             />
-
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                onClick={handleGeneratePack}
-                disabled={!topicInput.trim() || generateState === "running"}
-                className="rounded-lg border border-stone-200 bg-stone-100 px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-stone-900 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {generateState === "running"
-                  ? "Generating..."
-                  : generateState === "done"
-                    ? "Pack generated"
-                    : generateState === "error"
-                      ? "Generate failed"
-                      : "Generate content pack"}
-              </button>
-              <input
-                type="date"
-                value={packDate}
-                onChange={(event) => setPackDate(event.target.value)}
-                className="rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-xs text-stone-100"
-              />
-              <button
-                onClick={handleAddPackToCalendar}
-                disabled={!generatedPack}
-                className="rounded-lg border border-sky-400/60 bg-sky-500/10 px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-sky-100 transition hover:bg-sky-500/20 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                Add to calendar
-              </button>
-            </div>
+            <input
+              value={desiredOutcome}
+              onChange={(event) => setDesiredOutcome(event.target.value)}
+              placeholder="Desired audience outcome"
+              className="w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100"
+            />
           </div>
 
-          <div className="space-y-3">
-            <div className="rounded-xl border border-stone-800 bg-stone-950 p-3">
-              <p className="mb-2 text-[10px] uppercase tracking-[0.2em] text-stone-500">Caption</p>
-              <textarea
-                readOnly
-                value={generatedPack ? `${generatedPack.caption}\n\n${generatedPack.hashtags.join(" ")}` : "Generate pack to see caption output."}
-                className="h-24 w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-xs leading-relaxed text-stone-100"
-              />
-            </div>
-            <div className="rounded-xl border border-stone-800 bg-stone-950 p-3">
-              <p className="mb-2 text-[10px] uppercase tracking-[0.2em] text-stone-500">Story Sequence</p>
-              <textarea
-                readOnly
-                value={generatedPack ? generatedPack.storySequence.map((line, index) => `${index + 1}. ${line}`).join("\n") : "Generate pack to see story sequence."}
-                className="h-20 w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-xs leading-relaxed text-stone-100"
-              />
-            </div>
-            <div className="rounded-xl border border-stone-800 bg-stone-950 p-3">
-              <p className="mb-2 text-[10px] uppercase tracking-[0.2em] text-stone-500">Carousel Outline</p>
-              <textarea
-                readOnly
-                value={generatedPack ? generatedPack.carouselOutline.map((slide) => `${slide.slide}. ${slide.title} — ${slide.body}`).join("\n") : "Generate pack to see carousel outline."}
-                className="h-20 w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-xs leading-relaxed text-stone-100"
-              />
-            </div>
-            <div className="rounded-xl border border-stone-800 bg-stone-950 p-3">
-              <p className="mb-2 text-[10px] uppercase tracking-[0.2em] text-stone-500">Reel Script</p>
-              <textarea
-                readOnly
-                value={generatedPack ? generatedPack.reelScript.map((beat) => `${beat.beat}: ${beat.script}`).join("\n") : "Generate pack to see reel script."}
-                className="h-20 w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-xs leading-relaxed text-stone-100"
-              />
-            </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              onClick={handleSaveMemory}
+              disabled={!topic.trim()}
+              className="rounded-lg border border-stone-200 bg-stone-100 px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-stone-900 disabled:opacity-50"
+            >
+              Save to second brain
+            </button>
+
+            {(["caption", "story", "carousel", "reel"] as DraftType[]).map((type) => (
+              <button
+                key={type}
+                onClick={() => setDraftType(type)}
+                className={`rounded-lg px-3 py-2 text-[10px] uppercase tracking-[0.2em] ${
+                  draftType === type ? "bg-stone-100 text-stone-900" : "bg-stone-800 text-stone-300"
+                }`}
+              >
+                {type}
+              </button>
+            ))}
+
+            <button
+              onClick={handleGenerateDraft}
+              disabled={!topic.trim() || generateState === "running"}
+              className="rounded-lg border border-emerald-400/60 bg-emerald-500/10 px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-emerald-100 disabled:opacity-50"
+            >
+              {generateState === "running" ? "Generating..." : "Generate draft"}
+            </button>
+          </div>
+        </article>
+
+        <article className="rounded-2xl border border-stone-800 bg-[#0c0c0c] p-5">
+          <h2 className="font-['Times_New_Roman'] text-xl uppercase tracking-[0.14em] text-stone-100">Second Brain Memory</h2>
+          <div className="mt-3 max-h-96 space-y-2 overflow-y-auto pr-1">
+            {brainEntries.length === 0 ? (
+              <p className="text-sm text-stone-400">No memory entries yet.</p>
+            ) : (
+              brainEntries.map((entry) => (
+                <div key={entry.id} className="rounded-lg border border-stone-800 bg-stone-950 p-3">
+                  <p className="text-xs uppercase tracking-[0.18em] text-stone-500">{entry.topic}</p>
+                  <p className="mt-2 text-xs text-stone-300">Pain: {entry.painPoint || "-"}</p>
+                  <p className="text-xs text-stone-300">Outcome: {entry.desiredOutcome || "-"}</p>
+                  <p className="mt-2 line-clamp-2 text-xs text-stone-400">{entry.brainDump}</p>
+                </div>
+              ))
+            )}
+          </div>
+        </article>
+      </section>
+
+      <section className="mb-6 rounded-2xl border border-stone-800 bg-[#0c0c0c] p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-['Times_New_Roman'] text-xl uppercase tracking-[0.14em] text-stone-100">Generated Draft</h2>
+          <div className="flex gap-2">
+            <button
+              onClick={handleCopyDraft}
+              disabled={!draftText}
+              className="rounded-lg border border-stone-200 bg-stone-100 px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-stone-900 disabled:opacity-50"
+            >
+              {copyState === "copied" ? "Copied" : "Copy"}
+            </button>
+            <input
+              type="date"
+              value={calendarDate}
+              onChange={(event) => setCalendarDate(event.target.value)}
+              className="rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-xs text-stone-100"
+            />
+            <button
+              onClick={handleAddToCalendar}
+              disabled={!draft}
+              className="rounded-lg border border-sky-400/60 bg-sky-500/10 px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-sky-100 disabled:opacity-50"
+            >
+              Add to calendar
+            </button>
           </div>
         </div>
 
-        {generatedPack ? (
-          <div className="mt-4 grid gap-3 lg:grid-cols-4">
-            {([
-              { key: "caption", label: "Caption assets", items: generatedPack.suggestions.caption },
-              { key: "story", label: "Story assets", items: generatedPack.suggestions.story },
-              { key: "carousel", label: "Carousel assets", items: generatedPack.suggestions.carousel },
-              { key: "reel", label: "Reel assets", items: generatedPack.suggestions.reel },
-            ] as const).map((bucket) => (
-              <div key={bucket.key} className="rounded-xl border border-stone-800 bg-stone-950 p-3">
-                <p className="mb-2 text-[10px] uppercase tracking-[0.2em] text-stone-500">{bucket.label}</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {bucket.items.map((asset) => (
-                    <img key={`${bucket.key}-${asset.id}`} src={asset.image_url} alt={asset.prompt || `${bucket.label} asset`} className="h-16 w-full rounded-md object-cover" />
-                  ))}
-                </div>
-              </div>
-            ))}
+        <textarea
+          readOnly
+          value={draftText || "Generate a draft to view output here."}
+          className="mt-4 h-56 w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm leading-relaxed text-stone-100"
+        />
+
+        {draft?.claudePrompt ? (
+          <div className="mt-4 rounded-lg border border-stone-800 bg-stone-950 p-3">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-stone-500">Claude handoff prompt</p>
+            <textarea readOnly value={draft.claudePrompt} className="mt-2 h-28 w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-xs text-stone-100" />
           </div>
         ) : null}
       </section>
 
-      <section className="mb-6 rounded-2xl border border-stone-800 bg-[#0b0b0b] p-4 sm:p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-['Times_New_Roman'] text-xl uppercase tracking-[0.16em] text-stone-100">Imported Strategy Docs</h2>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-stone-500">Auto-detected from your content engine</p>
-        </div>
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {sourceDocs.map((doc) => (
-            <article key={doc.fileName} className="rounded-xl border border-stone-800 bg-stone-950 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-xs uppercase tracking-[0.16em] text-stone-300">{doc.title}</p>
-                <span
-                  className={`rounded-full px-2 py-1 text-[10px] uppercase tracking-[0.2em] ${
-                    doc.found ? "bg-emerald-500/20 text-emerald-200" : "bg-amber-500/20 text-amber-200"
-                  }`}
-                >
-                  {doc.found ? "loaded" : "missing"}
-                </span>
-              </div>
-              <p className="mt-2 text-xs text-stone-500">{doc.fileName}</p>
-              <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-stone-300">{doc.preview}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="mb-6 rounded-2xl border border-stone-800 bg-[#0b0b0b] p-4 sm:p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-['Times_New_Roman'] text-xl uppercase tracking-[0.16em] text-stone-100">Full Strategy Library</h2>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-stone-500">Complete Claude handoff files</p>
-        </div>
-
-        <div className="mb-3 flex flex-wrap gap-2">
-          {sourceDocs.map((doc) => (
+      <section className="mb-6 rounded-2xl border border-stone-800 bg-[#0c0c0c] p-5">
+        <h2 className="font-['Times_New_Roman'] text-xl uppercase tracking-[0.14em] text-stone-100">Asset Suggestions</h2>
+        <p className="mt-1 text-xs text-stone-400">Pick one suggested image before adding draft to calendar.</p>
+        <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+          {suggestedAssets.map((image) => (
             <button
-              key={doc.fileName}
-              onClick={() => setSelectedDocName(doc.fileName)}
-              className={`rounded-full px-3 py-2 text-[10px] uppercase tracking-[0.18em] transition ${
-                selectedDoc?.fileName === doc.fileName
-                  ? "bg-stone-100 text-stone-900"
-                  : "bg-stone-800 text-stone-300 hover:bg-stone-700"
+              key={image.id}
+              onClick={() => setSelectedAssetUrl(image.image_url)}
+              className={`overflow-hidden rounded-lg border ${
+                selectedAssetUrl === image.image_url ? "border-stone-200" : "border-stone-800"
               }`}
             >
-              {doc.title}
+              <img src={image.image_url} alt={image.prompt || `Asset ${image.id}`} className="h-20 w-full object-cover" />
             </button>
           ))}
         </div>
-
-        <div className="rounded-xl border border-stone-800 bg-stone-950 p-3">
-          <p className="mb-2 text-[10px] uppercase tracking-[0.2em] text-stone-500">
-            {selectedDoc?.absolutePath || "Source path unavailable"}
-          </p>
-          <textarea
-            readOnly
-            value={selectedDoc?.fullContent || "No content loaded for this file."}
-            className="h-72 w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-xs leading-relaxed text-stone-100"
-          />
-          <button
-            onClick={handleLibraryCopy}
-            className="mt-3 rounded-lg border border-stone-200 bg-stone-100 px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-stone-900 transition hover:bg-white"
-          >
-            {libraryCopyState === "copied" ? "Copied" : libraryCopyState === "failed" ? "Copy failed" : "Copy full document"}
-          </button>
-        </div>
       </section>
 
-      <section className="grid gap-6 lg:grid-cols-[1.2fr,1fr]">
-        <div className="space-y-6">
-          <article className="rounded-2xl border border-stone-800 bg-[#090909] p-4 sm:p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="font-['Times_New_Roman'] text-xl uppercase tracking-[0.16em] text-stone-100">Feed Planner Board</h2>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-stone-500">Tap card to edit and copy</p>
-            </div>
-
-            <div className="space-y-5">
-              {weeklyBuckets.map(([week, weekPosts], weekIndex) => (
-                <div key={`${week}-${weekIndex}`}>
-                  <p className="mb-2 text-[10px] uppercase tracking-[0.25em] text-stone-500">Week {weekIndex + 1}</p>
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
-                    {weekPosts.slice(0, 5).map((post) => (
-                      <button
-                        key={post.id}
-                        onClick={() => setSelectedPostId(post.id)}
-                        className={`rounded-xl border p-3 text-left transition ${
-                          selectedPost?.id === post.id
-                            ? "border-stone-200 bg-stone-800/80"
-                            : "border-stone-800 bg-stone-900/60 hover:border-stone-600"
-                        }`}
-                      >
-                        <p className="text-[10px] uppercase tracking-[0.2em] text-stone-400">{post.dayLabel}</p>
-                        <p className="mt-2 line-clamp-3 text-sm text-stone-100">{post.hook}</p>
-                        <div className="mt-3 flex items-center justify-between">
-                          <span className="text-[10px] uppercase tracking-[0.2em] text-stone-500">{post.format}</span>
-                          <span className={`rounded-full px-2 py-1 text-[10px] uppercase tracking-[0.2em] ${STATUS_STYLES[post.status]}`}>
-                            {post.status}
-                          </span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </article>
-
-          <article className="rounded-2xl border border-stone-800 bg-[#090909] p-4 sm:p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="font-['Times_New_Roman'] text-xl uppercase tracking-[0.16em] text-stone-100">Asset Gallery Picker</h2>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-stone-500">Assign selected image to post</p>
-            </div>
-
-            {galleryLoading ? (
-              <p className="text-sm text-stone-400">Loading gallery...</p>
-            ) : galleryImages.length === 0 ? (
-              <p className="text-sm text-stone-400">No gallery assets found. Generate or upload images to populate this tray.</p>
-            ) : (
-              <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 lg:grid-cols-5">
-                {galleryImages.map((image) => (
-                  <button
-                    key={image.id}
-                    onClick={() => selectedPost && updatePost(selectedPost.id, { assignedAssetUrl: image.image_url })}
-                    className="group relative overflow-hidden rounded-lg border border-stone-800 bg-stone-900"
-                  >
-                    <img src={image.image_url} alt={image.prompt || `Asset ${image.id}`} className="h-24 w-full object-cover" />
-                    <div className="absolute inset-0 hidden bg-black/45 text-[10px] uppercase tracking-[0.2em] text-white group-hover:flex group-hover:items-center group-hover:justify-center">
-                      Assign
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </article>
+      <section className="rounded-2xl border border-stone-800 bg-[#0c0c0c] p-5">
+        <h2 className="font-['Times_New_Roman'] text-xl uppercase tracking-[0.14em] text-stone-100">Calendar Queue</h2>
+        <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {posts.length === 0 ? (
+            <p className="text-sm text-stone-400">No calendar entries yet.</p>
+          ) : (
+            posts.map((post) => (
+              <article key={post.id} className="rounded-lg border border-stone-800 bg-stone-950 p-3">
+                <p className="text-[10px] uppercase tracking-[0.2em] text-stone-500">{post.dayLabel} · {post.format}</p>
+                <p className="mt-2 text-sm text-stone-100">{post.hook}</p>
+                {post.assignedAssetUrl ? <img src={post.assignedAssetUrl} alt="Assigned" className="mt-3 h-24 w-full rounded-md object-cover" /> : null}
+                <p className="mt-2 text-xs text-stone-400">{post.cta}</p>
+              </article>
+            ))
+          )}
         </div>
-
-        <aside className="space-y-6">
-          <article className="rounded-2xl border border-stone-800 bg-[#090909] p-4 sm:p-6">
-            <h2 className="font-['Times_New_Roman'] text-xl uppercase tracking-[0.16em] text-stone-100">Post Composer</h2>
-
-            {selectedPost ? (
-              <div className="mt-4 space-y-4">
-                <label className="block text-[10px] uppercase tracking-[0.2em] text-stone-500">Selected post</label>
-                <p className="text-sm text-stone-100">{selectedPost.dayLabel} · {selectedPost.format}</p>
-
-                <label className="block text-[10px] uppercase tracking-[0.2em] text-stone-500">Status</label>
-                <select
-                  value={selectedPost.status}
-                  onChange={(event) => updatePost(selectedPost.id, { status: event.target.value as PostStatus })}
-                  className="w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100"
-                >
-                  <option value="draft">Draft</option>
-                  <option value="ready">Ready</option>
-                  <option value="scheduled">Scheduled</option>
-                  <option value="posted">Posted</option>
-                </select>
-
-                <label className="block text-[10px] uppercase tracking-[0.2em] text-stone-500">Hook</label>
-                <textarea
-                  value={selectedPost.hook}
-                  onChange={(event) => updatePost(selectedPost.id, { hook: event.target.value })}
-                  className="h-24 w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100"
-                />
-
-                <label className="block text-[10px] uppercase tracking-[0.2em] text-stone-500">CTA</label>
-                <textarea
-                  value={selectedPost.cta}
-                  onChange={(event) => updatePost(selectedPost.id, { cta: event.target.value })}
-                  className="h-20 w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100"
-                />
-
-                <label className="block text-[10px] uppercase tracking-[0.2em] text-stone-500">Assigned asset</label>
-                {selectedPost.assignedAssetUrl ? (
-                  <img src={selectedPost.assignedAssetUrl} alt="Assigned post asset" className="h-40 w-full rounded-lg object-cover" />
-                ) : (
-                  <p className="rounded-lg border border-dashed border-stone-700 p-4 text-xs text-stone-400">No asset selected yet.</p>
-                )}
-              </div>
-            ) : (
-              <p className="mt-4 text-sm text-stone-400">No post selected.</p>
-            )}
-          </article>
-
-          <article className="rounded-2xl border border-stone-800 bg-[#090909] p-4 sm:p-6">
-            <div className="mb-4 flex flex-wrap gap-2">
-              {(["instagram", "tiktok", "linkedin"] as Platform[]).map((platform) => (
-                <button
-                  key={platform}
-                  onClick={() => setSelectedPlatform(platform)}
-                  className={`rounded-full px-3 py-2 text-[11px] uppercase tracking-[0.2em] transition ${
-                    selectedPlatform === platform
-                      ? "bg-stone-100 text-stone-900"
-                      : "bg-stone-800 text-stone-300 hover:bg-stone-700"
-                  }`}
-                >
-                  {platform}
-                </button>
-              ))}
-            </div>
-
-            <p className="mb-2 text-[10px] uppercase tracking-[0.2em] text-stone-500">Copy block for {selectedPlatform}</p>
-            <textarea readOnly value={composerText} className="h-56 w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100" />
-
-            <button
-              onClick={handleCopy}
-              className="mt-3 w-full rounded-lg border border-stone-200 bg-stone-100 px-3 py-2 text-xs uppercase tracking-[0.2em] text-stone-900 transition hover:bg-white"
-            >
-              {copyState === "copied" ? "Copied" : copyState === "failed" ? "Copy failed" : "Copy for paste"}
-            </button>
-          </article>
-        </aside>
       </section>
     </main>
   )
