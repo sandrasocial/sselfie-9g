@@ -4,7 +4,7 @@ import Link from "next/link"
 import { DollarSign, Users, Mail, Instagram } from "lucide-react"
 import { AdminNav } from "@/components/admin/admin-nav"
 import { AdminMetricCard } from "@/components/admin/shared"
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, type FormEvent } from "react"
 
 type FunnelReport = {
   periodStart: string
@@ -32,8 +32,69 @@ type CohortRow = {
   plannerStarted?: number
   generatedAny: number
   paidActive: number
-  retainedD1Proxy?: number
   retainedD1ActivityProxy?: number
+}
+
+type LaunchReport = {
+  conversionOps: {
+    applications90d: number
+    qualified90d: number
+    callsBooked90d: number
+    offersSent90d: number
+    closedWon90d: number
+    cashCollected90dCents: string
+    newMemberships30d: number
+    churnedMemberships30d: number
+    churn30dPct: number
+    activeMembershipsNow: number
+  }
+}
+
+type ArpuChurnReport = {
+  metrics: {
+    membershipMrrCents: number
+    activeMemberships: number
+    arpuCents: number
+    arpuEuro: number
+    discountedMembershipsActive: number
+    discountedSharePct: number
+    fullPriceMembershipsActive: number
+    newMemberships30d: number
+    churnedMemberships30d: number
+    churn30dPct: number
+  }
+  freezeGuard: {
+    discountedDeltaVsLastWeek: number
+    freezeHolding: boolean
+    note: string
+  }
+}
+
+type CohortDeliveryReport = {
+  summary: {
+    liveHours30d: number
+    asyncHours30d: number
+    totalHours30d: number
+    asyncRatio30dPct: number
+    liveRatio30dPct: number
+    asyncTargetMet: boolean
+  }
+  monthly: Array<{
+    month: string
+    liveHours: number
+    asyncHours: number
+    totalHours: number
+    asyncRatioPct: number
+  }>
+  recentEntries: Array<{
+    id: number
+    sessionDate: string
+    mode: "live" | "async"
+    hours: number
+    cohortLabel: string | null
+    notes: string | null
+    createdAt: string
+  }>
 }
 
 type StoredReportRow = {
@@ -45,12 +106,32 @@ type StoredReportRow = {
   created_at: string
 }
 
+function formatEuroFromCents(cents: number) {
+  return `€${(cents / 100).toFixed(0)}`
+}
+
 export default function AnalyticsPage() {
   const [funnelReports, setFunnelReports] = useState<StoredReportRow[]>([])
   const [cohortReports, setCohortReports] = useState<StoredReportRow[]>([])
+  const [launchReports, setLaunchReports] = useState<StoredReportRow[]>([])
+  const [arpuReports, setArpuReports] = useState<StoredReportRow[]>([])
+  const [deliveryLatest, setDeliveryLatest] = useState<CohortDeliveryReport | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [isRunning, setIsRunning] = useState<{ funnel: boolean; cohorts: boolean }>({ funnel: false, cohorts: false })
+  const [isRunning, setIsRunning] = useState({
+    funnel: false,
+    cohorts: false,
+    launch: false,
+    arpu: false,
+    delivery: false,
+  })
+  const [deliveryForm, setDeliveryForm] = useState({
+    mode: "live" as "live" | "async",
+    hours: "1",
+    sessionDate: new Date().toISOString().slice(0, 10),
+    cohortLabel: "",
+    notes: "",
+  })
 
   useEffect(() => {
     let cancelled = false
@@ -58,13 +139,20 @@ export default function AnalyticsPage() {
       try {
         setIsLoading(true)
         setError(null)
-        const [funnelRes, cohortsRes] = await Promise.all([
+        const [funnelRes, cohortsRes, launchRes, arpuRes, deliveryRes] = await Promise.all([
           fetch("/api/admin/analytics/funnel-daily").then((r) => r.json()),
           fetch("/api/admin/analytics/cohorts-weekly").then((r) => r.json()),
+          fetch("/api/admin/analytics/brand-engine-launch").then((r) => r.json()),
+          fetch("/api/admin/analytics/arpu-churn-weekly").then((r) => r.json()),
+          fetch("/api/admin/analytics/cohort-delivery-load").then((r) => r.json()),
         ])
         if (cancelled) return
+
         setFunnelReports(Array.isArray(funnelRes?.reports) ? funnelRes.reports : [])
         setCohortReports(Array.isArray(cohortsRes?.reports) ? cohortsRes.reports : [])
+        setLaunchReports(Array.isArray(launchRes?.reports) ? launchRes.reports : [])
+        setArpuReports(Array.isArray(arpuRes?.reports) ? arpuRes.reports : [])
+        setDeliveryLatest(deliveryRes?.latest || null)
       } catch (e: any) {
         if (cancelled) return
         setError(e?.message || "Failed to load analytics")
@@ -83,6 +171,18 @@ export default function AnalyticsPage() {
     if (!row?.payload) return null
     return row.payload as FunnelReport
   }, [funnelReports])
+
+  const latestLaunch = useMemo(() => {
+    const row = launchReports[0]
+    if (!row?.payload) return null
+    return row.payload as LaunchReport
+  }, [launchReports])
+
+  const latestArpu = useMemo(() => {
+    const row = arpuReports[0]
+    if (!row?.payload) return null
+    return row.payload as ArpuChurnReport
+  }, [arpuReports])
 
   const revenue24h = useMemo(() => {
     const cents = latestFunnel?.metrics?.stripePaymentsSumCents
@@ -121,6 +221,82 @@ export default function AnalyticsPage() {
     }
   }
 
+  const runLaunchNow = async () => {
+    try {
+      setIsRunning((s) => ({ ...s, launch: true }))
+      const res = await fetch("/api/admin/analytics/brand-engine-launch", { method: "POST" })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error || "Failed to run launch report")
+      const refreshed = await fetch("/api/admin/analytics/brand-engine-launch").then((r) => r.json())
+      setLaunchReports(Array.isArray(refreshed?.reports) ? refreshed.reports : [])
+    } catch (e: any) {
+      setError(e?.message || "Failed to run launch report")
+    } finally {
+      setIsRunning((s) => ({ ...s, launch: false }))
+    }
+  }
+
+  const runArpuNow = async () => {
+    try {
+      setIsRunning((s) => ({ ...s, arpu: true }))
+      const res = await fetch("/api/admin/analytics/arpu-churn-weekly", { method: "POST" })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error || "Failed to run ARPU/churn report")
+      const refreshed = await fetch("/api/admin/analytics/arpu-churn-weekly").then((r) => r.json())
+      setArpuReports(Array.isArray(refreshed?.reports) ? refreshed.reports : [])
+    } catch (e: any) {
+      setError(e?.message || "Failed to run ARPU/churn report")
+    } finally {
+      setIsRunning((s) => ({ ...s, arpu: false }))
+    }
+  }
+
+  const runDeliverySnapshotNow = async () => {
+    try {
+      setIsRunning((s) => ({ ...s, delivery: true }))
+      const res = await fetch("/api/admin/analytics/cohort-delivery-load", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error || "Failed to refresh delivery load")
+      setDeliveryLatest(data?.latest || null)
+      const refreshed = await fetch("/api/admin/analytics/cohort-delivery-load").then((r) => r.json())
+      setDeliveryLatest(refreshed?.latest || null)
+    } catch (e: any) {
+      setError(e?.message || "Failed to refresh delivery load")
+    } finally {
+      setIsRunning((s) => ({ ...s, delivery: false }))
+    }
+  }
+
+  const submitDeliveryLog = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    try {
+      setIsRunning((s) => ({ ...s, delivery: true }))
+      const res = await fetch("/api/admin/analytics/cohort-delivery-load", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode: deliveryForm.mode,
+          hours: Number(deliveryForm.hours || 0),
+          sessionDate: deliveryForm.sessionDate,
+          cohortLabel: deliveryForm.cohortLabel,
+          notes: deliveryForm.notes,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error || "Failed to log delivery entry")
+      setDeliveryLatest(data?.latest || null)
+      setDeliveryForm((prev) => ({ ...prev, notes: "", hours: "1" }))
+    } catch (e: any) {
+      setError(e?.message || "Failed to log delivery entry")
+    } finally {
+      setIsRunning((s) => ({ ...s, delivery: false }))
+    }
+  }
+
   return (
     <div className="min-h-screen bg-stone-50">
       <AdminNav />
@@ -131,7 +307,7 @@ export default function AnalyticsPage() {
             ANALYTICS
           </h1>
           <p className="text-xs sm:text-sm text-stone-500 tracking-[0.1em] uppercase">
-            Funnel tracking, daily digest, and weekly cohorts.
+            Funnel tracking, launch conversion ops, ARPU/churn, and cohort delivery load.
           </p>
         </div>
 
@@ -143,50 +319,51 @@ export default function AnalyticsPage() {
             <p className="text-xs text-red-700 leading-relaxed">Error: {error}</p>
           ) : isLoading ? (
             <p className="text-xs text-stone-700 leading-relaxed">Loading analytics reports...</p>
-          ) : latestFunnel ? (
-            <div className="space-y-2">
-              <p className="text-xs text-stone-700 leading-relaxed">
-                Latest daily window:{" "}
-                <span className="font-mono text-[11px] text-stone-600">
-                  {new Date(latestFunnel.periodStart).toISOString()} to {new Date(latestFunnel.periodEnd).toISOString()}
-                </span>
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <button
-                  onClick={runFunnelNow}
-                  disabled={isRunning.funnel}
-                  className="px-6 py-3 bg-stone-950 text-stone-50 text-xs tracking-[0.2em] uppercase hover:bg-stone-800 disabled:opacity-60 transition-colors rounded-none"
-                >
-                  {isRunning.funnel ? "Running Funnel Report..." : "Run Funnel Report Now"}
-                </button>
-                <button
-                  onClick={runCohortsNow}
-                  disabled={isRunning.cohorts}
-                  className="px-6 py-3 border border-stone-950 text-stone-950 text-xs tracking-[0.2em] uppercase hover:bg-stone-950 hover:text-stone-50 disabled:opacity-60 transition-colors rounded-none"
-                >
-                  {isRunning.cohorts ? "Running Cohort Report..." : "Run Cohort Report Now"}
-                </button>
-              </div>
-            </div>
           ) : (
             <div className="space-y-3">
-              <p className="text-xs text-stone-700 leading-relaxed">
-                No reports found yet. Run the reports once, then the daily and weekly crons will keep them updated.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3">
+              {latestFunnel && (
+                <p className="text-xs text-stone-700 leading-relaxed">
+                  Latest daily window:{" "}
+                  <span className="font-mono text-[11px] text-stone-600">
+                    {new Date(latestFunnel.periodStart).toISOString()} to {new Date(latestFunnel.periodEnd).toISOString()}
+                  </span>
+                </p>
+              )}
+              <div className="flex flex-col sm:flex-row flex-wrap gap-3">
                 <button
                   onClick={runFunnelNow}
                   disabled={isRunning.funnel}
                   className="px-6 py-3 bg-stone-950 text-stone-50 text-xs tracking-[0.2em] uppercase hover:bg-stone-800 disabled:opacity-60 transition-colors rounded-none"
                 >
-                  {isRunning.funnel ? "Running Funnel Report..." : "Run Funnel Report Now"}
+                  {isRunning.funnel ? "Running Funnel..." : "Run Funnel Report"}
                 </button>
                 <button
                   onClick={runCohortsNow}
                   disabled={isRunning.cohorts}
                   className="px-6 py-3 border border-stone-950 text-stone-950 text-xs tracking-[0.2em] uppercase hover:bg-stone-950 hover:text-stone-50 disabled:opacity-60 transition-colors rounded-none"
                 >
-                  {isRunning.cohorts ? "Running Cohort Report..." : "Run Cohort Report Now"}
+                  {isRunning.cohorts ? "Running Cohorts..." : "Run Cohort Report"}
+                </button>
+                <button
+                  onClick={runLaunchNow}
+                  disabled={isRunning.launch}
+                  className="px-6 py-3 border border-stone-950 text-stone-950 text-xs tracking-[0.2em] uppercase hover:bg-stone-950 hover:text-stone-50 disabled:opacity-60 transition-colors rounded-none"
+                >
+                  {isRunning.launch ? "Running Launch..." : "Run Launch Ops Report"}
+                </button>
+                <button
+                  onClick={runArpuNow}
+                  disabled={isRunning.arpu}
+                  className="px-6 py-3 border border-stone-950 text-stone-950 text-xs tracking-[0.2em] uppercase hover:bg-stone-950 hover:text-stone-50 disabled:opacity-60 transition-colors rounded-none"
+                >
+                  {isRunning.arpu ? "Running ARPU..." : "Run ARPU/Churn Report"}
+                </button>
+                <button
+                  onClick={runDeliverySnapshotNow}
+                  disabled={isRunning.delivery}
+                  className="px-6 py-3 border border-stone-950 text-stone-950 text-xs tracking-[0.2em] uppercase hover:bg-stone-950 hover:text-stone-50 disabled:opacity-60 transition-colors rounded-none"
+                >
+                  {isRunning.delivery ? "Refreshing..." : "Refresh Delivery Load"}
                 </button>
               </div>
             </div>
@@ -217,6 +394,38 @@ export default function AnalyticsPage() {
             value={latestFunnel ? String(latestFunnel.metrics.aiImagesCreated) : "--"}
             icon={<Instagram className="w-5 h-5" />}
             subtitle={latestFunnel ? `Trackers: ${latestFunnel.metrics.generationTrackersCreated}` : "Run report for live data"}
+          />
+          <AdminMetricCard
+            label="90D Applications"
+            value={latestLaunch ? String(latestLaunch.conversionOps.applications90d) : "--"}
+            icon={<Users className="w-5 h-5" />}
+            subtitle={latestLaunch ? `Qualified: ${latestLaunch.conversionOps.qualified90d}` : "Run launch report"}
+          />
+          <AdminMetricCard
+            label="90D Closed Won"
+            value={latestLaunch ? String(latestLaunch.conversionOps.closedWon90d) : "--"}
+            icon={<Users className="w-5 h-5" />}
+            subtitle={latestLaunch ? `Offers sent: ${latestLaunch.conversionOps.offersSent90d}` : "Run launch report"}
+          />
+          <AdminMetricCard
+            label="90D Cash"
+            value={
+              latestLaunch
+                ? formatEuroFromCents(Number(latestLaunch.conversionOps.cashCollected90dCents || "0"))
+                : "€--"
+            }
+            icon={<DollarSign className="w-5 h-5" />}
+            subtitle={latestLaunch ? `Calls booked: ${latestLaunch.conversionOps.callsBooked90d}` : "Run launch report"}
+          />
+          <AdminMetricCard
+            label="Membership Churn (30d)"
+            value={latestLaunch ? `${latestLaunch.conversionOps.churn30dPct}%` : "--"}
+            icon={<Users className="w-5 h-5" />}
+            subtitle={
+              latestLaunch
+                ? `New: ${latestLaunch.conversionOps.newMemberships30d}, Churned: ${latestLaunch.conversionOps.churnedMemberships30d}`
+                : "Run launch report"
+            }
           />
         </div>
 
@@ -292,26 +501,232 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
+          <div className="bg-white border border-stone-200 p-6 rounded-none">
+            <h2 className="font-['Times_New_Roman'] text-xl font-extralight tracking-[0.2em] uppercase text-stone-950 mb-4">
+              Conversion Ops (90D Plan)
+            </h2>
+            {latestLaunch ? (
+              <div className="space-y-2 text-xs text-stone-700">
+                <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+                  <span className="uppercase tracking-[0.12em] text-stone-500">Applications</span>
+                  <span className="font-mono text-[11px]">{latestLaunch.conversionOps.applications90d}</span>
+                </div>
+                <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+                  <span className="uppercase tracking-[0.12em] text-stone-500">Qualified</span>
+                  <span className="font-mono text-[11px]">{latestLaunch.conversionOps.qualified90d}</span>
+                </div>
+                <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+                  <span className="uppercase tracking-[0.12em] text-stone-500">Calls booked</span>
+                  <span className="font-mono text-[11px]">{latestLaunch.conversionOps.callsBooked90d}</span>
+                </div>
+                <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+                  <span className="uppercase tracking-[0.12em] text-stone-500">Offers sent</span>
+                  <span className="font-mono text-[11px]">{latestLaunch.conversionOps.offersSent90d}</span>
+                </div>
+                <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+                  <span className="uppercase tracking-[0.12em] text-stone-500">Closed won</span>
+                  <span className="font-mono text-[11px]">{latestLaunch.conversionOps.closedWon90d}</span>
+                </div>
+                <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+                  <span className="uppercase tracking-[0.12em] text-stone-500">Cash collected</span>
+                  <span className="font-mono text-[11px]">
+                    {formatEuroFromCents(Number(latestLaunch.conversionOps.cashCollected90dCents || "0"))}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+                  <span className="uppercase tracking-[0.12em] text-stone-500">New memberships (30d)</span>
+                  <span className="font-mono text-[11px]">{latestLaunch.conversionOps.newMemberships30d}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="uppercase tracking-[0.12em] text-stone-500">Churn (30d)</span>
+                  <span className="font-mono text-[11px]">{latestLaunch.conversionOps.churn30dPct}%</span>
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-stone-600">Run the launch report to populate this section.</p>
+            )}
+          </div>
+
+          <div className="bg-white border border-stone-200 p-6 rounded-none">
+            <h2 className="font-['Times_New_Roman'] text-xl font-extralight tracking-[0.2em] uppercase text-stone-950 mb-4">
+              ARPU / Churn Weekly Audit
+            </h2>
+            {latestArpu ? (
+              <div className="space-y-2 text-xs text-stone-700">
+                <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+                  <span className="uppercase tracking-[0.12em] text-stone-500">Membership MRR</span>
+                  <span className="font-mono text-[11px]">{formatEuroFromCents(latestArpu.metrics.membershipMrrCents)}</span>
+                </div>
+                <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+                  <span className="uppercase tracking-[0.12em] text-stone-500">Active memberships</span>
+                  <span className="font-mono text-[11px]">{latestArpu.metrics.activeMemberships}</span>
+                </div>
+                <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+                  <span className="uppercase tracking-[0.12em] text-stone-500">ARPU</span>
+                  <span className="font-mono text-[11px]">€{latestArpu.metrics.arpuEuro}</span>
+                </div>
+                <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+                  <span className="uppercase tracking-[0.12em] text-stone-500">Discounted active</span>
+                  <span className="font-mono text-[11px]">
+                    {latestArpu.metrics.discountedMembershipsActive} ({latestArpu.metrics.discountedSharePct}%)
+                  </span>
+                </div>
+                <div className="flex items-center justify-between border-b border-stone-100 pb-2">
+                  <span className="uppercase tracking-[0.12em] text-stone-500">Churn (30d)</span>
+                  <span className="font-mono text-[11px]">{latestArpu.metrics.churn30dPct}%</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="uppercase tracking-[0.12em] text-stone-500">Freeze guard</span>
+                  <span className={`font-mono text-[11px] ${latestArpu.freezeGuard.freezeHolding ? "text-emerald-700" : "text-red-700"}`}>
+                    {latestArpu.freezeGuard.discountedDeltaVsLastWeek >= 0 ? "+" : ""}
+                    {latestArpu.freezeGuard.discountedDeltaVsLastWeek}
+                  </span>
+                </div>
+                <p className="text-[11px] text-stone-500 pt-2">{latestArpu.freezeGuard.note}</p>
+              </div>
+            ) : (
+              <p className="text-xs text-stone-600">Run the ARPU/churn report to populate this section.</p>
+            )}
+          </div>
+        </div>
+
+        <div className="bg-white border border-stone-200 p-6 rounded-none mb-10">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+            <h2 className="font-['Times_New_Roman'] text-xl font-extralight tracking-[0.2em] uppercase text-stone-950">
+              Cohort Delivery Load
+            </h2>
+            <button
+              onClick={runDeliverySnapshotNow}
+              disabled={isRunning.delivery}
+              className="px-4 py-2 border border-stone-900 text-xs uppercase tracking-[0.15em] hover:bg-stone-900 hover:text-white transition-colors disabled:opacity-60 rounded-none"
+            >
+              {isRunning.delivery ? "Refreshing..." : "Refresh Snapshot"}
+            </button>
+          </div>
+
+          {deliveryLatest ? (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+              <AdminMetricCard
+                label="Live Hours (30d)"
+                value={String(deliveryLatest.summary.liveHours30d)}
+                subtitle={`Ratio: ${deliveryLatest.summary.liveRatio30dPct}%`}
+              />
+              <AdminMetricCard
+                label="Async Hours (30d)"
+                value={String(deliveryLatest.summary.asyncHours30d)}
+                subtitle={`Ratio: ${deliveryLatest.summary.asyncRatio30dPct}%`}
+              />
+              <AdminMetricCard
+                label="Total Hours (30d)"
+                value={String(deliveryLatest.summary.totalHours30d)}
+                subtitle="Live + Async"
+              />
+              <AdminMetricCard
+                label="Async Target"
+                value={deliveryLatest.summary.asyncTargetMet ? "On Track" : "Below 60%"}
+                subtitle="Goal: >= 60% async"
+              />
+            </div>
+          ) : (
+            <p className="text-xs text-stone-600 mb-6">No delivery load data yet. Log your first block below.</p>
+          )}
+
+          <form onSubmit={submitDeliveryLog} className="grid grid-cols-1 md:grid-cols-6 gap-3 mb-6">
+            <select
+              value={deliveryForm.mode}
+              onChange={(e) => setDeliveryForm((prev) => ({ ...prev, mode: e.target.value as "live" | "async" }))}
+              className="bg-white border border-stone-300 px-3 py-2 text-sm text-stone-900 focus:outline-none"
+            >
+              <option value="live">Live</option>
+              <option value="async">Async</option>
+            </select>
+            <input
+              type="number"
+              min="0.25"
+              step="0.25"
+              value={deliveryForm.hours}
+              onChange={(e) => setDeliveryForm((prev) => ({ ...prev, hours: e.target.value }))}
+              className="bg-white border border-stone-300 px-3 py-2 text-sm text-stone-900 focus:outline-none"
+              placeholder="Hours"
+            />
+            <input
+              type="date"
+              value={deliveryForm.sessionDate}
+              onChange={(e) => setDeliveryForm((prev) => ({ ...prev, sessionDate: e.target.value }))}
+              className="bg-white border border-stone-300 px-3 py-2 text-sm text-stone-900 focus:outline-none"
+            />
+            <input
+              type="text"
+              value={deliveryForm.cohortLabel}
+              onChange={(e) => setDeliveryForm((prev) => ({ ...prev, cohortLabel: e.target.value }))}
+              className="bg-white border border-stone-300 px-3 py-2 text-sm text-stone-900 focus:outline-none"
+              placeholder="Cohort label (optional)"
+            />
+            <input
+              type="text"
+              value={deliveryForm.notes}
+              onChange={(e) => setDeliveryForm((prev) => ({ ...prev, notes: e.target.value }))}
+              className="bg-white border border-stone-300 px-3 py-2 text-sm text-stone-900 focus:outline-none"
+              placeholder="Notes (optional)"
+            />
+            <button
+              type="submit"
+              disabled={isRunning.delivery}
+              className="border border-stone-900 bg-stone-900 text-white px-3 py-2 text-xs uppercase tracking-[0.15em] hover:bg-stone-800 transition-colors disabled:opacity-60"
+            >
+              Log Block
+            </button>
+          </form>
+
+          {deliveryLatest?.recentEntries?.length ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-[10px] tracking-[0.12em] uppercase text-stone-500 border-b border-stone-200">
+                    <th className="text-left py-2 pr-3">Date</th>
+                    <th className="text-left py-2 px-2">Mode</th>
+                    <th className="text-right py-2 px-2">Hours</th>
+                    <th className="text-left py-2 px-2">Cohort</th>
+                    <th className="text-left py-2 px-2">Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {deliveryLatest.recentEntries.slice(0, 10).map((row) => (
+                    <tr key={row.id} className="border-b border-stone-100 text-stone-700">
+                      <td className="py-2 pr-3 font-mono text-[11px]">{row.sessionDate}</td>
+                      <td className="py-2 px-2 uppercase tracking-[0.08em]">{row.mode}</td>
+                      <td className="py-2 px-2 text-right font-mono text-[11px]">{row.hours}</td>
+                      <td className="py-2 px-2">{row.cohortLabel || "-"}</td>
+                      <td className="py-2 px-2">{row.notes || "-"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+        </div>
+
         <div className="bg-stone-950 text-white p-8 rounded-none text-center">
           <h3 className="font-['Times_New_Roman'] text-lg tracking-[0.15em] uppercase mb-3">
             NEXT ACTION
           </h3>
           <p className="text-sm text-stone-200 mb-6">
-            Use Marketing Health to verify email sequences are delivering. Use this page to track funnel volume,
-            checkout behavior, and activation.
+            Run launch + ARPU/churn weekly reports after each CTA wave, and log cohort delivery blocks daily to keep
+            live hours under control.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
-              href="/admin/marketing"
+              href="/admin/brand-engine-applications"
               className="px-6 py-3 bg-white text-stone-950 text-xs tracking-[0.2em] uppercase hover:bg-stone-200 transition-colors rounded-none"
             >
-              Open Marketing Health
+              Open Launch Queue
             </Link>
             <Link
-              href="/admin/agents"
+              href="/admin/marketing"
               className="px-6 py-3 border border-white text-xs tracking-[0.2em] uppercase hover:bg-white hover:text-stone-950 transition-colors rounded-none"
             >
-              Open Agents
+              Open Marketing Health
             </Link>
           </div>
         </div>

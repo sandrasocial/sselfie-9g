@@ -6,7 +6,7 @@ import Link from "next/link"
 export default function BrandEnginePage() {
   const [showStickyFooter, setShowStickyFooter] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
-  const totalScenes = 6
+  const totalScenes = 9
 
   useEffect(() => {
     const handleScroll = () => {
@@ -92,22 +92,24 @@ export default function BrandEnginePage() {
           <div className="content text-center flex-1 flex flex-col justify-center">
             <span className="label fade-up">Brand Engine Cohort</span>
             <h1 className="hero-title fade-up">
-              Brand Engine Cohort.
+              €15K in 2 months.
               <br />
-              12 women. 4 weeks.
+              200+ paying customers.
               <br />
-              We build it together.
+              Now I&apos;m teaching 12 women how.
             </h1>
-            <p className="description fade-up mx-auto max-w-md">This works.</p>
-            <p className="description fade-up mx-auto max-w-md">Here&apos;s what I do.</p>
-            <p className="description fade-up mx-auto max-w-md">It&apos;s simple.</p>
+            <p className="description fade-up mx-auto max-w-md">
+              Brand Engine Cohort starts March 16. Four weeks. Small group. We build your offer, funnel, and content
+              system together.
+            </p>
+            <p className="description fade-up mx-auto max-w-md">No fluff. Just clarity and execution.</p>
             <div className="fade-up mt-6">
               <button
                 type="button"
                 onClick={() => scrollToScene(1)}
                 className="btn"
               >
-                See Details
+                See How It Works
               </button>
             </div>
           </div>
@@ -135,10 +137,33 @@ export default function BrandEnginePage() {
         <section className="scene section-alt">
           <div className="section-wrap text-center">
             <p className="description fade-up max-w-md mx-auto text-stone-400 italic">
-              &quot;I went from posting when I could to having a system I actually follow.
-              Sandra made this simple.&quot;
+              &quot;I built SSELFIE from €12. Grew to 154K+ followers using nothing but selfies. €15K in revenue with
+              200+ paying customers in just 2 months. No team, no funding, just systems that work.&quot;
             </p>
-            <p className="fade-up text-xs text-stone-500 mt-2">— Lisa, coach</p>
+            <p className="fade-up text-xs text-stone-500 mt-2">— Sandra, The Selfie Queen</p>
+          </div>
+        </section>
+
+        {/* 2.75. WHY SANDRA */}
+        <section className="scene section-dark">
+          <div className="section-wrap text-center">
+            <span className="label fade-up">Why I Built This</span>
+            <h2 className="hero-title fade-up">Let me be really honest.</h2>
+            <div className="description fade-up max-w-xl mx-auto text-left">
+              <p>My 14-year marriage fell apart under financial stress. Constant pressure. No breathing room.</p>
+              <p>I rebuilt from €12.</p>
+              <p>
+                Grew to 154K+ followers across platforms using nothing but selfies and storytelling. Built €15K in
+                revenue with 200+ paying customers in just 2 months.
+              </p>
+              <p>No team. No funding. No pretending to be someone else.</p>
+              <p>AI became my way out.</p>
+              <p>
+                Not because it&apos;s magic — because it handles the repeated work so I can focus on strategy,
+                creativity, and showing up.
+              </p>
+              <p>That&apos;s what I teach in Cohort.</p>
+            </div>
           </div>
         </section>
 
@@ -146,19 +171,20 @@ export default function BrandEnginePage() {
         <section className="scene section-alt">
           <div className="section-wrap text-center">
             <span className="label fade-up">What You Get</span>
-            <h2 className="hero-title fade-up">Here&apos;s what we build, you and me.</h2>
+            <h2 className="hero-title fade-up">Here&apos;s what we build together.</h2>
             <div className="description fade-up max-w-xl mx-auto text-left">
               <p>
-                <strong>Your offer. Your funnel. Your automations.</strong>
+                <strong>Your offer. Your funnel. Your content system.</strong>
               </p>
               <ul className="list">
-                <li>A clear offer people understand fast</li>
-                <li>A simple content system you can keep up with</li>
-                <li>A funnel path from visibility to inquiry</li>
-                <li>Weekly posting structure so you stay consistent</li>
-                <li>Agent support for repeated background tasks</li>
-                <li>A next-step plan you can follow after week four</li>
+                <li>A clear offer people understand fast (no more &quot;I help everyone with everything&quot;)</li>
+                <li>A simple content system you can actually keep up with</li>
+                <li>A funnel path from visibility to inquiry that works</li>
+                <li>Weekly posting structure so you stay consistent without burnout</li>
+                <li>Agent support for repeated background tasks (let AI handle the noise)</li>
+                <li>A next-step plan you can follow after we&apos;re done</li>
               </ul>
+              <p>You don&apos;t need perfect. You need momentum.</p>
             </div>
           </div>
         </section>
@@ -171,10 +197,11 @@ export default function BrandEnginePage() {
             <div className="description fade-up max-w-xl mx-auto text-left">
               <p>You&apos;re ready if:</p>
               <ul className="list">
-                <li>You&apos;re serious about your business, not dabbling</li>
-                <li>You want support, not just another course</li>
-                <li>You&apos;re willing to show up and build this with me</li>
-                <li>You want results in 4 weeks, not 4 months</li>
+                <li>You&apos;re rebuilding (career change, separation, starting over)</li>
+                <li>You&apos;re tired of tool chaos and zero momentum</li>
+                <li>You want €2K-€5K/month breathing room, not &quot;six figures in six weeks&quot;</li>
+                <li>You&apos;re willing to show your face (visibility = wealth)</li>
+                <li>You want a system you can follow, not another course to finish</li>
               </ul>
               <p>If that&apos;s you, apply.</p>
             </div>
@@ -182,23 +209,39 @@ export default function BrandEnginePage() {
         </section>
 
         {/* 4. TIMELINE */}
-        <section className="scene section-dark">
+        <section className="scene section-alt">
           <div className="section-wrap text-center">
             <span className="label fade-up">Timeline</span>
             <h2 className="hero-title fade-up">4 weeks. One clear path.</h2>
             <div className="description fade-up max-w-xl mx-auto text-left">
               <ul className="list">
                 <li>
-                  <strong>Week 1:</strong> Message, offer, direction
+                  <strong>Week 1: Message clarity + offer positioning</strong>
+                  <br />
+                  <span style={{ fontSize: "14px", color: "#a8a29e" }}>
+                    We figure out who you serve and what you sell. No more &quot;I help everyone with everything.&quot;
+                  </span>
                 </li>
                 <li>
-                  <strong>Week 2:</strong> Content system setup
+                  <strong>Week 2: Content system + weekly structure</strong>
+                  <br />
+                  <span style={{ fontSize: "14px", color: "#a8a29e" }}>
+                    We build a posting plan you can actually keep up with. No burnout, no guessing.
+                  </span>
                 </li>
                 <li>
-                  <strong>Week 3:</strong> Funnel and automations
+                  <strong>Week 3: Funnel + automations</strong>
+                  <br />
+                  <span style={{ fontSize: "14px", color: "#a8a29e" }}>
+                    From visibility to inquiry. Clear path for people to buy from you.
+                  </span>
                 </li>
                 <li>
-                  <strong>Week 4:</strong> Launch week and handoff
+                  <strong>Week 4: Launch + handoff</strong>
+                  <br />
+                  <span style={{ fontSize: "14px", color: "#a8a29e" }}>
+                    You go live. I&apos;m with you. You leave with momentum, not more homework.
+                  </span>
                 </li>
               </ul>
               <p>You don&apos;t need perfect. You need consistent.</p>
@@ -207,30 +250,38 @@ export default function BrandEnginePage() {
         </section>
 
         {/* 5. PRICE */}
-        <section className="scene section-alt">
+        <section className="scene section-dark">
           <div className="section-wrap text-center">
             <span className="label fade-up">Price</span>
-            <h2 className="hero-title fade-up">€2,497. 12 spots only. March 16.</h2>
-            <div className="description fade-up max-w-xl mx-auto">
-              <p>Small group by design. I want to work with you directly.</p>
-              <p>No pressure.</p>
-              <p>If you want, we can map your next step.</p>
+            <h2 className="hero-title fade-up">€2,497. 12 spots. March 16.</h2>
+            <div className="description fade-up max-w-xl mx-auto text-left">
+              <p>I know that&apos;s not cheap.</p>
+              <p>But compare it to:</p>
+              <ul className="list" style={{ fontSize: "15px", color: "#a8a29e" }}>
+                <li>€1,200 photoshoots every month (you&apos;ll need more content)</li>
+                <li>€3K for a website (that no one visits without a funnel)</li>
+                <li>6 months guessing alone (still stuck, still inconsistent)</li>
+              </ul>
+              <p>Four weeks. Small group. We build your offer, your funnel, your system. Together.</p>
+              <p>If that feels right, apply.</p>
             </div>
           </div>
         </section>
 
         {/* 6. CTA */}
-        <section className="scene section-dark">
+        <section className="scene section-alt">
           <div className="section-wrap text-center">
             <span className="label fade-up">Your Next Step</span>
             <h2 className="hero-title fade-up">Apply here</h2>
             <div className="description fade-up max-w-xl mx-auto">
               <p>I review every application personally.</p>
-              <p>You&apos;ve got this.</p>
+              <p>If it&apos;s a fit, we&apos;ll talk. If it&apos;s not, I&apos;ll be honest about that too.</p>
+              <p>No pressure. Just clarity.</p>
+              <p>You&apos;ve got this. 💭</p>
             </div>
             <div className="fade-up mt-8">
               <a href="/apply/brand-engine" className="btn">
-                Apply here
+                Apply for Cohort
               </a>
             </div>
           </div>

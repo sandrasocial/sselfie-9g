@@ -113,6 +113,14 @@
       "schedule": "15 8 * * 1"
     },
     {
+      "path": "/api/cron/arpu-churn-weekly",
+      "schedule": "25 8 * * 1"
+    },
+    {
+      "path": "/api/cron/cohort-delivery-load-weekly",
+      "schedule": "30 8 * * 1"
+    },
+    {
       "path": "/api/cron/brand-engine-launch-digest",
       "schedule": "20 8 * * *"
     }

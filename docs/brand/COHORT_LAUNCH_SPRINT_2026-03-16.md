@@ -67,6 +67,9 @@
 ## Reporting and automation
 
 - Vercel cron: `/api/cron/brand-engine-launch-digest` (daily)
+- Vercel cron: `/api/cron/arpu-churn-weekly` (weekly)
+- Vercel cron: `/api/cron/cohort-delivery-load-weekly` (weekly)
 - Output report (local automation): `output/automation/brand-engine-launch-digest-YYYY-MM-DD.md`
+- Output report (local automation): `output/automation/arpu-churn-weekly-YYYY-MM-DD.md`
+- Output report (local automation): `output/automation/cohort-delivery-load-YYYY-MM-DD.md`
 - Admin command center: `/admin/brand-engine-applications`
-

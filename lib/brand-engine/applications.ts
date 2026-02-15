@@ -140,6 +140,68 @@ function normalize(value: string | undefined | null) {
   return String(value || "").trim().toLowerCase()
 }
 
+const SOURCE_CHANNEL_ALIASES: Record<string, string> = {
+  ig: "instagram_dm",
+  ig_dm: "instagram_dm",
+  instagram: "instagram_dm",
+  instagram_direct: "instagram_dm",
+  dm: "instagram_dm",
+  manychat: "manychat_dm",
+  manychat_dm: "manychat_dm",
+  manual: "admin_manual",
+  admin: "admin_manual",
+  quick_add: "admin_manual",
+}
+
+const DM_BRIDGE_SOURCES = new Set(["instagram_dm", "manychat_dm", "admin_manual"])
+
+export function normalizeLeadSourceChannel(sourceChannel?: string | null) {
+  const normalized = normalize(sourceChannel || "unknown")
+  if (!normalized) return "unknown"
+  return SOURCE_CHANNEL_ALIASES[normalized] || normalized
+}
+
+export function isDmBridgeSource(sourceChannel?: string | null) {
+  return DM_BRIDGE_SOURCES.has(normalizeLeadSourceChannel(sourceChannel))
+}
+
+type SourceAwareRoutingInput = {
+  sourceChannel?: string | null
+  routingPath: BrandEngineRoutingPath
+  nextAction: BrandEngineNextAction
+  callRequired: boolean
+  checkoutMode: BrandEngineCheckoutMode
+  checkoutModeReason?: string | null
+}
+
+type SourceAwareRoutingDecision = {
+  routingPath: BrandEngineRoutingPath
+  nextAction: BrandEngineNextAction
+  callRequired: boolean
+  checkoutMode: BrandEngineCheckoutMode
+  checkoutModeReason: string | null
+}
+
+export function enforceSourceAwareRouting(input: SourceAwareRoutingInput): SourceAwareRoutingDecision {
+  if (!isDmBridgeSource(input.sourceChannel)) {
+    return {
+      routingPath: input.routingPath,
+      nextAction: input.nextAction,
+      callRequired: input.callRequired,
+      checkoutMode: input.checkoutMode,
+      checkoutModeReason: input.checkoutModeReason || null,
+    }
+  }
+
+  return {
+    routingPath: "fit_call",
+    nextAction: "book_call",
+    callRequired: true,
+    checkoutMode: "none",
+    checkoutModeReason: "dm_bridge_fit_call_required",
+  }
+}
+
 export function deriveLaunchRoutingDecision(input: RoutingDecisionInput): RoutingDecision {
   const offerType = normalize(input.offerType)
   const readyToInvest = normalize(input.readyToInvest)
@@ -256,12 +318,8 @@ export function resolveLeadSource(sourceChannel?: string, sourceDetail?: string)
   channel: string
   detail: string | null
 } {
-  const channel = (sourceChannel || "unknown").trim().toLowerCase()
+  const channel = normalizeLeadSourceChannel(sourceChannel)
   const detail = sourceDetail?.trim() || null
-
-  if (!channel) {
-    return { channel: "unknown", detail }
-  }
 
   return { channel, detail }
 }

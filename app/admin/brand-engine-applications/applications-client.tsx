@@ -217,6 +217,7 @@ export default function BrandEngineApplicationsClient({ applications }: { applic
     name: "",
     email: "",
     instagramHandle: "",
+    sourceChannel: "admin_manual",
     sourceCampaign: "ig_day1_dm_cohort",
     notes: "",
     offerType: "cohort",
@@ -593,7 +594,7 @@ export default function BrandEngineApplicationsClient({ applications }: { applic
             <span className="text-xs uppercase tracking-[0.12em] text-stone-500">Instagram DM bridge</span>
           </div>
 
-          <form onSubmit={handleQuickAddLead} className="grid grid-cols-1 md:grid-cols-6 gap-3">
+          <form onSubmit={handleQuickAddLead} className="grid grid-cols-1 md:grid-cols-7 gap-3">
             <input
               type="text"
               value={quickLead.name}
@@ -615,6 +616,15 @@ export default function BrandEngineApplicationsClient({ applications }: { applic
               placeholder="@instagram"
               className="bg-white border border-stone-300 px-3 py-2 text-sm text-stone-900 focus:outline-none"
             />
+            <select
+              value={quickLead.sourceChannel}
+              onChange={(e) => setQuickLead((prev) => ({ ...prev, sourceChannel: e.target.value }))}
+              className="bg-white border border-stone-300 px-3 py-2 text-sm text-stone-900 focus:outline-none"
+            >
+              <option value="admin_manual">Manual</option>
+              <option value="instagram_dm">Instagram DM</option>
+              <option value="manychat_dm">ManyChat DM</option>
+            </select>
             <input
               type="text"
               value={quickLead.sourceCampaign}

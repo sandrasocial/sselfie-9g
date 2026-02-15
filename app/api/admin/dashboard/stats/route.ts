@@ -144,6 +144,45 @@ export async function GET() {
       ? Math.round((paidUsers / totalUsers) * 100) 
       : 0
 
+    const conversionOpsResult = await sql`
+      SELECT
+        COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '90 days')::int AS applications_90d,
+        COUNT(*) FILTER (
+          WHERE created_at > NOW() - INTERVAL '90 days'
+            AND (
+              COALESCE(qualified, FALSE) = TRUE
+              OR pipeline_stage IN ('qualified_queue', 'contacted', 'call_booked', 'call_completed', 'offer_sent', 'closed_won')
+            )
+        )::int AS qualified_90d,
+        COUNT(*) FILTER (WHERE call_booked_at > NOW() - INTERVAL '90 days')::int AS calls_booked_90d,
+        COUNT(*) FILTER (WHERE offer_sent_at > NOW() - INTERVAL '90 days')::int AS offers_sent_90d,
+        COUNT(*) FILTER (WHERE closed_at > NOW() - INTERVAL '90 days' AND pipeline_stage = 'closed_won')::int AS closed_won_90d,
+        COALESCE(SUM(cash_collected_cents) FILTER (WHERE closed_at > NOW() - INTERVAL '90 days' AND pipeline_stage = 'closed_won'), 0)::bigint AS cash_90d_cents
+      FROM brand_engine_applications
+    `
+
+    const membershipOpsResult = await sql`
+      WITH membership_subs AS (
+        SELECT *
+        FROM subscriptions s
+        WHERE COALESCE(s.product_type, '') IN ('sselfie_studio_membership', 'brand_studio_membership', 'pro')
+          AND (s.is_test_mode = FALSE OR s.is_test_mode IS NULL)
+      )
+      SELECT
+        COUNT(*) FILTER (WHERE status = 'active')::int AS active_now,
+        COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '30 days')::int AS new_30d,
+        COUNT(*) FILTER (
+          WHERE LOWER(COALESCE(status, '')) IN ('canceled', 'cancelled')
+            AND COALESCE(
+              NULLIF(to_jsonb(membership_subs)->>'canceled_at', '')::timestamptz,
+              NULLIF(to_jsonb(membership_subs)->>'cancelled_at', '')::timestamptz,
+              updated_at,
+              created_at
+            ) > NOW() - INTERVAL '30 days'
+        )::int AS churned_30d
+      FROM membership_subs
+    `
+
     // Log conversion rate details for verification
     console.log(`[Dashboard Stats] Conversion rate: ${paidUsers}/${totalUsers} = ${conversionRate}%`)
     
@@ -219,6 +258,17 @@ export async function GET() {
         mrr: dbMrr,
         activeSubscriptions: dbActiveSubscriptions,
         totalRevenue: dbTotalRevenue,
+      },
+      conversionOps: {
+        applications90d: Number(conversionOpsResult[0]?.applications_90d || 0),
+        qualified90d: Number(conversionOpsResult[0]?.qualified_90d || 0),
+        callsBooked90d: Number(conversionOpsResult[0]?.calls_booked_90d || 0),
+        offersSent90d: Number(conversionOpsResult[0]?.offers_sent_90d || 0),
+        closedWon90d: Number(conversionOpsResult[0]?.closed_won_90d || 0),
+        cashCollected90dCents: Number(conversionOpsResult[0]?.cash_90d_cents || 0),
+        activeMembershipsNow: Number(membershipOpsResult[0]?.active_now || 0),
+        newMemberships30d: Number(membershipOpsResult[0]?.new_30d || 0),
+        churnedMemberships30d: Number(membershipOpsResult[0]?.churned_30d || 0),
       },
     }
 

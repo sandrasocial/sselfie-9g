@@ -47,5 +47,19 @@ export async function ensureAnalyticsSchema(): Promise<void> {
   `
 
   await sql`CREATE INDEX IF NOT EXISTS analytics_reports_type_created_at_idx ON analytics_reports (report_type, created_at DESC);`
-}
 
+  await sql`
+    CREATE TABLE IF NOT EXISTS cohort_delivery_load_logs (
+      id BIGSERIAL PRIMARY KEY,
+      session_date DATE NOT NULL,
+      mode TEXT NOT NULL CHECK (mode IN ('live', 'async')),
+      hours NUMERIC(6,2) NOT NULL CHECK (hours > 0),
+      cohort_label TEXT,
+      notes TEXT,
+      logged_by TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `
+  await sql`CREATE INDEX IF NOT EXISTS cohort_delivery_load_logs_session_idx ON cohort_delivery_load_logs (session_date DESC);`
+  await sql`CREATE INDEX IF NOT EXISTS cohort_delivery_load_logs_mode_idx ON cohort_delivery_load_logs (mode, session_date DESC);`
+}

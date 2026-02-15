@@ -3,6 +3,8 @@ import {
   calculateQualificationScore,
   deriveCheckoutExperienceDecision,
   deriveLaunchRoutingDecision,
+  enforceSourceAwareRouting,
+  normalizeLeadSourceChannel,
   resolveLeadSource,
 } from "@/lib/brand-engine/applications"
 
@@ -55,6 +57,12 @@ describe("brand-engine lead source resolver", () => {
       channel: "unknown",
       detail: null,
     })
+  })
+
+  it("normalizes manychat source aliases", () => {
+    expect(normalizeLeadSourceChannel("manychat")).toBe("manychat_dm")
+    expect(normalizeLeadSourceChannel("instagram_direct")).toBe("instagram_dm")
+    expect(normalizeLeadSourceChannel("manual")).toBe("admin_manual")
   })
 })
 
@@ -147,5 +155,40 @@ describe("brand-engine checkout experience routing", () => {
     })
 
     expect(decision.checkoutMode).toBe("none")
+  })
+})
+
+describe("source-aware routing guardrails", () => {
+  it("forces fit-call routing for manychat leads", () => {
+    const routed = enforceSourceAwareRouting({
+      sourceChannel: "manychat_dm",
+      routingPath: "direct_offer",
+      nextAction: "send_offer",
+      callRequired: false,
+      checkoutMode: "embedded_checkout",
+      checkoutModeReason: "self_serve_web_source",
+    })
+
+    expect(routed.routingPath).toBe("fit_call")
+    expect(routed.nextAction).toBe("book_call")
+    expect(routed.callRequired).toBe(true)
+    expect(routed.checkoutMode).toBe("none")
+    expect(routed.checkoutModeReason).toBe("dm_bridge_fit_call_required")
+  })
+
+  it("keeps web leads on their existing routing", () => {
+    const routed = enforceSourceAwareRouting({
+      sourceChannel: "website",
+      routingPath: "direct_offer",
+      nextAction: "send_offer",
+      callRequired: false,
+      checkoutMode: "embedded_checkout",
+      checkoutModeReason: "self_serve_web_source",
+    })
+
+    expect(routed.routingPath).toBe("direct_offer")
+    expect(routed.nextAction).toBe("send_offer")
+    expect(routed.callRequired).toBe(false)
+    expect(routed.checkoutMode).toBe("embedded_checkout")
   })
 })

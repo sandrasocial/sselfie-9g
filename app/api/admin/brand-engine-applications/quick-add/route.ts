@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
 import {
+  enforceSourceAwareRouting,
   ensureBrandEngineApplicationsSchema,
   expectedOfferValueCents,
+  normalizeLeadSourceChannel,
   resolveLeadSource,
 } from "@/lib/brand-engine/applications"
 import { requireAdmin } from "@/lib/admin-feature-flags"
@@ -22,7 +24,7 @@ export async function POST(req: NextRequest) {
     }
 
     const payload = await req.json()
-    const { name, email, instagramHandle, sourceCampaign, notes, offerType } = payload ?? {}
+    const { name, email, instagramHandle, sourceCampaign, sourceChannel, sourceDetail, notes, offerType } = payload ?? {}
 
     if (!name || typeof name !== "string") {
       return NextResponse.json({ success: false, error: "Name is required." }, { status: 400 })
@@ -43,7 +45,17 @@ export async function POST(req: NextRequest) {
       typeof sourceCampaign === "string" && sourceCampaign.trim().length > 0
         ? sourceCampaign.trim().toLowerCase()
         : "ig_day1_dm_cohort"
-    const source = resolveLeadSource("instagram_dm", handle ? `campaign:${campaign}; handle:${handle}` : `campaign:${campaign}`)
+    const normalizedSourceChannel = normalizeLeadSourceChannel(sourceChannel || "admin_manual")
+    const fallbackDetail = handle ? `campaign:${campaign}; handle:${handle}` : `campaign:${campaign}`
+    const source = resolveLeadSource(normalizedSourceChannel, sourceDetail || fallbackDetail)
+    const sourceAwareRouting = enforceSourceAwareRouting({
+      sourceChannel: source.channel,
+      routingPath: "fit_call",
+      nextAction: "book_call",
+      callRequired: true,
+      checkoutMode: "none",
+      checkoutModeReason: "dm_bridge_fit_call_required",
+    })
 
     const sql = getDb()
     await ensureBrandEngineApplicationsSchema(sql)
@@ -68,6 +80,7 @@ export async function POST(req: NextRequest) {
 
     const dmNoteParts = [
       "[dm-intake]",
+      `[source=${source.channel}]`,
       `campaign=${campaign}`,
       handle ? `instagram=@${handle}` : null,
       notes ? `note=${String(notes).trim()}` : null,
@@ -78,10 +91,11 @@ export async function POST(req: NextRequest) {
       "brand-engine",
       "dm-intake",
       `offer:${normalizedOfferType}`,
-      "source:instagram_dm",
+      `source:${source.channel}`,
       `campaign:${campaign}`,
-      "route:fit_call",
-      "next_action:book_call",
+      `route:${sourceAwareRouting.routingPath}`,
+      `next_action:${sourceAwareRouting.nextAction}`,
+      `checkout:${sourceAwareRouting.checkoutMode}`,
     ]
 
     const website = handle ? `https://instagram.com/${handle}` : null
@@ -136,15 +150,15 @@ export async function POST(req: NextRequest) {
         ${50},
         ${"dm_quick_add"},
         ${"medium"},
-        ${"fit_call"},
-        ${"book_call"},
-        ${true},
+        ${sourceAwareRouting.routingPath},
+        ${sourceAwareRouting.nextAction},
+        ${sourceAwareRouting.callRequired},
         ${source.channel},
         ${source.detail},
         ${JSON.stringify(leadTags)}::jsonb,
         ${expectedOfferValueCents(normalizedOfferType)},
-        ${"none"},
-        ${"non_direct_offer_route"},
+        ${sourceAwareRouting.checkoutMode},
+        ${sourceAwareRouting.checkoutModeReason || "non_direct_offer_route"},
         ${true},
         ${dmNoteParts.join("; ")},
         NOW(),

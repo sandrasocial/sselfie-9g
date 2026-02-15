@@ -33,6 +33,17 @@ interface DashboardStats {
     activeSubscriptions: number
     totalRevenue: number
   }
+  conversionOps?: {
+    applications90d: number
+    qualified90d: number
+    callsBooked90d: number
+    offersSent90d: number
+    closedWon90d: number
+    cashCollected90dCents: number
+    activeMembershipsNow: number
+    newMemberships30d: number
+    churnedMemberships30d: number
+  }
 }
 
 interface AdminError {
@@ -170,6 +181,56 @@ export function AdminDashboard({ userId, userName }: { userId: string; userName:
               icon={<TrendingUp className="w-5 h-5" />}
               source="Stripe Live"
             />
+          </div>
+
+          <div className="bg-white border border-stone-200 p-4 sm:p-6 rounded-none mb-8 sm:mb-12">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm sm:text-base font-['Times_New_Roman'] text-stone-950 tracking-[0.1em] uppercase">
+                Conversion Ops (90D)
+              </h3>
+              <Link
+                href="/admin/analytics"
+                className="text-[10px] sm:text-xs tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-600 hover:text-stone-950 transition-colors"
+              >
+                View →
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-xs text-stone-700">
+              <div>
+                <p className="text-[10px] tracking-[0.12em] uppercase text-stone-500 mb-1">Applications</p>
+                <p className="font-mono text-[11px]">{stats?.conversionOps?.applications90d ?? 0}</p>
+              </div>
+              <div>
+                <p className="text-[10px] tracking-[0.12em] uppercase text-stone-500 mb-1">Qualified</p>
+                <p className="font-mono text-[11px]">{stats?.conversionOps?.qualified90d ?? 0}</p>
+              </div>
+              <div>
+                <p className="text-[10px] tracking-[0.12em] uppercase text-stone-500 mb-1">Calls / Offers</p>
+                <p className="font-mono text-[11px]">
+                  {(stats?.conversionOps?.callsBooked90d ?? 0)}/{(stats?.conversionOps?.offersSent90d ?? 0)}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] tracking-[0.12em] uppercase text-stone-500 mb-1">Closed Won</p>
+                <p className="font-mono text-[11px]">{stats?.conversionOps?.closedWon90d ?? 0}</p>
+              </div>
+              <div>
+                <p className="text-[10px] tracking-[0.12em] uppercase text-stone-500 mb-1">Cash Collected</p>
+                <p className="font-mono text-[11px]">€{Math.round((stats?.conversionOps?.cashCollected90dCents ?? 0) / 100)}</p>
+              </div>
+              <div>
+                <p className="text-[10px] tracking-[0.12em] uppercase text-stone-500 mb-1">Active Members</p>
+                <p className="font-mono text-[11px]">{stats?.conversionOps?.activeMembershipsNow ?? 0}</p>
+              </div>
+              <div>
+                <p className="text-[10px] tracking-[0.12em] uppercase text-stone-500 mb-1">New (30d)</p>
+                <p className="font-mono text-[11px]">{stats?.conversionOps?.newMemberships30d ?? 0}</p>
+              </div>
+              <div>
+                <p className="text-[10px] tracking-[0.12em] uppercase text-stone-500 mb-1">Churned (30d)</p>
+                <p className="font-mono text-[11px]">{stats?.conversionOps?.churnedMemberships30d ?? 0}</p>
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-8 sm:mb-12">

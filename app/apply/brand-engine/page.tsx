@@ -34,14 +34,20 @@ export default function BrandEngineApplicationPage() {
     const utmSource = params.get("utm_source") || ""
     const utmMedium = params.get("utm_medium") || ""
     const utmCampaign = params.get("utm_campaign") || ""
-    const source = params.get("source") || utmSource || "unknown"
-    const sourceDetail = params.get("source_detail") || ""
+    const sourceChannel =
+      params.get("sourceChannel") ||
+      params.get("source_channel") ||
+      params.get("source") ||
+      (utmMedium.toLowerCase() === "manychat" ? "manychat_dm" : "") ||
+      utmSource ||
+      "unknown"
+    const sourceDetail = params.get("sourceDetail") || params.get("source_detail") || ""
     const referrer = typeof document !== "undefined" ? document.referrer || "" : ""
     const utmDetail = [utmSource, utmMedium, utmCampaign].filter(Boolean).join("/")
 
     setFormData((prev) => ({
       ...prev,
-      sourceChannel: source.toLowerCase(),
+      sourceChannel: sourceChannel.toLowerCase(),
       sourceDetail: sourceDetail || utmDetail,
       utmSource,
       utmMedium,

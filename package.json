@@ -21,6 +21,8 @@
     "tag-engagement": "tsx scripts/add-engagement-tags.ts",
     "audit-subscriptions": "tsx scripts/audit-subscription-data.ts",
     "audit-revenue": "tsx scripts/audit-revenue-sources.ts",
+    "arpu-churn-digest": "node scripts/arpu-churn-weekly-digest.mjs",
+    "cohort-delivery-digest": "node scripts/cohort-delivery-load-digest.mjs",
     "product-qa-digest": "tsx scripts/product-qa-digest.ts",
     "product-qa-digest:node": "node scripts/product-qa-digest.mjs",
     "launch-digest": "node scripts/brand-engine-launch-digest.mjs",

@@ -3,8 +3,10 @@ import { getDb } from "@/lib/db"
 import {
   calculateQualificationScore,
   deriveCheckoutExperienceDecision,
+  enforceSourceAwareRouting,
   ensureBrandEngineApplicationsSchema,
   expectedOfferValueCents,
+  normalizeLeadSourceChannel,
   resolveLeadSource,
 } from "@/lib/brand-engine/applications"
 
@@ -31,6 +33,8 @@ export async function POST(req: NextRequest) {
       readyToInvest,
       sourceChannel,
       sourceDetail,
+      source,
+      source_detail,
       utmSource,
       utmMedium,
       utmCampaign,
@@ -71,10 +75,30 @@ export async function POST(req: NextRequest) {
       whyInterested,
     })
 
-    const { channel, detail } = resolveLeadSource(sourceChannel, sourceDetail)
+    const sourceDetailLower = String(sourceDetail || source_detail || "").toLowerCase()
+    const normalizedSourceInput =
+      String(utmMedium || "").toLowerCase() === "manychat" || sourceDetailLower.includes("manychat")
+        ? "manychat_dm"
+        : sourceChannel ||
+          source ||
+          (String(utmSource || "").toLowerCase() === "instagram_dm" ? "instagram_dm" : "")
+
+    const { channel, detail } = resolveLeadSource(
+      normalizeLeadSourceChannel(normalizedSourceInput),
+      sourceDetail || source_detail,
+    )
+
     const checkoutExperience = deriveCheckoutExperienceDecision({
       routingPath: qualification.routingPath,
       sourceChannel: channel,
+    })
+    const sourceAwareRouting = enforceSourceAwareRouting({
+      sourceChannel: channel,
+      routingPath: qualification.routingPath,
+      nextAction: qualification.nextAction,
+      callRequired: qualification.callRequired,
+      checkoutMode: checkoutExperience.checkoutMode,
+      checkoutModeReason: checkoutExperience.reason,
     })
     const normalizedOfferType = typeof offerType === "string" ? offerType.toLowerCase() : "cohort"
     const leadTags = [
@@ -85,11 +109,11 @@ export async function POST(req: NextRequest) {
       utmSource ? `utm_source:${String(utmSource).toLowerCase()}` : null,
       utmMedium ? `utm_medium:${String(utmMedium).toLowerCase()}` : null,
       utmCampaign ? `utm_campaign:${String(utmCampaign).toLowerCase()}` : null,
-      qualification.qualified ? "qualified" : "nurture",
+      sourceAwareRouting.routingPath === "fit_call" ? "qualified" : qualification.qualified ? "qualified" : "nurture",
       `priority:${qualification.priorityTier}`,
-      `route:${qualification.routingPath}`,
-      `next_action:${qualification.nextAction}`,
-      `checkout:${checkoutExperience.checkoutMode}`,
+      `route:${sourceAwareRouting.routingPath}`,
+      `next_action:${sourceAwareRouting.nextAction}`,
+      `checkout:${sourceAwareRouting.checkoutMode}`,
     ].filter(Boolean)
 
     // Check if email already applied
@@ -153,19 +177,19 @@ export async function POST(req: NextRequest) {
         ${readyToInvest},
         ${qualification.qualified},
         ${qualification.qualified ? "pending_review" : "nurture"},
-        ${qualification.pipelineStage},
+        ${sourceAwareRouting.routingPath === "fit_call" ? "qualified_queue" : qualification.pipelineStage},
         ${qualification.score},
         ${qualification.notes},
         ${qualification.priorityTier},
-        ${qualification.routingPath},
-        ${qualification.nextAction},
-        ${qualification.callRequired},
+        ${sourceAwareRouting.routingPath},
+        ${sourceAwareRouting.nextAction},
+        ${sourceAwareRouting.callRequired},
         ${channel},
         ${detail || [utmSource, utmMedium, utmCampaign, referrer].filter(Boolean).join(" | ") || null},
         ${JSON.stringify(leadTags)}::jsonb,
         ${expectedOfferValueCents(normalizedOfferType)},
-        ${checkoutExperience.checkoutMode},
-        ${checkoutExperience.reason},
+        ${sourceAwareRouting.checkoutMode},
+        ${sourceAwareRouting.checkoutModeReason},
         ${true},
         ${`draft_mode=true; referrer=${referrer || "unknown"}`},
         NOW()
@@ -176,14 +200,14 @@ export async function POST(req: NextRequest) {
       success: true,
       qualified: qualification.qualified,
       score: qualification.score,
-      pipelineStage: qualification.pipelineStage,
-      routingPath: qualification.routingPath,
-      nextAction: qualification.nextAction,
-      checkoutMode: checkoutExperience.checkoutMode,
+      pipelineStage: sourceAwareRouting.routingPath === "fit_call" ? "qualified_queue" : qualification.pipelineStage,
+      routingPath: sourceAwareRouting.routingPath,
+      nextAction: sourceAwareRouting.nextAction,
+      checkoutMode: sourceAwareRouting.checkoutMode,
       priorityTier: qualification.priorityTier,
       message: qualification.qualified
-        ? qualification.routingPath === "direct_offer"
-          ? checkoutExperience.checkoutMode === "embedded_checkout"
+        ? sourceAwareRouting.routingPath === "direct_offer"
+          ? sourceAwareRouting.checkoutMode === "embedded_checkout"
             ? "Application received! If it's a fit, I'll send your checkout link within 24 hours."
             : "Application received! If it's a fit, I'll send your payment link within 24 hours."
           : "Application received! If it's a fit, I'll send your booking link within 24 hours."
