@@ -40,6 +40,38 @@ interface PlannerPostState extends PlannerPost {
   assignedAssetUrl?: string
 }
 
+interface GeneratedReelBeat {
+  beat: string
+  script: string
+}
+
+interface GeneratedCarouselSlide {
+  slide: number
+  title: string
+  body: string
+}
+
+interface AssetSuggestion {
+  id: number
+  image_url: string
+  prompt?: string
+}
+
+interface GeneratedPack {
+  caption: string
+  storySequence: string[]
+  carouselOutline: GeneratedCarouselSlide[]
+  reelScript: GeneratedReelBeat[]
+  hashtags: string[]
+  cta: string
+  suggestions: {
+    caption: AssetSuggestion[]
+    story: AssetSuggestion[]
+    carousel: AssetSuggestion[]
+    reel: AssetSuggestion[]
+  }
+}
+
 const STATUS_STYLES: Record<PostStatus, string> = {
   draft: "bg-stone-700/60 text-stone-200",
   ready: "bg-emerald-500/20 text-emerald-200",
@@ -74,6 +106,41 @@ async function copyToClipboard(value: string) {
   }
 }
 
+function tokenize(value: string) {
+  return value
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((token) => token.length > 3)
+}
+
+function suggestAssetsForText(text: string, galleryImages: GalleryImage[], limit = 4): AssetSuggestion[] {
+  if (!galleryImages.length) return []
+  const tokens = tokenize(text)
+
+  const scored = galleryImages.map((image) => {
+    const haystack = `${image.prompt || ""} ${image.content_category || ""}`.toLowerCase()
+    const score = tokens.reduce((total, token) => (haystack.includes(token) ? total + 1 : total), 0)
+    return { image, score }
+  })
+
+  scored.sort((a, b) => b.score - a.score)
+  const selected = scored.slice(0, limit).map((entry) => ({
+    id: entry.image.id,
+    image_url: entry.image.image_url,
+    prompt: entry.image.prompt,
+  }))
+
+  if (selected.every((item, index) => scored[index]?.score === 0)) {
+    return galleryImages.slice(0, limit).map((image) => ({
+      id: image.id,
+      image_url: image.image_url,
+      prompt: image.prompt,
+    }))
+  }
+
+  return selected
+}
+
 export function ContentEnginePlanner({
   initialPosts,
   sourceDocs,
@@ -94,6 +161,14 @@ export function ContentEnginePlanner({
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null)
   const [rewriteState, setRewriteState] = useState<"idle" | "running" | "done" | "error">("idle")
   const [clearState, setClearState] = useState<"idle" | "clearing" | "done" | "error">("idle")
+  const [generateState, setGenerateState] = useState<"idle" | "running" | "done" | "error">("idle")
+  const [packDate, setPackDate] = useState<string>(() => new Date().toISOString().slice(0, 10))
+  const [topicInput, setTopicInput] = useState("")
+  const [brainDumpInput, setBrainDumpInput] = useState("")
+  const [currentContextInput, setCurrentContextInput] = useState("")
+  const [shareGoalInput, setShareGoalInput] = useState("")
+  const [generatedPack, setGeneratedPack] = useState<GeneratedPack | null>(null)
+  const [persistedLoaded, setPersistedLoaded] = useState(false)
   const [selectedDocName, setSelectedDocName] = useState<string>(sourceDocs.find((doc) => doc.found)?.fileName || sourceDocs[0]?.fileName || "")
 
   const selectedPost = useMemo(
@@ -186,6 +261,8 @@ export function ContentEnginePlanner({
         }
       } catch {
         // Keep current in-memory state if persistence load fails.
+      } finally {
+        setPersistedLoaded(true)
       }
     }
 
@@ -197,6 +274,7 @@ export function ContentEnginePlanner({
   }
 
   useEffect(() => {
+    if (!persistedLoaded) return
     if (posts.length === 0) return
 
     const timeout = window.setTimeout(() => {
@@ -204,7 +282,7 @@ export function ContentEnginePlanner({
     }, 900)
 
     return () => window.clearTimeout(timeout)
-  }, [posts])
+  }, [posts, persistedLoaded])
 
   const handleCopy = async () => {
     if (!composerText) return
@@ -271,6 +349,127 @@ export function ContentEnginePlanner({
     } catch {
       setRewriteState("error")
     }
+  }
+
+  const handleGeneratePack = async () => {
+    if (!topicInput.trim()) return
+
+    setGenerateState("running")
+    try {
+      const response = await fetch("/api/admin/content-engine/generate-pack", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          topic: topicInput,
+          brainDump: brainDumpInput,
+          currentContext: currentContextInput,
+          shareGoal: shareGoalInput,
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Generation failed")
+      }
+
+      const data = await response.json()
+      const pack = data?.pack
+      if (!pack) {
+        throw new Error("No pack returned")
+      }
+
+      const captionText = typeof pack.caption === "string" ? pack.caption : ""
+      const storySequence = Array.isArray(pack.storySequence) ? pack.storySequence : []
+      const carouselOutline = Array.isArray(pack.carouselOutline) ? pack.carouselOutline : []
+      const reelScript = Array.isArray(pack.reelScript) ? pack.reelScript : []
+      const hashtags = Array.isArray(pack.hashtags) ? pack.hashtags : []
+      const cta = typeof pack.cta === "string" ? pack.cta : ""
+
+      const suggestions = {
+        caption: suggestAssetsForText(captionText, galleryImages, 4),
+        story: suggestAssetsForText(storySequence.join(" "), galleryImages, 4),
+        carousel: suggestAssetsForText(JSON.stringify(carouselOutline), galleryImages, 4),
+        reel: suggestAssetsForText(JSON.stringify(reelScript), galleryImages, 4),
+      }
+
+      setGeneratedPack({
+        caption: captionText,
+        storySequence,
+        carouselOutline,
+        reelScript,
+        hashtags,
+        cta,
+        suggestions,
+      })
+      setGenerateState("done")
+      window.setTimeout(() => setGenerateState("idle"), 1800)
+    } catch {
+      setGenerateState("error")
+    }
+  }
+
+  const handleAddPackToCalendar = () => {
+    if (!generatedPack) return
+
+    const makeId = () =>
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : `generated-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+
+    const carouselHook =
+      generatedPack.carouselOutline.find((slide) => slide.slide === 1)?.title ||
+      generatedPack.caption.split("\n")[0] ||
+      `Carousel: ${topicInput}`
+    const reelHook = generatedPack.reelScript[0]?.script || `Reel: ${topicInput}`
+    const storyHook = generatedPack.storySequence[0] || `Story sequence: ${topicInput}`
+
+    const sharedHashtags = generatedPack.hashtags.join(" ")
+
+    const newPosts: PlannerPostState[] = [
+      {
+        id: makeId(),
+        dayLabel: packDate,
+        format: "CAROUSEL",
+        pillar: "Educational",
+        hook: carouselHook,
+        cta: generatedPack.cta,
+        productionNotes: `${generatedPack.carouselOutline
+          .map((slide) => `${slide.slide}. ${slide.title}: ${slide.body}`)
+          .join("\n")}\n\nHashtags: ${sharedHashtags}`,
+        postingTime: "08:00",
+        captionTheme: generatedPack.caption,
+        status: "draft",
+        assignedAssetUrl: generatedPack.suggestions.carousel[0]?.image_url,
+      },
+      {
+        id: makeId(),
+        dayLabel: packDate,
+        format: "REEL",
+        pillar: "Story",
+        hook: reelHook,
+        cta: generatedPack.cta,
+        productionNotes: `${generatedPack.reelScript.map((beat) => `${beat.beat}: ${beat.script}`).join("\n")}\n\nHashtags: ${sharedHashtags}`,
+        postingTime: "12:00",
+        captionTheme: generatedPack.caption,
+        status: "draft",
+        assignedAssetUrl: generatedPack.suggestions.reel[0]?.image_url,
+      },
+      {
+        id: makeId(),
+        dayLabel: packDate,
+        format: "STORY",
+        pillar: "Engagement",
+        hook: storyHook,
+        cta: generatedPack.cta,
+        productionNotes: `${generatedPack.storySequence.map((line, index) => `Frame ${index + 1}: ${line}`).join("\n")}\n\nHashtags: ${sharedHashtags}`,
+        postingTime: "18:00",
+        captionTheme: generatedPack.caption,
+        status: "draft",
+        assignedAssetUrl: generatedPack.suggestions.story[0]?.image_url,
+      },
+    ]
+
+    setPosts((prev) => [...newPosts, ...prev])
+    setSelectedPostId(newPosts[0].id)
   }
 
   return (
@@ -343,6 +542,133 @@ export function ContentEnginePlanner({
             </button>
           </div>
         </div>
+      </section>
+
+      <section className="mb-6 rounded-2xl border border-stone-800 bg-[#0b0b0b] p-4 sm:p-6">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="font-['Times_New_Roman'] text-xl uppercase tracking-[0.16em] text-stone-100">Topic + Brain Dump</h2>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-stone-500">Generate complete content pack in your voice</p>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="space-y-3">
+            <label className="block text-[10px] uppercase tracking-[0.2em] text-stone-500">Topic</label>
+            <input
+              value={topicInput}
+              onChange={(event) => setTopicInput(event.target.value)}
+              placeholder="Example: showing up online after divorce"
+              className="w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100"
+            />
+
+            <label className="block text-[10px] uppercase tracking-[0.2em] text-stone-500">Brain dump</label>
+            <textarea
+              value={brainDumpInput}
+              onChange={(event) => setBrainDumpInput(event.target.value)}
+              placeholder="What happened, what you felt, what you learned..."
+              className="h-24 w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100"
+            />
+
+            <label className="block text-[10px] uppercase tracking-[0.2em] text-stone-500">What I have been doing</label>
+            <textarea
+              value={currentContextInput}
+              onChange={(event) => setCurrentContextInput(event.target.value)}
+              placeholder="Recent actions, client work, launches, updates..."
+              className="h-20 w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100"
+            />
+
+            <label className="block text-[10px] uppercase tracking-[0.2em] text-stone-500">What I want to share</label>
+            <textarea
+              value={shareGoalInput}
+              onChange={(event) => setShareGoalInput(event.target.value)}
+              placeholder="The point I want my audience to feel or do next..."
+              className="h-20 w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-sm text-stone-100"
+            />
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={handleGeneratePack}
+                disabled={!topicInput.trim() || generateState === "running"}
+                className="rounded-lg border border-stone-200 bg-stone-100 px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-stone-900 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {generateState === "running"
+                  ? "Generating..."
+                  : generateState === "done"
+                    ? "Pack generated"
+                    : generateState === "error"
+                      ? "Generate failed"
+                      : "Generate content pack"}
+              </button>
+              <input
+                type="date"
+                value={packDate}
+                onChange={(event) => setPackDate(event.target.value)}
+                className="rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-xs text-stone-100"
+              />
+              <button
+                onClick={handleAddPackToCalendar}
+                disabled={!generatedPack}
+                className="rounded-lg border border-sky-400/60 bg-sky-500/10 px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-sky-100 transition hover:bg-sky-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Add to calendar
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="rounded-xl border border-stone-800 bg-stone-950 p-3">
+              <p className="mb-2 text-[10px] uppercase tracking-[0.2em] text-stone-500">Caption</p>
+              <textarea
+                readOnly
+                value={generatedPack ? `${generatedPack.caption}\n\n${generatedPack.hashtags.join(" ")}` : "Generate pack to see caption output."}
+                className="h-24 w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-xs leading-relaxed text-stone-100"
+              />
+            </div>
+            <div className="rounded-xl border border-stone-800 bg-stone-950 p-3">
+              <p className="mb-2 text-[10px] uppercase tracking-[0.2em] text-stone-500">Story Sequence</p>
+              <textarea
+                readOnly
+                value={generatedPack ? generatedPack.storySequence.map((line, index) => `${index + 1}. ${line}`).join("\n") : "Generate pack to see story sequence."}
+                className="h-20 w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-xs leading-relaxed text-stone-100"
+              />
+            </div>
+            <div className="rounded-xl border border-stone-800 bg-stone-950 p-3">
+              <p className="mb-2 text-[10px] uppercase tracking-[0.2em] text-stone-500">Carousel Outline</p>
+              <textarea
+                readOnly
+                value={generatedPack ? generatedPack.carouselOutline.map((slide) => `${slide.slide}. ${slide.title} — ${slide.body}`).join("\n") : "Generate pack to see carousel outline."}
+                className="h-20 w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-xs leading-relaxed text-stone-100"
+              />
+            </div>
+            <div className="rounded-xl border border-stone-800 bg-stone-950 p-3">
+              <p className="mb-2 text-[10px] uppercase tracking-[0.2em] text-stone-500">Reel Script</p>
+              <textarea
+                readOnly
+                value={generatedPack ? generatedPack.reelScript.map((beat) => `${beat.beat}: ${beat.script}`).join("\n") : "Generate pack to see reel script."}
+                className="h-20 w-full rounded-lg border border-stone-700 bg-stone-900 px-3 py-2 text-xs leading-relaxed text-stone-100"
+              />
+            </div>
+          </div>
+        </div>
+
+        {generatedPack ? (
+          <div className="mt-4 grid gap-3 lg:grid-cols-4">
+            {([
+              { key: "caption", label: "Caption assets", items: generatedPack.suggestions.caption },
+              { key: "story", label: "Story assets", items: generatedPack.suggestions.story },
+              { key: "carousel", label: "Carousel assets", items: generatedPack.suggestions.carousel },
+              { key: "reel", label: "Reel assets", items: generatedPack.suggestions.reel },
+            ] as const).map((bucket) => (
+              <div key={bucket.key} className="rounded-xl border border-stone-800 bg-stone-950 p-3">
+                <p className="mb-2 text-[10px] uppercase tracking-[0.2em] text-stone-500">{bucket.label}</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {bucket.items.map((asset) => (
+                    <img key={`${bucket.key}-${asset.id}`} src={asset.image_url} alt={asset.prompt || `${bucket.label} asset`} className="h-16 w-full rounded-md object-cover" />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
       </section>
 
       <section className="mb-6 rounded-2xl border border-stone-800 bg-[#0b0b0b] p-4 sm:p-6">
