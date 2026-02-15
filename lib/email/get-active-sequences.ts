@@ -38,7 +38,7 @@ const SEQUENCE_SEGMENTS: Array<{
   {
     jobName: "welcome-sequence",
     label: "Welcome Sequence",
-    segmentKeys: ["welcomeDay0", "welcomeDay3", "welcomeDay7"],
+    segmentKeys: ["welcomeDay0", "welcomeDay3", "welcomeDay7", "welcomeDay14", "welcomeDay21", "welcomeDay28"],
   },
   {
     jobName: "reactivation-campaigns",

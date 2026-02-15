@@ -3,7 +3,14 @@ import { neon } from "@neondatabase/serverless"
 import { sendEmail } from "@/lib/email/send-email"
 import { createCronLogger } from "@/lib/cron-logger"
 import { logAdminError } from "@/lib/admin-error-log"
-import { generateWelcomeDay0, generateWelcomeDay3, generateWelcomeDay7 } from "@/lib/email/templates/welcome-sequence"
+import {
+  generateWelcomeDay0,
+  generateWelcomeDay3,
+  generateWelcomeDay7,
+  generateWelcomeDay14,
+  generateWelcomeDay21,
+  generateWelcomeDay28,
+} from "@/lib/email/templates/welcome-sequence"
 import { generateBlueprintFollowupDay0Email } from "@/lib/email/templates/blueprint-followup-day-0"
 import { enqueueAndProcessMarketingRun } from "@/lib/email/marketing-runner"
 import { MARKETING_SEGMENTS } from "@/lib/email/config"
@@ -16,7 +23,7 @@ const sql = neon(process.env.DATABASE_URL!)
 
 /**
  * Welcome Sequence Cron Job
- * Sends emails to new paid members on Day 0, Day 3, and Day 7
+ * Sends emails to new paid members on Day 0, Day 3, Day 7, Day 14, Day 21, and Day 28
  * Runs daily at 10 AM UTC
  */
 export async function GET(request: Request) {
@@ -46,6 +53,9 @@ export async function GET(request: Request) {
       day0: { sent: 0, failed: 0 },
       day3: { sent: 0, failed: 0 },
       day7: { sent: 0, failed: 0 },
+      day14: { sent: 0, failed: 0 },
+      day21: { sent: 0, failed: 0 },
+      day28: { sent: 0, failed: 0 },
       freeBlueprintDay0: { found: 0, sent: 0, failed: 0, skipped: 0 },
     }
 
@@ -110,6 +120,63 @@ export async function GET(request: Request) {
         AND el.id IS NULL
       `
 
+      const day14Users = await sql`
+        SELECT DISTINCT u.email, u.display_name as first_name, u.id, u.created_at
+        FROM users u
+        INNER JOIN subscriptions s ON u.id = s.user_id::varchar
+        LEFT JOIN email_logs el
+          ON el.user_email = u.email
+         AND el.email_type = 'welcome-day-14'
+         AND (
+           el.status IN ('sent', 'delivered')
+           OR (el.status = 'queued' AND el.sent_at > NOW() - INTERVAL '2 hours')
+         )
+        WHERE u.created_at <= NOW() - INTERVAL '14 days'
+        AND u.created_at > NOW() - INTERVAL '28 days'
+        AND s.status = 'active'
+        AND s.product_type IN ('sselfie_studio_membership', 'brand_studio_membership')
+        AND s.is_test_mode = false
+        AND el.id IS NULL
+      `
+
+      const day21Users = await sql`
+        SELECT DISTINCT u.email, u.display_name as first_name, u.id, u.created_at
+        FROM users u
+        INNER JOIN subscriptions s ON u.id = s.user_id::varchar
+        LEFT JOIN email_logs el
+          ON el.user_email = u.email
+         AND el.email_type = 'welcome-day-21'
+         AND (
+           el.status IN ('sent', 'delivered')
+           OR (el.status = 'queued' AND el.sent_at > NOW() - INTERVAL '2 hours')
+         )
+        WHERE u.created_at <= NOW() - INTERVAL '21 days'
+        AND u.created_at > NOW() - INTERVAL '35 days'
+        AND s.status = 'active'
+        AND s.product_type IN ('sselfie_studio_membership', 'brand_studio_membership')
+        AND s.is_test_mode = false
+        AND el.id IS NULL
+      `
+
+      const day28Users = await sql`
+        SELECT DISTINCT u.email, u.display_name as first_name, u.id, u.created_at
+        FROM users u
+        INNER JOIN subscriptions s ON u.id = s.user_id::varchar
+        LEFT JOIN email_logs el
+          ON el.user_email = u.email
+         AND el.email_type = 'welcome-day-28'
+         AND (
+           el.status IN ('sent', 'delivered')
+           OR (el.status = 'queued' AND el.sent_at > NOW() - INTERVAL '2 hours')
+         )
+        WHERE u.created_at <= NOW() - INTERVAL '28 days'
+        AND u.created_at > NOW() - INTERVAL '42 days'
+        AND s.status = 'active'
+        AND s.product_type IN ('sselfie_studio_membership', 'brand_studio_membership')
+        AND s.is_test_mode = false
+        AND el.id IS NULL
+      `
+
       // Get or create campaign records for tracking
       const getCampaignId = async (campaignType: string) => {
         const existing = await sql`
@@ -133,6 +200,9 @@ export async function GET(request: Request) {
       const day0CampaignId = await getCampaignId("welcome-day-0")
       const day3CampaignId = await getCampaignId("welcome-day-3")
       const day7CampaignId = await getCampaignId("welcome-day-7")
+      const day14CampaignId = await getCampaignId("welcome-day-14")
+      const day21CampaignId = await getCampaignId("welcome-day-21")
+      const day28CampaignId = await getCampaignId("welcome-day-28")
 
       // Send Day 0 emails (paid members only)
       if (day0Users.length > 0) {
@@ -247,6 +317,120 @@ export async function GET(request: Request) {
         }
       }
 
+      // Send Day 14 emails
+      if (day14Users.length > 0) {
+        try {
+          const segmentId = MARKETING_SEGMENTS.welcomeDay14 || MARKETING_SEGMENTS.welcomeDay7
+          if (!segmentId) {
+            throw new Error("RESEND_SEGMENT_WELCOME_DAY_14 (or fallback WELCOME_DAY_7) not configured")
+          }
+
+          const contacts = day14Users.map((user: any) => ({
+            email: user.email,
+            firstName: user.first_name,
+          }))
+
+          const emailContent = generateWelcomeDay14({
+            firstName: FIRST_NAME_PLACEHOLDER,
+            campaignId: day14CampaignId,
+          })
+
+          await enqueueAndProcessMarketingRun({
+            sequenceKey: "welcome-day-14",
+            emailType: "welcome-day-14",
+            tagKey: "sequence_welcome_day_14",
+            segmentId,
+            campaignKey: "welcome-day-14",
+            subject: emailContent.subject,
+            html: emailContent.html,
+            text: emailContent.text,
+            campaignId: day14CampaignId,
+            recipients: contacts,
+          })
+
+          results.day14.sent = day14Users.length
+        } catch (error) {
+          console.error("[Welcome Sequence] Failed to send Day 14 broadcast:", error)
+          results.day14.failed = day14Users.length
+        }
+      }
+
+      // Send Day 21 emails
+      if (day21Users.length > 0) {
+        try {
+          const segmentId = MARKETING_SEGMENTS.welcomeDay21 || MARKETING_SEGMENTS.welcomeDay7
+          if (!segmentId) {
+            throw new Error("RESEND_SEGMENT_WELCOME_DAY_21 (or fallback WELCOME_DAY_7) not configured")
+          }
+
+          const contacts = day21Users.map((user: any) => ({
+            email: user.email,
+            firstName: user.first_name,
+          }))
+
+          const emailContent = generateWelcomeDay21({
+            firstName: FIRST_NAME_PLACEHOLDER,
+            campaignId: day21CampaignId,
+          })
+
+          await enqueueAndProcessMarketingRun({
+            sequenceKey: "welcome-day-21",
+            emailType: "welcome-day-21",
+            tagKey: "sequence_welcome_day_21",
+            segmentId,
+            campaignKey: "welcome-day-21",
+            subject: emailContent.subject,
+            html: emailContent.html,
+            text: emailContent.text,
+            campaignId: day21CampaignId,
+            recipients: contacts,
+          })
+
+          results.day21.sent = day21Users.length
+        } catch (error) {
+          console.error("[Welcome Sequence] Failed to send Day 21 broadcast:", error)
+          results.day21.failed = day21Users.length
+        }
+      }
+
+      // Send Day 28 emails
+      if (day28Users.length > 0) {
+        try {
+          const segmentId = MARKETING_SEGMENTS.welcomeDay28 || MARKETING_SEGMENTS.welcomeDay7
+          if (!segmentId) {
+            throw new Error("RESEND_SEGMENT_WELCOME_DAY_28 (or fallback WELCOME_DAY_7) not configured")
+          }
+
+          const contacts = day28Users.map((user: any) => ({
+            email: user.email,
+            firstName: user.first_name,
+          }))
+
+          const emailContent = generateWelcomeDay28({
+            firstName: FIRST_NAME_PLACEHOLDER,
+            campaignId: day28CampaignId,
+          })
+
+          await enqueueAndProcessMarketingRun({
+            sequenceKey: "welcome-day-28",
+            emailType: "welcome-day-28",
+            tagKey: "sequence_welcome_day_28",
+            segmentId,
+            campaignKey: "welcome-day-28",
+            subject: emailContent.subject,
+            html: emailContent.html,
+            text: emailContent.text,
+            campaignId: day28CampaignId,
+            recipients: contacts,
+          })
+
+          results.day28.sent = day28Users.length
+        } catch (error) {
+          console.error("[Welcome Sequence] Failed to send Day 28 broadcast:", error)
+          results.day28.failed = day28Users.length
+        }
+      }
+
       // Send Day 0 emails for FREE blueprint users (no active subscription, no paid blueprint)
       const hasIsPaidColumn = await sql`
         SELECT column_name
@@ -350,8 +534,22 @@ export async function GET(request: Request) {
 
       console.log("[Welcome Sequence] Results:", results)
 
-      const totalSent = results.day0.sent + results.day3.sent + results.day7.sent + results.freeBlueprintDay0.sent
-      const totalFailed = results.day0.failed + results.day3.failed + results.day7.failed + results.freeBlueprintDay0.failed
+      const totalSent =
+        results.day0.sent +
+        results.day3.sent +
+        results.day7.sent +
+        results.day14.sent +
+        results.day21.sent +
+        results.day28.sent +
+        results.freeBlueprintDay0.sent
+      const totalFailed =
+        results.day0.failed +
+        results.day3.failed +
+        results.day7.failed +
+        results.day14.failed +
+        results.day21.failed +
+        results.day28.failed +
+        results.freeBlueprintDay0.failed
 
       await cronLogger.success({
         day0Sent: results.day0.sent,
@@ -360,6 +558,12 @@ export async function GET(request: Request) {
         day3Failed: results.day3.failed,
         day7Sent: results.day7.sent,
         day7Failed: results.day7.failed,
+        day14Sent: results.day14.sent,
+        day14Failed: results.day14.failed,
+        day21Sent: results.day21.sent,
+        day21Failed: results.day21.failed,
+        day28Sent: results.day28.sent,
+        day28Failed: results.day28.failed,
         freeBlueprintDay0Sent: results.freeBlueprintDay0.sent,
         freeBlueprintDay0Failed: results.freeBlueprintDay0.failed,
         totalSent,

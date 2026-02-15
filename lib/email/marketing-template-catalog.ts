@@ -2,6 +2,9 @@ import {
   generateWelcomeDay0,
   generateWelcomeDay3,
   generateWelcomeDay7,
+  generateWelcomeDay14,
+  generateWelcomeDay21,
+  generateWelcomeDay28,
 } from "@/lib/email/templates/welcome-sequence"
 import { generateNurtureDay1Email } from "@/lib/email/templates/nurture-day-1"
 import { generateNurtureDay3Email } from "@/lib/email/templates/nurture-day-3"
@@ -81,6 +84,24 @@ export const MARKETING_TEMPLATE_CATALOG: MarketingTemplateDefinition[] = [
     label: "Welcome Day 7",
     description: "New user follow-up (day 7)",
     getDefault: () => generateWelcomeDay7({ firstName: FIRST_NAME_PLACEHOLDER, campaignId: 0 }),
+  },
+  {
+    emailType: "welcome-day-14",
+    label: "Welcome Day 14",
+    description: "New user follow-up (day 14)",
+    getDefault: () => generateWelcomeDay14({ firstName: FIRST_NAME_PLACEHOLDER, campaignId: 0 }),
+  },
+  {
+    emailType: "welcome-day-21",
+    label: "Welcome Day 21",
+    description: "New user follow-up (day 21)",
+    getDefault: () => generateWelcomeDay21({ firstName: FIRST_NAME_PLACEHOLDER, campaignId: 0 }),
+  },
+  {
+    emailType: "welcome-day-28",
+    label: "Welcome Day 28",
+    description: "New user follow-up (day 28)",
+    getDefault: () => generateWelcomeDay28({ firstName: FIRST_NAME_PLACEHOLDER, campaignId: 0 }),
   },
   {
     emailType: "nurture-day-1",

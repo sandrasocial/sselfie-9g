@@ -10,6 +10,9 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
 export interface WelcomeSequenceParams {
   firstName?: string
   campaignId?: number
+  creditsRemaining?: number
+  creditsUsed?: number
+  photosGenerated?: number
 }
 
 /**
@@ -398,4 +401,178 @@ SSELFIE Studio - Where Visibility Meets Financial Freedom
 Unsubscribe: {{{RESEND_UNSUBSCRIBE_URL}}}`
 
   return { html, text, subject: "One week in - you're crushing it! 🎯" }
+}
+
+function buildLifecycleEmail(params: {
+  firstName?: string
+  subject: string
+  preheader: string
+  headline: string
+  intro: string[]
+  bullets?: string[]
+  ctaLabel?: string
+  closing?: string
+  ps?: string
+}) {
+  const greeting = params.firstName && params.firstName !== "friend" ? `Hey ${params.firstName},` : "Hey,"
+  const ctaLabel = params.ctaLabel || "Open Studio"
+  const closing = params.closing || "No stress. I'm here if you need me."
+  const ps = params.ps || "If you get stuck, reply and I'll guide you."
+
+  const introHtml = params.intro
+    .map(
+      (line) =>
+        `<p style="margin: 0 0 14px; font-size: 16px; line-height: 1.6; color: #1c1917;">${line}</p>`,
+    )
+    .join("")
+
+  const bulletsHtml =
+    params.bullets && params.bullets.length > 0
+      ? `<ul style="margin: 0 0 20px; padding-left: 20px; color: #1c1917; font-size: 16px; line-height: 1.8;">
+${params.bullets.map((line) => `<li style="margin-bottom: 10px;">${line}</li>`).join("")}
+</ul>`
+      : ""
+
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${params.subject}</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; background-color: #fafaf9;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; overflow: hidden;">
+          <tr>
+            <td style="background-color: #0c0a09; padding: 34px 24px; text-align: center;">
+              <h1 style="margin: 0; font-family: 'Times New Roman', serif; font-size: 30px; font-weight: 200; letter-spacing: 0.3em; color: #fafaf9; text-transform: uppercase;">
+                S S E L F I E
+              </h1>
+              <p style="margin: 10px 0 0; font-size: 12px; color: #d6d3d1;">${params.preheader}</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 34px 30px;">
+              <p style="margin: 0 0 14px; font-size: 16px; line-height: 1.6; color: #1c1917;">${greeting}</p>
+              <h2 style="margin: 0 0 16px; font-size: 22px; font-family: 'Times New Roman', serif; font-weight: 400; color: #1c1917;">${params.headline}</h2>
+              ${introHtml}
+              ${bulletsHtml}
+              <p style="margin: 0 0 22px; font-size: 16px; line-height: 1.6; color: #1c1917;"><strong>${closing}</strong></p>
+              <div style="margin: 24px 0; text-align: center;">
+                <a href="${SITE_URL}/studio" style="display: inline-block; padding: 14px 28px; background-color: #1c1917; color: #fafaf9; text-decoration: none; font-weight: 500; font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 8px;">
+                  ${ctaLabel} →
+                </a>
+              </div>
+              <p style="margin: 26px 0 0; padding-top: 18px; border-top: 1px solid #e7e5e4; font-size: 15px; line-height: 1.6; color: #57534e;">
+                <strong>P.S.</strong> ${ps}
+              </p>
+              <p style="margin: 20px 0 0; font-size: 16px; color: #1c1917;">
+                XoXo Sandra
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 24px; background-color: #f5f5f4; border-top: 1px solid #e7e5e4; text-align: center;">
+              <p style="margin: 0 0 8px; font-size: 12px; color: #78716c;">SSELFIE Studio</p>
+              <p style="margin: 0; font-size: 12px; color: #78716c;">
+                <a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color: #78716c; text-decoration: underline;">Unsubscribe</a>
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`
+
+  const bulletsText =
+    params.bullets && params.bullets.length > 0 ? `${params.bullets.map((line) => `- ${line}`).join("\n")}\n\n` : ""
+
+  const text = `${greeting}
+
+${params.headline}
+
+${params.intro.join("\n\n")}
+
+${bulletsText}${closing}
+
+${ctaLabel} →: ${SITE_URL}/studio
+
+P.S. ${ps}
+
+XoXo Sandra
+
+SSELFIE Studio
+Unsubscribe: {{{RESEND_UNSUBSCRIBE_URL}}}`
+
+  return { html, text, subject: params.subject }
+}
+
+export function generateWelcomeDay14(params: WelcomeSequenceParams = {}) {
+  const firstName = params.firstName
+  return buildLifecycleEmail({
+    firstName,
+    subject: "Quick check: have you used your credits this week?",
+    preheader: "Week 2 check-in",
+    headline: "You don't need more tools. You need your next step.",
+    intro: [
+      "This works when you keep it simple.",
+      "Open Studio and create one post today. That's enough to keep momentum.",
+    ],
+    bullets: [
+      "Pick one idea.",
+      "Generate one image.",
+      "Post it and move on.",
+    ],
+    ctaLabel: "Create one post",
+    closing: "You've got this.",
+    ps: "If you want, reply with STUCK and I'll send one quick prompt to use today.",
+  })
+}
+
+export function generateWelcomeDay21(params: WelcomeSequenceParams = {}) {
+  const firstName = params.firstName
+  return buildLifecycleEmail({
+    firstName,
+    subject: "Week 3: one quick win for your visibility",
+    preheader: "Week 3 momentum",
+    headline: "Here's what I'd do next.",
+    intro: [
+      "Use one selfie and build a 3-post mini sequence.",
+      "Your face is your best marketing tool. Keep showing up.",
+    ],
+    bullets: [
+      "Post 1: your story.",
+      "Post 2: a client or personal insight.",
+      "Post 3: your offer and clear CTA.",
+    ],
+    ctaLabel: "Plan your next 3 posts",
+    closing: "No pressure. Keep it simple and consistent.",
+    ps: "If you want, I can help you pick the 3 post ideas. Just reply 3-POSTS.",
+  })
+}
+
+export function generateWelcomeDay28(params: WelcomeSequenceParams = {}) {
+  const firstName = params.firstName
+  return buildLifecycleEmail({
+    firstName,
+    subject: "Month 1 check-in: stay consistent and keep building",
+    preheader: "Month 1 recap",
+    headline: "This is where consistency starts to pay off.",
+    intro: [
+      "Most people stop right before things click.",
+      "You're still here. Keep going with one clear action today.",
+    ],
+    bullets: [
+      "Open Studio.",
+      "Generate one strong image.",
+      "Share it this week.",
+    ],
+    ctaLabel: "Keep building",
+    closing: "This works. One step at a time.",
+    ps: "Need a quick reset plan? Reply RESET and I'll send a simple 7-day focus plan.",
+  })
 }
