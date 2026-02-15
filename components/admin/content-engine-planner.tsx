@@ -144,6 +144,7 @@ export function ContentEnginePlanner() {
   const [calendarDate, setCalendarDate] = useState(() => new Date().toISOString().slice(0, 10))
 
   const [selectedAssetUrl, setSelectedAssetUrl] = useState<string | undefined>(undefined)
+  const [selectedCalendarPostId, setSelectedCalendarPostId] = useState("")
   const [draft, setDraft] = useState<DraftResult | null>(null)
 
   const [workspaceState, setWorkspaceState] = useState<"idle" | "loading" | "saving" | "saved" | "error">("loading")
@@ -152,6 +153,10 @@ export function ContentEnginePlanner() {
 
   const draftText = useMemo(() => (draft ? buildDraftDisplay(draftType, draft) : ""), [draft, draftType])
   const suggestedAssets = useMemo(() => suggestAssets(draftText, galleryImages, 6), [draftText, galleryImages])
+  const selectedCalendarPost = useMemo(
+    () => posts.find((post) => post.id === selectedCalendarPostId) || posts[0],
+    [posts, selectedCalendarPostId],
+  )
 
   const loadWorkspace = async () => {
     setWorkspaceState("loading")
@@ -165,7 +170,9 @@ export function ContentEnginePlanner() {
       const workspaceData = await workspaceRes.json()
       const workspace = workspaceData?.workspace
 
-      setPosts(Array.isArray(workspace?.posts) ? workspace.posts : [])
+      const loadedPosts = Array.isArray(workspace?.posts) ? workspace.posts : []
+      setPosts(loadedPosts)
+      setSelectedCalendarPostId(loadedPosts[0]?.id || "")
       setBrainEntries(Array.isArray(workspace?.brainEntries) ? workspace.brainEntries : [])
 
       if (galleryRes.ok) {
@@ -263,6 +270,7 @@ export function ContentEnginePlanner() {
     const newPost = draftToPost(draftType, draft, calendarDate, selectedAssetUrl)
     const nextPosts = [newPost, ...posts]
     setPosts(nextPosts)
+    setSelectedCalendarPostId(newPost.id)
     await saveWorkspace(nextPosts, brainEntries)
   }
 
@@ -275,6 +283,7 @@ export function ContentEnginePlanner() {
       const response = await fetch("/api/admin/content-engine/workspace", { method: "DELETE" })
       if (!response.ok) throw new Error("clear failed")
       setPosts([])
+      setSelectedCalendarPostId("")
       setBrainEntries([])
       setDraft(null)
       setWorkspaceState("saved")
@@ -458,17 +467,48 @@ export function ContentEnginePlanner() {
 
       <section className="rounded-2xl border border-stone-800 bg-[#0c0c0c] p-5">
         <h2 className="font-['Times_New_Roman'] text-xl uppercase tracking-[0.14em] text-stone-100">Calendar Queue</h2>
+        {selectedCalendarPost ? (
+          <div className="mt-4 rounded-2xl border border-stone-700 bg-stone-950 p-4">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-stone-500">
+              Instagram preview · {selectedCalendarPost.dayLabel} · {selectedCalendarPost.format}
+            </p>
+            <div className="mx-auto mt-3 max-w-sm rounded-3xl border border-stone-700 bg-black p-3">
+              <div className="mb-3 flex items-center gap-3">
+                <div className="h-8 w-8 rounded-full bg-stone-700" />
+                <div>
+                  <p className="text-xs font-medium text-stone-100">selfiequeensandra</p>
+                  <p className="text-[10px] text-stone-500">Draft preview</p>
+                </div>
+              </div>
+              {selectedCalendarPost.assignedAssetUrl ? (
+                <img src={selectedCalendarPost.assignedAssetUrl} alt="Post preview" className="h-72 w-full rounded-xl object-cover" />
+              ) : (
+                <div className="flex h-72 items-center justify-center rounded-xl bg-stone-900 text-xs text-stone-500">
+                  No image selected
+                </div>
+              )}
+              <p className="mt-3 text-xs leading-relaxed text-stone-200">{selectedCalendarPost.captionTheme || selectedCalendarPost.productionNotes}</p>
+              <p className="mt-2 text-xs text-stone-400">{selectedCalendarPost.cta}</p>
+            </div>
+          </div>
+        ) : null}
         <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {posts.length === 0 ? (
             <p className="text-sm text-stone-400">No calendar entries yet.</p>
           ) : (
             posts.map((post) => (
-              <article key={post.id} className="rounded-lg border border-stone-800 bg-stone-950 p-3">
+              <button
+                key={post.id}
+                onClick={() => setSelectedCalendarPostId(post.id)}
+                className={`rounded-lg bg-stone-950 p-3 text-left ${
+                  selectedCalendarPost?.id === post.id ? "border border-stone-200" : "border border-stone-800"
+                }`}
+              >
                 <p className="text-[10px] uppercase tracking-[0.2em] text-stone-500">{post.dayLabel} · {post.format}</p>
                 <p className="mt-2 text-sm text-stone-100">{post.hook}</p>
                 {post.assignedAssetUrl ? <img src={post.assignedAssetUrl} alt="Assigned" className="mt-3 h-24 w-full rounded-md object-cover" /> : null}
                 <p className="mt-2 text-xs text-stone-400">{post.cta}</p>
-              </article>
+              </button>
             ))
           )}
         </div>
