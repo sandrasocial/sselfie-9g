@@ -11,6 +11,7 @@ import { MARKETING_SEGMENTS } from "@/lib/email/config"
 const sql = neon(process.env.DATABASE_URL!)
 
 const FIRST_NAME_PLACEHOLDER = "{{{FIRST_NAME|friend}}}"
+const REENGAGEMENT_INACTIVITY_DAYS = Number(process.env.REENGAGEMENT_INACTIVITY_DAYS || 14)
 
 /**
  * Re-Engagement Campaigns - Resend Broadcasts (Marketing)
@@ -48,7 +49,8 @@ export async function GET(request: Request) {
       errors: [] as Array<{ email: string; day: number; error: string }>,
     }
 
-    // Day 0: Find users who haven't been active in 30+ days and haven't received Day 0 email
+    // Day 0: Find users who haven't been active in the configured inactivity window
+    // and avoid overlap with recent welcome lifecycle emails.
     const day0Users = await sql`
       SELECT DISTINCT u.email, u.display_name as first_name, u.id
       FROM users u
@@ -57,13 +59,18 @@ export async function GET(request: Request) {
         AND el_day0.email_type = 'reengagement-day-0'
         AND (
           el_day0.status IN ('sent', 'delivered')
-          OR (el_day0.status = 'queued' AND el_day0.sent_at > NOW() - INTERVAL '2 hours')
-        )
+           OR (el_day0.status = 'queued' AND el_day0.sent_at > NOW() - INTERVAL '2 hours')
+         )
+      LEFT JOIN email_logs el_welcome_overlap ON el_welcome_overlap.user_email = u.email
+        AND el_welcome_overlap.email_type IN ('welcome-day-14', 'welcome-day-21', 'welcome-day-28')
+        AND el_welcome_overlap.status IN ('sent', 'delivered')
+        AND el_welcome_overlap.sent_at > NOW() - INTERVAL '14 days'
       WHERE s.status = 'active'
       AND s.product_type IN ('sselfie_studio_membership', 'brand_studio_membership')
       AND s.is_test_mode = false
-      AND (u.last_login_at < NOW() - INTERVAL '30 days' OR u.last_login_at IS NULL)
+      AND (u.last_login_at < NOW() - ${REENGAGEMENT_INACTIVITY_DAYS} * INTERVAL '1 day' OR u.last_login_at IS NULL)
       AND el_day0.id IS NULL
+      AND el_welcome_overlap.id IS NULL
       
     `
 
