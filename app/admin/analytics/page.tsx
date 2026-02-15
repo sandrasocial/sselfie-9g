@@ -4,6 +4,7 @@ import Link from "next/link"
 import { DollarSign, Users, Mail, Instagram } from "lucide-react"
 import { AdminNav } from "@/components/admin/admin-nav"
 import { AdminMetricCard } from "@/components/admin/shared"
+import { getSafeLaunchConversionOps, type LaunchConversionOps } from "@/lib/analytics/launch-report"
 import { useEffect, useMemo, useState, type FormEvent } from "react"
 
 type FunnelReport = {
@@ -36,18 +37,7 @@ type CohortRow = {
 }
 
 type LaunchReport = {
-  conversionOps: {
-    applications90d: number
-    qualified90d: number
-    callsBooked90d: number
-    offersSent90d: number
-    closedWon90d: number
-    cashCollected90dCents: string
-    newMemberships30d: number
-    churnedMemberships30d: number
-    churn30dPct: number
-    activeMembershipsNow: number
-  }
+  conversionOps: LaunchConversionOps
 }
 
 type ArpuChurnReport = {
@@ -175,8 +165,9 @@ export default function AnalyticsPage() {
   const latestLaunch = useMemo(() => {
     const row = launchReports[0]
     if (!row?.payload) return null
-    return row.payload as LaunchReport
+    return row.payload as Partial<LaunchReport>
   }, [launchReports])
+  const latestLaunchOps = useMemo(() => getSafeLaunchConversionOps(latestLaunch), [latestLaunch])
 
   const latestArpu = useMemo(() => {
     const row = arpuReports[0]
@@ -397,33 +388,33 @@ export default function AnalyticsPage() {
           />
           <AdminMetricCard
             label="90D Applications"
-            value={latestLaunch ? String(latestLaunch.conversionOps.applications90d) : "--"}
+            value={latestLaunch ? String(latestLaunchOps.applications90d) : "--"}
             icon={<Users className="w-5 h-5" />}
-            subtitle={latestLaunch ? `Qualified: ${latestLaunch.conversionOps.qualified90d}` : "Run launch report"}
+            subtitle={latestLaunch ? `Qualified: ${latestLaunchOps.qualified90d}` : "Run launch report"}
           />
           <AdminMetricCard
             label="90D Closed Won"
-            value={latestLaunch ? String(latestLaunch.conversionOps.closedWon90d) : "--"}
+            value={latestLaunch ? String(latestLaunchOps.closedWon90d) : "--"}
             icon={<Users className="w-5 h-5" />}
-            subtitle={latestLaunch ? `Offers sent: ${latestLaunch.conversionOps.offersSent90d}` : "Run launch report"}
+            subtitle={latestLaunch ? `Offers sent: ${latestLaunchOps.offersSent90d}` : "Run launch report"}
           />
           <AdminMetricCard
             label="90D Cash"
             value={
               latestLaunch
-                ? formatEuroFromCents(Number(latestLaunch.conversionOps.cashCollected90dCents || "0"))
+                ? formatEuroFromCents(Number(latestLaunchOps.cashCollected90dCents || "0"))
                 : "€--"
             }
             icon={<DollarSign className="w-5 h-5" />}
-            subtitle={latestLaunch ? `Calls booked: ${latestLaunch.conversionOps.callsBooked90d}` : "Run launch report"}
+            subtitle={latestLaunch ? `Calls booked: ${latestLaunchOps.callsBooked90d}` : "Run launch report"}
           />
           <AdminMetricCard
             label="Membership Churn (30d)"
-            value={latestLaunch ? `${latestLaunch.conversionOps.churn30dPct}%` : "--"}
+            value={latestLaunch ? `${latestLaunchOps.churn30dPct}%` : "--"}
             icon={<Users className="w-5 h-5" />}
             subtitle={
               latestLaunch
-                ? `New: ${latestLaunch.conversionOps.newMemberships30d}, Churned: ${latestLaunch.conversionOps.churnedMemberships30d}`
+                ? `New: ${latestLaunchOps.newMemberships30d}, Churned: ${latestLaunchOps.churnedMemberships30d}`
                 : "Run launch report"
             }
           />
@@ -510,37 +501,37 @@ export default function AnalyticsPage() {
               <div className="space-y-2 text-xs text-stone-700">
                 <div className="flex items-center justify-between border-b border-stone-100 pb-2">
                   <span className="uppercase tracking-[0.12em] text-stone-500">Applications</span>
-                  <span className="font-mono text-[11px]">{latestLaunch.conversionOps.applications90d}</span>
+                  <span className="font-mono text-[11px]">{latestLaunchOps.applications90d}</span>
                 </div>
                 <div className="flex items-center justify-between border-b border-stone-100 pb-2">
                   <span className="uppercase tracking-[0.12em] text-stone-500">Qualified</span>
-                  <span className="font-mono text-[11px]">{latestLaunch.conversionOps.qualified90d}</span>
+                  <span className="font-mono text-[11px]">{latestLaunchOps.qualified90d}</span>
                 </div>
                 <div className="flex items-center justify-between border-b border-stone-100 pb-2">
                   <span className="uppercase tracking-[0.12em] text-stone-500">Calls booked</span>
-                  <span className="font-mono text-[11px]">{latestLaunch.conversionOps.callsBooked90d}</span>
+                  <span className="font-mono text-[11px]">{latestLaunchOps.callsBooked90d}</span>
                 </div>
                 <div className="flex items-center justify-between border-b border-stone-100 pb-2">
                   <span className="uppercase tracking-[0.12em] text-stone-500">Offers sent</span>
-                  <span className="font-mono text-[11px]">{latestLaunch.conversionOps.offersSent90d}</span>
+                  <span className="font-mono text-[11px]">{latestLaunchOps.offersSent90d}</span>
                 </div>
                 <div className="flex items-center justify-between border-b border-stone-100 pb-2">
                   <span className="uppercase tracking-[0.12em] text-stone-500">Closed won</span>
-                  <span className="font-mono text-[11px]">{latestLaunch.conversionOps.closedWon90d}</span>
+                  <span className="font-mono text-[11px]">{latestLaunchOps.closedWon90d}</span>
                 </div>
                 <div className="flex items-center justify-between border-b border-stone-100 pb-2">
                   <span className="uppercase tracking-[0.12em] text-stone-500">Cash collected</span>
                   <span className="font-mono text-[11px]">
-                    {formatEuroFromCents(Number(latestLaunch.conversionOps.cashCollected90dCents || "0"))}
+                    {formatEuroFromCents(Number(latestLaunchOps.cashCollected90dCents || "0"))}
                   </span>
                 </div>
                 <div className="flex items-center justify-between border-b border-stone-100 pb-2">
                   <span className="uppercase tracking-[0.12em] text-stone-500">New memberships (30d)</span>
-                  <span className="font-mono text-[11px]">{latestLaunch.conversionOps.newMemberships30d}</span>
+                  <span className="font-mono text-[11px]">{latestLaunchOps.newMemberships30d}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="uppercase tracking-[0.12em] text-stone-500">Churn (30d)</span>
-                  <span className="font-mono text-[11px]">{latestLaunch.conversionOps.churn30dPct}%</span>
+                  <span className="font-mono text-[11px]">{latestLaunchOps.churn30dPct}%</span>
                 </div>
               </div>
             ) : (

@@ -1,6 +1,7 @@
 import { getStripe } from "@/lib/stripe"
 import { getDBRevenueMetrics } from "@/lib/revenue/db-revenue-metrics"
 import { CACHE_TTL, getCache, setCache } from "@/lib/cache"
+import { calculateSubscriptionAmount } from "@/lib/revenue/subscription-amount"
 
 export interface SingleSourceRevenueMetrics {
   mrr: number
@@ -18,31 +19,6 @@ export interface SingleSourceRevenueMetrics {
 }
 
 const CACHE_KEY = "admin:revenue:single-source"
-
-function calculateSubscriptionAmount(subscription: any): number {
-  const item = subscription.items?.data?.[0]
-  const price = item?.price
-  if (!price?.recurring) {
-    return 0
-  }
-
-  const amount = price.unit_amount || 0
-  const interval = price.recurring.interval
-
-  if (interval === "month") {
-    return amount / 100
-  }
-  if (interval === "year") {
-    return amount / 100 / 12
-  }
-  if (interval === "week") {
-    return (amount / 100) * 4.33
-  }
-  if (interval === "day") {
-    return (amount / 100) * 30
-  }
-  return 0
-}
 
 async function listAllSubscriptions(params: Record<string, any>) {
   const stripe = getStripe()
