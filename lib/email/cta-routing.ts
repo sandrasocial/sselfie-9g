@@ -28,6 +28,12 @@ export interface CTARoutingParams {
    * Product type for checkout
    */
   productType?: 'membership' | 'one-time'
+
+  /**
+   * Relative buying intent for no-account users.
+   * Used only when productType is not explicitly set.
+   */
+  intentLevel?: 'hot' | 'warm' | 'cold'
   
   /**
    * Optional promo code
@@ -39,7 +45,7 @@ export interface CTARoutingParams {
  * Generate appropriate CTA URL based on user account status
  */
 export function getCTALink(params: CTARoutingParams): string {
-  const { userType, campaignName, campaignId, productType, promoCode } = params
+  const { userType, campaignName, campaignId, productType, promoCode, intentLevel } = params
 
   // Account holders can go to studio or checkout
   if (userType === 'has_account') {
@@ -54,7 +60,12 @@ export function getCTALink(params: CTARoutingParams): string {
 
   // Non-account holders MUST go to landing page (homepage with pricing)
   // Landing page will handle signup flow
-  return getLandingPageLink(campaignName, campaignId, productType, promoCode)
+  const resolvedProductType = productType ?? getDefaultNoAccountProductType(intentLevel)
+  return getLandingPageLink(campaignName, campaignId, resolvedProductType, promoCode)
+}
+
+export function getDefaultNoAccountProductType(intentLevel: CTARoutingParams["intentLevel"] = "cold"): 'membership' | 'one-time' {
+  return intentLevel === "hot" ? "membership" : "one-time"
 }
 
 /**
@@ -172,5 +183,4 @@ export function getUserTypeFromSequence(sequenceType: string): 'has_account' | '
   console.warn(`[CTA Routing] Unknown sequence type: ${sequenceType}, defaulting to no_account`)
   return 'no_account'
 }
-
 
