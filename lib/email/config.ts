@@ -43,6 +43,7 @@ export const MARKETING_SEGMENTS = {
   welcomeDay14: readNormalizedEnv("RESEND_SEGMENT_WELCOME_DAY_14"),
   welcomeDay21: readNormalizedEnv("RESEND_SEGMENT_WELCOME_DAY_21"),
   welcomeDay28: readNormalizedEnv("RESEND_SEGMENT_WELCOME_DAY_28"),
+  monthlyUsageRecap: readNormalizedEnv("RESEND_SEGMENT_MONTHLY_USAGE_RECAP"),
   onboardingDay0: readNormalizedEnv("RESEND_SEGMENT_ONBOARDING_DAY_0"),
   onboardingDay2: readNormalizedEnv("RESEND_SEGMENT_ONBOARDING_DAY_2"),
   onboardingDay7: readNormalizedEnv("RESEND_SEGMENT_ONBOARDING_DAY_7"),

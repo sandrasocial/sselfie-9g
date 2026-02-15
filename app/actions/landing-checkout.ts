@@ -5,8 +5,7 @@ import { getProductById } from "@/lib/products"
 import { neon } from "@neondatabase/serverless"
 import type Stripe from "stripe"
 import { assertStripePricingConfig } from "@/lib/stripe/validate-pricing-config" // Declare the Stripe variable
-
-const ENABLE_BETA_DISCOUNT = false
+import { getMembershipPromoBlockReason } from "@/lib/stripe/membership-promo-policy"
 
 export async function createLandingCheckoutSession(productId: string, promoCode?: string, customerEmail?: string | null) {
   // FIX B3: Validate pricing configuration on first use
@@ -22,6 +21,7 @@ export async function createLandingCheckoutSession(productId: string, promoCode?
 
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai"
   const isSubscription = product.type === "sselfie_studio_membership"
+  const allowManualPromotionCodes = !isSubscription
 
   const actualPrice = product.priceInCents
 
@@ -110,19 +110,33 @@ export async function createLandingCheckoutSession(productId: string, promoCode?
   }
 
   // Validate promo code if provided (consistent with startCreditCheckoutSession)
-  let validatedCoupon = null
+  let validatedCoupon: string | null = null
   if (promoCode) {
     try {
       const coupon = await stripe.coupons.retrieve(promoCode.toUpperCase())
       if (coupon.valid) {
+        if (isSubscription) {
+          const blockReason = getMembershipPromoBlockReason({
+            duration: coupon.duration,
+            percentOff: coupon.percent_off,
+          })
+          if (blockReason) {
+            throw new Error(blockReason)
+          }
+        }
         validatedCoupon = coupon.id
         console.log(`[v0] ✅ Valid promo code found: ${promoCode.toUpperCase()}, applying discount`)
       } else {
         console.log(`[v0] ⚠️ Promo code ${promoCode.toUpperCase()} is not valid`)
       }
-    } catch (error) {
-      // Invalid coupon code - will allow promotion codes in UI instead
-      console.log(`[v0] ⚠️ Promo code ${promoCode?.toUpperCase()} not found, allowing promotion codes in UI`)
+    } catch (error: any) {
+      if (error instanceof Error && error.message.includes("no longer available")) {
+        throw error
+      }
+      // Invalid coupon code - only allow manual promotion codes for non-subscription products
+      console.log(
+        `[v0] ⚠️ Promo code ${promoCode?.toUpperCase()} not found, ${allowManualPromotionCodes ? "allowing" : "blocking"} manual promotion codes`,
+      )
     }
   }
 
@@ -145,7 +159,7 @@ export async function createLandingCheckoutSession(productId: string, promoCode?
         },
       ],
     }),
-    ...(!validatedCoupon && {
+    ...(!validatedCoupon && allowManualPromotionCodes && {
       allow_promotion_codes: true,
     }),
     ...(isSubscription && {

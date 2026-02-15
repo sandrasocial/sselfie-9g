@@ -42,6 +42,7 @@ import {
 import { generateUpsellDay10Email } from "@/lib/email/templates/upsell-day-10"
 import { generateUpsellFreebieMembershipEmail } from "@/lib/email/templates/upsell-freebie-membership"
 import { generateWinBackOfferEmail } from "@/lib/email/templates/win-back-offer"
+import { generateMonthlyUsageRecapEmail } from "@/lib/email/templates/monthly-usage-recap"
 import { 
   generatePreviewReadyEmail,
   generateEngagementCheckEmail,
@@ -102,6 +103,12 @@ export const MARKETING_TEMPLATE_CATALOG: MarketingTemplateDefinition[] = [
     label: "Welcome Day 28",
     description: "New user follow-up (day 28)",
     getDefault: () => generateWelcomeDay28({ firstName: FIRST_NAME_PLACEHOLDER, campaignId: 0 }),
+  },
+  {
+    emailType: "monthly-usage-recap",
+    label: "Monthly Usage Recap",
+    description: "Active member monthly usage summary",
+    getDefault: () => generateMonthlyUsageRecapEmail({ firstName: FIRST_NAME_PLACEHOLDER }),
   },
   {
     emailType: "nurture-day-1",

@@ -41,6 +41,11 @@ const SEQUENCE_SEGMENTS: Array<{
     segmentKeys: ["welcomeDay0", "welcomeDay3", "welcomeDay7", "welcomeDay14", "welcomeDay21", "welcomeDay28"],
   },
   {
+    jobName: "monthly-usage-recap",
+    label: "Monthly Usage Recap",
+    segmentKeys: ["monthlyUsageRecap"],
+  },
+  {
     jobName: "reactivation-campaigns",
     label: "Reactivation Campaigns",
     segmentKeys: [

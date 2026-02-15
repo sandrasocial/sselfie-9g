@@ -6,6 +6,7 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 import { getProductById } from "@/lib/products"
 import { neon } from "@neondatabase/serverless"
 import type Stripe from "stripe"
+import { getMembershipPromoBlockReason } from "@/lib/stripe/membership-promo-policy"
 
 export async function createUpgradeCheckoutSession(
   promoCode?: string | null
@@ -144,6 +145,17 @@ export async function createUpgradeCheckoutSession(
         const promoCodeObj = promotionCodes.data[0]
         // Check if promotion code is still valid
         if (promoCodeObj.active && (!promoCodeObj.max_redemptions || promoCodeObj.times_redeemed < promoCodeObj.max_redemptions)) {
+          const promoCoupon =
+            typeof promoCodeObj.coupon === "string"
+              ? await stripe.coupons.retrieve(promoCodeObj.coupon)
+              : promoCodeObj.coupon
+          const blockReason = getMembershipPromoBlockReason({
+            duration: promoCoupon.duration,
+            percentOff: promoCoupon.percent_off,
+          })
+          if (blockReason) {
+            throw new Error(blockReason)
+          }
           validatedPromoCode = promoCodeObj.id
           console.log(`[v0] ✅ Valid promotion code found: ${codeUpper} -> ${promoCodeObj.id}`)
         } else {
@@ -151,6 +163,9 @@ export async function createUpgradeCheckoutSession(
         }
       }
     } catch (error: any) {
+      if (error instanceof Error && error.message.includes("no longer available")) {
+        throw error
+      }
       console.log(`[v0] Promotion code lookup failed for ${codeUpper}: ${error.message}`)
     }
     
@@ -161,6 +176,13 @@ export async function createUpgradeCheckoutSession(
         console.log(`[v0] Coupon retrieved: ${coupon.id}, valid: ${coupon.valid}, percent_off: ${coupon.percent_off}, duration: ${coupon.duration}`)
         
         if (coupon.valid) {
+          const blockReason = getMembershipPromoBlockReason({
+            duration: coupon.duration,
+            percentOff: coupon.percent_off,
+          })
+          if (blockReason) {
+            throw new Error(blockReason)
+          }
           // Check additional restrictions
           const now = Math.floor(Date.now() / 1000)
           const isExpired = coupon.redeem_by && coupon.redeem_by < now
@@ -178,6 +200,9 @@ export async function createUpgradeCheckoutSession(
           console.log(`[v0] ⚠️ Coupon ${codeUpper} is not valid`)
         }
       } catch (error: any) {
+        if (error instanceof Error && error.message.includes("no longer available")) {
+          throw error
+        }
         console.log(`[v0] Code ${codeUpper} not found as coupon: ${error.message}`)
       }
     }
@@ -227,9 +252,6 @@ export async function createUpgradeCheckoutSession(
   } else if (validatedCoupon) {
     sessionConfig.discounts = [{ coupon: validatedCoupon }]
     console.log(`[v0] Applying coupon: ${validatedCoupon}`)
-  } else {
-    // Only allow promotion codes if no discount is pre-applied
-    sessionConfig.allow_promotion_codes = true
   }
   
   try {
@@ -247,4 +269,3 @@ export async function createUpgradeCheckoutSession(
     throw error
   }
 }
-
