@@ -79,7 +79,7 @@ Implementation:
 2. Ensure sequence mutual exclusion to avoid overlaps.
 
 Files:
-- `/Users/MD760HA/sselfie-9g/app/api/cron/reactivation-campaigns/route.ts`
+- `/Users/MD760HA/sselfie-9g/app/api/cron/reengagement-campaigns/route.ts`
 - `/Users/MD760HA/sselfie-9g/lib/email/get-active-sequences.ts`
 - `/Users/MD760HA/sselfie-9g/lib/email/segmentation.ts`
 
@@ -156,4 +156,3 @@ Files touched: [Absolute paths + reason]
 Outstanding issues: [Open errors or KPI gaps]
 Next steps: [Immediate next execution steps]
 ```
-
