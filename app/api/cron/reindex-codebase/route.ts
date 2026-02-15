@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server"
 import { createCronLogger } from "@/lib/cron-logger"
-import { exec } from "child_process"
-import { promisify } from "util"
+import { runCodebaseReindex } from "@/lib/ai/codebase-indexer"
 
-const execAsync = promisify(exec)
+export const maxDuration = 300
 
 /**
  * Cron Job: Re-index Codebase
@@ -54,36 +53,15 @@ export async function GET(request: Request) {
     }
 
     console.log("[Reindex Codebase] Starting weekly re-indexing...")
-
-    // Run indexing script
     const scriptStartTime = Date.now()
-    const { stdout, stderr } = await execAsync("npm run index-codebase", {
-      cwd: process.cwd(),
-      env: {
-        ...process.env,
-        HOME: process.env.HOME || "/tmp",
-        TMPDIR: process.env.TMPDIR || "/tmp",
-        npm_config_cache: process.env.npm_config_cache || "/tmp/.npm",
-      },
-    })
+    const reindexStats = await runCodebaseReindex({ rootDir: process.cwd() })
     const scriptDuration = ((Date.now() - scriptStartTime) / 1000).toFixed(2)
 
-    // Parse output to extract stats (accounting for [Index] prefix)
-    const indexedMatch = stdout.match(/\[Index\] Files indexed: (\d+)/)
-    const skippedMatch = stdout.match(/\[Index\] Files skipped: (\d+)/)
-    const errorsMatch = stdout.match(/\[Index\] Errors: (\d+)/)
-    const durationMatch = stdout.match(/\[Index\] Duration: ([\d.]+)s/)
-
     const stats = {
-      filesIndexed: indexedMatch ? parseInt(indexedMatch[1], 10) : 0,
-      filesSkipped: skippedMatch ? parseInt(skippedMatch[1], 10) : 0,
-      errors: errorsMatch ? parseInt(errorsMatch[1], 10) : 0,
-      scriptDuration: durationMatch ? `${durationMatch[1]}s` : `${scriptDuration}s`,
-    }
-
-    if (stderr && !stderr.includes("UPSTASH_SEARCH_REST_URL")) {
-      // Only warn about stderr if it's not the expected env var error
-      console.warn("[Reindex Codebase] stderr:", stderr.substring(0, 500))
+      filesIndexed: reindexStats.indexed,
+      filesSkipped: reindexStats.skipped,
+      errors: reindexStats.errors,
+      scriptDuration: `${scriptDuration}s`,
     }
 
     await cronLogger.success(stats)

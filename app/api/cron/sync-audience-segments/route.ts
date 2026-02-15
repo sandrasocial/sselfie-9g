@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server"
 import { getAllResendContacts, runSegmentationForEmails } from "@/lib/audience/segment-sync"
+import { toSegmentSyncEmailLogEntry } from "@/lib/audience/segment-sync-log"
 import { syncMarketingContacts } from "@/lib/email/marketing-sender"
 import { createCronLogger } from "@/lib/cron-logger"
 import { neon } from "@neondatabase/serverless"
 
 const sql = neon(process.env.DATABASE_URL!)
+export const maxDuration = 300
 
 /**
  * Cron Job Route for Periodic Audience Segment Sync
@@ -91,17 +93,24 @@ export async function GET(request: Request) {
         results.processed++
 
         // Log to email_logs
+        const logEntry = toSegmentSyncEmailLogEntry({
+          email: result.email,
+          tagsUpdated: result.tagsUpdated,
+          error: result.error,
+        })
         try {
           await sql`
             INSERT INTO email_logs (
               user_email,
               email_type,
               status,
+              error_message,
               sent_at
             ) VALUES (
-              ${result.email},
+              ${logEntry.email},
               'segment_sync_cron',
-              ${result.tagsUpdated ? 'success' : 'failed'},
+              ${logEntry.status},
+              ${logEntry.errorMessage},
               NOW()
             )
           `
