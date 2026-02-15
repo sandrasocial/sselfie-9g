@@ -3,6 +3,7 @@ import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { neon } from "@neondatabase/serverless"
 import { generateText } from "ai"
+import { SANDRA_BRAND_DNA, compactJournalContext, hasPainAndDesireSignals } from "@/lib/content-engine/brand-dna"
 
 const sql = neon(process.env.DATABASE_URL!)
 const ADMIN_EMAIL = "ssa@ssasocial.com"
@@ -14,6 +15,15 @@ interface JournalContext {
   wins?: string | null
   weekly_goals?: string | null
   future_self_vision?: string | null
+}
+
+interface GeneratedPack {
+  caption: string
+  storySequence: string[]
+  carouselOutline: Array<{ slide: number; title: string; body: string }>
+  reelScript: Array<{ beat: string; script: string }>
+  hashtags: string[]
+  cta: string
 }
 
 async function requireAdmin() {
@@ -56,6 +66,27 @@ async function getLatestJournalContext(userId: string): Promise<JournalContext |
   return result[0] as JournalContext
 }
 
+function parseGeneratedPack(rawText: string): GeneratedPack {
+  const cleaned = rawText.trim().replace(/^```json\s*/i, "").replace(/```$/, "")
+  const parsed = JSON.parse(cleaned) as {
+    caption?: string
+    storySequence?: string[]
+    carouselOutline?: Array<{ slide: number; title: string; body: string }>
+    reelScript?: Array<{ beat: string; script: string }>
+    hashtags?: string[]
+    cta?: string
+  }
+
+  return {
+    caption: typeof parsed.caption === "string" ? parsed.caption : "",
+    storySequence: Array.isArray(parsed.storySequence) ? parsed.storySequence.slice(0, 8) : [],
+    carouselOutline: Array.isArray(parsed.carouselOutline) ? parsed.carouselOutline.slice(0, 10) : [],
+    reelScript: Array.isArray(parsed.reelScript) ? parsed.reelScript.slice(0, 8) : [],
+    hashtags: Array.isArray(parsed.hashtags) ? parsed.hashtags.slice(0, 20) : [],
+    cta: typeof parsed.cta === "string" ? parsed.cta : "",
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const auth = await requireAdmin()
@@ -78,34 +109,35 @@ export async function POST(request: Request) {
     }
 
     const journal = await getLatestJournalContext(auth.userId)
-
-    const journalContext = journal
-      ? `
-Latest journal context:
-- Features built: ${journal.features_built || ""}
-- Personal story: ${journal.personal_story || ""}
-- Struggles: ${journal.struggles || ""}
-- Wins: ${journal.wins || ""}
-- Weekly goals: ${journal.weekly_goals || ""}
-- Future vision: ${journal.future_self_vision || ""}
-`
-      : "\nNo journal context found. Keep voice practical and human.\n"
+    const compactJournal = compactJournalContext({
+      featuresBuilt: journal?.features_built,
+      personalStory: journal?.personal_story,
+      struggles: journal?.struggles,
+      wins: journal?.wins,
+      weeklyGoals: journal?.weekly_goals,
+      futureVision: journal?.future_self_vision,
+    })
 
     const prompt = `You are Sandra's in-app content engine. Create one complete social content pack from this input.
 
-Brand voice requirements:
-- Warm, real, clear, encouraging, actionable
-- Short sentences, no jargon, no fake hype
-- Talk to one person directly
-- No corporate tone
-- No banned words: unlock, game-changer, level up, transform, elevate, synergy
+Brand DNA (compact):
+- Voice traits: ${SANDRA_BRAND_DNA.voice.traits.join(", ")}
+- Sentence style: ${SANDRA_BRAND_DNA.voice.sentenceStyle}
+- Preferred phrases: ${SANDRA_BRAND_DNA.voice.preferredPhrases.join(" | ")}
+- Banned words: ${SANDRA_BRAND_DNA.voice.bannedWords.join(", ")}
+- Origin story beats: ${SANDRA_BRAND_DNA.originStoryBeats.join(" | ")}
+- Audience: ${SANDRA_BRAND_DNA.audience.primary}
+- Audience pains: ${SANDRA_BRAND_DNA.audience.pains.join(" | ")}
+- Audience desires: ${SANDRA_BRAND_DNA.audience.desires.join(" | ")}
+- Story sequence: ${SANDRA_BRAND_DNA.storytellingFramework.sequence.join(" -> ")}
+- Required elements: ${SANDRA_BRAND_DNA.storytellingFramework.requiredElements.join(" | ")}
 
 Input:
 - Topic: ${topic}
 - Brain dump: ${brainDump}
 - Current context: ${currentContext}
 - What she wants to share: ${shareGoal}
-${journalContext}
+- Compact journal context: ${JSON.stringify(compactJournal)}
 
 Output strict JSON only, no markdown:
 {
@@ -130,30 +162,28 @@ Rules:
 - carouselOutline should have 6-8 slides total
 - reelScript should feel shootable with iPhone
 - hashtags should be 8-14, relevant and non-spammy
-- cta should be specific and low-pressure`
+- cta should be specific and low-pressure
+- Include at least one audience pain and one audience desire signal in caption or storySequence
+- Do not use banned words`
 
     const { text } = await generateText({
       model: "anthropic/claude-sonnet-4-20250514",
       prompt,
     })
 
-    const cleaned = text.trim().replace(/^```json\s*/i, "").replace(/```$/, "")
-    const parsed = JSON.parse(cleaned) as {
-      caption?: string
-      storySequence?: string[]
-      carouselOutline?: Array<{ slide: number; title: string; body: string }>
-      reelScript?: Array<{ beat: string; script: string }>
-      hashtags?: string[]
-      cta?: string
-    }
+    let pack = parseGeneratedPack(text)
 
-    const pack = {
-      caption: typeof parsed.caption === "string" ? parsed.caption : "",
-      storySequence: Array.isArray(parsed.storySequence) ? parsed.storySequence.slice(0, 8) : [],
-      carouselOutline: Array.isArray(parsed.carouselOutline) ? parsed.carouselOutline.slice(0, 10) : [],
-      reelScript: Array.isArray(parsed.reelScript) ? parsed.reelScript.slice(0, 8) : [],
-      hashtags: Array.isArray(parsed.hashtags) ? parsed.hashtags.slice(0, 20) : [],
-      cta: typeof parsed.cta === "string" ? parsed.cta : "",
+    const combinedNarrative = `${pack.caption} ${pack.storySequence.join(" ")}`
+    const needsRepair = !hasPainAndDesireSignals(combinedNarrative, SANDRA_BRAND_DNA)
+
+    if (needsRepair) {
+      const repairPrompt = `Improve this generated pack so it clearly includes one audience pain and one audience desire signal while keeping Sandra's voice.\n\nAudience pains: ${SANDRA_BRAND_DNA.audience.pains.join(" | ")}\nAudience desires: ${SANDRA_BRAND_DNA.audience.desires.join(" | ")}\nBanned words: ${SANDRA_BRAND_DNA.voice.bannedWords.join(", ")}\n\nCurrent pack JSON:\n${JSON.stringify(pack)}\n\nReturn strict JSON only with the same shape.`
+
+      const repair = await generateText({
+        model: "anthropic/claude-sonnet-4-20250514",
+        prompt: repairPrompt,
+      })
+      pack = parseGeneratedPack(repair.text)
     }
 
     return NextResponse.json({ pack })
