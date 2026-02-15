@@ -118,3 +118,29 @@ Legend: A = Accountable, R = Responsible, C = Consulted, I = Informed, X = Not a
 ## Immediate prerequisite from Sandra
 
 Complete the `MyNotes` intake checklist so agents can align to your true voice before copy automation is enabled.
+
+## Survival Overlay (2026-02-15 to 2026-02-22)
+
+This overlay takes priority over lower-impact optimizations.
+No more than 3 active priorities at once.
+
+### P1: Churn intervention
+
+1. Close Day 7 to Day 30 lifecycle gap with Day 14, 21, 28 touchpoints.
+2. Add monthly usage recap.
+3. Keep outbound in draft-only approval.
+
+### P2: Free-to-paid pathway split
+
+1. Route high-intent free users to membership.
+2. Route cold/new free users to Starter first.
+3. Upsell Starter to membership after first success event.
+
+### P3: Early inactivity recovery
+
+1. Trigger reactivation intervention earlier (14-day window).
+2. Prevent sequence overlap conflicts.
+3. Watch failure rates daily before scaling volume.
+
+Execution reference:
+- `docs/SURVIVAL_TO_GROWTH_EXECUTION_PLAN_2026-02-15.md`

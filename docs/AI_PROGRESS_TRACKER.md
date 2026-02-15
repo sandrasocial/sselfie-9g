@@ -33,6 +33,11 @@
 | V-01 | Voice | Ingest MyNotes and extract canonical voice/style rules | Sandra + Codex + Claude | In Review | Intake complete with approved canonical rules | 2026-02-14 | `docs/MYNOTES_VOICE_STYLE_INTAKE.md`, `docs/brand/VOICE_BIBLE.md`, `docs/brand/ORIGIN_STORY_LONGFORM.md` | Medium | Sandra approves canonical docs |
 | V-02 | Voice | Build brand voice QA rubric and scoring gate | Codex + Claude | Done | All outbound drafts scored pre-send | 2026-02-20 | `docs/brand/VOICE_BIBLE.md`, `docs/brand/DO_DONT.md`, `docs/brand/MESSAGING_PILLARS.md`, `app/brand-engine/page.tsx`, `app/apply/brand-engine/page.tsx` | Low | Keep draft-only approval gate active |
 | V-03 | Voice | Enable draft-only outbound for launch period | Stella-Ops + Sandra | Done | 100% outbound launch copy human-approved | 2026-02-20 | `docs/AI_OPERATIONS_EXECUTION_BOARD.md`, `docs/MYNOTES_VOICE_STYLE_INTAKE.md` | Low | Maintain until explicit upgrade |
+| M-08 | Monetization | 72-hour churn intervention sprint (Day 14/21/28 lifecycle + usage recap) | Codex | Planned | At-risk member contact coverage >=90% in 72h | 2026-02-18 | `docs/SURVIVAL_TO_GROWTH_EXECUTION_PLAN_2026-02-15.md`, `lib/email/marketing-template-catalog.ts`, `app/api/cron/welcome-sequence/route.ts`, `output/automation/email-performance-*.md` | High | Implement templates and wire sequence days |
+| M-09 | Monetization | Free-to-paid CTA split (hot intent -> membership, cold/new -> Starter) | Codex | Planned | Improve first paid CTA click-through for free users | 2026-02-18 | `docs/SURVIVAL_TO_GROWTH_EXECUTION_PLAN_2026-02-15.md`, `lib/email/cta-routing.ts`, `lib/email/templates/upsell-freebie-membership.tsx`, `app/bio/page.tsx`, `output/automation/funnel-digest-*.md` | High | Ship routing logic with tracked links |
+| M-10 | Monetization | Brand Engine launch queue execution (daily SLA on qualified_queue -> closed_won) | Sandra + Codex | In Progress | 3 calls/day pacing and clean stage progression | 2026-03-16 | `app/admin/brand-engine-applications/applications-client.tsx`, `output/automation/brand-engine-launch-digest-*.md` | Medium | Run daily board and follow-up SLA |
+| R-04 | Reliability | 14-day inactivity rescue + sequence overlap prevention | Codex | Planned | No overlap conflicts, lower late-stage reactivation risk | 2026-02-19 | `docs/SURVIVAL_TO_GROWTH_EXECUTION_PLAN_2026-02-15.md`, `app/api/cron/reactivation-campaigns/route.ts`, `lib/email/get-active-sequences.ts`, `lib/email/segmentation.ts`, `output/automation/triage-*.md` | High | Implement 14-day trigger and overlap guard |
+| R-05 | Reliability | Beta discount policy enforcement (no new permanent 50% memberships) | Sandra + Codex | Planned | Stop discounted-plan dilution from growing | 2026-02-20 | `docs/SURVIVAL_TO_GROWTH_EXECUTION_PLAN_2026-02-15.md`, `output/automation/revenue-audit-*.md`, `output/automation/subscription-audit-*.md` | Medium | Define and apply policy in checkout/ops rules |
 
 ## Decision Log (Sandra approvals)
 
@@ -45,6 +50,9 @@
 | 2026-02-12 | DEC-005 | Cohort sprint operating targets | Multiple start dates, seat caps, call targets | Cohort start 2026-03-16, 12 seats, 3 calls/day | Forces measurable execution and pacing accountability | M-04 |
 | 2026-02-12 | DEC-006 | DM bridge path | Manual only, ManyChat only, hybrid | Hybrid: ManyChat tracked apply link + admin quick-add fallback | Capture intent fast without blocking on API complexity | M-05 |
 | 2026-02-13 | DEC-007 | Landing and questionnaire voice direction | Partial polish vs full rewrite | Full rewrite to Sandra Voice Bible with simple 6-part landing structure | Removes corporate tone risk before launch traffic | M-07, V-02 |
+| 2026-02-15 | DEC-008 | Survival-first execution overlay | Continue broad optimization vs tighten to 3 priorities | Tighten to churn + CTA split + early inactivity rescue | Protect runway while improving conversion | M-08, M-09, R-04 |
+| 2026-02-15 | DEC-009 | CTA strategy for free users | Membership-first for all vs intent split | Intent split: hot->membership, cold/new->Starter | Preserves high-intent conversion while improving activation | M-09 |
+| 2026-02-15 | DEC-010 | Beta pricing policy | Continue permanent 50% expansion vs freeze | Freeze new permanent 50% while honoring existing beta users | Protect blended ARPU and MRR quality | R-05 |
 
 ## Blockers Log
 
