@@ -225,3 +225,47 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
+
+export async function DELETE() {
+  try {
+    const auth = await requireAdminEmail()
+    if (auth.error) return auth.error
+
+    const existingRows = await sql`
+      SELECT id
+      FROM content_calendars
+      WHERE created_by = ${ADMIN_EMAIL}
+        AND title = ${PLANNER_TITLE}
+      ORDER BY updated_at DESC
+      LIMIT 1
+    `
+
+    if (existingRows.length === 0) {
+      return NextResponse.json({ success: true, planner: null })
+    }
+
+    const existingId = existingRows[0].id as number
+    await sql`
+      UPDATE content_calendars
+      SET
+        calendar_data = ${JSON.stringify({ version: "content-engine-v1", days: [] })}::jsonb,
+        total_posts = 0,
+        content_pillars = ${[]},
+        updated_at = NOW()
+      WHERE id = ${existingId}
+    `
+
+    return NextResponse.json({
+      success: true,
+      planner: {
+        id: existingId,
+        posts: [],
+        updatedAt: new Date().toISOString(),
+      },
+    })
+  } catch (error: unknown) {
+    console.error("[content-engine] DELETE planner error", error)
+    const message = error instanceof Error ? error.message : "Failed to clear planner"
+    return NextResponse.json({ error: message }, { status: 500 })
+  }
+}

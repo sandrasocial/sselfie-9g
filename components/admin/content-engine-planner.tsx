@@ -92,6 +92,8 @@ export function ContentEnginePlanner({
   const [libraryCopyState, setLibraryCopyState] = useState<"idle" | "copied" | "failed">("idle")
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "error">("idle")
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null)
+  const [rewriteState, setRewriteState] = useState<"idle" | "running" | "done" | "error">("idle")
+  const [clearState, setClearState] = useState<"idle" | "clearing" | "done" | "error">("idle")
   const [selectedDocName, setSelectedDocName] = useState<string>(sourceDocs.find((doc) => doc.found)?.fileName || sourceDocs[0]?.fileName || "")
 
   const selectedPost = useMemo(
@@ -174,12 +176,12 @@ export function ContentEnginePlanner({
         if (!response.ok) return
 
         const data = await response.json()
-        const persistedPosts = data?.planner?.posts
-        if (!Array.isArray(persistedPosts) || persistedPosts.length === 0) return
+        if (!data?.planner) return
 
+        const persistedPosts = Array.isArray(data?.planner?.posts) ? data.planner.posts : []
         setPosts(persistedPosts)
-        setSelectedPostId(persistedPosts[0].id)
-        if (data?.planner?.updatedAt) {
+        setSelectedPostId(persistedPosts[0]?.id || "")
+        if (data.planner.updatedAt) {
           setLastSavedAt(data.planner.updatedAt)
         }
       } catch {
@@ -218,6 +220,57 @@ export function ContentEnginePlanner({
     const ok = await copyToClipboard(selectedDoc.fullContent)
     setLibraryCopyState(ok ? "copied" : "failed")
     window.setTimeout(() => setLibraryCopyState("idle"), 1800)
+  }
+
+  const handleClearPlanner = async () => {
+    const proceed = window.confirm("Clear current content engine planner? This removes saved planner content.")
+    if (!proceed) return
+
+    setClearState("clearing")
+    try {
+      const response = await fetch("/api/admin/content-engine/planner", { method: "DELETE" })
+      if (!response.ok) {
+        throw new Error("Failed to clear")
+      }
+
+      const data = await response.json()
+      const clearedPosts = Array.isArray(data?.planner?.posts) ? data.planner.posts : []
+      setPosts(clearedPosts)
+      setSelectedPostId(clearedPosts[0]?.id || "")
+      setLastSavedAt(data?.planner?.updatedAt || new Date().toISOString())
+      setClearState("done")
+      window.setTimeout(() => setClearState("idle"), 1500)
+    } catch {
+      setClearState("error")
+    }
+  }
+
+  const handleRewriteInVoice = async () => {
+    if (posts.length === 0) return
+
+    setRewriteState("running")
+    try {
+      const response = await fetch("/api/admin/content-engine/planner/rewrite", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ posts }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Rewrite failed")
+      }
+
+      const data = await response.json()
+      const rewrittenPosts = Array.isArray(data?.posts) ? data.posts : []
+      if (rewrittenPosts.length > 0) {
+        setPosts(rewrittenPosts)
+        setSelectedPostId(rewrittenPosts[0]?.id || "")
+      }
+      setRewriteState("done")
+      window.setTimeout(() => setRewriteState("idle"), 1800)
+    } catch {
+      setRewriteState("error")
+    }
   }
 
   return (
@@ -261,6 +314,32 @@ export function ContentEnginePlanner({
               className="rounded-lg border border-stone-600 bg-stone-900 px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-stone-100 transition hover:border-stone-400"
             >
               Save now
+            </button>
+            <button
+              onClick={handleRewriteInVoice}
+              disabled={rewriteState === "running" || posts.length === 0}
+              className="rounded-lg border border-emerald-500/60 bg-emerald-500/10 px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-emerald-200 transition hover:bg-emerald-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {rewriteState === "running"
+                ? "Improving..."
+                : rewriteState === "done"
+                  ? "Improved"
+                  : rewriteState === "error"
+                    ? "Improve failed"
+                    : "Improve in my voice"}
+            </button>
+            <button
+              onClick={handleClearPlanner}
+              disabled={clearState === "clearing"}
+              className="rounded-lg border border-amber-500/60 bg-amber-500/10 px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-amber-200 transition hover:bg-amber-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {clearState === "clearing"
+                ? "Clearing..."
+                : clearState === "done"
+                  ? "Cleared"
+                  : clearState === "error"
+                    ? "Clear failed"
+                    : "Clear engine"}
             </button>
           </div>
         </div>
