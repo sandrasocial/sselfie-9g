@@ -12,6 +12,7 @@ const CANDIDATE_DIRS = [
 
 const SOURCE_FILES = [
   { fileName: "30-day-calendar.md", title: "30-Day Calendar" },
+  { fileName: "30-day-instagram-strategy.md", title: "30-Day Instagram Strategy" },
   { fileName: "20-reel-concepts.md", title: "20 Reel Concepts" },
   { fileName: "10-carousel-concepts.md", title: "10 Carousel Concepts" },
   { fileName: "caption-templates.md", title: "Caption Templates" },
