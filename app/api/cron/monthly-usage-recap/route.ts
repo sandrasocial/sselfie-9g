@@ -36,7 +36,7 @@ export async function GET(request: Request) {
     }
 
     const recipients = await sql`
-      SELECT DISTINCT
+      SELECT
         u.id,
         u.email,
         COALESCE(NULLIF(TRIM(u.display_name), ''), 'friend') AS first_name,
@@ -44,7 +44,6 @@ export async function GET(request: Request) {
         COALESCE(usage_last28.credits_used, 0)::int AS credits_used,
         COALESCE(images_last28.photos_generated, 0)::int AS photos_generated
       FROM users u
-      INNER JOIN subscriptions s ON u.id = s.user_id::varchar
       LEFT JOIN user_credits uc ON uc.user_id = u.id
       LEFT JOIN LATERAL (
         SELECT COUNT(*)::int AS photos_generated
@@ -66,9 +65,14 @@ export async function GET(request: Request) {
           OR (el_recent.status = 'queued' AND el_recent.sent_at > NOW() - INTERVAL '2 hours')
         )
         AND el_recent.sent_at > NOW() - INTERVAL '28 days'
-      WHERE s.status = 'active'
-        AND s.is_test_mode = false
-        AND s.product_type IN ('sselfie_studio_membership', 'brand_studio_membership')
+      WHERE EXISTS (
+        SELECT 1
+        FROM subscriptions s
+        WHERE s.user_id::varchar = u.id
+          AND s.status = 'active'
+          AND s.is_test_mode = false
+          AND s.product_type IN ('sselfie_studio_membership', 'brand_studio_membership')
+      )
         AND u.created_at <= NOW() - INTERVAL '28 days'
         AND el_recent.id IS NULL
       ORDER BY u.created_at ASC
