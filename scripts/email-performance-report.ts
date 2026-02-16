@@ -124,6 +124,36 @@ async function main() {
     `
   })
 
+  const bounceReasons = await safe("bounce_reasons", async () => {
+    return await sql`
+      SELECT
+        COALESCE(NULLIF(error_message, ''), 'Unknown') AS reason,
+        COUNT(*)::int AS count,
+        MAX(sent_at) AS last_seen
+      FROM email_logs
+      WHERE status = 'bounced'
+        AND sent_at > NOW() - ${hours} * INTERVAL '1 hour'
+      GROUP BY 1
+      ORDER BY count DESC, last_seen DESC
+      LIMIT 15
+    `
+  })
+
+  const bounceDomains = await safe("bounce_domains", async () => {
+    return await sql`
+      SELECT
+        split_part(lower(user_email), '@', 2) AS domain,
+        COUNT(*)::int AS count,
+        MAX(sent_at) AS last_seen
+      FROM email_logs
+      WHERE status = 'bounced'
+        AND sent_at > NOW() - ${hours} * INTERVAL '1 hour'
+      GROUP BY 1
+      ORDER BY count DESC, last_seen DESC
+      LIMIT 15
+    `
+  })
+
   const campaignsActionable = await safe("campaigns_due_actionable", async () => {
     return await sql`
       SELECT id, campaign_name, campaign_type, status, approval_status, scheduled_for, resend_broadcast_id
@@ -198,6 +228,32 @@ async function main() {
     }
   } else {
     lines.push(`- Error: ${rateLimitFailures.error}`)
+  }
+  lines.push(``)
+
+  lines.push(`## Bounce diagnostics (last ${hours}h)`)
+  if (bounceReasons.ok) {
+    if ((bounceReasons.value as any[]).length === 0) {
+      lines.push(`No bounces found.`)
+    } else {
+      lines.push(`Top reasons:`)
+      for (const r of bounceReasons.value as any[]) {
+        lines.push(`- ${r.reason}: ${r.count} (last: ${iso(r.last_seen)})`)
+      }
+    }
+  } else {
+    lines.push(`- Error: ${bounceReasons.error}`)
+  }
+
+  if (bounceDomains.ok) {
+    if ((bounceDomains.value as any[]).length > 0) {
+      lines.push(`Top domains:`)
+      for (const r of bounceDomains.value as any[]) {
+        lines.push(`- ${r.domain || "unknown"}: ${r.count} (last: ${iso(r.last_seen)})`)
+      }
+    }
+  } else {
+    lines.push(`- Error: ${bounceDomains.error}`)
   }
   lines.push(``)
 

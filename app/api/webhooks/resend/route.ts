@@ -71,6 +71,65 @@ async function resolveCampaignId(broadcastId: string | null): Promise<number | n
   return campaign?.[0]?.id || null
 }
 
+async function resolveCampaignTypeById(campaignId: number | null): Promise<string | null> {
+  if (!campaignId) return null
+  const rows = await sql`
+    SELECT campaign_type
+    FROM admin_email_campaigns
+    WHERE id = ${campaignId}
+    LIMIT 1
+  `
+  return String(rows?.[0]?.campaign_type || "").trim() || null
+}
+
+async function resolveCampaignKeyByBroadcastId(broadcastId: string | null): Promise<string | null> {
+  if (!broadcastId) return null
+  const rows = await sql`
+    SELECT campaign_key
+    FROM email_events
+    WHERE provider_broadcast_id = ${broadcastId}
+      AND campaign_key IS NOT NULL
+      AND campaign_key != ''
+    ORDER BY created_at DESC
+    LIMIT 1
+  `
+  return String(rows?.[0]?.campaign_key || "").trim() || null
+}
+
+async function updateRecentEmailLogByRecipient(input: {
+  recipientEmail: string | null
+  messageId: string | null
+  emailType?: string | null
+  campaignId?: number | null
+  status: "sent" | "delivered" | "bounced" | "complained"
+  errorMessage?: string | null
+}) {
+  if (!input.recipientEmail) return [] as any[]
+  return await sql`
+    WITH target AS (
+      SELECT id
+      FROM email_logs
+      WHERE user_email = ${input.recipientEmail}
+        AND resend_message_id IS NULL
+        AND sent_at > NOW() - INTERVAL '14 days'
+        AND (
+          ${input.emailType || null} IS NULL
+          OR email_type = ${input.emailType || null}
+        )
+      ORDER BY sent_at DESC
+      LIMIT 1
+    )
+    UPDATE email_logs
+    SET
+      resend_message_id = COALESCE(${input.messageId || null}, resend_message_id),
+      status = ${input.status},
+      error_message = COALESCE(${input.errorMessage || null}, error_message),
+      campaign_id = COALESCE(${input.campaignId || null}, campaign_id)
+    WHERE id IN (SELECT id FROM target)
+    RETURNING id
+  `
+}
+
 async function ensureEmailLogEntry(params: {
   recipientEmail: string | null
   messageId: string | null
@@ -173,8 +232,10 @@ export async function POST(request: NextRequest) {
     const messageId = eventData?.email_id || eventData?.message_id || eventData?.id || body.id
     const broadcastId = resolveBroadcastId(eventData)
     const campaignId = await resolveCampaignId(broadcastId)
+    const campaignType = await resolveCampaignTypeById(campaignId)
+    const campaignKeyFromEvents = await resolveCampaignKeyByBroadcastId(broadcastId)
     const emailTypeFromTags = resolveEmailTypeFromTags(eventData)
-    const resolvedEmailType = emailTypeFromTags || (campaignId ? `campaign-${campaignId}` : null)
+    const resolvedEmailType = emailTypeFromTags || campaignType || campaignKeyFromEvents || null
 
     console.log("[v0] [Resend Webhook] Extracted:", {
       recipientEmail,
@@ -194,7 +255,7 @@ export async function POST(request: NextRequest) {
       case "email.sent":
         // Email was sent (already logged in send-email.ts, but update if needed)
         if (messageId || recipientEmail) {
-          const updated = await sql`
+          let updated = await sql`
             UPDATE email_logs
             SET resend_message_id = ${messageId || null}, status = 'sent'
             WHERE (
@@ -203,6 +264,16 @@ export async function POST(request: NextRequest) {
             )
             RETURNING id
           `
+
+          if ((!updated || updated.length === 0) && recipientEmail) {
+            updated = await updateRecentEmailLogByRecipient({
+              recipientEmail,
+              messageId,
+              emailType: resolvedEmailType,
+              campaignId,
+              status: "sent",
+            })
+          }
 
           if (!updated || updated.length === 0) {
             await ensureEmailLogEntry({
@@ -221,12 +292,21 @@ export async function POST(request: NextRequest) {
       case "email.delivered":
         // Email was delivered successfully
         if (messageId) {
-          const delivered = await sql`
+          let delivered = await sql`
             UPDATE email_logs
             SET status = 'delivered'
             WHERE resend_message_id = ${messageId}
             RETURNING id
           `
+          if ((!delivered || delivered.length === 0) && recipientEmail) {
+            delivered = await updateRecentEmailLogByRecipient({
+              recipientEmail,
+              messageId,
+              emailType: resolvedEmailType,
+              campaignId,
+              status: "delivered",
+            })
+          }
           if (!delivered || delivered.length === 0) {
             await ensureEmailLogEntry({
               recipientEmail,
@@ -379,12 +459,22 @@ export async function POST(request: NextRequest) {
           const bounceType = eventData?.bounce_type || "hard"
           const bounceReason = eventData?.bounce_reason || "Unknown"
           
-          const bounced = await sql`
+          let bounced = await sql`
             UPDATE email_logs
             SET status = 'bounced', error_message = ${`Bounced: ${bounceType} - ${bounceReason}`}
             WHERE resend_message_id = ${messageId}
             RETURNING id
           `
+          if ((!bounced || bounced.length === 0) && recipientEmail) {
+            bounced = await updateRecentEmailLogByRecipient({
+              recipientEmail,
+              messageId,
+              emailType: resolvedEmailType,
+              campaignId,
+              status: "bounced",
+              errorMessage: `Bounced: ${bounceType} - ${bounceReason}`,
+            })
+          }
           if (!bounced || bounced.length === 0) {
             await ensureEmailLogEntry({
               recipientEmail,
@@ -402,12 +492,22 @@ export async function POST(request: NextRequest) {
       case "email.complained":
         // User marked email as spam
         if (messageId) {
-          const complained = await sql`
+          let complained = await sql`
             UPDATE email_logs
             SET status = 'complained', error_message = 'User marked as spam'
             WHERE resend_message_id = ${messageId}
             RETURNING id
           `
+          if ((!complained || complained.length === 0) && recipientEmail) {
+            complained = await updateRecentEmailLogByRecipient({
+              recipientEmail,
+              messageId,
+              emailType: resolvedEmailType,
+              campaignId,
+              status: "complained",
+              errorMessage: "User marked as spam",
+            })
+          }
           if (!complained || complained.length === 0) {
             await ensureEmailLogEntry({
               recipientEmail,

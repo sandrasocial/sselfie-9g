@@ -90,7 +90,7 @@ async function checkProductionStatus() {
         ROUND(100.0 * COUNT(*) FILTER (WHERE resend_message_id IS NOT NULL) / NULLIF(COUNT(*), 0), 1) as pct_with_id
       FROM email_logs
       WHERE sent_at > NOW() - INTERVAL '7 days'
-        AND status = 'sent'
+        AND status IN ('sent', 'delivered', 'opened', 'clicked', 'bounced', 'complained')
       GROUP BY email_type
       ORDER BY email_type
     `
@@ -107,4 +107,3 @@ async function checkProductionStatus() {
 }
 
 checkProductionStatus().catch(console.error)
-

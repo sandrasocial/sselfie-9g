@@ -153,7 +153,7 @@ export async function GET(request: Request) {
 	      FROM email_logs
 	      WHERE user_email = ANY(${allEmails})
 	        AND email_type LIKE 'reactivation-day-%'
-	        AND status IN ('sent', 'delivered')
+	        AND status IN ('sent', 'delivered', 'bounced', 'complained')
 	        AND sent_at > NOW() - INTERVAL '90 days'
 	    `
     const reactivationEmails = new Set(reactivationRecipients.map((r: any) => r.user_email))
@@ -165,7 +165,7 @@ export async function GET(request: Request) {
 	      FROM email_logs
 	      WHERE user_email = ANY(${allEmails})
 	        AND email_type IN ('reengagement-day-0', 'reengagement-day-7', 'reengagement-day-14')
-	        AND status IN ('sent', 'delivered')
+	        AND status IN ('sent', 'delivered', 'bounced', 'complained')
 	        AND sent_at > NOW() - INTERVAL '90 days'
 	    `
     const reengagementEmails = new Set(reengagementRecipients.map((r: any) => r.user_email))
@@ -177,7 +177,7 @@ export async function GET(request: Request) {
 	      FROM email_logs
 	      WHERE user_email = ANY(${allEmails})
 	        AND email_type = 'win-back-offer'
-	        AND status IN ('sent', 'delivered')
+	        AND status IN ('sent', 'delivered', 'bounced', 'complained')
 	        AND sent_at > NOW() - INTERVAL '90 days'
 	    `
     const winbackEmails = new Set(winbackRecipients.map((r: any) => r.user_email))
@@ -213,7 +213,7 @@ export async function GET(request: Request) {
 	      LEFT JOIN email_logs el_email1 ON el_email1.user_email = el.user_email
 	        AND el_email1.email_type = 'blueprint-discovery-1'
 	        AND (
-	          el_email1.status IN ('sent', 'delivered')
+	          el_email1.status IN ('sent', 'delivered', 'bounced', 'complained')
 	          OR (el_email1.status = 'queued' AND el_email1.sent_at > NOW() - INTERVAL '2 hours')
 	        )
 	      LEFT JOIN blueprint_subscribers bs ON bs.email = el.user_email
@@ -279,7 +279,7 @@ export async function GET(request: Request) {
 	      LEFT JOIN email_logs el_email2 ON el_email2.user_email = bs.email
 	        AND el_email2.email_type = 'blueprint-discovery-2'
 	        AND (
-	          el_email2.status IN ('sent', 'delivered')
+	          el_email2.status IN ('sent', 'delivered', 'bounced', 'complained')
 	          OR (el_email2.status = 'queued' AND el_email2.sent_at > NOW() - INTERVAL '2 hours')
 	        )
 	      LEFT JOIN subscriptions s ON s.user_id = (SELECT id::varchar FROM users WHERE email = bs.email LIMIT 1)
@@ -347,7 +347,7 @@ export async function GET(request: Request) {
 	      LEFT JOIN email_logs el_email3 ON el_email3.user_email = bs.email
 	        AND el_email3.email_type = 'blueprint-discovery-3'
 	        AND (
-	          el_email3.status IN ('sent', 'delivered')
+	          el_email3.status IN ('sent', 'delivered', 'bounced', 'complained')
 	          OR (el_email3.status = 'queued' AND el_email3.sent_at > NOW() - INTERVAL '2 hours')
 	        )
 	      LEFT JOIN subscriptions s ON s.user_id = (SELECT id::varchar FROM users WHERE email = bs.email LIMIT 1)
@@ -417,7 +417,7 @@ export async function GET(request: Request) {
 	      LEFT JOIN email_logs el_email4 ON el_email4.user_email = bs.email
 	        AND el_email4.email_type = 'blueprint-discovery-4'
 	        AND (
-	          el_email4.status IN ('sent', 'delivered')
+	          el_email4.status IN ('sent', 'delivered', 'bounced', 'complained')
 	          OR (el_email4.status = 'queued' AND el_email4.sent_at > NOW() - INTERVAL '2 hours')
 	        )
 	      LEFT JOIN subscriptions s ON s.user_id = u.id::varchar
@@ -490,7 +490,7 @@ export async function GET(request: Request) {
 	      LEFT JOIN email_logs el_email5 ON el_email5.user_email = u.email
 	        AND el_email5.email_type = 'blueprint-discovery-5'
 	        AND (
-	          el_email5.status IN ('sent', 'delivered')
+	          el_email5.status IN ('sent', 'delivered', 'bounced', 'complained')
 	          OR (el_email5.status = 'queued' AND el_email5.sent_at > NOW() - INTERVAL '2 hours')
 	        )
 	      LEFT JOIN subscriptions s ON s.user_id = u.id::varchar
