@@ -29,43 +29,45 @@ export async function POST(req: NextRequest) {
     await ensureBrandEngineApplicationsSchema(sql)
 
     const mapped = toPipelineUpdate(status)
-    const updates: string[] = [
-      `pipeline_stage = $1`,
-      `status = $2`,
-      `updated_at = NOW()`,
-    ]
-    const values: any[] = [mapped.pipelineStage, mapped.status]
+    const boundedScore =
+      typeof score === "number" && Number.isFinite(score)
+        ? Math.max(0, Math.min(100, Math.round(score)))
+        : null
+    const trimmedNotes = typeof notes === "string" ? notes.trim() : null
 
-    if (typeof score === "number" && Number.isFinite(score)) {
-      updates.push(`qualification_score = $${values.length + 1}`)
-      values.push(Math.max(0, Math.min(100, Math.round(score))))
-    }
-
-    if (typeof notes === "string") {
-      updates.push(`notes = $${values.length + 1}`)
-      values.push(notes.trim())
-    }
-
-    if (mapped.setCallBookedAt) {
-      updates.push(`call_booked_at = COALESCE(call_booked_at, NOW())`)
-    }
-    if (mapped.setOfferSentAt) {
-      updates.push(`offer_sent_at = COALESCE(offer_sent_at, NOW())`)
-      updates.push(`next_action = 'follow_up'`)
-    }
-    if (mapped.setClosedAt) {
-      updates.push(`closed_at = COALESCE(closed_at, NOW())`)
-    }
-
-    const query = `
+    const result = await sql`
       UPDATE brand_engine_applications
-      SET ${updates.join(", ")}
-      WHERE id = $${values.length + 1}
+      SET
+        pipeline_stage = ${mapped.pipelineStage},
+        status = ${mapped.status},
+        qualification_score = CASE
+          WHEN ${boundedScore !== null} THEN ${boundedScore}
+          ELSE qualification_score
+        END,
+        notes = CASE
+          WHEN ${trimmedNotes !== null} THEN ${trimmedNotes}
+          ELSE notes
+        END,
+        call_booked_at = CASE
+          WHEN ${mapped.setCallBookedAt} THEN COALESCE(call_booked_at, NOW())
+          ELSE call_booked_at
+        END,
+        offer_sent_at = CASE
+          WHEN ${mapped.setOfferSentAt} THEN COALESCE(offer_sent_at, NOW())
+          ELSE offer_sent_at
+        END,
+        next_action = CASE
+          WHEN ${mapped.setOfferSentAt} THEN 'follow_up'
+          ELSE next_action
+        END,
+        closed_at = CASE
+          WHEN ${mapped.setClosedAt} THEN COALESCE(closed_at, NOW())
+          ELSE closed_at
+        END,
+        updated_at = NOW()
+      WHERE id = ${leadId}
       RETURNING id, pipeline_stage, status, qualification_score, updated_at
     `
-    values.push(leadId)
-
-    const result = await sql.unsafe(query, values)
     const updated = (result as any[])[0]
 
     if (!updated) {
