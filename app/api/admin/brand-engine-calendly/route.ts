@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
 import { ensureBrandEngineApplicationsSchema } from "@/lib/brand-engine/applications"
+import { requireAdmin } from "@/lib/admin-feature-flags"
 
 /**
  * POST /api/admin/brand-engine-calendly
@@ -8,6 +9,14 @@ import { ensureBrandEngineApplicationsSchema } from "@/lib/brand-engine/applicat
  */
 export async function POST(req: NextRequest) {
   try {
+    const adminCheck = await requireAdmin()
+    if (!adminCheck.isAdmin) {
+      return NextResponse.json(
+        { success: false, error: adminCheck.error || "Unauthorized" },
+        { status: adminCheck.error === "Not authenticated" ? 401 : 403 },
+      )
+    }
+
     const { applicationId } = await req.json()
 
     if (!applicationId) {
