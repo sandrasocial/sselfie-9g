@@ -170,35 +170,3 @@ export async function cleanupTestUser(email: string) {
 
   console.log(`[Test Helper] ✅ Cleaned up test data for user ${userId} (${email})`)
 }
-
-/**
- * Set user credits to specific amount (for testing credit-based flows)
- * 
- * @param email - User email
- * @param balance - Credit balance to set
- * @param totalUsed - Total credits used (for upsell modal trigger)
- */
-export async function setUserCredits(email: string, balance: number, totalUsed: number = 0) {
-  const sql = getTestDb()
-
-  const [user] = await sql`
-    SELECT id FROM users WHERE email = ${email} LIMIT 1
-  ` as any[]
-
-  if (!user || !user.id) {
-    throw new Error(`User with email ${email} not found`)
-  }
-
-  const userId = user.id
-
-  await sql`
-    INSERT INTO user_credits (user_id, balance, total_purchased, total_used)
-    VALUES (${userId}, ${balance}, ${balance}, ${totalUsed})
-    ON CONFLICT (user_id)
-    DO UPDATE SET
-      balance = ${balance},
-      total_used = ${totalUsed}
-  `
-
-  console.log(`[Test Helper] ✅ Set credits for user ${userId}: balance=${balance}, total_used=${totalUsed}`)
-}

@@ -58,13 +58,17 @@ export async function GET(request: Request) {
           AND ct.transaction_type = 'usage'
           AND ct.created_at >= NOW() - INTERVAL '28 days'
       ) AS usage_last28 ON TRUE
-      LEFT JOIN email_logs el_recent ON el_recent.user_email = u.email
-        AND el_recent.email_type = 'monthly-usage-recap'
-        AND (
-          el_recent.status IN ('sent', 'delivered')
-          OR (el_recent.status = 'queued' AND el_recent.sent_at > NOW() - INTERVAL '2 hours')
-        )
-        AND el_recent.sent_at > NOW() - INTERVAL '28 days'
+      LEFT JOIN LATERAL (
+        SELECT MAX(el.sent_at) AS last_sent_at
+        FROM email_logs el
+        WHERE el.user_email = u.email
+          AND el.email_type = 'monthly-usage-recap'
+          AND (
+            el.status IN ('sent', 'delivered')
+            OR (el.status = 'queued' AND el.sent_at > NOW() - INTERVAL '2 hours')
+          )
+          AND el.sent_at > NOW() - INTERVAL '28 days'
+      ) AS el_recent ON TRUE
       WHERE EXISTS (
         SELECT 1
         FROM subscriptions s
@@ -74,7 +78,7 @@ export async function GET(request: Request) {
           AND s.product_type IN ('sselfie_studio_membership', 'brand_studio_membership')
       )
         AND u.created_at <= NOW() - INTERVAL '28 days'
-        AND el_recent.id IS NULL
+        AND el_recent.last_sent_at IS NULL
       ORDER BY u.created_at ASC
       LIMIT ${MAX_RECIPIENTS}
     `

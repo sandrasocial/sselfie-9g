@@ -189,5 +189,3 @@ Better: "sitting on rooftop terrace with Manhattan skyline visible, string light
 
 The more specific the location, the more atmospheric and Instagram-worthy the result.
 `
-
-export default INSTAGRAM_LOCATION_INTELLIGENCE

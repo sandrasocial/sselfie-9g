@@ -35,7 +35,7 @@ import { generateText } from "ai"
 import { getFluxPromptingPrinciples } from "@/lib/maya/flux-prompting-principles"
 import { getFashionIntelligencePrinciples } from "@/lib/maya/fashion-knowledge-2025"
 import { getLifestyleContextIntelligence } from "@/lib/maya/lifestyle-contexts"
-import INSTAGRAM_LOCATION_INTELLIGENCE from "@/lib/maya/instagram-location-intelligence"
+import { INSTAGRAM_LOCATION_INTELLIGENCE } from "@/lib/maya/instagram-location-intelligence"
 import { getNanoBananaPromptingPrinciples } from "@/lib/maya/nano-banana-prompt-builder"
 import { getNanoBananaPerfectExamples } from "@/lib/maya/nano-banana-examples"
 import { getFluxPerfectExamples } from "@/lib/maya/flux-examples"
@@ -4053,4 +4053,3 @@ function extractLocation(prompt: string): string {
   }
   return ''
 }
-

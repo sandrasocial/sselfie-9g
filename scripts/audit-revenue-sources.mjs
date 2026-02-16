@@ -148,6 +148,35 @@ async function main() {
     `
     const rl = recentLinkage[0] || {}
     lines.push(`- Live purchase linkage (30d): ${rl.live_linked_30d ?? 0} linked / ${rl.live_missing_30d ?? 0} missing`)
+
+    const unresolvedAge = await sql`
+      SELECT
+        COUNT(*) FILTER (
+          WHERE created_at >= NOW() - INTERVAL '30 days'
+            AND (is_test_mode = FALSE OR is_test_mode IS NULL)
+            AND (stripe_payment_id IS NULL OR btrim(stripe_payment_id) = '')
+            AND COALESCE(reference_id, '') NOT LIKE 'legacy_unlinked_non_stripe%'
+        )::int AS unresolved_lt_30d,
+        COUNT(*) FILTER (
+          WHERE created_at < NOW() - INTERVAL '30 days'
+            AND created_at >= NOW() - INTERVAL '90 days'
+            AND (is_test_mode = FALSE OR is_test_mode IS NULL)
+            AND (stripe_payment_id IS NULL OR btrim(stripe_payment_id) = '')
+            AND COALESCE(reference_id, '') NOT LIKE 'legacy_unlinked_non_stripe%'
+        )::int AS unresolved_30_to_90d,
+        COUNT(*) FILTER (
+          WHERE created_at < NOW() - INTERVAL '90 days'
+            AND (is_test_mode = FALSE OR is_test_mode IS NULL)
+            AND (stripe_payment_id IS NULL OR btrim(stripe_payment_id) = '')
+            AND COALESCE(reference_id, '') NOT LIKE 'legacy_unlinked_non_stripe%'
+        )::int AS unresolved_gt_90d
+      FROM credit_transactions
+      WHERE transaction_type = 'purchase'
+    `
+    const ua = unresolvedAge[0] || {}
+    lines.push(
+      `- Active unresolved purchase linkage backlog (live, non-legacy): <30d ${ua.unresolved_lt_30d ?? 0}, 30-90d ${ua.unresolved_30_to_90d ?? 0}, >90d ${ua.unresolved_gt_90d ?? 0}`,
+    )
   } catch (err) {
     lines.push(`- Error: ${err?.message || String(err)}`)
   }

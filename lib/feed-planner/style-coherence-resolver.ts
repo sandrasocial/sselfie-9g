@@ -462,5 +462,3 @@ function getFallbackFashion(category: string): string {
 // ============================================================================
 // EXPORTS
 // ============================================================================
-
-export default resolveCoherentStyle

@@ -198,8 +198,6 @@ export async function createLandingCheckoutSession(productId: string, promoCode?
   }
 }
 
-export const createLandingCheckout = createLandingCheckoutSession
-
 export async function getCheckoutSession(sessionId: string) {
   try {
     const session = await stripe.checkout.sessions.retrieve(sessionId, {

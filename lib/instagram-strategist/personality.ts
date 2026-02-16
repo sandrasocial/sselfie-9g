@@ -169,5 +169,3 @@ Before writing, ask yourself:
 Write captions that pass the "Text a Friend" test. Mix up sentence rhythm. Use contractions. Kill AI phrases. Add tiny imperfections. Start with something real. Sound like yourself, not a robot.
 
 **Bottom line: Write like yourself. Add personal touches. Mix up the rhythm. If you're trying too hard to sound "professional," you'll sound like AI. Sound like you instead.**`
-
-export const INSTAGRAM_CAPTION_STRATEGIST_PERSONALITY = INSTAGRAM_STRATEGIST_SYSTEM_PROMPT

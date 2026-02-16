@@ -8,7 +8,7 @@
  */
 
 import Stripe from "stripe"
-import { PRICING_PRODUCTS, CREDIT_TOPUP_PACKAGES } from "@/lib/products"
+import { PRICING_PRODUCTS, CREDIT_PACKAGES } from "@/lib/products"
 import { config } from "dotenv"
 import { resolve } from "path"
 

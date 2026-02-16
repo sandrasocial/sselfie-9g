@@ -27,7 +27,7 @@ export interface PricingProduct {
 }
 
 // Credit top-up packages for existing members
-export const CREDIT_TOPUP_PACKAGES: CreditPackage[] = [
+export const CREDIT_PACKAGES: CreditPackage[] = [
   {
     id: "credits_topup_10",
     name: "10 Credits",
@@ -54,9 +54,6 @@ export const CREDIT_TOPUP_PACKAGES: CreditPackage[] = [
     popular: true,
   },
 ]
-
-// Legacy export for backward compatibility
-export const CREDIT_PACKAGES = CREDIT_TOPUP_PACKAGES
 
 export const PRICING_PRODUCTS: PricingProduct[] = [
   {

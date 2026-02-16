@@ -191,6 +191,38 @@ async function logEmailSend(
   }
 }
 
+async function getRecipientSuppression(email: string): Promise<{ suppressed: boolean; reason?: string }> {
+  try {
+    const recent = await sql`
+      SELECT status, error_message, sent_at
+      FROM email_logs
+      WHERE user_email = ${email}
+        AND status IN ('complained', 'bounced')
+        AND sent_at > NOW() - INTERVAL '30 days'
+      ORDER BY sent_at DESC
+      LIMIT 1
+    `
+
+    if (!recent || recent.length === 0) {
+      return { suppressed: false }
+    }
+
+    const row = recent[0] as { status: string; error_message?: string | null; sent_at?: string | null }
+    if (row.status === "complained") {
+      return { suppressed: true, reason: "recipient complained (spam report)" }
+    }
+
+    if (row.status === "bounced") {
+      return { suppressed: true, reason: row.error_message || "recipient recently bounced" }
+    }
+
+    return { suppressed: false }
+  } catch (error) {
+    console.warn("[v0] Failed suppression check (continuing send):", error)
+    return { suppressed: false }
+  }
+}
+
 export async function sendEmail(
   options: EmailOptions,
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
@@ -266,6 +298,16 @@ export async function sendEmail(
     return {
       success: false,
       error: `Rate limit exceeded. Please try again in ${Math.ceil((rateLimit.reset - Date.now()) / 1000 / 60)} minutes.`,
+    }
+  }
+
+  const suppression = await getRecipientSuppression(recipient)
+  if (suppression.suppressed) {
+    const reason = `Suppressed recipient: ${suppression.reason || "recent bounce/complaint"}`
+    await logEmailSend(recipient, emailType, "failed", undefined, reason, options.campaignId)
+    return {
+      success: false,
+      error: reason,
     }
   }
 

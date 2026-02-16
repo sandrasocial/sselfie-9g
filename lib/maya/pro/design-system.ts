@@ -326,4 +326,3 @@ export function getColorClasses(type: 'text' | 'bg' | 'border', color: string) {
 }
 
 // Export all for convenience
-export default ProModeDesign
