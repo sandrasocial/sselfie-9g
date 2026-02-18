@@ -105,6 +105,29 @@ async function updateRecentEmailLogByRecipient(input: {
   errorMessage?: string | null
 }) {
   if (!input.recipientEmail) return [] as any[]
+  if (input.emailType) {
+    return await sql`
+      WITH target AS (
+        SELECT id
+        FROM email_logs
+        WHERE user_email = ${input.recipientEmail}
+          AND resend_message_id IS NULL
+          AND sent_at > NOW() - INTERVAL '14 days'
+          AND email_type = ${input.emailType}
+        ORDER BY sent_at DESC
+        LIMIT 1
+      )
+      UPDATE email_logs
+      SET
+        resend_message_id = COALESCE(${input.messageId || null}, resend_message_id),
+        status = ${input.status},
+        error_message = COALESCE(${input.errorMessage || null}, error_message),
+        campaign_id = COALESCE(${input.campaignId || null}, campaign_id)
+      WHERE id IN (SELECT id FROM target)
+      RETURNING id
+    `
+  }
+
   return await sql`
     WITH target AS (
       SELECT id
@@ -112,10 +135,6 @@ async function updateRecentEmailLogByRecipient(input: {
       WHERE user_email = ${input.recipientEmail}
         AND resend_message_id IS NULL
         AND sent_at > NOW() - INTERVAL '14 days'
-        AND (
-          ${input.emailType || null} IS NULL
-          OR email_type = ${input.emailType || null}
-        )
       ORDER BY sent_at DESC
       LIMIT 1
     )
