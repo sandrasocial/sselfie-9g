@@ -13,6 +13,8 @@ export type AnalyticsEventName =
   | "activation_jumpstart_opened"
   | "activation_continue_clicked"
   | "activation_selfie_uploaded"
+  | "signup_to_first_gen"
+  | "academy_opens_from_maya"
 
 const ALLOWED_EVENTS = new Set<string>([
   "landing_view",
@@ -24,6 +26,8 @@ const ALLOWED_EVENTS = new Set<string>([
   "activation_jumpstart_opened",
   "activation_continue_clicked",
   "activation_selfie_uploaded",
+  "signup_to_first_gen",
+  "academy_opens_from_maya",
 ])
 
 function safeString(v: unknown, maxLen: number): string | null {

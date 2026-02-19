@@ -8,6 +8,11 @@ import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { checkCredits, deductCredits } from "@/lib/credits"
 import { detectStudioProIntent, getStudioProSystemPrompt } from "@/lib/maya/studio-pro-system-prompt"
 import { getOrCreateActiveChat } from "@/lib/data/maya"
+import {
+  autoSelectMayaMode,
+  isContentPlanningIntent,
+  isUnifiedMayaUiEnabled,
+} from "@/lib/maya/auto-select-mode"
 
 import { NextResponse } from "next/server"
 import type { Request } from "next/server"
@@ -110,20 +115,23 @@ export async function POST(req: Request) {
     // Get chatType from body, or fallback to header, or default to "maya"
     const chatTypeHeader = req.headers.get("x-chat-type")
     const activeTabHeader = req.headers.get("x-active-tab") // Feed tab flag
-    const chatType = chatTypeFromBody || chatTypeHeader || "maya"
-    const isFeedTab = activeTabHeader === "feed"
+    const requestedChatType = chatTypeFromBody || chatTypeHeader || "maya"
+    const unifiedMayaUiEnabled = isUnifiedMayaUiEnabled(process.env.FEATURE_UNIFIED_MAYA_UI)
+    let chatType = requestedChatType
+    let isFeedTab = activeTabHeader === "feed"
     
   console.log("[Maya Chat API] 🔍 Headers received:", {
     fromBody: chatTypeFromBody,
     fromHeader: chatTypeHeader,
     activeTabHeader,
     isFeedTab,
-    final: chatType,
-    allHeaders: {
-      "x-chat-type": chatTypeHeader,
-      "x-active-tab": activeTabHeader,
-      "x-studio-pro-mode": req.headers.get("x-studio-pro-mode"),
-    },
+      final: chatType,
+      unifiedMayaUiEnabled,
+      allHeaders: {
+        "x-chat-type": chatTypeHeader,
+        "x-active-tab": activeTabHeader,
+        "x-studio-pro-mode": req.headers.get("x-studio-pro-mode"),
+      },
     // PRODUCTION DEBUG: Log ALL headers
     allRequestHeaders: Object.fromEntries(req.headers.entries()),
   })
@@ -138,6 +146,48 @@ export async function POST(req: Request) {
     const isPromptBuilder = chatType === "prompt_builder"
     const ADMIN_EMAIL = "ssa@ssasocial.com"
     const isAdmin = user.email === ADMIN_EMAIL
+
+    if (unifiedMayaUiEnabled && !isPromptBuilder && chatType !== "pro-photoshoot" && Array.isArray(uiMessages)) {
+      const latestUserMessage = [...uiMessages].reverse().find((m: any) => m?.role === "user")
+      const parts = Array.isArray(latestUserMessage?.parts) ? latestUserMessage.parts : []
+      const hasReferenceImage = parts.some((part: any) => part?.type === "image" && !!part?.image)
+      const latestUserText =
+        parts
+          .filter((part: any) => part?.type === "text" && typeof part?.text === "string")
+          .map((part: any) => part.text)
+          .join(" ") ||
+        (typeof latestUserMessage?.content === "string" ? latestUserMessage.content : "")
+
+      let hasTrainedLoraModel = false
+      try {
+        const { neon } = await import("@neondatabase/serverless")
+        const sql = neon(process.env.DATABASE_URL!)
+        const modelRows = await sql`
+          SELECT 1
+          FROM user_models
+          WHERE user_id = ${dbUserId}
+            AND training_status = 'completed'
+          LIMIT 1
+        `
+        hasTrainedLoraModel = modelRows.length > 0
+      } catch (modelError) {
+        console.error("[Maya Chat API] Failed checking trained model for unified routing:", modelError)
+      }
+
+      const autoMode = autoSelectMayaMode({
+        hasReferenceImage,
+        hasTrainedLoraModel,
+        isContentPlanning: isContentPlanningIntent(latestUserText),
+      })
+      chatType = autoMode
+      isFeedTab = autoMode === "feed-planner"
+      console.log("[Maya Chat API] Unified routing applied:", {
+        requestedChatType,
+        selectedChatType: chatType,
+        hasReferenceImage,
+        hasTrainedLoraModel,
+      })
+    }
 
     // Only check credits for non-admin, non-prompt-builder chats
     if (!isPromptBuilder && !isAdmin) {
@@ -718,7 +768,7 @@ export async function POST(req: Request) {
     if (chatType === "prompt_builder") {
       systemPrompt = PROMPT_BUILDER_SYSTEM
       console.log("[Maya Chat] Using Prompt Builder system prompt")
-    } else if (chatType === "feed-planner" && isFeedTab) {
+    } else if (chatType === "feed-planner" && (isFeedTab || unifiedMayaUiEnabled)) {
       // 🔴 CRITICAL FIX: Only load feed planner context if BOTH conditions are true
       // This prevents the massive feed planner context (880+ lines) from leaking into regular Maya chat
       // Feed Planner Context: Add visual design guidance for feed creation

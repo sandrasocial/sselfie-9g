@@ -45,6 +45,7 @@ import MayaVideosTab from "./maya/maya-videos-tab"
 import MayaPromptsTab from "./maya/maya-prompts-tab"
 import MayaTrainingTab from "./maya/maya-training-tab"
 import { useRouter } from "next/navigation"
+import { trackAnalyticsEvent } from "@/lib/analytics/client"
 // Note: User type comes from Supabase auth (not next-auth)
 import { PromptSuggestionCard as NewPromptSuggestionCard } from "./prompt-suggestion-card"
 import type { PromptSuggestion } from "@/lib/maya/prompt-generator"
@@ -72,6 +73,7 @@ interface MayaChatScreenProps {
   onGuideChange?: (id: number | null, category: string | null) => void // Callback when guide selection changes
   hasTrainedModel?: boolean // Whether user has a trained model
   isMembership?: boolean // Whether user has membership (for Pro/Classic toggle visibility)
+  hideModeComplexity?: boolean
 }
 
 export default function MayaChatScreen({ 
@@ -87,6 +89,7 @@ export default function MayaChatScreen({
   onGuideChange,
   hasTrainedModel = true, // Default to true to avoid breaking existing usage
   isMembership = false, // Default to false - only membership users see Pro/Classic toggle
+  hideModeComplexity = false,
 }: MayaChatScreenProps) {
   const { toast } = useToast()
   const isFeedTabDisabled = true
@@ -111,6 +114,8 @@ export default function MayaChatScreen({
   const [creditBalance, setCreditBalance] = useState<number>(0)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false)
+  const [academyJourneyPrompt, setAcademyJourneyPrompt] = useState<"first_gen" | "three_gen" | null>(null)
+  const [isLoadingAcademyJourneyState, setIsLoadingAcademyJourneyState] = useState(false)
   const router = useRouter()
   
   // Tab state for Photos/Videos/Prompts/Training/Feed tabs
@@ -1896,6 +1901,59 @@ export default function MayaChatScreen({
     }
   }
 
+  useEffect(() => {
+    let mounted = true
+    const fetchAcademyJourneyState = async () => {
+      if (activeMayaTab !== "photos") return
+      setIsLoadingAcademyJourneyState(true)
+      try {
+        const res = await fetch("/api/onboarding/academy-journey-state", {
+          credentials: "include",
+          cache: "no-store",
+        })
+        if (!res.ok) return
+        const data = await res.json()
+        if (!mounted) return
+
+        if (data?.showAfterFirstGenerationPrompt) {
+          setAcademyJourneyPrompt("first_gen")
+          return
+        }
+        if (data?.showAfterThreeGenerationsPrompt) {
+          setAcademyJourneyPrompt("three_gen")
+          return
+        }
+        setAcademyJourneyPrompt(null)
+      } catch {
+        // Non-blocking: academy prompt should never break chat.
+      } finally {
+        if (mounted) {
+          setIsLoadingAcademyJourneyState(false)
+        }
+      }
+    }
+
+    fetchAcademyJourneyState()
+    return () => {
+      mounted = false
+    }
+  }, [activeMayaTab, messages.length])
+
+  const handleOpenAcademyFromMaya = () => {
+    trackAnalyticsEvent({
+      event: "academy_opens_from_maya",
+      properties: {
+        prompt_type: academyJourneyPrompt,
+      },
+    })
+    if (setActiveTab) {
+      setActiveTab("academy")
+    }
+    if (typeof window !== "undefined") {
+      window.history.replaceState(null, "", "#academy")
+    }
+  }
+
 
   const filteredMessages = messages.filter((msg) => {
     if (contentFilter === "all") return true
@@ -2376,7 +2434,7 @@ export default function MayaChatScreen({
           selectedGuideCategory={selectedGuideCategory}
           onGuideChange={onGuideChange}
           userId={userId}
-          showModeToggle={isMembership} // Only show Pro/Classic toggle for membership users
+          showModeToggle={isMembership && !hideModeComplexity} // Hide mode controls in unified UX
           onEditIntent={async () => {
             const newIntent = prompt('Enter your creative intent:', imageLibrary.intent || '')
             if (newIntent !== null) {
@@ -2675,6 +2733,50 @@ export default function MayaChatScreen({
               paddingBottom: '140px', // Space for fixed bottom input
             }}
           >
+      {!isLoadingAcademyJourneyState && academyJourneyPrompt && (
+        <div className="px-4 sm:px-6 py-3">
+          <div className="rounded-2xl border border-stone-200 bg-white/90 p-4">
+            {academyJourneyPrompt === "first_gen" ? (
+              <>
+                <p className="text-sm text-stone-800">
+                  Want to see exactly how to use this image for your Instagram?
+                </p>
+                <p className="text-sm text-stone-800 mt-1">
+                  I have a quick 2-minute tutorial. Type SHOW ME to see it.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-stone-800">
+                  You&apos;ve created some beautiful images.
+                </p>
+                <p className="text-sm text-stone-800 mt-1">
+                  Want me to show you how to turn these into a full month of content?
+                </p>
+                <p className="text-sm text-stone-800 mt-1">
+                  I have a system that takes 20 minutes.
+                </p>
+              </>
+            )}
+            <div className="mt-3 flex gap-2">
+              <button
+                type="button"
+                onClick={handleOpenAcademyFromMaya}
+                className="px-3 py-2 text-xs tracking-wide uppercase rounded-lg bg-stone-900 text-white"
+              >
+                Show Me
+              </button>
+              <button
+                type="button"
+                onClick={() => setAcademyJourneyPrompt(null)}
+                className="px-3 py-2 text-xs tracking-wide uppercase rounded-lg border border-stone-300 text-stone-700"
+              >
+                Not now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <MayaChatInterface
         messages={messages}
         filteredMessages={filteredMessages}

@@ -19,6 +19,7 @@ import OnboardingWizard from "./onboarding-wizard"
 import BlueprintWelcomeWizard from "./blueprint-welcome-wizard"
 // UnifiedOnboardingWizard is now handled exclusively by feed-planner-client.tsx
 import MayaChatScreen from "./maya-chat-screen"
+import WelcomeFirstGenerationFlow from "./maya/welcome-first-generation-flow"
 import GalleryScreen from "./gallery-screen"
 // Note: B-Roll functionality is accessible via Maya Videos tab (b-roll-screen.tsx kept for reference)
 import AcademyScreen from "./academy-screen"
@@ -59,7 +60,6 @@ import { Input } from "@/components/ui/input"
 import { Pencil, Palette } from "lucide-react"
 import { DesignClasses } from "@/lib/design-tokens"
 import { AnimatePresence, motion } from "framer-motion"
-import MayaModeToggle from "./maya/maya-mode-toggle"
 import useSWR from "swr"
 import { useRouter, useSearchParams } from "next/navigation"
 import { ChevronDown } from "lucide-react"
@@ -87,6 +87,9 @@ export default function SselfieApp({
   purchaseSuccess = false,
   initialTab,
 }: SselfieAppProps) {
+  const isUnifiedMayaUiEnabled =
+    process.env.NEXT_PUBLIC_FEATURE_UNIFIED_MAYA_UI === "true" ||
+    process.env.NEXT_PUBLIC_FEATURE_UNIFIED_MAYA_UI === "1"
   const getInitialTab = () => {
     // Decision 2: Use initialTab prop if provided (from URL param)
     if (initialTab) {
@@ -132,6 +135,7 @@ export default function SselfieApp({
   const [isLoadingTrainingStatus, setIsLoadingTrainingStatus] = useState(true)
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [showBlueprintWelcome, setShowBlueprintWelcome] = useState(false)
+  const [showWelcomeFirstGenerationFlow, setShowWelcomeFirstGenerationFlow] = useState(false)
   // showBlueprintOnboarding and existingBlueprintData removed - UnifiedOnboardingWizard is now handled by feed-planner-client.tsx
   const [creditBalance, setCreditBalance] = useState<number>(0)
   const [isLoadingCredits, setIsLoadingCredits] = useState(true)
@@ -438,6 +442,40 @@ export default function SselfieApp({
     window.addEventListener("credits-updated", handleCreditsUpdated)
     return () => window.removeEventListener("credits-updated", handleCreditsUpdated)
   }, [refreshCredits])
+
+  useEffect(() => {
+    let mounted = true
+
+    const loadWelcomeFirstGenerationState = async () => {
+      try {
+        const response = await fetch("/api/onboarding/welcome-first-generation-state", {
+          method: "GET",
+          credentials: "include",
+        })
+        if (!mounted || !response.ok) return
+
+        const data = await response.json().catch(() => null)
+        if (!mounted || !data?.eligible) return
+
+        setShowWelcomeFirstGenerationFlow(true)
+        setActiveTab("maya")
+        trackAnalyticsEvent({
+          event: "activation_jumpstart_opened",
+          properties: {
+            source: "welcome_first_generation",
+          },
+        })
+      } catch (error) {
+        console.error("[welcome-first-generation] failed to load state", error)
+      }
+    }
+
+    loadWelcomeFirstGenerationState()
+
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   useEffect(() => {
     if (!isTrainingStatusLoading || trainingStatusError) {
@@ -754,6 +792,12 @@ export default function SselfieApp({
       <WelcomeBackBanner />
 
       <main className="relative h-full mx-1 sm:mx-2 md:mx-3 pb-2 sm:pb-3 md:pb-4">
+        {showWelcomeFirstGenerationFlow ? (
+          <WelcomeFirstGenerationFlow
+            onGenerated={refreshCredits}
+            onDone={() => setShowWelcomeFirstGenerationFlow(false)}
+          />
+        ) : (
         <div className={`h-full ${DesignClasses.container} ${activeTab === "maya" ? "overflow-visible" : "overflow-hidden"}`}>
           {/* Hide header when in Maya tab - it has its own header */}
           {activeTab !== "maya" && (
@@ -1033,6 +1077,7 @@ export default function SselfieApp({
                     userId={userId}
                     hasTrainedModel={hasTrainedModel}
                     isMembership={access.hasFullAccess} // Only membership users see Pro/Classic toggle
+                    hideModeComplexity={isUnifiedMayaUiEnabled}
                   />
                 )}
                 {activeTab === "gallery" && (
@@ -1056,8 +1101,10 @@ export default function SselfieApp({
             </AnimatePresence>
           </div>
         </div>
+        )}
       </main>
 
+      {!showWelcomeFirstGenerationFlow && (
         <nav
           className={`fixed bottom-0 left-0 right-0 z-[70] px-2 sm:px-3 md:px-4 transition-transform duration-300 ease-in-out ${
             isNavVisible ? "translate-y-0" : "translate-y-full"
@@ -1114,6 +1161,7 @@ export default function SselfieApp({
             </div>
           </div>
         </nav>
+      )}
 
       <InstallPrompt />
 

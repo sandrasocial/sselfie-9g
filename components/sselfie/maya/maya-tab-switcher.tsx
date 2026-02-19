@@ -45,7 +45,7 @@ export default function MayaTabSwitcher({
     { id: "prompts" as const, label: "Prompts" },
     { id: "training" as const, label: "Training" },
     { id: "feed" as const, label: "Feed" },
-  ]
+  ].filter((tab) => !(disableFeedTab && tab.id === "feed"))
 
   const containerRef = useRef<HTMLDivElement>(null)
   const activeTabRef = useRef<HTMLButtonElement>(null)
@@ -137,4 +137,3 @@ export default function MayaTabSwitcher({
     </div>
   )
 }
-

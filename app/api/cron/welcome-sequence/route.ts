@@ -11,6 +11,8 @@ import {
   generateWelcomeDay21,
   generateWelcomeDay28,
 } from "@/lib/email/templates/welcome-sequence"
+import { generateWelcomeFirstGenerationFollowupEmail } from "@/lib/email/templates/welcome-first-generation-followup"
+import { generateMayaAcademyInactive48hEmail } from "@/lib/email/templates/maya-academy-inactive-48h"
 import { generateBlueprintFollowupDay0Email } from "@/lib/email/templates/blueprint-followup-day-0"
 import { enqueueAndProcessMarketingRun } from "@/lib/email/marketing-runner"
 import { MARKETING_SEGMENTS } from "@/lib/email/config"
@@ -56,6 +58,8 @@ export async function GET(request: Request) {
       day14: { sent: 0, failed: 0 },
       day21: { sent: 0, failed: 0 },
       day28: { sent: 0, failed: 0 },
+      welcomeFirstGenerationFollowup: { found: 0, sent: 0, failed: 0 },
+      mayaAcademyInactive48h: { found: 0, sent: 0, failed: 0 },
       freeBlueprintDay0: { found: 0, sent: 0, failed: 0, skipped: 0 },
     }
 
@@ -532,6 +536,128 @@ export async function GET(request: Request) {
         }
       }
 
+      const welcomeFirstGenerationFollowupCandidates = await sql`
+        SELECT
+          u.id,
+          u.email,
+          u.display_name,
+          ai.image_url,
+          ai.created_at AS first_generated_at
+        FROM users u
+        INNER JOIN LATERAL (
+          SELECT image_url, created_at
+          FROM ai_images
+          WHERE user_id = u.id
+            AND image_url IS NOT NULL
+            AND image_url <> ''
+            AND generation_status = 'completed'
+          ORDER BY created_at ASC
+          LIMIT 1
+        ) ai ON true
+        LEFT JOIN subscriptions s
+          ON s.user_id = u.id
+         AND s.status = 'active'
+         AND s.product_type IN ('sselfie_studio_membership', 'brand_studio_membership')
+        LEFT JOIN email_logs el
+          ON el.user_email = u.email
+         AND el.email_type = 'welcome-first-generation-followup'
+         AND el.status IN ('sent', 'delivered', 'queued')
+        WHERE ai.created_at <= NOW() - INTERVAL '24 hours'
+          AND ai.created_at > NOW() - INTERVAL '48 hours'
+          AND s.id IS NULL
+          AND el.id IS NULL
+      `
+
+      results.welcomeFirstGenerationFollowup.found = welcomeFirstGenerationFollowupCandidates.length
+
+      for (const candidate of welcomeFirstGenerationFollowupCandidates) {
+        try {
+          const firstName = candidate.display_name?.split(" ")[0] || undefined
+          const emailContent = generateWelcomeFirstGenerationFollowupEmail({
+            firstName,
+            generatedImageUrl: candidate.image_url || null,
+          })
+
+          const sendResult = await sendEmail({
+            to: candidate.email,
+            subject: emailContent.subject,
+            html: emailContent.html,
+            text: emailContent.text,
+            from: "Sandra from SSELFIE <hello@sselfie.ai>",
+            emailType: "welcome-first-generation-followup",
+          })
+
+          if (sendResult.success) {
+            results.welcomeFirstGenerationFollowup.sent++
+          } else {
+            results.welcomeFirstGenerationFollowup.failed++
+          }
+        } catch (error) {
+          console.error(
+            `[Welcome Sequence] Failed to send welcome-first-generation-followup to ${candidate.email}:`,
+            error,
+          )
+          results.welcomeFirstGenerationFollowup.failed++
+        }
+      }
+
+      const mayaAcademyInactiveCandidates = await sql`
+        SELECT
+          u.id,
+          u.email,
+          u.display_name,
+          MAX(ai.created_at) AS last_generated_at
+        FROM users u
+        INNER JOIN ai_images ai
+          ON ai.user_id = u.id
+         AND ai.generation_status = 'completed'
+         AND ai.image_url IS NOT NULL
+         AND ai.image_url <> ''
+        LEFT JOIN feed_posts fp
+          ON fp.user_id = u.id
+        LEFT JOIN email_logs el
+          ON el.user_email = u.email
+         AND el.email_type = 'maya-academy-inactive-48h'
+         AND el.status IN ('sent', 'delivered', 'queued')
+        GROUP BY u.id, u.email, u.display_name, el.id
+        HAVING MAX(ai.created_at) <= NOW() - INTERVAL '48 hours'
+           AND MAX(ai.created_at) > NOW() - INTERVAL '96 hours'
+           AND COUNT(fp.id) = 0
+           AND el.id IS NULL
+      `
+
+      results.mayaAcademyInactive48h.found = mayaAcademyInactiveCandidates.length
+
+      for (const candidate of mayaAcademyInactiveCandidates) {
+        try {
+          const firstName = candidate.display_name?.split(" ")[0] || undefined
+          const emailContent = generateMayaAcademyInactive48hEmail({
+            firstName,
+          })
+
+          const sendResult = await sendEmail({
+            to: candidate.email,
+            subject: emailContent.subject,
+            html: emailContent.html,
+            text: emailContent.text,
+            from: "Sandra from SSELFIE <hello@sselfie.ai>",
+            emailType: "maya-academy-inactive-48h",
+          })
+
+          if (sendResult.success) {
+            results.mayaAcademyInactive48h.sent++
+          } else {
+            results.mayaAcademyInactive48h.failed++
+          }
+        } catch (error) {
+          console.error(
+            `[Welcome Sequence] Failed to send maya-academy-inactive-48h to ${candidate.email}:`,
+            error,
+          )
+          results.mayaAcademyInactive48h.failed++
+        }
+      }
+
       console.log("[Welcome Sequence] Results:", results)
 
       const totalSent =
@@ -541,6 +667,8 @@ export async function GET(request: Request) {
         results.day14.sent +
         results.day21.sent +
         results.day28.sent +
+        results.welcomeFirstGenerationFollowup.sent +
+        results.mayaAcademyInactive48h.sent +
         results.freeBlueprintDay0.sent
       const totalFailed =
         results.day0.failed +
@@ -549,6 +677,8 @@ export async function GET(request: Request) {
         results.day14.failed +
         results.day21.failed +
         results.day28.failed +
+        results.welcomeFirstGenerationFollowup.failed +
+        results.mayaAcademyInactive48h.failed +
         results.freeBlueprintDay0.failed
 
       await cronLogger.success({
@@ -564,6 +694,10 @@ export async function GET(request: Request) {
         day21Failed: results.day21.failed,
         day28Sent: results.day28.sent,
         day28Failed: results.day28.failed,
+        welcomeFirstGenerationFollowupSent: results.welcomeFirstGenerationFollowup.sent,
+        welcomeFirstGenerationFollowupFailed: results.welcomeFirstGenerationFollowup.failed,
+        mayaAcademyInactive48hSent: results.mayaAcademyInactive48h.sent,
+        mayaAcademyInactive48hFailed: results.mayaAcademyInactive48h.failed,
         freeBlueprintDay0Sent: results.freeBlueprintDay0.sent,
         freeBlueprintDay0Failed: results.freeBlueprintDay0.failed,
         totalSent,
