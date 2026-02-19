@@ -172,7 +172,7 @@ export async function POST() {
       values.push(String(campaignId))
       const campaignIdIndex = values.length
       const updateSql = `UPDATE admin_email_campaigns SET ${setClauses.join(", ")} WHERE id = $${campaignIdIndex}`
-      await sql(updateSql, values)
+      await sql.query(updateSql, values)
     } else {
       const insertColumns: string[] = []
       const placeholders: string[] = []
@@ -208,7 +208,7 @@ export async function POST() {
       const insertSql = `INSERT INTO admin_email_campaigns (${insertColumns.join(", ")}) VALUES (${placeholders.join(
         ", ",
       )}) RETURNING id`
-      const [createdRow] = await sql(insertSql, values)
+      const [createdRow] = await sql.query(insertSql, values)
       campaignId = Number(createdRow.id)
     }
 
