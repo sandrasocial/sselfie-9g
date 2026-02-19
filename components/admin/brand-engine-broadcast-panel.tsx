@@ -26,6 +26,8 @@ type BroadcastState = {
   success: boolean
   campaign: BroadcastCampaign | null
   subscriberCount: number
+  dbSubscriberCount?: number
+  audienceMismatch?: boolean
 }
 
 const fetcher = async (url: string) => {
@@ -47,10 +49,16 @@ export function BrandEngineBroadcastPanel() {
 
   const campaign = data?.campaign || null
   const subscriberCount = Number(data?.subscriberCount || 0)
+  const dbSubscriberCount = Number(data?.dbSubscriberCount || 0)
+  const audienceMismatch = Boolean(data?.audienceMismatch)
   const subscriberCountDisplay = useMemo(() => {
     if (!subscriberCount) return "~3,000"
     return `~${new Intl.NumberFormat("en-US").format(subscriberCount)}`
   }, [subscriberCount])
+  const dbSubscriberCountDisplay = useMemo(() => {
+    if (!dbSubscriberCount) return "n/a"
+    return `~${new Intl.NumberFormat("en-US").format(dbSubscriberCount)}`
+  }, [dbSubscriberCount])
 
   const prepareDraft = async () => {
     try {
@@ -119,7 +127,7 @@ export function BrandEngineBroadcastPanel() {
           </button>
           <button
             onClick={() => setShowConfirm(true)}
-            disabled={!campaign || pending !== null}
+            disabled={!campaign || pending !== null || audienceMismatch}
             className="inline-flex items-center justify-center gap-2 border border-stone-200 bg-white px-4 py-3 text-xs tracking-[0.2em] uppercase text-stone-700 hover:bg-stone-50 transition-colors rounded-none disabled:opacity-50"
           >
             {pending === "send" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
@@ -144,6 +152,23 @@ export function BrandEngineBroadcastPanel() {
           <p className="text-sm text-stone-900 mt-1">{campaign?.target_segment || "all_subscribers"}</p>
         </div>
       </div>
+      <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="border border-stone-200 p-4">
+          <p className="text-[10px] tracking-[0.2em] uppercase text-stone-500">Resend Audience Contacts</p>
+          <p className="text-sm text-stone-900 mt-1">{subscriberCountDisplay}</p>
+        </div>
+        <div className="border border-stone-200 p-4">
+          <p className="text-[10px] tracking-[0.2em] uppercase text-stone-500">DB Subscribers</p>
+          <p className="text-sm text-stone-900 mt-1">{dbSubscriberCountDisplay}</p>
+        </div>
+      </div>
+
+      {audienceMismatch && (
+        <div className="mt-4 border border-amber-300 bg-amber-50 p-4 text-xs text-amber-900">
+          Audience mismatch detected. Resend audience count is much lower than DB subscribers. Sending is blocked
+          until audience sync/env is fixed.
+        </div>
+      )}
 
       {campaign && (
         <div className="mt-4 border border-stone-200 p-4 bg-stone-50">
