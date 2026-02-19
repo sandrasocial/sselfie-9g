@@ -7,6 +7,7 @@ import {
   BRAND_ENGINE_BROADCAST_CAMPAIGN_NAME,
   BRAND_ENGINE_BROADCAST_PREVIEW,
   BRAND_ENGINE_BROADCAST_SUBJECT,
+  BRAND_ENGINE_BROADCAST_CTA_URL,
   getBrandEngineBroadcastHtml,
 } from "@/lib/email/templates/brand-engine-broadcast-feb-2026"
 
@@ -103,6 +104,35 @@ export async function POST() {
     const sql = getDb()
     const columnSet = await getCampaignColumnSet(sql)
     const bodyHtml = getBrandEngineBroadcastHtml()
+    const bodyText =
+      [
+        "Hey [first_name]",
+        "",
+        "Let me be really honest for a second.",
+        "",
+        "I built an app from EUR12. Learned to code. Grew to 180K followers.",
+        "Did it all as a single mom with two boys and my own ADHD to manage.",
+        "",
+        "And I still doubted myself every single day.",
+        "",
+        "In January I hit a wall. Not burnout. More like I couldn't celebrate what I'd built because I was already chasing the next thing.",
+        "",
+        "So I took my boys to the mountains. No wifi. No electricity. No running water. Just a fireplace, red wine and quiet.",
+        "",
+        "This chapter I'm doing things differently.",
+        "And I'm ready to help a small group of women do the same.",
+        "",
+        "I'm opening Brand Engine in March — 6 weeks where we build your entire personal brand together using AI.",
+        "Not a course. Not theory. Actually built.",
+        "",
+        "THE COHORT — EUR2,497",
+        "THE VIP — EUR4,997",
+        "",
+        "Apply for Brand Engine:",
+        BRAND_ENGINE_BROADCAST_CTA_URL,
+        "",
+        "Sandra",
+      ].join("\n")
     const targetAudience = JSON.stringify({ segment: "all_subscribers" })
 
     const [existing] = await sql`
@@ -128,6 +158,7 @@ export async function POST() {
       pushSet("subject_line", BRAND_ENGINE_BROADCAST_SUBJECT)
       if (columnSet.has("preview_text")) pushSet("preview_text", BRAND_ENGINE_BROADCAST_PREVIEW)
       if (columnSet.has("body_html")) pushSet("body_html", bodyHtml)
+      if (columnSet.has("body_text")) pushSet("body_text", bodyText)
       pushSet("status", "draft")
       if (columnSet.has("approval_status")) pushSet("approval_status", "pending")
       if (columnSet.has("target_segment")) pushSet("target_segment", "all_subscribers")
@@ -158,6 +189,7 @@ export async function POST() {
       pushInsert("subject_line", BRAND_ENGINE_BROADCAST_SUBJECT)
       if (columnSet.has("preview_text")) pushInsert("preview_text", BRAND_ENGINE_BROADCAST_PREVIEW)
       if (columnSet.has("body_html")) pushInsert("body_html", bodyHtml)
+      if (columnSet.has("body_text")) pushInsert("body_text", bodyText)
       pushInsert("status", "draft")
       if (columnSet.has("approval_status")) pushInsert("approval_status", "pending")
       if (columnSet.has("target_segment")) pushInsert("target_segment", "all_subscribers")
