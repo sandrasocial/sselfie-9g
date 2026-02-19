@@ -31,6 +31,11 @@ export default function BrandEngineApplicationPage() {
 
   useEffect(() => {
     const params = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : new URLSearchParams()
+    const offerTypeParam = (params.get("offerType") || "").toLowerCase()
+    const offerType =
+      offerTypeParam === "vip" || offerTypeParam === "cohort" || offerTypeParam === "both"
+        ? offerTypeParam
+        : "cohort"
     const utmSource = params.get("utm_source") || ""
     const utmMedium = params.get("utm_medium") || ""
     const utmCampaign = params.get("utm_campaign") || ""
@@ -47,6 +52,7 @@ export default function BrandEngineApplicationPage() {
 
     setFormData((prev) => ({
       ...prev,
+      offerType,
       sourceChannel: sourceChannel.toLowerCase(),
       sourceDetail: sourceDetail || utmDetail,
       utmSource,
