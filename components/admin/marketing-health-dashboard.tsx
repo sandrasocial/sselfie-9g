@@ -4,6 +4,7 @@ import { useMemo, useState } from "react"
 import useSWR from "swr"
 import Link from "next/link"
 import { AdminNav } from "./admin-nav"
+import { BrandEngineBroadcastPanel } from "./brand-engine-broadcast-panel"
 import { AdminLoadingState, AdminMetricCard } from "./shared"
 import { formatAdminDate } from "@/lib/admin/format-utils"
 import { RefreshCw, AlertTriangle, CheckCircle2 } from "lucide-react"
@@ -243,6 +244,8 @@ export function MarketingHealthDashboard() {
             )}
           </div>
         </div>
+
+        <BrandEngineBroadcastPanel />
 
         <div className="bg-white border border-stone-200 p-6 rounded-none mb-10 sm:mb-14">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
