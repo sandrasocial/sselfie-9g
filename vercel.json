@@ -1,78 +1,6 @@
 {
   "crons": [
     {
-      "path": "/api/cron/sync-audience-segments",
-      "schedule": "0 2 * * *"
-    },
-    {
-      "path": "/api/cron/refresh-segments",
-      "schedule": "0 3 * * *"
-    },
-    {
-      "path": "/api/cron/send-blueprint-followups",
-      "schedule": "10 10 * * *"
-    },
-    {
-      "path": "/api/cron/nurture-sequence",
-      "schedule": "0 11 * * *"
-    },
-    {
-      "path": "/api/cron/reactivation-campaigns",
-      "schedule": "10 11 * * *"
-    },
-    {
-      "path": "/api/cron/blueprint-discovery-funnel",
-      "schedule": "0 12 * * *"
-    },
-    {
-      "path": "/api/cron/reengagement-campaigns",
-      "schedule": "10 12 * * *"
-    },
-    {
-      "path": "/api/cron/send-scheduled-campaigns",
-      "schedule": "*/15 * * * *"
-    },
-    {
-      "path": "/api/cron/send-scheduled-newsletters",
-      "schedule": "*/15 * * * *"
-    },
-    {
-      "path": "/api/cron/backfill-resend-audience",
-      "schedule": "30 * * * *"
-    },
-    {
-      "path": "/api/cron/welcome-sequence",
-      "schedule": "0 10 * * *"
-    },
-    {
-      "path": "/api/cron/monthly-usage-recap",
-      "schedule": "15 15 * * *"
-    },
-    {
-      "path": "/api/cron/referral-rewards",
-      "schedule": "0 13 * * *"
-    },
-    {
-      "path": "/api/cron/milestone-bonuses",
-      "schedule": "0 14 * * *"
-    },
-    {
-      "path": "/api/cron/upsell-campaigns",
-      "schedule": "20 10 * * *"
-    },
-    {
-      "path": "/api/cron/admin-alerts",
-      "schedule": "0 7 * * *"
-    },
-    {
-      "path": "/api/health/e2e",
-      "schedule": "0 6 * * *"
-    },
-    {
-      "path": "/api/cron/reindex-codebase",
-      "schedule": "0 3 * * 0"
-    },
-    {
       "path": "/api/cron/resolve-pending-payments",
       "schedule": "*/5 * * * *"
     },
@@ -103,26 +31,6 @@
     {
       "path": "/api/cron/reconcile-subscriptions",
       "schedule": "*/30 * * * *"
-    },
-    {
-      "path": "/api/cron/funnel-report-daily",
-      "schedule": "0 8 * * *"
-    },
-    {
-      "path": "/api/cron/cohort-report-weekly",
-      "schedule": "15 8 * * 1"
-    },
-    {
-      "path": "/api/cron/arpu-churn-weekly",
-      "schedule": "25 8 * * 1"
-    },
-    {
-      "path": "/api/cron/cohort-delivery-load-weekly",
-      "schedule": "30 8 * * 1"
-    },
-    {
-      "path": "/api/cron/brand-engine-launch-digest",
-      "schedule": "20 8 * * *"
     }
   ]
 }

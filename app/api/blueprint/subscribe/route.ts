@@ -2,7 +2,6 @@ import { type NextRequest, NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import { Resend } from "resend"
 import { addOrUpdateResendContact } from "@/lib/resend/manage-contact"
-import { syncContactToFlodesk } from '@/lib/flodesk'
 
 const resend = new Resend(process.env.RESEND_API_KEY!)
 const sql = neon(process.env.DATABASE_URL!)
@@ -144,42 +143,6 @@ export async function POST(request: NextRequest) {
         `[v0] Resend integration unavailable, continuing without it:`,
         resendError instanceof Error ? resendError.message : "Unknown error",
       )
-    }
-
-    // NEW: Add to Flodesk (marketing contacts)
-    try {
-      const flodeskResult = await syncContactToFlodesk({
-        email,
-        name,
-        source: 'blueprint-subscriber',
-        tags: ['brand-blueprint', 'lead'],
-        customFields: {
-          status: 'lead',
-          product: 'sselfie-brand-blueprint',
-          journey: 'nurture',
-          signupDate: new Date().toISOString().split('T')[0],
-          business: formData?.business,
-          dreamClient: formData?.dreamClient,
-          struggle: formData?.struggle
-        }
-      })
-      
-      if (flodeskResult.success) {
-        console.log(`[v0] ✅ Added to Flodesk: ${email}`)
-        
-        await sql`
-          UPDATE blueprint_subscribers 
-          SET flodesk_contact_id = ${flodeskResult.contactId || email},
-              synced_to_flodesk = true,
-              flodesk_synced_at = NOW(),
-              updated_at = NOW()
-          WHERE id = ${newSubscriber.id}
-        `
-      } else {
-        console.warn(`[v0] ⚠️ Flodesk sync failed: ${flodeskResult.error}`)
-      }
-    } catch (flodeskError: any) {
-      console.warn(`[v0] ⚠️ Flodesk sync error:`, flodeskError)
     }
 
     console.log("[v0] Returning success response")

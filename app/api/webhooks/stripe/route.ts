@@ -17,7 +17,6 @@ import {
   updateContactTags as updateTags,
   addContactToSegment,
 } from "@/lib/resend/manage-contact"
-import { syncContactToFlodesk, tagFlodeskContact } from '@/lib/flodesk'
 import { hasStudioMembership } from "@/lib/subscription"
 import { isBrandEngineCheckoutProductType } from "@/lib/brand-engine/offer-checkout-config"
 
@@ -219,63 +218,6 @@ export async function POST(request: NextRequest) {
               }
             } else {
               console.error(`[v0] Failed to add paying customer to Resend: ${resendResult.error}`)
-            }
-
-            // NEW: Add paying customer to Flodesk (marketing contacts)
-            try {
-              console.log(`[v0] Adding paying customer to Flodesk: ${customerEmail}`)
-              
-              // Build tags - include beta-customer if beta segment exists
-              const flodeskTags = ['customer', 'paid', productTag]
-              if (process.env.RESEND_BETA_SEGMENT_ID) {
-                flodeskTags.push('beta-customer')
-              }
-              
-              const flodeskResult = await syncContactToFlodesk({
-                email: customerEmail,
-                name: firstName,
-                source: 'stripe-checkout',
-                tags: flodeskTags,
-                customFields: {
-                  status: 'customer',
-                  product: productTag,
-                  journey: 'onboarding',
-                  converted: 'true',
-                  purchaseDate: new Date().toISOString().split('T')[0],
-                  ...(process.env.RESEND_BETA_SEGMENT_ID && { betaCustomer: 'true' })
-                }
-              })
-              
-              if (flodeskResult.success) {
-                console.log(`[v0] ✅ Added paying customer to Flodesk: ${customerEmail}`)
-                
-                // Update freebie_subscribers with Flodesk contact ID
-                await sql`
-                  UPDATE freebie_subscribers 
-                  SET flodesk_contact_id = ${flodeskResult.contactId || customerEmail},
-                      synced_to_flodesk = true,
-                      flodesk_synced_at = NOW(),
-                      updated_at = NOW()
-                  WHERE email = ${customerEmail}
-                `
-                console.log(`[v0] ✅ Updated freebie_subscribers with Flodesk contact ID`)
-                
-                // Update blueprint_subscribers with Flodesk contact ID (if exists)
-                await sql`
-                  UPDATE blueprint_subscribers 
-                  SET flodesk_contact_id = ${flodeskResult.contactId || customerEmail},
-                      synced_to_flodesk = true,
-                      flodesk_synced_at = NOW(),
-                      updated_at = NOW()
-                  WHERE email = ${customerEmail}
-                `
-                console.log(`[v0] ✅ Updated blueprint_subscribers with Flodesk contact ID`)
-              } else {
-                console.warn(`[v0] ⚠️ Flodesk sync failed for paying customer: ${flodeskResult.error}`)
-              }
-            } catch (flodeskError: any) {
-              console.warn(`[v0] ⚠️ Flodesk sync error (non-critical):`, flodeskError)
-              // Don't fail webhook if Flodesk sync fails
             }
 
             await sql`
@@ -2756,24 +2698,6 @@ export async function POST(request: NextRequest) {
 
         console.log(`[v0] Subscription cancelled: ${subscription.id}`)
 
-        // Get customer email for Flodesk sync
-        let customerEmail: string | null = null
-        try {
-          const subRecord = await sql`
-            SELECT user_id FROM subscriptions WHERE stripe_subscription_id = ${subscription.id}
-          `
-          if (subRecord.length > 0) {
-            const userRecord = await sql`
-              SELECT email FROM users WHERE id = ${subRecord[0].user_id}
-            `
-            if (userRecord.length > 0) {
-              customerEmail = userRecord[0].email
-            }
-          }
-        } catch (emailError) {
-          console.warn(`[v0] Could not get customer email for subscription cancellation:`, emailError)
-        }
-
         await sql`
           UPDATE subscriptions
           SET status = 'canceled', updated_at = NOW()
@@ -2781,16 +2705,6 @@ export async function POST(request: NextRequest) {
         `
 
         console.log(`[v0] ✅ Subscription ${subscription.id} marked as canceled`)
-
-        // Tag customer as cancelled in Flodesk
-        if (customerEmail) {
-          try {
-            await tagFlodeskContact(customerEmail, ['cancelled'])
-            console.log(`[v0] ✅ Tagged cancelled customer in Flodesk: ${customerEmail}`)
-          } catch (flodeskError) {
-            console.warn(`[v0] ⚠️ Flodesk sync error (non-critical):`, flodeskError)
-          }
-        }
 
         break
       }
@@ -2904,24 +2818,6 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Get customer email for Flodesk sync
-        let customerEmail: string | null = null
-        try {
-          const subRecord = await sql`
-            SELECT user_id FROM subscriptions WHERE stripe_subscription_id = ${sub.id}
-          `
-          if (subRecord.length > 0) {
-            const userRecord = await sql`
-              SELECT email FROM users WHERE id = ${subRecord[0].user_id}
-            `
-            if (userRecord.length > 0) {
-              customerEmail = userRecord[0].email
-            }
-          }
-        } catch (emailError) {
-          console.warn(`[v0] Could not get customer email for subscription update:`, emailError)
-        }
-
         if (productType) {
           await sql`
             UPDATE subscriptions
@@ -2946,24 +2842,6 @@ export async function POST(request: NextRequest) {
             WHERE stripe_subscription_id = ${sub.id}
           `
           console.log(`[v0] 📝 Subscription ${sub.id} updated to status: ${stripeStatus} (product_type/plan unchanged — price not in env mapping)`)
-        }
-
-        // Update subscription status in Flodesk custom fields
-        if (customerEmail) {
-          try {
-            await syncContactToFlodesk({
-              email: customerEmail,
-              name: '', // Name not needed for update
-              source: 'stripe-webhook',
-              tags: [],
-              customFields: {
-                subscription_status: stripeStatus
-              }
-            })
-            console.log(`[v0] ✅ Updated subscription status in Flodesk: ${customerEmail} -> ${stripeStatus}`)
-          } catch (flodeskError) {
-            console.warn(`[v0] ⚠️ Flodesk sync error (non-critical):`, flodeskError)
-          }
         }
 
         break

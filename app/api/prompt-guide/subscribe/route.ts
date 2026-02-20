@@ -2,7 +2,6 @@ import { type NextRequest, NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import { Resend } from "resend"
 import { addOrUpdateResendContact, addContactToSegment } from "@/lib/resend/manage-contact"
-import { syncContactToFlodesk } from '@/lib/flodesk'
 import { cookies } from "next/headers"
 
 const resend = new Resend(process.env.RESEND_API_KEY!)
@@ -40,8 +39,6 @@ export async function POST(request: NextRequest) {
 
     let accessToken: string
 
-    let newSubscriberId: number | null = null
-
     if (existingSubscriber.length > 0) {
       accessToken = existingSubscriber[0].access_token
     } else {
@@ -69,10 +66,6 @@ export async function POST(request: NextRequest) {
         )
         RETURNING id
       `
-
-      if (insertResult && insertResult.length > 0) {
-        newSubscriberId = insertResult[0].id
-      }
 
       // Add to Resend contact list if tag provided
       if (emailListTag && process.env.RESEND_API_KEY) {
@@ -105,36 +98,6 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // NEW: Add to Flodesk (marketing contacts)
-      if (newSubscriberId) {
-        try {
-          const flodeskResult = await syncContactToFlodesk({
-            email,
-            name,
-            source: 'prompt-guide-subscriber',
-            tags: ['prompt-guide', emailListTag || 'prompt-guide'],
-            customFields: {
-              status: 'lead',
-              product: emailListTag,
-              journey: 'nurture'
-            }
-          })
-          
-          if (flodeskResult.success) {
-            console.log(`[PromptGuide] ✅ Added to Flodesk: ${email}`)
-            
-            await sql`
-              UPDATE freebie_subscribers 
-              SET flodesk_contact_id = ${flodeskResult.contactId || email},
-                  synced_to_flodesk = true,
-                  flodesk_synced_at = NOW()
-              WHERE id = ${newSubscriberId}
-            `
-          }
-        } catch (flodeskError: any) {
-          console.warn(`[PromptGuide] ⚠️ Flodesk sync error:`, flodeskError)
-        }
-      }
     }
 
     // Set access token cookie

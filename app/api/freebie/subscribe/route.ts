@@ -2,7 +2,6 @@ import { type NextRequest, NextResponse } from "next/server"
 import { neon } from "@neondatabase/serverless"
 import { Resend } from "resend"
 import { addOrUpdateResendContact } from "@/lib/resend/manage-contact"
-import { syncContactToFlodesk } from '@/lib/flodesk'
 import { generateFreebieGuideEmail } from "@/lib/email/templates/freebie-guide-email"
 import { sendEmail } from "@/lib/email/send-email"
 
@@ -171,41 +170,6 @@ export async function POST(request: NextRequest) {
       `
     } else {
       console.error(`[v0] Failed to add to Resend audience: ${resendResult.error}`)
-    }
-
-    // NEW: Add to Flodesk (marketing contacts)
-    try {
-      const flodeskResult = await syncContactToFlodesk({
-        email,
-        name,
-        source: 'freebie-subscriber',
-        tags: ['freebie-guide', 'lead'],
-        customFields: {
-          status: 'lead',
-          product: 'sselfie-guide',
-          journey: 'nurture',
-          signupDate: new Date().toISOString().split('T')[0]
-        }
-      })
-      
-      if (flodeskResult.success) {
-        console.log(`[v0] ✅ Added to Flodesk: ${email}`)
-        
-        await sql`
-          UPDATE freebie_subscribers 
-          SET flodesk_contact_id = ${flodeskResult.contactId || email},
-              synced_to_flodesk = true,
-              flodesk_synced_at = NOW(),
-              updated_at = NOW()
-          WHERE id = ${newSubscriber.id}
-        `
-      } else {
-        console.warn(`[v0] ⚠️ Flodesk sync failed (non-critical): ${flodeskResult.error}`)
-        // Don't fail the request - Flodesk sync is secondary
-      }
-    } catch (flodeskError: any) {
-      console.warn(`[v0] ⚠️ Flodesk sync error (non-critical):`, flodeskError)
-      // Don't fail the request - continue without Flodesk
     }
 
     let emailSent = false
