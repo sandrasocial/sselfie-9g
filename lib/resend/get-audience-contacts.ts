@@ -309,78 +309,10 @@ export async function getAudienceContacts(audienceId: string) {
 
 export async function getAudienceContactCount(audienceId: string): Promise<number> {
   try {
-    const result = await getAudienceContactCountFast(audienceId)
-    if (typeof result.count === "number") {
-      return result.count
-    }
-    return 0
+    const contacts = await getAudienceContacts(audienceId)
+    return contacts.length
   } catch (error) {
     console.error("[v0] Error fetching audience contact count:", error)
     return 0
   }
-}
-
-export async function getAudienceContactCountStatus(
-  audienceId: string,
-): Promise<{ count: number | null; error?: string }> {
-  try {
-    const result = await getAudienceContactCountFast(audienceId)
-    return {
-      count: typeof result.count === "number" ? result.count : null,
-      error: result.error,
-    }
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error"
-    console.error("[v0] Error fetching audience contact count:", message)
-    return { count: null, error: message }
-  }
-}
-
-async function getAudienceContactCountFast(
-  audienceId: string,
-): Promise<{ count: number | null; error?: string }> {
-  const resendApiKey = process.env.RESEND_API_KEY
-
-  if (!resendApiKey) {
-    return { count: null, error: "RESEND_API_KEY is not configured" }
-  }
-
-  const cacheKey = `resend:audience:${audienceId}:count`
-
-  return getOrFetch(
-    cacheKey,
-    async () => {
-      try {
-        const url = new URL(`https://api.resend.com/audiences/${audienceId}/contacts`)
-        url.searchParams.set("limit", "1")
-
-        const response = await fetch(url.toString(), {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${resendApiKey}`,
-            "Content-Type": "application/json",
-          },
-        })
-
-        if (!response.ok) {
-          const errorText = await response.text()
-          return { count: null, error: `Failed to fetch contacts from Resend: ${response.status} ${errorText}` }
-        }
-
-        const payload = await response.json()
-        const total = payload?.total ?? payload?.count ?? null
-
-        if (typeof total === "number") {
-          return { count: total }
-        }
-
-        const list = Array.isArray(payload?.data) ? payload.data : []
-        return { count: list.length }
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "Unknown error"
-        return { count: null, error: message }
-      }
-    },
-    CACHE_TTL.SHORT,
-  )
 }

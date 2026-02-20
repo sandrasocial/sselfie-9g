@@ -78,20 +78,10 @@ export async function GET() {
     `
 
     const subscriberCount = await loadSubscriberCount().catch(() => 0)
-    const [dbCountRow] = await sql`
-      SELECT COUNT(*)::int AS count
-      FROM freebie_subscribers
-      WHERE email IS NOT NULL
-        AND BTRIM(email) <> ''
-    `
-    const dbSubscriberCount = Number(dbCountRow?.count || 0)
-
     return NextResponse.json({
       success: true,
       campaign: campaign || null,
       subscriberCount,
-      dbSubscriberCount,
-      audienceMismatch: dbSubscriberCount > 0 && subscriberCount > 0 && subscriberCount < Math.ceil(dbSubscriberCount * 0.5),
     })
   } catch (error) {
     console.error("[Brand Engine Broadcast] GET failed:", error)
@@ -224,20 +214,10 @@ export async function POST() {
     const campaign = await getCampaignById(sql, campaignId)
 
     const subscriberCount = await loadSubscriberCount().catch(() => 0)
-    const [dbCountRow] = await sql`
-      SELECT COUNT(*)::int AS count
-      FROM freebie_subscribers
-      WHERE email IS NOT NULL
-        AND BTRIM(email) <> ''
-    `
-    const dbSubscriberCount = Number(dbCountRow?.count || 0)
-
     return NextResponse.json({
       success: true,
       campaign,
       subscriberCount,
-      dbSubscriberCount,
-      audienceMismatch: dbSubscriberCount > 0 && subscriberCount > 0 && subscriberCount < Math.ceil(dbSubscriberCount * 0.5),
       message: "Draft campaign is ready for preview and approval.",
     })
   } catch (error) {

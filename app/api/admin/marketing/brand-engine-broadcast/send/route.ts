@@ -46,24 +46,6 @@ export async function POST(request: NextRequest) {
     const sql = getDb()
 
     const subscriberCount = await getSubscriberCount().catch(() => 0)
-    const [dbCountRow] = await sql`
-      SELECT COUNT(*)::int AS count
-      FROM freebie_subscribers
-      WHERE email IS NOT NULL
-        AND BTRIM(email) <> ''
-    `
-    const dbSubscriberCount = Number(dbCountRow?.count || 0)
-
-    if (dbSubscriberCount > 0 && subscriberCount > 0 && subscriberCount < Math.ceil(dbSubscriberCount * 0.5)) {
-      return NextResponse.json(
-        {
-          error: "Audience mismatch detected. Resend audience is too small compared to DB subscribers.",
-          subscriberCount,
-          dbSubscriberCount,
-        },
-        { status: 409 },
-      )
-    }
 
     if (expectedRecipients > 0 && subscriberCount > 0 && expectedRecipients !== subscriberCount) {
       return NextResponse.json(
