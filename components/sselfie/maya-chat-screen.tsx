@@ -147,6 +147,10 @@ export default function MayaChatScreen({
     }
     return "photos" // Default to Photos tab
   })
+  
+  // Mode managed by useMayaMode hook
+  const { proMode, setProMode, getModeString, hasModeChanged } = useMayaMode(forcedProMode)
+
   const formattedCreditBalance = Number.isFinite(creditBalance)
     ? Math.round(creditBalance).toLocaleString()
     : "0"
@@ -191,10 +195,6 @@ export default function MayaChatScreen({
       observer.disconnect()
     }
   }, [])
-  
-  // Mode managed by useMayaMode hook
-  const { proMode, setProMode, getModeString, hasModeChanged } = useMayaMode(forcedProMode)
-  
   // Settings managed by useMayaSettings hook
   const {
     settings,
