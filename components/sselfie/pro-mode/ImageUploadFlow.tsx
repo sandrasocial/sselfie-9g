@@ -696,9 +696,7 @@ export default function ImageUploadFlow({
               padding: '0 clamp(16px, 4vw, 24px)',
             }}
           >
-            We&apos;ll help you organize your images into categories: selfies for your face and features, 
-            products for brand partnerships, people for lifestyle moments, and vibes for aesthetic inspiration. 
-            This library will power your creative projects in Studio Pro Mode.
+            Add your selfies to power Pro mode generation. You can always add more photos later.
           </p>
 
           {/* Begin Setup Button */}
@@ -727,7 +725,7 @@ export default function ImageUploadFlow({
                 e.currentTarget.style.backgroundColor = Colors.primary
               }}
             >
-              {ButtonLabels.beginSetup}
+              Add Photos
             </button>
           </div>
 

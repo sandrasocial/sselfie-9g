@@ -65,6 +65,7 @@ interface MayaUnifiedInputProps {
   
   // Styling
   proMode?: boolean
+  imageCount?: number
 }
 
 export default function MayaUnifiedInput({
@@ -86,6 +87,7 @@ export default function MayaUnifiedInput({
   onNewProject,
   onHistory,
   proMode = false,
+  imageCount = 0,
 }: MayaUnifiedInputProps) {
   const [inputValue, setInputValue] = useState('')
   const internalFileInputRef = useRef<HTMLInputElement>(null)
@@ -380,7 +382,17 @@ export default function MayaUnifiedInput({
                 <div className="w-5 h-5 border-2 border-stone-400 border-t-transparent rounded-full animate-spin" />
               )
             ) : (
-              <ImageIcon size={18} strokeWidth={2} />
+              <div className="relative">
+                <ImageIcon size={18} strokeWidth={2} />
+                {proMode && imageCount === 0 && (
+                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-orange-500 rounded-full" />
+                )}
+                {proMode && imageCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-[#0a0a0a] text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center">
+                    {imageCount > 9 ? "9+" : imageCount}
+                  </span>
+                )}
+              </div>
             )}
           </button>
 
@@ -538,4 +550,3 @@ export default function MayaUnifiedInput({
     </div>
   )
 }
-

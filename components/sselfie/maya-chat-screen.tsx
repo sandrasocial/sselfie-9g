@@ -102,6 +102,8 @@ export default function MayaChatScreen({
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const [showScrollButton, setShowScrollButton] = useState(false)
   const isAtBottomRef = useRef(true)
+  const inputBarRef = useRef<HTMLDivElement>(null)
+  const [inputBarHeight, setInputBarHeight] = useState(140)
   const [uploadedImage, setUploadedImage] = useState<string | null>(null)
   const [isUploadingImage, setIsUploadingImage] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -114,6 +116,8 @@ export default function MayaChatScreen({
   const [creditBalance, setCreditBalance] = useState<number>(0)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false)
+  const [showCollapsedPrompts, setShowCollapsedPrompts] = useState(false)
+  const [showProModeTooltip, setShowProModeTooltip] = useState(false)
   const [academyJourneyPrompt, setAcademyJourneyPrompt] = useState<"first_gen" | "three_gen" | null>(null)
   const [isLoadingAcademyJourneyState, setIsLoadingAcademyJourneyState] = useState(false)
   const router = useRouter()
@@ -143,6 +147,12 @@ export default function MayaChatScreen({
     }
     return "photos" // Default to Photos tab
   })
+  const formattedCreditBalance = Number.isFinite(creditBalance)
+    ? Math.round(creditBalance).toLocaleString()
+    : "0"
+  const shouldCollapseInputPrompts = messages.length > 1
+  const shouldShowInputPrompts = !shouldCollapseInputPrompts || showCollapsedPrompts
+  const isProSessionEmpty = proMode && !isLoadingChat && (!messages || messages.length === 0)
 
   useEffect(() => {
     if (!isFeedTabDisabled) return
@@ -153,6 +163,34 @@ export default function MayaChatScreen({
       window.history.replaceState(null, "", "#maya")
     }
   }, [activeMayaTab, isFeedTabDisabled])
+
+  useEffect(() => {
+    if (!proMode || typeof window === "undefined") return
+    if (localStorage.getItem("sselfie_pro_tooltip_seen") !== "true") {
+      setShowProModeTooltip(true)
+    }
+  }, [proMode])
+
+  useEffect(() => {
+    const node = inputBarRef.current
+    if (!node || typeof ResizeObserver === "undefined") return
+
+    const updateHeight = () => {
+      const height = Math.ceil(node.getBoundingClientRect().height)
+      if (height > 0) {
+        setInputBarHeight(height)
+        document.documentElement.style.setProperty("--input-bar-height", `${height}px`)
+      }
+    }
+
+    updateHeight()
+    const observer = new ResizeObserver(updateHeight)
+    observer.observe(node)
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [])
   
   // Mode managed by useMayaMode hook
   const { proMode, setProMode, getModeString, hasModeChanged } = useMayaMode(forcedProMode)
@@ -705,6 +743,14 @@ export default function MayaChatScreen({
           // Find the current last assistant message ID before updating
           const lastAssistantMessage = [...messages].reverse().find((m) => m.role === "assistant")
           const messageId = lastAssistantMessage?.id?.toString()
+          const normalizedConcepts = concepts.map((concept: any, index: number) => ({
+            ...concept,
+            id: concept.id || `concept-${messageId || "pending"}-${index}`,
+          }))
+          const normalizedResult = {
+            ...result,
+            concepts: normalizedConcepts,
+          }
           
           // Category context will be handled by new Pro Mode system
           if (pendingConceptRequest) {
@@ -731,7 +777,7 @@ export default function MayaChatScreen({
                   ...existingParts,
                   {
                     type: "tool-generateConcepts",
-                    output: result,
+                    output: normalizedResult,
                   } as any,
                 ],
               }
@@ -763,7 +809,7 @@ export default function MayaChatScreen({
                 chatId,
                 role: "assistant",
                 content: textContent || "",
-                conceptCards: concepts,
+                conceptCards: normalizedConcepts,
                 updateExisting: true, // Signal to update if message exists
               }),
             })
@@ -2472,6 +2518,30 @@ export default function MayaChatScreen({
         />
       </div>
 
+      {showProModeTooltip && proMode && (
+        <div
+          className="fixed left-0 right-0 z-[95] px-3 sm:px-4"
+          style={{ top: "calc(env(safe-area-inset-top, 0px) + 96px)" }}
+        >
+          <div className="mx-auto max-w-5xl border border-[#e5e5e5] bg-[#f5f5f5] px-4 py-3 text-sm text-[#666666] flex items-start justify-between gap-3">
+            <p className="font-light leading-relaxed">
+              Pro Mode uses your reference photos instead of your trained model. Perfect for product shots, lifestyle content, and trying new looks.
+            </p>
+            <button
+              onClick={() => {
+                setShowProModeTooltip(false)
+                if (typeof window !== "undefined") {
+                  localStorage.setItem("sselfie_pro_tooltip_seen", "true")
+                }
+              }}
+              className="shrink-0 text-xs uppercase tracking-wide text-stone-700 hover:text-stone-900"
+            >
+              Got it x
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Training Prompt - Show if user doesn't have trained model */}
       {!hasTrainedModel && (
         <div className="shrink-0 mx-3 sm:mx-4 mt-4 mb-4">
@@ -2620,7 +2690,7 @@ export default function MayaChatScreen({
             <div className="shrink-0 px-6 py-6 border-b border-stone-200/50">
               <div className="text-[10px] tracking-[0.15em] uppercase font-light text-stone-500 mb-2">Your Credits</div>
               <div className="text-3xl font-serif font-extralight text-stone-950 tabular-nums">
-                {creditBalance.toFixed(1)}
+                {formattedCreditBalance}
               </div>
             </div>
 
@@ -2730,7 +2800,7 @@ export default function MayaChatScreen({
           <div 
             className="flex-1 min-h-0 flex flex-col"
             style={{
-              paddingBottom: '140px', // Space for fixed bottom input
+              paddingBottom: 'calc(var(--input-bar-height, 140px) + env(safe-area-inset-bottom, 0px))',
             }}
           >
       {!isLoadingAcademyJourneyState && academyJourneyPrompt && (
@@ -2807,128 +2877,23 @@ export default function MayaChatScreen({
         enhancedAuthenticity={enhancedAuthenticity}
       />
           {/* Empty State - Pro Features: Image Upload Flow, Classic: Welcome Screen */}
-          {isEmpty && hasProFeatures && !isTyping && (
+          {isProSessionEmpty && hasProFeatures && !isTyping && (
             <div className="flex-1 flex items-center justify-center p-6 sm:p-8">
               <div className="max-w-2xl w-full space-y-8">
                 {/* Show ImageUploadFlow if library is empty, otherwise show welcome */}
                 {libraryTotalImages === 0 ? (
-                  <ImageUploadFlow
-                    initialLibrary={imageLibrary}
-                    onComplete={async (library) => {
-                      console.log("[v0] [Pro Features] Image upload flow completed:", library)
-                      
-                      // Save library using the hook
-                      await saveLibrary(library)
-                      
-                      // If intent was provided, update it
-                      if (library.intent) {
-                        await updateIntent(library.intent)
-                      }
-                      
-                      // Trigger concept generation with the library
-                      if (sendMessage && library.selfies.length > 0) {
-                        // Build message with intent - we're in Photos tab, so use concepts message
-                        const defaultMessage = "I'm ready to create concepts with my images"
-                        const messageText = library.intent || defaultMessage
-                        
-                        // Add all images to message
-                        const allImages = [
-                          ...library.selfies,
-                          ...library.products,
-                          ...library.people,
-                          ...library.vibes,
-                        ]
-                        
-                        const messageParts: Array<{ type: string; text?: string; image?: string }> = []
-                        
-                        // Add text part
-                        if (messageText) {
-                          messageParts.push({ type: "text", text: messageText })
-                        }
-                        
-                        // Add all images
-                        allImages.forEach(imageUrl => {
-                          messageParts.push({ type: "image", image: imageUrl })
-                        })
-                        
-                        console.log("[v0] [PRO MODE] Sending message to Maya with library:", {
-                          text: messageText,
-                          imageCount: allImages.length,
-                          selfies: library.selfies.length,
-                          products: library.products.length,
-                          people: library.people.length,
-                          vibes: library.vibes.length,
-                          intent: library.intent,
-                        })
-                        
-                        sendMessage({
-                          role: "user",
-                          parts: messageParts as any, // Type assertion for parts array
-                        })
-                      }
-                    }}
-                    onStartCreating={async (library) => {
-                      // 🔴 FIX: Navigate to creation flow after "Start Creating" button
-                      console.log("[v0] [PRO MODE] Start Creating clicked - triggering concept generation", library)
-                      
-                      // Use the library passed from ImageUploadFlow, not the stale imageLibrary
-                      // saveLibrary expects Partial<ImageLibrary>, so we pass the full library
-                      await saveLibrary({
-                        selfies: library.selfies,
-                        products: library.products,
-                        people: library.people,
-                        vibes: library.vibes,
-                        intent: library.intent,
-                      })
-                      
-                      // Refresh library to ensure Prompts tab gets updated state
-                      await refreshLibrary()
-                      
-                      // If intent exists, update it
-                      if (library.intent) {
-                        await updateIntent(library.intent)
-                      }
-                      
-                      // Trigger concept generation by sending a message to Maya
-                      if (sendMessage && library.selfies.length > 0) {
-                        // We're in Photos tab, so use concepts message
-                        const defaultMessage = "I'm ready to create concepts with my images"
-                        const messageText = library.intent || defaultMessage
-                        
-                        const allImages = [
-                          ...library.selfies,
-                          ...library.products,
-                          ...library.people,
-                          ...library.vibes,
-                        ]
-                        
-                        const messageParts: Array<{ type: string; text?: string; image?: string }> = []
-                        
-                        if (messageText) {
-                          messageParts.push({ type: "text", text: messageText })
-                        }
-                        
-                        allImages.forEach(imageUrl => {
-                          messageParts.push({ type: "image", image: imageUrl })
-                        })
-                        
-                        sendMessage({
-                          role: "user",
-                          parts: messageParts as any, // Type assertion for parts array
-                        })
-                      }
-                    }}
-                    onManageCategory={(category) => {
-                      // 🔴 FIX: Open manage modal for category
-                      console.log("[v0] [Pro Features] Manage category clicked:", category)
-                      // Open library modal - it will show all categories, user can manage from there
-                      setShowLibraryModal(true)
-                    }}
-                    onCancel={() => {
-                      // Allow canceling - user can start chat without images
-                      console.log("[v0] [Pro Features] Image upload flow cancelled")
-                    }}
-                  />
+                  <div className="flex flex-col items-center justify-center text-center space-y-5 py-8">
+                    <div className="w-12 h-12 rounded-full border border-stone-300 flex items-center justify-center bg-white">
+                      <ImageIcon className="w-6 h-6 text-stone-600" />
+                    </div>
+                    <p className="text-base font-light text-[#666666]">Add your reference photos to get started</p>
+                    <button
+                      onClick={() => setShowUploadFlow(true)}
+                      className="px-6 py-2.5 bg-black text-white rounded-full text-sm hover:bg-stone-900"
+                    >
+                      Add Photos
+                    </button>
+                  </div>
                 ) : (
                   // Welcome message when library has images - matches Classic styling
                   <div className="flex flex-col items-center justify-center text-center space-y-6">
@@ -2955,7 +2920,7 @@ export default function MayaChatScreen({
                             onSelect={handleSendMessage}
                             disabled={isTyping || isGeneratingConcepts}
                       variant="empty-state"
-                            proMode={proMode}
+                            studioProMode={proMode}
                             isEmpty={isEmpty}
                           />
                   </div>
@@ -2985,7 +2950,7 @@ export default function MayaChatScreen({
                 onSelect={handleSendMessage}
                 disabled={isTyping}
                 variant="empty-state"
-                proMode={proMode}
+                studioProMode={proMode}
               />
             </div>
           )}
@@ -2998,23 +2963,40 @@ export default function MayaChatScreen({
       {/* Subtle background for contrast - positioned above nav, z-index below nav */}
       {(activeMayaTab === "photos" || activeMayaTab === "feed") && (
         <div
+          ref={inputBarRef}
           className="fixed left-0 right-0 bg-white/60 backdrop-blur-md border-t border-stone-200/30 px-3 sm:px-4 py-2.5 sm:py-3 z-65 safe-bottom flex flex-col"
           style={{
             bottom: '80px', // Position above bottom navigation with extra spacing
             paddingBottom: "calc(env(safe-area-inset-bottom) + 0.5rem)",
-            maxHeight: 'calc(100vh - 80px)', // Prevent extending beyond viewport
+            maxHeight: `calc(100vh - 80px)`,
           }}
         >
           {/* Quick Actions */}
-          <MayaQuickPrompts
-            prompts={currentPrompts}
-            onSelect={handleSendMessage}
-            disabled={isTyping}
-            variant="input-area"
-            proMode={proMode}
-            isEmpty={isEmpty}
-            uploadedImage={uploadedImage}
-          />
+          {shouldShowInputPrompts ? (
+            <MayaQuickPrompts
+              prompts={currentPrompts}
+              onSelect={(prompt) => {
+                handleSendMessage(prompt)
+                if (shouldCollapseInputPrompts) {
+                  setShowCollapsedPrompts(false)
+                }
+              }}
+              disabled={isTyping}
+              variant="input-area"
+              studioProMode={proMode}
+              isEmpty={isEmpty}
+              uploadedImage={uploadedImage}
+            />
+          ) : (
+            <div className="mb-2 mt-1">
+              <button
+                onClick={() => setShowCollapsedPrompts(true)}
+                className="px-3 py-1.5 text-[11px] uppercase tracking-wide border border-stone-300 rounded-full bg-white/70 hover:bg-white"
+              >
+                Prompts
+              </button>
+            </div>
+          )}
 
           {uploadedImage && (
             <div className="mb-2 relative inline-block">
@@ -3073,6 +3055,7 @@ export default function MayaChatScreen({
             onNewProject={handleNewChat}
             onHistory={() => hasProFeatures ? setShowProModeHistory(true) : setShowHistory(true)}
             proMode={proMode}
+            imageCount={hasProFeatures ? libraryTotalImages : undefined}
           />
         </div>
       )}

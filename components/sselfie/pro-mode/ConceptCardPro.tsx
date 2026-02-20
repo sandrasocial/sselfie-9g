@@ -69,8 +69,10 @@ export default function ConceptCardPro({
   messageId,
 }: ConceptCardProProps) {
   const { toast } = useToast()
+  const PRO_MODE_GENERATION_CREDITS = 2
   const [showPromptModal, setShowPromptModal] = useState(false)
   const [isEditingPrompt, setIsEditingPrompt] = useState(false)
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false)
   const [editedPrompt, setEditedPrompt] = useState(concept.fullPrompt || '')
 
   // Sync editedPrompt with concept.fullPrompt when concept changes (but not when editing)
@@ -1253,6 +1255,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
 
         {/* Description */}
         <p
+          className={!isDescriptionExpanded ? "line-clamp-3" : ""}
           style={{
             fontFamily: Typography.body.fontFamily,
             fontSize: 'clamp(14px, 3vw, 16px)',
@@ -1264,6 +1267,14 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
         >
           {concept.description}
         </p>
+        {concept.description && concept.description.length > 150 && (
+          <button
+            onClick={() => setIsDescriptionExpanded((prev) => !prev)}
+            className="text-xs text-[#0a0a0a] underline mt-1"
+          >
+            {isDescriptionExpanded ? "See less" : "See more"}
+          </button>
+        )}
 
         {/* Dividing line */}
         <div
@@ -1394,6 +1405,9 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
           >
             {(isGenerating || isGeneratingState) ? 'Generating...' : ButtonLabels.generate}
           </button>
+          <p className="text-center text-xs text-[#666666] mt-1 sm:mt-0 sm:w-full sm:basis-full">
+            Uses {PRO_MODE_GENERATION_CREDITS} credits
+          </p>
 
           {/* Save to Guide button (admin only) */}
           {isAdmin && (
