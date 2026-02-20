@@ -154,9 +154,6 @@ export default function MayaChatScreen({
   const formattedCreditBalance = Number.isFinite(creditBalance)
     ? Math.round(creditBalance).toLocaleString()
     : "0"
-  const shouldCollapseInputPrompts = messages.length > 1
-  const shouldShowInputPrompts = !shouldCollapseInputPrompts || showCollapsedPrompts
-  const isProSessionEmpty = proMode && !isLoadingChat && (!messages || messages.length === 0)
 
   useEffect(() => {
     if (!isFeedTabDisabled) return
@@ -238,6 +235,9 @@ export default function MayaChatScreen({
     getModeString,
     activeTab: activeMayaTab, // Pass Feed tab flag
   })
+  const shouldCollapseInputPrompts = messages.length > 1
+  const shouldShowInputPrompts = !shouldCollapseInputPrompts || showCollapsedPrompts
+  const isProSessionEmpty = proMode && !isLoadingChat && (!messages || messages.length === 0)
 
   const [pendingConceptRequest, setPendingConceptRequest] = useState<string | null>(null)
   const [isGeneratingConcepts, setIsGeneratingConcepts] = useState(false)
