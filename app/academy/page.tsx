@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
-  weight: ["200", "300"],
+  weight: ["300"],
 })
 
 const inter = Inter({
@@ -120,7 +120,7 @@ export default function AcademyPage() {
         </p>
         <h1
           className={`${cormorant.className} text-5xl uppercase text-[#0a0a0a] md:text-6xl`}
-          style={{ fontWeight: 200, lineHeight: 1.0, letterSpacing: "-0.01em" }}
+          style={{ fontWeight: 300, lineHeight: 1.0, letterSpacing: "-0.01em" }}
         >
           Start here.
           <br />
@@ -157,7 +157,7 @@ export default function AcademyPage() {
 
               <h2
                 className={`${cormorant.className} mt-3 text-3xl uppercase text-[#0a0a0a]`}
-                style={{ fontWeight: 200, lineHeight: 1.1, letterSpacing: "-0.01em" }}
+                style={{ fontWeight: 300, lineHeight: 1.1, letterSpacing: "-0.01em" }}
               >
                 {product.name}
               </h2>
@@ -193,7 +193,7 @@ export default function AcademyPage() {
           </p>
           <h2
             className={`${cormorant.className} text-4xl uppercase text-[#0a0a0a]`}
-            style={{ fontWeight: 200, lineHeight: 1.1, letterSpacing: "-0.01em" }}
+            style={{ fontWeight: 300, lineHeight: 1.1, letterSpacing: "-0.01em" }}
           >
             Creator Studio
             <br />
