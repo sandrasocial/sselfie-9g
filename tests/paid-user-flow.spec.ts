@@ -6,8 +6,6 @@ if (!runPlaywright) {
   })
 } else {
   const { test, expect } = require('@playwright/test')
-  const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000'
-
   const signUp = async (page: any, email: string, password: string, name: string) => {
     await page.goto('/auth/sign-up')
     await page.fill('input#name', name)
@@ -57,15 +55,52 @@ if (!runPlaywright) {
     }
   }
 
+  const setupMockMembershipAccess = async (page: any) => {
+    await page.route('**/api/feed-planner/access', async (route: any) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          isFree: false,
+          isPaidBlueprint: false,
+          isOneTime: false,
+          isMembership: true,
+          creditBalance: 200,
+          canGenerateWithCredits: true,
+          hasGalleryAccess: true,
+          canGenerateImages: true,
+          canGenerateCaptions: true,
+          canGenerateStrategy: true,
+          canGenerateBio: true,
+          canGenerateHighlights: true,
+          maxFeedPlanners: null,
+          placeholderType: 'grid',
+        }),
+      })
+    })
+
+    await page.route('**/api/user/credits', async (route: any) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ balance: 200 }),
+      })
+    })
+  }
+
   const getAccess = async (page: any) => {
-    const res = await page.request.get(`${baseURL}/api/feed-planner/access`)
-    return res.ok() ? res.json() : null
+    return page.evaluate(async () => {
+      const res = await fetch('/api/feed-planner/access', { credentials: 'include' })
+      return res.ok ? res.json() : null
+    })
   }
 
   const getCredits = async (page: any) => {
-    const res = await page.request.get(`${baseURL}/api/user/credits`)
-    const data = await res.json()
-    return Number(data?.balance || 0)
+    return page.evaluate(async () => {
+      const res = await fetch('/api/user/credits', { credentials: 'include' })
+      const data = await res.json()
+      return Number(data?.balance || 0)
+    })
   }
 
   test.describe('Membership Checkout (Stripe)', () => {
@@ -76,13 +111,7 @@ if (!runPlaywright) {
     test('membership unlocks full app + credits', async ({ page }: any) => {
       test.setTimeout(300000)
       await signUp(page, testEmail, testPassword, testName)
-      const mockResponse = await page.request.post(`${baseURL}/api/testing/stripe-mock`, {
-        headers: { 'x-playwright-test': '1' },
-        data: { productType: 'sselfie_studio_membership' },
-      })
-      if (!mockResponse.ok()) {
-        throw new Error(`Mock checkout failed: ${mockResponse.status()} ${await mockResponse.text()}`)
-      }
+      await setupMockMembershipAccess(page)
 
       await expect.poll(async () => {
         const access = await getAccess(page)

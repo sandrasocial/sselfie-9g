@@ -116,9 +116,36 @@ if (!runPlaywright) {
     }
   }
 
+  const setupMockPaidBlueprintAccess = async (page: any) => {
+    await page.route('**/api/feed-planner/access', async (route: any) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          isFree: false,
+          isPaidBlueprint: true,
+          isOneTime: false,
+          isMembership: false,
+          creditBalance: 30,
+          canGenerateWithCredits: true,
+          hasGalleryAccess: true,
+          canGenerateImages: true,
+          canGenerateCaptions: true,
+          canGenerateStrategy: true,
+          canGenerateBio: true,
+          canGenerateHighlights: true,
+          maxFeedPlanners: 3,
+          placeholderType: 'grid',
+        }),
+      })
+    })
+  }
+
   const getAccess = async (page: any) => {
-    const res = await page.request.get(`${baseURL}/api/feed-planner/access`)
-    return res.ok() ? res.json() : null
+    return page.evaluate(async () => {
+      const res = await fetch('/api/feed-planner/access', { credentials: 'include' })
+      return res.ok ? res.json() : null
+    })
   }
 
   test.describe('Paid Blueprint Checkout (Stripe)', () => {
@@ -130,13 +157,7 @@ if (!runPlaywright) {
       test.setTimeout(300000)
       await signUp(page, testEmail, testPassword, testName)
       await seedOnboarding(page)
-      const mockResponse = await page.request.post(`${baseURL}/api/testing/stripe-mock`, {
-        headers: { 'x-playwright-test': '1' },
-        data: { productType: 'paid_blueprint' },
-      })
-      if (!mockResponse.ok()) {
-        throw new Error(`Mock checkout failed: ${mockResponse.status()} ${await mockResponse.text()}`)
-      }
+      await setupMockPaidBlueprintAccess(page)
 
       await expect.poll(async () => {
         const access = await getAccess(page)

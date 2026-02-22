@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Image from "next/image"
-import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Play, Camera } from "lucide-react"
+import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Play, Camera, Sparkles } from "lucide-react"
 import FullscreenImageModal from "./fullscreen-image-modal"
 import type { ConceptData } from "./types"
 
@@ -23,6 +23,7 @@ interface InstagramPhotoCardProps {
   isCreatingProPhotoshoot?: boolean
   generationStatus?: string // e.g., "Analyzing motion..." or "Generating Video..."
   generationProgress?: number // 0-100
+  animateOverlayStyle?: "play" | "create"
 }
 
 export default function InstagramPhotoCard({
@@ -42,6 +43,7 @@ export default function InstagramPhotoCard({
   isCreatingProPhotoshoot = false,
   generationStatus,
   generationProgress,
+  animateOverlayStyle = "play",
 }: InstagramPhotoCardProps) {
   const [isViewerOpen, setIsViewerOpen] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
@@ -214,10 +216,14 @@ export default function InstagramPhotoCard({
               ) : (
                 <>
                   <div className="w-16 h-16 bg-white/95 backdrop-blur-sm rounded-full flex items-center justify-center shadow-2xl transform scale-100 opacity-100 md:scale-90 md:opacity-0 md:group-hover:scale-100 md:group-hover:opacity-100 transition-all duration-300">
-                    <Play size={28} className="text-stone-950 ml-1" fill="currentColor" />
+                    {animateOverlayStyle === "create" ? (
+                      <Sparkles size={24} className="text-stone-950" />
+                    ) : (
+                      <Play size={28} className="text-stone-950 ml-1" fill="currentColor" />
+                    )}
                   </div>
                   <p className="text-white font-serif text-sm tracking-wide opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 mt-3">
-                    Click to Create B-Roll
+                    {animateOverlayStyle === "create" ? "Animate ->" : "Click to Create B-Roll"}
                   </p>
                 </>
               )}
@@ -332,10 +338,13 @@ export default function InstagramPhotoCard({
                 ) : (
                   <>
                     <Camera size={18} strokeWidth={2} />
-                    <span>Create Photoshoot in This Style</span>
+                    <span>{"Create Full Photoshoot ->"}</span>
                   </>
                 )}
               </button>
+            )}
+            {onCreatePhotoshoot && !isCreatingPhotoshoot && (
+              <p className="text-[11px] text-stone-500 text-center">6-9 matching photos - ~3 min</p>
             )}
             {onCreateProPhotoshoot && studioProMode && (
               <button

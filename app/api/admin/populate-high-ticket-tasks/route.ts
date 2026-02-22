@@ -217,7 +217,8 @@ export async function POST(req: NextRequest) {
       message: `✅ Created ${insertedCount} tasks for High-Ticket Offer Launch`,
       projectId,
       tasksCreated: insertedCount,
-      redirect: "/admin/project-tracker"
+      // removed in CLEANUP-01: /admin/project-tracker
+      redirect: "/admin"
     })
 
   } catch (error) {

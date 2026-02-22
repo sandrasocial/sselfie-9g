@@ -528,6 +528,7 @@ export default function MayaVideosTab({
                       }
                       isFavorite={false}
                       showAnimateOverlay={true}
+                      animateOverlayStyle="create"
                       generationStatus={
                         isGenerating
                           ? analyzingMotion.has(imageId)
@@ -611,6 +612,7 @@ export default function MayaVideosTab({
                       }
                       isFavorite={false}
                       showAnimateOverlay={true}
+                      animateOverlayStyle="create"
                       generationStatus={
                         isGenerating
                           ? analyzingMotion.has(imageId)
@@ -688,4 +690,3 @@ export default function MayaVideosTab({
     </div>
   )
 }
-

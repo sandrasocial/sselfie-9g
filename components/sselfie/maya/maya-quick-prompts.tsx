@@ -40,31 +40,30 @@ export default function MayaQuickPrompts({
   // Empty State - Classic Mode
   if (variant === "empty-state" && !studioProMode) {
     return (
-      <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 w-full max-w-2xl px-2 sm:px-4 -mx-2 snap-x snap-mandatory">
-        {prompts.map((item, index) => (
-          <button
-            key={index}
-            onClick={() => {
-              if (studioProMode) {
-                // Pro Mode: Send message to Maya
-                const guidanceMessage = item.prompt
-                
-                // Send the message - use setTimeout to ensure state is updated
-                setTimeout(() => {
-                  onSelect(guidanceMessage)
-                }, 100)
-              } else {
-                // Classic mode, send regular message
-                onSelect(item.prompt)
-              }
-            }}
-            className="shrink-0 px-4 py-2.5 sm:py-3 bg-white/50 backdrop-blur-xl border border-white/70 rounded-xl hover:bg-stone-100 hover:border-stone-300 transition-all duration-300 touch-manipulation active:scale-95 active:bg-stone-100 min-h-[44px] min-w-[120px] snap-start"
-          >
-            <span className="text-xs tracking-wide font-medium text-stone-700 whitespace-nowrap">
-              {item.label}
-            </span>
-          </button>
-        ))}
+      <div className="relative w-full max-w-2xl px-2 sm:px-4 -mx-2">
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 snap-x snap-mandatory">
+          {prompts.map((item, index) => (
+            <button
+              key={index}
+              onClick={() => {
+                if (studioProMode) {
+                  const guidanceMessage = item.prompt
+                  setTimeout(() => {
+                    onSelect(guidanceMessage)
+                  }, 100)
+                } else {
+                  onSelect(item.prompt)
+                }
+              }}
+              className="shrink-0 px-4 py-2.5 sm:py-3 bg-white/50 backdrop-blur-xl border border-white/70 rounded-xl hover:bg-stone-100 hover:border-stone-300 transition-all duration-300 touch-manipulation active:scale-95 active:bg-stone-100 min-h-[44px] min-w-[120px] snap-start"
+            >
+              <span className="text-xs tracking-wide font-medium text-stone-700 whitespace-nowrap">
+                {item.label}
+              </span>
+            </button>
+          ))}
+        </div>
+        <div className="pointer-events-none absolute right-2 sm:right-4 top-0 bottom-2 w-10 bg-gradient-to-l from-white/95 to-transparent" />
       </div>
     )
   }
@@ -123,22 +122,24 @@ export default function MayaQuickPrompts({
   if (variant === "input-area" && !studioProMode && !isEmpty && !uploadedImage) {
     return (
       <div className="mb-2 mt-2">
-        <div className="flex gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide pb-1 -mx-2 px-2 sm:mx-0 sm:px-0 snap-x snap-mandatory">
-          {prompts.map((item, index) => (
-            <button
-              key={index}
-              onClick={() => {
-                // Classic mode, send regular message
-                onSelect(item.prompt)
-              }}
-              disabled={disabled}
-              className="shrink-0 px-3 py-2 bg-white/40 backdrop-blur-xl border border-white/60 rounded-lg hover:bg-white/60 active:bg-white/80 transition-all duration-300 disabled:opacity-50 touch-manipulation active:scale-95 min-h-[44px] min-w-[100px] snap-start"
-            >
-              <span className="text-xs tracking-wide font-medium text-stone-700 whitespace-nowrap">
-                {item.label}
-              </span>
-            </button>
-          ))}
+        <div className="relative">
+          <div className="flex gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide pb-1 -mx-2 px-2 sm:mx-0 sm:px-0 snap-x snap-mandatory">
+            {prompts.map((item, index) => (
+              <button
+                key={index}
+                onClick={() => {
+                  onSelect(item.prompt)
+                }}
+                disabled={disabled}
+                className="shrink-0 px-3 py-2 bg-white/40 backdrop-blur-xl border border-white/60 rounded-lg hover:bg-white/60 active:bg-white/80 transition-all duration-300 disabled:opacity-50 touch-manipulation active:scale-95 min-h-[44px] min-w-[100px] snap-start"
+              >
+                <span className="text-xs tracking-wide font-medium text-stone-700 whitespace-nowrap">
+                  {item.label}
+                </span>
+              </button>
+            ))}
+          </div>
+          <div className="pointer-events-none absolute right-0 top-0 bottom-1 w-8 bg-gradient-to-l from-white/90 to-transparent" />
         </div>
       </div>
     )

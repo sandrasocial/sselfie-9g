@@ -125,24 +125,39 @@ export async function POST(request: NextRequest) {
           existingConcepts = currentMessageData.concept_cards
         }
         
-        // Merge: Update existing concepts or add new ones
+        // Merge: update by stable id first, then by title+prompt fallback for legacy rows
         const mergedConcepts = [...existingConcepts]
-        conceptCards.forEach((updatedConcept: any) => {
-          const existingIndex = mergedConcepts.findIndex((c: any) => {
-            const cId = c.id || `concept-${messageIdNum}-${mergedConcepts.indexOf(c)}`
-            const updatedId = updatedConcept.id || `concept-${messageIdNum}-${conceptCards.indexOf(updatedConcept)}`
-            return cId === updatedId
+        conceptCards.forEach((updatedConcept: any, updatedIndex: number) => {
+          const updatedId = updatedConcept.id || `concept-${messageIdNum}-${updatedIndex}`
+          const updatedTitle = typeof updatedConcept.title === "string" ? updatedConcept.title.trim().toLowerCase() : ""
+          const updatedPrompt = typeof updatedConcept.prompt === "string" ? updatedConcept.prompt.trim().toLowerCase() : ""
+
+          let existingIndex = mergedConcepts.findIndex((c: any, existingIndex: number) => {
+            const existingId = c.id || `concept-${messageIdNum}-${existingIndex}`
+            return existingId === updatedId
           })
-          
+
+          if (existingIndex < 0 && (updatedTitle || updatedPrompt)) {
+            existingIndex = mergedConcepts.findIndex((c: any) => {
+              const existingTitle = typeof c?.title === "string" ? c.title.trim().toLowerCase() : ""
+              const existingPrompt = typeof c?.prompt === "string" ? c.prompt.trim().toLowerCase() : ""
+              if (updatedTitle && existingTitle && updatedTitle !== existingTitle) return false
+              if (updatedPrompt && existingPrompt && updatedPrompt !== existingPrompt) return false
+              return !!(updatedTitle || updatedPrompt)
+            })
+          }
+
           if (existingIndex >= 0) {
-            // Update existing concept (merge properties)
             mergedConcepts[existingIndex] = {
               ...mergedConcepts[existingIndex],
-              ...updatedConcept, // Overwrite with new data (generatedImageUrl, predictionId, etc.)
+              ...updatedConcept,
+              id: mergedConcepts[existingIndex]?.id || updatedId,
             }
           } else {
-            // Add new concept (shouldn't happen, but safety)
-            mergedConcepts.push(updatedConcept)
+            mergedConcepts.push({
+              ...updatedConcept,
+              id: updatedId,
+            })
           }
         })
         

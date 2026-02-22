@@ -61,6 +61,7 @@ export default function ConceptCard({
   // This prevents undefined/null from accidentally triggering Pro logic
   // IMPORTANT: Only use isProMode (never raw studioProMode) in conditionals
   const isProMode = studioProMode === true
+  const conceptStableId = concept.id || (messageId ? `concept-${messageId}-${concept.title || "untitled"}` : undefined)
   const [isGenerating, setIsGenerating] = useState(false)
   const [isGenerated, setIsGenerated] = useState(false)
   // CRITICAL FIX: Initialize generatedImageUrl from concept prop (for persistence on page refresh)
@@ -141,6 +142,17 @@ export default function ConceptCard({
   const [promptAccuracy, setPromptAccuracy] = useState<number | null>(null)
   const [extraLora, setExtraLora] = useState<string | null>(null)
   const [realismStrength, setRealismStrength] = useState<number | null>(null)
+  const hasMenuActions = isProMode || (isAdmin && !!selectedGuideId)
+  const categoryLabelMap: Record<string, string> = {
+    "Environmental Portrait": "Outdoor scene",
+    "Half Body Lifestyle": "Lifestyle portrait",
+    "Full Body": "Full body",
+    Portrait: "Close-up portrait",
+    Lifestyle: "Lifestyle scene",
+    Casual: "Everyday style",
+    Action: "In-motion shot",
+  }
+  const categoryLabel = concept.category ? (categoryLabelMap[concept.category] || concept.category) : null
 
   // Image selection state for Studio Pro mode
   // Initialize with baseImages prop if provided, otherwise use sharedImages (for non-first cards) or empty
@@ -557,6 +569,7 @@ export default function ConceptCard({
             try {
               const updatedConcept = {
                 ...concept,
+                id: conceptStableId,
                 generatedImageUrl: data.imageUrl,
                 generationId: generationId,
                 predictionId: predictionId, // CRITICAL: Save predictionId so images can be found on refresh
@@ -753,6 +766,7 @@ export default function ConceptCard({
                   try {
                     const updatedConcept = {
                       ...concept,
+                      id: conceptStableId,
                       generatedImageUrl: status.output,
                       generationId: generationId,
                       predictionId: predictionId, // CRITICAL: Save predictionId so images can be found on refresh
@@ -1727,7 +1741,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
         ? 'border-stone-200/60' 
         : 'border-stone-200/60'
     }`}>
-      <div className="flex items-center justify-between px-4 py-3 border-b border-stone-200/60">
+      <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 border-b border-stone-200/60">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full border border-stone-300 bg-white flex items-center justify-center">
             <span className="text-xs font-serif text-stone-700">S</span>
@@ -1741,48 +1755,52 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                 </span>
               )}
             </div>
-            <span className="text-xs text-stone-500 font-light">{concept.category}</span>
+            {categoryLabel && (
+              <span className="text-xs text-stone-500 font-light">{categoryLabel}</span>
+            )}
           </div>
         </div>
-        <div className="relative" ref={menuRef}>
-          <button 
-            onClick={() => setShowMenu(!showMenu)}
-            className="p-1 hover:bg-stone-100 rounded-full transition-colors"
-            aria-label="More options"
-          >
-            <MoreVertical className="w-5 h-5 text-stone-700" />
-          </button>
-          
-          {showMenu && (
-            <div className="absolute right-0 top-8 z-50 w-48 bg-white border border-stone-200 rounded-lg shadow-lg py-1">
-              {isProMode && (
-                <button
-                  onClick={() => {
-                    setShowPromptEditor(true)
-                    setShowMenu(false)
-                  }}
-                  className="w-full px-4 py-2 text-left text-sm text-stone-700 hover:bg-stone-50 flex items-center gap-2 transition-colors"
-                >
-                  <Edit2 className="w-4 h-4" />
-                  <span>View/Edit Prompt</span>
-                </button>
-              )}
-              {isAdmin && selectedGuideId && (
-                <button
-                  onClick={handleSaveToGuide}
-                  disabled={isSavingToGuide}
-                  className="w-full px-4 py-2 text-left text-sm text-stone-700 hover:bg-stone-50 flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Bookmark className="w-4 h-4" />
-                  <span>{isSavingToGuide ? "Saving..." : "Save to Guide"}</span>
-                </button>
-              )}
-            </div>
-          )}
-        </div>
+        {hasMenuActions && (
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setShowMenu(!showMenu)}
+              className="p-1 hover:bg-stone-100 rounded-full transition-colors"
+              aria-label="More options"
+            >
+              <MoreVertical className="w-5 h-5 text-stone-700" />
+            </button>
+
+            {showMenu && (
+              <div className="absolute right-0 top-8 z-50 w-48 bg-white border border-stone-200 rounded-lg shadow-lg py-1">
+                {isProMode && (
+                  <button
+                    onClick={() => {
+                      setShowPromptEditor(true)
+                      setShowMenu(false)
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-stone-700 hover:bg-stone-50 flex items-center gap-2 transition-colors"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                    <span>View/Edit Prompt</span>
+                  </button>
+                )}
+                {isAdmin && selectedGuideId && (
+                  <button
+                    onClick={handleSaveToGuide}
+                    disabled={isSavingToGuide}
+                    className="w-full px-4 py-2 text-left text-sm text-stone-700 hover:bg-stone-50 flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Bookmark className="w-4 h-4" />
+                    <span>{isSavingToGuide ? "Saving..." : "Save to Guide"}</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      <div className="px-4 py-4 space-y-4">
+      <div className="px-3 sm:px-4 py-3 sm:py-4 space-y-3 sm:space-y-4">
         <div className="space-y-2">
           <p className="text-sm leading-relaxed text-stone-950 font-serif font-light">
             {concept.title}
@@ -2001,7 +2019,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
             )}
 
             {showPhotoshootConfirm && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+              <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-4 pb-44 sm:pb-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
                 <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden animate-in zoom-in-95 duration-200">
                   <div className="px-6 pt-6 pb-4 border-b border-stone-100">
                     <h3 className="text-lg font-semibold text-stone-950">Create Carousel?</h3>

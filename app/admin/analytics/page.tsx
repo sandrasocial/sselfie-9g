@@ -713,12 +713,7 @@ export default function AnalyticsPage() {
             >
               Open Launch Queue
             </Link>
-            <Link
-              href="/admin/marketing"
-              className="px-6 py-3 border border-white text-xs tracking-[0.2em] uppercase hover:bg-white hover:text-stone-950 transition-colors rounded-none"
-            >
-              Open Marketing Health
-            </Link>
+            {/* removed in CLEANUP-01: /admin/marketing */}
           </div>
         </div>
       </div>

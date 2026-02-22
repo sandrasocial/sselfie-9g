@@ -132,6 +132,7 @@ export default function MayaHeaderUnified({
   const [isMounted, setIsMounted] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const { toast } = useToast()
+  const formattedCredits = Number.isFinite(credits) ? Math.round(credits).toLocaleString() : "0"
 
   useEffect(() => {
     setIsMounted(true)
@@ -404,7 +405,7 @@ export default function MayaHeaderUnified({
                 Credits
               </span>
               <span className="text-xs sm:text-sm md:text-base font-semibold text-stone-950 tabular-nums">
-                {credits.toFixed(1)}
+                {formattedCredits}
               </span>
             </div>
           )}
@@ -580,14 +581,14 @@ export default function MayaHeaderUnified({
                         color: Colors.textPrimary,
                       }}
                     >
-                      {credits.toFixed(1)}
+                      {formattedCredits}
                     </div>
                   </>
                 ) : (
                   <>
                     <div className="text-[10px] tracking-[0.15em] uppercase font-light text-stone-500 mb-2">Your Credits</div>
                     <div className="text-3xl font-serif font-extralight text-stone-950 tabular-nums">
-                      {credits.toFixed(1)}
+                      {formattedCredits}
                     </div>
                   </>
                 )}
@@ -883,4 +884,3 @@ export default function MayaHeaderUnified({
     </>
   )
 }
-

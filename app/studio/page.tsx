@@ -162,7 +162,7 @@ export default async function StudioPage({
           <p className="text-sm font-medium text-black">
             🎭 Viewing as <span className="font-semibold">{neonUser.email}</span>
             {" "}
-            <a href="/admin/exit-impersonation" className="underline ml-2">Exit →</a>
+            {/* removed in CLEANUP-01: /admin/exit-impersonation */}
           </p>
         </div>
       )}

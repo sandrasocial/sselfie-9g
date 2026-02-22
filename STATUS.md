@@ -4,10 +4,10 @@
 ---
 
 ## Last Updated
-2026-02-20 18:06 CET — Updated by Codex (UX-02 code complete; deploy blocked)
+2026-02-20 18:47 CET — Updated by Codex (ACADEMY-01 foundation complete)
 
 ## Last Task Completed
-UX-02 code complete (validation done; deployment blocked)
+ACADEMY-01 complete (A-01/A-02/A-03)
 
 ## Maya Component Audit
 - Live header: `components/sselfie/maya/maya-header.tsx`
@@ -86,12 +86,22 @@ UX-02 code complete (validation done; deployment blocked)
 - Pro input image icon badge (orange dot at 0 images; count badge at 1+)
 - Image upload intro copy updated to selfie-only wording; intro CTA renamed to `Add Photos`
 - Validation run: targeted eslint on touched files (0 errors; warnings only), `pnpm dev` smoke succeeded (`GET /studio 307`)
+- ACADEMY-01 complete:
+- Tables created: `academy_course_purchases`, `academy_resource_purchases`, `user_tags`
+- New files: `lib/academy-access.ts`, `migrations/20260220_academy_foundation_tables.sql`
+- Modified files: `lib/products.ts`, `.env.local`
+- Stripe academy price IDs:
+- `STRIPE_PRICE_WHAT_TO_SAY=price_1T2xljEVJvME7vkwFcaN1GEw`
+- `STRIPE_PRICE_SHOW_UP=price_1T2xllEVJvME7vkwHC3r6GAI`
+- `STRIPE_PRICE_GET_PAID=price_1T2xlmEVJvME7vkwkbgotHoB`
+- Validation run: eslint on touched files passed; `pnpm dev` smoke succeeded (`GET /studio 307`)
 
 ## What's Broken / Unconfirmed
 - E-01: Subscriber count logic (DB shows 479 vs Resend 3,021) — not yet resolved
 - E-03: 1,965 hard bounces in subscriber list — not yet cleaned
 - `pnpm type-check` still fails with broad pre-existing repository issues (Next route typing, script typing, and test-runner globals)
 - UX-02 production deploy is blocked: `VERCEL_TOKEN` missing/invalid in this shell (`vercel --prod --yes --token $VERCEL_TOKEN` and `vercel --prod --yes` both failed auth)
+- ACADEMY-01 note: Stripe key in `.env.local` is `sk_live...`; academy prices were created with configured key mode
 
 ## Currently In Progress
 Nothing — awaiting Vercel token/auth fix for UX-02 deployment
@@ -100,4 +110,4 @@ Nothing — awaiting Vercel token/auth fix for UX-02 deployment
 - Provide valid Vercel auth (`VERCEL_TOKEN` or refreshed CLI login) so UX-02 can be deployed and URL recorded
 
 ## Next Task
-Deploy UX-02 after Vercel auth is restored, then record production URL
+ACADEMY-02 (checkout flow + Stripe webhook)

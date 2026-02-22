@@ -26,6 +26,19 @@ export interface PricingProduct {
   popular?: boolean
 }
 
+export interface AcademyProduct {
+  id: "what_to_say" | "show_up" | "get_paid" | "ai_photo_prompts"
+  name: string
+  tagline: string
+  price: number
+  currency: "eur"
+  stripePriceId: string
+  manychatKeyword: "SAY" | "CONTENT" | "PAID" | "PHOTOS"
+  tag: "bought_what_to_say" | "bought_show_up" | "bought_get_paid" | "bought_ai_photo_prompts"
+  upsellTo: "show_up" | "get_paid" | "membership" | "what_to_say"
+  description: string
+}
+
 // Credit top-up packages for existing members
 export const CREDIT_PACKAGES: CreditPackage[] = [
   {
@@ -85,6 +98,59 @@ export const PRICING_PRODUCTS: PricingProduct[] = [
     credits: 60, // 30 images × 2 credits per image
   },
 ]
+
+export const ACADEMY_PRODUCTS = {
+  what_to_say: {
+    id: "what_to_say",
+    name: "What To Say",
+    tagline: "Find Your Message In One Hour",
+    price: 1700,
+    currency: "eur",
+    stripePriceId: process.env.STRIPE_PRICE_WHAT_TO_SAY?.trim() || "",
+    manychatKeyword: "SAY",
+    tag: "bought_what_to_say",
+    upsellTo: "show_up",
+    description: "Stop staring at a blank screen. Know exactly what to post - starting today.",
+  },
+  show_up: {
+    id: "show_up",
+    name: "Show Up",
+    tagline: "30 Days of Content That Gets You Noticed",
+    price: 2700,
+    currency: "eur",
+    stripePriceId: process.env.STRIPE_PRICE_SHOW_UP?.trim() || "",
+    manychatKeyword: "CONTENT",
+    tag: "bought_show_up",
+    upsellTo: "get_paid",
+    description: "Have your entire month of content planned, written, and ready - by Sunday.",
+  },
+  get_paid: {
+    id: "get_paid",
+    name: "Get Paid",
+    tagline: "Turn Your Visibility Into Your First 500 EUR Online",
+    price: 4700,
+    currency: "eur",
+    stripePriceId: process.env.STRIPE_PRICE_GET_PAID?.trim() || "",
+    manychatKeyword: "PAID",
+    tag: "bought_get_paid",
+    upsellTo: "membership",
+    description: "You're showing up. Now let's make sure the right people notice - and pay you.",
+  },
+  ai_photo_prompts: {
+    id: "ai_photo_prompts",
+    name: "AI Photo Prompt Pack",
+    tagline: "Turn Selfies Into Brand Photos — No Photographer Needed",
+    price: 1700,
+    currency: "eur",
+    stripePriceId: process.env.STRIPE_PRICE_AI_PHOTO_PROMPTS?.trim() || "",
+    manychatKeyword: "PHOTOS",
+    tag: "bought_ai_photo_prompts",
+    upsellTo: "what_to_say",
+    description: "50 done-for-you AI prompts across 10 brand scenarios. Your phone is enough.",
+  },
+} as const satisfies Record<string, AcademyProduct>
+
+export type AcademyProductId = keyof typeof ACADEMY_PRODUCTS
 
 // ORIGINAL_PRICING removed - no longer needed with simplified 2-tier model
 

@@ -308,11 +308,6 @@ export async function getAudienceContacts(audienceId: string) {
 }
 
 export async function getAudienceContactCount(audienceId: string): Promise<number> {
-  try {
-    const contacts = await getAudienceContacts(audienceId)
-    return contacts.length
-  } catch (error) {
-    console.error("[v0] Error fetching audience contact count:", error)
-    return 0
-  }
+  const contacts = await getAudienceContacts(audienceId)
+  return contacts.length
 }

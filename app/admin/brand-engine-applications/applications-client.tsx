@@ -1,7 +1,6 @@
 "use client"
 
 import { useMemo, useState, type FormEvent } from "react"
-import Link from "next/link"
 import {
   BRAND_ENGINE_APPLICATION_SPRINT_DAYS,
   BRAND_ENGINE_COHORT_START_DATE,
@@ -487,12 +486,7 @@ export default function BrandEngineApplicationsClient({ applications }: { applic
       <div className="border-b border-stone-200 bg-white">
         <div className="max-w-7xl mx-auto px-6 py-6 flex justify-between items-center">
           <div>
-            <Link
-              href="/admin/project-tracker"
-              className="text-xs tracking-[0.2em] uppercase text-stone-400 hover:text-stone-600 transition-colors mb-2 inline-block"
-            >
-              ← Back to Tracker
-            </Link>
+            {/* removed in CLEANUP-01: /admin/project-tracker */}
             <h1 className="text-2xl font-['Times_New_Roman'] tracking-[0.05em] text-stone-950">
               Brand Engine Launch Tracker
             </h1>

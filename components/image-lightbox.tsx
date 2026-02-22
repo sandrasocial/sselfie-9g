@@ -49,6 +49,16 @@ export function ImageLightbox({ image, images, onClose, onFavorite, onDelete, is
     }
   }
 
+  const handleAddToFeed = () => {
+    const url = `/feed-planner?sourceImage=${encodeURIComponent(currentImage.image_url)}`
+    window.location.href = url
+  }
+
+  const handleMakeVideo = () => {
+    const url = `/studio#maya/videos`
+    window.location.href = url
+  }
+
   return (
     <div className="fixed inset-0 z-50 bg-stone-950/95 backdrop-blur-xl flex items-center justify-center p-4">
       {/* Close button */}
@@ -85,7 +95,23 @@ export function ImageLightbox({ image, images, onClose, onFavorite, onDelete, is
           className="max-w-full max-h-[70vh] object-contain rounded-2xl"
         />
 
-        {/* Actions */}
+        {/* Primary actions */}
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <button
+            onClick={handleAddToFeed}
+            className="px-4 py-2 rounded-full bg-white/15 hover:bg-white/25 text-white text-sm transition-colors"
+          >
+            Add to Feed -&gt;
+          </button>
+          <button
+            onClick={handleMakeVideo}
+            className="px-4 py-2 rounded-full bg-white/15 hover:bg-white/25 text-white text-sm transition-colors"
+          >
+            Make a Video -&gt;
+          </button>
+        </div>
+
+        {/* Secondary actions */}
         <div className="flex items-center gap-3">
           <button
             onClick={() => onFavorite(currentImage.id, !currentIsFavorited)}

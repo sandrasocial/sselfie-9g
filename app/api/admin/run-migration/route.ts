@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
-import { redirect } from 'next/navigation'
 
 /**
  * Run the project tracker database migration
@@ -186,8 +185,8 @@ async function runMigration(req: NextRequest) {
       `
     }
 
-    // Redirect back to project tracker
-    return NextResponse.redirect(new URL('/admin/project-tracker', req.url))
+    // removed in CLEANUP-01: /admin/project-tracker
+    return NextResponse.redirect(new URL('/admin', req.url))
   } catch (error) {
     console.error("[Migration] Error:", error)
     return NextResponse.json({
