@@ -1,6 +1,12 @@
 import { sql } from "@/lib/neon"
 
-export type CourseId = "what_to_say" | "show_up" | "get_paid"
+export type CourseId =
+  | "what_to_say"
+  | "show_up"
+  | "get_paid"
+  | "ai_photo_prompts"
+  | "editing_masterclass"
+  | "branded_by_sselfie"
 
 export async function userHasAcademyAccess(userId: string, courseId: CourseId): Promise<boolean> {
   try {

@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>What To Say — SSELFIE Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,200;0,300;1,200;1,300&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --obsidian: #0a0a0a;
+    --porcelain: #ffffff;
+    --pearl: #f5f5f5;
+    --smoke: #666666;
+    --whisper: #e5e5e5;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+  body {
+    background: var(--porcelain);
+    color: var(--obsidian);
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;
+    line-height: 1.8;
+    min-width: 375px;
+  }
+  .page { max-width: 680px; margin: 0 auto; padding: 0 48px; }
+  @media (max-width: 600px) { .page { padding: 0 24px; } }
+
+  /* TYPOGRAPHY */
+  h1, h2, h3, .serif {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 300;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+    text-transform: uppercase;
+  }
+  h1 { font-size: clamp(2.4rem, 6vw, 3.6rem); font-weight: 200; }
+  h2 { font-size: clamp(1.6rem, 4vw, 2.2rem); }
+  h3 { font-size: clamp(1.2rem, 3vw, 1.6rem); font-weight: 300; }
+  p { font-size: 16px; line-height: 1.8; color: var(--smoke); margin-bottom: 1.2em; }
+  p:last-child { margin-bottom: 0; }
+  strong { font-weight: 500; color: var(--obsidian); }
+
+  /* LABEL */
+  .label {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 10px;
+    letter-spacing: 0.5em;
+    text-transform: uppercase;
+    color: var(--smoke);
+  }
+
+  /* DIVIDER */
+  hr { border: none; border-top: 1px solid var(--whisper); margin: 48px 0; }
+
+  /* PROGRESS BAR */
+  #progress-bar {
+    position: fixed; top: 0; left: 0; height: 2px;
+    background: var(--obsidian); width: 0%; z-index: 100;
+    transition: width 0.2s ease;
+  }
+
+  /* NAV */
+  nav {
+    position: sticky; top: 0; background: var(--porcelain);
+    border-bottom: 1px solid var(--whisper);
+    z-index: 50; padding: 16px 0;
+  }
+  .nav-inner {
+    max-width: 680px; margin: 0 auto; padding: 0 48px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  @media (max-width: 600px) { .nav-inner { padding: 0 24px; } }
+  .nav-logo { font-family: 'Cormorant Garamond', serif; font-weight: 200; font-size: 1rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--obsidian); text-decoration: none; }
+  .nav-progress { font-family: 'Inter', sans-serif; font-weight: 500; font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--smoke); }
+
+  /* SECTIONS */
+  section { padding: 64px 0; }
+  section:first-of-type { padding-top: 80px; }
+
+  /* COVER */
+  .cover { text-align: center; padding: 96px 0 80px; }
+  .cover .label { margin-bottom: 24px; display: block; }
+  .cover h1 { margin-bottom: 16px; }
+  .cover .tagline { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.2rem; font-weight: 200; color: var(--smoke); text-transform: none; letter-spacing: 0; margin-bottom: 40px; }
+  .cover-meta { display: flex; justify-content: center; gap: 40px; flex-wrap: wrap; margin-top: 40px; }
+  .cover-meta-item { text-align: center; }
+  .cover-meta-item .number { font-family: 'Cormorant Garamond', serif; font-weight: 200; font-size: 2rem; display: block; color: var(--obsidian); }
+  .cover-meta-item .desc { font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--smoke); font-weight: 500; }
+
+  /* SANDRA NOTE */
+  .sandra-note {
+    background: var(--pearl);
+    padding: 40px;
+    border-left: 1px solid var(--whisper);
+    margin: 48px 0;
+  }
+  .sandra-note .label { margin-bottom: 20px; display: block; }
+  .sandra-note blockquote { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.1rem; font-weight: 300; line-height: 1.7; color: var(--obsidian); text-transform: none; letter-spacing: 0; }
+
+  /* EXERCISE */
+  .exercise-header {
+    display: flex; align-items: baseline; gap: 16px; margin-bottom: 32px;
+  }
+  .exercise-number {
+    font-family: 'Cormorant Garamond', serif; font-weight: 200;
+    font-size: 5rem; line-height: 1; color: var(--whisper);
+    flex-shrink: 0;
+  }
+  .exercise-title-block h2 { margin-bottom: 4px; }
+
+  /* QUESTION BLOCK */
+  .question-block { margin: 32px 0; }
+  .question-label { font-weight: 500; font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--obsidian); margin-bottom: 8px; display: block; }
+  .question-text { font-size: 15px; color: var(--smoke); margin-bottom: 12px; line-height: 1.6; }
+  textarea {
+    width: 100%; min-height: 100px; border: 1px solid var(--whisper);
+    background: var(--porcelain); padding: 16px; font-family: 'Inter', sans-serif;
+    font-weight: 300; font-size: 15px; line-height: 1.7; color: var(--obsidian);
+    resize: vertical; outline: none; transition: border-color 0.2s;
+  }
+  textarea:focus { border-color: var(--smoke); }
+  textarea::placeholder { color: var(--whisper); }
+
+  /* PILLAR */
+  .pillar { margin-bottom: 48px; padding-bottom: 48px; border-bottom: 1px solid var(--whisper); }
+  .pillar:last-child { border-bottom: none; }
+  .pillar-number { font-family: 'Cormorant Garamond', serif; font-weight: 200; font-size: 4rem; color: var(--whisper); line-height: 1; margin-bottom: 8px; }
+  .pillar h3 { margin-bottom: 16px; }
+  .pillar-sandra { background: var(--pearl); padding: 24px; margin: 20px 0; }
+  .pillar-sandra .label { margin-bottom: 8px; display: block; }
+
+  /* POSITIONING */
+  .formula-block {
+    background: var(--obsidian); color: var(--porcelain);
+    padding: 32px 40px; margin: 32px 0;
+  }
+  .formula-block .label { color: var(--smoke); margin-bottom: 16px; display: block; }
+  .formula-block p { color: var(--porcelain); font-size: 1.05rem; font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 300; margin: 0; }
+  .example-block { border-left: 2px solid var(--whisper); padding-left: 20px; margin: 12px 0; }
+  .example-block p { font-style: italic; font-size: 14px; color: var(--smoke); }
+  .positioning-input-group { margin-top: 32px; }
+  .positioning-row { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+  .positioning-row .fill-label { font-weight: 500; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--smoke); padding-top: 14px; white-space: nowrap; }
+  .positioning-row input {
+    flex: 1; min-width: 180px; border: none; border-bottom: 1px solid var(--whisper);
+    padding: 10px 0; font-family: 'Inter', sans-serif; font-weight: 300; font-size: 15px;
+    color: var(--obsidian); outline: none; background: transparent;
+    transition: border-color 0.2s;
+  }
+  .positioning-row input:focus { border-color: var(--obsidian); }
+  #positioning-preview {
+    background: var(--pearl); padding: 24px 28px; margin-top: 24px;
+    border-left: 2px solid var(--obsidian); display: none;
+  }
+  #positioning-preview .label { margin-bottom: 8px; display: block; }
+  #positioning-preview p { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.2rem; font-weight: 300; color: var(--obsidian); margin: 0; }
+</style>
+</head>
+<body>
+<div id="progress-bar"></div>
+
+<nav>
+  <div class="nav-inner">
+    <a class="nav-logo" href="#">SSELFIE Studio</a>
+    <span class="nav-progress" id="nav-progress">Exercise 0 / 5</span>
+  </div>
+</nav>
+
+<!-- COVER -->
+<div class="page">
+  <div class="cover">
+    <span class="label">SSELFIE Academy</span>
+    <h1>What<br>To Say</h1>
+    <p class="tagline">Find Your Message. Build Your Brand Without The Freeze.</p>
+    <div class="cover-meta">
+      <div class="cover-meta-item"><span class="number">60</span><span class="desc">Minutes</span></div>
+      <div class="cover-meta-item"><span class="number">5</span><span class="desc">Exercises</span></div>
+      <div class="cover-meta-item"><span class="number">30</span><span class="desc">Caption Starters</span></div>
+    </div>
+  </div>
+
+  <!-- FROM SANDRA -->
+  <section>
+    <span class="label">From Sandra</span>
+    <hr style="margin-top:16px;">
+    <div class="sandra-note" style="margin-top:32px;">
+      <span class="label">A Note Before You Start</span>
+      <blockquote>
+        "I don't know what to say."<br><br>
+        Those five words have cost you more than you probably realise. Not money. Time. Visibility. The opportunities that sit just beyond where people can actually see you.<br><br>
+        I spent eight months staring at a blank caption box. Not because I couldn't write. But because I genuinely didn't believe I had the right to take up that space. I wasn't polished enough. I wasn't certified enough. I wasn't "influencer enough." And every time I thought about posting, my brain would just... freeze.<br><br>
+        What changed wasn't that I suddenly became more qualified. It's that I stopped waiting for permission from someone else and gave it to myself.<br><br>
+        This workbook isn't going to teach you marketing formulas or viral hacks. You don't need another framework. What you need is clarity on who you are, what you actually believe, and what that sounds like when you say it out loud.<br><br>
+        And then you need proof that people want to hear it from you.<br><br>
+        This is that proof machine.<br><br>
+        — Sandra
+      </blockquote>
+    </div>
+  </section>
+
+  <!-- HOW THIS WORKS -->
+  <section>
+    <span class="label">How This Works</span>
+    <hr style="margin-top:16px;margin-bottom:32px;">
+    <div style="display:grid;gap:24px;">
+      <div>
+        <span class="question-label">Step 01 — Understand The Freeze</span>
+        <p>You're not frozen because you don't know how to write. You're frozen because you haven't given yourself permission to be visible. This section names exactly what's happening so you stop blaming yourself.</p>
+      </div>
+      <div>
+        <span class="question-label">Step 02 — Claim Your Identity</span>
+        <p>Before you write a single caption, you need to know who you are as a business. That's the thing that makes your voice sound like YOU instead of everyone else.</p>
+      </div>
+      <div>
+        <span class="question-label">Step 03 — Know Your Message</span>
+        <p>Once you know who you are and who you're talking to, the words come. This section gives you the exact rotation framework so you never stare at a blank screen again.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- EXERCISE 01 -->
+  <section id="exercise-1">
+    <div class="exercise-header">
+      <div class="exercise-number">01</div>
+      <div class="exercise-title-block">
+        <span class="label">Exercise One</span>
+        <h2>Who Are<br>You For?</h2>
+      </div>
+    </div>
+    <p>You can't know what to say until you know who you're saying it to. Not their age or job title — the woman lying awake at night, thinking about her life. The more real she is in your mind, the more real your words become.</p>
+
+    <div class="question-block">
+      <span class="question-label">Question 01 — Who Is Your One Person?</span>
+      <p class="question-text">Forget demographics. Describe a real woman. What's her situation right now? Is she newly separated? Building something for the first time? Scared of being visible? Tired of trying to be perfect?</p>
+      <textarea placeholder="She's 38, recently divorced, has two kids in primary school. She's been running a small photography business on the side but has never told anyone because she's afraid of being judged..."></textarea>
+    </div>
+
+    <div class="question-block">
+      <span class="question-label">Question 02 — What Does She Tell Herself?</span>
+      <p class="question-text">What's the story running in her head when she feels stuck? The exact self-talk you know she's wrestling with — because you've wrestled with it too.</p>
+      <textarea placeholder="'I'm too old to start now.' 'No one would pay me for this.' 'I don't have the right look or the right background...'"></textarea>
+    </div>
+
+    <div class="question-block">
+      <span class="question-label">Question 03 — What's The 90-Day Transformation?</span>
+      <p class="question-text">If she works with you, what becomes true for her in three months? Not a vague promise — a concrete shift.</p>
+      <textarea placeholder="She knows exactly what to post every week. She's made her first €500 from her brand. She's stopped apologising for taking up space online..."></textarea>
+    </div>
+
+    <div class="question-block">
+      <span class="question-label">Question 04 — Why Are YOU The Right Person?</span>
+      <p class="question-text">Not because of credentials. Because of your story. What have you lived through that makes you the person who can help her?</p>
+      <textarea placeholder="Because I rebuilt from nothing after my marriage ended. Because I know what it feels like to be invisible and terrified and do it anyway..."></textarea>
+    </div>
+  </section>
+
+  <!-- EXERCISE 02 — 5 PILLARS -->
+  <section id="exercise-2">
+    <div class="exercise-header">
+      <div class="exercise-number">02</div>
+      <div class="exercise-title-block">
+        <span class="label">Exercise Two</span>
+        <h2>Your 5<br>Message Pillars</h2>
+      </div>
+    </div>
+    <p>These five pillars are the backbone of everything you say. When you're tired or confused or doubting yourself, these remind you who you are and what you're here to do.</p>
+
+    <!-- PILLAR 1 -->
+    <div class="pillar">
+      <div class="pillar-number">1</div>
+      <h3>Your Story</h3>
+      <p>Your story is where you came from and what happened that brought you here. It's why you're not selling people something — you're walking them through something you've already walked through yourself.</p>
+      <div class="pillar-sandra">
+        <span class="label">How Sandra Uses It</span>
+        <p style="margin:0;font-style:italic;color:var(--smoke);">I talk about rebuilding after my marriage ended. About building SSELFIE from €12. About being a single mum with two boys. My people see themselves in that story and think: "If she did it, maybe I can too."</p>
+      </div>
+      <div class="question-block" style="margin-top:20px;">
+        <span class="question-label">Your Turn</span>
+        <textarea placeholder="What's the chapter of your life that makes you qualified to help your person? What did you go through that taught you what you now teach?"></textarea>
+      </div>
+    </div>
+
+    <!-- PILLAR 2 -->
+    <div class="pillar">
+      <div class="pillar-number">2</div>
+      <h3>Your Expertise</h3>
+      <p>What you know that other people don't. Not because you have a certificate — because you've lived it. You've figured it out. You've made the mistakes so your people don't have to.</p>
+      <div class="pillar-sandra">
+        <span class="label">How Sandra Uses It</span>
+        <p style="margin:0;font-style:italic;color:var(--smoke);">I've figured out how to build visibility from nothing. I know the exact words that make women say yes. I learned this by doing it, not by reading about it. That's my expertise.</p>
+      </div>
+      <div class="question-block" style="margin-top:20px;">
+        <span class="question-label">Your Turn</span>
+        <textarea placeholder="What do people come to you asking about? What have you figured out through your own experience that your people desperately need to know?"></textarea>
+      </div>
+    </div>
+
+    <!-- PILLAR 3 -->
+    <div class="pillar">
+      <div class="pillar-number">3</div>
+      <h3>Your Values</h3>
+      <p>What you stand for and what you refuse to do. The non-negotiables. Why people trust you — because they know exactly where you draw the line.</p>
+      <div class="pillar-sandra">
+        <span class="label">How Sandra Uses It</span>
+        <p style="margin:0;font-style:italic;color:var(--smoke);">I believe in women being visible and honest. I refuse to sell hype or false promises. I believe work should support your life, not steal it.</p>
+      </div>
+      <div class="question-block" style="margin-top:20px;">
+        <span class="question-label">Your Turn</span>
+        <textarea placeholder="What do you believe that's non-negotiable? What would you rather walk away from than compromise on?"></textarea>
+      </div>
+    </div>
+
+    <!-- PILLAR 4 -->
+    <div class="pillar">
+      <div class="pillar-number">4</div>
+      <h3>Your Vision</h3>
+      <p>What you believe is possible for your people. Not just their business — their life. The future you're helping them build. The thing that gets you out of bed even when the work is hard.</p>
+      <div class="pillar-sandra">
+        <span class="label">How Sandra Uses It</span>
+        <p style="margin:0;font-style:italic;color:var(--smoke);">I believe women can be financially free without sacrificing their families. I believe AI is the great equaliser — it takes you from "I can't" to "I can" in weeks instead of years.</p>
+      </div>
+      <div class="question-block" style="margin-top:20px;">
+        <span class="question-label">Your Turn</span>
+        <textarea placeholder="What future are you building for the women you serve? What do you believe becomes possible because of your work?"></textarea>
+      </div>
+    </div>
+
+    <!-- PILLAR 5 -->
+    <div class="pillar">
+      <div class="pillar-number">5</div>
+      <h3>Your Voice</h3>
+      <p>How you talk. What makes you sound like you and not like everyone else. The words you use. The way you phrase things. The personality that comes through when you're being real.</p>
+      <div class="pillar-sandra">
+        <span class="label">How Sandra Uses It</span>
+        <p style="margin:0;font-style:italic;color:var(--smoke);">I say "Let me be really honest for a second" when I'm about to tell the truth. I say "Wild, right?" when something clicks. I use short sentences. I say "babe" and "gorgeous" like I'm texting a friend. That's my voice. It's not an accident — it's a choice.</p>
+      </div>
+      <div class="question-block" style="margin-top:20px;">
+        <span class="question-label">Your Turn</span>
+        <textarea placeholder="How do you talk when you're not trying? What words do you come back to? What makes someone think 'That sounds like HER'?"></textarea>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- EXERCISE 03 — POSITIONING STATEMENT -->
+<div class="page">
+  <section id="exercise-3">
+    <div class="exercise-header">
+      <div class="exercise-number">03</div>
+      <div class="exercise-title-block">
+        <span class="label">Exercise Three</span>
+        <h2>Your Positioning<br>Statement</h2>
+      </div>
+    </div>
+    <p>One clear sentence about what you do. When you have this, you stop second-guessing every caption. You know immediately what to post and what to skip. People who need exactly what you offer find you way faster.</p>
+
+    <div class="formula-block">
+      <span class="label">The Formula</span>
+      <p>I help [WHO] do / get / become [WHAT] even if / without [OBJECTION].</p>
+    </div>
+
+    <div class="example-block"><p>"I help women who feel invisible online build a personal brand that actually makes money, even without a big following or fancy equipment."</p></div>
+    <div class="example-block"><p>"I help divorced mums rebuild their confidence and their income by teaching them how to show up authentically on social media."</p></div>
+    <div class="example-block"><p>"I help solopreneurs who are tired of copying other people's strategies create a business model that actually fits their life and values."</p></div>
+
+    <div class="positioning-input-group" style="margin-top:40px;">
+      <div class="positioning-row">
+        <span class="fill-label">I help</span>
+        <input type="text" id="pos-who" placeholder="recently divorced women building their first business" oninput="updatePositioning()">
+      </div>
+      <div class="positioning-row">
+        <span class="fill-label">do / get</span>
+        <input type="text" id="pos-what" placeholder="generate €2K/month from their personal brand" oninput="updatePositioning()">
+      </div>
+      <div class="positioning-row">
+        <span class="fill-label">even without</span>
+        <input type="text" id="pos-barrier" placeholder="a big audience, tech skills, or a professional camera" oninput="updatePositioning()">
+      </div>
+    </div>
+
+    <div id="positioning-preview">
+      <span class="label">Your Positioning Statement</span>
+      <p id="positioning-text"></p>
+    </div>
+
+    <p style="margin-top:32px;font-size:14px;color:var(--smoke);">Read it out loud. Does it sound like something you'd actually say? If it feels stiff or salesy, rewrite it in your own words. This is your North Star for everything you post from now on.</p>
+  </section>
+
+  <!-- EXERCISE 04 — CONTENT BUCKETS -->
+  <section id="exercise-4">
+    <div class="exercise-header">
+      <div class="exercise-number">04</div>
+      <div class="exercise-title-block">
+        <span class="label">Exercise Four</span>
+        <h2>Your Content<br>Buckets</h2>
+      </div>
+    </div>
+    <p>You don't need a new idea every day. You need a rotation that works. Four buckets. Four types of content your people actually want. Rotate them forever. The pressure is gone.</p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--whisper);margin:32px 0;">
+      <div style="background:var(--porcelain);padding:28px;">
+        <span class="question-label" style="color:var(--obsidian);">Story</span>
+        <p style="font-size:14px;margin-top:8px;">Real moments. Vulnerable moments. Failures. Wins. The messy middle. Where people fall in love with you.</p>
+      </div>
+      <div style="background:var(--pearl);padding:28px;">
+        <span class="question-label" style="color:var(--obsidian);">Teach</span>
+        <p style="font-size:14px;margin-top:8px;">What you know that helps your people. Not showing off — teaching. Real tips. Things they can actually use.</p>
+      </div>
+      <div style="background:var(--pearl);padding:28px;">
+        <span class="question-label" style="color:var(--obsidian);">Sell</span>
+        <p style="font-size:14px;margin-top:8px;">Your offer. Your products. What working with you looks like. People can't buy if they don't know what you offer.</p>
+      </div>
+      <div style="background:var(--porcelain);padding:28px;">
+        <span class="question-label" style="color:var(--obsidian);">Connect</span>
+        <p style="font-size:14px;margin-top:8px;">Questions. Polls. Opinions. Conversations. The fastest way to build community and understand what people need.</p>
+      </div>
+    </div>
+
+    <div style="display:grid;gap:32px;margin-top:40px;">
+      <div>
+        <span class="question-label">In my STORY bucket, I will post about:</span>
+        <textarea style="min-height:80px;" placeholder="1. The day I decided to start&#10;2. My biggest mistake so far&#10;3. A win I'm proud of&#10;4. What nobody tells you about rebuilding&#10;5. The hardest week I've had"></textarea>
+      </div>
+      <div>
+        <span class="question-label">In my TEACH bucket, I will post about:</span>
+        <textarea style="min-height:80px;" placeholder="1. The one thing my industry gets wrong&#10;2. My actual process for...&#10;3. Three mistakes I see women making&#10;4. How I learned to...&#10;5. What changed when I started doing..."></textarea>
+      </div>
+      <div>
+        <span class="question-label">In my SELL bucket, I will post about:</span>
+        <textarea style="min-height:80px;" placeholder="1. What's inside my offer&#10;2. A result from someone I've worked with&#10;3. The problem my offer solves&#10;4. An invitation to join / book / buy&#10;5. A before and after"></textarea>
+      </div>
+      <div>
+        <span class="question-label">In my CONNECT bucket, I will post about:</span>
+        <textarea style="min-height:80px;" placeholder="1. A question about their biggest struggle&#10;2. A controversial opinion to start a conversation&#10;3. A poll: which resonates more?&#10;4. 'What do you wish someone had told you...'&#10;5. An open invite: 'Tell me about your business'"></textarea>
+      </div>
+    </div>
+  </section>
+
+  <!-- EXERCISE 05 — BRAND WORDS -->
+  <section id="exercise-5">
+    <div class="exercise-header">
+      <div class="exercise-number">05</div>
+      <div class="exercise-title-block">
+        <span class="label">Exercise Five</span>
+        <h2>Your Brand<br>Words</h2>
+      </div>
+    </div>
+    <p>Ten words or phrases that sound like you when you're being real. Once you know them, you use them everywhere. Everything you write starts to sound consistent. Sounds like you.</p>
+
+    <div style="display:grid;gap:16px;margin:32px 0;">
+      <div>
+        <span class="question-label">Sandra's Voice</span>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;">
+          <span style="background:var(--pearl);padding:6px 14px;font-size:12px;letter-spacing:0.1em;">"Here's the thing"</span>
+          <span style="background:var(--pearl);padding:6px 14px;font-size:12px;letter-spacing:0.1em;">"Wild, right?"</span>
+          <span style="background:var(--pearl);padding:6px 14px;font-size:12px;letter-spacing:0.1em;">"Let me be really honest"</span>
+          <span style="background:var(--pearl);padding:6px 14px;font-size:12px;letter-spacing:0.1em;">"Babe"</span>
+          <span style="background:var(--pearl);padding:6px 14px;font-size:12px;letter-spacing:0.1em;">"Without the fluff"</span>
+          <span style="background:var(--pearl);padding:6px 14px;font-size:12px;letter-spacing:0.1em;">"You're allowed to"</span>
+          <span style="background:var(--pearl);padding:6px 14px;font-size:12px;letter-spacing:0.1em;">"Gorgeous"</span>
+          <span style="background:var(--pearl);padding:6px 14px;font-size:12px;letter-spacing:0.1em;">"Stop waiting"</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="question-block" style="margin-top:32px;">
+      <span class="question-label">Your 10 Brand Words</span>
+      <p class="question-text">Write them one per line. The words you use when you're excited. The phrases you repeat without thinking. How you start sentences. What makes someone think "That sounds like her."</p>
+      <textarea style="min-height:200px;" placeholder="1. &#10;2. &#10;3. &#10;4. &#10;5. &#10;6. &#10;7. &#10;8. &#10;9. &#10;10. "></textarea>
+    </div>
+  </section>
+</div>
+
+<!-- 30 CAPTION STARTERS -->
+<div class="page">
+  <section>
+    <span class="label">Resource Section</span>
+    <hr style="margin-top:16px;margin-bottom:32px;">
+    <h2 style="margin-bottom:8px;">30 Caption<br>Starters</h2>
+    <p style="margin-bottom:40px;">Pick the ones that feel true to you. Finish them. Make them yours. You don't have to use them all — you just need to find the ones that sound like you.</p>
+
+    <!-- STORY -->
+    <div style="margin-bottom:48px;">
+      <span class="label" style="display:block;margin-bottom:24px;border-bottom:1px solid var(--whisper);padding-bottom:12px;">Story — Personal, Vulnerability, Real Life</span>
+      <div id="captions-story" style="display:grid;gap:16px;"></div>
+    </div>
+
+    <!-- PERMISSION -->
+    <div style="margin-bottom:48px;">
+      <span class="label" style="display:block;margin-bottom:24px;border-bottom:1px solid var(--whisper);padding-bottom:12px;">Permission — Mindset, Internal Shifts</span>
+      <div id="captions-permission" style="display:grid;gap:16px;"></div>
+    </div>
+
+    <!-- TEACH -->
+    <div style="margin-bottom:48px;">
+      <span class="label" style="display:block;margin-bottom:24px;border-bottom:1px solid var(--whisper);padding-bottom:12px;">Teach — Expertise, Tips, What You Know</span>
+      <div id="captions-teach" style="display:grid;gap:16px;"></div>
+    </div>
+
+    <!-- SELL -->
+    <div style="margin-bottom:48px;">
+      <span class="label" style="display:block;margin-bottom:24px;border-bottom:1px solid var(--whisper);padding-bottom:12px;">Sell — Offers, Results, Transformation</span>
+      <div id="captions-sell" style="display:grid;gap:16px;"></div>
+    </div>
+
+    <!-- CONNECT -->
+    <div style="margin-bottom:48px;">
+      <span class="label" style="display:block;margin-bottom:24px;border-bottom:1px solid var(--whisper);padding-bottom:12px;">Connect — Questions, Opinions, Conversation</span>
+      <div id="captions-connect" style="display:grid;gap:16px;"></div>
+    </div>
+  </section>
+
+  <!-- 5-DAY ROTATION -->
+  <section>
+    <span class="label">Your System</span>
+    <hr style="margin-top:16px;margin-bottom:32px;">
+    <h2 style="margin-bottom:8px;">The 5-Day<br>Rotation</h2>
+    <p style="margin-bottom:40px;">Five days. Four buckets. Repeat forever. You'll never stare at a blank screen again.</p>
+
+    <div style="display:grid;gap:2px;background:var(--whisper);">
+      <div style="background:var(--porcelain);padding:32px;">
+        <div style="display:flex;align-items:baseline;gap:16px;margin-bottom:16px;">
+          <span style="font-family:'Cormorant Garamond',serif;font-weight:200;font-size:2rem;color:var(--whisper);">M</span>
+          <span class="question-label">Monday — Story</span>
+        </div>
+        <p style="font-size:14px;margin-bottom:12px;"><strong>Prompt: What Made You Start</strong></p>
+        <p style="font-size:14px;">Post about the moment you decided to build something. Not the perfect origin story. The real one. What were you running from? What were you running towards?</p>
+        <div style="border-left:2px solid var(--whisper);padding-left:16px;margin-top:16px;">
+          <p style="font-size:13px;font-style:italic;color:var(--smoke);">"My marriage ended on a Tuesday in November. By Thursday, I knew I had to build something that would let me control my own income. Not because I was angry. Because I was terrified. And terror is a really good motivator."</p>
+        </div>
+      </div>
+      <div style="background:var(--pearl);padding:32px;">
+        <div style="display:flex;align-items:baseline;gap:16px;margin-bottom:16px;">
+          <span style="font-family:'Cormorant Garamond',serif;font-weight:200;font-size:2rem;color:var(--whisper);">T</span>
+          <span class="question-label">Tuesday — Teach</span>
+        </div>
+        <p style="font-size:14px;margin-bottom:12px;"><strong>Prompt: The One Thing Everyone Gets Wrong</strong></p>
+        <p style="font-size:14px;">Share one piece of advice that contradicts what everyone else is saying. What do most people get wrong? What have you learned the hard way?</p>
+        <div style="border-left:2px solid var(--whisper);padding-left:16px;margin-top:16px;">
+          <p style="font-size:13px;font-style:italic;color:var(--smoke);">"Everyone tells you to post every day. But here's what I've learned: it's not the frequency that matters. It's the clarity. One thoughtful post a week will outperform five posts where you're just filling space."</p>
+        </div>
+      </div>
+      <div style="background:var(--porcelain);padding:32px;">
+        <div style="display:flex;align-items:baseline;gap:16px;margin-bottom:16px;">
+          <span style="font-family:'Cormorant Garamond',serif;font-weight:200;font-size:2rem;color:var(--whisper);">W</span>
+          <span class="question-label">Wednesday — Connect</span>
+        </div>
+        <p style="font-size:14px;margin-bottom:12px;"><strong>Prompt: Ask Your People Something Real</strong></p>
+        <p style="font-size:14px;">Ask a question that makes them actually think. Not "What's your biggest goal?" — ask something that makes them reveal a struggle, a fear, an honest answer. Then reply to the comments.</p>
+        <div style="border-left:2px solid var(--whisper);padding-left:16px;margin-top:16px;">
+          <p style="font-size:13px;font-style:italic;color:var(--smoke);">"Real question: how many times this week did you almost post something but didn't because you were scared it would be judged? I think we're all living smaller than we have to."</p>
+        </div>
+      </div>
+      <div style="background:var(--pearl);padding:32px;">
+        <div style="display:flex;align-items:baseline;gap:16px;margin-bottom:16px;">
+          <span style="font-family:'Cormorant Garamond',serif;font-weight:200;font-size:2rem;color:var(--whisper);">T</span>
+          <span class="question-label">Thursday — Teach (Part 2)</span>
+        </div>
+        <p style="font-size:14px;margin-bottom:12px;"><strong>Prompt: Show Them How You Do It</strong></p>
+        <p style="font-size:14px;">Walk through your actual process. Not the polished version. Show them something you're working on. Tell them what doesn't work. Give them the real, unfiltered version.</p>
+        <div style="border-left:2px solid var(--whisper);padding-left:16px;margin-top:16px;">
+          <p style="font-size:13px;font-style:italic;color:var(--smoke);">"Here's the inside of my writing process for captions: I write 10 versions. Nine are too salesy or too stiff. I delete all of them and go back to what I was thinking at 6am. That one's usually the one that works."</p>
+        </div>
+      </div>
+      <div style="background:var(--obsidian);padding:32px;">
+        <div style="display:flex;align-items:baseline;gap:16px;margin-bottom:16px;">
+          <span style="font-family:'Cormorant Garamond',serif;font-weight:200;font-size:2rem;color:var(--smoke);">F</span>
+          <span class="question-label" style="color:var(--smoke);">Friday — Sell</span>
+        </div>
+        <p style="font-size:14px;margin-bottom:12px;color:var(--porcelain);"><strong style="color:var(--porcelain);">Prompt: The Open Door</strong></p>
+        <p style="font-size:14px;color:var(--smoke);">Make an invitation to your offer, program, or product. Not pushy. Just: this exists, here's what it does, here's who it's for, here's how to get it.</p>
+        <div style="border-left:2px solid var(--smoke);padding-left:16px;margin-top:16px;">
+          <p style="font-size:13px;font-style:italic;color:var(--smoke);">"The next Brand Engine cohort starts March 16. This is for women who are ready to stop being invisible and start making actual money. If that's you, the link is in my bio."</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- UPSELL FOOTER -->
+  <section>
+    <div style="background:var(--pearl);padding:48px 40px;text-align:center;border-top:2px solid var(--obsidian);">
+      <span class="label" style="display:block;margin-bottom:16px;">Next Step</span>
+      <h2 style="margin-bottom:16px;">Now That You Know<br>What To Say,<br>What Do You Show?</h2>
+      <p style="max-width:460px;margin:0 auto 32px;">Knowing what to say is half the battle. The other half is knowing what to show. The AI Photo Prompt Pack turns your phone into a visual content machine. No photoshoot. No fancy camera. Just you and prompts specific to your brand.</p>
+      <a href="/academy/products/ai-photo-prompts" style="display:inline-block;background:var(--obsidian);color:var(--porcelain);padding:16px 40px;text-decoration:none;font-family:'Inter',sans-serif;font-weight:500;font-size:11px;letter-spacing:0.3em;text-transform:uppercase;">Check Out The AI Photo Prompt Pack — €17</a>
+    </div>
+  </section>
+
+  <div style="padding:40px 0;text-align:center;border-top:1px solid var(--whisper);">
+    <span class="label">SSELFIE Studio — sselfie.ai</span>
+  </div>
+</div>
+
+<style>
+  .caption-card {
+    border: 1px solid var(--whisper);
+    padding: 20px 24px;
+    position: relative;
+    background: var(--porcelain);
+  }
+  .caption-card p { font-size: 14px; line-height: 1.7; color: var(--obsidian); margin: 0; }
+  .caption-num { font-family:'Cormorant Garamond',serif;font-weight:200;font-size:1.2rem;color:var(--whisper);position:absolute;top:12px;right:16px; }
+  .copy-btn {
+    display:inline-flex;align-items:center;gap:6px;
+    margin-top:12px; background:transparent; border:1px solid var(--whisper);
+    padding:6px 14px; font-family:'Inter',sans-serif; font-weight:500;
+    font-size:10px;letter-spacing:0.3em;text-transform:uppercase;color:var(--smoke);
+    cursor:pointer;transition:all 0.2s;
+  }
+  .copy-btn:hover { background:var(--obsidian);color:var(--porcelain);border-color:var(--obsidian); }
+  .copy-btn.copied { background:var(--obsidian);color:var(--porcelain);border-color:var(--obsidian); }
+</style>
+
+<script>
+const CAPTIONS = {
+  story: [
+    "I spent eight months building something alone. No business degree, no investor, no safety net. Just me and €12 and a belief that this could work.",
+    "The day my marriage ended, I had €48 in my bank account and two boys who were counting on me. I'm telling you this because...",
+    "Nobody talks about the moment you realise you have to figure this out yourself. There's no plan B. There's just you, building.",
+    "I was so scared of being judged that I almost never hit post. And then I realised: the people judging me weren't my people anyway.",
+    "Six months ago, I couldn't afford groceries. Today, I'm writing about building a business. But here's what changed...",
+    "The worst part about being invisible online wasn't the money I wasn't making. It was the women I wasn't reaching."
+  ],
+  permission: [
+    "You're allowed to want more. You're allowed to ask for it. You're allowed to be visible about it. Stop waiting for someone to give you permission.",
+    "Your story is messy and unfinished and that's exactly why people need to hear it. The polished version? Nobody cares about that.",
+    "You don't have to pretend you have it figured out. People buy from real. People follow real. People remember real.",
+    "Stop waiting for the right degree. The right certificate. The right moment. You're ready right now. Your people are waiting.",
+    "You've already survived the hardest part. Building your business from here? That's actually the easy part.",
+    "It's not selfish to take up space. It's essential. Your voice, your story, your offer — the world needs those."
+  ],
+  teach: [
+    "The number one reason women don't post is because they're waiting to feel ready. But readiness is just a story you tell yourself.",
+    "Here's what I've learned: the captions that make the most money aren't the polished ones. They're the honest ones.",
+    "Three things I see women getting wrong about visibility: they're waiting for the right moment, they're trying to sound like someone else, and they're not posting often enough.",
+    "The best marketing move you can make is to show the real you. Not the highlight reel. The actual you.",
+    "If you want to know what your audience actually wants, stop guessing and start asking. The answer is usually in the comments.",
+    "Your biggest competitive advantage isn't your credentials. It's your story. Lean into that."
+  ],
+  sell: [
+    "The women in my program stop overthinking and start posting within the first week. Here's what changes for them...",
+    "You could figure this out on your own. It would take months and cost you money in mistakes. Or you could let me walk you through it.",
+    "My students are making their first €1K within 30 days of implementing this. And it's not because they're special. It's because they finally know what to do.",
+    "If you're ready to stop being invisible and start building something real, we should talk about whether this is right for you.",
+    "The difference between women who build and women who stay stuck? They had someone who believed in them before they believed in themselves.",
+    "I'm opening the cohort for two weeks only. Not to create false scarcity. But because once we're full, we're full."
+  ],
+  connect: [
+    "Tell me something: what's the biggest lie you've been telling yourself about your business? The one that's stopping you from posting?",
+    "What would you do if you weren't afraid of being judged? Because that's where your real business lives.",
+    "Here's my hot take: the biggest career mistake women make isn't that they aim too high. It's that they aim too low because they don't believe in themselves.",
+    "I'm curious: when was the last time you felt genuinely proud of something you built? Tell me in the comments.",
+    "What's one thing you wish someone had told you before you started building? I'm asking because I want to know what you needed to hear.",
+    "This is probably controversial: I think visibility is actually more important than perfection. Prove me wrong in the comments."
+  ]
+};
+
+function renderCaptions() {
+  const cats = ['story','permission','teach','sell','connect'];
+  let n = 1;
+  cats.forEach(cat => {
+    const el = document.getElementById('captions-' + cat);
+    if (!el) return;
+    CAPTIONS[cat].forEach(text => {
+      const num = String(n).padStart(2,'0');
+      el.innerHTML += `<div class="caption-card">
+        <span class="caption-num">${num}</span>
+        <p>${text}</p>
+        <button class="copy-btn" onclick="copyCaption(this,'${text.replace(/'/g,"\\'")}')">Copy Caption</button>
+      </div>`;
+      n++;
+    });
+  });
+}
+
+function copyCaption(btn, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copied ✓';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy Caption'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+function updatePositioning() {
+  const who = document.getElementById('pos-who').value.trim();
+  const what = document.getElementById('pos-what').value.trim();
+  const barrier = document.getElementById('pos-barrier').value.trim();
+  const preview = document.getElementById('positioning-preview');
+  const text = document.getElementById('positioning-text');
+  if (who || what || barrier) {
+    preview.style.display = 'block';
+    text.textContent = `I help ${who || '[who]'} ${what || '[what]'} even without ${barrier || '[barrier]'}.`;
+  } else {
+    preview.style.display = 'none';
+  }
+}
+
+// Progress tracking
+function trackProgress() {
+  const exercises = document.querySelectorAll('section[id^="exercise-"]');
+  const textareas = document.querySelectorAll('textarea, input[type="text"]');
+  let filled = 0;
+  textareas.forEach(t => { if (t.value.trim().length > 10) filled++; });
+  const pct = Math.min(100, Math.round((filled / textareas.length) * 100));
+  document.getElementById('progress-bar').style.width = pct + '%';
+
+  // Which exercise are we near?
+  let current = 0;
+  exercises.forEach((ex, i) => {
+    const rect = ex.getBoundingClientRect();
+    if (rect.top < window.innerHeight * 0.6) current = i + 1;
+  });
+  const nav = document.getElementById('nav-progress');
+  if (nav) nav.textContent = current > 0 ? `Exercise ${current} / 5` : `${pct}% Complete`;
+}
+
+// Save to localStorage
+function saveAnswers() {
+  const data = {};
+  document.querySelectorAll('textarea, input[type="text"]').forEach((el, i) => {
+    data['field_' + i] = el.value;
+  });
+  localStorage.setItem('wts_answers', JSON.stringify(data));
+}
+
+function loadAnswers() {
+  const data = JSON.parse(localStorage.getItem('wts_answers') || '{}');
+  document.querySelectorAll('textarea, input[type="text"]').forEach((el, i) => {
+    if (data['field_' + i]) el.value = data['field_' + i];
+  });
+  updatePositioning();
+  trackProgress();
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  renderCaptions();
+  loadAnswers();
+  window.addEventListener('scroll', trackProgress);
+  document.querySelectorAll('textarea, input[type="text"]').forEach(el => {
+    el.addEventListener('input', () => { trackProgress(); saveAnswers(); });
+  });
+});
+</script>
+</body>
+</html>
