@@ -235,8 +235,7 @@ export default function MayaChatScreen({
     getModeString,
     activeTab: activeMayaTab, // Pass Feed tab flag
   })
-  const shouldCollapseInputPrompts = messages.length > 1
-  const shouldShowInputPrompts = !shouldCollapseInputPrompts || showCollapsedPrompts
+
   const isProSessionEmpty = proMode && !isLoadingChat && (!messages || messages.length === 0)
 
   const [pendingConceptRequest, setPendingConceptRequest] = useState<string | null>(null)
@@ -271,6 +270,12 @@ export default function MayaChatScreen({
     galleryImages,
     loadGalleryImages,
   } = useMayaImages(proMode)
+
+  // UX-ACT-01 fix: only collapse prompts once user has generated at least one image.
+  // Previously: messages.length > 1 (blocked ALL new users from seeing quick-start prompts)
+  // Now: also requires libraryTotalImages > 0 so new users always see the escape hatch.
+  const shouldCollapseInputPrompts = messages.length > 1 && (libraryTotalImages ?? 0) > 0
+  const shouldShowInputPrompts = !shouldCollapseInputPrompts || showCollapsedPrompts
 
   // Shared images between Photos and Videos tabs
   const {
