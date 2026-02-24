@@ -4,6 +4,37 @@ import { Resend } from "resend"
 const resend = new Resend(process.env.RESEND_API_KEY)
 const audienceId = process.env.RESEND_AUDIENCE_ID!
 
+const TEST_EMAIL_DOMAINS = new Set([
+  "playwright.test",
+  "test.local",
+  "sselfie.test",
+  "sselfie-studio.internal",
+  "example.com",
+  "yopmail.com",
+])
+
+const TEST_LOCAL_PART_PATTERNS = [/^test[-_]/i, /^playwright/i, /^e2e/i, /^debug/i, /^smoke\\+/i, /^qa[-_]/i]
+
+function isTestEmail(email: string): boolean {
+  const normalized = email.trim().toLowerCase()
+  const atIndex = normalized.indexOf("@")
+  if (atIndex === -1) return false
+  const local = normalized.slice(0, atIndex)
+  const domain = normalized.slice(atIndex + 1)
+
+  if (TEST_EMAIL_DOMAINS.has(domain)) return true
+  if (domain.endsWith(".test") || domain.endsWith(".local")) return true
+  if (TEST_LOCAL_PART_PATTERNS.some((pattern) => pattern.test(local))) return true
+  return false
+}
+
+function shouldSkipResend(email: string): boolean {
+  const disableTestFilter = String(process.env.RESEND_DISABLE_TEST_EMAILS || "").toLowerCase() === "false"
+  if (disableTestFilter) return false
+  if (process.env.CI === "true") return true
+  return isTestEmail(email)
+}
+
 export interface ContactTags {
   source?: string // 'freebie-subscriber', 'one-time-purchase', 'membership'
   status?: string // 'lead', 'customer', 'converted'
@@ -29,6 +60,11 @@ export async function addOrUpdateResendContact(
     if (!audienceId) {
       console.log("[v0] RESEND_AUDIENCE_ID not configured, skipping audience sync")
       return { success: false, error: "Audience not configured" }
+    }
+
+    if (shouldSkipResend(email)) {
+      console.log(`[v0] Skipping Resend sync for test email: ${email}`)
+      return { success: true }
     }
 
     console.log(`[v0] Adding/updating contact in Resend audience: ${email}`)
@@ -107,6 +143,11 @@ export async function updateContactTags(
   try {
     if (!process.env.RESEND_API_KEY || !audienceId) {
       return { success: false, error: "Resend not configured" }
+    }
+
+    if (shouldSkipResend(email)) {
+      console.log(`[v0] Skipping Resend tag update for test email: ${email}`)
+      return { success: true }
     }
 
     console.log(`[v0] Updating tags for contact: ${email}`)
@@ -188,6 +229,11 @@ export async function removeResendContact(email: string): Promise<{ success: boo
       return { success: false, error: "Resend not configured" }
     }
 
+    if (shouldSkipResend(email)) {
+      console.log(`[v0] Skipping Resend removal for test email: ${email}`)
+      return { success: true }
+    }
+
     console.log(`[v0] Removing contact from Resend: ${email}`)
 
     // Get existing contact
@@ -241,6 +287,11 @@ export async function addContactToSegment(
       return { success: false, error: "Audience not configured" }
     }
 
+    if (shouldSkipResend(email)) {
+      console.log(`[v0] Skipping Resend segment add for test email: ${email}`)
+      return { success: true }
+    }
+
     console.log(`[v0] Adding contact ${email} to segment ${segmentId}`)
 
     // Use the Resend API to add contact to segment
@@ -289,6 +340,11 @@ export async function removeContactFromSegment(
     if (!audienceId) {
       console.log("[v0] RESEND_AUDIENCE_ID not configured, skipping segment removal")
       return { success: false, error: "Audience not configured" }
+    }
+
+    if (shouldSkipResend(email)) {
+      console.log(`[v0] Skipping Resend segment remove for test email: ${email}`)
+      return { success: true }
     }
 
     console.log(`[v0] Removing contact ${email} from segment ${segmentId}`)
