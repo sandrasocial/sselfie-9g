@@ -13,6 +13,8 @@ import { ACADEMY_PRODUCTS } from "@/lib/products"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { checkWebhookRateLimit } from "@/lib/rate-limit"
 import { logWebhookError, alertWebhookError, isCriticalError } from "@/lib/webhook-monitoring"
+import { notifyNorth } from "@/lib/north-notifier"
+import { sendWelcomeEmail } from "@/lib/welcome-email"
 import {
   addOrUpdateResendContact,
   updateContactTags as updateTags,
@@ -2378,6 +2380,34 @@ export async function POST(request: NextRequest) {
         }
 
         // Credits for subscription creation are handled above (already checked livemode)
+        try {
+          const customerId =
+            typeof subscription.customer === "string" ? subscription.customer : subscription.customer?.id
+          if (customerId) {
+            const customer = await stripe.customers.retrieve(customerId)
+            if (customer && !customer.deleted) {
+              const item = subscription.items?.data?.[0]
+              const plan = item?.price?.nickname || item?.price?.id
+              const unitAmount = item?.price?.unit_amount
+              const amount = typeof unitAmount === "number" ? `€${unitAmount / 100}/mo` : undefined
+
+              void notifyNorth({
+                path: "stripe-new-member",
+                customerId: customer.id,
+                email: customer.email ?? undefined,
+                firstName: customer.name?.split(" ")[0] ?? undefined,
+                plan,
+                amount,
+              })
+
+              if (customer.email && customer.name) {
+                await sendWelcomeEmail(customer.email, customer.name.split(" ")[0])
+              }
+            }
+          }
+        } catch (notifyError) {
+          console.error("[v0] Failed to notify North for subscription.created:", notifyError)
+        }
         break
       }
 
@@ -2793,6 +2823,28 @@ export async function POST(request: NextRequest) {
 
         console.log(`[v0] ✅ Subscription ${subscription.id} marked as canceled`)
 
+        try {
+          const customerId =
+            typeof subscription.customer === "string" ? subscription.customer : subscription.customer?.id
+          if (customerId) {
+            const customer = await stripe.customers.retrieve(customerId)
+            if (customer && !customer.deleted) {
+              const item = subscription.items?.data?.[0]
+              const plan = item?.price?.nickname || item?.price?.id
+
+              void notifyNorth({
+                path: "stripe-cancellation",
+                customerId: customer.id,
+                email: customer.email ?? undefined,
+                firstName: customer.name?.split(" ")[0] ?? undefined,
+                plan,
+              })
+            }
+          }
+        } catch (notifyError) {
+          console.error("[v0] Failed to notify North for subscription.deleted:", notifyError)
+        }
+
         break
       }
 
@@ -2874,6 +2926,27 @@ export async function POST(request: NextRequest) {
           })
         } catch (emailError) {
           console.error("[v0] ⚠️ Failed to send payment failed email:", emailError)
+        }
+
+        try {
+          const customerId =
+            typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id
+          if (customerId) {
+            const customer = await stripe.customers.retrieve(customerId)
+            if (customer && !customer.deleted) {
+              const amount = typeof invoice.amount_due === "number" ? `€${invoice.amount_due / 100}` : undefined
+
+              void notifyNorth({
+                path: "stripe-payment-failed",
+                customerId: customer.id,
+                email: customer.email ?? undefined,
+                firstName: customer.name?.split(" ")[0] ?? undefined,
+                amount,
+              })
+            }
+          }
+        } catch (notifyError) {
+          console.error("[v0] Failed to notify North for invoice.payment_failed:", notifyError)
         }
         break
       }
