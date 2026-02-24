@@ -14,7 +14,6 @@ import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { checkWebhookRateLimit } from "@/lib/rate-limit"
 import { logWebhookError, alertWebhookError, isCriticalError } from "@/lib/webhook-monitoring"
 import { notifyNorth } from "@/lib/north-notifier"
-import { sendWelcomeEmail } from "@/lib/welcome-email"
 import {
   addOrUpdateResendContact,
   updateContactTags as updateTags,
@@ -2399,10 +2398,6 @@ export async function POST(request: NextRequest) {
                 plan,
                 amount,
               })
-
-              if (customer.email && customer.name) {
-                await sendWelcomeEmail(customer.email, customer.name.split(" ")[0])
-              }
             }
           }
         } catch (notifyError) {
