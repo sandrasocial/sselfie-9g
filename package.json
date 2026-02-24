@@ -30,7 +30,8 @@
     "test:feed-planner": "tsx scripts/test-feed-planner-issues.ts",
     "index-codebase": "tsx scripts/index-codebase.ts",
     "validate-columns": "tsx scripts/validate-column-names.ts",
-    "check:prompt-authority": "tsx scripts/check-prompt-authority.ts"
+    "check:prompt-authority": "tsx scripts/check-prompt-authority.ts",
+    "routes:inventory": "node scripts/inventory-routes.mjs"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "latest",

@@ -1,4 +1,5 @@
 import { createBrowserClient } from "@supabase/ssr"
+import { DEBUG_LOGS } from "@/lib/debug"
 
 export function createClient() {
   const supabaseUrl =
@@ -9,15 +10,15 @@ export function createClient() {
     process.env.SUPABASE_VITE_PUBLIC_SUPABASE_ANON_KEY ||
     process.env.SUPABASE_ANON_KEY
 
-  console.log("[v0] Browser Supabase env check:", {
-    url: supabaseUrl ? `✓ ${supabaseUrl.substring(0, 30)}...` : "✗ Missing",
-    key: supabaseAnonKey ? "✓ Set" : "✗ Missing",
-    allEnvKeys: Object.keys(process.env).filter((k) => k.includes("SUPABASE")),
-  })
+  if (DEBUG_LOGS) {
+    console.log("[v0] Supabase env present:", {
+      hasUrl: Boolean(supabaseUrl),
+      hasAnonKey: Boolean(supabaseAnonKey),
+    })
+  }
 
   if (!supabaseUrl || !supabaseAnonKey) {
     console.error("[v0] ❌ Missing Supabase environment variables")
-    console.error("[v0] Available env vars:", Object.keys(process.env))
     throw new Error("Missing Supabase environment variables. Please check your configuration.")
   }
 
