@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Loader2 } from "lucide-react"
+import { ACADEMY_PRODUCTS } from "@/lib/products"
 
 interface Course {
   id: string
@@ -37,7 +38,9 @@ export default function AdminAcademyPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
 
-  const [activeTab, setActiveTab] = useState<"courses" | "templates" | "monthly-drops" | "flatlay-images">("courses")
+  const [activeTab, setActiveTab] = useState<
+    "courses" | "templates" | "monthly-drops" | "flatlay-images" | "grant-access"
+  >("courses")
 
   const [courses, setCourses] = useState<Course[]>([])
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null)
@@ -92,6 +95,20 @@ export default function AdminAcademyPage() {
   const [uploadingFlatlayThumbnail, setUploadingFlatlayThumbnail] = useState(false)
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false) // Added: uploadingThumbnail state
   const [uploadProgress, setUploadProgress] = useState<string>("")
+
+  const academyProductOptions = Object.values(ACADEMY_PRODUCTS)
+  const defaultCourseId = academyProductOptions[0]?.id ?? "what_to_say"
+  const [grantForm, setGrantForm] = useState({
+    email: "",
+    courseId: defaultCourseId,
+    reason: "",
+  })
+  const [grantSubmitting, setGrantSubmitting] = useState(false)
+  const [grantResult, setGrantResult] = useState<{
+    success: boolean
+    message: string
+    created?: boolean
+  } | null>(null)
 
   // Course state and form
   const [courseDialogOpen, setCourseDialogOpen] = useState(false)
@@ -815,6 +832,49 @@ export default function AdminAcademyPage() {
     }
   }
 
+  const handleGrantAccess = async () => {
+    setGrantSubmitting(true)
+    setGrantResult(null)
+
+    try {
+      const response = await fetch("/api/admin/academy/grant-access", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          email: grantForm.email,
+          courseId: grantForm.courseId,
+          reason: grantForm.reason,
+        }),
+      })
+
+      const data = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        setGrantResult({
+          success: false,
+          message: data?.error || "Failed to grant access. Please try again.",
+        })
+        return
+      }
+
+      setGrantResult({
+        success: true,
+        message: "Access granted and email sent.",
+        created: data?.created,
+      })
+      setGrantForm({ ...grantForm, email: "", reason: "" })
+    } catch (error) {
+      console.error("[v0] Error granting access:", error)
+      setGrantResult({
+        success: false,
+        message: "Failed to grant access. Please try again.",
+      })
+    } finally {
+      setGrantSubmitting(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-stone-50 flex items-center justify-center">
@@ -876,6 +936,16 @@ export default function AdminAcademyPage() {
             }`}
           >
             Flatlay Images
+          </button>
+          <button
+            onClick={() => setActiveTab("grant-access")}
+            className={`px-6 py-3 text-sm tracking-wider uppercase transition-all ${
+              activeTab === "grant-access"
+                ? "border-b-2 border-stone-950 text-stone-950"
+                : "text-stone-500 hover:text-stone-950"
+            }`}
+          >
+            Grant Access
           </button>
         </div>
 
@@ -1180,6 +1250,94 @@ export default function AdminAcademyPage() {
                 <p className="text-sm text-stone-500 text-center py-8">
                   No flatlay images yet. Create your first flatlay image!
                 </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {activeTab === "grant-access" && (
+          <div className="max-w-2xl">
+            <div className="bg-white/50 backdrop-blur-xl rounded-[1.75rem] p-8 border border-white/60 shadow-xl space-y-6">
+              <div>
+                <h2 className="font-serif text-2xl font-extralight tracking-[0.2em] uppercase text-stone-950 mb-2">
+                  Grant Access
+                </h2>
+                <p className="text-xs tracking-[0.15em] uppercase font-light text-stone-500">
+                  Shopify migration and manual access grants
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="grant-email" className="text-xs uppercase tracking-wider text-stone-600">
+                  Customer Email
+                </Label>
+                <Input
+                  id="grant-email"
+                  type="email"
+                  placeholder="customer@email.com"
+                  value={grantForm.email}
+                  onChange={(event) => setGrantForm({ ...grantForm, email: event.target.value })}
+                  className="bg-white"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="grant-course" className="text-xs uppercase tracking-wider text-stone-600">
+                  Course
+                </Label>
+                <select
+                  id="grant-course"
+                  value={grantForm.courseId}
+                  onChange={(event) => setGrantForm({ ...grantForm, courseId: event.target.value })}
+                  className="w-full rounded-md border border-stone-200 bg-white px-3 py-2 text-sm text-stone-900"
+                >
+                  {academyProductOptions.map((product) => (
+                    <option key={product.id} value={product.id}>
+                      {product.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="grant-reason" className="text-xs uppercase tracking-wider text-stone-600">
+                  Reason
+                </Label>
+                <Textarea
+                  id="grant-reason"
+                  placeholder="Shopify customer — Editing Masterclass purchase"
+                  value={grantForm.reason}
+                  onChange={(event) => setGrantForm({ ...grantForm, reason: event.target.value })}
+                  className="bg-white"
+                />
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Button
+                  onClick={handleGrantAccess}
+                  disabled={grantSubmitting || !grantForm.email || !grantForm.courseId || !grantForm.reason}
+                  className="bg-stone-950 text-white hover:bg-stone-800 text-xs tracking-wider uppercase"
+                >
+                  {grantSubmitting ? "Granting..." : "Grant Access & Send Email"}
+                </Button>
+                {grantSubmitting && <Loader2 className="w-4 h-4 animate-spin text-stone-500" />}
+              </div>
+
+              {grantResult && (
+                <div
+                  className={`rounded-lg border px-4 py-3 text-sm ${
+                    grantResult.success
+                      ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                      : "border-red-200 bg-red-50 text-red-700"
+                  }`}
+                >
+                  <p className="font-medium">{grantResult.message}</p>
+                  {grantResult.success && (
+                    <p className="text-xs uppercase tracking-wider mt-1 text-emerald-700">
+                      {grantResult.created ? "Account created" : "Account already existed"}
+                    </p>
+                  )}
+                </div>
               )}
             </div>
           </div>

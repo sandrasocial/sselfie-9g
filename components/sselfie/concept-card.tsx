@@ -550,7 +550,19 @@ export default function ConceptCard({
     // CLASSIC MODE SAFETY: Use isProMode (normalized boolean) instead of raw prop
     if (isProMode || !predictionId || !generationId || isGenerated) return
 
+    let attempts = 0
+    const MAX_ATTEMPTS = 60 // 3 min max (60 × 3s) — prevents infinite loop on stuck generations
+
     const pollInterval = setInterval(async () => {
+      attempts++
+      if (attempts >= MAX_ATTEMPTS) {
+        console.warn("[v0] Generation polling timeout after 3 minutes — stopping poll loop")
+        setError("Generation timed out. Please try again.")
+        setIsGenerating(false)
+        clearInterval(pollInterval)
+        return
+      }
+
       try {
         const response = await fetch(
           `/api/maya/check-generation?predictionId=${predictionId}&generationId=${generationId}`,

@@ -41,3 +41,8 @@ next-env.d.ts
 # macOS / local agent tooling
 .DS_Store
 .claude/
+
+# Playwright
+/playwright-report/
+/test-results/
+/blob-report/

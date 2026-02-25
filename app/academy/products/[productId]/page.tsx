@@ -78,7 +78,7 @@ export default async function AcademyProductPage({
               Your product is ready. Open it below.
             </p>
             <a
-              href={`/public/academy/${productId}/index.html`}
+              href={`/academy/${productId}/index.html`}
               className={`${inter.className} mt-6 inline-block bg-[#0a0a0a] px-8 py-3 text-white transition-opacity hover:opacity-80`}
               style={{ fontWeight: 500, fontSize: "13px", letterSpacing: "0.1em", textTransform: "uppercase" }}
             >

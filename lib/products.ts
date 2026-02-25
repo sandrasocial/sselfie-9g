@@ -27,14 +27,20 @@ export interface PricingProduct {
 }
 
 export interface AcademyProduct {
-  id: "what_to_say" | "show_up" | "get_paid" | "ai_photo_prompts"
+  id: "what_to_say" | "show_up" | "get_paid" | "ai_photo_prompts" | "editing_masterclass" | "branded_by_sselfie"
   name: string
   tagline: string
   price: number
   currency: "eur"
   stripePriceId: string
-  manychatKeyword: "SAY" | "CONTENT" | "PAID" | "PHOTOS"
-  tag: "bought_what_to_say" | "bought_show_up" | "bought_get_paid" | "bought_ai_photo_prompts"
+  manychatKeyword: "SAY" | "CONTENT" | "PAID" | "PHOTOS" | "EDIT" | "BRAND"
+  tag:
+    | "bought_what_to_say"
+    | "bought_show_up"
+    | "bought_get_paid"
+    | "bought_ai_photo_prompts"
+    | "bought_editing_masterclass"
+    | "bought_branded_by_sselfie"
   upsellTo: "show_up" | "get_paid" | "membership" | "what_to_say"
   description: string
 }
@@ -147,6 +153,30 @@ export const ACADEMY_PRODUCTS = {
     tag: "bought_ai_photo_prompts",
     upsellTo: "what_to_say",
     description: "50 done-for-you AI prompts across 10 brand scenarios. Your phone is enough.",
+  },
+  editing_masterclass: {
+    id: "editing_masterclass",
+    name: "Editing Masterclass",
+    tagline: "Professional Photo Editing — On Your Phone",
+    price: 4700,
+    currency: "eur",
+    stripePriceId: process.env.STRIPE_PRICE_EDITING_MASTERCLASS?.trim() || "",
+    manychatKeyword: "EDIT",
+    tag: "bought_editing_masterclass",
+    upsellTo: "what_to_say",
+    description: "The exact editing workflow Sandra uses to turn selfies into professional brand photos.",
+  },
+  branded_by_sselfie: {
+    id: "branded_by_sselfie",
+    name: "Branded by SSELFIE",
+    tagline: "Your Complete Personal Brand — Built in One Week",
+    price: 39700,
+    currency: "eur",
+    stripePriceId: process.env.STRIPE_PRICE_BRANDED_BY_SSELFIE?.trim() || "",
+    manychatKeyword: "BRAND",
+    tag: "bought_branded_by_sselfie",
+    upsellTo: "membership",
+    description: "The complete brand system Sandra used to go from €12 to a live app. Done with you, not for you.",
   },
 } as const satisfies Record<string, AcademyProduct>
 

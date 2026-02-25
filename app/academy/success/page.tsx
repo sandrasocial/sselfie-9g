@@ -125,7 +125,7 @@ export default async function AcademySuccessPage({ searchParams }: SuccessPagePr
               All products. All tools. €97/month.
             </p>
             <Link
-              href="/academy/checkout?product=membership"
+              href="/checkout/membership"
               className={`${inter.className} mt-6 inline-flex bg-[#0a0a0a] px-8 py-3 text-white transition-opacity hover:opacity-80`}
               style={{ fontWeight: 500, fontSize: "13px", letterSpacing: "0.1em", textTransform: "uppercase" }}
             >
