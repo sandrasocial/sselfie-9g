@@ -58,23 +58,23 @@ export function generateWinBackDay3Email(params: WinBackDay3Params): {
               </p>
 
               <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6; color: #1c1917;">
-                I'm not going to pretend that's not disappointing for me. It is.
+                Honestly? I think I know why — and it's on me, not you.
               </p>
 
               <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6; color: #1c1917;">
-                But more than that, I want to understand it.
+                I've been building and updating and adding things non-stop. And somewhere along the way, SSELFIE got confusing. Features kept changing. The path to actually doing anything wasn't clear. I made it harder than it should have been.
               </p>
 
               <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6; color: #1c1917;">
-                You paid. You showed up. Something about SSELFIE made sense to you at some point — and then it didn't. I don't think that's about you. I think that might be about us.
+                That's not on you for leaving. That's on me for not making it simple enough to stay.
               </p>
 
               <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6; color: #1c1917;">
-                So I have one question: <strong>What didn't work?</strong>
+                I do have one question — not to pitch you, just because I'm still building this and I want to get it right: <strong>What was the moment it stopped working?</strong>
               </p>
 
               <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6; color: #1c1917;">
-                Was it the onboarding? Too slow to see results? Not sure what to do next? Life just got in the way? Something felt off about the product?
+                Was it the onboarding? Too slow to see results? Not sure what to do next? Life just got in the way?
               </p>
 
               <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6; color: #1c1917;">
@@ -82,7 +82,7 @@ export function generateWinBackDay3Email(params: WinBackDay3Params): {
               </p>
 
               <p style="margin: 0 0 32px; font-size: 16px; line-height: 1.6; color: #1c1917;">
-                I'm asking because I'm building this for women like you, and I can't get it right if I don't know what went wrong.
+                And if you're curious what's changed — it's a lot. But I'll save that for another day. For now, I just wanted to say: I get it. No hard feelings. You didn't do anything wrong.
               </p>
 
               <div style="margin: 0 0 32px; padding: 20px 24px; background-color: #fafaf9; border-left: 3px solid #1c1917; border-radius: 4px;">
@@ -125,19 +125,19 @@ Hey ${displayName},
 
 I noticed you cancelled your Studio membership a few days ago.
 
-I'm not going to pretend that's not disappointing for me. It is.
+Honestly? I think I know why — and it's on me, not you.
 
-But more than that, I want to understand it.
+I've been building and updating and adding things non-stop. And somewhere along the way, SSELFIE got confusing. Features kept changing. The path to actually doing anything wasn't clear. I made it harder than it should have been.
 
-You paid. You showed up. Something about SSELFIE made sense to you at some point — and then it didn't. I don't think that's about you. I think that might be about us.
+That's not on you for leaving. That's on me for not making it simple enough to stay.
 
-So I have one question: What didn't work?
+I do have one question — not to pitch you, just because I'm still building this and I want to get it right: What was the moment it stopped working?
 
-Was it the onboarding? Too slow to see results? Not sure what to do next? Life just got in the way? Something felt off about the product?
+Was it the onboarding? Too slow to see results? Not sure what to do next? Life just got in the way?
 
 If you reply to this email, I will read it. Not a bot, not a team — me.
 
-I'm asking because I'm building this for women like you, and I can't get it right if I don't know what went wrong.
+And if you're curious what's changed — it's a lot. But I'll save that for another day. For now, I just wanted to say: I get it. No hard feelings. You didn't do anything wrong.
 
 And if there's any part of you that's still curious — the door is open. No pressure, no expiry, no pitch.
 
