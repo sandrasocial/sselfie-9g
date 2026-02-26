@@ -1,8 +1,19 @@
 import { neon } from "@neondatabase/serverless"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getUserPersonalMemory, getUserPersonalBrand } from "@/lib/data/maya"
+import { ACADEMY_PRODUCTS } from "@/lib/products"
+import { hasStudioMembership } from "@/lib/subscription"
 
 const sql = neon(process.env.DATABASE_URL!)
+
+const ACADEMY_PRODUCT_GUIDANCE: Record<string, string> = {
+  what_to_say: "Helps with caption writing. Offer caption starters and a 7-caption series.",
+  show_up: "Helps with visibility and consistency. Offer a 7-day posting plan.",
+  get_paid: "Helps with monetization. Offer offer-ideas, pricing angles, and 3 sales post ideas.",
+  ai_photo_prompts: "Curated prompt library. Suggest best-fit prompts for their brand style.",
+  editing_masterclass: "Editing workflow. Suggest steps for refining images post-generation.",
+  branded_by_sselfie: "Full brand system. Offer guided next steps and checklists.",
+}
 
 const parseStringArray = (value: unknown): string[] | null => {
   if (Array.isArray(value)) {
@@ -43,7 +54,7 @@ export async function getUserContextForMaya(authUserId: string): Promise<string>
     }
 
     console.log("[v0] getUserContextForMaya: Fetching memory, brand, assets, and agent context...")
-    const [memory, personalBrand, assets, userGender, userEthnicity, recentConcepts, agentContext] = await Promise.all([
+    const [memory, personalBrand, assets, userGender, userEthnicity, recentConcepts, agentContext, academyPurchases, hasMembership] = await Promise.all([
       getUserPersonalMemory(neonUser.id).catch((err) => {
         console.error("[v0] Error fetching memory:", err)
         return null
@@ -79,6 +90,16 @@ export async function getUserContextForMaya(authUserId: string): Promise<string>
           console.error("[v0] Error fetching agent context:", err)
           return null
         }),
+      sql`SELECT course_id FROM academy_course_purchases WHERE user_id = ${neonUser.id} AND status = 'active'`
+        .then((rows: Array<{ course_id: string }>) => rows ?? [])
+        .catch((err: any) => {
+          console.error("[v0] Error fetching academy purchases:", err)
+          return []
+        }),
+      hasStudioMembership(neonUser.id).catch((err) => {
+        console.error("[v0] Error checking studio membership:", err)
+        return false
+      }),
     ])
     console.log("[v0] getUserContextForMaya: Data fetched successfully")
 
@@ -402,6 +423,23 @@ export async function getUserContextForMaya(authUserId: string): Promise<string>
       }
     }
 
+    const ownedProductIds = (hasMembership ? Object.values(ACADEMY_PRODUCTS).map((p) => p.id) : academyPurchases.map((p) => p.course_id))
+      .filter(Boolean)
+      .filter((value, index, self) => self.indexOf(value) === index)
+
+    if (ownedProductIds.length > 0) {
+      contextParts.push("=== USER'S ACADEMY PRODUCTS ===")
+      contextParts.push("User has purchased the following Academy products:")
+      for (const productId of ownedProductIds) {
+        const product = (ACADEMY_PRODUCTS as Record<string, { name: string }>)[productId]
+        const productName = product?.name ?? productId
+        const guidance = ACADEMY_PRODUCT_GUIDANCE[productId] || "Offer next-step guidance related to this product."
+        contextParts.push(`- ${productName}: ${guidance}`)
+      }
+      contextParts.push("When helpful, reference these products naturally and suggest a next step inside the app.")
+      contextParts.push("")
+    }
+
     if (recentConcepts && Array.isArray(recentConcepts) && recentConcepts.length > 0) {
       console.log("[v0] getUserContextForMaya: Processing recent concepts...")
       contextParts.push("=== YOUR RECENT CREATIVE SESSIONS WITH MAYA ===")
@@ -453,7 +491,8 @@ export async function getUserContextForMaya(authUserId: string): Promise<string>
           part.includes("USER INFORMATION") ||
           part.includes("PHYSICAL APPEARANCE PREFERENCES") ||
           part.includes("BRAND COLORS") ||
-          part.includes("VISUAL AESTHETIC PREFERENCE")
+          part.includes("VISUAL AESTHETIC PREFERENCE") ||
+          part.includes("ACADEMY PRODUCTS")
         ) {
           prioritySections.push(part)
         } else {

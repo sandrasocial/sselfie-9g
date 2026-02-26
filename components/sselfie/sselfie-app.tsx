@@ -63,6 +63,7 @@ import { AnimatePresence, motion } from "framer-motion"
 import useSWR from "swr"
 import { useRouter, useSearchParams } from "next/navigation"
 import { ChevronDown, ChevronRight, X } from "lucide-react"
+import ProductBadge from "./product-badge"
 
 interface SselfieAppProps {
   userId: string | number // Can be string or number (from database)
@@ -74,6 +75,26 @@ interface SselfieAppProps {
   productType?: string | null // NEW: "paid_blueprint" | "sselfie_studio_membership" | null
   purchaseSuccess?: boolean // Decision 2: Purchase success flag
   initialTab?: string // Decision 2: Initial tab from URL param
+  academyPurchaseSource?: string
+  academyPurchaseProduct?: string
+}
+
+const ACADEMY_PRODUCT_TO_TAB: Record<string, "feed-planner" | "maya" | "academy" | "account"> = {
+  what_to_say: "feed-planner",
+  show_up: "maya",
+  get_paid: "account",
+  ai_photo_prompts: "maya",
+  editing_masterclass: "academy",
+  branded_by_sselfie: "academy",
+}
+
+const PRODUCT_BADGE_META: Record<string, { label: string; icon: string; tab?: "feed-planner" | "maya" | "academy" | "account" }> = {
+  what_to_say: { label: "What To Say", icon: "📝", tab: "feed-planner" },
+  show_up: { label: "Show Up", icon: "🎤", tab: "maya" },
+  get_paid: { label: "Get Paid", icon: "💰", tab: "account" },
+  ai_photo_prompts: { label: "AI Photo Prompts", icon: "✨", tab: "maya" },
+  editing_masterclass: { label: "Editing Masterclass", icon: "🎬", tab: "academy" },
+  branded_by_sselfie: { label: "Branded by SSELFIE", icon: "🏷️", tab: "academy" },
 }
 
 export default function SselfieApp({
@@ -148,6 +169,11 @@ export default function SselfieApp({
   const [isLoadingCredits, setIsLoadingCredits] = useState(true)
   const [blueprintEntitlementType, setBlueprintEntitlementType] = useState<string | null>(null)
   const simpleFetcher = (url: string) => fetch(url).then((res) => res.json())
+  const { data: myProductsData } = useSWR("/api/academy/my-products", simpleFetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 60000,
+  })
+  const ownedProducts = Array.isArray(myProductsData?.purchases) ? myProductsData.purchases : []
   const {
     data: trainingStatus,
     error: trainingStatusError,
@@ -1102,6 +1128,27 @@ export default function SselfieApp({
                 </DropdownMenu>
                 </div>
               </div>
+              {ownedProducts.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {ownedProducts.map((product: { id: string; name: string }) => {
+                    const meta = PRODUCT_BADGE_META[product.id] ?? { label: product.name, icon: "🎁" }
+                    return (
+                      <ProductBadge
+                        key={product.id}
+                        label={meta.label}
+                        icon={meta.icon}
+                        onClick={
+                          meta.tab
+                            ? () => {
+                                handleTabChange(meta.tab)
+                              }
+                            : undefined
+                        }
+                      />
+                    )
+                  })}
+                </div>
+              )}
             </header>
           )}
 
