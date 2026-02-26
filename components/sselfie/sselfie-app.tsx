@@ -383,6 +383,10 @@ export default function SselfieApp({
     productType,
     userEmail,
   })
+  // New users: not a member, has welcome credits (just signed up), and hasn't trained a model yet.
+  // Once credits hit 0 OR they train a model, they've experienced value and see the full tab bar.
+  const isNewUser = !access.isMember && creditBalance > 0 && !hasTrainedModel
+
   const isPaidBlueprintUserForAccess =
     (access.isPaidBlueprintOnly || blueprintEntitlementType === "paid") && !access.isMember
   const isOneTimeSession = productType === "one_time_session"
@@ -1154,7 +1158,7 @@ export default function SselfieApp({
           <div className={`bg-white/20 ${DesignClasses.blur.lg} ${DesignClasses.radius.xl} ${DesignClasses.border.light} ${DesignClasses.shadows.container}`}>
             <div className="overflow-x-auto scrollbar-hide px-1.5 sm:px-2 md:px-3 py-2 sm:py-2.5 md:py-3">
               <div className="flex gap-1 sm:gap-2 min-w-max sm:justify-around">
-                {tabs.map((tab) => {
+                {(isNewUser ? tabs.filter((t) => t.id === "maya" || t.id === "account") : tabs).map((tab) => {
                   const Icon = tab.icon
                   const isActive = activeTab === tab.id
 
@@ -1195,6 +1199,11 @@ export default function SselfieApp({
                 })}
               </div>
             </div>
+            {isNewUser && (
+              <p className="text-xs text-stone-400 text-center py-1">
+                Feed Planner, Gallery &amp; Academy unlock after your first photo
+              </p>
+            )}
           </div>
         </nav>
       )}
