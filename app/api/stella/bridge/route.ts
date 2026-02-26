@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { neon } from "@neondatabase/serverless"
 import { stellaReply, parseStellaMode } from "@/lib/stella/runtime"
 
 export async function POST(req: NextRequest) {
@@ -16,7 +17,7 @@ export async function POST(req: NextRequest) {
     const headerToken = authHeader.replace(/^Bearer\\s+/i, "").trim()
     const altHeaderToken = (req.headers.get("x-stella-token") || "").trim()
 
-    const body = await req.json().catch(() => ({} as { message?: string; mode?: string; token?: string }))
+    const body = await req.json().catch(() => ({} as { message?: string; mode?: string; token?: string; action?: string; userId?: string; contextNote?: string }))
     const bodyToken = typeof body?.token === "string" ? body.token.trim() : ""
 
     const provided = headerToken || altHeaderToken || bodyToken
@@ -24,7 +25,43 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { message, mode } = body as { message?: string; mode?: string }
+    const { message, mode, action, userId, contextNote } = body as {
+      message?: string
+      mode?: string
+      action?: string
+      userId?: string
+      contextNote?: string
+    }
+
+    // Handle ClawDBot agent context injection
+    if (action === "inject_maya_context") {
+      if (!userId || !contextNote) {
+        return NextResponse.json(
+          { error: "Missing required fields: userId and contextNote" },
+          { status: 400 }
+        )
+      }
+
+      const sql = neon(process.env.DATABASE_URL!)
+      const now = new Date().toISOString()
+      const contextPayload = JSON.stringify({
+        agent_context_note: contextNote,
+        agent_context_updated_at: now,
+      })
+
+      await sql`
+        INSERT INTO maya_personal_memory (user_id, memory_data)
+        VALUES (${userId}, ${contextPayload}::jsonb)
+        ON CONFLICT (user_id) DO UPDATE
+        SET
+          memory_data = maya_personal_memory.memory_data || ${contextPayload}::jsonb,
+          updated_at = NOW()
+      `
+
+      console.log(`[Bridge] inject_maya_context: wrote context note for user ${userId}`)
+      return NextResponse.json({ success: true })
+    }
+
     if (!message) {
       return NextResponse.json({ error: "Missing message" }, { status: 400 })
     }

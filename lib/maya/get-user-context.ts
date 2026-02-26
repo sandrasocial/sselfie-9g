@@ -42,8 +42,8 @@ export async function getUserContextForMaya(authUserId: string): Promise<string>
       return ""
     }
 
-    console.log("[v0] getUserContextForMaya: Fetching memory, brand, and assets...")
-    const [memory, personalBrand, assets, userGender, userEthnicity, recentConcepts] = await Promise.all([
+    console.log("[v0] getUserContextForMaya: Fetching memory, brand, assets, and agent context...")
+    const [memory, personalBrand, assets, userGender, userEthnicity, recentConcepts, agentContext] = await Promise.all([
       getUserPersonalMemory(neonUser.id).catch((err) => {
         console.error("[v0] Error fetching memory:", err)
         return null
@@ -72,6 +72,12 @@ export async function getUserContextForMaya(authUserId: string): Promise<string>
         .catch((err: any) => {
           console.error("[v0] Error fetching recent concepts:", err)
           return []
+        }),
+      sql`SELECT memory_data->>'agent_context_note' AS agent_context_note FROM maya_personal_memory WHERE user_id = ${neonUser.id} LIMIT 1`
+        .then((result: any) => (result[0]?.agent_context_note as string | null | undefined) ?? null)
+        .catch((err: any) => {
+          console.error("[v0] Error fetching agent context:", err)
+          return null
         }),
     ])
     console.log("[v0] getUserContextForMaya: Data fetched successfully")
@@ -416,6 +422,13 @@ export async function getUserContextForMaya(authUserId: string): Promise<string>
       contextParts.push(
         "Use this history to personalise your suggestions — notice patterns, reference what you've built together, and build on what's working.",
       )
+      contextParts.push("")
+    }
+
+    if (agentContext) {
+      contextParts.push("=== AGENT CONTEXT (from your automation team) ===")
+      contextParts.push(agentContext)
+      contextParts.push("This context was added by your background agents — treat it as recent, relevant intelligence.")
       contextParts.push("")
     }
 
