@@ -208,6 +208,9 @@ export default function SselfieApp({
   }, [feedPlannerProMode])
   const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [showFirstPhotoToast, setShowFirstPhotoToast] = useState(false)
+  const initialCreditBalanceRef = useRef<number | null>(null)
+  const firstPhotoToastShownRef = useRef(false)
   const router = useRouter()
   const searchParams = useSearchParams()
   const hasTrackedStudioOpenRef = useRef(false)
@@ -448,6 +451,27 @@ export default function SselfieApp({
     window.addEventListener("credits-updated", handleCreditsUpdated)
     return () => window.removeEventListener("credits-updated", handleCreditsUpdated)
   }, [refreshCredits])
+
+  // Capture the initial credit balance once for a new (non-member) user
+  useEffect(() => {
+    if (initialCreditBalanceRef.current === null && creditBalance > 0 && !access.isMember) {
+      initialCreditBalanceRef.current = creditBalance
+    }
+  }, [creditBalance, access.isMember])
+
+  // Fire first-photo celebration toast when the first credit is spent
+  useEffect(() => {
+    if (
+      !firstPhotoToastShownRef.current &&
+      initialCreditBalanceRef.current !== null &&
+      creditBalance < initialCreditBalanceRef.current &&
+      !access.isMember
+    ) {
+      firstPhotoToastShownRef.current = true
+      setShowFirstPhotoToast(true)
+      setTimeout(() => setShowFirstPhotoToast(false), 5000)
+    }
+  }, [creditBalance, access.isMember])
 
   useEffect(() => {
     let mounted = true
@@ -790,6 +814,19 @@ export default function SselfieApp({
           <p className="text-sm font-medium">
             Your first brand photo is one selfie away. Get credits and let&apos;s get it done — it takes under 2 minutes.
           </p>
+        </div>
+      )}
+
+      {/* First-photo celebration toast — fires once when the first credit is spent */}
+      {showFirstPhotoToast && (
+        <div className="fixed top-0 left-0 right-0 z-[100] bg-stone-950 text-white px-4 py-3 flex items-center justify-between animate-in slide-in-from-top-2 duration-500">
+          <div>
+            <p className="text-sm font-medium">Your first brand photo is done.</p>
+            <p className="text-xs text-white/60 mt-0.5">You just proved this works. Feed Planner, Gallery &amp; Academy are now yours — go explore.</p>
+          </div>
+          <button onClick={() => setShowFirstPhotoToast(false)} className="text-white/40 hover:text-white ml-4 shrink-0" aria-label="Dismiss">
+            <X size={14} />
+          </button>
         </div>
       )}
 
