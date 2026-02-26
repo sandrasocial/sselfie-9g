@@ -2547,6 +2547,24 @@ export default function MayaChatScreen({
         </div>
       )}
 
+      {/* Credit welcome banner — shown to non-members with credits on an empty session.
+          Creates urgency and clarity: "you have X free photos, go use them." */}
+      {!isMembership && creditBalance > 0 && (!messages || messages.length === 0) && (
+        <div className="shrink-0 mx-3 sm:mx-4 mt-4 mb-1">
+          <div className="border border-stone-900/10 bg-gradient-to-r from-stone-950 to-stone-800 rounded-xl p-4 flex items-center gap-3">
+            <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center shrink-0">
+              <Camera size={14} className="text-white" strokeWidth={1.5} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-white mb-0.5">
+                You have {Math.floor(creditBalance / 2)} free photo{Math.floor(creditBalance / 2) !== 1 ? "s" : ""} waiting
+              </p>
+              <p className="text-xs text-white/60 leading-relaxed">Upload a selfie → Maya creates your first brand photo in 2 minutes.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Training Prompt - shown as a secondary option when user has no trained model.
           Does NOT block the interface — Pro mode is always available without training. */}
       {!hasTrainedModel && (
