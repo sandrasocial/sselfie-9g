@@ -59,6 +59,7 @@ import ProModeChatHistory from "./pro-mode/ProModeChatHistory"
 import { Typography, Colors } from '@/lib/maya/pro/design-system'
 import { useToast } from "@/hooks/use-toast"
 import { DesignClasses, ComponentClasses } from "@/lib/design-tokens"
+import { startEmbeddedCheckout } from "@/lib/start-embedded-checkout"
 
 interface MayaChatScreenProps {
   onImageGenerated?: () => void
@@ -2560,6 +2561,38 @@ export default function MayaChatScreen({
                 You have {Math.floor(creditBalance / 2)} free photo{Math.floor(creditBalance / 2) !== 1 ? "s" : ""} waiting
               </p>
               <p className="text-xs text-white/60 leading-relaxed">Upload a selfie → Maya creates your first brand photo in 2 minutes.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Zero-credits upgrade nudge — shown inline when a free (non-membership) user
+          has exhausted their credits on the Photos tab. */}
+      {!isMembership && creditBalance === 0 && activeMayaTab === "photos" && (
+        <div className="shrink-0 mx-3 sm:mx-4 mt-4 mb-1">
+          <div className="border border-stone-200 bg-stone-900 rounded-xl p-4 flex items-start gap-3">
+            <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
+              <Camera size={14} className="text-white" strokeWidth={1.5} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-white mb-0.5">You&apos;ve used your free photos</p>
+              <p className="text-xs text-stone-300 leading-relaxed">
+                Upgrade to Studio — 200 credits/month. Or grab a one-time credit pack.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  onClick={() => startEmbeddedCheckout("sselfie_studio_membership")}
+                  className="shrink-0 text-xs font-medium text-stone-900 bg-white rounded-lg px-3 py-1.5 hover:bg-stone-100 transition-colors whitespace-nowrap"
+                >
+                  Upgrade to Studio →
+                </button>
+                <button
+                  onClick={() => setShowBuyCreditsModal(true)}
+                  className="shrink-0 text-xs font-medium text-stone-300 bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 hover:bg-white/20 transition-colors whitespace-nowrap"
+                >
+                  Buy credits
+                </button>
+              </div>
             </div>
           </div>
         </div>
