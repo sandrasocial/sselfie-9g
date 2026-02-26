@@ -85,11 +85,13 @@ export function ZeroCreditsUpgradeModal({ credits, onClose }: ZeroCreditsUpgrade
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/80 p-4 animate-fade-in">
           <div className="relative w-full max-w-sm bg-stone-50 rounded-lg p-6 sm:p-8">
             <h2 className="font-serif text-2xl sm:text-3xl font-extralight tracking-[0.2em] uppercase text-stone-900 text-center mb-3">
-              OUT OF CREDITS
+              You&apos;ve been creating.
             </h2>
 
             <p className="text-center text-stone-600 font-light text-sm mb-6">
-              You&apos;ve used all your credits. Upgrade to Studio Membership for monthly credits, or purchase a one-time session.
+              You&apos;ve used every credit — that means you&apos;ve been showing up. Keep the momentum going.
+              <br /><br />
+              Studio gives you 200 credits a month — that&apos;s 100 brand photos, consistently, without having to think about it. Or top up now with a one-time pack if you want to keep it flexible.
             </p>
 
             <div className="space-y-3 mb-8">
@@ -98,20 +100,20 @@ export function ZeroCreditsUpgradeModal({ credits, onClose }: ZeroCreditsUpgrade
                 disabled={isUpgrading}
                 className="w-full bg-stone-900 text-stone-50 px-6 py-3 rounded-lg text-xs font-medium uppercase tracking-wider hover:bg-stone-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isUpgrading ? "Processing..." : "UPGRADE TO STUDIO"}
+                {isUpgrading ? "Processing..." : "Join Studio — 200 credits/mo"}
               </button>
               <button
                 onClick={handleBuyCredits}
                 disabled={isUpgrading}
                 className="w-full bg-stone-100 text-stone-900 px-6 py-3 rounded-lg text-xs font-medium uppercase tracking-wider hover:bg-stone-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-stone-300/40"
               >
-                BUY CREDITS
+                Top up with a credit pack
               </button>
               <button
                 onClick={handleDismiss}
                 className="w-full text-stone-600 hover:text-stone-900 px-6 py-3 text-xs font-light tracking-wider uppercase transition-colors"
               >
-                MAYBE LATER
+                Not right now
               </button>
             </div>
           </div>

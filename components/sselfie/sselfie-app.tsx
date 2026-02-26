@@ -784,7 +784,7 @@ export default function SselfieApp({
       {isWelcome && creditBalance === 0 && (
         <div className="hidden absolute top-0 left-0 right-0 z-50 bg-stone-900 text-white py-3 px-4 text-center">
           <p className="text-sm font-medium">
-            Welcome to SSELFIE! 🎉 Purchase credits to start creating your professional selfies
+            Your first brand photo is one selfie away. Get credits and let&apos;s get it done — it takes under 2 minutes.
           </p>
         </div>
       )}

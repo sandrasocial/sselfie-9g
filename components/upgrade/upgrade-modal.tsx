@@ -96,11 +96,13 @@ export function UpgradeModal({ open, currentTier, targetTier = "sselfie_studio_m
     >
       <div className="relative w-full max-w-sm bg-stone-50 rounded-lg p-6 sm:p-8" onClick={(e) => e.stopPropagation()}>
         <h2 className="font-serif text-2xl sm:text-3xl font-extralight tracking-[0.2em] uppercase text-stone-900 text-center mb-3">
-          UPGRADE
+          Ready to keep going?
         </h2>
 
         <p className="text-center text-stone-600 font-light text-sm mb-6">
-          Upgrade to <strong className="text-stone-900">{targetName}</strong> and get <strong className="text-stone-900">{targetCredits} credits{isSubscription ? " / month" : ""}</strong>
+          {isSubscription
+            ? <>Creator Studio gives you <strong className="text-stone-900">{targetCredits} credits a month</strong> — that&apos;s {Math.floor(targetCredits / 2)} brand photos. One monthly plan, everything you need to show up consistently without scrambling for content.</>
+            : <><strong className="text-stone-900">{targetName}</strong> gives you <strong className="text-stone-900">{targetCredits} credits</strong> to use whenever you need them.</>}
         </p>
 
         {error && (
@@ -115,13 +117,13 @@ export function UpgradeModal({ open, currentTier, targetTier = "sselfie_studio_m
             disabled={loading}
             className="w-full bg-stone-900 text-stone-50 px-6 py-3 rounded-lg text-xs font-medium uppercase tracking-wider hover:bg-stone-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? "Processing..." : `UPGRADE TO ${targetName.toUpperCase()}`}
+            {loading ? "Processing..." : isSubscription ? "Yes, join Studio" : `Get ${targetName}`}
           </button>
           <button
             onClick={onClose}
             className="w-full text-stone-600 hover:text-stone-900 px-6 py-3 text-xs font-light tracking-wider uppercase transition-colors"
           >
-            MAYBE LATER
+            Not right now
           </button>
         </div>
       </div>
