@@ -49,6 +49,8 @@ const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "ssa@ssasocial.com"
 const FIRST_NAME_PLACEHOLDER = "{{{FIRST_NAME|friend}}}"
 const EMAIL_PLACEHOLDER = "{{{EMAIL}}}"
 const STALE_DRAFT_SENDING_HOURS = Number.parseInt(process.env.EMAIL_STALE_DRAFT_SENDING_HOURS || "24", 10)
+/** Max hours a campaign can stay in "sending" before being marked failed (idempotency/retry limit). */
+const STUCK_SENDING_HOURS = Number.parseInt(process.env.EMAIL_STUCK_SENDING_HOURS || "2", 10)
 
 async function resetStaleDraftSendingCampaigns(staleHours: number): Promise<number> {
   const staleRows = await sql`
@@ -64,6 +66,24 @@ async function resetStaleDraftSendingCampaigns(staleHours: number): Promise<numb
     RETURNING id
   `
   return (staleRows as any[])?.length || 0
+}
+
+/**
+ * Mark campaigns stuck in "sending" for too long as "failed" (idempotency/retry limit).
+ * Prevents indefinite retries when a run crashes mid-send.
+ */
+async function failStuckSendingCampaigns(stuckHours: number): Promise<number> {
+  const stuckRows = await sql`
+    UPDATE admin_email_campaigns
+    SET
+      status = 'failed',
+      updated_at = NOW(),
+      metrics = COALESCE(metrics, '{}'::jsonb) || jsonb_build_object('stuck_sending_failed_at', NOW(), 'reason', 'stuck_sending_timeout')
+    WHERE status = 'sending'
+      AND updated_at < NOW() - make_interval(hours => ${stuckHours})
+    RETURNING id
+  `
+  return (stuckRows as any[])?.length || 0
 }
 
 export interface RunScheduledCampaignsConfig {
@@ -639,6 +659,13 @@ export async function runScheduledCampaigns(
     if (staleResetCount > 0) {
       console.log(
         `[v0] Reset ${staleResetCount} stale draft campaigns from sending -> draft (>${STALE_DRAFT_SENDING_HOURS}h old)`,
+      )
+    }
+
+    const stuckFailCount = await failStuckSendingCampaigns(STUCK_SENDING_HOURS)
+    if (stuckFailCount > 0) {
+      console.log(
+        `[v0] Marked ${stuckFailCount} stuck campaign(s) sending -> failed (>${STUCK_SENDING_HOURS}h)`,
       )
     }
 

@@ -6,6 +6,9 @@ import type { AcademyView } from "./types"
 import CourseCard from "../academy/course-card"
 import CourseDetail from "../academy/course-detail"
 import ResourceCard from "../academy/resource-card"
+import ProductAccessCard from "./product-access-card"
+import type { ProductAccessId } from "./product-access-card"
+import MiniProductCard from "./mini-product-card"
 import UnifiedLoading from "./unified-loading"
 import { X, Home, Aperture, MessageCircle, ImageIcon, Grid, User, SettingsIcon, LogOut, Film } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -42,6 +45,31 @@ const getFriendlyTierName = (tier: string): string => {
   }
   return tierMap[tier.toLowerCase()] || tier
 }
+
+/** Copy for "You Have Access" cards (docs/in-app-funnel/02-content-copy §1). Only products we show in-app with deep links. */
+const PRODUCT_ACCESS_COPY: Record<
+  "what_to_say" | "show_up" | "get_paid" | "ai_photo_prompts",
+  { subText: string; ctaLabel: string }
+> = {
+  what_to_say: {
+    subText: "Captions you love are just one click away in Feed Planner.",
+    ctaLabel: "Start in Feed Planner",
+  },
+  show_up: {
+    subText: "Maya's ready to help you nail your personal brand.",
+    ctaLabel: "Chat with Maya",
+  },
+  get_paid: {
+    subText: "Monetization strategies and partnership tips await.",
+    ctaLabel: "View in Profile",
+  },
+  ai_photo_prompts: {
+    subText: "Inspiration prompts for your next generation session.",
+    ctaLabel: "Browse Prompts",
+  },
+}
+
+const PRODUCT_IDS_WITH_ACCESS: Set<string> = new Set(Object.keys(PRODUCT_ACCESS_COPY))
 
 export default function AcademyScreen() {
   const [selectedView, setSelectedView] = useState<AcademyView>("overview")
@@ -93,6 +121,7 @@ export default function AcademyScreen() {
   const { data: creditsData } = useSWR("/api/user/credits", fetcher, {
     onSuccess: (data) => setCreditBalance(data?.balance || 0),
   })
+  const { data: myProductsData } = useSWR("/api/academy/my-products", fetcher)
 
   const hasAccess = coursesData?.hasAccess ?? false
   const productType = coursesData?.productType || userInfoData?.product_type || "one_time_session"
@@ -105,6 +134,15 @@ export default function AcademyScreen() {
   const flatlayImages = flatlayImagesData?.flatlayImages || []
   const myCourses = myCoursesData?.courses || []
   const inProgressCourses = myCourses.filter((c: any) => c.progress_percentage > 0 && c.progress_percentage < 100)
+
+  /** Owned Academy mini-products that have in-app "You Have Access" copy and deep links */
+  const ownedForAccess = (myProductsData?.purchases ?? []).filter((p: { id: string }) =>
+    PRODUCT_IDS_WITH_ACCESS.has(p.id),
+  ) as Array<{ id: string; name: string }>
+  /** Products the user can still buy (not owned); from my-products API */
+  const availableProducts = myProductsData?.availableProducts ?? []
+  /** Show "Get More" section when user does not have Studio and there are products to buy */
+  const showGetMore = !hasAccess && availableProducts.length > 0
 
   if (flatlayImages.length > 0) {
     console.log("[v0] Flatlay images data received:", flatlayImages)
@@ -873,6 +911,66 @@ export default function AcademyScreen() {
         </div>
 
         <div className="space-y-8 mt-12 px-4 sm:px-6">
+          {/* Slice 1.2: You Have Access — owned Academy mini-products with deep-link CTAs */}
+          {ownedForAccess.length > 0 && (
+            <section className="pt-12 pb-6">
+              <h2
+                className="font-serif text-[12px] font-extralight uppercase tracking-[0.2em] text-stone-500 pb-6"
+                style={{ letterSpacing: "0.2em" }}
+              >
+                YOU HAVE ACCESS
+              </h2>
+              <div
+                className="flex gap-4 overflow-x-auto pb-2 -mx-4 px-4 sm:-mx-6 sm:px-6"
+                style={{
+                  scrollbarWidth: "none",
+                  msOverflowStyle: "none",
+                  WebkitOverflowScrolling: "touch",
+                  scrollSnapType: "x proximity",
+                }}
+              >
+                {ownedForAccess.map((p: { id: string; name: string }) => {
+                  const id = p.id as ProductAccessId
+                  const copy = PRODUCT_ACCESS_COPY[id]
+                  if (!copy) return null
+                  return (
+                    <div key={p.id} className="scroll-snap-align-start flex-shrink-0">
+                      <ProductAccessCard
+                        productId={id}
+                        name={p.name}
+                        subText={copy.subText}
+                        ctaLabel={copy.ctaLabel}
+                      />
+                    </div>
+                  )
+                })}
+              </div>
+            </section>
+          )}
+
+          {/* Get More — non-Studio users: mini-product grid */}
+          {showGetMore && (
+            <section className="pt-12 pb-6">
+              <h2
+                className="font-serif text-[12px] font-extralight uppercase tracking-[0.2em] text-stone-500 pb-6"
+                style={{ letterSpacing: "0.2em" }}
+              >
+                GET MORE COURSES & RESOURCES
+              </h2>
+              <div className="grid grid-cols-2 gap-4 max-w-[360px]">
+                {availableProducts.map((p: { id: string; name: string; price: number }) => (
+                  <MiniProductCard
+                    key={p.id}
+                    productId={p.id}
+                    name={p.name}
+                    price={p.price}
+                    currency="€"
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
           <button
             onClick={() => setSelectedView("courses")}
             className="w-full border border-stone-200 rounded-2xl p-8 sm:p-10 text-left bg-stone-50 hover:bg-stone-100 hover:border-stone-300 transition-all"

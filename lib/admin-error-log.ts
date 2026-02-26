@@ -2,10 +2,12 @@
  * Admin Error Logging
  * Central helper for logging admin-related errors to admin_email_errors table
  * Falls back to console logging if DB write fails
+ * Uses optional error envelope (code, message, context) for consistent log metadata.
  */
 
 import { neon } from "@neondatabase/serverless"
 import { logger } from "@/lib/logger"
+import { toErrorEnvelope } from "@/lib/error-envelope"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -17,6 +19,8 @@ export interface AdminErrorLogOptions {
   toolName: string
   error: Error | unknown
   context?: AdminErrorContext
+  /** Optional code for consistent error classification (e.g. "stuck_sending_timeout"). */
+  code?: string
 }
 
 /**
@@ -27,9 +31,12 @@ export async function logAdminError({
   toolName,
   error,
   context = {},
+  code,
 }: AdminErrorLogOptions): Promise<void> {
-  const errorMessage = error instanceof Error ? error.message : String(error)
-  const errorStack = error instanceof Error ? error.stack : undefined
+  const envelope = toErrorEnvelope(error, code, context)
+  const errorMessage = envelope.message
+  const errorStack = envelope.stack ?? (error instanceof Error ? error.stack : undefined)
+  const logContext = { ...context, code: envelope.code }
 
   // Try to write to database
   try {
@@ -41,7 +48,7 @@ export async function logAdminError({
         ${toolName},
         ${errorMessage},
         ${errorStack || null},
-        ${JSON.stringify(context)},
+        ${JSON.stringify(logContext)},
         NOW()
       )
     `
@@ -49,24 +56,27 @@ export async function logAdminError({
     // Also log to structured logger
     logger.warn(`[ADMIN-ERROR] ${toolName}: ${errorMessage}`, {
       toolName,
+      code: envelope.code,
       error: errorMessage,
-      context,
+      context: logContext,
     })
   } catch (dbError: any) {
     // Fallback to console + structured logger if DB write fails
     console.error("[ADMIN-ERROR] Failed to log error to database:", dbError.message)
     console.error("[ADMIN-ERROR] Error context:", {
       toolName,
+      code: envelope.code,
       error: errorMessage,
       stack: errorStack,
-      context,
+      context: logContext,
     })
     
     logger.error(`[ADMIN-ERROR] Failed to log to DB: ${dbError.message}`, {
       toolName,
+      code: envelope.code,
       originalError: errorMessage,
       dbError: dbError.message,
-      context,
+      context: logContext,
     })
   }
 }

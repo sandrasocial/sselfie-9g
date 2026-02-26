@@ -43,6 +43,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
   const [localFeedStyleModal, setLocalFeedStyleModal] = useState(false)
   const didOpenFeedStyleFromQuery = useRef(false)
   const didOpenWizardFromQuery = useRef(false)
+  const didOpenCreateFirstFeedFromQuery = useRef(false)
 
   // Use controlled state if provided, otherwise use local state
   const showFeedStyleModal = controlledFeedStyleModal !== undefined ? controlledFeedStyleModal : localFeedStyleModal
@@ -90,6 +91,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
   // Get feedId from prop, query param, or null
   const feedIdFromQuery = feedIdProp ?? (searchParams.get('feedId') ? parseInt(searchParams.get('feedId')!, 10) : null)
   const activationAction = searchParams.get("activation") === "generate" ? "generate" : null
+  const createFirstFeedParam = searchParams.get("createFirstFeed") === "1"
 
   useEffect(() => {
     if (!didOpenFeedStyleFromQuery.current && searchParams.get("openFeedStyle") === "1") {
@@ -104,6 +106,14 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
       onOpenWizard?.()
     }
   }, [searchParams, onOpenWizard])
+
+  // Deep-link: ?createFirstFeed=1 opens feed style modal (create first feed flow)
+  useEffect(() => {
+    if (!didOpenCreateFirstFeedFromQuery.current && createFirstFeedParam) {
+      didOpenCreateFirstFeedFromQuery.current = true
+      setShowFeedStyleModal(true)
+    }
+  }, [createFirstFeedParam])
 
   // Phase 4.1: Use standard feed endpoints (removed blueprint endpoint)
   // Use specific feedId or latest feed
@@ -322,7 +332,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
       }
       
       // Navigate to the new feed
-      router.push(`/feed-planner?feedId=${responseData.feedId}`)
+      router.push(`/feed-planner?feedId=${data.feedId}`)
       
       toast({
         title: "Feed created",
@@ -378,7 +388,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
 
     return (
       <div className="flex flex-col flex-1 overflow-hidden min-h-0">
-        {/* Placeholder State */}
+        {/* Placeholder State — paid blueprint: inline "Set up in 30 seconds" card (A-02) */}
         <div className="flex-1 overflow-y-auto min-h-0 flex items-center justify-center p-4 sm:p-6 md:p-12">
           <div className="max-w-md w-full text-center space-y-6">
             {/* Icon */}
@@ -386,34 +396,38 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
               <ImageIcon className="w-8 h-8 sm:w-10 sm:h-10 text-stone-400" />
             </div>
 
-            {/* Heading */}
+            {/* Heading — paid blueprint: "Set up in 30 seconds" per §1.4 */}
             <div className="space-y-2">
               <h2 
                 className="text-xl sm:text-2xl font-light text-stone-900"
                 style={{ fontFamily: "'Times New Roman', serif" }}
               >
-                Create Your First Feed
+                {access?.isPaidBlueprint ? "Set up in 30 seconds" : "Create Your First Feed"}
               </h2>
               <p className="text-sm sm:text-base text-stone-600 font-light">
-                Create a feed manually or generate one with Maya&apos;s AI assistance.
+                {access?.isPaidBlueprint
+                  ? "Your 60 credits are ready. Create your first 9-post feed and we'll match your style."
+                  : "Create a feed manually or generate one with Maya's AI assistance."}
               </p>
             </div>
 
-            {/* CTA Buttons */}
+            {/* CTA — paid blueprint: single prominent "Create my first feed →" per content doc */}
             <div className="flex flex-col sm:flex-row gap-3 justify-center items-stretch sm:items-center">
               <button
                 onClick={handleCreateManualFeedClick}
                 disabled={isCreatingManual}
-                className="w-full sm:w-auto px-6 py-3 bg-stone-900 hover:bg-stone-800 active:bg-stone-700 text-white text-sm font-light tracking-wider uppercase transition-colors duration-200 border border-stone-900 min-h-[44px] touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full sm:w-auto px-6 py-4 bg-stone-900 hover:bg-stone-800 active:bg-stone-700 text-white text-sm font-medium tracking-wider uppercase transition-colors duration-200 border border-stone-900 min-h-[48px] touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                {isCreatingManual ? "Creating..." : "+ Create New Feed"}
+                {isCreatingManual ? "Creating..." : access?.isPaidBlueprint ? "Create my first feed →" : "+ Create New Feed"}
               </button>
-              <button
-                onClick={handleCreateFeed}
-                className="w-full sm:w-auto px-6 py-3 bg-white hover:bg-stone-50 active:bg-stone-100 text-stone-900 text-sm font-light tracking-wider uppercase transition-colors duration-200 border border-stone-300 min-h-[44px] touch-manipulation"
-              >
-                Create with Maya
-              </button>
+              {!access?.isPaidBlueprint && (
+                <button
+                  onClick={handleCreateFeed}
+                  className="w-full sm:w-auto px-6 py-3 bg-white hover:bg-stone-50 active:bg-stone-100 text-stone-900 text-sm font-light tracking-wider uppercase transition-colors duration-200 border border-stone-300 min-h-[44px] touch-manipulation"
+                >
+                  Create with Maya
+                </button>
+              )}
             </div>
 
             {/* Placeholder Grid Preview (Visual Guide) */}
@@ -485,10 +499,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
         open={showFeedStyleModal}
         onOpenChange={(open) => {
           setShowFeedStyleModal(open)
-          // Also notify parent if callback provided
-          if (onOpenFeedStyleModal) {
-            onOpenFeedStyleModal(open)
-          }
+          onFeedStyleModalChange?.(open)
         }}
         onConfirm={handleFeedStyleConfirm}
         defaultFeedStyle={lastFeedStyle}

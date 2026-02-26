@@ -4,25 +4,42 @@ export function isWelcomeFlowEnabled(envValue: string | undefined): boolean {
   return envValue === "true" || envValue === "1"
 }
 
-type WelcomeFlowDecisionInput = {
+export type WelcomeFlowDecisionInput = {
   enabled: boolean
-  userCreatedAt: string | Date | null | undefined
+  userCreatedAt?: string | Date | null
   hasAnyGeneration: boolean
+  /** At least one credit_transaction with transaction_type = 'bonus' for this user */
+  hasBonusCredits?: boolean
+  /** No credit_transaction with transaction_type = 'image' for this user (no image-type spend yet) */
+  hasNoImageSpend?: boolean
   now?: Date
 }
 
+/**
+ * Gate for Maya First-Generation Guided Path (Slice 1.1).
+ * Show when: feature enabled, user has bonus credits, zero image-type spend, and no generations yet.
+ * Optional: limit to users created within 24h (when userCreatedAt provided).
+ */
 export function shouldShowWelcomeFirstGenerationFlow(input: WelcomeFlowDecisionInput): boolean {
   if (!input.enabled) return false
   if (input.hasAnyGeneration) return false
-  if (!input.userCreatedAt) return false
 
-  const createdAt = input.userCreatedAt instanceof Date ? input.userCreatedAt : new Date(input.userCreatedAt)
-  if (Number.isNaN(createdAt.getTime())) return false
+  // Slice 1.1: require bonus credits and no image spend when provided
+  if (input.hasBonusCredits === false) return false
+  if (input.hasNoImageSpend === false) return false
 
-  const now = input.now ?? new Date()
-  const ageMs = now.getTime() - createdAt.getTime()
-  if (ageMs < 0) return false
+  if (input.userCreatedAt != null) {
+    const createdAt =
+      input.userCreatedAt instanceof Date ? input.userCreatedAt : new Date(input.userCreatedAt)
+    if (Number.isNaN(createdAt.getTime())) return false
 
-  return ageMs <= DAY_IN_MS
+    const now = input.now ?? new Date()
+    const ageMs = now.getTime() - createdAt.getTime()
+    if (ageMs < 0) return false
+
+    return ageMs <= DAY_IN_MS
+  }
+
+  return true
 }
 

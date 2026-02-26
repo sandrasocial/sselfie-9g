@@ -10,8 +10,8 @@ import { X } from "lucide-react"
 import { DesignClasses, ComponentClasses } from "@/lib/design-tokens"
 import { BlueprintSelfieUpload } from "@/components/blueprint/blueprint-selfie-upload"
 import useSWR from "swr"
-import { Aperture, Check, MessageCircle, Loader2 } from "lucide-react"
-import { Card } from "@/components/ui/card"
+import { Loader2, ArrowRight } from "lucide-react"
+import { trackAnalyticsEvent } from "@/lib/analytics/client"
 
 interface UnifiedOnboardingWizardProps {
   isOpen: boolean
@@ -114,52 +114,22 @@ interface FeedStyleVariationOption {
 
 const UNIFIED_STEPS = [
   {
-    id: "welcome",
-    title: "Welcome",
-    subtitle: "Let's get started",
+    id: "goal",
+    title: "What's your goal?",
+    subtitle: "Step 1 of 3",
+    stepIndex: 1,
   },
   {
-    id: "business",
-    title: "What do you do?",
-    subtitle: "Step 1 of 8",
-    field: "businessType",
+    id: "style",
+    title: "What's your style?",
+    subtitle: "Step 2 of 3",
+    stepIndex: 2,
   },
   {
-    id: "audience",
-    title: "Who is your ideal audience?",
-    subtitle: "Step 2 of 8",
-    isAudienceBuilder: true,
-  },
-  {
-    id: "story",
-    title: "What's your story?",
-    subtitle: "Step 3 of 8",
-    field: "transformationStory",
-    isTextarea: true,
-  },
-  {
-    id: "visual",
-    title: "What\u0027s your visual style?",
-    subtitle: "Step 4 of 8",
-    isVisualSelector: true,
-  },
-  {
-    id: "selfies",
-    title: "Upload your selfies",
-    subtitle: "Step 5 of 8",
-    isSelfieUpload: true,
-  },
-  {
-    id: "optional",
-    title: "Optional details",
-    subtitle: "Step 6 of 8",
-    isOptional: true,
-  },
-  {
-    id: "brandPillars",
-    title: "Create your content pillars",
-    subtitle: "Step 7 of 8 (Optional)",
-    isBrandPillars: true,
+    id: "ready",
+    title: "You're ready!",
+    subtitle: "Step 3 of 3",
+    stepIndex: 3,
   },
 ]
 
@@ -183,15 +153,21 @@ export default function UnifiedOnboardingWizard({
   )
   
   // Use initialStep if provided, otherwise default to 0
-  // Clamp initialStep to valid range (0 to totalSteps - 1)
+  // Map old 8-step initialStep (e.g. 5 = selfies) to new 3-step index: 5,4 -> 1 (style), 6,7 -> 2 (ready), else 0 (goal)
   const totalSteps = UNIFIED_STEPS.length
-  const safeInitialStep = Math.max(0, Math.min(initialStep, totalSteps - 1))
+  const mapInitialStep = (raw: number) => {
+    if (raw >= 6) return 2 // optional/pillars -> ready
+    if (raw >= 4) return 1 // visual/selfies -> style
+    if (raw >= 1) return 0 // business/audience/story -> goal
+    return 0
+  }
+  const safeInitialStep = Math.max(0, Math.min(mapInitialStep(initialStep ?? 0), totalSteps - 1))
   const [currentStep, setCurrentStep] = useState(safeInitialStep)
   
   // Reset to initialStep when wizard opens (if initialStep changes)
   useEffect(() => {
     if (isOpen) {
-      const safeStep = Math.max(0, Math.min(initialStep || 0, totalSteps - 1))
+      const safeStep = Math.max(0, Math.min(mapInitialStep(initialStep || 0), totalSteps - 1))
       setCurrentStep(safeStep)
     }
   }, [isOpen, initialStep, totalSteps])
@@ -433,14 +409,33 @@ export default function UnifiedOnboardingWizard({
   }
 
   const handleNext = () => {
+    const stepIndex = currentStep + 1 // 1-based
     if (currentStep < totalSteps - 1) {
+      trackAnalyticsEvent({
+        event: `wizard_step_${stepIndex}_complete`,
+        properties: { step: stepIndex, total_steps: totalSteps },
+      }).catch(() => {})
       setCurrentStep(currentStep + 1)
     } else {
       handleComplete()
     }
   }
 
+  const handleDismissWithAnalytics = () => {
+    const stepIndex = currentStep + 1
+    trackAnalyticsEvent({
+      event: `wizard_abandoned_at_step_${stepIndex}`,
+      properties: { step: stepIndex, total_steps: totalSteps },
+    }).catch(() => {})
+    onDismiss?.()
+  }
+
   const handleComplete = async () => {
+    trackAnalyticsEvent({
+      event: "wizard_step_3_complete",
+      properties: { step: 3, total_steps: totalSteps },
+    }).catch(() => {})
+
     // Verify selfies are uploaded before proceeding
     const hasSelfies = Array.isArray(formData.selfieImages) && formData.selfieImages.length > 0
     if (!hasSelfies) {
@@ -516,7 +511,7 @@ export default function UnifiedOnboardingWizard({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-stone-950/60 backdrop-blur-sm z-100"
-            onClick={onDismiss}
+            onClick={handleDismissWithAnalytics}
           />
 
           {/* Wizard Modal */}
@@ -534,7 +529,7 @@ export default function UnifiedOnboardingWizard({
               {/* Close Button */}
               {onDismiss && (
                 <button
-                  onClick={onDismiss}
+                  onClick={handleDismissWithAnalytics}
                   className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg transition-colors z-10 hover:bg-stone-100 text-stone-600 hover:text-stone-950"
                   aria-label="Close"
                 >
@@ -548,10 +543,12 @@ export default function UnifiedOnboardingWizard({
                 exit={{ opacity: 0, x: -20 }}
                 className="space-y-8 py-6"
               >
-                {/* Progress Bar */}
+                {/* Progress Bar + Step indicator */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-light tracking-[0.2em] uppercase text-stone-700">{step.subtitle}</span>
+                    <span className="text-xs font-light tracking-[0.2em] uppercase text-stone-700">
+                      {stepNumber} of 3
+                    </span>
                     <span className="text-xs font-light text-stone-700">{Math.round(progress)}%</span>
                   </div>
                   <Progress value={progress} className="h-1 bg-stone-200" />
@@ -565,21 +562,12 @@ export default function UnifiedOnboardingWizard({
                   {step.title}
                 </h2>
 
-                {/* Step 1: Welcome */}
+                {/* Step 1: Goal */}
                 {currentStep === 0 && (
                   <div className="space-y-6">
                     <p className="text-base sm:text-lg font-light leading-relaxed text-stone-700">
-                      Hi {userName && !userName.includes('@') ? userName : "there"}! 👋 Let&apos;s create content that actually looks and sounds like you. This will only take a few minutes.
+                      Hi {userName && !userName.includes('@') ? userName : "there"}! 👋 Tell us a bit about what you do and who you're here for.
                     </p>
-                    <p className="text-sm font-light text-stone-600">
-                      We&apos;ll ask you a few questions about your brand, style, and goals. Your answers help us generate personalized content just for you.
-                    </p>
-                  </div>
-                )}
-
-                {/* Step 2: Business Type */}
-                {currentStep === 1 && (
-                  <div className="space-y-6">
                     <div>
                       <label className="block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-stone-700 mb-2 sm:mb-3">
                         What do you do?
@@ -591,17 +579,7 @@ export default function UnifiedOnboardingWizard({
                         placeholder="e.g., Life Coach, Designer, Consultant..."
                         className="w-full border-b border-stone-300 py-3 sm:py-4 focus:outline-none focus:border-stone-950 transition-colors font-light bg-transparent border-t-0 border-l-0 border-r-0 rounded-none text-stone-950"
                       />
-                      {/* Debug: Show current formData value */}
-                      {process.env.NODE_ENV === 'development' && (
-                        <p className="text-xs text-stone-400 mt-1">Debug: formData.businessType = &quot;{formData.businessType}&quot;</p>
-                      )}
                     </div>
-                  </div>
-                )}
-
-                {/* Step 3: Audience Builder */}
-                {currentStep === 2 && (
-                  <div className="space-y-6">
                     <div>
                       <label className="block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-stone-700 mb-2 sm:mb-3">
                         Who is your ideal audience?
@@ -609,60 +587,31 @@ export default function UnifiedOnboardingWizard({
                       <Textarea
                         value={formData.idealAudience}
                         onChange={(e) => setFormData({ ...formData, idealAudience: e.target.value })}
-                        placeholder="e.g., Women entrepreneurs looking to build their personal brand, New moms balancing work and family..."
-                        className="w-full border-b border-stone-300 py-3 sm:py-4 focus:outline-none focus:border-stone-950 transition-colors font-light bg-transparent border-t-0 border-l-0 border-r-0 rounded-none text-stone-950 min-h-[100px] resize-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-stone-700 mb-2 sm:mb-3">
-                        What challenge do they face?
-                      </label>
-                      <Textarea
-                        value={formData.audienceChallenge}
-                        onChange={(e) => setFormData({ ...formData, audienceChallenge: e.target.value })}
-                        placeholder="e.g., Struggling to stand out online, Overwhelmed by content creation..."
+                        placeholder="e.g., Women entrepreneurs building their brand, new moms balancing work and family..."
                         className="w-full border-b border-stone-300 py-3 sm:py-4 focus:outline-none focus:border-stone-950 transition-colors font-light bg-transparent border-t-0 border-l-0 border-r-0 rounded-none text-stone-950 min-h-[80px] resize-none"
                       />
                     </div>
                     <div>
                       <label className="block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-stone-700 mb-2 sm:mb-3">
-                        What transformation do they want?
-                      </label>
-                      <Textarea
-                        value={formData.audienceTransformation}
-                        onChange={(e) => setFormData({ ...formData, audienceTransformation: e.target.value })}
-                        placeholder="e.g., Build a strong personal brand, Create consistent content..."
-                        className="w-full border-b border-stone-300 py-3 sm:py-4 focus:outline-none focus:border-stone-950 transition-colors font-light bg-transparent border-t-0 border-l-0 border-r-0 rounded-none text-stone-950 min-h-[80px] resize-none"
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Step 4: Story */}
-                {currentStep === 3 && (
-                  <div className="space-y-6">
-                    <div>
-                      <label className="block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-stone-700 mb-2 sm:mb-3">
-                        What\u0027s your story?
+                        What's your story? (optional)
                       </label>
                       <Textarea
                         value={formData.transformationStory}
                         onChange={(e) => setFormData({ ...formData, transformationStory: e.target.value })}
-                        placeholder="Share your journey, your why, what drives you..."
-                        className="w-full border-b border-stone-300 py-3 sm:py-4 focus:outline-none focus:border-stone-950 transition-colors font-light bg-transparent border-t-0 border-l-0 border-r-0 rounded-none text-stone-950 min-h-[150px] resize-none"
+                        placeholder="Share your journey or what drives you..."
+                        className="w-full border-b border-stone-300 py-3 sm:py-4 focus:outline-none focus:border-stone-950 transition-colors font-light bg-transparent border-t-0 border-l-0 border-r-0 rounded-none text-stone-950 min-h-[80px] resize-none"
                       />
                     </div>
                   </div>
                 )}
 
-                {/* Step 5: Visual Style + Feed Style (merged) */}
-                {currentStep === 4 && (
+                {/* Step 2: Style */}
+                {currentStep === 1 && (
                   <div className="space-y-6">
-                    <p className="text-sm font-light text-stone-600 mb-6">
-                      Pick a vibe that feels like you. Don\u0027t worry, you can always switch things up later!
+                    <p className="text-sm font-light text-stone-600">
+                      Pick a vibe that feels like you. Then add 1–3 selfies so we can match your look.
                     </p>
 
-                    {/* Feed Style Selection (from blueprint wizard) */}
                     <div>
                       <label className="block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-stone-700 mb-4">
                         Feed Style
@@ -719,7 +668,7 @@ export default function UnifiedOnboardingWizard({
                       </div>
                     </div>
 
-                    {(
+                    {formData.feedStyle && (
                       <div>
                         <label className="block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-stone-700 mb-4">
                           Choose Variation
@@ -731,8 +680,7 @@ export default function UnifiedOnboardingWizard({
                               <button
                                 key={variation.id}
                                 onClick={() => {
-                                  console.log('[Onboarding Wizard] User explicitly selected variation:', variation.id, variation.name)
-                                  userExplicitlySelectedVariationRef.current = true // Prevent auto-reset
+                                  userExplicitlySelectedVariationRef.current = true
                                   setFormData((prev) => ({ ...prev, feedStyleVariationId: variation.id }))
                                 }}
                                 className={`w-full text-left p-4 border transition-all duration-200 ${
@@ -752,225 +700,80 @@ export default function UnifiedOnboardingWizard({
                           })}
                         </div>
                         {variationData?.variations?.length === 0 && (
-                          <p className="text-xs text-stone-500 mt-3">
-                            No variations are available yet for this style.
-                          </p>
+                          <p className="text-xs text-stone-500 mt-3">No variations available for this style.</p>
                         )}
                       </div>
                     )}
-                  </div>
-                )}
 
-                {/* Step 6: Selfie Upload */}
-                {currentStep === 5 && (
-                  <div className="space-y-6">
                     <div>
-                      <p className="text-sm font-light text-stone-600 mb-2">
-                        Upload 1-3 selfies to use as reference images for generating your feed.
-                      </p>
-                      <p className="text-xs font-light text-stone-500 mb-6">
-                        These will help AI generate images that match your style and aesthetic.
-                      </p>
-                    </div>
-
-                    <BlueprintSelfieUpload
-                      onUploadComplete={(imageUrls) => {
-                        // Update local state for immediate UI feedback
-                        setFormData({ ...formData, selfieImages: imageUrls })
-                        // Trigger SWR revalidation to sync with API
-                        mutateImages()
-                      }}
-                      maxImages={3}
-                      initialImages={Array.isArray(formData.selfieImages) ? formData.selfieImages : []}
-                    />
-                  </div>
-                )}
-
-                {/* Step 6: Optional Details */}
-                {currentStep === 6 && (
-                  <div className="space-y-6">
-                    <p className="text-sm font-light text-stone-600 mb-6">
-                      These are optional, but they help us create even more personalized content for you.
-                    </p>
-
-                    {/* Brand Inspiration */}
-                    <div>
-                      <label className="block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-stone-700 mb-2 sm:mb-3">
-                        Who inspires you? (Optional)
+                      <label className="block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-stone-700 mb-2">
+                        Upload 1–3 selfies
                       </label>
-                      <Input
-                        type="text"
-                        value={formData.brandInspiration}
-                        onChange={(e) => setFormData({ ...formData, brandInspiration: e.target.value })}
-                        placeholder="e.g., @creator1, @creator2, Brand Name..."
-                        className="w-full border-b border-stone-300 py-3 sm:py-4 focus:outline-none focus:border-stone-950 transition-colors font-light bg-transparent border-t-0 border-l-0 border-r-0 rounded-none text-stone-950"
+                      <p className="text-xs font-light text-stone-500 mb-3">
+                        These help AI generate images that match your look.
+                      </p>
+                      <BlueprintSelfieUpload
+                        onUploadComplete={(imageUrls) => {
+                          setFormData({ ...formData, selfieImages: imageUrls })
+                          mutateImages()
+                        }}
+                        maxImages={3}
+                        initialImages={Array.isArray(formData.selfieImages) ? formData.selfieImages : []}
                       />
                     </div>
                   </div>
                 )}
 
-                {/* Step 7: Brand Pillars (Optional) */}
-                {currentStep === 7 && (
+                {/* Step 3: You're ready! — single CTA */}
+                {currentStep === 2 && (
                   <div className="space-y-6">
-                    {formData.contentPillars && formData.contentPillars.length > 0 ? (
-                      <>
-                        {/* Maya's Explanation */}
-                        {pillarExplanation && (
-                          <div className="flex gap-4 items-start bg-stone-50 rounded-xl p-4">
-                            <div className="shrink-0 w-12 h-12 bg-stone-950 rounded-full flex items-center justify-center">
-                              <Aperture size={20} className="text-white" />
-                            </div>
-                            <div className="flex-1">
-                              <p className="text-xs font-semibold text-stone-950 mb-1">Maya</p>
-                              <p className="text-sm text-stone-600 leading-relaxed">{pillarExplanation}</p>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Content Pillars Grid */}
-                        <div className="grid gap-4">
-                          {formData.contentPillars.map((pillar: any, index: number) => (
-                            <Card
-                              key={index}
-                              className="p-4 border-stone-200 bg-white"
-                            >
-                              <div className="flex items-start justify-between mb-2">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <h3 className="font-semibold text-stone-950">{pillar.name}</h3>
-                                    <Check size={16} className="text-stone-950" />
-                                  </div>
-                                  <p className="text-sm text-stone-600">{pillar.description}</p>
-                                </div>
-                              </div>
-
-                              {/* Content Ideas */}
-                              {pillar.contentIdeas && pillar.contentIdeas.length > 0 && (
-                                <div className="mt-3 space-y-1">
-                                  <p className="text-xs font-medium text-stone-500 mb-2">Post ideas:</p>
-                                  {pillar.contentIdeas.map((idea: string, i: number) => (
-                                    <div key={i} className="flex items-start gap-2">
-                                      <span className="text-xs text-stone-400 mt-0.5">•</span>
-                                      <p className="text-xs text-stone-600">{idea}</p>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </Card>
-                          ))}
-                        </div>
-
-                        <div className="flex gap-3 pt-4 border-t border-stone-200">
-                          <Button
-                            onClick={() => {
-                              setFormData({ ...formData, contentPillars: [] })
-                              setPillarExplanation("")
-                            }}
-                            variant="ghost"
-                            className="text-stone-600"
-                          >
-                            Start over
-                          </Button>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        {/* Maya's Introduction */}
-                        <div className="flex gap-4 items-start bg-stone-50 rounded-xl p-4">
-                          <div className="shrink-0 w-12 h-12 bg-stone-950 rounded-full flex items-center justify-center">
-                            <Aperture size={20} className="text-white" />
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-xs font-semibold text-stone-950 mb-1">Maya</p>
-                            <p className="text-sm text-stone-600 leading-relaxed">
-                            Now let\u0027s figure out what you\u0027ll actually post about! Content pillars are the main themes you\u0027ll create
-                              content around. Think of them as your content categories - they keep your feed organized and make it easy
-                              to come up with post ideas.
-                            </p>
-                            <p className="text-sm text-stone-600 leading-relaxed mt-2">
-                            Based on everything you\u0027ve told me about your brand, I can suggest pillars that will work perfectly for
-                              you. Ready?
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="flex gap-3">
-                          <Button
-                            onClick={async () => {
-                              setIsGeneratingPillars(true)
-                              try {
-                                // Prepare user answers for Maya
-                                const userAnswers = {
-                                  businessType: formData.businessType,
-                                  idealAudience: formData.idealAudience,
-                                  audienceChallenge: formData.audienceChallenge,
-                                  audienceTransformation: formData.audienceTransformation,
-                                  transformationStory: formData.transformationStory,
-                                  feedStyle: formData.feedStyle,
-                                }
-
-                                const response = await fetch("/api/maya/content-pillars", {
-                                  method: "POST",
-                                  headers: { "Content-Type": "application/json" },
-                                  credentials: "include",
-                                  body: JSON.stringify({ userAnswers }),
-                                })
-
-                                if (!response.ok) {
-                                  throw new Error("Failed to generate content pillars")
-                                }
-
-                                const data = await response.json()
-                                setFormData({ ...formData, contentPillars: data.pillars })
-                                setPillarExplanation(data.explanation)
-                              } catch (error) {
-                                console.error("[Unified Wizard] Error generating pillars:", error)
-                                alert("Failed to generate content pillars. Please try again.")
-                              } finally {
-                                setIsGeneratingPillars(false)
-                              }
-                            }}
-                            disabled={isGeneratingPillars}
-                            className="flex-1 bg-stone-950 hover:bg-stone-800 text-white"
-                          >
-                            {isGeneratingPillars ? (
-                              <>
-                                <Loader2 size={16} className="mr-2 animate-spin" />
-                                Maya is thinking...
-                              </>
-                            ) : (
-                              <>
-                                <MessageCircle size={16} className="mr-2" />
-                                Help me create content pillars
-                              </>
-                            )}
-                          </Button>
-                        </div>
-                      </>
-                    )}
+                    <p className="text-base sm:text-lg font-light leading-relaxed text-stone-700">
+                      Your feed is ready. One tap and we'll create your first 9-post grid.
+                    </p>
+                    <p className="text-sm font-light text-stone-600">
+                      You can always come back to edit your goal or style from the Feed Planner header.
+                    </p>
+                    <Button
+                      onClick={handleComplete}
+                      disabled={isSaving}
+                      className="w-full py-6 text-base sm:text-lg font-medium uppercase tracking-wider bg-stone-950 hover:bg-stone-800 text-stone-50 flex items-center justify-center gap-2 shadow-lg"
+                    >
+                      {isSaving ? (
+                        <>
+                          <Loader2 size={20} className="animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          Create my first feed
+                          <ArrowRight size={20} />
+                        </>
+                      )}
+                    </Button>
                   </div>
                 )}
 
-                {/* Navigation */}
-                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
-                  {currentStep > 0 && (
+                {/* Navigation — only for steps 1 and 2; step 3 has single CTA above */}
+                {currentStep < 2 && (
+                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
+                    {currentStep > 0 && (
+                      <Button
+                        variant="outline"
+                        onClick={() => setCurrentStep(currentStep - 1)}
+                        className="w-full sm:flex-1 border-stone-300 text-stone-700 hover:bg-stone-50"
+                      >
+                        Back
+                      </Button>
+                    )}
                     <Button
-                      variant="outline"
-                      onClick={() => setCurrentStep(currentStep - 1)}
-                      className="w-full sm:flex-1 border-stone-300 text-stone-700 hover:bg-stone-50"
+                      onClick={handleNext}
+                      disabled={!canProceed() || isSaving}
+                      className="w-full sm:flex-1 bg-stone-950 text-stone-50 hover:bg-stone-800"
                     >
-                      Back
+                      {currentStep === 0 ? "Continue →" : "Continue →"}
                     </Button>
-                  )}
-                  <Button
-                    onClick={handleNext}
-                    disabled={!canProceed() || isSaving}
-                    className="w-full sm:flex-1 bg-stone-950 text-stone-50 hover:bg-stone-800"
-                  >
-                    {isSaving ? "Saving..." : currentStep === totalSteps - 1 ? "Complete" : "Continue →"}
-                  </Button>
-                </div>
+                  </div>
+                )}
               </motion.div>
             </div>
           </motion.div>

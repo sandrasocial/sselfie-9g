@@ -40,6 +40,9 @@ export default function CreditBalance() {
             <div>
               <p className="text-xs tracking-[0.15em] uppercase font-light text-stone-500">Credit Balance</p>
               <p className="text-3xl font-serif font-extralight text-stone-950">{balance}</p>
+              {balance > 0 && history.length === 0 && (
+                <p className="text-xs text-stone-500 mt-1">Use credits in Maya or Feed to create your first image.</p>
+              )}
             </div>
           </div>
           <button

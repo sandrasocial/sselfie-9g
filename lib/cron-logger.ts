@@ -1,6 +1,7 @@
 import "server-only"
 import { logger } from "./logger"
 import { neon } from "@neondatabase/serverless"
+import { toErrorEnvelope } from "./error-envelope"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -113,15 +114,16 @@ export class CronLogger {
    */
   async error(error: Error | unknown, summary?: Record<string, unknown>): Promise<void> {
     const duration = Date.now() - this.startTime
-    const errorMessage = error instanceof Error ? error.message : String(error)
-    const errorName = error instanceof Error ? error.name : "UnknownError"
+    const envelope = toErrorEnvelope(error, undefined, summary)
+    const errorMessage = envelope.message
+    const errorName = envelope.code
 
     logger.error("Cron job failed", error instanceof Error ? error : new Error(errorMessage), {
       jobRunId: this.jobRunId,
       jobName: this.jobName,
       duration: `${duration}ms`,
       success: false,
-      errorName,
+      errorCode: errorName,
       errorMessage,
       ...summary,
     })
@@ -134,9 +136,9 @@ export class CronLogger {
         INSERT INTO admin_email_errors (tool_name, error_message, error_stack, context, created_at)
         VALUES (
           ${`cron:${this.jobName}`},
-          ${errorMessage},
-          ${error instanceof Error ? error.stack || null : null},
-          ${JSON.stringify({ jobRunId: this.jobRunId, ...summary })},
+          ${envelope.message},
+          ${envelope.stack || null},
+          ${JSON.stringify({ jobRunId: this.jobRunId, errorCode: envelope.code, ...summary })},
           NOW()
         )
         RETURNING id
@@ -147,6 +149,7 @@ export class CronLogger {
     }
 
     // Update database record
+    const failureSummary = { errorCode: envelope.code, errorMessage: envelope.message, ...summary }
     try {
       if (this.cronRunId) {
         await sql`
@@ -155,7 +158,7 @@ export class CronLogger {
             status = 'failed',
             finished_at = NOW(),
             duration_ms = ${duration},
-            summary = ${JSON.stringify(summary || {})},
+            summary = ${JSON.stringify(failureSummary)},
             error_id = ${errorId}
           WHERE id = ${this.cronRunId}
         `
@@ -169,7 +172,7 @@ export class CronLogger {
             to_timestamp(${this.startTime / 1000}), 
             NOW(), 
             ${duration}, 
-            ${JSON.stringify(summary || {})},
+            ${JSON.stringify(failureSummary)},
             ${errorId}
           )
         `

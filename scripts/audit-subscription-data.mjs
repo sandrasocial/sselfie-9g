@@ -50,6 +50,11 @@ async function main() {
   lines.push(``)
   lines.push(`- Generated at: ${now.toISOString()}`)
   lines.push(``)
+  lines.push(`## Classification (for ops)`)
+  lines.push(`- **Live active membership missing Stripe id:** High risk (recurring billing).`)
+  lines.push(`- **Live active paid_blueprint missing Stripe id:** Usually expected (one-time entitlement rows; "likely entitlement" = purchase exists).`)
+  lines.push(`- **Unresolved rows:** paid_blueprint rows with no purchase; true data gap.`)
+  lines.push(``)
 
   const totalUsers = await sql`SELECT COUNT(*)::int AS count FROM users`
   lines.push(`## Users`)

@@ -260,13 +260,10 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
     }
 
     // Paid users (first-time): Show wizard if missing extension data (skip free example)
-    // Paid users (returning): Skip wizard if already completed
+    // Paid blueprint: Skip full wizard entirely — show feed list view with inline "Set up in 30 seconds" card (A-02)
     if (access.isPaidBlueprint) {
-      // First-time paid users need wizard if missing extension data
-      // Returning paid users skip wizard if onboarding completed
-      const needsWizard = !hasExtensionData && !onboardingCompleted
       setWizardMode("none")
-      setShowWizard(needsWizard)
+      setShowWizard(false)
       setIsCheckingWizard(false)
       return
     }

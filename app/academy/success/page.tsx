@@ -8,6 +8,43 @@ import PurchaseButton from "../products/[productId]/purchase-button"
 const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300"] })
 const inter = Inter({ subsets: ["latin"], weight: ["300", "500"] })
 
+/** Post-purchase next-step copy and deep-link tab (docs/in-app-funnel/02-content-copy §3) */
+const NEXT_STEP_BY_PRODUCT: Record<
+  string,
+  { headline: string; subText: string; cta: string; studioTab: string }
+> = {
+  what_to_say: {
+    headline: "Your captions are waiting",
+    subText: "Head to Feed Planner now and write captions that feel like you.",
+    cta: "Go to Feed Planner",
+    studioTab: "feed-planner",
+  },
+  show_up: {
+    headline: "Let's show you to the world",
+    subText: "Chat with Maya about your brand and she'll help you shine.",
+    cta: "Chat with Maya",
+    studioTab: "maya",
+  },
+  get_paid: {
+    headline: "Time to monetize",
+    subText: "Open your Profile to see your monetization checklist and opportunities.",
+    cta: "Open Profile",
+    studioTab: "account",
+  },
+  ai_photo_prompts: {
+    headline: "Inspiration unlocked",
+    subText: "Browse curated prompts in Maya and generate your next photos.",
+    cta: "Browse Prompts",
+    studioTab: "maya",
+  },
+  paid_blueprint: {
+    headline: "Your 60 credits are ready",
+    subText: "Create your first 9-post feed in Feed Planner and watch the magic happen.",
+    cta: "Create First Feed",
+    studioTab: "feed-planner",
+  },
+}
+
 type SuccessPageProps = {
   searchParams: Promise<{ product?: string }>
 }
@@ -85,6 +122,34 @@ export default async function AcademySuccessPage({ searchParams }: SuccessPagePr
           >
             Go to Academy
           </Link>
+        )}
+
+        {/* Next step card: product-specific CTA deep-linking into app (Slice 1.3 / C-02) */}
+        {product && NEXT_STEP_BY_PRODUCT[product.id] && (
+          <div className="mt-10 border-2 border-[#e5e5e5] bg-[#ffffff] p-8 max-w-[320px]">
+            <p
+              className={`${inter.className} text-xs uppercase tracking-[0.5em] text-[#666666]`}
+              style={{ fontWeight: 500 }}
+            >
+              Your next step
+            </p>
+            <h2
+              className={`${cormorant.className} mt-3 text-xl uppercase text-[#0a0a0a]`}
+              style={{ fontWeight: 300 }}
+            >
+              {NEXT_STEP_BY_PRODUCT[product.id].headline}
+            </h2>
+            <p className={`${inter.className} mt-2 text-sm text-[#666666]`} style={{ fontWeight: 300 }}>
+              {NEXT_STEP_BY_PRODUCT[product.id].subText}
+            </p>
+            <Link
+              href={`/studio?tab=${encodeURIComponent(NEXT_STEP_BY_PRODUCT[product.id].studioTab)}&source=academy_purchase&product=${encodeURIComponent(product.id)}`}
+              className={`${inter.className} mt-6 inline-flex bg-[#0a0a0a] px-6 py-3 text-white transition-opacity hover:opacity-80`}
+              style={{ fontWeight: 500, fontSize: "13px", letterSpacing: "0.1em", textTransform: "uppercase" }}
+            >
+              {NEXT_STEP_BY_PRODUCT[product.id].cta} →
+            </Link>
+          </div>
         )}
 
         {/* Upsell block */}

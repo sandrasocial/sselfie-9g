@@ -41,6 +41,32 @@
 | `output/automation/` | Automation outputs (health reports, triage, cleanup). Treat these as immutable logs; refer to them when diagnosing incidents. |
 | `scripts/` | Diagnostic + onboarding scripts (Resend tests, automation instrumentation). Run them to double-check behavior before code changes. |
 | `docs/` | Strategy + context docs (read `STRATEGIC_CLEANUP_RECOMMENDATION.md`, `MASTER_COMMAND_CENTER.md`, etc.) before altering automation flows. |
+| `docs/features/` | **Per-feature source of truth** for research and implementation: `maya.md`, `feed-planner.md`, `gallery.md`, `academy.md`, `profile.md`, `admin.md`. **Research agents:** read the relevant feature doc, then fill "Current value / pain" and "Opportunities" using `output/automation/funnel-digest-*.md`, `output/automation/support-digest-*.md`, and feedback. See `docs/features/README.md` for how to use. |
+| `docs/codex-tasks/` | **Implementation task list for Codex.** Read `RESEARCH-SPRINT-CODEX-TASKS-2026-02-25.md` for the current 11 prioritized tasks (A-01 → E-03). Start here for implementation work. |
+| `docs/in-app-funnel/` | **Research deliverables for in-app journey + Academy funnel integration** (produced Feb 2026). Read these before implementing tasks A-01, C-01, C-02, C-03: `01-journey-map-2026-02-25.md` (4-stage funnel map), `02-content-copy-2026-02-25.md` (all CTAs, Maya system prompts, email copy), `03-designs-wireframes-2026-02-25.md` (mobile wireframes for Academy tab, post-purchase modal, Maya guided path), `04-prioritized-list-2026-02-25.md` (3-slice sprint plan + open questions for Sandra), `05-slice-1-verification-checklist.md` (QA checklist for Slice 1 tasks). |
+
+## Current state — Research Sprint Feb 2026
+
+```
+Context: Research sprint completed 2026-02-25. All 6 feature docs now have §7 and §8 filled.
+  11 Codex implementation tasks created. 4 in-app funnel research deliverables produced.
+Last actions:
+  - 6 parallel subagents filled §7 (Current value/pain) + §8 (Opportunities) in maya.md,
+    feed-planner.md, gallery.md, academy.md, profile.md, admin.md using funnel/support digests.
+  - Created docs/codex-tasks/RESEARCH-SPRINT-CODEX-TASKS-2026-02-25.md with 11 tasks
+    (A-01 to E-03), prioritized by impact.
+  - Created docs/in-app-funnel/ with 5 files: journey map, content/copy, wireframes,
+    prioritized sprint plan, and Slice 1 QA checklist.
+Files touched: docs/features/*.md (§7/§8 only), docs/codex-tasks/*, docs/in-app-funnel/*
+Outstanding issues:
+  - 0% first-output activation (0/14 new users generated; 3 days in a row)
+  - Feed Planner wizard: 1 "Continue" click in 3 days — wizard is the activation cliff
+  - Academy mini-products not surfaced in-app after purchase
+  - 80 unresolved credit_transaction rows missing stripe_payment_id (historical)
+  - B-03 (Prompts Tab) blocked until Sandra approves a list of 10–15 Nano Banana Pro prompts
+  - 5 open questions for Sandra in docs/in-app-funnel/04-prioritized-list-2026-02-25.md §6
+Next steps: Codex implements tasks in order: A-01 → A-02 → B-01 → E-01/02/03 → B-02 → B-03 → C-01 → C-02 → C-03 → D-01 → D-02. Read docs/in-app-funnel/ before A-01, C-01, C-02, C-03.
+```
 
 ## Operating procedure for Codex + Sandra
 

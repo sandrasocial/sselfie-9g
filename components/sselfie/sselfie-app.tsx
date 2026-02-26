@@ -62,7 +62,7 @@ import { DesignClasses } from "@/lib/design-tokens"
 import { AnimatePresence, motion } from "framer-motion"
 import useSWR from "swr"
 import { useRouter, useSearchParams } from "next/navigation"
-import { ChevronDown } from "lucide-react"
+import { ChevronDown, ChevronRight, X } from "lucide-react"
 
 interface SselfieAppProps {
   userId: string | number // Can be string or number (from database)
@@ -86,6 +86,8 @@ export default function SselfieApp({
   productType = null,
   purchaseSuccess = false,
   initialTab,
+  academyPurchaseSource,
+  academyPurchaseProduct,
 }: SselfieAppProps) {
   const isUnifiedMayaUiEnabled =
     process.env.NEXT_PUBLIC_FEATURE_UNIFIED_MAYA_UI === "true" ||
@@ -129,6 +131,9 @@ export default function SselfieApp({
 
   const [activeTab, setActiveTab] = useState(getInitialTab)
   const [showPurchaseSuccess, setShowPurchaseSuccess] = useState(purchaseSuccess)
+  const [showAcademyWelcomeBanner, setShowAcademyWelcomeBanner] = useState(
+    () => !!(academyPurchaseSource === "academy_purchase" && academyPurchaseProduct),
+  )
   const [isLoading, setIsLoading] = useState(true)
   const [currentTime, setCurrentTime] = useState(new Date())
   const [hasTrainedModel, setHasTrainedModel] = useState(false)
@@ -379,7 +384,9 @@ export default function SselfieApp({
   const isPaidBlueprintUserForAccess =
     (access.isPaidBlueprintOnly || blueprintEntitlementType === "paid") && !access.isMember
   const isOneTimeSession = productType === "one_time_session"
-  const academyBlocked = !access.hasFullAccess
+  const { data: myProductsData } = useSWR("/api/academy/my-products", fetcher)
+  const hasAcademyPurchases = (myProductsData?.purchases?.length ?? 0) > 0
+  const academyBlocked = !access.hasFullAccess && !hasAcademyPurchases
 
   const handleTabChange = (tabId: string) => {
     // Prevent non-members from accessing Maya
@@ -791,9 +798,43 @@ export default function SselfieApp({
       <CreditRenewalBanner />
       <WelcomeBackBanner />
 
+      {/* Slice 1.3: Post-purchase welcome banner when opening app with ?source=academy_purchase&product=... */}
+      {showAcademyWelcomeBanner &&
+        academyPurchaseSource === "academy_purchase" &&
+        academyPurchaseProduct &&
+        ACADEMY_PRODUCT_TO_TAB[academyPurchaseProduct] && (
+          <div className="sticky top-0 z-20 mx-1 sm:mx-2 md:mx-3 mt-2 sm:mt-3 md:mt-4">
+            <div className="bg-stone-950 text-white rounded-xl border border-stone-700 shadow-lg overflow-hidden">
+              <div className="flex items-center justify-between gap-3 px-4 py-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const tab = ACADEMY_PRODUCT_TO_TAB[academyPurchaseProduct]
+                    if (tab) handleTabChange(tab)
+                    setShowAcademyWelcomeBanner(false)
+                  }}
+                  className="flex-1 flex items-center justify-between gap-2 text-left group"
+                >
+                  <span className="text-sm font-medium">Welcome! Let&apos;s get started</span>
+                  <ChevronRight size={18} className="text-white shrink-0 group-hover:translate-x-0.5 transition-transform" aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAcademyWelcomeBanner(false)}
+                  className="shrink-0 p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+                  aria-label="Dismiss welcome banner"
+                >
+                  <X size={18} className="text-white" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
       <main className="relative h-full mx-1 sm:mx-2 md:mx-3 pb-2 sm:pb-3 md:pb-4">
         {showWelcomeFirstGenerationFlow ? (
           <WelcomeFirstGenerationFlow
+            userHasTrainedModel={hasTrainedModel}
             onGenerated={refreshCredits}
             onDone={() => setShowWelcomeFirstGenerationFlow(false)}
           />

@@ -57,6 +57,11 @@ async function main() {
   lines.push(``)
   lines.push(`- Generated at: ${now.toISOString()}`)
   lines.push(``)
+  lines.push(`## Classification (for ops)`)
+  lines.push(`- **Tagged legacy non-stripe:** Known pre-Stripe or unlinked; not a billing gap.`)
+  lines.push(`- **Active unresolved:** Missing \`stripe_payment_id\`; possible reconciliation gap (30d window is healthy when 0 missing).`)
+  lines.push(`- **One-time entitlement rows** (e.g. paid_blueprint) may have no Stripe payment ID by design; check subscription-audit for "likely entitlement" vs "unresolved".`)
+  lines.push(``)
 
   // 1. credit_transactions schema (compact)
   lines.push(`## credit_transactions schema (first 30 columns)`)

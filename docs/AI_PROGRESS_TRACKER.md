@@ -96,3 +96,36 @@ Copy this section each day and fill it:
   - Paid conversions:
   - Cash collected:
 ```
+
+## Weekly KPI gate review
+
+Use this section each week to decide **go / no-go** for the next optimization wave. Evidence lives in automation outputs and canonical docs.
+
+**No code required:** Daily evidence is generated automatically by GitHub Actions. See **`docs/AUTOMATION_FOR_SANDRA.md`** for what runs and the one-time secret setup.
+
+### Gate checklist
+
+| Gate | Pass condition | Evidence path |
+|------|-----------------|----------------|
+| **Paid-flow** | Stripe webhook + credits invariants OK; no paid-access regressions | `output/automation/revenue-audit-*.md`, `output/automation/subscription-audit-*.md`, `docs/_CANONICAL/CRON_TEST_METHOD.md` |
+| **Reliability** | Cron success and email failure thresholds within tracker targets | `output/automation/triage-*.md`, `output/automation/email-performance-*.md` |
+| **UX** | First-output activation stable or improved; no support error spike | `output/automation/funnel-digest-*.md`, `output/automation/support-digest-*.md` |
+| **Rollback** | Each change set has rollback steps and bounded blast radius | `docs/_CANONICAL/OPTIMIZATION_BACKLOG.md`, `docs/_CANONICAL/SCALE_HARDENING_CHECKLIST.md`, `docs/_CANONICAL/CLEANUP_LEDGER.md` |
+
+### Evidence links (canonical)
+
+- **Baseline & backlog:** `docs/_CANONICAL/OPTIMIZATION_BASELINE.md`, `docs/_CANONICAL/OPTIMIZATION_BACKLOG.md`
+- **Execution status:** `docs/_CANONICAL/EXECUTION_STATUS.md`
+- **Automation (latest):** `output/automation/` — triage, funnel-digest, support-digest, revenue-audit, subscription-audit, email-performance
+
+### Weekly summary template
+
+```md
+### Weekly gate review - YYYY-MM-DD
+
+- Paid-flow: Pass / Fail — notes:
+- Reliability: Pass / Fail — notes:
+- UX: Pass / Fail — notes:
+- Rollback: All change sets documented? Y / N
+- Decision: Proceed to next wave / Hold / Remediate first
+```

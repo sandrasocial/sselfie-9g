@@ -29,7 +29,7 @@ export async function GET() {
       return NextResponse.json({ enabled, eligible: false }, { status: 404 })
     }
 
-    const [userRow, generationRow] = await Promise.all([
+    const [userRow, generationRow, creditRow] = await Promise.all([
       sql`
         SELECT created_at
         FROM users
@@ -53,15 +53,30 @@ export async function GET() {
               )
           ) AS has_ai_images
       `,
+      sql`
+        SELECT
+          EXISTS(
+            SELECT 1 FROM credit_transactions
+            WHERE user_id = ${neonUser.id} AND transaction_type = 'bonus'
+          ) AS has_bonus_credits,
+          EXISTS(
+            SELECT 1 FROM credit_transactions
+            WHERE user_id = ${neonUser.id} AND transaction_type = 'image'
+          ) AS has_image_spend
+      `,
     ])
 
     const userCreatedAt = userRow?.[0]?.created_at ?? null
     const hasAnyGeneration = Boolean(generationRow?.[0]?.has_generated_images || generationRow?.[0]?.has_ai_images)
+    const hasBonusCredits = Boolean(creditRow?.[0]?.has_bonus_credits)
+    const hasNoImageSpend = !creditRow?.[0]?.has_image_spend
 
     const eligible = shouldShowWelcomeFirstGenerationFlow({
       enabled,
       userCreatedAt,
       hasAnyGeneration,
+      hasBonusCredits,
+      hasNoImageSpend,
     })
 
     return NextResponse.json({
@@ -69,6 +84,8 @@ export async function GET() {
       eligible,
       userCreatedAt,
       hasAnyGeneration,
+      hasBonusCredits,
+      hasNoImageSpend,
     })
   } catch (error) {
     console.error("[welcome-first-generation-state] failed:", error)

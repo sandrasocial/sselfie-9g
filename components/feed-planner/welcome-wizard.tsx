@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { motion, AnimatePresence } from "framer-motion"
-import { Sparkles, Grid3x3, FileText, Check, ArrowRight, X, Image as ImageIcon, Palette } from "lucide-react"
+import { Sparkles, Grid3x3, Check, ArrowRight, X, Image as ImageIcon } from "lucide-react"
 import { DesignClasses, ComponentClasses } from "@/lib/design-tokens"
 import useSWR from "swr"
 import Image from "next/image"
@@ -98,99 +98,6 @@ export default function WelcomeWizard({
     }
   }, [defaultFeedStyle])
 
-  // Feed style selection step content (matching unified wizard styling)
-  const feedStyleStepContent = useMemo(() => {
-    return (
-      <div className="space-y-6">
-        <p className="text-base sm:text-lg font-light leading-relaxed text-stone-700">
-          Choose the visual style for your feed.
-        </p>
-        <p className="text-sm font-light text-stone-600">
-          Select a style that matches your brand aesthetic. You can use your last selection or choose a different style.
-        </p>
-
-        {/* Feed Style Selection */}
-        <div>
-          <label className="block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-stone-700 mb-4">
-            Feed Style
-          </label>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
-            {Object.entries(feedExamples).map(([key, style]) => {
-              const feedStyle = key as FeedStyle
-              const isSelected = selectedFeedStyle === feedStyle
-              const isDefault = defaultFeedStyle === feedStyle
-
-              return (
-                <div
-                  key={key}
-                  onClick={() => setSelectedFeedStyle(feedStyle)}
-                  className={`cursor-pointer transition-all duration-300 ${
-                    isSelected ? "scale-105" : "hover:scale-102"
-                  }`}
-                >
-                  <div className={`border-2 p-4 bg-white ${
-                    isSelected ? "border-stone-950" : "border-stone-200"
-                  }`}>
-                    {/* Grid Preview */}
-                    <div className="grid grid-cols-3 gap-2 mb-4">
-                      {style.grid.map((type, idx) => (
-                        <div
-                          key={idx}
-                          className={`aspect-square rounded ${
-                            feedStyle === "minimal" ? "border border-stone-300" : ""
-                          }`}
-                          style={{
-                            backgroundColor: type === "selfie" ? style.colors[0] : style.colors[1],
-                          }}
-                        />
-                      ))}
-                    </div>
-
-                    {/* Style Name */}
-                    <h3 className="text-sm font-medium tracking-wider uppercase text-stone-950 mb-2">
-                      {style.name}
-                    </h3>
-
-                    {/* Color Swatches */}
-                    <div className="flex gap-2 mb-4">
-                      {style.colors.map((color, idx) => (
-                        <div
-                          key={idx}
-                          className={`w-6 h-6 rounded-full ${
-                            feedStyle === "minimal" ? "border border-stone-300" : "border border-stone-200"
-                          }`}
-                          style={{ backgroundColor: color }}
-                        />
-                      ))}
-                    </div>
-
-                    {/* Selection Button */}
-                    <button
-                      className={`w-full py-3 text-xs tracking-[0.2em] sm:tracking-[0.3em] uppercase border transition-all duration-200 ${
-                        isSelected
-                          ? "border-stone-950 bg-stone-950 text-stone-50"
-                          : "border-stone-300 text-stone-700 hover:border-stone-950"
-                      }`}
-                    >
-                      {isSelected ? "SELECTED" : "SELECT"}
-                    </button>
-
-                    {/* Default Badge */}
-                    {isDefault && !isSelected && (
-                      <p className="text-[10px] text-stone-500 mt-2 text-center">
-                        (Your last selection)
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      </div>
-    )
-  }, [selectedFeedStyle, defaultFeedStyle])
-
   // Dynamic first step content based on whether user has preview feed
   // Use useMemo to prevent recreation on every render
   const firstStepContent = useMemo(() => {
@@ -275,28 +182,30 @@ export default function WelcomeWizard({
     )
   }, [isLoadingPreview, hasPreviewFeed, previewImageUrl, onUsePreviewStyle, onChooseNewStyle])
 
-  // Determine step count and order based on whether user has preview feed and their choice
-  // NEW ORDER: Tutorial first, preview discovery last, skip style selection if user chose preview
-  const shouldSkipStyleSelection = hasPreviewFeed && userChosePreviewStyle === true
-  const totalSteps = hasPreviewFeed 
-    ? (shouldSkipStyleSelection ? 4 : 5) // 4 if skip style, 5 if include style
-    : 4 // 4 steps if no preview (welcome + style + 2 tutorial + completion)
-
+  // Max 3 steps (A-02 / §1.4): Welcome → How it works → You're ready
+  const totalSteps = 3
   const steps = useMemo(() => {
     const stepList = []
 
-    // Step 0: Welcome (if no preview feed)
-    if (!hasPreviewFeed) {
+    // Step 1: Welcome or Preview discovery
+    if (hasPreviewFeed && previewImageUrl) {
+      stepList.push({
+        title: "Great news! We found your preview feed",
+        subtitle: "Step 1 of 3",
+        content: firstStepContent,
+        icon: Sparkles,
+      })
+    } else {
       stepList.push({
         title: "Welcome to your Feed Planner",
-        subtitle: `Step 1 of ${totalSteps}`,
+        subtitle: "Step 1 of 3",
         content: (
           <div className="space-y-6">
             <p className="text-base sm:text-lg font-light leading-relaxed text-stone-700">
-              You&apos;re all set! Now you can create a complete Instagram feed with 9 beautiful photos.
+              You&apos;re all set! Create a 9-post feed that matches your style.
             </p>
             <p className="text-sm font-light text-stone-600">
-              Each photo will match your style and look amazing together. Let&apos;s walk through how it works.
+              Each photo will be unique but cohesive. Here&apos;s how it works.
             </p>
           </div>
         ),
@@ -304,31 +213,18 @@ export default function WelcomeWizard({
       })
     }
 
-    // Step: Feed Style Selection (skip if user chose preview style)
-    if (!shouldSkipStyleSelection) {
-      stepList.push({
-        title: "Choose Your Feed Style",
-        subtitle: `Step ${stepList.length + 1} of ${totalSteps}`,
-        content: feedStyleStepContent,
-        icon: Palette,
-      })
-    }
-
-    // Step: Generate photos tutorial
+    // Step 2: How it works (combined — generate photos + captions/strategy)
     stepList.push({
-      title: "Generate your photos",
-      subtitle: `Step ${stepList.length + 1} of ${totalSteps}`,
+      title: "How it works",
+      subtitle: "Step 2 of 3",
       content: (
         <div className="space-y-6">
           <p className="text-base sm:text-lg font-light leading-relaxed text-stone-700">
-            Click any empty placeholder in your grid to generate a photo.
-          </p>
-          <p className="text-sm font-light text-stone-600">
-            Each photo will be unique but match your style. You can generate them one at a time, or fill up the whole grid.
+            Click any empty slot in your grid to generate a photo. Then use the Post tab for captions and the Strategy tab for a full guide.
           </p>
           <div className="bg-stone-50 rounded-xl p-4 border border-stone-200">
             <p className="text-sm font-light text-stone-600">
-              💡 <span className="font-medium">Tip:</span> Start with the first few photos to see how they look together!
+              💡 Start with a few photos to see how they look together.
             </p>
           </div>
         </div>
@@ -336,75 +232,31 @@ export default function WelcomeWizard({
       icon: Grid3x3,
     })
 
-    // Step: Add captions and strategy tutorial
+    // Step 3: You're ready — single CTA per content doc
     stepList.push({
-      title: "Add captions and strategy",
-      subtitle: `Step ${stepList.length + 1} of ${totalSteps}`,
+      title: "You're ready!",
+      subtitle: "Step 3 of 3",
       content: (
         <div className="space-y-6">
           <p className="text-base sm:text-lg font-light leading-relaxed text-stone-700">
-            Once your photos are ready, you can add captions and get a full strategy guide.
+            Your feed is ready. One tap and we&apos;ll create your first 9-post grid.
           </p>
-          <p className="text-sm font-light text-stone-600">
-            Click the &quot;Post&quot; tab to get AI-generated captions for each photo. Click &quot;Strategy&quot; to get a complete guide for your feed.
-          </p>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="border border-stone-300 p-4 rounded-lg bg-white">
-              <p className="text-xs font-medium tracking-wider uppercase text-stone-700 mb-1">Post Tab</p>
-              <p className="text-xs font-light text-stone-600">AI-generated captions</p>
-            </div>
-            <div className="border border-stone-300 p-4 rounded-lg bg-white">
-              <p className="text-xs font-medium tracking-wider uppercase text-stone-700 mb-1">Strategy Tab</p>
-              <p className="text-xs font-light text-stone-600">Complete feed guide</p>
-            </div>
-          </div>
-        </div>
-      ),
-      icon: FileText,
-    })
-
-    // Step: Preview feed discovery (MOVED TO END - only if user has preview)
-    if (hasPreviewFeed) {
-      stepList.push({
-        title: "Great news! We found your preview feed",
-        subtitle: `Step ${stepList.length + 1} of ${totalSteps}`,
-        content: firstStepContent,
-        icon: Sparkles,
-      })
-    }
-
-    // Step: Completion
-    stepList.push({
-      title: "You&apos;re all set!",
-      subtitle: `Step ${stepList.length + 1} of ${totalSteps}`,
-      content: (
-        <div className="space-y-6">
-          <p className="text-base sm:text-lg font-light leading-relaxed text-stone-700">
-            That&apos;s it! You&apos;re ready to create amazing content.
-          </p>
-          <p className="text-sm font-light text-stone-600">
-            When you finish your first feed, you can create a new one anytime. All your feeds are saved so you can come back to them later.
-          </p>
-          <div className="bg-stone-50 rounded-xl p-4 border border-stone-200">
-            <p className="text-sm font-light text-stone-600">
-              🎉 <span className="font-medium">Have fun creating!</span> If you need help, just click the help button (?) in the header anytime.
-            </p>
-          </div>
+          <Button
+            onClick={handleComplete}
+            className="w-full py-6 text-base font-medium uppercase tracking-wider bg-stone-950 hover:bg-stone-800 text-white flex items-center justify-center gap-2 shadow-lg"
+          >
+            Create my first feed
+            <ArrowRight className="w-4 h-4" />
+          </Button>
         </div>
       ),
       icon: Check,
     })
 
     return stepList
-  }, [hasPreviewFeed, totalSteps, firstStepContent, feedStyleStepContent, shouldSkipStyleSelection, userChosePreviewStyle])
+  }, [hasPreviewFeed, previewImageUrl, firstStepContent])
 
   const handleNext = () => {
-    // If we're on the feed style step, save the selection
-    const currentStepData = steps[currentStep]
-    if (currentStepData?.title === "Choose Your Feed Style" && onFeedStyleSelected) {
-      onFeedStyleSelected(selectedFeedStyle)
-    }
-
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1)
     } else {
@@ -553,8 +405,8 @@ export default function WelcomeWizard({
                       </>
                     ) : (
                       <>
-                        Get Started
-                        <Check className="w-4 h-4 ml-2" />
+                        Create my first feed
+                        <ArrowRight className="w-4 h-4 ml-2" />
                       </>
                     )}
                   </Button>
