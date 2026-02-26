@@ -1,7 +1,7 @@
 # SSELFIE Copy Audit — 2026-02-26
 
 **Auditor:** Cursor AI Brand Copy Auditor  
-**Voice Bible source:** `docs/brand/VOICE_BIBLE.md`, `docs/brand/DO_DONT.md`, `docs/brand/MESSAGING_PILLARS.md`  
+**Voice Bible source:** `docs/brand/VOICE_BIBLE.md`, `docs/brand/DO_DONT.md`, `docs/brand/MESSAGING_PILLARS.md`
 **Scoring:** 1 = sounds corporate/wrong → 5 = sounds like Sandra  
 **Criteria:** Warm not corporate · Conversational not instructional · Outcome-focused not feature-focused · Uses "you" not "users" · Sounds like a woman talking to women · Never robotic
 

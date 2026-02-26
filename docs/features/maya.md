@@ -250,7 +250,7 @@ User-facing prompts come from **prompt_guide_items** + **prompt_guides** via `GE
    - **Offer bonus-credit top-ups on first generation** (e.g. "Generate a photo and get 2 bonus credits") to drive re-engagement and second generation.
 
 **Constraints:**
-- Design system (`docs/brand`, existing tokens); constitution (no critical-file changes without approval); no breaking paid flows or credit invariants; Training stays membership-only unless product decision changes.
+- Design system (existing tokens); constitution (no critical-file changes without approval); no breaking paid flows or credit invariants; Training stays membership-only unless product decision changes.
 - **First-time flow:** Must not block existing users or disrupt paid generation flows; launch as opt-in or feature-flag-gated A/B.
 - **Prompts tab optimization:** Research must validate best-performing Nano Banana Pro prompts before adding; avoid low-quality or off-brand suggestions.
 

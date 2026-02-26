@@ -233,7 +233,7 @@ maya.md §8 opportunity: "Offer bonus-credit top-ups on first generation." This 
   - In-app journey map (per funnel stage: free, paid blueprint, Studio member, Academy buyer → current landing + desired next-step surface)
   - Copy doc: exact strings for all CTAs, banners, Maya first messages, and product-specific guidance
   - Wireframes or UI spec: Academy tab layout, Gallery empty state, post-purchase modal, Maya mode explainer
-  - Color/component tokens: ensure designs follow `docs/brand` and existing SSELFIE system
+  - Color/component tokens: ensure designs follow existing SSELFIE design system
 
 - **Credit invariants:** No changes to `lib/credits.ts` CREDIT_COSTS without explicit product decision. All UI changes preserve existing credit logic.
 

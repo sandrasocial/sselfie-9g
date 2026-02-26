@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     }
 
     const authHeader = req.headers.get("authorization") || ""
-    const headerToken = authHeader.replace(/^Bearer\\s+/i, "").trim()
+    const headerToken = authHeader.replace(/^Bearer\s+/i, "").trim()
     const altHeaderToken = (req.headers.get("x-stella-token") || "").trim()
 
     const body = await req.json().catch(() => ({} as Record<string, unknown>))

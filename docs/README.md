@@ -1,37 +1,56 @@
-# Documentation Index
+# Docs map — what’s current vs archive
 
-This directory contains all project documentation organized by category.
+This file is the **map of project documentation**. Use it to know what is maintained as current vs historical reference.
 
-## 📁 Directory Structure
+**Canonical rules for Cursor and agents:** `docs/_CANONICAL/CURSOR_CONSTITUTION.md` and repo-root `AGENTS.md`. Read those first for behavior and doc authority.
 
-### `/database/`
-Database schema documentation and audits:
-- `DATABASE_SCHEMA.md` - Actual database schema reference
-- `DATABASE_SCHEMA_AUDIT.md` - Schema audit findings
-- `SCHEMA_PREVENTION_PLAN.md` - Prevention strategy
+---
 
-### `/audits/`
-Code audits and analysis reports:
-- Various audit reports for code quality, architecture, and issues
+## Active / current
 
-### `/implementation/`
-Implementation plans, summaries, and test results:
-- Feed creation refactoring documentation
-- Chat history fixes
-- Card image persistence implementations
-- Test plans and results
+These folders and areas are treated as **current** (updated and used for decisions and implementation):
 
-### `/feed-planner/`
-Feed planner specific documentation
+| Area | Purpose |
+|------|--------|
+| **`_CANONICAL/`** | Cursor constitution, system reality, execution status, drift rules — **authoritative**. |
+| **`features/`** | Feature specs (Maya, Feed Planner, Academy, Gallery, etc.). |
+| **`in-app-funnel/`** | In-app journey, Academy funnel, content/copy, wireframes, prioritized list. |
+| **`codex-tasks/`** | Codex/agent task briefs and reports. |
+| **`brand/`** | Voice Bible, DO_DONT, MESSAGING_PILLARS, cohort launch, content studio, ManyChat, etc. |
+| **`setup/`** | Setup and environment docs. |
+| **`database/`** | Schema and DB reference. |
+| **`email/`** | Email automation and templates. |
+| **`ui/`** | UI and design notes. |
+| **`audits/`** | Code/UX audits (reference). |
+| **`fixes/`** | Fix writeups (reference). |
+| **`maya/`** | Maya-specific docs. |
+| **`alex/`** | Alex (admin chat) docs. |
+| **`blueprint-funnel/`** | Blueprint funnel. |
+| **`content-engine/`** | Content engine. |
+| **`phases/`** | Phase planning. |
+| **`feed-planner/`** | Feed planner (non-archive). |
 
-### `/maya/`
-Maya AI assistant documentation
+Repo-root **`tasks/`** holds active task specs (e.g. ACADEMY-02, UX-01). Root **`STATUS.md`**, **`docs/MASTER_BRIEF.md`**, **`docs/AI_PROGRESS_TRACKER.md`** are current.
 
-### `/root-archive/`
-Archived documentation from previous cleanup
+---
 
-## 🔍 Quick Links
+## Archive / reference
 
-- **Database Schema**: [`database/DATABASE_SCHEMA.md`](./database/DATABASE_SCHEMA.md)
-- **Schema Types**: [`../lib/db/schema-types.ts`](../lib/db/schema-types.ts)
+Treat as **historical context only** — not current spec. Do not rely on these for up-to-date behavior or product decisions:
 
+- **`docs/archive/`**
+- **`docs/root-archive/`**
+- **`docs/feed-planner/archive/`**
+- **`docs/_ARCHIVE/`**
+- **`docs/implementation/`** (implementation reports and old plans)
+- Any path under `docs/` that contains **`archive`** or **`_ARCHIVE`**
+
+---
+
+## Entry points for agents
+
+1. **Cursor rules and doc authority:** `docs/_CANONICAL/CURSOR_CONSTITUTION.md` and **`AGENTS.md`**.
+2. **State and execution:** `docs/CODEX_CONTEXT.md`, `docs/_CANONICAL/EXECUTION_STATUS.md`, `docs/AI_PROGRESS_TRACKER.md`.
+3. **Product and funnel:** `docs/MASTER_BRIEF.md`, `docs/features/`, `docs/in-app-funnel/`.
+
+Generated outputs (e.g. `output/automation/*`, `output/agents/*`) are **not** canonical docs; use for logs and evidence only.

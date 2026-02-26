@@ -82,7 +82,7 @@ Subagents **do not write code**. They produce **research, content, and designs**
   - Academy tab (in-app): how “you have X / get Y next” and “Start” / “Buy” are shown; how a “next step” (e.g. Maya, Feed Planner) is surfaced.
   - Post-purchase in-app moment: e.g. modal or banner after checkout redirect: “You’re in. Next: [Start What To Say] or [Plan with Maya].”
   - Maya: where a “suggested next step” (e.g. “Plan your first week of captions”) appears (first message, sidebar, or card) — no backend logic, just placement and wording.
-- **Design system:** Follow `docs/brand` and existing SSELFIE tokens; no new systems. Note: mobile-first, existing components where possible.
+- **Design system:** Follow existing SSELFIE design tokens; no new systems. Note: mobile-first, existing components where possible.
 - **Deliverable:** Wireframes or a short “UI spec” (screens + copy + links) that implementation can follow.
 
 ### 3.4 Prioritization
