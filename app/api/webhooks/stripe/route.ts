@@ -2840,6 +2840,20 @@ export async function POST(request: NextRequest) {
           console.error("[v0] Failed to notify North for subscription.deleted:", notifyError)
         }
 
+        // WIN-BACK TRIGGER: Once the 3-touch win-back email sequence is approved by Sandra,
+        // add the trigger here. At this point `customer.email` and `customer.name` are
+        // available from the Stripe customer lookup above. The sequence should:
+        //   1. Immediately record cancellation_date in the `subscriptions` table (or a
+        //      dedicated `win_back_queue` table) alongside the subscriber's email and
+        //      first name so the scheduler can fan out the 3 sends.
+        //   2. Day 3  → generateWinBackDay3Email  (emailType: 'win-back-day3')
+        //   3. Day 7  → generateWinBackDay7Email  (emailType: 'win-back-day7', include offerCode)
+        //   4. Day 14 → generateWinBackDay14Email (emailType: 'win-back-day14')
+        // The scheduler can be a Vercel Cron job (or Resend Broadcasts with a send-at field)
+        // that queries for rows where NOW() >= cancellation_date + interval AND the
+        // corresponding email has not yet been sent (check email_logs by emailType).
+        // Do NOT send to anyone already on the payment-recovery or reactivation sequence.
+
         break
       }
 
