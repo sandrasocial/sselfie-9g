@@ -43,7 +43,7 @@ export async function getUserContextForMaya(authUserId: string): Promise<string>
     }
 
     console.log("[v0] getUserContextForMaya: Fetching memory, brand, and assets...")
-    const [memory, personalBrand, assets, userGender, userEthnicity] = await Promise.all([
+    const [memory, personalBrand, assets, userGender, userEthnicity, recentConcepts] = await Promise.all([
       getUserPersonalMemory(neonUser.id).catch((err) => {
         console.error("[v0] Error fetching memory:", err)
         return null
@@ -67,6 +67,11 @@ export async function getUserContextForMaya(authUserId: string): Promise<string>
         .catch((err: any) => {
           console.error("[v0] Error fetching ethnicity:", err)
           return null
+        }),
+      sql`SELECT title, type, created_at FROM maya_concepts WHERE user_id = ${neonUser.id} ORDER BY created_at DESC LIMIT 8`
+        .catch((err: any) => {
+          console.error("[v0] Error fetching recent concepts:", err)
+          return []
         }),
     ])
     console.log("[v0] getUserContextForMaya: Data fetched successfully")
@@ -389,6 +394,29 @@ export async function getUserContextForMaya(authUserId: string): Promise<string>
           contextParts.push("Typically responds positively to suggestions")
         }
       }
+    }
+
+    if (recentConcepts && Array.isArray(recentConcepts) && recentConcepts.length > 0) {
+      console.log("[v0] getUserContextForMaya: Processing recent concepts...")
+      contextParts.push("=== YOUR RECENT CREATIVE SESSIONS WITH MAYA ===")
+      contextParts.push(
+        "These are the most recent concept ideas Maya created for this user. Reference them naturally — you know this user's creative history.",
+      )
+      for (const concept of recentConcepts) {
+        const date = concept.created_at
+          ? new Date(concept.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+          : null
+        const parts = [
+          `- "${concept.title}"`,
+          concept.type ? `(${concept.type})` : null,
+          date ? `— ${date}` : null,
+        ].filter(Boolean)
+        contextParts.push(parts.join(" "))
+      }
+      contextParts.push(
+        "Use this history to personalise your suggestions — notice patterns, reference what you've built together, and build on what's working.",
+      )
+      contextParts.push("")
     }
 
     let finalContext = contextParts.length > 0 ? `\n\n${contextParts.join("\n")}` : ""
