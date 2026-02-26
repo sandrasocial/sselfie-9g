@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { FileText, ChevronRight, X } from "lucide-react"
+import { Camera, ChevronRight, X } from "lucide-react"
 import Image from "next/image"
 import { DesignClasses, ComponentClasses } from "@/lib/design-tokens"
 
@@ -65,32 +65,32 @@ export default function BlueprintWelcomeWizard({
               >
                 {/* Logo/Icon */}
                 <div className="w-20 h-20 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full flex items-center justify-center mx-auto shadow-2xl">
-                  <FileText className="w-12 h-12 text-white" strokeWidth={2} />
+                  <Camera className="w-10 h-10 text-white" strokeWidth={1.5} />
                 </div>
 
                 {/* Welcome Message */}
                 <div className="space-y-3">
                   <h2 className={`${DesignClasses.typography.heading.h2} text-white`}>
-                    Welcome{userName ? `, ${userName}` : ""}!
+                    {userName ? `You're in, ${userName}.` : "You're in."}
                   </h2>
                   <p className={`${DesignClasses.typography.body.medium} text-white/90 max-w-md mx-auto`}>
-                    Let&apos;s create your Brand Blueprint. Answer a few questions to get your custom brand strategy, content calendar, and a free Instagram grid.
+                    You have 60 credits. That&apos;s 30 AI brand photos. Let&apos;s use them — upload a selfie and Maya creates your first photo in under 2 minutes.
                   </p>
                 </div>
 
-                {/* Features List */}
+                {/* What's next */}
                 <div className="space-y-3 pt-4">
                   <div className="flex items-center justify-center gap-3 text-white/80">
                     <div className="w-1.5 h-1.5 bg-white/40 rounded-full"></div>
-                    <span className="text-sm">Custom brand strategy</span>
+                    <span className="text-sm">Upload one selfie → get a brand photo</span>
                   </div>
                   <div className="flex items-center justify-center gap-3 text-white/80">
                     <div className="w-1.5 h-1.5 bg-white/40 rounded-full"></div>
-                    <span className="text-sm">Content calendar</span>
+                    <span className="text-sm">Train your personal AI for faster results</span>
                   </div>
                   <div className="flex items-center justify-center gap-3 text-white/80">
                     <div className="w-1.5 h-1.5 bg-white/40 rounded-full"></div>
-                    <span className="text-sm">Free Instagram grid</span>
+                    <span className="text-sm">Plan your feed once you have your photos</span>
                   </div>
                 </div>
 
@@ -101,7 +101,7 @@ export default function BlueprintWelcomeWizard({
                 >
                   <div className="absolute inset-0 bg-stone-950/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                   <span className="relative z-10 flex items-center justify-center gap-2">
-                    Get Started
+                    Make my first photo →
                     <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
                   </span>
                 </button>

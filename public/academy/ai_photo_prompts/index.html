@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Photo Prompt Pack — SSELFIE Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,200;0,300;1,200;1,300&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --obsidian: #0a0a0a;
+    --porcelain: #ffffff;
+    --pearl: #f5f5f5;
+    --smoke: #666666;
+    --whisper: #e5e5e5;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+  body {
+    background: var(--porcelain);
+    color: var(--obsidian);
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;
+    line-height: 1.8;
+    min-width: 375px;
+  }
+  .page { max-width: 680px; margin: 0 auto; padding: 0 48px; }
+  @media (max-width: 600px) { .page { padding: 0 24px; } }
+
+  h1, h2, h3, .serif {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 300;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+    text-transform: uppercase;
+  }
+  h1 { font-size: clamp(2.4rem, 6vw, 3.6rem); font-weight: 200; }
+  h2 { font-size: clamp(1.6rem, 4vw, 2.2rem); }
+  h3 { font-size: clamp(1.2rem, 3vw, 1.6rem); font-weight: 300; }
+  p { font-size: 16px; line-height: 1.8; color: var(--smoke); margin-bottom: 1.2em; }
+  p:last-child { margin-bottom: 0; }
+  strong { font-weight: 500; color: var(--obsidian); }
+
+  .label {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 10px;
+    letter-spacing: 0.5em;
+    text-transform: uppercase;
+    color: var(--smoke);
+  }
+
+  hr { border: none; border-top: 1px solid var(--whisper); margin: 48px 0; }
+
+  #progress-bar {
+    position: fixed; top: 0; left: 0; height: 2px;
+    background: var(--obsidian); width: 0%; z-index: 100;
+    transition: width 0.2s ease;
+  }
+
+  nav {
+    position: sticky; top: 0; background: var(--porcelain);
+    border-bottom: 1px solid var(--whisper);
+    z-index: 50; padding: 16px 0;
+  }
+  .nav-inner {
+    max-width: 680px; margin: 0 auto; padding: 0 48px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  @media (max-width: 600px) { .nav-inner { padding: 0 24px; } }
+  .nav-logo { font-family: 'Cormorant Garamond', serif; font-weight: 200; font-size: 1rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--obsidian); text-decoration: none; }
+  .nav-progress { font-family: 'Inter', sans-serif; font-weight: 500; font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--smoke); }
+
+  section { padding: 64px 0; }
+  section:first-of-type { padding-top: 80px; }
+
+  .cover { text-align: center; padding: 96px 0 80px; }
+  .cover .label { margin-bottom: 24px; display: block; }
+  .cover h1 { margin-bottom: 16px; }
+  .cover .tagline { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.2rem; font-weight: 200; color: var(--smoke); text-transform: none; letter-spacing: 0; margin-bottom: 40px; }
+  .cover-meta { display: flex; justify-content: center; gap: 40px; flex-wrap: wrap; margin-top: 40px; }
+  .cover-meta-item { text-align: center; }
+  .cover-meta-item .number { font-family: 'Cormorant Garamond', serif; font-weight: 200; font-size: 2rem; display: block; color: var(--obsidian); }
+  .cover-meta-item .desc { font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--smoke); font-weight: 500; }
+
+  .sandra-note {
+    background: var(--pearl); padding: 40px;
+    border-left: 1px solid var(--whisper); margin: 48px 0;
+  }
+  .sandra-note .label { margin-bottom: 20px; display: block; }
+  .sandra-note blockquote { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.1rem; font-weight: 300; line-height: 1.7; color: var(--obsidian); text-transform: none; letter-spacing: 0; }
+
+  .scenario-header {
+    display: flex; align-items: baseline; gap: 16px; margin-bottom: 32px;
+  }
+  .scenario-number {
+    font-family: 'Cormorant Garamond', serif; font-weight: 200;
+    font-size: 5rem; line-height: 1; color: var(--whisper);
+    flex-shrink: 0;
+  }
+  .scenario-title-block h2 { margin-bottom: 4px; }
+
+  .prompt-list { list-style: none; padding: 0; margin: 24px 0; display: grid; gap: 12px; }
+  .prompt-item {
+    background: var(--pearl); border: 1px solid var(--whisper);
+    padding: 16px 20px; position: relative; cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .prompt-item:hover { border-color: var(--obsidian); }
+  .prompt-number { font-size: 10px; letter-spacing: 0.3em; font-weight: 500; text-transform: uppercase; color: var(--smoke); margin-bottom: 6px; display: block; }
+  .prompt-text { font-size: 14px; line-height: 1.6; color: var(--obsidian); }
+  .copy-hint { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--whisper); position: absolute; top: 12px; right: 12px; transition: color 0.2s; }
+  .prompt-item:hover .copy-hint { color: var(--smoke); }
+  .prompt-item.copied { border-color: var(--obsidian); background: var(--obsidian); }
+  .prompt-item.copied .prompt-text, .prompt-item.copied .prompt-number { color: var(--porcelain); }
+  .prompt-item.copied .copy-hint { color: var(--porcelain); }
+
+  .scenario-intro { background: var(--obsidian); color: var(--porcelain); padding: 24px 28px; margin-bottom: 24px; }
+  .scenario-intro p { color: rgba(255,255,255,0.8); margin: 0; font-size: 14px; }
+
+  .tip-block { border-left: 2px solid var(--whisper); padding-left: 20px; margin: 24px 0; }
+  .tip-block .label { margin-bottom: 8px; display: block; }
+  .tip-block p { font-size: 14px; }
+
+  .cta-section { background: var(--obsidian); padding: 64px 0; margin-top: 48px; }
+  .cta-section .page { text-align: center; }
+  .cta-section h2 { color: var(--porcelain); margin-bottom: 16px; }
+  .cta-section p { color: rgba(255,255,255,0.7); margin-bottom: 32px; }
+  .cta-button {
+    display: inline-block; background: var(--porcelain); color: var(--obsidian);
+    padding: 16px 40px; text-decoration: none;
+    font-family: 'Inter', sans-serif; font-weight: 500;
+    font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase;
+    transition: opacity 0.2s;
+  }
+  .cta-button:hover { opacity: 0.85; }
+</style>
+</head>
+<body>
+<div id="progress-bar"></div>
+
+<nav>
+  <div class="nav-inner">
+    <a class="nav-logo" href="#">SSELFIE Studio</a>
+    <span class="nav-progress" id="nav-progress">Scenario 0 / 10</span>
+  </div>
+</nav>
+
+<div class="page">
+  <div class="cover">
+    <span class="label">SSELFIE Academy</span>
+    <h1>AI Photo<br>Prompt Pack</h1>
+    <p class="tagline">Turn Selfies Into Brand Photos — No Photographer Needed.</p>
+    <div class="cover-meta">
+      <div class="cover-meta-item"><span class="number">50</span><span class="desc">Prompts</span></div>
+      <div class="cover-meta-item"><span class="number">10</span><span class="desc">Scenarios</span></div>
+      <div class="cover-meta-item"><span class="number">1</span><span class="desc">Phone</span></div>
+    </div>
+  </div>
+
+  <section>
+    <span class="label">From Sandra</span>
+    <hr style="margin-top:16px;">
+    <div class="sandra-note" style="margin-top:32px;">
+      <span class="label">Before You Start</span>
+      <blockquote>
+        I used to think I needed a photographer, a studio, perfect lighting, and two hours I didn't have — just to get a decent photo for Instagram.<br><br>
+        Then I started using AI. And I realised the photos I was getting from my phone and a few specific words were better than anything I'd ever paid €300 for.<br><br>
+        The problem isn't your phone. The problem isn't your face. The problem is that most people just type "nice photo" and wonder why it looks generic.<br><br>
+        The prompt is everything. The right words tell SSELFIE exactly what kind of woman to show — her vibe, her environment, her energy, what she's wearing, and how the light falls.<br><br>
+        These 50 prompts are the ones that actually work. Across 10 different brand scenarios, they'll give you a full month of content from a single selfie upload.<br><br>
+        Your phone is enough. You just needed the right words.<br><br>
+        — Sandra
+      </blockquote>
+    </div>
+  </section>
+
+  <section>
+    <span class="label">How To Use This</span>
+    <hr style="margin-top:16px;margin-bottom:32px;">
+    <div style="display:grid;gap:24px;">
+      <div>
+        <span style="font-weight:500;font-size:11px;letter-spacing:0.3em;text-transform:uppercase;color:var(--obsidian)">Step 01 — Choose Your Scenario</span>
+        <p>Pick the scenario that matches what you need this week. Morning routine, workspace, outfit, event — there's a scenario for every type of content.</p>
+      </div>
+      <div>
+        <span style="font-weight:500;font-size:11px;letter-spacing:0.3em;text-transform:uppercase;color:var(--obsidian)">Step 02 — Open SSELFIE Studio</span>
+        <p>Go to the Maya tab. Upload one clear selfie. Paste the prompt. Hit generate.</p>
+      </div>
+      <div>
+        <span style="font-weight:500;font-size:11px;letter-spacing:0.3em;text-transform:uppercase;color:var(--obsidian)">Step 03 — Customise If You Want</span>
+        <p>Add your brand colours, location, or mood to any prompt. The words in <strong>[brackets]</strong> are the ones worth personalising.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCENARIO 01 -->
+  <section id="scenario-1">
+    <div class="scenario-header">
+      <div class="scenario-number">01</div>
+      <div class="scenario-title-block">
+        <span class="label">Scenario One</span>
+        <h2>Morning<br>Routine</h2>
+      </div>
+    </div>
+    <div class="scenario-intro">
+      <p>The "morning content" slot is one of the highest-performing for women entrepreneurs. It signals discipline, intention, and realness — before the rest of the world is online.</p>
+    </div>
+    <ul class="prompt-list">
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 01</span>
+        <span class="prompt-text">A woman sitting at a clean white marble desk with a [gold/rose] coffee mug and a journal open beside her laptop. Soft morning light through sheer curtains. Minimal, intentional, editorial. Personal brand portrait.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 02</span>
+        <span class="prompt-text">Close-up portrait of a woman in a white bathrobe, holding a ceramic cup, looking out a bright window. Peaceful, premium, morning ritual energy. Soft bokeh background, natural skin tone.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 03</span>
+        <span class="prompt-text">A woman in a [neutral linen / soft grey] outfit sitting cross-legged on a bed with a notebook. Warm morning light, fresh flowers in the background. Calm, focused, intentional energy.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 04</span>
+        <span class="prompt-text">Editorial portrait of a woman standing at a kitchen counter, espresso machine beside her, golden hour light. She's dressed simply but stylishly. Lifestyle brand photo, magazine quality.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 05</span>
+        <span class="prompt-text">A woman in a oversized cream sweater, hair natural, outdoors on a terrace with city view and morning coffee. Authentic, unfiltered morning vibe with premium editorial framing.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+    </ul>
+    <div class="tip-block">
+      <span class="label">Sandra's Tip</span>
+      <p>For morning content, keep the background simple. Your face should be the focus. A blurred background and soft light beats a cluttered "aesthetic" every time.</p>
+    </div>
+  </section>
+
+  <!-- SCENARIO 02 -->
+  <section id="scenario-2">
+    <div class="scenario-header">
+      <div class="scenario-number">02</div>
+      <div class="scenario-title-block">
+        <span class="label">Scenario Two</span>
+        <h2>Work From<br>Anywhere</h2>
+      </div>
+    </div>
+    <div class="scenario-intro">
+      <p>Your audience wants to see that you work on your terms. This scenario says: "I built something that lets me choose." That's the whole message.</p>
+    </div>
+    <ul class="prompt-list">
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 06</span>
+        <span class="prompt-text">A woman working on a laptop at a [café / co-working space], sunlight on her face, a glass of water and a notebook nearby. She's focused but relaxed. Digital nomad lifestyle, editorial quality.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 07</span>
+        <span class="prompt-text">Close-up of a woman's hands on a laptop keyboard, minimalist gold jewellery, soft natural light. Professional yet personal. Brand portrait, depth-of-field effect.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 08</span>
+        <span class="prompt-text">A woman sitting at an outdoor terrace with a Mediterranean view, working on a laptop. She's wearing a [white / terracotta] linen shirt. Sun-bleached tones, travel content, luxury minimalism.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 09</span>
+        <span class="prompt-text">Portrait of a woman leaning back in a modern chair, laptop on her lap, thinking. Home office with plants and natural light. The "CEO moment" energy — confident, calm, in control.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 10</span>
+        <span class="prompt-text">A woman standing at a standing desk by a large window, reading notes. Minimal office setup, evening golden light. Professional brand portrait with architectural background.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+    </ul>
+  </section>
+
+  <!-- SCENARIO 03 -->
+  <section id="scenario-3">
+    <div class="scenario-header">
+      <div class="scenario-number">03</div>
+      <div class="scenario-title-block">
+        <span class="label">Scenario Three</span>
+        <h2>Brand<br>Statement</h2>
+      </div>
+    </div>
+    <div class="scenario-intro">
+      <p>These prompts are about one thing: presence. You don't need a context or a story. Just you, looking like you mean business.</p>
+    </div>
+    <ul class="prompt-list">
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 11</span>
+        <span class="prompt-text">A confident woman in a [black blazer / tailored jacket], standing against a clean white wall. Direct eye contact. Professional headshot with personality — not corporate, but commanding.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 12</span>
+        <span class="prompt-text">Editorial portrait of a woman in a sophisticated [cream / beige / stone] outfit, minimal accessories, neutral background. Magazine cover energy. Clean, precise, elevated.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 13</span>
+        <span class="prompt-text">A woman sitting on the edge of a marble counter, one leg crossed, looking directly at the camera. Confident posture. Luxury brand editorial. Studio lighting, sharp focus.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 14</span>
+        <span class="prompt-text">Close-up portrait, direct eye contact, natural light from the left. No distracting background. Just her face, her skin, her story. Raw, real, and completely her own brand.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 15</span>
+        <span class="prompt-text">A woman in an oversized [white shirt / structured blazer] standing in the centre of an empty, minimalist room. Wide shot. Power stance. This is what "I built something" looks like.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+    </ul>
+  </section>
+
+  <!-- SCENARIO 04 -->
+  <section id="scenario-4">
+    <div class="scenario-header">
+      <div class="scenario-number">04</div>
+      <div class="scenario-title-block">
+        <span class="label">Scenario Four</span>
+        <h2>Behind The<br>Scenes</h2>
+      </div>
+    </div>
+    <div class="scenario-intro">
+      <p>People buy from people they trust. Behind the scenes content builds that trust faster than any polished post ever will.</p>
+    </div>
+    <ul class="prompt-list">
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 16</span>
+        <span class="prompt-text">A woman at a messy creative desk — notes, mood board, open laptop — looking up mid-thought. Candid energy, warm light. "I'm in the middle of building something" aesthetic.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 17</span>
+        <span class="prompt-text">A woman packing orders or organising products, hair up, casual outfit, focused. Behind-the-scenes brand content. Real, relatable, energetic. Shallow depth of field.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 18</span>
+        <span class="prompt-text">Portrait of a woman on a video call, screen glow, notebook open, headphones around her neck. Working with clients from home. Real and polished at the same time.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 19</span>
+        <span class="prompt-text">A woman reviewing a printed document at her desk, pen in hand, glasses if applicable. Detailed work energy. The business version of "the devil is in the detail." Clean, focused.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 20</span>
+        <span class="prompt-text">A woman walking through a busy market / city street with a tote bag and phone in hand. Mid-movement, candid, energetic. Shows she has a life outside her screen. Vibrant and real.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+    </ul>
+  </section>
+
+  <!-- SCENARIO 05 -->
+  <section id="scenario-5">
+    <div class="scenario-header">
+      <div class="scenario-number">05</div>
+      <div class="scenario-title-block">
+        <span class="label">Scenario Five</span>
+        <h2>Lifestyle &<br>Personal</h2>
+      </div>
+    </div>
+    <div class="scenario-intro">
+      <p>People follow brands. They stay for people. These prompts show who you are when the laptop is closed.</p>
+    </div>
+    <ul class="prompt-list">
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 21</span>
+        <span class="prompt-text">A woman in a park or green outdoor space, natural light, relaxed expression. Wearing [casual but intentional outfit]. Lifestyle content that says: "I take care of myself." Clean and genuine.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 22</span>
+        <span class="prompt-text">A woman at a restaurant table, glass of wine or sparkling water, laughing or looking relaxed. The luxury of time and good food. Feminine, elegant, real. Not staged. Editorial spontaneity.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 23</span>
+        <span class="prompt-text">A woman reading a book on a couch, natural afternoon light, throw blanket, a cup of tea nearby. Calm domestic scene. "I protect my energy" energy. Warm tones, soft focus.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 24</span>
+        <span class="prompt-text">Portrait of a woman at the gym or in activewear — confident, post-workout, hair up. Not "fitness content." The message is: "I show up for myself the same way I show up for my business."</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 25</span>
+        <span class="prompt-text">A woman walking on a beach, coastal or lakeside setting, looking ahead. Natural light, movement, freedom. The visual equivalent of: "I built this so I could have this." Wide shot, filmic.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+    </ul>
+  </section>
+
+  <!-- SCENARIO 06 -->
+  <section id="scenario-6">
+    <div class="scenario-header">
+      <div class="scenario-number">06</div>
+      <div class="scenario-title-block">
+        <span class="label">Scenario Six</span>
+        <h2>Speaking &<br>Teaching</h2>
+      </div>
+    </div>
+    <div class="scenario-intro">
+      <p>If you want to be seen as an expert, you need photos that say "I know things." These position you as the person with the answers.</p>
+    </div>
+    <ul class="prompt-list">
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 26</span>
+        <span class="prompt-text">A woman presenting at a whiteboard or screen, marker in hand, energetic expression. Professional speaking environment. "She runs workshops" energy. Clean, bright, expert positioning.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 27</span>
+        <span class="prompt-text">Close-up portrait of a woman mid-explanation, hands gesturing, engaged expression. Teaching energy. Educational content visual. Warm, approachable, credible. Natural background.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 28</span>
+        <span class="prompt-text">A woman sitting in front of a ring light or professional setup, recording content. Behind the content creation process. Shows she's serious about her work. Modern creator aesthetic.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 29</span>
+        <span class="prompt-text">Portrait of a woman at a conference or event — badge visible, professional outfit, a crowd or venue background blurred. "She shows up in the room" energy. Aspirational, credible, real.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 30</span>
+        <span class="prompt-text">A woman looking directly at camera with a knowing half-smile — the look of someone who has figured something out and is about to share it. This is the "caption says it all" visual. Close-up, direct.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+    </ul>
+  </section>
+
+  <!-- SCENARIO 07 -->
+  <section id="scenario-7">
+    <div class="scenario-header">
+      <div class="scenario-number">07</div>
+      <div class="scenario-title-block">
+        <span class="label">Scenario Seven</span>
+        <h2>Outfit &<br>Style</h2>
+      </div>
+    </div>
+    <div class="scenario-intro">
+      <p>You don't need to be a fashion account to use outfit content. Getting dressed with intention is a message. "I care how I show up" is always on-brand.</p>
+    </div>
+    <ul class="prompt-list">
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 31</span>
+        <span class="prompt-text">Full-length portrait of a woman in a [trench coat / tailored trousers / clean minimal outfit] on a city street. Natural light, slight movement. Editorial fashion meets personal brand. Her style is her brand.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 32</span>
+        <span class="prompt-text">A woman in a [bold colour / pattern] outfit that makes her the only thing in the frame. Clean background — white wall, neutral street. The outfit speaks. Confident, intentional, on-brand.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 33</span>
+        <span class="prompt-text">Close-up of a woman's neck, collarbone, and jewellery. Soft natural light. The details tell the story. Premium, personal, feminine. This is what product detail photography looks like when the product is you.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 34</span>
+        <span class="prompt-text">A woman sitting on steps, looking away from camera. Three-quarter shot. Casual but considered outfit, natural environment. Thoughtful, introspective, quietly powerful energy.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 35</span>
+        <span class="prompt-text">A woman in her walk-in wardrobe or getting-ready space, mirror reflection, beautiful natural morning light. Getting ready content. The ritual of dressing as an act of self-respect.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+    </ul>
+  </section>
+
+  <!-- SCENARIO 08 -->
+  <section id="scenario-8">
+    <div class="scenario-header">
+      <div class="scenario-number">08</div>
+      <div class="scenario-title-block">
+        <span class="label">Scenario Eight</span>
+        <h2>Results &<br>Milestones</h2>
+      </div>
+    </div>
+    <div class="scenario-intro">
+      <p>Social proof doesn't have to be a screenshot. The right photo shows people that something good is happening. Pair these with your wins.</p>
+    </div>
+    <ul class="prompt-list">
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 36</span>
+        <span class="prompt-text">A woman with a laptop open, looking at the screen with a surprised and delighted expression — the "just got great news" face. Real, spontaneous energy. Caption: "She just checked her metrics."</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 37</span>
+        <span class="prompt-text">Portrait of a woman toasting with champagne or juice, laughing, celebratory. "We're celebrating something" energy. Warm light, blurred background, joy. The visual that goes with a win announcement.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 38</span>
+        <span class="prompt-text">A woman writing in a journal, pen moving, deep in reflection. Journaling as a business practice. Intentional. "I track my growth" energy. Peaceful, focused, morning light.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 39</span>
+        <span class="prompt-text">A woman standing outside a nice restaurant, hotel, or venue, dressed up and smiling. "Client dinner" or "sold-out event" energy. Subtle luxury, real celebration. Soft evening light.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 40</span>
+        <span class="prompt-text">Close-up of a woman's face — genuine, calm, clear-eyed. The look of someone who has been through something hard and come out the other side. No big smile needed. Just: "I made it."</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+    </ul>
+  </section>
+
+  <!-- SCENARIO 09 -->
+  <section id="scenario-9">
+    <div class="scenario-header">
+      <div class="scenario-number">09</div>
+      <div class="scenario-title-block">
+        <span class="label">Scenario Nine</span>
+        <h2>Story &<br>Vulnerability</h2>
+      </div>
+    </div>
+    <div class="scenario-intro">
+      <p>The photos that make people stop are the ones where something real is happening. These prompts create the visual space for your most honest captions.</p>
+    </div>
+    <ul class="prompt-list">
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 41</span>
+        <span class="prompt-text">A woman sitting alone at a window, looking out, thoughtful. Soft rain or grey light outside. Interior warmth. "I've been thinking about something" energy. For your most reflective posts.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 42</span>
+        <span class="prompt-text">A woman curled up on a couch with a blanket, phone in hand, looking tired but okay. The "I had a hard week and I'm recovering" photo. Real. Relatable. This is the post that gets the most DMs.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 43</span>
+        <span class="prompt-text">Portrait of a woman mid-laugh — not posed, not perfect. Genuine joy, messy happiness. This is the photo that reminds people you're a human, not a brand account. Use it sparingly. It lands hard.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 44</span>
+        <span class="prompt-text">A woman standing at a crossroads, looking left and right, or walking away from the camera down a long path. The "I was at a turning point" visual. Used for transformation stories, before/afters, pivots.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 45</span>
+        <span class="prompt-text">Close-up portrait, no makeup or very minimal, natural light, direct gaze. The "this is actually me" photo. It takes confidence to post this. That confidence is the whole point.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+    </ul>
+  </section>
+
+  <!-- SCENARIO 10 -->
+  <section id="scenario-10">
+    <div class="scenario-header">
+      <div class="scenario-number">10</div>
+      <div class="scenario-title-block">
+        <span class="label">Scenario Ten</span>
+        <h2>Seasonal &<br>Timely</h2>
+      </div>
+    </div>
+    <div class="scenario-intro">
+      <p>Tying your content to a season, month, or moment keeps it feeling relevant. These prompts are built to be adapted to whatever is happening right now.</p>
+    </div>
+    <ul class="prompt-list">
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 46</span>
+        <span class="prompt-text">A woman in an autumn / fall setting — warm tones, leaves, a coffee cup. Soft golden light. "New season energy" for business planning posts, quarterly reflection, or fresh starts.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 47</span>
+        <span class="prompt-text">A woman in a bright summer setting — sun, pool, terrace — working or relaxing. "This is my life in [month]" energy. Shows freedom, flexibility, the life that the business funds.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 48</span>
+        <span class="prompt-text">A woman in a cosy winter setting — fireplace, heavy knit, candlelight, warm interior. "The world slows down but I keep going" energy. For December content: reflection, goals, quiet power.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 49</span>
+        <span class="prompt-text">A woman outside in spring bloom — light jacket, flowers in background, fresh colours. "New beginnings" energy. First quarter goals, spring launches, feeling of momentum returning.</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+      <li class="prompt-item" onclick="copyPrompt(this)">
+        <span class="prompt-number">Prompt 50</span>
+        <span class="prompt-text">A woman at a desk with a calendar, planner, or goal board visible. New Year planning energy. "Here's what I'm building" post. Clear, confident, directional. The photo that says: "I have a plan."</span>
+        <span class="copy-hint">Copy</span>
+      </li>
+    </ul>
+  </section>
+
+</div>
+
+<div class="cta-section">
+  <div class="page">
+    <h2>Your phone is enough.</h2>
+    <p>Open SSELFIE Studio and use your first prompt today.<br>Upload a selfie. Paste. Generate. Done.</p>
+    <a href="https://sselfie.ai/studio" class="cta-button">Open SSELFIE Studio →</a>
+  </div>
+</div>
+
+<script>
+  // Progress bar
+  window.addEventListener('scroll', () => {
+    const scrollTop = document.documentElement.scrollTop;
+    const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+    const progress = scrollTop / scrollHeight * 100;
+    document.getElementById('progress-bar').style.width = progress + '%';
+
+    // Update nav counter
+    const scenarios = document.querySelectorAll('section[id^="scenario-"]');
+    let current = 0;
+    scenarios.forEach((section, i) => {
+      const rect = section.getBoundingClientRect();
+      if (rect.top < window.innerHeight * 0.5) current = i + 1;
+    });
+    document.getElementById('nav-progress').textContent = `Scenario ${current} / 10`;
+  });
+
+  // Copy prompt to clipboard
+  function copyPrompt(el) {
+    const text = el.querySelector('.prompt-text').textContent.trim();
+    navigator.clipboard.writeText(text).catch(() => {});
+    el.classList.add('copied');
+    const hint = el.querySelector('.copy-hint');
+    hint.textContent = 'Copied';
+    setTimeout(() => {
+      el.classList.remove('copied');
+      hint.textContent = 'Copy';
+    }, 2000);
+  }
+</script>
+</body>
+</html>

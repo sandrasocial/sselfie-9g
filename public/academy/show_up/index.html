@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Show Up — SSELFIE Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,200;0,300;1,200;1,300&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --obsidian: #0a0a0a;
+    --porcelain: #ffffff;
+    --pearl: #f5f5f5;
+    --smoke: #666666;
+    --whisper: #e5e5e5;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+  body {
+    background: var(--porcelain);
+    color: var(--obsidian);
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;
+    line-height: 1.8;
+    min-width: 375px;
+  }
+  .page { max-width: 680px; margin: 0 auto; padding: 0 48px; }
+  @media (max-width: 600px) { .page { padding: 0 24px; } }
+
+  /* TYPOGRAPHY */
+  h1, h2, h3, .serif {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 300;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+    text-transform: uppercase;
+  }
+  h1 { font-size: clamp(2.4rem, 6vw, 3.6rem); font-weight: 200; }
+  h2 { font-size: clamp(1.6rem, 4vw, 2.2rem); }
+  h3 { font-size: clamp(1.2rem, 3vw, 1.6rem); font-weight: 300; }
+  p { font-size: 16px; line-height: 1.8; color: var(--smoke); margin-bottom: 1.2em; }
+  p:last-child { margin-bottom: 0; }
+  strong { font-weight: 500; color: var(--obsidian); }
+
+  /* LABEL */
+  .label {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 10px;
+    letter-spacing: 0.5em;
+    text-transform: uppercase;
+    color: var(--smoke);
+  }
+
+  /* DIVIDER */
+  hr { border: none; border-top: 1px solid var(--whisper); margin: 48px 0; }
+
+  /* PROGRESS BAR */
+  #progress-bar {
+    position: fixed; top: 0; left: 0; height: 2px;
+    background: var(--obsidian); width: 0%; z-index: 100;
+    transition: width 0.2s ease;
+  }
+
+  /* NAV */
+  nav {
+    position: sticky; top: 0; background: var(--porcelain);
+    border-bottom: 1px solid var(--whisper);
+    z-index: 50; padding: 16px 0;
+  }
+  .nav-inner {
+    max-width: 680px; margin: 0 auto; padding: 0 48px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  @media (max-width: 600px) { .nav-inner { padding: 0 24px; } }
+  .nav-logo { font-family: 'Cormorant Garamond', serif; font-weight: 200; font-size: 1rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--obsidian); text-decoration: none; }
+  .nav-progress { font-family: 'Inter', sans-serif; font-weight: 500; font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--smoke); }
+
+  /* SECTIONS */
+  section { padding: 64px 0; }
+  section:first-of-type { padding-top: 80px; }
+
+  /* COVER */
+  .cover { text-align: center; padding: 96px 0 80px; }
+  .cover .label { margin-bottom: 24px; display: block; }
+  .cover h1 { margin-bottom: 16px; }
+  .cover .tagline { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.2rem; font-weight: 200; color: var(--smoke); text-transform: none; letter-spacing: 0; margin-bottom: 40px; }
+  .cover-meta { display: flex; justify-content: center; gap: 40px; flex-wrap: wrap; margin-top: 40px; }
+  .cover-meta-item { text-align: center; }
+  .cover-meta-item .number { font-family: 'Cormorant Garamond', serif; font-weight: 200; font-size: 2rem; display: block; color: var(--obsidian); }
+  .cover-meta-item .desc { font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--smoke); font-weight: 500; }
+
+  /* SANDRA NOTE */
+  .sandra-note {
+    background: var(--pearl);
+    padding: 40px;
+    border-left: 1px solid var(--whisper);
+    margin: 48px 0;
+  }
+  .sandra-note .label { margin-bottom: 20px; display: block; }
+  .sandra-note blockquote { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.1rem; font-weight: 300; line-height: 1.7; color: var(--obsidian); text-transform: none; letter-spacing: 0; }
+
+  /* EXERCISE */
+  .exercise-header {
+    display: flex; align-items: baseline; gap: 16px; margin-bottom: 32px;
+  }
+  .exercise-number {
+    font-family: 'Cormorant Garamond', serif; font-weight: 200;
+    font-size: 5rem; line-height: 1; color: var(--whisper);
+    flex-shrink: 0;
+  }
+  .exercise-title-block h2 { margin-bottom: 4px; }
+
+  /* QUESTION BLOCK */
+  .question-block { margin: 32px 0; }
+  .question-label { font-weight: 500; font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--obsidian); margin-bottom: 8px; display: block; }
+  .question-text { font-size: 15px; color: var(--smoke); margin-bottom: 12px; line-height: 1.6; }
+  textarea {
+    width: 100%; min-height: 100px; border: 1px solid var(--whisper);
+    background: var(--porcelain); padding: 16px; font-family: 'Inter', sans-serif;
+    font-weight: 300; font-size: 15px; line-height: 1.7; color: var(--obsidian);
+    resize: vertical; outline: none; transition: border-color 0.2s;
+  }
+  textarea:focus { border-color: var(--smoke); }
+  textarea::placeholder { color: var(--whisper); }
+
+  /* FORMULA BLOCK */
+  .formula-block {
+    background: var(--obsidian); color: var(--porcelain);
+    padding: 32px 40px; margin: 32px 0;
+  }
+  .formula-block .label { color: var(--smoke); margin-bottom: 16px; display: block; }
+  .formula-block p { color: var(--porcelain); font-size: 1.05rem; font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 300; margin: 0; }
+
+  /* WEEK PLANNER */
+  .week-planner { display: grid; gap: 1px; background: var(--whisper); margin: 32px 0; }
+  .week-row { background: var(--porcelain); padding: 28px 32px; }
+  .week-row:nth-child(even) { background: var(--pearl); }
+  .week-label { font-weight: 500; font-size: 10px; letter-spacing: 0.4em; text-transform: uppercase; color: var(--smoke); margin-bottom: 8px; display: block; }
+  .week-row textarea { min-height: 80px; }
+
+  /* CONTENT TYPE PILLS */
+  .content-types { display: grid; gap: 1px; background: var(--whisper); margin: 32px 0; }
+  .content-type-row { display: flex; align-items: flex-start; gap: 24px; padding: 24px 28px; }
+  .content-type-row:nth-child(odd) { background: var(--porcelain); }
+  .content-type-row:nth-child(even) { background: var(--pearl); }
+  .type-abbr { font-family: 'Cormorant Garamond', serif; font-weight: 200; font-size: 2.4rem; color: var(--whisper); line-height: 1; flex-shrink: 0; width: 48px; }
+  .type-body { flex: 1; }
+  .type-name { font-weight: 500; font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--obsidian); display: block; margin-bottom: 6px; }
+  .type-desc { font-size: 14px; color: var(--smoke); margin: 0; line-height: 1.6; }
+
+  /* 30-DAY CALENDAR */
+  .calendar-grid { width: 100%; border-collapse: collapse; margin: 32px 0; }
+  .calendar-grid th {
+    font-family: 'Inter', sans-serif; font-weight: 500; font-size: 10px;
+    letter-spacing: 0.3em; text-transform: uppercase; color: var(--smoke);
+    padding: 12px 8px; text-align: center; border-bottom: 1px solid var(--whisper);
+  }
+  .calendar-grid td {
+    border: 1px solid var(--whisper); padding: 12px 8px;
+    text-align: center; vertical-align: top;
+  }
+  .cal-day { font-family: 'Inter', sans-serif; font-size: 10px; color: var(--smoke); display: block; margin-bottom: 4px; }
+  .cal-type { font-family: 'Cormorant Garamond', serif; font-weight: 300; font-size: 0.9rem; color: var(--obsidian); display: block; }
+  .cal-type.story { color: #8B7355; }
+  .cal-type.strategy { color: var(--obsidian); }
+  .cal-type.social { color: var(--smoke); }
+  .cal-type.showup { color: #6B6B6B; }
+  .cal-type.sell { color: var(--obsidian); font-style: italic; }
+
+  /* CAPTION CARDS */
+  .caption-card {
+    border: 1px solid var(--whisper);
+    padding: 20px 24px;
+    position: relative;
+    background: var(--porcelain);
+  }
+  .caption-card p { font-size: 14px; line-height: 1.7; color: var(--obsidian); margin: 0; }
+  .caption-num { font-family:'Cormorant Garamond',serif; font-weight:200; font-size:1.2rem; color:var(--whisper); position:absolute; top:12px; right:16px; }
+  .copy-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-top: 12px; background: transparent; border: 1px solid var(--whisper);
+    padding: 6px 14px; font-family: 'Inter', sans-serif; font-weight: 500;
+    font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--smoke);
+    cursor: pointer; transition: all 0.2s;
+  }
+  .copy-btn:hover { background: var(--obsidian); color: var(--porcelain); border-color: var(--obsidian); }
+  .copy-btn.copied { background: var(--obsidian); color: var(--porcelain); border-color: var(--obsidian); }
+
+  /* RITUAL STEPS */
+  .ritual-steps { display: grid; gap: 1px; background: var(--whisper); margin: 32px 0; }
+  .ritual-step { padding: 28px 32px; display: flex; gap: 20px; align-items: flex-start; }
+  .ritual-step:nth-child(odd) { background: var(--porcelain); }
+  .ritual-step:nth-child(even) { background: var(--pearl); }
+  .ritual-step-num { font-family: 'Cormorant Garamond', serif; font-weight: 200; font-size: 2.4rem; color: var(--whisper); line-height: 1; flex-shrink: 0; }
+  .ritual-step-body { flex: 1; }
+  .ritual-step-title { font-weight: 500; font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--obsidian); display: block; margin-bottom: 6px; }
+  .ritual-step-desc { font-size: 14px; color: var(--smoke); margin: 0; line-height: 1.6; }
+
+  /* CLOSING */
+  .closing {
+    background: var(--pearl); padding: 64px 40px; text-align: center;
+    border-top: 2px solid var(--obsidian); margin-top: 48px;
+  }
+  .closing h2 { margin-bottom: 20px; }
+  .closing p { max-width: 460px; margin: 0 auto 32px; }
+  .cta-btn {
+    display: inline-block; background: var(--obsidian); color: var(--porcelain);
+    padding: 16px 40px; text-decoration: none; font-family: 'Inter', sans-serif;
+    font-weight: 500; font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase;
+    transition: opacity 0.2s;
+  }
+  .cta-btn:hover { opacity: 0.8; }
+
+  @media (max-width: 480px) {
+    .calendar-grid th, .calendar-grid td { padding: 8px 4px; }
+    .cal-type { font-size: 0.75rem; }
+    .cal-day { font-size: 9px; }
+  }
+</style>
+</head>
+<body>
+<div id="progress-bar"></div>
+
+<nav>
+  <div class="nav-inner">
+    <a class="nav-logo" href="#">SSELFIE Studio</a>
+    <span class="nav-progress" id="nav-progress">Exercise 0 / 4</span>
+  </div>
+</nav>
+
+<!-- COVER -->
+<div class="page">
+  <div class="cover">
+    <span class="label">SSELFIE Academy</span>
+    <h1>Show<br>Up</h1>
+    <p class="tagline">30 Days of Content That Gets You Noticed</p>
+    <div class="cover-meta">
+      <div class="cover-meta-item"><span class="number">30</span><span class="desc">Days</span></div>
+      <div class="cover-meta-item"><span class="number">4</span><span class="desc">Weeks</span></div>
+      <div class="cover-meta-item"><span class="number">120</span><span class="desc">Caption Ideas</span></div>
+    </div>
+  </div>
+
+  <!-- FROM SANDRA -->
+  <section>
+    <span class="label">From Sandra</span>
+    <hr style="margin-top:16px;">
+    <div class="sandra-note" style="margin-top:32px;">
+      <span class="label">A Note Before You Start</span>
+      <blockquote>
+        I used to post three times a week and then disappear for three weeks.<br><br>
+        Not because I didn't care. I cared so much it kept me up at night. But every Sunday I'd sit down to plan my content and just... stare. Nothing. A blank page and a growing sense that I was falling behind.<br><br>
+        I'd eventually write something in a panic on a Tuesday. It never felt right. And then I'd go quiet again and feel terrible about it.<br><br>
+        What I didn't realise was that the problem wasn't discipline. It was the absence of a plan. I wasn't lazy — I just had no system.<br><br>
+        This changes that. By Sunday, you have your whole week ready. Not just ideas — actual caption starters, your theme, your content types, all of it. Done before Monday morning.<br><br>
+        Thirty days planned. One Sunday at a time.<br><br>
+        — Sandra
+      </blockquote>
+    </div>
+  </section>
+
+  <!-- HOW THIS WORKS -->
+  <section>
+    <span class="label">How This Works</span>
+    <hr style="margin-top:16px;margin-bottom:32px;">
+    <div style="display:grid;gap:24px;">
+      <div>
+        <span class="question-label">Step 01 — Map Your Month</span>
+        <p>Four weeks. Four themes. One thing your audience needs to hear from you each week. You'll set this up once and it guides everything else.</p>
+      </div>
+      <div>
+        <span class="question-label">Step 02 — Learn The Formula</span>
+        <p>You don't need 30 different ideas. You need 5 content types in rotation. Once you know the formula, you never start from scratch again.</p>
+      </div>
+      <div>
+        <span class="question-label">Step 03 — Use The Starters</span>
+        <p>Thirty real caption starters you can use this month. Pick the ones that feel true, finish them in your own words, and post.</p>
+      </div>
+      <div>
+        <span class="question-label">Step 04 — Build The Ritual</span>
+        <p>Thirty minutes every Sunday. That's your whole week sorted. This section sets up the habit so it actually sticks.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- EXERCISE 01 -->
+  <section id="exercise-1">
+    <div class="exercise-header">
+      <div class="exercise-number">01</div>
+      <div class="exercise-title-block">
+        <span class="label">Exercise One</span>
+        <h2>Your Month<br>In 4 Themes</h2>
+      </div>
+    </div>
+    <p>Each week has one theme. A theme is the one thing your audience needs to hear from you that week — the thread that ties all your content together. When you have a theme, everything you post feels intentional instead of random.</p>
+    <p>You don't have to be wildly creative here. Think about what's real in your business right now. What's happening? What are you launching, thinking about, working through? Your life is the source material.</p>
+
+    <div class="question-block">
+      <span class="question-label">Question 01 — What Are The 4 Things You Talk About Most?</span>
+      <p class="question-text">Don't overthink it. If someone asked your clients what you're known for, what would they say? List the topics, skills, or ideas that come up again and again in your work.</p>
+      <textarea placeholder="1. Getting consistent on Instagram&#10;2. Overcoming the fear of being visible&#10;3. Content planning without overwhelm&#10;4. Building a brand on a small budget..."></textarea>
+    </div>
+
+    <div class="question-block">
+      <span class="question-label">Question 02 — What's Happening In Your Business This Month?</span>
+      <p class="question-text">A launch, a new offer, a milestone, a shift in thinking — anything that's live and real. Your content should connect to where your business actually is right now.</p>
+      <textarea placeholder="Launching a new 1:1 package, finishing a course, running a workshop, hitting a revenue goal, trying something new..."></textarea>
+    </div>
+
+    <div class="question-block">
+      <span class="question-label">Question 03 — What Do You Want People To DO After 30 Days?</span>
+      <p class="question-text">Not just what you want them to feel — what's the action? Follow you? Book a call? Buy your offer? Sign up for something? Know the destination before you start.</p>
+      <textarea placeholder="I want them to book a discovery call, or buy my digital product, or sign up for my next workshop..."></textarea>
+    </div>
+
+    <h3 style="margin:48px 0 8px;">Your 4-Week Theme Planner</h3>
+    <p style="margin-bottom:0;">One theme per week. Keep it simple — a short phrase is enough. You'll build all your content around this.</p>
+
+    <div class="week-planner" style="margin-top:24px;">
+      <div class="week-row">
+        <span class="week-label">Week 1 — Theme</span>
+        <textarea placeholder="e.g. Why consistency matters more than perfection"></textarea>
+      </div>
+      <div class="week-row">
+        <span class="week-label">Week 2 — Theme</span>
+        <textarea placeholder="e.g. The system behind my content planning"></textarea>
+      </div>
+      <div class="week-row">
+        <span class="week-label">Week 3 — Theme</span>
+        <textarea placeholder="e.g. Real results from real women"></textarea>
+      </div>
+      <div class="week-row">
+        <span class="week-label">Week 4 — Theme</span>
+        <textarea placeholder="e.g. Why now is the right time to start"></textarea>
+      </div>
+    </div>
+  </section>
+
+  <!-- EXERCISE 02 -->
+  <section id="exercise-2">
+    <div class="exercise-header">
+      <div class="exercise-number">02</div>
+      <div class="exercise-title-block">
+        <span class="label">Exercise Two</span>
+        <h2>The Daily 5<br>Formula</h2>
+      </div>
+    </div>
+    <p>Here's the thing nobody tells you: you don't need 30 different ideas. You need 5 content types and a rotation. That's it. You run these 5 types on repeat and your feed stays varied, interesting, and purposeful — every single month.</p>
+
+    <div class="formula-block">
+      <span class="label">The 5 Content Types</span>
+      <p>Story · Strategy · Social Proof · Show Up · Sell</p>
+    </div>
+
+    <div class="content-types">
+      <div class="content-type-row">
+        <div class="type-abbr">S</div>
+        <div class="type-body">
+          <span class="type-name">Story — Personal</span>
+          <p class="type-desc">A real moment from your life or business. Vulnerable. Honest. The kind of post that makes someone think "that's exactly how I feel." This is where people fall in love with you.</p>
+        </div>
+      </div>
+      <div class="content-type-row">
+        <div class="type-abbr">Str</div>
+        <div class="type-body">
+          <span class="type-name">Strategy — Tip or Lesson</span>
+          <p class="type-desc">Something you know that helps your audience. A quick win they can use today. Not showing off — genuinely teaching. This is where they trust you.</p>
+        </div>
+      </div>
+      <div class="content-type-row">
+        <div class="type-abbr">SP</div>
+        <div class="type-body">
+          <span class="type-name">Social Proof — Result or Testimonial</span>
+          <p class="type-desc">A win from a client or student. A result you've seen. What becomes possible when someone works with you or uses your method. This is where they believe you.</p>
+        </div>
+      </div>
+      <div class="content-type-row">
+        <div class="type-abbr">SU</div>
+        <div class="type-body">
+          <span class="type-name">Show Up — Behind the Scenes</span>
+          <p class="type-desc">A peek into your real process. Your workspace, your Sunday planning session, your drafts, your morning. This builds intimacy. It makes you human and real.</p>
+        </div>
+      </div>
+      <div class="content-type-row">
+        <div class="type-abbr">Se</div>
+        <div class="type-body">
+          <span class="type-name">Sell — Offer Mention</span>
+          <p class="type-desc">Your product, service, or offer. Clear, direct, no apology. People can't buy from you if they don't know what you sell. You're allowed to mention it.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="question-block">
+      <span class="question-label">Which Content Type Feels Most Natural To You?</span>
+      <p class="question-text">The one you actually enjoy writing. The one that comes out without effort. That's probably where your voice is strongest — lean into it first.</p>
+      <textarea style="min-height:80px;" placeholder="Story feels most natural. I can write personal posts without thinking — the words just come..."></textarea>
+    </div>
+
+    <div class="question-block">
+      <span class="question-label">Which Content Type Do You Avoid — And Why?</span>
+      <p class="question-text">Be honest. Sell? Strategy? Knowing where you avoid helps you plan ahead so you're not skipping it every week.</p>
+      <textarea style="min-height:80px;" placeholder="I avoid Sell. It feels pushy. I don't want people to think I'm just after their money..."></textarea>
+    </div>
+
+    <h3 style="margin:48px 0 8px;">Your 30-Day Content Calendar</h3>
+    <p style="margin-bottom:0;">The 5 types, rotating across 30 days. Each Sunday you decide which day gets which type — this is just your reference map.</p>
+
+    <div style="overflow-x:auto;margin-top:24px;">
+      <table class="calendar-grid">
+        <thead>
+          <tr>
+            <th>Mon</th>
+            <th>Tue</th>
+            <th>Wed</th>
+            <th>Thu</th>
+            <th>Fri</th>
+            <th>Sat</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="cal-day">01</span><span class="cal-type story">Story</span></td>
+            <td><span class="cal-day">02</span><span class="cal-type strategy">Strategy</span></td>
+            <td><span class="cal-day">03</span><span class="cal-type social">Soc. Proof</span></td>
+            <td><span class="cal-day">04</span><span class="cal-type showup">Show Up</span></td>
+            <td><span class="cal-day">05</span><span class="cal-type sell">Sell</span></td>
+            <td style="background:var(--pearl);"><span class="cal-day" style="color:var(--whisper);">06</span><span class="cal-type" style="color:var(--whisper);">Rest</span></td>
+          </tr>
+          <tr>
+            <td><span class="cal-day">07</span><span class="cal-type strategy">Strategy</span></td>
+            <td><span class="cal-day">08</span><span class="cal-type social">Soc. Proof</span></td>
+            <td><span class="cal-day">09</span><span class="cal-type showup">Show Up</span></td>
+            <td><span class="cal-day">10</span><span class="cal-type sell">Sell</span></td>
+            <td><span class="cal-day">11</span><span class="cal-type story">Story</span></td>
+            <td style="background:var(--pearl);"><span class="cal-day" style="color:var(--whisper);">12</span><span class="cal-type" style="color:var(--whisper);">Rest</span></td>
+          </tr>
+          <tr>
+            <td><span class="cal-day">13</span><span class="cal-type social">Soc. Proof</span></td>
+            <td><span class="cal-day">14</span><span class="cal-type showup">Show Up</span></td>
+            <td><span class="cal-day">15</span><span class="cal-type sell">Sell</span></td>
+            <td><span class="cal-day">16</span><span class="cal-type story">Story</span></td>
+            <td><span class="cal-day">17</span><span class="cal-type strategy">Strategy</span></td>
+            <td style="background:var(--pearl);"><span class="cal-day" style="color:var(--whisper);">18</span><span class="cal-type" style="color:var(--whisper);">Rest</span></td>
+          </tr>
+          <tr>
+            <td><span class="cal-day">19</span><span class="cal-type showup">Show Up</span></td>
+            <td><span class="cal-day">20</span><span class="cal-type sell">Sell</span></td>
+            <td><span class="cal-day">21</span><span class="cal-type story">Story</span></td>
+            <td><span class="cal-day">22</span><span class="cal-type strategy">Strategy</span></td>
+            <td><span class="cal-day">23</span><span class="cal-type social">Soc. Proof</span></td>
+            <td style="background:var(--pearl);"><span class="cal-day" style="color:var(--whisper);">24</span><span class="cal-type" style="color:var(--whisper);">Rest</span></td>
+          </tr>
+          <tr>
+            <td><span class="cal-day">25</span><span class="cal-type sell">Sell</span></td>
+            <td><span class="cal-day">26</span><span class="cal-type story">Story</span></td>
+            <td><span class="cal-day">27</span><span class="cal-type strategy">Strategy</span></td>
+            <td><span class="cal-day">28</span><span class="cal-type social">Soc. Proof</span></td>
+            <td><span class="cal-day">29</span><span class="cal-type showup">Show Up</span></td>
+            <td><span class="cal-day">30</span><span class="cal-type sell">Sell</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:24px;">
+      <span style="font-size:12px;color:var(--smoke);">Key:</span>
+      <span style="font-size:11px;letter-spacing:0.2em;background:var(--pearl);padding:4px 12px;color:#8B7355;">Story</span>
+      <span style="font-size:11px;letter-spacing:0.2em;background:var(--pearl);padding:4px 12px;color:var(--obsidian);">Strategy</span>
+      <span style="font-size:11px;letter-spacing:0.2em;background:var(--pearl);padding:4px 12px;color:var(--smoke);">Soc. Proof</span>
+      <span style="font-size:11px;letter-spacing:0.2em;background:var(--pearl);padding:4px 12px;color:#6B6B6B;">Show Up</span>
+      <span style="font-size:11px;letter-spacing:0.2em;background:var(--pearl);padding:4px 12px;color:var(--obsidian);font-style:italic;">Sell</span>
+    </div>
+  </section>
+</div>
+
+<!-- EXERCISE 03 — 30 CAPTION STARTERS -->
+<div class="page">
+  <section id="exercise-3">
+    <div class="exercise-header">
+      <div class="exercise-number">03</div>
+      <div class="exercise-title-block">
+        <span class="label">Exercise Three</span>
+        <h2>30 Caption<br>Starters</h2>
+      </div>
+    </div>
+    <p>Pick the ones that feel true. Finish them in your own words. You don't have to use all 30 — find the ones that sound like you and start there. These are real starters, not templates. They're meant to be finished, not just copied.</p>
+
+    <!-- STORY -->
+    <div style="margin-bottom:48px;">
+      <span class="label" style="display:block;margin-bottom:24px;border-bottom:1px solid var(--whisper);padding-bottom:12px;">Story — Personal, Real, Vulnerable</span>
+      <div id="captions-story" style="display:grid;gap:16px;"></div>
+    </div>
+
+    <!-- STRATEGY -->
+    <div style="margin-bottom:48px;">
+      <span class="label" style="display:block;margin-bottom:24px;border-bottom:1px solid var(--whisper);padding-bottom:12px;">Strategy — Tips, Lessons, What You Know</span>
+      <div id="captions-strategy" style="display:grid;gap:16px;"></div>
+    </div>
+
+    <!-- SOCIAL PROOF -->
+    <div style="margin-bottom:48px;">
+      <span class="label" style="display:block;margin-bottom:24px;border-bottom:1px solid var(--whisper);padding-bottom:12px;">Social Proof — Results, Testimonials, What's Possible</span>
+      <div id="captions-social" style="display:grid;gap:16px;"></div>
+    </div>
+
+    <!-- SHOW UP -->
+    <div style="margin-bottom:48px;">
+      <span class="label" style="display:block;margin-bottom:24px;border-bottom:1px solid var(--whisper);padding-bottom:12px;">Show Up — Behind the Scenes, Process, Real Life</span>
+      <div id="captions-showup" style="display:grid;gap:16px;"></div>
+    </div>
+
+    <!-- SELL -->
+    <div style="margin-bottom:48px;">
+      <span class="label" style="display:block;margin-bottom:24px;border-bottom:1px solid var(--whisper);padding-bottom:12px;">Sell — Your Offer, Direct, No Apology</span>
+      <div id="captions-sell" style="display:grid;gap:16px;"></div>
+    </div>
+  </section>
+
+  <!-- EXERCISE 04 -->
+  <section id="exercise-4">
+    <div class="exercise-header">
+      <div class="exercise-number">04</div>
+      <div class="exercise-title-block">
+        <span class="label">Exercise Four</span>
+        <h2>Your Sunday<br>Reset</h2>
+      </div>
+    </div>
+    <p>This is the ritual that makes everything else work. Thirty minutes every Sunday. That's it. Not every morning. Not every day. Once a week, you sit down with this plan and your whole week is sorted before Monday starts.</p>
+    <p>You've done the hard planning work already. Now you're just filling in the week. It gets faster every time.</p>
+
+    <div class="ritual-steps">
+      <div class="ritual-step">
+        <div class="ritual-step-num">1</div>
+        <div class="ritual-step-body">
+          <span class="ritual-step-title">Pick Your Theme For The Week</span>
+          <p class="ritual-step-desc">Go back to your 4-Week Theme Planner from Exercise 01. Which week is this? What's the one thing your audience needs to hear from you right now? Write it at the top of a page.</p>
+        </div>
+      </div>
+      <div class="ritual-step">
+        <div class="ritual-step-num">2</div>
+        <div class="ritual-step-body">
+          <span class="ritual-step-title">Choose Your 5 Content Types</span>
+          <p class="ritual-step-desc">You're posting 5 times this week. Decide which day gets which type — Story, Strategy, Social Proof, Show Up, Sell. Use the calendar as your guide. No stress about the order, just pick what makes sense.</p>
+        </div>
+      </div>
+      <div class="ritual-step">
+        <div class="ritual-step-num">3</div>
+        <div class="ritual-step-body">
+          <span class="ritual-step-title">Fill In 5 Caption Starters</span>
+          <p class="ritual-step-desc">Go to Exercise 03 and pick one starter per post. Copy it, paste it into your notes or your scheduler, and write two to three sentences that finish the thought in your own voice. Done.</p>
+        </div>
+      </div>
+      <div class="ritual-step">
+        <div class="ritual-step-num">4</div>
+        <div class="ritual-step-body">
+          <span class="ritual-step-title">Schedule or Batch-Write</span>
+          <p class="ritual-step-desc">Either schedule all 5 posts in your app of choice, or write them now and save them as drafts. Either way, the week is ready. You're not writing under pressure on a Tuesday morning.</p>
+        </div>
+      </div>
+      <div class="ritual-step">
+        <div class="ritual-step-num">5</div>
+        <div class="ritual-step-body">
+          <span class="ritual-step-title">Done — Close The Laptop</span>
+          <p class="ritual-step-desc">That's the whole ritual. Thirty minutes. Whole week sorted. Put it away and go do something you enjoy. You've already shown up for the week.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="question-block">
+      <span class="question-label">What Time Sunday Works For You?</span>
+      <p class="question-text">Be specific. "Sunday evening" is less real than "Sunday at 8pm after the kids are in bed." When exactly will this happen? Put it in your calendar right now.</p>
+      <textarea style="min-height:80px;" placeholder="Sunday at 9pm, once the kids are asleep. Before I watch anything. Coffee, notebook, 30 minutes..."></textarea>
+    </div>
+
+    <div class="question-block">
+      <span class="question-label">What Would Make This Feel Easier?</span>
+      <p class="question-text">What's the version of this ritual that you'd actually do? Less steps? A playlist? A specific spot? Remove any friction between you and this habit.</p>
+      <textarea style="min-height:80px;" placeholder="If I had everything in one place already. If I set a timer so I know it's actually just 30 minutes. If I made it feel like a treat, not a task..."></textarea>
+    </div>
+  </section>
+
+  <!-- CLOSING -->
+  <div class="closing">
+    <span class="label" style="display:block;margin-bottom:16px;">You're Ready</span>
+    <h2>You're Not Starting<br>From Scratch.<br>You're Starting<br>From Here.</h2>
+    <p>You have your themes. You have your formula. You have 30 caption starters and a Sunday ritual that fits your life. That's a full month of content, ready to go. The next step is simple — open SSELFIE Studio and make it happen.</p>
+    <a href="https://sselfie.ai/studio" class="cta-btn">Open SSELFIE Studio →</a>
+  </div>
+
+  <div style="padding:40px 0;text-align:center;border-top:1px solid var(--whisper);margin-top:0;">
+    <span class="label">SSELFIE Studio — sselfie.ai</span>
+  </div>
+</div>
+
+<script>
+const CAPTIONS = {
+  story: [
+    "I posted three times in a row and then went completely quiet for three weeks. Not because I stopped caring. Because I had no plan — and when you have no plan, panic posts feel better than silence, until they don't.",
+    "Last Sunday I sat down to plan my content and stared at a blank page for 45 minutes. Then I made a coffee and started again. This time I had a system. It took 28 minutes. That's when everything changed.",
+    "Here's the truth about consistency that nobody talks about: it's not a personality trait. It's a system. The women who show up every week aren't more disciplined. They're more prepared.",
+    "I used to think some people were just naturally consistent and I wasn't one of them. Then I realised the consistent people weren't posting from inspiration. They were posting from a plan.",
+    "The month I finally stayed consistent wasn't the month I had more time. It was the month I stopped trying to be clever and just followed a formula. Simple works. I have the receipts.",
+    "I'm not going to pretend I have this perfectly figured out. But I will tell you that the moment I stopped winging it and started planning — even badly — everything started moving."
+  ],
+  strategy: [
+    "Here's the system that actually keeps me consistent without burning out: one theme per week, five content types in rotation, thirty minutes on Sunday. That's it. Not thirty posts a week. Five intentional ones.",
+    "One thing I changed that made content creation feel easier: I stopped starting from nothing. Now I start from a starter. A sentence that already points in the right direction. Then I just finish the thought.",
+    "If you're posting without a plan, here's the next step — not a big overhaul, just this: decide your theme for the week before Monday. One sentence. Everything else follows from there.",
+    "The reason most people run out of content ideas isn't a creativity problem. It's a structure problem. When you have five content types and one theme, you always have something to say.",
+    "Three things you can do in 30 minutes on Sunday: pick your week's theme, choose your five content types, and copy five caption starters into your drafts. Your whole week is ready. No stress on Monday.",
+    "This is what planning a month of content actually looks like — not a complicated spreadsheet, just four themes, a rotation, and thirty starters you can finish in your own words. Quick win every Sunday."
+  ],
+  social: [
+    "She told me: 'I've never felt this prepared before. I used to dread Mondays. Now I actually look forward to posting.' That's the whole point of having a plan.",
+    "Before she worked through this, she hadn't posted in two weeks. By Sunday evening, she had her whole month mapped out. She texted me at 9:43pm just to say: 'I can actually do this.'",
+    "The DM I got last Monday made my whole week. She said: 'I've been consistent for six weeks in a row. I didn't think I had it in me.' She did. She just needed the system.",
+    "She went from 'I have nothing to say' to her whole month planned in one sitting. Not because she suddenly got more ideas. Because she finally had a structure to hang them on.",
+    "The question I get asked most: 'How do you stay consistent?' Here's the honest answer: I don't rely on motivation. I rely on a Sunday routine and five content types. Motivation runs out. Systems don't.",
+    "What happens when you stop improvising and start planning: you post more, you stress less, and the content actually reflects where your business is. Real talk from the women who've done this."
+  ],
+  showup: [
+    "Here's what my Sunday content planning session actually looks like: coffee, 30 minutes, this exact method. I pick my theme, choose my five types, fill in five starters. Done before 9pm. The week feels easy after that.",
+    "I'm in a café right now batching my entire week's content. It took 25 minutes. Two cappuccinos. No panic, no second-guessing. This is what prepared feels like.",
+    "Behind the scenes of how I planned this month: four themes, one per week. All tied to what's actually happening in my business. No random posts. No 'what should I say today?' Just clarity.",
+    "This is what 30 days of content looks like before it hits your feed — a theme per week, five types in rotation, and starters ready to finish. It's not complicated. It's just planned.",
+    "Real talk: here's what I do on Sunday nights that saves my entire week. I don't write perfect captions. I write the first sentence and trust myself to finish it in the morning. That one habit changed everything.",
+    "I want to show you what 'planned content' actually looks like in practice. Not a colour-coded spreadsheet. Just a theme, a formula, and five sentences I can finish fast. That's the whole system."
+  ],
+  sell: [
+    "If you want your whole month planned by Sunday — themes, formula, caption starters, all of it — Show Up will do that for you. It's €27 and it takes one afternoon.",
+    "This is exactly what's inside Show Up: a 4-week theme planner, the Daily 5 Formula, 30 caption starters, and a Sunday ritual you'll actually use. Everything you need to be consistent, nothing you don't.",
+    "You don't have to start from scratch every week. Show Up gives you the system so Sunday becomes the easiest part of your week — not the part you've been dreading.",
+    "Show Up is for women who want to be consistent on Instagram but don't know where to start. Not for the women who already have it figured out. For the ones sitting in front of a blank page wondering why it's so hard.",
+    "For €27, you get 30 days of content planned, written, and ready before Monday. Not because you suddenly have more time — because you have a system that works on the time you already have.",
+    "The women who stay consistent on Instagram aren't working harder. They're working with a plan. Show Up is that plan. Simple, clear, done on a Sunday."
+  ]
+};
+
+function renderCaptions() {
+  const cats = ['story','strategy','social','showup','sell'];
+  let n = 1;
+  cats.forEach(cat => {
+    const el = document.getElementById('captions-' + cat);
+    if (!el) return;
+    CAPTIONS[cat].forEach(text => {
+      const num = String(n).padStart(2,'0');
+      const escaped = text.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      el.innerHTML += `<div class="caption-card">
+        <span class="caption-num">${num}</span>
+        <p>${text}</p>
+        <button class="copy-btn" onclick="copyCaption(this,'${escaped}')">Copy Caption</button>
+      </div>`;
+      n++;
+    });
+  });
+}
+
+function copyCaption(btn, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copied ✓';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy Caption'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+function trackProgress() {
+  const exercises = document.querySelectorAll('section[id^="exercise-"]');
+  const inputs = document.querySelectorAll('textarea');
+  let filled = 0;
+  inputs.forEach(t => { if (t.value.trim().length > 10) filled++; });
+  const pct = inputs.length ? Math.min(100, Math.round((filled / inputs.length) * 100)) : 0;
+  document.getElementById('progress-bar').style.width = pct + '%';
+
+  let current = 0;
+  exercises.forEach((ex, i) => {
+    const rect = ex.getBoundingClientRect();
+    if (rect.top < window.innerHeight * 0.6) current = i + 1;
+  });
+  const nav = document.getElementById('nav-progress');
+  if (nav) nav.textContent = current > 0 ? `Exercise ${current} / 4` : `${pct}% Complete`;
+}
+
+function saveAnswers() {
+  const data = {};
+  document.querySelectorAll('textarea').forEach((el, i) => {
+    data['su_field_' + i] = el.value;
+  });
+  localStorage.setItem('showup_answers', JSON.stringify(data));
+}
+
+function loadAnswers() {
+  const data = JSON.parse(localStorage.getItem('showup_answers') || '{}');
+  document.querySelectorAll('textarea').forEach((el, i) => {
+    if (data['su_field_' + i]) el.value = data['su_field_' + i];
+  });
+  trackProgress();
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  renderCaptions();
+  loadAnswers();
+  window.addEventListener('scroll', trackProgress);
+  document.querySelectorAll('textarea').forEach(el => {
+    el.addEventListener('input', () => { trackProgress(); saveAnswers(); });
+  });
+});
+</script>
+</body>
+</html>

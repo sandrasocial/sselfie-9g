@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Get Paid — SSELFIE Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,200;0,300;1,200;1,300&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --obsidian: #0a0a0a;
+    --porcelain: #ffffff;
+    --pearl: #f5f5f5;
+    --smoke: #666666;
+    --whisper: #e5e5e5;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+  body {
+    background: var(--porcelain);
+    color: var(--obsidian);
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;
+    line-height: 1.8;
+    min-width: 375px;
+  }
+  .page { max-width: 680px; margin: 0 auto; padding: 0 48px; }
+  @media (max-width: 600px) { .page { padding: 0 24px; } }
+
+  /* TYPOGRAPHY */
+  h1, h2, h3, .serif {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 300;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+    text-transform: uppercase;
+  }
+  h1 { font-size: clamp(2.4rem, 6vw, 3.6rem); font-weight: 200; }
+  h2 { font-size: clamp(1.6rem, 4vw, 2.2rem); }
+  h3 { font-size: clamp(1.2rem, 3vw, 1.6rem); font-weight: 300; }
+  p { font-size: 16px; line-height: 1.8; color: var(--smoke); margin-bottom: 1.2em; }
+  p:last-child { margin-bottom: 0; }
+  strong { font-weight: 500; color: var(--obsidian); }
+
+  /* LABEL */
+  .label {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 10px;
+    letter-spacing: 0.5em;
+    text-transform: uppercase;
+    color: var(--smoke);
+  }
+
+  /* DIVIDER */
+  hr { border: none; border-top: 1px solid var(--whisper); margin: 48px 0; }
+
+  /* PROGRESS BAR */
+  #progress-bar {
+    position: fixed; top: 0; left: 0; height: 2px;
+    background: var(--obsidian); width: 0%; z-index: 100;
+    transition: width 0.2s ease;
+  }
+
+  /* NAV */
+  nav {
+    position: sticky; top: 0; background: var(--porcelain);
+    border-bottom: 1px solid var(--whisper);
+    z-index: 50; padding: 16px 0;
+  }
+  .nav-inner {
+    max-width: 680px; margin: 0 auto; padding: 0 48px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  @media (max-width: 600px) { .nav-inner { padding: 0 24px; } }
+  .nav-logo { font-family: 'Cormorant Garamond', serif; font-weight: 200; font-size: 1rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--obsidian); text-decoration: none; }
+  .nav-progress { font-family: 'Inter', sans-serif; font-weight: 500; font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--smoke); }
+
+  /* SECTIONS */
+  section { padding: 64px 0; }
+  section:first-of-type { padding-top: 80px; }
+
+  /* COVER */
+  .cover { text-align: center; padding: 96px 0 80px; }
+  .cover .label { margin-bottom: 24px; display: block; }
+  .cover h1 { margin-bottom: 16px; }
+  .cover .tagline { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.2rem; font-weight: 200; color: var(--smoke); text-transform: none; letter-spacing: 0; margin-bottom: 40px; }
+  .cover-meta { display: flex; justify-content: center; gap: 40px; flex-wrap: wrap; margin-top: 40px; }
+  .cover-meta-item { text-align: center; }
+  .cover-meta-item .number { font-family: 'Cormorant Garamond', serif; font-weight: 200; font-size: 2rem; display: block; color: var(--obsidian); }
+  .cover-meta-item .desc { font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--smoke); font-weight: 500; }
+
+  /* PRICE BADGE */
+  .price-badge {
+    display: inline-block;
+    border: 1px solid var(--obsidian);
+    padding: 10px 28px;
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 200;
+    font-size: 1.4rem;
+    letter-spacing: 0.05em;
+    color: var(--obsidian);
+    margin-bottom: 24px;
+  }
+
+  /* SANDRA NOTE */
+  .sandra-note {
+    background: var(--pearl);
+    padding: 40px;
+    border-left: 1px solid var(--whisper);
+    margin: 48px 0;
+  }
+  .sandra-note .label { margin-bottom: 20px; display: block; }
+  .sandra-note blockquote { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.1rem; font-weight: 300; line-height: 1.7; color: var(--obsidian); text-transform: none; letter-spacing: 0; }
+
+  /* EXERCISE */
+  .exercise-header {
+    display: flex; align-items: baseline; gap: 16px; margin-bottom: 32px;
+  }
+  .exercise-number {
+    font-family: 'Cormorant Garamond', serif; font-weight: 200;
+    font-size: 5rem; line-height: 1; color: var(--whisper);
+    flex-shrink: 0;
+  }
+  .exercise-title-block h2 { margin-bottom: 4px; }
+
+  /* QUESTION BLOCK */
+  .question-block { margin: 32px 0; }
+  .question-label { font-weight: 500; font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--obsidian); margin-bottom: 8px; display: block; }
+  .question-text { font-size: 15px; color: var(--smoke); margin-bottom: 12px; line-height: 1.6; }
+  textarea {
+    width: 100%; min-height: 100px; border: 1px solid var(--whisper);
+    background: var(--porcelain); padding: 16px; font-family: 'Inter', sans-serif;
+    font-weight: 300; font-size: 15px; line-height: 1.7; color: var(--obsidian);
+    resize: vertical; outline: none; transition: border-color 0.2s;
+  }
+  textarea:focus { border-color: var(--smoke); }
+  textarea::placeholder { color: var(--whisper); }
+
+  /* FORMULA BLOCK */
+  .formula-block {
+    background: var(--obsidian); color: var(--porcelain);
+    padding: 32px 40px; margin: 32px 0;
+  }
+  .formula-block .label { color: var(--smoke); margin-bottom: 16px; display: block; }
+  .formula-block p { color: var(--porcelain); font-size: 1.05rem; font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 300; margin: 0; }
+
+  /* OFFER INPUT GROUP */
+  .offer-input-group { margin-top: 32px; }
+  .offer-row { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+  .offer-row .fill-label { font-weight: 500; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--smoke); padding-top: 14px; white-space: nowrap; }
+  .offer-row input {
+    flex: 1; min-width: 180px; border: none; border-bottom: 1px solid var(--whisper);
+    padding: 10px 0; font-family: 'Inter', sans-serif; font-weight: 300; font-size: 15px;
+    color: var(--obsidian); outline: none; background: transparent;
+    transition: border-color 0.2s;
+  }
+  .offer-row input:focus { border-color: var(--obsidian); }
+  #offer-preview {
+    background: var(--pearl); padding: 24px 28px; margin-top: 24px;
+    border-left: 2px solid var(--obsidian); display: none;
+  }
+  #offer-preview .label { margin-bottom: 8px; display: block; }
+  #offer-preview p { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.2rem; font-weight: 300; color: var(--obsidian); margin: 0; }
+
+  /* PATH GRID */
+  .path-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1px;
+    background: var(--whisper); margin: 32px 0;
+  }
+  @media (max-width: 500px) { .path-grid { grid-template-columns: 1fr; } }
+  .path-cell { background: var(--porcelain); padding: 28px 24px; }
+  .path-cell:nth-child(2) { background: var(--pearl); }
+  .path-cell:nth-child(3) { background: var(--porcelain); }
+  .path-num { font-family: 'Cormorant Garamond', serif; font-weight: 200; font-size: 2.4rem; line-height: 1; color: var(--obsidian); display: block; margin-bottom: 6px; }
+  .path-desc { font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 500; color: var(--smoke); display: block; margin-bottom: 8px; }
+  .path-cell p { font-size: 14px; margin: 0; }
+
+  /* OFFER BUILD BLOCK */
+  .offer-build { background: var(--pearl); padding: 32px 40px; margin: 32px 0; }
+  .offer-build .label { margin-bottom: 20px; display: block; }
+  .offer-build-row { margin-bottom: 20px; }
+  .offer-build-row:last-child { margin-bottom: 0; }
+  .offer-build-row label { font-weight: 500; font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--obsidian); display: block; margin-bottom: 8px; }
+  .offer-build-row input {
+    width: 100%; border: none; border-bottom: 1px solid var(--whisper);
+    padding: 10px 0; font-family: 'Inter', sans-serif; font-weight: 300; font-size: 15px;
+    color: var(--obsidian); outline: none; background: transparent;
+    transition: border-color 0.2s;
+  }
+  .offer-build-row input:focus { border-color: var(--obsidian); }
+
+  /* SALES POST STRUCTURE */
+  .sales-post-block { margin: 32px 0; }
+  .sales-section { margin-bottom: 28px; }
+  .sales-section-label { font-weight: 500; font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--obsidian); margin-bottom: 4px; display: block; }
+  .sales-section-desc { font-size: 13px; color: var(--smoke); margin-bottom: 10px; }
+
+  /* HOOK STARTERS */
+  .hook-list { list-style: none; margin: 28px 0; display: grid; gap: 10px; }
+  .hook-list li {
+    border-left: 2px solid var(--whisper); padding: 12px 16px;
+    font-size: 14px; color: var(--smoke); line-height: 1.6;
+    transition: border-color 0.2s;
+  }
+  .hook-list li:hover { border-color: var(--obsidian); }
+
+  /* ASK SCRIPTS */
+  .ask-block { margin-bottom: 32px; }
+  .ask-block-label { font-weight: 500; font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--obsidian); margin-bottom: 4px; display: block; }
+  .ask-block-hint { font-size: 13px; color: var(--smoke); margin-bottom: 10px; }
+
+  /* CLOSING CTA */
+  .closing-block {
+    background: var(--obsidian); padding: 64px 40px; text-align: center; margin-top: 0;
+  }
+  .closing-block .label { color: var(--smoke); margin-bottom: 24px; display: block; }
+  .closing-block h2 { color: var(--porcelain); margin-bottom: 24px; }
+  .closing-block .closing-quote {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 200;
+    font-size: clamp(1.1rem, 3vw, 1.5rem); line-height: 1.5; color: var(--porcelain);
+    max-width: 480px; margin: 0 auto 40px; letter-spacing: 0; text-transform: none;
+  }
+  .closing-cta {
+    display: inline-block; background: var(--porcelain); color: var(--obsidian);
+    padding: 16px 40px; text-decoration: none; font-family: 'Inter', sans-serif;
+    font-weight: 500; font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase;
+    transition: opacity 0.2s;
+  }
+  .closing-cta:hover { opacity: 0.85; }
+</style>
+</head>
+<body>
+<div id="progress-bar"></div>
+
+<nav>
+  <div class="nav-inner">
+    <a class="nav-logo" href="#">SSELFIE Studio</a>
+    <span class="nav-progress" id="nav-progress">Session 0 / 5</span>
+  </div>
+</nav>
+
+<!-- COVER -->
+<div class="page">
+  <div class="cover">
+    <span class="label">SSELFIE Academy</span>
+    <h1>Get<br>Paid</h1>
+    <p class="tagline">Turn Your Visibility Into Your First 500 EUR Online</p>
+    <span class="price-badge">€47</span>
+    <div class="cover-meta">
+      <div class="cover-meta-item"><span class="number">5</span><span class="desc">Sessions</span></div>
+      <div class="cover-meta-item"><span class="number">€500</span><span class="desc">Goal</span></div>
+      <div class="cover-meta-item"><span class="number">1</span><span class="desc">Offer</span></div>
+    </div>
+  </div>
+
+  <!-- FROM SANDRA -->
+  <section>
+    <span class="label">From Sandra</span>
+    <hr style="margin-top:16px;">
+    <div class="sandra-note" style="margin-top:32px;">
+      <span class="label">A Note Before You Start</span>
+      <blockquote>
+        I had 3,000 followers. Nice photos. Comments. Saves. DMs that said "I love your content."<br><br>
+        And zero euros from Instagram.<br><br>
+        I kept telling myself visibility was the goal. That once enough people knew me, the money would follow. So I kept posting. Kept showing up. Kept building what I thought was an audience.<br><br>
+        But I wasn't building a business. I was building a hobby with an audience.<br><br>
+        The gap wasn't that I wasn't visible enough. The gap was that I had nothing clear to sell. No offer. No price. No "here's what I do and here's how you buy it." Just a vague sense that I was helpful and maybe someday that would translate into income.<br><br>
+        It doesn't work that way.<br><br>
+        This guide exists because I wish someone had sat me down and said: stop growing and start selling. You have everything you need right now. You just need to build the thing that makes money — not the thing that makes people click Like.<br><br>
+        Five sessions. One offer. Your first €500.<br><br>
+        Let's go.<br><br>
+        — Sandra
+      </blockquote>
+    </div>
+  </section>
+
+  <!-- HOW THIS WORKS -->
+  <section>
+    <span class="label">How This Works</span>
+    <hr style="margin-top:16px;margin-bottom:32px;">
+    <div style="display:grid;gap:24px;">
+      <div>
+        <span class="question-label">Session 01 — What You're Actually Selling</span>
+        <p>Before you can get paid, you need something real to sell. Not a vibe. Not "support." Something specific, with a result, a timeline, and a price.</p>
+      </div>
+      <div>
+        <span class="question-label">Session 02 — Who Pays</span>
+        <p>Your followers and your buyers are not the same people. This session helps you find the one who already has money, a problem, and trust in you.</p>
+      </div>
+      <div>
+        <span class="question-label">Session 03 — The €500 Path</span>
+        <p>Three ways to make €500 online. You pick the one that feels real. Then you build the offer that matches it.</p>
+      </div>
+      <div>
+        <span class="question-label">Session 04 — Your Sales Post</span>
+        <p>A sales post isn't a pitch. It's a story that ends with an invitation. You write yours here — one post that's ready to publish.</p>
+      </div>
+      <div>
+        <span class="question-label">Session 05 — Ask For The Sale</span>
+        <p>Most women hint. They mention. They "let people know." This session teaches you to actually ask — and gives you the words to do it.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SESSION 01 -->
+  <section id="exercise-1">
+    <div class="exercise-header">
+      <div class="exercise-number">01</div>
+      <div class="exercise-title-block">
+        <span class="label">Session One</span>
+        <h2>What You're<br>Actually Selling</h2>
+      </div>
+    </div>
+    <p>Most women are "selling" their general vibe. Their energy. Their presence. That doesn't pay rent. People don't buy a feeling — they buy a result. A specific one, with a clear before and after, in a timeframe they can believe.</p>
+    <p>Before you write a sales post, before you set a price, before you DM anyone — you need to know exactly what you're offering. Not approximately. Exactly.</p>
+
+    <div class="question-block">
+      <span class="question-label">Question 01 — What Exact Result Do You Help Someone Achieve?</span>
+      <p class="question-text">Not "I help women feel confident." What does that actually look like at the end? What can they do, say, earn, or feel that they couldn't before? Be specific.</p>
+      <textarea placeholder="They can show up on Instagram without freezing. They have 3 posts ready to publish. They've made their first paid offer..."></textarea>
+    </div>
+
+    <div class="question-block">
+      <span class="question-label">Question 02 — How Long Does It Take?</span>
+      <p class="question-text">Days? Weeks? One session? A month? Vague timelines kill trust. The more specific you are, the more believable it is.</p>
+      <textarea placeholder="In 5 days, they go from blank page to published post. Or: In 4 weeks, they have their first paid client..."></textarea>
+    </div>
+
+    <div class="question-block">
+      <span class="question-label">Question 03 — What Does Their Life Look Like Before vs. After?</span>
+      <p class="question-text">Before they work with you: what are they struggling with, avoiding, feeling stuck on? After: what's different? What changed?</p>
+      <textarea placeholder="Before: posting three times a week and making nothing from it, feeling frustrated and invisible. After: one offer, one sales post, their first paid client in the calendar..."></textarea>
+    </div>
+
+    <div class="formula-block">
+      <span class="label">Your Offer Formula</span>
+      <p>I help ______ ______ in ______ so they can ______.</p>
+    </div>
+
+    <div class="offer-input-group">
+      <div class="offer-row">
+        <span class="fill-label">I help</span>
+        <input type="text" id="offer-who" placeholder="women entrepreneurs who are visible but not earning" oninput="updateOffer()">
+      </div>
+      <div class="offer-row">
+        <span class="fill-label">do / get</span>
+        <input type="text" id="offer-what" placeholder="build and sell their first clear online offer" oninput="updateOffer()">
+      </div>
+      <div class="offer-row">
+        <span class="fill-label">in</span>
+        <input type="text" id="offer-time" placeholder="5 focused sessions" oninput="updateOffer()">
+      </div>
+      <div class="offer-row">
+        <span class="fill-label">so they can</span>
+        <input type="text" id="offer-outcome" placeholder="make their first €500 without a bigger audience" oninput="updateOffer()">
+      </div>
+    </div>
+
+    <div id="offer-preview">
+      <span class="label">Your Offer Sentence</span>
+      <p id="offer-text"></p>
+    </div>
+
+    <p style="margin-top:32px;font-size:14px;color:var(--smoke);">Read it back. Does it sound like something real that a real person would pay for? If not — it's not the words that are wrong. It's that the offer isn't specific enough yet. Keep going.</p>
+  </section>
+
+  <!-- SESSION 02 -->
+  <section id="exercise-2">
+    <div class="exercise-header">
+      <div class="exercise-number">02</div>
+      <div class="exercise-title-block">
+        <span class="label">Session Two</span>
+        <h2>Who<br>Pays</h2>
+      </div>
+    </div>
+    <p>Your buyer is not your follower. They're not even necessarily your most loyal fan. A buyer is a very specific kind of person: someone with a problem that hurts, money to solve it, and enough trust in you to hand it over.</p>
+    <p>Those three things have to be true at the same time. Most of your followers only have one. A buyer has all three.</p>
+
+    <div class="question-block">
+      <span class="question-label">Question 01 — Who Has Already Paid You?</span>
+      <p class="question-text">Even €50. Even a coffee meeting. Even a favour that felt like a transaction. Who are the people who have already said "yes" to you in some form? Write them down.</p>
+      <textarea placeholder="My friend who paid me to help her with her LinkedIn. The woman in my DMs who asked about a coaching session. The client who hired me for one day..."></textarea>
+    </div>
+
+    <div class="question-block">
+      <span class="question-label">Question 02 — What Were They Struggling With?</span>
+      <p class="question-text">Not what they said they wanted — what was actually bothering them when they came to you? The real problem under the surface.</p>
+      <textarea placeholder="She felt invisible and wasn't getting interviews. She didn't know how to talk about herself online. She was overwhelmed and needed someone to just tell her what to do..."></textarea>
+    </div>
+
+    <div class="question-block">
+      <span class="question-label">Question 03 — What Did They Say After?</span>
+      <p class="question-text">The exact words. What changed for them? What did they tell you when it worked? This is your testimonial. This is your sales copy. This is your proof.</p>
+      <textarea placeholder="She said: 'I finally feel like I know what to post.' Or: 'I got three responses the first week.' Or: 'I wish I'd done this six months ago.'"></textarea>
+    </div>
+
+    <div class="sandra-note">
+      <span class="label">Sandra's Experience</span>
+      <blockquote>
+        I spent a year looking for my buyer in the wrong place. I thought it was the woman who saved everything I posted. Who sent heart emojis. Who replied to every Story.<br><br>
+        But those women weren't buying. They were watching.<br><br>
+        My actual buyers were always women who said something specific. "I wish I had your confidence online." Not "I love your content." That one phrase — that specific problem — told me everything. They weren't looking for inspiration. They were looking for a way out of being invisible, and they believed I had it.<br><br>
+        Find the sentence your buyer uses. That's where the money is.
+      </blockquote>
+    </div>
+
+    <div class="question-block">
+      <span class="question-label">Your Buyer In One Sentence</span>
+      <p class="question-text">Who is she? What does she say when she's struggling? Write the sentence she uses that tells you she's ready to pay.</p>
+      <textarea placeholder="She says: 'I'm showing up but nothing is happening.' She's been posting for months and has made nothing. She's not a beginner — she's frustrated..."></textarea>
+    </div>
+  </section>
+
+  <!-- SESSION 03 -->
+  <section id="exercise-3">
+    <div class="exercise-header">
+      <div class="exercise-number">03</div>
+      <div class="exercise-title-block">
+        <span class="label">Session Three</span>
+        <h2>The €500<br>Path</h2>
+      </div>
+    </div>
+    <p>€500 is not a big number. It's a completely reachable number. But most women never make it because they never get specific about how. You can't just "try to earn €500." You need a path. Here are three.</p>
+
+    <div class="path-grid">
+      <div class="path-cell">
+        <span class="path-num">1</span>
+        <span class="path-desc">One client</span>
+        <p>One person pays you €500. One session, one service, one offer at that price.</p>
+      </div>
+      <div class="path-cell">
+        <span class="path-num">5</span>
+        <span class="path-desc">Five clients</span>
+        <p>Five people each pay you €100. A workshop, a mini-course, a short consult.</p>
+      </div>
+      <div class="path-cell">
+        <span class="path-num">10</span>
+        <span class="path-desc">Ten clients</span>
+        <p>Ten people each pay you €50. A guide, a template, a simple digital product.</p>
+      </div>
+    </div>
+
+    <div class="question-block">
+      <span class="question-label">Question 01 — Which Path Feels Most Realistic Right Now?</span>
+      <p class="question-text">Not the most exciting. Not the most impressive. The most honest answer — given where you are today, your audience, and your energy.</p>
+      <textarea placeholder="Honestly, 5 clients at €100 feels right. I could run a small group workshop or a focused 60-minute call. I already have people asking me about this..."></textarea>
+    </div>
+
+    <div class="question-block">
+      <span class="question-label">Question 02 — What Would You Need To Sell?</span>
+      <p class="question-text">If you chose that path — what is the actual thing? A call? A file? A session? A service? Be exact. Give it a name.</p>
+      <textarea placeholder="A 90-minute strategy session on personal brand positioning. One person, one problem, one outcome. I call it the Clarity Call..."></textarea>
+    </div>
+
+    <div class="question-block">
+      <span class="question-label">Question 03 — What's Stopping You From Offering It Today?</span>
+      <p class="question-text">Be honest. Not the official reason — the real one. Is it that it's not ready? Or is it that you're scared of what happens if you say it out loud?</p>
+      <textarea placeholder="I keep telling myself the website needs to be done first. But honestly I'm scared no one will say yes. And I don't know how to handle that yet..."></textarea>
+    </div>
+
+    <div class="offer-build">
+      <span class="label">Build Your First Offer</span>
+      <div class="offer-build-row">
+        <label for="ob-name">Offer Name</label>
+        <input type="text" id="ob-name" placeholder="e.g. The Clarity Call / The Brand Sprint / The €500 Workshop">
+      </div>
+      <div class="offer-build-row">
+        <label for="ob-price">Price</label>
+        <input type="text" id="ob-price" placeholder="e.g. €97 / €500 / €47">
+      </div>
+      <div class="offer-build-row">
+        <label for="ob-get">What They Get</label>
+        <input type="text" id="ob-get" placeholder="e.g. 90-minute 1:1 call + written summary + 30-day follow-up support">
+      </div>
+      <div class="offer-build-row">
+        <label for="ob-buy">How To Buy</label>
+        <input type="text" id="ob-buy" placeholder="e.g. DM me the word READY / Book via Calendly link / Reply to this post">
+      </div>
+    </div>
+  </section>
+
+  <!-- SESSION 04 -->
+  <section id="exercise-4">
+    <div class="exercise-header">
+      <div class="exercise-number">04</div>
+      <div class="exercise-title-block">
+        <span class="label">Session Four</span>
+        <h2>Your<br>Sales Post</h2>
+      </div>
+    </div>
+    <p>A sales post is not a pitch. Nobody wants to be pitched. A sales post is a story that ends with an invitation. You're not selling to them — you're recognising them and offering them a way through.</p>
+    <p>There's a structure that works. Five parts. Write one part at a time. Don't edit as you go. Just write.</p>
+
+    <div class="sales-post-block">
+
+      <div class="sales-section">
+        <span class="sales-section-label">Part 01 — The Hook</span>
+        <p class="sales-section-desc">Start with the problem they recognise in themselves. Not "are you struggling with..." — that's a pitch. A hook is a statement they see themselves in.</p>
+        <textarea id="post-hook" style="min-height:80px;" placeholder="You've been showing up consistently. You post. You reply. You do the stories. And somehow — nothing. No clients. No enquiries. Just more followers who seem to like you but never pay you."></textarea>
+      </div>
+
+      <div class="sales-section">
+        <span class="sales-section-label">Part 02 — Your Story</span>
+        <p class="sales-section-desc">Share your experience with this same problem. Not how you solved it — just the moment you felt it. Real, specific, honest.</p>
+        <textarea id="post-story" style="min-height:80px;" placeholder="I was there for eighteen months. I had a following that kept growing and a bank account that stayed exactly the same. And I kept telling myself visibility was enough. It wasn't."></textarea>
+      </div>
+
+      <div class="sales-section">
+        <span class="sales-section-label">Part 03 — The Bridge</span>
+        <p class="sales-section-desc">What changed? Not a miracle. A specific thing you did or understood that shifted it.</p>
+        <textarea id="post-bridge" style="min-height:80px;" placeholder="The day I stopped posting for engagement and started building for sale — everything shifted. I had to say: here is what I do, here is what it costs, here is how you get it."></textarea>
+      </div>
+
+      <div class="sales-section">
+        <span class="sales-section-label">Part 04 — The Offer</span>
+        <p class="sales-section-desc">What you have for them. The name, what it does, who it's for. One paragraph. Clear and honest.</p>
+        <textarea id="post-offer" style="min-height:80px;" placeholder="So I made Get Paid. Five sessions. One offer. Your first €500 online. It's for women who are showing up but not converting — and want to fix that this week, not next year."></textarea>
+      </div>
+
+      <div class="sales-section">
+        <span class="sales-section-label">Part 05 — The CTA</span>
+        <p class="sales-section-desc">One clear next step. Not three options. One thing they can do right now to move forward.</p>
+        <textarea id="post-cta" style="min-height:60px;" placeholder="If this is you — link in bio. Or DM me the word READY and I'll send you the details."></textarea>
+      </div>
+    </div>
+
+    <div style="margin-top:40px;">
+      <span class="label" style="display:block;margin-bottom:20px;border-bottom:1px solid var(--whisper);padding-bottom:12px;">10 Hook Starters — Use Any That Feels True</span>
+      <ul class="hook-list">
+        <li>"You've been posting for months. You have followers. You have engagement. And you've made nothing from it."</li>
+        <li>"The problem isn't that you're not visible enough. The problem is you have nothing clear to buy."</li>
+        <li>"I used to think I needed 10k followers before I could start charging. That belief cost me about €8,000."</li>
+        <li>"Here's something nobody tells you: getting likes and getting paid are two completely different skills."</li>
+        <li>"If someone looked at your Instagram right now — would they know what to buy from you? Or would they just know you're nice?"</li>
+        <li>"The gap between showing up and getting paid is not more content. It's one clear offer."</li>
+        <li>"Most women I know undercharge, underprice, or don't price at all. And then they wonder why they're exhausted."</li>
+        <li>"You've done the hard part. You're visible. Now let's make sure visibility pays."</li>
+        <li>"I made €0 from Instagram for 18 months. Not because nobody saw me. Because nobody knew what to buy."</li>
+        <li>"Your followers love you. That's lovely. But love doesn't pay the bills. A clear offer does."</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- SESSION 05 -->
+  <section id="exercise-5">
+    <div class="exercise-header">
+      <div class="exercise-number">05</div>
+      <div class="exercise-title-block">
+        <span class="label">Session Five</span>
+        <h2>Ask For<br>The Sale</h2>
+      </div>
+    </div>
+    <p>Most women never ask. They hint. They hope. They "let people know" something exists and then wait to see if anyone bites. That's not sales. That's wishing.</p>
+    <p>A direct ask feels awkward until you realise that it's actually <strong>respectful</strong>. You're not manipulating anyone. You're saying clearly: I have something that helps. Do you want it? That's honest. That's kind.</p>
+    <p>The awkwardness is yours to manage. It's not a reason to stay silent.</p>
+
+    <div class="sandra-note">
+      <span class="label">Something Real</span>
+      <blockquote>
+        The first time I asked directly — not hinted, not "mentioned" — I felt like I wanted to crawl out of my skin. I DM'd a woman I'd spoken to three times and I just said: "I think this would really help you. Want me to send you the details?"<br><br>
+        She said yes within four minutes.<br><br>
+        The only thing that had changed was that I asked. That's it. Same offer. Same person. Same conversation. Just the ask.
+      </blockquote>
+    </div>
+
+    <p style="margin-top:0;">Now it's your turn. Write three ways you could directly ask someone to work with you this week. Not hint. Not suggest. Ask.</p>
+
+    <div class="ask-block">
+      <span class="ask-block-label">Script 01 — The DM</span>
+      <p class="ask-block-hint">A direct message to someone you've spoken to before. Short. Warm. Specific about why you're reaching out to them.</p>
+      <textarea style="min-height:120px;" placeholder="Hey [name], I've been thinking about our conversation last week. I built something that I think is exactly what you were describing. It's called [offer name] and it's [what it does]. Would you like me to send you the details?"></textarea>
+    </div>
+
+    <div class="ask-block">
+      <span class="ask-block-label">Script 02 — The Caption</span>
+      <p class="ask-block-hint">A post that ends with a direct, specific invite. Not "link in bio if interested." An actual ask.</p>
+      <textarea style="min-height:120px;" placeholder="Write your caption that ends with a real ask — not a suggestion, not a soft mention. Something like: 'If this is you, DM me the word READY and I'll send you the details today.'"></textarea>
+    </div>
+
+    <div class="ask-block">
+      <span class="ask-block-label">Script 03 — The Email or Voice Note</span>
+      <p class="ask-block-hint">For someone on your email list, or a friend you've been meaning to reach out to. A voice note also works — sometimes better.</p>
+      <textarea style="min-height:120px;" placeholder="Hey, I made something new and you're one of the first people I'm sharing it with. It's [offer] and it's designed for [who]. I thought of you because [specific reason]. Here's the link: [link]. Let me know what you think."></textarea>
+    </div>
+  </section>
+</div>
+
+<!-- CLOSING -->
+<div class="page">
+  <section style="padding-bottom:0;">
+    <div class="closing-block">
+      <span class="label">You're Ready</span>
+      <p class="closing-quote">"You don't need 10k followers to make €500. You need one offer and the confidence to say it out loud."</p>
+      <a class="closing-cta" href="https://sselfie.ai/studio" target="_blank" rel="noopener">Open SSELFIE Studio →</a>
+    </div>
+  </section>
+
+  <div style="padding:40px 0;text-align:center;border-top:1px solid var(--whisper);">
+    <span class="label">SSELFIE Studio — sselfie.ai</span>
+  </div>
+</div>
+
+<script>
+function updateOffer() {
+  const who = document.getElementById('offer-who').value.trim();
+  const what = document.getElementById('offer-what').value.trim();
+  const time = document.getElementById('offer-time').value.trim();
+  const outcome = document.getElementById('offer-outcome').value.trim();
+  const preview = document.getElementById('offer-preview');
+  const text = document.getElementById('offer-text');
+  if (who || what || time || outcome) {
+    preview.style.display = 'block';
+    text.textContent = `I help ${who || '[who]'} ${what || '[what]'} in ${time || '[timeframe]'} so they can ${outcome || '[outcome]'}.`;
+  } else {
+    preview.style.display = 'none';
+  }
+}
+
+// Progress tracking
+function trackProgress() {
+  const exercises = document.querySelectorAll('section[id^="exercise-"]');
+  const fields = document.querySelectorAll('textarea, input[type="text"]');
+  let filled = 0;
+  fields.forEach(f => { if (f.value.trim().length > 10) filled++; });
+  const pct = Math.min(100, Math.round((filled / fields.length) * 100));
+  document.getElementById('progress-bar').style.width = pct + '%';
+
+  let current = 0;
+  exercises.forEach((ex, i) => {
+    const rect = ex.getBoundingClientRect();
+    if (rect.top < window.innerHeight * 0.6) current = i + 1;
+  });
+  const nav = document.getElementById('nav-progress');
+  if (nav) nav.textContent = current > 0 ? `Session ${current} / 5` : `${pct}% Complete`;
+}
+
+// Save to localStorage
+function saveAnswers() {
+  const data = {};
+  document.querySelectorAll('textarea, input[type="text"]').forEach((el, i) => {
+    data['gp_field_' + i] = el.value;
+  });
+  localStorage.setItem('gp_answers', JSON.stringify(data));
+}
+
+function loadAnswers() {
+  const data = JSON.parse(localStorage.getItem('gp_answers') || '{}');
+  document.querySelectorAll('textarea, input[type="text"]').forEach((el, i) => {
+    if (data['gp_field_' + i]) el.value = data['gp_field_' + i];
+  });
+  updateOffer();
+  trackProgress();
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  loadAnswers();
+  window.addEventListener('scroll', trackProgress);
+  document.querySelectorAll('textarea, input[type="text"]').forEach(el => {
+    el.addEventListener('input', () => { trackProgress(); saveAnswers(); });
+  });
+});
+</script>
+</body>
+</html>
