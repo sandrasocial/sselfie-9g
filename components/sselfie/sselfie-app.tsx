@@ -124,9 +124,11 @@ export default function SselfieApp({
         (subscriptionStatus === "active" || subscriptionStatus === "trialing") &&
         ["sselfie_studio_membership", "brand_studio_membership", "pro", "one_time_session"].includes(productType || "")
 
-      return isMembership ? "maya" : "feed-planner"
+      // Free users (no subscription) land on maya — it's the core value prop and where
+      // the welcome first-generation flow triggers. Feed Planner is a secondary feature.
+      return isMembership ? "maya" : "maya"
     }
-    return "feed-planner"
+    return "maya"
   }
 
   const [activeTab, setActiveTab] = useState(getInitialTab)

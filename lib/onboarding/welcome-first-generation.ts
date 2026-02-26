@@ -1,7 +1,10 @@
 const DAY_IN_MS = 24 * 60 * 60 * 1000
 
 export function isWelcomeFlowEnabled(envValue: string | undefined): boolean {
-  return envValue === "true" || envValue === "1"
+  // Default ON when not explicitly disabled — prevents silent activation failure
+  // Set FEATURE_NEW_WELCOME_FLOW=false to kill-switch in production
+  if (envValue === "false" || envValue === "0") return false
+  return true
 }
 
 export type WelcomeFlowDecisionInput = {
@@ -24,9 +27,10 @@ export function shouldShowWelcomeFirstGenerationFlow(input: WelcomeFlowDecisionI
   if (!input.enabled) return false
   if (input.hasAnyGeneration) return false
 
-  // Slice 1.1: require bonus credits and no image spend when provided
+  // Require bonus credits — users who never received welcome grant are outside the flow
   if (input.hasBonusCredits === false) return false
-  if (input.hasNoImageSpend === false) return false
+  // Note: hasNoImageSpend gate removed — it permanently blocked users after a single failed attempt,
+  // causing 0% activation. The hasAnyGeneration gate above already prevents re-showing after success.
 
   if (input.userCreatedAt != null) {
     const createdAt =
