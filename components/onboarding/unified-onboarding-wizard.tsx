@@ -547,7 +547,7 @@ export default function UnifiedOnboardingWizard({
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-light tracking-[0.2em] uppercase text-stone-700">
-                      {stepNumber} of 3
+                      {currentStep + 1} of 3
                     </span>
                     <span className="text-xs font-light text-stone-700">{Math.round(progress)}%</span>
                   </div>
