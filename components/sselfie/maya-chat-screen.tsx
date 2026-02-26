@@ -2547,39 +2547,24 @@ export default function MayaChatScreen({
         </div>
       )}
 
-      {/* Training Prompt - Show if user doesn't have trained model */}
+      {/* Training Prompt - shown as a secondary option when user has no trained model.
+          Does NOT block the interface — Pro mode is always available without training. */}
       {!hasTrainedModel && (
-        <div className="shrink-0 mx-3 sm:mx-4 mt-4 mb-4">
-          <div className={`${ComponentClasses.card} text-center`}>
-            <div className={`w-16 h-16 sm:w-20 sm:h-20 bg-white/70 ${DesignClasses.blur.md} ${DesignClasses.radius.md} flex items-center justify-center mx-auto ${DesignClasses.spacing.marginBottom.md} ${DesignClasses.border.strong} ${DesignClasses.shadows.button}`}>
-              <Aperture size={28} className="sm:w-8 sm:h-8" strokeWidth={1.5} />
+        <div className="shrink-0 mx-3 sm:mx-4 mt-4 mb-1">
+          <div className="border border-stone-200 bg-stone-50 rounded-xl p-4 flex items-start gap-3">
+            <div className="w-8 h-8 bg-stone-900 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
+              <Aperture size={14} className="text-white" strokeWidth={1.5} />
             </div>
-
-            <h2 className={`${DesignClasses.typography.heading.h3} ${DesignClasses.text.primary} ${DesignClasses.spacing.marginBottom.md} px-4`}>
-              Train Your AI First
-            </h2>
-
-            <p className={`${DesignClasses.typography.body.medium} ${DesignClasses.text.secondary} mb-6 sm:mb-8 max-w-md mx-auto leading-relaxed px-4`}>
-              Before you can create stunning photos with Maya, you need to train your personal AI model with your selfies.
-            </p>
-
-                <button
-                  onClick={() => {
-                    // Trigger onboarding wizard instead of navigating to training tab
-                    window.dispatchEvent(new CustomEvent('open-onboarding'))
-                  }}
-                  className={`group relative ${ComponentClasses.buttonPrimary} min-h-[52px] sm:min-h-[60px] overflow-hidden w-full sm:w-auto`}
-                >
-                  <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                  <span className="relative z-10 flex items-center justify-center gap-2">
-                    Start Training Now
-                    <ChevronRight
-                      size={14}
-                      strokeWidth={1.5}
-                      className="group-hover:translate-x-1 transition-transform duration-500"
-                    />
-                  </span>
-                </button>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-stone-900 mb-0.5">Train your personal AI</p>
+              <p className="text-xs text-stone-500 leading-relaxed">Get photos that always look exactly like you — no selfie upload needed each time.</p>
+            </div>
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent('open-onboarding'))}
+              className="shrink-0 text-xs font-medium text-stone-900 bg-white border border-stone-200 rounded-lg px-3 py-1.5 hover:bg-stone-50 transition-colors whitespace-nowrap"
+            >
+              Train →
+            </button>
           </div>
         </div>
       )}

@@ -40,20 +40,21 @@ export function getAccessState({
 
   if (isPaidBlueprintOnly) {
     return {
-      isMember: false, // Not a "member" in the traditional sense
-      canUseGenerators: false, // Paid blueprint = Feed Planner only
-      showUpgradeUI: true, // Show upgrade to membership
+      isMember: false,
+      canUseGenerators: true, // Paid blueprint = 60 credits for 30 Maya photos. API enforces credit limits.
+      showUpgradeUI: true, // Show upsell to membership (for more credits, monthly access)
       isPaidBlueprintOnly: true,
       hasFullAccess: false,
     }
   }
 
-  // Free users (no subscription) should NOT have access to generators
-  // Even if they have credits (2 credits are for testing feed planner only)
-  // Only members/paid users can use generators
+  // Free users: allow Maya access while they have bonus credits.
+  // The API deducts credits and returns 402 when exhausted — that triggers the upgrade modal.
+  // Hard-blocking the tab before they try creates a wall before the value is demonstrated.
+  const hasCredits = credits > 0
   return {
     isMember: false,
-    canUseGenerators: false,
+    canUseGenerators: hasCredits, // Gate by credits, not by subscription tier
     showUpgradeUI: true,
     isPaidBlueprintOnly: false,
     hasFullAccess: false,

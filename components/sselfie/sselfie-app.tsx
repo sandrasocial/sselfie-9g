@@ -391,16 +391,9 @@ export default function SselfieApp({
   const academyBlocked = !access.hasFullAccess && !hasAcademyPurchases
 
   const handleTabChange = (tabId: string) => {
-    // Prevent non-members from accessing Maya
-    if (tabId === "maya" && !access.canUseGenerators) {
-      toast({
-        title: "Upgrade Required",
-        description: "Maya is available with Studio Membership. Upgrade to unlock all features.",
-        variant: "default",
-      })
-      return // Don't change tab
-    }
-    
+    // If user has no credits and no subscription, still let them into Maya —
+    // but the generation API will surface the upgrade modal naturally when they try.
+    // Only hard-block if they've been explicitly downgraded (no credits, no plan, no blueprint).
     setActiveTab(tabId)
     // Update URL without triggering a page reload
     window.history.pushState(null, "", `#${tabId}`)
