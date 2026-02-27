@@ -38,6 +38,9 @@
   ],
   "exclude": [
     "node_modules",
-    ".next/dev/**"
+    ".next/dev/**",
+    "tests/**",
+    "**/*.spec.ts",
+    "**/*.test.ts"
   ]
 }
