@@ -476,10 +476,10 @@ export default function MayaUnifiedInput({
         {/* Added extra padding-bottom on desktop to prevent overlap with bottom navigation (bottom nav is ~80px) */}
         {(showSettingsButton || onNewProject || onHistory) && (
           <div 
-            className="mt-2 flex items-center justify-start gap-4"
+            className="mt-1.5 flex items-center justify-start gap-4"
             style={{
-              paddingBottom: 'max(8px, calc(env(safe-area-inset-bottom, 0px) + 12px))',
-              marginBottom: '8px',
+              paddingBottom: '2px',
+              marginBottom: '0px',
             }}
           >
             {showSettingsButton && onSettingsClick && (

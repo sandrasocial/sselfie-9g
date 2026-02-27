@@ -2439,7 +2439,7 @@ export default function MayaChatScreen({
   return (
     <>
     <div
-      className="flex flex-col h-full bg-[#0a0a0a] relative"
+      className="flex flex-col h-full relative bg-[radial-gradient(120%_90%_at_50%_0%,rgba(255,255,255,0.09)_0%,rgba(255,255,255,0.04)_18%,rgba(10,10,10,0.88)_48%,rgba(10,10,10,0.78)_100%)]"
       style={{
         paddingBottom: '80px', // Space for bottom navigation (approx 60-70px nav + safe area)
       }}
@@ -3002,10 +3002,11 @@ export default function MayaChatScreen({
       {(activeMayaTab === "photos" || activeMayaTab === "feed") && (
         <div
           ref={inputBarRef}
-          className="sticky left-0 right-0 bg-[rgba(255,255,255,0.04)] backdrop-blur-[20px] border-t border-[rgba(255,255,255,0.08)] px-3 sm:px-4 py-2.5 sm:py-3 z-65 safe-bottom flex flex-col"
+          className="fixed left-0 right-0 bg-[rgba(12,12,12,0.62)] backdrop-blur-[22px] border-t border-[rgba(255,255,255,0.12)] px-3 sm:px-4 py-2 sm:py-2.5 z-[90] flex flex-col"
           style={{
-            bottom: 0, // Stick to bottom of scroll container
-            paddingBottom: "calc(env(safe-area-inset-bottom) + 0.5rem)",
+            // Dock above bottom nav; avoid blocking the chat area while scrolling.
+            bottom: "calc(80px + env(safe-area-inset-bottom, 0px))",
+            paddingBottom: "max(0.25rem, env(safe-area-inset-bottom, 0px))",
           }}
         >
           {/* Quick Actions */}

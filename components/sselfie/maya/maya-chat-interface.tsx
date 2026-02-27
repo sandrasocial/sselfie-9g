@@ -418,7 +418,7 @@ export default function MayaChatInterface({
     <div className="flex-1 min-h-0 px-3 sm:px-4">
       <div
         ref={messagesContainerRef}
-        className="h-full overflow-y-auto pr-1 scroll-smooth"
+        className="h-full overflow-y-auto pr-1 scroll-smooth bg-[linear-gradient(180deg,rgba(255,255,255,0.03)_0%,rgba(10,10,10,0.18)_24%,rgba(10,10,10,0.3)_100%)]"
         style={{
           // Header (~56-64px) + Tabs (~50px) + safe area = ~106-114px total
           paddingTop: 'calc(106px + max(0.625rem, env(safe-area-inset-top, 0px)))',
