@@ -419,8 +419,7 @@ export default function SselfieApp({
   const isPaidBlueprintUserForAccess =
     (access.isPaidBlueprintOnly || blueprintEntitlementType === "paid") && !access.isMember
   const isOneTimeSession = productType === "one_time_session"
-  const { data: myProductsData } = useSWR("/api/academy/my-products", fetcher)
-  const hasAcademyPurchases = (myProductsData?.purchases?.length ?? 0) > 0
+  const hasAcademyPurchases = ownedProducts.length > 0
   const academyBlocked = !access.hasFullAccess && !hasAcademyPurchases
 
   const handleTabChange = (tabId: string) => {
