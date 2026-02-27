@@ -8,6 +8,37 @@ import PurchaseButton from "../products/[productId]/purchase-button"
 const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300"] })
 const inter = Inter({ subsets: ["latin"], weight: ["300", "500"] })
 
+/** Mini-product to Maya AI generation CTA mapping */
+const PRODUCT_TO_MAYA_CTA: Record<
+  string,
+  { icon: string; headline: string; description: string; mayaCta: string }
+> = {
+  what_to_say: {
+    icon: "✍️",
+    headline: "Chat with Maya to get your 30 personalized captions",
+    description: "Maya will generate captions that sound like you, tailored to your brand and audience.",
+    mayaCta: "Get My Captions →",
+  },
+  show_up: {
+    icon: "📅",
+    headline: "Chat with Maya to get your 30-day content calendar",
+    description: "A full month of content ideas, mixed perfectly for visibility and authority.",
+    mayaCta: "Get My Calendar →",
+  },
+  get_paid: {
+    icon: "💰",
+    headline: "Chat with Maya to build your monetization path",
+    description: "A custom strategy with your 5 best revenue streams and a 90-day launch timeline.",
+    mayaCta: "Build My Path →",
+  },
+  ai_photo_prompts: {
+    icon: "📸",
+    headline: "Chat with Maya to get your 20 personalized photo prompts",
+    description: "Phone-camera-ready prompts for your content pillars (lifestyle, behind-the-scenes, proof, results).",
+    mayaCta: "Get My Prompts →",
+  },
+}
+
 /** Post-purchase next-step copy and deep-link tab (docs/in-app-funnel/02-content-copy §3) */
 const NEXT_STEP_BY_PRODUCT: Record<
   string,
@@ -124,8 +155,35 @@ export default async function AcademySuccessPage({ searchParams }: SuccessPagePr
           </Link>
         )}
 
+        {/* Maya AI Generation CTA (for mini-products) */}
+        {product && PRODUCT_TO_MAYA_CTA[product.id] && (
+          <div className="mt-10 border-2 border-[#0a0a0a] bg-[#0a0a0a] p-8 max-w-[380px] text-white">
+            <div className="flex items-start gap-4">
+              <span className="text-4xl">{PRODUCT_TO_MAYA_CTA[product.id].icon}</span>
+              <div className="flex-1">
+                <h2
+                  className={`${cormorant.className} text-lg uppercase text-white`}
+                  style={{ fontWeight: 300 }}
+                >
+                  {PRODUCT_TO_MAYA_CTA[product.id].headline}
+                </h2>
+                <p className={`${inter.className} mt-2 text-sm text-[#f5f5f5]`} style={{ fontWeight: 300 }}>
+                  {PRODUCT_TO_MAYA_CTA[product.id].description}
+                </p>
+                <Link
+                  href={`/studio?tab=maya&source=academy_purchase&product=${encodeURIComponent(product.id)}&first_time_product_user=true`}
+                  className={`${inter.className} mt-4 inline-flex bg-[#ffffff] px-6 py-3 text-[#0a0a0a] transition-opacity hover:opacity-80`}
+                  style={{ fontWeight: 500, fontSize: "13px", letterSpacing: "0.1em", textTransform: "uppercase" }}
+                >
+                  {PRODUCT_TO_MAYA_CTA[product.id].mayaCta}
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Next step card: product-specific CTA deep-linking into app (Slice 1.3 / C-02) */}
-        {product && NEXT_STEP_BY_PRODUCT[product.id] && (
+        {product && NEXT_STEP_BY_PRODUCT[product.id] && !PRODUCT_TO_MAYA_CTA[product.id] && (
           <div className="mt-10 border-2 border-[#e5e5e5] bg-[#ffffff] p-8 max-w-[320px]">
             <p
               className={`${inter.className} text-xs uppercase tracking-[0.5em] text-[#666666]`}

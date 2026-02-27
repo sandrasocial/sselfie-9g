@@ -238,9 +238,7 @@ export default function MayaChatScreen({
     proMode,
     user,
     getModeString,
-    activeTab: activeMayaTab,
-    academyPurchaseProduct,
-    firstTimeProductUser, // Pass Feed tab flag
+    activeTab: activeMayaTab, // Pass Feed tab flag
   })
 
   const isProSessionEmpty = proMode && !isLoadingChat && (!messages || messages.length === 0)

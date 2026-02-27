@@ -152,7 +152,6 @@ export function useMayaChat({
       "x-studio-pro-mode": proMode ? "true" : "false",
       "x-chat-type": currentChatType,
       ...(activeTab ? { "x-active-tab": activeTab } : {}),
-      ...(academyPurchaseProduct ? { "x-academy-product": academyPurchaseProduct, "x-first-time-product-user": firstTimeProductUser ? "true" : "false" } : {}),
     }
     console.log("[useMayaChat] 🚀 Creating chat transport with headers:", {
       headers,

@@ -52,14 +52,8 @@ export async function POST(req: NextRequest) {
 
     // Parse request body
     const body = await req.json()
-    (const { message, imageUrl, imageLibrary, chatHistory } = body
-
-    // Get product context from body or request headers (passed from frontend via useMayaChat)
-    const headerProduct = req.headers.get("x-academy-product")
-    const headerFirstTime = req.headers.get("x-first-time-product-user") === "true"
-    const { product: bodyProduct, firstTimeProductUser: bodyFirstTime } = body
-    const product = bodyProduct || headerProduct
-    const firstTimeProductUser = bodyFirstTime !== undefined ? bodyFirstTime : headerFirstTime
+    const { message, imageUrl, imageLibrary, chatHistory } = body
+    const { product, firstTimeProductUser } = body
     const isFirstMessage = !chatHistory || chatHistory.length === 0
 
     if (!message || typeof message !== "string") {
