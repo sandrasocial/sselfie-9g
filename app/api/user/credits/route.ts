@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
-import { getUserByAuthId } from "@/lib/user-mapping"
 import { getUserCreditsCached } from "@/lib/credits-cached"
 import { getCreditHistory } from "@/lib/credits"
 
@@ -24,10 +23,16 @@ export async function GET() {
 
     const balance = await getUserCreditsCached(neonUser.id)
     const history = await getCreditHistory(neonUser.id, 50)
+    const hasBonusCredits = history.some((row) => row?.transaction_type === "bonus")
+    const hasImageSpend = history.some((row) => row?.transaction_type === "image")
+    const welcomeFirstGenerationEligible = hasBonusCredits && !hasImageSpend
 
     return NextResponse.json({
       balance,
       history,
+      hasBonusCredits,
+      hasImageSpend,
+      welcomeFirstGenerationEligible,
     })
   } catch (error) {
     console.error("[v0] Error fetching user credits:", error)

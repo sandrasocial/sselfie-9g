@@ -1748,27 +1748,27 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
   }
 
   return (
-    <div className={`bg-white border rounded-lg overflow-hidden transition-all duration-300 hover:shadow-xl hover:border-stone-300 ${
-      isProMode 
-        ? 'border-stone-200/60' 
-        : 'border-stone-200/60'
+    <div className={`bg-[rgba(255,255,255,0.04)] border rounded-[20px] overflow-hidden backdrop-blur-[20px] transition-all duration-300 hover:border-[rgba(255,255,255,0.16) ${
+      isProMode
+        ? 'border-[rgba(255,255,255,0.12)]'
+        : 'border-[rgba(255,255,255,0.08)]'
     }`}>
-      <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 border-b border-stone-200/60">
+      <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 border-b border-[rgba(255,255,255,0.08)]">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full border border-stone-300 bg-white flex items-center justify-center">
-            <span className="text-xs font-serif text-stone-700">S</span>
+          <div className="w-8 h-8 rounded-full border border-[rgba(255,255,255,0.2)] bg-[rgba(255,255,255,0.08)] flex items-center justify-center">
+            <span className="text-xs font-serif text-[#ffffff]">S</span>
           </div>
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-serif font-light tracking-[0.1em] uppercase text-stone-900">SSELFIE</span>
+              <span className="text-sm font-serif font-light tracking-[0.1em] uppercase text-[#ffffff]">SSELFIE</span>
               {isProMode && (
-                <span className="text-[9px] font-light tracking-[0.2em] uppercase text-stone-600 px-2 py-0.5 border border-stone-300 rounded">
+                <span className="text-[9px] font-light tracking-[0.2em] uppercase text-[#e5e5e5] px-2 py-0.5 border border-[rgba(255,255,255,0.2)] rounded">
                   Studio Pro
                 </span>
               )}
             </div>
             {categoryLabel && (
-              <span className="text-xs text-stone-500 font-light">{categoryLabel}</span>
+              <span className="text-xs text-[#666666] font-light">{categoryLabel}</span>
             )}
           </div>
         </div>
@@ -1776,21 +1776,21 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setShowMenu(!showMenu)}
-              className="p-1 hover:bg-stone-100 rounded-full transition-colors"
+              className="p-1 hover:bg-[rgba(255,255,255,0.08)] rounded-full transition-colors"
               aria-label="More options"
             >
-              <MoreVertical className="w-5 h-5 text-stone-700" />
+              <MoreVertical className="w-5 h-5 text-[#e5e5e5]" />
             </button>
 
             {showMenu && (
-              <div className="absolute right-0 top-8 z-50 w-48 bg-white border border-stone-200 rounded-lg shadow-lg py-1">
+              <div className="absolute right-0 top-8 z-50 w-48 bg-[#111111] border border-[rgba(255,255,255,0.12)] rounded-lg shadow-lg py-1">
                 {isProMode && (
                   <button
                     onClick={() => {
                       setShowPromptEditor(true)
                       setShowMenu(false)
                     }}
-                    className="w-full px-4 py-2 text-left text-sm text-stone-700 hover:bg-stone-50 flex items-center gap-2 transition-colors"
+                    className="w-full px-4 py-2 text-left text-sm text-[#e5e5e5] hover:bg-[rgba(255,255,255,0.08)] flex items-center gap-2 transition-colors"
                   >
                     <Edit2 className="w-4 h-4" />
                     <span>View/Edit Prompt</span>
@@ -1800,7 +1800,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                   <button
                     onClick={handleSaveToGuide}
                     disabled={isSavingToGuide}
-                    className="w-full px-4 py-2 text-left text-sm text-stone-700 hover:bg-stone-50 flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full px-4 py-2 text-left text-sm text-[#e5e5e5] hover:bg-[rgba(255,255,255,0.08)] flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Bookmark className="w-4 h-4" />
                     <span>{isSavingToGuide ? "Saving..." : "Save to Guide"}</span>
@@ -1814,10 +1814,10 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
 
       <div className="px-3 sm:px-4 py-3 sm:py-4 space-y-3 sm:space-y-4">
         <div className="space-y-2">
-          <p className="text-sm leading-relaxed text-stone-950 font-serif font-light">
+          <p className="text-sm leading-relaxed text-[#ffffff] font-serif font-light">
             {concept.title}
           </p>
-          <p className="text-xs leading-relaxed text-stone-600 font-light line-clamp-2">{concept.description}</p>
+          <p className="text-xs leading-relaxed text-[#e5e5e5] font-light line-clamp-2">{concept.description}</p>
         </div>
 
         {error && (
@@ -1836,12 +1836,12 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
           <div className="space-y-4">
             {/* Reference Images Preview - Studio Pro Only (Read-only when images provided from upload module) */}
             {isProMode && baseImages.length > 0 && (
-              <div className="space-y-3 border-t border-stone-200/60 pt-4">
+              <div className="space-y-3 border-t border-[rgba(255,255,255,0.08)] pt-4">
                 <div className="flex items-center justify-between px-1">
-                  <span className="text-[10px] tracking-[0.15em] uppercase text-stone-500 font-light">
+                  <span className="text-[10px] tracking-[0.15em] uppercase text-[#666666] font-light">
                     Reference Images
                   </span>
-                  <span className="text-[10px] text-stone-500 font-light">
+                  <span className="text-[10px] text-[#666666] font-light">
                     {baseImages.length} image{baseImages.length !== 1 ? "s" : ""}
                   </span>
                 </div>
@@ -1851,7 +1851,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                       <img
                         src={imageUrl}
                         alt={`Reference ${index + 1}`}
-                        className="w-20 h-20 object-cover rounded-lg border border-stone-200"
+                        className="w-20 h-20 object-cover rounded-lg border border-[rgba(255,255,255,0.12)]"
                       />
                       <div className="absolute bottom-0 left-0 right-0 bg-stone-950/80 p-1.5">
                         <span className="text-[9px] text-white font-light tracking-[0.1em] uppercase block text-center">
@@ -1861,7 +1861,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                     </div>
                   ))}
                 </div>
-                <p className="text-[10px] text-stone-500 leading-relaxed px-1 font-light">
+                <p className="text-[10px] text-[#666666] leading-relaxed px-1 font-light">
                   Images analyzed and incorporated into prompts
                 </p>
               </div>
@@ -1878,7 +1878,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                     ? "bg-stone-300 text-stone-600 cursor-wait"
                     : isProMode && baseImages.length === 0 && selectedImages.filter((img) => img !== null).length === 0
                     ? "bg-stone-200 text-stone-500 cursor-not-allowed"
-                    : "bg-stone-900 hover:bg-stone-800 text-white shadow-lg hover:shadow-xl"
+                    : "bg-[rgba(255,255,255,0.1)] hover:bg-[rgba(255,255,255,0.16)] text-white border border-[rgba(255,255,255,0.12)]"
                 }`}
               >
                 {isGenerating
@@ -1903,7 +1903,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                 <button
                   onClick={handleSaveToGuide}
                   disabled={!selectedGuideId || isSavingToGuide}
-                  className="flex-1 px-4 py-2 bg-stone-900 text-white rounded-lg hover:bg-stone-800 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
+                  className="flex-1 px-4 py-2 bg-[rgba(255,255,255,0.1)] text-white rounded-lg border border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.16)] disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
                   title={!selectedGuideId ? "Select a guide first" : "Save this prompt to your guide"}
                 >
                   <div className="flex items-center justify-center gap-2">
@@ -1916,7 +1916,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
 
             {/* Status Message Below Button */}
             <div className="text-center">
-              <p className="text-[10px] text-stone-500 leading-relaxed font-light">
+              <p className="text-[10px] text-[#666666] leading-relaxed font-light">
                 {isProMode
                   ? baseImages.length > 0
                     ? "Professional quality • 5 credits per generation"
@@ -1932,17 +1932,17 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
         {isGenerating && (
           <div className="flex flex-col items-center justify-center py-6 space-y-3">
             <div className="flex gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-stone-900 animate-pulse"></div>
+              <div className="w-2 h-2 rounded-full bg-[#ffffff] animate-pulse"></div>
               <div
-                className="w-2 h-2 rounded-full bg-stone-700 animate-pulse"
+                className="w-2 h-2 rounded-full bg-[#e5e5e5] animate-pulse"
                 style={{ animationDelay: "0.2s" }}
               ></div>
               <div
-                className="w-2 h-2 rounded-full bg-stone-500 animate-pulse"
+                className="w-2 h-2 rounded-full bg-[#666666] animate-pulse"
                 style={{ animationDelay: "0.4s" }}
               ></div>
             </div>
-            <span className="text-xs font-light text-stone-700 tracking-wide">
+            <span className="text-xs font-light text-[#e5e5e5] tracking-wide">
               {isProMode ? 'Creating with Studio Pro...' : 'Creating your photo'}
             </span>
           </div>
@@ -2186,12 +2186,12 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
       {/* Prompt Editor Modal */}
       {showPromptEditor && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="bg-[#0f0f0f] rounded-2xl border border-[rgba(255,255,255,0.12)] shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-stone-200">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[rgba(255,255,255,0.1)]">
               <div>
-                <h3 className="text-lg font-semibold text-stone-900">Edit Prompt</h3>
-                <p className="text-sm text-stone-500 mt-1">{concept.title}</p>
+                <h3 className="text-lg font-semibold text-[#ffffff]">Edit Prompt</h3>
+                <p className="text-sm text-[#666666] mt-1">{concept.title}</p>
               </div>
               <button
                 onClick={() => {
@@ -2201,10 +2201,10 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                     setEditedPrompt(null)
                   }
                 }}
-                className="p-2 hover:bg-stone-100 rounded-full transition-colors"
+                className="p-2 hover:bg-[rgba(255,255,255,0.08)] rounded-full transition-colors"
                 aria-label="Close"
               >
-                <X className="w-5 h-5 text-stone-600" />
+                <X className="w-5 h-5 text-[#e5e5e5]" />
               </button>
             </div>
 
@@ -2212,28 +2212,28 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
             <div className="flex-1 overflow-y-auto px-6 py-4">
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-stone-700 mb-2">
+                  <label className="block text-sm font-medium text-[#e5e5e5] mb-2">
                     Prompt Text
                   </label>
                   <textarea
                     value={editedPrompt ?? concept.prompt ?? `${concept.title}: ${concept.description}`}
                     onChange={(e) => setEditedPrompt(e.target.value)}
-                    className="w-full h-64 px-4 py-3 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-500 focus:border-transparent resize-none font-mono text-sm text-stone-900"
+                    className="w-full h-64 px-4 py-3 border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.05)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[rgba(255,255,255,0.25)] focus:border-transparent resize-none font-mono text-sm text-[#ffffff]"
                     placeholder="Enter your prompt..."
                   />
-                  <p className="text-xs text-stone-500 mt-2">
+                  <p className="text-xs text-[#666666] mt-2">
                     {editedPrompt ? editedPrompt.length : (concept.prompt?.length || 0)} characters
                     {editedPrompt && editedPrompt !== concept.prompt && (
-                      <span className="ml-2 text-orange-600">• Modified</span>
+                      <span className="ml-2 text-orange-400">• Modified</span>
                     )}
                   </p>
                 </div>
 
                 {concept.prompt && (
-                  <div className="pt-4 border-t border-stone-200">
-                    <p className="text-xs font-medium text-stone-600 mb-2">Original Maya Prompt:</p>
-                    <div className="bg-stone-50 rounded-lg p-3 border border-stone-200">
-                      <p className="text-xs text-stone-600 font-mono leading-relaxed">
+                  <div className="pt-4 border-t border-[rgba(255,255,255,0.1)]">
+                    <p className="text-xs font-medium text-[#666666] mb-2">Original Maya Prompt:</p>
+                    <div className="bg-[rgba(255,255,255,0.04)] rounded-lg p-3 border border-[rgba(255,255,255,0.1)]">
+                      <p className="text-xs text-[#e5e5e5] font-mono leading-relaxed">
                         {concept.prompt}
                       </p>
                     </div>
@@ -2241,7 +2241,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                       onClick={() => {
                         setEditedPrompt(concept.prompt)
                       }}
-                      className="mt-2 text-xs text-stone-600 hover:text-stone-900 underline"
+                      className="mt-2 text-xs text-[#666666] hover:text-[#ffffff] underline"
                     >
                       Restore original
                     </button>
@@ -2251,13 +2251,13 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-stone-200 bg-stone-50">
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)]">
               <button
                 onClick={() => {
                   setShowPromptEditor(false)
                   setEditedPrompt(null)
                 }}
-                className="px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-200 rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium text-[#e5e5e5] hover:bg-[rgba(255,255,255,0.08)] rounded-lg transition-colors"
               >
                 Cancel
               </button>
@@ -2265,7 +2265,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                 onClick={() => {
                   setShowPromptEditor(false)
                 }}
-                className="px-4 py-2 text-sm font-medium text-white bg-stone-900 hover:bg-stone-800 rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium text-white bg-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.2)] rounded-lg transition-colors border border-[rgba(255,255,255,0.14)]"
               >
                 Save Changes
               </button>

@@ -4,9 +4,58 @@
 ---
 
 ## Last Updated
-2026-02-27 18:51 CET — Updated by Codex (ACADEMY-02 unblock + onboarding 500 fix + E-01 reconciliation snapshot)
+2026-02-27 21:32 CET — Updated by Codex (UX-02 Maya redesign complete)
 
 ## Last Task Completed
+UX-02 completed (Maya screen redesign, UI-only):
+- `components/sselfie/maya-chat-screen.tsx`
+- `components/sselfie/maya/maya-header.tsx`
+- `components/sselfie/maya/maya-tab-switcher.tsx`
+- `components/sselfie/maya/maya-unified-input.tsx`
+- `components/sselfie/maya/maya-chat-interface.tsx`
+- `components/sselfie/concept-card.tsx`
+- `components/sselfie/instagram-photo-card.tsx`
+- `components/sselfie/instagram-carousel-card.tsx`
+- `components/sselfie/instagram-reel-card.tsx`
+- `components/sselfie/instagram-photo-preview.tsx`
+- `components/sselfie/instagram-reel-preview.tsx`
+- Completed fixes:
+- Dark glassmorphic Maya shell (#0a0a0a), updated header/tab treatments, and muted visible disabled Feed tab
+- User/Maya chat bubble restyle for dark mode with assistant-first visual hierarchy
+- Text-only action language across image/reel cards and preview modals (`DOWNLOAD / FAVOURITE / PHOTOSHOOT`)
+- Pro concept card + prompt editor restyled to glass inputs/cards without touching generation logic
+- Input bar updated to text-forward controls in Classic/Pro (`ADD`, `SETTINGS`, `SEND`)
+- Validation:
+- `pnpm eslint components/sselfie/maya-chat-screen.tsx components/sselfie/maya/maya-header.tsx components/sselfie/maya/maya-tab-switcher.tsx components/sselfie/maya/maya-unified-input.tsx components/sselfie/maya/maya-chat-interface.tsx components/sselfie/concept-card.tsx components/sselfie/instagram-photo-card.tsx components/sselfie/instagram-carousel-card.tsx components/sselfie/instagram-reel-card.tsx components/sselfie/instagram-photo-preview.tsx components/sselfie/instagram-reel-preview.tsx` (warnings only, 0 errors)
+- `pnpm build` passed
+- `pnpm dev` smoke passed (`GET /maya -> 307 -> /auth/login 200`, `GET /studio -> 307 -> /auth/login 200`)
+- Vercel preview: `https://v0-sselfie-7433w7q11-sselfie-studio.vercel.app`
+
+Activation task A-02 completed (Feed Planner wizard drop-off fix):
+- `app/feed-planner/feed-planner-client.tsx`
+  - Removed the standalone `QuickStartCard` gate so paid-blueprint users remain in `FeedViewScreen` and use inline setup.
+  - Kept paid-blueprint skip behavior for full onboarding wizard.
+  - Replaced the old "Activation Checklist + Continue" block with a single prominent CTA: `Create my first feed →`.
+- `components/onboarding/unified-onboarding-wizard.tsx`
+  - Maintains 3-step flow and analytics events; fixed JSX apostrophe lint errors in user-facing copy.
+- Validation:
+  - `pnpm eslint app/feed-planner/feed-planner-client.tsx components/onboarding/unified-onboarding-wizard.tsx components/feed-planner/feed-view-screen.tsx` (warnings only, 0 errors)
+  - `pnpm build` passed
+- Vercel preview: `https://v0-sselfie-fxp9suc4s-sselfie-studio.vercel.app`
+
+Design sprint continuation on `main` (`A-01` after approved `UX-01`):
+- A-01 (Maya first-generation guided path) hardened:
+- Restored strict eligibility gate in `lib/onboarding/welcome-first-generation.ts`: requires `hasBonusCredits === true` and `hasNoImageSpend === true`, plus no prior generations and <=24h user age
+- Added/updated tests in `tests/welcome-first-generation.test.ts` for default flag behavior and explicit no-image-spend gate; suite now passes (`10/10`)
+- Fixed guided-flow UI class typos in `components/sselfie/maya/welcome-first-generation-flow.tsx` (step labels/style cards render correctly)
+- Added explicit credit-eligibility metadata to `/api/user/credits` response in `app/api/user/credits/route.ts`:
+  `hasBonusCredits`, `hasImageSpend`, `welcomeFirstGenerationEligible`
+- Validation:
+- `pnpm vitest run tests/welcome-first-generation.test.ts` passed
+- `pnpm eslint app/api/user/credits/route.ts lib/onboarding/welcome-first-generation.ts components/sselfie/maya/welcome-first-generation-flow.tsx tests/welcome-first-generation.test.ts` passed (warning-only on existing `<img>`)
+- `pnpm build` passed
+- Vercel preview: `https://v0-sselfie-lj5nxfvik-sselfie-studio.vercel.app`
+
 Parallel execution stream completed on `main` (`b8e7bec2`) + production deploy (`https://v0-sselfie-gf3el0kcq-sselfie-studio.vercel.app`):
 - Fixed `/api/onboarding/academy-journey-state` production `500` (removed invalid `generated_images.status` query and replaced with schema-safe completed-image logic)
 - Production verification: `/api/onboarding/academy-journey-state` now returns `200` with valid JSON payload
@@ -89,16 +138,7 @@ Parallel execution stream completed on `main` (`b8e7bec2`) + production deploy (
 - Updated credits display to whole-number localized format in Maya header/menu
 - Added quick-prompt right-fade scroll affordance in `maya-quick-prompts`
 - Added `Add to Feed ->` and `Make a Video ->` actions in `components/image-lightbox.tsx`
-- UX-02 implemented locally (not deployed yet):
-- Files changed: `components/sselfie/maya-chat-screen.tsx`, `components/sselfie/maya/maya-unified-input.tsx`, `components/sselfie/pro-mode/ConceptCardPro.tsx`, `components/sselfie/pro-mode/ImageUploadFlow.tsx`
-- Completed fixes:
-- Pro empty-state CTA for empty sessions in Pro mode (`Add your reference photos to get started` + `Add Photos`)
-- One-time Pro mode tooltip (`sselfie_pro_tooltip_seen` localStorage gate)
-- Pro concept description clamp with `See more/See less`
-- Pro generate credit label (`Uses 2 credits`)
-- Pro input image icon badge (orange dot at 0 images; count badge at 1+)
-- Image upload intro copy updated to selfie-only wording; intro CTA renamed to `Add Photos`
-- Validation run: targeted eslint on touched files (0 errors; warnings only), `pnpm dev` smoke succeeded (`GET /studio 307`)
+- UX-02 deployed preview (`https://v0-sselfie-7433w7q11-sselfie-studio.vercel.app`) and ready for sign-off before merge-to-main production rollout.
 - ACADEMY-01 complete:
 - Tables created: `academy_course_purchases`, `academy_resource_purchases`, `user_tags`
 - New files: `lib/academy-access.ts`, `migrations/20260220_academy_foundation_tables.sql`

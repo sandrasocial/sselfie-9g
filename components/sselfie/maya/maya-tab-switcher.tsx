@@ -2,7 +2,6 @@
 
 import type React from "react"
 import { useEffect, useRef } from "react"
-import { ImageIcon, Film, GraduationCap } from "lucide-react"
 
 interface MayaTabSwitcherProps {
   activeTab: "photos" | "videos" | "prompts" | "training" | "feed"
@@ -45,7 +44,7 @@ export default function MayaTabSwitcher({
     { id: "prompts" as const, label: "Prompts" },
     { id: "training" as const, label: "Training" },
     { id: "feed" as const, label: "Feed" },
-  ].filter((tab) => !(disableFeedTab && tab.id === "feed"))
+  ]
 
   const containerRef = useRef<HTMLDivElement>(null)
   const activeTabRef = useRef<HTMLButtonElement>(null)
@@ -99,34 +98,34 @@ export default function MayaTabSwitcher({
             }}
             className={`px-2 sm:px-3 md:px-4 py-3 sm:py-4 md:py-5 border-b-2 transition-all touch-manipulation active:scale-95 min-h-[44px] sm:min-h-[48px] flex items-center gap-1.5 sm:gap-2 whitespace-nowrap scroll-snap-align-start ${
               isActive
-                ? "border-stone-950 text-stone-950 cursor-default"
+                ? "border-[#ffffff] text-[#ffffff] cursor-default"
                 : isDisabled
-                  ? "border-transparent text-stone-300 cursor-not-allowed"
-                  : "border-transparent text-stone-400 hover:text-stone-600 hover:border-stone-300 cursor-pointer"
+                  ? "border-transparent text-[#666666] opacity-60 cursor-not-allowed"
+                  : "border-transparent text-[#666666] hover:text-[#e5e5e5] hover:border-[#666666] cursor-pointer"
             }`}
             aria-label={`${tab.label} tab`}
             title={isDisabled ? "Feed is temporarily unavailable" : `${tab.label} tab`}
             disabled={isActive || isDisabled}
             aria-disabled={isDisabled}
             style={{
-              fontFamily: 'serif',
-              fontSize: '11px',
+              fontFamily: "var(--font-body)",
+              fontSize: "11px",
               fontWeight: 500,
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
+              letterSpacing: "0.5em",
+              textTransform: "uppercase",
             }}
           >
             {tab.label}
             {tab.id === "photos" && photosCount !== undefined && photosCount > 0 && (
               <span className={`text-xs font-medium tabular-nums ${
-                isActive ? "text-stone-950/80" : "text-stone-400"
+                isActive ? "text-[#e5e5e5]" : "text-[#666666]"
               }`}>
                 ({photosCount})
               </span>
             )}
             {tab.id === "videos" && videosCount !== undefined && videosCount > 0 && (
               <span className={`text-xs font-medium tabular-nums ${
-                isActive ? "text-stone-950/80" : "text-stone-400"
+                isActive ? "text-[#e5e5e5]" : "text-[#666666]"
               }`}>
                 ({videosCount})
               </span>

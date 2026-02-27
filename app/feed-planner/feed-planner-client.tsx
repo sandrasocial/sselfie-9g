@@ -6,7 +6,6 @@ import useSWR, { useSWRConfig } from "swr"
 import FeedViewScreen from "@/components/feed-planner/feed-view-screen"
 import UnifiedOnboardingWizard from "@/components/onboarding/unified-onboarding-wizard"
 import WelcomeWizard from "@/components/feed-planner/welcome-wizard"
-import QuickStartCard from "@/components/feed-planner/quick-start-card"
 import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 import UnifiedLoading from "@/components/sselfie/unified-loading"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
@@ -32,7 +31,6 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
   const router = useRouter()
   const [showWizard, setShowWizard] = useState(false)
   const [showWelcomeWizard, setShowWelcomeWizard] = useState(false)
-  const [showQuickStart, setShowQuickStart] = useState(false)
   const [isCheckingWizard, setIsCheckingWizard] = useState(true)
   const [wizardMode, setWizardMode] = useState<"selfie_first" | "none">("none")
   // State to track if we should open wizard at step 4 (visual style selection)
@@ -122,16 +120,6 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
     }
   )
 
-  // Fetch quick start status (for paid blueprint users)
-  const { data: quickStartStatus, isLoading: isLoadingQuickStart } = useSWR(
-    access?.isPaidBlueprint ? "/api/feed-planner/quick-start-complete" : null,
-    fetcher,
-    {
-      revalidateOnFocus: false,
-      dedupingInterval: 60000,
-    }
-  )
-
   // Fetch academy products for contextual hint
   const { data: myProductsData } = useSWR(
     access?.isPaidBlueprint ? "/api/academy/my-products" : null,
@@ -206,11 +194,6 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
 
     // Wait for both access and onboarding status to load
     if (isLoadingOnboarding || (!accessProp && isLoadingAccess)) {
-      setIsCheckingWizard(true)
-      return
-    }
-
-    if (access?.isPaidBlueprint && isLoadingQuickStart && !hasFeed) {
       setIsCheckingWizard(true)
       return
     }
@@ -301,13 +284,6 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
     // Paid users (first-time): Show wizard if missing extension data (skip free example)
     // Paid blueprint: Skip full wizard entirely — show feed list view with inline "Set up in 30 seconds" card (A-02)
     if (access.isPaidBlueprint) {
-      if (!hasFeed && quickStartStatus?.seen === false) {
-        setShowQuickStart(true)
-        setShowWizard(false)
-        setIsCheckingWizard(false)
-        return
-      }
-      setShowQuickStart(false)
       setWizardMode("none")
       setShowWizard(false)
       setIsCheckingWizard(false)
@@ -318,7 +294,7 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
     setWizardMode("none")
     setShowWizard(false)
     setIsCheckingWizard(false)
-  }, [isLoadingOnboarding, isLoadingAccess, isLoadingQuickStart, onboardingStatus, access, accessProp, quickStartStatus?.seen]) // React to access and onboardingStatus changes
+  }, [isLoadingOnboarding, isLoadingAccess, onboardingStatus, access, accessProp]) // React to access and onboardingStatus changes
 
   // Check if welcome wizard should be shown (for paid blueprint users only)
   // 🔴 CRITICAL: Only show automatically ONCE for first-time users
@@ -326,10 +302,6 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
   useEffect(() => {
     // Only check for paid blueprint users
     if (!access || !access.isPaidBlueprint) {
-      return
-    }
-
-    if (quickStartStatus?.seen === false || quickStartStatus?.seen === true) {
       return
     }
 
@@ -371,7 +343,7 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
       console.log('[FeedPlannerClient] ✅ Welcome wizard already auto-shown in this session - not showing again')
       setShowWelcomeWizard(false)
     }
-  }, [access, welcomeStatus, isLoadingWelcome, quickStartStatus?.seen])
+  }, [access, welcomeStatus, isLoadingWelcome])
 
   // Handle wizard completion
   const handleWizardComplete = async (data: {
@@ -546,27 +518,6 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
     return <UnifiedLoading message="Loading Feed Planner..." />
   }
 
-  const handleQuickStart = async () => {
-    try {
-      await fetch("/api/feed-planner/quick-start-complete", { method: "POST" })
-    } catch (error) {
-      console.error("[Feed Planner] Failed to mark quick start seen:", error)
-    }
-    setShowQuickStart(false)
-    if (typeof window !== "undefined") {
-      const url = new URL(window.location.href)
-      url.searchParams.set("createFirstFeed", "1")
-      if (!url.searchParams.get("tab")) {
-        url.searchParams.set("tab", "feed-planner")
-      }
-      router.push(`${url.pathname}?${url.searchParams.toString()}${url.hash}`)
-    }
-  }
-
-  if (showQuickStart) {
-    return <QuickStartCard onStartNow={handleQuickStart} productHint={productHint} />
-  }
-
   // Show wizard if needed
   if (showWizard) {
     // Removed excessive logging that was causing re-renders
@@ -689,10 +640,10 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h3 className="font-['Times_New_Roman'] text-xl font-light tracking-[0.14em] uppercase text-stone-950">
-                  Activation Checklist
+                  Start Your First Feed
                 </h3>
                 <p className="mt-2 text-sm text-stone-600">
-                  Complete these three steps to get your first result faster.
+                  One tap to continue setup and create your first feed.
                 </p>
               </div>
               <button
@@ -700,22 +651,8 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
                 onClick={handleActivationContinue}
                 className="h-11 min-w-[160px] border border-stone-950 bg-stone-950 px-6 text-xs font-medium tracking-[0.22em] uppercase text-white transition-colors hover:bg-stone-800"
               >
-                Continue
+                Create my first feed →
               </button>
-            </div>
-            <div className="mt-4 grid gap-2 sm:grid-cols-3">
-              {activationChecklist.steps.map((step) => (
-                <div key={step.key} className="flex items-center gap-2 border border-stone-200 px-3 py-3 text-sm text-stone-700">
-                  <span
-                    className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[11px] ${
-                      step.done ? "bg-stone-950 text-white" : "bg-stone-100 text-stone-500"
-                    }`}
-                  >
-                    {step.done ? "✓" : "•"}
-                  </span>
-                  <span>{step.label}</span>
-                </div>
-              ))}
             </div>
           </div>
         </div>

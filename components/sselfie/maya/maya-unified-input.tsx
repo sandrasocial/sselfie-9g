@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useRef } from 'react'
-import { ImageIcon, Send, Sliders } from 'lucide-react'
 import { createPortal } from 'react-dom'
 import LoadingSpinner from '../loading-spinner'
 import { Typography, Colors, BorderRadius, ButtonLabels } from '@/lib/maya/pro/design-system'
@@ -182,7 +181,7 @@ export default function MayaUnifiedInput({
 
   const textareaClass = proMode
     ? "focus:outline-none touch-manipulation"
-    : "w-full pl-12 pr-12 py-3 bg-white border border-stone-200 rounded-xl text-stone-950 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-stone-950/50 focus:bg-white font-medium text-[16px] min-h-[48px] max-h-[80px] shadow-lg shadow-stone-950/10 transition-all duration-300 resize-none overflow-y-auto leading-relaxed touch-manipulation"
+    : "w-full pl-12 pr-12 py-3 bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] rounded-xl text-[#ffffff] placeholder-[#666666] focus:outline-none focus:ring-1 focus:ring-[rgba(255,255,255,0.2)] focus:bg-[rgba(255,255,255,0.08)] font-medium text-[16px] min-h-[48px] max-h-[80px] transition-all duration-300 resize-none overflow-y-auto leading-relaxed touch-manipulation"
 
   const textareaStyle = proMode
     ? {
@@ -206,7 +205,7 @@ export default function MayaUnifiedInput({
 
   const imageButtonClass = proMode
     ? "touch-manipulation active:scale-95 shrink-0"
-    : "touch-manipulation active:scale-95 shrink-0 flex items-center justify-center w-11 h-11 rounded-lg border border-stone-300 bg-white hover:bg-stone-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+    : "touch-manipulation active:scale-95 shrink-0 flex items-center justify-center w-11 h-11 rounded-lg border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.1)] text-[#e5e5e5] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
 
   const imageButtonStyle = proMode
     ? {
@@ -229,7 +228,7 @@ export default function MayaUnifiedInput({
 
   const sendButtonClass = proMode
     ? "touch-manipulation active:scale-95 shrink-0"
-    : "absolute right-2 bottom-2.5 w-9 h-9 flex items-center justify-center text-stone-600 hover:text-stone-950 transition-colors disabled:opacity-50 touch-manipulation active:scale-95 z-10 pointer-events-auto"
+    : "absolute right-2 bottom-2.5 w-9 h-9 flex items-center justify-center text-[#e5e5e5] hover:text-[#ffffff] transition-colors disabled:opacity-50 touch-manipulation active:scale-95 z-10 pointer-events-auto"
 
   const sendButtonStyle = proMode
     ? {
@@ -280,10 +279,9 @@ export default function MayaUnifiedInput({
                 onSettingsClick() // This will close the menu and open settings (handled by parent)
               }
             }}
-            className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-stone-700 hover:bg-stone-50 transition-colors touch-manipulation"
+            className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-[#e5e5e5] hover:bg-[rgba(255,255,255,0.08)] transition-colors touch-manipulation"
           >
-            <Sliders size={18} strokeWidth={2} />
-            <span className="font-medium">Generation Settings</span>
+            <span className="font-medium uppercase tracking-[0.2em] text-[11px]">Generation Settings</span>
           </button>
         </div>,
         document.body
@@ -382,17 +380,7 @@ export default function MayaUnifiedInput({
                 <div className="w-5 h-5 border-2 border-stone-400 border-t-transparent rounded-full animate-spin" />
               )
             ) : (
-              <div className="relative">
-                <ImageIcon size={18} strokeWidth={2} />
-                {proMode && imageCount === 0 && (
-                  <span className="absolute -top-1 -right-1 w-2 h-2 bg-orange-500 rounded-full" />
-                )}
-                {proMode && imageCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-[#0a0a0a] text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center">
-                    {imageCount > 9 ? "9+" : imageCount}
-                  </span>
-                )}
-              </div>
+              <span className="text-[10px] uppercase tracking-[0.2em] font-medium">Add</span>
             )}
           </button>
 
@@ -403,12 +391,12 @@ export default function MayaUnifiedInput({
               <button
                 onClick={onSettingsClick}
                 disabled={isLoading || disabled}
-                className="absolute left-2 bottom-2.5 w-9 h-9 flex items-center justify-center text-stone-600 hover:text-stone-950 transition-colors disabled:opacity-50 touch-manipulation active:scale-95 z-20 pointer-events-auto"
+                className="absolute left-2 bottom-2.5 px-2 h-9 flex items-center justify-center text-[#666666] hover:text-[#ffffff] transition-colors disabled:opacity-50 touch-manipulation active:scale-95 z-20 pointer-events-auto text-[10px] uppercase tracking-[0.2em]"
                 style={{ zIndex: 20 }}
                 aria-label="Settings menu"
                 type="button"
               >
-                <Sliders size={20} strokeWidth={2} />
+                Settings
               </button>
             )}
 
@@ -456,7 +444,7 @@ export default function MayaUnifiedInput({
                 aria-label="Send message"
                 type="button"
               >
-                <Send size={20} strokeWidth={2} />
+                <span className="text-[10px] uppercase tracking-[0.2em] font-medium">Send</span>
               </button>
             )}
           </div>
@@ -491,7 +479,7 @@ export default function MayaUnifiedInput({
               {isLoading ? (
                 <LoadingSpinner size="sm" />
               ) : (
-                <Send size={18} />
+                <span className="text-[10px] uppercase tracking-[0.2em] font-medium">Send</span>
               )}
             </button>
           )}

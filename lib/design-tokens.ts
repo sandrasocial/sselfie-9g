@@ -9,6 +9,41 @@
  *   className={`${DesignTokens.spacing.md} ${DesignTokens.colors.background.primary}`}
  */
 
+export const COLORS = {
+  obsidian: "#0a0a0a",
+  porcelain: "#ffffff",
+  pearl: "#f5f5f5",
+  smoke: "#666666",
+  whisper: "#e5e5e5",
+} as const
+
+export const GLASS = {
+  cardBg: "rgba(255,255,255,0.04)",
+  cardBorder: "rgba(255,255,255,0.08)",
+  inputBg: "rgba(255,255,255,0.06)",
+  inputBorder: "rgba(255,255,255,0.12)",
+  blur: "20px",
+  radius: "20px",
+} as const
+
+export const TYPOGRAPHY = {
+  display: {
+    family: "'Cormorant Garamond', serif",
+    weights: {
+      light: 200,
+      regular: 300,
+    },
+  },
+  body: {
+    family: "'Inter', system-ui, -apple-system, sans-serif",
+    weights: {
+      light: 300,
+      regular: 400,
+      medium: 500,
+    },
+  },
+} as const
+
 export const DesignTokens = {
   /**
    * Spacing Scale (4px base unit)
@@ -258,4 +293,3 @@ export const ComponentClasses = {
     DesignClasses.shadows.container,
   ].join(' '),
 } as const
-

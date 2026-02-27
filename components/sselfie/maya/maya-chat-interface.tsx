@@ -156,7 +156,7 @@ export default function MayaChatInterface({
           elements.push(
             <ul key={`list-${index}`} className="list-disc list-inside space-y-1.5 my-2 ml-4">
               {currentList.map((item, itemIdx) => (
-                <li key={itemIdx} className="text-sm leading-relaxed text-stone-700">
+                <li key={itemIdx} className="text-sm leading-relaxed text-[#e5e5e5]">
                   {item}
                 </li>
               ))}
@@ -178,7 +178,7 @@ export default function MayaChatInterface({
           
           if (trimmedLine.length > 0) {
             elements.push(
-              <p key={`para-${index}`} className="text-sm leading-relaxed text-stone-700 mb-2 last:mb-0">
+              <p key={`para-${index}`} className="text-sm leading-relaxed text-[#e5e5e5] mb-2 last:mb-0">
                 {processedLine}
               </p>
             )
@@ -194,7 +194,7 @@ export default function MayaChatInterface({
       elements.push(
         <ul key="list-final" className="list-disc list-inside space-y-1.5 my-2 ml-4">
           {currentList.map((item, itemIdx) => (
-            <li key={itemIdx} className="text-sm leading-relaxed text-stone-700">
+            <li key={itemIdx} className="text-sm leading-relaxed text-[#e5e5e5]">
               {item}
             </li>
           ))}
@@ -302,12 +302,12 @@ export default function MayaChatInterface({
 
     // For user messages, keep simple styling
     if (isUser) {
-      return <p className="text-sm leading-relaxed font-medium whitespace-pre-wrap">{removeEmojis(cleanedText)}</p>
+      return <p className="text-sm leading-relaxed font-medium whitespace-pre-wrap text-[#ffffff]">{removeEmojis(cleanedText)}</p>
     }
 
     // For Maya's messages (assistant), render with markdown support
     return (
-      <div className="text-sm leading-relaxed text-stone-700">
+      <div className="text-sm leading-relaxed text-[#e5e5e5]">
         {renderMarkdownText(cleanedText)}
       </div>
     )
@@ -454,8 +454,8 @@ export default function MayaChatInterface({
                             <div
                               className={`p-4 rounded-2xl transition-all duration-300 ${
                                 msg.role === "user"
-                                  ? "bg-stone-950 text-white shadow-lg shadow-stone-950/20"
-                                  : "bg-white/50 backdrop-blur-xl border border-white/70 shadow-lg shadow-stone-950/5 text-stone-950"
+                                  ? "bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.12)] text-[#ffffff] backdrop-blur-[20px]"
+                                  : "bg-transparent border border-transparent text-[#e5e5e5]"
                               }`}
                               role={msg.role === "assistant" ? "article" : undefined}
                             >
@@ -630,7 +630,7 @@ export default function MayaChatInterface({
                                           promptSuggestions.length > 0 &&
                                           msg.id === messages[messages.length - 1]?.id && (
                                       <div className="mt-4 space-y-3">
-                                        <div className="text-xs text-stone-700 mb-1">
+                                        <div className="text-xs text-[#e5e5e5] mb-1">
                                           Step 2 – Pick a concept you like, then send it to your Workbench below.
                                         </div>
                                         {promptSuggestions.map((suggestion) => (
@@ -1094,8 +1094,8 @@ export default function MayaChatInterface({
                     <div
                       className={`p-4 rounded-2xl transition-all duration-300 ${
                         msg.role === "user"
-                          ? "bg-stone-950 text-white shadow-lg shadow-stone-950/20"
-                          : "bg-white/50 backdrop-blur-xl border border-white/70 shadow-lg shadow-stone-950/5 text-stone-950"
+                          ? "bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.12)] text-[#ffffff] backdrop-blur-[20px]"
+                          : "bg-transparent border border-transparent text-[#e5e5e5]"
                       }`}
                       role={msg.role === "assistant" ? "article" : undefined}
                     >
@@ -1111,20 +1111,20 @@ export default function MayaChatInterface({
           {/* This prevents duplication with the feed creation loader below */}
           {isTyping && !isCreatingFeed && (
             <div className="flex justify-start">
-              <div className="bg-white/50 backdrop-blur-xl border border-white/70 p-3 rounded-2xl max-w-[85%] shadow-lg shadow-stone-900/5">
+              <div className="bg-[rgba(255,255,255,0.04)] backdrop-blur-[20px] border border-[rgba(255,255,255,0.08)] p-3 rounded-2xl max-w-[85%]">
                 <div className="flex items-center gap-3">
                   <div className="flex gap-1">
-                    <div className="w-1.5 h-1.5 rounded-full animate-bounce bg-stone-700"></div>
+                    <div className="w-1.5 h-1.5 rounded-full animate-bounce bg-[#e5e5e5]"></div>
                     <div
-                      className="w-1.5 h-1.5 rounded-full animate-bounce bg-stone-700"
+                      className="w-1.5 h-1.5 rounded-full animate-bounce bg-[#e5e5e5]"
                       style={{ animationDelay: "0.2s" }}
                     ></div>
                     <div
-                      className="w-1.5 h-1.5 rounded-full animate-bounce bg-stone-700"
+                      className="w-1.5 h-1.5 rounded-full animate-bounce bg-[#e5e5e5]"
                       style={{ animationDelay: "0.4s" }}
                     ></div>
                   </div>
-                  <span className="text-xs font-light text-stone-600">Maya is thinking...</span>
+                  <span className="text-xs font-light text-[#e5e5e5]">Maya is thinking...</span>
                 </div>
               </div>
             </div>

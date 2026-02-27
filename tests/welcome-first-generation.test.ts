@@ -6,16 +6,18 @@ import {
 } from "@/lib/onboarding/welcome-first-generation"
 
 describe("isWelcomeFlowEnabled", () => {
+  it("defaults to enabled when env value is not provided", () => {
+    expect(isWelcomeFlowEnabled(undefined)).toBe(true)
+  })
+
   it("returns true for true-ish env values", () => {
     expect(isWelcomeFlowEnabled("true")).toBe(true)
     expect(isWelcomeFlowEnabled("1")).toBe(true)
   })
 
   it("returns false for false-ish env values", () => {
-    expect(isWelcomeFlowEnabled(undefined)).toBe(false)
     expect(isWelcomeFlowEnabled("false")).toBe(false)
     expect(isWelcomeFlowEnabled("0")).toBe(false)
-    expect(isWelcomeFlowEnabled("")).toBe(false)
   })
 })
 
@@ -57,6 +59,19 @@ describe("shouldShowWelcomeFirstGenerationFlow", () => {
         hasAnyGeneration: false,
         hasBonusCredits: true,
         hasNoImageSpend: false,
+        now,
+      }),
+    ).toBe(false)
+  })
+
+  it("hides when no-image-spend signal is missing", () => {
+    const now = new Date("2026-02-19T12:00:00.000Z")
+    expect(
+      shouldShowWelcomeFirstGenerationFlow({
+        enabled: true,
+        userCreatedAt: "2026-02-19T01:00:00.000Z",
+        hasAnyGeneration: false,
+        hasBonusCredits: true,
         now,
       }),
     ).toBe(false)

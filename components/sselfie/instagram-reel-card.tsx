@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useRef, useEffect } from "react"
-import { Heart, MessageCircle, Send, MoreVertical, Volume2, VolumeX, Play, Download } from "lucide-react"
+import { MoreVertical, Play } from "lucide-react"
 
 interface InstagramReelCardProps {
   videoUrl: string
@@ -234,7 +234,7 @@ export default function InstagramReelCard({
   }, [])
 
   return (
-    <div className="relative aspect-9/16 bg-stone-950 rounded-2xl overflow-hidden shadow-2xl max-w-[400px] mx-auto group">
+    <div className="relative aspect-9/16 bg-[#0a0a0a] rounded-[20px] overflow-hidden border border-[rgba(255,255,255,0.08)] max-w-[400px] mx-auto group">
       <div className="absolute top-0 left-0 right-0 h-0.5 bg-white/20 z-20">
         <div className="h-full bg-white transition-all duration-100" style={{ width: `${progress}%` }} />
       </div>
@@ -325,85 +325,69 @@ export default function InstagramReelCard({
               e.preventDefault()
               handlePlayPause(e)
             }}
-            className="w-16 h-16 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-transform touch-manipulation"
+            className="w-16 h-16 bg-[rgba(255,255,255,0.12)] backdrop-blur-sm rounded-full border border-[rgba(255,255,255,0.2)] flex items-center justify-center hover:scale-110 active:scale-95 transition-transform touch-manipulation"
             aria-label="Play video"
             type="button"
           >
-            <Play size={28} className="text-stone-950 ml-1" fill="currentColor" />
+            <Play size={28} className="text-[#ffffff] ml-1" fill="currentColor" />
           </button>
         </div>
       )}
 
       <button
         onClick={handleMuteToggle}
-        className="absolute top-4 right-4 w-10 h-10 bg-stone-950/60 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-stone-950/80 transition-colors z-20"
+        className="absolute top-4 right-4 px-3 py-1.5 bg-stone-950/60 backdrop-blur-sm rounded-full border border-[rgba(255,255,255,0.2)] hover:bg-stone-950/80 transition-colors z-20 text-[10px] text-[#ffffff] tracking-[0.2em] uppercase"
         aria-label={isMuted ? "Unmute" : "Mute"}
       >
-        {isMuted ? <VolumeX size={18} className="text-white" /> : <Volume2 size={18} className="text-white" />}
+        {isMuted ? "Muted" : "Audio"}
       </button>
 
-      <div className="absolute right-3 bottom-20 flex flex-col items-center gap-6 z-20">
+      <div className="absolute right-3 bottom-20 flex flex-col items-end gap-2 z-20">
         <button
           onClick={handleLike}
-          className="flex flex-col items-center gap-1 hover:scale-110 transition-transform active:scale-95"
+          className="px-3 py-1.5 rounded-full bg-stone-950/60 border border-[rgba(255,255,255,0.2)] text-[10px] tracking-[0.2em] uppercase text-[#ffffff] hover:bg-stone-950/80 transition-colors"
           aria-label={liked ? "Unlike" : "Like"}
         >
-          <div className="w-12 h-12 bg-stone-950/60 backdrop-blur-sm rounded-full flex items-center justify-center">
-            <Heart
-              size={24}
-              className={liked ? "fill-red-500 text-red-500" : "text-white"}
-              strokeWidth={liked ? 0 : 2}
-            />
-          </div>
-          <span className="text-xs font-semibold text-white drop-shadow-lg">{liked ? "1" : ""}</span>
+          {liked ? "Favourited" : "Favourite"}
         </button>
 
         <button
-          className="flex flex-col items-center gap-1 hover:scale-110 transition-transform active:scale-95"
+          className="px-3 py-1.5 rounded-full bg-stone-950/60 border border-[rgba(255,255,255,0.2)] text-[10px] tracking-[0.2em] uppercase text-[#ffffff] hover:bg-stone-950/80 transition-colors"
           aria-label="Comment"
         >
-          <div className="w-12 h-12 bg-stone-950/60 backdrop-blur-sm rounded-full flex items-center justify-center">
-            <MessageCircle size={24} className="text-white" strokeWidth={2} />
-          </div>
+          Preview
         </button>
 
         <button
           onClick={handleDownload}
           disabled={isDownloading}
-          className="flex flex-col items-center gap-1 hover:scale-110 transition-transform active:scale-95 disabled:opacity-50"
+          className="px-3 py-1.5 rounded-full bg-stone-950/60 border border-[rgba(255,255,255,0.2)] text-[10px] tracking-[0.2em] uppercase text-[#ffffff] hover:bg-stone-950/80 transition-colors disabled:opacity-50"
           aria-label="Download video"
         >
-          <div className="w-12 h-12 bg-stone-950/60 backdrop-blur-sm rounded-full flex items-center justify-center">
-            <Download size={24} className="text-white" strokeWidth={2} />
-          </div>
-          {isDownloading && <span className="text-xs font-semibold text-white drop-shadow-lg">...</span>}
+          {isDownloading ? "Downloading" : "Download"}
         </button>
 
         <button
-          className="flex flex-col items-center gap-1 hover:scale-110 transition-transform active:scale-95"
+          className="px-3 py-1.5 rounded-full bg-stone-950/60 border border-[rgba(255,255,255,0.2)] text-[10px] tracking-[0.2em] uppercase text-[#ffffff] hover:bg-stone-950/80 transition-colors"
           aria-label="Share"
         >
-          <div className="w-12 h-12 bg-stone-950/60 backdrop-blur-sm rounded-full flex items-center justify-center">
-            <Send size={24} className="text-white" strokeWidth={2} />
-          </div>
+          Photoshoot
         </button>
 
         <button
           onClick={() => setShowMenu(!showMenu)}
-          className="flex flex-col items-center gap-1 hover:scale-110 transition-transform active:scale-95 relative"
+          className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-stone-950/60 border border-[rgba(255,255,255,0.2)] text-[10px] tracking-[0.2em] uppercase text-[#ffffff] hover:bg-stone-950/80 transition-colors relative"
           aria-label="More options"
         >
-          <div className="w-12 h-12 bg-stone-950/60 backdrop-blur-sm rounded-full flex items-center justify-center">
-            <MoreVertical size={24} className="text-white" strokeWidth={2} />
-          </div>
+          More <MoreVertical size={14} className="text-white" strokeWidth={2} />
           {showMenu && (
-            <div className="absolute right-full mr-2 bottom-0 bg-white rounded-xl shadow-2xl border border-stone-200 py-2 w-48">
+            <div className="absolute right-full mr-2 bottom-0 bg-[#111111] rounded-xl shadow-2xl border border-[rgba(255,255,255,0.12)] py-2 w-48">
               <button
                 onClick={() => {
                   window.open(videoUrl, "_blank")
                   setShowMenu(false)
                 }}
-                className="w-full px-4 py-2.5 text-left text-sm hover:bg-stone-50 transition-colors text-stone-950"
+                className="w-full px-4 py-2.5 text-left text-sm text-[#f5f5f5] hover:bg-[rgba(255,255,255,0.08)] transition-colors"
               >
                 View Fullscreen
               </button>
@@ -413,7 +397,7 @@ export default function InstagramReelCard({
                     onDelete()
                     setShowMenu(false)
                   }}
-                  className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 transition-colors"
+                  className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-red-500/10 transition-colors"
                 >
                   Delete Video
                 </button>
@@ -425,12 +409,12 @@ export default function InstagramReelCard({
 
       <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-stone-950/80 via-stone-950/40 to-transparent z-10">
         <div className="flex items-center gap-2 mb-2">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 p-[2px]">
-            <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
-              <span className="text-xs font-bold text-stone-950">S</span>
+          <div className="w-8 h-8 rounded-full border border-[rgba(255,255,255,0.2)] bg-[rgba(255,255,255,0.08)] p-[2px]">
+            <div className="w-full h-full rounded-full bg-[#0a0a0a] flex items-center justify-center">
+              <span className="text-xs font-semibold text-[#ffffff]">S</span>
             </div>
           </div>
-          <span className="text-sm font-semibold text-white drop-shadow-lg">sselfie</span>
+          <span className="text-sm font-medium text-white drop-shadow-lg">sselfie</span>
         </div>
         {motionPrompt && (
           <p className="text-sm text-white drop-shadow-lg line-clamp-2 leading-relaxed">{motionPrompt}</p>

@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react"
 import Image from "next/image"
-import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react'
+import { MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react'
 import FullscreenImageModal from "./fullscreen-image-modal"
 
 interface PhotoshootImage {
@@ -80,34 +80,34 @@ export default function InstagramCarouselCard({
 
   return (
     <>
-      <div className="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-lg max-w-[470px] mx-auto">
+      <div className="bg-[rgba(255,255,255,0.04)] backdrop-blur-[20px] rounded-[20px] border border-[rgba(255,255,255,0.08)] overflow-hidden max-w-[470px] mx-auto">
         {/* Instagram Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-stone-100">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[rgba(255,255,255,0.08)]">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 p-[2px]">
-              <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
-                <span className="text-xs font-bold text-stone-950">S</span>
+            <div className="w-8 h-8 rounded-full border border-[rgba(255,255,255,0.2)] bg-[rgba(255,255,255,0.08)] p-[2px]">
+              <div className="w-full h-full rounded-full bg-[#0a0a0a] flex items-center justify-center">
+                <span className="text-xs font-semibold text-[#ffffff]">S</span>
               </div>
             </div>
             <div>
-              <p className="text-sm font-semibold text-stone-950">sselfie</p>
-              <p className="text-xs text-stone-500">{category}</p>
+              <p className="text-sm font-medium text-[#ffffff]">sselfie</p>
+              <p className="text-xs text-[#666666]">{category}</p>
             </div>
           </div>
           <button
             onClick={() => setShowMenu(!showMenu)}
-            className="p-2 hover:bg-stone-50 rounded-full transition-colors relative"
+            className="p-2 hover:bg-[rgba(255,255,255,0.08)] rounded-full transition-colors relative"
             aria-label="More options"
           >
-            <MoreHorizontal size={20} className="text-stone-950" />
+            <MoreHorizontal size={20} className="text-[#e5e5e5]" />
             {showMenu && (
-              <div className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-2xl border border-stone-200 py-2 w-48 z-10">
+              <div className="absolute right-0 top-full mt-1 bg-[#111111] rounded-xl shadow-2xl border border-[rgba(255,255,255,0.12)] py-2 w-48 z-10">
                 <button
                   onClick={() => {
                     setIsViewerOpen(true)
                     setShowMenu(false)
                   }}
-                  className="w-full px-4 py-2.5 text-left text-sm hover:bg-stone-50 transition-colors"
+                  className="w-full px-4 py-2.5 text-left text-sm text-[#f5f5f5] hover:bg-[rgba(255,255,255,0.08)] transition-colors"
                 >
                   View Full Size
                 </button>
@@ -116,7 +116,7 @@ export default function InstagramCarouselCard({
                     onDelete()
                     setShowMenu(false)
                   }}
-                  className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 transition-colors"
+                  className="w-full px-4 py-2.5 text-left text-sm text-red-400 hover:bg-red-500/10 transition-colors"
                 >
                   Delete Photoshoot
                 </button>
@@ -128,7 +128,7 @@ export default function InstagramCarouselCard({
         {/* Instagram Carousel with Navigation */}
         <div 
           ref={imageContainerRef}
-          className="relative aspect-[4/5] bg-stone-100 group cursor-pointer touch-pan-y"
+          className="relative aspect-[4/5] bg-[#121212] group cursor-pointer touch-pan-y"
           onClick={() => setIsViewerOpen(true)}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
@@ -151,20 +151,20 @@ export default function InstagramCarouselCard({
                   e.stopPropagation()
                   handlePrevious()
                 }}
-                className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:scale-110 active:scale-95 sm:opacity-100"
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-[#0a0a0a]/80 backdrop-blur-sm rounded-full border border-[rgba(255,255,255,0.2)] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 active:scale-95 sm:opacity-100"
                 aria-label="Previous image"
               >
-                <ChevronLeft size={20} className="text-stone-950" />
+                <ChevronLeft size={20} className="text-[#ffffff]" />
               </button>
               <button
                 onClick={(e) => {
                   e.stopPropagation()
                   handleNext()
                 }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg hover:scale-110 active:scale-95 sm:opacity-100"
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-[#0a0a0a]/80 backdrop-blur-sm rounded-full border border-[rgba(255,255,255,0.2)] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 active:scale-95 sm:opacity-100"
                 aria-label="Next image"
               >
-                <ChevronRight size={20} className="text-stone-950" />
+                <ChevronRight size={20} className="text-[#ffffff]" />
               </button>
             </>
           )}
@@ -180,7 +180,7 @@ export default function InstagramCarouselCard({
                     setCurrentIndex(index)
                   }}
                   className={`h-1.5 rounded-full transition-all ${
-                    index === currentIndex ? "bg-white w-6" : "bg-white/50 w-1.5 hover:bg-white/70"
+                    index === currentIndex ? "bg-white w-6" : "bg-white/40 w-1.5 hover:bg-white/70"
                   }`}
                   aria-label={`Go to slide ${index + 1}`}
                 />
@@ -189,8 +189,8 @@ export default function InstagramCarouselCard({
           )}
 
           {/* Slide Counter */}
-          <div className="absolute top-3 right-3 px-2 py-1 bg-stone-950/70 backdrop-blur-sm rounded-lg">
-            <span className="text-xs text-white font-medium">
+          <div className="absolute top-3 right-3 px-2 py-1 bg-stone-950/70 backdrop-blur-sm rounded-lg border border-[rgba(255,255,255,0.18)]">
+            <span className="text-xs text-white font-medium tracking-wide">
               {currentIndex + 1}/{images.length}
             </span>
           </div>
@@ -205,55 +205,45 @@ export default function InstagramCarouselCard({
         {/* Instagram Action Bar */}
         <div className="px-4 py-3 space-y-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsViewerOpen(true)}
+                className="text-[10px] uppercase tracking-[0.2em] text-[#e5e5e5] hover:text-[#ffffff] transition-colors"
+                aria-label="Download"
+              >
+                Download
+              </button>
               <button
                 onClick={handleLike}
-                className="hover:opacity-60 transition-opacity active:scale-90"
+                className="text-[10px] uppercase tracking-[0.2em] text-[#e5e5e5] hover:text-[#ffffff] transition-colors"
                 aria-label={liked ? "Unlike" : "Like"}
               >
-                <Heart
-                  size={24}
-                  className={liked ? "fill-red-500 text-red-500" : "text-stone-950"}
-                  strokeWidth={liked ? 0 : 2}
-                />
+                {liked ? "Favourited" : "Favourite"}
               </button>
               <button
                 onClick={() => setIsViewerOpen(true)}
-                className="hover:opacity-60 transition-opacity active:scale-90"
-                aria-label="Comment"
+                className="text-[10px] uppercase tracking-[0.2em] text-[#e5e5e5] hover:text-[#ffffff] transition-colors"
+                aria-label="Photoshoot"
               >
-                <MessageCircle size={24} className="text-stone-950" strokeWidth={2} />
-              </button>
-              <button className="hover:opacity-60 transition-opacity active:scale-90" aria-label="Share">
-                <Send size={24} className="text-stone-950" strokeWidth={2} />
+                Photoshoot
               </button>
             </div>
-            <button
-              onClick={handleLike}
-              className="hover:opacity-60 transition-opacity active:scale-90"
-              aria-label="Save"
-            >
-              <Bookmark
-                size={24}
-                className={liked ? "fill-stone-950 text-stone-950" : "text-stone-950"}
-                strokeWidth={2}
-              />
-            </button>
+            <span className="text-[10px] uppercase tracking-[0.2em] text-[#666666]">{category}</span>
           </div>
 
           {/* Engagement */}
           <div className="space-y-1">
             {liked && (
-              <p className="text-sm font-semibold text-stone-950">
+              <p className="text-sm font-semibold text-[#ffffff]">
                 Liked by <span className="font-bold">you</span>
               </p>
             )}
             <div className="text-sm">
-              <span className="font-semibold text-stone-950">sselfie</span>{" "}
-              <span className="text-stone-950 whitespace-pre-wrap">{description}</span>
+              <span className="font-semibold text-[#ffffff]">sselfie</span>{" "}
+              <span className="text-[#f5f5f5] whitespace-pre-wrap">{description}</span>
             </div>
-            <p className="text-[10px] text-stone-400 tracking-wide">AI-generated photoshoot • {images.length} photos</p>
-            <p className="text-xs text-stone-400 uppercase tracking-wide">Just now</p>
+            <p className="text-[10px] text-[#666666] tracking-wide uppercase">AI-generated photoshoot • {images.length} photos</p>
+            <p className="text-xs text-[#666666] uppercase tracking-wide">Just now</p>
           </div>
         </div>
       </div>

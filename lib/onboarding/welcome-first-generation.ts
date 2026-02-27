@@ -28,9 +28,9 @@ export function shouldShowWelcomeFirstGenerationFlow(input: WelcomeFlowDecisionI
   if (input.hasAnyGeneration) return false
 
   // Require bonus credits — users who never received welcome grant are outside the flow
-  if (input.hasBonusCredits === false) return false
-  // Note: hasNoImageSpend gate removed — it permanently blocked users after a single failed attempt,
-  // causing 0% activation. The hasAnyGeneration gate above already prevents re-showing after success.
+  if (input.hasBonusCredits !== true) return false
+  // Require no prior image spend for this focused first-generation jumpstart.
+  if (input.hasNoImageSpend !== true) return false
 
   if (input.userCreatedAt != null) {
     const createdAt =
@@ -46,4 +46,3 @@ export function shouldShowWelcomeFirstGenerationFlow(input: WelcomeFlowDecisionI
 
   return true
 }
-

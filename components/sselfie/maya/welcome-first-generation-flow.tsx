@@ -71,7 +71,10 @@ export default function WelcomeFirstGenerationFlow({
 
   useEffect(() => {
     fetch("/api/prompt-guides/items")
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to load top prompts")
+        return res.json()
+      })
       .then((data) => {
         const items = data?.items ?? []
         setTopPrompts(Array.isArray(items) ? items.slice(0, 4) : [])
@@ -271,7 +274,9 @@ export default function WelcomeFirstGenerationFlow({
                       selectedStyle === opt.id ? "border-[#0a0a0a] bg-[#f5f5f5]" : "border-[#e5e5e5] bg-white hover:border-[#999]"
                     }`}
                   >
-                    <span className="font-serif text-[10px] sm:text-xs font-extralight tracking-[0.2em] uppercase text-[#0a0a0a">{opt.label}</span>
+                    <span className="font-serif text-[10px] sm:text-xs font-extralight tracking-[0.2em] uppercase text-[#0a0a0a]">
+                      {opt.label}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -300,7 +305,9 @@ export default function WelcomeFirstGenerationFlow({
                     onClick={() => setSelectedMode("classic")}
                     className={`w-full text-left p-4 rounded-sm border-2 transition-all ${selectedMode === "classic" ? "border-[#0a0a0a] bg-[#f5f5f5]" : "border-[#e5e5e5] bg-white hover:border-[#999]"}`}
                   >
-                    <span className="font-serif text-xs font-extralight tracking-[0.15em] uppercase text-[#0a0a0a block mb-1">CLASSIC</span>
+                    <span className="font-serif text-xs font-extralight tracking-[0.15em] uppercase text-[#0a0a0a] block mb-1">
+                      CLASSIC
+                    </span>
                     <span className="text-sm font-light text-[#666] leading-relaxed">Your trained style (Fast, simple)</span>
                   </button>
                 )}
@@ -309,7 +316,9 @@ export default function WelcomeFirstGenerationFlow({
                   onClick={() => setSelectedMode("pro")}
                   className={`w-full text-left p-4 rounded-sm border-2 transition-all ${selectedMode === "pro" ? "border-[#0a0a0a] bg-[#f5f5f5]" : "border-[#e5e5e5] bg-white hover:border-[#999]"}`}
                 >
-                  <span className="font-serif text-xs font-extralight tracking-[0.15em] uppercase text-[#0a0a0a block mb-1">PRO</span>
+                  <span className="font-serif text-xs font-extralight tracking-[0.15em] uppercase text-[#0a0a0a] block mb-1">
+                    PRO
+                  </span>
                   <span className="text-sm font-light text-[#666] leading-relaxed">With reference images (More control)</span>
                 </button>
               </div>

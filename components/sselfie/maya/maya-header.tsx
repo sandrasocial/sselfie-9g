@@ -228,7 +228,7 @@ export default function MayaHeaderUnified({
   // Unified header styling - same for both modes
   // Mobile optimized: proper touch targets, safe area insets, responsive spacing
   // Note: border-b removed since tabs section will have its own border
-  const headerClassName = "flex items-center justify-between w-full px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 md:py-4 bg-white/80 backdrop-blur-xl relative z-[100]"
+  const headerClassName = "flex items-center justify-between w-full px-3 sm:px-4 md:px-6 py-2.5 sm:py-3 md:py-4 bg-[rgba(255,255,255,0.04)] backdrop-blur-[20px] relative z-[100] border-b border-[rgba(255,255,255,0.08)]"
 
   return (
     <>
@@ -237,7 +237,7 @@ export default function MayaHeaderUnified({
       >
         {/* Left: SSELFIE - Always show SSELFIE logo/title */}
         <div className="flex items-center shrink-0 min-h-[44px]">
-          <h1 className="text-base sm:text-lg md:text-xl font-serif font-normal text-stone-950 uppercase tracking-wide">
+          <h1 className="text-base sm:text-lg md:text-xl font-serif font-normal text-[#ffffff] uppercase tracking-wide">
             SSELFIE
           </h1>
         </div>
@@ -400,11 +400,11 @@ export default function MayaHeaderUnified({
 
           {/* Credits Display - Always show when available */}
           {credits !== undefined && (
-            <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded border border-stone-200 bg-stone-50/50 min-h-[36px] sm:min-h-[40px]">
-              <span className="text-[9px] sm:text-[10px] md:text-xs font-light text-stone-500 uppercase tracking-wider">
+            <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.06)] min-h-[36px] sm:min-h-[40px]">
+              <span className="text-[9px] sm:text-[10px] md:text-xs font-light text-[#e5e5e5] uppercase tracking-wider">
                 Credits
               </span>
-              <span className="text-xs sm:text-sm md:text-base font-semibold text-stone-950 tabular-nums">
+              <span className="text-xs sm:text-sm md:text-base font-semibold text-[#ffffff] tabular-nums">
                 {formattedCredits}
               </span>
             </div>
@@ -464,7 +464,7 @@ export default function MayaHeaderUnified({
                 {proMode ? (
                   <MoreVertical size={18} strokeWidth={2} />
                 ) : (
-                  <span className="text-xs sm:text-sm font-serif tracking-[0.2em] text-stone-950 uppercase">MENU</span>
+                  <span className="text-xs sm:text-sm font-serif tracking-[0.2em] text-[#ffffff] uppercase">MENU</span>
                 )}
               </div>
             </button>
@@ -485,7 +485,7 @@ export default function MayaHeaderUnified({
 
       {/* Tab Switcher - Integrated into header */}
       {activeTab && onTabChange && (
-        <div className="w-full border-t border-stone-200/50 bg-white/80 backdrop-blur-sm z-[100] relative">
+        <div className="w-full border-t border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] backdrop-blur-[20px] z-[100] relative">
           <div className="px-3 sm:px-4 md:px-6">
             <MayaTabSwitcher
               activeTab={activeTab}

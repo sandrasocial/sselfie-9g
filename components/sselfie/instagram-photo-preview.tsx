@@ -5,14 +5,9 @@ import type React from "react"
 import { useState, useRef, useEffect } from "react"
 import {
   X,
-  Heart,
-  MessageCircle,
-  Bookmark,
   MoreHorizontal,
   ChevronLeft,
   ChevronRight,
-  Download,
-  Trash2,
 } from "lucide-react"
 import type { GalleryImage } from "@/lib/data/images"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
@@ -191,29 +186,27 @@ export function InstagramPhotoPreview({
         {/* Actions */}
         <div className="p-3 space-y-3 border-t border-stone-800">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button onClick={handleFavoriteClick} className="transition-transform hover:scale-110 active:scale-95">
-                <Heart
-                  size={24}
-                  className={currentIsFavorited ? "text-red-500 fill-red-500" : "text-white"}
-                  strokeWidth={1.5}
-                />
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleDownload}
+                className="text-[10px] uppercase tracking-[0.2em] text-[#e5e5e5] hover:text-white transition-colors"
+              >
+                Download
               </button>
-              <button className="transition-transform hover:scale-110 active:scale-95">
-                <MessageCircle size={24} className="text-white" strokeWidth={1.5} />
+              <button
+                onClick={handleFavoriteClick}
+                className="text-[10px] uppercase tracking-[0.2em] text-[#e5e5e5] hover:text-white transition-colors"
+              >
+                {currentIsFavorited ? "Favourited" : "Favourite"}
               </button>
-              <button onClick={handleDownload} className="transition-transform hover:scale-110 active:scale-95">
-                <Download size={24} className="text-white" strokeWidth={1.5} />
-              </button>
-            </div>
-            <div className="flex items-center gap-4">
-              <button onClick={handleDeleteClick} className="transition-transform hover:scale-110 active:scale-95">
-                <Trash2 size={24} className="text-red-400" strokeWidth={1.5} />
-              </button>
-              <button className="transition-transform hover:scale-110 active:scale-95">
-                <Bookmark size={24} className="text-white" strokeWidth={1.5} />
+              <button
+                onClick={handleDeleteClick}
+                className="text-[10px] uppercase tracking-[0.2em] text-red-400 hover:text-red-300 transition-colors"
+              >
+                Delete
               </button>
             </div>
+            <span className="text-[10px] uppercase tracking-[0.2em] text-[#666666]">{userName}</span>
           </div>
 
           {/* Likes */}

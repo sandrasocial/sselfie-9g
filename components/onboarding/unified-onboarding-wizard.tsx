@@ -566,7 +566,7 @@ export default function UnifiedOnboardingWizard({
                 {currentStep === 0 && (
                   <div className="space-y-6">
                     <p className="text-base sm:text-lg font-light leading-relaxed text-stone-700">
-                      Hi {userName && !userName.includes('@') ? userName : "there"}! 👋 Tell us a bit about what you do and who you're here for.
+                      Hi {userName && !userName.includes('@') ? userName : "there"}! 👋 Tell us a bit about what you do and who you&apos;re here for.
                     </p>
                     <div>
                       <label className="block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-stone-700 mb-2 sm:mb-3">
@@ -593,7 +593,7 @@ export default function UnifiedOnboardingWizard({
                     </div>
                     <div>
                       <label className="block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-stone-700 mb-2 sm:mb-3">
-                        What's your story? (optional)
+                        What&apos;s your story? (optional)
                       </label>
                       <Textarea
                         value={formData.transformationStory}
@@ -728,7 +728,7 @@ export default function UnifiedOnboardingWizard({
                 {currentStep === 2 && (
                   <div className="space-y-6">
                     <p className="text-base sm:text-lg font-light leading-relaxed text-stone-700">
-                      Your feed is ready. One tap and we'll create your first 9-post grid.
+                      Your feed is ready. One tap and we&apos;ll create your first 9-post grid.
                     </p>
                     <p className="text-sm font-light text-stone-600">
                       You can always come back to edit your goal or style from the Feed Planner header.

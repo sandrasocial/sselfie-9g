@@ -2440,7 +2440,7 @@ export default function MayaChatScreen({
   return (
     <>
     <div
-      className="flex flex-col h-full bg-linear-to-b from-stone-50 to-white relative"
+      className="flex flex-col h-full bg-[#0a0a0a] relative"
       style={{
         paddingBottom: '80px', // Space for bottom navigation (approx 60-70px nav + safe area)
       }}
@@ -2465,7 +2465,7 @@ export default function MayaChatScreen({
       {/* Mobile optimized: safe area insets, responsive padding */}
       {/* Using z-[100] to ensure it's above all other content */}
       <div 
-        className="fixed top-0 left-0 right-0 z-100 bg-white/95 backdrop-blur-xl shadow-sm"
+        className="fixed top-0 left-0 right-0 z-100 bg-[rgba(255,255,255,0.04)] backdrop-blur-[20px]"
         style={{
           paddingTop: 'max(0.625rem, env(safe-area-inset-top, 0px))',
         }}
@@ -2535,7 +2535,7 @@ export default function MayaChatScreen({
           className="fixed left-0 right-0 z-[95] px-3 sm:px-4"
           style={{ top: "calc(env(safe-area-inset-top, 0px) + 96px)" }}
         >
-          <div className="mx-auto max-w-5xl border border-[#e5e5e5] bg-[#f5f5f5] px-4 py-3 text-sm text-[#666666] flex items-start justify-between gap-3">
+          <div className="mx-auto max-w-5xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.06)] px-4 py-3 text-sm text-[#e5e5e5] flex items-start justify-between gap-3">
             <p className="font-light leading-relaxed">
               Pro Mode uses your reference photos instead of your trained model. Perfect for product shots, lifestyle content, and trying new looks.
             </p>
@@ -2546,7 +2546,7 @@ export default function MayaChatScreen({
                   localStorage.setItem("sselfie_pro_tooltip_seen", "true")
                 }
               }}
-              className="shrink-0 text-xs uppercase tracking-wide text-stone-700 hover:text-stone-900"
+                className="shrink-0 text-xs uppercase tracking-wide text-[#e5e5e5] hover:text-[#ffffff]"
             >
               Got it x
             </button>
@@ -2849,25 +2849,25 @@ export default function MayaChatScreen({
           >
       {!isLoadingAcademyJourneyState && academyJourneyPrompt && (
         <div className="px-4 sm:px-6 py-3">
-          <div className="rounded-2xl border border-stone-200 bg-white/90 p-4">
+          <div className="rounded-2xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
             {academyJourneyPrompt === "first_gen" ? (
               <>
-                <p className="text-sm text-stone-800">
+                <p className="text-sm text-[#e5e5e5]">
                   Want to see exactly how to use this image for your Instagram?
                 </p>
-                <p className="text-sm text-stone-800 mt-1">
+                <p className="text-sm text-[#e5e5e5] mt-1">
                   I have a quick 2-minute tutorial. Type SHOW ME to see it.
                 </p>
               </>
             ) : (
               <>
-                <p className="text-sm text-stone-800">
+                <p className="text-sm text-[#e5e5e5]">
                   You&apos;ve created some beautiful images.
                 </p>
-                <p className="text-sm text-stone-800 mt-1">
+                <p className="text-sm text-[#e5e5e5] mt-1">
                   Want me to show you how to turn these into a full month of content?
                 </p>
-                <p className="text-sm text-stone-800 mt-1">
+                <p className="text-sm text-[#e5e5e5] mt-1">
                   I have a system that takes 20 minutes.
                 </p>
               </>
@@ -2876,14 +2876,14 @@ export default function MayaChatScreen({
               <button
                 type="button"
                 onClick={handleOpenAcademyFromMaya}
-                className="px-3 py-2 text-xs tracking-wide uppercase rounded-lg bg-stone-900 text-white"
+                className="px-3 py-2 text-xs tracking-wide uppercase rounded-lg bg-[rgba(255,255,255,0.08)] text-[#ffffff] border border-[rgba(255,255,255,0.12)]"
               >
                 Show Me
               </button>
               <button
                 type="button"
                 onClick={() => setAcademyJourneyPrompt(null)}
-                className="px-3 py-2 text-xs tracking-wide uppercase rounded-lg border border-stone-300 text-stone-700"
+                className="px-3 py-2 text-xs tracking-wide uppercase rounded-lg border border-[rgba(255,255,255,0.12)] text-[#e5e5e5]"
               >
                 Not now
               </button>
@@ -3007,7 +3007,7 @@ export default function MayaChatScreen({
       {(activeMayaTab === "photos" || activeMayaTab === "feed") && (
         <div
           ref={inputBarRef}
-          className="sticky left-0 right-0 bg-white/60 backdrop-blur-md border-t border-stone-200/30 px-3 sm:px-4 py-2.5 sm:py-3 z-65 safe-bottom flex flex-col"
+          className="sticky left-0 right-0 bg-[rgba(255,255,255,0.04)] backdrop-blur-[20px] border-t border-[rgba(255,255,255,0.08)] px-3 sm:px-4 py-2.5 sm:py-3 z-65 safe-bottom flex flex-col"
           style={{
             bottom: 0, // Stick to bottom of scroll container
             paddingBottom: "calc(env(safe-area-inset-bottom) + 0.5rem)",
@@ -3033,7 +3033,7 @@ export default function MayaChatScreen({
             <div className="mb-2 mt-1">
               <button
                 onClick={() => setShowCollapsedPrompts(true)}
-                className="px-3 py-1.5 text-[11px] uppercase tracking-wide border border-stone-300 rounded-full bg-white/70 hover:bg-white"
+                className="px-3 py-1.5 text-[11px] uppercase tracking-wide border border-[rgba(255,255,255,0.12)] rounded-full bg-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.1)] text-[#e5e5e5]"
               >
                 Prompts
               </button>

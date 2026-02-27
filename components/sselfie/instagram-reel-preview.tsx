@@ -6,15 +6,9 @@ import { useState, useRef, useEffect } from "react"
 import { createPortal } from "react-dom"
 import {
   X,
-  Heart,
-  MessageCircle,
   MoreHorizontal,
-  Volume2,
-  VolumeX,
   ChevronLeft,
   ChevronRight,
-  Trash2,
-  Download,
 } from "lucide-react"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 
@@ -208,52 +202,37 @@ export function InstagramReelPreview({
         <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-stone-950/90 to-transparent pointer-events-none" />
 
         {/* Right sidebar actions */}
-        <div className="absolute right-3 bottom-20 flex flex-col items-center gap-6 z-10">
+        <div className="absolute right-3 bottom-20 flex flex-col items-end gap-2 z-10">
           <button
             onClick={() => setLiked(!liked)}
-            className="flex flex-col items-center gap-1 transition-transform hover:scale-110"
+            className="px-3 py-1.5 rounded-full bg-stone-950/50 border border-[rgba(255,255,255,0.2)] text-[10px] tracking-[0.2em] uppercase text-white transition-colors hover:bg-stone-950/80"
           >
-            <div className="w-12 h-12 rounded-full bg-stone-950/50 backdrop-blur-sm flex items-center justify-center">
-              <Heart size={28} className={liked ? "text-red-500 fill-red-500" : "text-white"} strokeWidth={1.5} />
-            </div>
-            <span className="text-xs text-white font-medium">{liked ? "1" : ""}</span>
+            {liked ? "Favourited" : "Favourite"}
           </button>
 
-          <button className="flex flex-col items-center gap-1 transition-transform hover:scale-110">
-            <div className="w-12 h-12 rounded-full bg-stone-950/50 backdrop-blur-sm flex items-center justify-center">
-              <MessageCircle size={28} className="text-white" strokeWidth={1.5} />
-            </div>
+          <button className="px-3 py-1.5 rounded-full bg-stone-950/50 border border-[rgba(255,255,255,0.2)] text-[10px] tracking-[0.2em] uppercase text-white transition-colors hover:bg-stone-950/80">
+            Preview
           </button>
 
           <button
             onClick={handleDownload}
-            className="flex flex-col items-center gap-1 transition-transform hover:scale-110"
+            className="px-3 py-1.5 rounded-full bg-stone-950/50 border border-[rgba(255,255,255,0.2)] text-[10px] tracking-[0.2em] uppercase text-white transition-colors hover:bg-stone-950/80"
           >
-            <div className="w-12 h-12 rounded-full bg-stone-950/50 backdrop-blur-sm flex items-center justify-center">
-              <Download size={28} className="text-white" strokeWidth={1.5} />
-            </div>
+            Download
           </button>
 
           <button
             onClick={() => onDelete(currentVideo.id)}
-            className="flex flex-col items-center gap-1 transition-transform hover:scale-110"
+            className="px-3 py-1.5 rounded-full bg-red-500/20 border border-red-400/30 text-[10px] tracking-[0.2em] uppercase text-red-300 transition-colors hover:bg-red-500/30"
           >
-            <div className="w-12 h-12 rounded-full bg-red-500/20 backdrop-blur-sm flex items-center justify-center">
-              <Trash2 size={28} className="text-red-400" strokeWidth={1.5} />
-            </div>
+            Delete
           </button>
 
           <button
             onClick={toggleMute}
-            className="flex flex-col items-center gap-1 transition-transform hover:scale-110"
+            className="px-3 py-1.5 rounded-full bg-stone-950/50 border border-[rgba(255,255,255,0.2)] text-[10px] tracking-[0.2em] uppercase text-white transition-colors hover:bg-stone-950/80"
           >
-            <div className="w-12 h-12 rounded-full bg-stone-950/50 backdrop-blur-sm flex items-center justify-center">
-              {isMuted ? (
-                <VolumeX size={28} className="text-white" strokeWidth={1.5} />
-              ) : (
-                <Volume2 size={28} className="text-white" strokeWidth={1.5} />
-              )}
-            </div>
+            {isMuted ? "Muted" : "Audio"}
           </button>
         </div>
 
