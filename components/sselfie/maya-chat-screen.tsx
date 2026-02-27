@@ -2529,30 +2529,6 @@ export default function MayaChatScreen({
         />
       </div>
 
-      {showProModeTooltip && proMode && (
-        <div
-          className="fixed left-0 right-0 z-[95] px-3 sm:px-4"
-          style={{ top: "calc(env(safe-area-inset-top, 0px) + 96px)" }}
-        >
-          <div className="mx-auto max-w-5xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.06)] px-4 py-3 text-sm text-[#e5e5e5] flex items-start justify-between gap-3">
-            <p className="font-light leading-relaxed">
-              Pro Mode uses your reference photos instead of your trained model. Perfect for product shots, lifestyle content, and trying new looks.
-            </p>
-            <button
-              onClick={() => {
-                setShowProModeTooltip(false)
-                if (typeof window !== "undefined") {
-                  localStorage.setItem("sselfie_pro_tooltip_seen", "true")
-                }
-              }}
-                className="shrink-0 text-xs uppercase tracking-wide text-[#e5e5e5] hover:text-[#ffffff]"
-            >
-              Got it x
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Credit welcome banner — shown to non-members with credits on an empty session.
           Creates urgency and clarity: "you have X free photos, go use them." */}
       {!isMembership && creditBalance > 0 && (!messages || messages.length === 0) && (
@@ -2846,6 +2822,26 @@ export default function MayaChatScreen({
           <div 
             className="flex-1 min-h-0 flex flex-col overflow-y-auto"
           >
+      {showProModeTooltip && proMode && (
+        <div className="px-4 sm:px-6 py-3">
+          <div className="mx-auto max-w-5xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.06)] px-4 py-3 text-sm text-[#e5e5e5] flex items-start justify-between gap-3">
+            <p className="font-light leading-relaxed">
+              Pro Mode uses your reference photos instead of your trained model. Perfect for product shots, lifestyle content, and trying new looks.
+            </p>
+            <button
+              onClick={() => {
+                setShowProModeTooltip(false)
+                if (typeof window !== "undefined") {
+                  localStorage.setItem("sselfie_pro_tooltip_seen", "true")
+                }
+              }}
+              className="shrink-0 text-xs uppercase tracking-wide text-[#e5e5e5] hover:text-[#ffffff]"
+            >
+              Got it x
+            </button>
+          </div>
+        </div>
+      )}
       {!isLoadingAcademyJourneyState && academyJourneyPrompt && (
         <div className="px-4 sm:px-6 py-3">
           <div className="rounded-2xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
