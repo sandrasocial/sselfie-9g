@@ -4,17 +4,23 @@
 ---
 
 ## Last Updated
-2026-02-27 18:34 CET — Updated by Codex (deployed + production-verified Maya/revenue split patch bundle)
+2026-02-27 18:51 CET — Updated by Codex (ACADEMY-02 unblock + onboarding 500 fix + E-01 reconciliation snapshot)
 
 ## Last Task Completed
-Launch readiness patch bundle deployed to production (`main` commit `080c715a`, Vercel deploy `https://v0-sselfie-7xvl1vmm8-sselfie-studio.vercel.app`):
-- `/studio` smoke-checked in production (logged-out + logged-in flows) with no `Cannot access 'tu' before initialization` runtime error observed
-- `/api/maya/chat` first-time mini-product behavior validated in production via authenticated smoke user + academy headers (`what_to_say`, `firstTimeProductUser=true`, `x-studio-pro-mode=true`): status `200`, streaming response begins with product-delivery wording (personalized captions flow)
-- Revenue reporting split deployed and DB-validated:
-- `activeRecurringSubscribers=16`
-- `activeBlueprintEntitlements=13`
-- `activeAllSubscriptionsRaw=29`
-- Hard-bounce cleanup remains completed: `39` hard-bounced contacts removed from active Resend audience (report: `output/automation/hard-bounce-cleanup-2026-02-27T16-36-50-188Z.md`)
+Parallel execution stream completed on `main` (`b8e7bec2`) + production deploy (`https://v0-sselfie-gf3el0kcq-sselfie-studio.vercel.app`):
+- Fixed `/api/onboarding/academy-journey-state` production `500` (removed invalid `generated_images.status` query and replaced with schema-safe completed-image logic)
+- Production verification: `/api/onboarding/academy-journey-state` now returns `200` with valid JSON payload
+- ACADEMY-02 checkout blocker resolved:
+- Added robust origin fallback in `/api/academy/checkout` (no longer hard-fails when `NEXT_PUBLIC_SITE_URL` is absent/misaligned)
+- Added missing Academy Stripe env vars in Vercel (`STRIPE_PRICE_WHAT_TO_SAY`, `STRIPE_PRICE_SHOW_UP`, `STRIPE_PRICE_GET_PAID`, `STRIPE_PRICE_AI_PHOTO_PROMPTS`) across Production/Preview/Development
+- Production verification: authenticated checkout call now returns `200` with Stripe Checkout URL (`checkout.stripe.com`)
+- E-01 reconciliation snapshot generated with live numbers:
+- `output/automation/e01-subscriber-reconciliation-2026-02-27T17-42-19-791Z.md`
+- Resend total `881` / subscribed `820` / unsubscribed `61`
+- DB unique union contacts `1170`
+- Active recurring subscribers `16`
+- Active blueprint entitlements `13`
+- Type-check status refreshed: `pnpm type-check` currently passes (`tsc --noEmit` exit `0`)
 
 ## Maya Component Audit
 - Live header: `components/sselfie/maya/maya-header.tsx`
@@ -104,18 +110,18 @@ Launch readiness patch bundle deployed to production (`main` commit `080c715a`, 
 - Validation run: eslint on touched files passed; `pnpm dev` smoke succeeded (`GET /studio 307`)
 
 ## What's Broken / Unconfirmed
-- E-01 status: code-path fix exists, but subscriber-count business reconciliation (Resend vs internal/legacy expectations) still needs explicit ops sign-off
+- E-01 status: reconciliation snapshot is complete and ready for business sign-off (ops decision pending)
 - E-03 status: cleanup completed for currently active audience rows (39 removed); historical bounce entries remain in logs by design
-- New issue from live smoke: `/api/onboarding/academy-journey-state` returned `500` during first-time user onboarding check (non-blocking for this patch, but should be triaged)
-- `pnpm type-check` still fails with broad pre-existing repository issues (Next route typing, script typing, and test-runner globals)
+- ACADEMY-02 webhook path has implementation in place, but no new end-to-end paid checkout-to-webhook write was executed in this run
 - ACADEMY-01 note: Stripe key in `.env.local` is `sk_live...`; academy prices were created with configured key mode
 - Runtime issue observed earlier in production (`Cannot access 'tu' before initialization`) is now rechecked and not reproduced
 
 ## Currently In Progress
-None (current patch bundle shipped and production-smoke verified)
+None (latest patches deployed and production-smoke verified)
 
 ## Blocked On Sandra
 None for this completed patch bundle
 
 ## Next Task
-Run `tasks/ACADEMY-02.md` (checkout + webhook path), then close E-01 with explicit subscriber-count reconciliation evidence
+1) Run one controlled Academy checkout completion + webhook event verification against `academy_course_purchases` and `user_tags`
+2) Get Sandra/business sign-off on E-01 snapshot denominator policy (Resend audience vs DB entity tables vs revenue subscription metrics)
