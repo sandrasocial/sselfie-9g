@@ -36,10 +36,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL
-    if (!siteUrl) {
-      return NextResponse.json({ error: "NEXT_PUBLIC_SITE_URL is not configured" }, { status: 500 })
-    }
+    const configuredSiteUrl = String(process.env.NEXT_PUBLIC_SITE_URL || "").trim()
+    const forwardedHost = request.headers.get("x-forwarded-host")
+    const forwardedProto = request.headers.get("x-forwarded-proto") || "https"
+    const requestOrigin = new URL(request.url).origin
+    const derivedOrigin =
+      configuredSiteUrl ||
+      (forwardedHost ? `${forwardedProto}://${forwardedHost}` : "") ||
+      requestOrigin
+    const siteUrl = derivedOrigin.replace(/\/$/, "")
 
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
