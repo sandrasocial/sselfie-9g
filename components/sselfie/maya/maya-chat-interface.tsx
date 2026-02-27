@@ -423,7 +423,7 @@ export default function MayaChatInterface({
           // Header (~56-64px) + Tabs (~50px) + safe area = ~106-114px total
           paddingTop: 'calc(106px + max(0.625rem, env(safe-area-inset-top, 0px)))',
           // Input area (~140px) + Bottom nav (~70px) = ~210px total
-          paddingBottom: "210px",
+          paddingBottom: "100px",
         }}
         role="log"
         aria-live="polite"

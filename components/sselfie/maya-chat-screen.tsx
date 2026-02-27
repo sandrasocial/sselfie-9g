@@ -2839,10 +2839,7 @@ export default function MayaChatScreen({
             </div>
           )}
           <div 
-            className="flex-1 min-h-0 flex flex-col"
-            style={{
-              paddingBottom: 'calc(var(--input-bar-height, 140px) + env(safe-area-inset-bottom, 0px))',
-            }}
+            className="flex-1 min-h-0 flex flex-col overflow-y-auto"
           >
       {!isLoadingAcademyJourneyState && academyJourneyPrompt && (
         <div className="px-4 sm:px-6 py-3">
@@ -3000,16 +2997,14 @@ export default function MayaChatScreen({
       )}
 
       {/* Fixed Bottom Input Area - Show in Photos and Feed tabs */}
-      {/* Positioned above bottom navigation (nav is ~70px tall) */}
       {/* Subtle background for contrast - positioned above nav, z-index below nav */}
       {(activeMayaTab === "photos" || activeMayaTab === "feed") && (
         <div
           ref={inputBarRef}
-          className="fixed left-0 right-0 bg-white/60 backdrop-blur-md border-t border-stone-200/30 px-3 sm:px-4 py-2.5 sm:py-3 z-65 safe-bottom flex flex-col"
+          className="sticky left-0 right-0 bg-white/60 backdrop-blur-md border-t border-stone-200/30 px-3 sm:px-4 py-2.5 sm:py-3 z-65 safe-bottom flex flex-col"
           style={{
-            bottom: '80px', // Position above bottom navigation with extra spacing
+            bottom: 0, // Stick to bottom of scroll container
             paddingBottom: "calc(env(safe-area-inset-bottom) + 0.5rem)",
-            maxHeight: `calc(100vh - 80px)`,
           }}
         >
           {/* Quick Actions */}
