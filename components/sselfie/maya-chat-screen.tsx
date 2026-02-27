@@ -101,7 +101,6 @@ export default function MayaChatScreen({
   const [inputValue, setInputValue] = useState("")
   const [showHistory, setShowHistory] = useState(false)
   const [showNavMenu, setShowNavMenu] = useState(false)
-  const [showChatMenu, setShowChatMenu] = useState(false)
   // savedMessageIds is now provided by useMayaChat hook
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
@@ -3040,22 +3039,6 @@ export default function MayaChatScreen({
             </div>
           )}
 
-          {uploadedImage && (
-            <div className="mb-2 relative inline-block">
-              <div className="relative w-20 h-20 sm:w-16 sm:h-16 rounded-lg overflow-hidden border border-white/60 shadow-lg">
-                <img src={uploadedImage || "/placeholder.svg"} alt="Inspiration" className="w-full h-full object-cover" />
-                <button
-                  onClick={() => setUploadedImage(null)}
-                  className="absolute top-1 right-1 w-6 h-6 bg-stone-950 text-white rounded-full flex items-center justify-center hover:scale-110 transition-transform touch-manipulation"
-                  aria-label="Remove image"
-                >
-                  <X size={14} strokeWidth={2.5} />
-                </button>
-              </div>
-              <p className="text-xs text-stone-600 mt-1 tracking-wide">Inspiration Image</p>
-            </div>
-          )}
-
           {/* Input Area - Unified for both Classic and Pro Mode */}
           {/* Unified Input Component - Works for Photos and Feed tabs */}
           <MayaUnifiedInput
@@ -3085,13 +3068,9 @@ export default function MayaChatScreen({
             placeholder={hasProFeatures ? "What would you like to create?" : "Message Maya..."}
             showSettingsButton={!hasProFeatures}
             onSettingsClick={() => {
-              if (showChatMenu) {
-                // If menu is open, clicking settings button should open settings panel
-                setShowSettings(true)
-              }
-              setShowChatMenu(!showChatMenu)
+              setShowSettings(true)
             }}
-            showChatMenu={showChatMenu}
+            showChatMenu={false}
             showLibraryButton={false} // Removed - image icon handles library access
             onManageLibrary={undefined} // Removed - image icon handles library access
             onNewProject={handleNewChat}

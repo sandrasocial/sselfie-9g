@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import LoadingSpinner from '../loading-spinner'
-import { Typography, Colors, BorderRadius, ButtonLabels } from '@/lib/maya/pro/design-system'
+import { Typography, Colors, BorderRadius } from '@/lib/maya/pro/design-system'
 
 /**
  * Maya Unified Input Component
@@ -181,7 +181,7 @@ export default function MayaUnifiedInput({
 
   const textareaClass = proMode
     ? "focus:outline-none touch-manipulation"
-    : "w-full pl-12 pr-12 py-3 bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] rounded-xl text-[#ffffff] placeholder-[#666666] focus:outline-none focus:ring-1 focus:ring-[rgba(255,255,255,0.2)] focus:bg-[rgba(255,255,255,0.08)] font-medium text-[16px] min-h-[48px] max-h-[80px] transition-all duration-300 resize-none overflow-y-auto leading-relaxed touch-manipulation"
+    : "w-full px-4 py-3 bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] rounded-xl text-[#ffffff] placeholder-[#666666] focus:outline-none focus:ring-1 focus:ring-[rgba(255,255,255,0.2)] focus:bg-[rgba(255,255,255,0.08)] font-medium text-[16px] min-h-[48px] max-h-[80px] transition-all duration-300 resize-none overflow-y-auto leading-relaxed touch-manipulation"
 
   const textareaStyle = proMode
     ? {
@@ -228,7 +228,7 @@ export default function MayaUnifiedInput({
 
   const sendButtonClass = proMode
     ? "touch-manipulation active:scale-95 shrink-0"
-    : "absolute right-2 bottom-2.5 w-9 h-9 flex items-center justify-center text-[#e5e5e5] hover:text-[#ffffff] transition-colors disabled:opacity-50 touch-manipulation active:scale-95 z-10 pointer-events-auto"
+    : "touch-manipulation active:scale-95 shrink-0 flex items-center justify-center min-w-[56px] h-11 rounded-lg border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.1)] text-[#e5e5e5] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
 
   const sendButtonStyle = proMode
     ? {
@@ -345,7 +345,7 @@ export default function MayaUnifiedInput({
           </div>
         )}
 
-        <div className={`flex ${proMode ? 'items-end gap-2 sm:gap-3' : 'gap-2 items-end'}`}>
+        <div className={`flex ${proMode ? 'items-end gap-2 sm:gap-3' : 'items-end gap-2'}`}>
           {/* Image upload button */}
           <button
             type="button"
@@ -385,21 +385,7 @@ export default function MayaUnifiedInput({
           </button>
 
           {/* Text input */}
-          <div className="flex-1 relative">
-            {/* Settings Menu Button - Classic mode only */}
-            {showSettingsButton && onSettingsClick && (
-              <button
-                onClick={onSettingsClick}
-                disabled={isLoading || disabled}
-                className="absolute left-2 bottom-2.5 px-2 h-9 flex items-center justify-center text-[#666666] hover:text-[#ffffff] transition-colors disabled:opacity-50 touch-manipulation active:scale-95 z-20 pointer-events-auto text-[10px] uppercase tracking-[0.2em]"
-                style={{ zIndex: 20 }}
-                aria-label="Settings menu"
-                type="button"
-              >
-                Settings
-              </button>
-            )}
-
+          <div className="flex-1">
             <textarea
               ref={textareaRef}
               value={inputValue}
@@ -434,20 +420,20 @@ export default function MayaUnifiedInput({
               autoComplete="off"
               enterKeyHint="send"
             />
-
-            {/* Send button - Classic Mode: absolute positioned, Pro Mode: in flex */}
-            {!proMode && (
-              <button
-                onClick={handleSubmit}
-                className={sendButtonClass}
-                disabled={isLoading || (!inputValue.trim() && !uploadedImage) || isUploadingImage || disabled}
-                aria-label="Send message"
-                type="button"
-              >
-                <span className="text-[10px] uppercase tracking-[0.2em] font-medium">Send</span>
-              </button>
-            )}
           </div>
+
+          {/* Send button - Classic Mode */}
+          {!proMode && (
+            <button
+              onClick={handleSubmit}
+              className={sendButtonClass}
+              disabled={isLoading || (!inputValue.trim() && !uploadedImage) || isUploadingImage || disabled}
+              aria-label="Send message"
+              type="button"
+            >
+              <span className="text-[10px] uppercase tracking-[0.2em] font-medium">Send</span>
+            </button>
+          )}
 
           {/* Send button - Pro Mode only (in flex layout) */}
           {proMode && (
@@ -488,7 +474,7 @@ export default function MayaUnifiedInput({
         {/* Navigation buttons - New Project and History (replaces Open Library, consistent in both modes) */}
         {/* Text-only buttons with no background, positioned to avoid bottom nav overlap */}
         {/* Added extra padding-bottom on desktop to prevent overlap with bottom navigation (bottom nav is ~80px) */}
-        {(onNewProject || onHistory) && (
+        {(showSettingsButton || onNewProject || onHistory) && (
           <div 
             className="mt-2 flex items-center justify-start gap-4"
             style={{
@@ -496,6 +482,24 @@ export default function MayaUnifiedInput({
               marginBottom: '8px',
             }}
           >
+            {showSettingsButton && onSettingsClick && (
+              <button
+                type="button"
+                onClick={onSettingsClick}
+                className="touch-manipulation active:scale-95 text-xs font-serif font-extralight tracking-[0.2em] uppercase text-stone-500 hover:text-stone-300 transition-colors"
+                style={{
+                  backgroundColor: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '0',
+                  margin: '0',
+                }}
+                aria-label="Open settings"
+                title="Open settings"
+              >
+                Settings
+              </button>
+            )}
             {onNewProject && (
               <button
                 type="button"
