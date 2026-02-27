@@ -100,20 +100,18 @@ Launch triage complete: live Stripe-vs-DB revenue audit + runtime hotfix patch s
 - E-01: Subscriber count logic (DB shows 479 vs Resend 3,021) — not yet resolved
 - E-03: 1,965 hard bounces in subscriber list — not yet cleaned
 - `pnpm type-check` still fails with broad pre-existing repository issues (Next route typing, script typing, and test-runner globals)
-- UX-02 production deploy is blocked: `VERCEL_TOKEN` missing/invalid in this shell (`vercel --prod --yes --token $VERCEL_TOKEN` and `vercel --prod --yes` both failed auth)
 - ACADEMY-01 note: Stripe key in `.env.local` is `sk_live...`; academy prices were created with configured key mode
-- Runtime issue observed in production (`Cannot access 'tu' before initialization`) patched locally in `components/sselfie/pro-mode/ConceptCardPro.tsx`; deploy verification pending
-- Maya Pro mini-product generation prompt was computed but not injected into system prompt; patched locally in `app/api/maya/pro/chat/route.ts`; deploy verification pending
+- Runtime issue observed in production (`Cannot access 'tu' before initialization`) patched and pushed in commit `82009acc`; deploy verification pending
+- Maya Pro mini-product generation prompt was computed but not injected into system prompt; patched and pushed in commit `82009acc`; deploy verification pending
 
 ## Currently In Progress
-Preparing hotfix deployment + verification for:
-- Pro mode TDZ runtime patch (`ConceptCardPro`)
-- Maya Pro product prompt injection (`/api/maya/pro/chat`)
-- Product prompt copy alignment (removed external AI tool reference in `lib/products-system-prompt.ts`)
-- Pricing/value audit report: `docs/codex-tasks/MINI-PRODUCTS-PRICE-VALUE-AUDIT-2026-02-27.md`
+Post-push verification for commit `82009acc` (auto-deploy on Vercel):
+- Confirm no client runtime crash on `/studio` (Pro mode path)
+- Confirm first-time product users receive product-specific generation behavior in Maya Pro
+- Review pricing/value audit report: `docs/codex-tasks/MINI-PRODUCTS-PRICE-VALUE-AUDIT-2026-02-27.md`
 
 ## Blocked On Sandra
-- Provide valid Vercel auth (`VERCEL_TOKEN` or refreshed CLI login) so UX-02 can be deployed and URL recorded
+- Confirm production smoke checks after Vercel completes deploy for commit `82009acc`
 
 ## Next Task
 ACADEMY-02 (checkout flow + Stripe webhook)
