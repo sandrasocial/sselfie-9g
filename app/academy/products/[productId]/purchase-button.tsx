@@ -46,12 +46,12 @@ export default function PurchaseButton({
       <button
         onClick={handleBuy}
         disabled={loading}
-        className={`${inter.className} w-full bg-[#0a0a0a] px-8 py-3 text-white transition-opacity hover:opacity-80 disabled:opacity-50`}
-        style={{ fontWeight: 500, fontSize: "13px", letterSpacing: "0.1em", textTransform: "uppercase" }}
+        className={`${inter.className} w-full rounded-[20px] border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.08)] px-6 py-3 text-[11px] uppercase tracking-[0.22em] text-[#ffffff] transition-colors hover:bg-[rgba(255,255,255,0.14)] disabled:opacity-50`}
+        style={{ fontWeight: 500 }}
       >
-        {loading ? "Opening checkout…" : `Get it — €${price}`}
+        {loading ? "Opening checkout" : `Get it -> ${price} EUR`}
       </button>
-      {error ? <p className={`${inter.className} mt-2 text-xs text-red-500`}>{error}</p> : null}
+      {error ? <p className={`${inter.className} mt-2 text-xs text-red-400`}>{error}</p> : null}
     </div>
   )
 }

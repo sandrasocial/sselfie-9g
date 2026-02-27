@@ -19,38 +19,31 @@ type ProductId = "what_to_say" | "show_up" | "get_paid" | "ai_photo_prompts"
 const PRODUCTS: {
   id: ProductId
   name: string
-  tagline: string
   description: string
   price: number
-  badge?: string
 }[] = [
   {
     id: "what_to_say",
     name: "What To Say",
-    tagline: "Find Your Message In One Hour",
-    description: "Stop staring at a blank screen. Know exactly what to post — starting today.",
+    description: "Know exactly what to post without staring at a blank screen.",
     price: 17,
   },
   {
     id: "show_up",
     name: "Show Up",
-    tagline: "30 Days of Content That Gets You Noticed",
-    description: "Have your entire month of content planned, written, and ready — by Sunday.",
+    description: "Build your 30-day content rhythm so visibility compounds weekly.",
     price: 27,
-    badge: "Most popular",
   },
   {
     id: "get_paid",
     name: "Get Paid",
-    tagline: "Turn Your Visibility Into Your First €500 Online",
-    description: "You're showing up. Now let's make sure the right people notice — and pay you.",
+    description: "Turn your audience attention into your first consistent online income.",
     price: 47,
   },
   {
     id: "ai_photo_prompts",
     name: "AI Photo Prompt Pack",
-    tagline: "Turn Selfies Into Brand Photos — No Photographer Needed",
-    description: "50 done-for-you AI prompts across 10 brand scenarios. Your phone is enough.",
+    description: "Generate stronger brand photos from your phone with guided prompts.",
     price: 17,
   },
 ]
@@ -78,7 +71,7 @@ function BuyButton({
       const data = await res.json()
       if (!res.ok) {
         if (res.status === 401) {
-          router.push("/login?redirect=/academy")
+          router.push("/auth/login?redirect=/academy")
           return
         }
         throw new Error(data.error || "Something went wrong")
@@ -91,129 +84,95 @@ function BuyButton({
   }
 
   return (
-    <div>
+    <div className="mt-5">
       <button
         onClick={handleBuy}
         disabled={loading}
-        className={`${inter.className} mt-6 w-full bg-[#0a0a0a] px-8 py-3 text-white transition-opacity hover:opacity-80 disabled:opacity-50`}
-        style={{ fontWeight: 500, fontSize: "13px", letterSpacing: "0.1em", textTransform: "uppercase" }}
+        className={`${inter.className} text-[11px] uppercase tracking-[0.22em] text-[#ffffff] hover:text-[#f5f5f5] disabled:opacity-50`}
+        style={{ fontWeight: 500 }}
       >
-        {loading ? "Opening checkout…" : `Get it — €${price}`}
+        {loading ? "Opening checkout" : `Get it -> ${price} EUR`}
       </button>
-      {error && (
-        <p className={`${inter.className} mt-2 text-xs text-red-500`}>{error}</p>
-      )}
+      {error && <p className={`${inter.className} mt-2 text-xs text-red-400`}>{error}</p>}
     </div>
   )
 }
 
 export default function AcademyPage() {
   return (
-    <main className="min-h-screen min-w-[375px] bg-[#ffffff]">
-      {/* Header */}
-      <div className="border-b border-[#e5e5e5] px-8 py-12 md:px-16">
-        <p
-          className={`${inter.className} mb-4 text-xs uppercase tracking-[0.5em] text-[#666666]`}
-          style={{ fontWeight: 500 }}
-        >
+    <main className="min-h-screen min-w-[375px] bg-[#0a0a0a] text-[#ffffff]">
+      <section className="px-6 py-16 md:px-20 md:py-20 border-b border-[rgba(255,255,255,0.08)]">
+        <p className={`${inter.className} text-[11px] uppercase tracking-[0.5em] text-[#666666]`} style={{ fontWeight: 500 }}>
           SSELFIE Academy
         </p>
         <h1
-          className={`${cormorant.className} text-5xl uppercase text-[#0a0a0a] md:text-6xl`}
-          style={{ fontWeight: 300, lineHeight: 1.0, letterSpacing: "-0.01em" }}
+          className={`${cormorant.className} mt-6 uppercase text-[#ffffff] text-5xl md:text-7xl`}
+          style={{ fontWeight: 200, lineHeight: 0.95 }}
         >
-          Start here.
+          From 12 EUR
           <br />
-          Build from there.
+          To A Live App
+          <br />
+          In 8 Months.
         </h1>
-        <p
-          className={`${inter.className} mt-6 max-w-md text-base text-[#666666]`}
-          style={{ fontWeight: 300, lineHeight: 1.8 }}
-        >
-          Each mini-product solves one real problem. Pick the one that matches where you&apos;re stuck right now.
-        </p>
-      </div>
+      </section>
 
-      {/* Products grid */}
-      <div className="px-8 py-12 md:px-16">
-        <div className="grid gap-px bg-[#e5e5e5] md:grid-cols-2">
-          {PRODUCTS.map((product) => (
-            <div key={product.id} className="relative bg-[#ffffff] p-10">
-              {product.badge && (
-                <span
-                  className={`${inter.className} mb-4 inline-block bg-[#0a0a0a] px-3 py-1 text-[10px] uppercase tracking-[0.5em] text-white`}
+      <section className="px-6 py-10 md:px-20 md:py-14">
+        <ol className="space-y-0 border-t border-[rgba(255,255,255,0.08)]">
+          {PRODUCTS.map((product, index) => (
+            <li
+              key={product.id}
+              className="grid grid-cols-[80px_1fr] gap-4 border-b border-[rgba(255,255,255,0.08)] py-8 md:grid-cols-[120px_1fr] md:gap-6"
+            >
+              <p
+                className={`${cormorant.className} text-4xl md:text-5xl text-[#f5f5f5]`}
+                style={{ fontWeight: 300, lineHeight: 1 }}
+              >
+                {String(index + 1).padStart(2, "0")}
+              </p>
+
+              <div>
+                <p
+                  className={`${inter.className} text-[11px] uppercase tracking-[0.38em] text-[#ffffff]`}
                   style={{ fontWeight: 500 }}
                 >
-                  {product.badge}
-                </span>
-              )}
-
-              <p
-                className={`${inter.className} text-xs uppercase tracking-[0.5em] text-[#666666]`}
-                style={{ fontWeight: 500 }}
-              >
-                €{product.price}
-              </p>
-
-              <h2
-                className={`${cormorant.className} mt-3 text-3xl uppercase text-[#0a0a0a]`}
-                style={{ fontWeight: 300, lineHeight: 1.1, letterSpacing: "-0.01em" }}
-              >
-                {product.name}
-              </h2>
-
-              <p
-                className={`${inter.className} mt-2 text-sm text-[#0a0a0a]`}
-                style={{ fontWeight: 300 }}
-              >
-                {product.tagline}
-              </p>
-
-              <p
-                className={`${inter.className} mt-4 text-sm text-[#666666]`}
-                style={{ fontWeight: 300, lineHeight: 1.8 }}
-              >
-                {product.description}
-              </p>
-
-              <BuyButton productId={product.id} price={product.price} />
-            </div>
+                  {product.name}
+                </p>
+                <p className={`${inter.className} mt-3 text-sm text-[#666666] max-w-xl`} style={{ fontWeight: 300, lineHeight: 1.8 }}>
+                  {product.description}
+                </p>
+                <p className={`${inter.className} mt-4 text-[11px] uppercase tracking-[0.22em] text-[#ffffff]`} style={{ fontWeight: 500 }}>
+                  {product.price} EUR
+                </p>
+                <BuyButton productId={product.id} price={product.price} />
+              </div>
+            </li>
           ))}
-        </div>
-      </div>
+        </ol>
+      </section>
 
-      {/* Membership upsell */}
-      <div className="border-t border-[#e5e5e5] bg-[#f5f5f5] px-8 py-12 md:px-16">
-        <div className="max-w-2xl">
-          <p
-            className={`${inter.className} mb-4 text-xs uppercase tracking-[0.5em] text-[#666666]`}
-            style={{ fontWeight: 500 }}
-          >
-            Or go all in
-          </p>
-          <h2
-            className={`${cormorant.className} text-4xl uppercase text-[#0a0a0a]`}
-            style={{ fontWeight: 300, lineHeight: 1.1, letterSpacing: "-0.01em" }}
-          >
-            Creator Studio
-            <br />
-            €97 / month
-          </h2>
-          <p
-            className={`${inter.className} mt-4 text-base text-[#666666]`}
-            style={{ fontWeight: 300, lineHeight: 1.8 }}
-          >
-            Your complete AI content team. 200 credits/month. Everything above — plus photos, feed planning, and your brand built on autopilot.
-          </p>
-          <a
-            href="/pricing"
-            className={`${inter.className} mt-6 inline-flex bg-[#0a0a0a] px-8 py-3 text-white transition-opacity hover:opacity-80`}
-            style={{ fontWeight: 500, fontSize: "13px", letterSpacing: "0.1em", textTransform: "uppercase" }}
-          >
-            See what&apos;s included
-          </a>
+      <section className="px-6 pb-16 md:px-20 md:pb-20">
+        <div className="grid grid-cols-3 gap-3 border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] p-5 md:gap-6 md:p-8">
+          <div>
+            <p className={`${cormorant.className} text-3xl md:text-5xl text-[#ffffff]`} style={{ fontWeight: 200 }}>180K+</p>
+            <p className={`${inter.className} mt-1 text-[11px] uppercase tracking-[0.22em] text-[#666666]`} style={{ fontWeight: 300 }}>
+              Audience
+            </p>
+          </div>
+          <div>
+            <p className={`${cormorant.className} text-3xl md:text-5xl text-[#ffffff]`} style={{ fontWeight: 200 }}>12 EUR</p>
+            <p className={`${inter.className} mt-1 text-[11px] uppercase tracking-[0.22em] text-[#666666]`} style={{ fontWeight: 300 }}>
+              Starting Point
+            </p>
+          </div>
+          <div>
+            <p className={`${cormorant.className} text-3xl md:text-5xl text-[#ffffff]`} style={{ fontWeight: 200 }}>8 Months</p>
+            <p className={`${inter.className} mt-1 text-[11px] uppercase tracking-[0.22em] text-[#666666]`} style={{ fontWeight: 300 }}>
+              Build Window
+            </p>
+          </div>
         </div>
-      </div>
+      </section>
     </main>
   )
 }

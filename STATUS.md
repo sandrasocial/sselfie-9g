@@ -4,9 +4,24 @@
 ---
 
 ## Last Updated
-2026-02-27 21:32 CET — Updated by Codex (UX-02 Maya redesign complete)
+2026-02-27 22:12 CET — Updated by Codex (UX-03 Academy redesign complete)
 
 ## Last Task Completed
+UX-03 completed (Academy landing + product/success screens, UI-only):
+- `app/academy/page.tsx`
+- `app/academy/products/[productId]/page.tsx`
+- `app/academy/products/[productId]/purchase-button.tsx`
+- `app/academy/success/page.tsx`
+- Completed fixes:
+- `/academy` converted to dark editorial layout with hero statement, numbered 01–04 product list, and stat block (`180K+ / 12 EUR / 8 Months`)
+- Product detail pages redesigned with dark hero, “What’s included” section, and glass-style purchase/open actions
+- Success page redesigned to dark confirmation flow with product-specific next-step CTA deep-linking into `/studio`
+- Preserved existing checkout + upsell logic (no API/Stripe flow changes)
+- Validation:
+- `pnpm eslint app/academy/page.tsx app/academy/products/[productId]/page.tsx app/academy/products/[productId]/purchase-button.tsx app/academy/success/page.tsx` (0 errors)
+- `pnpm build` passed
+- Vercel preview: `https://v0-sselfie-mb4h9f6s0-sselfie-studio.vercel.app`
+
 UX-02 completed (Maya screen redesign, UI-only):
 - `components/sselfie/maya-chat-screen.tsx`
 - `components/sselfie/maya/maya-header.tsx`
