@@ -33,7 +33,7 @@ export default function MiniProductCard({
       className="flex flex-col w-full max-w-[160px] h-[200px] rounded border border-stone-200 bg-white overflow-hidden transition-all hover:border-stone-300 active:scale-[0.98]"
     >
       {/* Image */}
-      <div className="relative w-full h-[100px] bg-stone-100 overflow-hidden shrink-0">
+      <div className="relative w-full h-[88px] bg-stone-100 overflow-hidden shrink-0">
         {imageUrl ? (
           <img
             src={imageUrl}
@@ -50,7 +50,7 @@ export default function MiniProductCard({
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex flex-col p-3 min-h-0">
+      <div className="flex-1 flex flex-col p-2 min-h-0">
         <h3
           className="font-serif text-[14px] font-extralight tracking-[0.02em] uppercase text-stone-950 leading-tight line-clamp-2"
           style={{ letterSpacing: "0.02em" }}

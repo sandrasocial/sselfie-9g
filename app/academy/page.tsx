@@ -111,7 +111,7 @@ export default function AcademyPage() {
   return (
     <main className="min-h-screen min-w-[375px] bg-[#ffffff]">
       {/* Header */}
-      <div className="border-b border-[#e5e5e5] px-8 py-16 md:px-16">
+      <div className="border-b border-[#e5e5e5] px-8 py-12 md:px-16">
         <p
           className={`${inter.className} mb-4 text-xs uppercase tracking-[0.5em] text-[#666666]`}
           style={{ fontWeight: 500 }}
@@ -135,7 +135,7 @@ export default function AcademyPage() {
       </div>
 
       {/* Products grid */}
-      <div className="px-8 py-16 md:px-16">
+      <div className="px-8 py-12 md:px-16">
         <div className="grid gap-px bg-[#e5e5e5] md:grid-cols-2">
           {PRODUCTS.map((product) => (
             <div key={product.id} className="relative bg-[#ffffff] p-10">
@@ -183,7 +183,7 @@ export default function AcademyPage() {
       </div>
 
       {/* Membership upsell */}
-      <div className="border-t border-[#e5e5e5] bg-[#f5f5f5] px-8 py-16 md:px-16">
+      <div className="border-t border-[#e5e5e5] bg-[#f5f5f5] px-8 py-12 md:px-16">
         <div className="max-w-2xl">
           <p
             className={`${inter.className} mb-4 text-xs uppercase tracking-[0.5em] text-[#666666]`}

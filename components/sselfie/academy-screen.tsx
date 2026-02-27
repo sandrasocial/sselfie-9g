@@ -879,7 +879,7 @@ export default function AcademyScreen() {
 
       {/* Add top padding to content to account for fixed header */}
       <div className="pt-16">
-        <div className="relative h-[50vh] sm:h-[60vh] w-full overflow-hidden">
+        <div className="relative h-[40vh] sm:h-[45vh] w-full overflow-hidden">
           <img
             src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/887-JHliMtQOFFLmPDRmabtQ9DAuiPDTOv-I0ltnA6ru3zz4C0YmuHYD8y66QZDB7.png"
             alt="Academy"
@@ -891,7 +891,7 @@ export default function AcademyScreen() {
           </div>
         </div>
 
-        <div className="px-4 sm:px-6 -mt-12 relative z-10">
+        <div className="px-4 sm:px-6 -mt-8 relative z-10">
           <div className="grid grid-cols-3 gap-2 sm:gap-3 max-w-2xl mx-auto">
             <div className="bg-white border border-stone-200 rounded-lg p-3 sm:p-4 text-center">
               <div className="text-[10px] sm:text-xs tracking-wider uppercase text-stone-500 mb-1">Your Plan</div>
@@ -910,10 +910,10 @@ export default function AcademyScreen() {
           </div>
         </div>
 
-        <div className="space-y-8 mt-12 px-4 sm:px-6">
+        <div className="space-y-6 mt-8 px-4 sm:px-6">
           {/* Slice 1.2: You Have Access — owned Academy mini-products with deep-link CTAs */}
           {ownedForAccess.length > 0 && (
-            <section className="pt-12 pb-6">
+            <section className="pt-6 pb-3">
               <h2
                 className="font-serif text-[12px] font-extralight uppercase tracking-[0.2em] text-stone-500 pb-6"
                 style={{ letterSpacing: "0.2em" }}
@@ -950,7 +950,7 @@ export default function AcademyScreen() {
 
           {/* Get More — non-Studio users: mini-product grid */}
           {showGetMore && (
-            <section className="pt-12 pb-6">
+            <section className="pt-6 pb-3">
               <h2
                 className="font-serif text-[12px] font-extralight uppercase tracking-[0.2em] text-stone-500 pb-6"
                 style={{ letterSpacing: "0.2em" }}
