@@ -98,8 +98,8 @@ export async function POST(
         brandVibe: brandProfile.brand_vibe || feedLayout.brand_vibe || "authentic",
         brandVoice: brandProfile.brand_voice || "authentic and relatable",
         targetAudience: brandProfile.target_audience || "general audience",
-        businessGoals: brandProfile.business_goals || null,
-        researchData: researchData || null,
+        businessGoals: brandProfile.business_goals ?? undefined,
+        researchData: researchData ?? undefined,
       })
       console.log("[v0] [GENERATE-BIO] Bio generation result:", {
         success: bioResult.success,

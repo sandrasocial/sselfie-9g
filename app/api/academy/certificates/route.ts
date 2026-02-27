@@ -7,7 +7,7 @@ import { generateCertificate, getUserCertificates } from "@/lib/data/academy"
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { courseId } = body
+    const { courseId, certificateUrl: certificateUrlFromBody } = body
 
     console.log("[v0] Generate certificate for course:", courseId)
 
@@ -32,18 +32,26 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    // Generate certificate
-    const certificate = await generateCertificate(neonUser.id, Number.parseInt(courseId))
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || "https://sselfie.ai"
+    const resolvedCertificateUrl =
+      certificateUrlFromBody || `${baseUrl}/academy/certificates/${neonUser.id}/${courseId}`
+
+    // Generate certificate record
+    await generateCertificate(neonUser.id, Number.parseInt(courseId), resolvedCertificateUrl)
+
+    const certificates = await getUserCertificates(neonUser.id)
+    const certificate = certificates.find((item: any) => item.course_id === Number.parseInt(courseId)) || null
 
     if (!certificate) {
       return NextResponse.json({ error: "Course not completed or certificate already exists" }, { status: 400 })
     }
 
-    console.log("[v0] Certificate generated:", certificate.certificate_id)
+    console.log("[v0] Certificate generated:", certificate.id)
 
     return NextResponse.json({
       success: true,
       certificate,
+      certificateUrl: resolvedCertificateUrl,
     })
   } catch (error) {
     console.error("[v0] Error generating certificate:", error)

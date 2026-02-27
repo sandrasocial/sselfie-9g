@@ -121,7 +121,7 @@ ${categoryInfo ? `- Reference the user's category (${categoryInfo.name}) and bra
 `
 
     // Build conversation history
-    const conversationHistory: UIMessage[] = []
+    const conversationHistory: any[] = []
 
     // Add chat history if provided
     if (Array.isArray(chatHistory)) {
@@ -142,7 +142,7 @@ ${categoryInfo ? `- Reference the user's category (${categoryInfo.name}) and bra
     }
 
     // Add current user message
-    const currentMessage: UIMessage = {
+    const currentMessage: any = {
       role: "user",
       content: imageUrl
         ? [
@@ -155,7 +155,7 @@ ${categoryInfo ? `- Reference the user's category (${categoryInfo.name}) and bra
     conversationHistory.push(currentMessage)
 
     // Convert to model messages
-    const modelMessages = convertToModelMessages(conversationHistory)
+    const modelMessages = await convertToModelMessages(conversationHistory as any)
 
     console.log("[v0] [PRO MODE] Streaming response with", modelMessages.length, "messages")
 
@@ -166,11 +166,11 @@ ${categoryInfo ? `- Reference the user's category (${categoryInfo.name}) and bra
       messages: modelMessages,
       temperature: 0.7,
       maxTokens: 2000,
-    })
+    } as any)
 
     // Deduct credits after successful response start
     try {
-      await deductCredits(dbUserId, 1, "maya_pro_chat", "Maya Pro chat message")
+      await deductCredits(dbUserId, 1, "image", "Maya Pro chat message")
       console.log("[v0] [PRO MODE] Credits deducted successfully")
     } catch (creditError) {
       console.error("[v0] [PRO MODE] Error deducting credits:", creditError)
@@ -178,7 +178,7 @@ ${categoryInfo ? `- Reference the user's category (${categoryInfo.name}) and bra
     }
 
     // Return streaming response
-    return result.toDataStreamResponse()
+    return result.toTextStreamResponse()
   } catch (error: any) {
     console.error("[v0] [PRO MODE] Chat API error:", error)
     return NextResponse.json(

@@ -13,8 +13,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const { data } = await createServerClient().auth.getUser()
-    const neonUser = await getUserByAuthId(data.user.id)
+    const neonUser = await getUserByAuthId(authUser.id)
 
     if (!neonUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })

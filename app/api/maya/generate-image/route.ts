@@ -293,7 +293,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate seed: customSettings seed, preset seed, or random
-    const seed = customSettings?.seed || qualitySettings.seed || Math.floor(Math.random() * 1000000)
+    const seed = customSettings?.seed ?? (qualitySettings as any).seed ?? Math.floor(Math.random() * 1000000)
 
     // Build Replicate input using shared helper
     // The helper handles conditional extra_lora inclusion (only if scale > 0)

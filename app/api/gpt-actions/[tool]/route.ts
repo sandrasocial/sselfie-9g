@@ -174,9 +174,10 @@ async function handleListFiles(request: NextRequest): Promise<NextResponse> {
         { status: 403 }
       )
     }
+    const resolvedDirPath = pathResult.path
 
     // Check if path exists
-    if (!existsSync(pathResult.path)) {
+    if (!existsSync(resolvedDirPath)) {
       return NextResponse.json(
         { error: "Directory not found" },
         { status: 404 }
@@ -184,7 +185,7 @@ async function handleListFiles(request: NextRequest): Promise<NextResponse> {
     }
 
     // Get file stats
-    const pathStats = await stat(pathResult.path)
+    const pathStats = await stat(resolvedDirPath)
     
     // Check if it's a directory
     if (!pathStats.isDirectory()) {
@@ -195,12 +196,12 @@ async function handleListFiles(request: NextRequest): Promise<NextResponse> {
     }
 
     // Read directory contents
-    const entries = await readdir(pathResult.path, { withFileTypes: true })
+    const entries = await readdir(resolvedDirPath, { withFileTypes: true })
 
     // Filter out denied paths and map to file/directory info
     const files = entries
       .filter((entry) => {
-        const entryPath = join(pathResult.path, entry.name)
+        const entryPath = join(resolvedDirPath, entry.name)
         const relativeEntryPath = relative(getProjectRoot(), entryPath)
         return !isPathDenied(relativeEntryPath)
       })
@@ -208,13 +209,13 @@ async function handleListFiles(request: NextRequest): Promise<NextResponse> {
         return {
           name: entry.name,
           type: entry.isDirectory() ? "directory" : "file",
-          path: relative(getProjectRoot(), join(pathResult.path, entry.name)),
+          path: relative(getProjectRoot(), join(resolvedDirPath, entry.name)),
         }
       })
 
     return NextResponse.json({
       success: true,
-      directoryPath: relative(getProjectRoot(), pathResult.path),
+      directoryPath: relative(getProjectRoot(), resolvedDirPath),
       files,
       count: files.length,
     })

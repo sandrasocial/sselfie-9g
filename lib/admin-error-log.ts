@@ -71,13 +71,19 @@ export async function logAdminError({
       context: logContext,
     })
     
-    logger.error(`[ADMIN-ERROR] Failed to log to DB: ${dbError.message}`, {
-      toolName,
-      code: envelope.code,
-      originalError: errorMessage,
-      dbError: dbError.message,
-      context: logContext,
-    })
+    const dbErr =
+      dbError instanceof Error ? dbError : new Error(typeof dbError?.message === "string" ? dbError.message : "DB log failed")
+    logger.error(
+      `[ADMIN-ERROR] Failed to log to DB: ${dbErr.message}`,
+      dbErr,
+      {
+        toolName,
+        code: envelope.code,
+        originalError: errorMessage,
+        dbError: dbErr.message,
+        context: logContext,
+      },
+    )
   }
 }
 

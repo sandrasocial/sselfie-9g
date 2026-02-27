@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
             Tone: ${content.tone_analysis || ""}
             Hashtags: ${content.hashtags?.join(", ") || ""}`
 
-          await vectorClient.upsert({
+          await vectorClient.namespace(VectorNamespaces.competitorContent).upsert({
             id: vectorId,
             data: textToIndex,
             metadata: {
@@ -49,7 +49,6 @@ export async function POST(request: NextRequest) {
               engagementRate: content.engagement_rate,
               analyzedAt: content.analyzed_at,
             },
-            namespace: VectorNamespaces.competitorContent,
           })
 
           await supabase
@@ -76,7 +75,7 @@ export async function POST(request: NextRequest) {
         for (const campaign of campaigns) {
           const vectorId = generateEmbeddingId(VectorNamespaces.userCampaigns, campaign.id)
 
-          await vectorClient.upsert({
+          await vectorClient.namespace(VectorNamespaces.userCampaigns).upsert({
             id: vectorId,
             data: campaign.content,
             metadata: {
@@ -84,7 +83,6 @@ export async function POST(request: NextRequest) {
               chatId: campaign.chat_id,
               createdAt: campaign.created_at,
             },
-            namespace: VectorNamespaces.userCampaigns,
           })
 
           await supabase

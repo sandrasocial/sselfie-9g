@@ -117,6 +117,7 @@ export async function POST(request: NextRequest) {
       imageUrls = [],
       metadata = {},
       parentDraftId, // If editing existing draft, link to previous version
+      checkDuplicate = false,
     } = body
 
     if (!subjectLine || !bodyHtml) {
@@ -336,4 +337,3 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: error.message || "Failed to update draft" }, { status: 500 })
   }
 }
-

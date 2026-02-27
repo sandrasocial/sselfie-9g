@@ -168,7 +168,7 @@ export async function POST(req: NextRequest) {
     `
     values.push(applicationId)
 
-    const result = await sql.unsafe(query, values)
+    const result = await sql.query(query, values)
     const row = (result as any[])[0]
 
     if (!row) {

@@ -146,8 +146,6 @@ export async function GET() {
             from: "sselfie Admin <hello@sselfie.ai>",
             to: adminEmail,
             subject: `[sselfie Admin] ${alertsToSend.length} Critical Alert${alertsToSend.length > 1 ? 's' : ''}`,
-            tracking_opens: false,
-            tracking_clicks: false,
             html: `
               <!DOCTYPE html>
               <html>

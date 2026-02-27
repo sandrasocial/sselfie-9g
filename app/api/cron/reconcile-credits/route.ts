@@ -202,7 +202,7 @@ async function reconcileStripePayments(days: number) {
     return { processed: 0, stored: 0, skipped: 0, error: "STRIPE_SECRET_KEY missing" }
   }
 
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2024-11-20.acacia" })
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2026-01-28.clover" })
   const startTs = Math.floor((Date.now() - days * 24 * 60 * 60 * 1000) / 1000)
 
   let processed = 0
@@ -220,7 +220,8 @@ async function reconcileStripePayments(days: number) {
       skipped += 1
       continue
     }
-    if (pi.invoice) {
+    const invoiceRef = (pi as any).invoice
+    if (invoiceRef) {
       skipped += 1
       continue
     }
@@ -283,16 +284,17 @@ async function reconcileStripePayments(days: number) {
 
   for (const invoice of invoices.data) {
     processed += 1
+    const invoiceAny = invoice as any
     const subscriptionId =
-      typeof invoice.subscription === "string" ? invoice.subscription : invoice.subscription?.id
+      typeof invoiceAny.subscription === "string" ? invoiceAny.subscription : invoiceAny.subscription?.id
     const customerId = typeof invoice.customer === "string" ? invoice.customer : invoice.customer?.id
     if (!subscriptionId || !customerId) {
       skipped += 1
       continue
     }
     const paymentId =
-      (typeof invoice.charge === "string" ? invoice.charge : invoice.charge?.id) ||
-      (typeof invoice.payment_intent === "string" ? invoice.payment_intent : invoice.payment_intent?.id) ||
+      (typeof invoiceAny.charge === "string" ? invoiceAny.charge : invoiceAny.charge?.id) ||
+      (typeof invoiceAny.payment_intent === "string" ? invoiceAny.payment_intent : invoiceAny.payment_intent?.id) ||
       invoice.id
 
     await sql`

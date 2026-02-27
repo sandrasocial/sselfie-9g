@@ -79,11 +79,10 @@ export async function addOrUpdateResendContact(
       }))
 
     // Try to create the contact (will update if exists)
-    const { data, error } = await resend.contacts.create({
+    const { data, error } = await (resend.contacts as any).create({
       email,
       firstName: firstName || undefined,
       audienceId,
-      // @ts-ignore - Resend types may not be up to date
       tags: formattedTags,
     })
 
@@ -166,7 +165,7 @@ export async function updateContactTags(
     }
 
     // Merge existing tags with new tags
-    const existingTags = existingContact.tags || []
+    const existingTags = (existingContact as any).tags || []
     const existingTagsMap: { [key: string]: string } = {}
 
     for (const tag of existingTags) {
@@ -294,9 +293,8 @@ export async function addContactToSegment(
 
     console.log(`[v0] Adding contact ${email} to segment ${segmentId}`)
 
-    // Use the Resend API to add contact to segment
-    // @ts-ignore - Resend types may not include segments.add yet
-    const { error } = await resend.contacts.segments.add({
+    // Use the Resend API to add contact to segment (SDK typings may lag)
+    const { error } = await (resend as any).contacts.segments.add({
       email,
       segmentId,
       audienceId,

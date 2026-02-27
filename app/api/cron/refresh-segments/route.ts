@@ -30,7 +30,10 @@ export async function GET(request: Request) {
 
     const results = await refreshAllSegments()
 
-    const totalMembers = results.reduce((sum, r) => sum + (r.memberCount || 0), 0)
+    const totalMembers = results.reduce(
+      (sum, r) => sum + ("memberCount" in r && typeof r.memberCount === "number" ? r.memberCount : 0),
+      0,
+    )
 
     console.log(`[v0] [Refresh Segments] Refreshed ${results.length} segments, ${totalMembers} total members`)
 

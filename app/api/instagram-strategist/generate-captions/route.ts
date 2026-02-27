@@ -68,7 +68,7 @@ export async function POST(request: Request) {
 
     console.log(`[v0] Instagram Strategist: Found ${posts.length} posts to write captions for`)
 
-    const captionResults = []
+    const captionResults: Array<{ postId: number; caption: string; hashtags: string[] }> = []
 
     for (let i = 0; i < posts.length; i++) {
       const post = posts[i]

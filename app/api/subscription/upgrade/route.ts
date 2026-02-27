@@ -118,8 +118,9 @@ export async function POST(req: NextRequest) {
         },
       })
       
+      const stripeSubAny = stripeSub as any
       console.log(
-        `[UPGRADE_API] ✅ Subscription upgraded. New price will apply at next renewal (${new Date(stripeSub.current_period_end * 1000).toISOString().split('T')[0]})`
+        `[UPGRADE_API] ✅ Subscription upgraded. New price will apply at next renewal (${stripeSubAny.current_period_end ? new Date(stripeSubAny.current_period_end * 1000).toISOString().split('T')[0] : "unknown"})`
       )
 
       // Reflect change in local database

@@ -280,6 +280,28 @@ No other text, no markdown formatting, just the JSON array.`
       const cacheHitRate = cacheRead > 0 ? (cacheRead / (inputTokens + cacheRead) * 100).toFixed(1) : '0.0'
     }
 
+    const duration = Date.now() - startTime
+    const outputText = (data?.content?.[0]?.text as string | undefined) ?? ""
+
+    let prompts: PromptResult[] = []
+    try {
+      const jsonMatch = outputText.match(/\[[\s\S]*\]/)
+      const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : outputText)
+      if (Array.isArray(parsed)) {
+        prompts = parsed
+          .map((item: any): PromptResult | null => {
+            const position = Number(item?.position)
+            const prompt = typeof item?.prompt === "string" ? item.prompt : ""
+            if (!Number.isFinite(position) || position < 1 || position > 9 || !prompt) return null
+            return { position, prompt }
+          })
+          .filter(Boolean) as PromptResult[]
+      }
+    } catch {
+      // Ignore parsing errors; we'll return an empty list + token usage for debugging.
+      prompts = []
+    }
+
     return NextResponse.json({
       success: true,
       prompts: prompts,

@@ -74,6 +74,7 @@ export async function POST(request: NextRequest) {
     if (!neonUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
+    const neonUserId = neonUser.id
 
     // Get Maya's strategy from request
     const { strategy, customSettings, userModePreference, imageLibrary, saveToPlanner = false } = await request.json()
@@ -168,7 +169,7 @@ export async function POST(request: NextRequest) {
     
     // Calculate total credits needed (strategy + images)
     // Strategy credits: 1 credit (fixed)
-    const strategyCredits = CREDIT_COSTS.STRATEGY || 1
+    const strategyCredits = 1
     
     // Image credits: All posts are Pro Mode × 2 credits each
     const totalImageCredits = proPosts.length * getStudioProCreditCost('2K')
@@ -184,7 +185,7 @@ export async function POST(request: NextRequest) {
       const [model] = await sql`
         SELECT trigger_word, replicate_version_id, replicate_model_id, lora_weights_url
         FROM user_models
-        WHERE user_id = ${neonUser.id}
+        WHERE user_id = ${neonUserId}
         AND training_status = 'completed'
         ORDER BY created_at DESC
         LIMIT 1
@@ -419,7 +420,7 @@ export async function POST(request: NextRequest) {
         )
         RETURNING id
       `
-      feedLayout = result
+      feedLayout = result as { id: number }
     } catch (error: any) {
       if (error?.code === '42703') {
         const [result] = await sql`
@@ -460,7 +461,7 @@ export async function POST(request: NextRequest) {
           )
           RETURNING id
         `
-        feedLayout = result
+        feedLayout = result as { id: number }
       } else {
         throw error
       }

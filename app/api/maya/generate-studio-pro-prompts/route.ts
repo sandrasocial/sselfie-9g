@@ -4,7 +4,6 @@ import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { generateText } from "ai"
 import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
-import { nanoBananaPromptBuilder } from "@/lib/maya/nano-banana-prompt-builder"
 import { generateStudioProPromptsViaAuthority } from "@/lib/maya/prompt-authority"
 
 export async function POST(req: NextRequest) {
@@ -68,7 +67,7 @@ export async function POST(req: NextRequest) {
       model: "anthropic/claude-sonnet-4",
       prompt: promptGenerationPrompt,
       maxTokens: 4000,
-    })
+    } as any)
 
     // Parse JSON from response
     const jsonMatch = text.match(/\[[\s\S]*\]/)

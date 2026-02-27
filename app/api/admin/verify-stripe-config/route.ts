@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
             } : null,
             product: typeof price.product === 'string'
               ? price.product
-              : price.product?.name || price.product?.id,
+              : ("deleted" in price.product ? price.product.id : price.product.name) || price.product.id,
           })
         } catch (error: any) {
           results.priceVerifications.push({

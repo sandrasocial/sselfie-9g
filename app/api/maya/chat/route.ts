@@ -15,7 +15,6 @@ import {
 } from "@/lib/maya/auto-select-mode"
 
 import { NextResponse } from "next/server"
-import type { Request } from "next/server"
 
 export const maxDuration = 60
 
@@ -383,10 +382,10 @@ export async function POST(req: Request) {
         if (m.parts && Array.isArray(m.parts)) {
           const textParts = m.parts.filter((p: any) => p && p.type === "text")
           messageText = textParts.map((p: any) => p.text || "").join(" ")
-        } else if (typeof m.content === "string") {
-          messageText = m.content
-        } else if (Array.isArray(m.content)) {
-          const textParts = m.content.filter((p: any) => p && p.type === "text")
+        } else if (typeof (m as any).content === "string") {
+          messageText = (m as any).content
+        } else if (Array.isArray((m as any).content)) {
+          const textParts = (m as any).content.filter((p: any) => p && p.type === "text")
           messageText = textParts.map((p: any) => p.text || "").join(" ")
         }
         
@@ -1179,7 +1178,7 @@ You: "Love the cozy fall vibe! 🥰 Creating some concepts with warm textures, t
         messages: modelMessages,
         maxTokens: 4096, // CRITICAL: Ensure Maya has enough tokens to complete response including [GENERATE_CONCEPTS] trigger
         temperature: 0.7, // Balanced creativity and consistency
-      })
+      } as any)
     } catch (streamError) {
       console.error("[v0] Error in streamText call:", streamError)
       

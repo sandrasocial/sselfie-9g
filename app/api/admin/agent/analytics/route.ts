@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { neon } from "@neondatabase/serverless"
-import { getStripeLiveMetrics } from "@/lib/stripe/stripe-live-metrics"
+import { getStripeLiveMetrics, type StripeLiveMetrics } from "@/lib/stripe/stripe-live-metrics"
 
 const sql = neon(process.env.DATABASE_URL!)
 const ADMIN_EMAIL = "ssa@ssasocial.com"
@@ -83,12 +83,12 @@ export async function GET(request: Request) {
       `
 
       // Get real-time Stripe metrics (cached, 5-min TTL)
-      let stripeMetrics
+      let stripeMetrics: StripeLiveMetrics | null = null
       try {
         const timeoutPromise = new Promise((_, reject) =>
           setTimeout(() => reject(new Error("Stripe metrics timeout")), 20000)
         )
-        stripeMetrics = await Promise.race([getStripeLiveMetrics(), timeoutPromise])
+        stripeMetrics = (await Promise.race([getStripeLiveMetrics(), timeoutPromise])) as StripeLiveMetrics
       } catch (error: any) {
         console.error("[Analytics] Error fetching Stripe live metrics:", error.message || error)
         stripeMetrics = null

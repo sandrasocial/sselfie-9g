@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     const sql = neon(process.env.DATABASE_URL!)
     
     // Authenticate user
-    const cookieStore = cookies()
+    const cookieStore = await cookies()
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -112,9 +112,9 @@ export async function POST(req: NextRequest) {
     let prediction
     try {
       prediction = await generateWithNanoBanana({
-        inputImages,
+        image_input: inputImages,
         prompt: scene.maya_technical_prompt,
-        aspectRatio: aspectRatio as any,
+        aspect_ratio: aspectRatio as any,
         resolution: resolution as any,
       })
     } catch (error) {
@@ -156,7 +156,7 @@ export async function POST(req: NextRequest) {
     await sql`
       UPDATE scene_composer_scenes
       SET 
-        prediction_id = ${prediction.id},
+        prediction_id = ${prediction.predictionId},
         generation_status = 'processing',
         aspect_ratio = ${aspectRatio},
         resolution = ${resolution},
@@ -164,12 +164,12 @@ export async function POST(req: NextRequest) {
       WHERE id = ${sceneId}
     `
 
-    console.log("[SCENE-COMPOSER] Generation started:", prediction.id)
+    console.log("[SCENE-COMPOSER] Generation started:", prediction.predictionId)
 
     return NextResponse.json({
       success: true,
       sceneId,
-      predictionId: prediction.id,
+      predictionId: prediction.predictionId,
       creditsDeducted: creditCost,
       status: "processing",
     })

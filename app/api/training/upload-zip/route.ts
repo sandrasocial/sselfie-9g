@@ -308,7 +308,7 @@ export async function POST(request: Request) {
     const replicate = getReplicateClient()
     const replicateUsername = process.env.REPLICATE_USERNAME || "sandrasocial"
 
-    const destination = `${replicateUsername}/${destinationModelName}`
+    const destination = `${replicateUsername}/${destinationModelName}` as `${string}/${string}`
 
     console.log(
       "[v0] Using destination:",

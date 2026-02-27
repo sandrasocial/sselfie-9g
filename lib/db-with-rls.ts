@@ -112,7 +112,7 @@ export async function batchInsert<T>(
     const flatValues = batch.flat()
     const query = `INSERT INTO ${tableName} (${columns.join(", ")}) VALUES ${values}`
 
-    await sql(query, flatValues)
+    await (sql as any)(query, flatValues)
     console.log(`[v0] [DB] Inserted batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(rows.length / batchSize)}`)
 
     // Add small delay between batches to avoid rate limits

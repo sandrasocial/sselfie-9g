@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Loader2 } from "lucide-react"
-import { ACADEMY_PRODUCTS } from "@/lib/products"
+import { ACADEMY_PRODUCTS, type AcademyProductId } from "@/lib/products"
 
 interface Course {
   id: string
@@ -97,8 +97,12 @@ export default function AdminAcademyPage() {
   const [uploadProgress, setUploadProgress] = useState<string>("")
 
   const academyProductOptions = Object.values(ACADEMY_PRODUCTS)
-  const defaultCourseId = academyProductOptions[0]?.id ?? "what_to_say"
-  const [grantForm, setGrantForm] = useState({
+  const defaultCourseId = (academyProductOptions[0]?.id ?? "what_to_say") as AcademyProductId
+  const [grantForm, setGrantForm] = useState<{
+    email: string
+    courseId: AcademyProductId
+    reason: string
+  }>({
     email: "",
     courseId: defaultCourseId,
     reason: "",
@@ -1288,7 +1292,9 @@ export default function AdminAcademyPage() {
                 <select
                   id="grant-course"
                   value={grantForm.courseId}
-                  onChange={(event) => setGrantForm({ ...grantForm, courseId: event.target.value })}
+                  onChange={(event) =>
+                    setGrantForm({ ...grantForm, courseId: event.target.value as AcademyProductId })
+                  }
                   className="w-full rounded-md border border-stone-200 bg-white px-3 py-2 text-sm text-stone-900"
                 >
                   {academyProductOptions.map((product) => (

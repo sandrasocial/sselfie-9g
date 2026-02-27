@@ -55,7 +55,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ fee
     console.log("[v0] [REGENERATE-POST] Post generation mode:", { generationMode, proModeType, storedGenerationMode: post.generation_mode })
 
     // Check credits based on generation mode (Pro Mode = 2 credits, Classic = 1 credit)
-    const creditsNeeded = generationMode === 'pro' ? getStudioProCreditCost('2K') : CREDIT_COSTS.IMAGE
+    const creditsNeeded = getStudioProCreditCost('2K')
     const hasCredits = await checkCredits(neonUser.id.toString(), creditsNeeded)
     if (!hasCredits) {
       console.error("[v0] [REGENERATE-POST] Insufficient credits")

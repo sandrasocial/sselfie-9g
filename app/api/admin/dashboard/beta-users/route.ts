@@ -52,12 +52,14 @@ export async function GET() {
 
       try {
         const subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId, {
-          expand: ["items.data.price", "discount.coupon"],
+          expand: ["items.data.price", "discounts.coupon"],
         })
 
         const price = subscription.items.data[0]?.price
         const unitAmount = price?.unit_amount ?? null
-        const coupon = (subscription.discount?.coupon as any) || null
+        const discount = Array.isArray(subscription.discounts) ? subscription.discounts[0] : null
+        const discountObj = typeof discount === "string" ? null : discount
+        const coupon = (discountObj as any)?.coupon || null
         const percentOff = typeof coupon?.percent_off === "number" ? coupon.percent_off : 0
         const duration = typeof coupon?.duration === "string" ? coupon.duration : ""
 

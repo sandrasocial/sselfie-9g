@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     // Generate unique referral code
     // Format: First 3 letters of email + random 6-digit number
     const emailPrefix = neonUser.email?.split("@")[0].toUpperCase().slice(0, 3) || "SSE"
-    let referralCode: string
+    let referralCode = ""
     let isUnique = false
     let attempts = 0
     const maxAttempts = 10

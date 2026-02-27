@@ -1,26 +1,27 @@
-import { neon } from "@neondatabase/serverless"
+import { neon, type NeonQueryFunction } from "@neondatabase/serverless"
 
-let dbInstance: ReturnType<typeof neon> | null = null
+type SqlClient = NeonQueryFunction<false, false>
+let dbInstance: SqlClient | null = null
 
 /**
  * Get or create a singleton database connection.
  * This prevents creating new connections on every API request
  * which would exhaust the connection pool under load
  */
-function getOrCreateDb() {
+function getOrCreateDb(): SqlClient {
   if (!dbInstance) {
     if (!process.env.DATABASE_URL) {
       throw new Error("DATABASE_URL environment variable is not set")
     }
     // All queries run server-side, so the warning is not applicable
-    dbInstance = neon(process.env.DATABASE_URL, {
+    dbInstance = neon<false, false>(process.env.DATABASE_URL, {
       disableWarningInBrowsers: true,
     })
   }
   return dbInstance
 }
 
-export function getDbClient() {
+export function getDbClient(): SqlClient {
   return getOrCreateDb()
 }
 

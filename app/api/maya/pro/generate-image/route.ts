@@ -141,7 +141,7 @@ export async function POST(req: NextRequest) {
         await deductCredits(
           dbUserId,
           creditCost,
-          "maya_pro_image",
+          "image",
           `Pro Mode image generation (${resolution})`
         )
         console.log("[v0] [PRO MODE] Credits deducted:", creditCost)

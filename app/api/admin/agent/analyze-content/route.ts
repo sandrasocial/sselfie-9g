@@ -110,8 +110,9 @@ export async function POST(req: NextRequest) {
 
       console.log("[v0] Processing file upload:", file.name, file.type, file.size)
       
+      let blob: { url: string } | null = null
       try {
-        const blob = await put(file.name, file, {
+        blob = await put(file.name, file, {
           access: "public",
           addRandomSuffix: true,
         })
@@ -126,7 +127,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({
           transcription,
           contentType: file.type.includes("video") ? "uploaded video" : "uploaded audio",
-          fileUrl: blob.url,
+          fileUrl: blob?.url || null,
         })
       } catch (transcriptionError: any) {
         console.error("[v0] Transcription failed, but blob upload succeeded")
@@ -134,7 +135,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({
           transcription: `[${file.type.includes('video') ? 'Video' : 'Audio'} file uploaded: ${file.name}]\n\n${transcriptionError.message}\n\nThe file has been uploaded successfully. You can still analyze the visual content or provide a manual description.`,
           contentType: file.type.includes("video") ? "uploaded video (transcription unavailable)" : "uploaded audio (transcription unavailable)",
-          fileUrl: blob.url,
+          fileUrl: blob?.url || null,
           warning: transcriptionError.message
         })
       }

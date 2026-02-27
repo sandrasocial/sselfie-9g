@@ -47,9 +47,9 @@ export async function GET(request: Request) {
       success: true,
       message: "Test email sent successfully",
       recipient: process.env.ADMIN_EMAIL || "test@example.com",
-      messageId: result.id,
+      messageId: result.messageId,
     })
-    apiLogger.success(200, { messageId: result.id })
+    apiLogger.success(200, { messageId: result.messageId })
     return response
   } catch (error: any) {
     console.error("[v0] Email test failed:", error)

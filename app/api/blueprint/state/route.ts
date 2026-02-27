@@ -234,7 +234,7 @@ export async function POST(req: NextRequest) {
         updateValues.push(neonUser.id)
         
         const query = `UPDATE blueprint_subscribers SET ${updateFields.join(', ')} WHERE user_id = $${updateValues.length}`
-        await sql.unsafe(query, updateValues)
+        await sql.query(query, updateValues)
       }
     } else {
       // Create new blueprint state for user

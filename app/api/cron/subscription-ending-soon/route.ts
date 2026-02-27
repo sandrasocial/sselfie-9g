@@ -57,16 +57,17 @@ export async function GET(request: Request) {
       })
 
       subscriptions.data.forEach((sub) => {
-        if (!sub.livemode) return
-        if (!sub.cancel_at_period_end) return
-        if (!sub.current_period_end) return
-        if (sub.current_period_end < now || sub.current_period_end > sevenDaysFromNow) return
-        if (sub.status !== "active" && sub.status !== "trialing") return
+        const subAny = sub as any
+        if (!subAny.livemode) return
+        if (!subAny.cancel_at_period_end) return
+        if (!subAny.current_period_end) return
+        if (subAny.current_period_end < now || subAny.current_period_end > sevenDaysFromNow) return
+        if (subAny.status !== "active" && subAny.status !== "trialing") return
         endingSoonSubs.push({
-          id: sub.id,
-          current_period_end: sub.current_period_end,
-          customer: typeof sub.customer === "string" ? sub.customer : sub.customer?.id || null,
-          status: sub.status,
+          id: subAny.id,
+          current_period_end: subAny.current_period_end,
+          customer: typeof subAny.customer === "string" ? subAny.customer : subAny.customer?.id || null,
+          status: subAny.status,
         })
       })
 

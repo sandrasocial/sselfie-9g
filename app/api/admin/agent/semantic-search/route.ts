@@ -96,7 +96,8 @@ export async function PUT(request: NextRequest) {
     const vectorId = generateEmbeddingId(namespace || VectorNamespaces.competitorContent, contentId)
 
     // Upsert to vector database
-    await vectorClient.upsert({
+    const targetNamespace = namespace || VectorNamespaces.competitorContent
+    await vectorClient.namespace(targetNamespace).upsert({
       id: vectorId,
       data: text,
       metadata: {
@@ -104,11 +105,10 @@ export async function PUT(request: NextRequest) {
         contentId,
         indexedAt: new Date().toISOString(),
       },
-      namespace: namespace || VectorNamespaces.competitorContent,
     })
 
     // Update database to mark as indexed
-    if (namespace === VectorNamespaces.competitorContent) {
+    if (targetNamespace === VectorNamespaces.competitorContent) {
       await supabase
         .from("competitor_content_analysis")
         .update({
@@ -116,7 +116,7 @@ export async function PUT(request: NextRequest) {
           vector_id: vectorId,
         })
         .eq("id", contentId)
-    } else if (namespace === VectorNamespaces.userCampaigns) {
+    } else if (targetNamespace === VectorNamespaces.userCampaigns) {
       await supabase
         .from("maya_chat_messages")
         .update({

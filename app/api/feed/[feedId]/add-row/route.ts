@@ -161,44 +161,7 @@ Be creative and ensure these posts feel like a natural extension of the existing
 
     console.log("[v0] [ADD-ROW] Posts saved, generating captions...")
 
-    // Generate captions for new posts
-    try {
-      const newPostsForCaptions = await sql`
-        SELECT id, prompt, post_type, position
-        FROM feed_posts
-        WHERE feed_layout_id = ${feedId}
-        AND position >= ${startPosition}
-        ORDER BY position ASC
-      `
-
-      // Generate captions for each new post
-      for (const post of newPostsForCaptions) {
-        try {
-          const { generateCaptionForPost } = await import("@/lib/instagram-strategist/caption-logic")
-          const caption = await generateCaptionForPost({
-            postPrompt: post.prompt,
-            postType: post.post_type,
-            brandVibe: feed.brand_vibe,
-            businessType: feed.business_type,
-            feedStory: feed.feed_story,
-            researchData: feed.research_insights,
-          })
-
-          await sql`
-            UPDATE feed_posts
-            SET caption = ${caption}
-            WHERE id = ${post.id}
-          `
-        } catch (captionError) {
-          console.error("[v0] [ADD-ROW] Caption generation error for post:", post.id, captionError)
-        }
-      }
-
-      console.log("[v0] [ADD-ROW] Captions generated for", newPostsForCaptions.length, "posts")
-    } catch (captionError) {
-      console.error("[v0] [ADD-ROW] Caption generation error:", captionError)
-      // Continue even if captions fail
-    }
+    // Caption generation is handled elsewhere; posts are inserted with placeholders.
 
     // Fetch the complete new posts with captions
     const newPostsData = await sql`

@@ -149,7 +149,7 @@ export async function GET(request: Request) {
 
     const sequenceJobs: Array<{
       tagKey: string
-      query: typeof sql
+      query: ReturnType<typeof sql>
     }> = [
       {
         tagKey: "sequence_blueprint_day_3",

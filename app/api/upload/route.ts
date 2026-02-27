@@ -72,7 +72,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         
         const file = formData.get("file") || formData.get("image")
         
-        if (!file || !(file instanceof File || file instanceof Blob)) {
+        if (!file || !(file instanceof Blob)) {
           console.error("[v0] No valid file in FormData")
           
           // If content-type was null and no file, try JSON parsing as fallback
@@ -105,7 +105,7 @@ export async function POST(request: Request): Promise<NextResponse> {
           return NextResponse.json({ error: "No file provided in request" }, { status: 400 })
         }
         
-        const fileName = file instanceof File ? file.name : `upload-${Date.now()}.png`
+        const fileName = typeof (file as any).name === "string" ? (file as any).name : `upload-${Date.now()}.png`
         console.log("[v0] Uploading file:", fileName, "Size:", file.size, "bytes")
         
         // Upload to Blob storage

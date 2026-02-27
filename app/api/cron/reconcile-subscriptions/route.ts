@@ -274,9 +274,10 @@ export async function GET(request: NextRequest) {
         }
 
         const stripeStatus = sub.status || "canceled"
-        const cps = sub.current_period_start ? new Date(sub.current_period_start * 1000) : null
-        const cpe = sub.current_period_end ? new Date(sub.current_period_end * 1000) : null
-        const isTestMode = !(sub as any).livemode
+        const subAny = sub as any
+        const cps = subAny.current_period_start ? new Date(subAny.current_period_start * 1000) : null
+        const cpe = subAny.current_period_end ? new Date(subAny.current_period_end * 1000) : null
+        const isTestMode = !subAny.livemode
 
         const existingByStripe = await sql`
           SELECT id

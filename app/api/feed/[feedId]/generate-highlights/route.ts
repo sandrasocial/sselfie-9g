@@ -146,7 +146,7 @@ Return a JSON array of 3-4 highlight titles (maximum 4) that reflect the brand's
     let highlights: string[] = []
     try {
       // Extract JSON array from response (handle markdown code blocks)
-      const jsonMatch = highlightsText.match(/\[.*?\]/s)
+      const jsonMatch = highlightsText.match(/\[[\s\S]*?\]/)
       if (jsonMatch) {
         highlights = JSON.parse(jsonMatch[0])
       } else {

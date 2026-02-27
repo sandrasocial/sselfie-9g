@@ -1208,17 +1208,6 @@ export async function POST(request: NextRequest) {
               console.log(`[v0] 💎 Paid Blueprint purchase from ${customerEmail} - Payment confirmed`)
               console.log(`[v0] 💎 Processing paid blueprint purchase for email: ${customerEmail}`)
               
-              // Track purchase event (server-side analytics)
-              try {
-                const { trackPurchase } = await import("@/lib/analytics")
-                const purchaseAmount = paymentAmountCents ? paymentAmountCents / 100 : 0
-                trackPurchase(purchaseAmount, "USD", [{ product_type: "paid_blueprint", quantity: 1 }])
-                console.log(`[v0] ✅ Tracked purchase event: $${purchaseAmount.toFixed(2)}`)
-              } catch (analyticsError) {
-                console.error(`[v0] ⚠️ Failed to track purchase analytics:`, analyticsError)
-                // Don't fail webhook if analytics fails
-              }
-              
               const isTestMode = !event.livemode
               const paymentIntentId = typeof session.payment_intent === 'string'
                 ? session.payment_intent
@@ -1250,8 +1239,19 @@ export async function POST(request: NextRequest) {
                 customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id || null
               }
               
+              // Track purchase event (server-side analytics) - best effort
+              try {
+                const { trackPurchase } = await import("@/lib/analytics")
+                const purchaseAmount = paymentAmountCents ? paymentAmountCents / 100 : 0
+                trackPurchase(purchaseAmount, "USD", [{ product_type: "paid_blueprint", quantity: 1 }])
+                console.log(`[v0] ✅ Tracked purchase event: $${purchaseAmount.toFixed(2)}`)
+              } catch (analyticsError) {
+                console.error(`[v0] ⚠️ Failed to track purchase analytics:`, analyticsError)
+              }
+
               // Store payment in stripe_payments table (comprehensive revenue tracking)
               // Fix: Handle $0 payments (discount codes) - allow processing even if paymentIntentId is null
+              let userId: string | null = session.metadata?.user_id || null
               const isZeroAmountPayment = session.amount_total === 0 || paymentAmountCents === 0
               const paymentIdForStorage = paymentIntentId || session.id // Use session.id for $0 payments (no payment intent)
               const amountForStorage = paymentAmountCents || 0 // Use 0 for $0 payments
@@ -1329,7 +1329,6 @@ export async function POST(request: NextRequest) {
               
               // Decision 1: Grant 60 credits for paid blueprint purchase (30 images × 2 credits per image)
               // Fix #2: Resolve user_id (priority: session metadata, then email lookup)
-              let userId: string | null = session.metadata?.user_id || null
               
               if (userId) {
                 console.log(`[v0] Using user_id from session.metadata (authenticated checkout): ${userId}`)
@@ -1892,7 +1891,9 @@ export async function POST(request: NextRequest) {
                 }
 
                 if (session.subscription) {
-                  const subscriptionData = await stripe.subscriptions.retrieve(session.subscription as string)
+                  const subscriptionData = (await stripe.subscriptions.retrieve(
+                    session.subscription as string,
+                  )) as any
 
                   console.log(`[v0] Creating subscription record for existing user ${userId}`)
 
@@ -2135,7 +2136,7 @@ export async function POST(request: NextRequest) {
                   },
                 })
 
-                const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
+                const subscription = (await stripe.subscriptions.retrieve(session.subscription as string)) as any
                 await stripe.subscriptions.update(subscription.id, {
                   metadata: {
                     ...subscription.metadata,
@@ -2148,7 +2149,9 @@ export async function POST(request: NextRequest) {
                 console.log(`[v0] Account created successfully for ${customerEmail}`)
 
                 if (userId && session.subscription) {
-                  const subscriptionData = await stripe.subscriptions.retrieve(session.subscription as string)
+                  const subscriptionData = (await stripe.subscriptions.retrieve(
+                    session.subscription as string,
+                  )) as any
 
                   console.log(`[v0] Creating subscription record in database for user ${userId}`)
 
@@ -2229,7 +2232,9 @@ export async function POST(request: NextRequest) {
               )
 
               if (session.subscription) {
-                const subscriptionData = await stripe.subscriptions.retrieve(session.subscription as string)
+                const subscriptionData = (await stripe.subscriptions.retrieve(
+                  session.subscription as string,
+                )) as any
 
                 console.log(`[v0] Creating subscription record in database for existing user ${userId}`)
 
@@ -2747,7 +2752,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Update subscription period
-        const subscription = await stripe.subscriptions.retrieve(invoice.subscription)
+        const subscription = (await stripe.subscriptions.retrieve(invoice.subscription)) as any
         await sql`
           UPDATE subscriptions
           SET 

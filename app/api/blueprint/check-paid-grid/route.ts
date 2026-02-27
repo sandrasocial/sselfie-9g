@@ -159,7 +159,7 @@ export async function GET(req: NextRequest) {
         // - create_missing: true to create array/expand if needed
         // Build the path array as a string literal for the SQL query
         const pathArray = `ARRAY['${targetIndex}']`
-        const updateResult = await sql.unsafe(`
+        const updateResult = await sql.query(`
           UPDATE blueprint_subscribers
           SET paid_blueprint_photo_urls = jsonb_set(
             COALESCE(paid_blueprint_photo_urls, '[]'::jsonb),

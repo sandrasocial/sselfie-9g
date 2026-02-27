@@ -34,6 +34,8 @@ import { ensureTriggerWordPrefix, ensureGenderInPrompt } from '@/lib/replicate-h
 import { createHash } from 'crypto'
 import { PromptGenerator, type WorkbenchContext, type PromptSuggestion } from './prompt-generator'
 
+export type { WorkbenchContext, PromptSuggestion } from './prompt-generator'
+
 // ============================================================================
 // TYPES
 // ============================================================================

@@ -6,7 +6,7 @@ import { submitExercise } from "@/lib/data/academy"
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { exerciseId, answer } = body
+    const { exerciseId, answer, isCorrect: isCorrectInput } = body
 
     console.log("[v0] Submit exercise:", { exerciseId, answerLength: answer?.length })
 
@@ -32,13 +32,15 @@ export async function POST(req: NextRequest) {
     }
 
     // Submit exercise
-    const submission = await submitExercise(neonUser.id, Number.parseInt(exerciseId), answer)
+    const isCorrect = typeof isCorrectInput === "boolean" ? isCorrectInput : false
+    await submitExercise(neonUser.id, Number.parseInt(exerciseId), answer, isCorrect)
 
-    console.log("[v0] Exercise submitted:", submission)
+    console.log("[v0] Exercise submitted:", { exerciseId, isCorrect })
 
     return NextResponse.json({
       success: true,
-      submission,
+      exerciseId,
+      isCorrect,
     })
   } catch (error) {
     console.error("[v0] Error submitting exercise:", error)

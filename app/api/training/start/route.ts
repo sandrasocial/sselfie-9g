@@ -96,12 +96,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "At least 5 training images are required" }, { status: 400 })
     }
 
+    // Generate trigger word (must exist before creating DB model record)
+    const triggerWord = `user${neonUser.id}`
+
     // Create training model record
     const model = await createTrainingModel(
       neonUser.id,
       modelName || `${neonUser.display_name || "User"}'s Model`,
       modelType || "flux-dev-lora",
-      gender,
+      gender || "person",
+      triggerWord,
     )
 
     if (gender) {
@@ -133,9 +137,6 @@ export async function POST(request: NextRequest) {
         })
       }
 
-      // Generate trigger word
-      const triggerWord = `user${neonUser.id}`
-
       await deductCredits(neonUser.id, CREDIT_COSTS.TRAINING, "training", `Training model: ${modelName}`)
       console.log("[v0] Deducted", CREDIT_COSTS.TRAINING, "credits for training")
 
@@ -163,7 +164,7 @@ export async function POST(request: NextRequest) {
         ? existingModelCheck[0].replicate_model_id.split('/')[1] // Extract model name from full ID
         : `user-${neonUser.id.substring(0, 8)}-selfie-lora`
       
-      const destination = `${process.env.REPLICATE_USERNAME || "sandrasocial"}/${destinationModelName}`
+      const destination = `${process.env.REPLICATE_USERNAME || "sandrasocial"}/${destinationModelName}` as `${string}/${string}`
       
       // For retraining, preserve original trigger word
       const finalTriggerWord = isRetraining && existingModelCheck[0].trigger_word

@@ -115,11 +115,11 @@ export async function POST(
       shotType: post.post_type || 'portrait',
       purpose: post.content_pillar || 'general',
       emotionalTone: 'warm',
-      brandProfile: brandProfile || {
+      brandProfile: (brandProfile as any) || {
         business_type: post.business_type || 'Personal Brand',
         brand_vibe: post.brand_vibe || 'Strategic',
-        brand_voice: brandProfile?.brand_voice || 'Authentic',
-        target_audience: brandProfile?.target_audience || 'Entrepreneurs',
+        brand_voice: 'Authentic',
+        target_audience: 'Entrepreneurs',
       },
       targetAudience: brandProfile?.target_audience || 'general audience',
       brandVoice: brandProfile?.brand_voice || 'authentic',

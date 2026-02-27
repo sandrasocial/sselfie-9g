@@ -141,7 +141,7 @@ export async function GET(request: NextRequest) {
       started_at: model.started_at,
     })
 
-    const debugInfo = {
+    const debugInfo: any = {
       hasTrainingId: !!model.training_id,
       trainingId: model.training_id,
       trainingStatus: model.training_status,
@@ -216,7 +216,8 @@ export async function GET(request: NextRequest) {
           debugInfo.progressSource = "completed"
         } else if (training.status === "processing" || training.status === "starting") {
           if (training.metrics && typeof training.metrics === "object" && "progress" in training.metrics) {
-            progress = Math.round(training.metrics.progress * 100)
+            const metricsAny = training.metrics as any
+            progress = Math.round((typeof metricsAny.progress === "number" ? metricsAny.progress : 0) * 100)
             debugInfo.progressSource = "replicate_metrics"
             debugInfo.metricsProgress = progress
             console.log("[v0] Progress from Replicate metrics:", progress)

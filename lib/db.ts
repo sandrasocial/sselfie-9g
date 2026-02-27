@@ -1,15 +1,17 @@
 import "server-only"
 
-import { neon as createNeonClient } from "@neondatabase/serverless"
+import { neon as createNeonClient, type NeonQueryFunction } from "@neondatabase/serverless"
 
-let sqlInstance: ReturnType<typeof createNeonClient> | null = null
+type SqlClient = NeonQueryFunction<false, false>
 
-export function getDb() {
+let sqlInstance: SqlClient | null = null
+
+export function getDb(): SqlClient {
   if (!sqlInstance) {
     if (!process.env.DATABASE_URL) {
       throw new Error("DATABASE_URL environment variable is not set")
     }
-    sqlInstance = createNeonClient(process.env.DATABASE_URL)
+    sqlInstance = createNeonClient<false, false>(process.env.DATABASE_URL)
     console.log("[v0] [DB] Created singleton database connection")
   }
   return sqlInstance
@@ -40,7 +42,7 @@ export async function batchInsert<T>(
     const flatValues = batch.flat()
     const query = `INSERT INTO ${tableName} (${columns.join(", ")}) VALUES ${values}`
 
-    await sql(query, flatValues)
+    await (sql as any)(query, flatValues)
     console.log(`[v0] [DB] Inserted batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(rows.length / batchSize)}`)
 
     // Add small delay between batches to avoid rate limits

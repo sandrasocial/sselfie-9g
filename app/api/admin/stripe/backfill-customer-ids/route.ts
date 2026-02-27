@@ -129,9 +129,9 @@ async function backfillCustomerIdForEmail(
   
   try {
     // Get user from database
-    users = await sql`
+    users = (await sql`
       SELECT id, email, stripe_customer_id FROM users WHERE email = ${email} LIMIT 1
-    `
+    `) as Array<{ id: string; email: string; stripe_customer_id: string | null }>
 
     if (users.length === 0) {
       return {

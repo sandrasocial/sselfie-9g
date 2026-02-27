@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check credits (3 credits per grid for 4K)
-    const hasCredits = await checkCredits(adminCheck.userId, PRO_PHOTOSHOOT_4K_CREDITS)
+    const hasCredits = await checkCredits(String(adminCheck.userId), PRO_PHOTOSHOOT_4K_CREDITS)
     if (!hasCredits) {
       return NextResponse.json(
         { error: `Insufficient credits. Pro Photoshoot grids require ${PRO_PHOTOSHOOT_4K_CREDITS} credits each (4K resolution).` },
@@ -184,7 +184,7 @@ export async function POST(request: NextRequest) {
 
     // Deduct credits BEFORE generation
     const creditResult = await deductCredits(
-      adminCheck.userId,
+      String(adminCheck.userId),
       PRO_PHOTOSHOOT_4K_CREDITS,
       "image",
       `Pro Photoshoot Grid ${gridNumber} (4K)`

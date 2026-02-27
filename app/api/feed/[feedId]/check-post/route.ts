@@ -39,6 +39,8 @@ async function getReplicatePredictionWithRetry(predictionId: string, maxRetries 
 }
 
 export async function GET(request: Request) {
+  let predictionId: string | null = null
+  let postId: string | null = null
   try {
     const { user, error: authError } = await getAuthenticatedUserWithRetry()
 
@@ -52,8 +54,8 @@ export async function GET(request: Request) {
     }
 
     const { searchParams } = new URL(request.url)
-    const predictionId = searchParams.get("predictionId")
-    const postId = searchParams.get("postId")
+    predictionId = searchParams.get("predictionId")
+    postId = searchParams.get("postId")
 
     console.log("[v0] Check-post API called with:", { predictionId, postId })
 

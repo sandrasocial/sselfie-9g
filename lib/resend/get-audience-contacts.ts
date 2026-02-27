@@ -1,5 +1,18 @@
 import { getOrFetch, CACHE_TTL } from "@/lib/cache"
 
+export interface ResendAudienceContact {
+  id: string
+  email: string
+  first_name?: string | null
+  last_name?: string | null
+  firstName?: string | null
+  lastName?: string | null
+  created_at?: string | null
+  createdAt?: string | null
+  tags?: string[]
+  unsubscribed?: boolean
+}
+
 async function sleep(ms: number) {
   await new Promise((resolve) => setTimeout(resolve, ms))
 }
@@ -50,7 +63,7 @@ async function fetchWithRetry(
   throw lastErr instanceof Error ? lastErr : new Error("Resend fetch failed after retries")
 }
 
-export async function getAudienceContacts(audienceId: string) {
+export async function getAudienceContacts(audienceId: string): Promise<ResendAudienceContact[]> {
   const resendApiKey = process.env.RESEND_API_KEY
 
   if (!resendApiKey) {
@@ -67,7 +80,7 @@ export async function getAudienceContacts(audienceId: string) {
       // Direct API approach (audience-specific)
 
       console.log("[v0] Using direct API to fetch contacts with cursor-based pagination...")
-      const allContacts: any[] = []
+      const allContacts: ResendAudienceContact[] = []
       let pageNumber = 1
       const limit = 100
       const maxPages = 100

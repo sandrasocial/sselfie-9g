@@ -556,6 +556,41 @@ function mapToUniversalPromptCategory(category: string, userRequest?: string): s
   return null
 }
 
+function buildEnhancedPrompt(args: {
+  category: string
+  vibe: string
+  location: string
+  userAge?: string
+  userFeatures?: string | null
+  userGender: string
+  hairStyle?: string
+  userRequest: string
+  imageAnalysis?: string
+}): string {
+  const cleanedFeatures =
+    typeof args.userFeatures === "string"
+      ? args.userFeatures
+          .replace(/\b(don't|do not|doesn't|keep my|maintain|preserve|keep the|the same)\s+/gi, "")
+          .trim()
+      : ""
+
+  const personLine = [args.userAge, args.userGender, cleanedFeatures || undefined, args.hairStyle]
+    .filter(Boolean)
+    .join(", ")
+
+  return [
+    `Create a professional, photorealistic image concept.`,
+    `Category: ${args.category}. Vibe: ${args.vibe}. Location: ${args.location}.`,
+    `Person: ${personLine || args.userGender}.`,
+    `User request: ${args.userRequest}`,
+    args.imageAnalysis ? `Image notes: ${args.imageAnalysis}` : null,
+    `Include outfit details (materials, colors, brand-appropriate styling), a natural pose, and cinematic lighting.`,
+    `Add camera specs (lens + f-stop) and a high-resolution, realistic finish.`,
+  ]
+    .filter(Boolean)
+    .join("\n")
+}
+
 /**
  * Validate prompt matches production requirements
  */
@@ -2783,7 +2818,7 @@ Same quality/luxury/styling as professional concepts, but with:
           userId: effectiveUser.id.toString(),
           triggerWord,
           userGender,
-          ethnicity,
+          ethnicity: userEthnicity,
           physicalPreferences,
           category: detectedCategory,
           userRequest: enrichedUserRequestForDetection,
@@ -2860,7 +2895,7 @@ Same quality/luxury/styling as professional concepts, but with:
                 userId: effectiveUser.id.toString(),
                 triggerWord,
                 userGender,
-                ethnicity,
+                ethnicity: userEthnicity,
                 physicalPreferences,
                 category: detectedCategory,
                 userRequest: enrichedUserRequestForDetection,

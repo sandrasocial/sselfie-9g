@@ -312,10 +312,11 @@ async function processFeedCards(
                 LIMIT 1
               `
               if (matchingFeed?.id) {
-                feedIdToFetch = matchingFeed.id
-                console.log("[v0] 🔍 Found feedId by matching post data:", feedIdToFetch)
+                const foundFeedId = matchingFeed.id as number
+                feedIdToFetch = foundFeedId
+                console.log("[v0] 🔍 Found feedId by matching post data:", foundFeedId)
                 // Retry fetch with found feedId
-                const feedData = await fetchFeedData(feedIdToFetch)
+                const feedData = await fetchFeedData(foundFeedId)
                 if (feedData) {
                   feedCardParts.push({
                     type: "tool-generateFeed",

@@ -13,7 +13,7 @@ export async function GET() {
     }
 
     const isTestMode = stripeKey.startsWith("sk_test_")
-    const stripe = new Stripe(stripeKey, { apiVersion: "2024-11-20.acacia" })
+    const stripe = new Stripe(stripeKey, { apiVersion: "2026-01-28.clover" })
 
     const products = await stripe.products.list({ limit: 100, active: true })
 

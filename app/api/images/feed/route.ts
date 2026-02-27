@@ -58,9 +58,10 @@ export async function GET(request: Request) {
     // Transform feed posts to GalleryImage format
     const images: GalleryImage[] = feedPosts.map((post: any) => ({
       id: `feed-${post.id}`,
+      user_id: neonUser.id,
       image_url: post.image_url,
       prompt: post.prompt || `Feed post from ${post.feed_title || 'Feed'}`,
-      description: null, // feed_posts table doesn't have description column
+      description: undefined, // feed_posts table doesn't have description column
       category: post.category || 'feed',
       source: 'feed',
       is_favorite: false, // Feed images don't have favorites yet

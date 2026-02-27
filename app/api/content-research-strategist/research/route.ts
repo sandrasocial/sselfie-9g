@@ -73,7 +73,6 @@ Provide specific, actionable insights backed by current data.`
       model: "anthropic/claude-sonnet-4",
       prompt: researchPrompt,
       system: CONTENT_RESEARCH_STRATEGIST_PROMPT,
-      experimental_toolCallStreaming: true,
       onFinish: async ({ text }) => {
         console.log("[v0] Content Research Strategist: Research complete, saving to database")
 

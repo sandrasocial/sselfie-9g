@@ -47,6 +47,7 @@ export async function POST(request: NextRequest) {
           to: adminEmail,
           subject: emailContent.subject,
           html: emailContent.html,
+          text: `New feedback (#${feedbackId}) from ${userName || "Anonymous"} <${userEmail || "no-email"}>\n\n${subject}\n\n${message}\n\nDashboard: ${dashboardUrl}\n`,
         }),
       )
 

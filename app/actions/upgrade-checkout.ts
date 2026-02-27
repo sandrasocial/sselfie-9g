@@ -145,10 +145,14 @@ export async function createUpgradeCheckoutSession(
         const promoCodeObj = promotionCodes.data[0]
         // Check if promotion code is still valid
         if (promoCodeObj.active && (!promoCodeObj.max_redemptions || promoCodeObj.times_redeemed < promoCodeObj.max_redemptions)) {
+          const promoCouponRef = promoCodeObj.promotion?.coupon
+          if (!promoCouponRef) {
+            throw new Error("Promotion code is missing a coupon reference")
+          }
           const promoCoupon =
-            typeof promoCodeObj.coupon === "string"
-              ? await stripe.coupons.retrieve(promoCodeObj.coupon)
-              : promoCodeObj.coupon
+            typeof promoCouponRef === "string"
+              ? await stripe.coupons.retrieve(promoCouponRef)
+              : promoCouponRef
           const blockReason = getMembershipPromoBlockReason({
             duration: promoCoupon.duration,
             percentOff: promoCoupon.percent_off,

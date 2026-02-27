@@ -7,7 +7,7 @@ export interface EmailOptions {
   to: string | string[]
   subject: string
   html: string
-  text: string
+  text?: string
   from?: string
   replyTo?: string
   tags?: string[]
@@ -75,12 +75,9 @@ async function sendEmailWithRetry(
         to: Array.isArray(options.to) ? options.to : [options.to],
         subject: options.subject,
         html: options.html,
-        text: options.text,
-        reply_to: options.replyTo,
+        text: options.text ?? "",
+        ...(options.replyTo ? { replyTo: options.replyTo } : {}),
         tags: options.tags?.map((tag) => ({ name: tag, value: tag })),
-        // Only enable tracking for marketing/campaign sends
-        tracking_opens: isMarketing,
-        tracking_clicks: isMarketing,
       })
 
       if (error) {

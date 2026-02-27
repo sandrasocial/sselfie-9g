@@ -72,7 +72,7 @@ ${brandProfile.goals || "Not specified"}
       prompt: prompt,
       temperature: 0.7,
       maxTokens: 2000,
-    })
+    } as any)
 
     console.log("[v0] Brand Strategist streaming response")
 

@@ -59,8 +59,9 @@ export async function GET(request: NextRequest) {
       console.log("[v0] 📦 Migrating images from temporary Replicate URLs to permanent Blob storage...")
 
       const permanentUrls: string[] = []
-      const photoshootPoses = prediction.input?.poses || []
-      const fluxPrompts = prediction.input?.fluxPrompts || []
+      const inputAny = (prediction as any).input as any
+      const photoshootPoses = inputAny?.poses || []
+      const fluxPrompts = inputAny?.fluxPrompts || []
 
       for (let i = 0; i < temporaryImageUrls.length; i++) {
         const tempUrl = temporaryImageUrls[i]

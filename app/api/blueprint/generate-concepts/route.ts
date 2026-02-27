@@ -357,7 +357,7 @@ export async function POST(req: NextRequest) {
         'blueprint-preview',
         'blueprint-preview',
         {
-          userId: userId?.toString() || null,
+          userId: userId?.toString() ?? undefined,
           feedStyle: selectedFeedStyle,
           businessType: formData.business,
           formData,

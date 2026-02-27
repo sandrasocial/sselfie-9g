@@ -1,7 +1,7 @@
-import { neon } from "@neondatabase/serverless"
+import { neon, type NeonQueryFunction } from "@neondatabase/serverless"
 import { createServerClient } from "@/lib/supabase/server"
 
-let sql: ReturnType<typeof neon> | null = null
+let sql: NeonQueryFunction<false, false> | null = null
 
 function getSQL() {
   if (!sql) {
@@ -9,7 +9,7 @@ function getSQL() {
     if (!dbUrl) {
       throw new Error("DATABASE_URL environment variable is not set")
     }
-    sql = neon(dbUrl)
+    sql = neon<false, false>(dbUrl)
   }
   return sql
 }
@@ -17,9 +17,14 @@ function getSQL() {
 export interface NeonUser {
   id: string
   email: string
+  role?: string | null
+  // Legacy/compat fields used across routes (DB may contain one or more)
+  name?: string | null
   display_name?: string
   first_name?: string
   last_name?: string
+  gender?: string | null
+  trigger_word?: string | null
   profile_image_url?: string
   stack_auth_id?: string
   supabase_user_id?: string

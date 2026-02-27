@@ -208,8 +208,10 @@ export async function GET(request: Request) {
       errors: [] as Array<{ email: string; day: number; error: string }>,
     }
 
+    type DayKey = "day0" | "day2" | "day5" | "day7" | "day10" | "day14" | "day20" | "day25"
+
     const sendReactivationBroadcast = async (params: {
-      dayKey: keyof typeof results
+      dayKey: DayKey
       dayNumber: number
       emails: string[]
       tagKey: string

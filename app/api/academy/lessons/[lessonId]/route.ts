@@ -60,7 +60,7 @@ export async function GET(req: NextRequest, { params }: { params: { lessonId: st
     console.log("[v0] Lesson found:", lesson.title)
     console.log("[v0] Video URL:", lesson.video_url ? `${lesson.video_url.substring(0, 80)}...` : "null")
     console.log("[v0] Exercises:", exercises.length)
-    console.log("[v0] User progress:", progress?.is_completed ? "Completed" : "In Progress")
+    console.log("[v0] User progress:", progress?.status === "completed" ? "Completed" : "In Progress")
 
     return NextResponse.json({
       lesson: lessonWithDuration,
