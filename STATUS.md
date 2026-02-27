@@ -4,14 +4,17 @@
 ---
 
 ## Last Updated
-2026-02-27 18:16 CET — Updated by Codex (revenue segmentation cleanup + bounce cleanup + Maya product-path patch)
+2026-02-27 18:34 CET — Updated by Codex (deployed + production-verified Maya/revenue split patch bundle)
 
 ## Last Task Completed
-Parallel launch readiness stream:
-- Production smoke check run on `https://sselfie.ai/studio` (no `Cannot access 'tu' before initialization` error observed in browser console)
-- Revenue reporting split patched (recurring memberships separated from `paid_blueprint` entitlement rows in dashboard metrics paths)
-- Hard-bounce cleanup executed (`39` hard-bounced contacts removed from active Resend audience; report in `output/automation/hard-bounce-cleanup-2026-02-27T16-36-50-188Z.md`)
-- Maya first-time product prompt injection fixed on active `/api/maya/chat` path (verified locally with authenticated request + `what_to_say` headers)
+Launch readiness patch bundle deployed to production (`main` commit `080c715a`, Vercel deploy `https://v0-sselfie-7xvl1vmm8-sselfie-studio.vercel.app`):
+- `/studio` smoke-checked in production (logged-out + logged-in flows) with no `Cannot access 'tu' before initialization` runtime error observed
+- `/api/maya/chat` first-time mini-product behavior validated in production via authenticated smoke user + academy headers (`what_to_say`, `firstTimeProductUser=true`, `x-studio-pro-mode=true`): status `200`, streaming response begins with product-delivery wording (personalized captions flow)
+- Revenue reporting split deployed and DB-validated:
+- `activeRecurringSubscribers=16`
+- `activeBlueprintEntitlements=13`
+- `activeAllSubscriptionsRaw=29`
+- Hard-bounce cleanup remains completed: `39` hard-bounced contacts removed from active Resend audience (report: `output/automation/hard-bounce-cleanup-2026-02-27T16-36-50-188Z.md`)
 
 ## Maya Component Audit
 - Live header: `components/sselfie/maya/maya-header.tsx`
@@ -101,24 +104,18 @@ Parallel launch readiness stream:
 - Validation run: eslint on touched files passed; `pnpm dev` smoke succeeded (`GET /studio 307`)
 
 ## What's Broken / Unconfirmed
-- Production verification pending for new local patches in this session (not deployed yet):
-- `/api/maya/chat` first-time academy product delivery override
-- Revenue metric separation updates in `lib/revenue/single-source.ts`, `lib/stripe/stripe-live-metrics.ts`, and admin dashboard routes
-- E-01 status: code path is resolved (Resend source-of-truth count only; mismatch guard removed), but production should be re-checked after next deploy
-- E-03 status: completed for active audience rows (39 removed); historical bounce totals in logs remain as historical data
+- E-01 status: code-path fix exists, but subscriber-count business reconciliation (Resend vs internal/legacy expectations) still needs explicit ops sign-off
+- E-03 status: cleanup completed for currently active audience rows (39 removed); historical bounce entries remain in logs by design
+- New issue from live smoke: `/api/onboarding/academy-journey-state` returned `500` during first-time user onboarding check (non-blocking for this patch, but should be triaged)
 - `pnpm type-check` still fails with broad pre-existing repository issues (Next route typing, script typing, and test-runner globals)
 - ACADEMY-01 note: Stripe key in `.env.local` is `sk_live...`; academy prices were created with configured key mode
-- Runtime issue observed in production (`Cannot access 'tu' before initialization`) now smoke-checked in production and not reproduced during this run
+- Runtime issue observed earlier in production (`Cannot access 'tu' before initialization`) is now rechecked and not reproduced
 
 ## Currently In Progress
-Pre-deploy patch bundle ready locally:
-- `app/api/maya/chat/route.ts` (first-time academy product delivery now enforced on active chat route)
-- `app/api/admin/dashboard/stats/route.ts` + `app/api/admin/dashboard/revenue/route.ts` + `lib/revenue/single-source.ts` + `lib/stripe/stripe-live-metrics.ts` (membership vs blueprint metric split)
-- `scripts/cleanup-hard-bounces.ts` (operational script; dry-run/apply modes)
-- `lib/revenue/membership-subscription-filter.ts` + `lib/__tests__/single-source-membership-filter.test.ts` (regression coverage)
+None (current patch bundle shipped and production-smoke verified)
 
 ## Blocked On Sandra
-- Go-ahead to push the current patch bundle to `main` for production deploy verification
+None for this completed patch bundle
 
 ## Next Task
-Deploy current patch bundle, verify production behavior, then run ACADEMY-02 live webhook/checkout E2E verification pass
+Run `tasks/ACADEMY-02.md` (checkout + webhook path), then close E-01 with explicit subscriber-count reconciliation evidence
