@@ -154,28 +154,24 @@ export default async function AcademySuccessPage({ searchParams }: SuccessPagePr
         {/* Maya AI Generation CTA (for mini-products) */}
         {product && PRODUCT_TO_MAYA_CTA[product.id] && (
           <div className="mt-10 border-2 border-[#0a0a0a] bg-[#0a0a0a] p-8 max-w-[380px] text-white">
-            <div className="flex-1">
-              <h2
-                  className={`${cormorant.className} text-lg uppercase text-white`}
-                  style={{ fontWeight: 300 }}
-                >
-                  {PRODUCT_TO_MAYA_CTA[product.id].headline}
-                </h2>
-                <p className={`${inter.className} mt-2 text-sm text-[#f5f5f5]`} style={{ fontWeight: 300 }}>
-                  {PRODUCT_TO_MAYA_CTA[product.id].description}
-                </p>
-                <Link
-                  href={`/studio?tab=maya&source=academy_purchase&product=${encodeURIComponent(product.id)}&first_time_product_user=true`}
-                  className={`${inter.className} mt-4 inline-flex bg-[#ffffff] px-6 py-3 text-[#0a0a0a] transition-opacity hover:opacity-80`}
-                  style={{ fontWeight: 500, fontSize: "13px", letterSpacing: "0.1em", textTransform: "uppercase" }}
-                >
-                  {PRODUCT_TO_MAYA_CTA[product.id].mayaCta}
-                </Link>
-              </div>
-            </div>
+            <h2
+              className={`${cormorant.className} text-lg uppercase text-white`}
+              style={{ fontWeight: 300 }}
+            >
+              {PRODUCT_TO_MAYA_CTA[product.id].headline}
+            </h2>
+            <p className={`${inter.className} mt-2 text-sm text-[#f5f5f5]`} style={{ fontWeight: 300 }}>
+              {PRODUCT_TO_MAYA_CTA[product.id].description}
+            </p>
+            <Link
+              href={`/studio?tab=maya&source=academy_purchase&product=${encodeURIComponent(product.id)}&first_time_product_user=true`}
+              className={`${inter.className} mt-4 inline-flex bg-[#ffffff] px-6 py-3 text-[#0a0a0a] transition-opacity hover:opacity-80`}
+              style={{ fontWeight: 500, fontSize: "13px", letterSpacing: "0.1em", textTransform: "uppercase" }}
+            >
+              {PRODUCT_TO_MAYA_CTA[product.id].mayaCta}
+            </Link>
           </div>
         )}
-
         {/* Next step card: product-specific CTA deep-linking into app (Slice 1.3 / C-02) */}
         {product && NEXT_STEP_BY_PRODUCT[product.id] && !PRODUCT_TO_MAYA_CTA[product.id] && (
           <div className="mt-10 border-2 border-[#e5e5e5] bg-[#ffffff] p-8 max-w-[320px]">
