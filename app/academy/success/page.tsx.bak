@@ -11,24 +11,28 @@ const inter = Inter({ subsets: ["latin"], weight: ["300", "500"] })
 /** Mini-product to Maya AI generation CTA mapping */
 const PRODUCT_TO_MAYA_CTA: Record<
   string,
-  { headline: string; description: string; mayaCta: string }
+  { icon: string; headline: string; description: string; mayaCta: string }
 > = {
   what_to_say: {
+    icon: "✍️",
     headline: "Chat with Maya to get your 30 personalized captions",
     description: "Maya will generate captions that sound like you, tailored to your brand and audience.",
     mayaCta: "Get My Captions →",
   },
   show_up: {
+    icon: "📅",
     headline: "Chat with Maya to get your 30-day content calendar",
     description: "A full month of content ideas, mixed perfectly for visibility and authority.",
     mayaCta: "Get My Calendar →",
   },
   get_paid: {
+    icon: "💰",
     headline: "Chat with Maya to build your monetization path",
     description: "A custom strategy with your 5 best revenue streams and a 90-day launch timeline.",
     mayaCta: "Build My Path →",
   },
   ai_photo_prompts: {
+    icon: "📸",
     headline: "Chat with Maya to get your 20 personalized photo prompts",
     description: "Phone-camera-ready prompts for your content pillars (lifestyle, behind-the-scenes, proof, results).",
     mayaCta: "Get My Prompts →",
@@ -154,8 +158,10 @@ export default async function AcademySuccessPage({ searchParams }: SuccessPagePr
         {/* Maya AI Generation CTA (for mini-products) */}
         {product && PRODUCT_TO_MAYA_CTA[product.id] && (
           <div className="mt-10 border-2 border-[#0a0a0a] bg-[#0a0a0a] p-8 max-w-[380px] text-white">
-            <div className="flex-1">
-              <h2
+            <div className="flex items-start gap-4">
+              <span className="text-4xl">{PRODUCT_TO_MAYA_CTA[product.id].icon}</span>
+              <div className="flex-1">
+                <h2
                   className={`${cormorant.className} text-lg uppercase text-white`}
                   style={{ fontWeight: 300 }}
                 >
