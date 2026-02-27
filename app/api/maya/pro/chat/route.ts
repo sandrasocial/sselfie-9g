@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
 
     // Parse request body
     const body = await req.json()
-    (const { message, imageUrl, imageLibrary, chatHistory } = body
+    const { message, imageUrl, imageLibrary, chatHistory } = body
 
     // Get product context from body or request headers (passed from frontend via useMayaChat)
     const headerProduct = req.headers.get("x-academy-product")
