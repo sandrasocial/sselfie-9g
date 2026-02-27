@@ -4,10 +4,14 @@
 ---
 
 ## Last Updated
-2026-02-27 16:30 CET — Updated by Codex (launch triage + pricing/value audit + hotfix prep)
+2026-02-27 18:16 CET — Updated by Codex (revenue segmentation cleanup + bounce cleanup + Maya product-path patch)
 
 ## Last Task Completed
-Launch triage complete: live Stripe-vs-DB revenue audit + runtime hotfix patch set prepared
+Parallel launch readiness stream:
+- Production smoke check run on `https://sselfie.ai/studio` (no `Cannot access 'tu' before initialization` error observed in browser console)
+- Revenue reporting split patched (recurring memberships separated from `paid_blueprint` entitlement rows in dashboard metrics paths)
+- Hard-bounce cleanup executed (`39` hard-bounced contacts removed from active Resend audience; report in `output/automation/hard-bounce-cleanup-2026-02-27T16-36-50-188Z.md`)
+- Maya first-time product prompt injection fixed on active `/api/maya/chat` path (verified locally with authenticated request + `what_to_say` headers)
 
 ## Maya Component Audit
 - Live header: `components/sselfie/maya/maya-header.tsx`
@@ -97,21 +101,24 @@ Launch triage complete: live Stripe-vs-DB revenue audit + runtime hotfix patch s
 - Validation run: eslint on touched files passed; `pnpm dev` smoke succeeded (`GET /studio 307`)
 
 ## What's Broken / Unconfirmed
-- E-01: Subscriber count logic (DB shows 479 vs Resend 3,021) — not yet resolved
-- E-03: 1,965 hard bounces in subscriber list — not yet cleaned
+- Production verification pending for new local patches in this session (not deployed yet):
+- `/api/maya/chat` first-time academy product delivery override
+- Revenue metric separation updates in `lib/revenue/single-source.ts`, `lib/stripe/stripe-live-metrics.ts`, and admin dashboard routes
+- E-01 status: code path is resolved (Resend source-of-truth count only; mismatch guard removed), but production should be re-checked after next deploy
+- E-03 status: completed for active audience rows (39 removed); historical bounce totals in logs remain as historical data
 - `pnpm type-check` still fails with broad pre-existing repository issues (Next route typing, script typing, and test-runner globals)
 - ACADEMY-01 note: Stripe key in `.env.local` is `sk_live...`; academy prices were created with configured key mode
-- Runtime issue observed in production (`Cannot access 'tu' before initialization`) patched and pushed in commit `82009acc`; deploy verification pending
-- Maya Pro mini-product generation prompt was computed but not injected into system prompt; patched and pushed in commit `82009acc`; deploy verification pending
+- Runtime issue observed in production (`Cannot access 'tu' before initialization`) now smoke-checked in production and not reproduced during this run
 
 ## Currently In Progress
-Post-push verification for commit `82009acc` (auto-deploy on Vercel):
-- Confirm no client runtime crash on `/studio` (Pro mode path)
-- Confirm first-time product users receive product-specific generation behavior in Maya Pro
-- Review pricing/value audit report: `docs/codex-tasks/MINI-PRODUCTS-PRICE-VALUE-AUDIT-2026-02-27.md`
+Pre-deploy patch bundle ready locally:
+- `app/api/maya/chat/route.ts` (first-time academy product delivery now enforced on active chat route)
+- `app/api/admin/dashboard/stats/route.ts` + `app/api/admin/dashboard/revenue/route.ts` + `lib/revenue/single-source.ts` + `lib/stripe/stripe-live-metrics.ts` (membership vs blueprint metric split)
+- `scripts/cleanup-hard-bounces.ts` (operational script; dry-run/apply modes)
+- `lib/revenue/membership-subscription-filter.ts` + `lib/__tests__/single-source-membership-filter.test.ts` (regression coverage)
 
 ## Blocked On Sandra
-- Confirm production smoke checks after Vercel completes deploy for commit `82009acc`
+- Go-ahead to push the current patch bundle to `main` for production deploy verification
 
 ## Next Task
-ACADEMY-02 (checkout flow + Stripe webhook)
+Deploy current patch bundle, verify production behavior, then run ACADEMY-02 live webhook/checkout E2E verification pass

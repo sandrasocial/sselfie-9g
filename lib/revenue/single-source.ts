@@ -2,6 +2,7 @@ import { getStripe } from "@/lib/stripe"
 import { getDBRevenueMetrics } from "@/lib/revenue/db-revenue-metrics"
 import { CACHE_TTL, getCache, setCache } from "@/lib/cache"
 import { calculateSubscriptionAmount } from "@/lib/revenue/subscription-amount"
+import { getConfiguredMembershipPriceIds, isMembershipSubscription } from "@/lib/revenue/membership-subscription-filter"
 
 export interface SingleSourceRevenueMetrics {
   mrr: number
@@ -45,6 +46,7 @@ async function listAllSubscriptions(params: Record<string, any>) {
 async function fetchSingleSourceMetrics(): Promise<SingleSourceRevenueMetrics> {
   const now = Date.now()
   const thirtyDaysAgo = Math.floor((now - 30 * 24 * 60 * 60 * 1000) / 1000)
+  const configuredMembershipPriceIds = getConfiguredMembershipPriceIds()
 
   const [activeSubs, totalSubs, canceledSubs, newSubs, dbRevenue] = await Promise.all([
     listAllSubscriptions({ status: "active" }),
@@ -54,17 +56,29 @@ async function fetchSingleSourceMetrics(): Promise<SingleSourceRevenueMetrics> {
     getDBRevenueMetrics(),
   ])
 
-  const activeSubscriptions = activeSubs.filter((sub) => sub.livemode).length
-  const totalSubscriptions = totalSubs.filter((sub) => sub.livemode).length
-  const canceledSubscriptions30d = canceledSubs.filter(
-    (sub) => sub.livemode && sub.canceled_at && sub.canceled_at >= thirtyDaysAgo,
-  ).length
-  const newSubscribers30d = newSubs.filter((sub) => sub.livemode).length
+  const activeMembershipSubs = activeSubs.filter((sub) =>
+    isMembershipSubscription(sub, configuredMembershipPriceIds),
+  )
+  const totalMembershipSubs = totalSubs.filter((sub) =>
+    isMembershipSubscription(sub, configuredMembershipPriceIds),
+  )
+  const canceledMembershipSubs = canceledSubs.filter(
+    (sub) =>
+      isMembershipSubscription(sub, configuredMembershipPriceIds) &&
+      sub.canceled_at &&
+      sub.canceled_at >= thirtyDaysAgo,
+  )
+  const newMembershipSubs = newSubs.filter((sub) =>
+    isMembershipSubscription(sub, configuredMembershipPriceIds),
+  )
+
+  const activeSubscriptions = activeMembershipSubs.length
+  const totalSubscriptions = totalMembershipSubs.length
+  const canceledSubscriptions30d = canceledMembershipSubs.length
+  const newSubscribers30d = newMembershipSubs.length
 
   const mrr = Math.round(
-    activeSubs
-      .filter((sub) => sub.livemode)
-      .reduce((sum, sub) => sum + calculateSubscriptionAmount(sub), 0),
+    activeMembershipSubs.reduce((sum, sub) => sum + calculateSubscriptionAmount(sub), 0),
   )
 
   return {

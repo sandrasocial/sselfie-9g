@@ -137,9 +137,15 @@ export async function GET() {
         COUNT(DISTINCT s.id) FILTER (
           WHERE s.status = 'active'
             AND (s.is_test_mode = FALSE OR s.is_test_mode IS NULL)
+            AND COALESCE(s.product_type, '') IN ('sselfie_studio_membership', 'brand_studio_membership', 'pro')
             AND s.stripe_subscription_id IS NOT NULL
             AND BTRIM(s.stripe_subscription_id) <> ''
-        ) as active_subscribers
+        ) as active_recurring_subscribers,
+        COUNT(DISTINCT s.id) FILTER (
+          WHERE s.status = 'active'
+            AND (s.is_test_mode = FALSE OR s.is_test_mode IS NULL)
+            AND COALESCE(s.product_type, '') = 'paid_blueprint'
+        ) as active_blueprint_entitlements
       FROM users u
       LEFT JOIN user_models um ON um.user_id = u.id
       LEFT JOIN subscriptions s ON s.user_id = u.id
@@ -158,7 +164,8 @@ export async function GET() {
       userStats: {
         totalUsers: Number(userStats[0]?.total_users || 0),
         usersWithModels: Number(userStats[0]?.users_with_models || 0),
-        activeSubscribers: Number(userStats[0]?.active_subscribers || 0),
+        activeRecurringSubscribers: Number(userStats[0]?.active_recurring_subscribers || 0),
+        activeBlueprintEntitlements: Number(userStats[0]?.active_blueprint_entitlements || 0),
       },
       revenueTrend: revenueTrend.map((item) => ({
         month: item.month,

@@ -13,6 +13,7 @@ import {
   isContentPlanningIntent,
   isUnifiedMayaUiEnabled,
 } from "@/lib/maya/auto-select-mode"
+import { getProductGenerationPrompt } from "@/lib/products-system-prompt"
 
 import { NextResponse } from "next/server"
 
@@ -109,7 +110,13 @@ export async function POST(req: Request) {
     console.log("[v0] User authenticated:", { userId, dbUserId, userEmail: user.email })
 
     const body = await req.json()
-    const { messages: uiMessages, chatId, chatType: chatTypeFromBody } = body
+    const {
+      messages: uiMessages,
+      chatId,
+      chatType: chatTypeFromBody,
+      product: productFromBody,
+      firstTimeProductUser: firstTimeProductUserFromBody,
+    } = body
     
     // Get chatType from body, or fallback to header, or default to "maya"
     const chatTypeHeader = req.headers.get("x-chat-type")
@@ -762,7 +769,19 @@ export async function POST(req: Request) {
     // Check for prompt builder chat type first (highest priority)
     // Define isStudioProMode outside conditional so it's available for later use
     const isStudioProMode = chatType !== "prompt_builder" && (studioProIntent.isStudioPro || hasStudioProHeader)
-    
+    const academyPurchaseProduct = (req.headers.get("x-academy-product") || productFromBody || "").trim() || null
+    const headerFirstTimeProductUser = req.headers.get("x-first-time-product-user") === "true"
+    const firstTimeProductUser =
+      typeof firstTimeProductUserFromBody === "boolean" ? firstTimeProductUserFromBody : headerFirstTimeProductUser
+    const userMessageCount = Array.isArray(uiMessages)
+      ? uiMessages.filter((message: any) => message?.role === "user").length
+      : 0
+    const isFirstUserMessage = userMessageCount <= 1
+    const productGenerationPrompt =
+      isStudioProMode && academyPurchaseProduct && firstTimeProductUser && isFirstUserMessage
+        ? getProductGenerationPrompt(academyPurchaseProduct, {})
+        : ""
+
     let systemPrompt: string
     if (chatType === "prompt_builder") {
       systemPrompt = PROMPT_BUILDER_SYSTEM
@@ -878,6 +897,15 @@ ${finalUserContext}
 - Connect their current request to their brand story and aesthetic when relevant
 - Show you understand their brand and vision - make them feel seen and understood
 - Use this to enhance concepts, but always prioritize what they're asking for RIGHT NOW if it conflicts`
+    }
+
+    if (productGenerationPrompt) {
+      systemPrompt += `\n\n## Product Delivery Mode\n${productGenerationPrompt}`
+      console.log("[Maya Chat] Activated first-time academy product generation prompt", {
+        academyPurchaseProduct,
+        firstTimeProductUser,
+        isFirstUserMessage,
+      })
     }
 
     if (enhancedConversationContext && enhancedConversationContext.length > 0) {
@@ -1163,6 +1191,17 @@ You: "Love the cozy fall vibe! 🥰 Creating some concepts with warm textures, t
 - ❌ DO NOT write full prompts in your response
 - ❌ DO NOT stop before including the [GENERATE_CONCEPTS] trigger
 - ❌ DO NOT use generic, cold responses - always be warm and enthusiastic` : ''}`
+
+    if (productGenerationPrompt) {
+      systemPrompt += `\n\n## 🔴 PRODUCT DELIVERY OVERRIDE (HIGHEST PRIORITY)
+- Purchased product: ${academyPurchaseProduct}
+- First-time product user: ${firstTimeProductUser ? "yes" : "no"}
+- This is the first user message after purchase: ${isFirstUserMessage ? "yes" : "no"}
+- You ALREADY KNOW what they purchased from context above.
+- DO NOT ask what they bought.
+- DO NOT redirect to another flow.
+- Deliver the purchased artifact immediately in your first answer.`
+    }
 
     // Create Anthropic provider with direct API key (bypasses AI Gateway)
     // This ensures Maya uses Claude directly, not through Gateway

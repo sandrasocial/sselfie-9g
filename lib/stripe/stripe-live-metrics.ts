@@ -19,6 +19,7 @@ import { PRICING_PRODUCTS } from "@/lib/products"
 import { getStripe } from "@/lib/stripe"
 
 const sql = neon(process.env.DATABASE_URL!)
+const RECURRING_MEMBERSHIP_TYPES = ["sselfie_studio_membership", "brand_studio_membership", "pro"] as const
 
 export interface StripeLiveMetrics {
   activeSubscriptions: number
@@ -51,10 +52,9 @@ async function getMRRFromDatabase(): Promise<number> {
       FROM subscriptions
       WHERE status = 'active'
         AND (is_test_mode = FALSE OR is_test_mode IS NULL)
-        AND (
-          product_type NOT IN ('sselfie_studio_membership', 'brand_studio_membership', 'pro')
-          OR (stripe_subscription_id IS NOT NULL AND BTRIM(stripe_subscription_id) <> '')
-        )
+        AND COALESCE(product_type, '') = ANY(${RECURRING_MEMBERSHIP_TYPES as unknown as string[]})
+        AND stripe_subscription_id IS NOT NULL
+        AND BTRIM(stripe_subscription_id) <> ''
       GROUP BY product_type
     `
 
@@ -74,7 +74,11 @@ async function getMRRFromDatabase(): Promise<number> {
         const revenue = Number(sub.count) * priceDollars
 
         // MRR only includes recurring subscriptions
-        if (sub.product_type === "sselfie_studio_membership" || sub.product_type === "brand_studio_membership") {
+        if (
+          sub.product_type === "sselfie_studio_membership" ||
+          sub.product_type === "brand_studio_membership" ||
+          sub.product_type === "pro"
+        ) {
           mrr += revenue
         }
       }
@@ -148,6 +152,7 @@ async function getActiveSubscriptionsFromDatabase(): Promise<number> {
       FROM subscriptions
       WHERE status = 'active'
         AND (is_test_mode = FALSE OR is_test_mode IS NULL)
+        AND COALESCE(product_type, '') = ANY(${RECURRING_MEMBERSHIP_TYPES as unknown as string[]})
         AND (stripe_subscription_id IS NOT NULL AND BTRIM(stripe_subscription_id) <> '')
     `
     return result?.count || 0
@@ -166,6 +171,7 @@ async function getTotalSubscriptionsFromDatabase(): Promise<number> {
       SELECT COUNT(*)::int as count
       FROM subscriptions
       WHERE (is_test_mode = FALSE OR is_test_mode IS NULL)
+        AND COALESCE(product_type, '') = ANY(${RECURRING_MEMBERSHIP_TYPES as unknown as string[]})
         AND (stripe_subscription_id IS NOT NULL AND BTRIM(stripe_subscription_id) <> '')
     `
     return result?.count || 0
@@ -185,6 +191,7 @@ async function getCanceledSubscriptions30dFromDatabase(): Promise<number> {
       FROM subscriptions
       WHERE status = 'canceled'
         AND (is_test_mode = FALSE OR is_test_mode IS NULL)
+        AND COALESCE(product_type, '') = ANY(${RECURRING_MEMBERSHIP_TYPES as unknown as string[]})
         AND (stripe_subscription_id IS NOT NULL AND BTRIM(stripe_subscription_id) <> '')
         AND updated_at >= NOW() - INTERVAL '30 days'
     `
@@ -204,6 +211,7 @@ async function getNewSubscribers30dFromDatabase(): Promise<number> {
       SELECT COUNT(*)::int as count
       FROM subscriptions
       WHERE (is_test_mode = FALSE OR is_test_mode IS NULL)
+        AND COALESCE(product_type, '') = ANY(${RECURRING_MEMBERSHIP_TYPES as unknown as string[]})
         AND (stripe_subscription_id IS NOT NULL AND BTRIM(stripe_subscription_id) <> '')
         AND created_at >= NOW() - INTERVAL '30 days'
     `
