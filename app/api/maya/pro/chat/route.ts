@@ -1,7 +1,6 @@
-import { streamText, convertToModelMessages, type UIMessage } from "ai"
+import { streamText, convertToModelMessages } from "ai"
 import { getMayaSystemPrompt, MAYA_PRO_CONFIG } from "@/lib/maya/mode-adapters"
 import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
-import { createServerClient } from "@/lib/supabase/server"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { checkCredits, deductCredits } from "@/lib/credits"
@@ -116,15 +115,16 @@ export async function POST(req: NextRequest) {
     let productGenerationPrompt = ""
     if (product && firstTimeProductUser && isFirstMessage) {
       productGenerationPrompt = getProductGenerationPrompt(product, { brand_profile: userContext })
-      console.log(`[PRODUCT] Activated  generation prompt for first-time user`)
+      console.log(`[PRODUCT] Activated ${product} generation prompt for first-time user`)
     }
 
     // Build Pro Mode system prompt with context using unified system
     const systemPrompt = `${getMayaSystemPrompt(MAYA_PRO_CONFIG)}
 
 ${userContext}
-
-
+${libraryContext}
+${categoryContext}
+${productGenerationPrompt ? `\n## Product Delivery Mode\n${productGenerationPrompt}` : ""}
 
 ## CRITICAL: Studio Pro Mode Rules
 - You are in Studio Pro Mode - use your Pro personality

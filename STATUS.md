@@ -4,10 +4,10 @@
 ---
 
 ## Last Updated
-2026-02-20 18:47 CET — Updated by Codex (ACADEMY-01 foundation complete)
+2026-02-27 16:30 CET — Updated by Codex (launch triage + pricing/value audit + hotfix prep)
 
 ## Last Task Completed
-ACADEMY-01 complete (A-01/A-02/A-03)
+Launch triage complete: live Stripe-vs-DB revenue audit + runtime hotfix patch set prepared
 
 ## Maya Component Audit
 - Live header: `components/sselfie/maya/maya-header.tsx`
@@ -102,9 +102,15 @@ ACADEMY-01 complete (A-01/A-02/A-03)
 - `pnpm type-check` still fails with broad pre-existing repository issues (Next route typing, script typing, and test-runner globals)
 - UX-02 production deploy is blocked: `VERCEL_TOKEN` missing/invalid in this shell (`vercel --prod --yes --token $VERCEL_TOKEN` and `vercel --prod --yes` both failed auth)
 - ACADEMY-01 note: Stripe key in `.env.local` is `sk_live...`; academy prices were created with configured key mode
+- Runtime issue observed in production (`Cannot access 'tu' before initialization`) patched locally in `components/sselfie/pro-mode/ConceptCardPro.tsx`; deploy verification pending
+- Maya Pro mini-product generation prompt was computed but not injected into system prompt; patched locally in `app/api/maya/pro/chat/route.ts`; deploy verification pending
 
 ## Currently In Progress
-Nothing — awaiting Vercel token/auth fix for UX-02 deployment
+Preparing hotfix deployment + verification for:
+- Pro mode TDZ runtime patch (`ConceptCardPro`)
+- Maya Pro product prompt injection (`/api/maya/pro/chat`)
+- Product prompt copy alignment (removed external AI tool reference in `lib/products-system-prompt.ts`)
+- Pricing/value audit report: `docs/codex-tasks/MINI-PRODUCTS-PRICE-VALUE-AUDIT-2026-02-27.md`
 
 ## Blocked On Sandra
 - Provide valid Vercel auth (`VERCEL_TOKEN` or refreshed CLI login) so UX-02 can be deployed and URL recorded

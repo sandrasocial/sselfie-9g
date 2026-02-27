@@ -569,7 +569,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
   }
 
   // Poll grid status until completion
-  const pollGridStatus = async (gridId: number, predictionId: string, gridNumber: number) => {
+  async function pollGridStatus(gridId: number, predictionId: string, gridNumber: number) {
     const maxAttempts = 120
     let attempts = 0
 

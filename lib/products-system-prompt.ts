@@ -92,7 +92,7 @@ For each prompt include:
 - Lighting (golden hour, bright, moody)
 - Mood/emotion (confident, vulnerable, professional)
 - Phone composition tips
-- AI alternative prompt (for DALL-E/Midjourney)
+- Optional in-app AI variant prompt (for SSELFIE generation)
 
 Ready to use immediately.`
 
