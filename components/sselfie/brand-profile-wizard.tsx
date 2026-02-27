@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -221,6 +222,7 @@ const STEPS = [
 ]
 
 export default function BrandProfileWizard({ isOpen, onClose, onComplete, existingData }: BrandProfileWizardProps) {
+  const router = useRouter()
   const [currentStep, setCurrentStep] = useState(0)
   const [isSaving, setIsSaving] = useState(false)
   const [formData, setFormData] = useState({
@@ -335,7 +337,7 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
     }
   }
 
-  const handleComplete = async () => {
+  const handleComplete = async (options?: { redirectToStrategy?: boolean }) => {
     setIsSaving(true)
     try {
       const response = await fetch("/api/profile/personal-brand", {
@@ -378,6 +380,10 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
       }
 
       onComplete()
+
+      if (options?.redirectToStrategy) {
+        router.push("/brand-strategy")
+      }
     } catch (error) {
       console.error("[v0] Error saving brand profile:", error)
     } finally {
@@ -762,13 +768,23 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
               </Button>
 
               {isLastStep ? (
-                <Button
-                  onClick={handleComplete}
-                  disabled={!canProceed() || isSaving}
-                  className="bg-stone-950 hover:bg-stone-800 text-white text-sm font-medium tracking-wider uppercase px-8 py-6 rounded-lg transition-all duration-200"
-                >
-                  {isSaving ? "SAVING..." : "COMPLETE"}
-                </Button>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button
+                    onClick={() => handleComplete({ redirectToStrategy: true })}
+                    disabled={!canProceed() || isSaving}
+                    variant="outline"
+                    className="border-stone-300 text-stone-700 hover:bg-stone-50 text-sm font-medium tracking-wider uppercase px-6 py-6 rounded-lg transition-all duration-200"
+                  >
+                    Generate my Brand Strategy
+                  </Button>
+                  <Button
+                    onClick={() => handleComplete()}
+                    disabled={!canProceed() || isSaving}
+                    className="bg-stone-950 hover:bg-stone-800 text-white text-sm font-medium tracking-wider uppercase px-8 py-6 rounded-lg transition-all duration-200"
+                  >
+                    {isSaving ? "SAVING..." : "COMPLETE"}
+                  </Button>
+                </div>
               ) : (
                 <Button
                   onClick={handleNext}

@@ -56,11 +56,13 @@ export async function GET(request: Request) {
     // Default: gallery images (ai_images/generated_images)
     const { images: paginatedImages, total } = await getUserImages(neonUser.id, limit, offset)
     const hasMore = offset + limit < total
+    const hasImages = total > 0
 
     return NextResponse.json({
       images: paginatedImages,
       hasMore,
       total,
+      hasImages,
     })
   } catch (error) {
     console.error("[v0] Images API: Error", error)

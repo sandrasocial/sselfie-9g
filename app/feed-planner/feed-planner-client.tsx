@@ -6,6 +6,7 @@ import useSWR, { useSWRConfig } from "swr"
 import FeedViewScreen from "@/components/feed-planner/feed-view-screen"
 import UnifiedOnboardingWizard from "@/components/onboarding/unified-onboarding-wizard"
 import WelcomeWizard from "@/components/feed-planner/welcome-wizard"
+import QuickStartCard from "@/components/feed-planner/quick-start-card"
 import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 import UnifiedLoading from "@/components/sselfie/unified-loading"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
@@ -31,6 +32,7 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
   const router = useRouter()
   const [showWizard, setShowWizard] = useState(false)
   const [showWelcomeWizard, setShowWelcomeWizard] = useState(false)
+  const [showQuickStart, setShowQuickStart] = useState(false)
   const [isCheckingWizard, setIsCheckingWizard] = useState(true)
   const [wizardMode, setWizardMode] = useState<"selfie_first" | "none">("none")
   // State to track if we should open wizard at step 4 (visual style selection)
@@ -120,6 +122,26 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
     }
   )
 
+  // Fetch quick start status (for paid blueprint users)
+  const { data: quickStartStatus, isLoading: isLoadingQuickStart } = useSWR(
+    access?.isPaidBlueprint ? "/api/feed-planner/quick-start-complete" : null,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 60000,
+    }
+  )
+
+  // Fetch academy products for contextual hint
+  const { data: myProductsData } = useSWR(
+    access?.isPaidBlueprint ? "/api/academy/my-products" : null,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 60000,
+    }
+  )
+
   const { data: setupStatus } = useSWR(
     showWizard ? null : "/api/user/setup-status",
     fetcher,
@@ -147,6 +169,12 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
     return posts.some((post: any) => Boolean(post?.image_url))
   }, [latestFeedData])
 
+  const hasFeed = useMemo(() => {
+    const feedId = latestFeedData?.feed?.id
+    const posts = Array.isArray(latestFeedData?.posts) ? latestFeedData.posts : []
+    return Boolean(feedId || posts.length > 0)
+  }, [latestFeedData])
+
   const activationChecklist = useMemo(
     () =>
       getActivationChecklist({
@@ -157,6 +185,12 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
       }),
     [access?.isFree, hasGeneratedAny, onboardingStatus?.hasSelfies, setupStatus?.hasTrainedModel],
   )
+
+  const productHint = useMemo(() => {
+    const purchases = Array.isArray(myProductsData?.purchases) ? myProductsData.purchases : []
+    const hasWhatToSay = purchases.some((product: any) => product.id === "what_to_say")
+    return hasWhatToSay ? "What To Say" : null
+  }, [myProductsData?.purchases])
 
   // Determine if wizard is needed
   // React to access and onboardingStatus changes, but respect manual close
@@ -172,6 +206,11 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
 
     // Wait for both access and onboarding status to load
     if (isLoadingOnboarding || (!accessProp && isLoadingAccess)) {
+      setIsCheckingWizard(true)
+      return
+    }
+
+    if (access?.isPaidBlueprint && isLoadingQuickStart && !hasFeed) {
       setIsCheckingWizard(true)
       return
     }
@@ -262,6 +301,13 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
     // Paid users (first-time): Show wizard if missing extension data (skip free example)
     // Paid blueprint: Skip full wizard entirely — show feed list view with inline "Set up in 30 seconds" card (A-02)
     if (access.isPaidBlueprint) {
+      if (!hasFeed && quickStartStatus?.seen === false) {
+        setShowQuickStart(true)
+        setShowWizard(false)
+        setIsCheckingWizard(false)
+        return
+      }
+      setShowQuickStart(false)
       setWizardMode("none")
       setShowWizard(false)
       setIsCheckingWizard(false)
@@ -272,7 +318,7 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
     setWizardMode("none")
     setShowWizard(false)
     setIsCheckingWizard(false)
-  }, [isLoadingOnboarding, isLoadingAccess, onboardingStatus, access, accessProp]) // React to access and onboardingStatus changes
+  }, [isLoadingOnboarding, isLoadingAccess, isLoadingQuickStart, onboardingStatus, access, accessProp, quickStartStatus?.seen]) // React to access and onboardingStatus changes
 
   // Check if welcome wizard should be shown (for paid blueprint users only)
   // 🔴 CRITICAL: Only show automatically ONCE for first-time users
@@ -280,6 +326,10 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
   useEffect(() => {
     // Only check for paid blueprint users
     if (!access || !access.isPaidBlueprint) {
+      return
+    }
+
+    if (quickStartStatus?.seen === false || quickStartStatus?.seen === true) {
       return
     }
 
@@ -321,7 +371,7 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
       console.log('[FeedPlannerClient] ✅ Welcome wizard already auto-shown in this session - not showing again')
       setShowWelcomeWizard(false)
     }
-  }, [access, welcomeStatus, isLoadingWelcome])
+  }, [access, welcomeStatus, isLoadingWelcome, quickStartStatus?.seen])
 
   // Handle wizard completion
   const handleWizardComplete = async (data: {
@@ -494,6 +544,27 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
   // Show loading while checking wizard status
   if (isCheckingWizard) {
     return <UnifiedLoading message="Loading Feed Planner..." />
+  }
+
+  const handleQuickStart = async () => {
+    try {
+      await fetch("/api/feed-planner/quick-start-complete", { method: "POST" })
+    } catch (error) {
+      console.error("[Feed Planner] Failed to mark quick start seen:", error)
+    }
+    setShowQuickStart(false)
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href)
+      url.searchParams.set("createFirstFeed", "1")
+      if (!url.searchParams.get("tab")) {
+        url.searchParams.set("tab", "feed-planner")
+      }
+      router.push(`${url.pathname}?${url.searchParams.toString()}${url.hash}`)
+    }
+  }
+
+  if (showQuickStart) {
+    return <QuickStartCard onStartNow={handleQuickStart} productHint={productHint} />
   }
 
   // Show wizard if needed

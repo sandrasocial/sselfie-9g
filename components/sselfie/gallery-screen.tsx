@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect, useCallback } from "react"
+import { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import {
   Heart,
   Camera,
@@ -28,7 +28,11 @@ import { GalleryHeader } from "./gallery/components/gallery-header"
 import { GalleryFilters } from "./gallery/components/gallery-filters"
 import { GalleryImageGrid } from "./gallery/components/gallery-image-grid"
 import { GallerySelectionBar } from "./gallery/components/gallery-selection-bar"
+import { GalleryEmptyState } from "./gallery/components/gallery-empty-state"
+import { GalleryTopSuggestions } from "./gallery/components/gallery-top-suggestions"
 import { InviteFriendsCTA } from "@/components/referrals/invite-friends-cta"
+import { rankTopImages } from "@/lib/gallery/rank-top-images"
+import { ToastAction } from "@/components/ui/toast"
 
 interface GalleryScreenProps {
   user: any
@@ -135,6 +139,16 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
   // Use bulk operations hook
   const { isProcessing: isBulkProcessing, bulkDelete, bulkFavorite, bulkSave, bulkDownload } = useBulkOperations()
   const { toast } = useToast()
+  const firstImageToastShownRef = useRef(false)
+  const previousImageCountRef = useRef<number | null>(null)
+
+  const topImages = useMemo(() => rankTopImages(allImages || []), [allImages])
+  const profileSelectorImages = useMemo(() => {
+    const images = Array.isArray(allImages) ? allImages : []
+    if (topImages.length === 0) return images
+    const topIds = new Set(topImages.map((img) => img.id))
+    return [...topImages, ...images.filter((img) => !topIds.has(img.id))]
+  }, [allImages, topImages])
 
   // Error handlers for bulk operations
   const handleBulkDelete = async () => {
@@ -275,6 +289,41 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
     }
   }, [userData]) // Only userData - this effect syncs API data to state, not vice versa
 
+  useEffect(() => {
+    if (!Array.isArray(allImages)) return
+    const count = allImages.length
+
+    if (previousImageCountRef.current === null) {
+      previousImageCountRef.current = count
+      return
+    }
+
+    if (previousImageCountRef.current === 0 && count > 0 && !firstImageToastShownRef.current) {
+      firstImageToastShownRef.current = true
+      toast({
+        title: "Your first brand photo! ✨",
+        description: "Next: Create your first feed",
+        action: (
+          <ToastAction altText="Create feed" onClick={() => (window.location.hash = "feed-planner")}>
+            Create Feed
+          </ToastAction>
+        ),
+      })
+
+      fetch("/api/milestones", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          milestoneType: "first_image_generated",
+          title: "First brand photo",
+          description: "Generated your first brand photo",
+        }),
+      }).catch(() => {})
+    }
+
+    previousImageCountRef.current = count
+  }, [allImages, toast])
+
   // Filtering and sorting is now handled by useGalleryFilters hook
 
   const toggleFavorite = async (imageId: string, currentFavoriteState: boolean) => {
@@ -378,6 +427,11 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
     }
   }
 
+  const handleStartNow = () => {
+    const mayaTab = document.querySelector('[data-tab="maya"]') as HTMLButtonElement
+    mayaTab?.click()
+  }
+
   // Selection and bulk operations are now handled by hooks
   const selectAll = () => {
     selectAllImages((displayImages || []).map((img) => img.id))
@@ -458,6 +512,12 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
         contentFilter={contentFilter}
         onContentFilterChange={setContentFilter}
       />
+
+      {!selectionMode && contentFilter === "photos" && topImages.length > 0 && (
+        <div className={DesignClasses.spacing.paddingX.md}>
+          <GalleryTopSuggestions images={topImages} onSelect={() => setShowProfileSelector(true)} />
+        </div>
+      )}
 
       {/* Invite Friends CTA - Show after user has some images */}
       {!selectionMode && contentFilter === "photos" && allImages && allImages.length > 0 && (
@@ -544,28 +604,16 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
                 Clear Search
               </button>
             </>
-          ) : (
+          ) : contentFilter === "favorited" ? (
             <>
               <Camera size={48} className="mx-auto mb-6 text-stone-400" strokeWidth={1.5} />
-              <h3 className="text-xl font-serif font-extralight tracking-[0.15em] text-stone-950 uppercase mb-3">
-                {contentFilter === "favorited" ? "No Favorites Yet" : "No Images Yet"}
-              </h3>
+              <h3 className="text-xl font-serif font-extralight tracking-[0.15em] text-stone-950 uppercase mb-3">No Favorites Yet</h3>
               <p className="text-sm font-light text-stone-600 mb-6 max-w-md mx-auto">
-                {contentFilter === "favorited"
-                  ? "Tap the heart icon on any image to add it to your favorites collection."
-                  : "Create your first AI-generated photo with Maya to start building your gallery."}
+                Tap the heart icon on any image to add it to your favorites collection.
               </p>
-              {contentFilter !== "favorited" && (
-                <button
-                  onClick={() => {
-                    window.location.hash = "maya"
-                  }}
-                  className="px-6 py-3 text-xs tracking-[0.15em] uppercase font-light bg-stone-950 text-white rounded-xl hover:bg-stone-800 transition-all duration-200"
-                >
-                  Go to Maya
-                </button>
-              )}
             </>
+          ) : (
+            <GalleryEmptyState onStartNow={handleStartNow} />
           )}
         </div>
       )}
@@ -598,7 +646,7 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
 
       {showProfileSelector && (
         <ProfileImageSelector
-          images={allImages}
+          images={profileSelectorImages}
           currentAvatar={profileImage}
           onSelect={handleProfileImageUpdate}
           onClose={() => setShowProfileSelector(false)}

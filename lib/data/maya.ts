@@ -66,6 +66,9 @@ export interface UserPersonalBrand {
   color_mood: string | null
   color_theme: string | null
   color_palette: any | null // JSONB field for custom colors
+  positioning_statement?: string | null
+  brand_strategy_pack?: any | null
+  brand_strategy_pack_updated_at?: Date | null
   is_completed: boolean
   onboarding_step: number
   created_at: Date

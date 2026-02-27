@@ -173,10 +173,10 @@ export default function WelcomeWizard({
     return (
       <div className="space-y-6">
         <p className="text-base sm:text-lg font-light leading-relaxed text-stone-700">
-          You&apos;re all set! Now you can create a complete Instagram feed with 12 beautiful photos.
+          Your first 60 credits are ready.
         </p>
         <p className="text-sm font-light text-stone-600">
-          Each photo will match your style and look amazing together. Let&apos;s walk through how it works.
+          Create a complete 9-post feed in minutes. Let&apos;s walk through how it works.
         </p>
       </div>
     )
@@ -197,12 +197,12 @@ export default function WelcomeWizard({
       })
     } else {
       stepList.push({
-        title: "Welcome to your Feed Planner",
+        title: "Your first 60 credits are ready",
         subtitle: "Step 1 of 3",
         content: (
           <div className="space-y-6">
             <p className="text-base sm:text-lg font-light leading-relaxed text-stone-700">
-              You&apos;re all set! Create a 9-post feed that matches your style.
+              Create your first 9-post feed in minutes.
             </p>
             <p className="text-sm font-light text-stone-600">
               Each photo will be unique but cohesive. Here&apos;s how it works.
@@ -239,7 +239,7 @@ export default function WelcomeWizard({
       content: (
         <div className="space-y-6">
           <p className="text-base sm:text-lg font-light leading-relaxed text-stone-700">
-            Your feed is ready. One tap and we&apos;ll create your first 9-post grid.
+            Your first 60 credits are ready — create your first feed below.
           </p>
           <Button
             onClick={handleComplete}
