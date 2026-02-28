@@ -58,61 +58,61 @@ export default function EditProfileDialog({ open, onOpenChange, currentData, onS
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="border border-[color:var(--glass-border)] bg-[color:var(--color-obsidian)]/95 text-[color:var(--color-porcelain)] backdrop-blur-[20px] sm:max-w-[520px]">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-serif font-extralight tracking-[0.15em] uppercase text-stone-950">
+          <DialogTitle className="display-header text-2xl font-light text-[color:var(--color-porcelain)]">
             Edit Profile
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6 py-4">
           <div className="space-y-2">
-            <Label htmlFor="name" className="text-xs tracking-wider uppercase text-stone-600">
+            <Label htmlFor="name" className="text-[11px] font-medium uppercase tracking-[0.35em] text-[color:var(--color-smoke)]">
               Name
             </Label>
             <Input
               id="name"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="border-stone-300 focus:border-stone-500"
+              className="h-12 border-white/15 bg-white/6 text-[color:var(--color-whisper)] placeholder:text-[color:var(--color-smoke)] focus:border-white/30"
               required
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="bio" className="text-xs tracking-wider uppercase text-stone-600">
+            <Label htmlFor="bio" className="text-[11px] font-medium uppercase tracking-[0.35em] text-[color:var(--color-smoke)]">
               Bio
             </Label>
             <Textarea
               id="bio"
               value={formData.bio}
               onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-              className="border-stone-300 focus:border-stone-500 min-h-[100px]"
+              className="min-h-[100px] border-white/15 bg-white/6 text-[color:var(--color-whisper)] placeholder:text-[color:var(--color-smoke)] focus:border-white/30"
               placeholder="Tell us about yourself..."
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="location" className="text-xs tracking-wider uppercase text-stone-600">
+            <Label htmlFor="location" className="text-[11px] font-medium uppercase tracking-[0.35em] text-[color:var(--color-smoke)]">
               Location
             </Label>
             <Input
               id="location"
               value={formData.location}
               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              className="border-stone-300 focus:border-stone-500"
+              className="h-12 border-white/15 bg-white/6 text-[color:var(--color-whisper)] placeholder:text-[color:var(--color-smoke)] focus:border-white/30"
               placeholder="City, Country"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="instagram" className="text-xs tracking-wider uppercase text-stone-600">
+            <Label htmlFor="instagram" className="text-[11px] font-medium uppercase tracking-[0.35em] text-[color:var(--color-smoke)]">
               Instagram Handle
             </Label>
             <Input
               id="instagram"
               value={formData.instagram}
               onChange={(e) => setFormData({ ...formData, instagram: e.target.value })}
-              className="border-stone-300 focus:border-stone-500"
+              className="h-12 border-white/15 bg-white/6 text-[color:var(--color-whisper)] placeholder:text-[color:var(--color-smoke)] focus:border-white/30"
               placeholder="@username"
             />
           </div>
@@ -123,11 +123,15 @@ export default function EditProfileDialog({ open, onOpenChange, currentData, onS
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={loading}
-              className="border-stone-300 text-stone-700 hover:bg-stone-50"
+              className="border-white/20 bg-white/5 text-[color:var(--color-whisper)] hover:bg-white/10"
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={loading} className="bg-stone-950 text-white hover:bg-stone-800">
+            <Button
+              type="submit"
+              disabled={loading}
+              className="border border-white/20 bg-white/10 font-medium uppercase tracking-[0.2em] text-[color:var(--color-porcelain)] hover:bg-white/15"
+            >
               {loading ? (
                 <>
                   <LoadingSpinner size="sm" className="mr-2" />

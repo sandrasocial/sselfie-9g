@@ -1,10 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Aperture, Edit2, Plus } from "lucide-react"
+import { Aperture } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import UnifiedOnboardingWizard from "@/components/onboarding/unified-onboarding-wizard"
-import BrandProfileWizard from "./brand-profile-wizard"
 import UnifiedLoading from "./unified-loading"
 
 interface PersonalBrandData {
@@ -25,17 +24,10 @@ interface PersonalBrandSectionProps {
   userId: string
 }
 
-export default function PersonalBrandSection({ userId }: PersonalBrandSectionProps) {
+export default function PersonalBrandSection({ userId: _userId }: PersonalBrandSectionProps) {
   const [brandData, setBrandData] = useState<PersonalBrandData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [isEditing, setIsEditing] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
-  const [editData, setEditData] = useState<PersonalBrandData | null>(null)
   const [showWizard, setShowWizard] = useState(false)
-
-  useEffect(() => {
-    console.log("[v0] PersonalBrandSection showWizard changed:", showWizard)
-  }, [showWizard])
 
   useEffect(() => {
     fetchBrandData()
@@ -43,12 +35,10 @@ export default function PersonalBrandSection({ userId }: PersonalBrandSectionPro
 
   const fetchBrandData = async () => {
     try {
-      console.log("[v0] Fetching personal brand data...")
       const response = await fetch("/api/profile/personal-brand", {
         credentials: "include",
       })
       const data = await response.json()
-      console.log("[v0] Personal brand response:", data)
 
       if (data.exists && data.completed) {
         setBrandData(data.data)
@@ -61,24 +51,12 @@ export default function PersonalBrandSection({ userId }: PersonalBrandSectionPro
   }
 
   const handleStartBrandProfile = () => {
-    console.log("[v0] Starting brand profile creation...")
-    console.log("[v0] Current showWizard state:", showWizard)
     setShowWizard(true)
-    console.log("[v0] Set showWizard to true")
   }
 
   const handleEdit = () => {
-    console.log("[v0] Editing existing brand profile...")
     setShowWizard(true)
   }
-
-  const handleWizardComplete = () => {
-    console.log("[v0] Brand profile wizard completed")
-    setShowWizard(false)
-    fetchBrandData()
-  }
-
-  console.log("[v0] PersonalBrandSection rendering, showWizard:", showWizard, "brandData:", !!brandData)
 
   if (isLoading) {
     return <UnifiedLoading message="Loading brand profile..." />
@@ -87,79 +65,82 @@ export default function PersonalBrandSection({ userId }: PersonalBrandSectionPro
   return (
     <>
       {!brandData ? (
-        <div className="bg-gradient-to-br from-stone-50/80 to-white/50 backdrop-blur-2xl rounded-xl sm:rounded-[1.75rem] p-6 sm:p-8 border border-stone-200/40 shadow-xl shadow-stone-900/10">
+        <div className="rounded-[20px] border border-[color:var(--glass-border)] bg-[color:var(--glass-bg)] p-6 backdrop-blur-[20px] sm:p-8">
           <div className="flex items-start gap-4">
-            <div className="p-3 bg-stone-950 rounded-xl">
-              <Aperture size={20} className="text-white" />
+            <div className="rounded-xl border border-white/15 bg-white/8 p-3">
+              <Aperture size={20} className="text-[color:var(--color-whisper)]" />
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-bold text-stone-950 mb-2">Create Your Personal Brand</h3>
-              <p className="text-sm text-stone-600 mb-4">
+              <h3 className="display-header mb-2 text-lg font-light text-[color:var(--color-porcelain)]">Create Your Brand Profile</h3>
+              <p className="mb-4 text-sm text-[color:var(--color-whisper)]">
                 Help Maya understand your unique style and vision. Complete your personal brand profile so she can
                 create photos that truly represent you.
               </p>
-              <Button onClick={handleStartBrandProfile} className="bg-stone-950 hover:bg-stone-800 text-white">
-                <Plus size={16} className="mr-2" />
+              <Button
+                onClick={handleStartBrandProfile}
+                className="border border-white/20 bg-white/10 text-[11px] font-medium uppercase tracking-[0.35em] text-[color:var(--color-porcelain)] hover:bg-white/16"
+              >
                 Start Brand Profile
               </Button>
             </div>
           </div>
         </div>
       ) : (
-        <div className="bg-white/50 backdrop-blur-2xl rounded-xl sm:rounded-[1.75rem] p-6 sm:p-8 border border-white/60 shadow-xl shadow-stone-900/10">
+        <div className="rounded-[20px] border border-[color:var(--glass-border)] bg-[color:var(--glass-bg)] p-6 backdrop-blur-[20px] sm:p-8">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-stone-950 rounded-lg shadow-lg">
-                <Aperture size={18} className="text-white" strokeWidth={2.5} />
-              </div>
-              <h3 className="text-lg font-bold text-stone-950">Personal Brand</h3>
+              <h3 className="display-header text-lg font-light text-[color:var(--color-porcelain)]">Personal Brand</h3>
             </div>
-            <Button onClick={handleEdit} variant="ghost" size="sm" className="text-stone-600 hover:text-stone-950">
-              <Edit2 size={16} className="mr-2" />
-              Edit
+            <Button
+              onClick={handleEdit}
+              variant="ghost"
+              size="sm"
+              className="rounded-full border border-white/15 px-4 text-[10px] uppercase tracking-[0.35em] text-[color:var(--color-whisper)] hover:bg-white/10"
+            >
+              Edit Brand
             </Button>
           </div>
 
           <div className="space-y-6">
             {brandData.name && (
               <div>
-                <h4 className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2">Brand Name</h4>
-                <p className="text-sm text-stone-950">{brandData.name}</p>
+                <h4 className="mb-2 text-[11px] font-medium uppercase tracking-[0.35em] text-[color:var(--color-smoke)]">Brand Name</h4>
+                <p className="text-sm text-[color:var(--color-whisper)]">{brandData.name}</p>
               </div>
             )}
 
             {brandData.businessType && (
               <div>
-                <h4 className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2">Business Type</h4>
-                <p className="text-sm text-stone-950">{brandData.businessType}</p>
+                <h4 className="mb-2 text-[11px] font-medium uppercase tracking-[0.35em] text-[color:var(--color-smoke)]">Business Type</h4>
+                <p className="text-sm text-[color:var(--color-whisper)]">{brandData.businessType}</p>
               </div>
             )}
 
             {brandData.photoGoals && (
               <div>
-                <h4 className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2">Photo Goals</h4>
-                <p className="text-sm text-stone-950">{brandData.photoGoals}</p>
+                <h4 className="mb-2 text-[11px] font-medium uppercase tracking-[0.35em] text-[color:var(--color-smoke)]">Photo Goals</h4>
+                <p className="text-sm text-[color:var(--color-whisper)]">{brandData.photoGoals}</p>
               </div>
             )}
 
             {brandData.stylePreferences && (
               <div>
-                <h4 className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2">
+                <h4 className="mb-2 text-[11px] font-medium uppercase tracking-[0.35em] text-[color:var(--color-smoke)]">
                   Style Preferences
                 </h4>
-                <p className="text-sm text-stone-950">{brandData.stylePreferences}</p>
+                <p className="text-sm text-[color:var(--color-whisper)]">{brandData.stylePreferences}</p>
               </div>
             )}
 
             {brandData.transformationStory && (
               <div>
-                <h4 className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-2">Your Story</h4>
-                <p className="text-sm text-stone-950 line-clamp-3">{brandData.transformationStory}</p>
+                <h4 className="mb-2 text-[11px] font-medium uppercase tracking-[0.35em] text-[color:var(--color-smoke)]">Your Story</h4>
+                <p className="line-clamp-3 text-sm text-[color:var(--color-whisper)]">{brandData.transformationStory}</p>
               </div>
             )}
 
-            <div className="pt-4 border-t border-stone-200/30">
-              <p className="text-xs text-stone-500 italic">
+            <div className="border-t border-white/10 pt-4">
+              <p className="text-xs italic text-[color:var(--color-smoke)]">
                 Maya uses this information to create personalized photo concepts that align with your brand and vision.
               </p>
             </div>
@@ -170,11 +151,9 @@ export default function PersonalBrandSection({ userId }: PersonalBrandSectionPro
       <UnifiedOnboardingWizard
         isOpen={showWizard}
         onDismiss={() => {
-          console.log("[v0] Closing wizard")
           setShowWizard(false)
         }}
-        onComplete={async (data) => {
-          console.log("[v0] Unified wizard completed")
+        onComplete={async (_data) => {
           setShowWizard(false)
           await fetchBrandData()
         }}

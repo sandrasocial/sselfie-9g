@@ -13,7 +13,7 @@ interface UpgradeModalProps {
   onClose: () => void
 }
 
-export function UpgradeModal({ open, currentTier, targetTier = "sselfie_studio_membership", onClose }: UpgradeModalProps) {
+export function UpgradeModal({ open, currentTier: _currentTier, targetTier = "sselfie_studio_membership", onClose }: UpgradeModalProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -23,7 +23,6 @@ export function UpgradeModal({ open, currentTier, targetTier = "sselfie_studio_m
     setLoading(true)
     setError(null)
     try {
-      console.log("[UPGRADE] Starting upgrade to:", targetTier)
       trackCTAClick("upgrade_modal", `Upgrade to ${targetName}`, "/checkout")
       const response = await fetch("/api/subscription/upgrade", {
         method: "POST",
@@ -33,7 +32,6 @@ export function UpgradeModal({ open, currentTier, targetTier = "sselfie_studio_m
       })
 
       const data = await response.json()
-      console.log("[UPGRADE] Response:", data)
       
       if (!response.ok) {
         let errorMsg = data.error || "Upgrade failed. Please try again."
@@ -45,7 +43,6 @@ export function UpgradeModal({ open, currentTier, targetTier = "sselfie_studio_m
           errorMsg = "Upgrade service is temporarily unavailable. Please contact support."
         }
         
-        console.error("[UPGRADE] Error:", errorMsg, "Raw error:", data.error)
         setError(errorMsg)
         setLoading(false)
         return
@@ -55,25 +52,21 @@ export function UpgradeModal({ open, currentTier, targetTier = "sselfie_studio_m
       if (data?.clientSecret || (data?.requiresCheckout && data?.clientSecret)) {
         // No existing subscription: start embedded checkout
         const clientSecret = data.clientSecret
-        console.log("[UPGRADE] Redirecting to checkout with clientSecret")
         window.location.href = `/checkout?client_secret=${clientSecret}`
         return
       }
 
       // Success via subscription update: reload to reflect new tier
       if (data?.success) {
-        console.log("[UPGRADE] Upgrade successful, reloading page")
         window.location.reload()
         return
       }
 
       // Fallback: if we get here, something unexpected happened
-      console.warn("[UPGRADE] Unexpected response format:", data)
       setError("Upgrade completed but response was unexpected. Please refresh the page.")
       setLoading(false)
-    } catch (err: any) {
-      console.error("[UPGRADE] Exception:", err)
-      setError(err?.message || "Upgrade failed. Please try again.")
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Upgrade failed. Please try again.")
       setLoading(false)
     }
   }
@@ -87,27 +80,40 @@ export function UpgradeModal({ open, currentTier, targetTier = "sselfie_studio_m
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/80 p-4 animate-fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-xl animate-fade-in"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           onClose()
         }
       }}
     >
-      <div className="relative w-full max-w-sm bg-stone-50 rounded-lg p-6 sm:p-8" onClick={(e) => e.stopPropagation()}>
-        <h2 className="font-serif text-2xl sm:text-3xl font-extralight tracking-[0.2em] uppercase text-stone-900 text-center mb-3">
+      <div
+        className="relative w-full max-w-sm rounded-[20px] border border-[color:var(--glass-border)] bg-[color:var(--color-obsidian)]/95 p-6 backdrop-blur-[20px] sm:p-8"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="display-header mb-3 text-center text-2xl font-light text-[color:var(--color-porcelain)] sm:text-3xl">
           Ready to keep going?
         </h2>
 
-        <p className="text-center text-stone-600 font-light text-sm mb-6">
+        <p className="mb-6 text-center text-sm font-light text-[color:var(--color-whisper)]">
           {isSubscription
-            ? <>Creator Studio gives you <strong className="text-stone-900">{targetCredits} credits a month</strong> — that&apos;s {Math.floor(targetCredits / 2)} brand photos. One monthly plan, everything you need to show up consistently without scrambling for content.</>
-            : <><strong className="text-stone-900">{targetName}</strong> gives you <strong className="text-stone-900">{targetCredits} credits</strong> to use whenever you need them.</>}
+            ? (
+              <>
+                Creator Studio gives you{" "}
+                <strong className="text-[color:var(--color-porcelain)]">{targetCredits} credits a month</strong> - that&apos;s{" "}
+                {Math.floor(targetCredits / 2)} brand photos. One monthly plan, everything you need to show up consistently without scrambling for content.
+              </>
+            ) : (
+              <>
+                <strong className="text-[color:var(--color-porcelain)]">{targetName}</strong> gives you{" "}
+                <strong className="text-[color:var(--color-porcelain)]">{targetCredits} credits</strong> to use whenever you need them.
+              </>
+            )}
         </p>
 
         {error && (
-          <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3">
-            <p className="text-sm text-red-600 text-center">{error}</p>
+          <div className="mb-4 rounded-lg border border-red-300/35 bg-red-500/15 p-3">
+            <p className="text-center text-sm text-red-100">{error}</p>
           </div>
         )}
 
@@ -115,13 +121,13 @@ export function UpgradeModal({ open, currentTier, targetTier = "sselfie_studio_m
           <button
             onClick={handleUpgrade}
             disabled={loading}
-            className="w-full bg-stone-900 text-stone-50 px-6 py-3 rounded-lg text-xs font-medium uppercase tracking-wider hover:bg-stone-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full rounded-xl border border-white/25 bg-white/12 px-6 py-3 text-xs font-medium uppercase tracking-[0.3em] text-[color:var(--color-porcelain)] transition-all hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? "Processing..." : isSubscription ? "Yes, join Studio" : `Get ${targetName}`}
           </button>
           <button
             onClick={onClose}
-            className="w-full text-stone-600 hover:text-stone-900 px-6 py-3 text-xs font-light tracking-wider uppercase transition-colors"
+            className="w-full rounded-xl border border-white/15 bg-white/5 px-6 py-3 text-xs font-medium uppercase tracking-[0.3em] text-[color:var(--color-whisper)] transition-colors hover:bg-white/10"
           >
             Not right now
           </button>

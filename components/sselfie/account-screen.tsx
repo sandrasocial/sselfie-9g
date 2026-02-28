@@ -2,26 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import {
-  User,
-  Settings as SettingsIcon,
-  Edit2,
-  Plus,
-  Aperture,
-  Camera,
-  ImageIcon,
-  X,
-  LogOut,
-  Bell,
-  Shield,
-  Mail,
-  Calendar,
-  CreditCard,
-  Package,
-  ExternalLink,
-  Lock,
-  ChevronRight,
-} from "lucide-react"
+import { Camera, ImageIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import EditProfileDialog from "./edit-profile-dialog"
 import { ProfileImageSelector } from "@/components/profile-image-selector"
@@ -34,8 +15,6 @@ import type { User as UserType } from "./types"
 import Image from "next/image"
 import UnifiedLoading from "./unified-loading"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { DesignClasses } from "@/lib/design-tokens"
 import { ReferralDashboard } from "@/components/referrals/referral-dashboard"
 import { trackCTAClick } from "@/lib/analytics"
 
@@ -88,7 +67,7 @@ interface SubscriptionInfo {
   stripe_subscription_id?: string
 }
 
-export default function AccountScreen({ user, creditBalance }: AccountScreenProps) {
+export default function AccountScreen({ user, creditBalance: _creditBalance }: AccountScreenProps) {
   const [activeSection, setActiveSection] = useState<AccountSection>("profile")
   
   // Profile state
@@ -111,7 +90,7 @@ export default function AccountScreen({ user, creditBalance }: AccountScreenProp
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [emailNotifications, setEmailNotifications] = useState(true)
   const [mayaUpdates, setMayaUpdates] = useState(true)
-  const [defaultImageCount, setDefaultImageCount] = useState(5)
+  const [_defaultImageCount, setDefaultImageCount] = useState(5)
   const [saveToGallery, setSaveToGallery] = useState(true)
   const [dataForTraining, setDataForTraining] = useState(true)
   const [gender, setGender] = useState<string>("")
@@ -227,7 +206,7 @@ export default function AccountScreen({ user, creditBalance }: AccountScreenProp
     }
   }
 
-  const handleProfileImageUpdate = async (imageUrl: string) => {
+  const handleProfileImageUpdate = async (_imageUrl: string) => {
     await refreshProfileData()
     setShowProfileSelector(false)
   }
@@ -419,129 +398,121 @@ export default function AccountScreen({ user, creditBalance }: AccountScreenProp
 
   const isStudioMembership = userInfo?.product_type === "sselfie_studio_membership"
   const hasActiveSubscription = subscriptionInfo?.status === "active"
-  const currentTier = (userInfo?.product_type as any) ?? "one_time_session"
+  const currentTier =
+    userInfo?.product_type === "sselfie_studio_membership" || userInfo?.product_type === "brand_studio_membership"
+      ? userInfo.product_type
+      : "one_time_session"
   // Only show upgrade for users without Creator Studio membership
   const upgradeTargetTier =
     currentTier === "sselfie_studio_membership" || currentTier === "brand_studio_membership"
       ? null // Already on Creator Studio (or legacy Brand Studio)
       : "sselfie_studio_membership"
+  const isPastDue = subscriptionInfo?.status === "past_due"
+  const sectionWrap = "px-4 sm:px-6 md:px-8"
+  const glassCard =
+    "rounded-[20px] border border-[color:var(--glass-border)] bg-[color:var(--glass-bg)] backdrop-blur-[20px]"
+  const glassRow =
+    "rounded-2xl border border-white/10 bg-white/5 px-4 py-3 transition-colors hover:border-white/20"
+  const sectionLabel = "text-[11px] font-medium uppercase tracking-[0.5em] text-[color:var(--color-whisper)]"
+  const actionButton =
+    "w-full rounded-2xl border border-white/20 bg-white/5 px-4 py-4 text-[11px] font-medium uppercase tracking-[0.35em] text-[color:var(--color-porcelain)] transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
 
   return (
-    <div className="space-y-6 pb-24">
-      {/* Tab Switcher */}
-      <div className={`flex gap-2 ${DesignClasses.spacing.paddingX.md} pt-4`}>
-        <button
-          onClick={() => setActiveSection("profile")}
-          className={`flex-1 ${DesignClasses.spacing.padding.sm} ${DesignClasses.radius.md} transition-all ${
-            activeSection === "profile"
-              ? `${DesignClasses.buttonPrimary}`
-              : `${DesignClasses.buttonSecondary}`
-          }`}
-        >
-          <span className={DesignClasses.typography.label.button}>Profile</span>
-        </button>
-        <button
-          onClick={() => setActiveSection("settings")}
-          className={`flex-1 ${DesignClasses.spacing.padding.sm} ${DesignClasses.radius.md} transition-all ${
-            activeSection === "settings"
-              ? `${DesignClasses.buttonPrimary}`
-              : `${DesignClasses.buttonSecondary}`
-          }`}
-        >
-          <span className={DesignClasses.typography.label.button}>Settings</span>
-        </button>
+    <div className="space-y-6 pb-28">
+      <div className={`${sectionWrap} pt-4`}>
+        <div className="flex items-end gap-8 border-b border-white/10">
+          <button
+            onClick={() => setActiveSection("profile")}
+            className={`pb-4 text-[11px] font-medium uppercase tracking-[0.5em] transition-colors ${
+              activeSection === "profile"
+                ? "border-b border-[color:var(--color-porcelain)] text-[color:var(--color-porcelain)]"
+                : "text-[color:var(--color-smoke)] hover:text-[color:var(--color-whisper)]"
+            }`}
+          >
+            Profile
+          </button>
+          <button
+            onClick={() => setActiveSection("settings")}
+            className={`pb-4 text-[11px] font-medium uppercase tracking-[0.5em] transition-colors ${
+              activeSection === "settings"
+                ? "border-b border-[color:var(--color-porcelain)] text-[color:var(--color-porcelain)]"
+                : "text-[color:var(--color-smoke)] hover:text-[color:var(--color-whisper)]"
+            }`}
+          >
+            Settings
+          </button>
+        </div>
       </div>
 
-      {/* Profile Section */}
       {activeSection === "profile" && (
-        <div className="space-y-8">
-          <div className="text-center space-y-8 pt-4">
-            <button onClick={() => setShowProfileSelector(true)} className="relative inline-block group">
-              <Avatar className="w-32 h-32 sm:w-40 sm:h-40 border-2 border-stone-200/60 shadow-sm">
-                <AvatarImage
-                  src={displayAvatar || "/placeholder.svg"}
-                  alt={displayName}
-                  className="object-cover object-top"
-                />
-                <AvatarFallback className="bg-stone-200 text-stone-700 text-5xl sm:text-6xl font-light">
-                  {userInitial}
-                </AvatarFallback>
-              </Avatar>
-              <div className="absolute inset-0 bg-stone-950/0 group-hover:bg-stone-950/40 rounded-full transition-all flex items-center justify-center">
-                <ImageIcon size={24} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-            </button>
-
-            <div className="space-y-4">
-              <h2 className="text-3xl sm:text-5xl font-serif font-extralight tracking-[0.25em] text-stone-950 uppercase">
-                {displayName}
-              </h2>
-              {profileInfo?.bio && <p className="text-sm text-stone-600 max-w-md mx-auto">{profileInfo.bio}</p>}
-              <p className="text-xs tracking-[0.3em] uppercase font-light bg-stone-500/10 px-4 py-2 rounded-full inline-block text-stone-600">
-                {displayPlan} Member
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-8 pt-4 max-w-sm mx-auto">
-              {[
-                { value: stats?.totalGenerations || 0, label: "Photos" },
-                { value: stats?.favorites || 0, label: "Favorites" },
-              ].map((stat, index) => (
-                <div key={index} className="text-center space-y-3">
-                  <div className="text-3xl sm:text-4xl font-serif font-extralight text-stone-950">{stat.value}</div>
-                  <div className="text-xs tracking-[0.15em] uppercase font-light text-stone-500">{stat.label}</div>
+        <div className={`${sectionWrap} space-y-5`}>
+          <div className={`${glassCard} overflow-hidden p-6 sm:p-8`}>
+            <div className="text-center space-y-6">
+              <button onClick={() => setShowProfileSelector(true)} className="relative inline-block group">
+                <Avatar className="h-28 w-28 border-2 border-[color:var(--color-whisper)] sm:h-36 sm:w-36">
+                  <AvatarImage
+                    src={displayAvatar || "/placeholder.svg"}
+                    alt={displayName}
+                    className="object-cover object-top"
+                  />
+                  <AvatarFallback className="bg-white/10 text-5xl font-light text-[color:var(--color-porcelain)] sm:text-6xl">
+                    {userInitial}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/0 transition-all group-hover:bg-black/45">
+                  <ImageIcon
+                    size={20}
+                    className="text-[color:var(--color-porcelain)] opacity-0 transition-opacity group-hover:opacity-100"
+                  />
                 </div>
-              ))}
-            </div>
-          </div>
+              </button>
 
-          {/* Referral Dashboard */}
-          <div className={DesignClasses.spacing.paddingX.md}>
-            <ReferralDashboard />
+              <div className="space-y-3">
+                <h2 className="display-header text-3xl font-light text-[color:var(--color-porcelain)] sm:text-5xl">
+                  {displayName}
+                </h2>
+                {profileInfo?.bio && (
+                  <p className="mx-auto max-w-xl text-sm leading-relaxed text-[color:var(--color-whisper)]">{profileInfo.bio}</p>
+                )}
+                <p className="inline-flex rounded-full border border-white/20 bg-white/6 px-4 py-2 text-[10px] font-medium uppercase tracking-[0.4em] text-[color:var(--color-whisper)]">
+                  {displayPlan} Member
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { value: stats?.totalGenerations || 0, label: "Photos" },
+                  { value: stats?.favorites || 0, label: "Favourites" },
+                ].map((stat) => (
+                  <div key={stat.label} className={`${glassRow} text-center`}>
+                    <p className="display-header text-3xl font-light text-[color:var(--color-porcelain)]">{stat.value}</p>
+                    <p className="mt-1 text-[10px] font-medium uppercase tracking-[0.4em] text-[color:var(--color-smoke)]">
+                      {stat.label}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           <button
             onClick={() => setEditDialogOpen(true)}
-            className={`w-full group relative ${DesignClasses.buttonPrimary} overflow-hidden`}
+            className="w-full rounded-2xl border border-white/20 bg-white/10 px-5 py-4 text-[11px] font-medium uppercase tracking-[0.35em] text-[color:var(--color-porcelain)] transition-colors hover:bg-white/15"
           >
-            <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            <span className="relative z-10 flex items-center justify-center gap-2">
-              <Edit2 size={16} />
-              Edit Profile
-            </span>
+            Edit Profile
           </button>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             <button
               onClick={() => setIsBrandSectionExpanded(!isBrandSectionExpanded)}
-              className={`w-full flex items-center justify-between ${DesignClasses.spacing.padding.sm} ${DesignClasses.card} hover:bg-white/60 transition-all`}
+              className={`w-full ${glassCard} flex items-center justify-between px-5 py-4 transition-colors hover:bg-white/8`}
             >
-              <div className="flex items-center gap-3">
-                <div className="p-2.5 bg-stone-950 rounded-lg shadow-lg">
-                  <Aperture size={18} className="text-white" strokeWidth={2.5} />
-                </div>
-                <h3 className="text-lg sm:text-xl md:text-2xl font-serif font-extralight tracking-[0.15em] text-stone-950 uppercase">
-                  Personal Brand
-                </h3>
-              </div>
-              <div className={`transform transition-transform duration-200 ${isBrandSectionExpanded ? "rotate-180" : ""}`}>
-                <svg
-                  width="20"
-                  height="20"
-                  viewBox="0 0 20 20"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="text-stone-600"
-                >
-                  <path
-                    d="M5 7.5L10 12.5L15 7.5"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
+              <h3 className="display-header text-lg font-light text-[color:var(--color-porcelain)]">Your Brand</h3>
+              <span
+                className={`text-lg text-[color:var(--color-whisper)] transition-transform duration-200 ${isBrandSectionExpanded ? "rotate-180" : ""}`}
+              >
+                ▾
+              </span>
             </button>
             {isBrandSectionExpanded && (
               <div className="animate-in slide-in-from-top-2 duration-200">
@@ -550,31 +521,26 @@ export default function AccountScreen({ user, creditBalance }: AccountScreenProp
             )}
           </div>
 
-          <div className="space-y-4 sm:space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base sm:text-xl md:text-2xl font-serif font-extralight tracking-[0.15em] text-stone-950 uppercase">
-                Best Work
-              </h3>
-              <Button
+          <div className={`${glassCard} space-y-4 p-5 sm:p-6`}>
+            <div className="flex items-center justify-between gap-4">
+              <h3 className="display-header text-xl font-light text-[color:var(--color-porcelain)]">Best Work</h3>
+              <button
                 onClick={() => setShowBestWorkSelector(true)}
-                variant="ghost"
-                size="sm"
-                className="text-xs text-stone-600 hover:text-stone-950"
+                className="rounded-full border border-white/15 px-3 py-2 text-[10px] font-medium uppercase tracking-[0.35em] text-[color:var(--color-whisper)] transition-colors hover:bg-white/10"
                 disabled={isSavingBestWork}
               >
-                <Plus size={14} className="mr-1" />
-                Select Photos
-              </Button>
+                Select
+              </button>
             </div>
 
             {isSavingBestWork && (
               <div className="flex items-center justify-center gap-2 py-2">
-                <div className="w-4 h-4 border-2 border-stone-300 border-t-stone-950 rounded-full animate-spin" />
-                <p className="text-xs text-stone-600">Saving...</p>
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                <p className="text-xs text-[color:var(--color-smoke)]">Saving...</p>
               </div>
             )}
 
-            <div className="grid grid-cols-3 gap-2 sm:gap-3 md:gap-4">
+            <div className="grid grid-cols-3 gap-2">
               {bestWork.length > 0
                 ? bestWork.map((image, index) => (
                     <div
@@ -583,149 +549,117 @@ export default function AccountScreen({ user, creditBalance }: AccountScreenProp
                       onDragStart={() => handleDragStart(index)}
                       onDragOver={(e) => handleDragOver(e, index)}
                       onDragEnd={handleDragEnd}
-                      className={`aspect-square rounded-xl sm:rounded-2xl border border-stone-300/30 overflow-hidden cursor-move group transition-all duration-200 hover:scale-[1.02] hover:shadow-lg relative ${
-                        draggedIndex === index ? "opacity-50 scale-95" : ""
+                      className={`group relative aspect-square cursor-move overflow-hidden rounded-xl border border-white/10 transition-all duration-200 hover:border-white/30 ${
+                        draggedIndex === index ? "scale-95 opacity-60" : ""
                       }`}
                     >
                       <Image
                         src={image.image_url || "/placeholder.svg"}
                         alt={image.category || "Generated image"}
                         fill
-                        className="object-cover object-top pointer-events-none"
+                        className="pointer-events-none object-cover object-top"
                         loading="lazy"
                       />
-                      <div className="absolute inset-0 bg-stone-950/0 group-hover:bg-stone-950/10 transition-all flex items-center justify-center">
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg">
-                          <p className="text-xs text-stone-600 font-medium">#{index + 1}</p>
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-all group-hover:bg-black/30">
+                        <div className="rounded-md bg-black/70 px-2 py-1 opacity-0 transition-opacity group-hover:opacity-100">
+                          <p className="text-[10px] text-[color:var(--color-whisper)]">#{index + 1}</p>
                         </div>
                       </div>
                     </div>
                   ))
                 : Array.from({ length: 9 }).map((_, i) => (
-                    <div
+                    <button
                       key={`empty-${i}`}
                       onClick={() => setShowBestWorkSelector(true)}
-                      className="aspect-square bg-stone-200/30 rounded-xl sm:rounded-2xl border border-stone-300/30 flex items-center justify-center cursor-pointer hover:bg-stone-200/50 transition-colors group"
+                      className="group flex aspect-square items-center justify-center rounded-xl border border-white/10 bg-white/4 transition-colors hover:bg-white/10"
                     >
                       <div className="flex flex-col items-center gap-1">
                         <Camera
-                          size={20}
+                          size={18}
                           strokeWidth={1.5}
-                          className="text-stone-400 group-hover:text-stone-600 transition-colors"
+                          className="text-[color:var(--color-smoke)] transition-colors group-hover:text-[color:var(--color-whisper)]"
                         />
-                        <span className="text-[10px] text-stone-400 group-hover:text-stone-600 transition-colors font-light">
+                        <span className="text-[10px] font-light text-[color:var(--color-smoke)] transition-colors group-hover:text-[color:var(--color-whisper)]">
                           {i + 1}
                         </span>
                       </div>
-                    </div>
+                    </button>
                   ))}
             </div>
+
             {bestWork.length === 0 && (
-              <p className="text-center text-sm text-stone-500 py-4">
-                Click the + button or empty slots to select your best work from your gallery
+              <p className="text-center text-xs text-[color:var(--color-smoke)]">
+                Select up to 9 images from your gallery for your profile showcase.
               </p>
             )}
+          </div>
+
+          <div className={`${glassCard} p-4 sm:p-5`}>
+            <p className={`${sectionLabel} mb-4`}>Referral</p>
+            <ReferralDashboard />
           </div>
         </div>
       )}
 
-      {/* Settings Section */}
       {activeSection === "settings" && (
-        <div className={`space-y-4 sm:space-y-6 md:space-y-8 ${DesignClasses.spacing.paddingX.md}`}>
-          {userInfo && (
-            <div className={DesignClasses.card}>
-              <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
-                <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
-                  <User size={18} className="text-white" strokeWidth={2.5} />
-                </div>
-                <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">Account Information</h3>
-              </div>
+        <div className={`${sectionWrap} space-y-4 sm:space-y-5`}>
+          {isPastDue && (
+            <div className="rounded-[20px] border border-amber-300/35 bg-amber-500/10 p-4">
+              <p className="text-[11px] font-medium uppercase tracking-[0.35em] text-amber-100">Payment issue</p>
+              <p className="mt-2 text-sm text-amber-50">
+                Your subscription is marked as past due. Please update billing details to avoid losing access.
+              </p>
+            </div>
+          )}
 
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 py-3">
-                  <Mail size={16} className="text-stone-500" />
-                  <div>
-                    <p className="text-xs text-stone-500 uppercase tracking-wider">Email</p>
-                    <p className="text-sm font-medium text-stone-950">{userInfo.email}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 py-3">
-                  <CreditCard size={16} className="text-stone-500" />
-                  <div>
-                    <p className="text-xs text-stone-500 uppercase tracking-wider">Membership</p>
-                    <p className="text-sm font-medium text-stone-950 uppercase">
-                      {userInfo.product_type === "sselfie_studio_membership"
-                        ? "Studio Member"
-                        : userInfo.product_type === "one_time_session"
-                          ? "One-Time Session"
-                          : "Free"}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 py-3">
-                  <Calendar size={16} className="text-stone-500" />
-                  <div>
-                    <p className="text-xs text-stone-500 uppercase tracking-wider">Member Since</p>
-                    <p className="text-sm font-medium text-stone-950">{formatDate(userInfo.memberSince)}</p>
-                  </div>
-                </div>
+          {userInfo && (
+            <div className={`${glassCard} space-y-4 p-5 sm:p-6`}>
+              <p className={sectionLabel}>Account</p>
+              <div className={glassRow}>
+                <p className="text-[11px] uppercase tracking-[0.35em] text-[color:var(--color-smoke)]">Email</p>
+                <p className="text-sm text-[color:var(--color-whisper)]">{userInfo.email}</p>
+              </div>
+              <div className={glassRow}>
+                <p className="text-[11px] uppercase tracking-[0.35em] text-[color:var(--color-smoke)]">Membership</p>
+                <p className="text-sm uppercase text-[color:var(--color-whisper)]">
+                  {userInfo.product_type === "sselfie_studio_membership"
+                    ? "Studio Member"
+                    : userInfo.product_type === "one_time_session"
+                      ? "One-Time Session"
+                      : "Free"}
+                </p>
+              </div>
+              <div className={glassRow}>
+                <p className="text-[11px] uppercase tracking-[0.35em] text-[color:var(--color-smoke)]">Member Since</p>
+                <p className="text-sm text-[color:var(--color-whisper)]">{formatDate(userInfo.memberSince)}</p>
               </div>
             </div>
           )}
 
           {userInfo?.product_type === "sselfie_studio_membership" && (
-            <div className={DesignClasses.card}>
-              <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
-                <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
-                  <CreditCard size={18} className="text-white" strokeWidth={2.5} />
+            <div className={`${glassCard} space-y-4 p-5 sm:p-6`}>
+              <p className={sectionLabel}>Subscription</p>
+              {subscriptionInfo?.current_period_end && (
+                <div className={glassRow}>
+                  <p className="text-[11px] uppercase tracking-[0.35em] text-[color:var(--color-smoke)]">Next Billing Date</p>
+                  <p className="text-sm text-[color:var(--color-whisper)]">
+                    {formatRenewalDate(subscriptionInfo.current_period_end)}
+                  </p>
                 </div>
-                <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">Subscription Management</h3>
-              </div>
-
-              <div className="space-y-4">
-                {subscriptionInfo?.current_period_end && (
-                  <div className="flex items-center gap-3 py-3">
-                    <Calendar size={16} className="text-stone-500" />
-                    <div>
-                      <p className="text-xs text-stone-500 uppercase tracking-wider">Next Billing Date</p>
-                      <p className="text-sm font-medium text-stone-950">
-                        {formatRenewalDate(subscriptionInfo.current_period_end)}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                <button
-                  onClick={handleManageSubscription}
-                  disabled={isLoadingPortal}
-                  className="w-full flex items-center justify-center gap-2 text-sm tracking-[0.15em] uppercase font-light border rounded-2xl py-5 transition-colors hover:text-stone-950 hover:bg-stone-100/30 min-h-[56px] text-stone-600 border-stone-300/40 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <ExternalLink size={16} />
-                  {isLoadingPortal ? "Opening..." : "Manage Subscription"}
-                </button>
-
-                <p className="text-xs text-stone-500 text-center">
-                  Update your payment method, view billing history, or cancel your membership anytime
-                </p>
-              </div>
+              )}
+              <button onClick={handleManageSubscription} disabled={isLoadingPortal} className={actionButton}>
+                {isLoadingPortal ? "Opening..." : "Manage Subscription"}
+              </button>
+              <p className="text-xs text-[color:var(--color-smoke)]">
+                Update payment method, review invoices, or cancel your membership in Stripe.
+              </p>
             </div>
           )}
 
           {userInfo && upgradeTargetTier && (
-            <div className="bg-white/70 backdrop-blur-2xl rounded-xl sm:rounded-[1.75rem] p-4 sm:p-6 md:p-8 border border-stone-200/60 shadow-xl shadow-stone-900/10">
-              <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
-                <div className="p-2.5 sm:p-3.5 bg-stone-900 rounded-lg sm:rounded-[1.125rem] shadow-lg">
-                  <CreditCard size={18} className="text-white" strokeWidth={2.5} />
-                </div>
-                <div>
-                  <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">
-                    Upgrade to Creator Studio
-                  </h3>
-                  <p className="text-sm text-stone-600">More credits, premium features, priority support.</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-4">
+            <div className={`${glassCard} space-y-4 p-5 sm:p-6`}>
+              <p className={sectionLabel}>Upgrade</p>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <InfoPill
                   label="Current plan"
                   value={
@@ -736,14 +670,8 @@ export default function AccountScreen({ user, creditBalance }: AccountScreenProp
                         : "Free"
                   }
                 />
-                <InfoPill
-                  label="Upgrade to"
-                  value="Creator Studio"
-                />
-                <InfoPill
-                  label="Credits"
-                  value="200 credits / month"
-                />
+                <InfoPill label="Upgrade to" value="Creator Studio" />
+                <InfoPill label="Credits" value="200 credits / month" />
               </div>
 
               <button
@@ -753,275 +681,188 @@ export default function AccountScreen({ user, creditBalance }: AccountScreenProp
                   trackCTAClick("account_screen_upgrade", "Upgrade now", "/checkout")
                   setShowUpgradeModal(true)
                 }}
-                className="w-full flex items-center justify-center gap-2 text-sm tracking-[0.15em] uppercase font-medium rounded-2xl py-4 bg-stone-900 text-white hover:bg-stone-800 transition-colors active:scale-[0.98]"
+                className="w-full rounded-2xl border border-white/30 bg-white/10 px-4 py-4 text-center font-serif text-2xl font-extralight uppercase tracking-[0.2em] text-[color:var(--color-porcelain)] transition-colors hover:bg-white/16"
               >
-                Upgrade now
-                <ChevronRight size={14} />
+                Upgrade To Studio
               </button>
 
-              <p className="text-xs text-stone-500 text-center mt-3">
-                We&apos;ll prorate the change automatically. You can switch back anytime in Stripe.
+              <p className="text-xs text-[color:var(--color-smoke)]">
+                Proration is automatic. You can change plans anytime in Stripe.
               </p>
             </div>
           )}
 
-          {((hasActiveSubscription || userInfo?.stripe_customer_id) && !isStudioMembership) && (
-            <div className={DesignClasses.card}>
-              <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
-                <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
-                  <CreditCard size={18} className="text-white" strokeWidth={2.5} />
+          {(hasActiveSubscription || userInfo?.stripe_customer_id) && !isStudioMembership && (
+            <div className={`${glassCard} space-y-4 p-5 sm:p-6`}>
+              <p className={sectionLabel}>Billing</p>
+              {subscriptionInfo?.current_period_end && (
+                <div className={glassRow}>
+                  <p className="text-[11px] uppercase tracking-[0.35em] text-[color:var(--color-smoke)]">Session Expires</p>
+                  <p className="text-sm text-[color:var(--color-whisper)]">
+                    {formatRenewalDate(subscriptionInfo.current_period_end)}
+                  </p>
                 </div>
-                <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">Billing & Invoices</h3>
-              </div>
-
-              <div className="space-y-4">
-                {subscriptionInfo?.current_period_end && (
-                  <div className="flex items-center gap-3 py-3">
-                    <Calendar size={16} className="text-stone-500" />
-                    <div>
-                      <p className="text-xs text-stone-500 uppercase tracking-wider">Session Expires</p>
-                      <p className="text-sm font-medium text-stone-950">
-                        {formatRenewalDate(subscriptionInfo.current_period_end)}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {userInfo?.stripe_customer_id && (
-                  <button
-                    onClick={handleManageSubscription}
-                    disabled={isLoadingPortal}
-                    className="w-full flex items-center justify-center gap-2 text-sm tracking-[0.15em] uppercase font-light border rounded-2xl py-5 transition-colors hover:text-stone-950 hover:bg-stone-100/30 min-h-[56px] text-stone-600 border-stone-300/40 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <ExternalLink size={16} />
-                    {isLoadingPortal ? "Opening..." : "View Invoices"}
-                  </button>
-                )}
-
-                <p className="text-xs text-stone-500 text-center">
-                  {userInfo?.stripe_customer_id
-                    ? "View your invoices and billing history in Stripe"
-                    : "Manage your session details and billing information"}
-                </p>
-              </div>
+              )}
+              {userInfo?.stripe_customer_id && (
+                <button onClick={handleManageSubscription} disabled={isLoadingPortal} className={actionButton}>
+                  {isLoadingPortal ? "Opening..." : "View Invoices"}
+                </button>
+              )}
             </div>
           )}
 
-          <div className={DesignClasses.card}>
-            <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
-              <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
-                <Bell size={18} className="text-white" strokeWidth={2.5} />
-              </div>
-              <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">Notifications</h3>
-            </div>
-
-            <div className="space-y-1 sm:space-y-2">
-              <ToggleItem
-                label="Email notifications"
-                description="Get notified when your photos are ready"
-                value={emailNotifications}
-                onChange={(value) => {
-                  setEmailNotifications(value)
-                  updateSetting("emailNotifications", value)
-                }}
-              />
-              <ToggleItem
-                label="Maya updates"
-                description="Receive tips and new features from Maya"
-                value={mayaUpdates}
-                onChange={(value) => {
-                  setMayaUpdates(value)
-                  updateSetting("mayaUpdates", value)
-                }}
-              />
-            </div>
+          <div className={`${glassCard} space-y-2 p-5 sm:p-6`}>
+            <p className={sectionLabel}>Notifications</p>
+            <ToggleItem
+              label="Email notifications"
+              description="Get notified when your photos are ready"
+              value={emailNotifications}
+              onChange={(value) => {
+                setEmailNotifications(value)
+                updateSetting("emailNotifications", value)
+              }}
+            />
+            <ToggleItem
+              label="Maya updates"
+              description="Receive tips and new features from Maya"
+              value={mayaUpdates}
+              onChange={(value) => {
+                setMayaUpdates(value)
+                updateSetting("mayaUpdates", value)
+              }}
+            />
           </div>
 
-          <div className={DesignClasses.card}>
-            <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
-              <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
-                <Aperture size={18} className="text-white" strokeWidth={2.5} />
-              </div>
-              <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">Generation Preferences</h3>
-            </div>
-
-            <div className="space-y-1 sm:space-y-2">
-              <ToggleItem
-                label="Auto-save to gallery"
-                description="Automatically save generated photos to your gallery"
-                value={saveToGallery}
-                onChange={(value) => {
-                  setSaveToGallery(value)
-                  updateSetting("saveToGallery", value)
-                }}
-              />
-            </div>
+          <div className={`${glassCard} space-y-2 p-5 sm:p-6`}>
+            <p className={sectionLabel}>Generation Preferences</p>
+            <ToggleItem
+              label="Auto-save to gallery"
+              description="Automatically save generated photos to your gallery"
+              value={saveToGallery}
+              onChange={(value) => {
+                setSaveToGallery(value)
+                updateSetting("saveToGallery", value)
+              }}
+            />
           </div>
 
-          <div className={DesignClasses.card}>
-            <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
-              <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
-                <Shield size={18} className="text-white" strokeWidth={2.5} />
-              </div>
-              <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">Privacy & Data</h3>
-            </div>
-
-            <div className="space-y-1 sm:space-y-2">
-              <ToggleItem
-                label="Use my data for training"
-                description="Help improve Maya by allowing your photos to enhance the AI model"
-                value={dataForTraining}
-                onChange={(value) => {
-                  setDataForTraining(value)
-                  updateSetting("dataForTraining", value)
-                }}
-              />
-            </div>
+          <div className={`${glassCard} space-y-2 p-5 sm:p-6`}>
+            <p className={sectionLabel}>Privacy & Data</p>
+            <ToggleItem
+              label="Use my data for training"
+              description="Allow your photos to improve Maya"
+              value={dataForTraining}
+              onChange={(value) => {
+                setDataForTraining(value)
+                updateSetting("dataForTraining", value)
+              }}
+            />
           </div>
 
-          <div className={DesignClasses.card}>
-            <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
-              <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
-                <Package size={18} className="text-white" strokeWidth={2.5} />
-              </div>
-              <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">Brand Assets</h3>
-            </div>
+          <div className={`${glassCard} space-y-4 p-5 sm:p-6`}>
+            <p className={sectionLabel}>Brand Assets</p>
             <BrandAssetsManager />
           </div>
 
-          <div className={DesignClasses.card}>
-            <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
-              <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
-                <Lock size={18} className="text-white" strokeWidth={2.5} />
-              </div>
-              <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">Admin Access</h3>
-            </div>
-
-            <div className="space-y-4">
-              <button
-                onClick={handleAdminAccess}
-                className="w-full flex items-center justify-center gap-2 text-sm tracking-[0.15em] uppercase font-light border rounded-2xl py-5 transition-colors hover:text-stone-950 hover:bg-stone-100/30 min-h-[56px] text-stone-600 border-stone-300/40"
-              >
-                <Lock size={16} />
-                Admin Dashboard
-              </button>
-
-              <p className="text-xs text-stone-500 text-center">Access admin tools and content management</p>
-            </div>
+          <div className={`${glassCard} space-y-4 p-5 sm:p-6`}>
+            <p className={sectionLabel}>Admin</p>
+            <button onClick={handleAdminAccess} className={actionButton}>
+              Admin Dashboard
+            </button>
+            <p className="text-xs text-[color:var(--color-smoke)]">Access admin tools and content management.</p>
           </div>
 
-          <div className={DesignClasses.card}>
-            <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
-              <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
-                <Aperture size={18} className="text-white" strokeWidth={2.5} />
-              </div>
-              <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">Model Training</h3>
-            </div>
-
-            <div className="space-y-4 mb-6">
-              <p className="text-sm text-stone-600">
-                Want to improve your results? Retrain your model with new selfies to get better AI-generated images.
-              </p>
-              <button
-                onClick={() => setShowRetrainModal(true)}
-                className="w-full flex items-center justify-center gap-2 text-sm tracking-[0.15em] uppercase font-light border rounded-2xl py-5 transition-colors hover:text-white hover:bg-stone-950 min-h-[56px] text-stone-950 border-stone-950"
-              >
-                <Aperture size={16} />
-                Retrain Model
-              </button>
-            </div>
-          </div>
-
-          <div className={DesignClasses.card}>
-            <div className="flex items-center space-x-3 sm:space-x-4 mb-6 sm:mb-8">
-              <div className="p-2.5 sm:p-3.5 bg-stone-950 rounded-lg sm:rounded-[1.125rem] shadow-lg">
-                <User size={18} className="text-white" strokeWidth={2.5} />
-              </div>
-              <h3 className="text-base sm:text-lg md:text-xl font-bold text-stone-950">Model Information</h3>
-            </div>
-
-            <div className="space-y-6">
-              <div>
-                <label className="block text-xs text-stone-500 uppercase tracking-wider mb-3">Gender</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {["woman", "man", "non-binary"].map((option) => (
-                    <button
-                      key={option}
-                      onClick={() => setGender(option)}
-                      className={`px-4 py-3 text-sm rounded-xl border transition-all ${
-                        gender === option
-                          ? "bg-stone-950 text-white border-stone-950"
-                          : "bg-white text-stone-600 border-stone-300/40 hover:border-stone-400"
-                      }`}
-                    >
-                      {option.charAt(0).toUpperCase() + option.slice(1)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs text-stone-500 uppercase tracking-wider mb-3">Ethnicity (Optional)</label>
-                <select
-                  value={ethnicity}
-                  onChange={(e) => setEthnicity(e.target.value)}
-                  className="w-full px-4 py-3 text-sm rounded-xl border border-stone-300/40 bg-white text-stone-950 focus:outline-none focus:border-stone-400 transition-all"
-                >
-                  <option value="">Select ethnicity</option>
-                  <option value="Black">Black</option>
-                  <option value="White">White</option>
-                  <option value="Asian">Asian</option>
-                  <option value="Latina/Latino">Latina/Latino</option>
-                  <option value="Middle Eastern">Middle Eastern</option>
-                  <option value="South Asian">South Asian</option>
-                  <option value="Mixed">Mixed</option>
-                  <option value="Other">Other</option>
-                  <option value="Prefer not to say">Prefer not to say</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs text-stone-500 uppercase tracking-wider mb-3">
-                  Physical Preferences (Optional)
-                </label>
-                <textarea
-                  value={physicalPreferences}
-                  onChange={(e) => setPhysicalPreferences(e.target.value)}
-                  placeholder="e.g., curvier body type, fuller bust, lighter blonde hair, athletic build"
-                  rows={3}
-                  className="w-full px-4 py-3 text-sm rounded-xl border border-stone-300/40 bg-white text-stone-950 focus:outline-none focus:border-stone-400 transition-all resize-none"
-                />
-                <p className="mt-2 text-xs text-stone-500">
-                  Describe how you&apos;d like to appear in your photos. These preferences will be applied to all future image
-                  generations.
-                </p>
-              </div>
-
-              <button
-                onClick={handleUpdateDemographics}
-                disabled={isUpdatingDemographics || !gender}
-                className="w-full flex items-center justify-center gap-2 text-sm tracking-[0.15em] uppercase font-light border rounded-2xl py-5 transition-colors hover:text-white hover:bg-stone-950 min-h-[56px] text-stone-950 border-stone-950 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isUpdatingDemographics ? "Updating..." : "Update Model Information"}
-              </button>
-
-              <p className="text-xs text-stone-500 text-center">
-                This information helps Maya generate accurate AI images that represent you. Physical preferences will be
-                applied to all future generations. No retraining required.
-              </p>
-            </div>
-          </div>
-
-          <div className="pt-6 border-t border-stone-200/30 space-y-3">
+          <div className={`${glassCard} space-y-4 p-5 sm:p-6`}>
+            <p className={sectionLabel}>Model Training</p>
+            <p className="text-sm leading-relaxed text-[color:var(--color-whisper)]">
+              Retrain with new selfies to improve future generation quality.
+            </p>
             <button
-              onClick={handleLogout}
-              disabled={isLoggingOut}
-              className="w-full flex items-center justify-center gap-2 text-sm tracking-[0.15em] uppercase font-light border rounded-2xl py-5 transition-colors hover:text-stone-950 hover:bg-stone-100/30 min-h-[56px] text-stone-600 border-stone-300/40 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => setShowRetrainModal(true)}
+              className="w-full rounded-2xl border border-white/25 bg-white/8 px-4 py-4 text-[11px] font-medium uppercase tracking-[0.35em] text-[color:var(--color-porcelain)] transition-colors hover:bg-white/14"
             >
-              <LogOut size={16} />
-              {isLoggingOut ? "Signing Out..." : "Sign Out"}
+              Retrain Model
             </button>
           </div>
+
+          <div className={`${glassCard} space-y-6 p-5 sm:p-6`}>
+            <p className={sectionLabel}>Model Information</p>
+
+            <div>
+              <label className="mb-3 block text-[11px] uppercase tracking-[0.35em] text-[color:var(--color-smoke)]">
+                Gender
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {["woman", "man", "non-binary"].map((option) => (
+                  <button
+                    key={option}
+                    onClick={() => setGender(option)}
+                    className={`rounded-xl border px-3 py-2 text-xs uppercase tracking-[0.2em] transition-colors ${
+                      gender === option
+                        ? "border-white/40 bg-white/14 text-[color:var(--color-porcelain)]"
+                        : "border-white/12 bg-white/6 text-[color:var(--color-whisper)] hover:bg-white/10"
+                    }`}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-3 block text-[11px] uppercase tracking-[0.35em] text-[color:var(--color-smoke)]">
+                Ethnicity (Optional)
+              </label>
+              <select
+                value={ethnicity}
+                onChange={(e) => setEthnicity(e.target.value)}
+                className="w-full rounded-xl border border-white/12 bg-white/6 px-4 py-3 text-sm text-[color:var(--color-whisper)] outline-none transition-colors focus:border-white/30"
+              >
+                <option value="">Select ethnicity</option>
+                <option value="Black">Black</option>
+                <option value="White">White</option>
+                <option value="Asian">Asian</option>
+                <option value="Latina/Latino">Latina/Latino</option>
+                <option value="Middle Eastern">Middle Eastern</option>
+                <option value="South Asian">South Asian</option>
+                <option value="Mixed">Mixed</option>
+                <option value="Other">Other</option>
+                <option value="Prefer not to say">Prefer not to say</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-3 block text-[11px] uppercase tracking-[0.35em] text-[color:var(--color-smoke)]">
+                Physical Preferences (Optional)
+              </label>
+              <textarea
+                value={physicalPreferences}
+                onChange={(e) => setPhysicalPreferences(e.target.value)}
+                placeholder="e.g., curvier body type, fuller bust, lighter blonde hair, athletic build"
+                rows={3}
+                className="w-full resize-none rounded-xl border border-white/12 bg-white/6 px-4 py-3 text-sm text-[color:var(--color-whisper)] outline-none transition-colors focus:border-white/30"
+              />
+              <p className="mt-2 text-xs text-[color:var(--color-smoke)]">
+                These preferences help Maya keep generated images aligned to your profile.
+              </p>
+            </div>
+
+            <button
+              onClick={handleUpdateDemographics}
+              disabled={isUpdatingDemographics || !gender}
+              className={actionButton}
+            >
+              {isUpdatingDemographics ? "Updating..." : "Update Model Information"}
+            </button>
+          </div>
+
+          <button
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className="w-full rounded-2xl border border-white/20 bg-white/5 px-4 py-4 text-[11px] font-medium uppercase tracking-[0.35em] text-[color:var(--color-whisper)] transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isLoggingOut ? "Signing Out..." : "Sign Out"}
+          </button>
         </div>
       )}
 
@@ -1098,22 +939,22 @@ function ToggleItem({
   return (
     <div
       onClick={() => onChange(!value)}
-      className="flex items-start justify-between py-3 sm:py-5 hover:bg-white/30 rounded-lg sm:rounded-[1.25rem] px-3 sm:px-6 -mx-3 sm:-mx-6 transition-all duration-300 cursor-pointer group min-h-[68px] sm:min-h-[80px]"
+      className="group -mx-3 flex min-h-[70px] cursor-pointer items-center justify-between rounded-xl border border-white/6 bg-white/4 px-3 py-3 transition-all duration-300 hover:border-white/16 hover:bg-white/8 sm:px-4"
     >
-      <div className="flex-1 min-w-0 pr-4">
-        <p className="text-xs sm:text-sm md:text-base text-stone-950 font-medium">{label}</p>
-        <p className="text-[10px] sm:text-xs text-stone-500 mt-1">{description}</p>
+      <div className="min-w-0 flex-1 pr-4">
+        <p className="text-sm font-medium text-[color:var(--color-whisper)]">{label}</p>
+        <p className="mt-1 text-[11px] text-[color:var(--color-smoke)]">{description}</p>
       </div>
       <div
-        className={`relative w-12 h-7 sm:w-14 sm:h-8 md:w-16 md:h-9 rounded-full transition-all duration-300 cursor-pointer shadow-inner shrink-0 ${
-          value ? "bg-stone-950 shadow-stone-900/30" : "bg-stone-300/60"
+        className={`relative h-7 w-12 shrink-0 cursor-pointer rounded-full border transition-all duration-300 ${
+          value ? "border-white/25 bg-white/18" : "border-white/12 bg-white/6"
         }`}
       >
         <div
-          className={`absolute top-1 w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 bg-white rounded-full shadow-lg transition-all duration-300 ${
-            value ? "translate-x-6 sm:translate-x-7 md:translate-x-8" : "translate-x-1"
+          className={`absolute top-0.5 h-5 w-5 rounded-full bg-[color:var(--color-porcelain)] transition-all duration-300 ${
+            value ? "translate-x-6" : "translate-x-0.5"
           }`}
-        ></div>
+        />
       </div>
     </div>
   )
@@ -1121,10 +962,9 @@ function ToggleItem({
 
 function InfoPill({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-stone-200 bg-white/70 px-4 py-3 space-y-1">
-      <p className="text-[10px] uppercase tracking-[0.15em] text-stone-500">{label}</p>
-      <p className="text-sm font-semibold text-stone-900">{value}</p>
+    <div className="space-y-1 rounded-xl border border-white/10 bg-white/6 px-4 py-3">
+      <p className="text-[10px] uppercase tracking-[0.25em] text-[color:var(--color-smoke)]">{label}</p>
+      <p className="text-sm font-medium text-[color:var(--color-whisper)]">{value}</p>
     </div>
   )
 }
-
