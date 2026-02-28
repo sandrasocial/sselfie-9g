@@ -4,7 +4,7 @@
 ---
 
 ## Last Updated
-2026-02-28 15:12 CET — Updated by Codex (P0 pass deployed to preview; live smoke blocked by Vercel protection)
+2026-02-28 15:23 CET — Updated by Codex (P0 pass pushed to main + production smoke)
 
 ## Last Task Completed
 P0 backend recovery (activation-first) completed:
@@ -43,6 +43,15 @@ P0 backend recovery (activation-first) completed:
     - `https://v0-sselfie-p91lnwtcf-sselfie-studio.vercel.app`
     - `https://v0-sselfie-q3tcdh53e-sselfie-studio.vercel.app`
   - Live endpoint smoke against preview is currently blocked by Vercel Deployment Protection (401 auth wall) without bypass token/SSO session.
+  - Commit pushed to `main`: `9b9802c1` (`Stabilize activation P0: tab sync, Maya context, analytics contract, broadcast preflight`)
+  - Production deploy URLs:
+    - `https://v0-sselfie-9bq22t9ji-sselfie-studio.vercel.app`
+    - Custom domain live: `https://sselfie.ai`
+  - Production endpoint smoke:
+    - `POST /api/analytics/event` with `mode_selected` -> `{ "ok": true, "accepted": true }`
+    - `POST /api/analytics/event` with unsupported `wizard_step_3_complete` -> `{ "ok": true, "accepted": false, "reason": "Unsupported event" }`
+    - `GET /studio` and deep-link `GET /studio?tab=maya&source=academy_purchase&product=what_to_say&first_time_product_user=true` -> `307` to login with `returnTo` preserved
+    - `POST /api/admin/marketing/brand-engine-broadcast/send` currently returns no-pending-draft guard (safe): `{ "success": false, "error": "No pending Brand Engine broadcast found. Create a draft first." }`
 
 Previous completed tasks:
 UX-06 completed (Profile / Account redesign, UI-only):
