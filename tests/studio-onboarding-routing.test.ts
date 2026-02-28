@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import {
   shouldApplyBlueprintFallbackRouting,
+  shouldOpenWelcomeFirstGenerationModal,
   shouldRouteMemberToFeedPlannerOnMissingOnboarding,
 } from "@/lib/onboarding/studio-onboarding-routing"
 
@@ -46,5 +47,9 @@ describe("studio onboarding routing policy", () => {
         hasExtensionData: false,
       }),
     ).toBe(true)
+  })
+
+  it("never auto-opens the legacy first-photo modal onboarding flow", () => {
+    expect(shouldOpenWelcomeFirstGenerationModal({ eligible: true })).toBe(false)
   })
 })

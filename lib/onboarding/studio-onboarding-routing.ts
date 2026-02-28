@@ -11,6 +11,10 @@ type MissingOnboardingRoutingInput = {
   hasExtensionData: boolean
 }
 
+type WelcomeFirstGenerationModalInput = {
+  eligible: boolean
+}
+
 /**
  * Only members should be auto-routed to Feed Planner on Studio load.
  * Free users should stay in Maya and use the welcome-first-generation flow.
@@ -35,4 +39,15 @@ export function shouldRouteMemberToFeedPlannerOnMissingOnboarding({
 }: MissingOnboardingRoutingInput): boolean {
   const hasMissingData = !hasBaseWizardData || !hasExtensionData
   return isMember && blueprintWelcomeShown && hasMissingData
+}
+
+/**
+ * Legacy "Your First Photo in 3 Steps" modal is fully disabled.
+ * First-time guidance must stay inside Maya welcome screen.
+ */
+export function shouldOpenWelcomeFirstGenerationModal({
+  eligible,
+}: WelcomeFirstGenerationModalInput): boolean {
+  void eligible
+  return false
 }

@@ -19,7 +19,6 @@ import OnboardingWizard from "./onboarding-wizard"
 import BlueprintWelcomeWizard from "./blueprint-welcome-wizard"
 // UnifiedOnboardingWizard is now handled exclusively by feed-planner-client.tsx
 import MayaChatScreen from "./maya-chat-screen"
-import WelcomeFirstGenerationFlow from "./maya/welcome-first-generation-flow"
 import GalleryScreen from "./gallery-screen"
 // Note: B-Roll functionality is accessible via Maya Videos tab (b-roll-screen.tsx kept for reference)
 import AcademyScreen from "./academy-screen"
@@ -148,7 +147,6 @@ export default function SselfieApp({
   const [isLoadingTrainingStatus, setIsLoadingTrainingStatus] = useState(true)
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [showBlueprintWelcome, setShowBlueprintWelcome] = useState(false)
-  const [showWelcomeFirstGenerationFlow, setShowWelcomeFirstGenerationFlow] = useState(false)
   // showBlueprintOnboarding and existingBlueprintData removed - UnifiedOnboardingWizard is now handled by feed-planner-client.tsx
   const [creditBalance, setCreditBalance] = useState<number>(0)
   const [isLoadingCredits, setIsLoadingCredits] = useState(true)
@@ -297,7 +295,7 @@ export default function SselfieApp({
       observer.disconnect()
       window.removeEventListener("resize", updateBottomNavHeight)
     }
-  }, [showWelcomeFirstGenerationFlow])
+  }, [])
   
   // Fetch feed list for feed planner header
   const fetcher = async (url: string) => {
@@ -539,40 +537,6 @@ export default function SselfieApp({
       setTimeout(() => setShowFirstPhotoToast(false), 5000)
     }
   }, [creditBalance, access.isMember])
-
-  useEffect(() => {
-    let mounted = true
-
-    const loadWelcomeFirstGenerationState = async () => {
-      try {
-        const response = await fetch("/api/onboarding/welcome-first-generation-state", {
-          method: "GET",
-          credentials: "include",
-        })
-        if (!mounted || !response.ok) return
-
-        const data = await response.json().catch(() => null)
-        if (!mounted || !data?.eligible) return
-
-        setShowWelcomeFirstGenerationFlow(true)
-        setActiveTab("maya")
-        trackAnalyticsEvent({
-          event: "activation_jumpstart_opened",
-          properties: {
-            source: "welcome_first_generation",
-          },
-        })
-      } catch (error) {
-        console.error("[welcome-first-generation] failed to load state", error)
-      }
-    }
-
-    loadWelcomeFirstGenerationState()
-
-    return () => {
-      mounted = false
-    }
-  }, [])
 
   useEffect(() => {
     if (!isTrainingStatusLoading || trainingStatusError) {
@@ -953,13 +917,6 @@ export default function SselfieApp({
         )}
 
       <main className="relative h-full mx-1 sm:mx-2 md:mx-3 pb-2 sm:pb-3 md:pb-4">
-        {showWelcomeFirstGenerationFlow ? (
-          <WelcomeFirstGenerationFlow
-            userHasTrainedModel={hasTrainedModel}
-            onGenerated={refreshCredits}
-            onDone={() => setShowWelcomeFirstGenerationFlow(false)}
-          />
-        ) : (
         <div className={`h-full ${DesignClasses.container} ${activeTab === "maya" ? "overflow-visible" : "overflow-hidden"}`}>
           {/* Hide header when in Maya tab - it has its own header */}
           {activeTab !== "maya" && (
@@ -1265,11 +1222,9 @@ export default function SselfieApp({
             </AnimatePresence>
           </div>
         </div>
-        )}
       </main>
 
-      {!showWelcomeFirstGenerationFlow && (
-        <nav
+      <nav
           ref={bottomNavRef}
           className={`fixed bottom-0 left-0 right-0 z-[70] px-2 sm:px-3 md:px-4 transition-transform duration-300 ease-in-out ${
             isNavVisible ? "translate-y-0" : "translate-y-full"
@@ -1331,7 +1286,6 @@ export default function SselfieApp({
             )}
           </div>
         </nav>
-      )}
 
       <InstallPrompt />
 
