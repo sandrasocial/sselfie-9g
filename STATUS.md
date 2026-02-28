@@ -4,9 +4,37 @@
 ---
 
 ## Last Updated
-2026-02-28 18:08 CET — Updated by Codex (UX-07 in-app Academy dark-glass batch shipped to main)
+2026-02-28 18:11 CET — Updated by Codex (UX-04 Gallery + UX-06 Profile batches shipped to main)
 
 ## Last Task Completed
+UX-06 Profile / Account redesign batch shipped to production:
+- Commit pushed to `main`: `5243544f` (`Restyle account and profile flows to glass UI`)
+- Files shipped:
+  - `components/sselfie/account-screen.tsx`
+  - `components/sselfie/best-work-selector.tsx`
+  - `components/sselfie/edit-profile-dialog.tsx`
+  - `components/sselfie/personal-brand-section.tsx`
+  - `components/upgrade/upgrade-modal.tsx`
+- Validation:
+  - `pnpm eslint` on touched profile files passed with warnings only (0 errors)
+  - `pnpm build` passed
+
+UX-04 Gallery redesign batch shipped to production:
+- Commit pushed to `main`: `6b3b7b43` (`Restyle gallery surfaces to dark glass layout`)
+- Files shipped:
+  - `components/sselfie/gallery-screen.tsx`
+  - `components/sselfie/fullscreen-image-modal.tsx`
+  - `components/sselfie/gallery/components/gallery-empty-state.tsx`
+  - `components/sselfie/gallery/components/gallery-filters.tsx`
+  - `components/sselfie/gallery/components/gallery-header.tsx`
+  - `components/sselfie/gallery/components/gallery-image-card.tsx`
+  - `components/sselfie/gallery/components/gallery-image-grid.tsx`
+  - `components/sselfie/gallery/components/gallery-selection-bar.tsx`
+  - `components/sselfie/gallery/components/gallery-top-suggestions.tsx`
+- Validation:
+  - `pnpm eslint` on touched gallery files passed with warnings only (0 errors)
+  - `pnpm build` passed
+
 UX-07 Academy in-app redesign batch shipped to production:
 - Commit pushed to `main`: `47a28b9d` (`Restyle in-app academy to dark glass system`)
 - Files shipped:
