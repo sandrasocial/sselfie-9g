@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Photo Prompts — SSELFIE Academy</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@200;300&family=Inter:wght@300;500&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --obsidian: #0a0a0a;
+      --porcelain: #ffffff;
+      --pearl: #f5f5f5;
+      --smoke: #666666;
+      --whisper: #e5e5e5;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      font-weight: 300;
+      line-height: 1.8;
+      background: var(--obsidian);
+      color: var(--porcelain);
+      overflow-x: hidden;
+    }
+
+    /* Hero Section */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 80px;
+      position: relative;
+      background: linear-gradient(160deg, #1a1a1a 0%, #0f0f0f 40%, #1d1d1d 100%);
+    }
+
+    @media (max-width: 768px) {
+      .hero {
+        padding: 24px;
+        min-height: 90vh;
+      }
+    }
+
+    .hero-image-grid {
+      position: absolute;
+      top: 60px;
+      left: 80px;
+      right: 80px;
+      height: 420px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 16px;
+      z-index: 1;
+    }
+
+    @media (max-width: 768px) {
+      .hero-image-grid {
+        left: 24px;
+        right: 24px;
+        height: 280px;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        top: 40px;
+      }
+    }
+
+    .hero-image-item {
+      background: linear-gradient(160deg, #2a2a2a 0%, #1a1a1a 40%, #333 100%);
+      opacity: 0.8;
+      animation: fadeInUp 1.2s ease-out;
+      border-radius: 0;
+    }
+
+    .hero-image-item:nth-child(1) {
+      animation-delay: 0.1s;
+      background: linear-gradient(160deg, #2a2a2a 0%, #1a1a1a 40%, #333 100%);
+    }
+
+    .hero-image-item:nth-child(2) {
+      animation-delay: 0.2s;
+      background: linear-gradient(135deg, #1f1f1f 0%, #2d2d2d 100%);
+      margin-top: 80px;
+    }
+
+    .hero-image-item:nth-child(3) {
+      animation-delay: 0.3s;
+      background: linear-gradient(150deg, #252020 0%, #1a1a1a 60%, #2d2825 100%);
+    }
+
+    .hero-image-item:nth-child(4) {
+      animation-delay: 0.4s;
+      background: linear-gradient(160deg, #2a2a2a 0%, #1a1a1a 40%, #333 100%);
+      margin-top: 60px;
+    }
+
+    @media (max-width: 768px) {
+      .hero-image-item:nth-child(2),
+      .hero-image-item:nth-child(4) {
+        display: none;
+      }
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      max-width: 600px;
+    }
+
+    .hero-product-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      font-size: 110px;
+      line-height: 1.0;
+      letter-spacing: -0.01em;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+      animation: fadeInUp 1s ease-out 0.3s backwards;
+    }
+
+    @media (max-width: 768px) {
+      .hero-product-name {
+        font-size: 48px;
+      }
+    }
+
+    .hero-subtitle {
+      font-size: 18px;
+      color: var(--smoke);
+      font-weight: 300;
+      margin-bottom: 32px;
+      animation: fadeInUp 1s ease-out 0.4s backwards;
+    }
+
+    @media (max-width: 768px) {
+      .hero-subtitle {
+        font-size: 16px;
+      }
+    }
+
+    .hero-price {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      font-size: 48px;
+      letter-spacing: -0.01em;
+      color: var(--porcelain);
+      margin-bottom: 40px;
+      animation: fadeInUp 1s ease-out 0.5s backwards;
+    }
+
+    @media (max-width: 768px) {
+      .hero-price {
+        font-size: 32px;
+      }
+    }
+
+    .cta-button {
+      border: 1px solid var(--porcelain);
+      background: transparent;
+      color: var(--porcelain);
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      font-size: 18px;
+      padding: 18px 48px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.4s ease;
+      display: inline-block;
+      animation: fadeInUp 1s ease-out 0.6s backwards;
+    }
+
+    .cta-button:hover {
+      background: var(--porcelain);
+      color: var(--obsidian);
+    }
+
+    /* Problem Section */
+    .problem-section {
+      padding: 100px 80px;
+      background: var(--obsidian);
+      border-top: 1px solid var(--whisper);
+    }
+
+    @media (max-width: 768px) {
+      .problem-section {
+        padding: 60px 24px;
+      }
+    }
+
+    .problem-statement {
+      font-size: 20px;
+      line-height: 1.8;
+      max-width: 850px;
+      color: var(--porcelain);
+    }
+
+    @media (max-width: 768px) {
+      .problem-statement {
+        font-size: 18px;
+      }
+    }
+
+    /* What's Inside Section */
+    .whats-inside-section {
+      padding: 120px 80px;
+      background: var(--obsidian);
+    }
+
+    @media (max-width: 768px) {
+      .whats-inside-section {
+        padding: 60px 24px;
+      }
+    }
+
+    .section-label {
+      font-weight: 500;
+      font-size: 11px;
+      letter-spacing: 0.5em;
+      text-transform: uppercase;
+      color: var(--smoke);
+      margin-bottom: 40px;
+    }
+
+    .section-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      font-size: 80px;
+      line-height: 1.1;
+      letter-spacing: -0.01em;
+      text-transform: uppercase;
+      margin-bottom: 80px;
+      max-width: 600px;
+    }
+
+    @media (max-width: 768px) {
+      .section-title {
+        font-size: 42px;
+        margin-bottom: 40px;
+      }
+    }
+
+    .prompt-categories {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      max-width: 1100px;
+    }
+
+    @media (max-width: 768px) {
+      .prompt-categories {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .category-card {
+      background: linear-gradient(135deg, #1f1f1f 0%, #2d2d2d 100%);
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--whisper);
+    }
+
+    @media (max-width: 768px) {
+      .category-card {
+        padding: 30px;
+      }
+    }
+
+    .category-icon {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      font-size: 40px;
+      margin-bottom: 12px;
+      color: var(--porcelain);
+    }
+
+    .category-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      font-size: 22px;
+      margin-bottom: 12px;
+      color: var(--porcelain);
+      letter-spacing: -0.01em;
+    }
+
+    @media (max-width: 768px) {
+      .category-title {
+        font-size: 18px;
+      }
+    }
+
+    .category-count {
+      font-size: 13px;
+      color: var(--smoke);
+      font-weight: 500;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    /* Before/After Section */
+    .comparison-section {
+      padding: 120px 80px;
+      background: linear-gradient(135deg, #1f1f1f 0%, #2d2d2d 100%);
+      border-top: 1px solid var(--whisper);
+    }
+
+    @media (max-width: 768px) {
+      .comparison-section {
+        padding: 60px 24px;
+      }
+    }
+
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      max-width: 1000px;
+    }
+
+    @media (max-width: 768px) {
+      .comparison-grid {
+        grid-template-columns: 1fr;
+        gap: 40px;
+      }
+    }
+
+    .comparison-column h3 {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      font-size: 32px;
+      margin-bottom: 20px;
+      color: var(--porcelain);
+      letter-spacing: -0.01em;
+    }
+
+    @media (max-width: 768px) {
+      .comparison-column h3 {
+        font-size: 24px;
+      }
+    }
+
+    .comparison-image {
+      height: 380px;
+      background: linear-gradient(160deg, #2a2a2a 0%, #1a1a1a 40%, #333 100%);
+      margin-bottom: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .comparison-image {
+        height: 280px;
+      }
+    }
+
+    .comparison-text {
+      font-size: 16px;
+      line-height: 1.8;
+      color: var(--smoke);
+    }
+
+    .comparison-column:first-child .comparison-text {
+      color: #999;
+    }
+
+    /* How To Use Section */
+    .how-to-section {
+      padding: 120px 80px;
+      background: var(--obsidian);
+      border-top: 1px solid var(--whisper);
+    }
+
+    @media (max-width: 768px) {
+      .how-to-section {
+        padding: 60px 24px;
+      }
+    }
+
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 60px;
+      max-width: 1100px;
+    }
+
+    @media (max-width: 768px) {
+      .steps-grid {
+        grid-template-columns: 1fr;
+        gap: 40px;
+      }
+    }
+
+    .step {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .step-number {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      font-size: 56px;
+      line-height: 1.0;
+      color: var(--porcelain);
+      margin-bottom: 12px;
+    }
+
+    @media (max-width: 768px) {
+      .step-number {
+        font-size: 42px;
+      }
+    }
+
+    .step-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      font-size: 22px;
+      color: var(--porcelain);
+      margin-bottom: 12px;
+      letter-spacing: -0.01em;
+    }
+
+    @media (max-width: 768px) {
+      .step-title {
+        font-size: 18px;
+      }
+    }
+
+    .step-description {
+      font-size: 16px;
+      color: var(--smoke);
+      line-height: 1.8;
+    }
+
+    /* Buy Section */
+    .buy-section {
+      padding: 100px 80px;
+      background: linear-gradient(180deg, #0a0a0a 0%, #1a1a1a 100%);
+      border-top: 1px solid var(--whisper);
+    }
+
+    @media (max-width: 768px) {
+      .buy-section {
+        padding: 60px 24px;
+      }
+    }
+
+    .buy-statement {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      font-size: 64px;
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+      margin-bottom: 60px;
+      max-width: 700px;
+    }
+
+    @media (max-width: 768px) {
+      .buy-statement {
+        font-size: 36px;
+        margin-bottom: 40px;
+      }
+    }
+
+    .buy-price {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      font-size: 72px;
+      letter-spacing: -0.01em;
+      margin-bottom: 40px;
+    }
+
+    @media (max-width: 768px) {
+      .buy-price {
+        font-size: 48px;
+      }
+    }
+
+    .buy-cta {
+      border: 2px solid var(--porcelain);
+      background: transparent;
+      color: var(--porcelain);
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      font-size: 20px;
+      padding: 20px 60px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.4s ease;
+      display: inline-block;
+    }
+
+    .buy-cta:hover {
+      background: var(--porcelain);
+      color: var(--obsidian);
+    }
+
+    /* Footer */
+    .footer {
+      padding: 60px 80px;
+      border-top: 1px solid var(--whisper);
+      background: var(--obsidian);
+      font-size: 13px;
+      color: var(--smoke);
+    }
+
+    @media (max-width: 768px) {
+      .footer {
+        padding: 40px 24px;
+        font-size: 12px;
+      }
+    }
+
+    /* Animations */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    .scroll-fade {
+      opacity: 0;
+      animation: fadeIn 0.8s ease-out forwards;
+    }
+  </style>
+</head>
+<body>
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-image-grid">
+      <div class="hero-image-item"></div>
+      <div class="hero-image-item"></div>
+      <div class="hero-image-item"></div>
+      <div class="hero-image-item"></div>
+    </div>
+    <div class="hero-content">
+      <h1 class="hero-product-name">AI Photo<br>Prompts</h1>
+      <p class="hero-subtitle">Pro Photos From Your Phone</p>
+      <p class="hero-price">€17</p>
+      <button class="cta-button">Get Prompts</button>
+    </div>
+  </section>
+
+  <!-- Problem Section -->
+  <section class="problem-section">
+    <p class="problem-statement">AI photos look fake. Stiff. Wrong. You type a prompt and get a generic AI render with dead eyes. Here's the truth — 100+ of the right prompts make all the difference. The ones that actually work with YOUR face, YOUR brand, YOUR aesthetic.</p>
+  </section>
+
+  <!-- What's Inside Section -->
+  <section class="whats-inside-section">
+    <p class="section-label">100+ PROMPTS ACROSS</p>
+    <h2 class="section-title">Prompt Categories</h2>
+    <div class="prompt-categories">
+      <div class="category-card">
+        <p class="category-icon">✦</p>
+        <h3 class="category-title">Editorial Beauty</h3>
+        <p class="category-count">12 Prompts</p>
+      </div>
+      <div class="category-card">
+        <p class="category-icon">◆</p>
+        <h3 class="category-title">Professional Headshots</h3>
+        <p class="category-count">15 Prompts</p>
+      </div>
+      <div class="category-card">
+        <p class="category-icon">◇</p>
+        <h3 class="category-title">Lifestyle Brand</h3>
+        <p class="category-count">18 Prompts</p>
+      </div>
+      <div class="category-card">
+        <p class="category-icon">●</p>
+        <h3 class="category-title">Close-Up Portrait</h3>
+        <p class="category-count">14 Prompts</p>
+      </div>
+      <div class="category-card">
+        <p class="category-icon">■</p>
+        <h3 class="category-title">Work Environment</h3>
+        <p class="category-count">16 Prompts</p>
+      </div>
+      <div class="category-card">
+        <p class="category-icon">▲</p>
+        <h3 class="category-title">Fashion & Style</h3>
+        <p class="category-count">13 Prompts</p>
+      </div>
+      <div class="category-card">
+        <p class="category-icon">◈</p>
+        <h3 class="category-title">Candid & Authentic</h3>
+        <p class="category-count">12 Prompts</p>
+      </div>
+      <div class="category-card">
+        <p class="category-icon">✧</p>
+        <h3 class="category-title">Bold & Dramatic</h3>
+        <p class="category-count">10 Prompts</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Before/After Section -->
+  <section class="comparison-section">
+    <p class="section-label">The Difference</p>
+    <div class="comparison-grid">
+      <div class="comparison-column">
+        <h3>Generic AI</h3>
+        <div class="comparison-image"></div>
+        <p class="comparison-text">Looks like every other AI headshot. Same vibe, same energy, same generic beauty. Your followers scroll past without seeing YOU.</p>
+      </div>
+      <div class="comparison-column">
+        <h3>SSELFIE Prompts</h3>
+        <div class="comparison-image"></div>
+        <p class="comparison-text">Professional. Editorial. Uniquely you. These prompts pull out your actual face and energy, not a generic render. People stop and look. They see YOU.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- How To Use Section -->
+  <section class="how-to-section">
+    <p class="section-label">HOW TO USE</p>
+    <h2 class="section-title" style="margin-bottom: 60px;">Three Simple Steps</h2>
+    <div class="steps-grid">
+      <div class="step">
+        <p class="step-number">1</p>
+        <h3 class="step-title">Pick Your Prompt</h3>
+        <p class="step-description">Browse 100+ prompts in your phone. Each one tested with real faces. Pick the vibe that matches your brand.</p>
+      </div>
+      <div class="step">
+        <p class="step-number">2</p>
+        <h3 class="step-title">Generate in Midjourney</h3>
+        <p class="step-description">Paste the prompt into Midjourney or your AI tool. Add a selfie if you want. Hit generate. Takes 60 seconds.</p>
+      </div>
+      <div class="step">
+        <p class="step-number">3</p>
+        <h3 class="step-title">Post & Convert</h3>
+        <p class="step-description">Use your professional brand photos across Instagram, LinkedIn, your website. Watch engagement (and sales) jump.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Buy Section -->
+  <section class="buy-section">
+    <h2 class="buy-statement">100+ prompts. Professional photos. Your phone.</h2>
+    <p class="buy-price">€17</p>
+    <button class="buy-cta">Get Prompts Now</button>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>SSELFIE Academy &mdash; Mini-products designed to solve one real problem. No fluff. No subscriptions. Just results.</p>
+  </footer>
+
+  <script>
+    document.querySelectorAll('button').forEach(button => {
+      button.addEventListener('click', function() {
+        console.log('Button clicked');
+      });
+    });
+
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -100px 0px'
+    };
+
+    const observer = new IntersectionObserver(function(entries) {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('scroll-fade');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, observerOptions);
+
+    document.querySelectorAll('.category-card, .comparison-column, .step').forEach(el => {
+      observer.observe(el);
+    });
+  </script>
+</body>
+</html>

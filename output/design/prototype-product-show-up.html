@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Show Up — SSELFIE Academy</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@200;300&family=Inter:wght@300;500&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --obsidian: #0a0a0a;
+      --porcelain: #ffffff;
+      --pearl: #f5f5f5;
+      --smoke: #666666;
+      --whisper: #e5e5e5;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      font-weight: 300;
+      line-height: 1.8;
+      background: var(--obsidian);
+      color: var(--porcelain);
+      overflow-x: hidden;
+    }
+
+    /* Hero Section */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 80px;
+      position: relative;
+      background: linear-gradient(150deg, #252020 0%, #1a1a1a 60%, #2d2825 100%);
+    }
+
+    @media (max-width: 768px) {
+      .hero {
+        padding: 24px;
+        min-height: auto;
+        flex-direction: column;
+      }
+    }
+
+    .hero-image {
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: 50%;
+      height: 100%;
+      background: linear-gradient(150deg, #252020 0%, #1a1a1a 60%, #2d2825 100%);
+      z-index: 1;
+    }
+
+    @media (max-width: 768px) {
+      .hero-image {
+        position: relative;
+        width: 100%;
+        height: 400px;
+        margin-bottom: 40px;
+      }
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      max-width: 500px;
+    }
+
+    .hero-product-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      font-size: 110px;
+      line-height: 1.0;
+      letter-spacing: -0.01em;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+      animation: fadeInUp 1s ease-out 0.3s backwards;
+    }
+
+    @media (max-width: 768px) {
+      .hero-product-name {
+        font-size: 48px;
+      }
+    }
+
+    .hero-subtitle {
+      font-size: 18px;
+      color: var(--smoke);
+      font-weight: 300;
+      margin-bottom: 20px;
+      animation: fadeInUp 1s ease-out 0.4s backwards;
+    }
+
+    @media (max-width: 768px) {
+      .hero-subtitle {
+        font-size: 16px;
+      }
+    }
+
+    .hero-price {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      font-size: 48px;
+      letter-spacing: -0.01em;
+      color: var(--porcelain);
+      margin-bottom: 40px;
+      animation: fadeInUp 1s ease-out 0.5s backwards;
+    }
+
+    @media (max-width: 768px) {
+      .hero-price {
+        font-size: 32px;
+      }
+    }
+
+    .cta-button {
+      border: 1px solid var(--porcelain);
+      background: transparent;
+      color: var(--porcelain);
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      font-size: 18px;
+      padding: 18px 48px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.4s ease;
+      display: inline-block;
+      animation: fadeInUp 1s ease-out 0.6s backwards;
+    }
+
+    .cta-button:hover {
+      background: var(--porcelain);
+      color: var(--obsidian);
+    }
+
+    /* Problem Statement Section */
+    .problem-section {
+      padding: 100px 80px;
+      background: var(--obsidian);
+      border-top: 1px solid var(--whisper);
+    }
+
+    @media (max-width: 768px) {
+      .problem-section {
+        padding: 60px 24px;
+      }
+    }
+
+    .problem-statement {
+      font-size: 20px;
+      line-height: 1.8;
+      max-width: 800px;
+      color: var(--porcelain);
+    }
+
+    @media (max-width: 768px) {
+      .problem-statement {
+        font-size: 18px;
+      }
+    }
+
+    /* What's Inside Section */
+    .whats-inside-section {
+      padding: 120px 80px;
+      background: var(--obsidian);
+    }
+
+    @media (max-width: 768px) {
+      .whats-inside-section {
+        padding: 60px 24px;
+      }
+    }
+
+    .section-label {
+      font-weight: 500;
+      font-size: 11px;
+      letter-spacing: 0.5em;
+      text-transform: uppercase;
+      color: var(--smoke);
+      margin-bottom: 40px;
+    }
+
+    .section-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      font-size: 80px;
+      line-height: 1.1;
+      letter-spacing: -0.01em;
+      text-transform: uppercase;
+      margin-bottom: 80px;
+      max-width: 600px;
+    }
+
+    @media (max-width: 768px) {
+      .section-title {
+        font-size: 42px;
+        margin-bottom: 40px;
+      }
+    }
+
+    .contents-list {
+      max-width: 700px;
+      display: grid;
+      gap: 1px;
+      background: var(--whisper);
+    }
+
+    .content-item {
+      background: var(--obsidian);
+      padding: 40px;
+    }
+
+    @media (max-width: 768px) {
+      .content-item {
+        padding: 24px;
+      }
+    }
+
+    .content-item-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      font-size: 26px;
+      color: var(--porcelain);
+      margin-bottom: 12px;
+      letter-spacing: -0.01em;
+    }
+
+    @media (max-width: 768px) {
+      .content-item-title {
+        font-size: 20px;
+      }
+    }
+
+    .content-item-description {
+      font-size: 16px;
+      color: var(--smoke);
+      line-height: 1.8;
+    }
+
+    /* Camera Truth Section */
+    .camera-section {
+      padding: 120px 80px;
+      background: var(--obsidian);
+      border-top: 1px solid var(--whisper);
+    }
+
+    @media (max-width: 768px) {
+      .camera-section {
+        padding: 60px 24px;
+      }
+    }
+
+    .camera-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: center;
+      max-width: 1000px;
+    }
+
+    @media (max-width: 768px) {
+      .camera-grid {
+        grid-template-columns: 1fr;
+        gap: 40px;
+      }
+    }
+
+    .camera-image {
+      height: 500px;
+      background: linear-gradient(135deg, #1f1f1f 0%, #2d2d2d 100%);
+    }
+
+    @media (max-width: 768px) {
+      .camera-image {
+        height: 300px;
+      }
+    }
+
+    .camera-text h3 {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      font-size: 48px;
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 768px) {
+      .camera-text h3 {
+        font-size: 32px;
+      }
+    }
+
+    .camera-text p {
+      font-size: 18px;
+      line-height: 1.8;
+      color: var(--smoke);
+      margin-bottom: 16px;
+    }
+
+    /* Buy Section */
+    .buy-section {
+      padding: 100px 80px;
+      background: linear-gradient(180deg, #0a0a0a 0%, #1a1a1a 100%);
+      border-top: 1px solid var(--whisper);
+    }
+
+    @media (max-width: 768px) {
+      .buy-section {
+        padding: 60px 24px;
+      }
+    }
+
+    .buy-statement {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      font-size: 64px;
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+      margin-bottom: 60px;
+      max-width: 700px;
+    }
+
+    @media (max-width: 768px) {
+      .buy-statement {
+        font-size: 36px;
+        margin-bottom: 40px;
+      }
+    }
+
+    .buy-price {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      font-size: 72px;
+      letter-spacing: -0.01em;
+      margin-bottom: 40px;
+    }
+
+    @media (max-width: 768px) {
+      .buy-price {
+        font-size: 48px;
+      }
+    }
+
+    .buy-cta {
+      border: 2px solid var(--porcelain);
+      background: transparent;
+      color: var(--porcelain);
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 300;
+      font-size: 20px;
+      padding: 20px 60px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.4s ease;
+      display: inline-block;
+    }
+
+    .buy-cta:hover {
+      background: var(--porcelain);
+      color: var(--obsidian);
+    }
+
+    /* Footer */
+    .footer {
+      padding: 60px 80px;
+      border-top: 1px solid var(--whisper);
+      background: var(--obsidian);
+      font-size: 13px;
+      color: var(--smoke);
+    }
+
+    @media (max-width: 768px) {
+      .footer {
+        padding: 40px 24px;
+        font-size: 12px;
+      }
+    }
+
+    /* Animations */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    .scroll-fade {
+      opacity: 0;
+      animation: fadeIn 0.8s ease-out forwards;
+    }
+  </style>
+</head>
+<body>
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-content">
+      <h1 class="hero-product-name">Show<br>Up</h1>
+      <p class="hero-subtitle">Create Content That Actually Converts</p>
+      <p class="hero-price">€27</p>
+      <button class="cta-button">Start Now</button>
+    </div>
+    <div class="hero-image"></div>
+  </section>
+
+  <!-- Problem Section -->
+  <section class="problem-section">
+    <p class="problem-statement">Most women hide. They post quotes and aesthetics instead of their face. And wonder why no one buys. But here's the truth — people don't buy from a logo. They buy from someone they trust. Someone they can see.</p>
+  </section>
+
+  <!-- What's Inside Section -->
+  <section class="whats-inside-section">
+    <p class="section-label">THE COURSE</p>
+    <h2 class="section-title">What's Inside</h2>
+    <div class="contents-list">
+      <div class="content-item">
+        <h3 class="content-item-title">The Camera Confidence Shift</h3>
+        <p class="content-item-description">This isn't about makeup or angles. It's about feeling genuinely comfortable on camera. We break down the psychology of why you hate how you look — and how to fix it.</p>
+      </div>
+      <div class="content-item">
+        <h3 class="content-item-title">Reels That Stop The Scroll</h3>
+        <p class="content-item-description">30-second videos that actually convert. The exact formats, pacing, and on-camera presence that work. No dancing. No trending audio. Just you, magnetic.</p>
+      </div>
+      <div class="content-item">
+        <h3 class="content-item-title">Lighting, Audio & Setup</h3>
+        <p class="content-item-description">Professional video starts with basics. We show you exactly what you need (spoiler: less than you think) and how to use your phone like a pro.</p>
+      </div>
+      <div class="content-item">
+        <h3 class="content-item-title">30-Day Content Blueprint</h3>
+        <p class="content-item-description">Done-for-you video ideas. One month of content, pre-planned, so you're never wondering what to film.</p>
+      </div>
+      <div class="content-item">
+        <h3 class="content-item-title">The Magnetic Presence Formula</h3>
+        <p class="content-item-description">How to show up on camera in a way that makes people pay attention. The micro-expressions, tonality, and energy that sell.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Camera Truth Section -->
+  <section class="camera-section">
+    <p class="section-label">THE TRANSFORMATION</p>
+    <div class="camera-grid">
+      <div class="camera-image"></div>
+      <div class="camera-text">
+        <h3>From hiding to magnetic.</h3>
+        <p>Most of our students say the same thing: "I didn't realize how much my face was stopping me from selling."</p>
+        <p>By the end of this course, you'll be filming content you're actually proud of. Reels your family will want to watch. Videos that convert followers into customers.</p>
+        <p>And honestly? You'll feel different. More visible. More confident. More like yourself.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Buy Section -->
+  <section class="buy-section">
+    <h2 class="buy-statement">Stop hiding. Start converting.</h2>
+    <p class="buy-price">€27</p>
+    <button class="buy-cta">Get Access</button>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p>SSELFIE Academy &mdash; Mini-products designed to solve one real problem. No fluff. No subscriptions. Just results.</p>
+  </footer>
+
+  <script>
+    document.querySelectorAll('button').forEach(button => {
+      button.addEventListener('click', function() {
+        console.log('Button clicked');
+      });
+    });
+
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -100px 0px'
+    };
+
+    const observer = new IntersectionObserver(function(entries) {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('scroll-fade');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, observerOptions);
+
+    document.querySelectorAll('.content-item, .camera-grid').forEach(el => {
+      observer.observe(el);
+    });
+  </script>
+</body>
+</html>

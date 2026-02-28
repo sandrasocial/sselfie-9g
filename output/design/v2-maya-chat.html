@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSELFIE Studio - Maya Chat v2</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --obsidian: #0a0a0a;
+            --porcelain: #ffffff;
+            --pearl: #f5f5f5;
+            --smoke: #666666;
+            --whisper: #e5e5e5;
+            --glass-surface: rgba(255, 255, 255, 0.04);
+            --glass-border: 1px solid rgba(255, 255, 255, 0.08);
+            --glass-elevated: rgba(255, 255, 255, 0.07);
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            background: var(--obsidian);
+            color: var(--porcelain);
+            font-family: 'Inter', sans-serif;
+            font-weight: 300;
+            font-size: 16px;
+            line-height: 1.8;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            background: var(--obsidian);
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            padding: 20px 20px 12px;
+            background: var(--glass-surface);
+            backdrop-filter: blur(20px);
+            border-bottom: var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 32px;
+            font-weight: 200;
+            letter-spacing: -0.01em;
+            text-transform: uppercase;
+            color: var(--porcelain);
+        }
+
+        .credit-balance {
+            font-family: 'Inter', sans-serif;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+            color: var(--pearl);
+        }
+
+        /* ===== TAB SWITCHER ===== */
+        .tab-switcher {
+            display: flex;
+            border-bottom: var(--glass-border);
+            background: var(--glass-surface);
+            backdrop-filter: blur(20px);
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+
+        .tab-switcher::-webkit-scrollbar {
+            display: none;
+        }
+
+        .tab-button {
+            padding: 12px 16px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+            color: var(--smoke);
+            white-space: nowrap;
+            position: relative;
+            transition: color 0.3s ease;
+            border-bottom: 2px solid transparent;
+        }
+
+        .tab-button:hover {
+            color: var(--pearl);
+        }
+
+        .tab-button.active {
+            color: var(--porcelain);
+            border-bottom-color: var(--porcelain);
+        }
+
+        .tab-button:last-child {
+            position: relative;
+        }
+
+        .tab-button.locked::after {
+            content: ' (COMING)';
+            font-size: 9px;
+            letter-spacing: 0.3em;
+        }
+
+        /* ===== CONTENT AREA ===== */
+        .content-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .tab-content {
+            display: none;
+            flex: 1;
+            overflow-y: auto;
+            padding-bottom: 20px;
+        }
+
+        .tab-content.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Scroll styling */
+        .tab-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .tab-content::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .tab-content::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        /* ===== CHAT AREA (CLASSIC TAB) ===== */
+        .chat-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .message-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message {
+            display: flex;
+            max-width: 85%;
+        }
+
+        .message.user {
+            align-self: flex-end;
+        }
+
+        .message.maya {
+            align-self: flex-start;
+        }
+
+        .message-content {
+            padding: 12px 16px;
+            border-radius: 8px;
+            backdrop-filter: blur(20px);
+            border: var(--glass-border);
+        }
+
+        .message.maya .message-content {
+            background: var(--glass-elevated);
+            color: var(--porcelain);
+        }
+
+        .message.user .message-content {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--porcelain);
+        }
+
+        .message-text {
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .concept-name {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 18px;
+            font-weight: 300;
+            font-style: italic;
+            color: var(--pearl);
+            margin: 8px 0;
+        }
+
+        /* ===== QUICK PROMPTS ===== */
+        .quick-prompts {
+            padding: 0 20px 16px;
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+
+        .quick-prompts::-webkit-scrollbar {
+            display: none;
+        }
+
+        .prompt-pill {
+            padding: 8px 14px;
+            background: var(--glass-elevated);
+            backdrop-filter: blur(20px);
+            border: var(--glass-border);
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+            color: var(--pearl);
+            white-space: nowrap;
+            transition: all 0.2s ease;
+        }
+
+        .prompt-pill:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* ===== INSTAGRAM PHOTO CARD ===== */
+        .instagram-card {
+            margin: 20px;
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--glass-surface);
+            backdrop-filter: blur(20px);
+            border: var(--glass-border);
+            animation: slideUp 0.5s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .photo-frame {
+            aspect-ratio: 4 / 5;
+            background: linear-gradient(135deg, rgba(100, 50, 150, 0.2) 0%, rgba(50, 100, 150, 0.2) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: var(--smoke);
+            position: relative;
+        }
+
+        .photo-frame.has-image {
+            background-size: cover;
+            background-position: center;
+        }
+
+        .photo-placeholder {
+            text-align: center;
+        }
+
+        .photo-placeholder::before {
+            content: '◼';
+            display: block;
+            font-size: 32px;
+            margin-bottom: 8px;
+            opacity: 0.3;
+        }
+
+        .card-footer {
+            padding: 16px;
+            border-top: var(--glass-border);
+        }
+
+        .card-username {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--pearl);
+            margin-bottom: 8px;
+        }
+
+        .card-actions {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+            color: var(--smoke);
+        }
+
+        .action-link {
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .action-link:hover {
+            color: var(--pearl);
+        }
+
+        .photoshoot-button {
+            margin: 0 20px 20px;
+            padding: 12px 20px;
+            background: var(--glass-elevated);
+            backdrop-filter: blur(20px);
+            border: var(--glass-border);
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+            color: var(--porcelain);
+            transition: all 0.2s ease;
+        }
+
+        .photoshoot-button:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        /* ===== PRO TAB - CONCEPT CARDS ===== */
+        .pro-section-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 24px;
+            font-weight: 200;
+            letter-spacing: -0.01em;
+            text-transform: uppercase;
+            padding: 20px 20px 12px;
+            color: var(--porcelain);
+        }
+
+        .reference-selector {
+            padding: 0 20px 20px;
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+
+        .reference-selector::-webkit-scrollbar {
+            display: none;
+        }
+
+        .reference-thumb {
+            width: 80px;
+            height: 80px;
+            border-radius: 6px;
+            background: var(--glass-elevated);
+            backdrop-filter: blur(20px);
+            border: var(--glass-border);
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+
+        .reference-thumb:hover {
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .reference-thumb.active {
+            border-color: var(--porcelain);
+        }
+
+        .concepts-grid {
+            padding: 0 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 600px) {
+            .concepts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .concept-card {
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--glass-surface);
+            backdrop-filter: blur(20px);
+            border: var(--glass-border);
+            transition: all 0.2s ease;
+        }
+
+        .concept-card:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .concept-image {
+            aspect-ratio: 3 / 4;
+            background: linear-gradient(135deg, rgba(80, 40, 120, 0.25) 0%, rgba(40, 80, 120, 0.25) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: var(--smoke);
+            position: relative;
+        }
+
+        .concept-image::before {
+            content: '◼';
+            font-size: 32px;
+            opacity: 0.3;
+        }
+
+        .concept-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 12px 12px;
+            background: linear-gradient(to top, rgba(10, 10, 10, 0.8), transparent);
+        }
+
+        .concept-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 16px;
+            font-weight: 300;
+            font-style: italic;
+            color: var(--porcelain);
+        }
+
+        .concept-category {
+            font-size: 8px;
+            font-weight: 500;
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+            color: var(--smoke);
+            margin-top: 4px;
+        }
+
+        .concept-body {
+            padding: 16px;
+        }
+
+        .prompt-editor {
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .prompt-editor.active {
+            display: flex;
+        }
+
+        .prompt-textarea {
+            width: 100%;
+            min-height: 80px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: var(--glass-border);
+            border-radius: 4px;
+            color: var(--porcelain);
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            line-height: 1.5;
+            resize: vertical;
+        }
+
+        .prompt-textarea::placeholder {
+            color: var(--smoke);
+        }
+
+        .prompt-textarea:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .concept-generate-btn {
+            padding: 10px 16px;
+            background: var(--glass-elevated);
+            backdrop-filter: blur(20px);
+            border: var(--glass-border);
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+            color: var(--porcelain);
+            transition: all 0.2s ease;
+        }
+
+        .concept-generate-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .concept-edit-toggle {
+            font-size: 10px;
+            color: var(--smoke);
+            cursor: pointer;
+            font-weight: 500;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            transition: color 0.2s ease;
+        }
+
+        .concept-edit-toggle:hover {
+            color: var(--pearl);
+        }
+
+        /* ===== VIDEOS TAB ===== */
+        .videos-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 24px;
+            font-weight: 200;
+            letter-spacing: -0.01em;
+            text-transform: uppercase;
+            padding: 20px 20px 12px;
+            color: var(--porcelain);
+        }
+
+        .videos-grid {
+            padding: 0 20px 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 12px;
+        }
+
+        .video-item {
+            aspect-ratio: 9 / 16;
+            border-radius: 6px;
+            background: linear-gradient(135deg, rgba(80, 40, 120, 0.25) 0%, rgba(40, 80, 120, 0.25) 100%);
+            position: relative;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: var(--glass-border);
+        }
+
+        .video-item:hover {
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .video-item::before {
+            content: '▶';
+            font-size: 24px;
+            color: rgba(255, 255, 255, 0.6);
+            position: absolute;
+        }
+
+        .video-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            border-radius: 6px;
+        }
+
+        .video-item:hover .video-overlay {
+            opacity: 1;
+        }
+
+        .video-cta {
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+            color: var(--porcelain);
+        }
+
+        /* ===== PROMPTS TAB ===== */
+        .prompts-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 24px;
+            font-weight: 200;
+            letter-spacing: -0.01em;
+            text-transform: uppercase;
+            padding: 20px 20px 12px;
+            color: var(--porcelain);
+        }
+
+        .prompts-list {
+            padding: 0 20px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .prompt-item {
+            padding: 16px;
+            background: var(--glass-elevated);
+            backdrop-filter: blur(20px);
+            border: var(--glass-border);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .prompt-item:hover {
+            border-color: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .prompt-item-category {
+            font-size: 9px;
+            font-weight: 500;
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+            color: var(--smoke);
+            margin-bottom: 6px;
+        }
+
+        .prompt-item-text {
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--pearl);
+        }
+
+        /* ===== TRAINING TAB ===== */
+        .training-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 24px;
+            font-weight: 200;
+            letter-spacing: -0.01em;
+            text-transform: uppercase;
+            padding: 20px 20px 12px;
+            color: var(--porcelain);
+        }
+
+        .training-content {
+            padding: 20px;
+        }
+
+        .status-card {
+            padding: 20px;
+            background: var(--glass-elevated);
+            backdrop-filter: blur(20px);
+            border: var(--glass-border);
+            border-radius: 6px;
+            margin-bottom: 16px;
+        }
+
+        .status-label {
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+            color: var(--smoke);
+            margin-bottom: 8px;
+        }
+
+        .status-value {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 20px;
+            font-weight: 300;
+            color: var(--porcelain);
+            margin-bottom: 12px;
+        }
+
+        .training-progress {
+            width: 100%;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 1px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 1px;
+            animation: progress 2s ease-in-out infinite;
+        }
+
+        @keyframes progress {
+            0% { width: 30%; }
+            50% { width: 70%; }
+            100% { width: 30%; }
+        }
+
+        /* ===== INPUT BAR (FIXED BOTTOM) ===== */
+        .input-bar {
+            background: var(--glass-surface);
+            backdrop-filter: blur(20px);
+            border-top: var(--glass-border);
+            padding: 12px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .input-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .mode-toggle {
+            padding: 6px 10px;
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-size: 9px;
+            font-weight: 500;
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+            color: var(--pearl);
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .mode-toggle:hover {
+            border-color: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .input-field {
+            flex: 1;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            color: var(--porcelain);
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+        }
+
+        .input-field::placeholder {
+            color: var(--smoke);
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .send-btn {
+            padding: 6px 12px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+            color: var(--pearl);
+            transition: color 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .send-btn:hover {
+            color: var(--porcelain);
+        }
+
+        .settings-link {
+            cursor: pointer;
+            font-family: 'Inter', sans-serif;
+            font-size: 9px;
+            font-weight: 500;
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+            color: var(--smoke);
+            transition: color 0.2s ease;
+            padding: 4px 8px;
+        }
+
+        .settings-link:hover {
+            color: var(--pearl);
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 600px) {
+            .header-title {
+                font-size: 24px;
+            }
+
+            .message {
+                max-width: 95%;
+            }
+
+            .tab-button {
+                padding: 10px 12px;
+                font-size: 9px;
+            }
+
+            .concepts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ===== CAROUSEL INDICATOR ===== */
+        .carousel-indicator {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+            color: var(--porcelain);
+            background: rgba(0, 0, 0, 0.4);
+            padding: 6px 10px;
+            border-radius: 3px;
+        }
+
+        .pagination-dots {
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+            padding: 12px 0;
+        }
+
+        .dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .dot.active {
+            background: var(--porcelain);
+            width: 12px;
+            border-radius: 2px;
+        }
+
+        .download-all-link {
+            text-align: center;
+            padding: 12px 0;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+            color: var(--smoke);
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .download-all-link:hover {
+            color: var(--pearl);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- HEADER -->
+        <div class="header">
+            <div class="header-title">Maya</div>
+            <div class="credit-balance">24 CREDITS</div>
+        </div>
+
+        <!-- TAB SWITCHER -->
+        <div class="tab-switcher">
+            <button class="tab-button active" data-tab="classic">Classic</button>
+            <button class="tab-button" data-tab="pro">Pro</button>
+            <button class="tab-button" data-tab="videos">Videos</button>
+            <button class="tab-button" data-tab="prompts">Prompts</button>
+            <button class="tab-button" data-tab="training">Training</button>
+            <button class="tab-button locked" data-tab="feed">Feed</button>
+        </div>
+
+        <!-- CONTENT AREA -->
+        <div class="content-area">
+
+            <!-- CLASSIC TAB -->
+            <div class="tab-content active" id="classic">
+                <div class="chat-area">
+                    <!-- Message from Maya -->
+                    <div class="message-group">
+                        <div class="message maya">
+                            <div class="message-content">
+                                <div class="message-text">I'm thinking of a concept that bridges editorial minimalism with your personal aesthetic. How does this sound?</div>
+                                <div class="concept-name">Whisper Luxe</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- User Message -->
+                    <div class="message-group">
+                        <div class="message user">
+                            <div class="message-content">
+                                <div class="message-text">Show me something editorial and calm</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Generated Image Card -->
+                    <div class="message-group">
+                        <div class="instagram-card">
+                            <div class="photo-frame">
+                                <div class="photo-placeholder">
+                                    <div>AI GENERATED PORTRAIT</div>
+                                    <div style="font-size: 10px; margin-top: 8px;">4:5 FORMAT</div>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <div class="card-username">sselfie_studio</div>
+                                <div class="card-actions">
+                                    <span class="action-link">SAVE</span>
+                                    <span class="action-link">FAVOURITE</span>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="photoshoot-button">Create Photoshoot →</button>
+                    </div>
+                </div>
+
+                <!-- Quick Prompts Row -->
+                <div class="quick-prompts">
+                    <div class="prompt-pill">EDITORIAL</div>
+                    <div class="prompt-pill">MINIMAL</div>
+                    <div class="prompt-pill">LUXURY</div>
+                    <div class="prompt-pill">AVANT GARDE</div>
+                </div>
+            </div>
+
+            <!-- PRO TAB -->
+            <div class="tab-content" id="pro">
+                <div style="flex: 1; overflow-y: auto;">
+                    <div class="pro-section-title">Select References</div>
+
+                    <!-- Reference Selector -->
+                    <div class="reference-selector">
+                        <div class="reference-thumb active">📷</div>
+                        <div class="reference-thumb">📷</div>
+                        <div class="reference-thumb">📷</div>
+                        <div class="reference-thumb">📷</div>
+                    </div>
+
+                    <!-- Concept Cards Grid -->
+                    <div class="concepts-grid">
+                        <!-- Concept Card 1 -->
+                        <div class="concept-card">
+                            <div class="concept-image">
+                                <div class="concept-overlay">
+                                    <div class="concept-title">Urban Grace</div>
+                                    <div class="concept-category">Fashion</div>
+                                </div>
+                            </div>
+                            <div class="concept-body">
+                                <div class="concept-edit-toggle" onclick="togglePrompt(this)">EDIT PROMPT →</div>
+                                <div class="prompt-editor">
+                                    <textarea class="prompt-textarea" placeholder="Custom prompt here...">Woman in oversized tailored coat, urban setting, golden hour light, minimalist fashion editorial style</textarea>
+                                    <button class="concept-generate-btn">Generate</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Concept Card 2 -->
+                        <div class="concept-card">
+                            <div class="concept-image">
+                                <div class="concept-overlay">
+                                    <div class="concept-title">Ethereal Muse</div>
+                                    <div class="concept-category">Beauty</div>
+                                </div>
+                            </div>
+                            <div class="concept-body">
+                                <div class="concept-edit-toggle" onclick="togglePrompt(this)">EDIT PROMPT →</div>
+                                <div class="prompt-editor">
+                                    <textarea class="prompt-textarea" placeholder="Custom prompt here...">Soft focus beauty portrait, ethereal lighting, dreamy aesthetic, editorial cosmetics styling</textarea>
+                                    <button class="concept-generate-btn">Generate</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Concept Card 3 -->
+                        <div class="concept-card">
+                            <div class="concept-image">
+                                <div class="concept-overlay">
+                                    <div class="concept-title">Avant Garde</div>
+                                    <div class="concept-category">Art</div>
+                                </div>
+                            </div>
+                            <div class="concept-body">
+                                <div class="concept-edit-toggle" onclick="togglePrompt(this)">EDIT PROMPT →</div>
+                                <div class="prompt-editor">
+                                    <textarea class="prompt-textarea" placeholder="Custom prompt here...">Conceptual art direction, dramatic lighting, avant garde styling, high fashion experimental</textarea>
+                                    <button class="concept-generate-btn">Generate</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Concept Card 4 -->
+                        <div class="concept-card">
+                            <div class="concept-image">
+                                <div class="concept-overlay">
+                                    <div class="concept-title">Candid Moments</div>
+                                    <div class="concept-category">Lifestyle</div>
+                                </div>
+                            </div>
+                            <div class="concept-body">
+                                <div class="concept-edit-toggle" onclick="togglePrompt(this)">EDIT PROMPT →</div>
+                                <div class="prompt-editor">
+                                    <textarea class="prompt-textarea" placeholder="Custom prompt here...">Candid lifestyle moment, natural lighting, authentic editorial aesthetic, everyday luxury</textarea>
+                                    <button class="concept-generate-btn">Generate</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIDEOS TAB -->
+            <div class="tab-content" id="videos">
+                <div style="flex: 1; overflow-y: auto;">
+                    <div class="videos-title">Animate</div>
+                    <div class="videos-grid">
+                        <div class="video-item">
+                            <div class="video-overlay">
+                                <span class="video-cta">ANIMATE →</span>
+                            </div>
+                        </div>
+                        <div class="video-item">
+                            <div class="video-overlay">
+                                <span class="video-cta">ANIMATE →</span>
+                            </div>
+                        </div>
+                        <div class="video-item">
+                            <div class="video-overlay">
+                                <span class="video-cta">ANIMATE →</span>
+                            </div>
+                        </div>
+                        <div class="video-item">
+                            <div class="video-overlay">
+                                <span class="video-cta">ANIMATE →</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PROMPTS TAB -->
+            <div class="tab-content" id="prompts">
+                <div style="flex: 1; overflow-y: auto;">
+                    <div class="prompts-title">Curated Styles</div>
+                    <div class="prompts-list">
+                        <div class="prompt-item">
+                            <div class="prompt-item-category">Editorial</div>
+                            <div class="prompt-item-text">Woman in luxury minimalist setting, editorial fashion photography, cinematic lighting</div>
+                        </div>
+                        <div class="prompt-item">
+                            <div class="prompt-item-category">High Fashion</div>
+                            <div class="prompt-item-text">Haute couture portrait, avant-garde styling, dramatic editorial aesthetic, luxury brand campaign</div>
+                        </div>
+                        <div class="prompt-item">
+                            <div class="prompt-item-category">Beauty</div>
+                            <div class="prompt-item-text">Clean beauty portrait, soft natural lighting, cosmetics editorial, professional makeup styling</div>
+                        </div>
+                        <div class="prompt-item">
+                            <div class="prompt-item-category">Lifestyle</div>
+                            <div class="prompt-item-text">Candid lifestyle moment, golden hour light, authentic luxury aesthetic, editorial lifestyle</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TRAINING TAB -->
+            <div class="tab-content" id="training">
+                <div class="training-content">
+                    <div class="training-title">Train Model</div>
+                    <div class="status-card">
+                        <div class="status-label">Status</div>
+                        <div class="status-value">Ready to Train</div>
+                        <div class="training-progress">
+                            <div class="progress-bar"></div>
+                        </div>
+                        <div style="font-size: 10px; color: var(--smoke); margin-top: 8px; letter-spacing: 0.5em; text-transform: uppercase;">Upload 10-15 selfies to train custom Flux model</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- INPUT BAR (FIXED) -->
+        <div class="input-bar">
+            <div class="input-controls">
+                <button class="mode-toggle">CLASSIC</button>
+                <input type="text" class="input-field" placeholder="Describe what you want to create...">
+                <button class="send-btn">SEND</button>
+                <span class="settings-link">SETTINGS</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                const tab = button.dataset.tab;
+                if (tab === 'feed') return; // Prevent clicking locked tab
+
+                // Update active tab button
+                document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+                button.classList.add('active');
+
+                // Update active content
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                document.getElementById(tab).classList.add('active');
+            });
+        });
+
+        // Prompt toggle function
+        function togglePrompt(element) {
+            const editor = element.parentElement.querySelector('.prompt-editor');
+            editor.classList.toggle('active');
+            element.textContent = editor.classList.contains('active') ? 'CLOSE →' : 'EDIT PROMPT →';
+        }
+
+        // Quick prompts click handler
+        document.querySelectorAll('.prompt-pill').forEach(pill => {
+            pill.addEventListener('click', () => {
+                const input = document.querySelector('.input-field');
+                input.value = pill.textContent.toLowerCase();
+                input.focus();
+            });
+        });
+    </script>
+</body>
+</html>

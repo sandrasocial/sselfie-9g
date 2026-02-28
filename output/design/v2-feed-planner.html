@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SSELFIE Feed Planner — Premium Redesign</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: #0a0a0a;
+      color: #ffffff;
+      font-family: 'Inter', sans-serif;
+      font-weight: 300;
+      line-height: 1.8;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 375px;
+      margin: 0 auto;
+      background-color: #0a0a0a;
+      min-height: 100vh;
+      padding: 0;
+      position: relative;
+    }
+
+    /* ============ DESIGN TOKENS ============ */
+    .obsidian { color: #0a0a0a; background-color: #0a0a0a; }
+    .porcelain { color: #ffffff; }
+    .pearl { color: #f5f5f5; }
+    .smoke { color: #666666; }
+    .whisper { color: #e5e5e5; border-color: #e5e5e5; }
+
+    /* ============ GLASS EFFECTS ============ */
+    .glass {
+      background-color: rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+    }
+
+    .glass-elevated {
+      background-color: rgba(255, 255, 255, 0.07);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+    }
+
+    /* ============ TYPOGRAPHY ============ */
+    .header-display {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 48px;
+      font-weight: 300;
+      letter-spacing: -0.01em;
+      line-height: 1.1;
+      text-transform: uppercase;
+      color: #ffffff;
+    }
+
+    .header-large {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 32px;
+      font-weight: 300;
+      letter-spacing: -0.01em;
+      line-height: 1.2;
+      text-transform: uppercase;
+      color: #ffffff;
+    }
+
+    .header-medium {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 24px;
+      font-weight: 300;
+      letter-spacing: -0.01em;
+      line-height: 1.2;
+      text-transform: uppercase;
+      color: #ffffff;
+    }
+
+    .label-tiny {
+      font-family: 'Inter', sans-serif;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.5em;
+      text-transform: uppercase;
+      color: #666666;
+    }
+
+    .label-small {
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.5em;
+      text-transform: uppercase;
+      color: #e5e5e5;
+    }
+
+    .body-text {
+      font-family: 'Inter', sans-serif;
+      font-size: 16px;
+      font-weight: 300;
+      line-height: 1.8;
+      color: #ffffff;
+    }
+
+    .body-secondary {
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 300;
+      line-height: 1.8;
+      color: #f5f5f5;
+    }
+
+    .caption-text {
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 1.6;
+      color: #666666;
+    }
+
+    /* ============ STATES & SECTIONS ============ */
+    .state-section {
+      min-height: 100vh;
+      padding: 24px;
+      padding-top: 40px;
+      padding-bottom: 60px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      flex-direction: column;
+      background-color: #0a0a0a;
+    }
+
+    .state-label {
+      position: absolute;
+      top: 8px;
+      right: 16px;
+      font-size: 10px;
+      letter-spacing: 0.5em;
+      text-transform: uppercase;
+      color: #666666;
+    }
+
+    /* ============ STATE A: FEED LIST VIEW ============ */
+    .feed-list-header {
+      margin-bottom: 32px;
+    }
+
+    .feed-list-title {
+      margin-bottom: 8px;
+    }
+
+    .feed-list-subtitle {
+      margin-bottom: 32px;
+    }
+
+    .create-feed-button {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px;
+      margin-bottom: 32px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background-color: rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(20px);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .create-feed-button:hover {
+      background-color: rgba(255, 255, 255, 0.07);
+      border-color: rgba(255, 255, 255, 0.12);
+    }
+
+    .create-button-plus {
+      font-family: 'Inter', sans-serif;
+      font-size: 24px;
+      font-weight: 300;
+      color: #ffffff;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .create-button-text {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .create-button-text span:first-child {
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.5em;
+      text-transform: uppercase;
+      color: #e5e5e5;
+    }
+
+    .feed-card {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 16px;
+      padding: 16px;
+      margin-bottom: 12px;
+      background-color: rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .feed-card:hover {
+      background-color: rgba(255, 255, 255, 0.07);
+      border-color: rgba(255, 255, 255, 0.12);
+    }
+
+    .feed-card-thumbnails {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 4px;
+    }
+
+    .feed-thumbnail {
+      aspect-ratio: 1;
+      background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.04));
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: #666666;
+    }
+
+    .feed-card-info h3 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 18px;
+      font-weight: 300;
+      letter-spacing: -0.01em;
+      text-transform: uppercase;
+      color: #ffffff;
+      margin-bottom: 8px;
+    }
+
+    .feed-card-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .feed-date {
+      font-size: 11px;
+      color: #666666;
+    }
+
+    .feed-status {
+      font-size: 11px;
+      color: #f5f5f5;
+    }
+
+    .feed-card-action {
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.5em;
+      text-transform: uppercase;
+      color: #e5e5e5;
+    }
+
+    .upgrade-cta {
+      margin-top: 32px;
+      padding: 24px;
+      background-color: rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .upgrade-cta h4 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 20px;
+      font-weight: 300;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      color: #ffffff;
+    }
+
+    .upgrade-cta p {
+      font-size: 13px;
+      color: #f5f5f5;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .upgrade-button {
+      display: inline-block;
+      padding: 12px 24px;
+      background-color: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 4px;
+      color: #ffffff;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.5em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .upgrade-button:hover {
+      background-color: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.16);
+    }
+
+    /* ============ STATE B: GRID VIEW (THE HERO) ============ */
+    .grid-view-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 32px;
+    }
+
+    .grid-view-title {
+      flex: 1;
+    }
+
+    .grid-view-title h2 {
+      margin-bottom: 8px;
+    }
+
+    .posts-count {
+      font-size: 10px;
+      letter-spacing: 0.5em;
+      text-transform: uppercase;
+      color: #666666;
+    }
+
+    .credit-indicator {
+      text-align: right;
+      font-size: 11px;
+      color: #f5f5f5;
+    }
+
+    .credit-number {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 18px;
+      font-weight: 400;
+      color: #ffffff;
+      margin-bottom: 4px;
+    }
+
+    /* ============ INSTAGRAM GRID (3x3 - THE WOW) ============ */
+    .instagram-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+      aspect-ratio: 1;
+      margin-bottom: 32px;
+      background-color: rgba(255, 255, 255, 0.02);
+      padding: 2px;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .grid-cell {
+      aspect-ratio: 1;
+      background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .grid-cell.filled {
+      background-size: cover;
+      background-position: center;
+      border: none;
+    }
+
+    .grid-cell-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 11px;
+      letter-spacing: 0.5em;
+      text-transform: uppercase;
+      color: #666666;
+    }
+
+    .grid-cell-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .generate-button-block {
+      margin-bottom: 32px;
+    }
+
+    .button-primary {
+      width: 100%;
+      padding: 16px;
+      background-color: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      color: #ffffff;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 0.5em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .button-primary:hover {
+      background-color: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.16);
+    }
+
+    /* ============ TABS ============ */
+    .feed-tabs-container {
+      margin-bottom: 24px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 0;
+    }
+
+    .feed-tabs {
+      display: flex;
+      gap: 24px;
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.5em;
+      text-transform: uppercase;
+      color: #666666;
+    }
+
+    .feed-tab {
+      padding: 12px 0;
+      cursor: pointer;
+      position: relative;
+      transition: color 0.3s ease;
+    }
+
+    .feed-tab:hover {
+      color: #e5e5e5;
+    }
+
+    .feed-tab.active {
+      color: #ffffff;
+    }
+
+    .feed-tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background-color: #ffffff;
+    }
+
+    /* ============ STATE C: POSTS/CAPTIONS TAB ============ */
+    .posts-list {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .post-item {
+      display: grid;
+      grid-template-columns: 80px 1fr;
+      gap: 16px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .post-thumbnail {
+      aspect-ratio: 1;
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    .post-content {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .post-caption-textarea {
+      width: 100%;
+      min-height: 80px;
+      padding: 12px;
+      background-color: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+      color: #ffffff;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 300;
+      line-height: 1.6;
+      resize: none;
+      margin-bottom: 12px;
+    }
+
+    .post-caption-textarea::placeholder {
+      color: #666666;
+    }
+
+    .post-actions {
+      display: flex;
+      gap: 16px;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.5em;
+      text-transform: uppercase;
+      color: #e5e5e5;
+    }
+
+    .post-action-link {
+      cursor: pointer;
+      transition: color 0.3s ease;
+    }
+
+    .post-action-link:hover {
+      color: #ffffff;
+    }
+
+    /* ============ STATE D: STRATEGY TAB ============ */
+    .strategy-content {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+    }
+
+    .strategy-section {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .strategy-section h3 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 20px;
+      font-weight: 300;
+      letter-spacing: -0.01em;
+      text-transform: uppercase;
+      color: #ffffff;
+      margin-bottom: 8px;
+    }
+
+    .goal-statement {
+      padding: 16px;
+      background-color: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+      font-size: 14px;
+      line-height: 1.8;
+      color: #f5f5f5;
+    }
+
+    .pillars-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+
+    .pillar-card {
+      padding: 16px;
+      background-color: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 4px;
+    }
+
+    .pillar-card h4 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 16px;
+      font-weight: 300;
+      letter-spacing: -0.01em;
+      text-transform: uppercase;
+      color: #ffffff;
+      margin-bottom: 8px;
+    }
+
+    .pillar-description {
+      font-size: 13px;
+      line-height: 1.6;
+      color: #f5f5f5;
+    }
+
+    /* ============ RESPONSIVE ============ */
+    @media (max-width: 480px) {
+      .container {
+        max-width: 100%;
+      }
+
+      .header-display {
+        font-size: 36px;
+      }
+
+      .feed-card {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .feed-card-info {
+        order: -1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- ============ STATE A: FEED LIST VIEW ============ -->
+    <section class="state-section">
+      <div class="state-label">STATE A: FEED LIST</div>
+      
+      <div class="feed-list-header">
+        <h1 class="header-display feed-list-title">FEED PLANNER</h1>
+        <p class="label-tiny feed-list-subtitle">YOUR INSTAGRAM GRID</p>
+      </div>
+
+      <button class="create-feed-button">
+        <div class="create-button-plus">+</div>
+        <div class="create-button-text">
+          <span>CREATE NEW FEED</span>
+        </div>
+      </button>
+
+      <div>
+        <div class="feed-card">
+          <div class="feed-card-thumbnails">
+            <div class="feed-thumbnail">img</div>
+            <div class="feed-thumbnail">img</div>
+            <div class="feed-thumbnail">img</div>
+          </div>
+          <div class="feed-card-info">
+            <h3>Summer Campaign</h3>
+            <div class="feed-card-meta">
+              <span class="feed-date">Feb 15, 2026</span>
+              <span class="feed-status">7/9 posts</span>
+            </div>
+            <div class="feed-card-action">OPEN →</div>
+          </div>
+        </div>
+
+        <div class="feed-card">
+          <div class="feed-card-thumbnails">
+            <div class="feed-thumbnail">img</div>
+            <div class="feed-thumbnail">img</div>
+            <div class="feed-thumbnail">img</div>
+          </div>
+          <div class="feed-card-info">
+            <h3>Spring Edit</h3>
+            <div class="feed-card-meta">
+              <span class="feed-date">Feb 10, 2026</span>
+              <span class="feed-status">9/9 posts</span>
+            </div>
+            <div class="feed-card-action">OPEN →</div>
+          </div>
+        </div>
+
+        <div class="feed-card">
+          <div class="feed-card-thumbnails">
+            <div class="feed-thumbnail">img</div>
+            <div class="feed-thumbnail">img</div>
+            <div class="feed-thumbnail">img</div>
+          </div>
+          <div class="feed-card-info">
+            <h3>Brand Story</h3>
+            <div class="feed-card-meta">
+              <span class="feed-date">Feb 5, 2026</span>
+              <span class="feed-status">5/9 posts</span>
+            </div>
+            <div class="feed-card-action">OPEN →</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="upgrade-cta">
+        <h4>UNLOCK FULL FEEDS</h4>
+        <p>Upgrade to Blueprint for full 9-post grids and 60 credits. Create your perfect Instagram presence.</p>
+        <button class="upgrade-button">UPGRADE NOW</button>
+      </div>
+    </section>
+
+    <!-- ============ STATE B: GRID VIEW (THE HERO) ============ -->
+    <section class="state-section">
+      <div class="state-label">STATE B: GRID HERO</div>
+
+      <div class="grid-view-header">
+        <div class="grid-view-title">
+          <h2 class="header-large">SUMMER CAMPAIGN</h2>
+          <p class="posts-count">9 POSTS</p>
+        </div>
+        <div class="credit-indicator">
+          <div class="credit-number">18</div>
+          <div class="caption-text">CREDITS</div>
+        </div>
+      </div>
+
+      <!-- Instagram 3x3 Grid -->
+      <div class="instagram-grid">
+        <div class="grid-cell filled" style="background-image: url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 400%22><rect fill=%22%23222%22 width=%22400%22 height=%22400%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-size=%2240%22 fill=%22%23666%22>IMG 1</text></svg>');"></div>
+        <div class="grid-cell filled" style="background-image: url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 400%22><rect fill=%22%23262626%22 width=%22400%22 height=%22400%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-size=%2240%22 fill=%22%23666%22>IMG 2</text></svg>');"></div>
+        <div class="grid-cell filled" style="background-image: url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 400%22><rect fill=%22%23222%22 width=%22400%22 height=%22400%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-size=%2240%22 fill=%22%23666%22>IMG 3</text></svg>');"></div>
+        
+        <div class="grid-cell filled" style="background-image: url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 400%22><rect fill=%22%23262626%22 width=%22400%22 height=%22400%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-size=%2240%22 fill=%22%23666%22>IMG 4</text></svg>');"></div>
+        <div class="grid-cell filled" style="background-image: url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 400%22><rect fill=%22%23222%22 width=%22400%22 height=%22400%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-size=%2240%22 fill=%22%23666%22>IMG 5</text></svg>');"></div>
+        <div class="grid-cell filled" style="background-image: url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 400%22><rect fill=%22%23262626%22 width=%22400%22 height=%22400%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-size=%2240%22 fill=%22%23666%22>IMG 6</text></svg>');"></div>
+        
+        <div class="grid-cell filled" style="background-image: url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 400%22><rect fill=%22%23222%22 width=%22400%22 height=%22400%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-size=%2240%22 fill=%22%23666%22>IMG 7</text></svg>');"></div>
+        <div class="grid-cell filled" style="background-image: url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 400%22><rect fill=%22%23262626%22 width=%22400%22 height=%22400%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-size=%2240%22 fill=%22%23666%22>IMG 8</text></svg>');"></div>
+        <div class="grid-cell filled" style="background-image: url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 400%22><rect fill=%22%23222%22 width=%22400%22 height=%22400%22/><text x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-size=%2240%22 fill=%22%23666%22>IMG 9</text></svg>');"></div>
+      </div>
+
+      <div class="generate-button-block">
+        <button class="button-primary">GENERATE ALL POSTS</button>
+      </div>
+
+      <div class="feed-tabs-container">
+        <div class="feed-tabs">
+          <div class="feed-tab active">GRID</div>
+          <div class="feed-tab">POSTS</div>
+          <div class="feed-tab">STRATEGY</div>
+          <div class="feed-tab">PILLARS</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ STATE C: POSTS/CAPTIONS TAB ============ -->
+    <section class="state-section">
+      <div class="state-label">STATE C: POSTS TAB</div>
+
+      <h2 class="header-large" style="margin-bottom: 24px;">SUMMER CAMPAIGN</h2>
+
+      <div class="feed-tabs-container">
+        <div class="feed-tabs">
+          <div class="feed-tab">GRID</div>
+          <div class="feed-tab active">POSTS</div>
+          <div class="feed-tab">STRATEGY</div>
+          <div class="feed-tab">PILLARS</div>
+        </div>
+      </div>
+
+      <div class="posts-list">
+        <div class="post-item">
+          <div class="post-thumbnail"></div>
+          <div class="post-content">
+            <textarea class="post-caption-textarea" placeholder="Edit your caption here...">Golden hour vibes. There's something about that particular light when the sun dips below the horizon, painting the sky in shades we didn't know existed.</textarea>
+            <div class="post-actions">
+              <span class="post-action-link">REGENERATE CAPTION</span>
+              <span class="post-action-link">EDIT</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="post-item">
+          <div class="post-thumbnail"></div>
+          <div class="post-content">
+            <textarea class="post-caption-textarea" placeholder="Edit your caption here...">Minimalism meets maximalist energy. Sometimes the most powerful statement is silence.</textarea>
+            <div class="post-actions">
+              <span class="post-action-link">REGENERATE CAPTION</span>
+              <span class="post-action-link">EDIT</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="post-item">
+          <div class="post-thumbnail"></div>
+          <div class="post-content">
+            <textarea class="post-caption-textarea" placeholder="Edit your caption here...">In the details, we find beauty. Every element chosen with intention.</textarea>
+            <div class="post-actions">
+              <span class="post-action-link">REGENERATE CAPTION</span>
+              <span class="post-action-link">EDIT</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ STATE D: STRATEGY TAB ============ -->
+    <section class="state-section">
+      <div class="state-label">STATE D: STRATEGY TAB</div>
+
+      <h2 class="header-large" style="margin-bottom: 24px;">SUMMER CAMPAIGN</h2>
+
+      <div class="feed-tabs-container">
+        <div class="feed-tabs">
+          <div class="feed-tab">GRID</div>
+          <div class="feed-tab">POSTS</div>
+          <div class="feed-tab active">STRATEGY</div>
+          <div class="feed-tab">PILLARS</div>
+        </div>
+      </div>
+
+      <div class="strategy-content">
+        <div class="strategy-section">
+          <h3>YOUR BRAND STRATEGY</h3>
+          <div class="goal-statement">
+            Build an authentic luxury lifestyle brand that inspires and connects with creators who value quality, intention, and editorial excellence. Show the behind-the-scenes of a curated creative life.
+          </div>
+        </div>
+
+        <div class="strategy-section">
+          <h3>CONTENT PILLARS</h3>
+          <div class="pillars-grid">
+            <div class="pillar-card">
+              <h4>EDITORIAL MOMENTS</h4>
+              <p class="pillar-description">High-fashion photography and artistic direction. Show the world through a curated lens. Aesthetic perfection in every frame.</p>
+            </div>
+            <div class="pillar-card">
+              <h4>LIFESTYLE NARRATIVE</h4>
+              <p class="pillar-description">Daily rituals and routines. The human side of luxury. What it means to live intentionally in a digital age.</p>
+            </div>
+            <div class="pillar-card">
+              <h4>COMMUNITY & CONNECTION</h4>
+              <p class="pillar-description">Engage with your audience authentically. Share vulnerability alongside perfection. Build genuine relationships.</p>
+            </div>
+          </div>
+        </div>
+
+        <button class="button-primary">GENERATE STRATEGY</button>
+      </div>
+    </section>
+
+  </div>
+</body>
+</html>

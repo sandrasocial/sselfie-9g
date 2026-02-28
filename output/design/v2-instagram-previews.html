@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSELFIE Studio - Instagram Previews v2</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --obsidian: #0a0a0a;
+            --porcelain: #ffffff;
+            --pearl: #f5f5f5;
+            --smoke: #666666;
+            --whisper: #e5e5e5;
+            --glass-surface: rgba(255, 255, 255, 0.04);
+            --glass-border: 1px solid rgba(255, 255, 255, 0.08);
+            --glass-elevated: rgba(255, 255, 255, 0.07);
+        }
+
+        html, body {
+            width: 100%;
+            min-height: 100vh;
+            background: var(--obsidian);
+            color: var(--porcelain);
+            font-family: 'Inter', sans-serif;
+            font-weight: 300;
+            font-size: 16px;
+            line-height: 1.8;
+        }
+
+        body {
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 32px;
+            font-weight: 200;
+            letter-spacing: -0.01em;
+            text-transform: uppercase;
+            margin-bottom: 40px;
+            color: var(--porcelain);
+            text-align: center;
+        }
+
+        .preview-section {
+            margin-bottom: 80px;
+        }
+
+        .preview-type {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 20px;
+            font-weight: 300;
+            letter-spacing: -0.01em;
+            text-transform: uppercase;
+            margin-bottom: 24px;
+            color: var(--pearl);
+        }
+
+        .preview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+            margin-bottom: 60px;
+        }
+
+        /* ===== PHOTO CARD ===== */
+        .photo-card {
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--glass-surface);
+            backdrop-filter: blur(20px);
+            border: var(--glass-border);
+            animation: slideUp 0.6s ease;
+            max-width: 360px;
+            margin: 0 auto;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .photo-frame {
+            aspect-ratio: 4 / 5;
+            background: linear-gradient(135deg, rgba(100, 50, 150, 0.3) 0%, rgba(50, 100, 150, 0.3) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: var(--smoke);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .photo-frame::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.05), transparent);
+            pointer-events: none;
+        }
+
+        .photo-placeholder {
+            text-align: center;
+            z-index: 1;
+        }
+
+        .photo-placeholder::before {
+            content: '◼';
+            display: block;
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: 0.25;
+        }
+
+        .photo-placeholder-text {
+            font-size: 11px;
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+        }
+
+        .card-footer {
+            padding: 16px;
+            border-top: var(--glass-border);
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .card-username {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--pearl);
+            letter-spacing: 0.02em;
+        }
+
+        .card-menu {
+            font-size: 14px;
+            cursor: pointer;
+            color: var(--smoke);
+            transition: color 0.2s ease;
+        }
+
+        .card-menu:hover {
+            color: var(--porcelain);
+        }
+
+        .card-actions {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+            color: var(--smoke);
+            gap: 12px;
+        }
+
+        .action-link {
+            cursor: pointer;
+            transition: color 0.2s ease;
+            flex: 1;
+        }
+
+        .action-link:hover {
+            color: var(--pearl);
+        }
+
+        .caption-preview {
+            font-size: 13px;
+            color: var(--pearl);
+            line-height: 1.5;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: var(--glass-border);
+        }
+
+        .caption-preview-user {
+            font-weight: 500;
+            color: var(--porcelain);
+        }
+
+        .caption-preview-text {
+            color: var(--pearl);
+            margin-top: 4px;
+        }
+
+        /* ===== CAROUSEL CARD ===== */
+        .carousel-card {
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--glass-surface);
+            backdrop-filter: blur(20px);
+            border: var(--glass-border);
+            animation: slideUp 0.6s ease 0.1s both;
+            max-width: 360px;
+            margin: 0 auto;
+        }
+
+        .carousel-frame {
+            aspect-ratio: 4 / 5;
+            background: linear-gradient(135deg, rgba(100, 50, 150, 0.3) 0%, rgba(50, 100, 150, 0.3) 100%);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .carousel-frame::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.05), transparent);
+            pointer-events: none;
+        }
+
+        .carousel-placeholder {
+            text-align: center;
+            font-size: 12px;
+            color: var(--smoke);
+            z-index: 1;
+        }
+
+        .carousel-placeholder::before {
+            content: '◼';
+            display: block;
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: 0.25;
+        }
+
+        .carousel-placeholder-text {
+            font-size: 11px;
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+        }
+
+        .carousel-indicator {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+            color: var(--porcelain);
+            background: rgba(0, 0, 0, 0.5);
+            padding: 6px 10px;
+            border-radius: 3px;
+            z-index: 2;
+        }
+
+        .carousel-footer {
+            padding: 16px;
+            border-top: var(--glass-border);
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .carousel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .carousel-username {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--pearl);
+        }
+
+        .carousel-menu {
+            font-size: 14px;
+            cursor: pointer;
+            color: var(--smoke);
+            transition: color 0.2s ease;
+        }
+
+        .carousel-menu:hover {
+            color: var(--porcelain);
+        }
+
+        .carousel-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .carousel-swipe-hint {
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+            color: var(--smoke);
+        }
+
+        .pagination-dots {
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+            margin-bottom: 12px;
+        }
+
+        .dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .dot.active {
+            background: var(--porcelain);
+            width: 12px;
+            border-radius: 2px;
+        }
+
+        .carousel-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+            color: var(--smoke);
+        }
+
+        .carousel-engagement {
+            display: flex;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .carousel-engagement .action-link {
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .carousel-engagement .action-link:hover {
+            color: var(--pearl);
+        }
+
+        .download-all-link {
+            cursor: pointer;
+            color: var(--smoke);
+            transition: color 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .download-all-link:hover {
+            color: var(--pearl);
+        }
+
+        /* ===== REEL CARD ===== */
+        .reel-card {
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--glass-surface);
+            backdrop-filter: blur(20px);
+            border: var(--glass-border);
+            animation: slideUp 0.6s ease 0.2s both;
+            max-width: 360px;
+            margin: 0 auto;
+        }
+
+        .reel-frame {
+            aspect-ratio: 9 / 16;
+            background: linear-gradient(135deg, rgba(50, 100, 150, 0.3) 0%, rgba(100, 50, 150, 0.3) 100%);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .reel-frame::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.05), transparent);
+            pointer-events: none;
+        }
+
+        .reel-phone-frame {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+        }
+
+        .reel-play-button {
+            font-size: 48px;
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 2;
+        }
+
+        .reel-play-button:hover {
+            font-size: 56px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .reel-placeholder {
+            text-align: center;
+            color: var(--smoke);
+            margin-top: 16px;
+            font-size: 11px;
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+        }
+
+        .reel-footer {
+            padding: 16px;
+            border-top: var(--glass-border);
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .reel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .reel-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 14px;
+            font-weight: 300;
+            color: var(--porcelain);
+        }
+
+        .reel-menu {
+            font-size: 14px;
+            cursor: pointer;
+            color: var(--smoke);
+            transition: color 0.2s ease;
+        }
+
+        .reel-menu:hover {
+            color: var(--porcelain);
+        }
+
+        .reel-caption {
+            font-size: 12px;
+            color: var(--pearl);
+            line-height: 1.4;
+            margin-bottom: 12px;
+        }
+
+        .reel-cta {
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+            color: var(--smoke);
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .reel-cta:hover {
+            color: var(--pearl);
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 600px) {
+            body {
+                padding: 20px 16px;
+            }
+
+            .section-title {
+                font-size: 24px;
+            }
+
+            .preview-grid {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+
+            .photo-card,
+            .carousel-card,
+            .reel-card {
+                max-width: 100%;
+            }
+        }
+
+        /* ===== DEMO CONTROLS ===== */
+        .demo-controls {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 10px;
+            color: var(--smoke);
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+        }
+
+        .demo-controls span {
+            cursor: pointer;
+            color: var(--pearl);
+            transition: color 0.2s ease;
+            margin: 0 8px;
+        }
+
+        .demo-controls span:hover {
+            color: var(--porcelain);
+        }
+
+        /* ===== SCROLL TO TOP ===== */
+        .scroll-indicator {
+            text-align: center;
+            margin-top: 60px;
+            font-size: 10px;
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+            color: var(--smoke);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- TITLE -->
+        <div class="section-title">Instagram Preview Cards</div>
+
+        <!-- PHOTO CARD SECTION -->
+        <div class="preview-section">
+            <div class="preview-type">Photo Card</div>
+            <div class="preview-grid">
+                <!-- Single Photo Example 1 -->
+                <div class="photo-card">
+                    <div class="photo-frame">
+                        <div class="photo-placeholder">
+                            <div class="photo-placeholder-text">EDITORIAL PORTRAIT</div>
+                            <div style="font-size: 10px; margin-top: 8px; opacity: 0.6;">4:5 RATIO</div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="card-header">
+                            <div class="card-username">sselfie_studio</div>
+                            <div class="card-menu">•••</div>
+                        </div>
+                        <div class="card-actions">
+                            <span class="action-link">SAVE</span>
+                            <span class="action-link">FAVOURITE</span>
+                            <span class="action-link">SHARE</span>
+                        </div>
+                        <div class="caption-preview">
+                            <span class="caption-preview-user">sselfie</span>
+                            <div class="caption-preview-text">A moment of pure luxury. Curated by Maya, captured by Flux.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Single Photo Example 2 -->
+                <div class="photo-card">
+                    <div class="photo-frame" style="background: linear-gradient(135deg, rgba(120, 40, 100, 0.3) 0%, rgba(40, 120, 100, 0.3) 100%);">
+                        <div class="photo-placeholder">
+                            <div class="photo-placeholder-text">AI GENERATED</div>
+                            <div style="font-size: 10px; margin-top: 8px; opacity: 0.6;">MINIMAL AESTHETIC</div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <div class="card-header">
+                            <div class="card-username">sselfie_studio</div>
+                            <div class="card-menu">•••</div>
+                        </div>
+                        <div class="card-actions">
+                            <span class="action-link">SAVE</span>
+                            <span class="action-link">FAVOURITE</span>
+                            <span class="action-link">SHARE</span>
+                        </div>
+                        <div class="caption-preview">
+                            <span class="caption-preview-user">sselfie</span>
+                            <div class="caption-preview-text">Whisper Luxe. A concept that bridges editorial minimalism with personal aesthetic.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CAROUSEL CARD SECTION -->
+        <div class="preview-section">
+            <div class="preview-type">Carousel — Photoshoot Bundle</div>
+            <div class="preview-grid">
+                <!-- Carousel Example 1 -->
+                <div class="carousel-card">
+                    <div class="carousel-frame">
+                        <div class="carousel-placeholder">
+                            <div class="carousel-placeholder-text">PHOTOSHOOT</div>
+                            <div style="font-size: 10px; margin-top: 8px; opacity: 0.6;">6-9 IMAGES</div>
+                        </div>
+                        <div class="carousel-indicator">1/9</div>
+                    </div>
+                    <div class="carousel-footer">
+                        <div class="carousel-header">
+                            <div class="carousel-username">sselfie_studio</div>
+                            <div class="carousel-menu">•••</div>
+                        </div>
+                        <div class="carousel-info">
+                            <div class="carousel-swipe-hint">SWIPE</div>
+                        </div>
+                        <div class="pagination-dots">
+                            <div class="dot active"></div>
+                            <div class="dot"></div>
+                            <div class="dot"></div>
+                            <div class="dot"></div>
+                            <div class="dot"></div>
+                            <div class="dot"></div>
+                            <div class="dot"></div>
+                            <div class="dot"></div>
+                            <div class="dot"></div>
+                        </div>
+                        <div class="carousel-actions">
+                            <div class="carousel-engagement">
+                                <span class="action-link">SAVE</span>
+                                <span class="action-link">FAVOURITE</span>
+                            </div>
+                            <span class="download-all-link">DOWNLOAD ALL</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Carousel Example 2 -->
+                <div class="carousel-card">
+                    <div class="carousel-frame" style="background: linear-gradient(135deg, rgba(80, 60, 140, 0.3) 0%, rgba(60, 100, 120, 0.3) 100%);">
+                        <div class="carousel-placeholder">
+                            <div class="carousel-placeholder-text">CREATIVE SERIES</div>
+                            <div style="font-size: 10px; margin-top: 8px; opacity: 0.6;">VARIATIONS</div>
+                        </div>
+                        <div class="carousel-indicator">3/9</div>
+                    </div>
+                    <div class="carousel-footer">
+                        <div class="carousel-header">
+                            <div class="carousel-username">sselfie_studio</div>
+                            <div class="carousel-menu">•••</div>
+                        </div>
+                        <div class="carousel-info">
+                            <div class="carousel-swipe-hint">SWIPE</div>
+                        </div>
+                        <div class="pagination-dots">
+                            <div class="dot"></div>
+                            <div class="dot"></div>
+                            <div class="dot active"></div>
+                            <div class="dot"></div>
+                            <div class="dot"></div>
+                            <div class="dot"></div>
+                            <div class="dot"></div>
+                            <div class="dot"></div>
+                            <div class="dot"></div>
+                        </div>
+                        <div class="carousel-actions">
+                            <div class="carousel-engagement">
+                                <span class="action-link">SAVE</span>
+                                <span class="action-link">FAVOURITE</span>
+                            </div>
+                            <span class="download-all-link">DOWNLOAD ALL</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- REEL CARD SECTION -->
+        <div class="preview-section">
+            <div class="preview-type">Reel Card — Animated Video</div>
+            <div class="preview-grid">
+                <!-- Reel Example 1 -->
+                <div class="reel-card">
+                    <div class="reel-frame">
+                        <div class="reel-phone-frame">
+                            <div class="reel-play-button">▶</div>
+                            <div class="reel-placeholder">MOTION VIDEO</div>
+                        </div>
+                    </div>
+                    <div class="reel-footer">
+                        <div class="reel-header">
+                            <div class="reel-title">Flowing Motion</div>
+                            <div class="reel-menu">•••</div>
+                        </div>
+                        <div class="reel-caption">Soft camera pan across editorial portrait with ethereal particle effects</div>
+                        <div class="reel-cta">ANIMATE →</div>
+                    </div>
+                </div>
+
+                <!-- Reel Example 2 -->
+                <div class="reel-card">
+                    <div class="reel-frame" style="background: linear-gradient(135deg, rgba(100, 80, 140, 0.3) 0%, rgba(40, 100, 120, 0.3) 100%);">
+                        <div class="reel-phone-frame">
+                            <div class="reel-play-button">▶</div>
+                            <div class="reel-placeholder">ANIMATED REEL</div>
+                        </div>
+                    </div>
+                    <div class="reel-footer">
+                        <div class="reel-header">
+                            <div class="reel-title">Luxury Movement</div>
+                            <div class="reel-menu">•••</div>
+                        </div>
+                        <div class="reel-caption">Cinematic zoom through luxury fashion scene with lighting transitions</div>
+                        <div class="reel-cta">ANIMATE →</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RESPONSIVE NOTE -->
+        <div class="scroll-indicator">
+            Fully responsive — optimized for all screen sizes (375px min)
+        </div>
+    </div>
+
+    <script>
+        // Interactive dot navigation for carousels
+        document.querySelectorAll('.pagination-dots').forEach((dotsContainer, carouselIndex) => {
+            const dots = dotsContainer.querySelectorAll('.dot');
+            dots.forEach((dot, index) => {
+                dot.addEventListener('click', () => {
+                    dots.forEach(d => d.classList.remove('active'));
+                    dot.classList.add('active');
+
+                    // Update carousel indicator
+                    const carousel = dotsContainer.closest('.carousel-card');
+                    const indicator = carousel.querySelector('.carousel-indicator');
+                    if (indicator) {
+                        indicator.textContent = (index + 1) + '/9';
+                    }
+                });
+            });
+        });
+
+        // Play button interaction
+        document.querySelectorAll('.reel-play-button').forEach(playBtn => {
+            playBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                alert('Playing video animation...');
+            });
+        });
+
+        // Smooth animations on scroll
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.animation = 'slideUp 0.6s ease forwards';
+                }
+            });
+        });
+
+        document.querySelectorAll('.photo-card, .carousel-card, .reel-card').forEach(card => {
+            observer.observe(card);
+        });
+    </script>
+</body>
+</html>
