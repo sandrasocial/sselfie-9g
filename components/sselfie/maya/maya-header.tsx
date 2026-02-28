@@ -713,7 +713,7 @@ export default function MayaHeaderUnified({
                   </button>
                 )}
 
-                {/* Switch Mode - Pro Mode shows "Switch to Classic" in menu on mobile (membership only) */}
+                {/* Switch Mode - SELFIE mode shows "Switch to MY MODEL" in menu on mobile (membership only) */}
                 {showModeToggle && proMode && onSwitchToClassic && (
                   <>
                     <div
@@ -735,7 +735,7 @@ export default function MayaHeaderUnified({
                         color: Colors.textSecondary,
                       }}
                     >
-                      Switch to Classic
+                      Switch to MY MODEL
                     </button>
                   </>
                 )}

@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Loader2, Aperture } from "lucide-react"
+import { useState } from "react"
+import { Loader2 } from "lucide-react"
 import useSWR from "swr"
 import Image from "next/image"
 import RetrainModelModal from "../retrain-model-modal"
@@ -10,11 +10,23 @@ interface MayaTrainingTabProps {
   userId?: string
   setActiveTab?: (tab: string) => void
   userName?: string | null
+  creditBalance?: number
+  isMembership?: boolean
+  onBuyCredits?: () => void
+  onJoinStudio?: () => void
 }
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
-export default function MayaTrainingTab({ userId, setActiveTab, userName }: MayaTrainingTabProps) {
+export default function MayaTrainingTab({
+  userId,
+  setActiveTab,
+  userName,
+  creditBalance = 0,
+  isMembership = false,
+  onBuyCredits,
+  onJoinStudio,
+}: MayaTrainingTabProps) {
   const [showRetrainModal, setShowRetrainModal] = useState(false)
   const { data: trainingStatus, error, mutate } = useSWR("/api/training/status", fetcher, {
     refreshInterval: (data) => {
@@ -46,6 +58,8 @@ export default function MayaTrainingTab({ userId, setActiveTab, userName }: Maya
   const isCompleted = model?.training_status === "completed"
   const isFailed = model?.training_status === "failed"
   const progress = progressData?.progress || model?.progress || 0
+  const trainingCost = 20
+  const needsTrainingCredits = !isTraining && !isCompleted && !isFailed && creditBalance < trainingCost
 
   const handleStartTraining = () => {
     window.dispatchEvent(new CustomEvent('open-onboarding'))
@@ -96,6 +110,33 @@ export default function MayaTrainingTab({ userId, setActiveTab, userName }: Maya
             Train your personal AI model with your selfies. This takes about 5 minutes and you only need to do it once.
           </p>
         </div>
+
+        {needsTrainingCredits && (
+          <div className="bg-stone-900 border border-stone-800 rounded-[20px] p-5 mb-6 sm:mb-8">
+            <p className="text-sm font-medium tracking-wide uppercase text-white mb-2">Training costs 20 credits</p>
+            <p className="text-sm text-stone-300 mb-4">
+              You currently have {Math.round(creditBalance)} credits.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={onBuyCredits}
+                className="px-4 py-2 rounded-lg bg-white text-stone-900 text-xs font-medium tracking-[0.08em] uppercase hover:bg-stone-100 transition-colors"
+              >
+                Buy Credits →
+              </button>
+              {!isMembership && (
+                <button
+                  type="button"
+                  onClick={onJoinStudio}
+                  className="px-4 py-2 rounded-lg border border-white/30 text-white text-xs font-medium tracking-[0.08em] uppercase hover:bg-white/10 transition-colors"
+                >
+                  Join Studio for Monthly Credits →
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Training Status Card */}
         <div className="bg-white border border-stone-200/40 rounded-[24px] p-6 sm:p-8 mb-6 sm:mb-8 shadow-[0_8px_32px_rgba(28,25,23,0.04)]">
@@ -191,11 +232,12 @@ export default function MayaTrainingTab({ userId, setActiveTab, userName }: Maya
                 Get Started
               </h3>
               <p className="text-sm text-stone-600 mb-6">
-                Upload 5+ selfies to train your personal AI model. Once trained, you can generate personalized images.
+                Upload 5+ selfies to train your personal AI model. Training costs 20 credits.
               </p>
               <button
                 onClick={handleStartTraining}
-                className="px-6 py-3 bg-stone-950 text-white rounded-lg hover:bg-stone-800 transition-colors text-sm font-medium tracking-wide uppercase mx-auto"
+                disabled={needsTrainingCredits}
+                className="px-6 py-3 bg-stone-950 text-white rounded-lg hover:bg-stone-800 transition-colors text-sm font-medium tracking-wide uppercase mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Start Training
               </button>
@@ -276,4 +318,3 @@ export default function MayaTrainingTab({ userId, setActiveTab, userName }: Maya
     </div>
   )
 }
-

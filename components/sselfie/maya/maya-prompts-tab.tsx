@@ -48,6 +48,8 @@ interface MayaPromptsTabProps {
     intent: string
   }
   onOpenUploadFlow?: () => void
+  aiPhotoPromptsLocked?: boolean
+  onUpgradeToStudio?: () => void
 }
 
 export default function MayaPromptsTab({ 
@@ -59,6 +61,8 @@ export default function MayaPromptsTab({
   proMode = false, // 🔴 FIX: Changed from studioProMode to proMode
   imageLibrary: externalImageLibrary,
   onOpenUploadFlow,
+  aiPhotoPromptsLocked = false,
+  onUpgradeToStudio,
 }: MayaPromptsTabProps) {
   const [prompts, setPrompts] = useState<PromptItem[]>([])
   const [categories, setCategories] = useState<string[]>([])
@@ -783,7 +787,7 @@ export default function MayaPromptsTab({
               generationId: null,
               isGenerating: false,
               isGenerated: false,
-              error: "Please upload images first. At least one selfie is required in Pro mode.",
+              error: "Please upload images first. At least one selfie is required in SELFIE mode.",
             })
             return newMap
           })
@@ -949,6 +953,51 @@ export default function MayaPromptsTab({
             >
               Retry
             </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (aiPhotoPromptsLocked) {
+    const lockedPreviewPrompts = prompts.slice(0, 3)
+
+    return (
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+          <div className="rounded-2xl border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.05)] backdrop-blur-[20px] p-5 sm:p-6">
+            <h3
+              className="text-xs sm:text-sm tracking-[0.2em] uppercase text-[#ffffff]"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
+              Unlock 100+ Curated Prompts
+            </h3>
+            <p className="text-sm text-[#e5e5e5] mt-2 leading-relaxed">
+              AI Photo Prompts gives you Sandra&apos;s best-performing styles.
+            </p>
+            <button
+              type="button"
+              onClick={onUpgradeToStudio}
+              className="mt-4 text-[11px] uppercase tracking-[0.16em] text-[#ffffff] hover:text-[#f5f5f5] transition-colors"
+            >
+              Upgrade to Studio — includes everything →
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            {lockedPreviewPrompts.map((prompt) => (
+              <div
+                key={prompt.id}
+                className="opacity-50 rounded-xl border border-[rgba(255,255,255,0.16)] bg-[rgba(255,255,255,0.06)] p-4"
+              >
+                <p className="text-[10px] uppercase tracking-[0.14em] text-[#e5e5e5]">
+                  Preview
+                </p>
+                <p className="text-sm text-[#ffffff] mt-2 leading-relaxed line-clamp-5">
+                  {prompt.prompt_text}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </div>

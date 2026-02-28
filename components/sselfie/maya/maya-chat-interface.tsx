@@ -418,12 +418,12 @@ export default function MayaChatInterface({
     <div className="flex-1 min-h-0 px-3 sm:px-4">
       <div
         ref={messagesContainerRef}
-        className="h-full overflow-y-auto pr-1 scroll-smooth bg-[linear-gradient(180deg,rgba(255,255,255,0.03)_0%,rgba(10,10,10,0.18)_24%,rgba(10,10,10,0.3)_100%)]"
+        className="h-full overflow-y-auto pr-1 scroll-smooth rounded-[20px] border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)]"
         style={{
-          // Header (~56-64px) + Tabs (~50px) + safe area = ~106-114px total
-          paddingTop: 'calc(106px + max(0.625rem, env(safe-area-inset-top, 0px)))',
+          // Layout contract: measured fixed header height + breathing room.
+          paddingTop: "calc(var(--maya-header-height, 124px) + 8px)",
           // Keep last message clear of dynamic input dock + fixed bottom nav.
-          paddingBottom: "calc(var(--input-bar-height, 168px) + 88px)",
+          paddingBottom: "calc(var(--input-bar-height, 168px) + var(--sselfie-bottom-nav-height, 96px) + 16px)",
         }}
         role="log"
         aria-live="polite"

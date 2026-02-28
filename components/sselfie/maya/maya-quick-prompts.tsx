@@ -37,8 +37,8 @@ export default function MayaQuickPrompts({
     return null
   }
 
-  // Empty State - Classic Mode
-  if (variant === "empty-state" && !studioProMode) {
+  // Empty State - Shared layout for Classic + Pro welcome states
+  if (variant === "empty-state") {
     return (
       <div className="relative w-full max-w-2xl px-2 sm:px-4 -mx-2">
         <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 snap-x snap-mandatory">
@@ -46,14 +46,7 @@ export default function MayaQuickPrompts({
             <button
               key={index}
               onClick={() => {
-                if (studioProMode) {
-                  const guidanceMessage = item.prompt
-                  setTimeout(() => {
-                    onSelect(guidanceMessage)
-                  }, 100)
-                } else {
-                  onSelect(item.prompt)
-                }
+                onSelect(item.prompt)
               }}
               className="shrink-0 px-4 py-2.5 sm:py-3 bg-white/50 backdrop-blur-xl border border-white/70 rounded-xl hover:bg-stone-100 hover:border-stone-300 transition-all duration-300 touch-manipulation active:scale-95 active:bg-stone-100 min-h-[44px] min-w-[120px] snap-start"
             >
@@ -78,13 +71,13 @@ export default function MayaQuickPrompts({
         {/* Signature style prompts */}
         <div className="space-y-3">
           <p className="text-xs text-stone-600 font-light tracking-wide uppercase">
-            {isEmpty 
-              ? "Start with Pro Mode Examples"
-              : "Or Start with Pro Mode Examples"}
+            {isEmpty
+              ? "Start with SELFIE Mode Examples"
+              : "Or Start with SELFIE Mode Examples"}
           </p>
           {studioProMode && (
             <p className="text-xs text-stone-500 text-center mb-3">
-              Pro Mode category examples - tap to inspire Maya
+              SELFIE Mode category examples - tap to inspire Maya
             </p>
           )}
           {prompts.length > 0 ? (

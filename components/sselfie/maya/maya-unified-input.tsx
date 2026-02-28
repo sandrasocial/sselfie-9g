@@ -108,7 +108,7 @@ export default function MayaUnifiedInput({
       setInputValue('')
       // Reset textarea height
       if (textareaRef.current) {
-        textareaRef.current.style.height = proMode ? '44px' : '48px'
+        textareaRef.current.style.height = "48px"
       }
     }
   }
@@ -155,106 +155,42 @@ export default function MayaUnifiedInput({
     setInputValue(e.target.value)
     // Auto-resize textarea
     e.target.style.height = 'auto'
-    e.target.style.height = `${Math.min(e.target.scrollHeight, proMode ? 200 : 80)}px`
+    e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`
   }
 
-  // Use Pro Mode design system styling when in Pro Mode, Classic styling otherwise
-  // Subtle background for contrast - light enough to not block bottom nav
-  const inputContainerClass = proMode
-    ? "w-full"
-    : "w-full"
-    
-  const inputContainerStyle = proMode
-    ? {
-        backgroundColor: 'rgba(255, 255, 255, 0.4)',
-        backdropFilter: 'blur(8px)',
-        paddingTop: 'clamp(12px, 3vw, 16px)',
-        paddingBottom: 'clamp(12px, 3vw, 16px)',
-        paddingLeft: 'clamp(12px, 3vw, 24px)',
-        paddingRight: 'clamp(12px, 3vw, 24px)',
-      }
-    : {}
+  const inputContainerClass = "w-full"
+  const inputContainerStyle = {}
+  const inputWrapperClass = "w-full"
 
-  const inputWrapperClass = proMode
-    ? "max-w-[1200px] mx-auto"
-    : "w-full"
+  const textareaClass =
+    "w-full px-4 py-3 bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] rounded-xl text-[#ffffff] placeholder-[#8c8c8c] focus:outline-none focus:ring-1 focus:ring-[rgba(255,255,255,0.24)] focus:bg-[rgba(255,255,255,0.09)] font-medium text-[16px] min-h-[48px] max-h-[120px] transition-all duration-300 resize-none overflow-y-auto leading-relaxed touch-manipulation"
 
-  const textareaClass = proMode
-    ? "focus:outline-none touch-manipulation"
-    : "w-full px-4 py-3 bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] rounded-xl text-[#ffffff] placeholder-[#666666] focus:outline-none focus:ring-1 focus:ring-[rgba(255,255,255,0.2)] focus:bg-[rgba(255,255,255,0.08)] font-medium text-[16px] min-h-[48px] max-h-[80px] transition-all duration-300 resize-none overflow-y-auto leading-relaxed touch-manipulation"
+  const textareaStyle = {
+    fontFamily: Typography.body.fontFamily,
+    fontSize: "16px",
+    fontWeight: Typography.body.weights.regular,
+    lineHeight: Typography.body.lineHeight,
+    letterSpacing: Typography.body.letterSpacing,
+  }
 
-  const textareaStyle = proMode
-    ? {
-        fontFamily: Typography.body.fontFamily,
-        fontSize: 'clamp(15px, 4vw, 16px)',
-        fontWeight: Typography.body.weights.regular,
-        color: Colors.textPrimary,
-        backgroundColor: Colors.surface,
-        border: `1px solid ${Colors.border}`,
-        borderRadius: BorderRadius.input,
-        padding: 'clamp(10px, 3vw, 12px) clamp(12px, 3vw, 14px)',
-        width: '100%',
-        minHeight: '44px',
-        maxHeight: '200px',
-        resize: 'none' as const,
-        lineHeight: Typography.body.lineHeight,
-        letterSpacing: Typography.body.letterSpacing,
-        transition: 'border-color 0.2s ease',
-      }
-    : {}
+  const imageButtonClass =
+    "touch-manipulation active:scale-95 shrink-0 flex items-center justify-center w-11 h-11 rounded-lg border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.1)] text-[#e5e5e5] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
 
-  const imageButtonClass = proMode
-    ? "touch-manipulation active:scale-95 shrink-0"
-    : "touch-manipulation active:scale-95 shrink-0 flex items-center justify-center w-11 h-11 rounded-lg border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.1)] text-[#e5e5e5] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+  const imageButtonStyle = {
+    borderRadius: BorderRadius.button,
+  }
 
-  const imageButtonStyle = proMode
-    ? {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: 'clamp(40px, 10vw, 44px)',
-        height: 'clamp(40px, 10vw, 44px)',
-        minWidth: '44px',
-        minHeight: '44px',
-        borderRadius: BorderRadius.button,
-        border: `1px solid ${Colors.border}`,
-        backgroundColor: 'transparent',
-        color: Colors.textSecondary,
-        cursor: isLoading || disabled || isUploadingImage ? 'not-allowed' : 'pointer',
-        opacity: isLoading || disabled || isUploadingImage ? 0.5 : 1,
-        transition: 'all 0.2s ease',
-      }
-    : {}
+  const sendButtonClass =
+    "touch-manipulation active:scale-95 shrink-0 flex items-center justify-center min-w-[56px] h-11 rounded-lg border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.1)] text-[#e5e5e5] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
 
-  const sendButtonClass = proMode
-    ? "touch-manipulation active:scale-95 shrink-0"
-    : "touch-manipulation active:scale-95 shrink-0 flex items-center justify-center min-w-[56px] h-11 rounded-lg border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.1)] text-[#e5e5e5] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-
-  const sendButtonStyle = proMode
-    ? {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: 'clamp(40px, 10vw, 44px)',
-        height: 'clamp(40px, 10vw, 44px)',
-        minWidth: '44px',
-        minHeight: '44px',
-        borderRadius: BorderRadius.button,
-        border: 'none',
-        backgroundColor:
-          (!inputValue.trim() && !uploadedImage) || isLoading || disabled
-            ? Colors.border
-            : Colors.primary,
-        color: Colors.surface,
-        cursor:
-          (!inputValue.trim() && !uploadedImage) || isLoading || disabled
-            ? 'not-allowed'
-            : 'pointer',
-        opacity:
-          (!inputValue.trim() && !uploadedImage) || isLoading || disabled ? 0.5 : 1,
-        transition: 'all 0.2s ease',
-      }
-    : {}
+  const sendButtonStyle = {
+    borderRadius: BorderRadius.button,
+    backgroundColor:
+      (!inputValue.trim() && !uploadedImage) || isLoading || disabled
+        ? "rgba(255,255,255,0.06)"
+        : "rgba(255,255,255,0.14)",
+    color: Colors.textSecondary,
+  }
 
   return (
     <div
@@ -264,9 +200,9 @@ export default function MayaUnifiedInput({
       {/* Chat Menu Dropdown - Rendered via portal to avoid positioning issues (Classic Mode only) */}
       {showSettingsButton && showChatMenu && typeof window !== 'undefined' && createPortal(
         <div 
-          className="fixed bg-white/95 backdrop-blur-3xl border border-stone-200 rounded-2xl overflow-hidden shadow-xl shadow-stone-950/10 animate-in slide-in-from-bottom-2 duration-300 z-[70]"
+          className="fixed bg-[rgba(14,14,14,0.94)] backdrop-blur-3xl border border-[rgba(255,255,255,0.14)] rounded-2xl overflow-hidden shadow-xl shadow-stone-950/30 animate-in slide-in-from-bottom-2 duration-300 z-[70]"
           style={{
-            bottom: 'calc(80px + 60px)', // Above bottom nav + input area
+            bottom: "calc(var(--sselfie-bottom-nav-height, 96px) + var(--input-bar-height, 168px) - 8px)",
             left: '12px',
             right: '12px',
             maxWidth: 'calc(100vw - 24px)',
@@ -279,7 +215,7 @@ export default function MayaUnifiedInput({
                 onSettingsClick() // This will close the menu and open settings (handled by parent)
               }
             }}
-            className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-[#e5e5e5] hover:bg-[rgba(255,255,255,0.08)] transition-colors touch-manipulation"
+            className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-white/85 hover:bg-[rgba(255,255,255,0.08)] transition-colors touch-manipulation"
           >
             <span className="font-medium uppercase tracking-[0.2em] text-[11px]">Generation Settings</span>
           </button>
@@ -353,16 +289,6 @@ export default function MayaUnifiedInput({
             disabled={isLoading || disabled || isUploadingImage}
             className={imageButtonClass}
             style={imageButtonStyle}
-            onMouseEnter={proMode ? (e) => {
-              if (!isLoading && !disabled && !isUploadingImage) {
-                e.currentTarget.style.backgroundColor = Colors.hover
-                e.currentTarget.style.borderColor = Colors.primary
-              }
-            } : undefined}
-            onMouseLeave={proMode ? (e) => {
-              e.currentTarget.style.backgroundColor = 'transparent'
-              e.currentTarget.style.borderColor = Colors.border
-            } : undefined}
             title="Upload image"
           >
             <input
@@ -405,12 +331,6 @@ export default function MayaUnifiedInput({
                 position: 'relative',
                 zIndex: 1,
               }}
-              onFocus={proMode ? (e) => {
-                e.currentTarget.style.borderColor = Colors.primary
-              } : undefined}
-              onBlur={proMode ? (e) => {
-                e.currentTarget.style.borderColor = Colors.border
-              } : undefined}
               aria-label="Message input"
               rows={1}
               inputMode="text"
@@ -442,24 +362,6 @@ export default function MayaUnifiedInput({
               disabled={(!inputValue.trim() && !uploadedImage) || isLoading || disabled}
               className={sendButtonClass}
               style={sendButtonStyle}
-              onMouseEnter={(e) => {
-                if (
-                  (inputValue.trim() || uploadedImage) &&
-                  !isLoading &&
-                  !disabled
-                ) {
-                  e.currentTarget.style.backgroundColor = Colors.accent
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (
-                  (inputValue.trim() || uploadedImage) &&
-                  !isLoading &&
-                  !disabled
-                ) {
-                  e.currentTarget.style.backgroundColor = Colors.primary
-                }
-              }}
               title="Send message"
             >
               {isLoading ? (
@@ -486,7 +388,7 @@ export default function MayaUnifiedInput({
               <button
                 type="button"
                 onClick={onSettingsClick}
-                className="touch-manipulation active:scale-95 text-xs font-serif font-extralight tracking-[0.2em] uppercase text-stone-500 hover:text-stone-300 transition-colors"
+                className="touch-manipulation active:scale-95 text-xs font-serif font-extralight tracking-[0.2em] uppercase text-white/60 hover:text-white transition-colors"
                 style={{
                   backgroundColor: 'transparent',
                   border: 'none',
@@ -504,7 +406,7 @@ export default function MayaUnifiedInput({
               <button
                 type="button"
                 onClick={onNewProject}
-                className="touch-manipulation active:scale-95 text-xs font-serif font-extralight tracking-[0.2em] uppercase text-stone-500 hover:text-stone-700 transition-colors"
+                className="touch-manipulation active:scale-95 text-xs font-serif font-extralight tracking-[0.2em] uppercase text-white/60 hover:text-white transition-colors"
                 style={{
                   backgroundColor: 'transparent',
                   border: 'none',
@@ -522,7 +424,7 @@ export default function MayaUnifiedInput({
               <button
                 type="button"
                 onClick={onHistory}
-                className="touch-manipulation active:scale-95 text-xs font-serif font-extralight tracking-[0.2em] uppercase text-stone-500 hover:text-stone-700 transition-colors"
+                className="touch-manipulation active:scale-95 text-xs font-serif font-extralight tracking-[0.2em] uppercase text-white/60 hover:text-white transition-colors"
                 style={{
                   backgroundColor: 'transparent',
                   border: 'none',

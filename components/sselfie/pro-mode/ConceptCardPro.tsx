@@ -8,7 +8,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Typography, Colors, BorderRadius, Spacing, UILabels, ButtonLabels } from '@/lib/maya/pro/design-system'
-import { X, Save, Bookmark } from 'lucide-react'
+import { Save } from 'lucide-react'
 import InstagramPhotoCard from '../instagram-photo-card'
 import ProPhotoshootPanel from '../pro-photoshoot-panel'
 import InstagramCarouselCard from '../instagram-carousel-card'
@@ -54,6 +54,14 @@ interface ConceptCardProProps {
   onSaveToGuide?: (concept: any, imageUrl?: string) => void // Save handler from parent
   messageId?: string // Message ID for updating JSONB when image is generated
 }
+
+const PRO_CARD_BG = "rgba(255,255,255,0.04)"
+const PRO_CARD_BORDER = "rgba(255,255,255,0.08)"
+const PRO_INPUT_BG = "rgba(255,255,255,0.06)"
+const PRO_INPUT_BORDER = "rgba(255,255,255,0.12)"
+const PRO_TEXT_PRIMARY = "#f5f5f5"
+const PRO_TEXT_SECONDARY = "rgba(245,245,245,0.74)"
+const PRO_TEXT_MUTED = "rgba(245,245,245,0.58)"
 
 export default function ConceptCardPro({
   concept,
@@ -1232,11 +1240,11 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
   return (
     <>
       <div
-        className="bg-white rounded-xl p-4 sm:p-5 md:p-6 space-y-3 sm:space-y-4 border"
+        className="rounded-[20px] p-4 sm:p-5 md:p-6 space-y-3 sm:space-y-4 border backdrop-blur-[20px]"
         style={{
           borderRadius: BorderRadius.card,
-          borderColor: Colors.border,
-          backgroundColor: Colors.surface,
+          borderColor: PRO_CARD_BORDER,
+          backgroundColor: PRO_CARD_BG,
         }}
       >
         {/* Title */}
@@ -1245,9 +1253,10 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
             fontFamily: Typography.subheaders.fontFamily,
             fontSize: 'clamp(18px, 4vw, 22px)',
             fontWeight: Typography.subheaders.weights.regular,
-            color: Colors.textPrimary,
+            color: PRO_TEXT_PRIMARY,
             lineHeight: Typography.subheaders.lineHeight,
             letterSpacing: Typography.subheaders.letterSpacing,
+            textTransform: 'uppercase',
           }}
         >
           {concept.title}
@@ -1260,7 +1269,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
             fontFamily: Typography.body.fontFamily,
             fontSize: 'clamp(14px, 3vw, 16px)',
             fontWeight: Typography.body.weights.light,
-            color: Colors.textSecondary,
+            color: PRO_TEXT_SECONDARY,
             lineHeight: Typography.body.lineHeight,
             letterSpacing: Typography.body.letterSpacing,
           }}
@@ -1270,7 +1279,8 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
         {concept.description && concept.description.length > 150 && (
           <button
             onClick={() => setIsDescriptionExpanded((prev) => !prev)}
-            className="text-xs text-[#0a0a0a] underline mt-1"
+            className="text-xs underline mt-1"
+            style={{ color: PRO_TEXT_PRIMARY }}
           >
             {isDescriptionExpanded ? "See less" : "See more"}
           </button>
@@ -1280,7 +1290,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
         <div
           style={{
             height: '1px',
-            backgroundColor: Colors.border,
+            backgroundColor: PRO_CARD_BORDER,
             width: '100%',
           }}
         />
@@ -1293,7 +1303,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                 fontFamily: Typography.ui.fontFamily,
                 fontSize: Typography.ui.sizes.sm,
                 fontWeight: Typography.ui.weights.medium,
-                color: Colors.textPrimary,
+                color: PRO_TEXT_PRIMARY,
               }}
             >
               {UILabels.imagesLinked(concept.linkedImages.length)}
@@ -1310,7 +1320,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                 fontFamily: Typography.ui.fontFamily,
                 fontSize: Typography.ui.sizes.xs,
                 fontWeight: Typography.ui.weights.medium,
-                color: Colors.textSecondary,
+                color: PRO_TEXT_SECONDARY,
                 textTransform: 'uppercase',
                 letterSpacing: '0.05em',
               }}
@@ -1328,7 +1338,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                 fontFamily: Typography.ui.fontFamily,
                 fontSize: Typography.ui.sizes.xs,
                 fontWeight: Typography.ui.weights.medium,
-                color: Colors.textSecondary,
+                color: PRO_TEXT_SECONDARY,
                 textTransform: 'uppercase',
                 letterSpacing: '0.05em',
               }}
@@ -1349,23 +1359,23 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
               fontSize: 'clamp(13px, 3vw, 14px)',
               fontWeight: Typography.ui.weights.medium,
               letterSpacing: '0.01em',
-              color: Colors.primary,
-              backgroundColor: 'transparent',
+              color: PRO_TEXT_PRIMARY,
+              backgroundColor: PRO_INPUT_BG,
               padding: 'clamp(10px, 2.5vw, 12px) clamp(16px, 4vw, 20px)',
               minHeight: '44px',
               borderRadius: BorderRadius.button,
-              border: `1px solid ${Colors.border}`,
+              border: `1px solid ${PRO_INPUT_BORDER}`,
               cursor: 'pointer',
               transition: 'all 0.2s ease',
               flex: 1,
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = Colors.hover
-              e.currentTarget.style.borderColor = Colors.primary
+              e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.12)"
+              e.currentTarget.style.borderColor = "rgba(255,255,255,0.22)"
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent'
-              e.currentTarget.style.borderColor = Colors.border
+              e.currentTarget.style.backgroundColor = PRO_INPUT_BG
+              e.currentTarget.style.borderColor = PRO_INPUT_BORDER
             }}
           >
             {ButtonLabels.viewPrompt}
@@ -1381,12 +1391,12 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
               fontSize: 'clamp(13px, 3vw, 14px)',
               fontWeight: Typography.ui.weights.medium,
               letterSpacing: '0.01em',
-              color: Colors.surface,
-              backgroundColor: (isGenerating || isGeneratingState) ? Colors.border : Colors.primary,
+              color: PRO_TEXT_PRIMARY,
+              backgroundColor: (isGenerating || isGeneratingState) ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.12)",
               padding: 'clamp(10px, 2.5vw, 12px) clamp(16px, 4vw, 20px)',
               minHeight: '44px',
               borderRadius: BorderRadius.button,
-              border: 'none',
+              border: `1px solid ${PRO_INPUT_BORDER}`,
               cursor: (isGenerating || isGeneratingState) ? 'not-allowed' : 'pointer',
               transition: 'all 0.2s ease',
               flex: 1,
@@ -1394,18 +1404,20 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
             }}
             onMouseEnter={(e) => {
               if (!isGenerating && !isGeneratingState) {
-                e.currentTarget.style.backgroundColor = Colors.accent
+                e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.18)"
+                e.currentTarget.style.borderColor = "rgba(255,255,255,0.3)"
               }
             }}
             onMouseLeave={(e) => {
               if (!isGenerating && !isGeneratingState) {
-                e.currentTarget.style.backgroundColor = Colors.primary
+                e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.12)"
+                e.currentTarget.style.borderColor = PRO_INPUT_BORDER
               }
             }}
           >
             {(isGenerating || isGeneratingState) ? 'Generating...' : ButtonLabels.generate}
           </button>
-          <p className="text-center text-xs text-[#666666] mt-1 sm:mt-0 sm:w-full sm:basis-full">
+          <p className="text-center text-xs mt-1 sm:mt-0 sm:w-full sm:basis-full" style={{ color: PRO_TEXT_MUTED }}>
             Uses {PRO_MODE_GENERATION_CREDITS} credits
           </p>
 
@@ -1420,12 +1432,12 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                 fontSize: 'clamp(13px, 3vw, 14px)',
                 fontWeight: Typography.ui.weights.medium,
                 letterSpacing: '0.01em',
-                color: Colors.surface,
-                backgroundColor: (!selectedGuideId || isSavingToGuide) ? Colors.border : Colors.primary,
+                color: PRO_TEXT_PRIMARY,
+                backgroundColor: (!selectedGuideId || isSavingToGuide) ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.12)",
                 padding: 'clamp(10px, 2.5vw, 12px) clamp(16px, 4vw, 20px)',
                 minHeight: '44px',
                 borderRadius: BorderRadius.button,
-                border: 'none',
+                border: `1px solid ${PRO_INPUT_BORDER}`,
                 cursor: (!selectedGuideId || isSavingToGuide) ? 'not-allowed' : 'pointer',
                 transition: 'all 0.2s ease',
                 flex: 1,
@@ -1437,12 +1449,12 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
               }}
               onMouseEnter={(e) => {
                 if (selectedGuideId && !isSavingToGuide) {
-                  e.currentTarget.style.backgroundColor = Colors.accent
+                  e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.18)"
                 }
               }}
               onMouseLeave={(e) => {
                 if (selectedGuideId && !isSavingToGuide) {
-                  e.currentTarget.style.backgroundColor = Colors.primary
+                  e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.12)"
                 }
               }}
               title={!selectedGuideId ? "Select a guide first" : "Save this prompt to your guide"}
@@ -1471,11 +1483,11 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                 fontFamily: Typography.ui.fontFamily,
                 fontSize: Typography.ui.sizes.sm,
                 fontWeight: Typography.ui.weights.medium,
-                color: Colors.surface,
-                backgroundColor: Colors.primary,
+                color: PRO_TEXT_PRIMARY,
+                backgroundColor: "rgba(255,255,255,0.12)",
                 padding: '8px 16px',
                 borderRadius: BorderRadius.button,
-                border: 'none',
+                border: `1px solid ${PRO_INPUT_BORDER}`,
                 cursor: 'pointer',
               }}
             >
@@ -1488,17 +1500,17 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
         {(isGenerating || isGeneratingState) && !isGenerated && !error && (
           <div className="flex flex-col items-center justify-center py-6 space-y-3">
             <div className="flex gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-stone-900 animate-pulse"></div>
+              <div className="w-2 h-2 rounded-full bg-white/90 animate-pulse"></div>
               <div
-                className="w-2 h-2 rounded-full bg-stone-700 animate-pulse"
+                className="w-2 h-2 rounded-full bg-white/70 animate-pulse"
                 style={{ animationDelay: "0.2s" }}
               ></div>
               <div
-                className="w-2 h-2 rounded-full bg-stone-500 animate-pulse"
+                className="w-2 h-2 rounded-full bg-white/45 animate-pulse"
                 style={{ animationDelay: "0.4s" }}
               ></div>
             </div>
-            <span className="text-xs font-light text-stone-700 tracking-wide">
+            <span className="text-xs font-light tracking-wide" style={{ color: PRO_TEXT_SECONDARY }}>
               Creating with Studio Pro...
             </span>
           </div>
@@ -1552,8 +1564,8 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
         {proPhotoshootSessionId && !proPhotoshootCarousel && (
           <div className="mt-4">
             {proPhotoshootError && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-xs text-red-600">{proPhotoshootError}</p>
+              <div className="mb-4 p-3 rounded-lg" style={{ backgroundColor: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.35)" }}>
+                <p className="text-xs" style={{ color: "#fecaca" }}>{proPhotoshootError}</p>
               </div>
             )}
             <ProPhotoshootPanel
@@ -1592,9 +1604,9 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
         
         {/* Debug: Show state if image should be displayed but isn't */}
         {isGenerated && !generatedImageUrl && (
-          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-xs text-yellow-800">
-              ⚠️ Debug: isGenerated=true but generatedImageUrl is missing. Polling should continue...
+          <div className="mt-4 p-4 rounded-lg" style={{ backgroundColor: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.35)" }}>
+            <p className="text-xs" style={{ color: "#fde68a" }}>
+              Debug: `isGenerated=true` but `generatedImageUrl` is missing. Polling should continue.
             </p>
           </div>
         )}
@@ -1612,8 +1624,11 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
         <DialogContent
           className="max-w-[95vw] sm:max-w-2xl md:max-w-3xl max-h-[90vh] overflow-y-auto mx-2 sm:mx-4"
           style={{
-            backgroundColor: Colors.surface,
-            borderColor: Colors.border,
+            backgroundColor: "rgba(10,10,10,0.92)",
+            borderColor: PRO_CARD_BORDER,
+            borderWidth: "1px",
+            borderRadius: BorderRadius.card,
+            backdropFilter: "blur(24px)",
           }}
         >
           <DialogHeader>
@@ -1622,8 +1637,9 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                 fontFamily: Typography.subheaders.fontFamily,
                 fontSize: Typography.subheaders.sizes.lg,
                 fontWeight: Typography.subheaders.weights.regular,
-                color: Colors.textPrimary,
+                color: PRO_TEXT_PRIMARY,
                 marginBottom: Spacing.element,
+                textTransform: "uppercase",
               }}
             >
               {concept.title}
@@ -1641,7 +1657,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                         fontFamily: Typography.ui.fontFamily,
                         fontSize: Typography.ui.sizes.xs,
                         fontWeight: Typography.ui.weights.medium,
-                        color: Colors.textSecondary,
+                        color: PRO_TEXT_SECONDARY,
                         textTransform: 'uppercase',
                         letterSpacing: '0.05em',
                         marginBottom: '4px',
@@ -1658,7 +1674,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                         fontFamily: Typography.ui.fontFamily,
                         fontSize: Typography.ui.sizes.xs,
                         fontWeight: Typography.ui.weights.medium,
-                        color: Colors.textSecondary,
+                        color: PRO_TEXT_SECONDARY,
                         textTransform: 'uppercase',
                         letterSpacing: '0.05em',
                         marginBottom: '4px',
@@ -1675,7 +1691,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                         fontFamily: Typography.ui.fontFamily,
                         fontSize: Typography.ui.sizes.xs,
                         fontWeight: Typography.ui.weights.medium,
-                        color: Colors.textSecondary,
+                        color: PRO_TEXT_SECONDARY,
                         textTransform: 'uppercase',
                         letterSpacing: '0.05em',
                         marginBottom: '4px',
@@ -1696,7 +1712,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                     fontFamily: Typography.ui.fontFamily,
                     fontSize: Typography.ui.sizes.xs,
                     fontWeight: Typography.ui.weights.medium,
-                    color: Colors.textSecondary,
+                    color: PRO_TEXT_SECONDARY,
                     textTransform: 'uppercase',
                     letterSpacing: '0.05em',
                   }}
@@ -1708,7 +1724,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                     fontFamily: Typography.body.fontFamily,
                     fontSize: Typography.body.sizes.sm,
                     fontWeight: Typography.body.weights.regular,
-                    color: Colors.textPrimary,
+                    color: PRO_TEXT_PRIMARY,
                     lineHeight: Typography.body.lineHeight,
                   }}
                 >
@@ -1721,7 +1737,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
             <div
               style={{
                 height: '1px',
-                backgroundColor: Colors.border,
+                backgroundColor: PRO_CARD_BORDER,
                 width: '100%',
               }}
             />
@@ -1735,7 +1751,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                       fontFamily: Typography.ui.fontFamily,
                       fontSize: Typography.ui.sizes.sm,
                       fontWeight: Typography.ui.weights.medium,
-                      color: Colors.textPrimary,
+                      color: PRO_TEXT_PRIMARY,
                       textTransform: 'uppercase',
                       letterSpacing: '0.05em',
                     }}
@@ -1750,21 +1766,21 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                         fontFamily: Typography.ui.fontFamily,
                         fontSize: Typography.ui.sizes.xs,
                         fontWeight: Typography.ui.weights.medium,
-                        color: Colors.primary,
-                        backgroundColor: 'transparent',
+                        color: PRO_TEXT_PRIMARY,
+                        backgroundColor: PRO_INPUT_BG,
                         padding: '6px 12px',
                         borderRadius: BorderRadius.buttonSm,
-                        border: `1px solid ${Colors.border}`,
+                        border: `1px solid ${PRO_INPUT_BORDER}`,
                         cursor: 'pointer',
                         transition: 'all 0.2s ease',
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = Colors.hover
-                        e.currentTarget.style.borderColor = Colors.primary
+                        e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.12)"
+                        e.currentTarget.style.borderColor = "rgba(255,255,255,0.24)"
                       }}
                       onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent'
-                        e.currentTarget.style.borderColor = Colors.border
+                        e.currentTarget.style.backgroundColor = PRO_INPUT_BG
+                        e.currentTarget.style.borderColor = PRO_INPUT_BORDER
                       }}
                     >
                       Edit
@@ -1774,8 +1790,8 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                 <div
                   className="p-4 rounded-lg"
                   style={{
-                    backgroundColor: Colors.backgroundAlt,
-                    border: `1px solid ${Colors.border}`,
+                    backgroundColor: PRO_INPUT_BG,
+                    border: `1px solid ${PRO_INPUT_BORDER}`,
                     borderRadius: BorderRadius.cardSm,
                   }}
                 >
@@ -1788,7 +1804,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                         fontFamily: Typography.body.fontFamily,
                         fontSize: Typography.body.sizes.md,
                         fontWeight: Typography.body.weights.regular,
-                        color: Colors.textPrimary,
+                        color: PRO_TEXT_PRIMARY,
                         lineHeight: Typography.body.lineHeight,
                         letterSpacing: Typography.body.letterSpacing,
                         backgroundColor: 'transparent',
@@ -1805,7 +1821,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                         fontFamily: Typography.body.fontFamily,
                         fontSize: Typography.body.sizes.md,
                         fontWeight: Typography.body.weights.regular,
-                        color: Colors.textPrimary,
+                        color: PRO_TEXT_PRIMARY,
                         lineHeight: Typography.body.lineHeight,
                         letterSpacing: Typography.body.letterSpacing,
                         whiteSpace: 'pre-wrap',
@@ -1823,7 +1839,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                   fontFamily: Typography.body.fontFamily,
                   fontSize: Typography.body.sizes.sm,
                   fontWeight: Typography.body.weights.light,
-                  color: Colors.textTertiary,
+                  color: PRO_TEXT_MUTED,
                   fontStyle: 'italic',
                 }}
               >
@@ -1839,7 +1855,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                     fontFamily: Typography.ui.fontFamily,
                     fontSize: Typography.ui.sizes.xs,
                     fontWeight: Typography.ui.weights.medium,
-                    color: Colors.textSecondary,
+                    color: PRO_TEXT_SECONDARY,
                     textTransform: 'uppercase',
                     letterSpacing: '0.05em',
                   }}
@@ -1851,7 +1867,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                     fontFamily: Typography.body.fontFamily,
                     fontSize: Typography.body.sizes.sm,
                     fontWeight: Typography.body.weights.regular,
-                    color: Colors.textPrimary,
+                    color: PRO_TEXT_PRIMARY,
                     lineHeight: Typography.body.lineHeight,
                     whiteSpace: 'pre-wrap',
                   }}
@@ -1869,7 +1885,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                     fontFamily: Typography.ui.fontFamily,
                     fontSize: Typography.ui.sizes.xs,
                     fontWeight: Typography.ui.weights.medium,
-                    color: Colors.textSecondary,
+                    color: PRO_TEXT_SECONDARY,
                     textTransform: 'uppercase',
                     letterSpacing: '0.05em',
                   }}
@@ -1879,8 +1895,8 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                 <div
                   className="p-3 rounded"
                   style={{
-                    backgroundColor: Colors.backgroundAlt,
-                    border: `1px solid ${Colors.border}`,
+                    backgroundColor: PRO_INPUT_BG,
+                    border: `1px solid ${PRO_INPUT_BORDER}`,
                     borderRadius: BorderRadius.cardSm,
                   }}
                 >
@@ -1889,7 +1905,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                       fontFamily: 'monospace',
                       fontSize: Typography.body.sizes.sm,
                       fontWeight: Typography.body.weights.regular,
-                      color: Colors.textPrimary,
+                      color: PRO_TEXT_PRIMARY,
                       lineHeight: Typography.body.lineHeight,
                       whiteSpace: 'pre-wrap',
                     }}
@@ -1908,7 +1924,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                     fontFamily: Typography.ui.fontFamily,
                     fontSize: Typography.ui.sizes.sm,
                     fontWeight: Typography.ui.weights.medium,
-                    color: Colors.textPrimary,
+                    color: PRO_TEXT_PRIMARY,
                   }}
                 >
                   {UILabels.imagesLinked(concept.linkedImages.length)}
@@ -1918,7 +1934,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
             )}
 
             {/* Action buttons */}
-            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-4 border-t" style={{ borderColor: Colors.border }}>
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-4 border-t" style={{ borderColor: PRO_CARD_BORDER }}>
               {isEditingPrompt ? (
                 <>
                   <button
@@ -1929,21 +1945,21 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                       fontSize: 'clamp(13px, 3vw, 14px)',
                       fontWeight: Typography.ui.weights.medium,
                       letterSpacing: '0.01em',
-                      color: Colors.surface,
-                      backgroundColor: Colors.primary,
+                      color: PRO_TEXT_PRIMARY,
+                      backgroundColor: "rgba(255,255,255,0.12)",
                       padding: 'clamp(10px, 2.5vw, 12px) clamp(16px, 4vw, 20px)',
                       minHeight: '44px',
                       borderRadius: BorderRadius.button,
-                      border: 'none',
+                      border: `1px solid ${PRO_INPUT_BORDER}`,
                       cursor: 'pointer',
                       transition: 'all 0.2s ease',
                       flex: 1,
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = Colors.accent
+                      e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.18)"
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = Colors.primary
+                      e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.12)"
                     }}
                   >
                     Save Changes
@@ -1956,23 +1972,23 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                       fontSize: 'clamp(13px, 3vw, 14px)',
                       fontWeight: Typography.ui.weights.medium,
                       letterSpacing: '0.01em',
-                      color: Colors.textPrimary,
-                      backgroundColor: 'transparent',
+                      color: PRO_TEXT_PRIMARY,
+                      backgroundColor: PRO_INPUT_BG,
                       padding: 'clamp(10px, 2.5vw, 12px) clamp(16px, 4vw, 20px)',
                       minHeight: '44px',
                       borderRadius: BorderRadius.button,
-                      border: `1px solid ${Colors.border}`,
+                      border: `1px solid ${PRO_INPUT_BORDER}`,
                       cursor: 'pointer',
                       transition: 'all 0.2s ease',
                       flex: 1,
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = Colors.hover
-                      e.currentTarget.style.borderColor = Colors.textPrimary
+                      e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.12)"
+                      e.currentTarget.style.borderColor = "rgba(255,255,255,0.24)"
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'transparent'
-                      e.currentTarget.style.borderColor = Colors.border
+                      e.currentTarget.style.backgroundColor = PRO_INPUT_BG
+                      e.currentTarget.style.borderColor = PRO_INPUT_BORDER
                     }}
                   >
                     Cancel
@@ -1987,21 +2003,21 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                     fontSize: 'clamp(13px, 3vw, 14px)',
                     fontWeight: Typography.ui.weights.medium,
                     letterSpacing: '0.01em',
-                    color: Colors.surface,
-                    backgroundColor: Colors.primary,
+                    color: PRO_TEXT_PRIMARY,
+                    backgroundColor: "rgba(255,255,255,0.12)",
                     padding: 'clamp(10px, 2.5vw, 12px) clamp(16px, 4vw, 20px)',
                     minHeight: '44px',
                     borderRadius: BorderRadius.button,
-                    border: 'none',
+                    border: `1px solid ${PRO_INPUT_BORDER}`,
                     cursor: 'pointer',
                     transition: 'all 0.2s ease',
                     flex: 1,
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = Colors.accent
+                    e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.18)"
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = Colors.primary
+                    e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.12)"
                   }}
                 >
                   {ButtonLabels.close}

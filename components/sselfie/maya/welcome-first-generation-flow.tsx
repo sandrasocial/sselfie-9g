@@ -343,9 +343,9 @@ export default function WelcomeFirstGenerationFlow({
                     className={`w-full text-left p-4 rounded-sm border-2 transition-all ${selectedMode === "classic" ? "border-[#0a0a0a] bg-[#f5f5f5]" : "border-[#e5e5e5] bg-white hover:border-[#999]"}`}
                   >
                     <span className="font-serif text-xs font-extralight tracking-[0.15em] uppercase text-[#0a0a0a] block mb-1">
-                      CLASSIC
+                      MY MODEL
                     </span>
-                    <span className="text-sm font-light text-[#666] leading-relaxed">Your trained style (Fast, simple)</span>
+                    <span className="text-sm font-light text-[#666] leading-relaxed">Use your trained model (Fast, consistent)</span>
                   </button>
                 )}
                 <button
@@ -354,9 +354,9 @@ export default function WelcomeFirstGenerationFlow({
                   className={`w-full text-left p-4 rounded-sm border-2 transition-all ${selectedMode === "pro" ? "border-[#0a0a0a] bg-[#f5f5f5]" : "border-[#e5e5e5] bg-white hover:border-[#999]"}`}
                 >
                   <span className="font-serif text-xs font-extralight tracking-[0.15em] uppercase text-[#0a0a0a] block mb-1">
-                    PRO
+                    SELFIE
                   </span>
-                  <span className="text-sm font-light text-[#666] leading-relaxed">With reference images (More control)</span>
+                  <span className="text-sm font-light text-[#666] leading-relaxed">Use reference selfies (More control)</span>
                 </button>
               </div>
               <div className="flex gap-3">

@@ -24,7 +24,7 @@ import {
   Film,
   GraduationCap,
 } from "lucide-react"
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { createPortal } from "react-dom"
 import ConceptCard from "./concept-card"
 import MayaChatHistory from "./maya-chat-history"
@@ -44,7 +44,10 @@ import MayaTabSwitcher from "./maya/maya-tab-switcher"
 import MayaVideosTab from "./maya/maya-videos-tab"
 import MayaPromptsTab from "./maya/maya-prompts-tab"
 import MayaTrainingTab from "./maya/maya-training-tab"
+import StudioMemberOnboarding from "./maya/studio-member-onboarding"
+import MembershipHomeCard from "./maya/membership-home-card"
 import { useRouter } from "next/navigation"
+import useSWR from "swr"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
 // Note: User type comes from Supabase auth (not next-auth)
 import { PromptSuggestionCard as NewPromptSuggestionCard } from "./prompt-suggestion-card"
@@ -60,6 +63,38 @@ import { Typography, Colors } from '@/lib/maya/pro/design-system'
 import { useToast } from "@/hooks/use-toast"
 import { DesignClasses, ComponentClasses } from "@/lib/design-tokens"
 import { startEmbeddedCheckout } from "@/lib/start-embedded-checkout"
+
+const MINI_PRODUCT_IDS = ["what_to_say", "show_up", "get_paid", "ai_photo_prompts"] as const
+type MiniProductId = (typeof MINI_PRODUCT_IDS)[number]
+
+const ACADEMY_PRODUCT_ID_ALIASES: Record<string, MiniProductId> = {
+  what_to_say: "what_to_say",
+  "what-to-say": "what_to_say",
+  show_up: "show_up",
+  "show-up": "show_up",
+  get_paid: "get_paid",
+  "get-paid": "get_paid",
+  ai_photo_prompts: "ai_photo_prompts",
+  "ai-photo-prompts": "ai_photo_prompts",
+}
+
+function normalizeMiniProductId(value?: string | null): MiniProductId | null {
+  if (!value) return null
+  const normalized = value.trim().toLowerCase()
+  return ACADEMY_PRODUCT_ID_ALIASES[normalized] ?? null
+}
+
+type MyProductsResponse = {
+  purchases?: Array<{ id?: string | null }>
+}
+
+const simpleFetcher = async <T,>(url: string): Promise<T> => {
+  const response = await fetch(url)
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status}`)
+  }
+  return (await response.json()) as T
+}
 
 interface MayaChatScreenProps {
   onImageGenerated?: () => void
@@ -104,6 +139,7 @@ export default function MayaChatScreen({
   // savedMessageIds is now provided by useMayaChat hook
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
+  const headerRef = useRef<HTMLDivElement>(null)
   const [showScrollButton, setShowScrollButton] = useState(false)
   const isAtBottomRef = useRef(true)
   const inputBarRef = useRef<HTMLDivElement>(null)
@@ -121,10 +157,36 @@ export default function MayaChatScreen({
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false)
   const [showCollapsedPrompts, setShowCollapsedPrompts] = useState(false)
-  const [showProModeTooltip, setShowProModeTooltip] = useState(false)
   const [academyJourneyPrompt, setAcademyJourneyPrompt] = useState<"first_gen" | "three_gen" | null>(null)
   const [isLoadingAcademyJourneyState, setIsLoadingAcademyJourneyState] = useState(false)
   const router = useRouter()
+
+  const { data: myProductsData } = useSWR<MyProductsResponse>(
+    user ? "/api/academy/my-products" : null,
+    simpleFetcher,
+  )
+
+  const ownedMiniProductIds = useMemo<Set<MiniProductId>>(() => {
+    const owned = new Set<MiniProductId>()
+
+    if (isMembership) {
+      MINI_PRODUCT_IDS.forEach((id) => owned.add(id))
+    }
+
+    const purchasedFromContext = normalizeMiniProductId(academyPurchaseProduct)
+    if (purchasedFromContext) {
+      owned.add(purchasedFromContext)
+    }
+
+    for (const row of myProductsData?.purchases ?? []) {
+      const normalized = normalizeMiniProductId(row?.id ?? null)
+      if (normalized) {
+        owned.add(normalized)
+      }
+    }
+
+    return owned
+  }, [academyPurchaseProduct, isMembership, myProductsData?.purchases])
   
   // Tab state for Photos/Videos/Prompts/Training/Feed tabs
   const [activeMayaTab, setActiveMayaTab] = useState<"photos" | "videos" | "prompts" | "training" | "feed">(() => {
@@ -170,13 +232,6 @@ export default function MayaChatScreen({
   }, [activeMayaTab, isFeedTabDisabled])
 
   useEffect(() => {
-    if (!proMode || typeof window === "undefined") return
-    if (localStorage.getItem("sselfie_pro_tooltip_seen") !== "true") {
-      setShowProModeTooltip(true)
-    }
-  }, [proMode])
-
-  useEffect(() => {
     const node = inputBarRef.current
     if (!node || typeof ResizeObserver === "undefined") return
 
@@ -190,6 +245,26 @@ export default function MayaChatScreen({
 
     updateHeight()
     const observer = new ResizeObserver(updateHeight)
+    observer.observe(node)
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [])
+
+  useEffect(() => {
+    const node = headerRef.current
+    if (!node || typeof ResizeObserver === "undefined") return
+
+    const updateHeaderHeight = () => {
+      const height = Math.ceil(node.getBoundingClientRect().height)
+      if (height > 0) {
+        document.documentElement.style.setProperty("--maya-header-height", `${height}px`)
+      }
+    }
+
+    updateHeaderHeight()
+    const observer = new ResizeObserver(updateHeaderHeight)
     observer.observe(node)
 
     return () => {
@@ -320,6 +395,7 @@ export default function MayaChatScreen({
   
   // Pro features onboarding state
   const [showStudioProOnboarding, setShowStudioProOnboarding] = useState(false)
+  const [showStudioMemberOnboarding, setShowStudioMemberOnboarding] = useState(false)
   
   // Pro features library management state
   const [showLibraryModal, setShowLibraryModal] = useState(false)
@@ -392,6 +468,12 @@ export default function MayaChatScreen({
     setPendingConceptRequest(null) // Clear pending request on chat change
     console.log("[v0] ✅ Cleared processedConceptMessagesRef for new chat:", chatId)
   }, [chatId])
+
+  useEffect(() => {
+    if (isMembership && firstTimeProductUser) {
+      setShowStudioMemberOnboarding(true)
+    }
+  }, [isMembership, firstTimeProductUser])
 
   // Detect [GENERATE_CONCEPTS] trigger in messages
   useEffect(() => {
@@ -2432,6 +2514,58 @@ export default function MayaChatScreen({
     (!messages || messages.length === 0) && // No messages = new/empty chat
     hasLoadedChatRef.current // Only show empty if we've actually loaded (prevents showing during initial load)
 
+  const showReturningMemberHome =
+    isMembership &&
+    !firstTimeProductUser &&
+    hasLoadedChatRef.current &&
+    !isLoadingChat &&
+    !isTyping &&
+    (!messages || messages.length === 0)
+
+  const showProEmptyState = !showReturningMemberHome && isProSessionEmpty && hasProFeatures && !isTyping
+  const showClassicEmptyState = !showReturningMemberHome && isEmpty && !proMode && !isTyping
+  const showAnyEmptyState = showReturningMemberHome || showProEmptyState || showClassicEmptyState
+
+  const returningMemberLastSessionTitle =
+    typeof chatTitle === "string" && chatTitle.trim().length > 0 && !/^new chat$/i.test(chatTitle.trim())
+      ? chatTitle
+      : null
+
+  const hasWhatToSayAccess = ownedMiniProductIds.has("what_to_say")
+  const hasShowUpAccess = ownedMiniProductIds.has("show_up")
+  const hasAiPhotoPromptsAccess = ownedMiniProductIds.has("ai_photo_prompts")
+
+  const assistantTextCorpus = useMemo(() => {
+    return (messages || [])
+      .filter((message: any) => message?.role === "assistant")
+      .map((message: any) => getMessageText(message).toLowerCase())
+      .filter((text: string) => text.length > 0)
+  }, [messages, getMessageText])
+
+  const hasBrandStrategyOutput = assistantTextCorpus.some((text) => {
+    return (
+      text.includes("brand strategy") ||
+      text.includes("content pillars") ||
+      text.includes("positioning") ||
+      text.includes("caption starters")
+    )
+  })
+
+  const hasFeedPlannerSignal = assistantTextCorpus.some((text) => {
+    return (
+      text.includes("feed planner") ||
+      text.includes("9-post") ||
+      text.includes("9 post") ||
+      text.includes("plan your feed") ||
+      text.includes("posting plan")
+    )
+  })
+
+  const showWhatToSayUpsellCard =
+    activeMayaTab === "photos" && !isMembership && !hasWhatToSayAccess && hasBrandStrategyOutput
+  const showShowUpUpsellCard =
+    activeMayaTab === "photos" && !isMembership && !hasShowUpAccess && hasFeedPlannerSignal
+
   // NOTE: Workbench should always be available in Pro mode for manual creation
   // Therefore, we always show the chat UI when in Pro mode, which includes the workbench
   // The old ProModeWrapper (form-based interface) has been removed in favor of the workbench-based chat UI
@@ -2441,7 +2575,7 @@ export default function MayaChatScreen({
     <div
       className="flex flex-col h-full relative bg-[radial-gradient(120%_90%_at_50%_0%,rgba(255,255,255,0.09)_0%,rgba(255,255,255,0.04)_18%,rgba(10,10,10,0.88)_48%,rgba(10,10,10,0.78)_100%)]"
       style={{
-        paddingBottom: '80px', // Space for bottom navigation (approx 60-70px nav + safe area)
+        paddingBottom: "var(--sselfie-bottom-nav-height, 96px)",
       }}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
@@ -2464,6 +2598,7 @@ export default function MayaChatScreen({
       {/* Mobile optimized: safe area insets, responsive padding */}
       {/* Using z-[100] to ensure it's above all other content */}
       <div 
+        ref={headerRef}
         className="fixed top-0 left-0 right-0 z-100 bg-[rgba(255,255,255,0.04)] backdrop-blur-[20px]"
         style={{
           paddingTop: 'max(0.625rem, env(safe-area-inset-top, 0px))',
@@ -2822,26 +2957,6 @@ export default function MayaChatScreen({
           <div 
             className="flex-1 min-h-0 flex flex-col overflow-y-auto"
           >
-      {showProModeTooltip && proMode && (
-        <div className="px-4 sm:px-6 py-3">
-          <div className="mx-auto max-w-5xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.06)] px-4 py-3 text-sm text-[#e5e5e5] flex items-start justify-between gap-3">
-            <p className="font-light leading-relaxed">
-              Pro Mode uses your reference photos instead of your trained model. Perfect for product shots, lifestyle content, and trying new looks.
-            </p>
-            <button
-              onClick={() => {
-                setShowProModeTooltip(false)
-                if (typeof window !== "undefined") {
-                  localStorage.setItem("sselfie_pro_tooltip_seen", "true")
-                }
-              }}
-              className="shrink-0 text-xs uppercase tracking-wide text-[#e5e5e5] hover:text-[#ffffff]"
-            >
-              Got it x
-            </button>
-          </div>
-        </div>
-      )}
       {!isLoadingAcademyJourneyState && academyJourneyPrompt && (
         <div className="px-4 sm:px-6 py-3">
           <div className="rounded-2xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
@@ -2886,49 +3001,167 @@ export default function MayaChatScreen({
           </div>
         </div>
       )}
-      <MayaChatInterface
-        messages={messages}
-        filteredMessages={filteredMessages}
-        setMessages={setMessages}
-        proMode={proMode}
-        isTyping={isTyping}
-        isGeneratingConcepts={isGeneratingConcepts}
-        isGeneratingPro={isGeneratingPro}
-        contentFilter={contentFilter}
-        messagesContainerRef={messagesContainerRef as React.RefObject<HTMLDivElement>}
-        messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
-        showScrollButton={showScrollButton}
-        isAtBottomRef={isAtBottomRef}
-        scrollToBottom={scrollToBottom}
-        onFeedSaved={handleFeedSaved}
-        chatId={chatId ?? undefined}
-        uploadedImages={uploadedImages}
-        setCreditBalance={setCreditBalance}
-        onImageGenerated={onImageGenerated}
-        isAdmin={isAdmin}
-        selectedGuideId={selectedGuideId}
-        selectedGuideCategory={selectedGuideCategory}
-        onSaveToGuide={handleSaveToGuide}
-        userId={userId}
-        user={user}
-        promptSuggestions={promptSuggestions}
-        generationSettings={settings}
-        enhancedAuthenticity={enhancedAuthenticity}
-      />
+
+      {showWhatToSayUpsellCard && (
+        <div className="px-4 sm:px-6 py-3">
+          <div className="rounded-2xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
+            <p
+              className="text-[11px] tracking-[0.18em] uppercase text-[#ffffff]"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
+              Want This With Captions?
+            </p>
+            <p className="text-sm text-[#e5e5e5] mt-2">
+              What To Say includes 30 caption templates matched to your brand pillars.
+            </p>
+            <button
+              type="button"
+              onClick={() => startEmbeddedCheckout("sselfie_studio_membership")}
+              className="mt-3 text-[11px] uppercase tracking-[0.16em] text-[#ffffff] hover:text-[#f5f5f5] transition-colors"
+            >
+              Upgrade to Studio — includes everything →
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showShowUpUpsellCard && (
+        <div className="px-4 sm:px-6 py-3">
+          <div className="rounded-2xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
+            <p
+              className="text-[11px] tracking-[0.18em] uppercase text-[#ffffff]"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
+              Want a 7-day posting plan?
+            </p>
+            <p className="text-sm text-[#e5e5e5] mt-2">
+              Show Up builds your consistency schedule around your content.
+            </p>
+            <button
+              type="button"
+              onClick={() => startEmbeddedCheckout("sselfie_studio_membership")}
+              className="mt-3 text-[11px] uppercase tracking-[0.16em] text-[#ffffff] hover:text-[#f5f5f5] transition-colors"
+            >
+              Upgrade to Studio — includes everything →
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!showAnyEmptyState && (
+        <MayaChatInterface
+          messages={messages}
+          filteredMessages={filteredMessages}
+          setMessages={setMessages}
+          proMode={proMode}
+          isTyping={isTyping}
+          isGeneratingConcepts={isGeneratingConcepts}
+          isGeneratingPro={isGeneratingPro}
+          contentFilter={contentFilter}
+          messagesContainerRef={messagesContainerRef as React.RefObject<HTMLDivElement>}
+          messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
+          showScrollButton={showScrollButton}
+          isAtBottomRef={isAtBottomRef}
+          scrollToBottom={scrollToBottom}
+          onFeedSaved={handleFeedSaved}
+          chatId={chatId ?? undefined}
+          uploadedImages={uploadedImages}
+          setCreditBalance={setCreditBalance}
+          onImageGenerated={onImageGenerated}
+          isAdmin={isAdmin}
+          selectedGuideId={selectedGuideId}
+          selectedGuideCategory={selectedGuideCategory}
+          onSaveToGuide={handleSaveToGuide}
+          userId={userId}
+          user={user}
+          promptSuggestions={promptSuggestions}
+          generationSettings={settings}
+          enhancedAuthenticity={enhancedAuthenticity}
+        />
+      )}
+          {showReturningMemberHome && (
+            <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 animate-in fade-in duration-500">
+              <div
+                className="flex flex-col items-center justify-start py-6"
+                style={{
+                  paddingTop: "calc(var(--maya-header-height, 124px) + 8px)",
+                  paddingBottom: "calc(var(--input-bar-height, 168px) + var(--sselfie-bottom-nav-height, 96px) + 20px)",
+                }}
+              >
+                <MembershipHomeCard
+                  creditsReady={creditBalance}
+                  lastSessionTitle={returningMemberLastSessionTitle}
+                  monthlyDropName={null}
+                  onContinue={() => {
+                    if (hasProFeatures) {
+                      setShowProModeHistory(true)
+                      return
+                    }
+                    setShowHistory(true)
+                  }}
+                  onGeneratePhoto={() => {
+                    setActiveMayaTab("photos")
+                    if (typeof window !== "undefined") {
+                      localStorage.setItem("mayaActiveTab", "photos")
+                      window.history.replaceState(null, "", "#maya")
+                    }
+                  }}
+                  onPlanFeed={() => {
+                    setActiveTab?.("feed-planner")
+                  }}
+                  onBrowseStyles={() => {
+                    setActiveMayaTab("prompts")
+                    if (typeof window !== "undefined") {
+                      localStorage.setItem("mayaActiveTab", "prompts")
+                      window.history.replaceState(null, "", "#maya/prompts")
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          )}
           {/* Empty State - Pro Features: Image Upload Flow, Classic: Welcome Screen */}
-          {isProSessionEmpty && hasProFeatures && !isTyping && (
-            <div className="flex-1 flex items-center justify-center p-6 sm:p-8">
+          {showProEmptyState && (
+            <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6">
+              <div
+                className="mx-auto w-full max-w-2xl pt-4 pb-6 sm:pb-8"
+                style={{
+                  paddingTop: "calc(var(--maya-header-height, 124px) + 8px)",
+                  paddingBottom: "calc(var(--input-bar-height, 168px) + var(--sselfie-bottom-nav-height, 96px) + 20px)",
+                }}
+              >
               <div className="max-w-2xl w-full space-y-8">
                 {/* Show ImageUploadFlow if library is empty, otherwise show welcome */}
                 {libraryTotalImages === 0 ? (
-                  <div className="flex flex-col items-center justify-center text-center space-y-5 py-8">
-                    <div className="w-12 h-12 rounded-full border border-stone-300 flex items-center justify-center bg-white">
-                      <ImageIcon className="w-6 h-6 text-stone-600" />
+                  <div className="flex flex-col items-center justify-center text-center space-y-6 py-8">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-stone-200/60 overflow-hidden">
+                      <img
+                        src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
+                        alt="Maya"
+                        className="w-full h-full object-cover"
+                      />
                     </div>
-                    <p className="text-base font-light text-[#666666]">Add your reference photos to get started</p>
+                    <div className="space-y-3">
+                      <h2 className="text-xl sm:text-2xl font-serif font-extralight tracking-[0.3em] text-white uppercase">
+                        Welcome
+                      </h2>
+                      <p className="text-xs sm:text-sm text-white/70 tracking-wide max-w-md leading-relaxed px-4">
+                        Hi, I&apos;m Maya. SELFIE mode uses your linked reference photos instead of your trained model. Perfect for product shots, lifestyle content, and trying new looks.
+                      </p>
+                    </div>
+                    <div className="w-full max-w-sm rounded-2xl border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.05)] p-4 text-left">
+                      <p className="text-[11px] uppercase tracking-[0.2em] text-white/75 mb-2">
+                        Quick Start
+                      </p>
+                      <p className="text-xs text-white/70 leading-relaxed">
+                        Tap <span className="text-white font-medium">Add Photos</span> to open the upload wizard and link 1-3 reference images.
+                      </p>
+                    </div>
                     <button
-                      onClick={() => setShowUploadFlow(true)}
-                      className="px-6 py-2.5 bg-black text-white rounded-full text-sm hover:bg-stone-900"
+                      onClick={() => {
+                        setShowUploadFlow(true)
+                      }}
+                      className="px-6 py-2.5 bg-[rgba(255,255,255,0.12)] border border-[rgba(255,255,255,0.25)] text-white rounded-full text-sm hover:bg-[rgba(255,255,255,0.18)] transition-colors"
                     >
                       Add Photos
                     </button>
@@ -2945,11 +3178,11 @@ export default function MayaChatScreen({
                       />
                     </div>
                         <div className="space-y-3">
-                      <h2 className="text-xl sm:text-2xl font-serif font-extralight tracking-[0.3em] text-stone-950 uppercase">
+                      <h2 className="text-xl sm:text-2xl font-serif font-extralight tracking-[0.3em] text-white uppercase">
                         Welcome
                       </h2>
-                      <p className="text-xs sm:text-sm text-stone-600 tracking-wide max-w-md leading-relaxed px-4">
-                        Hi, I&apos;m Maya. I&apos;ll help you create beautiful photos and videos.
+                      <p className="text-xs sm:text-sm text-white/70 tracking-wide max-w-md leading-relaxed px-4">
+                        Hi, I&apos;m Maya. Your reference photos are linked. Choose a quick prompt below to start creating.
                       </p>
                         </div>
 
@@ -2965,12 +3198,20 @@ export default function MayaChatScreen({
                   </div>
                 )}
               </div>
+              </div>
             </div>
           )}
 
           {/* Classic Mode Empty State */}
-          {isEmpty && !proMode && !isTyping && (
-            <div className="flex flex-col items-center justify-center h-full px-4 py-8 animate-in fade-in duration-500">
+          {showClassicEmptyState && (
+            <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6 animate-in fade-in duration-500">
+              <div
+                className="flex flex-col items-center justify-start py-6"
+                style={{
+                  paddingTop: "calc(var(--maya-header-height, 124px) + 8px)",
+                  paddingBottom: "calc(var(--input-bar-height, 168px) + var(--sselfie-bottom-nav-height, 96px) + 20px)",
+                }}
+              >
               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-stone-200/60 overflow-hidden mb-4 sm:mb-6">
                 <img
                   src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
@@ -2978,10 +3219,10 @@ export default function MayaChatScreen({
                   className="w-full h-full object-cover"
                 />
               </div>
-              <h2 className="text-xl sm:text-2xl font-serif font-extralight tracking-[0.3em] text-stone-950 uppercase mb-2 sm:mb-3 text-center">
+              <h2 className="text-xl sm:text-2xl font-serif font-extralight tracking-[0.3em] text-white uppercase mb-2 sm:mb-3 text-center">
                 Welcome
               </h2>
-              <p className="text-xs sm:text-sm text-stone-600 tracking-wide text-center mb-4 sm:mb-6 max-w-md leading-relaxed px-4">
+              <p className="text-xs sm:text-sm text-white/70 tracking-wide text-center mb-4 sm:mb-6 max-w-md leading-relaxed px-4">
                 Hi, I&apos;m Maya. I&apos;ll help you create beautiful photos and videos.
               </p>
               <MayaQuickPrompts
@@ -2991,6 +3232,7 @@ export default function MayaChatScreen({
                 variant="empty-state"
                 studioProMode={proMode}
               />
+              </div>
             </div>
           )}
           </div>
@@ -3002,10 +3244,10 @@ export default function MayaChatScreen({
       {(activeMayaTab === "photos" || activeMayaTab === "feed") && (
         <div
           ref={inputBarRef}
-          className="fixed left-0 right-0 bg-[rgba(12,12,12,0.62)] backdrop-blur-[22px] border-t border-[rgba(255,255,255,0.12)] px-3 sm:px-4 py-2 sm:py-2.5 z-[90] flex flex-col"
+          className="fixed left-0 right-0 bg-[rgba(12,12,12,0.55)] backdrop-blur-[22px] border-t border-[rgba(255,255,255,0.12)] px-3 sm:px-4 py-2 sm:py-2.5 z-[90] flex flex-col"
           style={{
             // Dock above bottom nav; avoid blocking the chat area while scrolling.
-            bottom: "calc(80px + env(safe-area-inset-bottom, 0px))",
+            bottom: "calc(var(--sselfie-bottom-nav-height, 96px) + 4px)",
             paddingBottom: "max(0.25rem, env(safe-area-inset-bottom, 0px))",
           }}
         >
@@ -3062,7 +3304,7 @@ export default function MayaChatScreen({
             onRemoveImage={() => setUploadedImage(null)}
             isLoading={isTyping || isGeneratingConcepts}
             disabled={isTyping || isGeneratingConcepts}
-            placeholder={hasProFeatures ? "What would you like to create?" : "Message Maya..."}
+            placeholder="Message Maya..."
             showSettingsButton={!hasProFeatures}
             onSettingsClick={() => {
               setShowSettings(true)
@@ -3148,6 +3390,8 @@ export default function MayaChatScreen({
             proMode={proMode}
             imageLibrary={imageLibrary}
             onOpenUploadFlow={() => setShowUploadFlow(true)}
+            aiPhotoPromptsLocked={!hasAiPhotoPromptsAccess}
+            onUpgradeToStudio={() => startEmbeddedCheckout("sselfie_studio_membership")}
           />
         </div>
       )}
@@ -3226,11 +3470,49 @@ export default function MayaChatScreen({
                 userId={userId} 
                 setActiveTab={setActiveTab}
                 userName={user?.name || user?.email?.split('@')[0] || null}
+                creditBalance={creditBalance}
+                isMembership={isMembership}
+                onBuyCredits={() => setShowBuyCreditsModal(true)}
+                onJoinStudio={() => startEmbeddedCheckout("sselfie_studio_membership")}
               />
             </div>
           </div>
         </div>
       )}
+
+      <StudioMemberOnboarding
+        open={showStudioMemberOnboarding}
+        creditBalance={creditBalance}
+        onClose={() => setShowStudioMemberOnboarding(false)}
+        onShowSelfieMode={() => {
+          if (!proMode) {
+            handleModeSwitch(true)
+          }
+          setActiveMayaTab("photos")
+          if (typeof window !== "undefined") {
+            localStorage.setItem("mayaActiveTab", "photos")
+            window.history.replaceState(null, "", "#maya")
+          }
+        }}
+        onUploadSelfie={() => {
+          if (!proMode) {
+            handleModeSwitch(true)
+          }
+          setActiveMayaTab("photos")
+          setShowUploadFlow(true)
+          if (typeof window !== "undefined") {
+            localStorage.setItem("mayaActiveTab", "photos")
+            window.history.replaceState(null, "", "#maya")
+          }
+        }}
+        onStartTraining={() => {
+          setActiveMayaTab("training")
+          if (typeof window !== "undefined") {
+            localStorage.setItem("mayaActiveTab", "training")
+            window.history.replaceState(null, "", "#maya/training")
+          }
+        }}
+      />
 
         {/* Pro Mode Onboarding Modal - Rendered via Portal to avoid stacking context issues */}
         {showStudioProOnboarding && typeof window !== 'undefined' && createPortal(
@@ -3254,7 +3536,7 @@ export default function MayaChatScreen({
               
               {/* Header */}
               <h2 className="text-xl font-serif font-light tracking-[0.15em] uppercase text-stone-900 mb-2 pr-8">
-                Pro
+                SELFIE
               </h2>
               <p className="text-sm text-stone-600 mb-6 leading-relaxed">
                 Professional content creation guided by Maya
@@ -3323,10 +3605,10 @@ export default function MayaChatScreen({
                   </p>
                 </div>
                 
-                {/* Pro Tips */}
+                {/* SELFIE Tips */}
                 <div className="border-t border-stone-200 pt-4 mt-6">
                   <h3 className="text-xs tracking-[0.15em] uppercase text-stone-900 font-medium mb-3">
-                    Pro Tips
+                    SELFIE Tips
                   </h3>
                   <ul className="space-y-2">
                     <li className="flex items-start gap-2">

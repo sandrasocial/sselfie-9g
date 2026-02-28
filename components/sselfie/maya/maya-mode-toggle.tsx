@@ -12,7 +12,7 @@ interface MayaModeToggleProps {
 /**
  * Maya Mode Toggle Component
  * 
- * Segmented control for switching between Classic and Pro features.
+ * Segmented control for switching between MY MODEL and SELFIE modes.
  * Shows both options with the active one highlighted.
  * 
  * **Pro Features Include:**
@@ -43,20 +43,20 @@ export default function MayaModeToggle({
       return (
         <div className={`flex items-center ${className}`}>
           <span className="text-sm font-medium text-stone-600">
-            {isProMode ? "Pro" : "Classic"}
+            {isProMode ? "SELFIE" : "MY MODEL"}
           </span>
         </div>
       )
     }
     
-    // Segmented control: shows both Classic and Pro, with active one highlighted
-    // When in Pro mode, clicking Classic switches to Classic. Clicking Pro does nothing (already active)
+    // Segmented control: shows both MY MODEL and SELFIE, with active one highlighted
+    // When in SELFIE mode, clicking MY MODEL switches modes. Clicking SELFIE does nothing (already active)
     // Mobile optimized: min 44px touch targets, responsive text sizes
     return (
       <div className={`inline-flex rounded-lg border border-stone-300 bg-white p-0.5 ${className}`}>
         <button
           onClick={() => {
-            // Only toggle if not already in Classic mode
+            // Only toggle if not already in MY MODEL mode
             if (isProMode) {
               onToggle()
             }
@@ -66,17 +66,17 @@ export default function MayaModeToggle({
               ? "bg-white text-stone-600 hover:bg-stone-50 cursor-pointer"
               : "bg-stone-950 text-white cursor-default"
           }`}
-          aria-label="Switch to Classic Mode - Basic chat interface with simple image generation"
-          title="Switch to Classic Mode - Basic chat interface with simple image generation"
+          aria-label="Switch to MY MODEL - Use your trained model for consistent results"
+          title="Switch to MY MODEL - Use your trained model for consistent results"
           disabled={!isProMode}
         >
           <span className="text-[10px] sm:text-xs md:text-sm font-serif font-extralight tracking-[0.2em] uppercase whitespace-nowrap">
-            Classic
+            MY MODEL
           </span>
         </button>
         <button
           onClick={() => {
-            // Only toggle if not already in Pro mode
+            // Only toggle if not already in SELFIE mode
             if (!isProMode) {
               onToggle()
             }
@@ -86,12 +86,12 @@ export default function MayaModeToggle({
               ? "bg-stone-950 text-white cursor-default"
               : "bg-white text-stone-600 hover:bg-stone-50 cursor-pointer"
           }`}
-          aria-label="Switch to Pro Mode - Image library, advanced options, and enhanced concept generation"
-          title="Switch to Pro Mode - Image library, advanced options, and enhanced concept generation"
+          aria-label="Switch to SELFIE - Upload selfies for faster generation"
+          title="Switch to SELFIE - Upload selfies for faster generation"
           disabled={isProMode}
         >
           <span className="text-[10px] sm:text-xs md:text-sm font-serif font-extralight tracking-[0.2em] uppercase whitespace-nowrap">
-            Pro
+            SELFIE
           </span>
         </button>
       </div>
@@ -104,15 +104,15 @@ export default function MayaModeToggle({
       <button
         onClick={onToggle}
         className="touch-manipulation active:scale-95 px-4 py-2 rounded-lg transition-colors bg-stone-100 text-stone-900 hover:bg-stone-200 border border-stone-300 min-h-[36px]"
-        aria-label={isClassicMode 
-          ? "Switch to Pro Mode - Enable image library, advanced options, and enhanced concept generation"
-          : "Switch to Classic Mode - Basic chat interface with simple image generation"}
-        title={isClassicMode 
-          ? "Switch to Pro Mode - Enable image library, advanced options, and enhanced concept generation"
-          : "Switch to Classic Mode - Basic chat interface with simple image generation"}
+        aria-label={isClassicMode
+          ? "Switch to SELFIE - Upload selfies for faster generation"
+          : "Switch to MY MODEL - Use your trained model for consistent results"}
+        title={isClassicMode
+          ? "Switch to SELFIE - Upload selfies for faster generation"
+          : "Switch to MY MODEL - Use your trained model for consistent results"}
       >
         <span className="text-xs sm:text-sm font-serif font-extralight tracking-[0.2em] uppercase">
-          {isClassicMode ? "Switch to Pro" : "Switch to Classic"}
+          {isClassicMode ? "Switch to SELFIE" : "Switch to MY MODEL"}
         </span>
       </button>
     </div>
