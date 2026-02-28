@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
-import { checkCredits, deductCredits, getUserCredits } from "@/lib/credits"
+import { checkCredits, deductCredits, getUserCredits, addCredits } from "@/lib/credits"
 import { generateWithNanoBanana, getStudioProCreditCost } from "@/lib/nano-banana-client"
 import { neon } from "@neondatabase/serverless"
 import { put } from "@vercel/blob"
@@ -105,20 +105,95 @@ export async function POST(req: NextRequest) {
     })
     const routedPrompt = authorityResult.prompt
 
-    // Generate image with Nano Banana Pro
-    const generationResult = await generateWithNanoBanana({
-      prompt: routedPrompt,
-      image_input: imageInput.length > 0 ? imageInput : undefined,
-      aspect_ratio: aspectRatio as any,
-      resolution: resolution as "1K" | "2K" | "4K",
-      output_format: "png",
-      safety_filter_level: "block_only_high",
-    })
+    // Deduct credits BEFORE generation starts to prevent free generations on async flow.
+    const tempReferenceId = `maya-pro-temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    const deductionResult = await deductCredits(
+      dbUserId,
+      creditCost,
+      "image",
+      `Pro Mode image generation (${resolution})`,
+      tempReferenceId,
+    )
+
+    if (!deductionResult.success) {
+      const creditError = deductionResult.error || "Failed to deduct credits"
+      if (creditError.toLowerCase().includes("insufficient credits")) {
+        const currentBalance = await getUserCredits(dbUserId)
+        return NextResponse.json(
+          {
+            error: "Insufficient credits",
+            required: creditCost,
+            current: currentBalance,
+            message: `Image generation requires ${creditCost} credits. You currently have ${currentBalance} credits.`,
+          },
+          { status: 402 },
+        )
+      }
+
+      console.error("[v0] [PRO MODE] Credit deduction failed:", creditError)
+      return NextResponse.json(
+        {
+          error: "Failed to deduct credits",
+          details: creditError,
+        },
+        { status: 500 },
+      )
+    }
+
+    let generationResult: Awaited<ReturnType<typeof generateWithNanoBanana>>
+    try {
+      generationResult = await generateWithNanoBanana({
+        prompt: routedPrompt,
+        image_input: imageInput.length > 0 ? imageInput : undefined,
+        aspect_ratio: aspectRatio as any,
+        resolution: resolution as "1K" | "2K" | "4K",
+        output_format: "png",
+        safety_filter_level: "block_only_high",
+      })
+    } catch (generationError: any) {
+      console.error("[v0] [PRO MODE] Generation start failed after credit deduction:", generationError)
+      try {
+        await addCredits(
+          dbUserId,
+          creditCost,
+          "refund",
+          `Refund for failed Pro Mode generation start (${resolution})`,
+        )
+      } catch (refundError) {
+        console.error("[v0] [PRO MODE] Failed to refund credits after generation start failure:", refundError)
+      }
+
+      return NextResponse.json(
+        {
+          error: "Failed to start generation",
+          details: generationError?.message || "Unknown generation start error",
+        },
+        { status: 500 },
+      )
+    }
 
     console.log("[v0] [PRO MODE] Generation started:", {
       predictionId: generationResult.predictionId,
       status: generationResult.status,
     })
+
+    // Update temporary reference with actual prediction ID for reconciliation.
+    try {
+      await sql`
+        UPDATE credit_transactions
+        SET reference_id = ${generationResult.predictionId}
+        WHERE id = (
+          SELECT id
+          FROM credit_transactions
+          WHERE user_id = ${dbUserId}
+            AND reference_id = ${tempReferenceId}
+          ORDER BY created_at DESC
+          LIMIT 1
+        )
+      `
+    } catch (referenceUpdateError) {
+      console.error("[v0] [PRO MODE] Failed to update credit transaction reference:", referenceUpdateError)
+    }
 
     // If generation completed immediately, handle it
     if (generationResult.status === "succeeded" && generationResult.output) {
@@ -135,20 +210,6 @@ export async function POST(req: NextRequest) {
           addRandomSuffix: true,
         }
       )
-
-      // Deduct credits
-      try {
-        await deductCredits(
-          dbUserId,
-          creditCost,
-          "image",
-          `Pro Mode image generation (${resolution})`
-        )
-        console.log("[v0] [PRO MODE] Credits deducted:", creditCost)
-      } catch (creditError) {
-        console.error("[v0] [PRO MODE] Error deducting credits:", creditError)
-        // Don't fail the request if credit deduction fails - log it
-      }
 
       // Save to database
       let generationId: number | null = null
