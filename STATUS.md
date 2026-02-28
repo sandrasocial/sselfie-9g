@@ -4,9 +4,30 @@
 ---
 
 ## Last Updated
-2026-02-28 18:02 CET — Updated by Codex (Phase-3 Maya + training access shipped to main)
+2026-02-28 18:06 CET — Updated by Codex (UX-05 feed planner dark-glass batch shipped to main)
 
 ## Last Task Completed
+UX-05 Feed Planner redesign batch shipped to production:
+- Commit pushed to `main`: `a2315e9a` (`Restyle feed planner surfaces to dark glass UX`)
+- Files shipped:
+  - `app/feed-planner/feed-planner-client.tsx`
+  - `components/feed-planner/feed-brand-pillars.tsx`
+  - `components/feed-planner/feed-grid-item.tsx`
+  - `components/feed-planner/feed-grid.tsx`
+  - `components/feed-planner/feed-header.tsx`
+  - `components/feed-planner/feed-posts-list.tsx`
+  - `components/feed-planner/feed-single-placeholder.tsx`
+  - `components/feed-planner/feed-strategy.tsx`
+  - `components/feed-planner/feed-style-modal.tsx`
+  - `components/feed-planner/feed-tabs.tsx`
+  - `components/feed-planner/feed-view-screen.tsx`
+  - `components/feed-planner/instagram-feed-view.tsx`
+  - `components/feed-planner/welcome-wizard.tsx`
+- Validation:
+  - `pnpm vitest run tests/feed-planner-access-control.test.ts` passed (3/3)
+  - `pnpm eslint` on touched feed-planner files passed with warnings only (0 errors)
+  - `pnpm build` passed
+
 Decision #2 shipped to production: training access is now credit-gated for all users (not membership-gated):
 - Commit pushed to `main`: `6842912c` (`Allow credit-gated training for non-members`)
 - Files:
