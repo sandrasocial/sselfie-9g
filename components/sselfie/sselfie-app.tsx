@@ -68,6 +68,10 @@ import {
   resolveStudioTab,
   type StudioTab,
 } from "@/lib/studio/tab-routing"
+import {
+  shouldApplyBlueprintFallbackRouting,
+  shouldRouteMemberToFeedPlannerOnMissingOnboarding,
+} from "@/lib/onboarding/studio-onboarding-routing"
 
 interface SselfieAppProps {
   userId: string | number // Can be string or number (from database)
@@ -630,7 +634,14 @@ export default function SselfieApp({
           entitlementType: blueprintData?.entitlement?.type,
         })
         
-        if (isBlueprintUser && !onboardingCompleted && mounted) {
+        if (
+          shouldApplyBlueprintFallbackRouting({
+            isBlueprintUser,
+            isMember: subscriptionStatus === "active" || subscriptionStatus === "trialing",
+            onboardingCompleted,
+          }) &&
+          mounted
+        ) {
           const currentUrlTab = typeof window !== "undefined" 
             ? new URLSearchParams(window.location.search).get("tab") || window.location.hash.slice(1) || null
             : null
@@ -693,8 +704,14 @@ export default function SselfieApp({
             // Note: UnifiedOnboardingWizard is now handled by feed-planner-client.tsx
           }
           // Step 2: Show Unified Blueprint Onboarding Wizard if welcome shown (members) OR directly for free users
-          else if ((isMember && blueprintWelcomeShown && (!hasBaseWizardData || !hasExtensionData)) ||
-                   (!isMember && (!hasBaseWizardData || !hasExtensionData))) {
+          else if (
+            shouldRouteMemberToFeedPlannerOnMissingOnboarding({
+              isMember,
+              blueprintWelcomeShown,
+              hasBaseWizardData,
+              hasExtensionData,
+            })
+          ) {
             console.log("[Blueprint Onboarding] 📝 Onboarding data missing - feed-planner-client.tsx will handle wizard")
             setShowBlueprintWelcome(false)
             setShowOnboarding(false)
@@ -702,6 +719,12 @@ export default function SselfieApp({
             if (activeTab !== "feed-planner") {
               setActiveTab("feed-planner")
             }
+          }
+          // Free users stay in Maya; activation/welcome flow handles first generation path
+          else if (!isMember && (!hasBaseWizardData || !hasExtensionData)) {
+            console.log("[Blueprint Onboarding] Free user onboarding missing - staying in Maya welcome flow")
+            setShowBlueprintWelcome(false)
+            setShowOnboarding(false)
           }
           // Step 3: Show Training Wizard if all onboarding done but no trained model
           // SKIP training wizard for blueprint users (free or paid) since Feed Planner doesn't require LoRA training

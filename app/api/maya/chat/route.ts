@@ -14,6 +14,7 @@ import {
   isUnifiedMayaUiEnabled,
 } from "@/lib/maya/auto-select-mode"
 import { getProductGenerationPrompt } from "@/lib/products-system-prompt"
+import { shouldDeductMayaChatCredit } from "@/lib/maya/chat-credit-policy"
 
 import { NextResponse } from "next/server"
 
@@ -1304,8 +1305,13 @@ You: "Love the cozy fall vibe! 🥰 Creating some concepts with warm textures, t
 
     // Wrapped in try/catch to avoid breaking the stream if deduction fails
     try {
-      // Only deduct credits if not prompt_builder mode and not admin
-      if (!isPromptBuilder && !isAdmin) {
+      const shouldDeductCredit = shouldDeductMayaChatCredit({
+        isPromptBuilder,
+        isAdmin,
+        isStudioProMode,
+      })
+
+      if (shouldDeductCredit) {
         await deductCredits(
           dbUserId,
           1,
@@ -1314,7 +1320,15 @@ You: "Love the cozy fall vibe! 🥰 Creating some concepts with warm textures, t
         )
         console.log("[v0] Successfully deducted 1 credit for Maya chat")
       } else {
-        console.log("[v0] Skipping credit deduction for:", isPromptBuilder ? "prompt_builder mode" : "admin user")
+        console.log("[v0] Skipping chat credit deduction", {
+          reason: isPromptBuilder
+            ? "prompt_builder"
+            : isAdmin
+              ? "admin_user"
+              : isStudioProMode
+                ? "studio_pro_mode"
+                : "policy",
+        })
       }
     } catch (deductError) {
       console.error("[v0] Failed to deduct credits for Maya chat (non-fatal):", deductError)
