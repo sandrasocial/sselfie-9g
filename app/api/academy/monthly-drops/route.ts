@@ -39,20 +39,25 @@ export async function GET(request: NextRequest) {
     }
 
     const monthlyDrops = await sql`
-      SELECT 
-        id,
-        title,
-        description,
-        thumbnail_url,
-        resource_type,
-        resource_url,
-        month,
-        category,
-        order_index,
-        download_count
-      FROM academy_monthly_drops
-      WHERE status = 'published'
-      ORDER BY created_at DESC, order_index ASC
+      SELECT
+        md.id,
+        md.title,
+        md.description,
+        md.thumbnail_url,
+        md.resource_type,
+        md.resource_url,
+        md.month,
+        md.category,
+        md.order_index,
+        md.download_count,
+        CASE WHEN urd.id IS NOT NULL THEN true ELSE false END AS downloaded
+      FROM academy_monthly_drops md
+      LEFT JOIN user_resource_downloads urd
+        ON md.id::text = urd.resource_id::text
+        AND urd.resource_type = 'monthly-drop'
+        AND urd.user_id = ${neonUser.id}
+      WHERE md.status = 'published'
+      ORDER BY md.created_at DESC, md.order_index ASC
     `
 
     return NextResponse.json({

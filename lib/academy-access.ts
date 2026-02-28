@@ -1,4 +1,5 @@
 import { sql } from "@/lib/neon"
+import { hasStudioMembership } from "@/lib/subscription"
 
 export type CourseId =
   | "what_to_say"
@@ -10,15 +11,8 @@ export type CourseId =
 
 export async function userHasAcademyAccess(userId: string, courseId: CourseId): Promise<boolean> {
   try {
-    const activeSubscription = await sql`
-      SELECT 1
-      FROM subscriptions
-      WHERE user_id = ${userId}
-        AND status = 'active'
-      LIMIT 1
-    `
-
-    if (activeSubscription.length > 0) {
+    // Studio membership unlocks all Academy products.
+    if (await hasStudioMembership(userId)) {
       return true
     }
 

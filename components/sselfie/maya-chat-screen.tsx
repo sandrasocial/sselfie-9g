@@ -88,6 +88,14 @@ type MyProductsResponse = {
   purchases?: Array<{ id?: string | null }>
 }
 
+type MonthlyDropRow = {
+  title?: string | null
+}
+
+type MonthlyDropsResponse = {
+  monthlyDrops?: MonthlyDropRow[]
+}
+
 const simpleFetcher = async <T,>(url: string): Promise<T> => {
   const response = await fetch(url)
   if (!response.ok) {
@@ -163,6 +171,10 @@ export default function MayaChatScreen({
 
   const { data: myProductsData } = useSWR<MyProductsResponse>(
     user ? "/api/academy/my-products" : null,
+    simpleFetcher,
+  )
+  const { data: monthlyDropsData } = useSWR<MonthlyDropsResponse>(
+    user && isMembership ? "/api/academy/monthly-drops" : null,
     simpleFetcher,
   )
 
@@ -2530,6 +2542,19 @@ export default function MayaChatScreen({
     typeof chatTitle === "string" && chatTitle.trim().length > 0 && !/^new chat$/i.test(chatTitle.trim())
       ? chatTitle
       : null
+  const latestMonthlyDropName = useMemo(() => {
+    const drops = monthlyDropsData?.monthlyDrops
+    if (!Array.isArray(drops)) return null
+
+    for (const drop of drops) {
+      const title = typeof drop?.title === "string" ? drop.title.trim() : ""
+      if (title.length > 0) {
+        return title
+      }
+    }
+
+    return null
+  }, [monthlyDropsData?.monthlyDrops])
 
   const hasWhatToSayAccess = ownedMiniProductIds.has("what_to_say")
   const hasShowUpAccess = ownedMiniProductIds.has("show_up")
@@ -3091,7 +3116,7 @@ export default function MayaChatScreen({
                 <MembershipHomeCard
                   creditsReady={creditBalance}
                   lastSessionTitle={returningMemberLastSessionTitle}
-                  monthlyDropName={null}
+                  monthlyDropName={latestMonthlyDropName}
                   onContinue={() => {
                     if (hasProFeatures) {
                       setShowProModeHistory(true)
@@ -3115,6 +3140,14 @@ export default function MayaChatScreen({
                       localStorage.setItem("mayaActiveTab", "prompts")
                       window.history.replaceState(null, "", "#maya/prompts")
                     }
+                  }}
+                  onExploreMonthlyDrop={() => {
+                    if (typeof window !== "undefined") {
+                      const nextUrl = new URL(window.location.href)
+                      nextUrl.searchParams.set("academy_view", "monthly-drops")
+                      window.history.replaceState(null, "", `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`)
+                    }
+                    setActiveTab?.("academy")
                   }}
                 />
               </div>

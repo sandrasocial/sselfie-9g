@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import useSWR from "swr"
 import type { AcademyView } from "./types"
 import CourseCard from "../academy/course-card"
@@ -11,7 +11,8 @@ import type { ProductAccessId } from "./product-access-card"
 import MiniProductCard from "./mini-product-card"
 import UnifiedLoading from "./unified-loading"
 import { X, Home, Aperture, MessageCircle, ImageIcon, Grid, User, SettingsIcon, LogOut, Film } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { parseAcademyViewParam } from "@/lib/academy/view-routing"
 
 const fetcher = async (url: string) => {
   console.log("[v0] Fetching Academy data from:", url)
@@ -71,7 +72,11 @@ const PRODUCT_ACCESS_COPY: Record<
 const PRODUCT_IDS_WITH_ACCESS: Set<string> = new Set(Object.keys(PRODUCT_ACCESS_COPY))
 
 export default function AcademyScreen() {
-  const [selectedView, setSelectedView] = useState<AcademyView>("overview")
+  const searchParams = useSearchParams()
+  const initialAcademyView = parseAcademyViewParam(
+    searchParams.get("academy_view") ?? searchParams.get("academyView"),
+  )
+  const [selectedView, setSelectedView] = useState<AcademyView>(initialAcademyView ?? "overview")
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedTemplateCategory, setSelectedTemplateCategory] = useState<string>("all")
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null)
@@ -81,6 +86,14 @@ export default function AcademyScreen() {
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [creditBalance, setCreditBalance] = useState<number>(0)
   const router = useRouter()
+
+  useEffect(() => {
+    if (!initialAcademyView || typeof window === "undefined") return
+    const nextUrl = new URL(window.location.href)
+    nextUrl.searchParams.delete("academy_view")
+    nextUrl.searchParams.delete("academyView")
+    window.history.replaceState(null, "", `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`)
+  }, [initialAcademyView])
 
   const {
     data: coursesData,
