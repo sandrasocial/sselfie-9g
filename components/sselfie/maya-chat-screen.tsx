@@ -2699,7 +2699,7 @@ export default function MayaChatScreen({
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-xs font-semibold text-white mb-0.5">
-                You have {Math.floor(creditBalance / 2)} free photo{Math.floor(creditBalance / 2) !== 1 ? "s" : ""} waiting
+                You have {creditBalance} credit{creditBalance !== 1 ? "s" : ""} ready
               </p>
               <p className="text-xs text-white/60 leading-relaxed">Upload a selfie → Maya creates your first brand photo in 2 minutes.</p>
             </div>
