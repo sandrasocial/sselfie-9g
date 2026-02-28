@@ -4,7 +4,6 @@ import { useState, useEffect } from "react"
 import { Copy, Check, MessageCircle, Loader2 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
 import useSWR from "swr"
 
 interface ContentPillar {
@@ -171,28 +170,28 @@ export default function FeedBrandPillars({ businessType }: FeedBrandPillarsProps
   if (!personalBrandData) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-sm text-stone-500">Loading brand pillars...</div>
+        <div className="text-sm text-white/60">Loading brand pillars...</div>
       </div>
     )
   }
 
   if (contentPillars.length === 0) {
     return (
-      <div className="px-4 md:px-8 py-8">
-        <div className="max-w-4xl mx-auto text-center">
+      <div className="px-4 py-8 md:px-8">
+        <div className="mx-auto max-w-4xl rounded-3xl border border-white/15 bg-white/[0.04] p-8 text-center backdrop-blur-2xl">
           <h2
-            style={{ fontFamily: "'Times New Roman', serif" }}
-            className="text-2xl sm:text-3xl md:text-4xl font-extralight tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-4 text-stone-950"
+            style={{ fontFamily: "'Cormorant Garamond', serif" }}
+            className="mb-4 text-2xl font-light uppercase tracking-[0.15em] text-white sm:text-3xl md:text-4xl"
           >
             Your Content Pillars
           </h2>
-          <p className="text-sm font-light text-stone-600 leading-relaxed max-w-2xl mx-auto mb-8">
+          <p className="mx-auto mb-8 max-w-2xl text-sm font-light leading-relaxed text-white/65">
             Content pillars are the main themes you&apos;ll create content around. They keep your feed organized and make it easy to come up with post ideas.
           </p>
           <Button
             onClick={generateNewPillars}
             disabled={isGenerating}
-            className="bg-stone-950 hover:bg-stone-800 text-white"
+            className="rounded-full border border-white/25 bg-white/10 text-white hover:bg-white/15"
           >
             {isGenerating ? (
               <>
@@ -212,17 +211,17 @@ export default function FeedBrandPillars({ businessType }: FeedBrandPillarsProps
   }
 
   return (
-    <div className="px-4 md:px-8 py-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
+    <div className="px-4 py-8 md:px-8">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-8 flex items-center justify-between gap-4">
           <div>
             <h2
-              style={{ fontFamily: "'Times New Roman', serif" }}
-              className="text-2xl sm:text-3xl md:text-4xl font-extralight tracking-[0.15em] sm:tracking-[0.2em] uppercase mb-2 text-stone-950"
+              style={{ fontFamily: "'Cormorant Garamond', serif" }}
+              className="mb-2 text-2xl font-light uppercase tracking-[0.15em] text-white sm:text-3xl md:text-4xl"
             >
               Your Content Pillars
             </h2>
-            <p className="text-xs sm:text-sm font-light text-stone-600 leading-relaxed">
+            <p className="text-xs font-light leading-relaxed text-white/65 sm:text-sm">
               These are the main themes you&apos;ll create content around. Use them to plan your posts and keep your feed organized.
             </p>
           </div>
@@ -230,7 +229,7 @@ export default function FeedBrandPillars({ businessType }: FeedBrandPillarsProps
             onClick={generateNewPillars}
             disabled={isGenerating}
             variant="outline"
-            className="border-stone-300 text-stone-700 hover:bg-stone-50"
+            className="rounded-full border-white/25 bg-white/[0.04] text-white/80 hover:bg-white/10 hover:text-white"
           >
             {isGenerating ? (
               <>
@@ -245,43 +244,49 @@ export default function FeedBrandPillars({ businessType }: FeedBrandPillarsProps
 
         {/* Maya's Explanation */}
         {pillarExplanation && (
-          <div className="flex gap-4 items-start bg-stone-50 rounded-xl p-4 mb-8">
-            <div className="flex-shrink-0 w-12 h-12 bg-stone-950 rounded-full flex items-center justify-center">
+          <div className="mb-8 flex items-start gap-4 rounded-2xl border border-white/15 bg-white/[0.04] p-4 backdrop-blur-2xl">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10">
               <MessageCircle size={20} className="text-white" />
             </div>
             <div className="flex-1">
-              <p className="text-xs font-semibold text-stone-950 mb-1">Maya</p>
-              <p className="text-sm text-stone-600 leading-relaxed">{pillarExplanation}</p>
+              <p className="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-white/80">Maya</p>
+              <p className="text-sm leading-relaxed text-white/70">{pillarExplanation}</p>
             </div>
           </div>
         )}
 
         {/* Content Pillars Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {contentPillars.map((pillar, index) => (
-            <Card key={index} className="p-6 border-stone-200 bg-white">
-              <div className="mb-4">
-                <h3 className="text-lg font-semibold text-stone-950 mb-2">{pillar.name}</h3>
-                <p className="text-sm text-stone-600 leading-relaxed">{pillar.description}</p>
+            <div key={index} className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 backdrop-blur-2xl">
+              <div className="mb-4 space-y-2">
+                <div className="text-[11px] font-medium uppercase tracking-[0.2em] text-white/50">{`0${index + 1}`.slice(-2)}</div>
+                <h3
+                  style={{ fontFamily: "'Cormorant Garamond', serif" }}
+                  className="text-xl font-light uppercase tracking-[0.12em] text-white"
+                >
+                  {pillar.name}
+                </h3>
+                <p className="text-sm leading-relaxed text-white/68">{pillar.description}</p>
               </div>
 
               {/* Content Ideas */}
               {pillar.contentIdeas && pillar.contentIdeas.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-stone-200">
-                  <p className="text-xs font-medium text-stone-500 mb-3 uppercase tracking-wider">Post Ideas</p>
+                <div className="mt-4 border-t border-white/12 pt-4">
+                  <p className="mb-3 text-xs font-medium uppercase tracking-[0.2em] text-white/55">Post Ideas</p>
                   <div className="space-y-2">
                     {pillar.contentIdeas.map((idea, i) => (
                       <div key={i} className="flex items-start justify-between gap-2">
-                        <p className="text-xs text-stone-600 leading-relaxed flex-1">{idea}</p>
+                        <p className="flex-1 text-xs leading-relaxed text-white/68">{idea}</p>
                         <button
                           onClick={() => copyToClipboard(idea, `${pillar.name}-${i}`)}
-                          className="p-1.5 hover:bg-stone-100 rounded transition-colors shrink-0"
+                          className="shrink-0 rounded border border-white/15 p-1.5 transition-colors hover:bg-white/10"
                           title="Copy idea"
                         >
                           {copiedPillar === `${pillar.name}-${i}` ? (
                             <Check className="w-3.5 h-3.5 text-green-600" />
                           ) : (
-                            <Copy className="w-3.5 h-3.5 text-stone-400" />
+                            <Copy className="h-3.5 w-3.5 text-white/60" />
                           )}
                         </button>
                       </div>
@@ -289,7 +294,7 @@ export default function FeedBrandPillars({ businessType }: FeedBrandPillarsProps
                   </div>
                 </div>
               )}
-            </Card>
+            </div>
           ))}
         </div>
       </div>

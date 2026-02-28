@@ -486,7 +486,7 @@ export default function FeedSinglePlaceholder({
         {hasImage ? (
           // Show generated image with download button
           <div className="relative group">
-            <div className="aspect-9/16 bg-white border border-stone-200 rounded-lg overflow-hidden">
+            <div className="aspect-9/16 overflow-hidden rounded-[20px] border border-white/15 bg-white/[0.04] backdrop-blur-xl">
               <img
                 src={displayImageUrl}
                 alt="Generated post"
@@ -573,7 +573,7 @@ export default function FeedSinglePlaceholder({
                   }
                 }}
                 disabled={isDownloading}
-                className="bg-stone-900 hover:bg-stone-800 text-white shadow-lg"
+                className="border border-white/25 bg-white/12 text-white shadow-lg backdrop-blur-xl hover:bg-white/18"
                 size="sm"
               >
                 {isDownloading ? (
@@ -593,7 +593,7 @@ export default function FeedSinglePlaceholder({
         ) : (
           // Show single placeholder
           <div className="relative">
-            <div className="aspect-9/16 bg-white border-2 border-dashed border-stone-300 rounded-lg"></div>
+            <div className="aspect-9/16 rounded-[20px] border border-dashed border-white/20 bg-white/[0.04] backdrop-blur-xl"></div>
 
             {/* Generation button overlay - only show if NOT generating and post is ready */}
             {!isPostGenerating && post?.id && (
@@ -604,7 +604,7 @@ export default function FeedSinglePlaceholder({
                       e.stopPropagation()
                       handleGenerateImage()
                     }}
-                    className="bg-stone-900 hover:bg-stone-800 text-white"
+                    className="border border-white/25 bg-white/12 text-white hover:bg-white/18 backdrop-blur-xl"
                     size="default"
                   >
                     Generate Image
@@ -616,19 +616,19 @@ export default function FeedSinglePlaceholder({
             {!isPostGenerating && !post?.id && (
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center space-y-2 px-4">
-                  <Loader2 className="w-6 h-6 text-stone-500 animate-spin mx-auto" />
-                  <div className="text-xs font-light text-stone-600">Preparing your preview...</div>
+                  <Loader2 className="w-6 h-6 text-white/60 animate-spin mx-auto" />
+                  <div className="text-xs font-light text-white/60">Preparing your preview...</div>
                 </div>
               </div>
             )}
 
             {/* Loading state - show when generating (from API call OR from post data) */}
             {isPostGenerating && (
-              <div className="absolute inset-0 bg-white/90 backdrop-blur-sm flex items-center justify-center rounded-lg">
+              <div className="absolute inset-0 flex items-center justify-center rounded-[20px] bg-black/45 backdrop-blur-md">
                 <div className="text-center space-y-3 px-4 max-w-sm mx-auto">
-                  <Loader2 className="w-8 h-8 text-stone-600 animate-spin mx-auto" />
-                  <div className="text-sm font-medium text-stone-900">Generating your preview feed</div>
-                  <div className="text-xs font-light text-stone-600">This usually takes 1-2 minutes...</div>
+                  <Loader2 className="w-8 h-8 text-white/75 animate-spin mx-auto" />
+                  <div className="text-sm font-medium text-white">Generating your preview feed</div>
+                  <div className="text-xs font-light text-white/65">This usually takes 1-2 minutes...</div>
                   <Button
                     onClick={(e) => {
                       e.stopPropagation()
@@ -636,14 +636,14 @@ export default function FeedSinglePlaceholder({
                     }}
                     disabled={!canStop || isStopping}
                     size="sm"
-                    className="bg-stone-100 text-stone-700 hover:bg-stone-200"
+                    className="border border-white/20 bg-white/10 text-white hover:bg-white/15"
                   >
                     {isStopping ? "Stopping..." : "Stop generation"}
                   </Button>
                   {isTakingLonger && (
-                    <div className="mt-4 pt-4 border-t border-stone-200">
-                      <p className="text-xs font-light text-stone-600 leading-relaxed">
-                        ✨ This is taking a bit longer than expected! Your photo is being carefully crafted with high-quality details. Feel free to grab a coffee—we&apos;ll have it ready soon! ☕
+                    <div className="mt-4 border-t border-white/15 pt-4">
+                      <p className="text-xs font-light leading-relaxed text-white/65">
+                        This is taking longer than expected. Your photo is still processing and should be ready soon.
                       </p>
                     </div>
                   )}
@@ -656,10 +656,10 @@ export default function FeedSinglePlaceholder({
         {/* Helper text and Upsell CTA */}
         <div className="mt-6 text-center space-y-4">
           <div>
-            <p className="text-xs text-stone-500 font-light">
+            <p className="text-xs text-white/65 font-light">
               This is a preview of your feed grid
             </p>
-            <p className="text-xs text-stone-400 font-light mt-1">
+            <p className="text-xs text-white/45 font-light mt-1">
               Get the full Feed Planner + 30 Photos, Captions & Strategy
             </p>
           </div>
@@ -672,7 +672,7 @@ export default function FeedSinglePlaceholder({
               trackCTAClick("feed_preview_placeholder", "Continue Creating", "/checkout/blueprint")
               setShowBlueprintModal(true)
             }}
-            className="w-full bg-stone-900 hover:bg-stone-800 text-white font-medium shadow-lg hover:shadow-xl transition-all"
+            className="w-full border border-white/25 bg-white/12 text-white font-medium shadow-lg backdrop-blur-xl hover:bg-white/18 transition-all"
             size="default"
           >
             Continue Creating

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { motion, AnimatePresence } from "framer-motion"
 import { Sparkles, Grid3x3, Check, ArrowRight, X, Image as ImageIcon } from "lucide-react"
-import { DesignClasses, ComponentClasses } from "@/lib/design-tokens"
+import { DesignClasses } from "@/lib/design-tokens"
 import useSWR from "swr"
 import Image from "next/image"
 
@@ -15,7 +15,7 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json())
 const feedExamples = {
   luxury: {
     name: "Dark & Moody",
-    colors: ["#0a0a0a", "#2d2d2d", "#4a4a4a"],
+    colors: ["#0b0d10", "#2d2f34", "#4a4d52"],
     grid: ["selfie", "selfie", "flatlay", "selfie", "selfie", "selfie", "flatlay", "selfie", "selfie"],
   },
   minimal: {
@@ -105,7 +105,7 @@ export default function WelcomeWizard({
       return (
         <div className="space-y-6">
           <div className="flex items-center justify-center py-8">
-            <div className="w-8 h-8 border-2 border-stone-300 border-t-stone-950 rounded-full animate-spin" />
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/25 border-t-white" />
           </div>
         </div>
       )
@@ -114,15 +114,15 @@ export default function WelcomeWizard({
     if (hasPreviewFeed && previewImageUrl) {
       return (
         <div className="space-y-6">
-          <p className="text-base sm:text-lg font-light leading-relaxed text-stone-700">
+          <p className="text-base sm:text-lg font-light leading-relaxed text-white/80">
             Great news! We found your preview feed from the free blueprint.
           </p>
-          <p className="text-sm font-light text-stone-600">
+          <p className="text-sm font-light text-white/65">
             You can create your full feed using this style, or choose a new style.
           </p>
           
           {/* Preview Image */}
-          <div className="relative w-full max-w-xs mx-auto aspect-[9/16] bg-stone-100 rounded-xl overflow-hidden border-2 border-stone-200">
+          <div className="relative mx-auto aspect-[9/16] w-full max-w-xs overflow-hidden rounded-xl border border-white/20 bg-white/[0.05]">
             {previewImageUrl ? (
               <Image
                 src={previewImageUrl}
@@ -132,8 +132,8 @@ export default function WelcomeWizard({
                 sizes="(max-width: 768px) 100vw, 320px"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <ImageIcon className="w-12 h-12 text-stone-400" />
+              <div className="flex h-full w-full items-center justify-center">
+                <ImageIcon className="h-12 w-12 text-white/45" />
               </div>
             )}
           </div>
@@ -147,7 +147,7 @@ export default function WelcomeWizard({
                 }
                 handleComplete()
               }}
-              className="flex-1 bg-stone-950 hover:bg-stone-800 text-white px-6 py-3 text-sm font-medium uppercase tracking-wider transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg shadow-stone-900/20"
+              className="flex-1 rounded-full border border-white/25 bg-white/10 px-6 py-3 text-sm font-medium uppercase tracking-[0.2em] text-white transition-all duration-200 hover:scale-105 hover:bg-white/15 active:scale-95 shadow-lg"
             >
               Create Feed Using Preview Style
               <ArrowRight className="w-4 h-4 ml-2" />
@@ -160,7 +160,7 @@ export default function WelcomeWizard({
                 handleComplete()
               }}
               variant="outline"
-              className="flex-1 border-stone-300 text-stone-700 hover:bg-stone-50 hover:border-stone-950 px-6 py-3 text-sm font-medium uppercase tracking-wider transition-all duration-200"
+              className="flex-1 border-white/25 bg-white/[0.04] px-6 py-3 text-sm font-medium uppercase tracking-[0.2em] text-white/75 transition-all duration-200 hover:border-white/45 hover:bg-white/10 hover:text-white"
             >
               Choose New Style
             </Button>
@@ -172,10 +172,10 @@ export default function WelcomeWizard({
     // Default content (no preview feed)
     return (
       <div className="space-y-6">
-        <p className="text-base sm:text-lg font-light leading-relaxed text-stone-700">
+        <p className="text-base sm:text-lg font-light leading-relaxed text-white/80">
           Your first 60 credits are ready.
         </p>
-        <p className="text-sm font-light text-stone-600">
+        <p className="text-sm font-light text-white/65">
           Create a complete 9-post feed in minutes. Let&apos;s walk through how it works.
         </p>
       </div>
@@ -201,10 +201,10 @@ export default function WelcomeWizard({
         subtitle: "Step 1 of 3",
         content: (
           <div className="space-y-6">
-            <p className="text-base sm:text-lg font-light leading-relaxed text-stone-700">
+            <p className="text-base sm:text-lg font-light leading-relaxed text-white/80">
               Create your first 9-post feed in minutes.
             </p>
-            <p className="text-sm font-light text-stone-600">
+            <p className="text-sm font-light text-white/65">
               Each photo will be unique but cohesive. Here&apos;s how it works.
             </p>
           </div>
@@ -219,12 +219,12 @@ export default function WelcomeWizard({
       subtitle: "Step 2 of 3",
       content: (
         <div className="space-y-6">
-          <p className="text-base sm:text-lg font-light leading-relaxed text-stone-700">
+          <p className="text-base sm:text-lg font-light leading-relaxed text-white/80">
             Click any empty slot in your grid to generate a photo. Then use the Post tab for captions and the Strategy tab for a full guide.
           </p>
-          <div className="bg-stone-50 rounded-xl p-4 border border-stone-200">
-            <p className="text-sm font-light text-stone-600">
-              💡 Start with a few photos to see how they look together.
+          <div className="rounded-xl border border-white/15 bg-white/[0.04] p-4">
+            <p className="text-sm font-light text-white/65">
+              Start with a few photos to see how they look together.
             </p>
           </div>
         </div>
@@ -238,12 +238,12 @@ export default function WelcomeWizard({
       subtitle: "Step 3 of 3",
       content: (
         <div className="space-y-6">
-          <p className="text-base sm:text-lg font-light leading-relaxed text-stone-700">
+          <p className="text-base sm:text-lg font-light leading-relaxed text-white/80">
             Your first 60 credits are ready — create your first feed below.
           </p>
           <Button
             onClick={handleComplete}
-            className="w-full py-6 text-base font-medium uppercase tracking-wider bg-stone-950 hover:bg-stone-800 text-white flex items-center justify-center gap-2 shadow-lg"
+            className="flex w-full items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 py-6 text-base font-medium uppercase tracking-[0.2em] text-white shadow-lg transition-colors hover:bg-white/15"
           >
             Create my first feed
             <ArrowRight className="w-4 h-4" />
@@ -285,7 +285,7 @@ export default function WelcomeWizard({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-stone-950/60 backdrop-blur-sm z-[100]"
+            className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-md"
             onClick={handleDismiss}
           />
 
@@ -298,14 +298,12 @@ export default function WelcomeWizard({
             onClick={(e) => e.stopPropagation()}
             style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 6rem)" }}
           >
-            <div
-              className={`w-full max-w-3xl max-h-[90vh] overflow-y-auto ${ComponentClasses.card} ${DesignClasses.spacing.padding.lg} relative rounded-2xl shadow-2xl bg-white`}
-            >
+            <div className={`relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-white/20 bg-[rgba(13,15,19,0.94)] ${DesignClasses.spacing.padding.lg} text-white shadow-2xl backdrop-blur-2xl`}>
               {/* Close Button - matching unified wizard */}
               {onDismiss && (
                 <button
                   onClick={handleDismiss}
-                  className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg transition-colors z-10 hover:bg-stone-100 text-stone-600 hover:text-stone-950"
+                  className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-lg text-white/65 transition-colors hover:bg-white/10 hover:text-white"
                   aria-label="Close"
                 >
                   <X size={18} />
@@ -321,16 +319,16 @@ export default function WelcomeWizard({
                 {/* Progress Bar - matching unified wizard */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-light tracking-[0.2em] uppercase text-stone-700">{currentStepData.subtitle}</span>
-                    <span className="text-xs font-light text-stone-700">{Math.round(progress)}%</span>
+                    <span className="text-xs font-light uppercase tracking-[0.2em] text-white/70">{currentStepData.subtitle}</span>
+                    <span className="text-xs font-light text-white/70">{Math.round(progress)}%</span>
                   </div>
-                  <Progress value={progress} className="h-1 bg-stone-200" />
+                  <Progress value={progress} className="h-1 bg-white/20" />
                 </div>
 
                 {/* Title - matching unified wizard typography */}
                 <h2
-                  style={{ fontFamily: "'Times New Roman', serif" }}
-                  className="text-2xl sm:text-3xl md:text-4xl font-light tracking-[0.15em] uppercase text-stone-950"
+                  style={{ fontFamily: "'Cormorant Garamond', serif" }}
+                  className="text-2xl font-light uppercase tracking-[0.15em] text-white sm:text-3xl md:text-4xl"
                 >
                   {currentStepData.title}
                 </h2>
@@ -352,8 +350,8 @@ export default function WelcomeWizard({
                       transition={{ delay: 0.1, type: "spring", stiffness: 200 }}
                       className="flex justify-center"
                     >
-                      <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-stone-100 flex items-center justify-center border-2 border-stone-200">
-                        <Icon className="w-8 h-8 sm:w-10 sm:h-10 text-stone-700" strokeWidth={1.5} />
+                      <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-white/20 bg-white/8 sm:h-20 sm:w-20">
+                        <Icon className="h-8 w-8 text-white/70 sm:h-10 sm:w-10" strokeWidth={1.5} />
                       </div>
                     </motion.div>
 
@@ -370,10 +368,10 @@ export default function WelcomeWizard({
                           onClick={() => setCurrentStep(index)}
                           className={`h-2 rounded-full transition-all cursor-pointer ${
                             index === currentStep
-                              ? "w-8 bg-stone-950"
+                              ? "w-8 bg-white"
                               : index < currentStep
-                              ? "w-2 bg-stone-400 hover:bg-stone-600"
-                              : "w-2 bg-stone-200 hover:bg-stone-300"
+                              ? "w-2 bg-white/50 hover:bg-white/70"
+                              : "w-2 bg-white/20 hover:bg-white/35"
                           }`}
                           whileHover={{ scale: 1.2 }}
                           whileTap={{ scale: 0.9 }}
@@ -385,18 +383,18 @@ export default function WelcomeWizard({
                 </AnimatePresence>
 
                 {/* Navigation Buttons - matching unified wizard style */}
-                <div className="flex items-center justify-between pt-6 border-t border-stone-200">
+                <div className="flex items-center justify-between border-t border-white/15 pt-6">
                   <Button
                     variant="ghost"
                     onClick={currentStep > 0 ? handleBack : handleDismiss}
-                    className="text-stone-600 hover:text-stone-950 hover:bg-stone-50 transition-colors"
+                    className="text-white/65 transition-colors hover:bg-white/10 hover:text-white"
                   >
                     {currentStep > 0 ? "Back" : "Skip"}
                   </Button>
 
                   <Button
                     onClick={handleNext}
-                    className="bg-stone-950 hover:bg-stone-800 text-white px-6 sm:px-8 py-3 sm:py-4 text-sm font-medium uppercase tracking-wider transition-all duration-200 hover:scale-105 active:scale-95 shadow-lg shadow-stone-900/20"
+                    className="px-6 py-3 text-sm font-medium uppercase tracking-[0.2em] sm:px-8 sm:py-4 rounded-full border border-white/25 bg-white/10 text-white transition-all duration-200 hover:bg-white/15 hover:scale-105 active:scale-95 shadow-lg"
                   >
                     {currentStep < steps.length - 1 ? (
                       <>

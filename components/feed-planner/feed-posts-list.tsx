@@ -92,14 +92,14 @@ export default function FeedPostsList({
   const showCaptionGeneration = access?.canGenerateCaptions ?? true // Default to true if access not provided
 
   return (
-    <div className="space-y-6 md:space-y-8">
+    <div className="space-y-6 px-3 pb-6 md:space-y-8">
       {/* Phase 4.4: Create Captions Button - Hide based on access control */}
       {showCaptionGeneration && posts.length > 0 && posts.every((p: any) => !p.caption || p.caption.trim() === "") && (
         <div className="flex justify-center pb-4">
           <button
             onClick={handleCreateCaptions}
             disabled={isGeneratingCaptions}
-            className="px-6 py-3 bg-stone-900 text-white rounded-xl text-sm font-medium hover:bg-stone-800 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-6 py-3 text-sm font-medium uppercase tracking-[0.2em] text-white transition-colors hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {isGeneratingCaptions ? (
               <>
@@ -119,25 +119,25 @@ export default function FeedPostsList({
         const displayCaption = isExpanded || !shouldTruncate ? caption : caption.substring(0, 150) + "..."
 
         return (
-          <div key={post.id} className="border-b border-stone-100 pb-6">
-            <div className="flex items-center justify-between px-4 md:px-0 py-3">
+          <div key={post.id} className="rounded-[20px] border border-white/12 bg-white/[0.04] p-3 pb-5 backdrop-blur-xl">
+            <div className="flex items-center justify-between px-2 py-3 md:px-1">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 p-[2px]">
-                  <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
-                    <span className="text-xs font-bold text-stone-900">S</span>
+                  <div className="flex h-full w-full items-center justify-center rounded-full border border-white/10 bg-[var(--color-obsidian)]">
+                    <span className="text-xs font-bold text-white">S</span>
                   </div>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-stone-900">sselfie</p>
-                  <p className="text-xs text-stone-500">{post.content_pillar || `Post ${post.position}`}</p>
+                  <p className="text-sm font-semibold text-white">sselfie</p>
+                  <p className="text-xs uppercase tracking-[0.16em] text-white/50">{post.content_pillar || `Post ${post.position}`}</p>
                 </div>
               </div>
-              <button className="p-2 hover:bg-stone-50 rounded-full transition-colors">
-                <MoreHorizontal size={20} className="text-stone-900" />
+              <button className="rounded-full p-2 transition-colors hover:bg-white/10">
+                <MoreHorizontal size={20} className="text-white/80" />
               </button>
             </div>
 
-            <div className="aspect-square bg-stone-100 relative">
+            <div className="relative aspect-square overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]">
               {post.image_url ? (
                 <Image
                   src={post.image_url || "/placeholder.svg"}
@@ -148,7 +148,7 @@ export default function FeedPostsList({
                 />
               ) : !isManualFeed && post.generation_status === "generating" && post.prediction_id ? (
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <Loader2 size={32} className="animate-spin text-stone-400" strokeWidth={1.5} />
+                  <Loader2 size={32} className="animate-spin text-white/65" strokeWidth={1.5} />
                 </div>
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -159,7 +159,7 @@ export default function FeedPostsList({
                         onAddImage(post.id)
                       }
                     }}
-                    className="px-6 py-3 bg-stone-900 text-white rounded-xl text-sm font-medium hover:bg-stone-800 transition-colors"
+                    className="rounded-full border border-white/25 bg-white/10 px-6 py-3 text-sm font-medium uppercase tracking-[0.18em] text-white transition-colors hover:bg-white/15"
                   >
                     Add Image
                   </button>
@@ -167,33 +167,33 @@ export default function FeedPostsList({
               )}
             </div>
 
-            <div className="px-4 md:px-0 py-3 space-y-2">
+            <div className="space-y-2 px-2 py-3 md:px-1">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <button className="hover:opacity-60 transition-opacity">
-                    <Heart size={24} className="text-stone-900" strokeWidth={2} />
+                    <Heart size={24} className="text-white" strokeWidth={2} />
                   </button>
                   <button className="hover:opacity-60 transition-opacity">
-                    <MessageCircle size={24} className="text-stone-900" strokeWidth={2} />
+                    <MessageCircle size={24} className="text-white" strokeWidth={2} />
                   </button>
                   <button className="hover:opacity-60 transition-opacity">
-                    <Send size={24} className="text-stone-900" strokeWidth={2} />
+                    <Send size={24} className="text-white" strokeWidth={2} />
                   </button>
                 </div>
                 <button className="hover:opacity-60 transition-opacity">
-                  <Bookmark size={24} className="text-stone-900" strokeWidth={2} />
+                  <Bookmark size={24} className="text-white" strokeWidth={2} />
                 </button>
               </div>
 
               <div className="space-y-2">
                 <div className="flex items-start justify-between gap-3">
                   <div className="text-sm flex-1 min-w-0">
-                    <span className="font-semibold text-stone-900">sselfie</span>{" "}
-                    <span className="text-stone-900 whitespace-pre-wrap break-words">{displayCaption}</span>
+                    <span className="font-semibold text-white">sselfie</span>{" "}
+                    <span className="whitespace-pre-wrap break-words text-white/88">{displayCaption}</span>
                     {shouldTruncate && (
                       <button
                         onClick={() => onToggleCaption(post.id)}
-                        className="text-stone-500 ml-1 hover:text-stone-700 transition-colors"
+                        className="ml-1 text-white/55 transition-colors hover:text-white/80"
                       >
                         {isExpanded ? "less" : "more"}
                       </button>
@@ -202,13 +202,13 @@ export default function FeedPostsList({
                   <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
                     <button
                       onClick={() => onCopyCaption(post.caption, post.id)}
-                      className="p-2 hover:bg-stone-100 rounded-lg transition-colors border border-stone-200 hover:border-stone-300"
+                      className="rounded-lg border border-white/20 p-2 transition-colors hover:bg-white/10 hover:border-white/30"
                       title="Copy caption"
                     >
                       {copiedCaptions.has(post.id) ? (
                         <Check size={18} className="text-green-600" />
                       ) : (
-                        <Copy size={18} className="text-stone-600" />
+                          <Copy size={18} className="text-white/70" />
                       )}
                     </button>
                     {/* Decision 2: Hide enhance caption button in blueprint mode */}
@@ -216,19 +216,19 @@ export default function FeedPostsList({
                       <button
                         onClick={() => onEnhanceCaption(post.id, post.caption)}
                         disabled={enhancingCaptions.has(post.id)}
-                        className="p-2 hover:bg-stone-100 rounded-lg transition-colors border border-stone-200 hover:border-stone-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="rounded-lg border border-white/20 p-2 transition-colors hover:bg-white/10 hover:border-white/30 disabled:cursor-not-allowed disabled:opacity-50"
                         title="Enhance with Maya"
                       >
                         {enhancingCaptions.has(post.id) ? (
-                          <Loader2 size={18} className="text-stone-600 animate-spin" />
+                          <Loader2 size={18} className="animate-spin text-white/70" />
                         ) : (
-                          <Wand2 size={18} className="text-stone-600" />
+                          <Wand2 size={18} className="text-white/70" />
                         )}
                       </button>
                     )}
                   </div>
                 </div>
-                <p className="text-xs text-stone-400 uppercase tracking-wide">Just now</p>
+                <p className="text-xs uppercase tracking-wide text-white/40">Just now</p>
               </div>
             </div>
           </div>
@@ -237,4 +237,3 @@ export default function FeedPostsList({
     </div>
   )
 }
-

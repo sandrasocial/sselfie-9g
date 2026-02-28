@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { ChevronLeft, MoreHorizontal, Plus, Settings, HelpCircle } from "lucide-react"
+import { ChevronLeft, MoreHorizontal, Plus, Settings, HelpCircle, Loader2 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import FeedStyleModal, { type FeedStyle, type FeedStyleModalData } from "./feed-style-modal"
 import useSWR, { mutate } from "swr"
@@ -493,11 +493,11 @@ export default function FeedHeader({
   const feedColor = feedData?.feed?.display_color || "#3b82f6" // Default blue
 
   return (
-    <div className="bg-white border-b border-stone-200">
+    <div className="border-b border-white/12 bg-[rgba(10,10,10,0.86)] backdrop-blur-xl">
       <div className="flex items-center justify-between px-4 py-3">
         {onBack && (
-          <button onClick={onBack} className="p-2 -ml-2 hover:bg-stone-50 rounded-full transition-colors">
-            <ChevronLeft size={24} className="text-stone-900" strokeWidth={2} />
+          <button onClick={onBack} className="-ml-2 rounded-full p-2 transition-colors hover:bg-white/10">
+            <ChevronLeft size={24} className="text-white" strokeWidth={2} />
           </button>
         )}
         <div className="flex items-center gap-2">
@@ -512,7 +512,7 @@ export default function FeedHeader({
               title={`Feed color: ${feedData.feed.display_color}`}
             />
           )}
-          <span className="text-base font-semibold text-stone-900">{feedName}</span>
+          <span className="text-base font-semibold text-white">{feedName}</span>
           <svg 
             className="w-4 h-4" 
             fill="currentColor" 
@@ -526,19 +526,19 @@ export default function FeedHeader({
           {onOpenWizard && (
             <button
               onClick={onOpenWizard}
-              className="p-2 hover:bg-stone-50 rounded-full transition-colors"
+              className="rounded-full p-2 transition-colors hover:bg-white/10"
               title="Edit wizard answers"
             >
-              <Settings size={20} className="text-stone-600" strokeWidth={2} />
+              <Settings size={20} className="text-white/70" strokeWidth={2} />
             </button>
           )}
           {onOpenWelcomeWizard && access?.isPaidBlueprint && (
             <button
               onClick={onOpenWelcomeWizard}
-              className="p-2 hover:bg-stone-50 rounded-full transition-colors"
+              className="rounded-full p-2 transition-colors hover:bg-white/10"
               title="View welcome guide"
             >
-              <HelpCircle size={20} className="text-stone-600" strokeWidth={2} />
+              <HelpCircle size={20} className="text-white/70" strokeWidth={2} />
             </button>
           )}
           {access?.isMembership && onToggleGenerationMode && (
@@ -550,8 +550,8 @@ export default function FeedHeader({
               />
             </div>
           )}
-          <button className="p-2 -mr-2 hover:bg-stone-50 rounded-full transition-colors">
-            <MoreHorizontal size={24} className="text-stone-900" strokeWidth={2} />
+          <button className="-mr-2 rounded-full p-2 transition-colors hover:bg-white/10">
+            <MoreHorizontal size={24} className="text-white" strokeWidth={2} />
           </button>
         </div>
       </div>
@@ -562,7 +562,7 @@ export default function FeedHeader({
             onClick={onProfileImageClick}
             className="relative group w-20 h-20 md:w-32 md:h-32 rounded-full bg-linear-to-br from-purple-500 via-pink-500 to-orange-500 p-[3px] mb-4 md:mb-0 shrink-0 transition-opacity hover:opacity-90"
           >
-            <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden relative">
+            <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-full border border-white/10 bg-[var(--color-obsidian)]">
               {hasProfileImage ? (
                 <Image
                   src={feedData.feed.profile_image_url}
@@ -573,16 +573,16 @@ export default function FeedHeader({
                   style={{ borderRadius: '50%' }}
                 />
               ) : (
-                <span className="text-2xl md:text-4xl font-bold text-stone-900 relative z-10">S</span>
+                <span className="relative z-10 text-2xl font-bold text-white md:text-4xl">S</span>
               )}
             </div>
-            <div className="absolute inset-0 bg-stone-950/0 group-hover:bg-stone-950/40 rounded-full transition-all flex items-center justify-center pointer-events-none">
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-full bg-black/0 transition-all group-hover:bg-black/45">
               <span className="text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity font-medium text-center px-2">
                 {hasProfileImage ? "Change" : "Add photo"}
               </span>
             </div>
             {!hasProfileImage && (
-              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 bg-stone-900 text-white text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+              <div className="pointer-events-none absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/20 bg-[rgba(10,10,10,0.9)] px-2 py-0.5 text-[10px] text-white opacity-0 transition-opacity group-hover:opacity-100">
                 Click to add profile picture
               </div>
             )}
@@ -591,24 +591,24 @@ export default function FeedHeader({
           <div className="flex-1 space-y-4">
             <div className="flex items-center gap-8">
               <div className="text-center">
-                <div className="text-sm md:text-base font-semibold text-stone-900">9</div>
-                <div className="text-xs md:text-sm text-stone-500">posts</div>
+                <div className="text-sm md:text-base font-semibold text-white">9</div>
+                <div className="text-xs md:text-sm text-white/55">posts</div>
               </div>
               <div className="text-center">
-                <div className="text-sm md:text-base font-semibold text-stone-900">1.2K</div>
-                <div className="text-xs md:text-sm text-stone-500">followers</div>
+                <div className="text-sm md:text-base font-semibold text-white">1.2K</div>
+                <div className="text-xs md:text-sm text-white/55">followers</div>
               </div>
               <div className="text-center">
-                <div className="text-sm md:text-base font-semibold text-stone-900">342</div>
-                <div className="text-xs md:text-sm text-stone-500">following</div>
+                <div className="text-sm md:text-base font-semibold text-white">342</div>
+                <div className="text-xs md:text-sm text-white/55">following</div>
               </div>
             </div>
 
             <div className="space-y-2">
-              <div className="text-sm font-semibold text-stone-900">
+              <div className="text-sm font-semibold text-white">
                 {feedData?.userDisplayName || feedData?.feed?.brand_name || "User"}
               </div>
-              <div className="text-sm text-stone-900 whitespace-pre-wrap">
+              <div className="whitespace-pre-wrap text-sm text-white/75">
                 {hasBio ? feedData.bio.bio_text : "Your Instagram feed strategy created by Maya"}
               </div>
             </div>
@@ -618,7 +618,7 @@ export default function FeedHeader({
               {!access?.isFree && (
                 <button
                   onClick={onWriteBio}
-                  className="flex-1 md:flex-none md:px-8 bg-stone-100 hover:bg-stone-200 text-stone-900 text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors"
+                  className="flex-1 md:flex-none md:px-8 rounded-xl border border-white/20 bg-white/10 px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-white/15"
                 >
                   Write Bio
                 </button>
@@ -626,11 +626,11 @@ export default function FeedHeader({
               <button
                 onClick={handleCreatePreviewFeed}
                 disabled={isCreatingPreviewFeed}
-                className="flex-1 md:flex-none md:px-6 bg-stone-100 hover:bg-stone-200 text-stone-900 text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50 md:flex-none md:px-6"
               >
                 {isCreatingPreviewFeed ? (
                   <>
-                    <span className="animate-spin">⏳</span>
+                    <Loader2 size={16} className="animate-spin" />
                     <span>Creating...</span>
                   </>
                 ) : (
@@ -645,17 +645,18 @@ export default function FeedHeader({
                 <button
                   onClick={handleCreateNewFeedClick}
                   disabled={isCreatingFeed}
-                  className="flex-1 md:flex-none md:px-8 bg-stone-900 hover:bg-stone-800 text-white text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-sm font-semibold uppercase tracking-[0.2em] text-white transition-colors hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50 md:flex-none md:px-8"
+                  style={{ fontFamily: "'Cormorant Garamond', serif" }}
                 >
                   {isCreatingFeed ? (
                     <>
-                      <span className="animate-spin">⏳</span>
+                      <Loader2 size={16} className="animate-spin" />
                       <span>Creating...</span>
                     </>
                   ) : (
                     <>
                       <Plus size={16} />
-                      <span>New Feed</span>
+                      <span>NEW FEED -{">"}</span>
                     </>
                   )}
                 </button>
@@ -663,7 +664,7 @@ export default function FeedHeader({
               {!access?.isFree && onCreateHighlights && (
                 <button
                   onClick={onCreateHighlights}
-                  className="flex-1 md:flex-none md:px-8 bg-stone-100 hover:bg-stone-200 text-stone-900 text-sm font-semibold px-4 py-1.5 rounded-lg transition-colors"
+                  className="flex-1 md:flex-none md:px-8 rounded-xl border border-white/20 bg-white/10 px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-white/15"
                 >
                   Create Highlights
                 </button>
@@ -703,7 +704,7 @@ export default function FeedHeader({
                     return (
                       <div key={highlight.id || highlight.title} className="flex flex-col items-center gap-2 min-w-[64px] md:min-w-[70px] shrink-0">
                         <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-linear-to-tr from-yellow-400 via-pink-500 to-purple-600 p-[2px]">
-                          <div className="w-full h-full rounded-full bg-white p-[2px]">
+                          <div className="h-full w-full rounded-full border border-white/10 bg-[var(--color-obsidian)] p-[2px]">
                             {isColorHighlight ? (
                               <div
                                 className="w-full h-full rounded-full flex items-center justify-center"
@@ -726,7 +727,7 @@ export default function FeedHeader({
                             )}
                           </div>
                         </div>
-                        <span className="text-xs text-stone-900 text-center leading-tight max-w-[64px] md:max-w-[70px] truncate">
+                        <span className="max-w-[64px] truncate text-center text-xs leading-tight text-white/80 md:max-w-[70px]">
                           {highlight.title}
                         </span>
                       </div>
@@ -758,4 +759,3 @@ export default function FeedHeader({
     </div>
   )
 }
-

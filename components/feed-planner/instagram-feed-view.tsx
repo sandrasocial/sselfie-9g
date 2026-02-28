@@ -335,14 +335,14 @@ export default function InstagramFeedView({
   // Handle error responses
   if (feedData?.error) {
     return (
-      <div className="w-full max-w-none md:max-w-[935px] mx-auto bg-white min-h-screen flex items-center justify-center p-4">
+      <div className="mx-auto flex min-h-screen w-full max-w-none items-center justify-center bg-[var(--color-obsidian)] p-4 md:max-w-[935px]">
         <div className="text-center space-y-4">
-          <h2 className="text-xl font-light text-stone-900">Feed Not Found</h2>
-          <p className="text-sm text-stone-600">{feedData.error}</p>
+          <h2 className="text-xl font-light uppercase tracking-[0.15em] text-white">Feed Not Found</h2>
+          <p className="text-sm text-white/65">{feedData.error}</p>
           {onBack && (
             <button
               onClick={onBack}
-              className="text-sm text-stone-500 hover:text-stone-900 underline"
+              className="text-sm text-white/65 underline hover:text-white"
             >
               Go back
             </button>
@@ -357,14 +357,14 @@ export default function InstagramFeedView({
   // Handle error responses (check both feedData.error and feedError from SWR)
   if (feedError || feedData?.error) {
     return (
-      <div className="w-full max-w-none md:max-w-[935px] mx-auto bg-white min-h-screen flex items-center justify-center p-4">
+      <div className="mx-auto flex min-h-screen w-full max-w-none items-center justify-center bg-[var(--color-obsidian)] p-4 md:max-w-[935px]">
         <div className="text-center space-y-4 max-w-md">
-          <h2 className="text-xl font-light text-stone-900">Feed Not Found</h2>
-          <p className="text-sm text-stone-600">{feedData?.error || feedError?.message || "Unable to load feed data"}</p>
+          <h2 className="text-xl font-light uppercase tracking-[0.15em] text-white">Feed Not Found</h2>
+          <p className="text-sm text-white/65">{feedData?.error || feedError?.message || "Unable to load feed data"}</p>
           {onBack && (
             <button
               onClick={onBack}
-              className="text-sm text-stone-500 hover:text-stone-900 underline mt-4"
+              className="mt-4 text-sm text-white/65 underline hover:text-white"
             >
               Go back and create a new feed
             </button>
@@ -392,14 +392,14 @@ export default function InstagramFeedView({
     // If we have an error in the response, show that
     if (feedData?.error) {
       return (
-        <div className="w-full max-w-none md:max-w-[935px] mx-auto bg-white min-h-screen flex items-center justify-center p-4">
+        <div className="mx-auto flex min-h-screen w-full max-w-none items-center justify-center bg-[var(--color-obsidian)] p-4 md:max-w-[935px]">
           <div className="text-center space-y-4 max-w-md">
-            <h2 className="text-xl font-light text-stone-900">Feed Not Found</h2>
-            <p className="text-sm text-stone-600">{feedData.error}</p>
+            <h2 className="text-xl font-light uppercase tracking-[0.15em] text-white">Feed Not Found</h2>
+            <p className="text-sm text-white/65">{feedData.error}</p>
             {onBack && (
               <button
                 onClick={onBack}
-                className="text-sm text-stone-500 hover:text-stone-900 underline mt-4"
+                className="mt-4 text-sm text-white/65 underline hover:text-white"
               >
                 Go back
               </button>
@@ -425,14 +425,14 @@ export default function InstagramFeedView({
       
       // Show error UI for invalid data structure
       return (
-        <div className="w-full max-w-none md:max-w-[935px] mx-auto bg-white min-h-screen flex items-center justify-center p-4">
+        <div className="mx-auto flex min-h-screen w-full max-w-none items-center justify-center bg-[var(--color-obsidian)] p-4 md:max-w-[935px]">
           <div className="text-center space-y-4 max-w-md">
-            <h2 className="text-xl font-light text-stone-900">Invalid Feed Data</h2>
-            <p className="text-sm text-stone-600">The feed data structure is invalid. Please try creating a new feed.</p>
+            <h2 className="text-xl font-light uppercase tracking-[0.15em] text-white">Invalid Feed Data</h2>
+            <p className="text-sm text-white/65">The feed data structure is invalid. Please try creating a new feed.</p>
             {onBack && (
               <button
                 onClick={onBack}
-                className="text-sm text-stone-500 hover:text-stone-900 underline mt-4"
+                className="mt-4 text-sm text-white/65 underline hover:text-white"
               >
                 Go back
               </button>
@@ -547,7 +547,7 @@ export default function InstagramFeedView({
   }
 
   return (
-    <div className="w-full max-w-none md:max-w-[935px] mx-auto bg-white min-h-screen">
+    <div className="mx-auto min-h-screen w-full max-w-none bg-[var(--color-obsidian)] md:max-w-[935px]">
       <FeedHeader
         feedData={feedData}
         currentFeedId={feedId}
@@ -609,7 +609,7 @@ export default function InstagramFeedView({
                 {/* Helpful hint for empty posts */}
                 {displayPosts.some((p: any) => !p.image_url) && (
                   <div className="mt-6 px-4 text-center">
-                    <p className="text-xs text-stone-500 font-light">
+                    <p className="text-xs font-light text-white/55">
                       Click any empty post to upload an image or select from your gallery
                     </p>
                   </div>
@@ -707,17 +707,17 @@ export default function InstagramFeedView({
 
       {/* Bio Editing Modal */}
       {showBioModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => !isSavingBio && setShowBioModal(false)}>
-          <div className="bg-white rounded-lg max-w-md w-full p-6 space-y-4" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold text-stone-900">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={() => !isSavingBio && setShowBioModal(false)}>
+          <div className="w-full max-w-md space-y-4 rounded-[20px] border border-white/20 bg-[rgba(13,15,19,0.94)] p-6 text-white backdrop-blur-2xl" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-light uppercase tracking-[0.12em]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
               {isSavingBio && !bioText ? "Creating Your Bio" : "Edit Bio"}
             </h2>
             {isSavingBio && !bioText ? (
               <div className="flex flex-col items-center justify-center py-8 space-y-4">
-                <div className="w-6 h-6 border-2 border-stone-300 border-t-stone-900 rounded-full animate-spin" />
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-white/25 border-t-white/90" />
                 <div className="text-center space-y-2">
-                  <p className="text-sm font-medium text-stone-900">I&apos;m crafting your perfect bio...</p>
-                  <p className="text-xs text-stone-500">This will just take a moment! ✨</p>
+                  <p className="text-sm font-medium text-white">I&apos;m crafting your perfect bio...</p>
+                  <p className="text-xs text-white/55">This will just take a moment.</p>
                 </div>
               </div>
             ) : (
@@ -726,11 +726,11 @@ export default function InstagramFeedView({
                   value={bioText}
                   onChange={(e) => setBioText(e.target.value)}
                   placeholder="Your AI-generated bio will appear here..."
-                  className="w-full h-32 p-3 border border-stone-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-stone-900 text-sm"
+                  className="h-32 w-full resize-none rounded-xl border border-white/20 bg-white/8 p-3 text-sm text-white placeholder:text-white/45 focus:outline-none focus:ring-1 focus:ring-white/40"
                   maxLength={150}
                   disabled={isSavingBio}
                 />
-                <div className="text-xs text-stone-500 text-right">
+                <div className="text-right text-xs text-white/55">
                   {bioText.length}/150 characters
                 </div>
               </>
@@ -739,7 +739,7 @@ export default function InstagramFeedView({
               <button
                 onClick={() => setShowBioModal(false)}
                 disabled={isSavingBio}
-                className="px-4 py-2 text-sm text-stone-600 hover:text-stone-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 text-sm text-white/65 transition-colors hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Cancel
               </button>
@@ -747,7 +747,7 @@ export default function InstagramFeedView({
                 <button
                   onClick={handleSaveBio}
                   disabled={!bioText.trim()}
-                  className="px-4 py-2 bg-stone-900 text-white text-sm font-semibold rounded-lg hover:bg-stone-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="rounded-full border border-white/25 bg-white/10 px-4 py-2 text-sm uppercase tracking-[0.2em] text-white transition-colors hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Save
                 </button>

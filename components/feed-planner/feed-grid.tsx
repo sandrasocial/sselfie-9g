@@ -1,6 +1,5 @@
 "use client"
 
-import { useState } from "react"
 import { toast } from "@/hooks/use-toast"
 import { ToastAction } from "@/components/ui/toast"
 import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
@@ -150,7 +149,7 @@ export default function FeedGrid({
   const showGenerateButton = access?.canGenerateImages ?? false
   // Phase 4: Changed from grid-cols-3 (9 posts) to grid-cols-4 (12 posts) for paid blueprint
   return (
-    <div className="grid grid-cols-3 md:grid-cols-4 gap-[2px] md:gap-1">
+    <div className="grid grid-cols-3 gap-0 border border-white/12 bg-white/[0.02]">
       {posts.map((post: any, index: number) => (
         <FeedGridItem
           key={post.id}

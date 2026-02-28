@@ -176,7 +176,7 @@ export default function FeedGridItem({
       onDragStart={onDragStart}
       onDragOver={onDragOver}
       onDragEnd={onDragEnd}
-      className={`aspect-square bg-stone-100 relative transition-all duration-200 ${
+      className={`relative aspect-square border border-white/10 bg-white/[0.04] backdrop-blur-[2px] transition-all duration-200 ${
         isDragging ? 'opacity-50 scale-95' : ''
       } ${
         isComplete && !isSavingOrder ? 'cursor-move hover:opacity-90' : 'cursor-pointer'
@@ -192,9 +192,9 @@ export default function FeedGridItem({
           onClick={() => onPostClick(post)}
         />
       ) : isGenerating ? (
-        <div className="absolute inset-0 bg-stone-50 flex flex-col items-center justify-center">
-          <Loader2 size={20} className="text-stone-400 animate-spin mb-2" strokeWidth={1.5} />
-          <div className="text-[10px] font-light text-stone-500 text-center">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/45 backdrop-blur-[1px]">
+          <Loader2 size={20} className="mb-2 animate-spin text-white/70" strokeWidth={1.5} />
+          <div className="text-center text-[10px] font-light text-white/65">
             Creating...
           </div>
           <button
@@ -202,7 +202,7 @@ export default function FeedGridItem({
             onClick={handleStopGeneration}
             disabled={!canStop || isStopping}
             className={`mt-2 text-[10px] font-light ${
-              !canStop || isStopping ? "text-stone-300" : "text-stone-600 hover:text-stone-800"
+              !canStop || isStopping ? "text-white/30" : "text-white/70 hover:text-white"
             }`}
           >
             {isStopping ? "Stopping..." : "Stop generation"}
@@ -212,18 +212,18 @@ export default function FeedGridItem({
         // Show generation button for paid users, gallery selector for others
         showGenerateButton ? (
           <button
-            className="absolute inset-0 bg-white flex flex-col items-center justify-center p-3 cursor-pointer hover:bg-stone-50 transition-colors"
+            className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center bg-white/[0.04] p-3 transition-colors hover:bg-white/[0.1]"
             onClick={handleGenerateClick}
             disabled={isGenerating}
           >
-            <ImageIcon className="w-10 h-10 text-stone-400 mb-2" strokeWidth={1.5} />
-            <div className="text-[10px] font-light text-stone-600 text-center">
+            <ImageIcon className="mb-2 h-10 w-10 text-white/45" strokeWidth={1.5} />
+            <div className="text-center text-[10px] font-light uppercase tracking-[0.2em] text-white/65">
               Generate image
             </div>
           </button>
         ) : (
           <div
-            className="absolute inset-0 bg-white flex flex-col items-center justify-center p-3 cursor-pointer hover:bg-stone-50 transition-colors"
+            className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center bg-white/[0.04] p-3 transition-colors hover:bg-white/[0.1]"
             onClick={(e) => {
               e.stopPropagation()
               // Open gallery selector for free users
@@ -232,8 +232,8 @@ export default function FeedGridItem({
               }
             }}
           >
-            <ImageIcon className="w-10 h-10 text-stone-300 mb-2" strokeWidth={1.5} />
-            <div className="text-[10px] font-light text-stone-500 text-center">
+            <ImageIcon className="mb-2 h-10 w-10 text-white/35" strokeWidth={1.5} />
+            <div className="text-center text-[10px] font-light uppercase tracking-[0.2em] text-white/55">
               Click to add image
             </div>
           </div>
