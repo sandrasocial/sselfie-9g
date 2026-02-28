@@ -4,10 +4,27 @@
 ---
 
 ## Last Updated
-2026-02-28 17:48 CET — Updated by Codex (academy-journey-state hardening + E-01 reconciliation refresh)
+2026-02-28 17:53 CET — Updated by Codex (E-03 hard-bounce cleanup verification)
 
 ## Last Task Completed
-E-01 reconciliation snapshot refreshed (formal sign-off artifact updated):
+E-03 hard-bounce cleanup verification completed (execution path + evidence captured):
+- Dry-run executed:
+  - `pnpm tsx scripts/cleanup-hard-bounces.ts`
+  - Report: `output/automation/hard-bounce-cleanup-2026-02-28T16-52-14-307Z.md`
+- Apply path executed (no-op by design, because intersection is zero):
+  - `pnpm tsx scripts/cleanup-hard-bounces.ts --apply`
+  - Report: `output/automation/hard-bounce-cleanup-2026-02-28T16-52-45-075Z.md`
+- Verified results:
+  - Hard-bounced emails in DB history: `397`
+  - Active subscribed contacts in Resend audience: `831`
+  - Hard-bounced contacts currently in audience: `0`
+  - Removed this run: `0`
+  - Failed removals: `0`
+- Operational conclusion:
+  - No hard-bounced contacts are currently present in the active Resend audience.
+  - E-03 cleanup is currently in a healthy state; continue periodic reruns as hygiene.
+
+Previous task (E-01) reconciliation snapshot refreshed (formal sign-off artifact updated):
 - Ran reconciliation script:
   - `pnpm tsx scripts/reconcile-subscriber-counts.ts`
 - New evidence file:
