@@ -4,25 +4,44 @@
 ---
 
 ## Last Updated
-2026-02-28 17:53 CET — Updated by Codex (E-03 hard-bounce cleanup verification)
+2026-02-28 18:02 CET — Updated by Codex (Phase-3 Maya + training access shipped to main)
 
 ## Last Task Completed
-E-03 hard-bounce cleanup verification completed (execution path + evidence captured):
-- Dry-run executed:
+Decision #2 shipped to production: training access is now credit-gated for all users (not membership-gated):
+- Commit pushed to `main`: `6842912c` (`Allow credit-gated training for non-members`)
+- Files:
+  - `app/api/training/start/route.ts`
+  - `app/api/training/upload-zip/route.ts`
+  - `tests/training-start-access.test.ts`
+  - `tests/training-upload-zip-access.test.ts`
+- Validation:
+  - `pnpm vitest run tests/training-start-access.test.ts tests/training-upload-zip-access.test.ts` passed (2/2)
+  - `pnpm eslint app/api/training/start/route.ts app/api/training/upload-zip/route.ts tests/training-start-access.test.ts tests/training-upload-zip-access.test.ts` passed with warnings only (0 errors)
+
+Phase-3 Maya UX slice shipped to production (UX-08/09/10 + mode labels + lock states):
+- Commit pushed to `main`: `f7895833` (`Implement Maya phase-3 onboarding and unlock states`)
+- Includes:
+  - Studio member onboarding overlay (`components/sselfie/maya/studio-member-onboarding.tsx`)
+  - Returning-member home card (`components/sselfie/maya/membership-home-card.tsx`)
+  - Prompt lock state + upgrade CTA in Prompts tab
+  - Chat upsell cards for What To Say / Show Up signals
+  - SELFIE / MY MODEL user-facing label surfaces
+- Validation:
+  - `pnpm vitest run tests/welcome-first-generation.test.ts tests/maya-mode-toggle-labels.test.tsx tests/maya-prompts-tab-lock.test.tsx tests/membership-home-card.test.tsx tests/studio-member-onboarding.test.tsx` passed (17/17)
+  - `pnpm build` passed
+
+E-03 hard-bounce cleanup verification + apply path completed:
+- Commit pushed to `main`: `99983a3f` (`Log E-03 hard-bounce cleanup verification`)
+- Commands:
   - `pnpm tsx scripts/cleanup-hard-bounces.ts`
-  - Report: `output/automation/hard-bounce-cleanup-2026-02-28T16-52-14-307Z.md`
-- Apply path executed (no-op by design, because intersection is zero):
   - `pnpm tsx scripts/cleanup-hard-bounces.ts --apply`
-  - Report: `output/automation/hard-bounce-cleanup-2026-02-28T16-52-45-075Z.md`
-- Verified results:
-  - Hard-bounced emails in DB history: `397`
-  - Active subscribed contacts in Resend audience: `831`
-  - Hard-bounced contacts currently in audience: `0`
-  - Removed this run: `0`
-  - Failed removals: `0`
-- Operational conclusion:
-  - No hard-bounced contacts are currently present in the active Resend audience.
-  - E-03 cleanup is currently in a healthy state; continue periodic reruns as hygiene.
+- Evidence:
+  - `output/automation/hard-bounce-cleanup-2026-02-28T16-52-14-307Z.md`
+  - `output/automation/hard-bounce-cleanup-2026-02-28T16-52-45-075Z.md`
+- Result:
+  - Hard-bounced in audience: `0`
+  - Removed: `0`
+  - Failed: `0`
 
 Previous task (E-01) reconciliation snapshot refreshed (formal sign-off artifact updated):
 - Ran reconciliation script:
