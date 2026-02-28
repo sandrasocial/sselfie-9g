@@ -10,7 +10,6 @@ import {
   getAdaptiveTrainingParams,
 } from "@/lib/replicate-client"
 import { checkCredits, deductCredits, getUserCredits, CREDIT_COSTS } from "@/lib/credits"
-import { hasStudioMembership } from "@/lib/subscription"
 import { put } from "@vercel/blob"
 import { neon } from "@neondatabase/serverless"
 
@@ -136,17 +135,6 @@ export async function POST(request: Request) {
       email: neonUser.email,
     })
 
-    const hasMembership = await hasStudioMembership(neonUser.id)
-    if (!hasMembership) {
-      return NextResponse.json(
-        {
-          error: "Membership required",
-          message: "Training a model requires an active Studio Membership.",
-        },
-        { status: 403 },
-      )
-    }
-
     const hasEnoughCredits = await checkCredits(neonUser.id, CREDIT_COSTS.TRAINING)
     if (!hasEnoughCredits) {
       const currentBalance = await getUserCredits(neonUser.id)
@@ -155,7 +143,7 @@ export async function POST(request: Request) {
           error: "Insufficient credits",
           required: CREDIT_COSTS.TRAINING,
           current: currentBalance,
-          message: `Training requires ${CREDIT_COSTS.TRAINING} credits. You currently have ${currentBalance} credits.`,
+          message: `Training costs ${CREDIT_COSTS.TRAINING} credits. You currently have ${currentBalance} credits. Buy credits or join Studio for monthly credits.`,
         },
         { status: 402 },
       )
