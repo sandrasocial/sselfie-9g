@@ -2,33 +2,10 @@ import "server-only"
 
 import { ensureAnalyticsSchema } from "@/lib/analytics/schema"
 import { getDb } from "@/lib/db"
-
-export type AnalyticsEventName =
-  | "landing_view"
-  | "pricing_view"
-  | "checkout_start"
-  | "purchase"
-  | "studio_opened"
-  | "tab_opened"
-  | "activation_jumpstart_opened"
-  | "activation_continue_clicked"
-  | "activation_selfie_uploaded"
-  | "signup_to_first_gen"
-  | "academy_opens_from_maya"
-
-const ALLOWED_EVENTS = new Set<string>([
-  "landing_view",
-  "pricing_view",
-  "checkout_start",
-  "purchase",
-  "studio_opened",
-  "tab_opened",
-  "activation_jumpstart_opened",
-  "activation_continue_clicked",
-  "activation_selfie_uploaded",
-  "signup_to_first_gen",
-  "academy_opens_from_maya",
-])
+import {
+  isAllowedAnalyticsEventName,
+  type AnalyticsEventName,
+} from "@/lib/analytics/event-contract"
 
 function safeString(v: unknown, maxLen: number): string | null {
   if (typeof v !== "string") return null
@@ -74,7 +51,7 @@ export async function logAnalyticsEvent(input: {
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
     const eventName = safeString(input.eventName, 64)
-    if (!eventName || !ALLOWED_EVENTS.has(eventName)) {
+    if (!eventName || !isAllowedAnalyticsEventName(eventName)) {
       return { ok: false, error: "Unsupported event" }
     }
 

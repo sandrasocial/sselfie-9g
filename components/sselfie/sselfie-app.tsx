@@ -32,7 +32,6 @@ import BuyCreditsModal from "./buy-credits-modal"
 import { LowCreditModal } from "@/components/credits/low-credit-modal"
 import { ZeroCreditsUpgradeModal } from "@/components/credits/zero-credits-upgrade-modal"
 import { CreditRenewalBanner } from "@/components/credits/credit-renewal-banner"
-import { WelcomeBackBanner } from "@/components/engagement/welcome-back-banner"
 import { FeedbackButton } from "@/components/feedback/feedback-button"
 import { UpgradeOrCredits } from "@/components/UpgradeOrCredits"
 import type { User as UserType } from "./types"
@@ -63,7 +62,12 @@ import { AnimatePresence, motion } from "framer-motion"
 import useSWR from "swr"
 import { useRouter, useSearchParams } from "next/navigation"
 import { ChevronDown, ChevronRight, X } from "lucide-react"
-import ProductBadge from "./product-badge"
+import {
+  readStudioTabFromHash,
+  readStudioTabFromSearchParams,
+  resolveStudioTab,
+  type StudioTab,
+} from "@/lib/studio/tab-routing"
 
 interface SselfieAppProps {
   userId: string | number // Can be string or number (from database)
@@ -77,6 +81,7 @@ interface SselfieAppProps {
   initialTab?: string // Decision 2: Initial tab from URL param
   academyPurchaseSource?: string
   academyPurchaseProduct?: string
+  firstTimeProductUser?: boolean
 }
 
 const ACADEMY_PRODUCT_TO_TAB: Record<string, "feed-planner" | "maya" | "academy" | "account"> = {
@@ -86,15 +91,6 @@ const ACADEMY_PRODUCT_TO_TAB: Record<string, "feed-planner" | "maya" | "academy"
   ai_photo_prompts: "maya",
   editing_masterclass: "academy",
   branded_by_sselfie: "academy",
-}
-
-const PRODUCT_BADGE_META: Record<string, { label: string; icon: string; tab?: "feed-planner" | "maya" | "academy" | "account" }> = {
-  what_to_say: { label: "What To Say", icon: "📝", tab: "feed-planner" },
-  show_up: { label: "Show Up", icon: "🎤", tab: "maya" },
-  get_paid: { label: "Get Paid", icon: "💰", tab: "account" },
-  ai_photo_prompts: { label: "AI Photo Prompts", icon: "✨", tab: "maya" },
-  editing_masterclass: { label: "Editing Masterclass", icon: "🎬", tab: "academy" },
-  branded_by_sselfie: { label: "Branded by SSELFIE", icon: "🏷️", tab: "academy" },
 }
 
 export default function SselfieApp({
@@ -109,50 +105,35 @@ export default function SselfieApp({
   initialTab,
   academyPurchaseSource,
   academyPurchaseProduct,
+  firstTimeProductUser = false,
 }: SselfieAppProps) {
   const isUnifiedMayaUiEnabled =
     process.env.NEXT_PUBLIC_FEATURE_UNIFIED_MAYA_UI === "true" ||
     process.env.NEXT_PUBLIC_FEATURE_UNIFIED_MAYA_UI === "1"
+
+  const isMembershipUser =
+    (subscriptionStatus === "active" || subscriptionStatus === "trialing") &&
+    ["sselfie_studio_membership", "brand_studio_membership", "pro", "one_time_session"].includes(productType || "")
+
   const getInitialTab = () => {
-    // Decision 2: Use initialTab prop if provided (from URL param)
-    if (initialTab) {
-      const validTabs = ["maya", "gallery", "feed-planner", "academy", "account"]
-      if (validTabs.includes(initialTab)) {
-        return initialTab
-      }
-    }
-    
     if (typeof window !== "undefined") {
-      const hash = window.location.hash.slice(1) // Remove the # symbol
-      const validTabs = [
-        "maya",
-        "gallery",
-        "feed-planner",
-        "academy",
-        "account",
-      ]
-      // Check URL search params for tab override (e.g., ?tab=blueprint from auth redirect)
-      const searchParams = new URLSearchParams(window.location.search)
-      const tabParam = searchParams.get("tab")
-      if (tabParam && validTabs.includes(tabParam)) {
-        return tabParam
-      }
-      if (validTabs.includes(hash)) {
-        return hash
-      }
-
-      const isMembership =
-        (subscriptionStatus === "active" || subscriptionStatus === "trialing") &&
-        ["sselfie_studio_membership", "brand_studio_membership", "pro", "one_time_session"].includes(productType || "")
-
-      // Free users (no subscription) land on maya — it's the core value prop and where
-      // the welcome first-generation flow triggers. Feed Planner is a secondary feature.
-      return isMembership ? "maya" : "maya"
+      return resolveStudioTab({
+        initialTab,
+        searchTab: new URLSearchParams(window.location.search).get("tab"),
+        hashTab: window.location.hash,
+        isMembership: isMembershipUser,
+      })
     }
-    return "maya"
+
+    return resolveStudioTab({
+      initialTab,
+      searchTab: null,
+      hashTab: null,
+      isMembership: isMembershipUser,
+    })
   }
 
-  const [activeTab, setActiveTab] = useState(getInitialTab)
+  const [activeTab, setActiveTab] = useState<StudioTab>(getInitialTab)
   const [showPurchaseSuccess, setShowPurchaseSuccess] = useState(purchaseSuccess)
   const [showAcademyWelcomeBanner, setShowAcademyWelcomeBanner] = useState(
     () => !!(academyPurchaseSource === "academy_purchase" && academyPurchaseProduct),
@@ -237,8 +218,10 @@ export default function SselfieApp({
   const [showFirstPhotoToast, setShowFirstPhotoToast] = useState(false)
   const initialCreditBalanceRef = useRef<number | null>(null)
   const firstPhotoToastShownRef = useRef(false)
+  const bottomNavRef = useRef<HTMLElement | null>(null)
   const router = useRouter()
   const searchParams = useSearchParams()
+  const tabFromSearchParams = readStudioTabFromSearchParams(searchParams)
   const hasTrackedStudioOpenRef = useRef(false)
 
   useEffect(() => {
@@ -261,6 +244,29 @@ export default function SselfieApp({
       },
     })
   }, [activeTab])
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof document === "undefined") return
+    const node = bottomNavRef.current
+    if (!node || typeof ResizeObserver === "undefined") return
+
+    const updateBottomNavHeight = () => {
+      const height = Math.ceil(node.getBoundingClientRect().height)
+      if (height > 0) {
+        document.documentElement.style.setProperty("--sselfie-bottom-nav-height", `${height}px`)
+      }
+    }
+
+    updateBottomNavHeight()
+    const observer = new ResizeObserver(updateBottomNavHeight)
+    observer.observe(node)
+    window.addEventListener("resize", updateBottomNavHeight)
+
+    return () => {
+      observer.disconnect()
+      window.removeEventListener("resize", updateBottomNavHeight)
+    }
+  }, [showWelcomeFirstGenerationFlow])
   
   // Fetch feed list for feed planner header
   const fetcher = async (url: string) => {
@@ -361,28 +367,30 @@ export default function SselfieApp({
   )
 
   useEffect(() => {
+    if (!tabFromSearchParams) return
+    setActiveTab((currentTab) => (currentTab === tabFromSearchParams ? currentTab : tabFromSearchParams))
+  }, [tabFromSearchParams])
+
+  useEffect(() => {
     const handlePopState = () => {
-      const hash = window.location.hash.slice(1)
-      const validTabs = [
-        "maya",
-        "gallery",
-        "feed-planner",
-        "academy",
-        "account",
-      ]
-      if (validTabs.includes(hash)) {
-        setActiveTab(hash)
-      } else {
-        const isMembership =
-          (subscriptionStatus === "active" || subscriptionStatus === "trialing") &&
-          ["sselfie_studio_membership", "brand_studio_membership", "pro", "one_time_session"].includes(productType || "")
-        setActiveTab(isMembership ? "maya" : "feed-planner")
-      }
+      const tabFromQuery = readStudioTabFromSearchParams(new URLSearchParams(window.location.search))
+      const tabFromHash = readStudioTabFromHash(window.location.hash)
+      const nextTab =
+        tabFromQuery ??
+        tabFromHash ??
+        resolveStudioTab({
+          initialTab,
+          searchTab: null,
+          hashTab: null,
+          isMembership: isMembershipUser,
+        })
+
+      setActiveTab((currentTab) => (currentTab === nextTab ? currentTab : nextTab))
     }
 
     window.addEventListener("popstate", handlePopState)
     return () => window.removeEventListener("popstate", handlePopState)
-  }, [])
+  }, [initialTab, isMembershipUser])
 
   useEffect(() => {
     let isMounted = true
@@ -422,13 +430,16 @@ export default function SselfieApp({
   const hasAcademyPurchases = ownedProducts.length > 0
   const academyBlocked = !access.hasFullAccess && !hasAcademyPurchases
 
-  const handleTabChange = (tabId: string) => {
+  const handleTabChange = (tabId: StudioTab) => {
     // If user has no credits and no subscription, still let them into Maya —
     // but the generation API will surface the upgrade modal naturally when they try.
     // Only hard-block if they've been explicitly downgraded (no credits, no plan, no blueprint).
     setActiveTab(tabId)
-    // Update URL without triggering a page reload
-    window.history.pushState(null, "", `#${tabId}`)
+    // Keep query tab + hash aligned for deep-linking and back/forward consistency.
+    const nextUrl = new URL(window.location.href)
+    nextUrl.searchParams.set("tab", tabId)
+    nextUrl.hash = tabId
+    window.history.pushState(null, "", `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`)
   }
 
   const refreshCredits = useCallback(async () => {
@@ -857,7 +868,6 @@ export default function SselfieApp({
 
       {/* Engagement Banners */}
       <CreditRenewalBanner />
-      <WelcomeBackBanner />
 
       {/* Slice 1.3: Post-purchase welcome banner when opening app with ?source=academy_purchase&product=... */}
       {showAcademyWelcomeBanner &&
@@ -1127,27 +1137,6 @@ export default function SselfieApp({
                 </DropdownMenu>
                 </div>
               </div>
-              {ownedProducts.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {ownedProducts.map((product: { id: string; name: string }) => {
-                    const meta = PRODUCT_BADGE_META[product.id] ?? { label: product.name, icon: "🎁" }
-                    return (
-                      <ProductBadge
-                        key={product.id}
-                        label={meta.label}
-                        icon={meta.icon}
-                        onClick={
-                          meta.tab
-                            ? () => {
-                                handleTabChange(meta.tab)
-                              }
-                            : undefined
-                        }
-                      />
-                    )
-                  })}
-                </div>
-              )}
             </header>
           )}
 
@@ -1201,6 +1190,8 @@ export default function SselfieApp({
                     hasTrainedModel={hasTrainedModel}
                     isMembership={access.hasFullAccess} // Only membership users see Pro/Classic toggle
                     hideModeComplexity={isUnifiedMayaUiEnabled}
+                    academyPurchaseProduct={academyPurchaseProduct}
+                    firstTimeProductUser={firstTimeProductUser}
                   />
                 )}
                 {activeTab === "gallery" && (
@@ -1229,6 +1220,7 @@ export default function SselfieApp({
 
       {!showWelcomeFirstGenerationFlow && (
         <nav
+          ref={bottomNavRef}
           className={`fixed bottom-0 left-0 right-0 z-[70] px-2 sm:px-3 md:px-4 transition-transform duration-300 ease-in-out ${
             isNavVisible ? "translate-y-0" : "translate-y-full"
           }`}

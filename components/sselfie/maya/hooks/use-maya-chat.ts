@@ -167,7 +167,7 @@ export function useMayaChat({
       api: "/api/maya/chat",
       headers,
     }) as any
-  }, [proMode, currentChatType, activeTab])
+  }, [proMode, currentChatType, activeTab, academyPurchaseProduct, firstTimeProductUser])
 
   // Create a unique ID for the chat session to force useChat to reset when chatId changes
   // This ensures that when a new chat is created, all previous messages are cleared

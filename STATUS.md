@@ -4,9 +4,125 @@
 ---
 
 ## Last Updated
-2026-02-27 22:12 CET — Updated by Codex (UX-03 Academy redesign complete)
+2026-02-28 15:12 CET — Updated by Codex (P0 pass deployed to preview; live smoke blocked by Vercel protection)
 
 ## Last Task Completed
+P0 backend recovery (activation-first) completed:
+- P0-01 tab/query sync + deep-link reliability:
+  - Added shared tab resolver: `lib/studio/tab-routing.ts`
+  - Updated `components/sselfie/sselfie-app.tsx` to reactively sync `activeTab` from `?tab=` and popstate; now preserves query + hash on tab changes
+- P0-02 Academy purchase context propagation into Maya:
+  - Added parser: `lib/academy/studio-query-context.ts`
+  - Updated `app/studio/page.tsx` to parse and pass `first_time_product_user`
+  - Updated `components/sselfie/sselfie-app.tsx` to pass `academyPurchaseProduct` + `firstTimeProductUser` into `MayaChatScreen`
+  - Updated `components/sselfie/maya/hooks/use-maya-chat.ts` transport dependencies so headers refresh when product/first-time flags change
+  - Updated `app/academy/success/page.tsx` deep-link to include `first_time_product_user=true`
+- P0-03 analytics contract hardening:
+  - Added canonical event contract: `lib/analytics/event-contract.ts`
+  - Updated `lib/analytics/events.ts` to validate against shared contract
+  - Updated emitters to only use supported names:
+    - `components/onboarding/unified-onboarding-wizard.tsx` now emits `onboarding_step_complete`, `onboarding_abandoned`, `onboarding_complete`
+    - `components/sselfie/maya/welcome-first-generation-flow.tsx` now emits `mode_selected`, `first_image_generated`, `credits_used`
+    - `components/sselfie/maya/hooks/use-maya-mode.ts` now emits `mode_selected` on real toggle changes
+  - Updated `app/api/analytics/event/route.ts` to return `{ accepted: false, reason }` when rejected (still fail-open)
+- P0-04 broadcast preflight + suppression guard:
+  - Added helper: `lib/email/broadcast-preflight.ts`
+  - Updated `lib/email/send-newsletter-broadcast.ts` with recipient preflight (`getBroadcastRecipientPreflight`) and zero-sendable hard stop before sending
+  - Updated `app/api/admin/marketing/brand-engine-broadcast/send/route.ts` to run preflight before approval/send and return preflight counts
+- New regression tests:
+  - `tests/studio-tab-routing.test.ts`
+  - `tests/studio-academy-context.test.ts`
+  - `tests/analytics-event-contract.test.ts`
+  - `tests/broadcast-preflight.test.ts`
+- Validation:
+  - `pnpm vitest run tests/studio-tab-routing.test.ts tests/studio-academy-context.test.ts tests/analytics-event-contract.test.ts tests/broadcast-preflight.test.ts` passed (18/18)
+  - `pnpm build` passed
+  - `pnpm dev` smoke passed (`HEAD /studio -> 307`, deep-link with `?tab=maya&source=academy_purchase&product=what_to_say&first_time_product_user=true -> 307`)
+  - Targeted eslint on touched files passed with warnings only (0 errors)
+  - Preview deploys:
+    - `https://v0-sselfie-p91lnwtcf-sselfie-studio.vercel.app`
+    - `https://v0-sselfie-q3tcdh53e-sselfie-studio.vercel.app`
+  - Live endpoint smoke against preview is currently blocked by Vercel Deployment Protection (401 auth wall) without bypass token/SSO session.
+
+Previous completed tasks:
+UX-06 completed (Profile / Account redesign, UI-only):
+- `components/sselfie/account-screen.tsx`
+- `components/sselfie/edit-profile-dialog.tsx`
+- `components/sselfie/best-work-selector.tsx`
+- `components/sselfie/personal-brand-section.tsx`
+- `components/upgrade/upgrade-modal.tsx`
+- Completed fixes:
+- Profile/settings tab switcher restyled to Inter 11px uppercase with active hairline indicator
+- Profile hero rebuilt as dark glass surface: circular Whisper avatar border, Cormorant display name, glass stats row
+- Personal Brand and Best Work sections moved to consistent dark glass containers with updated controls
+- Settings converted to glass list-row model with uppercase section headers, dark toggles, and full-width Cormorant upgrade CTA
+- Added `past_due` subscription banner in settings when Stripe status indicates payment issue
+- Edit Profile dialog, Best Work selector modal, and Upgrade modal now match the dark glass visual system
+- Validation:
+- `pnpm exec eslint components/sselfie/account-screen.tsx components/sselfie/edit-profile-dialog.tsx components/sselfie/best-work-selector.tsx components/sselfie/personal-brand-section.tsx components/upgrade/upgrade-modal.tsx` (warnings only, 0 errors)
+- `pnpm build` passed
+- `pnpm dev` smoke passed (`GET /studio -> 307`, `GET /feed-planner -> 307`, `GET /academy -> 200`)
+- Vercel preview: `https://v0-sselfie-naxm81qc0-sselfie-studio.vercel.app`
+
+Maya layout hotfix pass completed (post-UX-05 review):
+- `components/sselfie/sselfie-app.tsx`
+- `components/sselfie/maya-chat-screen.tsx`
+- `components/sselfie/maya/maya-chat-interface.tsx`
+- `components/sselfie/maya/maya-unified-input.tsx`
+- Completed fixes:
+- Replaced hardcoded nav offsets with measured layout contract (`--sselfie-bottom-nav-height`) to prevent input dock overlaying bottom navigation
+- Added measured header contract (`--maya-header-height`) and removed hardcoded top spacing in chat viewport
+- Fixed empty-state rendering flow so welcome content no longer sits below a full-height empty chat region
+- Unified Classic/Pro input visual system (same dark glass input/buttons) to remove white-vs-dark inconsistency
+- Shifted input dock and menu positioning to dynamic CSS variables so layout remains stable across device safe areas
+- Validation:
+- `pnpm exec eslint components/sselfie/sselfie-app.tsx components/sselfie/maya-chat-screen.tsx components/sselfie/maya/maya-chat-interface.tsx components/sselfie/maya/maya-unified-input.tsx` (warnings only, 0 errors)
+- `pnpm dev` smoke passed (`HEAD /maya -> 307 -> /auth/login`)
+- `pnpm build` passed
+- Vercel preview: `https://v0-sselfie-j2wn6weln-sselfie-studio.vercel.app`
+
+UX-05 completed (Feed Planner redesign, UI-only):
+- `components/feed-planner/feed-view-screen.tsx`
+- `components/feed-planner/instagram-feed-view.tsx`
+- `components/feed-planner/feed-grid.tsx`
+- `components/feed-planner/feed-grid-item.tsx`
+- `components/feed-planner/feed-tabs.tsx`
+- `components/feed-planner/feed-posts-list.tsx`
+- `components/feed-planner/feed-strategy.tsx`
+- `components/feed-planner/feed-header.tsx`
+- `components/feed-planner/welcome-wizard.tsx`
+- `components/onboarding/unified-onboarding-wizard.tsx`
+- Completed fixes:
+- Feed Planner shell switched to dark glassmorphic styling with `#0a0a0a` background and glass card treatments
+- Feed empty state and entry card updated with Cormorant-driven `NEW FEED ->` CTA language
+- Feed grid visual treatment updated to 3-column dominant layout with hairline separators and dark placeholders
+- Caption/posts surfaces and strategy surfaces restyled to glass cards/inputs while preserving existing generation + API logic
+- Wizard visuals updated to dark modal treatment with Cormorant headings, dot indicators, and full-width glass CTA button
+- Validation:
+- `pnpm exec eslint components/feed-planner/feed-view-screen.tsx components/feed-planner/instagram-feed-view.tsx components/feed-planner/feed-grid.tsx components/feed-planner/feed-grid-item.tsx components/feed-planner/feed-tabs.tsx components/feed-planner/feed-posts-list.tsx components/feed-planner/feed-strategy.tsx components/feed-planner/welcome-wizard.tsx components/onboarding/unified-onboarding-wizard.tsx components/feed-planner/feed-header.tsx` (warnings only, 0 errors)
+- `pnpm dev` smoke passed (`HEAD /feed-planner -> 307 -> /auth/login`)
+- `pnpm build` passed
+
+UX-04 completed (Gallery redesign, UI-only):
+- `components/sselfie/gallery-screen.tsx`
+- `components/sselfie/gallery/components/gallery-filters.tsx`
+- `components/sselfie/gallery/components/gallery-image-grid.tsx`
+- `components/sselfie/gallery/components/gallery-image-card.tsx`
+- `components/sselfie/gallery/components/gallery-selection-bar.tsx`
+- `components/sselfie/gallery/components/gallery-empty-state.tsx`
+- `components/sselfie/fullscreen-image-modal.tsx`
+- Completed fixes:
+- Gallery filter tabs now match required order/labels: `Photos / Videos / Feed / Favourited` with dark uppercase tab treatment
+- Grid updated to 3-column mobile edge-to-edge visual structure
+- Video thumbnails updated to 9:16 cards with text overlay `ANIMATE ->` (icon overlay removed)
+- Selection mode updated with dim overlays and text checkmark treatment
+- Selection action bar restyled to glass + text-only actions (`Save / Download / Favourite / Delete`)
+- Empty gallery CTA updated to `CREATE WITH MAYA ->`
+- Fullscreen modal simplified to a dark overlay + glass text action pill bar (`FAVOURITE / DOWNLOAD / DELETE`)
+- Validation:
+- `pnpm exec eslint components/sselfie/gallery/components/gallery-filters.tsx components/sselfie/gallery/components/gallery-image-grid.tsx components/sselfie/gallery/components/gallery-image-card.tsx components/sselfie/gallery/components/gallery-selection-bar.tsx components/sselfie/gallery/components/gallery-empty-state.tsx components/sselfie/fullscreen-image-modal.tsx components/sselfie/gallery-screen.tsx` (warnings only, 0 errors)
+- `pnpm build` passed
+
 UX-03 completed (Academy landing + product/success screens, UI-only):
 - `app/academy/page.tsx`
 - `app/academy/products/[productId]/page.tsx`
@@ -154,6 +270,23 @@ Parallel execution stream completed on `main` (`b8e7bec2`) + production deploy (
 - Added quick-prompt right-fade scroll affordance in `maya-quick-prompts`
 - Added `Add to Feed ->` and `Make a Video ->` actions in `components/image-lightbox.tsx`
 - UX-02 deployed preview (`https://v0-sselfie-7433w7q11-sselfie-studio.vercel.app`) and ready for sign-off before merge-to-main production rollout.
+- UX-02 follow-up Maya mobile hotfix preview (`https://v0-sselfie-lwz6ts3wt-sselfie-studio.vercel.app`):
+- Removed legacy Pro top instruction banner that pushed content below the fold
+- Pro empty state now shows Maya guidance under avatar (inside welcome screen)
+- Pro no-reference state includes explicit "Quick Start" card + `Add Photos` CTA to open upload flow
+- Pro with linked references shows the same quick-prompt pattern as Classic-mode welcome state
+- Kept fixed input dock clear of bottom navigation using measured layout variables (`--maya-header-height`, `--input-bar-height`, `--sselfie-bottom-nav-height`)
+- UX-02 prompt/card visual pass preview (`https://v0-sselfie-h6zhfmqy6-sselfie-studio.vercel.app`):
+- Fixed missing Pro welcome quick prompts by enabling `empty-state` prompt variant for both Classic + Pro
+- Kept Pro prompts distinct (same chip style/placement as Classic, different Pro prompt content)
+- Restyled Pro concept cards to dark glass spec (`rgba(255,255,255,0.04)` card + `rgba(255,255,255,0.06)` editable prompt surfaces) in `components/sselfie/pro-mode/ConceptCardPro.tsx`
+- UX-05 refinement pass preview (`https://v0-sselfie-m09sszvbi-sselfie-studio.vercel.app`):
+- Removed non-design top clutter from Studio surfaces: hidden `WelcomeBackBanner` and removed academy emoji product-badge strip in `components/sselfie/sselfie-app.tsx`
+- Restyled gallery profile suggestions card to dark glass in `components/sselfie/gallery/components/gallery-top-suggestions.tsx`
+- Restyled gallery search/sort/select header controls to dark glass in `components/sselfie/gallery/components/gallery-header.tsx`
+- Restyled feed planner header action controls + stat typography to dark glass and replaced emoji loading indicators with icon spinners in `components/feed-planner/feed-header.tsx`
+- Restyled free/preview single-placeholder view to dark glass (including loading overlays and CTA buttons) in `components/feed-planner/feed-single-placeholder.tsx`
+- Restyled feed style modal/wizard surface from white to dark glass in `components/feed-planner/feed-style-modal.tsx`
 - ACADEMY-01 complete:
 - Tables created: `academy_course_purchases`, `academy_resource_purchases`, `user_tags`
 - New files: `lib/academy-access.ts`, `migrations/20260220_academy_foundation_tables.sql`

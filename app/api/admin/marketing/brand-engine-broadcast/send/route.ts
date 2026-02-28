@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getDb } from "@/lib/db"
-import { sendNewsletterBroadcast } from "@/lib/email/send-newsletter-broadcast"
-import { getAudienceContactCount } from "@/lib/resend/get-audience-contacts"
+import {
+  getBroadcastRecipientPreflight,
+  sendNewsletterBroadcast,
+} from "@/lib/email/send-newsletter-broadcast"
 
 const AUDIENCE_ID = process.env.RESEND_AUDIENCE_ID!
 
@@ -42,18 +44,40 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // 2. Sanity check subscriber count if provided
-    if (expectedRecipients > 0 && AUDIENCE_ID) {
-      const realCount = await getAudienceContactCount(AUDIENCE_ID)
-      const diff = Math.abs(realCount - expectedRecipients)
-      const pct = realCount > 0 ? diff / realCount : 1
+    // 2. Preflight recipient count (source of truth for sendability)
+    if (!AUDIENCE_ID) {
+      return NextResponse.json(
+        { success: false, error: "RESEND_AUDIENCE_ID is not configured." },
+        { status: 500 },
+      )
+    }
+
+    const preflight = await getBroadcastRecipientPreflight(AUDIENCE_ID)
+    if (preflight.sendableCount <= 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "No sendable recipients available after suppression filtering. Run bounce cleanup before sending.",
+          preflight,
+        },
+        { status: 400 },
+      )
+    }
+
+    // 3. Sanity check recipient expectation if provided
+    if (expectedRecipients > 0) {
+      const diff = Math.abs(preflight.sendableCount - expectedRecipients)
+      const pct = preflight.sendableCount > 0 ? diff / preflight.sendableCount : 1
       if (pct > 0.3) {
-        console.warn(`[BE Broadcast Send] Count mismatch: expected ${expectedRecipients}, got ${realCount}`)
+        console.warn(
+          `[BE Broadcast Send] Count mismatch: expected ${expectedRecipients}, preflight sendable ${preflight.sendableCount}`,
+        )
         // Log but do not block — Sandra approved this
       }
     }
 
-    // 3. Approve campaign
+    // 4. Approve campaign
     await sql`
       UPDATE admin_email_campaigns
       SET
@@ -66,8 +90,8 @@ export async function POST(req: NextRequest) {
       WHERE id = ${campaign.id}
     `
 
-    // 4. Send via Resend broadcast
-    const broadcastId = await sendNewsletterBroadcast(campaign.id)
+    // 5. Send via Resend broadcast
+    const broadcastId = await sendNewsletterBroadcast(campaign.id, preflight)
 
     console.log(`[BE Broadcast Send] ✅ Sent campaign ${campaign.id}, Resend broadcast: ${broadcastId}`)
 
@@ -75,6 +99,7 @@ export async function POST(req: NextRequest) {
       success: true,
       campaignId: campaign.id,
       broadcastId,
+      preflight,
       message: "Brand Engine broadcast sent successfully.",
     })
   } catch (error) {

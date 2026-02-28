@@ -3,13 +3,24 @@ import { getUserByAuthId, getOrCreateNeonUser } from "@/lib/user-mapping"
 import { getUserSubscription } from "@/lib/subscription"
 import { redirect } from "next/navigation"
 import SselfieApp from "@/components/sselfie/sselfie-app"
+import { parseStudioAcademyContext } from "@/lib/academy/studio-query-context"
 
 export const dynamic = "force-dynamic"
 
 export default async function StudioPage({
   searchParams,
 }: {
-  searchParams: Promise<{ welcome?: string; showCheckout?: string; checkout?: string; impersonate?: string; tab?: string; purchase?: string; source?: string; product?: string }>
+  searchParams: Promise<{
+    welcome?: string
+    showCheckout?: string
+    checkout?: string
+    impersonate?: string
+    tab?: string
+    purchase?: string
+    source?: string
+    product?: string
+    first_time_product_user?: string
+  }>
 }) {
   // Await searchParams in Next.js 15+
   const params = await searchParams
@@ -152,8 +163,7 @@ export default async function StudioPage({
   const shouldShowCheckout = params.showCheckout === "true" || params.checkout === "one_time"
   const purchaseSuccess = params.purchase === "success"
   const initialTab = params.tab || undefined // Pass tab param to SselfieApp
-  const academyPurchaseSource = params.source === "academy_purchase" ? params.source : undefined
-  const academyPurchaseProduct = academyPurchaseSource && typeof params.product === "string" && params.product ? params.product : undefined
+  const { academyPurchaseSource, academyPurchaseProduct, firstTimeProductUser } = parseStudioAcademyContext(params)
 
   const isImpersonating = !!impersonatedUserId
 
@@ -180,6 +190,7 @@ export default async function StudioPage({
         initialTab={initialTab}
         academyPurchaseSource={academyPurchaseSource}
         academyPurchaseProduct={academyPurchaseProduct}
+        firstTimeProductUser={firstTimeProductUser}
       />
     </>
   )

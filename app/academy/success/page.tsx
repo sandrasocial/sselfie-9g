@@ -110,7 +110,11 @@ export default async function AcademySuccessPage({ searchParams }: SuccessPagePr
               {NEXT_STEP_BY_PRODUCT[product.id].subText}
             </p>
             <Link
-              href={`/studio?tab=${encodeURIComponent(NEXT_STEP_BY_PRODUCT[product.id].studioTab)}&source=academy_purchase&product=${encodeURIComponent(product.id)}`}
+              href={`/studio?tab=${encodeURIComponent(
+                NEXT_STEP_BY_PRODUCT[product.id].studioTab,
+              )}&source=academy_purchase&product=${encodeURIComponent(
+                product.id,
+              )}&first_time_product_user=true`}
               className={`${inter.className} mt-6 inline-flex rounded-[20px] border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.08)] px-6 py-3 text-[11px] uppercase tracking-[0.2em] text-[#ffffff] hover:bg-[rgba(255,255,255,0.14)]`}
               style={{ fontWeight: 500 }}
             >

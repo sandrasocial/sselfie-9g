@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
       // ignore auth errors (tracking still works anonymously)
     }
 
-    await logAnalyticsEvent({
+    const analyticsResult = await logAnalyticsEvent({
       eventName,
       userId: neonUserId,
       anonId,
@@ -76,7 +76,18 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    const res = NextResponse.json({ ok: true })
+    if (!analyticsResult.ok) {
+      console.warn("[analytics] event rejected:", {
+        eventName,
+        reason: analyticsResult.error,
+      })
+    }
+
+    const res = NextResponse.json(
+      analyticsResult.ok
+        ? { ok: true, accepted: true }
+        : { ok: true, accepted: false, reason: analyticsResult.error },
+    )
     if (!anonCookie) {
       res.cookies.set("sselfie_anon_id", anonId, {
         httpOnly: true,

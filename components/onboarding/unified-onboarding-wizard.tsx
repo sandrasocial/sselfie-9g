@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Progress } from "@/components/ui/progress"
 import { motion, AnimatePresence } from "framer-motion"
 import { X } from "lucide-react"
-import { DesignClasses, ComponentClasses } from "@/lib/design-tokens"
+import { DesignClasses } from "@/lib/design-tokens"
 import { BlueprintSelfieUpload } from "@/components/blueprint/blueprint-selfie-upload"
 import useSWR from "swr"
 import { Loader2, ArrowRight } from "lucide-react"
@@ -412,7 +412,7 @@ export default function UnifiedOnboardingWizard({
     const stepIndex = currentStep + 1 // 1-based
     if (currentStep < totalSteps - 1) {
       trackAnalyticsEvent({
-        event: `wizard_step_${stepIndex}_complete`,
+        event: "onboarding_step_complete",
         properties: { step: stepIndex, total_steps: totalSteps },
       }).catch(() => {})
       setCurrentStep(currentStep + 1)
@@ -424,7 +424,7 @@ export default function UnifiedOnboardingWizard({
   const handleDismissWithAnalytics = () => {
     const stepIndex = currentStep + 1
     trackAnalyticsEvent({
-      event: `wizard_abandoned_at_step_${stepIndex}`,
+      event: "onboarding_abandoned",
       properties: { step: stepIndex, total_steps: totalSteps },
     }).catch(() => {})
     onDismiss?.()
@@ -432,8 +432,8 @@ export default function UnifiedOnboardingWizard({
 
   const handleComplete = async () => {
     trackAnalyticsEvent({
-      event: "wizard_step_3_complete",
-      properties: { step: 3, total_steps: totalSteps },
+      event: "onboarding_complete",
+      properties: { step: totalSteps, total_steps: totalSteps },
     }).catch(() => {})
 
     // Verify selfies are uploaded before proceeding
@@ -510,7 +510,7 @@ export default function UnifiedOnboardingWizard({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-stone-950/60 backdrop-blur-sm z-100"
+            className="fixed inset-0 z-100 bg-black/70 backdrop-blur-md"
             onClick={handleDismissWithAnalytics}
           />
 
@@ -524,13 +524,13 @@ export default function UnifiedOnboardingWizard({
             style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 6rem)" }}
           >
             <div
-              className={`w-full max-w-3xl max-h-[90vh] overflow-y-auto ${ComponentClasses.card} ${DesignClasses.spacing.padding.lg} relative rounded-2xl shadow-2xl bg-white`}
+              className={`relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl border border-white/20 bg-[rgba(13,15,19,0.94)] ${DesignClasses.spacing.padding.lg} text-white shadow-2xl backdrop-blur-2xl`}
             >
               {/* Close Button */}
               {onDismiss && (
                 <button
                   onClick={handleDismissWithAnalytics}
-                  className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg transition-colors z-10 hover:bg-stone-100 text-stone-600 hover:text-stone-950"
+                  className="absolute top-4 right-4 z-10 flex h-8 w-8 items-center justify-center rounded-lg text-white/65 transition-colors hover:bg-white/10 hover:text-white"
                   aria-label="Close"
                 >
                   <X size={18} />
@@ -546,18 +546,18 @@ export default function UnifiedOnboardingWizard({
                 {/* Progress Bar + Step indicator */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-light tracking-[0.2em] uppercase text-stone-700">
+                    <span className="text-xs font-light tracking-[0.2em] uppercase text-white/70">
                       {currentStep + 1} of 3
                     </span>
-                    <span className="text-xs font-light text-stone-700">{Math.round(progress)}%</span>
+                    <span className="text-xs font-light text-white/70">{Math.round(progress)}%</span>
                   </div>
-                  <Progress value={progress} className="h-1 bg-stone-200" />
+                  <Progress value={progress} className="h-1 bg-white/20" />
                 </div>
 
                 {/* Title */}
                 <h2
-                  style={{ fontFamily: "'Times New Roman', serif" }}
-                  className="text-2xl sm:text-3xl md:text-4xl font-light tracking-[0.15em] uppercase text-stone-950"
+                  style={{ fontFamily: "'Cormorant Garamond', serif" }}
+                  className="text-2xl sm:text-3xl md:text-4xl font-light tracking-[0.15em] uppercase text-white"
                 >
                   {step.title}
                 </h2>
@@ -565,11 +565,11 @@ export default function UnifiedOnboardingWizard({
                 {/* Step 1: Goal */}
                 {currentStep === 0 && (
                   <div className="space-y-6">
-                    <p className="text-base sm:text-lg font-light leading-relaxed text-stone-700">
-                      Hi {userName && !userName.includes('@') ? userName : "there"}! 👋 Tell us a bit about what you do and who you&apos;re here for.
+                    <p className="text-base sm:text-lg font-light leading-relaxed text-white/80">
+                      Hi {userName && !userName.includes('@') ? userName : "there"}! Tell us a bit about what you do and who you&apos;re here for.
                     </p>
                     <div>
-                      <label className="block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-stone-700 mb-2 sm:mb-3">
+                      <label className="mb-2 block text-[10px] sm:mb-3 sm:text-xs font-medium tracking-wider uppercase text-white/70">
                         What do you do?
                       </label>
                       <Input
@@ -577,29 +577,29 @@ export default function UnifiedOnboardingWizard({
                         value={formData.businessType || ""}
                         onChange={(e) => setFormData({ ...formData, businessType: e.target.value })}
                         placeholder="e.g., Life Coach, Designer, Consultant..."
-                        className="w-full border-b border-stone-300 py-3 sm:py-4 focus:outline-none focus:border-stone-950 transition-colors font-light bg-transparent border-t-0 border-l-0 border-r-0 rounded-none text-stone-950"
+                        className="w-full rounded-xl border border-white/20 bg-white/8 px-4 py-3 sm:py-4 font-light text-white placeholder:text-white/45 transition-colors focus:outline-none focus:border-white/50"
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-stone-700 mb-2 sm:mb-3">
+                      <label className="mb-2 block text-[10px] sm:mb-3 sm:text-xs font-medium tracking-wider uppercase text-white/70">
                         Who is your ideal audience?
                       </label>
                       <Textarea
                         value={formData.idealAudience}
                         onChange={(e) => setFormData({ ...formData, idealAudience: e.target.value })}
                         placeholder="e.g., Women entrepreneurs building their brand, new moms balancing work and family..."
-                        className="w-full border-b border-stone-300 py-3 sm:py-4 focus:outline-none focus:border-stone-950 transition-colors font-light bg-transparent border-t-0 border-l-0 border-r-0 rounded-none text-stone-950 min-h-[80px] resize-none"
+                        className="min-h-[80px] w-full resize-none rounded-xl border border-white/20 bg-white/8 px-4 py-3 sm:py-4 font-light text-white placeholder:text-white/45 transition-colors focus:outline-none focus:border-white/50"
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-stone-700 mb-2 sm:mb-3">
+                      <label className="mb-2 block text-[10px] sm:mb-3 sm:text-xs font-medium tracking-wider uppercase text-white/70">
                         What&apos;s your story? (optional)
                       </label>
                       <Textarea
                         value={formData.transformationStory}
                         onChange={(e) => setFormData({ ...formData, transformationStory: e.target.value })}
                         placeholder="Share your journey or what drives you..."
-                        className="w-full border-b border-stone-300 py-3 sm:py-4 focus:outline-none focus:border-stone-950 transition-colors font-light bg-transparent border-t-0 border-l-0 border-r-0 rounded-none text-stone-950 min-h-[80px] resize-none"
+                        className="min-h-[80px] w-full resize-none rounded-xl border border-white/20 bg-white/8 px-4 py-3 sm:py-4 font-light text-white placeholder:text-white/45 transition-colors focus:outline-none focus:border-white/50"
                       />
                     </div>
                   </div>
@@ -608,12 +608,12 @@ export default function UnifiedOnboardingWizard({
                 {/* Step 2: Style */}
                 {currentStep === 1 && (
                   <div className="space-y-6">
-                    <p className="text-sm font-light text-stone-600">
+                    <p className="text-sm font-light text-white/65">
                       Pick a vibe that feels like you. Then add 1–3 selfies so we can match your look.
                     </p>
 
                     <div>
-                      <label className="block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-stone-700 mb-4">
+                      <label className="mb-4 block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-white/70">
                         Feed Style
                       </label>
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
@@ -625,13 +625,13 @@ export default function UnifiedOnboardingWizard({
                               formData.feedStyle === key ? "scale-105" : "hover:scale-102"
                             }`}
                           >
-                            <div className="border-2 border-stone-200 p-4 bg-white">
+                            <div className="border border-white/20 bg-white/[0.04] p-4 rounded-2xl backdrop-blur-xl">
                               <div className="grid grid-cols-3 gap-2 mb-4">
                                 {style.grid.map((type, idx) => (
                                   <div
                                     key={idx}
                                     className={`aspect-square rounded ${
-                                      key === "minimal" ? "border border-stone-300" : ""
+                                      key === "minimal" ? "border border-white/35" : ""
                                     }`}
                                     style={{
                                       backgroundColor: type === "selfie" ? style.colors[0] : style.colors[1],
@@ -639,7 +639,7 @@ export default function UnifiedOnboardingWizard({
                                   />
                                 ))}
                               </div>
-                              <h3 className="text-sm font-medium tracking-wider uppercase text-stone-950 mb-2">
+                              <h3 className="mb-2 text-sm font-medium tracking-wider uppercase text-white">
                                 {style.name}
                               </h3>
                               <div className="flex gap-2">
@@ -647,7 +647,7 @@ export default function UnifiedOnboardingWizard({
                                   <div
                                     key={idx}
                                     className={`w-6 h-6 rounded-full ${
-                                      key === "minimal" ? "border border-stone-300" : "border border-stone-200"
+                                      key === "minimal" ? "border border-white/35" : "border border-white/15"
                                     }`}
                                     style={{ backgroundColor: color }}
                                   />
@@ -656,8 +656,8 @@ export default function UnifiedOnboardingWizard({
                               <button
                                 className={`w-full py-3 mt-4 text-xs tracking-[0.2em] sm:tracking-[0.3em] uppercase border transition-all duration-200 ${
                                   formData.feedStyle === key
-                                    ? "border-stone-950 bg-stone-950 text-stone-50"
-                                    : "border-stone-300 text-stone-700 hover:border-stone-950"
+                                    ? "border-white/40 bg-white/20 text-white"
+                                    : "border-white/25 text-white/70 hover:border-white/45"
                                 }`}
                               >
                                 {formData.feedStyle === key ? "SELECTED" : "SELECT"}
@@ -670,7 +670,7 @@ export default function UnifiedOnboardingWizard({
 
                     {formData.feedStyle && (
                       <div>
-                        <label className="block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-stone-700 mb-4">
+                        <label className="mb-4 block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-white/70">
                           Choose Variation
                         </label>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -685,13 +685,13 @@ export default function UnifiedOnboardingWizard({
                                 }}
                                 className={`w-full text-left p-4 border transition-all duration-200 ${
                                   isSelected
-                                    ? "border-stone-950 bg-stone-950 text-stone-50"
-                                    : "border-stone-300 text-stone-700 hover:border-stone-950 bg-white"
+                                    ? "border-white/40 bg-white/20 text-white"
+                                    : "border-white/25 bg-white/[0.04] text-white/70 hover:border-white/45"
                                 }`}
                               >
                                 <div className="text-xs tracking-wider uppercase font-medium">{variation.name}</div>
                                 {variation.description ? (
-                                  <p className={`text-xs mt-2 ${isSelected ? "text-stone-200" : "text-stone-500"}`}>
+                                  <p className={`text-xs mt-2 ${isSelected ? "text-white/70" : "text-white/50"}`}>
                                     {variation.description}
                                   </p>
                                 ) : null}
@@ -700,16 +700,16 @@ export default function UnifiedOnboardingWizard({
                           })}
                         </div>
                         {variationData?.variations?.length === 0 && (
-                          <p className="text-xs text-stone-500 mt-3">No variations available for this style.</p>
+                          <p className="mt-3 text-xs text-white/50">No variations available for this style.</p>
                         )}
                       </div>
                     )}
 
                     <div>
-                      <label className="block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-stone-700 mb-2">
+                      <label className="mb-2 block text-[10px] sm:text-xs font-medium tracking-wider uppercase text-white/70">
                         Upload 1–3 selfies
                       </label>
-                      <p className="text-xs font-light text-stone-500 mb-3">
+                      <p className="mb-3 text-xs font-light text-white/55">
                         These help AI generate images that match your look.
                       </p>
                       <BlueprintSelfieUpload
@@ -727,16 +727,16 @@ export default function UnifiedOnboardingWizard({
                 {/* Step 3: You're ready! — single CTA */}
                 {currentStep === 2 && (
                   <div className="space-y-6">
-                    <p className="text-base sm:text-lg font-light leading-relaxed text-stone-700">
+                    <p className="text-base sm:text-lg font-light leading-relaxed text-white/80">
                       Your feed is ready. One tap and we&apos;ll create your first 9-post grid.
                     </p>
-                    <p className="text-sm font-light text-stone-600">
+                    <p className="text-sm font-light text-white/65">
                       You can always come back to edit your goal or style from the Feed Planner header.
                     </p>
                     <Button
                       onClick={handleComplete}
                       disabled={isSaving}
-                      className="w-full py-6 text-base sm:text-lg font-medium uppercase tracking-wider bg-stone-950 hover:bg-stone-800 text-stone-50 flex items-center justify-center gap-2 shadow-lg"
+                      className="flex w-full items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 py-6 text-base sm:text-lg font-medium uppercase tracking-[0.2em] text-white shadow-lg transition-colors hover:bg-white/15"
                     >
                       {isSaving ? (
                         <>
@@ -760,7 +760,7 @@ export default function UnifiedOnboardingWizard({
                       <Button
                         variant="outline"
                         onClick={() => setCurrentStep(currentStep - 1)}
-                        className="w-full sm:flex-1 border-stone-300 text-stone-700 hover:bg-stone-50"
+                        className="w-full sm:flex-1 border-white/25 bg-white/[0.04] text-white/75 hover:bg-white/10 hover:text-white"
                       >
                         Back
                       </Button>
@@ -768,7 +768,7 @@ export default function UnifiedOnboardingWizard({
                     <Button
                       onClick={handleNext}
                       disabled={!canProceed() || isSaving}
-                      className="w-full sm:flex-1 bg-stone-950 text-stone-50 hover:bg-stone-800"
+                      className="w-full sm:flex-1 border border-white/25 bg-white/10 text-white hover:bg-white/15"
                     >
                       {currentStep === 0 ? "Continue →" : "Continue →"}
                     </Button>

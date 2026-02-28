@@ -13,6 +13,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from "react"
+import { trackAnalyticsEvent } from "@/lib/analytics/client"
 
 const STORAGE_KEY = "mayaProMode"
 
@@ -84,7 +85,7 @@ export function useMayaMode(forcedMode?: boolean): UseMayaModeReturn {
       console.log("[useMayaMode] Forced mode changed, updating:", forcedMode ? "Pro" : "Classic")
       setProModeState(forcedMode)
     }
-  }, [forcedMode])
+  }, [forcedMode, proMode])
 
   // Save mode to localStorage when it changes (but not on initial load)
   useEffect(() => {
@@ -109,8 +110,19 @@ export function useMayaMode(forcedMode?: boolean): UseMayaModeReturn {
       console.log("[useMayaMode] ⚠️ Mode change blocked - forced mode is active:", forcedMode ? "Pro" : "Classic")
       return
     }
+
+    if (mode === proMode) {
+      return
+    }
     
     console.log("[useMayaMode] ✅ Mode change allowed, setting to:", mode ? "Pro" : "Classic")
+    trackAnalyticsEvent({
+      event: "mode_selected",
+      properties: {
+        source: "maya_mode_toggle",
+        mode: mode ? "pro" : "classic",
+      },
+    }).catch(() => {})
     setProModeState(mode)
   }
 
@@ -135,4 +147,3 @@ export function useMayaMode(forcedMode?: boolean): UseMayaModeReturn {
     hasModeChanged,
   }
 }
-

@@ -2,8 +2,41 @@ import "server-only"
 import { Resend } from 'resend'
 import { getDb } from '@/lib/db'
 import { processEmailLinks, validateEmailLinks } from './link-library'
+import { getAudienceContacts } from "@/lib/resend/get-audience-contacts"
+import { computeBroadcastPreflight } from "@/lib/email/broadcast-preflight"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
+
+export interface BroadcastRecipientPreflight {
+  totalAudience: number
+  suppressedCount: number
+  sendableCount: number
+}
+
+export async function getBroadcastRecipientPreflight(audienceId: string): Promise<BroadcastRecipientPreflight> {
+  const sql = getDb()
+  const audienceContacts = await getAudienceContacts(audienceId)
+  const audienceEmails = audienceContacts.map((contact) => contact.email)
+
+  const suppressedRows = await sql`
+    SELECT DISTINCT LOWER(TRIM(user_email)) AS email
+    FROM email_logs
+    WHERE user_email IS NOT NULL
+      AND status IN ('bounced', 'hard_bounced', 'complained')
+  `
+
+  const suppressedEmails = (suppressedRows as Array<{ email?: string | null }>).map((row) => row.email ?? null)
+  const preflight = computeBroadcastPreflight({
+    audienceEmails,
+    suppressedEmails,
+  })
+
+  return {
+    totalAudience: preflight.totalAudience,
+    suppressedCount: preflight.suppressedCount,
+    sendableCount: preflight.sendableCount,
+  }
+}
 
 /**
  * Send approved newsletter campaign as Resend Broadcast
@@ -18,7 +51,10 @@ const resend = new Resend(process.env.RESEND_API_KEY)
  * @param campaignId - Database ID of the campaign to send
  * @returns Resend broadcast ID
  */
-export async function sendNewsletterBroadcast(campaignId: number): Promise<string> {
+export async function sendNewsletterBroadcast(
+  campaignId: number,
+  preflightInput?: BroadcastRecipientPreflight,
+): Promise<string> {
   const sql = getDb()
 
   console.log(`[Newsletter Broadcast] Starting send for campaign ${campaignId}`)
@@ -97,6 +133,25 @@ export async function sendNewsletterBroadcast(campaignId: number): Promise<strin
     segmentName,
     targetAudience
   })
+
+  const preflight = preflightInput ?? (await getBroadcastRecipientPreflight(audienceId))
+  if (preflight.sendableCount <= 0) {
+    throw new Error("Broadcast preflight failed: zero sendable recipients after suppression filtering.")
+  }
+
+  await sql`
+    UPDATE admin_email_campaigns
+    SET total_recipients = ${preflight.sendableCount},
+        metrics = COALESCE(metrics, '{}'::jsonb) || ${JSON.stringify({
+          recipient_preflight: {
+            total_audience: preflight.totalAudience,
+            suppressed_count: preflight.suppressedCount,
+            sendable_count: preflight.sendableCount,
+          },
+        })}::jsonb,
+        updated_at = NOW()
+    WHERE id = ${campaignId}
+  `
 
   // 5. Update status to 'sending'
   await sql`
@@ -202,7 +257,7 @@ export async function sendTestEmail(
   const campaign = campaigns[0]
 
   // Process links
-  let processedHTML = processEmailLinks(
+  const processedHTML = processEmailLinks(
     campaign.body_html,
     campaign.id.toString(),
     testEmail

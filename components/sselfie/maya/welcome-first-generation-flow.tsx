@@ -70,6 +70,16 @@ export default function WelcomeFirstGenerationFlow({
   }, [hasTrackedStart])
 
   useEffect(() => {
+    trackAnalyticsEvent({
+      event: "mode_selected",
+      properties: {
+        source: "maya_welcome_flow",
+        mode: selectedMode,
+      },
+    }).catch(() => {})
+  }, [selectedMode])
+
+  useEffect(() => {
     fetch("/api/prompt-guides/items")
       .then((res) => {
         if (!res.ok) throw new Error("Failed to load top prompts")
@@ -107,7 +117,9 @@ export default function WelcomeFirstGenerationFlow({
     return uploadData.url as string
   }
 
-  const generateFirstImage = async (imageUrl: string): Promise<string> => {
+  const generateFirstImage = async (
+    imageUrl: string,
+  ): Promise<{ predictionId: string; creditsUsed: number }> => {
     setStatus("generating")
     const response = await fetch("/api/maya/generate-studio-pro", {
       method: "POST",
@@ -131,7 +143,10 @@ export default function WelcomeFirstGenerationFlow({
     }
     const data = await response.json()
     if (!data?.predictionId) throw new Error("Missing prediction ID.")
-    return data.predictionId as string
+    return {
+      predictionId: data.predictionId as string,
+      creditsUsed: Number(data?.creditsDeducted ?? 0),
+    }
   }
 
   const pollStudioProPrediction = async (predictionId: string): Promise<string> => {
@@ -152,10 +167,12 @@ export default function WelcomeFirstGenerationFlow({
     if (selectedMode === "pro" && !selfieFile) return
     setErrorMessage(null)
     try {
+      let creditsUsed = 0
       if (selectedMode === "pro") {
         const uploadedUrl = await uploadSelfie()
-        const predictionId = await generateFirstImage(uploadedUrl)
-        const imageUrl = await pollStudioProPrediction(predictionId)
+        const studioProGeneration = await generateFirstImage(uploadedUrl)
+        creditsUsed = studioProGeneration.creditsUsed
+        const imageUrl = await pollStudioProPrediction(studioProGeneration.predictionId)
         setGeneratedImageUrl(imageUrl)
       } else {
         setStatus("generating")
@@ -176,6 +193,7 @@ export default function WelcomeFirstGenerationFlow({
         })
         const data = await response.json()
         if (!response.ok) throw new Error(data?.error || data?.details || "Failed to generate image.")
+        creditsUsed = Number(data?.creditsDeducted ?? 0)
         if (data?.predictionId) {
           const checkUrl = `/api/maya/check-generation?predictionId=${data.predictionId}&generationId=${data.generationId ?? ""}`
           for (let i = 0; i < 40; i++) {
@@ -194,6 +212,25 @@ export default function WelcomeFirstGenerationFlow({
       setStatus("done")
       trackEvent("first_generation_guided_complete", { source: "maya_welcome_flow", mode: selectedMode })
       trackAnalyticsEvent({ event: "first_generation_guided_complete", properties: { source: "maya_welcome_flow", mode: selectedMode } })
+      trackAnalyticsEvent({
+        event: "first_image_generated",
+        properties: {
+          source: "maya_welcome_flow",
+          mode: selectedMode,
+          credits_used: creditsUsed,
+        },
+      })
+      if (creditsUsed > 0) {
+        trackAnalyticsEvent({
+          event: "credits_used",
+          properties: {
+            source: "maya_welcome_flow",
+            mode: selectedMode,
+            amount: creditsUsed,
+            action: "first_generation",
+          },
+        })
+      }
       if (onGenerated) onGenerated()
     } catch (error) {
       setStatus("error")
