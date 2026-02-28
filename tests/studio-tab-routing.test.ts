@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest"
 
 import {
   resolveStudioTab,
+  resolvePostAuthRedirect,
+  DEFAULT_STUDIO_AUTH_REDIRECT,
   readStudioTabFromSearchParams,
   readStudioTabFromHash,
   type StudioTab,
@@ -63,5 +65,18 @@ describe("studio tab routing", () => {
   it("ignores invalid hash values", () => {
     expect(readStudioTabFromHash("#maya/prompts")).toBeNull()
     expect(readStudioTabFromHash("#unknown") as StudioTab | null).toBeNull()
+  })
+
+  it("defaults post-auth redirect to Maya tab", () => {
+    expect(resolvePostAuthRedirect(null)).toBe(DEFAULT_STUDIO_AUTH_REDIRECT)
+    expect(resolvePostAuthRedirect("")).toBe(DEFAULT_STUDIO_AUTH_REDIRECT)
+  })
+
+  it("keeps valid relative post-auth redirects", () => {
+    expect(resolvePostAuthRedirect("/studio?tab=academy")).toBe("/studio?tab=academy")
+  })
+
+  it("rejects non-relative post-auth redirects", () => {
+    expect(resolvePostAuthRedirect("https://evil.example")).toBe(DEFAULT_STUDIO_AUTH_REDIRECT)
   })
 })

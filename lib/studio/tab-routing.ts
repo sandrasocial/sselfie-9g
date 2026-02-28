@@ -1,4 +1,5 @@
 export const STUDIO_TABS = ["maya", "gallery", "feed-planner", "academy", "account"] as const
+export const DEFAULT_STUDIO_AUTH_REDIRECT = "/studio?tab=maya"
 
 export type StudioTab = (typeof STUDIO_TABS)[number]
 
@@ -43,4 +44,10 @@ export function resolveStudioTab(input: {
   if (fromHash && isStudioTab(fromHash)) return fromHash
 
   return input.isMembership ? "maya" : "maya"
+}
+
+export function resolvePostAuthRedirect(nextParam: string | null | undefined): string {
+  const candidate = normalizeTab(nextParam)
+  if (!candidate) return DEFAULT_STUDIO_AUTH_REDIRECT
+  return candidate.startsWith("/") ? candidate : DEFAULT_STUDIO_AUTH_REDIRECT
 }
