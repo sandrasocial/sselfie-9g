@@ -12,7 +12,6 @@ import MiniProductCard from "./mini-product-card"
 import UnifiedLoading from "./unified-loading"
 import { X, Home, Aperture, MessageCircle, ImageIcon, Grid, User, SettingsIcon, LogOut, Film } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { DesignClasses } from "@/lib/design-tokens"
 
 const fetcher = async (url: string) => {
   console.log("[v0] Fetching Academy data from:", url)
@@ -355,17 +354,17 @@ export default function AcademyScreen() {
     if (templatesError || !hasAccess) {
       return (
         <div className="flex items-center justify-center min-h-[400px] px-4">
-          <div className="text-center space-y-6 max-w-md">
+          <div className="text-center space-y-6 max-w-md bg-[rgba(255,255,255,0.07)] border border-white/15 rounded-2xl p-8 backdrop-blur-xl">
             <div className="space-y-3">
-              <h3 className="font-serif text-2xl tracking-wider text-stone-950">Studio Membership Required</h3>
-              <p className="text-sm text-stone-600 leading-relaxed">
+              <h3 className="font-serif text-2xl tracking-wider text-white">Studio Membership Required</h3>
+              <p className="text-sm text-white/70 leading-relaxed">
                 Access exclusive templates, monthly drops, and flatlay images with a Studio Membership
               </p>
             </div>
             <button
               onClick={handleUpgrade}
               disabled={isUpgrading}
-              className="px-8 py-4 text-sm tracking-wider uppercase bg-stone-950 text-stone-50 rounded-xl hover:bg-stone-800 transition-all disabled:opacity-50"
+              className="px-8 py-4 text-sm tracking-wider uppercase bg-white/90 text-[#0b0d10] rounded-xl hover:bg-white transition-all disabled:opacity-50"
             >
               {isUpgrading ? "Processing..." : "Upgrade to Studio"}
             </button>
@@ -376,19 +375,19 @@ export default function AcademyScreen() {
 
     if (showCategoryGrid && selectedTemplateCategory === "all") {
       return (
-        <div className="space-y-10 pb-32 px-4 sm:px-6">
+        <div className="space-y-10 pb-32 px-4 sm:px-6 text-white">
           <div className="pt-8">
             <button
               onClick={() => setSelectedView("overview")}
-              className="text-sm tracking-wider uppercase text-stone-600 hover:text-stone-950 transition-colors"
+              className="text-sm tracking-wider uppercase text-white/70 hover:text-white transition-colors"
             >
               ← Back
             </button>
           </div>
 
           <div className="space-y-3">
-            <h1 className="font-serif text-4xl sm:text-5xl tracking-wider text-stone-950">Templates</h1>
-            <p className="text-stone-600 text-base font-light leading-relaxed">
+            <h1 className="font-serif text-4xl sm:text-5xl tracking-wider text-white">Templates</h1>
+            <p className="text-white/70 text-base font-light leading-relaxed">
               Select a category to explore professional templates
             </p>
           </div>
@@ -424,41 +423,41 @@ export default function AcademyScreen() {
     }
 
     return (
-      <div className="space-y-10 pb-32 px-4 sm:px-6">
+      <div className="space-y-10 pb-32 px-4 sm:px-6 text-white">
         <div className="pt-8">
           <button
             onClick={() => {
               setShowCategoryGrid(true)
               setSelectedTemplateCategory("all")
             }}
-            className="text-sm tracking-wider uppercase text-stone-600 hover:text-stone-950 transition-colors"
+            className="text-sm tracking-wider uppercase text-white/70 hover:text-white transition-colors"
           >
             ← Back to Categories
           </button>
         </div>
 
         <div className="space-y-3">
-          <h1 className="font-serif text-4xl sm:text-5xl tracking-wider text-stone-950">
+          <h1 className="font-serif text-4xl sm:text-5xl tracking-wider text-white">
             {templateCategories.find((cat) => cat.value === selectedTemplateCategory)?.label || "Templates"}
           </h1>
-          <p className="text-stone-600 text-base font-light leading-relaxed">
+          <p className="text-white/70 text-base font-light leading-relaxed">
             Download professional templates for your brand
           </p>
         </div>
 
-        <div className="border border-stone-200 rounded-xl p-4">
+        <div className="bg-[rgba(255,255,255,0.04)] border border-white/10 rounded-xl p-4 backdrop-blur-xl">
           <input
             type="text"
             placeholder="Search templates..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-transparent text-sm text-stone-950 placeholder:text-stone-400 focus:outline-none"
+            className="w-full bg-transparent text-sm text-white placeholder:text-white/30 focus:outline-none"
           />
         </div>
 
         {filteredTemplates.length === 0 ? (
-          <div className="border border-stone-200 rounded-2xl p-16 text-center">
-            <p className="text-stone-600 text-sm">No templates found in this category. Try adjusting your search.</p>
+          <div className="bg-[rgba(255,255,255,0.04)] border border-white/10 rounded-2xl p-16 text-center">
+            <p className="text-white/70 text-sm">No templates found in this category. Try adjusting your search.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -486,17 +485,17 @@ export default function AcademyScreen() {
     if (monthlyDropsError || !hasAccess) {
       return (
         <div className="flex items-center justify-center min-h-[400px] px-4">
-          <div className="text-center space-y-6 max-w-md">
+          <div className="text-center space-y-6 max-w-md bg-[rgba(255,255,255,0.07)] border border-white/15 rounded-2xl p-8 backdrop-blur-xl">
             <div className="space-y-3">
-              <h3 className="font-serif text-2xl tracking-wider text-stone-950">Studio Membership Required</h3>
-              <p className="text-sm text-stone-600 leading-relaxed">
+              <h3 className="font-serif text-2xl tracking-wider text-white">Studio Membership Required</h3>
+              <p className="text-sm text-white/70 leading-relaxed">
                 Get exclusive monthly content drops with a Studio Membership
               </p>
             </div>
             <button
               onClick={handleUpgrade}
               disabled={isUpgrading}
-              className="px-8 py-4 text-sm tracking-wider uppercase bg-stone-950 text-stone-50 rounded-xl hover:bg-stone-800 transition-all disabled:opacity-50"
+              className="px-8 py-4 text-sm tracking-wider uppercase bg-white/90 text-[#0b0d10] rounded-xl hover:bg-white transition-all disabled:opacity-50"
             >
               {isUpgrading ? "Processing..." : "Upgrade to Studio"}
             </button>
@@ -506,36 +505,36 @@ export default function AcademyScreen() {
     }
 
     return (
-      <div className="space-y-10 pb-32 px-4 sm:px-6">
+      <div className="space-y-10 pb-32 px-4 sm:px-6 text-white">
         <div className="pt-8">
           <button
             onClick={() => setSelectedView("overview")}
-            className="text-sm tracking-wider uppercase text-stone-600 hover:text-stone-950 transition-colors"
+            className="text-sm tracking-wider uppercase text-white/70 hover:text-white transition-colors"
           >
             ← Back
           </button>
         </div>
 
         <div className="space-y-3">
-          <h1 className="font-serif text-4xl sm:text-5xl tracking-wider text-stone-950">Monthly Drops</h1>
-          <p className="text-stone-600 text-base font-light leading-relaxed">
+          <h1 className="font-serif text-4xl sm:text-5xl tracking-wider text-white">Monthly Drops</h1>
+          <p className="text-white/70 text-base font-light leading-relaxed">
             Exclusive monthly resources and content drops for Studio Members
           </p>
         </div>
 
-        <div className="border border-stone-200 rounded-xl p-4">
+        <div className="bg-[rgba(255,255,255,0.04)] border border-white/10 rounded-xl p-4 backdrop-blur-xl">
           <input
             type="text"
             placeholder="Search monthly drops..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-transparent text-sm text-stone-950 placeholder:text-stone-400 focus:outline-none"
+            className="w-full bg-transparent text-sm text-white placeholder:text-white/30 focus:outline-none"
           />
         </div>
 
         {filteredMonthlyDrops.length === 0 ? (
-          <div className="border border-stone-200 rounded-2xl p-16 text-center">
-            <p className="text-stone-600 text-sm">No monthly drops found. Try adjusting your search.</p>
+          <div className="bg-[rgba(255,255,255,0.04)] border border-white/10 rounded-2xl p-16 text-center">
+            <p className="text-white/70 text-sm">No monthly drops found. Try adjusting your search.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -563,17 +562,17 @@ export default function AcademyScreen() {
     if (flatlayImagesError || !hasAccess) {
       return (
         <div className="flex items-center justify-center min-h-[400px] px-4">
-          <div className="text-center space-y-6 max-w-md">
+          <div className="text-center space-y-6 max-w-md bg-[rgba(255,255,255,0.07)] border border-white/15 rounded-2xl p-8 backdrop-blur-xl">
             <div className="space-y-3">
-              <h3 className="font-serif text-2xl tracking-wider text-stone-950">Studio Membership Required</h3>
-              <p className="text-sm text-stone-600 leading-relaxed">
+              <h3 className="font-serif text-2xl tracking-wider text-white">Studio Membership Required</h3>
+              <p className="text-sm text-white/70 leading-relaxed">
                 Access professional flatlay images with a Studio Membership
               </p>
             </div>
             <button
               onClick={handleUpgrade}
               disabled={isUpgrading}
-              className="px-8 py-4 text-sm tracking-wider uppercase bg-stone-950 text-stone-50 rounded-xl hover:bg-stone-800 transition-all disabled:opacity-50"
+              className="px-8 py-4 text-sm tracking-wider uppercase bg-white/90 text-[#0b0d10] rounded-xl hover:bg-white transition-all disabled:opacity-50"
             >
               {isUpgrading ? "Processing..." : "Upgrade to Studio"}
             </button>
@@ -583,36 +582,36 @@ export default function AcademyScreen() {
     }
 
     return (
-      <div className="space-y-10 pb-32 px-4 sm:px-6">
+      <div className="space-y-10 pb-32 px-4 sm:px-6 text-white">
         <div className="pt-8">
           <button
             onClick={() => setSelectedView("overview")}
-            className="text-sm tracking-wider uppercase text-stone-600 hover:text-stone-950 transition-colors"
+            className="text-sm tracking-wider uppercase text-white/70 hover:text-white transition-colors"
           >
             ← Back
           </button>
         </div>
 
         <div className="space-y-3">
-          <h1 className="font-serif text-4xl sm:text-5xl tracking-wider text-stone-950">Flatlay Images</h1>
-          <p className="text-stone-600 text-base font-light leading-relaxed">
+          <h1 className="font-serif text-4xl sm:text-5xl tracking-wider text-white">Flatlay Images</h1>
+          <p className="text-white/70 text-base font-light leading-relaxed">
             Professional flatlay images for your content and brand aesthetic
           </p>
         </div>
 
-        <div className="border border-stone-200 rounded-xl p-4">
+        <div className="bg-[rgba(255,255,255,0.04)] border border-white/10 rounded-xl p-4 backdrop-blur-xl">
           <input
             type="text"
             placeholder="Search flatlay images..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-transparent text-sm text-stone-950 placeholder:text-stone-400 focus:outline-none"
+            className="w-full bg-transparent text-sm text-white placeholder:text-white/30 focus:outline-none"
           />
         </div>
 
         {filteredFlatlayImages.length === 0 ? (
-          <div className="border border-stone-200 rounded-2xl p-16 text-center">
-            <p className="text-stone-600 text-sm">No flatlay images found. Try adjusting your search.</p>
+          <div className="bg-[rgba(255,255,255,0.04)] border border-white/10 rounded-2xl p-16 text-center">
+            <p className="text-white/70 text-sm">No flatlay images found. Try adjusting your search.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -644,11 +643,11 @@ export default function AcademyScreen() {
     if (coursesError) {
       return (
         <div className="flex items-center justify-center min-h-[400px] px-4">
-          <div className="text-center space-y-4">
-            <p className="text-sm text-stone-600">We couldn&apos;t load the courses right now</p>
+          <div className="text-center space-y-4 bg-[rgba(255,255,255,0.07)] border border-white/15 rounded-2xl p-8 backdrop-blur-xl">
+            <p className="text-sm text-white/70">We couldn&apos;t load the courses right now</p>
             <button
               onClick={() => window.location.reload()}
-              className="px-6 py-3 text-sm tracking-wider uppercase bg-stone-950 text-stone-50 rounded-xl hover:bg-stone-800 transition-all"
+              className="px-6 py-3 text-sm tracking-wider uppercase bg-white/90 text-[#0b0d10] rounded-xl hover:bg-white transition-all"
             >
               Try Again
             </button>
@@ -658,36 +657,36 @@ export default function AcademyScreen() {
     }
 
     return (
-      <div className="space-y-10 pb-32 px-4 sm:px-6">
+      <div className="space-y-10 pb-32 px-4 sm:px-6 text-white">
         <div className="pt-8">
           <button
             onClick={() => setSelectedView("overview")}
-            className="text-sm tracking-wider uppercase text-stone-600 hover:text-stone-950 transition-colors"
+            className="text-sm tracking-wider uppercase text-white/70 hover:text-white transition-colors"
           >
             ← Back
           </button>
         </div>
 
         <div className="space-y-3">
-          <h1 className="font-serif text-4xl sm:text-5xl tracking-wider text-stone-950">Courses</h1>
-          <p className="text-stone-600 text-base font-light leading-relaxed">
+          <h1 className="font-serif text-4xl sm:text-5xl tracking-wider text-white">Courses</h1>
+          <p className="text-white/70 text-base font-light leading-relaxed">
             Learn at your own pace with our curated collection
           </p>
         </div>
 
-        <div className="border border-stone-200 rounded-xl p-4">
+        <div className="bg-[rgba(255,255,255,0.04)] border border-white/10 rounded-xl p-4 backdrop-blur-xl">
           <input
             type="text"
             placeholder="Search courses..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-transparent text-sm text-stone-950 placeholder:text-stone-400 focus:outline-none"
+            className="w-full bg-transparent text-sm text-white placeholder:text-white/30 focus:outline-none"
           />
         </div>
 
         {inProgressCourses.length > 0 && (
           <div className="space-y-6">
-            <h2 className="font-serif text-2xl tracking-wider text-stone-950">Continue Learning</h2>
+            <h2 className="font-serif text-2xl tracking-wider text-white">Continue Learning</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {inProgressCourses.map((course: any) => (
                 <CourseCard
@@ -707,10 +706,10 @@ export default function AcademyScreen() {
         )}
 
         <div className="space-y-6">
-          <h2 className="font-serif text-2xl tracking-wider text-stone-950">All Courses</h2>
+          <h2 className="font-serif text-2xl tracking-wider text-white">All Courses</h2>
           {filteredCourses.length === 0 ? (
-            <div className="border border-stone-200 rounded-2xl p-16 text-center">
-              <p className="text-stone-600 text-sm">No courses found. Try adjusting your search.</p>
+            <div className="bg-[rgba(255,255,255,0.04)] border border-white/10 rounded-2xl p-16 text-center">
+              <p className="text-white/70 text-sm">No courses found. Try adjusting your search.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -771,29 +770,29 @@ export default function AcademyScreen() {
   const totalEnrolledCourses = myCourses.length
 
   return (
-    <div className="pb-32">
+    <div className="pb-32 bg-[#0b0d10] text-white">
       {showNavMenu && (
         <>
           <div
-            className="fixed inset-0 bg-stone-950/20 backdrop-blur-sm z-40 animate-in fade-in duration-200"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 animate-in fade-in duration-200"
             onClick={() => setShowNavMenu(false)}
           />
 
-          <div className={`fixed top-0 right-0 bottom-0 w-80 ${DesignClasses.background.overlay} ${DesignClasses.blur.lg} border-l ${DesignClasses.border.stone} ${DesignClasses.shadows.container} z-50 animate-in slide-in-from-right duration-300 flex flex-col`}>
-            <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-stone-200/50">
-              <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-950">Menu</h3>
+          <div className="fixed top-0 right-0 bottom-0 w-80 bg-[rgba(11,13,16,0.95)] backdrop-blur-3xl border-l border-white/10 shadow-2xl shadow-black/40 z-50 animate-in slide-in-from-right duration-300 flex flex-col">
+            <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-white/10">
+              <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-white">Menu</h3>
               <button
                 onClick={() => setShowNavMenu(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 transition-colors"
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors"
                 aria-label="Close menu"
               >
-                <X size={18} className="text-stone-600" strokeWidth={2} />
+                <X size={18} className="text-white/70" strokeWidth={2} />
               </button>
             </div>
 
-            <div className="flex-shrink-0 px-6 py-6 border-b border-stone-200/50">
-              <div className="text-[10px] tracking-[0.15em] uppercase font-light text-stone-500 mb-2">Your Credits</div>
-              <div className="text-3xl font-serif font-extralight text-stone-950 tabular-nums">
+            <div className="flex-shrink-0 px-6 py-6 border-b border-white/10">
+              <div className="text-[10px] tracking-[0.15em] uppercase font-light text-white/50 mb-2">Your Credits</div>
+              <div className="text-3xl font-serif font-extralight text-white tabular-nums">
                 {creditBalance.toFixed(1)}
               </div>
             </div>
@@ -801,31 +800,31 @@ export default function AcademyScreen() {
             <div className="flex-1 overflow-y-auto min-h-0 py-2">
               <button
                 onClick={() => handleNavigation("studio")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/5 transition-colors touch-manipulation"
               >
-                <Home size={18} className="text-stone-600" strokeWidth={2} />
-                <span className="text-sm font-medium text-stone-700">Studio</span>
+                <Home size={18} className="text-white/70" strokeWidth={2} />
+                <span className="text-sm font-medium text-white/70">Studio</span>
               </button>
               <button
                 onClick={() => handleNavigation("training")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/5 transition-colors touch-manipulation"
               >
-                <Aperture size={18} className="text-stone-600" strokeWidth={2} />
-                <span className="text-sm font-medium text-stone-700">Training</span>
+                <Aperture size={18} className="text-white/70" strokeWidth={2} />
+                <span className="text-sm font-medium text-white/70">Training</span>
               </button>
               <button
                 onClick={() => handleNavigation("maya")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/5 transition-colors touch-manipulation"
               >
-                <MessageCircle size={18} className="text-stone-600" strokeWidth={2} />
-                <span className="text-sm font-medium text-stone-700">Maya</span>
+                <MessageCircle size={18} className="text-white/70" strokeWidth={2} />
+                <span className="text-sm font-medium text-white/70">Maya</span>
               </button>
               <button
                 onClick={() => handleNavigation("gallery")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/5 transition-colors touch-manipulation"
               >
-                <ImageIcon size={18} className="text-stone-600" strokeWidth={2} />
-                <span className="text-sm font-medium text-stone-700">Gallery</span>
+                <ImageIcon size={18} className="text-white/70" strokeWidth={2} />
+                <span className="text-sm font-medium text-white/70">Gallery</span>
               </button>
               {/* B-Roll moved to Maya Videos tab */}
               <button
@@ -835,39 +834,39 @@ export default function AcademyScreen() {
                     window.location.hash = "#maya/videos"
                   }, 100)
                 }}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/5 transition-colors touch-manipulation"
               >
-                <Film size={18} className="text-stone-600" strokeWidth={2} />
-                <span className="text-sm font-medium text-stone-700">Videos</span>
+                <Film size={18} className="text-white/70" strokeWidth={2} />
+                <span className="text-sm font-medium text-white/70">Videos</span>
               </button>
               <button
                 onClick={() => handleNavigation("academy")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left bg-stone-100/50 border-l-2 border-stone-950"
+                className="w-full flex items-center gap-3 px-6 py-4 text-left bg-white/10 border-l-2 border-white/40"
               >
-                <Grid size={18} className="text-stone-950" strokeWidth={2} />
-                <span className="text-sm font-medium text-stone-950">Academy</span>
+                <Grid size={18} className="text-white" strokeWidth={2} />
+                <span className="text-sm font-medium text-white">Academy</span>
               </button>
               <button
                 onClick={() => handleNavigation("profile")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/5 transition-colors touch-manipulation"
               >
-                <User size={18} className="text-stone-600" strokeWidth={2} />
-                <span className="text-sm font-medium text-stone-700">Profile</span>
+                <User size={18} className="text-white/70" strokeWidth={2} />
+                <span className="text-sm font-medium text-white/70">Profile</span>
               </button>
               <button
                 onClick={() => handleNavigation("settings")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/5 transition-colors touch-manipulation"
               >
-                <SettingsIcon size={18} className="text-stone-600" strokeWidth={2} />
-                <span className="text-sm font-medium text-stone-700">Settings</span>
+                <SettingsIcon size={18} className="text-white/70" strokeWidth={2} />
+                <span className="text-sm font-medium text-white/70">Settings</span>
               </button>
             </div>
 
-            <div className="flex-shrink-0 px-6 py-4 border-t border-stone-200/50 bg-white/95">
+            <div className="flex-shrink-0 px-6 py-4 border-t border-white/10 bg-[rgba(11,13,16,0.92)]">
               <button
                 onClick={handleLogout}
                 disabled={isLoggingOut}
-                className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+                className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-medium text-red-300 hover:bg-red-500/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
               >
                 <LogOut size={16} strokeWidth={2} />
                 <span>{isLoggingOut ? "Signing Out..." : "Sign Out"}</span>
@@ -893,19 +892,19 @@ export default function AcademyScreen() {
 
         <div className="px-4 sm:px-6 -mt-8 relative z-10">
           <div className="grid grid-cols-3 gap-2 sm:gap-3 max-w-2xl mx-auto">
-            <div className="bg-white border border-stone-200 rounded-lg p-3 sm:p-4 text-center">
-              <div className="text-[10px] sm:text-xs tracking-wider uppercase text-stone-500 mb-1">Your Plan</div>
-              <div className="font-serif text-base sm:text-lg text-stone-950">{getFriendlyTierName(userTier)}</div>
+            <div className="bg-[rgba(13,15,19,0.92)] backdrop-blur-xl border border-white/15 rounded-lg p-3 sm:p-4 text-center">
+              <div className="text-[10px] sm:text-xs tracking-wider uppercase text-white/50 mb-1">Your Plan</div>
+              <div className="font-serif text-base sm:text-lg text-white">{getFriendlyTierName(userTier)}</div>
             </div>
-            <div className="bg-white border border-stone-200 rounded-lg p-3 sm:p-4 text-center">
-              <div className="text-[10px] sm:text-xs tracking-wider uppercase text-stone-500 mb-1">Completed</div>
-              <div className="font-serif text-base sm:text-lg text-stone-950">
+            <div className="bg-[rgba(13,15,19,0.92)] backdrop-blur-xl border border-white/15 rounded-lg p-3 sm:p-4 text-center">
+              <div className="text-[10px] sm:text-xs tracking-wider uppercase text-white/50 mb-1">Completed</div>
+              <div className="font-serif text-base sm:text-lg text-white">
                 {completedCoursesCount}/{totalEnrolledCourses}
               </div>
             </div>
-            <div className="bg-white border border-stone-200 rounded-lg p-3 sm:p-4 text-center">
-              <div className="text-[10px] sm:text-xs tracking-wider uppercase text-stone-500 mb-1">Learning</div>
-              <div className="font-serif text-base sm:text-lg text-stone-950">{inProgressCourses.length}</div>
+            <div className="bg-[rgba(13,15,19,0.92)] backdrop-blur-xl border border-white/15 rounded-lg p-3 sm:p-4 text-center">
+              <div className="text-[10px] sm:text-xs tracking-wider uppercase text-white/50 mb-1">Learning</div>
+              <div className="font-serif text-base sm:text-lg text-white">{inProgressCourses.length}</div>
             </div>
           </div>
         </div>
@@ -915,7 +914,7 @@ export default function AcademyScreen() {
           {ownedForAccess.length > 0 && (
             <section className="pt-6 pb-3">
               <h2
-                className="font-serif text-[12px] font-extralight uppercase tracking-[0.2em] text-stone-500 pb-6"
+                className="font-serif text-[12px] font-extralight uppercase tracking-[0.2em] text-white/50 pb-6"
                 style={{ letterSpacing: "0.2em" }}
               >
                 YOU HAVE ACCESS
@@ -952,7 +951,7 @@ export default function AcademyScreen() {
           {showGetMore && (
             <section className="pt-6 pb-3">
               <h2
-                className="font-serif text-[12px] font-extralight uppercase tracking-[0.2em] text-stone-500 pb-6"
+                className="font-serif text-[12px] font-extralight uppercase tracking-[0.2em] text-white/50 pb-6"
                 style={{ letterSpacing: "0.2em" }}
               >
                 GET MORE COURSES & RESOURCES
@@ -973,60 +972,60 @@ export default function AcademyScreen() {
 
           <button
             onClick={() => setSelectedView("courses")}
-            className="w-full border border-stone-200 rounded-2xl p-8 sm:p-10 text-left bg-stone-50 hover:bg-stone-100 hover:border-stone-300 transition-all"
+            className="w-full border border-white/10 rounded-2xl p-8 sm:p-10 text-left bg-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.07)] hover:border-white/20 transition-all"
           >
-            <h2 className="font-serif text-2xl sm:text-3xl tracking-wider text-stone-950 mb-3">Browse Courses</h2>
-            <p className="text-stone-600 text-sm sm:text-base font-light leading-relaxed mb-6">
+            <h2 className="font-serif text-2xl sm:text-3xl tracking-wider text-white mb-3">Browse Courses</h2>
+            <p className="text-white/70 text-sm sm:text-base font-light leading-relaxed mb-6">
               Explore our complete library of courses designed to help you master professional photography and personal
               branding
             </p>
-            <div className="text-xs tracking-wider uppercase text-stone-600">See All Courses →</div>
+            <div className="text-xs tracking-wider uppercase text-white/70">See All Courses →</div>
           </button>
 
           <button
             onClick={() => setSelectedView("templates")}
-            className="w-full border border-stone-200 rounded-2xl p-8 sm:p-10 text-left bg-white hover:bg-stone-50 hover:border-stone-300 transition-all"
+            className="w-full border border-white/10 rounded-2xl p-8 sm:p-10 text-left bg-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.07)] hover:border-white/20 transition-all"
           >
-            <h2 className="font-serif text-2xl sm:text-3xl tracking-wider text-stone-950 mb-3">Templates</h2>
-            <p className="text-stone-600 text-sm sm:text-base font-light leading-relaxed mb-6">
+            <h2 className="font-serif text-2xl sm:text-3xl tracking-wider text-white mb-3">Templates</h2>
+            <p className="text-white/70 text-sm sm:text-base font-light leading-relaxed mb-6">
               Download professional templates for Canva, PDFs, and more to elevate your brand
             </p>
-            <div className="text-xs tracking-wider uppercase text-stone-600">Browse Templates →</div>
+            <div className="text-xs tracking-wider uppercase text-white/70">Browse Templates →</div>
           </button>
 
           <button
             onClick={() => setSelectedView("monthly-drops")}
-            className="w-full border border-stone-200 rounded-2xl p-8 sm:p-10 text-left bg-white hover:bg-stone-50 hover:border-stone-300 transition-all"
+            className="w-full border border-white/10 rounded-2xl p-8 sm:p-10 text-left bg-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.07)] hover:border-white/20 transition-all"
           >
-            <h2 className="font-serif text-2xl sm:text-3xl tracking-wider text-stone-950 mb-3">Monthly Drops</h2>
-            <p className="text-stone-600 text-sm sm:text-base font-light leading-relaxed mb-6">
+            <h2 className="font-serif text-2xl sm:text-3xl tracking-wider text-white mb-3">Monthly Drops</h2>
+            <p className="text-white/70 text-sm sm:text-base font-light leading-relaxed mb-6">
               Exclusive monthly resources and content drops for Studio Members
             </p>
-            <div className="text-xs tracking-wider uppercase text-stone-600">View Monthly Drops →</div>
+            <div className="text-xs tracking-wider uppercase text-white/70">View Monthly Drops →</div>
           </button>
 
           <button
             onClick={() => setSelectedView("flatlay-images")}
-            className="w-full border border-stone-200 rounded-2xl p-8 sm:p-10 text-left bg-white hover:bg-stone-50 hover:border-stone-300 transition-all"
+            className="w-full border border-white/10 rounded-2xl p-8 sm:p-10 text-left bg-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.07)] hover:border-white/20 transition-all"
           >
-            <h2 className="font-serif text-2xl sm:text-3xl tracking-wider text-stone-950 mb-3">Flatlay Images</h2>
-            <p className="text-stone-600 text-sm sm:text-base font-light leading-relaxed mb-6">
+            <h2 className="font-serif text-2xl sm:text-3xl tracking-wider text-white mb-3">Flatlay Images</h2>
+            <p className="text-white/70 text-sm sm:text-base font-light leading-relaxed mb-6">
               Professional flatlay images to elevate your content and brand aesthetic
             </p>
-            <div className="text-xs tracking-wider uppercase text-stone-600">Browse Flatlay Images →</div>
+            <div className="text-xs tracking-wider uppercase text-white/70">Browse Flatlay Images →</div>
           </button>
 
           {(inProgressCourses[0] || allCourses[0]) && (
-            <div className="border border-stone-950 bg-stone-950 text-stone-50 rounded-2xl p-8 sm:p-10">
+            <div className="border border-white/15 bg-[rgba(255,255,255,0.07)] text-white rounded-2xl p-8 sm:p-10">
               <div className="space-y-6">
                 <div>
-                  <div className="inline-block px-3 py-1 bg-stone-800 rounded-full text-xs tracking-wider uppercase mb-4">
+                  <div className="inline-block px-3 py-1 bg-white/10 border border-white/10 rounded-full text-xs tracking-wider uppercase text-white/70 mb-4">
                     {inProgressCourses[0] ? "Continue Learning" : "Recommended"}
                   </div>
                   <h2 className="font-serif text-2xl sm:text-3xl tracking-wider mb-3">
                     {(inProgressCourses[0] || allCourses[0])?.title}
                   </h2>
-                  <p className="text-stone-300 text-sm leading-relaxed">
+                  <p className="text-white/50 text-sm leading-relaxed">
                     {(inProgressCourses[0] || allCourses[0])?.lesson_count || 0} lessons • {(() => {
                       const duration = (inProgressCourses[0] || allCourses[0])?.total_duration
                       if (!duration || isNaN(Number(duration)) || Number(duration) <= 0) {
@@ -1041,7 +1040,7 @@ export default function AcademyScreen() {
 
                 <button
                   onClick={() => handleCourseClick((inProgressCourses[0] || allCourses[0])?.id)}
-                  className="w-full bg-stone-50 text-stone-950 py-4 rounded-xl text-sm tracking-wider uppercase hover:bg-stone-100 transition-all"
+                  className="w-full bg-white/90 text-[#0b0d10] py-4 rounded-xl text-sm tracking-wider uppercase hover:bg-white transition-all"
                 >
                   {inProgressCourses[0] ? "Continue" : "Start Learning"}
                 </button>

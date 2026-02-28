@@ -139,18 +139,18 @@ export default function CourseDetail({ courseId, onBack }: CourseDetailProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 text-stone-600 animate-spin" />
+        <Loader2 className="w-8 h-8 text-white/50 animate-spin" />
       </div>
     )
   }
 
   if (error || !course) {
     return (
-      <div className="bg-white/50 backdrop-blur-xl border border-white/60 rounded-[1.75rem] p-8 text-center">
-        <p className="text-stone-600 font-light mb-4">{error || "Course not found"}</p>
+      <div className="bg-[rgba(255,255,255,0.04)] backdrop-blur-xl border border-white/10 rounded-[1.75rem] p-8 text-center">
+        <p className="text-white/60 font-light mb-4">{error || "Course not found"}</p>
         <button
           onClick={onBack}
-          className="px-6 py-3 bg-stone-950 text-stone-50 rounded-xl font-light tracking-[0.15em] uppercase text-sm hover:bg-stone-800 transition-all duration-200"
+          className="px-6 py-3 bg-[rgba(255,255,255,0.08)] border border-white/10 text-white/80 rounded-xl font-light tracking-[0.15em] uppercase text-sm hover:bg-[rgba(255,255,255,0.12)] transition-all duration-200"
         >
           Back to Courses
         </button>
@@ -171,16 +171,16 @@ export default function CourseDetail({ courseId, onBack }: CourseDetailProps) {
       {/* Back Button */}
       <button
         onClick={onBack}
-        className="text-sm font-light tracking-[0.15em] uppercase text-stone-600 hover:text-stone-950 transition-colors"
+        className="text-sm font-light tracking-[0.15em] uppercase text-white/60 hover:text-white transition-colors"
       >
         ← Back to Courses
       </button>
 
       {/* Course Header */}
-      <div className="bg-white/50 backdrop-blur-xl border border-white/60 rounded-[1.75rem] overflow-hidden shadow-xl shadow-stone-900/10">
+      <div className="bg-[rgba(255,255,255,0.04)] backdrop-blur-xl border border-white/10 rounded-[1.75rem] overflow-hidden shadow-xl shadow-black/30">
         {/* Thumbnail */}
         {course.thumbnail_url && (
-          <div className="aspect-video relative overflow-hidden bg-stone-200/30">
+          <div className="aspect-video relative overflow-hidden bg-[rgba(255,255,255,0.07)]">
             <img
               src={course.thumbnail_url || "/placeholder.svg"}
               alt={course.title}
@@ -194,23 +194,23 @@ export default function CourseDetail({ courseId, onBack }: CourseDetailProps) {
           {/* Title & Description */}
           <div className="space-y-4">
             <div className="flex items-start justify-between gap-4">
-              <h1 className="text-3xl sm:text-4xl font-serif font-extralight tracking-[0.2em] uppercase text-stone-950 leading-tight">
+              <h1 className="text-3xl sm:text-4xl font-serif font-extralight tracking-[0.2em] uppercase text-white leading-tight">
                 {course.title}
               </h1>
               {course.is_completed && (
-                <span className="px-4 py-2 bg-stone-950 text-stone-50 rounded-full text-xs tracking-[0.15em] uppercase font-light whitespace-nowrap">
+                <span className="px-4 py-2 bg-[rgba(11,13,16,0.8)] border border-white/15 text-white/80 rounded-full text-xs tracking-[0.15em] uppercase font-light whitespace-nowrap">
                   Completed
                 </span>
               )}
             </div>
 
             {course.description && (
-              <p className="text-base font-light text-stone-600 leading-relaxed">{course.description}</p>
+              <p className="text-base font-light text-white/50 leading-relaxed">{course.description}</p>
             )}
           </div>
 
           {/* Meta Info */}
-          <div className="flex flex-wrap items-center gap-6 text-xs tracking-[0.1em] uppercase font-light text-stone-500">
+          <div className="flex flex-wrap items-center gap-6 text-xs tracking-[0.1em] uppercase font-light text-white/40">
             {course.instructor_name && <span>By {course.instructor_name}</span>}
             <span>{formatTotalDuration(course.total_duration)}</span>
             <span>{course.lesson_count} Lessons</span>
@@ -219,16 +219,16 @@ export default function CourseDetail({ courseId, onBack }: CourseDetailProps) {
           {/* Progress Bar */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs tracking-[0.15em] uppercase font-light text-stone-500">Course Progress</span>
-              <span className="text-sm font-light text-stone-950">{Math.round(progressPercentage)}%</span>
+              <span className="text-xs tracking-[0.15em] uppercase font-light text-white/40">Course Progress</span>
+              <span className="text-sm font-light text-white">{Math.round(progressPercentage)}%</span>
             </div>
-            <div className="w-full h-2 bg-stone-200 rounded-full overflow-hidden">
+            <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
               <div
-                className="h-full bg-stone-950 transition-all duration-500"
+                className="h-full bg-white/70 transition-all duration-500"
                 style={{ width: `${progressPercentage}%` }}
               />
             </div>
-            <p className="text-xs font-light text-stone-500">
+            <p className="text-xs font-light text-white/40">
               {completedLessons} of {lessonCount} lessons completed
             </p>
           </div>
@@ -237,7 +237,7 @@ export default function CourseDetail({ courseId, onBack }: CourseDetailProps) {
           {course.is_completed && course.certificate_url && (
             <button
               onClick={handleDownloadCertificate}
-              className="w-full bg-stone-950 text-stone-50 py-4 rounded-[1.25rem] font-light tracking-[0.15em] uppercase text-sm hover:bg-stone-800 transition-all duration-200 shadow-xl shadow-stone-900/20"
+              className="w-full bg-white/90 text-[#0b0d10] py-4 rounded-[1.25rem] font-light tracking-[0.15em] uppercase text-sm hover:bg-white transition-all duration-200 shadow-xl shadow-black/30"
             >
               Download Certificate
             </button>
@@ -246,8 +246,8 @@ export default function CourseDetail({ courseId, onBack }: CourseDetailProps) {
       </div>
 
       {/* Lesson List */}
-      <div className="bg-white/50 backdrop-blur-xl border border-white/60 rounded-[1.75rem] p-6 sm:p-8 shadow-xl shadow-stone-900/10">
-        <h2 className="text-2xl font-serif font-extralight tracking-[0.2em] uppercase text-stone-950 mb-6">
+      <div className="bg-[rgba(255,255,255,0.04)] backdrop-blur-xl border border-white/10 rounded-[1.75rem] p-6 sm:p-8 shadow-xl shadow-black/30">
+        <h2 className="text-2xl font-serif font-extralight tracking-[0.2em] uppercase text-white mb-6">
           Course Content
         </h2>
 
@@ -259,21 +259,21 @@ export default function CourseDetail({ courseId, onBack }: CourseDetailProps) {
               disabled={lesson.is_locked}
               className={`w-full text-left p-4 rounded-xl border transition-all ${
                 lesson.is_locked
-                  ? "border-stone-200 bg-stone-50/50 opacity-60 cursor-not-allowed"
-                  : "border-stone-200 hover:border-stone-400 hover:bg-white/80 cursor-pointer"
+                  ? "border-white/10 bg-[rgba(255,255,255,0.04)] opacity-60 cursor-not-allowed"
+                  : "border-white/10 hover:border-white/20 hover:bg-[rgba(255,255,255,0.07)] cursor-pointer"
               }`}
             >
               <div className="flex items-start gap-4">
                 {/* Status Icon */}
                 <div className="flex-shrink-0 mt-1">
                   {lesson.is_locked ? (
-                    <div className="w-6 h-6 rounded-full bg-stone-200 flex items-center justify-center">
-                      <Lock size={14} className="text-stone-500" strokeWidth={2} />
+                    <div className="w-6 h-6 rounded-full bg-[rgba(255,255,255,0.07)] border border-white/10 flex items-center justify-center">
+                      <Lock size={14} className="text-white/50" strokeWidth={2} />
                     </div>
                   ) : lesson.is_completed ? (
-                    <CheckCircle2 size={24} className="text-stone-950" strokeWidth={1.5} />
+                    <CheckCircle2 size={24} className="text-white" strokeWidth={1.5} />
                   ) : (
-                    <Circle size={24} className="text-stone-400" strokeWidth={1.5} />
+                    <Circle size={24} className="text-white/30" strokeWidth={1.5} />
                   )}
                 </div>
 
@@ -282,27 +282,27 @@ export default function CourseDetail({ courseId, onBack }: CourseDetailProps) {
                   <div className="flex items-start justify-between gap-4 mb-2">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-1">
-                        <span className="text-xs tracking-[0.15em] uppercase font-light text-stone-500">
+                        <span className="text-xs tracking-[0.15em] uppercase font-light text-white/40">
                           Lesson {index + 1}
                         </span>
                         {lesson.is_completed && (
-                          <span className="px-2 py-0.5 bg-stone-950 text-stone-50 rounded-full text-[10px] tracking-[0.15em] uppercase font-light">
+                          <span className="px-2 py-0.5 bg-[rgba(11,13,16,0.8)] border border-white/15 text-white/80 rounded-full text-[10px] tracking-[0.15em] uppercase font-light">
                             Done
                           </span>
                         )}
                       </div>
-                      <h3 className="text-sm font-medium text-stone-950 mb-1">{lesson.title}</h3>
+                      <h3 className="text-sm font-medium text-white mb-1">{lesson.title}</h3>
                       {lesson.description && (
-                        <p className="text-xs font-light text-stone-600 line-clamp-2">{lesson.description}</p>
+                        <p className="text-xs font-light text-white/50 line-clamp-2">{lesson.description}</p>
                       )}
                     </div>
-                    <span className="text-xs font-light text-stone-500 whitespace-nowrap">
+                    <span className="text-xs font-light text-white/40 whitespace-nowrap">
                       {formatDuration(lesson.duration_seconds)}
                     </span>
                   </div>
 
                   {lesson.is_locked && (
-                    <p className="text-xs font-light text-stone-500 italic">Complete previous lessons to unlock</p>
+                    <p className="text-xs font-light text-white/40 italic">Complete previous lessons to unlock</p>
                   )}
                 </div>
               </div>

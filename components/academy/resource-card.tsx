@@ -69,9 +69,9 @@ export default function ResourceCard({ resource, onDownload }: ResourceCardProps
   }
 
   return (
-    <div className="bg-white border border-stone-200 rounded-2xl overflow-hidden hover:border-stone-300 transition-all group">
+    <div className="bg-[rgba(255,255,255,0.04)] border border-white/10 rounded-2xl overflow-hidden hover:border-white/20 hover:bg-[rgba(255,255,255,0.07)] transition-all group">
       {/* Thumbnail */}
-      <div className="relative aspect-[4/3] bg-stone-100 overflow-hidden">
+      <div className="relative aspect-[4/3] bg-[rgba(255,255,255,0.07)] overflow-hidden">
         {resource.thumbnail_url ? (
           <img
             src={resource.thumbnail_url || "/placeholder.svg"}
@@ -80,11 +80,11 @@ export default function ResourceCard({ resource, onDownload }: ResourceCardProps
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <div className="text-stone-400 text-sm tracking-wider uppercase">No Preview</div>
+            <div className="text-white/30 text-sm tracking-wider uppercase">No Preview</div>
           </div>
         )}
         {resource.month && (
-          <div className="absolute top-3 left-3 px-3 py-1 bg-stone-950 text-stone-50 text-[10px] tracking-wider uppercase rounded-full">
+          <div className="absolute top-3 left-3 px-3 py-1 bg-[rgba(11,13,16,0.8)] border border-white/15 text-white/75 text-[10px] tracking-wider uppercase rounded-full">
             {resource.month}
           </div>
         )}
@@ -94,32 +94,32 @@ export default function ResourceCard({ resource, onDownload }: ResourceCardProps
       <div className="p-6 space-y-4">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] tracking-wider uppercase text-stone-500">
+            <span className="text-[10px] tracking-wider uppercase text-white/30">
               {getResourceTypeLabel(resource.resource_type)}
             </span>
             {resource.category && (
               <>
-                <span className="text-stone-300">•</span>
-                <span className="text-[10px] tracking-wider uppercase text-stone-500">{resource.category}</span>
+                <span className="text-white/20">•</span>
+                <span className="text-[10px] tracking-wider uppercase text-white/30">{resource.category}</span>
               </>
             )}
           </div>
-          <h3 className="font-serif text-xl tracking-wider text-stone-950">{resource.title}</h3>
+          <h3 className="font-serif text-xl tracking-wider text-white">{resource.title}</h3>
           {resource.description && (
-            <p className="text-sm text-stone-600 leading-relaxed line-clamp-2">{resource.description}</p>
+            <p className="text-sm text-white/50 leading-relaxed line-clamp-2">{resource.description}</p>
           )}
         </div>
 
         <button
           onClick={handleClick}
-          className="w-full flex items-center justify-center gap-2 bg-stone-950 text-stone-50 py-3 rounded-xl text-sm tracking-wider uppercase hover:bg-stone-800 transition-all active:scale-95"
+          className="w-full flex items-center justify-center gap-2 bg-[rgba(255,255,255,0.07)] border border-white/10 text-white/75 py-3 rounded-xl text-sm tracking-wider uppercase hover:bg-[rgba(255,255,255,0.1)] hover:border-white/20 transition-all active:scale-95"
           style={{ touchAction: "manipulation" }}
         >
           <Download className="w-4 h-4" />
           {isExternalLink ? "Open" : "Download"}
         </button>
 
-        <div className="text-[10px] tracking-wider uppercase text-stone-400 text-center">
+        <div className="text-[10px] tracking-wider uppercase text-white/30 text-center">
           {resource.download_count} downloads
         </div>
       </div>

@@ -30,10 +30,10 @@ export default function MiniProductCard({
   return (
     <Link
       href={href}
-      className="flex flex-col w-full max-w-[160px] h-[200px] rounded border border-stone-200 bg-white overflow-hidden transition-all hover:border-stone-300 active:scale-[0.98]"
+      className="flex flex-col w-full max-w-[160px] h-[200px] rounded-xl border border-white/10 bg-[rgba(255,255,255,0.04)] overflow-hidden transition-all hover:border-white/20 hover:bg-[rgba(255,255,255,0.07)] active:scale-[0.98]"
     >
       {/* Image */}
-      <div className="relative w-full h-[88px] bg-stone-100 overflow-hidden shrink-0">
+      <div className="relative w-full h-[88px] bg-[rgba(255,255,255,0.07)] overflow-hidden shrink-0">
         {imageUrl ? (
           <img
             src={imageUrl}
@@ -41,8 +41,8 @@ export default function MiniProductCard({
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-stone-100 to-stone-200">
-            <span className="font-serif text-2xl font-extralight tracking-wider uppercase text-stone-400">
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[rgba(255,255,255,0.08)] to-[rgba(255,255,255,0.04)]">
+            <span className="font-serif text-2xl font-extralight tracking-wider uppercase text-white/30">
               {name.charAt(0)}
             </span>
           </div>
@@ -52,15 +52,15 @@ export default function MiniProductCard({
       {/* Content */}
       <div className="flex-1 flex flex-col p-2 min-h-0">
         <h3
-          className="font-serif text-[14px] font-extralight tracking-[0.02em] uppercase text-stone-950 leading-tight line-clamp-2"
+          className="font-serif text-[14px] font-extralight tracking-[0.02em] uppercase text-white leading-tight line-clamp-2"
           style={{ letterSpacing: "0.02em" }}
         >
           {name}
         </h3>
-        <p className="text-[12px] font-light text-stone-500 mt-1">
+        <p className="text-[12px] font-light text-white/50 mt-1">
           {currency}{price}
         </p>
-        <span className="text-[12px] font-light text-stone-950 mt-auto pt-2 border-b border-transparent hover:border-stone-950 transition-colors inline-flex self-start">
+        <span className="text-[12px] font-light text-white/75 mt-auto pt-2 transition-colors inline-flex self-start">
           Get it →
         </span>
       </div>

@@ -52,14 +52,14 @@ export default function CourseCard({ course, userTier, progress, onCourseClick }
     <button
       onClick={() => !isLocked && onCourseClick(course.id)}
       disabled={isLocked}
-      className={`group relative bg-white/50 backdrop-blur-xl border border-white/60 rounded-3xl overflow-hidden text-left transition-all duration-300 shadow-lg shadow-stone-900/5 ${
+      className={`group relative bg-[rgba(255,255,255,0.04)] backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden text-left transition-all duration-300 shadow-xl shadow-black/30 ${
         isLocked
           ? "opacity-60 cursor-not-allowed"
-          : "hover:bg-white/70 hover:border-white/80 hover:shadow-2xl hover:shadow-stone-900/20 hover:scale-[1.02]"
+          : "hover:bg-[rgba(255,255,255,0.07)] hover:border-white/20 hover:shadow-2xl hover:shadow-black/40 hover:scale-[1.02]"
       }`}
     >
       {/* Thumbnail */}
-      <div className="aspect-video relative overflow-hidden bg-stone-200/30">
+      <div className="aspect-video relative overflow-hidden bg-[rgba(255,255,255,0.07)]">
         {course.thumbnail_url ? (
           <img
             src={course.thumbnail_url || "/placeholder.svg"}
@@ -67,8 +67,8 @@ export default function CourseCard({ course, userTier, progress, onCourseClick }
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-stone-100 to-stone-200">
-            <span className="text-4xl font-serif font-extralight tracking-[0.2em] uppercase text-stone-400">
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[rgba(255,255,255,0.08)] to-[rgba(255,255,255,0.04)]">
+            <span className="text-4xl font-serif font-extralight tracking-[0.2em] uppercase text-white/30">
               {course.title.charAt(0)}
             </span>
           </div>
@@ -76,9 +76,9 @@ export default function CourseCard({ course, userTier, progress, onCourseClick }
 
         {/* Lock overlay for higher-tier courses */}
         {isLocked && (
-          <div className="absolute inset-0 bg-stone-950/60 backdrop-blur-sm flex items-center justify-center">
+          <div className="absolute inset-0 bg-[rgba(11,13,16,0.70)] backdrop-blur-sm flex items-center justify-center">
             <div className="text-center space-y-2">
-              <div className="w-12 h-12 bg-white/20 backdrop-blur-xl rounded-full flex items-center justify-center mx-auto border border-white/30">
+              <div className="w-12 h-12 bg-white/10 backdrop-blur-xl rounded-full flex items-center justify-center mx-auto border border-white/20">
                 <Lock size={20} className="text-white" strokeWidth={1.5} />
               </div>
               <p className="text-xs tracking-[0.15em] uppercase font-light text-white">{course.tier} tier required</p>
@@ -88,7 +88,7 @@ export default function CourseCard({ course, userTier, progress, onCourseClick }
 
         {/* Completion badge */}
         {isCompleted && !isLocked && (
-          <div className="absolute top-3 right-3 px-3 py-1.5 bg-stone-950/80 backdrop-blur-xl rounded-full border border-white/20">
+          <div className="absolute top-3 right-3 px-3 py-1.5 bg-[rgba(11,13,16,0.80)] backdrop-blur-xl rounded-full border border-white/20">
             <span className="text-xs tracking-[0.15em] uppercase font-light text-white">Completed</span>
           </div>
         )}
@@ -97,15 +97,15 @@ export default function CourseCard({ course, userTier, progress, onCourseClick }
       {/* Content */}
       <div className="p-6 space-y-4">
         {/* Title */}
-        <h3 className="text-lg font-serif font-extralight tracking-[0.15em] uppercase text-stone-950 leading-tight">
+        <h3 className="text-lg font-serif font-extralight tracking-[0.15em] uppercase text-white leading-tight">
           {course.title}
         </h3>
 
         {/* Description */}
-        <p className="text-sm font-light text-stone-600 leading-relaxed line-clamp-2">{course.description}</p>
+        <p className="text-sm font-light text-white/50 leading-relaxed line-clamp-2">{course.description}</p>
 
         {/* Meta info */}
-        <div className="flex items-center gap-6 text-xs tracking-[0.1em] uppercase font-light text-stone-500">
+        <div className="flex items-center gap-6 text-xs tracking-[0.1em] uppercase font-light text-white/40">
           <span>{formatDuration(totalDuration)}</span>
           <span>{lessonCount} Lessons</span>
         </div>
@@ -114,12 +114,12 @@ export default function CourseCard({ course, userTier, progress, onCourseClick }
         {progress && !isLocked && (
           <div className="space-y-2">
             <div className="flex justify-between text-xs">
-              <span className="tracking-[0.1em] uppercase font-light text-stone-400">Progress</span>
-              <span className="font-light text-stone-500">{Math.round(progressPercentage)}%</span>
+              <span className="tracking-[0.1em] uppercase font-light text-white/40">Progress</span>
+              <span className="font-light text-white/50">{Math.round(progressPercentage)}%</span>
             </div>
-            <div className="w-full h-1.5 bg-stone-200/60 rounded-full overflow-hidden">
+            <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
               <div
-                className="h-full bg-stone-950 rounded-full transition-all duration-500"
+                className="h-full bg-white/55 rounded-full transition-all duration-500"
                 style={{ width: `${progressPercentage}%` }}
               ></div>
             </div>
@@ -129,7 +129,7 @@ export default function CourseCard({ course, userTier, progress, onCourseClick }
         {/* Action button */}
         {!isLocked && (
           <div className="pt-2">
-            <div className="w-full text-center bg-stone-950 text-stone-50 py-3 rounded-2xl font-light tracking-[0.15em] uppercase text-sm transition-all duration-200 group-hover:bg-stone-800 min-h-[48px] flex items-center justify-center">
+            <div className="w-full text-center bg-[rgba(255,255,255,0.07)] border border-white/10 text-white/75 py-3 rounded-2xl font-light tracking-[0.15em] uppercase text-sm transition-all duration-200 group-hover:bg-[rgba(255,255,255,0.1)] min-h-[48px] flex items-center justify-center">
               {isCompleted ? "Review" : hasStarted ? "Continue" : "Start"}
             </div>
           </div>
