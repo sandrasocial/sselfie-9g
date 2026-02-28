@@ -1,11 +1,9 @@
 import { NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
 
 import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { getDb } from "@/lib/db"
 import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
 import { getAcademyJourneyState } from "@/lib/onboarding/academy-journey"
-
-const sql = neon(process.env.DATABASE_URL!)
 
 export async function GET() {
   try {
@@ -21,48 +19,58 @@ export async function GET() {
 
     const userId = neonUser.id
 
-    const [aiImageCountRows, generatedImageCountRows, contentPlanRows, lastActivityRows] = await Promise.all([
-      sql`
-        SELECT COUNT(*)::int AS count
-        FROM ai_images
-        WHERE user_id = ${userId}
-          AND generation_status = 'completed'
-      `,
-      // generated_images has no status column in production schema.
-      // Treat rows with generated output as completed.
-      sql`
-        SELECT COUNT(*)::int AS count
-        FROM generated_images
-        WHERE user_id = ${userId}
-          AND (
-            selected_url IS NOT NULL
-            OR (image_urls IS NOT NULL AND BTRIM(image_urls) <> '')
-          )
-      `,
-      sql`
-        SELECT COUNT(*)::int AS count
-        FROM feed_posts
-        WHERE user_id = ${userId}
-      `,
-      sql`
-        SELECT
-          EXTRACT(EPOCH FROM (NOW() - MAX(activity_at))) / 3600.0 AS hours_since
-        FROM (
-          SELECT MAX(created_at) AS activity_at FROM ai_images WHERE user_id = ${userId}
-          UNION ALL
-          SELECT MAX(created_at) AS activity_at FROM generated_images WHERE user_id = ${userId}
-          UNION ALL
-          SELECT MAX(updated_at) AS activity_at FROM feed_posts WHERE user_id = ${userId}
-        ) activity
-        WHERE activity_at IS NOT NULL
-      `,
-    ])
+    let generationCount = 0
+    let hasContentPlan = false
+    let hoursSinceLastActive: number | null = null
 
-    const generationCount =
-      Number(aiImageCountRows[0]?.count || 0) + Number(generatedImageCountRows[0]?.count || 0)
-    const hasContentPlan = Number(contentPlanRows[0]?.count || 0) > 0
-    const hoursSinceLastActive =
-      lastActivityRows[0]?.hours_since == null ? null : Number(lastActivityRows[0]?.hours_since)
+    try {
+      const sql = getDb()
+      const [aiImageCountRows, generatedImageCountRows, contentPlanRows, lastActivityRows] = await Promise.all([
+        sql`
+          SELECT COUNT(*)::int AS count
+          FROM ai_images
+          WHERE user_id = ${userId}
+            AND generation_status = 'completed'
+        `,
+        // generated_images has no status column in production schema.
+        // Treat rows with generated output as completed.
+        sql`
+          SELECT COUNT(*)::int AS count
+          FROM generated_images
+          WHERE user_id = ${userId}
+            AND (
+              selected_url IS NOT NULL
+              OR (image_urls IS NOT NULL AND BTRIM(image_urls) <> '')
+            )
+        `,
+        sql`
+          SELECT COUNT(*)::int AS count
+          FROM feed_posts
+          WHERE user_id = ${userId}
+        `,
+        sql`
+          SELECT
+            EXTRACT(EPOCH FROM (NOW() - MAX(activity_at))) / 3600.0 AS hours_since
+          FROM (
+            SELECT MAX(created_at) AS activity_at FROM ai_images WHERE user_id = ${userId}
+            UNION ALL
+            SELECT MAX(created_at) AS activity_at FROM generated_images WHERE user_id = ${userId}
+            UNION ALL
+            SELECT MAX(updated_at) AS activity_at FROM feed_posts WHERE user_id = ${userId}
+          ) activity
+          WHERE activity_at IS NOT NULL
+        `,
+      ])
+
+      generationCount =
+        Number(aiImageCountRows[0]?.count || 0) + Number(generatedImageCountRows[0]?.count || 0)
+      hasContentPlan = Number(contentPlanRows[0]?.count || 0) > 0
+      hoursSinceLastActive =
+        lastActivityRows[0]?.hours_since == null ? null : Number(lastActivityRows[0]?.hours_since)
+    } catch (journeyStateError) {
+      // Non-blocking endpoint: Maya should continue rendering even if journey state lookup fails.
+      console.error("[academy-journey-state] Query fallback to defaults:", journeyStateError)
+    }
 
     const journeyState = getAcademyJourneyState({
       generationCount,

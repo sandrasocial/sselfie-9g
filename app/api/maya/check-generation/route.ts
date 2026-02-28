@@ -4,6 +4,7 @@ import { getReplicateClient } from "@/lib/replicate-client"
 import { put } from "@vercel/blob"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { hookMayaGeneration } from "@/lib/quality/hooks"
+import { logTtfiCompletionOnFirstGallerySave } from "@/lib/analytics/ttfi"
 
 const sql = neon(process.env.DATABASE_URL || "")
 
@@ -69,6 +70,14 @@ export async function GET(request: NextRequest) {
         `
 
         if (generation) {
+          const [completedCountRow] = await sql`
+            SELECT COUNT(*)::int AS count
+            FROM ai_images
+            WHERE user_id = ${generation.user_id}
+              AND generation_status = 'completed'
+          `
+          const isFirstGalleryImage = Number(completedCountRow?.count || 0) === 0
+
           const [existing] = await sql`
             SELECT id FROM ai_images WHERE prediction_id = ${predictionId}
           `
@@ -97,6 +106,14 @@ export async function GET(request: NextRequest) {
                 NOW()
               )
             `
+
+            await logTtfiCompletionOnFirstGallerySave({
+              userId: String(generation.user_id),
+              source: "maya_check_generation",
+              imageSource: "maya_chat",
+              predictionId,
+              isFirstGalleryImage,
+            })
           }
           
           // Quality monitoring hook (fire-and-forget)

@@ -87,6 +87,28 @@ type CohortDeliveryReport = {
   }>
 }
 
+type ActivationKpiReport = {
+  windowDays: number
+  periodStart: string
+  periodEnd: string
+  metrics: {
+    newSignups: number
+    starts: number
+    completes: number
+    completesWithin5m: number
+    completesWithin60m: number
+    medianTtfiSeconds: number | null
+    medianTtfiMinutes: number | null
+  }
+  rates: {
+    startCoveragePct: number
+    completionFromStartsPct: number
+    activation5mFromStartsPct: number
+    activation60mFromStartsPct: number
+    activation60mFromSignupsPct: number
+  }
+}
+
 type StoredReportRow = {
   id: number
   report_type: string
@@ -106,6 +128,7 @@ export default function AnalyticsPage() {
   const [launchReports, setLaunchReports] = useState<StoredReportRow[]>([])
   const [arpuReports, setArpuReports] = useState<StoredReportRow[]>([])
   const [deliveryLatest, setDeliveryLatest] = useState<CohortDeliveryReport | null>(null)
+  const [activationKpi, setActivationKpi] = useState<ActivationKpiReport | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isRunning, setIsRunning] = useState({
@@ -114,6 +137,7 @@ export default function AnalyticsPage() {
     launch: false,
     arpu: false,
     delivery: false,
+    activationKpi: false,
   })
   const [deliveryForm, setDeliveryForm] = useState({
     mode: "live" as "live" | "async",
@@ -129,12 +153,13 @@ export default function AnalyticsPage() {
       try {
         setIsLoading(true)
         setError(null)
-        const [funnelRes, cohortsRes, launchRes, arpuRes, deliveryRes] = await Promise.all([
+        const [funnelRes, cohortsRes, launchRes, arpuRes, deliveryRes, activationKpiRes] = await Promise.all([
           fetch("/api/admin/analytics/funnel-daily").then((r) => r.json()),
           fetch("/api/admin/analytics/cohorts-weekly").then((r) => r.json()),
           fetch("/api/admin/analytics/brand-engine-launch").then((r) => r.json()),
           fetch("/api/admin/analytics/arpu-churn-weekly").then((r) => r.json()),
           fetch("/api/admin/analytics/cohort-delivery-load").then((r) => r.json()),
+          fetch("/api/admin/analytics/activation-kpi-7d").then((r) => r.json()),
         ])
         if (cancelled) return
 
@@ -143,6 +168,7 @@ export default function AnalyticsPage() {
         setLaunchReports(Array.isArray(launchRes?.reports) ? launchRes.reports : [])
         setArpuReports(Array.isArray(arpuRes?.reports) ? arpuRes.reports : [])
         setDeliveryLatest(deliveryRes?.latest || null)
+        setActivationKpi(activationKpiRes?.report || null)
       } catch (e: any) {
         if (cancelled) return
         setError(e?.message || "Failed to load analytics")
@@ -262,6 +288,20 @@ export default function AnalyticsPage() {
     }
   }
 
+  const runActivationKpiNow = async () => {
+    try {
+      setIsRunning((s) => ({ ...s, activationKpi: true }))
+      const res = await fetch("/api/admin/analytics/activation-kpi-7d")
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error || "Failed to refresh activation KPI")
+      setActivationKpi(data?.report || null)
+    } catch (e: any) {
+      setError(e?.message || "Failed to refresh activation KPI")
+    } finally {
+      setIsRunning((s) => ({ ...s, activationKpi: false }))
+    }
+  }
+
   const submitDeliveryLog = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     try {
@@ -356,6 +396,13 @@ export default function AnalyticsPage() {
                 >
                   {isRunning.delivery ? "Refreshing..." : "Refresh Delivery Load"}
                 </button>
+                <button
+                  onClick={runActivationKpiNow}
+                  disabled={isRunning.activationKpi}
+                  className="px-6 py-3 border border-stone-950 text-stone-950 text-xs tracking-[0.2em] uppercase hover:bg-stone-950 hover:text-stone-50 disabled:opacity-60 transition-colors rounded-none"
+                >
+                  {isRunning.activationKpi ? "Refreshing TTFI..." : "Refresh 7D TTFI KPI"}
+                </button>
               </div>
             </div>
           )}
@@ -416,6 +463,40 @@ export default function AnalyticsPage() {
               latestLaunch
                 ? `New: ${latestLaunchOps.newMemberships30d}, Churned: ${latestLaunchOps.churnedMemberships30d}`
                 : "Run launch report"
+            }
+          />
+          <AdminMetricCard
+            label="TTFI Median (7d)"
+            value={
+              activationKpi?.metrics.medianTtfiMinutes !== null && activationKpi?.metrics.medianTtfiMinutes !== undefined
+                ? `${activationKpi.metrics.medianTtfiMinutes}m`
+                : "--"
+            }
+            icon={<Instagram className="w-5 h-5" />}
+            subtitle={
+              activationKpi
+                ? `Completions: ${activationKpi.metrics.completes}`
+                : "Refresh 7D TTFI KPI"
+            }
+          />
+          <AdminMetricCard
+            label="Activation <=5m"
+            value={activationKpi ? `${activationKpi.rates.activation5mFromStartsPct}%` : "--"}
+            icon={<Users className="w-5 h-5" />}
+            subtitle={
+              activationKpi
+                ? `From starts: ${activationKpi.metrics.completesWithin5m}/${activationKpi.metrics.starts}`
+                : "Refresh 7D TTFI KPI"
+            }
+          />
+          <AdminMetricCard
+            label="Activation <=60m"
+            value={activationKpi ? `${activationKpi.rates.activation60mFromSignupsPct}%` : "--"}
+            icon={<Users className="w-5 h-5" />}
+            subtitle={
+              activationKpi
+                ? `From signups: ${activationKpi.metrics.completesWithin60m}/${activationKpi.metrics.newSignups}`
+                : "Refresh 7D TTFI KPI"
             }
           />
         </div>

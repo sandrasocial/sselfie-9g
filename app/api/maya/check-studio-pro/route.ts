@@ -4,6 +4,7 @@ import { getUserIdFromSupabase } from "@/lib/user-mapping"
 import { neon } from "@neondatabase/serverless"
 import { checkNanoBananaPrediction } from "@/lib/nano-banana-client"
 import { put } from "@vercel/blob"
+import { logTtfiCompletionOnFirstGallerySave } from "@/lib/analytics/ttfi"
 
 const sql = neon(process.env.DATABASE_URL!)
 
@@ -40,6 +41,23 @@ export async function GET(req: NextRequest) {
 
     // UPDATE database if completed
     if (status.status === "succeeded" && finalOutput) {
+      const [currentImageRow] = await sql`
+        SELECT id, generation_status
+        FROM ai_images
+        WHERE prediction_id = ${predictionId}
+          AND user_id = ${neonUserId}
+        LIMIT 1
+      `
+      const wasAlreadyCompleted = currentImageRow?.generation_status === "completed"
+
+      const [completedCountRow] = await sql`
+        SELECT COUNT(*)::int AS count
+        FROM ai_images
+        WHERE user_id = ${neonUserId}
+          AND generation_status = 'completed'
+      `
+      const isFirstGalleryImage = Number(completedCountRow?.count || 0) === 0
+
       // Download and re-upload to Vercel Blob for permanence
       let permanentUrl = status.output
       
@@ -75,6 +93,16 @@ export async function GET(req: NextRequest) {
         WHERE prediction_id = ${predictionId}
         AND user_id = ${neonUserId}
       `
+
+      if (currentImageRow && !wasAlreadyCompleted) {
+        await logTtfiCompletionOnFirstGallerySave({
+          userId: String(neonUserId),
+          source: "maya_check_studio_pro",
+          imageSource: "studio_pro",
+          predictionId,
+          isFirstGalleryImage,
+        })
+      }
 
       console.log("[STUDIO-PRO] Generation completed:", predictionId)
     } else if (status.status === "failed") {

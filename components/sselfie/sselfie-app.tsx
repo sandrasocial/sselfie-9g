@@ -223,6 +223,7 @@ export default function SselfieApp({
   const searchParams = useSearchParams()
   const tabFromSearchParams = readStudioTabFromSearchParams(searchParams)
   const hasTrackedStudioOpenRef = useRef(false)
+  const hasTrackedTtfiStartRef = useRef(false)
 
   useEffect(() => {
     if (hasTrackedStudioOpenRef.current) return
@@ -241,6 +242,32 @@ export default function SselfieApp({
       event: "tab_opened",
       properties: {
         tab: activeTab,
+      },
+    })
+  }, [activeTab])
+
+  useEffect(() => {
+    if (activeTab !== "maya" || hasTrackedTtfiStartRef.current) return
+
+    try {
+      if (typeof window !== "undefined") {
+        const sessionKey = "ttfi_signup_start_tracked"
+        if (window.sessionStorage.getItem(sessionKey) === "1") {
+          hasTrackedTtfiStartRef.current = true
+          return
+        }
+        window.sessionStorage.setItem(sessionKey, "1")
+      }
+    } catch {
+      // Ignore storage errors (private mode / blocked storage).
+    }
+
+    hasTrackedTtfiStartRef.current = true
+    trackAnalyticsEvent({
+      event: "signup_to_first_gen",
+      properties: {
+        stage: "start",
+        source: "studio_maya_tab_load",
       },
     })
   }, [activeTab])

@@ -4,9 +4,158 @@
 ---
 
 ## Last Updated
-2026-02-28 15:23 CET — Updated by Codex (P0 pass pushed to main + production smoke)
+2026-02-28 17:48 CET — Updated by Codex (academy-journey-state hardening + E-01 reconciliation refresh)
 
 ## Last Task Completed
+E-01 reconciliation snapshot refreshed (formal sign-off artifact updated):
+- Ran reconciliation script:
+  - `pnpm tsx scripts/reconcile-subscriber-counts.ts`
+- New evidence file:
+  - `output/automation/e01-subscriber-reconciliation-2026-02-28T16-42-46-461Z.md`
+- Current values in snapshot:
+  - Resend total contacts: `881`
+  - Resend subscribed contacts: `820`
+  - Resend unsubscribed contacts: `61`
+  - DB unique union contacts (`users + freebie + blueprint`): `1191`
+  - Active recurring subscribers (membership/pro): `15`
+  - Active paid_blueprint entitlements: `13`
+- Sign-off framing preserved:
+  - Resend subscribed contacts = canonical broadcast denominator
+  - DB subscription slices = product/revenue denominator
+  - Keep both reported separately to avoid denominator drift
+
+/api/onboarding/academy-journey-state reliability hardening completed (non-blocking fail-open):
+- Route hardened:
+  - `app/api/onboarding/academy-journey-state/route.ts`
+  - Replaced module-level DB client usage with `getDb()` inside request scope
+  - Wrapped journey data query block in local try/catch and now falls back to safe defaults on DB/query failure:
+    - `generationCount = 0`
+    - `hasContentPlan = false`
+    - `hoursSinceLastActive = null`
+  - Endpoint now returns `200` with computed safe state even when journey query fails, instead of bubbling to `500`
+  - Auth/user guard behavior unchanged (`401` unauthorized, `404` missing neon user)
+- New regression tests (test-first):
+  - `tests/academy-journey-state-route.test.ts`
+  - Covers:
+    - query failure path returns `200` + safe defaults
+    - normal count path returns computed prompt state (`showAfterFirstGenerationPrompt`)
+- Validation:
+  - `pnpm vitest run tests/academy-journey-state-route.test.ts` passed (2/2)
+  - `pnpm vitest run tests/academy-journey-state-route.test.ts tests/activation-kpi.test.ts tests/ttfi-analytics.test.ts` passed (8/8)
+  - `pnpm eslint app/api/onboarding/academy-journey-state/route.ts tests/academy-journey-state-route.test.ts` passed (0 errors)
+  - `pnpm build` passed
+- Diagnostics evidence:
+  - Searched `output/automation/*` for academy journey 500 traces before patch; no matching log entries were present.
+  - Direct DB schema/query probe confirms current production-compatible columns for this endpoint (`generated_images.image_urls` is `text`, `ai_images.generation_status` exists), indicating failure mode is intermittent DB/query path reliability rather than static schema mismatch.
+
+P0-03 follow-through completed (activation KPI visibility in admin analytics):
+- Added activation KPI calculation helper:
+  - `lib/analytics/activation-kpi.ts`
+  - Computes 7-day TTFI median + activation rates (<=5m, <=60m) with zero-safe denominators
+- Added new admin analytics endpoint:
+  - `app/api/admin/analytics/activation-kpi-7d/route.ts`
+  - Admin-only report using `analytics_events` (`signup_to_first_gen` start/complete) + `users` signups window
+  - Returns `report` with:
+    - metrics: `newSignups`, `starts`, `completes`, `completesWithin5m`, `completesWithin60m`, median TTFI
+    - rates: start coverage, completion-from-starts, activation <=5m/<=60m
+- Wired new KPI view into admin analytics page:
+  - `app/admin/analytics/page.tsx`
+  - Loads `/api/admin/analytics/activation-kpi-7d` in dashboard load
+  - Added refresh action button: `Refresh 7D TTFI KPI`
+  - Added 3 metric cards:
+    - `TTFI Median (7d)`
+    - `Activation <=5m`
+    - `Activation <=60m`
+- Test-first evidence:
+  - Added `tests/activation-kpi.test.ts` (failed first due missing module; then passed after implementation)
+- Validation:
+  - `pnpm vitest run tests/activation-kpi.test.ts tests/ttfi-analytics.test.ts tests/analytics-event-contract.test.ts tests/studio-tab-routing.test.ts tests/broadcast-preflight.test.ts` passed (20/20)
+  - `pnpm eslint lib/analytics/activation-kpi.ts app/api/admin/analytics/activation-kpi-7d/route.ts app/admin/analytics/page.tsx tests/activation-kpi.test.ts` passed (0 errors, warnings only)
+  - `pnpm build` passed
+
+UX-08 completed (Studio member onboarding flow, UI-only):
+- New component:
+  - `components/sselfie/maya/studio-member-onboarding.tsx`
+  - 3-step dark glass onboarding sheet:
+    - Step 1: `YOUR STUDIO IS READY` with credits + SELFIE + Training readiness row
+    - Step 2: `THIS IS SELFIE MODE` with upload CTA
+    - Step 3: `WANT EVEN BETTER RESULTS?` with training CTA
+- Integrated in Maya screen:
+  - `components/sselfie/maya-chat-screen.tsx`
+  - New mount condition implemented:
+    - opens when `isMembership && firstTimeProductUser`
+  - Wired actions:
+    - `Show Me SELFIE Mode ->` switches to photos + SELFIE mode
+    - `Upload a Selfie ->` opens upload flow in photos tab
+    - `Start Training ->` switches to training tab
+- New regression tests:
+  - `tests/studio-member-onboarding.test.tsx`
+    - verifies closed state
+    - verifies step progression + callbacks for SELFIE/upload/training actions
+- Validation:
+  - `pnpm vitest run tests/studio-member-onboarding.test.tsx tests/maya-mode-toggle-labels.test.tsx tests/welcome-first-generation.test.ts` passed (14/14)
+  - `pnpm eslint components/sselfie/maya/studio-member-onboarding.tsx components/sselfie/maya-chat-screen.tsx tests/studio-member-onboarding.test.tsx` passed (warnings only, 0 errors)
+  - `pnpm build` passed
+
+Mode naming cleanup completed (Decision #1 from Master Plan, display/copy-only):
+- Renamed user-facing Maya mode labels without changing enum/state values:
+  - `pro` displays as `SELFIE`
+  - `classic` displays as `MY MODEL`
+- Updated UI surfaces:
+  - `components/sselfie/maya/maya-mode-toggle.tsx`
+    - Segmented labels now `MY MODEL` and `SELFIE`
+    - Button variant now shows `Switch to SELFIE` / `Switch to MY MODEL`
+    - Updated accessibility labels/titles to renamed mode language
+  - `components/sselfie/maya/maya-header.tsx`
+    - Mobile menu action now `Switch to MY MODEL`
+  - `components/sselfie/maya/maya-quick-prompts.tsx`
+    - Empty-state heading now `Start with SELFIE Mode Examples`
+  - `components/sselfie/maya/welcome-first-generation-flow.tsx`
+    - Step 2 mode cards now `MY MODEL` and `SELFIE` with updated helper copy
+  - `components/sselfie/maya-chat-screen.tsx`
+    - Pro welcome copy and onboarding modal copy updated to `SELFIE`
+  - `components/sselfie/maya/maya-prompts-tab.tsx`
+    - Upload requirement error now references `SELFIE mode`
+- New regression test:
+  - `tests/maya-mode-toggle-labels.test.tsx`
+  - Verifies compact + button toggle variants render renamed labels and ARIA text
+- Validation:
+  - `pnpm vitest run tests/maya-mode-toggle-labels.test.tsx tests/welcome-first-generation.test.ts` passed (12/12)
+  - `pnpm eslint components/sselfie/maya/maya-mode-toggle.tsx components/sselfie/maya/maya-header.tsx components/sselfie/maya/maya-quick-prompts.tsx components/sselfie/maya/welcome-first-generation-flow.tsx components/sselfie/maya/maya-prompts-tab.tsx components/sselfie/maya-chat-screen.tsx tests/maya-mode-toggle-labels.test.tsx` passed (warnings only, 0 errors)
+  - `pnpm build` passed
+
+Training access update (Decision #2 from Master Plan: training available to all users, credit-gated):
+- API gate changes:
+  - `app/api/training/start/route.ts`
+    - Removed Studio membership requirement gate (`403`)
+    - Training now gates on credits only
+    - Updated insufficient-credit copy to: `Training costs 20 credits... Buy credits or join Studio for monthly credits.`
+  - `app/api/training/upload-zip/route.ts`
+    - Removed Studio membership requirement gate (`403`)
+    - Training now gates on credits only
+    - Updated insufficient-credit copy to same credit-gate language
+- Maya Training UI update:
+  - `components/sselfie/maya/maya-training-tab.tsx`
+    - Added insufficient-credit training card when balance `< 20`
+    - Added explicit CTAs:
+      - `Buy Credits ->`
+      - `Join Studio for Monthly Credits ->` (non-members only)
+    - Disabled start button when training credits are insufficient
+    - Updated training start copy to explicitly state `Training costs 20 credits`
+  - `components/sselfie/maya-chat-screen.tsx`
+    - Passed `creditBalance`, `isMembership`, and CTA handlers into `MayaTrainingTab`
+    - Wired CTA handlers to existing flows:
+      - Buy Credits opens `BuyCreditsModal`
+      - Join Studio uses embedded checkout (`sselfie_studio_membership`)
+- New regression tests (test-first):
+  - `tests/training-start-access.test.ts`
+  - `tests/training-upload-zip-access.test.ts`
+  - Both tests enforce non-member training is credit-gated (`402 Insufficient credits`) instead of membership-gated (`403`)
+- Validation:
+  - `pnpm vitest run tests/training-start-access.test.ts tests/training-upload-zip-access.test.ts` passed (2/2)
+  - `pnpm eslint app/api/training/start/route.ts app/api/training/upload-zip/route.ts components/sselfie/maya/maya-training-tab.tsx components/sselfie/maya-chat-screen.tsx tests/training-start-access.test.ts tests/training-upload-zip-access.test.ts` passed (warnings only, 0 errors)
+  - `pnpm build` passed
+
 P0 backend recovery (activation-first) completed:
 - P0-01 tab/query sync + deep-link reliability:
   - Added shared tab resolver: `lib/studio/tab-routing.ts`
@@ -322,3 +471,62 @@ None for this completed patch bundle
 ## Next Task
 1) Run one controlled Academy checkout completion + webhook event verification against `academy_course_purchases` and `user_tags`
 2) Get Sandra/business sign-off on E-01 snapshot denominator policy (Resend audience vs DB entity tables vs revenue subscription metrics)
+
+UX-09 completed (Returning Member Home State in Maya):
+- Added `components/sselfie/maya/membership-home-card.tsx`
+- Updated `components/sselfie/maya-chat-screen.tsx`
+- Added `tests/membership-home-card.test.tsx`
+- Completed behavior:
+- New membership-only home card now appears when `isMembership && messages.length === 0 && !firstTimeProductUser`
+- Replaced blank empty-state branches in that condition (classic/pro empty states are suppressed)
+- Card includes: `YOUR CREDITS`, `CONTINUE`, optional `THIS MONTH`, and quick actions
+- Quick actions wired to live app navigation:
+- `Generate a photo ->` keeps Maya Photos active (`#maya`)
+- `Plan my feed ->` routes via parent nav to `feed-planner`
+- `Browse styles ->` switches to Maya Prompts (`#maya/prompts`)
+- `Pick up where you left off ->` opens history modal (`ProModeChatHistory` when available, otherwise `MayaChatHistory`)
+- Validation:
+- `pnpm vitest run tests/membership-home-card.test.tsx tests/studio-member-onboarding.test.tsx tests/maya-mode-toggle-labels.test.tsx tests/welcome-first-generation.test.ts tests/training-start-access.test.ts tests/training-upload-zip-access.test.ts` passed
+- `pnpm eslint components/sselfie/maya-chat-screen.tsx components/sselfie/maya/membership-home-card.tsx tests/membership-home-card.test.tsx` passed with existing warnings only (0 errors)
+- `pnpm build` passed
+
+State Summary Template:
+Context: Activation-first execution plan continuation, implementing UX-09 returning-member Maya home state.
+Last actions: Added new home card component + Maya mount condition, then ran targeted vitest suite, targeted eslint, and full build (all passing; eslint warnings pre-existing).
+Files touched: `components/sselfie/maya/membership-home-card.tsx` (new), `components/sselfie/maya-chat-screen.tsx` (render/condition wiring), `tests/membership-home-card.test.tsx` (new).
+Outstanding issues: UX-10 (mini-product unlock states) and remaining gated plan phases still pending; repo still has pre-existing broad eslint warnings in `maya-chat-screen.tsx`.
+Next steps: Implement UX-10 in Maya surfaces, then continue remaining master-plan phases in order.
+
+UX-10 completed (Mini-product unlock states in Maya, UI-only):
+- Updated `components/sselfie/maya-chat-screen.tsx`
+- Updated `components/sselfie/maya/maya-prompts-tab.tsx`
+- Added `tests/maya-prompts-tab-lock.test.tsx`
+- Completed behavior:
+- Product ownership is now normalized and checked in Maya from:
+  - `academyPurchaseProduct` context param (`source=academy_purchase&product=...`)
+  - `/api/academy/my-products` purchases (read-only fetch)
+  - active Studio membership (treated as owning all mini-products)
+- Prompts tab lock state:
+  - If user does not own `ai_photo_prompts`, Prompts tab now shows:
+    - Lock banner: `UNLOCK 100+ CURATED PROMPTS`
+    - Copy: `AI Photo Prompts gives you Sandra's best-performing styles.`
+    - CTA: `Upgrade to Studio — includes everything →`
+    - Exactly 3 greyed-out preview prompt cards (`opacity-50`)
+- Maya chat upsell cards (non-members only):
+  - After brand-strategy style output is detected in assistant messages and user lacks `what_to_say`:
+    - card `WANT THIS WITH CAPTIONS?`
+    - CTA: `Upgrade to Studio — includes everything →`
+  - After feed-planner style signal is detected and user lacks `show_up`:
+    - card `WANT A 7-DAY POSTING PLAN?`
+    - CTA: `Upgrade to Studio — includes everything →`
+- Validation:
+- `pnpm vitest run tests/maya-prompts-tab-lock.test.tsx tests/membership-home-card.test.tsx tests/studio-member-onboarding.test.tsx tests/maya-mode-toggle-labels.test.tsx tests/welcome-first-generation.test.ts tests/training-start-access.test.ts tests/training-upload-zip-access.test.ts` passed
+- `pnpm eslint components/sselfie/maya-chat-screen.tsx components/sselfie/maya/maya-prompts-tab.tsx components/sselfie/maya/membership-home-card.tsx tests/maya-prompts-tab-lock.test.tsx tests/membership-home-card.test.tsx` passed with existing warnings only (0 errors)
+- `pnpm build` passed
+
+State Summary Template:
+Context: Master plan execution continued through UX-09 and UX-10 Maya activation/upsell surfaces.
+Last actions: Implemented returning-member home state + mini-product unlock states, then ran targeted vitest, targeted eslint, and full build.
+Files touched: `components/sselfie/maya/membership-home-card.tsx`, `components/sselfie/maya-chat-screen.tsx`, `components/sselfie/maya/maya-prompts-tab.tsx`, `tests/membership-home-card.test.tsx`, `tests/maya-prompts-tab-lock.test.tsx`, `STATUS.md`.
+Outstanding issues: Remaining master-plan phases still pending (next practical UX slices are UX-03/UX-04/UX-05 refinements and KPI-gated rollout tasks); pre-existing lint warnings in large legacy Maya files remain.
+Next steps: Continue remaining queued phase tasks in order and run deploy smoke checks after merge/deploy.
