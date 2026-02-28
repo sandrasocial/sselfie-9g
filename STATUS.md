@@ -4,9 +4,24 @@
 ---
 
 ## Last Updated
-2026-02-28 18:06 CET — Updated by Codex (UX-05 feed planner dark-glass batch shipped to main)
+2026-02-28 18:08 CET — Updated by Codex (UX-07 in-app Academy dark-glass batch shipped to main)
 
 ## Last Task Completed
+UX-07 Academy in-app redesign batch shipped to production:
+- Commit pushed to `main`: `47a28b9d` (`Restyle in-app academy to dark glass system`)
+- Files shipped:
+  - `components/sselfie/academy-screen.tsx`
+  - `components/academy/course-card.tsx`
+  - `components/academy/course-detail.tsx`
+  - `components/academy/lesson-modal.tsx`
+  - `components/academy/resource-card.tsx`
+  - `components/sselfie/mini-product-card.tsx`
+  - `components/sselfie/product-access-card.tsx`
+- Validation:
+  - `pnpm vitest run tests/studio-academy-context.test.ts tests/academy-journey.test.ts` passed (8/8)
+  - `pnpm eslint` on touched academy files passed with warnings only (0 errors)
+  - `pnpm build` passed
+
 UX-05 Feed Planner redesign batch shipped to production:
 - Commit pushed to `main`: `a2315e9a` (`Restyle feed planner surfaces to dark glass UX`)
 - Files shipped:
