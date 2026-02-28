@@ -32,7 +32,7 @@ export function GalleryHeader({
           fontSize: '28px',
           fontWeight: 300,
           letterSpacing: '0.3em',
-          color: '#1C1917',
+          color: '#F5F5F5',
           textTransform: 'uppercase',
           marginBottom: '12px',
         }}
@@ -47,7 +47,7 @@ export function GalleryHeader({
             style={{
               fontFamily: 'Inter, sans-serif',
               fontWeight: 500,
-              color: '#78716C',
+              color: 'rgba(245,245,245,0.62)',
             }}
           >
             {stats.totalGenerated || 0} photos
@@ -56,7 +56,7 @@ export function GalleryHeader({
             style={{
               fontFamily: 'Inter, sans-serif',
               fontWeight: 500,
-              color: '#78716C',
+              color: 'rgba(245,245,245,0.62)',
             }}
           >
             {stats.totalFavorites || stats.favorites || 0} favorites
@@ -68,7 +68,7 @@ export function GalleryHeader({
       <div className="flex gap-3">
         {/* Search Bar */}
         <div className="flex-1 relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/45 pointer-events-none" />
           <input
             type="text"
             placeholder="Search by description..."
@@ -79,12 +79,12 @@ export function GalleryHeader({
               fontSize: '14px',
               fontWeight: 400,
             }}
-            className="w-full pl-10 pr-10 py-2.5 bg-stone-100/50 border border-stone-200/30 rounded-lg text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-950/20 transition-all"
+            className="w-full pl-10 pr-10 py-2.5 rounded-lg border border-white/15 bg-white/[0.05] text-white placeholder:text-white/45 backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-white/20 transition-all"
           />
           {searchQuery && (
             <button
               onClick={() => onSearchChange("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-white/45 hover:text-white/75 transition-colors"
               aria-label="Clear search"
             >
               <X size={16} />
@@ -101,11 +101,11 @@ export function GalleryHeader({
             fontSize: '12px',
             fontWeight: 500,
             letterSpacing: '0.02em',
-            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2378716b' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' strokeOpacity='0.6' strokeWidth='2' strokeLinecap='round' strokeLinejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
             backgroundRepeat: "no-repeat",
             backgroundPosition: "right 0.5rem center",
           }}
-          className="px-4 py-2.5 bg-stone-100/50 border border-stone-200/30 rounded-lg text-stone-700 focus:outline-none focus:ring-2 focus:ring-stone-950/20 transition-all cursor-pointer appearance-none pr-8"
+          className="px-4 py-2.5 rounded-lg border border-white/15 bg-white/[0.05] text-white/80 backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-white/20 transition-all cursor-pointer appearance-none pr-8"
         >
           <option value="date-desc">Newest First</option>
           <option value="date-asc">Oldest First</option>
@@ -122,7 +122,7 @@ export function GalleryHeader({
             letterSpacing: '0.15em',
             textTransform: 'uppercase',
           }}
-          className="px-4 py-2.5 bg-stone-100/50 border border-stone-200/30 rounded-lg text-stone-700 hover:bg-stone-100/70 transition-all"
+          className="px-4 py-2.5 rounded-lg border border-white/15 bg-white/[0.05] text-white/80 backdrop-blur-xl hover:bg-white/[0.1] transition-all"
         >
           Select
         </button>
@@ -130,4 +130,3 @@ export function GalleryHeader({
     </div>
   )
 }
-

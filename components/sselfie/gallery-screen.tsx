@@ -550,14 +550,14 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
           onLongPressEnd={handleLongPressEnd}
         />
       ) : (
-        <div className="bg-stone-100/40 rounded-3xl p-8 sm:p-12 text-center border border-stone-200/40">
+        <div className="rounded-3xl border border-white/10 bg-white/4 p-8 text-center sm:p-12">
           {contentFilter === "videos" ? (
             <>
-              <Video size={48} className="mx-auto mb-6 text-stone-400" strokeWidth={1.5} />
-              <h3 className="text-xl font-serif font-extralight tracking-[0.15em] text-stone-950 uppercase mb-3">
+              <Video size={48} className="mx-auto mb-6 text-white/45" strokeWidth={1.5} />
+              <h3 className="mb-3 text-xl font-serif font-extralight uppercase tracking-[0.15em] text-white">
                 No Videos Yet
               </h3>
-              <p className="text-sm font-light text-stone-600 mb-6 max-w-md mx-auto">
+              <p className="mx-auto mb-6 max-w-md text-sm font-light text-white/65">
                 Bring your photos to life! Go to Maya and ask her to animate any of your images into stunning videos.
               </p>
               <button
@@ -565,50 +565,50 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
                   const mayaTab = document.querySelector('[data-tab="maya"]') as HTMLButtonElement
                   mayaTab?.click()
                 }}
-                className="px-6 py-3 text-xs tracking-[0.15em] uppercase font-light bg-stone-950 text-white rounded-xl hover:bg-stone-800 transition-all duration-200"
+                className="rounded-full border border-white/20 bg-white/8 px-6 py-3 text-xs font-light uppercase tracking-[0.2em] text-white transition-all duration-200 hover:bg-white/14"
               >
                 Go to Maya
               </button>
             </>
           ) : contentFilter === "feed" ? (
             <>
-              <Camera size={48} className="mx-auto mb-6 text-stone-400" strokeWidth={1.5} />
-              <h3 className="text-xl font-serif font-extralight tracking-[0.15em] text-stone-950 uppercase mb-3">
+              <Camera size={48} className="mx-auto mb-6 text-white/45" strokeWidth={1.5} />
+              <h3 className="mb-3 text-xl font-serif font-extralight uppercase tracking-[0.15em] text-white">
                 No Feed Images Yet
               </h3>
-              <p className="text-sm font-light text-stone-600 mb-6 max-w-md mx-auto">
+              <p className="mx-auto mb-6 max-w-md text-sm font-light text-white/65">
                 Create your first Instagram feed with the Feed Planner to see your feed images here.
               </p>
               <button
                 onClick={() => {
                   window.location.hash = "feed-planner"
                 }}
-                className="px-6 py-3 text-xs tracking-[0.15em] uppercase font-light bg-stone-950 text-white rounded-xl hover:bg-stone-800 transition-all duration-200"
+                className="rounded-full border border-white/20 bg-white/8 px-6 py-3 text-xs font-light uppercase tracking-[0.2em] text-white transition-all duration-200 hover:bg-white/14"
               >
                 Go to Feed Planner
               </button>
             </>
           ) : searchQuery ? (
             <>
-              <Search size={48} className="mx-auto mb-6 text-stone-400" strokeWidth={1.5} />
-              <h3 className="text-xl font-serif font-extralight tracking-[0.15em] text-stone-950 uppercase mb-3">
+              <Search size={48} className="mx-auto mb-6 text-white/45" strokeWidth={1.5} />
+              <h3 className="mb-3 text-xl font-serif font-extralight uppercase tracking-[0.15em] text-white">
                 No Results Found
               </h3>
-              <p className="text-sm font-light text-stone-600 mb-6 max-w-md mx-auto">
+              <p className="mx-auto mb-6 max-w-md text-sm font-light text-white/65">
                 No images match &quot;{searchQuery}&quot;. Try a different search term or clear the search to see all images.
               </p>
               <button
                 onClick={() => setSearchQuery("")}
-                className="px-6 py-3 text-xs tracking-[0.15em] uppercase font-light bg-stone-950 text-white rounded-xl hover:bg-stone-800 transition-all duration-200"
+                className="rounded-full border border-white/20 bg-white/8 px-6 py-3 text-xs font-light uppercase tracking-[0.2em] text-white transition-all duration-200 hover:bg-white/14"
               >
                 Clear Search
               </button>
             </>
           ) : contentFilter === "favorited" ? (
             <>
-              <Camera size={48} className="mx-auto mb-6 text-stone-400" strokeWidth={1.5} />
-              <h3 className="text-xl font-serif font-extralight tracking-[0.15em] text-stone-950 uppercase mb-3">No Favorites Yet</h3>
-              <p className="text-sm font-light text-stone-600 mb-6 max-w-md mx-auto">
+              <Camera size={48} className="mx-auto mb-6 text-white/45" strokeWidth={1.5} />
+              <h3 className="mb-3 text-xl font-serif font-extralight uppercase tracking-[0.15em] text-white">No Favorites Yet</h3>
+              <p className="mx-auto mb-6 max-w-md text-sm font-light text-white/65">
                 Tap the heart icon on any image to add it to your favorites collection.
               </p>
             </>

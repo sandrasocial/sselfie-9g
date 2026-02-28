@@ -1,7 +1,6 @@
 "use client"
 
 import React, { useCallback } from "react"
-import { CheckSquare, Square, Heart } from "lucide-react"
 import { ProgressiveImage } from "../../progressive-image"
 import { getOptimizedImageUrl } from "../utils/image-utils"
 import type { GalleryImage } from "@/lib/data/images"
@@ -71,7 +70,7 @@ function GalleryImageCardComponent({
       onMouseDown={handleMouseDown}
       onMouseUp={onLongPressEnd}
       onMouseLeave={onLongPressEnd}
-      className="aspect-square relative group overflow-hidden bg-stone-200/30"
+      className="relative aspect-square overflow-hidden bg-white/5"
     >
       <ProgressiveImage
         src={image.image_url || "/placeholder.svg"}
@@ -80,20 +79,17 @@ function GalleryImageCardComponent({
         className="w-full h-full object-cover"
       />
       {selectionMode && (
-        <div className="absolute top-2 right-2 z-10">
-          {isSelected ? (
-            <CheckSquare size={24} className="text-stone-950 bg-white rounded" fill="currentColor" />
-          ) : (
-            <Square size={24} className="text-white drop-shadow-lg" />
-          )}
-        </div>
+        <>
+          {!isSelected && <div className="absolute inset-0 bg-black/45" />}
+          <div className="absolute right-2 top-2 z-10 rounded-full border border-white/35 bg-black/20 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-white backdrop-blur-xl">
+            {isSelected ? "CHECKED" : "SELECT"}
+          </div>
+        </>
       )}
       {!selectionMode && (
-        <div className="absolute inset-0 bg-stone-950/0 group-hover:bg-stone-950/30 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
-          <div className="flex items-center gap-4 text-stone-50">
-            <div className="flex items-center gap-1">
-              <Heart size={16} fill="currentColor" strokeWidth={1.5} />
-            </div>
+        <div className="absolute inset-0 flex items-end bg-black/0 opacity-0 transition-all duration-300 hover:bg-black/25 hover:opacity-100">
+          <div className="m-2 rounded-full border border-white/20 bg-black/30 px-2 py-1 text-[10px] uppercase tracking-[0.2em] text-white/90 backdrop-blur-xl">
+            VIEW
           </div>
         </div>
       )}
@@ -119,4 +115,3 @@ export const GalleryImageCard = React.memo(GalleryImageCardComponent, (prevProps
     // - Parent functions (handleImageClick, handleToggleSelection, etc.) are stable via useCallback
   )
 })
-

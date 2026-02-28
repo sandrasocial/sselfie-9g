@@ -1,7 +1,5 @@
 "use client"
 
-import { Save, Download, Heart, Trash2 } from "lucide-react"
-
 interface GallerySelectionBarProps {
   selectedCount: number
   totalCount: number
@@ -28,25 +26,25 @@ export function GallerySelectionBar({
   isProcessing = false,
 }: GallerySelectionBarProps) {
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-stone-950 text-white p-3 sm:p-4 shadow-2xl z-50 border-t border-stone-800 safe-area-inset-bottom">
+    <div className="safe-area-inset-bottom fixed bottom-0 left-0 right-0 z-50 border-t border-white/15 bg-black/80 p-3 text-white backdrop-blur-2xl sm:p-4">
       <div className="max-w-screen-xl mx-auto">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-          <div className="flex items-center justify-between sm:justify-start gap-3">
+        <div className="flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
+          <div className="flex items-center justify-between gap-3 sm:justify-start">
             <button
               onClick={onCancel}
               disabled={isProcessing}
-              className="text-sm font-light tracking-wide hover:text-stone-300 transition-colors min-h-[44px] px-2 touch-manipulation disabled:opacity-50"
+              className="min-h-[44px] px-2 text-sm font-light tracking-[0.16em] uppercase text-white/75 transition-colors hover:text-white disabled:opacity-50"
             >
               Cancel
             </button>
-            <span className="text-sm font-light">{selectedCount} selected</span>
+            <span className="text-sm font-light tracking-[0.16em] uppercase text-white/85">{selectedCount} selected</span>
           </div>
-          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2">
+          <div className="grid grid-cols-2 items-center gap-2 sm:flex sm:flex-wrap">
             {selectedCount < totalCount && (
               <button
                 onClick={onSelectAll}
                 disabled={isProcessing}
-                className="px-3 sm:px-4 py-2 text-xs tracking-[0.15em] uppercase font-light bg-stone-800 rounded-lg hover:bg-stone-700 transition-all min-h-[44px] touch-manipulation disabled:opacity-50"
+                className="min-h-[44px] rounded-full border border-white/20 bg-white/5 px-3 py-2 text-xs font-light uppercase tracking-[0.2em] transition-all hover:bg-white/10 disabled:opacity-50"
               >
                 Select All
               </button>
@@ -57,7 +55,7 @@ export function GallerySelectionBar({
                   <button
                     onClick={onDeselectAll}
                     disabled={isProcessing}
-                    className="px-3 sm:px-4 py-2 text-xs tracking-[0.15em] uppercase font-light bg-stone-800 rounded-lg hover:bg-stone-700 transition-all min-h-[44px] touch-manipulation disabled:opacity-50"
+                    className="min-h-[44px] rounded-full border border-white/20 bg-white/5 px-3 py-2 text-xs font-light uppercase tracking-[0.2em] transition-all hover:bg-white/10 disabled:opacity-50"
                   >
                     Deselect
                   </button>
@@ -65,33 +63,29 @@ export function GallerySelectionBar({
                 <button
                   onClick={onSave}
                   disabled={isProcessing}
-                  className="px-3 sm:px-4 py-2 text-xs tracking-[0.15em] uppercase font-light bg-stone-900 rounded-lg hover:bg-stone-800 transition-all flex items-center justify-center gap-2 min-h-[44px] touch-manipulation disabled:opacity-50"
+                  className="min-h-[44px] rounded-full border border-white/30 bg-white/10 px-3 py-2 text-xs font-light uppercase tracking-[0.2em] transition-all hover:bg-white/15 disabled:opacity-50"
                 >
-                  <Save size={14} />
-                  <span className="hidden sm:inline">Save</span>
+                  Save
                 </button>
                 <button
                   onClick={onDownload}
                   disabled={isProcessing}
-                  className="px-3 sm:px-4 py-2 text-xs tracking-[0.15em] uppercase font-light bg-stone-800 rounded-lg hover:bg-stone-700 transition-all flex items-center justify-center gap-2 min-h-[44px] touch-manipulation disabled:opacity-50"
+                  className="min-h-[44px] rounded-full border border-white/20 bg-white/5 px-3 py-2 text-xs font-light uppercase tracking-[0.2em] transition-all hover:bg-white/10 disabled:opacity-50"
                 >
-                  <Download size={14} />
-                  <span className="hidden sm:inline">Download</span>
+                  Download
                 </button>
                 <button
                   onClick={onFavorite}
                   disabled={isProcessing}
-                  className="px-3 sm:px-4 py-2 text-xs tracking-[0.15em] uppercase font-light bg-stone-800 rounded-lg hover:bg-stone-700 transition-all flex items-center justify-center gap-2 min-h-[44px] touch-manipulation disabled:opacity-50"
+                  className="min-h-[44px] rounded-full border border-white/20 bg-white/5 px-3 py-2 text-xs font-light uppercase tracking-[0.2em] transition-all hover:bg-white/10 disabled:opacity-50"
                 >
-                  <Heart size={14} />
-                  <span className="hidden sm:inline">Favorite</span>
+                  Favourite
                 </button>
                 <button
                   onClick={onDelete}
                   disabled={isProcessing}
-                  className="px-3 sm:px-4 py-2 text-xs tracking-[0.15em] uppercase font-light bg-red-600 rounded-lg hover:bg-red-700 transition-all flex items-center justify-center gap-2 min-h-[44px] col-span-2 sm:col-span-1 touch-manipulation disabled:opacity-50"
+                  className="col-span-2 min-h-[44px] rounded-full border border-white/30 bg-white/15 px-3 py-2 text-xs font-light uppercase tracking-[0.2em] text-white transition-all hover:bg-white/20 disabled:opacity-50 sm:col-span-1"
                 >
-                  <Trash2 size={14} />
                   Delete
                 </button>
               </>
@@ -102,4 +96,3 @@ export function GallerySelectionBar({
     </div>
   )
 }
-

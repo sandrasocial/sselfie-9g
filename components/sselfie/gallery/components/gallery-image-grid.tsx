@@ -1,7 +1,6 @@
 "use client"
 
 import React, { useCallback, useRef, useEffect, useState } from "react"
-import { Video, Play } from "lucide-react"
 import { triggerHaptic } from "@/lib/utils/haptics"
 import { GalleryImageCard } from "./gallery-image-card"
 import UnifiedLoading from "../../unified-loading"
@@ -59,7 +58,7 @@ function GalleryImageGridComponent({
 
   return (
     <>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-1">
+      <div className="grid grid-cols-3 gap-0">
         {images.map((image) => (
           <GalleryImageCard
             key={`img-${image.id}`}
@@ -98,7 +97,7 @@ function GalleryImageGridComponent({
           ) : (
             <button
               onClick={onLoadMore}
-              className="px-6 py-3 text-xs tracking-[0.15em] uppercase font-light bg-stone-100/50 border border-stone-200/40 rounded-xl hover:bg-stone-100/70 transition-all duration-200"
+              className="px-6 py-3 text-xs tracking-[0.2em] uppercase font-light bg-white/5 border border-white/15 rounded-xl text-white hover:bg-white/10 transition-all duration-200"
             >
               Load More Images
             </button>
@@ -153,7 +152,7 @@ function VideoThumbnail({
     <button
       ref={containerRef}
       onClick={() => onVideoClick(video)}
-      className="aspect-square relative group overflow-hidden bg-stone-200/30"
+      className="relative aspect-[9/16] overflow-hidden bg-white/5"
     >
       {posterImage ? (
         // Show poster image as thumbnail (lazy loaded)
@@ -174,15 +173,11 @@ function VideoThumbnail({
         />
       ) : (
         // Placeholder while waiting to load
-        <div className="w-full h-full bg-stone-200/30 animate-pulse" />
+        <div className="w-full h-full bg-white/10 animate-pulse" />
       )}
-      <div className="absolute inset-0 bg-stone-950/40 flex items-center justify-center">
-        <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">
-          <Play size={20} className="text-stone-950 ml-1" fill="currentColor" />
-        </div>
-      </div>
-      <div className="absolute top-2 right-2">
-        <Video size={16} className="text-white drop-shadow-lg" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/5 via-black/15 to-black/55" />
+      <div className="absolute bottom-2 left-2 rounded-full border border-white/20 bg-black/25 px-3 py-1 text-[10px] uppercase tracking-[0.22em] text-white/90 backdrop-blur-xl">
+        ANIMATE -&gt;
       </div>
     </button>
   )
@@ -190,4 +185,3 @@ function VideoThumbnail({
 
 // Memoize component to prevent unnecessary re-renders when parent re-renders
 export const GalleryImageGrid = React.memo(GalleryImageGridComponent)
-

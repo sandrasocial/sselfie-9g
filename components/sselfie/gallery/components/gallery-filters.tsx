@@ -12,24 +12,25 @@ export function GalleryFilters({
   const filters = [
     { key: "photos" as const, label: "Photos" },
     { key: "videos" as const, label: "Videos" },
-    { key: "favorited" as const, label: "Favourites" },
     { key: "feed" as const, label: "Feed" },
+    { key: "favorited" as const, label: "Favourited" },
   ]
 
   return (
-    <div className="mb-6">
-      <div className="flex gap-2">
+    <div className="mb-4 border-b border-white/10 px-3">
+      <div className="flex items-center gap-2 overflow-x-auto pb-1">
         {filters.map((filter) => (
           <button
             key={filter.key}
             onClick={() => onContentFilterChange(filter.key)}
-            className={`px-4 py-2.5 text-[11px] tracking-[0.2em] uppercase font-medium transition-all duration-200 rounded-lg ${
+            className={`whitespace-nowrap border-b-2 px-2 py-3 text-[11px] uppercase tracking-[0.28em] transition-colors duration-200 ${
               contentFilter === filter.key
-                ? "bg-stone-950 text-white"
-                : "bg-stone-50 text-stone-700 hover:bg-stone-100 border border-stone-200/30"
+                ? "border-white text-white"
+                : "border-transparent text-white/45 hover:text-white/70"
             }`}
             style={{
               fontFamily: 'Inter, sans-serif',
+              fontWeight: 500,
             }}
           >
             {filter.label}
@@ -39,4 +40,3 @@ export function GalleryFilters({
     </div>
   )
 }
-
