@@ -918,7 +918,7 @@ export default function SselfieApp({
         )}
 
       <main className="relative h-full lg:mx-3 pb-2 sm:pb-3 md:pb-4">
-        <div className={`hidden lg:block h-full ${DesignClasses.container} ${activeTab === "maya" ? "overflow-visible" : "overflow-hidden"}`}>
+        <div className={`h-full ${DesignClasses.container} ${activeTab === "maya" ? "overflow-visible" : "overflow-hidden"}`}>
           {/* Hide header when in Maya tab - it has its own header */}
           {activeTab !== "maya" && (
             <header className={`sticky top-0 z-10 border-b ${DesignClasses.border.stone} ${DesignClasses.spacing.paddingX.sm} py-3 pt-safe`} style={{ background: 'rgba(16,16,16,0.88)', backdropFilter: 'blur(20px)' }}>
