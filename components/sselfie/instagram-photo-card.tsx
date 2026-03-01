@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import Image from "next/image"
-import { MoreHorizontal } from "lucide-react"
 import FullscreenImageModal from "./fullscreen-image-modal"
 import type { ConceptData } from "./types"
 
@@ -131,10 +130,10 @@ export default function InstagramPhotoCard({
           <div className="relative">
             <button
               onClick={() => setShowMenu(!showMenu)}
-              className="p-2 hover:bg-[rgba(255,255,255,0.08)] rounded-full transition-colors"
+              className="rounded-full border border-[rgba(255,255,255,0.2)] px-3 py-1.5 hover:bg-[rgba(255,255,255,0.08)] transition-colors"
               aria-label="More options"
             >
-              <MoreHorizontal size={20} className="text-[#e5e5e5]" />
+              <span className="text-[10px] uppercase tracking-[0.2em] text-[#e5e5e5]">Menu</span>
             </button>
             {showMenu && (
               <div className="absolute right-0 top-full mt-1 bg-[#111111] rounded-xl shadow-2xl border border-[rgba(255,255,255,0.12)] py-2 w-48 z-10">

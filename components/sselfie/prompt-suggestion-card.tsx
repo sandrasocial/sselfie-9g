@@ -6,7 +6,6 @@
 'use client'
 
 import { useState } from 'react'
-import { Check } from 'lucide-react'
 import type { PromptSuggestion, NanoBananaCapability } from '@/lib/maya/prompt-generator'
 
 interface PromptSuggestionCardProps {
@@ -100,7 +99,7 @@ export function PromptSuggestionCard({
           >
             {copied ? (
               <span className="flex items-center justify-center gap-2">
-                <Check className="w-4 h-4" strokeWidth={2} />
+                <span className="text-[10px] tracking-[0.16em] uppercase">Done</span>
                 COPIED
               </span>
             ) : (
@@ -228,7 +227,6 @@ export function PromptSuggestionsContainer({
     </div>
   )
 }
-
 
 
 

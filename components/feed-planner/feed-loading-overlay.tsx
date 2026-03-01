@@ -1,7 +1,5 @@
 "use client"
 
-import { Loader2 } from "lucide-react"
-
 interface FeedLoadingOverlayProps {
   feedId: number | null
   readyPosts: number
@@ -109,7 +107,7 @@ export default function FeedLoadingOverlay({
                   </div>
 
                   <div className="flex items-center gap-2 justify-center">
-                    <Loader2 size={14} className="animate-spin text-stone-600" />
+                    <span className="inline-flex w-3 h-3 rounded-full border border-stone-400 border-t-stone-700 animate-spin" />
                     <p className="text-xs font-light text-stone-500">
                       {getProgressMessage()}
                     </p>
@@ -121,7 +119,7 @@ export default function FeedLoadingOverlay({
                   {isTakingLonger && (
                     <div className="mt-6 pt-6 border-t border-stone-200">
                       <p className="text-sm font-light text-stone-600 leading-relaxed">
-                        ✨ This is taking a bit longer than expected! Your photos are being carefully crafted with high-quality details. Feel free to grab a coffee—we&apos;ll have them ready soon! ☕
+                        This is taking a bit longer than expected. Your photos are being crafted with high-quality details.
                       </p>
                     </div>
                   )}
@@ -134,4 +132,3 @@ export default function FeedLoadingOverlay({
     </div>
   )
 }
-

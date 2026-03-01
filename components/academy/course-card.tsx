@@ -1,5 +1,4 @@
 "use client"
-import { Lock } from "lucide-react"
 
 interface CourseCardProps {
   course: {
@@ -79,7 +78,7 @@ export default function CourseCard({ course, userTier, progress, onCourseClick }
           <div className="absolute inset-0 bg-[rgba(11,13,16,0.70)] backdrop-blur-sm flex items-center justify-center">
             <div className="text-center space-y-2">
               <div className="w-12 h-12 bg-white/10 backdrop-blur-xl rounded-full flex items-center justify-center mx-auto border border-white/20">
-                <Lock size={20} className="text-white" strokeWidth={1.5} />
+                <span className="text-[10px] tracking-[0.12em] uppercase text-white/80">Locked</span>
               </div>
               <p className="text-xs tracking-[0.15em] uppercase font-light text-white">{course.tier} tier required</p>
             </div>

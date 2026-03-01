@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useRef, useMemo } from "react"
-import { Loader2, Settings, X, ChevronLeft, ChevronRight, Search, ArrowUpDown, Heart, Clock, TrendingUp, ImageIcon } from "lucide-react"
 import Image from "next/image"
 import FullscreenImageModal from "../fullscreen-image-modal"
 
@@ -328,7 +327,7 @@ export default function MayaPromptsTab({
             className="absolute top-4 right-4 sm:top-6 sm:right-6 z-10 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors backdrop-blur-xl"
             aria-label="Close preview"
           >
-            <X className="w-5 h-5 sm:w-6 sm:h-6 text-white" strokeWidth={2} />
+            <span className="text-[10px] uppercase tracking-[0.18em] text-white">Close</span>
           </button>
           
           {/* Image Container */}
@@ -374,7 +373,7 @@ export default function MayaPromptsTab({
           className="absolute top-4 right-4 sm:top-6 sm:right-6 z-10 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors backdrop-blur-xl"
           aria-label="Close preview"
         >
-          <X className="w-5 h-5 sm:w-6 sm:h-6 text-white" strokeWidth={2} />
+          <span className="text-[10px] uppercase tracking-[0.18em] text-white">Close</span>
         </button>
         
         {/* Navigation Buttons */}
@@ -389,7 +388,7 @@ export default function MayaPromptsTab({
                 className="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 z-10 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors backdrop-blur-xl"
                 aria-label="Previous image"
               >
-                <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-white" strokeWidth={2} />
+                <span className="text-[10px] uppercase tracking-[0.16em] text-white">Prev</span>
               </button>
             )}
             {canGoNext && (
@@ -401,7 +400,7 @@ export default function MayaPromptsTab({
                 className="absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 z-10 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors backdrop-blur-xl"
                 aria-label="Next image"
               >
-                <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-white" strokeWidth={2} />
+                <span className="text-[10px] uppercase tracking-[0.16em] text-white">Next</span>
               </button>
             )}
           </>
@@ -1071,7 +1070,7 @@ export default function MayaPromptsTab({
                     >
                       {hasImages ? (
                         <>
-                          <Settings size={14} />
+                          <span className="text-[10px] uppercase tracking-[0.16em]">Manage</span>
                           <span>Manage</span>
                         </>
                       ) : (
@@ -1088,13 +1087,13 @@ export default function MayaPromptsTab({
           <div className="flex flex-col sm:flex-row gap-4 mb-6 sm:mb-8">
             {/* Search Input */}
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" strokeWidth={2} />
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] uppercase tracking-[0.16em] text-stone-400">Find</span>
               <input
                 type="text"
                 placeholder="Search prompts..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 text-sm bg-white border border-stone-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-950 focus:border-transparent transition-all"
+                className="w-full pl-14 pr-4 py-3 text-sm bg-white border border-stone-200/60 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-950 focus:border-transparent transition-all"
               />
               {searchQuery && (
                 <button
@@ -1102,7 +1101,7 @@ export default function MayaPromptsTab({
                   className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center text-stone-400 hover:text-stone-600 transition-colors"
                   aria-label="Clear search"
                 >
-                  <X size={16} strokeWidth={2} />
+                  <span className="text-[10px] uppercase tracking-[0.16em]">Clear</span>
                 </button>
               )}
             </div>
@@ -1119,7 +1118,7 @@ export default function MayaPromptsTab({
                 <option value="alphabetical">Alphabetical</option>
                 <option value="category">By Category</option>
               </select>
-              <ArrowUpDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 pointer-events-none" strokeWidth={2} />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] uppercase tracking-[0.16em] text-stone-400 pointer-events-none">Sort</span>
             </div>
           </div>
 
@@ -1163,7 +1162,7 @@ export default function MayaPromptsTab({
           {recentlyUsedPrompts.length > 0 && searchQuery === "" && selectedCategory === "all" && (
             <div className="mb-8 sm:mb-12">
               <div className="flex items-center gap-2 mb-4 sm:mb-6">
-                <Clock size={18} className="text-stone-600" strokeWidth={1.5} />
+                <span className="text-[10px] uppercase tracking-[0.16em] text-stone-600">Recent</span>
                 <h3 className="text-sm sm:text-base font-serif font-light tracking-[0.15em] uppercase text-stone-950">
                   Recently Used
                 </h3>
@@ -1225,7 +1224,7 @@ export default function MayaPromptsTab({
           {promptFavorites.size > 0 && searchQuery === "" && selectedCategory === "all" && (
             <div className="mb-8 sm:mb-12">
               <div className="flex items-center gap-2 mb-4 sm:mb-6">
-                <Heart size={18} className="text-red-500 fill-current" strokeWidth={1.5} />
+                <span className="text-[10px] uppercase tracking-[0.16em] text-red-500">Saved</span>
                 <h3 className="text-sm sm:text-base font-serif font-light tracking-[0.15em] uppercase text-stone-950">
                   Favorites
                 </h3>
@@ -1280,7 +1279,7 @@ export default function MayaPromptsTab({
                               className="p-2 text-red-500 bg-red-50 rounded-lg hover:bg-red-100 transition-all touch-manipulation active:scale-95"
                               aria-label="Remove from favorites"
                             >
-                              <Heart size={16} className="fill-current" strokeWidth={2} />
+                              <span className="text-[10px] uppercase tracking-[0.16em]">Saved</span>
                             </button>
                           </div>
                         </div>
@@ -1295,7 +1294,7 @@ export default function MayaPromptsTab({
           {promptUsageCounts.size > 0 && searchQuery === "" && selectedCategory === "all" && (
             <div className="mb-8 sm:mb-12">
               <div className="flex items-center gap-2 mb-4 sm:mb-6">
-                <TrendingUp size={18} className="text-stone-600" strokeWidth={1.5} />
+                <span className="text-[10px] uppercase tracking-[0.16em] text-stone-600">Top</span>
                 <h3 className="text-sm sm:text-base font-serif font-light tracking-[0.15em] uppercase text-stone-950">
                   Most Used
                 </h3>
@@ -1337,7 +1336,7 @@ export default function MayaPromptsTab({
                           )}
                           {/* Usage count badge */}
                           <div className="absolute top-2 right-2 px-2 py-1 bg-stone-950/80 backdrop-blur-sm rounded-full flex items-center gap-1">
-                            <TrendingUp size={12} className="text-white" strokeWidth={2} />
+                            <span className="text-[9px] uppercase tracking-[0.16em] text-white">Top</span>
                             <span className="text-[10px] text-white font-medium">{count}</span>
                           </div>
                         </div>
@@ -1364,7 +1363,7 @@ export default function MayaPromptsTab({
           {/* Prompts Grid */}
           {filteredAndSortedPrompts.length === 0 ? (
             <div className="text-center py-24">
-              <ImageIcon size={48} className="mx-auto mb-4 text-stone-400" strokeWidth={1.5} />
+              <p className="mx-auto mb-4 text-[10px] uppercase tracking-[0.18em] text-stone-400">Prompts</p>
               <h3 className="text-lg font-serif font-light tracking-[0.2em] uppercase text-stone-950 mb-2">
                 No Prompts Available
               </h3>
@@ -1428,7 +1427,7 @@ export default function MayaPromptsTab({
                             {/* Loading overlay */}
                             {isGenerating && (
                               <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10 pointer-events-none">
-                                <Loader2 className="w-8 h-8 text-white animate-spin" />
+                                <div className="w-8 h-8 rounded-full border-2 border-white/25 border-t-white animate-spin" />
                               </div>
                             )}
                           </button>
@@ -1446,7 +1445,7 @@ export default function MayaPromptsTab({
                             {/* Loading overlay */}
                             {isGenerating && (
                               <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
-                                <Loader2 className="w-8 h-8 text-white animate-spin" />
+                                <div className="w-8 h-8 rounded-full border-2 border-white/25 border-t-white animate-spin" />
                               </div>
                             )}
                           </div>
@@ -1484,7 +1483,7 @@ export default function MayaPromptsTab({
                           >
                             {isGenerating ? (
                               <>
-                                <Loader2 className="w-3 h-3 animate-spin" />
+                                <span className="inline-flex w-3 h-3 rounded-full border border-white/30 border-t-white animate-spin" />
                                 Generating...
                               </>
                             ) : (
@@ -1502,7 +1501,7 @@ export default function MayaPromptsTab({
                           >
                             {isGenerating ? (
                               <>
-                                <Loader2 className="w-3 h-3 animate-spin" />
+                                <span className="inline-flex w-3 h-3 rounded-full border border-white/30 border-t-white animate-spin" />
                                 Regenerating...
                               </>
                             ) : (
@@ -1531,11 +1530,9 @@ export default function MayaPromptsTab({
                           }`}
                           aria-label={promptFavorites.has(prompt.id) ? "Remove from favorites" : "Add to favorites"}
                         >
-                          <Heart
-                            size={16}
-                            className={promptFavorites.has(prompt.id) ? "fill-current" : ""}
-                            strokeWidth={2}
-                          />
+                          <span className="text-[10px] uppercase tracking-[0.16em]">
+                            {promptFavorites.has(prompt.id) ? "Saved" : "Save"}
+                          </span>
                         </button>
                       </div>
 

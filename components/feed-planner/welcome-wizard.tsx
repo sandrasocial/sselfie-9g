@@ -4,7 +4,6 @@ import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { motion, AnimatePresence } from "framer-motion"
-import { Sparkles, Grid3x3, Check, ArrowRight, X, Image as ImageIcon } from "lucide-react"
 import { DesignClasses } from "@/lib/design-tokens"
 import useSWR from "swr"
 import Image from "next/image"
@@ -133,7 +132,7 @@ export default function WelcomeWizard({
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center">
-                <ImageIcon className="h-12 w-12 text-white/45" />
+                <span className="text-[11px] uppercase tracking-[0.25em] text-white/45">Preview</span>
               </div>
             )}
           </div>
@@ -150,7 +149,6 @@ export default function WelcomeWizard({
               className="flex-1 rounded-full border border-white/25 bg-white/10 px-6 py-3 text-sm font-medium uppercase tracking-[0.2em] text-white transition-all duration-200 hover:scale-105 hover:bg-white/15 active:scale-95 shadow-lg"
             >
               Create Feed Using Preview Style
-              <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
             <Button
               onClick={() => {
@@ -193,7 +191,6 @@ export default function WelcomeWizard({
         title: "Great news! We found your preview feed",
         subtitle: "Step 1 of 3",
         content: firstStepContent,
-        icon: Sparkles,
       })
     } else {
       stepList.push({
@@ -209,7 +206,6 @@ export default function WelcomeWizard({
             </p>
           </div>
         ),
-        icon: Sparkles,
       })
     }
 
@@ -229,7 +225,6 @@ export default function WelcomeWizard({
           </div>
         </div>
       ),
-      icon: Grid3x3,
     })
 
     // Step 3: You're ready — single CTA per content doc
@@ -246,11 +241,9 @@ export default function WelcomeWizard({
             className="flex w-full items-center justify-center gap-2 rounded-full border border-white/25 bg-white/10 py-6 text-base font-medium uppercase tracking-[0.2em] text-white shadow-lg transition-colors hover:bg-white/15"
           >
             Create my first feed
-            <ArrowRight className="w-4 h-4" />
           </Button>
         </div>
       ),
-      icon: Check,
     })
 
     return stepList
@@ -271,7 +264,6 @@ export default function WelcomeWizard({
   }
 
   const currentStepData = steps[currentStep]
-  const Icon = currentStepData.icon
   const progress = ((currentStep + 1) / steps.length) * 100
 
   if (!open) return null
@@ -306,7 +298,7 @@ export default function WelcomeWizard({
                   className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-lg text-white/65 transition-colors hover:bg-white/10 hover:text-white"
                   aria-label="Close"
                 >
-                  <X size={18} />
+                  <span className="text-[10px] uppercase tracking-[0.2em]">Close</span>
                 </button>
               )}
 
@@ -343,7 +335,7 @@ export default function WelcomeWizard({
                     transition={{ duration: 0.3 }}
                     className="space-y-6"
                   >
-                    {/* Icon with animation */}
+                    {/* Step indicator */}
                     <motion.div
                       initial={{ scale: 0.8, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
@@ -351,7 +343,7 @@ export default function WelcomeWizard({
                       className="flex justify-center"
                     >
                       <div className="flex h-16 w-16 items-center justify-center rounded-full border-2 border-white/20 bg-white/8 sm:h-20 sm:w-20">
-                        <Icon className="h-8 w-8 text-white/70 sm:h-10 sm:w-10" strokeWidth={1.5} />
+                        <span className="text-xs uppercase tracking-[0.3em] text-white/70">0{currentStep + 1}</span>
                       </div>
                     </motion.div>
 
@@ -399,12 +391,10 @@ export default function WelcomeWizard({
                     {currentStep < steps.length - 1 ? (
                       <>
                         Next
-                        <ArrowRight className="w-4 h-4 ml-2" />
                       </>
                     ) : (
                       <>
                         Create my first feed
-                        <ArrowRight className="w-4 h-4 ml-2" />
                       </>
                     )}
                   </Button>

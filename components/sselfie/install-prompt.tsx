@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Download, X, Share } from "lucide-react"
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>
@@ -137,7 +136,7 @@ export function InstallPrompt() {
           <div className="flex items-start justify-between">
             <h3 className="font-semibold text-lg">Install SSELFIE</h3>
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleDismiss}>
-              <X className="h-4 w-4" />
+              <span className="text-[10px] uppercase tracking-[0.2em]">Close</span>
             </Button>
           </div>
           <div className="space-y-3">
@@ -147,7 +146,7 @@ export function InstallPrompt() {
                 <span className="flex-1">
                   {isIOS ? (
                     <>
-                      Tap the <Share className="inline h-4 w-4 mx-1" /> Share button at the bottom of Safari
+                      Tap the Share button at the bottom of Safari
                     </>
                   ) : (
                     "Tap the menu button (⋮) in your browser"
@@ -173,7 +172,7 @@ export function InstallPrompt() {
       <div className="rounded-lg border border-border bg-background/95 p-4 shadow-lg backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="flex items-start gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-            <Download className="h-5 w-5 text-primary" />
+            <span className="text-[10px] uppercase tracking-[0.2em] text-primary">App</span>
           </div>
           <div className="flex-1 space-y-2">
             <div className="flex items-start justify-between gap-2">
@@ -188,7 +187,7 @@ export function InstallPrompt() {
                 </p>
               </div>
               <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={handleDismiss}>
-                <X className="h-4 w-4" />
+                <span className="text-[10px] uppercase tracking-[0.2em]">X</span>
               </Button>
             </div>
             <div className="flex gap-2">

@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Download, Share, MoreVertical } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
@@ -90,7 +89,7 @@ export function InstallButton({ variant = "default" }: InstallButtonProps) {
     return (
       <>
         <button onClick={handleInstall} className="flex items-center gap-2 w-full text-sm px-2 py-1.5">
-          <Download size={16} />
+          <span className="text-[10px] uppercase tracking-[0.2em]">App</span>
           <span>Install App</span>
         </button>
 
@@ -98,7 +97,7 @@ export function InstallButton({ variant = "default" }: InstallButtonProps) {
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <Download className="h-5 w-5" />
+                <span className="text-[10px] uppercase tracking-[0.2em]">App</span>
                 Install SSELFIE
               </DialogTitle>
               <DialogDescription>
@@ -123,8 +122,8 @@ export function InstallButton({ variant = "default" }: InstallButtonProps) {
                       <p className="text-sm font-medium">For iPhone/iPad:</p>
                       <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
                         <li className="flex items-start gap-2">
-                          <span className="flex-1">
-                            Tap the <Share className="inline h-4 w-4 mx-1" /> Share button at the bottom of Safari
+                        <span className="flex-1">
+                            Tap the Share button at the bottom of Safari
                           </span>
                         </li>
                         <li>Scroll down and tap &quot;Add to Home Screen&quot;</li>
@@ -138,8 +137,8 @@ export function InstallButton({ variant = "default" }: InstallButtonProps) {
                       <p className="text-sm font-medium">For Android:</p>
                       <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
                         <li className="flex items-start gap-2">
-                          <span className="flex-1">
-                            Tap the <MoreVertical className="inline h-4 w-4 mx-1" /> menu button in your browser
+                        <span className="flex-1">
+                            Tap the menu button in your browser
                           </span>
                         </li>
                         <li>Select &quot;Add to Home screen&quot; or &quot;Install app&quot;</li>
@@ -179,7 +178,7 @@ export function InstallButton({ variant = "default" }: InstallButtonProps) {
         onClick={handleInstall}
         className="gap-2 text-xs tracking-[0.15em] uppercase font-light"
       >
-        <Download size={14} />
+        <span className="text-[10px] uppercase tracking-[0.2em]">App</span>
         Install App
       </Button>
 
@@ -187,7 +186,7 @@ export function InstallButton({ variant = "default" }: InstallButtonProps) {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Download className="h-5 w-5" />
+              <span className="text-[10px] uppercase tracking-[0.2em]">App</span>
               Install SSELFIE
             </DialogTitle>
             <DialogDescription>
@@ -213,7 +212,7 @@ export function InstallButton({ variant = "default" }: InstallButtonProps) {
                     <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
                       <li className="flex items-start gap-2">
                         <span className="flex-1">
-                          Tap the <Share className="inline h-4 w-4 mx-1" /> Share button at the bottom of Safari
+                          Tap the Share button at the bottom of Safari
                         </span>
                       </li>
                       <li>Scroll down and tap &quot;Add to Home Screen&quot;</li>
@@ -228,7 +227,7 @@ export function InstallButton({ variant = "default" }: InstallButtonProps) {
                     <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
                       <li className="flex items-start gap-2">
                         <span className="flex-1">
-                          Tap the <MoreVertical className="inline h-4 w-4 mx-1" /> menu button in your browser
+                          Tap the menu button in your browser
                         </span>
                       </li>
                       <li>Select &quot;Add to Home screen&quot; or &quot;Install app&quot;</li>

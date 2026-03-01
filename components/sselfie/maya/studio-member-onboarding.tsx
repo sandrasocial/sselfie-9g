@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { X } from "lucide-react"
 
 interface StudioMemberOnboardingProps {
   open: boolean
@@ -50,7 +49,7 @@ export default function StudioMemberOnboarding({
             className="w-8 h-8 rounded-full border border-[rgba(255,255,255,0.2)] flex items-center justify-center hover:bg-[rgba(255,255,255,0.1)] transition-colors"
             aria-label="Close onboarding"
           >
-            <X size={16} />
+            <span className="text-[10px] uppercase tracking-[0.18em] text-[#e5e5e5]">Close</span>
           </button>
         </div>
 

@@ -1,6 +1,5 @@
 "use client"
 
-import { MessageSquare, Clock, ChevronRight, Aperture, Trash2, MoreVertical, X } from "lucide-react"
 import useSWR from "swr"
 import { useState, useEffect, useRef } from "react"
 import UnifiedLoading from "./unified-loading"
@@ -161,11 +160,11 @@ export default function MayaChatHistory({
     if (!category) return null
 
     const categoryColors: Record<string, string> = {
-      portrait: "bg-purple-100 text-purple-700 border-purple-200",
-      lifestyle: "bg-blue-100 text-blue-700 border-blue-200",
-      editorial: "bg-pink-100 text-pink-700 border-pink-200",
-      creative: "bg-amber-100 text-amber-700 border-amber-200",
-      default: "bg-stone-100 text-stone-700 border-stone-200",
+      portrait: "bg-[rgba(255,255,255,0.12)] text-[#ffffff] border-[rgba(255,255,255,0.22)]",
+      lifestyle: "bg-[rgba(255,255,255,0.12)] text-[#ffffff] border-[rgba(255,255,255,0.22)]",
+      editorial: "bg-[rgba(255,255,255,0.12)] text-[#ffffff] border-[rgba(255,255,255,0.22)]",
+      creative: "bg-[rgba(255,255,255,0.12)] text-[#ffffff] border-[rgba(255,255,255,0.22)]",
+      default: "bg-[rgba(255,255,255,0.1)] text-[#e5e5e5] border-[rgba(255,255,255,0.2)]",
     }
 
     const colorClass = categoryColors[category.toLowerCase()] || categoryColors.default
@@ -174,7 +173,7 @@ export default function MayaChatHistory({
       <span
         className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] tracking-wider uppercase font-light border ${colorClass}`}
       >
-        <Aperture size={10} strokeWidth={1.5} />
+        <span>Type</span>
         {category}
       </span>
     )
@@ -183,11 +182,11 @@ export default function MayaChatHistory({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent
-        className="max-w-[95vw] sm:max-w-2xl md:max-w-3xl max-h-[90vh] overflow-hidden mx-2 sm:mx-4 p-0 flex flex-col bg-white border-stone-200"
+        className="max-w-[95vw] sm:max-w-2xl md:max-w-3xl max-h-[90vh] overflow-hidden mx-2 sm:mx-4 p-0 flex flex-col bg-[rgba(10,10,10,0.96)] border-[rgba(255,255,255,0.14)] backdrop-blur-[20px]"
       >
-        <DialogHeader className="px-6 py-4 border-b border-stone-200">
+        <DialogHeader className="px-6 py-4 border-b border-[rgba(255,255,255,0.12)]">
           <div className="flex items-center justify-between">
-            <DialogTitle className="text-base sm:text-lg font-serif font-normal text-stone-950 uppercase tracking-wide">
+            <DialogTitle className="text-base sm:text-lg font-serif font-normal text-[#ffffff] uppercase tracking-wide">
               Project History
             </DialogTitle>
             <div className="flex items-center gap-3">
@@ -200,15 +199,15 @@ export default function MayaChatHistory({
               </button>
               <button
                 onClick={onClose}
-                className="touch-manipulation active:scale-95 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 transition-colors"
+                className="touch-manipulation active:scale-95 px-3 h-8 flex items-center justify-center rounded-lg border border-[rgba(255,255,255,0.2)] hover:bg-[rgba(255,255,255,0.08)] transition-colors"
                 aria-label="Close"
               >
-                <X size={18} className="text-stone-600" strokeWidth={2} />
+                <span className="text-[10px] uppercase tracking-[0.18em] text-[#e5e5e5]">Close</span>
               </button>
             </div>
           </div>
           {chats.length > 0 && (
-            <p className="text-xs font-light text-stone-500 mt-2">
+            <p className="text-xs font-light text-[#e5e5e5] mt-2">
               {chats.length} project{chats.length !== 1 ? 's' : ''}
             </p>
           )}
@@ -217,23 +216,23 @@ export default function MayaChatHistory({
         <div className="flex-1 overflow-y-auto px-6 py-4">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <p className="text-sm font-light text-stone-500">Loading chat history...</p>
+              <p className="text-sm font-light text-[#e5e5e5]">Loading chat history...</p>
             </div>
           ) : error ? (
-            <div className="bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl p-4 text-center">
-              <p className="text-xs font-light text-stone-500">Failed to load chat history</p>
+            <div className="bg-[rgba(255,255,255,0.04)] backdrop-blur-2xl border border-[rgba(255,255,255,0.12)] rounded-xl p-4 text-center">
+              <p className="text-xs font-light text-[#e5e5e5]">Failed to load chat history</p>
               <button
                 onClick={() => window.location.reload()}
-                className="mt-2 text-xs tracking-[0.1em] uppercase font-light text-stone-600 hover:text-stone-900 transition-colors duration-300"
+                className="mt-2 text-xs tracking-[0.1em] uppercase font-light text-[#ffffff] hover:text-[#e5e5e5] transition-colors duration-300"
               >
                 Retry
               </button>
             </div>
           ) : chats.length === 0 ? (
-            <div className="bg-white/40 backdrop-blur-2xl border border-white/60 rounded-xl p-8 text-center">
-          <MessageSquare size={32} className="text-stone-400 mx-auto mb-4" strokeWidth={1.5} />
-          <h4 className="text-sm font-light text-stone-900 mb-2">No conversations yet</h4>
-          <p className="text-xs font-light text-stone-500 mb-4 max-w-[200px] mx-auto">
+            <div className="bg-[rgba(255,255,255,0.04)] backdrop-blur-2xl border border-[rgba(255,255,255,0.12)] rounded-xl p-8 text-center">
+          <p className="text-[10px] tracking-[0.18em] uppercase text-[#e5e5e5] mb-4">History</p>
+          <h4 className="text-sm font-light text-[#ffffff] mb-2">No conversations yet</h4>
+          <p className="text-xs font-light text-[#e5e5e5] mb-4 max-w-[200px] mx-auto">
             Start chatting with Maya to create your first photo concepts
           </p>
           <button
@@ -256,8 +255,8 @@ export default function MayaChatHistory({
                   onClick={() => onSelectChat(chat.id, displayTitle)}
                   className={`group w-full text-left p-4 rounded-xl transition-all duration-300 hover:scale-[1.01] active:scale-[0.99] cursor-pointer ${
                     isActive
-                      ? "bg-stone-900 text-white shadow-xl shadow-stone-900/30 ring-2 ring-stone-900 ring-offset-2"
-                      : "bg-white/40 backdrop-blur-2xl border border-white/60 hover:bg-white/60 hover:border-white/80 hover:shadow-lg shadow-stone-900/5"
+                      ? "bg-[rgba(255,255,255,0.12)] text-white shadow-xl ring-1 ring-[rgba(255,255,255,0.26)]"
+                      : "bg-[rgba(255,255,255,0.04)] backdrop-blur-2xl border border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.08)] hover:border-[rgba(255,255,255,0.2)] hover:shadow-lg"
                   }`}
                   role="button"
                   tabIndex={0}
@@ -274,7 +273,7 @@ export default function MayaChatHistory({
                     <div className="mb-2">
                       {isActive ? (
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] tracking-wider uppercase font-light border bg-white/20 text-white border-white/30">
-                          <Aperture size={10} strokeWidth={1.5} />
+                          <span>Type</span>
                           {chat.chat_category}
                         </span>
                       ) : (
@@ -306,22 +305,22 @@ export default function MayaChatHistory({
                         className={`p-2 rounded-lg transition-all relative z-10 ${
                           isActive
                             ? "hover:bg-white/20 text-white hover:text-white bg-white/10"
-                            : "text-stone-700 hover:bg-stone-200 hover:text-stone-900 bg-stone-100"
+                            : "text-[#e5e5e5] hover:bg-[rgba(255,255,255,0.12)] hover:text-[#ffffff] bg-[rgba(255,255,255,0.08)]"
                         }`}
                         aria-label="Chat options"
                         title={onDeleteChat ? "Delete chat" : "Chat options (delete not available)"}
                         type="button"
                         style={{ display: "flex", alignItems: "center", justifyContent: "center" }}
                       >
-                        <MoreVertical size={18} strokeWidth={2.5} />
+                        <span className="text-[10px] uppercase tracking-[0.16em]">Menu</span>
                       </button>
-                      <ChevronRight
-                        size={16}
-                        className={`flex-shrink-0 transition-transform duration-300 ${
-                          isActive ? "text-white translate-x-0.5" : "text-stone-400 group-hover:translate-x-0.5"
+                      <span
+                        className={`text-[10px] uppercase tracking-[0.16em] flex-shrink-0 transition-transform duration-300 ${
+                          isActive ? "text-white translate-x-0.5" : "text-[#e5e5e5] group-hover:translate-x-0.5"
                         }`}
-                        strokeWidth={1.5}
-                      />
+                      >
+                        Open
+                      </span>
                     </div>
                   </div>
 
@@ -337,17 +336,13 @@ export default function MayaChatHistory({
 
                   <div className="flex items-center gap-4 text-xs font-light">
                     <div className="flex items-center gap-1.5">
-                      <Clock size={12} className={isActive ? "text-white/70" : "text-stone-400"} strokeWidth={1.5} />
+                      <span className={isActive ? "text-white/70 text-[10px] uppercase tracking-[0.16em]" : "text-[#e5e5e5] text-[10px] uppercase tracking-[0.16em]"}>Updated</span>
                       <span className={isActive ? "text-white/70" : "text-stone-500"}>
                         {formatTimeAgo(chat.last_activity)}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <MessageSquare
-                        size={12}
-                        className={isActive ? "text-white/70" : "text-stone-400"}
-                        strokeWidth={1.5}
-                      />
+                      <span className={isActive ? "text-white/70 text-[10px] uppercase tracking-[0.16em]" : "text-[#e5e5e5] text-[10px] uppercase tracking-[0.16em]"}>Msgs</span>
                       <span className={isActive ? "text-white/70" : "text-stone-500"}>{chat.message_count || 0}</span>
                     </div>
                   </div>
@@ -357,18 +352,18 @@ export default function MayaChatHistory({
                 {showMenuForChat === chat.id && (
                   <div
                     ref={menuRef}
-                    className="absolute right-2 top-12 bg-white rounded-xl shadow-2xl border border-stone-200 py-2 w-48 z-20"
+                    className="absolute right-2 top-12 bg-[rgba(10,10,10,0.96)] rounded-xl shadow-2xl border border-[rgba(255,255,255,0.14)] py-2 w-48 z-20"
                   >
                     {onDeleteChat ? (
                       <button
                         onClick={(e) => handleDeleteClick(e, chat.id)}
-                        className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
+                        className="w-full px-4 py-2.5 text-left text-sm text-red-300 hover:bg-[rgba(255,255,255,0.08)] transition-colors flex items-center gap-2"
                       >
-                        <Trash2 size={14} strokeWidth={1.5} />
+                        <span className="text-[10px] uppercase tracking-[0.16em]">Delete</span>
                         Delete Chat
                       </button>
                     ) : (
-                      <div className="px-4 py-2.5 text-sm text-stone-500">
+                      <div className="px-4 py-2.5 text-sm text-[#e5e5e5]">
                         Delete not available
                       </div>
                     )}
@@ -378,24 +373,24 @@ export default function MayaChatHistory({
                 {/* Delete Confirmation Modal */}
                 {showDeleteConfirm === chat.id && (
                   <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl border border-stone-200 p-6 max-w-md w-full">
+                    <div className="bg-[rgba(10,10,10,0.96)] rounded-2xl shadow-2xl border border-[rgba(255,255,255,0.14)] p-6 max-w-md w-full">
                       <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-lg font-semibold text-stone-950">Delete Conversation?</h3>
+                        <h3 className="text-lg font-semibold text-[#ffffff]">Delete Conversation?</h3>
                         <button
                           onClick={() => setShowDeleteConfirm(null)}
-                          className="p-1 hover:bg-stone-100 rounded-lg transition-colors"
+                          className="px-3 py-1.5 border border-[rgba(255,255,255,0.2)] rounded-lg hover:bg-[rgba(255,255,255,0.08)] transition-colors"
                           aria-label="Close"
                         >
-                          <X size={20} className="text-stone-600" strokeWidth={1.5} />
+                          <span className="text-[10px] uppercase tracking-[0.16em] text-[#e5e5e5]">Close</span>
                         </button>
                       </div>
-                      <p className="text-sm text-stone-600 mb-6">
+                      <p className="text-sm text-[#e5e5e5] mb-6">
                         Are you sure you want to delete this conversation? This action cannot be undone.
                       </p>
                       <div className="flex items-center gap-3">
                         <button
                           onClick={() => setShowDeleteConfirm(null)}
-                          className="flex-1 px-4 py-2.5 border border-stone-300 text-stone-700 rounded-lg hover:bg-stone-50 transition-colors text-sm font-medium"
+                          className="flex-1 px-4 py-2.5 border border-[rgba(255,255,255,0.2)] text-[#e5e5e5] rounded-lg hover:bg-[rgba(255,255,255,0.08)] transition-colors text-sm font-medium"
                           disabled={isDeleting}
                         >
                           Cancel

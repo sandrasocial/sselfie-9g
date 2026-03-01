@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Loader2, ImageIcon, Copy, Check, Wand2, Edit2, X, Save, Hash } from 'lucide-react'
 import { toast } from "@/hooks/use-toast"
 
 interface FeedPostCardProps {
@@ -304,7 +303,7 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
           </div>
         </div>
         <button className="p-2 hover:bg-stone-50 rounded-full transition-colors">
-          <MoreHorizontal size={20} className="text-stone-950" />
+          <span className="text-[10px] uppercase tracking-[0.16em] text-stone-950">Menu</span>
         </button>
       </div>
 
@@ -325,7 +324,7 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
           <div className="w-full h-full flex flex-col items-center justify-center">
             <div className="relative mb-4">
               <div className="w-16 h-16 rounded-full border-4 border-stone-200 border-t-stone-900 animate-spin"></div>
-              <Wand2 size={24} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-stone-900" strokeWidth={2} />
+              <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[9px] uppercase tracking-[0.16em] text-stone-900">AI</span>
             </div>
             <p className="text-sm text-stone-700 font-light tracking-wider">Creating your image...</p>
             <p className="text-xs text-stone-500 mt-1">This usually takes 1-2 minutes</p>
@@ -351,7 +350,7 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
               
               {/* Icon */}
               <div className="mb-4 w-20 h-20 rounded-full bg-white/60 backdrop-blur-sm border border-stone-200 flex items-center justify-center shadow-sm">
-                <ImageIcon size={32} className="text-stone-400" strokeWidth={1.5} />
+                <span className="text-[10px] uppercase tracking-[0.18em] text-stone-400">Image</span>
               </div>
               
               {/* Description */}
@@ -365,7 +364,7 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
                   onClick={handleNavigateToMaya}
                   className="group px-8 py-3.5 bg-stone-900 hover:bg-stone-800 text-white text-sm font-medium tracking-wide rounded-xl transition-all hover:shadow-xl hover:scale-[1.02] flex items-center gap-2"
                 >
-                  <Wand2 size={16} className="group-hover:rotate-12 transition-transform" strokeWidth={2} />
+                  <span className="text-[10px] uppercase tracking-[0.16em]">AI</span>
                   <span>Generate in Maya</span>
                 </button>
               )}
@@ -385,17 +384,17 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button className="hover:opacity-60 transition-opacity">
-              <Heart size={24} className="text-stone-950" strokeWidth={2} />
+              <span className="text-[10px] uppercase tracking-[0.16em] text-stone-950">Like</span>
             </button>
             <button className="hover:opacity-60 transition-opacity">
-              <MessageCircle size={24} className="text-stone-950" strokeWidth={2} />
+              <span className="text-[10px] uppercase tracking-[0.16em] text-stone-950">Reply</span>
             </button>
             <button className="hover:opacity-60 transition-opacity">
-              <Send size={24} className="text-stone-950" strokeWidth={2} />
+              <span className="text-[10px] uppercase tracking-[0.16em] text-stone-950">Send</span>
             </button>
           </div>
           <button className="hover:opacity-60 transition-opacity">
-            <Bookmark size={24} className="text-stone-950" strokeWidth={2} />
+            <span className="text-[10px] uppercase tracking-[0.16em] text-stone-950">Save</span>
           </button>
         </div>
 
@@ -403,7 +402,7 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
         {isRegenerating ? (
           <div className="space-y-2 px-4 py-3 bg-stone-50 rounded-lg border border-stone-200">
             <div className="flex items-center gap-3">
-              <Loader2 size={18} className="text-stone-600 animate-spin" />
+              <span className="inline-flex w-4 h-4 rounded-full border border-stone-400 border-t-stone-700 animate-spin" />
               <p className="text-sm text-stone-700">Maya is creating a new caption...</p>
             </div>
           </div>
@@ -425,7 +424,7 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
                   {editedCaption.length}/2,200 • {getLengthIndicator(editedCaption.length)}
                 </span>
                 {editedCaption.length >= 125 && editedCaption.length <= 150 && (
-                  <span className="text-xs text-green-600">✨ Optimal</span>
+                  <span className="text-xs text-green-600">Optimal</span>
                 )}
               </div>
               <div className="flex items-center gap-2">
@@ -434,7 +433,7 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
                   disabled={isSaving}
                   className="px-3 py-1.5 text-xs font-medium text-stone-700 hover:bg-stone-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
                 >
-                  <X size={14} />
+                  <span className="text-[10px] uppercase tracking-[0.16em]">Cancel</span>
                   Cancel
                 </button>
                 <button
@@ -444,12 +443,12 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
                 >
                   {isSaving ? (
                     <>
-                      <Loader2 size={14} className="animate-spin" />
+                      <span className="inline-flex w-3 h-3 rounded-full border border-white/30 border-t-white animate-spin" />
                       Saving...
                     </>
                   ) : (
                     <>
-                      <Save size={14} />
+                      <span className="text-[10px] uppercase tracking-[0.16em]">Save</span>
                       Save
                     </>
                   )}
@@ -481,9 +480,9 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
                   title="Copy caption"
                 >
                   {copiedCaption ? (
-                    <Check size={18} className="text-green-600" />
+                    <span className="text-[10px] uppercase tracking-[0.16em] text-green-600">Done</span>
                   ) : (
-                    <Copy size={18} className="text-stone-600" />
+                    <span className="text-[10px] uppercase tracking-[0.16em] text-stone-600">Copy</span>
                   )}
                 </button>
                 {hashtags && (
@@ -493,9 +492,9 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
                     title="Copy hashtags"
                   >
                     {copiedHashtags ? (
-                      <Check size={18} className="text-green-600" />
+                      <span className="text-[10px] uppercase tracking-[0.16em] text-green-600">Done</span>
                     ) : (
-                      <Hash size={18} className="text-stone-600" />
+                      <span className="text-[10px] uppercase tracking-[0.16em] text-stone-600">Tags</span>
                     )}
                   </button>
                 )}
@@ -505,7 +504,7 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
                   className="p-2 hover:bg-stone-100 rounded-lg transition-colors border border-stone-200 hover:border-stone-300 disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Edit caption"
                 >
-                  <Edit2 size={18} className="text-stone-600" />
+                  <span className="text-[10px] uppercase tracking-[0.16em] text-stone-600">Edit</span>
                 </button>
                 <button
                   onClick={handleRegenerateCaption}
@@ -513,7 +512,7 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
                   className="p-2 hover:bg-stone-100 rounded-lg transition-colors border border-stone-200 hover:border-stone-300 disabled:opacity-50 disabled:cursor-not-allowed"
                   title="Regenerate caption"
                 >
-                  <Wand2 size={18} className="text-stone-600" />
+                  <span className="text-[10px] uppercase tracking-[0.16em] text-stone-600">Redo</span>
                 </button>
                 <button
                   onClick={handleEnhanceCaption}
@@ -522,9 +521,9 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
                   title="Enhance caption (make it longer)"
                 >
                   {isEnhancing ? (
-                    <Loader2 size={18} className="text-stone-600 animate-spin" />
+                    <span className="inline-flex w-4 h-4 rounded-full border border-stone-400 border-t-stone-700 animate-spin" />
                   ) : (
-                    <Wand2 size={18} className="text-stone-600" />
+                    <span className="text-[10px] uppercase tracking-[0.16em] text-stone-600">Boost</span>
                   )}
                 </button>
               </div>
@@ -536,7 +535,7 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
                   {caption.length} chars • {getLengthIndicator(caption.length)}
                 </span>
                 {caption.length >= 125 && caption.length <= 150 && (
-                  <span className="text-xs text-green-600">✨</span>
+                  <span className="text-xs text-green-600">Optimal</span>
                 )}
               </div>
             </div>
@@ -552,12 +551,12 @@ export default function FeedPostCard({ post, feedId, onUpdate, onNavigateToMaya 
               >
                 {isRegenerating ? (
                   <>
-                    <Loader2 size={14} className="animate-spin" />
+                    <span className="inline-flex w-3 h-3 rounded-full border border-white/30 border-t-white animate-spin" />
                     <span>Generating...</span>
                   </>
                 ) : (
                   <>
-                    <Wand2 size={14} />
+                    <span className="text-[10px] uppercase tracking-[0.16em]">AI</span>
                     <span>Generate Caption</span>
                   </>
                 )}

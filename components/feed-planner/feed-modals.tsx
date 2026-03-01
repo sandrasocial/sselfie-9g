@@ -1,6 +1,5 @@
 "use client"
 
-import { X } from "lucide-react"
 import { createPortal } from "react-dom"
 import { toast } from "@/hooks/use-toast"
 import FeedPostCard from "./feed-post-card"
@@ -56,7 +55,7 @@ export default function FeedModals({
               onClick={onClosePost}
               className="absolute -top-12 right-0 z-10 p-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full transition-colors"
             >
-              <X size={20} className="text-white" />
+              <span className="text-[10px] uppercase tracking-[0.16em] text-white">Close</span>
             </button>
 
             {/* Action buttons - shown when image exists */}
@@ -139,4 +138,3 @@ export default function FeedModals({
     </>
   )
 }
-

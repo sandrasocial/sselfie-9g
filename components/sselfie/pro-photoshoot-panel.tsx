@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import { Loader2 } from "lucide-react"
 
 interface ProPhotoshootGrid {
   id?: number
@@ -56,41 +55,41 @@ export default function ProPhotoshootPanel({
   })
 
   return (
-    <div className="bg-white/50 backdrop-blur-3xl border border-white/60 rounded-2xl sm:rounded-3xl p-6 sm:p-8 shadow-xl shadow-stone-900/5">
+    <div className="bg-white/[0.04] backdrop-blur-[20px] border border-white/15 rounded-[20px] p-6 sm:p-8">
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-serif text-xl sm:text-2xl font-extralight tracking-[0.15em] sm:tracking-[0.2em] text-stone-900 uppercase">
+          <h2 className="font-serif text-xl sm:text-2xl font-extralight tracking-[0.15em] sm:tracking-[0.2em] text-white uppercase">
             Pro Photoshoot
           </h2>
-          <div className="flex items-center gap-3 text-xs sm:text-sm font-light text-stone-600">
+          <div className="flex items-center gap-3 text-xs sm:text-sm font-light text-white/65">
             <div className="flex items-center gap-1.5">
-              <div className="w-2 h-2 bg-stone-900 rounded-full"></div>
+              <div className="w-2 h-2 bg-white rounded-full"></div>
               <span>{completedCount} Complete</span>
             </div>
             {generatingCount > 0 && (
               <div className="flex items-center gap-1.5">
-                <Loader2 size={12} className="text-stone-400 animate-spin" />
+                <span className="h-3 w-3 rounded-full border border-white/40 border-t-white animate-spin" />
                 <span>{generatingCount} Generating</span>
               </div>
             )}
             {pendingCount > 0 && (
               <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 bg-stone-300 rounded-full"></div>
+                <div className="w-2 h-2 bg-white/35 rounded-full"></div>
                 <span>{pendingCount} Pending</span>
               </div>
             )}
           </div>
         </div>
         <div className="flex items-center justify-between">
-          <p className="text-sm font-light text-stone-500 leading-relaxed">
+          <p className="text-sm font-light text-white/55 leading-relaxed">
             Progress: {completedCount}/{maxGrids} grids • {creditCost} credits per grid
           </p>
           {canGenerateMore && gridsToGenerate > 0 && (
             <button
               onClick={handleGenerateMore}
               disabled={isGenerating}
-              className="px-4 py-2 bg-gradient-to-r from-stone-800 via-stone-900 to-stone-800 hover:from-stone-900 hover:via-stone-950 hover:to-stone-900 text-white rounded-lg font-medium text-sm transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 border border-white/20 bg-white/10 hover:bg-white/15 text-white rounded-lg font-medium text-sm transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isGenerating ? (
                 <span>Generating...</span>
@@ -107,7 +106,7 @@ export default function ProPhotoshootPanel({
         {allGrids.map((grid) => (
           <div
             key={grid.gridNumber}
-            className="aspect-square bg-stone-100 rounded-xl overflow-hidden relative group"
+            className="aspect-square bg-white/[0.04] border border-white/10 rounded-xl overflow-hidden relative group"
           >
             {grid.status === "completed" && grid.gridUrl ? (
               <div className="w-full h-full">
@@ -131,7 +130,7 @@ export default function ProPhotoshootPanel({
                       >
                         {creatingCarouselForGridId === grid.id ? (
                           <span className="flex items-center gap-1.5">
-                            <Loader2 size={12} className="animate-spin" />
+                            <span className="h-3 w-3 rounded-full border border-stone-300 border-t-stone-600 animate-spin" />
                             Creating...
                           </span>
                         ) : (
@@ -147,28 +146,28 @@ export default function ProPhotoshootPanel({
                 </div>
               </div>
             ) : grid.status === "generating" ? (
-              <div className="w-full h-full flex flex-col items-center justify-center bg-stone-50">
-                <Loader2 size={24} className="text-stone-400 animate-spin mb-2" strokeWidth={1.5} />
-                <p className="text-xs text-stone-500 font-light tracking-wider">Creating...</p>
+              <div className="w-full h-full flex flex-col items-center justify-center bg-black/20">
+                <span className="mb-2 h-6 w-6 rounded-full border border-white/35 border-t-white animate-spin" />
+                <p className="text-xs text-white/65 font-light tracking-wider">Creating...</p>
                 <div className="absolute top-2 left-2 w-6 h-6 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm">
                   <span className="text-[10px] font-light text-stone-900">{grid.gridNumber}</span>
                 </div>
               </div>
             ) : grid.status === "failed" ? (
-              <div className="w-full h-full flex flex-col items-center justify-center bg-stone-50">
-                <p className="text-xs text-stone-500 font-light tracking-wider">Failed</p>
+              <div className="w-full h-full flex flex-col items-center justify-center bg-black/20">
+                <p className="text-xs text-white/65 font-light tracking-wider">Failed</p>
                 <div className="absolute top-2 left-2 w-6 h-6 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm">
                   <span className="text-[10px] font-light text-stone-900">{grid.gridNumber}</span>
                 </div>
               </div>
             ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-stone-50 to-stone-100 relative">
+              <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-black/30 to-black/10 relative">
                 {/* Subtle background pattern */}
-                <div className="absolute inset-0 opacity-5">
+                <div className="absolute inset-0 opacity-10">
                   <div
                     className="w-full h-full"
                     style={{
-                      backgroundImage: "radial-gradient(circle at 2px 2px, rgb(0 0 0) 1px, transparent 0)",
+                      backgroundImage: "radial-gradient(circle at 2px 2px, rgb(255 255 255) 1px, transparent 0)",
                       backgroundSize: "16px 16px",
                     }}
                   ></div>
@@ -177,8 +176,8 @@ export default function ProPhotoshootPanel({
                 {/* Content */}
                 <div className="relative z-10 flex flex-col items-center">
                   {/* Grid Number */}
-                  <span className="text-xs font-medium text-stone-700 tracking-wider">Grid {grid.gridNumber}</span>
-                  <span className="text-[9px] text-stone-500 font-light mt-1">Pending</span>
+                  <span className="text-xs font-medium text-white/80 tracking-wider">Grid {grid.gridNumber}</span>
+                  <span className="text-[9px] text-white/55 font-light mt-1">Pending</span>
                 </div>
 
                 {/* Grid number badge */}
@@ -193,4 +192,3 @@ export default function ProPhotoshootPanel({
     </div>
   )
 }
-

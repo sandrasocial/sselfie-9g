@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Aperture } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import UnifiedOnboardingWizard from "@/components/onboarding/unified-onboarding-wizard"
 import UnifiedLoading from "./unified-loading"
@@ -68,7 +67,7 @@ export default function PersonalBrandSection({ userId: _userId }: PersonalBrandS
         <div className="rounded-[20px] border border-[color:var(--glass-border)] bg-[color:var(--glass-bg)] p-6 backdrop-blur-[20px] sm:p-8">
           <div className="flex items-start gap-4">
             <div className="rounded-xl border border-white/15 bg-white/8 p-3">
-              <Aperture size={20} className="text-[color:var(--color-whisper)]" />
+              <span className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--color-whisper)]">Brand</span>
             </div>
             <div className="flex-1">
               <h3 className="display-header mb-2 text-lg font-light text-[color:var(--color-porcelain)]">Create Your Brand Profile</h3>

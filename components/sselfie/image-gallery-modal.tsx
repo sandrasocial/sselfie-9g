@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
-import { X, Check, Loader2 } from "lucide-react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import type { GalleryImage } from "@/lib/data/images"
 
@@ -211,10 +210,10 @@ export default function ImageGalleryModal({
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-stone-100 rounded-lg transition-colors"
+              className="rounded-lg border border-stone-300 px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-stone-700 hover:bg-stone-100 transition-colors"
               aria-label="Close"
             >
-              <X size={20} className="text-stone-600" />
+              Close
             </button>
           </div>
 
@@ -222,7 +221,7 @@ export default function ImageGalleryModal({
           <div className="flex-1 overflow-y-auto p-6">
             {isLoading && displayImages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center py-12">
-                <Loader2 className="w-8 h-8 text-stone-400 animate-spin mb-4" />
+                <span className="mb-4 h-8 w-8 rounded-full border border-stone-300 border-t-stone-500 animate-spin" />
                 <p className="text-sm text-stone-500 font-light">Loading gallery...</p>
               </div>
             ) : displayImages.length === 0 ? (
@@ -257,7 +256,7 @@ export default function ImageGalleryModal({
                       {isSelected && (
                         <div className="absolute inset-0 bg-stone-950/40 flex items-center justify-center">
                           <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-                            <Check size={16} className="text-stone-950" strokeWidth={3} />
+                            <span className="text-[10px] uppercase tracking-[0.2em] text-stone-950">Ok</span>
                           </div>
                         </div>
                       )}
@@ -276,7 +275,7 @@ export default function ImageGalleryModal({
                   <div ref={loadMoreRef} className="flex items-center justify-center py-6">
                     {isLoadingMore ? (
                       <div className="flex items-center gap-2 text-stone-500">
-                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span className="h-5 w-5 rounded-full border border-stone-300 border-t-stone-500 animate-spin" />
                         <span className="text-sm font-light">Loading more images...</span>
                       </div>
                     ) : (

@@ -2,28 +2,6 @@
 
 import type React from "react"
 import VideoCard from "./video-card"
-import {
-  Camera,
-  Send,
-  ArrowDown,
-  X,
-  Home,
-  Aperture,
-  MessageCircle,
-  ImageIcon,
-  Grid,
-  User,
-  SettingsIcon,
-  LogOut,
-  Sliders,
-  Plus,
-  Clock,
-  Image,
-  Menu,
-  ChevronRight,
-  Film,
-  GraduationCap,
-} from "lucide-react"
 import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { createPortal } from "react-dom"
 import ConceptCard from "./concept-card"
@@ -1902,8 +1880,8 @@ export default function MayaChatScreen({
         // Use same fallback chain as API call to ensure consistent concept name display
         const conceptName = concept.title || concept.label || concept.concept_title || 'Untitled Concept'
         toast({
-          title: "Saved to guide! ✨",
-          description: `Added "${conceptName}" ${imageUrl ? 'with image' : ''} to your guide`,
+          title: "Saved to guide",
+          description: `Added "${conceptName}" ${imageUrl ? "with image" : ""} to your guide`,
         })
         return // Exit early on success
       }
@@ -2608,13 +2586,12 @@ export default function MayaChatScreen({
       onDrop={handleDrop}
     >
       {isDragging && (
-        <div className="fixed inset-0 z-50 bg-stone-950/80 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-200">
-          <div className="bg-white/90 backdrop-blur-xl border-2 border-dashed border-stone-400 rounded-3xl p-12 text-center max-w-md mx-4">
-            <Camera size={48} className="mx-auto mb-4 text-stone-600" strokeWidth={1.5} />
-            <h3 className="text-xl font-serif font-extralight tracking-[0.2em] uppercase text-stone-950 mb-2">
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-200">
+          <div className="bg-[rgba(10,10,10,0.94)] backdrop-blur-[20px] border border-white/15 rounded-3xl p-12 text-center max-w-md mx-4">
+            <h3 className="text-xl font-serif font-extralight tracking-[0.2em] uppercase text-white mb-2">
               Drop Image Here
             </h3>
-            <p className="text-sm text-stone-600 tracking-wide">Upload a reference image for Maya to work with</p>
+            <p className="text-sm text-white/65 tracking-wide">Upload a reference image for Maya to work with</p>
           </div>
         </div>
       )}
@@ -2693,10 +2670,7 @@ export default function MayaChatScreen({
           Creates urgency and clarity: "you have X free photos, go use them." */}
       {!isMembership && creditBalance > 0 && (!messages || messages.length === 0) && (
         <div className="shrink-0 mx-3 sm:mx-4 mt-4 mb-1">
-          <div className="border border-stone-900/10 bg-gradient-to-r from-stone-950 to-stone-800 rounded-xl p-4 flex items-center gap-3">
-            <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center shrink-0">
-              <Camera size={14} className="text-white" strokeWidth={1.5} />
-            </div>
+          <div className="border border-white/12 bg-[rgba(10,10,10,0.8)] rounded-xl p-4 flex items-center gap-3">
             <div className="flex-1 min-w-0">
               <p className="text-xs font-semibold text-white mb-0.5">
                 You have {creditBalance} credit{creditBalance !== 1 ? "s" : ""} ready
@@ -2711,10 +2685,7 @@ export default function MayaChatScreen({
           has exhausted their credits on the Photos tab. */}
       {!isMembership && creditBalance === 0 && activeMayaTab === "photos" && (
         <div className="shrink-0 mx-3 sm:mx-4 mt-4 mb-1">
-          <div className="border border-stone-200 bg-stone-900 rounded-xl p-4 flex items-start gap-3">
-            <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
-              <Camera size={14} className="text-white" strokeWidth={1.5} />
-            </div>
+          <div className="border border-white/12 bg-[rgba(10,10,10,0.82)] rounded-xl p-4 flex items-start gap-3">
             <div className="flex-1 min-w-0">
               <p className="text-xs font-medium text-white mb-0.5">You&apos;ve used your free photos</p>
               <p className="text-xs text-stone-300 leading-relaxed">
@@ -2743,17 +2714,14 @@ export default function MayaChatScreen({
           Does NOT block the interface — Pro mode is always available without training. */}
       {!hasTrainedModel && (
         <div className="shrink-0 mx-3 sm:mx-4 mt-4 mb-1">
-          <div className="border border-stone-200 bg-stone-50 rounded-xl p-4 flex items-start gap-3">
-            <div className="w-8 h-8 bg-stone-900 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
-              <Aperture size={14} className="text-white" strokeWidth={1.5} />
-            </div>
+          <div className="border border-white/12 bg-[rgba(10,10,10,0.7)] rounded-xl p-4 flex items-start gap-3">
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-stone-900 mb-0.5">Train your personal AI</p>
-              <p className="text-xs text-stone-500 leading-relaxed">Get photos that always look exactly like you — no selfie upload needed each time.</p>
+              <p className="text-xs font-medium text-white mb-0.5">Train your personal AI</p>
+              <p className="text-xs text-white/60 leading-relaxed">Get photos that always look exactly like you — no selfie upload needed each time.</p>
             </div>
             <button
               onClick={() => window.dispatchEvent(new CustomEvent('open-onboarding'))}
-              className="shrink-0 text-xs font-medium text-stone-900 bg-white border border-stone-200 rounded-lg px-3 py-1.5 hover:bg-stone-50 transition-colors whitespace-nowrap"
+              className="shrink-0 text-xs font-medium text-white bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 hover:bg-white/20 transition-colors whitespace-nowrap"
             >
               Train →
             </button>
@@ -2778,9 +2746,9 @@ export default function MayaChatScreen({
               </div>
               <button
                 onClick={() => setShowGallerySelector(false)}
-                className="p-2 hover:bg-stone-100 rounded-lg transition-colors"
+                className="px-2 py-1.5 hover:bg-stone-100 rounded-lg transition-colors"
               >
-                <X className="w-5 h-5" />
+                <span className="text-[10px] uppercase tracking-[0.2em] text-stone-600">Close</span>
               </button>
             </div>
             
@@ -2836,7 +2804,7 @@ export default function MayaChatScreen({
               
               {galleryImages.length === 0 && (
                 <div className="text-center py-12">
-                  <Camera className="w-12 h-12 mx-auto text-stone-300 mb-3" />
+                  <div className="mx-auto mb-3 text-[10px] uppercase tracking-[0.25em] text-stone-400">No Images</div>
                   <p className="text-sm text-stone-600">No images in gallery yet</p>
                   <p className="text-xs text-stone-400 mt-1">Generate some photos with Maya first!</p>
                 </div>
@@ -2855,23 +2823,23 @@ export default function MayaChatScreen({
           />
 
           {/* Sliding menu from right */}
-          <div className="fixed top-0 right-0 bottom-0 w-80 bg-white/95 backdrop-blur-3xl border-l border-stone-200 shadow-2xl z-50 animate-in slide-in-from-right duration-300 flex flex-col">
+          <div className="fixed top-0 right-0 bottom-0 w-80 bg-[rgba(10,10,10,0.94)] backdrop-blur-[20px] border-l border-white/12 shadow-2xl z-50 animate-in slide-in-from-right duration-300 flex flex-col">
             {/* Header with close button - fixed at top */}
-            <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-stone-200/50">
-              <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-950">Menu</h3>
+            <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-white/10">
+              <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-white">Menu</h3>
               <button
                 onClick={() => setShowNavMenu(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 transition-colors"
+                className="px-2 py-1.5 rounded-lg hover:bg-white/10 transition-colors"
                 aria-label="Close menu"
               >
-                <X size={18} className="text-stone-600" strokeWidth={2} />
+                <span className="text-[10px] uppercase tracking-[0.2em] text-white/75">Close</span>
               </button>
             </div>
 
             {/* Credits display - fixed below header */}
-            <div className="shrink-0 px-6 py-6 border-b border-stone-200/50">
-              <div className="text-[10px] tracking-[0.15em] uppercase font-light text-stone-500 mb-2">Your Credits</div>
-              <div className="text-3xl font-serif font-extralight text-stone-950 tabular-nums">
+            <div className="shrink-0 px-6 py-6 border-b border-white/10">
+              <div className="text-[10px] tracking-[0.15em] uppercase font-light text-white/55 mb-2">Your Credits</div>
+              <div className="text-3xl font-serif font-extralight text-white tabular-nums">
                 {formattedCreditBalance}
               </div>
             </div>
@@ -2880,59 +2848,52 @@ export default function MayaChatScreen({
             <div className="flex-1 overflow-y-auto py-2 pb-32 min-h-0">
               <button
                 onClick={() => handleNavigation("maya")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/10 transition-colors touch-manipulation"
               >
-                <Home size={18} className="text-stone-600" strokeWidth={2} />
-                <span className="text-sm font-medium text-stone-700">Studio</span>
+                <span className="text-xs uppercase tracking-[0.2em] text-white/75">Studio</span>
               </button>
               <button
                 onClick={() => {
                   // Training moved to Account → Settings, trigger onboarding if needed
                   window.dispatchEvent(new CustomEvent('open-onboarding'))
                 }}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/10 transition-colors touch-manipulation"
               >
-                <Aperture size={18} className="text-stone-600" strokeWidth={2} />
-                <span className="text-sm font-medium text-stone-700">Training</span>
+                <span className="text-xs uppercase tracking-[0.2em] text-white/75">Training</span>
               </button>
               <button
                 onClick={() => handleNavigation("maya")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left bg-stone-100/50 border-l-2 border-stone-950"
+                className="w-full flex items-center gap-3 px-6 py-4 text-left bg-white/10 border-l-2 border-white"
               >
-                <MessageCircle size={18} className="text-stone-950" strokeWidth={2} />
-                <span className="text-sm font-medium text-stone-950">Maya</span>
+                <span className="text-xs uppercase tracking-[0.2em] text-white">Maya</span>
               </button>
               <button
                 onClick={() => handleNavigation("gallery")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/10 transition-colors touch-manipulation"
               >
-                <ImageIcon size={18} className="text-stone-600" strokeWidth={2} />
-                <span className="text-sm font-medium text-stone-700">Gallery</span>
+                <span className="text-xs uppercase tracking-[0.2em] text-white/75">Gallery</span>
               </button>
               <button
                 onClick={() => handleNavigation("academy")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/10 transition-colors touch-manipulation"
               >
-                <Grid size={18} className="text-stone-600" strokeWidth={2} />
-                <span className="text-sm font-medium text-stone-700">Academy</span>
+                <span className="text-xs uppercase tracking-[0.2em] text-white/75">Academy</span>
               </button>
               <button
                 onClick={() => handleNavigation("account")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-stone-50 transition-colors touch-manipulation"
+                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/10 transition-colors touch-manipulation"
               >
-                <User size={18} className="text-stone-600" strokeWidth={2} />
-                <span className="text-sm font-medium text-stone-700">Account</span>
+                <span className="text-xs uppercase tracking-[0.2em] text-white/75">Account</span>
               </button>
             </div>
 
             {/* Sign out button - fixed at bottom */}
-            <div className="shrink-0 px-6 py-4 border-t border-stone-200/50 bg-white/95">
+            <div className="shrink-0 px-6 py-4 border-t border-white/10 bg-[rgba(10,10,10,0.9)]">
               <button
                 onClick={handleLogout}
                 disabled={isLoggingOut}
-                className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+                className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-medium uppercase tracking-[0.2em] text-red-300 hover:bg-red-500/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
               >
-                <LogOut size={16} strokeWidth={2} />
                 <span>{isLoggingOut ? "Signing Out..." : "Sign Out"}</span>
               </button>
             </div>
@@ -3493,10 +3454,10 @@ export default function MayaChatScreen({
           >
             <button
               onClick={closeTrainingTab}
-              className="absolute right-4 top-4 w-9 h-9 flex items-center justify-center rounded-full bg-white/90 border border-stone-200 text-stone-500 hover:text-stone-700 shadow-sm"
+              className="absolute right-4 top-4 px-2 py-1.5 rounded-full bg-white/90 border border-stone-200 text-stone-500 hover:text-stone-700 shadow-sm"
               aria-label="Close training"
             >
-              <X size={18} strokeWidth={2} />
+              <span className="text-[10px] uppercase tracking-[0.2em]">Close</span>
             </button>
             <div className="pt-safe pb-24">
               <MayaTrainingTab 
@@ -3555,23 +3516,23 @@ export default function MayaChatScreen({
             style={{ zIndex: 9999 }}
           >
             <div
-              className="bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full my-4 sm:my-8 shadow-xl relative flex flex-col max-h-[calc(100vh-2rem)]"
+              className="bg-[rgba(10,10,10,0.96)] border border-white/12 rounded-2xl p-6 sm:p-8 max-w-md w-full my-4 sm:my-8 shadow-xl relative flex flex-col max-h-[calc(100vh-2rem)] text-white"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Close button */}
               <button
                 onClick={() => setShowStudioProOnboarding(false)}
-                className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center text-stone-400 hover:text-stone-600 transition-colors rounded-full hover:bg-stone-100 z-10"
+                className="absolute top-4 right-4 px-2 py-1.5 text-white/60 hover:text-white transition-colors rounded-full hover:bg-white/10 z-10"
                 aria-label="Close"
               >
-                <X size={20} strokeWidth={2} />
+                <span className="text-[10px] uppercase tracking-[0.2em]">Close</span>
               </button>
               
               {/* Header */}
-              <h2 className="text-xl font-serif font-light tracking-[0.15em] uppercase text-stone-900 mb-2 pr-8">
+              <h2 className="text-xl font-serif font-light tracking-[0.15em] uppercase text-white mb-2 pr-8">
                 SELFIE
               </h2>
-              <p className="text-sm text-stone-600 mb-6 leading-relaxed">
+              <p className="text-sm text-white/65 mb-6 leading-relaxed">
                 Professional content creation guided by Maya
               </p>
               
@@ -3758,14 +3719,14 @@ export default function MayaChatScreen({
       {/* Modal must be above header (z-[100]) and bottom nav (z-[70]) */}
       {hasProFeatures && showUploadFlow && (
         <div className="fixed inset-0 z-150 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
-          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-            <div className="p-4 border-b border-stone-200 flex items-center justify-between">
-              <h3 className="text-lg font-medium">Add Images to Library</h3>
+          <div className="bg-[rgba(10,10,10,0.96)] border border-white/12 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="p-4 border-b border-white/12 flex items-center justify-between">
+              <h3 className="text-lg font-medium text-white">Add Images to Library</h3>
               <button
                 onClick={() => setShowUploadFlow(false)}
-                className="p-2 hover:bg-stone-100 rounded-lg transition-colors"
+                className="px-2 py-1.5 hover:bg-white/10 rounded-lg transition-colors"
               >
-                <X size={20} />
+                <span className="text-[10px] uppercase tracking-[0.2em] text-white/70">Close</span>
               </button>
             </div>
             <div className="p-4 overflow-y-auto max-h-[calc(90vh-120px)]">

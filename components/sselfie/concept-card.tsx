@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
-import { MoreVertical, X, Edit2, Bookmark, Save } from "lucide-react"
 import InstagramPhotoCard from "./instagram-photo-card"
 import InstagramReelCard from "./instagram-reel-card"
 import InstagramCarouselCard from "./instagram-carousel-card"
@@ -1779,7 +1778,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
               className="p-1 hover:bg-[rgba(255,255,255,0.08)] rounded-full transition-colors"
               aria-label="More options"
             >
-              <MoreVertical className="w-5 h-5 text-[#e5e5e5]" />
+              <span className="text-[10px] uppercase tracking-[0.18em] text-[#e5e5e5]">Menu</span>
             </button>
 
             {showMenu && (
@@ -1792,7 +1791,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                     }}
                     className="w-full px-4 py-2 text-left text-sm text-[#e5e5e5] hover:bg-[rgba(255,255,255,0.08)] flex items-center gap-2 transition-colors"
                   >
-                    <Edit2 className="w-4 h-4" />
+                    <span className="text-[10px] uppercase tracking-[0.16em]">Edit</span>
                     <span>View/Edit Prompt</span>
                   </button>
                 )}
@@ -1802,7 +1801,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                     disabled={isSavingToGuide}
                     className="w-full px-4 py-2 text-left text-sm text-[#e5e5e5] hover:bg-[rgba(255,255,255,0.08)] flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Bookmark className="w-4 h-4" />
+                    <span className="text-[10px] uppercase tracking-[0.16em]">Save</span>
                     <span>{isSavingToGuide ? "Saving..." : "Save to Guide"}</span>
                   </button>
                 )}
@@ -1907,7 +1906,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                   title={!selectedGuideId ? "Select a guide first" : "Save this prompt to your guide"}
                 >
                   <div className="flex items-center justify-center gap-2">
-                    <Save size={16} />
+                    <span className="text-[10px] uppercase tracking-[0.16em]">Save</span>
                     <span>{isSavingToGuide ? "Saving..." : generatedImageUrl ? "Save with Image" : "Save Prompt"}</span>
                   </div>
                 </button>
@@ -2204,7 +2203,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                 className="p-2 hover:bg-[rgba(255,255,255,0.08)] rounded-full transition-colors"
                 aria-label="Close"
               >
-                <X className="w-5 h-5 text-[#e5e5e5]" />
+                <span className="text-[10px] uppercase tracking-[0.18em] text-[#e5e5e5]">Close</span>
               </button>
             </div>
 

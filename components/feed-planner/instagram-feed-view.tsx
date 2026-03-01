@@ -2,7 +2,6 @@
 
 import { useState, useMemo, useEffect } from "react"
 import type React from "react"
-import { Loader2 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import useSWR from "swr"
 import { useFeedPolling } from "./hooks/use-feed-polling"

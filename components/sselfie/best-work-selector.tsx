@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { X, Heart } from "lucide-react"
 import Image from "next/image"
 
 interface BestWorkImage {
@@ -74,7 +73,7 @@ export function BestWorkSelector({ images, currentBestWork, onClose, onSave }: B
             </p>
           </div>
           <button onClick={onClose} className="rounded-full p-2 transition-colors hover:bg-white/10">
-            <X size={20} className="text-[color:var(--color-whisper)]" strokeWidth={1.5} />
+            <span className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--color-whisper)]">Close</span>
           </button>
         </div>
 
@@ -120,7 +119,7 @@ export function BestWorkSelector({ images, currentBestWork, onClose, onSave }: B
                           </div>
                         ) : (
                           <div className="flex h-7 w-7 items-center justify-center rounded-full bg-black/70 opacity-0 transition-opacity group-hover:opacity-100 sm:h-8 sm:w-8">
-                            <Heart size={14} className="text-[color:var(--color-whisper)]" strokeWidth={2} />
+                            <span className="text-[9px] uppercase tracking-[0.2em] text-[color:var(--color-whisper)]">Fav</span>
                           </div>
                         )}
                       </div>

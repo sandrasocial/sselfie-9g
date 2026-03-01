@@ -1,7 +1,6 @@
 "use client"
 
 import { useMemo, useState, useEffect } from "react"
-import { X, Loader2 } from "lucide-react"
 import { trackEvent } from "@/lib/analytics"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
 
@@ -283,7 +282,7 @@ export default function WelcomeFirstGenerationFlow({
             YOUR FIRST PHOTO IN 3 STEPS
           </h2>
           <button type="button" onClick={handleSkip} className="p-2 -m-2 text-[#666] hover:text-[#0a0a0a]" aria-label="Close">
-            <X className="w-5 h-5" strokeWidth={2} />
+            <span className="text-[11px] tracking-[0.12em] uppercase">Close</span>
           </button>
         </div>
         <div className="flex gap-1.5 justify-center py-4">
@@ -389,7 +388,7 @@ export default function WelcomeFirstGenerationFlow({
               )}
               {(status === "uploading" || status === "generating" || status === "polling") && (
                 <div className="rounded-sm border border-[#e5e5e5] bg-[#f5f5f5] px-4 py-3 text-sm text-[#666] mb-4 flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                  <div className="h-4 w-4 rounded-full border-2 border-[#d4d4d4] border-t-[#4a4a4a] animate-spin shrink-0" />
                   Creating your photo…
                 </div>
               )}

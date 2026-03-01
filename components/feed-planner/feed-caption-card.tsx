@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { Plus, RotateCw, Hash } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 
 interface FeedCaptionCardProps {
@@ -82,7 +81,7 @@ export default function FeedCaptionCard({
   }
 
   return (
-    <div className="bg-white/50 backdrop-blur-3xl border border-white/60 rounded-2xl p-4 sm:p-6 shadow-xl shadow-stone-900/5">
+    <div className="bg-white/[0.04] backdrop-blur-[20px] border border-white/15 rounded-[20px] p-4 sm:p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
@@ -90,9 +89,9 @@ export default function FeedCaptionCard({
             <span className="text-white text-sm font-light">{postPosition}</span>
           </div>
           <div>
-            <h4 className="text-sm font-medium text-stone-900">Post {postPosition}</h4>
+            <h4 className="text-sm font-medium text-white">Post {postPosition}</h4>
             {postPrompt && (
-              <p className="text-xs text-stone-500 line-clamp-1">{postPrompt}</p>
+              <p className="text-xs text-white/55 line-clamp-1">{postPrompt}</p>
             )}
           </div>
         </div>
@@ -100,7 +99,7 @@ export default function FeedCaptionCard({
 
       {/* Caption Preview */}
       <div className="mb-4">
-        <p className="text-sm text-stone-700 leading-relaxed whitespace-pre-wrap">
+        <p className="text-sm text-white/75 leading-relaxed whitespace-pre-wrap">
           {caption}
         </p>
       </div>
@@ -111,10 +110,9 @@ export default function FeedCaptionCard({
           {hashtags.map((tag, index) => (
             <span
               key={index}
-              className="inline-flex items-center gap-1 px-2 py-1 bg-stone-100 rounded-md text-xs text-stone-600"
+              className="inline-flex items-center gap-1 px-2 py-1 bg-white/10 border border-white/15 rounded-md text-xs text-white/65"
             >
-              <Hash size={12} strokeWidth={2} />
-              {tag}
+              #{tag.replace(/^#/, "")}
             </span>
           ))}
         </div>
@@ -125,24 +123,21 @@ export default function FeedCaptionCard({
         <button
           onClick={handleAddToFeed}
           disabled={isAdding || isRegenerating}
-          className="flex-1 py-2.5 bg-stone-900 text-white rounded-lg hover:bg-stone-800 transition-colors text-xs sm:text-sm font-medium tracking-wide uppercase flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex-1 py-2.5 bg-white/10 border border-white/20 text-white rounded-lg hover:bg-white/15 transition-colors text-xs sm:text-sm font-medium tracking-wide uppercase disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <Plus size={14} strokeWidth={2} />
           <span>{isAdding ? "Adding..." : "Add to Feed"}</span>
         </button>
         <button
           onClick={handleRegenerate}
           disabled={isAdding || isRegenerating}
-          className="px-4 py-2.5 border border-stone-300 text-stone-700 rounded-lg hover:bg-stone-50 transition-colors text-xs sm:text-sm font-medium tracking-wide uppercase flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-4 py-2.5 border border-white/20 text-white/75 rounded-lg hover:bg-white/10 transition-colors text-xs sm:text-sm font-medium tracking-wide uppercase disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <RotateCw size={14} strokeWidth={2} className={isRegenerating ? "animate-spin" : ""} />
-          <span>Regenerate</span>
+          <span>{isRegenerating ? "Regenerating..." : "Regenerate"}</span>
         </button>
       </div>
     </div>
   )
 }
-
 
 
 

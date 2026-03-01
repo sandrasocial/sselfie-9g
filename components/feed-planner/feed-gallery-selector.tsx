@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { X, Check, Upload } from "lucide-react"
 import Image from "next/image"
 import type { GalleryImage } from "@/lib/data/images"
 
@@ -210,8 +209,8 @@ export function FeedGallerySelector({ type, postId, feedId, onClose, onImageSele
           ) : (
             <h2 className="text-lg font-semibold text-stone-900">Choose Profile Image</h2>
           )}
-          <button onClick={onClose} className="p-2 hover:bg-stone-100 rounded-full transition-colors">
-            <X size={20} className="text-stone-600" strokeWidth={1.5} />
+          <button onClick={onClose} className="rounded-full border border-stone-300 px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-stone-700 hover:bg-stone-100 transition-colors">
+            Close
           </button>
         </div>
 
@@ -228,7 +227,7 @@ export function FeedGallerySelector({ type, postId, feedId, onClose, onImageSele
                     </div>
                   ) : (
                     <>
-                      <Upload size={32} className="text-stone-600" strokeWidth={1.5} />
+                      <div className="rounded-full border border-stone-300 bg-white px-4 py-2 text-[10px] uppercase tracking-[0.2em] text-stone-700">Upload</div>
                       <div className="text-center">
                         <span className="text-sm font-light text-stone-900 block mb-1">Upload from device</span>
                         <span className="text-xs text-stone-500">Click to browse or drag and drop</span>
@@ -319,7 +318,7 @@ export function FeedGallerySelector({ type, postId, feedId, onClose, onImageSele
                         <div className="absolute top-2 right-2">
                           {isSelected ? (
                             <div className="w-7 h-7 sm:w-8 sm:h-8 bg-white rounded-full flex items-center justify-center">
-                              <Check size={16} className="text-stone-950" strokeWidth={2.5} />
+                              <span className="text-[10px] uppercase tracking-[0.2em] text-stone-950">Ok</span>
                             </div>
                           ) : (
                             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center bg-white/80 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -340,7 +339,7 @@ export function FeedGallerySelector({ type, postId, feedId, onClose, onImageSele
                       isSelected && (
                         <div className="absolute inset-0 bg-stone-950/40 flex items-center justify-center">
                           <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-                            <Check size={16} className="text-stone-950" strokeWidth={2.5} />
+                            <span className="text-[10px] uppercase tracking-[0.2em] text-stone-950">Ok</span>
                           </div>
                         </div>
                       )
@@ -421,4 +420,3 @@ export function FeedGallerySelector({ type, postId, feedId, onClose, onImageSele
     </div>
   )
 }
-

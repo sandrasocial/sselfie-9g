@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import VideoPlayer from "./video-player"
-import { Loader2 } from "lucide-react"
 
 interface Lesson {
   id: number
@@ -75,7 +74,7 @@ export default function LessonViewer({
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 text-stone-600 animate-spin" />
+        <div className="h-8 w-8 rounded-full border-2 border-stone-300 border-t-stone-700 animate-spin" />
       </div>
     )
   }

@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo, useRef } from "react"
 import { flushSync } from "react-dom"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { Loader2, ArrowRight, Download } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { ToastAction } from "@/components/ui/toast"
 import { Button } from "@/components/ui/button"
@@ -578,12 +577,11 @@ export default function FeedSinglePlaceholder({
               >
                 {isDownloading ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    <span className="mr-2 h-4 w-4 rounded-full border border-white/40 border-t-white animate-spin" />
                     Saving...
                   </>
                 ) : (
                   <>
-                    <Download className="w-4 h-4 mr-2" />
                     Save to Device
                   </>
                 )}
@@ -616,7 +614,7 @@ export default function FeedSinglePlaceholder({
             {!isPostGenerating && !post?.id && (
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center space-y-2 px-4">
-                  <Loader2 className="w-6 h-6 text-white/60 animate-spin mx-auto" />
+                  <div className="mx-auto h-6 w-6 rounded-full border border-white/40 border-t-white animate-spin" />
                   <div className="text-xs font-light text-white/60">Preparing your preview...</div>
                 </div>
               </div>
@@ -626,7 +624,7 @@ export default function FeedSinglePlaceholder({
             {isPostGenerating && (
               <div className="absolute inset-0 flex items-center justify-center rounded-[20px] bg-black/45 backdrop-blur-md">
                 <div className="text-center space-y-3 px-4 max-w-sm mx-auto">
-                  <Loader2 className="w-8 h-8 text-white/75 animate-spin mx-auto" />
+                  <div className="mx-auto h-8 w-8 rounded-full border border-white/40 border-t-white animate-spin" />
                   <div className="text-sm font-medium text-white">Generating your preview feed</div>
                   <div className="text-xs font-light text-white/65">This usually takes 1-2 minutes...</div>
                   <Button
@@ -676,7 +674,7 @@ export default function FeedSinglePlaceholder({
             size="default"
           >
             Continue Creating
-            <ArrowRight className="w-4 h-4 ml-2" />
+            <span className="ml-2 text-[10px] uppercase tracking-[0.2em]">Next</span>
           </Button>
         </div>
       </div>

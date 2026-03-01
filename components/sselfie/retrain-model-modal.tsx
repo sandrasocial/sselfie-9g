@@ -3,7 +3,6 @@
 import type React from "react"
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
-import { Camera, Aperture, X, ChevronRight } from "lucide-react"
 import LoadingSpinner from "./loading-spinner"
 import useSWR from "swr"
 import JSZip from "jszip"
@@ -456,10 +455,10 @@ export default function RetrainModelModal({
               {stage !== "training" && (
                 <button
                   onClick={onClose}
-                  className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 transition-colors z-10"
+                  className="absolute top-4 right-4 min-h-8 min-w-8 flex items-center justify-center rounded-lg border border-stone-300 px-2 text-[10px] uppercase tracking-[0.2em] hover:bg-stone-100 transition-colors z-10"
                   aria-label="Close"
                 >
-                  <X size={18} className="text-stone-600" />
+                  Close
                 </button>
               )}
 
@@ -536,7 +535,7 @@ export default function RetrainModelModal({
                         disabled={isUploading}
                       />
                       <div className="w-16 h-16 bg-stone-950 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-xl group-hover:scale-110 transition-transform">
-                        <Camera size={28} className="text-white" strokeWidth={2.5} />
+                        <span className="text-[10px] uppercase tracking-[0.2em] text-white">Upload</span>
                       </div>
                       <h4 className="text-base font-semibold text-stone-950 mb-2">Click to Upload Photos</h4>
                       <p className="text-sm text-stone-600 mb-4">or drag and drop</p>
@@ -562,7 +561,7 @@ export default function RetrainModelModal({
                               onClick={() => handleRemoveUploadedImage(i)}
                               className="absolute top-1 right-1 w-6 h-6 bg-stone-950/80 hover:bg-stone-950 active:bg-stone-900 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                             >
-                              <X size={14} />
+                              <span className="text-[9px] uppercase tracking-[0.15em]">X</span>
                             </button>
                           </div>
                         ))}
@@ -678,11 +677,11 @@ export default function RetrainModelModal({
                     <div className="relative w-20 h-20 mx-auto">
                       <div className="absolute inset-0 bg-stone-200/30 rounded-full animate-ping"></div>
                       <div className="relative w-20 h-20 bg-stone-950 rounded-full flex items-center justify-center shadow-2xl">
-                        <Aperture size={32} className="text-white" strokeWidth={2.5} />
+                        <span className="text-[10px] uppercase tracking-[0.2em] text-white">Done</span>
                       </div>
                     </div>
                     <h2 className={`${DesignClasses.typography.heading.h2} ${DesignClasses.text.primary}`}>
-                      Retraining Complete! 🎉
+                      Retraining Complete
                     </h2>
                     <p className={`${DesignClasses.typography.body.medium} ${DesignClasses.text.secondary} max-w-md mx-auto`}>
                       Your AI model has been updated with your new photos.
@@ -703,4 +702,3 @@ export default function RetrainModelModal({
 
   return createPortal(modal, document.body)
 }
-

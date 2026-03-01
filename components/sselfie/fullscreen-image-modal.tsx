@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
-import { X } from "lucide-react"
 import Image from "next/image"
 
 interface FullscreenImageModalProps {
@@ -145,10 +144,10 @@ export default function FullscreenImageModal({
         <h3 className="text-base sm:text-lg font-semibold text-white truncate max-w-[60%]">{title}</h3>
         <button
           onClick={onClose}
-          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors backdrop-blur-xl"
+          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full border border-white/20 bg-white/10 px-3 text-[10px] uppercase tracking-[0.2em] text-white hover:bg-white/20 transition-colors backdrop-blur-xl"
           aria-label="Close fullscreen view"
         >
-          <X className="w-5 h-5 sm:w-6 sm:h-6 text-white" strokeWidth={2} />
+          Close
         </button>
       </div>
 

@@ -2,7 +2,6 @@
 
 import type React from "react"
 
-import { Play, Download, Trash2 } from "lucide-react"
 import LoadingSpinner from "./loading-spinner"
 import { useState, useRef, useEffect } from "react"
 
@@ -81,25 +80,25 @@ export default function VideoCard({ videoUrl, imageSource, motionPrompt, status,
 
   if (status === "processing") {
     return (
-      <div className="bg-white/50 backdrop-blur-xl border border-white/70 rounded-2xl p-6 shadow-xl shadow-stone-900/10">
+      <div className="rounded-2xl p-6 shadow-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] backdrop-blur-[20px]">
         <div className="flex items-center gap-4 mb-4">
           <LoadingSpinner size="md" className="text-stone-600" />
           <div className="flex-1">
-            <p className="text-sm font-medium text-stone-950 mb-1">Generating Video...</p>
-            <p className="text-xs text-stone-600">{progress || 0}% complete</p>
+            <p className="text-sm font-medium text-[#ffffff] mb-1">Generating Video</p>
+            <p className="text-xs text-[#e5e5e5]">{progress || 0}% complete</p>
           </div>
         </div>
-        <div className="w-full bg-stone-200 rounded-full h-2 overflow-hidden">
-          <div className="bg-stone-950 h-full transition-all duration-300" style={{ width: `${progress || 0}%` }} />
+        <div className="w-full rounded-full h-2 overflow-hidden bg-[rgba(255,255,255,0.12)]">
+          <div className="h-full transition-all duration-300 bg-[#ffffff]" style={{ width: `${progress || 0}%` }} />
         </div>
-        {motionPrompt && <p className="text-xs text-stone-600 mt-3 leading-relaxed">{motionPrompt}</p>}
+        {motionPrompt && <p className="text-xs text-[#e5e5e5] mt-3 leading-relaxed">{motionPrompt}</p>}
       </div>
     )
   }
 
   return (
-    <div className="bg-white/50 backdrop-blur-xl border border-white/70 rounded-2xl overflow-hidden shadow-xl shadow-stone-900/10 group">
-      <div className="relative aspect-[9/16] bg-stone-100">
+    <div className="rounded-2xl overflow-hidden shadow-xl group border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] backdrop-blur-[20px]">
+      <div className="relative aspect-[9/16] bg-[rgba(255,255,255,0.06)]">
         <video
           ref={videoRef}
           src={videoUrl}
@@ -119,38 +118,32 @@ export default function VideoCard({ videoUrl, imageSource, motionPrompt, status,
           className="absolute inset-0 flex items-center justify-center bg-stone-950/20 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300"
           aria-label={isPlaying ? "Pause video" : "Play video"}
         >
-          <div className="w-16 h-16 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-2xl">
-            {isPlaying ? (
-              <div className="flex gap-1.5">
-                <div className="w-1.5 h-6 bg-stone-950 rounded-full" />
-                <div className="w-1.5 h-6 bg-stone-950 rounded-full" />
-              </div>
-            ) : (
-              <Play size={24} className="text-stone-950 ml-1" fill="currentColor" />
-            )}
+          <div className="px-5 py-2 bg-[rgba(10,10,10,0.84)] rounded-full border border-[rgba(255,255,255,0.2)]">
+            <span className="text-xs font-medium uppercase tracking-[0.18em] text-[#ffffff]">
+              {isPlaying ? "Pause" : "Play"}
+            </span>
           </div>
         </button>
       </div>
 
       <div className="p-4">
-        {motionPrompt && <p className="text-xs text-stone-600 mb-3 leading-relaxed line-clamp-2">{motionPrompt}</p>}
+        {motionPrompt && <p className="text-xs text-[#e5e5e5] mb-3 leading-relaxed line-clamp-2">{motionPrompt}</p>}
         <div className="flex items-center gap-2">
           <button
             onClick={handleDownload}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-stone-950 text-white rounded-xl hover:bg-stone-800 transition-all duration-300 hover:scale-105 active:scale-95"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[rgba(255,255,255,0.1)] text-[#ffffff] rounded-xl border border-[rgba(255,255,255,0.2)] hover:bg-[rgba(255,255,255,0.16)] transition-all duration-300 hover:scale-105 active:scale-95"
             aria-label="Download video"
           >
-            <Download size={14} strokeWidth={2.5} />
-            <span className="text-xs font-medium tracking-wide">Download</span>
+            <span className="text-xs font-medium uppercase tracking-[0.18em]">Download</span>
           </button>
           {onDelete && (
             <button
               onClick={handleDelete}
               disabled={isDeleting}
-              className="px-4 py-2.5 bg-white/60 backdrop-blur-xl border border-white/80 rounded-xl hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2.5 rounded-xl border border-[rgba(255,255,255,0.2)] text-[#e5e5e5] bg-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.14)] transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               aria-label="Delete video"
             >
-              {isDeleting ? <LoadingSpinner size="sm" /> : <Trash2 size={14} strokeWidth={2.5} />}
+              {isDeleting ? <LoadingSpinner size="sm" /> : <span className="text-xs font-medium uppercase tracking-[0.18em]">Delete</span>}
             </button>
           )}
         </div>

@@ -9,7 +9,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Typography, Colors, BorderRadius, Spacing, UILabels, ButtonLabels } from '@/lib/maya/pro/design-system'
-import { X } from 'lucide-react'
 
 /**
  * ProModeChatHistory Component
@@ -216,7 +215,7 @@ export default function ProModeChatHistory({
                   className="touch-manipulation active:scale-95 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 transition-colors"
                   aria-label="Close"
                 >
-                  <X size={18} className="text-stone-600" strokeWidth={2} />
+                  <span className="text-[10px] uppercase tracking-[0.18em] text-stone-600">Close</span>
                 </button>
               </div>
             </div>

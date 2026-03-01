@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { X, Loader2 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 
 interface Highlight {
@@ -81,7 +80,7 @@ export default function FeedHighlightsModal({
 
       toast({
         title: "Highlights generated!",
-        description: "Maya created your highlight titles ✨",
+        description: "Maya created your highlight titles.",
       })
     } catch (error) {
       console.error("[v0] Error generating highlights:", error)
@@ -166,7 +165,7 @@ export default function FeedHighlightsModal({
             className="p-2 hover:bg-stone-100 rounded-full transition-colors"
             disabled={isSaving}
           >
-            <X size={20} className="text-stone-600" />
+            <span className="text-[10px] uppercase tracking-[0.16em] text-stone-600">Close</span>
           </button>
         </div>
 
@@ -184,7 +183,7 @@ export default function FeedHighlightsModal({
               >
                 {isGenerating ? (
                   <>
-                    <Loader2 size={20} className="animate-spin" />
+                    <span className="inline-flex w-4 h-4 rounded-full border border-white/30 border-t-white animate-spin" />
                     <span>Maya is creating highlights...</span>
                   </>
                 ) : (
@@ -233,16 +232,16 @@ export default function FeedHighlightsModal({
                 <button
                   onClick={handleGenerate}
                   disabled={isGenerating || isSaving}
-                  className="px-4 py-2 text-sm text-stone-600 hover:text-stone-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 size={16} className="animate-spin" />
-                      <span>Regenerating...</span>
-                    </>
-                  ) : (
-                    <span>Regenerate highlights</span>
-                  )}
+                className="px-4 py-2 text-sm text-stone-600 hover:text-stone-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {isGenerating ? (
+                  <>
+                    <span className="inline-flex w-3 h-3 rounded-full border border-stone-400 border-t-stone-700 animate-spin" />
+                    <span>Regenerating...</span>
+                  </>
+                ) : (
+                  <span>Regenerate highlights</span>
+                )}
                 </button>
               </div>
             </>
@@ -266,7 +265,7 @@ export default function FeedHighlightsModal({
             >
               {isSaving ? (
                 <>
-                  <Loader2 size={16} className="animate-spin" />
+                  <span className="inline-flex w-3 h-3 rounded-full border border-white/30 border-t-white animate-spin" />
                   <span>Saving...</span>
                 </>
               ) : (

@@ -8,7 +8,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Typography, Colors, BorderRadius, Spacing, UILabels, ButtonLabels } from '@/lib/maya/pro/design-system'
-import { Save } from 'lucide-react'
 import InstagramPhotoCard from '../instagram-photo-card'
 import ProPhotoshootPanel from '../pro-photoshoot-panel'
 import InstagramCarouselCard from '../instagram-carousel-card'
@@ -1459,7 +1458,6 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
               }}
               title={!selectedGuideId ? "Select a guide first" : "Save this prompt to your guide"}
             >
-              <Save size={16} />
               <span>{isSavingToGuide ? "Saving..." : generatedImageUrl ? "Save with Image" : "Save Prompt"}</span>
             </button>
           )}

@@ -8,7 +8,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Typography, Colors, BorderRadius, Spacing, UILabels, ButtonLabels } from '@/lib/maya/pro/design-system'
-import { X } from 'lucide-react'
 
 /**
  * Optimize image URL for thumbnails (reduces bandwidth by 80-90%)

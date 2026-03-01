@@ -16,7 +16,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Typography, Colors, BorderRadius, Spacing, UILabels, ButtonLabels } from '@/lib/maya/pro/design-system'
-import { ChevronDown, MoreVertical, X, LogOut, FolderOpen, Plus, Eye, Sliders } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import MayaModeToggle from '../maya/maya-mode-toggle'
 
@@ -244,20 +243,22 @@ export default function ProModeHeader({
                   e.currentTarget.style.borderColor = Colors.border
                 }}
               >
-                <FolderOpen size={14} />
+                <span className="text-[10px] uppercase tracking-[0.2em]">Guide</span>
                 <span className="hidden sm:inline">
                   {selectedGuideId 
                     ? guides.find(g => g.id === selectedGuideId)?.title || 'Guide'
                     : 'Guide'}
                 </span>
-                <ChevronDown
-                  size={12}
+                <span
                   style={{
                     color: Colors.textSecondary,
                     transition: 'transform 0.2s ease',
                     transform: isGuideMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                    display: 'inline-block',
                   }}
-                />
+                >
+                  ˅
+                </span>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
@@ -341,7 +342,6 @@ export default function ProModeHeader({
                       border: `1px solid ${Colors.border}`,
                     }}
                   >
-                    <Plus size={14} />
                     New Guide
                   </button>
                   {selectedGuideId && (
@@ -356,7 +356,6 @@ export default function ProModeHeader({
                         border: `1px solid ${Colors.border}`,
                       }}
                     >
-                      <Eye size={14} />
                       Preview
                     </button>
                   )}
@@ -396,16 +395,18 @@ export default function ProModeHeader({
                   e.currentTarget.style.backgroundColor = 'transparent'
                   e.currentTarget.style.borderColor = Colors.border
                 }}
-              >
-                <span>{ButtonLabels.manage}</span>
-                <ChevronDown
-                  size={14}
+                >
+                  <span>{ButtonLabels.manage}</span>
+                <span
                   style={{
                     color: Colors.primary,
                     transition: 'transform 0.2s ease',
                     transform: isManageOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                    display: 'inline-block',
                   }}
-                />
+                >
+                  ˅
+                </span>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
@@ -571,7 +572,7 @@ export default function ProModeHeader({
             aria-label="Navigation menu"
             aria-expanded={showNavMenu}
           >
-            <MoreVertical size={18} strokeWidth={2} />
+            <span className="text-[10px] uppercase tracking-[0.2em]">Menu</span>
           </button>
         )}
       </div>
@@ -618,10 +619,10 @@ export default function ProModeHeader({
               </h3>
               <button
                 onClick={() => setShowNavMenu(false)}
-                className="touch-manipulation active:scale-95 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 transition-colors"
+                className="touch-manipulation active:scale-95 min-h-8 min-w-8 flex items-center justify-center rounded-lg border border-stone-300 px-2 text-[10px] uppercase tracking-[0.2em] hover:bg-stone-100 transition-colors"
                 aria-label="Close menu"
               >
-                <X size={18} className="text-stone-600" strokeWidth={2} />
+                Close
               </button>
             </div>
 
@@ -958,7 +959,6 @@ export default function ProModeHeader({
                     }
                   }}
                 >
-                  <LogOut size={16} strokeWidth={2} />
                   <span>{isLoggingOut ? "Signing Out..." : "Sign Out"}</span>
                 </button>
               </div>

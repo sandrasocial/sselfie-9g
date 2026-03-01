@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import Image from "next/image"
-import { ImageIcon, Loader2 } from "lucide-react"
 import { useFeedPostPolling } from "@/lib/hooks/use-feed-post-polling"
 import { toast } from "@/hooks/use-toast"
 
@@ -193,7 +192,7 @@ export default function FeedGridItem({
         />
       ) : isGenerating ? (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/45 backdrop-blur-[1px]">
-          <Loader2 size={20} className="mb-2 animate-spin text-white/70" strokeWidth={1.5} />
+          <span className="mb-2 h-5 w-5 rounded-full border border-white/35 border-t-white animate-spin" />
           <div className="text-center text-[10px] font-light text-white/65">
             Creating...
           </div>
@@ -216,7 +215,9 @@ export default function FeedGridItem({
             onClick={handleGenerateClick}
             disabled={isGenerating}
           >
-            <ImageIcon className="mb-2 h-10 w-10 text-white/45" strokeWidth={1.5} />
+            <div className="mb-2 rounded-full border border-white/20 bg-white/8 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-white/70">
+              Add
+            </div>
             <div className="text-center text-[10px] font-light uppercase tracking-[0.2em] text-white/65">
               Generate image
             </div>
@@ -232,7 +233,9 @@ export default function FeedGridItem({
               }
             }}
           >
-            <ImageIcon className="mb-2 h-10 w-10 text-white/35" strokeWidth={1.5} />
+            <div className="mb-2 rounded-full border border-white/20 bg-white/8 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-white/60">
+              Add
+            </div>
             <div className="text-center text-[10px] font-light uppercase tracking-[0.2em] text-white/55">
               Click to add image
             </div>

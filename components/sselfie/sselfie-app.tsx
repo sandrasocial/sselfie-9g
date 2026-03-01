@@ -1,21 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
-import {
-  Camera,
-  User,
-  Aperture,
-  Grid,
-  MessageCircle,
-  ImageIcon,
-  Settings,
-  MoreVertical,
-  LogOut,
-  LayoutGrid,
-  FileText,
-} from "lucide-react"
 import LoadingScreen from "./loading-screen"
-import OnboardingWizard from "./onboarding-wizard"
 import BlueprintWelcomeWizard from "./blueprint-welcome-wizard"
 // UnifiedOnboardingWizard is now handled exclusively by feed-planner-client.tsx
 import MayaChatScreen from "./maya-chat-screen"
@@ -55,12 +41,10 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { Pencil, Palette } from "lucide-react"
 import { DesignClasses } from "@/lib/design-tokens"
 import { AnimatePresence, motion } from "framer-motion"
 import useSWR from "swr"
 import { useRouter, useSearchParams } from "next/navigation"
-import { ChevronDown, ChevronRight, X } from "lucide-react"
 import {
   readStudioTabFromHash,
   readStudioTabFromSearchParams,
@@ -145,7 +129,7 @@ export default function SselfieApp({
   const [currentTime, setCurrentTime] = useState(new Date())
   const [hasTrainedModel, setHasTrainedModel] = useState(false)
   const [isLoadingTrainingStatus, setIsLoadingTrainingStatus] = useState(true)
-  const [showOnboarding, setShowOnboarding] = useState(false)
+  const [, setShowOnboarding] = useState(false)
   const [showBlueprintWelcome, setShowBlueprintWelcome] = useState(false)
   // showBlueprintOnboarding and existingBlueprintData removed - UnifiedOnboardingWizard is now handled by feed-planner-client.tsx
   const [creditBalance, setCreditBalance] = useState<number>(0)
@@ -746,11 +730,11 @@ export default function SselfieApp({
   }, [shouldShowCheckout, isLoadingCredits])
 
   const tabs = [
-    { id: "maya", label: "Maya", icon: MessageCircle },
-    { id: "gallery", label: "Gallery", icon: ImageIcon },
-    { id: "feed-planner", label: "Feed", icon: LayoutGrid },
-    { id: "academy", label: "Academy", icon: Grid },
-    { id: "account", label: "Account", icon: User },
+    { id: "maya", label: "Maya" },
+    { id: "gallery", label: "Gallery" },
+    { id: "feed-planner", label: "Feed" },
+    { id: "academy", label: "Academy" },
+    { id: "account", label: "Account" },
   ]
 
   const user: UserType = {
@@ -876,7 +860,7 @@ export default function SselfieApp({
             <p className="text-xs text-white/60 mt-0.5">You just proved this works. Feed Planner, Gallery &amp; Academy are now yours — go explore.</p>
           </div>
           <button onClick={() => setShowFirstPhotoToast(false)} className="text-white/40 hover:text-white ml-4 shrink-0" aria-label="Dismiss">
-            <X size={14} />
+            <span className="text-[10px] tracking-[0.2em] uppercase">Close</span>
           </button>
         </div>
       )}
@@ -902,7 +886,9 @@ export default function SselfieApp({
                   className="flex-1 flex items-center justify-between gap-2 text-left group"
                 >
                   <span className="text-sm font-medium">Welcome! Let&apos;s get started</span>
-                  <ChevronRight size={18} className="text-white shrink-0 group-hover:translate-x-0.5 transition-transform" aria-hidden />
+                  <span className="text-[10px] tracking-[0.2em] uppercase text-white/80 shrink-0 group-hover:text-white transition-colors" aria-hidden>
+                    Open
+                  </span>
                 </button>
                 <button
                   type="button"
@@ -910,7 +896,7 @@ export default function SselfieApp({
                   className="shrink-0 p-1.5 rounded-lg hover:bg-white/10 transition-colors"
                   aria-label="Dismiss welcome banner"
                 >
-                  <X size={18} className="text-white" />
+                  <span className="text-[10px] tracking-[0.2em] uppercase text-white">Close</span>
                 </button>
               </div>
             </div>
@@ -940,7 +926,7 @@ export default function SselfieApp({
                           style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}
                         >
                           <span>My Feed</span>
-                          <ChevronDown size={14} className="text-white/70" />
+                          <span className="text-[10px] tracking-[0.2em] uppercase text-white/70">Open</span>
                         </button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className={`w-56 ${DesignClasses.background.overlay} ${DesignClasses.blur.md} ${DesignClasses.border.stone} shadow-lg`}>
@@ -1001,7 +987,7 @@ export default function SselfieApp({
                                     className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-stone-200 rounded"
                                     aria-label="Edit feed"
                                   >
-                                    <Pencil size={12} className="text-stone-600" />
+                                    <span className="text-[9px] tracking-[0.2em] uppercase text-stone-600">Edit</span>
                                   </button>
                                 </div>
                               ))
@@ -1085,7 +1071,7 @@ export default function SselfieApp({
                       aria-label="Menu"
                       style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}
                     >
-                      <MoreVertical size={18} className="text-white" />
+                      <span className="text-[10px] tracking-[0.2em] uppercase text-white">Menu</span>
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className={`w-64 ${DesignClasses.background.overlay} ${DesignClasses.blur.md} ${DesignClasses.border.stone} shadow-lg`}>
@@ -1102,7 +1088,6 @@ export default function SselfieApp({
                       <div className={`${DesignClasses.typography.label.uppercase} ${DesignClasses.text.tertiary} mb-1`}>Navigate</div>
                       <div className="grid grid-cols-2 gap-1">
                         {tabs.map((tab) => {
-                          const Icon = tab.icon
                           return (
                             <button
                               key={`menu-${tab.id}`}
@@ -1112,7 +1097,6 @@ export default function SselfieApp({
                               }}
                               className={`flex items-center ${DesignClasses.spacing.gap.sm} px-2 py-2 ${DesignClasses.radius.sm} hover:bg-stone-100/60 text-left transition-colors`}
                             >
-                              <Icon size={16} className="text-stone-600" />
                               <span className="text-xs font-medium text-stone-800">{tab.label}</span>
                             </button>
                           )
@@ -1140,7 +1124,6 @@ export default function SselfieApp({
                       disabled={isLoggingOut}
                       className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
                     >
-                      <LogOut size={16} className="mr-2" />
                       <span className="text-sm">{isLoggingOut ? "Signing Out..." : "Sign Out"}</span>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -1242,7 +1225,6 @@ export default function SselfieApp({
             <div className="overflow-x-auto scrollbar-hide px-1.5 sm:px-2 md:px-3 py-2 sm:py-2.5 md:py-3">
               <div className="flex gap-1 sm:gap-2 min-w-max sm:justify-around">
                 {(isNewUser ? tabs.filter((t) => t.id === "maya" || t.id === "account") : tabs).map((tab) => {
-                  const Icon = tab.icon
                   const isActive = activeTab === tab.id
 
                   return (
@@ -1258,23 +1240,11 @@ export default function SselfieApp({
                       {isActive && (
                         <div className={`absolute inset-0 ${DesignClasses.radius.lg} ${DesignClasses.shadows.card}`} style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)' }}></div>
                       )}
-                      <div
-                        className={`relative z-10 w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 ${DesignClasses.radius.md} flex items-center justify-center transition-all duration-500 ${
-                          isActive ? `${DesignClasses.shadows.button}` : ``
-                        }`}
-                        aria-hidden="true"
-                        style={isActive ? { background: 'rgba(255,255,255,0.1)' } : { background: 'rgba(255,255,255,0.04)' }}
-                      >
-                        <Icon
-                          size={isActive ? 19 : 17}
-                          strokeWidth={2}
-                          className={`transition-all duration-500 ${isActive ? "text-white" : "text-white opacity-50"}`}
-                        />
-                      </div>
                       <span
-                        className={`relative z-10 text-[9px] sm:text-[10px] md:text-[11px] font-semibold tracking-wide transition-all duration-500 whitespace-nowrap ${
+                        className={`relative z-10 px-3 py-2 sm:px-4 sm:py-2.5 md:px-5 md:py-3 rounded-full text-[9px] sm:text-[10px] md:text-[11px] font-semibold uppercase tracking-[0.2em] transition-all duration-500 whitespace-nowrap ${
                           isActive ? "text-white" : "text-white opacity-50"
                         }`}
+                        style={isActive ? { background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" } : { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
                       >
                         {tab.label}
                       </span>
@@ -1318,20 +1288,6 @@ export default function SselfieApp({
       {activeTab !== "maya" && activeTab !== "feed-planner" && (
         <FeedbackButton userId={userId} userEmail={userEmail} userName={userName} />
       )}
-
-      {/* Onboarding Wizard */}
-      {/* Decision 3: Only show training wizard if blueprint welcome is NOT showing */}
-      <OnboardingWizard
-        isOpen={showOnboarding && !hasTrainedModel && !showBlueprintWelcome}
-        onComplete={() => {
-          setShowOnboarding(false)
-          setHasTrainedModel(true)
-        }}
-        onDismiss={() => setShowOnboarding(false)}
-        hasTrainedModel={hasTrainedModel}
-        userId={userId}
-        userName={userName}
-      />
 
       {/* Blueprint Welcome Wizard */}
       <BlueprintWelcomeWizard

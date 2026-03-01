@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect } from "react"
-import { Grid3x3, LayoutGrid, List, FileText, Columns } from "lucide-react"
 import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 
 export type FeedTab = "grid" | "posts" | "captions" | "strategy" | "pillars"
@@ -36,33 +35,30 @@ export default function FeedTabs({ activeTab, onTabChange, access }: FeedTabsPro
     <div className="mx-3 mb-3 flex rounded-full border border-white/15 bg-white/[0.04] p-1 backdrop-blur-xl">
       <button
         onClick={() => onTabChange("grid")}
-        className={`flex flex-1 items-center justify-center gap-2 rounded-full py-2.5 transition-colors ${
+        className={`flex flex-1 items-center justify-center rounded-full py-2.5 transition-colors ${
           activeTab === "grid" ? "bg-white/14 text-white" : "text-white/50 hover:text-white/70"
         }`}
       >
-        <Grid3x3 size={20} strokeWidth={activeTab === "grid" ? 2.5 : 2} />
-          <span className="text-[11px] font-medium uppercase tracking-[0.2em]">Grid</span>
+        <span className="text-[11px] font-medium uppercase tracking-[0.2em]">Grid</span>
       </button>
       
       {/* For free users: Show Captions tab, for paid/membership: Show Posts tab */}
       {isFreeUser ? (
         <button
           onClick={() => onTabChange("captions")}
-          className={`flex flex-1 items-center justify-center gap-2 rounded-full py-2.5 transition-colors ${
+          className={`flex flex-1 items-center justify-center rounded-full py-2.5 transition-colors ${
             activeTab === "captions" ? "bg-white/14 text-white" : "text-white/50 hover:text-white/70"
           }`}
         >
-          <FileText size={20} strokeWidth={activeTab === "captions" ? 2.5 : 2} />
           <span className="text-[11px] font-medium uppercase tracking-[0.2em]">Captions</span>
         </button>
       ) : (
         <button
           onClick={() => onTabChange("posts")}
-          className={`flex flex-1 items-center justify-center gap-2 rounded-full py-2.5 transition-colors ${
+          className={`flex flex-1 items-center justify-center rounded-full py-2.5 transition-colors ${
             activeTab === "posts" ? "bg-white/14 text-white" : "text-white/50 hover:text-white/70"
           }`}
         >
-          <LayoutGrid size={20} strokeWidth={activeTab === "posts" ? 2.5 : 2} />
           <span className="text-[11px] font-medium uppercase tracking-[0.2em]">Posts</span>
         </button>
       )}
@@ -70,11 +66,10 @@ export default function FeedTabs({ activeTab, onTabChange, access }: FeedTabsPro
       {showStrategyTab && (
         <button
           onClick={() => onTabChange("strategy")}
-          className={`flex flex-1 items-center justify-center gap-2 rounded-full py-2.5 transition-colors ${
+          className={`flex flex-1 items-center justify-center rounded-full py-2.5 transition-colors ${
             activeTab === "strategy" ? "bg-white/14 text-white" : "text-white/50 hover:text-white/70"
           }`}
         >
-          <List size={20} strokeWidth={activeTab === "strategy" ? 2.5 : 2} />
           <span className="text-[11px] font-medium uppercase tracking-[0.2em]">Strategy</span>
         </button>
       )}
@@ -82,11 +77,10 @@ export default function FeedTabs({ activeTab, onTabChange, access }: FeedTabsPro
       {/* Brand Pillars tab - show for all users who have completed onboarding */}
       <button
         onClick={() => onTabChange("pillars")}
-        className={`flex flex-1 items-center justify-center gap-2 rounded-full py-2.5 transition-colors ${
+        className={`flex flex-1 items-center justify-center rounded-full py-2.5 transition-colors ${
           activeTab === "pillars" ? "bg-white/14 text-white" : "text-white/50 hover:text-white/70"
         }`}
       >
-        <Columns size={20} strokeWidth={activeTab === "pillars" ? 2.5 : 2} />
         <span className="text-[11px] font-medium uppercase tracking-[0.2em]">Pillars</span>
       </button>
     </div>

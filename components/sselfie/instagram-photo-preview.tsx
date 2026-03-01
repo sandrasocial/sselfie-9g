@@ -3,12 +3,6 @@
 import type React from "react"
 
 import { useState, useRef, useEffect } from "react"
-import {
-  X,
-  MoreHorizontal,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react"
 import type { GalleryImage } from "@/lib/data/images"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { triggerHaptic, triggerSuccessHaptic } from "@/lib/utils/haptics"
@@ -124,9 +118,9 @@ export function InstagramPhotoPreview({
           triggerHaptic("light")
           onClose()
         }}
-        className="absolute top-4 right-4 z-10 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+        className="absolute top-4 right-4 z-10 px-3 py-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors border border-white/20 text-[10px] uppercase tracking-[0.2em] text-white"
       >
-        <X size={24} className="text-white" strokeWidth={1.5} />
+        Close
       </button>
 
       {/* Navigation */}
@@ -134,15 +128,15 @@ export function InstagramPhotoPreview({
         <>
           <button
             onClick={handlePrevious}
-            className="absolute left-4 z-10 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors hidden sm:flex items-center justify-center"
+            className="absolute left-4 z-10 px-3 py-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors hidden sm:flex items-center justify-center border border-white/20 text-[10px] uppercase tracking-[0.2em] text-white"
           >
-            <ChevronLeft size={24} className="text-white" strokeWidth={1.5} />
+            Prev
           </button>
           <button
             onClick={handleNext}
-            className="absolute right-4 z-10 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-colors hidden sm:flex items-center justify-center"
+            className="absolute right-4 z-10 px-3 py-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors hidden sm:flex items-center justify-center border border-white/20 text-[10px] uppercase tracking-[0.2em] text-white"
           >
-            <ChevronRight size={24} className="text-white" strokeWidth={1.5} />
+            Next
           </button>
         </>
       )}
@@ -158,8 +152,8 @@ export function InstagramPhotoPreview({
             </Avatar>
             <span className="text-sm font-medium text-white">{userName}</span>
           </div>
-          <button className="text-white">
-            <MoreHorizontal size={20} />
+          <button className="rounded-full border border-white/20 px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-white">
+            Menu
           </button>
         </div>
 

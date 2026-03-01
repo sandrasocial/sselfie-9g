@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
-import { X, ChevronLeft, ChevronRight, Loader2, CheckCircle2 } from "lucide-react"
 import VideoPlayer from "./video-player"
 
 interface Lesson {
@@ -111,7 +110,7 @@ export default function LessonModal({
         
         {loading ? (
           <div className="flex items-center justify-center min-h-[400px]">
-            <Loader2 className="w-8 h-8 text-white/50 animate-spin" />
+            <div className="h-8 w-8 rounded-full border-2 border-white/20 border-t-white/60 animate-spin" />
           </div>
         ) : error || !lesson ? (
           <div className="p-8 text-center">
@@ -135,7 +134,7 @@ export default function LessonModal({
                     className="p-2 hover:bg-white/10 rounded-lg transition-colors"
                     aria-label="Previous lesson"
                   >
-                    <ChevronLeft size={20} className="text-white/60" />
+                    <span className="text-[11px] tracking-[0.12em] uppercase text-white/70">Prev</span>
                   </button>
                 )}
                 {onNextLesson && (
@@ -144,7 +143,7 @@ export default function LessonModal({
                     className="p-2 hover:bg-white/10 rounded-lg transition-colors"
                     aria-label="Next lesson"
                   >
-                    <ChevronRight size={20} className="text-white/60" />
+                    <span className="text-[11px] tracking-[0.12em] uppercase text-white/70">Next</span>
                   </button>
                 )}
               </div>
@@ -154,7 +153,7 @@ export default function LessonModal({
                 className="p-2 hover:bg-white/10 rounded-lg transition-colors"
                 aria-label="Close"
               >
-                <X size={20} className="text-white/60" />
+                <span className="text-[11px] tracking-[0.12em] uppercase text-white/70">Close</span>
               </button>
             </div>
 
@@ -238,12 +237,12 @@ export default function LessonModal({
                   >
                     {isMarkingComplete ? (
                       <>
-                        <Loader2 size={16} className="animate-spin" />
+                        <div className="h-4 w-4 rounded-full border-2 border-white/20 border-t-white/70 animate-spin" />
                         <span>Marking Complete...</span>
                       </>
                     ) : (
                       <>
-                        <CheckCircle2 size={16} />
+                        <span className="text-[10px] tracking-[0.12em] uppercase text-white/60">Done</span>
                         <span>Mark as Done</span>
                       </>
                     )}

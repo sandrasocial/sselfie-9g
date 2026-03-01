@@ -2,7 +2,6 @@
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { ArrowRight } from "lucide-react"
 import BuyBlueprintModal from "@/components/sselfie/buy-blueprint-modal"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
@@ -87,7 +86,7 @@ export default function FreeModeUpsellModal({
                   <div className="font-medium text-stone-900 text-sm sm:text-base">Test More</div>
                   <div className="text-xs text-stone-500 mt-0.5 sm:mt-0">{starterPrice} • 5 preview feeds</div>
                 </div>
-                <ArrowRight className="w-4 h-4 text-stone-400 shrink-0" />
+                <span className="text-[10px] uppercase tracking-[0.2em] text-stone-500 shrink-0">Next</span>
               </div>
             </Button>
 
@@ -101,7 +100,7 @@ export default function FreeModeUpsellModal({
                   <div className="font-medium text-white text-sm sm:text-base">Unlock Full Blueprint</div>
                   <div className="text-xs text-stone-300 mt-0.5 sm:mt-0">{blueprintPrice} • 60 Credits • Full Feed Planner</div>
                 </div>
-                <ArrowRight className="w-4 h-4 text-stone-300 shrink-0" />
+                <span className="text-[10px] uppercase tracking-[0.2em] text-stone-300 shrink-0">Next</span>
               </div>
             </Button>
 
@@ -116,7 +115,7 @@ export default function FreeModeUpsellModal({
                   <div className="font-medium text-stone-700 text-sm sm:text-base">Get More Credits</div>
                   <div className="text-xs text-stone-500 mt-0.5 sm:mt-0">{powerPrice} • 100 credits • 50 preview feeds</div>
                 </div>
-                <ArrowRight className="w-4 h-4 text-stone-400 shrink-0" />
+                <span className="text-[10px] uppercase tracking-[0.2em] text-stone-500 shrink-0">Next</span>
               </div>
             </Button>
           </div>

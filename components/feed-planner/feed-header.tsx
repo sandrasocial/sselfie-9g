@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
-import { ChevronLeft, MoreHorizontal, Plus, Settings, HelpCircle, Loader2 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import FeedStyleModal, { type FeedStyle, type FeedStyleModalData } from "./feed-style-modal"
 import useSWR, { mutate } from "swr"
@@ -496,8 +495,11 @@ export default function FeedHeader({
     <div className="border-b border-white/12 bg-[rgba(10,10,10,0.86)] backdrop-blur-xl">
       <div className="flex items-center justify-between px-4 py-3">
         {onBack && (
-          <button onClick={onBack} className="-ml-2 rounded-full p-2 transition-colors hover:bg-white/10">
-            <ChevronLeft size={24} className="text-white" strokeWidth={2} />
+          <button
+            onClick={onBack}
+            className="-ml-2 rounded-full px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+          >
+            Back
           </button>
         )}
         <div className="flex items-center gap-2">
@@ -513,32 +515,27 @@ export default function FeedHeader({
             />
           )}
           <span className="text-base font-semibold text-white">{feedName}</span>
-          <svg 
-            className="w-4 h-4" 
-            fill="currentColor" 
-            viewBox="0 0 24 24"
-            style={{ color: feedColor }}
-          >
-            <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-          </svg>
+          <span className="text-[10px] uppercase tracking-[0.2em]" style={{ color: feedColor }}>
+            Live
+          </span>
         </div>
         <div className="flex items-center gap-1">
           {onOpenWizard && (
             <button
               onClick={onOpenWizard}
-              className="rounded-full p-2 transition-colors hover:bg-white/10"
+              className="rounded-full px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-white/70 transition-colors hover:bg-white/10 hover:text-white"
               title="Edit wizard answers"
             >
-              <Settings size={20} className="text-white/70" strokeWidth={2} />
+              Wizard
             </button>
           )}
           {onOpenWelcomeWizard && access?.isPaidBlueprint && (
             <button
               onClick={onOpenWelcomeWizard}
-              className="rounded-full p-2 transition-colors hover:bg-white/10"
+              className="rounded-full px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-white/70 transition-colors hover:bg-white/10 hover:text-white"
               title="View welcome guide"
             >
-              <HelpCircle size={20} className="text-white/70" strokeWidth={2} />
+              Guide
             </button>
           )}
           {access?.isMembership && onToggleGenerationMode && (
@@ -550,8 +547,8 @@ export default function FeedHeader({
               />
             </div>
           )}
-          <button className="-mr-2 rounded-full p-2 transition-colors hover:bg-white/10">
-            <MoreHorizontal size={24} className="text-white" strokeWidth={2} />
+          <button className="-mr-2 rounded-full px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-white transition-colors hover:bg-white/10">
+            Menu
           </button>
         </div>
       </div>
@@ -560,7 +557,7 @@ export default function FeedHeader({
         <div className="flex flex-col md:flex-row md:items-start md:gap-12 mb-4">
           <button
             onClick={onProfileImageClick}
-            className="relative group w-20 h-20 md:w-32 md:h-32 rounded-full bg-linear-to-br from-purple-500 via-pink-500 to-orange-500 p-[3px] mb-4 md:mb-0 shrink-0 transition-opacity hover:opacity-90"
+            className="relative group w-20 h-20 md:w-32 md:h-32 rounded-full border border-white/20 bg-white/4 p-[3px] mb-4 md:mb-0 shrink-0 transition-opacity hover:opacity-90"
           >
             <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-full border border-white/10 bg-[var(--color-obsidian)]">
               {hasProfileImage ? (
@@ -630,12 +627,10 @@ export default function FeedHeader({
               >
                 {isCreatingPreviewFeed ? (
                   <>
-                    <Loader2 size={16} className="animate-spin" />
                     <span>Creating...</span>
                   </>
                 ) : (
                   <>
-                    <Plus size={16} />
                     <span>New Preview</span>
                   </>
                 )}
@@ -650,12 +645,10 @@ export default function FeedHeader({
                 >
                   {isCreatingFeed ? (
                     <>
-                      <Loader2 size={16} className="animate-spin" />
                       <span>Creating...</span>
                     </>
                   ) : (
                     <>
-                      <Plus size={16} />
                       <span>NEW FEED -{">"}</span>
                     </>
                   )}

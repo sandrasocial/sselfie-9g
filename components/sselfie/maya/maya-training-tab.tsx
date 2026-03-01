@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { Loader2 } from "lucide-react"
 import useSWR from "swr"
 import Image from "next/image"
 import RetrainModelModal from "../retrain-model-modal"
@@ -80,15 +79,15 @@ export default function MayaTrainingTab({
       <div className="flex-1 overflow-y-auto p-4 sm:p-6">
         <div className="max-w-4xl mx-auto">
           <div className="text-center py-12">
-            <h2 className="text-xl sm:text-2xl font-serif font-extralight tracking-[0.2em] uppercase text-stone-950 mb-3">
+            <h2 className="text-xl sm:text-2xl font-serif font-extralight tracking-[0.2em] uppercase text-white mb-3">
               Error Loading Training Status
             </h2>
-            <p className="text-sm text-stone-600 max-w-md mx-auto mb-6">
+            <p className="text-sm text-white/65 max-w-md mx-auto mb-6">
               Unable to load your training status. Please try again later.
             </p>
             <button
               onClick={() => mutate()}
-              className="px-6 py-3 bg-stone-950 text-white rounded-lg hover:bg-stone-800 transition-colors text-sm font-medium tracking-wide uppercase"
+              className="px-6 py-3 bg-white/10 text-white rounded-lg hover:bg-white/16 transition-colors text-sm font-medium tracking-wide uppercase border border-white/15"
             >
               Retry
             </button>
@@ -103,25 +102,25 @@ export default function MayaTrainingTab({
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8 sm:mb-12">
-          <h2 className="text-xl sm:text-2xl font-serif font-extralight tracking-[0.2em] uppercase text-stone-950 mb-3">
+          <h2 className="text-xl sm:text-2xl font-serif font-extralight tracking-[0.2em] uppercase text-white mb-3">
             AI Model Training
           </h2>
-          <p className="text-sm sm:text-base text-stone-600 max-w-2xl">
+          <p className="text-sm sm:text-base text-white/65 max-w-2xl">
             Train your personal AI model with your selfies. This takes about 5 minutes and you only need to do it once.
           </p>
         </div>
 
         {needsTrainingCredits && (
-          <div className="bg-stone-900 border border-stone-800 rounded-[20px] p-5 mb-6 sm:mb-8">
+          <div className="bg-[rgba(10,10,10,0.8)] border border-white/12 rounded-[20px] p-5 mb-6 sm:mb-8">
             <p className="text-sm font-medium tracking-wide uppercase text-white mb-2">Training costs 20 credits</p>
-            <p className="text-sm text-stone-300 mb-4">
+            <p className="text-sm text-white/65 mb-4">
               You currently have {Math.round(creditBalance)} credits.
             </p>
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={onBuyCredits}
-                className="px-4 py-2 rounded-lg bg-white text-stone-900 text-xs font-medium tracking-[0.08em] uppercase hover:bg-stone-100 transition-colors"
+                className="px-4 py-2 rounded-lg bg-white/12 text-white text-xs font-medium tracking-[0.08em] uppercase hover:bg-white/18 transition-colors border border-white/15"
               >
                 Buy Credits →
               </button>
@@ -139,35 +138,35 @@ export default function MayaTrainingTab({
         )}
 
         {/* Training Status Card */}
-        <div className="bg-white border border-stone-200/40 rounded-[24px] p-6 sm:p-8 mb-6 sm:mb-8 shadow-[0_8px_32px_rgba(28,25,23,0.04)]">
+        <div className="bg-white/4 border border-white/12 rounded-[24px] p-6 sm:p-8 mb-6 sm:mb-8 backdrop-blur-[20px]">
           {isTraining ? (
             // Training in Progress
             <div className="text-center">
               <div className="relative w-20 h-20 mx-auto mb-6">
-                <Loader2 className="w-full h-full text-stone-950 animate-spin" strokeWidth={1.5} />
+                <div className="w-full h-full rounded-full border-2 border-white/25 border-t-white animate-spin" />
               </div>
-              <h3 className="text-lg sm:text-xl font-serif font-light tracking-[0.02em] text-stone-950 mb-2">
+              <h3 className="text-lg sm:text-xl font-serif font-light tracking-[0.02em] text-white mb-2">
                 Training in Progress
               </h3>
-              <p className="text-sm text-stone-600 mb-6">
+              <p className="text-sm text-white/65 mb-6">
                 Your AI model is being trained. This usually takes about 5 minutes.
               </p>
               
               {/* Progress Bar */}
               <div className="w-full max-w-md mx-auto mb-4">
-                <div className="w-full h-2 bg-stone-200 rounded-full overflow-hidden">
+                <div className="w-full h-2 bg-white/12 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-stone-950 transition-all duration-500 ease-out"
+                    className="h-full bg-white transition-all duration-500 ease-out"
                     style={{ width: `${Math.min(progress, 100)}%` }}
                   />
                 </div>
-                <p className="text-xs text-stone-500 mt-2 text-center">
+                <p className="text-xs text-white/55 mt-2 text-center">
                   {Math.round(progress)}% complete
                 </p>
               </div>
 
               {progressData?.estimatedMinutesRemaining && (
-                <p className="text-xs text-stone-500">
+                <p className="text-xs text-white/55">
                   Approximately {Math.ceil(progressData.estimatedMinutesRemaining)} minute{Math.ceil(progressData.estimatedMinutesRemaining) !== 1 ? 's' : ''} remaining
                 </p>
               )}
@@ -175,14 +174,14 @@ export default function MayaTrainingTab({
           ) : isCompleted && hasTrainedModel ? (
             // Training Completed
             <div className="text-center">
-              <h3 className="text-lg sm:text-xl font-serif font-light tracking-[0.02em] text-stone-950 mb-2">
+              <h3 className="text-lg sm:text-xl font-serif font-light tracking-[0.02em] text-white mb-2">
                 Training Complete
               </h3>
-              <p className="text-sm text-stone-600 mb-6">
+              <p className="text-sm text-white/65 mb-6">
                 Your AI model is ready to use! You can now generate personalized images.
               </p>
               {model?.created_at && (
-                <p className="text-xs text-stone-500 mb-6">
+                <p className="text-xs text-white/55 mb-6">
                   Trained on {new Date(model.created_at).toLocaleDateString()}
                 </p>
               )}
@@ -197,13 +196,13 @@ export default function MayaTrainingTab({
                     console.log("[MayaTrainingTab] Opening retrain modal, userId:", userId)
                     setShowRetrainModal(true)
                   }}
-                  className="px-6 py-3 bg-stone-950 text-white rounded-lg hover:bg-stone-800 transition-colors text-sm font-medium tracking-wide uppercase"
+                  className="px-6 py-3 bg-white/12 text-white rounded-lg hover:bg-white/18 transition-colors text-sm font-medium tracking-wide uppercase border border-white/15"
                 >
                   Retrain Model
                 </button>
                 <button
                   onClick={handleManageTraining}
-                  className="px-6 py-3 bg-stone-100 text-stone-700 rounded-lg hover:bg-stone-200 transition-colors text-sm font-medium tracking-wide uppercase"
+                  className="px-6 py-3 bg-white/10 text-white rounded-lg hover:bg-white/16 transition-colors text-sm font-medium tracking-wide uppercase border border-white/12"
                 >
                   Manage Images
                 </button>
@@ -212,15 +211,15 @@ export default function MayaTrainingTab({
           ) : isFailed ? (
             // Training Failed
             <div className="text-center">
-              <h3 className="text-lg sm:text-xl font-serif font-light tracking-[0.02em] text-stone-950 mb-2">
+              <h3 className="text-lg sm:text-xl font-serif font-light tracking-[0.02em] text-white mb-2">
                 Training Failed
               </h3>
-              <p className="text-sm text-stone-600 mb-6">
+              <p className="text-sm text-white/65 mb-6">
                 There was an error during training. Please try again.
               </p>
               <button
                 onClick={handleStartTraining}
-                className="px-6 py-3 bg-stone-950 text-white rounded-lg hover:bg-stone-800 transition-colors text-sm font-medium tracking-wide uppercase"
+                className="px-6 py-3 bg-white/10 text-white rounded-lg hover:bg-white/16 transition-colors text-sm font-medium tracking-wide uppercase border border-white/12"
               >
                 Retry Training
               </button>
@@ -228,16 +227,16 @@ export default function MayaTrainingTab({
           ) : (
             // No Training / Start Training
             <div className="text-center">
-              <h3 className="text-lg sm:text-xl font-serif font-light tracking-[0.02em] text-stone-950 mb-2">
+              <h3 className="text-lg sm:text-xl font-serif font-light tracking-[0.02em] text-white mb-2">
                 Get Started
               </h3>
-              <p className="text-sm text-stone-600 mb-6">
+              <p className="text-sm text-white/65 mb-6">
                 Upload 5+ selfies to train your personal AI model. Training costs 20 credits.
               </p>
               <button
                 onClick={handleStartTraining}
                 disabled={needsTrainingCredits}
-                className="px-6 py-3 bg-stone-950 text-white rounded-lg hover:bg-stone-800 transition-colors text-sm font-medium tracking-wide uppercase mx-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-3 bg-white/10 text-white rounded-lg hover:bg-white/16 transition-colors text-sm font-medium tracking-wide uppercase mx-auto disabled:opacity-50 disabled:cursor-not-allowed border border-white/12"
               >
                 Start Training
               </button>
@@ -247,12 +246,12 @@ export default function MayaTrainingTab({
 
         {/* Training Images Preview */}
         {trainingImages.length > 0 && (
-          <div className="bg-white border border-stone-200/40 rounded-[24px] p-6 sm:p-8 shadow-[0_8px_32px_rgba(28,25,23,0.04)]">
+          <div className="bg-white/4 border border-white/12 rounded-[24px] p-6 sm:p-8 backdrop-blur-[20px]">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base sm:text-lg font-serif font-light tracking-[0.02em] text-stone-950">
+              <h3 className="text-base sm:text-lg font-serif font-light tracking-[0.02em] text-white">
                 Training Images
               </h3>
-              <span className="text-xs text-stone-500">
+              <span className="text-xs text-white/55">
                 {trainingImages.length} image{trainingImages.length !== 1 ? 's' : ''}
               </span>
             </div>
@@ -260,7 +259,7 @@ export default function MayaTrainingTab({
               {trainingImages.slice(0, 10).map((image: any, index: number) => (
                 <div
                   key={image.id || index}
-                  className="relative aspect-square rounded-lg overflow-hidden bg-stone-100 border border-stone-200/40"
+                  className="relative aspect-square rounded-lg overflow-hidden bg-white/6 border border-white/12"
                 >
                   {image.image_url ? (
                     <Image
@@ -271,15 +270,15 @@ export default function MayaTrainingTab({
                       sizes="(max-width: 640px) 33vw, (max-width: 1024px) 25vw, 20vw"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-stone-100">
-                      <span className="text-xs text-stone-400">No image</span>
+                    <div className="w-full h-full flex items-center justify-center bg-white/6">
+                      <span className="text-xs text-white/45">No image</span>
                     </div>
                   )}
                 </div>
               ))}
               {trainingImages.length > 10 && (
-                <div className="relative aspect-square rounded-lg overflow-hidden bg-stone-100 border border-stone-200/40 flex items-center justify-center">
-                  <span className="text-xs font-medium text-stone-600">
+                <div className="relative aspect-square rounded-lg overflow-hidden bg-white/6 border border-white/12 flex items-center justify-center">
+                  <span className="text-xs font-medium text-white/65">
                     +{trainingImages.length - 10}
                   </span>
                 </div>
@@ -288,7 +287,7 @@ export default function MayaTrainingTab({
             {trainingImages.length > 0 && (
               <button
                 onClick={handleManageTraining}
-                className="mt-4 text-xs text-stone-600 hover:text-stone-950 transition-colors uppercase tracking-[0.1em]"
+                className="mt-4 text-xs text-white/65 hover:text-white transition-colors uppercase tracking-[0.1em]"
               >
                 Manage Images →
               </button>

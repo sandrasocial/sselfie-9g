@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-import { X } from "lucide-react"
 
 interface MayaSettingsPanelProps {
   isOpen: boolean
@@ -56,23 +55,23 @@ export default function MayaSettingsPanel({
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-stone-950/20 backdrop-blur-sm z-[100] animate-in fade-in duration-200"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] animate-in fade-in duration-200"
         onClick={onClose}
       />
 
       {/* Settings Panel */}
-      <div className="fixed inset-x-4 top-20 bottom-4 sm:bottom-auto sm:max-h-[85vh] bg-white/95 backdrop-blur-3xl border border-stone-200 rounded-2xl shadow-xl shadow-stone-950/10 animate-in slide-in-from-top-2 duration-300 z-[101] max-w-md mx-auto flex flex-col">
+      <div className="fixed inset-x-4 top-20 bottom-4 sm:bottom-auto sm:max-h-[85vh] bg-[rgba(10,10,10,0.94)] backdrop-blur-[20px] border border-[rgba(255,255,255,0.08)] rounded-2xl shadow-xl shadow-black/40 animate-in slide-in-from-top-2 duration-300 z-[101] max-w-md mx-auto flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between mb-4 p-6 pb-4 flex-shrink-0">
-          <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-950">
+          <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-white">
             Generation Settings
           </h3>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-100 transition-colors"
+            className="px-2 py-1.5 rounded-lg hover:bg-white/10 transition-colors"
             aria-label="Close settings"
           >
-            <X size={18} className="text-stone-600" strokeWidth={2} />
+            <span className="text-[10px] uppercase tracking-[0.2em] text-white/75">Close</span>
           </button>
         </div>
 
@@ -82,8 +81,8 @@ export default function MayaSettingsPanel({
             {/* Style Strength */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="text-xs tracking-wider uppercase text-stone-600">Style Strength</label>
-                <span className="text-sm font-medium text-stone-950">{styleStrength.toFixed(2)}</span>
+                <label className="text-xs tracking-wider uppercase text-white/65">Style Strength</label>
+                <span className="text-sm font-medium text-white">{styleStrength.toFixed(2)}</span>
               </div>
               <input
                 type="range"
@@ -99,8 +98,8 @@ export default function MayaSettingsPanel({
             {/* Prompt Accuracy */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="text-xs tracking-wider uppercase text-stone-600">Prompt Accuracy</label>
-                <span className="text-sm font-medium text-stone-950">{promptAccuracy.toFixed(1)}</span>
+                <label className="text-xs tracking-wider uppercase text-white/65">Prompt Accuracy</label>
+                <span className="text-sm font-medium text-white">{promptAccuracy.toFixed(1)}</span>
               </div>
               <input
                 type="range"
@@ -116,8 +115,8 @@ export default function MayaSettingsPanel({
             {/* Realism Boost */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="text-xs tracking-wider uppercase text-stone-600">Realism Boost</label>
-                <span className="text-sm font-medium text-stone-950">{realismStrength.toFixed(2)}</span>
+                <label className="text-xs tracking-wider uppercase text-white/65">Realism Boost</label>
+                <span className="text-sm font-medium text-white">{realismStrength.toFixed(2)}</span>
               </div>
               <input
                 type="range"
@@ -128,16 +127,16 @@ export default function MayaSettingsPanel({
                 onChange={(e) => onRealismStrengthChange(Number.parseFloat(e.target.value))}
                 className="w-full"
               />
-              <p className="text-xs text-stone-500 mt-1">Higher = more photorealistic, lower = more stylized</p>
+              <p className="text-xs text-white/55 mt-1">Higher = more photorealistic, lower = more stylized</p>
             </div>
 
             {/* Aspect Ratio */}
             <div>
-              <label className="text-xs tracking-wider uppercase text-stone-600 mb-2 block">Aspect Ratio</label>
+              <label className="text-xs tracking-wider uppercase text-white/65 mb-2 block">Aspect Ratio</label>
               <select
                 value={aspectRatio}
                 onChange={(e) => onAspectRatioChange(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-stone-200 rounded-lg text-sm"
+                className="w-full px-3 py-2 bg-white/5 border border-white/15 rounded-lg text-sm text-white"
               >
                 <option value="1:1">Square (1:1)</option>
                 <option value="4:5">Portrait (4:5)</option>
@@ -147,20 +146,20 @@ export default function MayaSettingsPanel({
 
             {/* Enhanced Authenticity Toggle - Only show in Classic mode */}
             {!studioProMode && (
-              <div className="pt-2 border-t border-stone-200">
+              <div className="pt-2 border-t border-white/10">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <label className="text-xs tracking-wider uppercase text-stone-600 mb-1 block">
+                    <label className="text-xs tracking-wider uppercase text-white/65 mb-1 block">
                       Enhanced Authenticity
                     </label>
-                    <p className="text-xs text-stone-500 mt-1">
+                    <p className="text-xs text-white/55 mt-1">
                       More muted colors, iPhone quality, and film grain for a more authentic look
                     </p>
                   </div>
                   <button
                     onClick={() => onEnhancedAuthenticityChange(!enhancedAuthenticity)}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-stone-950 focus:ring-offset-2 ${
-                      enhancedAuthenticity ? 'bg-stone-900' : 'bg-stone-300'
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-white/40 focus:ring-offset-2 ${
+                      enhancedAuthenticity ? "bg-white/30" : "bg-white/15"
                     }`}
                     role="switch"
                     aria-checked={enhancedAuthenticity}
@@ -168,7 +167,7 @@ export default function MayaSettingsPanel({
                   >
                     <span
                       className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        enhancedAuthenticity ? 'translate-x-6' : 'translate-x-1'
+                        enhancedAuthenticity ? "translate-x-6" : "translate-x-1"
                       }`}
                     />
                   </button>

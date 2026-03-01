@@ -3,7 +3,6 @@
 import type React from "react"
 
 import { useState, useEffect, useRef } from "react"
-import { Upload, FileText, ImageIcon, Video, File, Trash2 } from "lucide-react"
 
 interface BrandAsset {
   id: number
@@ -105,11 +104,11 @@ export default function BrandAssetsManager() {
     }
   }
 
-  const getFileIcon = (fileType: string) => {
-    if (fileType.startsWith("image/")) return <ImageIcon size={20} />
-    if (fileType.startsWith("video/")) return <Video size={20} />
-    if (fileType.includes("pdf")) return <FileText size={20} />
-    return <File size={20} />
+  const getFileLabel = (fileType: string) => {
+    if (fileType.startsWith("image/")) return "Image"
+    if (fileType.startsWith("video/")) return "Video"
+    if (fileType.includes("pdf")) return "PDF"
+    return "File"
   }
 
   const formatFileSize = (bytes: number) => {
@@ -156,7 +155,7 @@ export default function BrandAssetsManager() {
         />
         <div className="flex flex-col items-center gap-3">
           <div className="w-12 h-12 bg-stone-900 rounded-xl flex items-center justify-center">
-            <Upload size={20} className="text-white" />
+            <span className="text-[10px] uppercase tracking-[0.2em] text-white">Upload</span>
           </div>
           <div>
             <p className="text-sm font-semibold text-stone-950">
@@ -176,7 +175,9 @@ export default function BrandAssetsManager() {
             >
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 bg-stone-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                  {getFileIcon(asset.file_type)}
+                  <span className="text-[10px] uppercase tracking-[0.2em] text-stone-700">
+                    {getFileLabel(asset.file_type)}
+                  </span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-stone-950 truncate">{asset.file_name}</p>
@@ -185,9 +186,9 @@ export default function BrandAssetsManager() {
                 </div>
                 <button
                   onClick={() => deleteAsset(asset.id)}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-stone-100 rounded-lg"
+                  className="opacity-0 group-hover:opacity-100 transition-opacity px-2 py-1.5 hover:bg-stone-100 rounded-lg text-[10px] uppercase tracking-[0.2em] text-stone-700"
                 >
-                  <Trash2 size={16} className="text-stone-600" />
+                  Delete
                 </button>
               </div>
             </div>

@@ -1,7 +1,6 @@
 "use client"
 
 import { createPortal } from "react-dom"
-import { X } from "lucide-react"
 import FeedPostCard from "./feed-post-card"
 import type { FeedPost } from "./feed-preview-types"
 
@@ -37,7 +36,7 @@ export default function FeedPreviewImageModal({
           className="absolute top-2 right-2 sm:top-4 sm:right-4 z-10 p-2 bg-black/50 hover:bg-black/70 active:bg-black/80 rounded-full text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
           aria-label="Close modal"
         >
-          <X size={20} className="sm:w-6 sm:h-6" />
+          <span className="text-[10px] uppercase tracking-[0.16em]">Close</span>
         </button>
 
         {feedId ? (

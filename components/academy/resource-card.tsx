@@ -1,6 +1,5 @@
 "use client"
 
-import { Download } from "lucide-react"
 import { sanitizeExternalUrl } from "@/lib/security/url-validator"
 
 interface ResourceCardProps {
@@ -115,7 +114,7 @@ export default function ResourceCard({ resource, onDownload }: ResourceCardProps
           className="w-full flex items-center justify-center gap-2 bg-[rgba(255,255,255,0.07)] border border-white/10 text-white/75 py-3 rounded-xl text-sm tracking-wider uppercase hover:bg-[rgba(255,255,255,0.1)] hover:border-white/20 transition-all active:scale-95"
           style={{ touchAction: "manipulation" }}
         >
-          <Download className="w-4 h-4" />
+          <span className="text-[10px] tracking-[0.12em] uppercase text-white/50">File</span>
           {isExternalLink ? "Open" : "Download"}
         </button>
 

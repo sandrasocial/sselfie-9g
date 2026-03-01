@@ -4,9 +4,26 @@
 ---
 
 ## Last Updated
-2026-02-28 18:11 CET — Updated by Codex (UX-04 Gallery + UX-06 Profile batches shipped to main)
+2026-03-01 22:13 CET — Updated by Codex (Mounted-surface UX consistency hardening + tracker sync)
 
 ## Last Task Completed
+Mounted-surface UX consistency hardening completed (Maya, Feed Planner, Gallery, Account, Academy):
+- Scope:
+  - Removed icon-based UI affordances from active Studio surfaces and replaced with text affordances.
+  - Enforced dark glass consistency on mounted component shells and overlays.
+  - Added formal state snapshot and remaining legacy list in:
+    - `docs/codex-tasks/UX-CONSISTENCY-AUDIT-2026-03-01.md`
+- Key files updated:
+  - `components/feed-planner/*` (core cards/modals/input and list surfaces)
+  - `components/sselfie/maya/*` and `components/sselfie/pro-mode/*` (mounted chat surfaces)
+  - `components/sselfie/gallery-screen.tsx`, `components/sselfie/fullscreen-image-modal.tsx`, `components/sselfie/image-gallery-modal.tsx`
+  - `components/sselfie/academy-screen.tsx`
+  - `components/academy/course-card.tsx`, `components/academy/course-detail.tsx`, `components/academy/lesson-modal.tsx`, `components/academy/lesson-viewer.tsx`, `components/academy/resource-card.tsx`
+- Validation:
+  - Mounted-scope icon scan: `0` `lucide-react` imports in active Studio scope.
+  - `pnpm eslint` on touched files: passed with warnings only (`0` errors).
+  - `pnpm build`: passed.
+
 UX-06 Profile / Account redesign batch shipped to production:
 - Commit pushed to `main`: `5243544f` (`Restyle account and profile flows to glass UI`)
 - Files shipped:

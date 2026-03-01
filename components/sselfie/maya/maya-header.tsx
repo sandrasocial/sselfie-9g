@@ -421,7 +421,7 @@ export default function MayaHeaderUnified({
                 }}
                 aria-label="More options"
               >
-                <span style={{ fontSize: '18px', fontWeight: 500, color: '#0a0a0a', letterSpacing: '0.05em' }}>···</span>
+                <span style={{ fontSize: "18px", fontWeight: 500, color: "#ffffff", letterSpacing: "0.05em" }}>···</span>
               </button>
 
               {isDotsMenuOpen && (
@@ -429,36 +429,36 @@ export default function MayaHeaderUnified({
                   className="absolute right-0 z-[200] animate-in fade-in slide-in-from-top-2 duration-150"
                   style={{
                     top: 'calc(100% + 8px)', width: '200px',
-                    backgroundColor: '#ffffff', border: '1px solid #e5e5e5',
+                    backgroundColor: "rgba(10,10,10,0.96)", border: "1px solid rgba(255,255,255,0.12)",
                     borderRadius: '16px', padding: '8px',
-                    boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
+                    boxShadow: "0 8px 32px rgba(0,0,0,0.35)",
                   }}
                 >
                   {onSettings && (
                     <button onClick={() => { onSettings(); setIsDotsMenuOpen(false) }}
-                      className="w-full text-left px-4 py-3 rounded-xl hover:bg-stone-50 transition-colors touch-manipulation"
-                      style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', fontWeight: 300, color: '#0a0a0a' }}>
+                      className="w-full text-left px-4 py-3 rounded-xl hover:bg-white/10 transition-colors touch-manipulation"
+                      style={{ fontFamily: "Inter, sans-serif", fontSize: "14px", fontWeight: 300, color: "#ffffff" }}>
                       Settings
                     </button>
                   )}
                   {onNewProject && (
                     <button onClick={() => { onNewProject(); setIsDotsMenuOpen(false) }}
-                      className="w-full text-left px-4 py-3 rounded-xl hover:bg-stone-50 transition-colors touch-manipulation"
-                      style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', fontWeight: 300, color: '#0a0a0a' }}>
+                      className="w-full text-left px-4 py-3 rounded-xl hover:bg-white/10 transition-colors touch-manipulation"
+                      style={{ fontFamily: "Inter, sans-serif", fontSize: "14px", fontWeight: 300, color: "#ffffff" }}>
                       New Project
                     </button>
                   )}
                   {onHistory && (
                     <button onClick={() => { onHistory(); setIsDotsMenuOpen(false) }}
-                      className="w-full text-left px-4 py-3 rounded-xl hover:bg-stone-50 transition-colors touch-manipulation"
-                      style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', fontWeight: 300, color: '#0a0a0a' }}>
+                      className="w-full text-left px-4 py-3 rounded-xl hover:bg-white/10 transition-colors touch-manipulation"
+                      style={{ fontFamily: "Inter, sans-serif", fontSize: "14px", fontWeight: 300, color: "#ffffff" }}>
                       History
                     </button>
                   )}
                   {onNavigation && (
                     <button onClick={() => { onNavigation('prompts'); setIsDotsMenuOpen(false) }}
-                      className="w-full text-left px-4 py-3 rounded-xl hover:bg-stone-50 transition-colors touch-manipulation"
-                      style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', fontWeight: 300, color: '#0a0a0a' }}>
+                      className="w-full text-left px-4 py-3 rounded-xl hover:bg-white/10 transition-colors touch-manipulation"
+                      style={{ fontFamily: "Inter, sans-serif", fontSize: "14px", fontWeight: 300, color: "#ffffff" }}>
                       Prompts Library
                     </button>
                   )}

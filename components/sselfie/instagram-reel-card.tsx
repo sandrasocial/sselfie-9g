@@ -3,7 +3,6 @@
 import type React from "react"
 
 import { useState, useRef, useEffect } from "react"
-import { MoreVertical, Play } from "lucide-react"
 
 interface InstagramReelCardProps {
   videoUrl: string
@@ -329,7 +328,7 @@ export default function InstagramReelCard({
             aria-label="Play video"
             type="button"
           >
-            <Play size={28} className="text-[#ffffff] ml-1" fill="currentColor" />
+            <span className="text-[11px] tracking-[0.2em] uppercase text-[#ffffff]">Play</span>
           </button>
         </div>
       )}
@@ -379,7 +378,7 @@ export default function InstagramReelCard({
           className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-stone-950/60 border border-[rgba(255,255,255,0.2)] text-[10px] tracking-[0.2em] uppercase text-[#ffffff] hover:bg-stone-950/80 transition-colors relative"
           aria-label="More options"
         >
-          More <MoreVertical size={14} className="text-white" strokeWidth={2} />
+          More
           {showMenu && (
             <div className="absolute right-full mr-2 bottom-0 bg-[#111111] rounded-xl shadow-2xl border border-[rgba(255,255,255,0.12)] py-2 w-48">
               <button

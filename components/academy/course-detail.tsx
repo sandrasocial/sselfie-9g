@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Loader2, Lock, CheckCircle2, Circle } from "lucide-react"
 import LessonModal from "./lesson-modal"
 
 interface Lesson {
@@ -139,7 +138,7 @@ export default function CourseDetail({ courseId, onBack }: CourseDetailProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="w-8 h-8 text-white/50 animate-spin" />
+        <div className="h-8 w-8 rounded-full border-2 border-white/20 border-t-white/60 animate-spin" />
       </div>
     )
   }
@@ -268,12 +267,14 @@ export default function CourseDetail({ courseId, onBack }: CourseDetailProps) {
                 <div className="flex-shrink-0 mt-1">
                   {lesson.is_locked ? (
                     <div className="w-6 h-6 rounded-full bg-[rgba(255,255,255,0.07)] border border-white/10 flex items-center justify-center">
-                      <Lock size={14} className="text-white/50" strokeWidth={2} />
+                      <span className="text-[9px] tracking-[0.08em] uppercase text-white/55">L</span>
                     </div>
                   ) : lesson.is_completed ? (
-                    <CheckCircle2 size={24} className="text-white" strokeWidth={1.5} />
+                    <div className="w-6 h-6 rounded-full bg-white/90 text-[#0b0d10] flex items-center justify-center text-[9px] tracking-[0.08em] uppercase">
+                      OK
+                    </div>
                   ) : (
-                    <Circle size={24} className="text-white/30" strokeWidth={1.5} />
+                    <div className="w-6 h-6 rounded-full border border-white/20 bg-white/[0.03]" />
                   )}
                 </div>
 

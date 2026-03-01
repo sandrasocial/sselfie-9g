@@ -1,6 +1,5 @@
 "use client"
 
-import { X } from "lucide-react"
 import { useState } from "react"
 
 interface ContextualTipsProps {
@@ -68,10 +67,10 @@ export function ContextualTips({ generationCount, hasCompletedBrand, favoriteCou
           >
             <button
               onClick={() => dismissTip(tip.id)}
-              className="absolute top-4 right-4 sm:top-6 sm:right-6 p-2 hover:bg-stone-100 rounded-lg transition-colors"
+              className="absolute top-4 right-4 sm:top-6 sm:right-6 px-2 py-1.5 border border-stone-300 hover:bg-stone-100 rounded-lg transition-colors text-[10px] uppercase tracking-[0.2em] text-stone-500"
               aria-label="Dismiss"
             >
-              <X size={16} strokeWidth={1.5} className="text-stone-400" />
+              Close
             </button>
             <div className="pr-8">
               <h3 className="font-['Times_New_Roman'] text-lg sm:text-xl font-extralight tracking-[0.15em] uppercase text-stone-900 mb-3">

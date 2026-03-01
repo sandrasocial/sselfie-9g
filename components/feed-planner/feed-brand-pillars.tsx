@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Copy, Check, MessageCircle, Loader2 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
 import useSWR from "swr"
@@ -195,14 +194,11 @@ export default function FeedBrandPillars({ businessType }: FeedBrandPillarsProps
           >
             {isGenerating ? (
               <>
-                <Loader2 size={16} className="mr-2 animate-spin" />
+                <span className="mr-2 h-4 w-4 rounded-full border border-white/40 border-t-white animate-spin" />
                 Maya is thinking...
               </>
             ) : (
-              <>
-                <MessageCircle size={16} className="mr-2" />
-                Generate my content pillars
-              </>
+              "Generate my content pillars"
             )}
           </Button>
         </div>
@@ -233,7 +229,7 @@ export default function FeedBrandPillars({ businessType }: FeedBrandPillarsProps
           >
             {isGenerating ? (
               <>
-                <Loader2 size={16} className="mr-2 animate-spin" />
+                <span className="mr-2 h-4 w-4 rounded-full border border-white/40 border-t-white animate-spin" />
                 Regenerating...
               </>
             ) : (
@@ -246,7 +242,7 @@ export default function FeedBrandPillars({ businessType }: FeedBrandPillarsProps
         {pillarExplanation && (
           <div className="mb-8 flex items-start gap-4 rounded-2xl border border-white/15 bg-white/[0.04] p-4 backdrop-blur-2xl">
             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10">
-              <MessageCircle size={20} className="text-white" />
+              <span className="text-[10px] uppercase tracking-[0.2em] text-white/85">Maya</span>
             </div>
             <div className="flex-1">
               <p className="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-white/80">Maya</p>
@@ -280,14 +276,10 @@ export default function FeedBrandPillars({ businessType }: FeedBrandPillarsProps
                         <p className="flex-1 text-xs leading-relaxed text-white/68">{idea}</p>
                         <button
                           onClick={() => copyToClipboard(idea, `${pillar.name}-${i}`)}
-                          className="shrink-0 rounded border border-white/15 p-1.5 transition-colors hover:bg-white/10"
+                          className="shrink-0 rounded border border-white/15 px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-white/70 transition-colors hover:bg-white/10"
                           title="Copy idea"
                         >
-                          {copiedPillar === `${pillar.name}-${i}` ? (
-                            <Check className="w-3.5 h-3.5 text-green-600" />
-                          ) : (
-                            <Copy className="h-3.5 w-3.5 text-white/60" />
-                          )}
+                          {copiedPillar === `${pillar.name}-${i}` ? "Done" : "Copy"}
                         </button>
                       </div>
                     ))}

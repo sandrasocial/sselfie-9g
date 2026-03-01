@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import useSWR from "swr"
 import InstagramFeedView from "./instagram-feed-view"
-import { ArrowLeft, ImageIcon } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import UnifiedLoading from "@/components/sselfie/unified-loading"
 import FeedStyleModal, { type FeedStyle, type FeedStyleModalData } from "./feed-style-modal"
@@ -393,7 +392,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
           <div className="w-full max-w-md space-y-6 rounded-[20px] border border-white/15 bg-white/[0.04] p-6 text-center backdrop-blur-2xl">
             {/* Icon */}
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-white/20 bg-white/10 sm:h-20 sm:w-20">
-              <ImageIcon className="h-8 w-8 text-white/60 sm:h-10 sm:w-10" />
+              <span className="text-[10px] uppercase tracking-[0.2em] text-white/60">Feed</span>
             </div>
 
             {/* Heading — paid blueprint: "Set up in 30 seconds" per §1.4 */}
@@ -442,7 +441,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
                     key={i}
                     className="flex aspect-square items-center justify-center border border-white/10 bg-white/[0.03]"
                   >
-                    <ImageIcon className="h-4 w-4 text-white/35" />
+                    <span className="text-[9px] uppercase tracking-[0.2em] text-white/35">Slot</span>
                   </div>
                 ))}
               </div>
@@ -465,7 +464,7 @@ export default function FeedViewScreen({ feedId: feedIdProp, access: accessProp,
               onClick={handleBackToMaya}
               className="mx-auto flex items-center gap-2 text-sm text-white/65 underline hover:text-white"
             >
-              <ArrowLeft size={16} />
+              <span className="text-[10px] uppercase tracking-[0.2em]">Back</span>
               Back to Maya Chat
             </button>
           </div>

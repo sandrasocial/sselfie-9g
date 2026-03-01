@@ -2,7 +2,6 @@
 
 import { useState } from "react"
 import Image from "next/image"
-import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Loader2, Copy, Check, Wand2 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 
@@ -103,7 +102,7 @@ export default function FeedPostsList({
           >
             {isGeneratingCaptions ? (
               <>
-                <Loader2 size={18} className="animate-spin" />
+                <span className="h-[18px] w-[18px] rounded-full border border-white/40 border-t-white animate-spin" />
                 <span>Generating Captions...</span>
               </>
             ) : (
@@ -132,8 +131,8 @@ export default function FeedPostsList({
                   <p className="text-xs uppercase tracking-[0.16em] text-white/50">{post.content_pillar || `Post ${post.position}`}</p>
                 </div>
               </div>
-              <button className="rounded-full p-2 transition-colors hover:bg-white/10">
-                <MoreHorizontal size={20} className="text-white/80" />
+              <button className="rounded-full border border-white/20 px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-white/80 transition-colors hover:bg-white/10">
+                Menu
               </button>
             </div>
 
@@ -148,7 +147,7 @@ export default function FeedPostsList({
                 />
               ) : !isManualFeed && post.generation_status === "generating" && post.prediction_id ? (
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <Loader2 size={32} className="animate-spin text-white/65" strokeWidth={1.5} />
+                  <div className="h-8 w-8 rounded-full border border-white/35 border-t-white/90 animate-spin" />
                 </div>
               ) : (
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -170,18 +169,18 @@ export default function FeedPostsList({
             <div className="space-y-2 px-2 py-3 md:px-1">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <button className="hover:opacity-60 transition-opacity">
-                    <Heart size={24} className="text-white" strokeWidth={2} />
+                  <button className="text-[10px] uppercase tracking-[0.2em] text-white/80 transition-opacity hover:opacity-60">
+                    Like
                   </button>
-                  <button className="hover:opacity-60 transition-opacity">
-                    <MessageCircle size={24} className="text-white" strokeWidth={2} />
+                  <button className="text-[10px] uppercase tracking-[0.2em] text-white/80 transition-opacity hover:opacity-60">
+                    Comment
                   </button>
-                  <button className="hover:opacity-60 transition-opacity">
-                    <Send size={24} className="text-white" strokeWidth={2} />
+                  <button className="text-[10px] uppercase tracking-[0.2em] text-white/80 transition-opacity hover:opacity-60">
+                    Share
                   </button>
                 </div>
-                <button className="hover:opacity-60 transition-opacity">
-                  <Bookmark size={24} className="text-white" strokeWidth={2} />
+                <button className="text-[10px] uppercase tracking-[0.2em] text-white/80 transition-opacity hover:opacity-60">
+                  Save
                 </button>
               </div>
 
@@ -202,28 +201,20 @@ export default function FeedPostsList({
                   <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
                     <button
                       onClick={() => onCopyCaption(post.caption, post.id)}
-                      className="rounded-lg border border-white/20 p-2 transition-colors hover:bg-white/10 hover:border-white/30"
+                      className="rounded-lg border border-white/20 px-2.5 py-2 text-[10px] uppercase tracking-[0.2em] text-white/75 transition-colors hover:bg-white/10 hover:border-white/30"
                       title="Copy caption"
                     >
-                      {copiedCaptions.has(post.id) ? (
-                        <Check size={18} className="text-green-600" />
-                      ) : (
-                          <Copy size={18} className="text-white/70" />
-                      )}
+                      {copiedCaptions.has(post.id) ? "Copied" : "Copy"}
                     </button>
                     {/* Decision 2: Hide enhance caption button in blueprint mode */}
                     {showCaptionGeneration && (
                       <button
                         onClick={() => onEnhanceCaption(post.id, post.caption)}
                         disabled={enhancingCaptions.has(post.id)}
-                        className="rounded-lg border border-white/20 p-2 transition-colors hover:bg-white/10 hover:border-white/30 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-lg border border-white/20 px-2.5 py-2 text-[10px] uppercase tracking-[0.2em] text-white/75 transition-colors hover:bg-white/10 hover:border-white/30 disabled:cursor-not-allowed disabled:opacity-50"
                         title="Enhance with Maya"
                       >
-                        {enhancingCaptions.has(post.id) ? (
-                          <Loader2 size={18} className="animate-spin text-white/70" />
-                        ) : (
-                          <Wand2 size={18} className="text-white/70" />
-                        )}
+                        {enhancingCaptions.has(post.id) ? "Working" : "Enhance"}
                       </button>
                     )}
                   </div>

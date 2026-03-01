@@ -10,7 +10,6 @@ import ProductAccessCard from "./product-access-card"
 import type { ProductAccessId } from "./product-access-card"
 import MiniProductCard from "./mini-product-card"
 import UnifiedLoading from "./unified-loading"
-import { X, Home, Aperture, MessageCircle, ImageIcon, Grid, User, SettingsIcon, LogOut, Film } from 'lucide-react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { parseAcademyViewParam } from "@/lib/academy/view-routing"
 
@@ -796,10 +795,10 @@ export default function AcademyScreen() {
               <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-white">Menu</h3>
               <button
                 onClick={() => setShowNavMenu(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors"
+                className="h-8 px-3 inline-flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors text-[11px] tracking-[0.12em] uppercase text-white/70"
                 aria-label="Close menu"
               >
-                <X size={18} className="text-white/70" strokeWidth={2} />
+                Close
               </button>
             </div>
 
@@ -815,28 +814,28 @@ export default function AcademyScreen() {
                 onClick={() => handleNavigation("studio")}
                 className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/5 transition-colors touch-manipulation"
               >
-                <Home size={18} className="text-white/70" strokeWidth={2} />
+                <span className="text-[11px] tracking-[0.12em] uppercase text-white/45">Studio</span>
                 <span className="text-sm font-medium text-white/70">Studio</span>
               </button>
               <button
                 onClick={() => handleNavigation("training")}
                 className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/5 transition-colors touch-manipulation"
               >
-                <Aperture size={18} className="text-white/70" strokeWidth={2} />
+                <span className="text-[11px] tracking-[0.12em] uppercase text-white/45">Train</span>
                 <span className="text-sm font-medium text-white/70">Training</span>
               </button>
               <button
                 onClick={() => handleNavigation("maya")}
                 className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/5 transition-colors touch-manipulation"
               >
-                <MessageCircle size={18} className="text-white/70" strokeWidth={2} />
+                <span className="text-[11px] tracking-[0.12em] uppercase text-white/45">Chat</span>
                 <span className="text-sm font-medium text-white/70">Maya</span>
               </button>
               <button
                 onClick={() => handleNavigation("gallery")}
                 className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/5 transition-colors touch-manipulation"
               >
-                <ImageIcon size={18} className="text-white/70" strokeWidth={2} />
+                <span className="text-[11px] tracking-[0.12em] uppercase text-white/45">Media</span>
                 <span className="text-sm font-medium text-white/70">Gallery</span>
               </button>
               {/* B-Roll moved to Maya Videos tab */}
@@ -849,28 +848,28 @@ export default function AcademyScreen() {
                 }}
                 className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/5 transition-colors touch-manipulation"
               >
-                <Film size={18} className="text-white/70" strokeWidth={2} />
+                <span className="text-[11px] tracking-[0.12em] uppercase text-white/45">Video</span>
                 <span className="text-sm font-medium text-white/70">Videos</span>
               </button>
               <button
                 onClick={() => handleNavigation("academy")}
                 className="w-full flex items-center gap-3 px-6 py-4 text-left bg-white/10 border-l-2 border-white/40"
               >
-                <Grid size={18} className="text-white" strokeWidth={2} />
+                <span className="text-[11px] tracking-[0.12em] uppercase text-white">Learn</span>
                 <span className="text-sm font-medium text-white">Academy</span>
               </button>
               <button
                 onClick={() => handleNavigation("profile")}
                 className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/5 transition-colors touch-manipulation"
               >
-                <User size={18} className="text-white/70" strokeWidth={2} />
+                <span className="text-[11px] tracking-[0.12em] uppercase text-white/45">Profile</span>
                 <span className="text-sm font-medium text-white/70">Profile</span>
               </button>
               <button
                 onClick={() => handleNavigation("settings")}
                 className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/5 transition-colors touch-manipulation"
               >
-                <SettingsIcon size={18} className="text-white/70" strokeWidth={2} />
+                <span className="text-[11px] tracking-[0.12em] uppercase text-white/45">Prefs</span>
                 <span className="text-sm font-medium text-white/70">Settings</span>
               </button>
             </div>
@@ -881,7 +880,6 @@ export default function AcademyScreen() {
                 disabled={isLoggingOut}
                 className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-medium text-red-300 hover:bg-red-500/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
               >
-                <LogOut size={16} strokeWidth={2} />
                 <span>{isLoggingOut ? "Signing Out..." : "Sign Out"}</span>
               </button>
             </div>

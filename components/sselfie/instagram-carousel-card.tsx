@@ -2,7 +2,6 @@
 
 import { useState, useRef } from "react"
 import Image from "next/image"
-import { MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react'
 import FullscreenImageModal from "./fullscreen-image-modal"
 
 interface PhotoshootImage {
@@ -96,10 +95,10 @@ export default function InstagramCarouselCard({
           </div>
           <button
             onClick={() => setShowMenu(!showMenu)}
-            className="p-2 hover:bg-[rgba(255,255,255,0.08)] rounded-full transition-colors relative"
+            className="rounded-full border border-[rgba(255,255,255,0.2)] px-3 py-1.5 hover:bg-[rgba(255,255,255,0.08)] transition-colors relative"
             aria-label="More options"
           >
-            <MoreHorizontal size={20} className="text-[#e5e5e5]" />
+            <span className="text-[10px] uppercase tracking-[0.2em] text-[#e5e5e5]">Menu</span>
             {showMenu && (
               <div className="absolute right-0 top-full mt-1 bg-[#111111] rounded-xl shadow-2xl border border-[rgba(255,255,255,0.12)] py-2 w-48 z-10">
                 <button
@@ -154,7 +153,7 @@ export default function InstagramCarouselCard({
                 className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-[#0a0a0a]/80 backdrop-blur-sm rounded-full border border-[rgba(255,255,255,0.2)] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 active:scale-95 sm:opacity-100"
                 aria-label="Previous image"
               >
-                <ChevronLeft size={20} className="text-[#ffffff]" />
+                <span className="text-[10px] uppercase tracking-[0.2em] text-[#ffffff]">Prev</span>
               </button>
               <button
                 onClick={(e) => {
@@ -164,7 +163,7 @@ export default function InstagramCarouselCard({
                 className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-[#0a0a0a]/80 backdrop-blur-sm rounded-full border border-[rgba(255,255,255,0.2)] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 active:scale-95 sm:opacity-100"
                 aria-label="Next image"
               >
-                <ChevronRight size={20} className="text-[#ffffff]" />
+                <span className="text-[10px] uppercase tracking-[0.2em] text-[#ffffff]">Next</span>
               </button>
             </>
           )}

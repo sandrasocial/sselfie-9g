@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 import { ProModeDesign, ButtonLabels, Typography, Colors, BorderRadius, Spacing, UILabels } from '@/lib/maya/pro/design-system'
 import ImageGalleryModal from '@/components/sselfie/image-gallery-modal'
 import type { GalleryImage } from '@/lib/data/images'
-import { X } from 'lucide-react'
 
 /**
  * Optimize image URL for thumbnails (reduces bandwidth by 80-90%)
@@ -128,7 +127,7 @@ export default function ImageUploadFlow({
                 fontFamily: Typography.ui.fontFamily,
               }}
             >
-              <X size={16} strokeWidth={2.5} />
+              <span className="text-[10px] uppercase tracking-[0.18em]">Remove</span>
             </button>
           </div>
         ))}

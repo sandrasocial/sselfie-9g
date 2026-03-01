@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { EmbeddedCheckout, EmbeddedCheckoutProvider } from "@stripe/react-stripe-js"
 import { loadStripe } from "@stripe/stripe-js"
-import { Check } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { startProductCheckoutSession } from "@/app/actions/stripe"
 import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
@@ -131,19 +130,19 @@ export default function BuyBlueprintModal({
 
                 <div className="pt-4 space-y-2">
                   <div className="flex items-center gap-2 text-sm text-stone-700">
-                    <Check size={16} className="text-stone-900" />
+                    <span className="text-[10px] tracking-[0.12em] uppercase text-stone-900 font-medium">Included</span>
                     <span>30 custom AI photos</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-stone-700">
-                    <Check size={16} className="text-stone-900" />
+                    <span className="text-[10px] tracking-[0.12em] uppercase text-stone-900 font-medium">Included</span>
                     <span>Full Feed Planner access</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-stone-700">
-                    <Check size={16} className="text-stone-900" />
+                    <span className="text-[10px] tracking-[0.12em] uppercase text-stone-900 font-medium">Included</span>
                     <span>Caption templates & strategy</span>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-stone-700">
-                    <Check size={16} className="text-stone-900" />
+                    <span className="text-[10px] tracking-[0.12em] uppercase text-stone-900 font-medium">Included</span>
                     <span>Content calendar</span>
                   </div>
                 </div>

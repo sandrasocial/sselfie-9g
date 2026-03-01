@@ -1,12 +1,6 @@
 "use client"
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react"
-import {
-  Heart,
-  Camera,
-  Video,
-  Search,
-} from "lucide-react"
 import useSWR from "swr"
 import type { GalleryImage } from "@/lib/data/images"
 import { InstagramReelPreview } from "./instagram-reel-preview"
@@ -301,7 +295,7 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
     if (previousImageCountRef.current === 0 && count > 0 && !firstImageToastShownRef.current) {
       firstImageToastShownRef.current = true
       toast({
-        title: "Your first brand photo! ✨",
+        title: "Your first brand photo is ready",
         description: "Next: Create your first feed",
         action: (
           <ToastAction altText="Create feed" onClick={() => (window.location.hash = "feed-planner")}>
@@ -553,7 +547,7 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
         <div className="rounded-3xl border border-white/10 bg-white/4 p-8 text-center sm:p-12">
           {contentFilter === "videos" ? (
             <>
-              <Video size={48} className="mx-auto mb-6 text-white/45" strokeWidth={1.5} />
+              <div className="mx-auto mb-6 text-[10px] uppercase tracking-[0.25em] text-white/45">Videos</div>
               <h3 className="mb-3 text-xl font-serif font-extralight uppercase tracking-[0.15em] text-white">
                 No Videos Yet
               </h3>
@@ -572,7 +566,7 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
             </>
           ) : contentFilter === "feed" ? (
             <>
-              <Camera size={48} className="mx-auto mb-6 text-white/45" strokeWidth={1.5} />
+              <div className="mx-auto mb-6 text-[10px] uppercase tracking-[0.25em] text-white/45">Feed</div>
               <h3 className="mb-3 text-xl font-serif font-extralight uppercase tracking-[0.15em] text-white">
                 No Feed Images Yet
               </h3>
@@ -590,7 +584,7 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
             </>
           ) : searchQuery ? (
             <>
-              <Search size={48} className="mx-auto mb-6 text-white/45" strokeWidth={1.5} />
+              <div className="mx-auto mb-6 text-[10px] uppercase tracking-[0.25em] text-white/45">Search</div>
               <h3 className="mb-3 text-xl font-serif font-extralight uppercase tracking-[0.15em] text-white">
                 No Results Found
               </h3>
@@ -606,10 +600,10 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
             </>
           ) : contentFilter === "favorited" ? (
             <>
-              <Camera size={48} className="mx-auto mb-6 text-white/45" strokeWidth={1.5} />
+              <div className="mx-auto mb-6 text-[10px] uppercase tracking-[0.25em] text-white/45">Saved</div>
               <h3 className="mb-3 text-xl font-serif font-extralight uppercase tracking-[0.15em] text-white">No Favorites Yet</h3>
               <p className="mx-auto mb-6 max-w-md text-sm font-light text-white/65">
-                Tap the heart icon on any image to add it to your favorites collection.
+                Save any image to add it to your favorites collection.
               </p>
             </>
           ) : (

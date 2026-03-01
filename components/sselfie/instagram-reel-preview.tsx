@@ -4,12 +4,6 @@ import type React from "react"
 
 import { useState, useRef, useEffect } from "react"
 import { createPortal } from "react-dom"
-import {
-  X,
-  MoreHorizontal,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 
 interface GeneratedVideo {
@@ -138,14 +132,14 @@ export function InstagramReelPreview({
       {/* Close button - top right corner, always visible */}
       <button
         onClick={onClose}
-        className="absolute z-[100] min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-black/80 hover:bg-black transition-colors backdrop-blur-md shadow-2xl border border-white/20"
+        className="absolute z-[100] min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-black/80 hover:bg-black transition-colors backdrop-blur-md shadow-2xl border border-white/20 px-3 text-[10px] uppercase tracking-[0.2em] text-white"
         style={{
           top: `max(calc(env(safe-area-inset-top) + 0.5rem), 0.5rem)`,
           right: `max(calc(env(safe-area-inset-right) + 0.5rem), 0.5rem)`,
         }}
         aria-label="Close video preview"
       >
-        <X size={24} className="text-white" strokeWidth={3} />
+        Close
       </button>
 
       {/* Navigation */}
@@ -161,7 +155,7 @@ export function InstagramReelPreview({
             }}
             aria-label="Previous video"
           >
-            <ChevronLeft size={24} className="text-white" strokeWidth={1.5} />
+            <span className="text-[10px] uppercase tracking-[0.2em] text-white">Prev</span>
           </button>
           <button
             onClick={handleNext}
@@ -173,7 +167,7 @@ export function InstagramReelPreview({
             }}
             aria-label="Next video"
           >
-            <ChevronRight size={24} className="text-white" strokeWidth={1.5} />
+            <span className="text-[10px] uppercase tracking-[0.2em] text-white">Next</span>
           </button>
         </>
       )}
@@ -244,8 +238,8 @@ export function InstagramReelPreview({
               <AvatarFallback className="bg-stone-700 text-white text-sm font-medium">{userInitial}</AvatarFallback>
             </Avatar>
             <span className="text-sm font-medium text-white">{userName}</span>
-            <button className="ml-auto text-white">
-              <MoreHorizontal size={20} />
+            <button className="ml-auto rounded-full border border-white/20 px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-white">
+              Menu
             </button>
           </div>
 

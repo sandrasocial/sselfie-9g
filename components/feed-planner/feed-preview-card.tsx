@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 import Image from "next/image"
-import { Eye, ImageIcon, Loader2, Wand2 } from "lucide-react"
 import type { FeedPost, FeedPreviewCardProps } from "./feed-preview-types"
 import { useFeedPolling } from "./hooks/feed/use-feed-polling"
 import { useFeedActions } from "./hooks/feed/use-feed-actions"
@@ -161,7 +160,7 @@ export default function FeedPreviewCard({
                   ) : isGeneratingPost ? (
                     <div className="absolute inset-0 flex items-center justify-center bg-stone-50">
                       <div className="flex flex-col items-center gap-2">
-                        <Loader2 className="w-5 h-5 text-stone-400 animate-spin" />
+                        <span className="h-5 w-5 rounded-full border border-stone-300 border-t-stone-500 animate-spin" />
                         <span className="text-[10px] text-stone-500 uppercase tracking-wider">Creating</span>
                       </div>
                     </div>
@@ -169,7 +168,7 @@ export default function FeedPreviewCard({
                     <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-stone-50 to-stone-100">
                       <div className="flex flex-col items-center gap-1 sm:gap-2">
                         <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white shadow-sm flex items-center justify-center">
-                          <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5 text-stone-400" />
+                          <span className="text-[9px] sm:text-[10px] uppercase tracking-[0.18em] text-stone-500">Add</span>
                         </div>
                         <span className="text-[9px] sm:text-[10px] text-stone-500 uppercase tracking-wider">Pending</span>
                       </div>
@@ -186,7 +185,7 @@ export default function FeedPreviewCard({
         ) : (
           <div className={`w-full sm:max-w-[600px] sm:mx-auto aspect-square flex items-center justify-center min-h-[300px] ${isSaved ? "bg-stone-800" : "bg-white"}`}>
             <div className="flex flex-col items-center gap-2">
-              <Loader2 className="w-6 h-6 animate-spin text-stone-400" />
+              <span className="h-6 w-6 rounded-full border border-stone-300 border-t-stone-500 animate-spin" />
               <span className={`text-xs uppercase tracking-wider ${isSaved ? "text-stone-300" : "text-stone-500"}`}>Loading feed posts...</span>
             </div>
           </div>
@@ -200,7 +199,14 @@ export default function FeedPreviewCard({
             disabled={isGenerating || isSaving}
             className="w-full py-3 bg-amber-600 hover:bg-amber-700 text-white text-xs sm:text-sm uppercase disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {isGenerating ? <><Loader2 size={16} className="animate-spin" />Retrying Failed Images...</> : `Retry Failed Images (${failedCount})`}
+            {isGenerating ? (
+              <>
+                <span className="h-4 w-4 rounded-full border border-white/40 border-t-white animate-spin" />
+                Retrying Failed Images...
+              </>
+            ) : (
+              `Retry Failed Images (${failedCount})`
+            )}
           </button>
         )}
 
@@ -210,7 +216,19 @@ export default function FeedPreviewCard({
             disabled={isGenerating || isSaving}
             className="w-full py-3 bg-stone-900 hover:bg-stone-800 text-white text-xs sm:text-sm uppercase disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {isSaving ? <><Loader2 size={16} className="animate-spin" />Saving Feed...</> : isGenerating ? <><Loader2 size={16} className="animate-spin" />Starting Generation...</> : `Generate Feed Images${pendingCount > 0 && feedId ? ` (${pendingCount} remaining)` : ""}`}
+            {isSaving ? (
+              <>
+                <span className="h-4 w-4 rounded-full border border-white/40 border-t-white animate-spin" />
+                Saving Feed...
+              </>
+            ) : isGenerating ? (
+              <>
+                <span className="h-4 w-4 rounded-full border border-white/40 border-t-white animate-spin" />
+                Starting Generation...
+              </>
+            ) : (
+              `Generate Feed Images${pendingCount > 0 && feedId ? ` (${pendingCount} remaining)` : ""}`
+            )}
           </button>
         )}
 
@@ -234,14 +252,20 @@ export default function FeedPreviewCard({
 
         {!isSaved && strategy && (
           <button onClick={handleSaveFeed} disabled={isSaving || isGenerating} className="w-full py-3 bg-white border border-stone-300 text-stone-900 hover:bg-stone-50 text-xs uppercase disabled:opacity-50 flex items-center justify-center gap-2">
-            {isSaving ? <><Loader2 size={16} className="animate-spin" />Saving Feed...</> : <><Wand2 size={14} />Save Feed</>}
+            {isSaving ? (
+              <>
+                <span className="h-4 w-4 rounded-full border border-stone-300 border-t-stone-500 animate-spin" />
+                Saving Feed...
+              </>
+            ) : (
+              "Save Feed"
+            )}
           </button>
         )}
 
         {postsData.length > 0 && (
           <button onClick={() => setShowPromptModal(true)} className="w-full py-2 bg-white hover:bg-stone-50 text-stone-600 text-xs uppercase border border-stone-200 flex items-center justify-center gap-1.5">
-            <Eye size={14} className="opacity-60" />
-            View Prompts
+            <span>View Prompts</span>
           </button>
         )}
       </div>

@@ -2,7 +2,6 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
-import { Camera, ImageIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import EditProfileDialog from "./edit-profile-dialog"
 import { ProfileImageSelector } from "@/components/profile-image-selector"
@@ -460,10 +459,9 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
                   </AvatarFallback>
                 </Avatar>
                 <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/0 transition-all group-hover:bg-black/45">
-                  <ImageIcon
-                    size={20}
-                    className="text-[color:var(--color-porcelain)] opacity-0 transition-opacity group-hover:opacity-100"
-                  />
+                  <span className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--color-porcelain)] opacity-0 transition-opacity group-hover:opacity-100">
+                    Edit
+                  </span>
                 </div>
               </button>
 
@@ -574,11 +572,9 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
                       className="group flex aspect-square items-center justify-center rounded-xl border border-white/10 bg-white/4 transition-colors hover:bg-white/10"
                     >
                       <div className="flex flex-col items-center gap-1">
-                        <Camera
-                          size={18}
-                          strokeWidth={1.5}
-                          className="text-[color:var(--color-smoke)] transition-colors group-hover:text-[color:var(--color-whisper)]"
-                        />
+                        <span className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--color-smoke)] transition-colors group-hover:text-[color:var(--color-whisper)]">
+                          Add
+                        </span>
                         <span className="text-[10px] font-light text-[color:var(--color-smoke)] transition-colors group-hover:text-[color:var(--color-whisper)]">
                           {i + 1}
                         </span>

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { X, ChevronDown, ChevronUp } from "lucide-react"
 import { DesignClasses } from "@/lib/design-tokens"
 import { Button } from "@/components/ui/button"
 import { BlueprintSelfieUpload } from "@/components/blueprint/blueprint-selfie-upload"
@@ -281,10 +280,10 @@ export default function FeedStyleModal({
               {/* Close Button - matching unified wizard */}
               <button
                 onClick={() => onOpenChange(false)}
-                className="absolute top-4 right-4 z-10 flex h-8 w-8 items-center justify-center rounded-lg text-white/65 transition-colors hover:bg-white/10 hover:text-white"
+                className="absolute top-4 right-4 z-10 flex h-8 px-3 items-center justify-center rounded-lg text-white/65 transition-colors hover:bg-white/10 hover:text-white border border-white/15"
                 aria-label="Close"
               >
-                <X size={18} />
+                <span className="text-[10px] uppercase tracking-[0.18em]">Close</span>
               </button>
 
               <div className="space-y-8 py-6">
@@ -434,11 +433,9 @@ export default function FeedStyleModal({
                       className="flex w-full items-center justify-between py-3 text-sm font-medium text-white/80 transition-colors hover:text-white"
                     >
                       <span className="uppercase tracking-wider">Advanced Options</span>
-                      {showAdvanced ? (
-                        <ChevronUp size={20} className="text-white/70" />
-                      ) : (
-                        <ChevronDown size={20} className="text-white/70" />
-                      )}
+                      <span className="text-[10px] uppercase tracking-[0.18em] text-white/70">
+                        {showAdvanced ? "Hide" : "Show"}
+                      </span>
                     </button>
 
                     {/* Advanced Options Content */}

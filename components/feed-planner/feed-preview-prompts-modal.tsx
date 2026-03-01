@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react"
 import { createPortal } from "react-dom"
 import Image from "next/image"
-import { X, Eye } from "lucide-react"
 import type { FeedPost } from "./feed-preview-types"
 
 interface FeedPreviewPromptsModalProps {
@@ -42,7 +41,7 @@ export default function FeedPreviewPromptsModal({
             <p className="text-sm text-stone-500 mt-1">Review prompts before generating</p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-stone-100 rounded-full transition-colors" aria-label="Close">
-            <X className="w-5 h-5 text-stone-600" />
+            <span className="text-[10px] uppercase tracking-[0.16em] text-stone-600">Close</span>
           </button>
         </div>
 
@@ -164,7 +163,7 @@ export default function FeedPreviewPromptsModal({
         <div className="flex items-center justify-between px-6 py-4 border-t border-stone-200 bg-stone-50">
           <p className="text-xs text-stone-500">{posts.filter((p) => p.prompt).length} of {posts.length} prompts ready</p>
           <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-white bg-stone-900 hover:bg-stone-800 rounded-lg transition-colors flex items-center gap-1.5">
-            <Eye size={14} className="opacity-80" />
+            <span className="text-[10px] uppercase tracking-[0.16em] opacity-80">View</span>
             Close
           </button>
         </div>

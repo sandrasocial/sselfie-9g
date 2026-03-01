@@ -2,8 +2,6 @@
 
 import type React from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Camera, ChevronRight, X } from "lucide-react"
-import Image from "next/image"
 import { DesignClasses, ComponentClasses } from "@/lib/design-tokens"
 
 interface BlueprintWelcomeWizardProps {
@@ -50,10 +48,10 @@ export default function BlueprintWelcomeWizard({
               {onDismiss && (
                 <button
                   onClick={onDismiss}
-                  className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg transition-colors z-10 hover:bg-stone-800 text-white/80 hover:text-white"
+                  className="absolute top-4 right-4 px-3 h-8 flex items-center justify-center rounded-lg transition-colors z-10 hover:bg-stone-800 text-white/80 hover:text-white text-[11px] tracking-[0.12em] uppercase"
                   aria-label="Close"
                 >
-                  <X size={18} />
+                  Close
                 </button>
               )}
 
@@ -65,7 +63,7 @@ export default function BlueprintWelcomeWizard({
               >
                 {/* Logo/Icon */}
                 <div className="w-20 h-20 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full flex items-center justify-center mx-auto shadow-2xl">
-                  <Camera className="w-10 h-10 text-white" strokeWidth={1.5} />
+                  <span className="text-[12px] tracking-[0.22em] uppercase text-white/85">Maya</span>
                 </div>
 
                 {/* Welcome Message */}
@@ -100,9 +98,8 @@ export default function BlueprintWelcomeWizard({
                   className="group relative bg-white text-stone-950 px-6 py-3 rounded-lg font-medium min-h-[52px] overflow-hidden hover:bg-stone-100 transition-all w-full max-w-xs mx-auto"
                 >
                   <div className="absolute inset-0 bg-stone-950/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <span className="relative z-10 flex items-center justify-center gap-2">
+                  <span className="relative z-10 flex items-center justify-center gap-2 tracking-[0.08em] uppercase text-sm">
                     Make my first photo →
-                    <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
                   </span>
                 </button>
               </motion.div>

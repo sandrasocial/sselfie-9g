@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { ContentPillarTag } from "./content-pillar-tag"
-import { Calendar, Clock } from "lucide-react"
 
 interface SchedulePostModalProps {
   open: boolean
@@ -118,8 +117,8 @@ export default function SchedulePostModal({ open, onOpenChange, post, onSchedule
           {/* Date Picker */}
           <div className="space-y-2">
             <Label htmlFor="date" className="flex items-center gap-2 text-sm font-medium text-stone-700">
-              <Calendar className="w-4 h-4" />
-              Date
+              <span className="text-[10px] tracking-[0.12em] uppercase text-stone-500">Pick</span>
+              <span>Date</span>
             </Label>
             <input
               id="date"
@@ -134,8 +133,8 @@ export default function SchedulePostModal({ open, onOpenChange, post, onSchedule
           {/* Time Picker */}
           <div className="space-y-2">
             <Label htmlFor="time" className="flex items-center gap-2 text-sm font-medium text-stone-700">
-              <Clock className="w-4 h-4" />
-              Time
+              <span className="text-[10px] tracking-[0.12em] uppercase text-stone-500">Set</span>
+              <span>Time</span>
             </Label>
             <select
               id="time"

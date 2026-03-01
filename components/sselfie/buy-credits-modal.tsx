@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { EmbeddedCheckout, EmbeddedCheckoutProvider } from "@stripe/react-stripe-js"
 import { loadStripe } from "@stripe/stripe-js"
 import { CREDIT_PACKAGES } from "@/lib/products"
-import { Check } from 'lucide-react'
 import { startCreditCheckoutSession } from "@/app/actions/stripe"
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
@@ -81,15 +80,15 @@ export default function BuyCreditsModal({ open, onOpenChange, onSuccess }: BuyCr
 
                   <div className="pt-4 space-y-2">
                     <div className="flex items-center gap-2 text-sm text-stone-700">
-                      <Check size={16} className="text-stone-900" />
+                      <span className="text-[10px] uppercase tracking-[0.16em] text-stone-900">Included</span>
                       <span>Generate AI images</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-stone-700">
-                      <Check size={16} className="text-stone-900" />
+                      <span className="text-[10px] uppercase tracking-[0.16em] text-stone-900">Included</span>
                       <span>Create Instagram feeds</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-stone-700">
-                      <Check size={16} className="text-stone-900" />
+                      <span className="text-[10px] uppercase tracking-[0.16em] text-stone-900">Included</span>
                       <span>Never expires</span>
                     </div>
                   </div>

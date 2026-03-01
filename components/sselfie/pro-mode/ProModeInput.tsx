@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useRef } from 'react'
-import { ImageIcon, Send, ChevronDown, ChevronUp } from 'lucide-react'
 import LoadingSpinner from '../loading-spinner'
 import { Typography, Colors, BorderRadius, Spacing, ButtonLabels } from '@/lib/maya/pro/design-system'
 
@@ -200,9 +199,9 @@ export default function ProModeInput({
             e.currentTarget.style.color = Colors.textSecondary
           }}
         >
-          <ChevronDown size={16} />
+          <span className="text-[10px] uppercase tracking-[0.2em]">Open</span>
           <span>{placeholder}</span>
-          <ChevronDown size={16} style={{ visibility: 'hidden', width: '16px' }} />
+          <span className="text-[10px] uppercase tracking-[0.2em] opacity-0">Open</span>
         </button>
       )}
 
@@ -236,7 +235,7 @@ export default function ProModeInput({
                 e.currentTarget.style.color = Colors.textTertiary
               }}
             >
-              <ChevronUp size={14} />
+              <span className="text-[10px] uppercase tracking-[0.2em]">Hide</span>
               <span>Collapse</span>
             </button>
           )}
@@ -317,7 +316,7 @@ export default function ProModeInput({
               {isUploadingImage ? (
                 <LoadingSpinner size="sm" />
               ) : (
-                <ImageIcon size={18} />
+                <span className="text-[10px] uppercase tracking-[0.2em]">Add</span>
               )}
             </button>
 
@@ -419,7 +418,7 @@ export default function ProModeInput({
               {isLoading ? (
                 <LoadingSpinner size="sm" />
               ) : (
-                <Send size={18} />
+                <span className="text-[10px] uppercase tracking-[0.2em]">Send</span>
               )}
             </button>
           </div>

@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { Play, Download, Trash2 } from "lucide-react"
 
 interface VideoPlayerProps {
   videoUrl: string
@@ -68,8 +67,8 @@ export default function VideoPlayer({ videoUrl, videoId, title, onDelete }: Vide
           />
           {!isPlaying && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
-              <div className="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center shadow-2xl">
-                <Play className="w-8 h-8 text-stone-950 ml-1" fill="currentColor" />
+              <div className="h-12 px-5 bg-white/90 rounded-full flex items-center justify-center shadow-2xl">
+                <span className="text-[11px] tracking-[0.18em] uppercase text-stone-950">Play</span>
               </div>
             </div>
           )}
@@ -80,14 +79,14 @@ export default function VideoPlayer({ videoUrl, videoId, title, onDelete }: Vide
             onClick={handleDownload}
             className="px-4 sm:px-5 py-3 sm:py-4 bg-stone-950 text-white rounded-[1.25rem] font-semibold text-xs sm:text-sm transition-all duration-300 hover:shadow-2xl hover:shadow-stone-950/40 hover:scale-[1.02] active:scale-[0.98] min-h-[48px] sm:min-h-[52px] flex items-center justify-center gap-2"
           >
-            <Download className="w-4 h-4" />
+            <span className="text-[10px] tracking-[0.12em] uppercase text-white/70">Save</span>
             Download
           </button>
           <button
             onClick={handleDelete}
             className="px-4 sm:px-5 py-3 sm:py-4 bg-white/50 backdrop-blur-2xl text-stone-950 border border-white/60 rounded-[1.25rem] font-semibold text-xs sm:text-sm transition-all duration-300 hover:bg-white/70 hover:border-white/80 hover:scale-[1.02] active:scale-[0.98] min-h-[48px] sm:min-h-[52px] shadow-lg shadow-stone-900/10 flex items-center justify-center gap-2"
           >
-            <Trash2 className="w-4 h-4" />
+            <span className="text-[10px] tracking-[0.12em] uppercase text-stone-600">Remove</span>
             Delete
           </button>
         </div>
