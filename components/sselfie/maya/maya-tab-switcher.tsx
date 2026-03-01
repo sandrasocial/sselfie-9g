@@ -82,6 +82,10 @@ export default function MayaTabSwitcher({
         msOverflowStyle: 'none',
         WebkitOverflowScrolling: 'touch',
         scrollSnapType: 'x proximity',
+        background: 'rgba(255,255,255,0.04)',
+        backdropFilter: 'blur(20px)',
+        borderRadius: '12px',
+        border: '1px solid rgba(255,255,255,0.08)',
       }}
     >
       {tabs.map((tab) => {
@@ -98,10 +102,10 @@ export default function MayaTabSwitcher({
             }}
             className={`relative px-4 sm:px-5 py-2.5 rounded-full border transition-all touch-manipulation active:scale-95 min-h-[40px] flex items-center gap-1.5 sm:gap-2 whitespace-nowrap scroll-snap-align-start ${
               isActive
-                ? "border-[rgba(255,255,255,0.2)] text-[#ffffff] cursor-default bg-[rgba(255,255,255,0.04)]"
+                ? "border-[rgba(255,255,255,0.15)] text-[#ffffff] cursor-default"
                 : isDisabled
-                  ? "border-[rgba(255,255,255,0.08)] text-[#666666] opacity-60 cursor-not-allowed bg-[rgba(255,255,255,0.02)]"
-                  : "border-[rgba(255,255,255,0.08)] text-[#666666] hover:text-[#e5e5e5] hover:bg-[rgba(255,255,255,0.06)] cursor-pointer bg-[rgba(255,255,255,0.04)]"
+                  ? "border-[rgba(255,255,255,0.08)] text-[rgba(255,255,255,0.3)] opacity-60 cursor-not-allowed"
+                  : "border-[rgba(255,255,255,0.08)] text-[rgba(255,255,255,0.5)] hover:text-[rgba(255,255,255,0.7)] hover:bg-[rgba(255,255,255,0.08)] cursor-pointer"
             }`}
             aria-label={`${tab.label} tab`}
             title={isDisabled ? "Feed is temporarily unavailable" : `${tab.label} tab`}
@@ -114,25 +118,26 @@ export default function MayaTabSwitcher({
               letterSpacing: "0.5em",
               textTransform: "uppercase",
               backdropFilter: "blur(20px)",
+              background: isActive ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.04)',
             }}
           >
             {tab.label}
             {tab.id === "photos" && photosCount !== undefined && photosCount > 0 && (
               <span className={`text-xs font-medium tabular-nums ${
-                isActive ? "text-[#e5e5e5]" : "text-[#666666]"
+                isActive ? "text-white" : "text-[rgba(255,255,255,0.5)]"
               }`}>
                 ({photosCount})
               </span>
             )}
             {tab.id === "videos" && videosCount !== undefined && videosCount > 0 && (
               <span className={`text-xs font-medium tabular-nums ${
-                isActive ? "text-[#e5e5e5]" : "text-[#666666]"
+                isActive ? "text-white" : "text-[rgba(255,255,255,0.5)]"
               }`}>
                 ({videosCount})
               </span>
             )}
             {isActive && (
-              <span className="absolute bottom-0 left-4 right-4 h-[2px] bg-[#ffffff] rounded-full" />
+              <span className="absolute bottom-0 left-4 right-4 h-[2px] rounded-full" style={{ background: 'rgba(255,255,255,0.4)' }} />
             )}
           </button>
         )

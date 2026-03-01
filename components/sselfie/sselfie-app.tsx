@@ -845,8 +845,9 @@ export default function SselfieApp({
 
   return (
     <div
-        className="h-screen bg-linear-to-br from-stone-50 via-stone-100/50 to-stone-50 relative overflow-hidden prevent-horizontal-scroll"
+        className="h-screen relative overflow-hidden prevent-horizontal-scroll"
         style={{
+          background: 'radial-gradient(ellipse 150% 100% at 50% 0%, #1c1c1c 0%, #111111 50%, #0d0d0d 100%)',
           fontFamily:
             '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
           paddingTop: "env(safe-area-inset-top)",
@@ -855,8 +856,8 @@ export default function SselfieApp({
         <ServiceWorkerProvider />
 
       <div className="absolute inset-0">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-stone-200/20 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-stone-300/20 rounded-full blur-3xl"></div>
+        <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full blur-3xl" style={{ background: 'rgba(255,255,255,0.02)' }}></div>
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 rounded-full blur-3xl" style={{ background: 'rgba(255,255,255,0.015)' }}></div>
       </div>
 
       {isWelcome && creditBalance === 0 && (
@@ -916,14 +917,14 @@ export default function SselfieApp({
           </div>
         )}
 
-      <main className="relative h-full mx-1 sm:mx-2 md:mx-3 pb-2 sm:pb-3 md:pb-4">
-        <div className={`h-full ${DesignClasses.container} ${activeTab === "maya" ? "overflow-visible" : "overflow-hidden"}`}>
+      <main className="relative h-full lg:mx-3 pb-2 sm:pb-3 md:pb-4">
+        <div className={`hidden lg:block h-full ${DesignClasses.container} ${activeTab === "maya" ? "overflow-visible" : "overflow-hidden"}`}>
           {/* Hide header when in Maya tab - it has its own header */}
           {activeTab !== "maya" && (
-            <header className={`sticky top-0 z-10 bg-white/70 ${DesignClasses.blur.md} border-b ${DesignClasses.border.stone} ${DesignClasses.spacing.paddingX.sm} py-3 pt-safe`}>
+            <header className={`sticky top-0 z-10 border-b ${DesignClasses.border.stone} ${DesignClasses.spacing.paddingX.sm} py-3 pt-safe`} style={{ background: 'rgba(16,16,16,0.88)', backdropFilter: 'blur(20px)' }}>
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 shrink-0">
-                  <div className={`${DesignClasses.typography.heading.h4} ${DesignClasses.text.primary}`}>
+                  <div className={`${DesignClasses.typography.heading.h4} text-white`}>
                     SSELFIE
                   </div>
                 </div>
@@ -934,11 +935,12 @@ export default function SselfieApp({
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button
-                          className={`flex items-center gap-1.5 px-3 py-1.5 ${DesignClasses.radius.sm} bg-white/70 ${DesignClasses.border.medium} hover:bg-white/90 transition-colors text-xs font-medium text-stone-700`}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 ${DesignClasses.radius.sm} hover:bg-white/10 transition-colors text-xs font-medium text-white`}
                           aria-label="My Feed"
+                          style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}
                         >
                           <span>My Feed</span>
-                          <ChevronDown size={14} className="text-stone-500" />
+                          <ChevronDown size={14} className="text-white/70" />
                         </button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className={`w-56 ${DesignClasses.background.overlay} ${DesignClasses.blur.md} ${DesignClasses.border.stone} shadow-lg`}>
@@ -1079,10 +1081,11 @@ export default function SselfieApp({
                   <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
                   <DropdownMenuTrigger asChild>
                     <button
-                      className={`flex items-center justify-center w-9 h-9 ${DesignClasses.radius.sm} bg-white/70 ${DesignClasses.border.medium} hover:bg-white/90 transition-colors shadow-sm`}
+                      className={`flex items-center justify-center w-9 h-9 ${DesignClasses.radius.sm} hover:bg-white/10 transition-colors`}
                       aria-label="Menu"
+                      style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}
                     >
-                      <MoreVertical size={18} className="text-stone-600" />
+                      <MoreVertical size={18} className="text-white" />
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className={`w-64 ${DesignClasses.background.overlay} ${DesignClasses.blur.md} ${DesignClasses.border.stone} shadow-lg`}>
@@ -1235,7 +1238,7 @@ export default function SselfieApp({
           aria-label="Main navigation"
           aria-hidden={!isNavVisible}
         >
-          <div className={`bg-white/20 ${DesignClasses.blur.lg} ${DesignClasses.radius.xl} ${DesignClasses.border.light} ${DesignClasses.shadows.container}`}>
+          <div className={`${DesignClasses.radius.xl} ${DesignClasses.shadows.container}`} style={{ background: 'rgba(16,16,16,0.88)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.1)' }}>
             <div className="overflow-x-auto scrollbar-hide px-1.5 sm:px-2 md:px-3 py-2 sm:py-2.5 md:py-3">
               <div className="flex gap-1 sm:gap-2 min-w-max sm:justify-around">
                 {(isNewUser ? tabs.filter((t) => t.id === "maya" || t.id === "account") : tabs).map((tab) => {
@@ -1253,23 +1256,24 @@ export default function SselfieApp({
                       aria-current={isActive ? "page" : undefined}
                     >
                       {isActive && (
-                        <div className={`absolute inset-0 bg-linear-to-b from-white/90 to-white/70 ${DesignClasses.blur.md} ${DesignClasses.radius.lg} ${DesignClasses.shadows.card} ${DesignClasses.border.strong}`}></div>
+                        <div className={`absolute inset-0 ${DesignClasses.radius.lg} ${DesignClasses.shadows.card}`} style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)' }}></div>
                       )}
                       <div
                         className={`relative z-10 w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 ${DesignClasses.radius.md} flex items-center justify-center transition-all duration-500 ${
-                          isActive ? `bg-stone-950 ${DesignClasses.shadows.button}` : `bg-white/40 ${DesignClasses.blur.sm}`
+                          isActive ? `${DesignClasses.shadows.button}` : ``
                         }`}
                         aria-hidden="true"
+                        style={isActive ? { background: 'rgba(255,255,255,0.1)' } : { background: 'rgba(255,255,255,0.04)' }}
                       >
                         <Icon
                           size={isActive ? 19 : 17}
                           strokeWidth={2}
-                          className={`transition-all duration-500 ${isActive ? "text-white" : "text-stone-600"}`}
+                          className={`transition-all duration-500 ${isActive ? "text-white" : "text-white opacity-50"}`}
                         />
                       </div>
                       <span
                         className={`relative z-10 text-[9px] sm:text-[10px] md:text-[11px] font-semibold tracking-wide transition-all duration-500 whitespace-nowrap ${
-                          isActive ? "text-stone-900" : "text-stone-500 opacity-70"
+                          isActive ? "text-white" : "text-white opacity-50"
                         }`}
                       >
                         {tab.label}
@@ -1280,7 +1284,7 @@ export default function SselfieApp({
               </div>
             </div>
             {isNewUser && (
-              <p className="text-xs text-stone-400 text-center py-1">
+              <p className="text-xs text-center py-1" style={{ color: 'rgba(255,255,255,0.5)' }}>
                 Feed Planner, Gallery &amp; Academy unlock after your first photo
               </p>
             )}
