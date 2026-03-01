@@ -41,9 +41,9 @@ export default function MayaTabSwitcher({
   const tabs = [
     { id: "photos" as const, label: "Photos" },
     { id: "videos" as const, label: "Videos" },
-    { id: "prompts" as const, label: "Prompts" },
-    { id: "training" as const, label: "Training" },
-    { id: "feed" as const, label: "Feed" },
+    
+    
+    
   ]
 
   const containerRef = useRef<HTMLDivElement>(null)
