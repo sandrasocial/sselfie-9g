@@ -167,7 +167,7 @@ export async function POST(request: NextRequest) {
         WHERE id = ${newSubscriber.id}
       `
     } else {
-      console.error(`[v0] Failed to add to Resend audience: ${resendResult.error}`)
+      console.error(`[CRITICAL] Freebie Resend sync failed: ${email} - ${resendResult.error}`)
     }
 
     let emailSent = false

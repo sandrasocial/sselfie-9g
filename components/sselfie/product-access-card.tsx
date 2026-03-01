@@ -23,10 +23,10 @@ export interface ProductAccessCardProps {
 }
 
 const DEEP_LINKS: Record<ProductAccessId, string> = {
-  what_to_say: "/studio?tab=feed-planner&product=what_to_say",
-  show_up: "/studio?tab=maya&product=show_up",
-  get_paid: "/studio?tab=account&product=get_paid",
-  ai_photo_prompts: "/studio?tab=maya&product=ai_photo_prompts#maya/prompts",
+  what_to_say: "/academy/products/what_to_say",
+  show_up: "/academy/products/show_up",
+  get_paid: "/academy/products/get_paid",
+  ai_photo_prompts: "/academy/products/ai_photo_prompts",
 }
 
 export default function ProductAccessCard({

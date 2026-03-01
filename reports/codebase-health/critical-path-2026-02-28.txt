@@ -1,0 +1,46 @@
+CRITICAL PATH HEALTH CHECK
+Time: 2026-02-28T23:15:41.363Z
+Target: https://www.sselfie.ai
+Status: ⚠️ ISSUES DETECTED (4 failures)
+
+========================================
+
+RESULTS SUMMARY
+❌ POST undefined
+   Status: NO RESPONSE
+   Response time: 1266ms
+   Description: Authentication endpoint
+   Error: certificate has expired
+
+❌ POST undefined
+   Status: NO RESPONSE
+   Response time: 66ms
+   Description: Image generation (Maya)
+   Error: certificate has expired
+
+❌ POST undefined
+   Status: NO RESPONSE
+   Response time: 59ms
+   Description: Membership checkout
+   Error: certificate has expired
+
+❌ POST undefined
+   Status: NO RESPONSE
+   Response time: 64ms
+   Description: Blueprint product checkout
+   Error: certificate has expired
+
+========================================
+
+HEALTH SUMMARY
+- Healthy endpoints: 0/4
+- Good (2xx-3xx) endpoints: 0/4
+- Overall: ❌ FAIL
+
+REMEDIATION
+- undefined: certificate has expired
+- undefined: certificate has expired
+- undefined: certificate has expired
+- undefined: certificate has expired
+
+Timestamp: 2026-02-28T23:15:41.363Z

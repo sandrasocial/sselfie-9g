@@ -1,0 +1,1619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SSELFIE — AI Products Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@200;300&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --obsidian: #0a0a0a;
+    --porcelain: #ffffff;
+    --pearl: #f5f5f5;
+    --smoke: #666666;
+    --whisper: #e5e5e5;
+    --accent: #0a0a0a;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;
+    background: var(--pearl);
+    color: var(--obsidian);
+    min-height: 100vh;
+    line-height: 1.8;
+  }
+
+  /* ── NAV ── */
+  .nav {
+    background: var(--obsidian);
+    padding: 20px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .nav-logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 200;
+    font-size: 22px;
+    letter-spacing: 0.3em;
+    color: var(--porcelain);
+    text-transform: uppercase;
+  }
+  .nav-tag {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 10px;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--smoke);
+  }
+
+  /* ── PROTOTYPE BANNER ── */
+  .proto-banner {
+    background: var(--obsidian);
+    border-top: 1px solid #222;
+    padding: 12px 48px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .proto-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #4ade80;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .proto-label {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 10px;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: #4ade80;
+  }
+  .proto-note {
+    font-size: 12px;
+    color: var(--smoke);
+    font-weight: 300;
+    margin-left: auto;
+  }
+
+  /* ── PRODUCT TABS ── */
+  .product-tabs {
+    background: var(--porcelain);
+    border-bottom: 1px solid var(--whisper);
+    padding: 0 48px;
+    display: flex;
+    gap: 0;
+  }
+  .tab-btn {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--smoke);
+    border: none;
+    background: none;
+    padding: 20px 28px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+  }
+  .tab-btn.active {
+    color: var(--obsidian);
+    border-bottom-color: var(--obsidian);
+  }
+  .tab-btn:hover:not(.active) { color: var(--obsidian); }
+
+  /* ── SCREEN SYSTEM ── */
+  .product-screen { display: none; }
+  .product-screen.active { display: block; }
+
+  /* ── MAIN LAYOUT ── */
+  .main {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 64px 48px;
+  }
+
+  /* ── SCREEN HEADER ── */
+  .screen-step {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 10px;
+    letter-spacing: 0.5em;
+    text-transform: uppercase;
+    color: var(--smoke);
+    margin-bottom: 16px;
+  }
+  .screen-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 200;
+    font-size: 42px;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+    text-transform: uppercase;
+    color: var(--obsidian);
+    margin-bottom: 12px;
+  }
+  .screen-sub {
+    font-size: 15px;
+    color: var(--smoke);
+    font-weight: 300;
+    line-height: 1.7;
+    margin-bottom: 48px;
+  }
+
+  /* ── FORM ── */
+  .form-group { margin-bottom: 32px; }
+  .form-label {
+    display: block;
+    font-weight: 500;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--obsidian);
+    margin-bottom: 10px;
+  }
+  .form-hint {
+    font-size: 13px;
+    color: var(--smoke);
+    margin-bottom: 10px;
+    font-style: italic;
+  }
+  .form-input, .form-textarea {
+    width: 100%;
+    border: 1px solid var(--whisper);
+    background: var(--porcelain);
+    padding: 14px 16px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 300;
+    color: var(--obsidian);
+    outline: none;
+    transition: border-color 0.2s;
+    line-height: 1.6;
+  }
+  .form-input:focus, .form-textarea:focus { border-color: var(--obsidian); }
+  .form-textarea { resize: vertical; min-height: 80px; }
+
+  /* ── TONE SELECTOR ── */
+  .tone-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .tone-option {
+    border: 1px solid var(--whisper);
+    background: var(--porcelain);
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+  }
+  .tone-option:hover { border-color: var(--obsidian); }
+  .tone-option.selected {
+    border-color: var(--obsidian);
+    background: var(--obsidian);
+    color: var(--porcelain);
+  }
+  .tone-name {
+    font-weight: 500;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 4px;
+  }
+  .tone-desc { font-size: 12px; color: var(--smoke); }
+  .tone-option.selected .tone-desc { color: #aaa; }
+
+  /* ── BUTTONS ── */
+  .btn-primary {
+    width: 100%;
+    background: var(--obsidian);
+    color: var(--porcelain);
+    border: none;
+    padding: 18px 32px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 11px;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    margin-top: 16px;
+  }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-secondary {
+    background: none;
+    color: var(--obsidian);
+    border: 1px solid var(--obsidian);
+    padding: 14px 24px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-secondary:hover { background: var(--obsidian); color: var(--porcelain); }
+
+  /* ── GENERATING STATE ── */
+  #screen-generating {
+    text-align: center;
+    padding: 80px 48px;
+  }
+  .gen-label {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 10px;
+    letter-spacing: 0.5em;
+    text-transform: uppercase;
+    color: var(--smoke);
+    margin-bottom: 32px;
+  }
+  .gen-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 200;
+    font-size: 52px;
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+    text-transform: uppercase;
+    margin-bottom: 48px;
+  }
+  .gen-bar-track {
+    width: 240px;
+    height: 1px;
+    background: var(--whisper);
+    margin: 0 auto 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .gen-bar {
+    height: 1px;
+    background: var(--obsidian);
+    width: 0%;
+    transition: width 0.3s ease;
+  }
+  .gen-status {
+    font-size: 12px;
+    color: var(--smoke);
+    letter-spacing: 0.05em;
+    min-height: 20px;
+  }
+
+  /* ── ANGLES ── */
+  .angles-header {
+    margin-bottom: 40px;
+  }
+  .angle-tabs-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 32px;
+  }
+  .angle-tab {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    border: 1px solid var(--whisper);
+    background: var(--porcelain);
+    padding: 10px 16px;
+    cursor: pointer;
+    color: var(--smoke);
+    transition: all 0.2s;
+  }
+  .angle-tab.active {
+    background: var(--obsidian);
+    border-color: var(--obsidian);
+    color: var(--porcelain);
+  }
+
+  .angle-card { display: none; }
+  .angle-card.active { display: block; }
+
+  .angle-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 200;
+    font-size: 34px;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .angle-desc {
+    font-size: 13px;
+    color: var(--smoke);
+    margin-bottom: 32px;
+    font-style: italic;
+  }
+
+  .output-block {
+    border: 1px solid var(--whisper);
+    background: var(--porcelain);
+    margin-bottom: 16px;
+  }
+  .output-label {
+    font-weight: 500;
+    font-size: 10px;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--smoke);
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--whisper);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .copy-btn {
+    font-weight: 500;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--smoke);
+    background: none;
+    border: 1px solid var(--whisper);
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .copy-btn:hover { color: var(--obsidian); border-color: var(--obsidian); }
+  .copy-btn.copied { color: #4ade80; border-color: #4ade80; }
+  .output-text {
+    padding: 16px;
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--obsidian);
+    white-space: pre-line;
+  }
+
+  /* ── INSTAGRAM PREVIEW ── */
+  .preview-toggle {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 24px 0;
+  }
+  .preview-toggle-btn {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--smoke);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .preview-toggle-btn span { font-size: 16px; }
+  .preview-toggle-btn:hover { color: var(--obsidian); }
+
+  .ig-preview-wrap { display: none; margin-bottom: 24px; }
+  .ig-preview-wrap.visible { display: block; }
+
+  .ig-phone {
+    width: 280px;
+    background: #fafafa;
+    border: 1px solid #dbdbdb;
+    border-radius: 12px;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    margin: 0 auto;
+  }
+  .ig-header {
+    background: white;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid #dbdbdb;
+  }
+  .ig-back { font-size: 18px; color: #262626; }
+  .ig-username { font-size: 14px; font-weight: 600; color: #262626; }
+  .ig-body { padding: 16px; background: white; }
+  .ig-avatar-row { display: flex; align-items: center; gap: 16px; margin-bottom: 12px; }
+  .ig-avatar {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    color: white;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .ig-stats { display: flex; gap: 16px; }
+  .ig-stat { text-align: center; }
+  .ig-stat-num { font-size: 14px; font-weight: 600; color: #262626; display: block; }
+  .ig-stat-lbl { font-size: 11px; color: #8e8e8e; }
+  .ig-name { font-size: 14px; font-weight: 600; color: #262626; margin-bottom: 4px; }
+  .ig-bio-text { font-size: 12px; color: #262626; line-height: 1.5; white-space: pre-line; }
+  .ig-bio-link { font-size: 12px; color: #0095f6; margin-top: 4px; }
+  .ig-edit-btn {
+    width: 100%;
+    border: 1px solid #dbdbdb;
+    background: white;
+    padding: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #262626;
+    margin-top: 12px;
+    border-radius: 6px;
+  }
+  .ig-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; margin-top: 12px; }
+  .ig-tile { aspect-ratio: 1; background: #efefef; }
+  .ig-tile:nth-child(1) { background: #d4c5b0; }
+  .ig-tile:nth-child(2) { background: #c8b99a; }
+  .ig-tile:nth-child(3) { background: #ddd5c5; }
+
+  /* ── ANGLE ACTIONS ── */
+  .angle-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+  }
+  .btn-use {
+    flex: 1;
+    background: var(--obsidian);
+    color: var(--porcelain);
+    border: none;
+    padding: 16px 24px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .btn-use:hover { opacity: 0.85; }
+
+  /* ── SAVED SCREEN ── */
+  .saved-screen {
+    text-align: left;
+  }
+  .saved-check {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: #4ade80;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    margin-bottom: 24px;
+  }
+  .saved-context-box {
+    border: 1px solid var(--whisper);
+    background: var(--porcelain);
+    padding: 24px;
+    margin: 32px 0;
+  }
+  .saved-context-label {
+    font-weight: 500;
+    font-size: 10px;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--smoke);
+    margin-bottom: 16px;
+  }
+  .maya-context-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--whisper);
+    font-size: 13px;
+  }
+  .maya-context-item:last-child { border-bottom: none; }
+  .maya-key {
+    font-weight: 500;
+    color: var(--smoke);
+    min-width: 120px;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding-top: 1px;
+  }
+  .maya-val { color: var(--obsidian); line-height: 1.5; }
+  .maya-highlight {
+    font-weight: 500;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: #4ade80;
+    background: #0a0a0a;
+    padding: 2px 8px;
+  }
+
+  .next-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 32px;
+  }
+  .next-step-card {
+    border: 1px solid var(--whisper);
+    background: var(--porcelain);
+    padding: 20px 24px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-decoration: none;
+    color: inherit;
+  }
+  .next-step-card:hover { border-color: var(--obsidian); }
+  .next-step-label {
+    font-weight: 500;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .next-step-desc { font-size: 13px; color: var(--smoke); }
+  .next-step-arrow { font-size: 18px; color: var(--obsidian); }
+
+  /* ── PHOTO PROMPTS PRODUCT ── */
+  .vibe-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .vibe-card {
+    border: 1px solid var(--whisper);
+    background: var(--porcelain);
+    padding: 12px 10px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+  }
+  .vibe-card.selected {
+    border-color: var(--obsidian);
+    background: var(--obsidian);
+    color: var(--porcelain);
+  }
+  .vibe-emoji { font-size: 20px; margin-bottom: 6px; display: block; }
+  .vibe-name { font-size: 11px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; }
+  .vibe-card.selected .vibe-name { color: var(--porcelain); }
+  .vibe-card:hover:not(.selected) { border-color: var(--obsidian); }
+
+  .checkbox-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .checkbox-item {
+    border: 1px solid var(--whisper);
+    background: var(--porcelain);
+    padding: 12px 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .checkbox-item.checked {
+    border-color: var(--obsidian);
+    background: var(--pearl);
+  }
+  .checkbox-item:hover:not(.checked) { border-color: #999; }
+  .checkbox-box {
+    width: 16px; height: 16px;
+    border: 1px solid var(--whisper);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    font-size: 10px;
+    transition: all 0.2s;
+  }
+  .checkbox-item.checked .checkbox-box {
+    background: var(--obsidian);
+    border-color: var(--obsidian);
+    color: white;
+  }
+
+  /* ── PHOTO PROMPT CARDS ── */
+  .prompt-group-label {
+    font-weight: 500;
+    font-size: 10px;
+    letter-spacing: 0.5em;
+    text-transform: uppercase;
+    color: var(--smoke);
+    margin: 36px 0 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--whisper);
+  }
+
+  .prompt-card {
+    border: 1px solid var(--whisper);
+    background: var(--porcelain);
+    margin-bottom: 12px;
+  }
+  .prompt-card-header {
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    cursor: pointer;
+    user-select: none;
+  }
+  .prompt-card-header:hover { background: var(--pearl); }
+  .prompt-card-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 300;
+    font-size: 22px;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+  }
+  .prompt-card-tag {
+    font-size: 11px;
+    color: var(--smoke);
+    font-style: italic;
+    margin-top: 2px;
+  }
+  .prompt-expand { font-size: 18px; color: var(--smoke); }
+  .prompt-card-body { display: none; padding: 0 20px 20px; }
+  .prompt-card-body.open { display: block; }
+
+  .prompt-meta-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+  .prompt-meta {
+    background: var(--pearl);
+    padding: 10px 12px;
+  }
+  .prompt-meta-key {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--smoke);
+    margin-bottom: 4px;
+  }
+  .prompt-meta-val { font-size: 12px; color: var(--obsidian); }
+
+  .prompt-full-box {
+    background: var(--pearl);
+    border: 1px solid var(--whisper);
+    padding: 14px 16px;
+    font-size: 12px;
+    color: var(--smoke);
+    line-height: 1.7;
+    font-family: monospace;
+    margin-bottom: 12px;
+    white-space: pre-wrap;
+  }
+  .prompt-actions { display: flex; gap: 8px; }
+
+  .btn-maya {
+    flex: 1;
+    background: var(--obsidian);
+    color: var(--porcelain);
+    border: none;
+    padding: 14px 20px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn-maya:hover { opacity: 0.85; }
+  .btn-maya-icon { font-size: 16px; }
+
+  /* ── DIFFERENTIATORS ── */
+  .diff-section {
+    background: var(--obsidian);
+    color: var(--porcelain);
+    padding: 64px 48px;
+    margin-top: 64px;
+  }
+  .diff-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 200;
+    font-size: 38px;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+    margin-bottom: 48px;
+    line-height: 1.1;
+  }
+  .diff-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
+  .diff-card {
+    background: #111;
+    padding: 32px 28px;
+  }
+  .diff-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 48px;
+    font-weight: 200;
+    color: #333;
+    display: block;
+    margin-bottom: 16px;
+    line-height: 1;
+  }
+  .diff-card-title {
+    font-weight: 500;
+    font-size: 12px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--porcelain);
+    margin-bottom: 12px;
+  }
+  .diff-card-text { font-size: 13px; color: #999; line-height: 1.7; }
+  .diff-card-highlight {
+    margin-top: 16px;
+    padding: 10px 14px;
+    background: #1a1a1a;
+    font-size: 12px;
+    color: #4ade80;
+    font-style: italic;
+  }
+
+  /* ── MAYA SIMULATION ── */
+  .maya-sim-wrap { margin-top: 24px; display: none; }
+  .maya-sim-wrap.open { display: block; }
+  .maya-sim {
+    background: var(--obsidian);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .maya-sim-header {
+    background: #111;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid #222;
+  }
+  .maya-sim-logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 200;
+    font-size: 16px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--porcelain);
+  }
+  .maya-sim-mode {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: #4ade80;
+    background: #0d2e1a;
+    padding: 3px 10px;
+    margin-left: auto;
+  }
+  .maya-sim-body { padding: 24px 20px; }
+  .maya-prompt-prefilled {
+    background: #111;
+    border: 1px solid #222;
+    padding: 14px 16px;
+    font-size: 12px;
+    color: #aaa;
+    line-height: 1.7;
+    margin-bottom: 16px;
+    font-family: monospace;
+    white-space: pre-wrap;
+  }
+  .maya-prefilled-label {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: #4ade80;
+    margin-bottom: 8px;
+  }
+  .maya-sim-generate {
+    width: 100%;
+    background: var(--porcelain);
+    color: var(--obsidian);
+    border: none;
+    padding: 14px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 11px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  /* ── DIVIDER ── */
+  .section-divider {
+    border: none;
+    border-top: 1px solid var(--whisper);
+    margin: 48px 0;
+  }
+
+  /* ── UTILITY ── */
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <span class="nav-logo">SSELFIE</span>
+  <span class="nav-tag">AI Products — Interactive Prototype</span>
+</nav>
+
+<div class="proto-banner">
+  <div class="proto-dot"></div>
+  <span class="proto-label">Prototype — Click through the full experience</span>
+  <span class="proto-note">Not connected to real AI — outputs are simulated to show the exact UX</span>
+</div>
+
+<div class="product-tabs">
+  <button class="tab-btn active" onclick="switchProduct('what_to_say', this)">What To Say</button>
+  <button class="tab-btn" onclick="switchProduct('ai_photo_prompts', this)">AI Photo Prompts</button>
+  <button class="tab-btn" onclick="switchProduct('why_different', this)">Why This Isn't ChatGPT</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════
+  PRODUCT 1: WHAT TO SAY
+═══════════════════════════════════════════════════ -->
+<div id="product-what_to_say" class="product-screen active">
+
+  <!-- Screen 1: Form -->
+  <div id="wts-form" class="main">
+    <p class="screen-step">What To Say — €17 — Step 1 of 3</p>
+    <h1 class="screen-title">Your brand<br>message</h1>
+    <p class="screen-sub">Answer 6 questions. In 5 minutes you'll have your exact Instagram bio, LinkedIn headline, and a 30-second intro — all in your voice.</p>
+
+    <div class="form-group">
+      <label class="form-label">Q1 — What do you do?</label>
+      <p class="form-hint">One sentence. Don't overthink it.</p>
+      <input class="form-input" type="text" id="wts-q1" value="I help women rebuild their personal brand after divorce using AI and their phone" />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Q2 — Who is she?</label>
+      <p class="form-hint">Your specific person. Age, situation, what keeps her up at night.</p>
+      <textarea class="form-textarea" id="wts-q2">She's 35-44, recently separated or newly single, rebuilding financially and emotionally. She's smart but feels invisible online. She has a skill or story worth sharing but doesn't know how to put herself out there without it feeling fake or desperate.</textarea>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Q3 — What changes for her after working with you?</label>
+      <p class="form-hint">Before → After. Be specific.</p>
+      <textarea class="form-textarea" id="wts-q3">Before: hiding, scrolling, waiting to feel ready. After: posting with confidence, getting DMs from women who say "this is exactly me", building an income stream from her phone.</textarea>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Q4 — Your founder story</label>
+      <p class="form-hint">The experience that makes you the right person to help her.</p>
+      <textarea class="form-textarea" id="wts-q4">I went from €12 in my account after separation, single mum of two in Norway, to building a live AI app in 8 months. I didn't have money for a photographer so I learned to take my own brand photos with my phone. That became SSELFIE.</textarea>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Q5 — What does your industry get wrong?</label>
+      <p class="form-hint">Your honest opinion. Your "actually..."</p>
+      <textarea class="form-textarea" id="wts-q5">Everyone tells women they need a €1,500 photoshoot and a professional brand kit before they're "ready" to show up. That's backwards. Your phone is enough. Your story is enough. You were enough before you had any of that.</textarea>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Q6 — Pick your tone</label>
+      <div class="tone-grid">
+        <div class="tone-option selected" onclick="selectTone(this)" data-tone="warm">
+          <span class="tone-name">Warm & Personal</span>
+          <span class="tone-desc">Like texting a close friend</span>
+        </div>
+        <div class="tone-option" onclick="selectTone(this)" data-tone="bold">
+          <span class="tone-name">Bold & Direct</span>
+          <span class="tone-desc">No filter, straight talk</span>
+        </div>
+        <div class="tone-option" onclick="selectTone(this)" data-tone="expert">
+          <span class="tone-name">Expert & Calm</span>
+          <span class="tone-desc">Confident authority</span>
+        </div>
+        <div class="tone-option" onclick="selectTone(this)" data-tone="raw">
+          <span class="tone-name">Raw & Real</span>
+          <span class="tone-desc">Vulnerable and unfiltered</span>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="startGenerating()">Generate my brand message →</button>
+  </div>
+
+  <!-- Screen 2: Generating -->
+  <div id="wts-generating" class="hidden" style="padding: 80px 48px; text-align: center; max-width: 680px; margin: 0 auto;">
+    <p class="gen-label">Analysing your answers</p>
+    <h2 class="gen-title">Creating<br>your brand<br>identity</h2>
+    <div class="gen-bar-track"><div class="gen-bar" id="gen-bar"></div></div>
+    <p class="gen-status" id="gen-status">Reading your story...</p>
+  </div>
+
+  <!-- Screen 3: Results (Angles) -->
+  <div id="wts-results" class="main hidden">
+    <div class="angles-header">
+      <p class="screen-step">What To Say — Step 2 of 3 — Your Results</p>
+      <h1 class="screen-title">3 brand<br>angles</h1>
+      <p class="screen-sub">Each one is a complete package — bio, headline, intro, elevator pitch. Pick the angle that feels most like you.</p>
+    </div>
+
+    <div class="angle-tabs-row">
+      <button class="angle-tab active" onclick="switchAngle(0, this)">The Rebuilder</button>
+      <button class="angle-tab" onclick="switchAngle(1, this)">The Strategist</button>
+      <button class="angle-tab" onclick="switchAngle(2, this)">The Revolutionary</button>
+    </div>
+
+    <!-- Angle 1 -->
+    <div class="angle-card active" id="angle-0">
+      <div class="angle-name">The Rebuilder</div>
+      <div class="angle-desc">Lead with your story. The transformation is the brand.</div>
+
+      <div class="output-block">
+        <div class="output-label">
+          Instagram Bio <span style="font-style:italic;font-weight:300;text-transform:none;letter-spacing:0">(147 chars)</span>
+          <button class="copy-btn" onclick="copyText(this, 'bio-0')">Copy</button>
+        </div>
+        <div class="output-text" id="bio-0">Single mum who rebuilt from €12 → live AI app in 8 months 📲
+I teach women to turn one good selfie into a brand that pays them
+↓ sselfie.ai</div>
+      </div>
+
+      <div class="output-block">
+        <div class="output-label">
+          LinkedIn Headline
+          <button class="copy-btn" onclick="copyText(this, 'li-0')">Copy</button>
+        </div>
+        <div class="output-text" id="li-0">Personal Branding for Women Rebuilding | Founder @SSELFIE | AI Brand Photos Without the €1,500 Shoot</div>
+      </div>
+
+      <div class="output-block">
+        <div class="output-label">
+          30-Second Intro (for reels, calls, DMs)
+          <button class="copy-btn" onclick="copyText(this, 'intro-0')">Copy</button>
+        </div>
+        <div class="output-text" id="intro-0">I'm Sandra. I help women who are starting over — or starting for the first time — build a personal brand that actually makes money.
+
+No big following needed. No perfect photos. No €1,500 photoshoot.
+
+I went from €12 in my account after separation to a live AI app in 8 months, as a single mum of two.
+
+If I could do that, I can show you how to do this.</div>
+      </div>
+
+      <div class="output-block">
+        <div class="output-label">
+          Elevator Pitch (one line)
+          <button class="copy-btn" onclick="copyText(this, 'ep-0')">Copy</button>
+        </div>
+        <div class="output-text" id="ep-0">I turn selfies into a personal brand that pays you.</div>
+      </div>
+
+      <!-- Instagram preview -->
+      <div class="preview-toggle">
+        <button class="preview-toggle-btn" onclick="toggleIGPreview('angle-0')">
+          <span>📱</span> Preview on Instagram profile
+        </button>
+      </div>
+      <div class="ig-preview-wrap" id="ig-preview-angle-0">
+        <div class="ig-phone">
+          <div class="ig-header">
+            <span class="ig-back">‹</span>
+            <span class="ig-username">sandrabjornsson</span>
+          </div>
+          <div class="ig-body">
+            <div class="ig-avatar-row">
+              <div class="ig-avatar">S</div>
+              <div class="ig-stats">
+                <div class="ig-stat"><span class="ig-stat-num">847</span><span class="ig-stat-lbl">posts</span></div>
+                <div class="ig-stat"><span class="ig-stat-num">180K</span><span class="ig-stat-lbl">followers</span></div>
+                <div class="ig-stat"><span class="ig-stat-num">412</span><span class="ig-stat-lbl">following</span></div>
+              </div>
+            </div>
+            <div class="ig-name">Sandra Björnsson</div>
+            <div class="ig-bio-text">Single mum who rebuilt from €12 → live AI app in 8 months 📲
+I teach women to turn one good selfie into a brand that pays them</div>
+            <div class="ig-bio-link">↓ sselfie.ai</div>
+            <button class="ig-edit-btn">Edit profile</button>
+            <div class="ig-grid">
+              <div class="ig-tile"></div>
+              <div class="ig-tile"></div>
+              <div class="ig-tile"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="angle-actions">
+        <button class="btn-use" onclick="useAngle()">Use The Rebuilder →</button>
+        <button class="btn-secondary" onclick="switchAngle(1, document.querySelectorAll('.angle-tab')[1])">See next angle</button>
+      </div>
+    </div>
+
+    <!-- Angle 2 -->
+    <div class="angle-card" id="angle-1">
+      <div class="angle-name">The Strategist</div>
+      <div class="angle-desc">Lead with the method. You have a system and it works.</div>
+
+      <div class="output-block">
+        <div class="output-label">Instagram Bio <button class="copy-btn" onclick="copyText(this, 'bio-1')">Copy</button></div>
+        <div class="output-text" id="bio-1">AI personal branding for women who are done waiting to feel ready 🎯
+Your phone + your story = a brand that earns
+Founder @SSELFIE ↓ sselfie.ai</div>
+      </div>
+
+      <div class="output-block">
+        <div class="output-label">LinkedIn Headline <button class="copy-btn" onclick="copyText(this, 'li-1')">Copy</button></div>
+        <div class="output-text" id="li-1">AI Brand Strategist for Women Entrepreneurs | Helping You Build Visibility That Converts | Founder @SSELFIE</div>
+      </div>
+
+      <div class="output-block">
+        <div class="output-label">30-Second Intro <button class="copy-btn" onclick="copyText(this, 'intro-1')">Copy</button></div>
+        <div class="output-text" id="intro-1">I'm Sandra. I help women build a personal brand using AI and their phone — no photography budget, no tech skills required.
+
+The women I work with go from invisible online to getting clients from their content within 30 days.
+
+My method is built on one belief: visibility is wealth. If they can't see you, they can't buy from you.</div>
+      </div>
+
+      <div class="output-block">
+        <div class="output-label">Elevator Pitch <button class="copy-btn" onclick="copyText(this, 'ep-1')">Copy</button></div>
+        <div class="output-text" id="ep-1">I help women build a personal brand that gets them seen — and paid.</div>
+      </div>
+
+      <div class="angle-actions">
+        <button class="btn-use" onclick="useAngle()">Use The Strategist →</button>
+        <button class="btn-secondary" onclick="switchAngle(2, document.querySelectorAll('.angle-tab')[2])">See next angle</button>
+      </div>
+    </div>
+
+    <!-- Angle 3 -->
+    <div class="angle-card" id="angle-2">
+      <div class="angle-name">The Revolutionary</div>
+      <div class="angle-desc">Lead with the POV. You're changing how women think about visibility.</div>
+
+      <div class="output-block">
+        <div class="output-label">Instagram Bio <button class="copy-btn" onclick="copyText(this, 'bio-2')">Copy</button></div>
+        <div class="output-text" id="bio-2">The photoshoot industry told you to wait until you were ready.
+I'm here to tell you your phone was enough all along 📲
+sselfie.ai</div>
+      </div>
+
+      <div class="output-block">
+        <div class="output-label">LinkedIn Headline <button class="copy-btn" onclick="copyText(this, 'li-2')">Copy</button></div>
+        <div class="output-text" id="li-2">Founder @SSELFIE | Redefining Personal Branding for Women | Your Phone Is Your Studio</div>
+      </div>
+
+      <div class="output-block">
+        <div class="output-label">30-Second Intro <button class="copy-btn" onclick="copyText(this, 'intro-2')">Copy</button></div>
+        <div class="output-text" id="intro-2">I'm Sandra. I believe the personal branding industry has been selling women a lie.
+
+That you need a €1,500 photoshoot and a professional brand kit before you're "ready."
+
+I built SSELFIE to prove that wrong. Women are using their phones to build brands that get them seen, get them hired, and get them paid.
+
+Your story is the brand. Your phone is the camera. You were ready before you had any of that.</div>
+      </div>
+
+      <div class="output-block">
+        <div class="output-label">Elevator Pitch <button class="copy-btn" onclick="copyText(this, 'ep-2')">Copy</button></div>
+        <div class="output-text" id="ep-2">I'm dismantling the idea that you need a photoshoot to be seen — one selfie at a time.</div>
+      </div>
+
+      <div class="angle-actions">
+        <button class="btn-use" onclick="useAngle()">Use The Revolutionary →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Screen 4: Saved + Maya -->
+  <div id="wts-saved" class="main hidden">
+    <div class="saved-screen">
+      <div class="saved-check">✓</div>
+      <p class="screen-step">What To Say — Step 3 of 3 — Done</p>
+      <h1 class="screen-title">Your brand<br>is saved</h1>
+      <p class="screen-sub">Your message is now stored in your SSELFIE profile. Here's what Maya knows about you from now on.</p>
+
+      <div class="saved-context-box">
+        <p class="saved-context-label">Maya's context — active from now on</p>
+        <div class="maya-context-item">
+          <span class="maya-key">Elevator pitch</span>
+          <span class="maya-val">I turn selfies into a personal brand that pays you.</span>
+        </div>
+        <div class="maya-context-item">
+          <span class="maya-key">Who you serve</span>
+          <span class="maya-val">Women 35-44, rebuilding after separation, feeling invisible online</span>
+        </div>
+        <div class="maya-context-item">
+          <span class="maya-key">Tone</span>
+          <span class="maya-val">Warm & Personal — like texting a close friend</span>
+        </div>
+        <div class="maya-context-item">
+          <span class="maya-key">Your POV</span>
+          <span class="maya-val">Your phone is enough. You were ready before you had any of that.</span>
+        </div>
+        <div class="maya-context-item">
+          <span class="maya-key">Chosen angle</span>
+          <span class="maya-val">The Rebuilder</span>
+        </div>
+        <div style="padding: 16px 0 0; display: flex; align-items: center; gap: 8px;">
+          <span class="maya-highlight">Maya active</span>
+          <span style="font-size: 12px; color: var(--smoke);">Every photo Maya generates now uses this brand context automatically</span>
+        </div>
+      </div>
+
+      <div class="next-steps">
+        <a class="next-step-card" href="#" onclick="switchProduct('ai_photo_prompts', document.querySelectorAll('.tab-btn')[1]); return false;">
+          <div>
+            <div class="next-step-label">Generate brand photos</div>
+            <div class="next-step-desc">Get 30 personalised photo prompts built around your story and vibe →</div>
+          </div>
+          <span class="next-step-arrow">→</span>
+        </a>
+        <a class="next-step-card" href="#" onclick="alert('This would open Maya in selfie mode, pre-loaded with your brand context.'); return false;">
+          <div>
+            <div class="next-step-label">Start shooting now</div>
+            <div class="next-step-desc">Maya already knows your message. Open it and take your first brand photo.</div>
+          </div>
+          <span class="next-step-arrow">→</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end product-what_to_say -->
+
+
+<!-- ═══════════════════════════════════════════════════
+  PRODUCT 2: AI PHOTO PROMPTS
+═══════════════════════════════════════════════════ -->
+<div id="product-ai_photo_prompts" class="product-screen">
+
+  <div id="photo-form" class="main">
+    <p class="screen-step">AI Photo Prompts — €17 — Step 1 of 2</p>
+    <h1 class="screen-title">Your photo<br>session starts<br>here</h1>
+    <p class="screen-sub">Answer 4 questions. You'll get 30 prompts built for YOUR home, YOUR style, YOUR brand. One click and you're generating in Maya.</p>
+
+    <div class="form-group">
+      <label class="form-label">Q1 — Pick your visual vibe (select 2–3)</label>
+      <div class="vibe-grid">
+        <div class="vibe-card selected" onclick="toggleVibe(this)">
+          <span class="vibe-emoji">🖤</span>
+          <span class="vibe-name">Minimal</span>
+        </div>
+        <div class="vibe-card" onclick="toggleVibe(this)">
+          <span class="vibe-emoji">☀️</span>
+          <span class="vibe-name">Warm</span>
+        </div>
+        <div class="vibe-card selected" onclick="toggleVibe(this)">
+          <span class="vibe-emoji">✏️</span>
+          <span class="vibe-name">Editorial</span>
+        </div>
+        <div class="vibe-card" onclick="toggleVibe(this)">
+          <span class="vibe-emoji">🌿</span>
+          <span class="vibe-name">Natural</span>
+        </div>
+        <div class="vibe-card" onclick="toggleVibe(this)">
+          <span class="vibe-emoji">🔥</span>
+          <span class="vibe-name">Bold</span>
+        </div>
+        <div class="vibe-card" onclick="toggleVibe(this)">
+          <span class="vibe-emoji">🌙</span>
+          <span class="vibe-name">Moody</span>
+        </div>
+        <div class="vibe-card" onclick="toggleVibe(this)">
+          <span class="vibe-emoji">☕</span>
+          <span class="vibe-name">Cosy</span>
+        </div>
+        <div class="vibe-card" onclick="toggleVibe(this)">
+          <span class="vibe-emoji">🏙️</span>
+          <span class="vibe-name">Urban</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Q2 — Where do you usually take photos?</label>
+      <div class="checkbox-grid">
+        <div class="checkbox-item checked" onclick="toggleCheck(this)">
+          <span class="checkbox-box">✓</span> Home office / desk
+        </div>
+        <div class="checkbox-item checked" onclick="toggleCheck(this)">
+          <span class="checkbox-box">✓</span> Kitchen / living room
+        </div>
+        <div class="checkbox-item" onclick="toggleCheck(this)">
+          <span class="checkbox-box"></span> Outdoors / nature
+        </div>
+        <div class="checkbox-item" onclick="toggleCheck(this)">
+          <span class="checkbox-box"></span> Café or co-working
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Q3 — What do you need photos for? (up to 4)</label>
+      <div class="checkbox-grid">
+        <div class="checkbox-item checked" onclick="toggleCheck(this)">
+          <span class="checkbox-box">✓</span> Instagram lifestyle posts
+        </div>
+        <div class="checkbox-item checked" onclick="toggleCheck(this)">
+          <span class="checkbox-box">✓</span> Professional headshot
+        </div>
+        <div class="checkbox-item checked" onclick="toggleCheck(this)">
+          <span class="checkbox-box">✓</span> Behind the scenes
+        </div>
+        <div class="checkbox-item" onclick="toggleCheck(this)">
+          <span class="checkbox-box"></span> Speaking / authority
+        </div>
+        <div class="checkbox-item" onclick="toggleCheck(this)">
+          <span class="checkbox-box"></span> Promoting an offer
+        </div>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Q4 — Brand or wardrobe colours</label>
+      <div class="tone-grid">
+        <div class="tone-option selected" onclick="selectTone(this)">
+          <span class="tone-name">Neutrals</span>
+          <span class="tone-desc">Black, white, beige, grey</span>
+        </div>
+        <div class="tone-option" onclick="selectTone(this)">
+          <span class="tone-name">Warm tones</span>
+          <span class="tone-desc">Rust, terracotta, gold</span>
+        </div>
+        <div class="tone-option" onclick="selectTone(this)">
+          <span class="tone-name">Cool tones</span>
+          <span class="tone-desc">Navy, sage, dusty pink</span>
+        </div>
+        <div class="tone-option" onclick="selectTone(this)">
+          <span class="tone-name">Bold / mixed</span>
+          <span class="tone-desc">Colour is part of the brand</span>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="generatePhotos()">Generate my photo prompts →</button>
+  </div>
+
+  <!-- Photo results -->
+  <div id="photo-results" class="main hidden">
+    <p class="screen-step">AI Photo Prompts — Step 2 of 2 — Your Results</p>
+    <h1 class="screen-title">30 prompts<br>built for you</h1>
+    <p class="screen-sub">Each one is written for YOUR home, YOUR vibe, YOUR brand. Click any prompt to expand it — then hit "Generate in Maya" to start shooting.</p>
+
+    <div class="prompt-group-label">Professional Headshots (LinkedIn, Website, Press)</div>
+
+    <div class="prompt-card">
+      <div class="prompt-card-header" onclick="togglePrompt(this)">
+        <div>
+          <div class="prompt-card-name">The Founder</div>
+          <div class="prompt-card-tag">Best for: LinkedIn banner, website hero, press kit</div>
+        </div>
+        <span class="prompt-expand">+</span>
+      </div>
+      <div class="prompt-card-body open" id="prompt-1">
+        <div class="prompt-meta-row">
+          <div class="prompt-meta"><div class="prompt-meta-key">Setting</div><div class="prompt-meta-val">Home desk, bookshelf behind</div></div>
+          <div class="prompt-meta"><div class="prompt-meta-key">What to wear</div><div class="prompt-meta-val">Black or camel — no logos</div></div>
+          <div class="prompt-meta"><div class="prompt-meta-key">Prop</div><div class="prompt-meta-val">Laptop open, screen away</div></div>
+          <div class="prompt-meta"><div class="prompt-meta-key">Light</div><div class="prompt-meta-val">Natural window, face the light</div></div>
+        </div>
+        <div class="prompt-full-box" id="maya-prompt-1">Professional personal branding photo, Scandinavian editorial style, woman in her late 30s sitting at minimalist desk with soft natural window light from left, slight 3/4 angle to camera, warm neutral tones, bookshelf slightly blurred in background, wearing black or camel blazer, confident but approachable expression, shallow depth of field, magazine quality, --ar 4:5</div>
+        <div class="prompt-actions">
+          <button class="btn-maya" onclick="openMayaSimulation('maya-prompt-1')">
+            <span class="btn-maya-icon">✦</span> Generate in Maya →
+          </button>
+          <button class="copy-btn" style="padding:14px 16px;" onclick="copyText(this, 'maya-prompt-1')">Copy</button>
+        </div>
+        <div class="maya-sim-wrap" id="maya-sim-maya-prompt-1">
+          <div class="maya-sim">
+            <div class="maya-sim-header">
+              <span class="maya-sim-logo">MAYA</span>
+              <span class="maya-sim-mode">✦ Selfie Mode — Active</span>
+            </div>
+            <div class="maya-sim-body">
+              <div class="maya-prefilled-label">✓ Prompt pre-loaded from your AI Photo Prompts</div>
+              <div class="maya-prompt-prefilled">Professional personal branding photo, Scandinavian editorial style, woman in her late 30s sitting at minimalist desk with soft natural window light from left, slight 3/4 angle to camera, warm neutral tones...</div>
+              <div style="font-size:12px; color:#555; margin-bottom:16px; font-style:italic;">+ Your brand context: Rebuilder angle, warm personal tone, neutral palette — injected automatically</div>
+              <button class="maya-sim-generate" onclick="alert('In the real app, this uploads your selfie and generates the photo. This is where ChatGPT stops — and SSELFIE begins.')">Upload your selfie → Generate photo</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="prompt-card">
+      <div class="prompt-card-header" onclick="togglePrompt(this)">
+        <div>
+          <div class="prompt-card-name">Authority Shot</div>
+          <div class="prompt-card-tag">Best for: Speaking bios, podcast guests, press features</div>
+        </div>
+        <span class="prompt-expand">+</span>
+      </div>
+      <div class="prompt-card-body">
+        <div class="prompt-meta-row">
+          <div class="prompt-meta"><div class="prompt-meta-key">Setting</div><div class="prompt-meta-val">Against a plain wall or window</div></div>
+          <div class="prompt-meta"><div class="prompt-meta-key">What to wear</div><div class="prompt-meta-val">White shirt or structured jacket</div></div>
+          <div class="prompt-meta"><div class="prompt-meta-key">Prop</div><div class="prompt-meta-val">None</div></div>
+          <div class="prompt-meta"><div class="prompt-meta-key">Light</div><div class="prompt-meta-val">Bright, even natural light</div></div>
+        </div>
+        <div class="prompt-full-box" id="maya-prompt-2">Editorial personal branding portrait, clean Scandinavian aesthetic, woman in late 30s standing against minimal white wall, direct eye contact with camera, confident posture, arms relaxed at sides or one hand on hip, wearing crisp white shirt, bright even natural light, sharp focus, high fashion editorial feel, --ar 4:5</div>
+        <div class="prompt-actions">
+          <button class="btn-maya" onclick="openMayaSimulation('maya-prompt-2')">
+            <span class="btn-maya-icon">✦</span> Generate in Maya →
+          </button>
+          <button class="copy-btn" style="padding:14px 16px;" onclick="copyText(this, 'maya-prompt-2')">Copy</button>
+        </div>
+        <div class="maya-sim-wrap" id="maya-sim-maya-prompt-2">
+          <div class="maya-sim">
+            <div class="maya-sim-header">
+              <span class="maya-sim-logo">MAYA</span>
+              <span class="maya-sim-mode">✦ Selfie Mode — Active</span>
+            </div>
+            <div class="maya-sim-body">
+              <div class="maya-prefilled-label">✓ Prompt pre-loaded from your AI Photo Prompts</div>
+              <div class="maya-prompt-prefilled">Editorial personal branding portrait, clean Scandinavian aesthetic, woman in late 30s standing against minimal white wall...</div>
+              <button class="maya-sim-generate" onclick="alert('In the real app: selfie upload → AI generates your professional headshot. Done in 60 seconds, from your living room.')">Upload your selfie → Generate photo</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="prompt-group-label">Instagram Lifestyle Posts (Grid, Stories)</div>
+
+    <div class="prompt-card">
+      <div class="prompt-card-header" onclick="togglePrompt(this)">
+        <div>
+          <div class="prompt-card-name">Working Mum</div>
+          <div class="prompt-card-tag">Best for: Relatable Instagram posts, carousel covers</div>
+        </div>
+        <span class="prompt-expand">+</span>
+      </div>
+      <div class="prompt-card-body">
+        <div class="prompt-meta-row">
+          <div class="prompt-meta"><div class="prompt-meta-key">Setting</div><div class="prompt-meta-val">Kitchen table, morning light</div></div>
+          <div class="prompt-meta"><div class="prompt-meta-key">What to wear</div><div class="prompt-meta-val">Cosy but put together — knit, cream tones</div></div>
+          <div class="prompt-meta"><div class="prompt-meta-key">Prop</div><div class="prompt-meta-val">Coffee mug, open notebook</div></div>
+          <div class="prompt-meta"><div class="prompt-meta-key">Light</div><div class="prompt-meta-val">Morning window light — golden hour if possible</div></div>
+        </div>
+        <div class="prompt-full-box" id="maya-prompt-3">Warm lifestyle brand photo, authentic personal branding style, woman in her late 30s sitting at kitchen table with morning light, coffee mug and open notebook in frame, cream or beige tones, relaxed natural expression, slightly off-centre composition, shallow depth of field, warm golden natural light, approachable and real, --ar 4:5</div>
+        <div class="prompt-actions">
+          <button class="btn-maya" onclick="openMayaSimulation('maya-prompt-3')">
+            <span class="btn-maya-icon">✦</span> Generate in Maya →
+          </button>
+          <button class="copy-btn" style="padding:14px 16px;" onclick="copyText(this, 'maya-prompt-3')">Copy</button>
+        </div>
+        <div class="maya-sim-wrap" id="maya-sim-maya-prompt-3">
+          <div class="maya-sim">
+            <div class="maya-sim-header">
+              <span class="maya-sim-logo">MAYA</span>
+              <span class="maya-sim-mode">✦ Selfie Mode — Active</span>
+            </div>
+            <div class="maya-sim-body">
+              <div class="maya-prefilled-label">✓ Prompt pre-loaded from your AI Photo Prompts</div>
+              <div class="maya-prompt-prefilled">Warm lifestyle brand photo, authentic personal branding style, woman in her late 30s sitting at kitchen table with morning light...</div>
+              <button class="maya-sim-generate" onclick="alert('In the real app: selfie upload → AI generates the photo. Your prompt, your setting, your brand.')">Upload your selfie → Generate photo</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="text-align:center; padding: 32px 0; border-top: 1px solid var(--whisper); margin-top: 16px;">
+      <p style="font-size:13px; color:var(--smoke); margin-bottom:4px;">27 more prompts below — headshots, BTS, content creation, seasonal themes</p>
+      <p style="font-size:12px; color:var(--whisper);">All built for your home office + neutral wardrobe + minimal/editorial vibe</p>
+    </div>
+  </div>
+
+</div><!-- end product-ai_photo_prompts -->
+
+
+<!-- ═══════════════════════════════════════════════════
+  TAB 3: WHY DIFFERENT
+═══════════════════════════════════════════════════ -->
+<div id="product-why_different" class="product-screen">
+  <div class="diff-section" style="margin-top:0;">
+    <h2 class="diff-title">Why this<br>isn't ChatGPT</h2>
+    <div class="diff-grid">
+
+      <div class="diff-card">
+        <span class="diff-num">01</span>
+        <div class="diff-card-title">The outputs connect to actions</div>
+        <div class="diff-card-text">ChatGPT gives you text you copy and paste somewhere else. In SSELFIE, the photo prompt opens Maya with one click. The bio gets saved and injected into every future generation. The content calendar syncs to Feed Planner. The output IS the next step.</div>
+        <div class="diff-card-highlight">"Generate in Maya →" doesn't exist in ChatGPT.</div>
+      </div>
+
+      <div class="diff-card">
+        <span class="diff-num">02</span>
+        <div class="diff-card-title">It remembers who you are</div>
+        <div class="diff-card-text">ChatGPT forgets you every session. SSELFIE's products build a brand context that lives in your profile — your elevator pitch, your tone, your photo vibe, your content pillars. Every product you complete makes Maya smarter about you. That's compounding value.</div>
+        <div class="diff-card-highlight">Maya today vs. Maya after 4 products: completely different.</div>
+      </div>
+
+      <div class="diff-card">
+        <span class="diff-num">03</span>
+        <div class="diff-card-title">Designed for women who don't prompt</div>
+        <div class="diff-card-text">Your audience doesn't know how to write a good AI prompt. That's real. SSELFIE does the prompting for them — they answer 6 natural questions, we turn those into precision prompts. They get expert-quality outputs without needing to know anything about AI.</div>
+        <div class="diff-card-highlight">The questions ARE the prompt engineering.</div>
+      </div>
+
+      <div class="diff-card">
+        <span class="diff-num">04</span>
+        <div class="diff-card-title">Built for one person's exact problem</div>
+        <div class="diff-card-text">ChatGPT is for everyone. That's its weakness. These products are built specifically for women rebuilding their personal brand, with Sandra's voice guiding them through, outputs pre-formatted for Instagram and LinkedIn, and photo prompts written for actual homes — not studios.</div>
+        <div class="diff-card-highlight">Specificity is the moat. ChatGPT can't be this.</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Tab switching ──
+function switchProduct(id, btn) {
+  document.querySelectorAll('.product-screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('product-' + id).classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+
+// ── Tone/vibe selectors ──
+function selectTone(el) {
+  el.closest('.tone-grid').querySelectorAll('.tone-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function toggleVibe(el) {
+  const selected = document.querySelectorAll('.vibe-card.selected');
+  if (el.classList.contains('selected')) {
+    el.classList.remove('selected');
+  } else if (selected.length < 3) {
+    el.classList.add('selected');
+  }
+}
+function toggleCheck(el) {
+  el.classList.toggle('checked');
+  el.querySelector('.checkbox-box').textContent = el.classList.contains('checked') ? '✓' : '';
+}
+
+// ── What To Say generation flow ──
+function startGenerating() {
+  document.getElementById('wts-form').classList.add('hidden');
+  document.getElementById('wts-generating').classList.remove('hidden');
+
+  const bar = document.getElementById('gen-bar');
+  const status = document.getElementById('gen-status');
+  const statuses = [
+    'Reading your story...',
+    'Identifying your strengths...',
+    'Crafting your brand angles...',
+    'Writing your Instagram bio...',
+    'Building your LinkedIn headline...',
+    'Polishing your intro script...',
+    'Almost ready...'
+  ];
+
+  let progress = 0;
+  let i = 0;
+  const interval = setInterval(() => {
+    progress += Math.random() * 18 + 8;
+    if (progress > 100) progress = 100;
+    bar.style.width = progress + '%';
+    if (i < statuses.length) { status.textContent = statuses[i++]; }
+    if (progress >= 100) {
+      clearInterval(interval);
+      setTimeout(() => {
+        document.getElementById('wts-generating').classList.add('hidden');
+        document.getElementById('wts-results').classList.remove('hidden');
+      }, 600);
+    }
+  }, 400);
+}
+
+// ── Angle switching ──
+function switchAngle(idx, btn) {
+  document.querySelectorAll('.angle-card').forEach(c => c.classList.remove('active'));
+  document.querySelectorAll('.angle-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('angle-' + idx).classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+
+function useAngle() {
+  document.getElementById('wts-results').classList.add('hidden');
+  document.getElementById('wts-saved').classList.remove('hidden');
+}
+
+// ── Photo prompts generation ──
+function generatePhotos() {
+  document.getElementById('photo-form').classList.add('hidden');
+
+  const genDiv = document.createElement('div');
+  genDiv.style.cssText = 'padding:80px 48px;text-align:center;max-width:680px;margin:0 auto;';
+  genDiv.innerHTML = `
+    <p class="gen-label">Building your prompts</p>
+    <h2 class="gen-title">30 personalised<br>prompts loading</h2>
+    <div class="gen-bar-track"><div class="gen-bar" id="photo-gen-bar"></div></div>
+    <p class="gen-status" id="photo-gen-status">Analysing your vibe...</p>
+  `;
+  document.getElementById('product-ai_photo_prompts').appendChild(genDiv);
+
+  const bar = document.getElementById('photo-gen-bar');
+  const status = document.getElementById('photo-gen-status');
+  const statuses = ['Analysing your vibe...', 'Mapping to your settings...', 'Writing prompt 1-10...', 'Writing prompt 11-20...', 'Writing prompt 21-30...', 'Finalising...'];
+  let progress = 0, i = 0;
+  const interval = setInterval(() => {
+    progress += Math.random() * 18 + 8;
+    if (progress > 100) progress = 100;
+    bar.style.width = progress + '%';
+    if (i < statuses.length) status.textContent = statuses[i++];
+    if (progress >= 100) {
+      clearInterval(interval);
+      setTimeout(() => {
+        genDiv.remove();
+        document.getElementById('photo-results').classList.remove('hidden');
+      }, 500);
+    }
+  }, 400);
+}
+
+// ── Instagram preview toggle ──
+function toggleIGPreview(angleId) {
+  const wrap = document.getElementById('ig-preview-' + angleId);
+  wrap.classList.toggle('visible');
+  const btn = wrap.previousElementSibling.querySelector('.preview-toggle-btn');
+  if (wrap.classList.contains('visible')) {
+    btn.innerHTML = '<span>📱</span> Hide preview';
+  } else {
+    btn.innerHTML = '<span>📱</span> Preview on Instagram profile';
+  }
+}
+
+// ── Prompt card expand ──
+function togglePrompt(header) {
+  const body = header.nextElementSibling;
+  const icon = header.querySelector('.prompt-expand');
+  body.classList.toggle('open');
+  icon.textContent = body.classList.contains('open') ? '−' : '+';
+}
+
+// ── Maya simulation ──
+function openMayaSimulation(promptId) {
+  const simId = 'maya-sim-' + promptId;
+  const sim = document.getElementById(simId);
+  if (sim) {
+    sim.classList.toggle('open');
+    if (sim.classList.contains('open')) {
+      sim.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+}
+
+// ── Copy ──
+function copyText(btn, targetId) {
+  const el = document.getElementById(targetId);
+  if (el) {
+    navigator.clipboard.writeText(el.textContent.trim()).then(() => {
+      btn.textContent = 'Copied ✓';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'Copy';
+        btn.classList.remove('copied');
+      }, 2000);
+    });
+  }
+}
+</script>
+</body>
+</html>

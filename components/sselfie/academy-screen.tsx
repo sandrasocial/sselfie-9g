@@ -52,20 +52,20 @@ const PRODUCT_ACCESS_COPY: Record<
   { subText: string; ctaLabel: string }
 > = {
   what_to_say: {
-    subText: "Captions you love are just one click away in Feed Planner.",
-    ctaLabel: "Start in Feed Planner",
+    subText: "Your caption framework and messaging workbook.",
+    ctaLabel: "Open workbook",
   },
   show_up: {
-    subText: "Maya's ready to help you nail your personal brand.",
-    ctaLabel: "Chat with Maya",
+    subText: "Your 30-day content rhythm and batching workflow.",
+    ctaLabel: "Open workbook",
   },
   get_paid: {
-    subText: "Monetization strategies and partnership tips await.",
-    ctaLabel: "View in Profile",
+    subText: "Your revenue path map and 90-day execution plan.",
+    ctaLabel: "Open workbook",
   },
   ai_photo_prompts: {
-    subText: "Inspiration prompts for your next generation session.",
-    ctaLabel: "Browse Prompts",
+    subText: "50 done-for-you prompts across 10 brand scenarios.",
+    ctaLabel: "Open prompts",
   },
 }
 

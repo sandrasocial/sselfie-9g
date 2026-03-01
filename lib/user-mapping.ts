@@ -1,5 +1,6 @@
 import { neon, type NeonQueryFunction } from "@neondatabase/serverless"
 import { createServerClient } from "@/lib/supabase/server"
+import { autoSyncUserToResend } from "@/lib/resend/auto-sync-user"
 
 let sql: NeonQueryFunction<false, false> | null = null
 
@@ -131,7 +132,18 @@ export async function getOrCreateNeonUser(
       2000,
     )
 
-    return newUsers[0] as NeonUser
+    const newUser = newUsers[0] as NeonUser
+
+    // Auto-sync new user to Resend (non-blocking)
+    try {
+      await autoSyncUserToResend(newUser.email, newUser.display_name, {
+        source: "app_signup",
+      })
+    } catch (syncErr) {
+      console.warn("[USER-MAPPING] Resend sync error (non-blocking):", syncErr)
+    }
+
+    return newUser
   } catch (error) {
     console.error("Database error in getOrCreateNeonUser:", error)
     throw error
