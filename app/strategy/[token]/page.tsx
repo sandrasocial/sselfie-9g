@@ -474,10 +474,10 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
             Planner, and a community of women building their brand.
           </p>
           <div className="upsell-buttons">
-            <a href="https://sselfie.ai/checkout/membership" className="btn-primary">
+            <a href="https://sselfie.ai/auth/sign-up?checkout=studio_membership" className="btn-primary">
               Join Studio — €97/month
             </a>
-            <a href="https://sselfie.ai/checkout/blueprint" className="btn-secondary">
+            <a href="https://sselfie.ai/blueprint" className="btn-secondary">
               Try Feed Planner first
             </a>
           </div>
