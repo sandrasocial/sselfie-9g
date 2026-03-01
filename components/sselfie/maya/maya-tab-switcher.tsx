@@ -4,11 +4,11 @@ import type React from "react"
 import { useEffect, useRef } from "react"
 
 interface MayaTabSwitcherProps {
-  activeTab: "chat" | "photos" | "videos"
-  onTabChange: (tab: "chat" | "photos" | "videos") => void
+  activeTab: "photos" | "videos" | "prompts" | "training" | "feed"
+  onTabChange: (tab: "photos" | "videos" | "prompts" | "training" | "feed") => void
   photosCount?: number // Optional: show count of generated photos
   videosCount?: number // Optional: show count of generated videos
-  disableFeedTab?: boolean // kept for backward compat, unused
+  disableFeedTab?: boolean
   className?: string
 }
 
@@ -39,9 +39,11 @@ export default function MayaTabSwitcher({
   className = "",
 }: MayaTabSwitcherProps) {
   const tabs = [
-    { id: "chat" as const, label: "Chat" },
     { id: "photos" as const, label: "Photos" },
     { id: "videos" as const, label: "Videos" },
+    
+    
+    
   ]
 
   const containerRef = useRef<HTMLDivElement>(null)

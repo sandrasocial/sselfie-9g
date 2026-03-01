@@ -201,7 +201,7 @@ export default function MayaChatScreen({
   }, [academyPurchaseProduct, isMembership, myProductsData?.purchases])
   
   // Tab state for Photos/Videos/Prompts/Training/Feed tabs
-  const [activeMayaTab, setActiveMayaTab] = useState<"chat" | "photos" | "videos" | "prompts" | "training" | "feed">(() => {
+  const [activeMayaTab, setActiveMayaTab] = useState<"photos" | "videos" | "prompts" | "training" | "feed">(() => {
     // Check URL hash for tab selection (e.g., #maya/videos, #maya/prompts, #maya/training, #maya/feed)
     if (typeof window !== "undefined") {
       const hash = window.location.hash
@@ -219,13 +219,11 @@ export default function MayaChatScreen({
       }
       // Check localStorage for persisted tab selection
       const savedTab = localStorage.getItem("mayaActiveTab")
-      if (savedTab === "chat" || savedTab === "photos" || savedTab === "videos" || savedTab === "prompts" || savedTab === "training" || (!isFeedTabDisabled && savedTab === "feed")) {
-        // Map legacy "photos" to "chat" for the new tab naming
-        if (savedTab === "photos") return "chat"
-        return savedTab as "chat" | "photos" | "videos" | "prompts" | "training" | "feed"
+      if (savedTab === "photos" || savedTab === "videos" || savedTab === "prompts" || savedTab === "training" || (!isFeedTabDisabled && savedTab === "feed")) {
+        return savedTab as "photos" | "videos" | "prompts" | "training" | "feed"
       }
     }
-    return "chat" // Default to Chat tab
+    return "photos" // Default to Photos tab
   })
   
   // Mode managed by useMayaMode hook
@@ -3276,7 +3274,7 @@ export default function MayaChatScreen({
 
       {/* Fixed Bottom Input Area - Show in Photos and Feed tabs */}
       {/* Subtle background for contrast - positioned above nav, z-index below nav */}
-      {(activeMayaTab === "chat" || activeMayaTab === "photos" || activeMayaTab === "feed") && (
+      {(activeMayaTab === "photos" || activeMayaTab === "feed") && (
         <div
           ref={inputBarRef}
           className="fixed left-0 right-0 bg-[rgba(12,12,12,0.55)] backdrop-blur-[22px] border-t border-[rgba(255,255,255,0.12)] px-3 sm:px-4 py-2 sm:py-2.5 z-[90] flex flex-col"
@@ -3286,7 +3284,7 @@ export default function MayaChatScreen({
             paddingBottom: "max(0.25rem, env(safe-area-inset-bottom, 0px))",
           }}
         >
-          {/* Quick Actions — chips above input in Chat tab, pill variant elsewhere */}
+          {/* Quick Actions */}
           {shouldShowInputPrompts ? (
             <MayaQuickPrompts
               prompts={currentPrompts}
@@ -3297,7 +3295,7 @@ export default function MayaChatScreen({
                 }
               }}
               disabled={isTyping}
-              variant={activeMayaTab === "chat" ? "quick-chips" : "input-area"}
+              variant="input-area"
               studioProMode={proMode}
               isEmpty={isEmpty}
               uploadedImage={uploadedImage}
