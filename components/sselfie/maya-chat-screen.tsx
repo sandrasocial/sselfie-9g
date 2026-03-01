@@ -3295,7 +3295,7 @@ export default function MayaChatScreen({
                 }
               }}
               disabled={isTyping}
-              variant="input-area"
+              variant={activeMayaTab === "photos" ? "quick-chips" : "input-area"}
               studioProMode={proMode}
               isEmpty={isEmpty}
               uploadedImage={uploadedImage}

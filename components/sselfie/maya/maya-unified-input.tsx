@@ -376,73 +376,7 @@ export default function MayaUnifiedInput({
           )}
         </div>
 
-        {/* Navigation buttons - New Project and History (replaces Open Library, consistent in both modes) */}
-        {/* Text-only buttons with no background, positioned to avoid bottom nav overlap */}
-        {/* Added extra padding-bottom on desktop to prevent overlap with bottom navigation (bottom nav is ~80px) */}
-        {(showSettingsButton || onNewProject || onHistory) && (
-          <div 
-            className="mt-1.5 flex items-center justify-start gap-4"
-            style={{
-              paddingBottom: '2px',
-              marginBottom: '0px',
-            }}
-          >
-            {showSettingsButton && onSettingsClick && (
-              <button
-                type="button"
-                onClick={onSettingsClick}
-                className="touch-manipulation active:scale-95 text-[11px] font-medium tracking-[0.2em] uppercase text-white/70 hover:text-white transition-colors"
-                style={{
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: '0',
-                  margin: '0',
-                }}
-                aria-label="Open settings"
-                title="Open settings"
-              >
-                Settings
-              </button>
-            )}
-            {onNewProject && (
-              <button
-                type="button"
-                onClick={onNewProject}
-                className="touch-manipulation active:scale-95 text-[11px] font-medium tracking-[0.2em] uppercase text-white/70 hover:text-white transition-colors"
-                style={{
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: '0',
-                  margin: '0',
-                }}
-                aria-label="Start a new project"
-                title="Start a new project"
-              >
-                New Project
-              </button>
-            )}
-            {onHistory && (
-              <button
-                type="button"
-                onClick={onHistory}
-                className="touch-manipulation active:scale-95 text-[11px] font-medium tracking-[0.2em] uppercase text-white/70 hover:text-white transition-colors"
-                style={{
-                  backgroundColor: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: '0',
-                  margin: '0',
-                }}
-                aria-label="View chat history"
-                title="View chat history"
-              >
-                History
-              </button>
-            )}
-          </div>
-        )}
+        {/* New Project / History moved to header ··· menu */}
       </form>
     </div>
   )

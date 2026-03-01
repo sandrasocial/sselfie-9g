@@ -42,6 +42,8 @@ interface MayaHeaderUnifiedProps {
   
   // Navigation & Actions
   onNavigation?: (tab: string) => void
+  onNewProject?: () => void
+  onHistory?: () => void
   onLogout?: () => void
   isLoggingOut?: boolean
   
@@ -111,6 +113,8 @@ export default function MayaHeaderUnified({
   disableFeedTab = false,
 }: MayaHeaderUnifiedProps) {
   const [isGuideMenuOpen, setIsGuideMenuOpen] = useState(false)
+  const [isDotsMenuOpen, setIsDotsMenuOpen] = useState(false)
+  const dotsMenuRef = useRef<HTMLDivElement>(null)
   const [guides, setGuides] = useState<Guide[]>([])
   const [isLoadingGuides, setIsLoadingGuides] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
@@ -210,18 +214,31 @@ export default function MayaHeaderUnified({
       }
     }
 
+    const handleDotsMenuClickOutside = (event: MouseEvent) => {
+      if (dotsMenuRef.current && !dotsMenuRef.current.contains(event.target as Node)) {
+        const target = event.target as HTMLElement
+        if (!target.closest('[data-dots-trigger]')) {
+          setIsDotsMenuOpen(false)
+        }
+      }
+    }
+
     if (showNavMenu) {
       document.addEventListener("mousedown", handleClickOutside)
     }
     if (isGuideMenuOpen) {
       document.addEventListener("mousedown", handleGuidePanelClickOutside)
     }
+    if (isDotsMenuOpen) {
+      document.addEventListener("mousedown", handleDotsMenuClickOutside)
+    }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside)
       document.removeEventListener("mousedown", handleGuidePanelClickOutside)
+      document.removeEventListener("mousedown", handleDotsMenuClickOutside)
     }
-  }, [showNavMenu, isGuideMenuOpen])
+  }, [showNavMenu, isGuideMenuOpen, isDotsMenuOpen])
 
   // Unified header styling - same for both modes
   // Mobile optimized: proper touch targets, safe area insets, responsive spacing
@@ -386,6 +403,68 @@ export default function MayaHeaderUnified({
                 variant="compact"
               />
             )
+          )}
+
+          {/* Dots Menu Button */}
+          {(onSettings || onNewProject || onHistory || onNavigation) && (
+            <div className="relative" ref={dotsMenuRef}>
+              <button
+                onClick={() => setIsDotsMenuOpen(prev => !prev)}
+                data-dots-trigger
+                className="touch-manipulation active:scale-95 flex items-center justify-center"
+                style={{
+                  width: '44px', height: '44px', minWidth: '44px', minHeight: '44px',
+                  borderRadius: '12px',
+                  border: '1px solid #e5e5e5',
+                  backgroundColor: 'transparent',
+                  cursor: 'pointer',
+                }}
+                aria-label="More options"
+              >
+                <span style={{ fontSize: '18px', fontWeight: 500, color: '#0a0a0a', letterSpacing: '0.05em' }}>···</span>
+              </button>
+
+              {isDotsMenuOpen && (
+                <div
+                  className="absolute right-0 z-[200] animate-in fade-in slide-in-from-top-2 duration-150"
+                  style={{
+                    top: 'calc(100% + 8px)', width: '200px',
+                    backgroundColor: '#ffffff', border: '1px solid #e5e5e5',
+                    borderRadius: '16px', padding: '8px',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
+                  }}
+                >
+                  {onSettings && (
+                    <button onClick={() => { onSettings(); setIsDotsMenuOpen(false) }}
+                      className="w-full text-left px-4 py-3 rounded-xl hover:bg-stone-50 transition-colors touch-manipulation"
+                      style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', fontWeight: 300, color: '#0a0a0a' }}>
+                      Settings
+                    </button>
+                  )}
+                  {onNewProject && (
+                    <button onClick={() => { onNewProject(); setIsDotsMenuOpen(false) }}
+                      className="w-full text-left px-4 py-3 rounded-xl hover:bg-stone-50 transition-colors touch-manipulation"
+                      style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', fontWeight: 300, color: '#0a0a0a' }}>
+                      New Project
+                    </button>
+                  )}
+                  {onHistory && (
+                    <button onClick={() => { onHistory(); setIsDotsMenuOpen(false) }}
+                      className="w-full text-left px-4 py-3 rounded-xl hover:bg-stone-50 transition-colors touch-manipulation"
+                      style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', fontWeight: 300, color: '#0a0a0a' }}>
+                      History
+                    </button>
+                  )}
+                  {onNavigation && (
+                    <button onClick={() => { onNavigation('prompts'); setIsDotsMenuOpen(false) }}
+                      className="w-full text-left px-4 py-3 rounded-xl hover:bg-stone-50 transition-colors touch-manipulation"
+                      style={{ fontFamily: 'Inter, sans-serif', fontSize: '14px', fontWeight: 300, color: '#0a0a0a' }}>
+                      Prompts Library
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           )}
 
           {/* Menu Button */}
