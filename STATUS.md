@@ -4,9 +4,25 @@
 ---
 
 ## Last Updated
-2026-03-01 22:13 CET — Updated by Codex (Mounted-surface UX consistency hardening + tracker sync)
+2026-03-01 22:31 CET — Updated by Codex (Academy backend pipeline hardening: access/unlock/monthly-drops)
 
 ## Last Task Completed
+Academy backend pipeline hardening completed (access gate accuracy + monthly-drops reliability):
+- Scope:
+  - Added deterministic live-vs-test entitlement selection for subscription checks used by Academy access decisions.
+  - Fixed monthly drops API response deduplication to prevent duplicate card rows after repeated downloads.
+  - Made monthly-drop download tracking idempotent (duplicate insert no longer fails request).
+- Files updated:
+  - `lib/subscription.ts`
+  - `app/api/academy/monthly-drops/route.ts`
+  - `app/api/academy/monthly-drops/[dropId]/download/route.ts`
+  - `tests/subscription-live-filter.test.ts` (new)
+  - `tests/monthly-drops-clickthrough.test.ts` (new)
+- Validation:
+  - `pnpm vitest run tests/monthly-drops-clickthrough.test.ts tests/subscription-live-filter.test.ts tests/academy-access-gate.test.ts tests/academy-journey.test.ts` passed (12/12)
+  - `pnpm eslint app/api/academy/monthly-drops/route.ts app/api/academy/monthly-drops/[dropId]/download/route.ts lib/subscription.ts tests/monthly-drops-clickthrough.test.ts tests/subscription-live-filter.test.ts` passed (0 errors, warnings only)
+  - `pnpm build` passed
+
 Mounted-surface UX consistency hardening completed (Maya, Feed Planner, Gallery, Account, Academy):
 - Scope:
   - Removed icon-based UI affordances from active Studio surfaces and replaced with text affordances.

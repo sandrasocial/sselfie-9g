@@ -6,6 +6,36 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 
 const sql = neon(process.env.DATABASE_URL!)
 
+type MonthlyDropRow = {
+  id: number | string
+  downloaded?: boolean | null
+  [key: string]: unknown
+}
+
+function dedupeMonthlyDrops(rows: MonthlyDropRow[]): MonthlyDropRow[] {
+  const byId = new Map<string, MonthlyDropRow>()
+
+  for (const row of rows) {
+    const key = String(row.id)
+    const existing = byId.get(key)
+    if (!existing) {
+      byId.set(key, {
+        ...row,
+        downloaded: row.downloaded === true,
+      })
+      continue
+    }
+
+    byId.set(key, {
+      ...existing,
+      ...row,
+      downloaded: existing.downloaded === true || row.downloaded === true,
+    })
+  }
+
+  return Array.from(byId.values())
+}
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createServerClient()
@@ -60,9 +90,11 @@ export async function GET(request: NextRequest) {
       ORDER BY md.created_at DESC, md.order_index ASC
     `
 
+    const normalizedMonthlyDrops = dedupeMonthlyDrops(monthlyDrops as MonthlyDropRow[])
+
     return NextResponse.json({
       hasAccess: true,
-      monthlyDrops,
+      monthlyDrops: normalizedMonthlyDrops,
       productType,
     })
   } catch (error) {

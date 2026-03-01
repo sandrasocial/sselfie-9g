@@ -10,6 +10,26 @@ export type SubscriptionStatus =
   | "cancelled"
   | "expired"
 
+type SubscriptionRow = {
+  product_type: ProductType | string
+  status: SubscriptionStatus | null
+  stripe_subscription_id?: string | null
+  current_period_start?: Date | string | null
+  current_period_end?: Date | string | null
+  created_at?: Date | string | null
+  is_test_mode?: boolean | null
+}
+
+type PickPreferredSubscriptionOptions = {
+  liveOnly?: boolean
+}
+
+function createdAtMillis(value: Date | string | null | undefined): number {
+  if (!value) return 0
+  const parsed = new Date(value).getTime()
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
 function hasGracePeriodAccess(status: SubscriptionStatus | null, currentPeriodEnd?: Date | null) {
   if (!status || !currentPeriodEnd) {
     return false
@@ -35,6 +55,36 @@ function isSubscriptionAccessActive(subscription: any) {
 }
 
 /**
+ * Pick one active entitlement row from subscription history.
+ * Prefers live rows over test rows when liveOnly=true.
+ */
+export function pickPreferredSubscription(
+  subscriptions: SubscriptionRow[],
+  options: PickPreferredSubscriptionOptions = {},
+): SubscriptionRow | null {
+  const activeCandidates = subscriptions.filter(isSubscriptionAccessActive)
+  if (activeCandidates.length === 0) {
+    return null
+  }
+
+  const orderedActive = activeCandidates.sort(
+    (a, b) => createdAtMillis(b.created_at ?? null) - createdAtMillis(a.created_at ?? null),
+  )
+
+  if (options.liveOnly) {
+    const liveActive = orderedActive.find((candidate) => candidate.is_test_mode !== true)
+    return liveActive ?? null
+  }
+
+  const preferredLive = orderedActive.find((candidate) => candidate.is_test_mode !== true)
+  if (preferredLive) {
+    return preferredLive
+  }
+
+  return orderedActive[0] ?? null
+}
+
+/**
  * Get user's active product/subscription
  * Returns the product type and status
  */
@@ -47,18 +97,19 @@ export async function getUserSubscription(userId: string) {
         stripe_subscription_id,
         current_period_start,
         current_period_end,
-        created_at
+        created_at,
+        is_test_mode
       FROM subscriptions 
       WHERE user_id = ${userId}
       ORDER BY created_at DESC
-      LIMIT 1
+      LIMIT 20
     `
 
-    if (subscriptions.length > 0 && isSubscriptionAccessActive(subscriptions[0])) {
-      return subscriptions[0]
-    }
+    const preferredSubscription = pickPreferredSubscription(subscriptions as SubscriptionRow[], {
+      liveOnly: process.env.NODE_ENV === "production",
+    })
 
-    return null
+    return preferredSubscription ?? null
   } catch (error) {
     console.error("[v0] [getUserSubscription] Error getting user subscription:", error)
     return null
