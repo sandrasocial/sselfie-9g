@@ -158,12 +158,15 @@ export default function MayaUnifiedInput({
     e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`
   }
 
-  const inputContainerClass = "w-full"
-  const inputContainerStyle = {}
+  const inputContainerClass =
+    "w-full rounded-[20px] border border-[rgba(255,255,255,0.08)] bg-[rgba(12,12,12,0.55)] backdrop-blur-[22px] shadow-[0_10px_30px_rgba(0,0,0,0.28)] p-3 sm:p-4"
+  const inputContainerStyle = {
+    borderTop: "1px solid rgba(255,255,255,0.12)",
+  }
   const inputWrapperClass = "w-full"
 
   const textareaClass =
-    "w-full px-4 py-3 bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.12)] rounded-xl text-[#ffffff] placeholder-[#8c8c8c] focus:outline-none focus:ring-1 focus:ring-[rgba(255,255,255,0.24)] focus:bg-[rgba(255,255,255,0.09)] font-medium text-[16px] min-h-[48px] max-h-[120px] transition-all duration-300 resize-none overflow-y-auto leading-relaxed touch-manipulation"
+    "w-full px-4 py-3 bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.08)] rounded-lg text-[#ffffff] placeholder-[rgba(255,255,255,0.5)] focus:outline-none focus:ring-1 focus:ring-[rgba(255,255,255,0.12)] focus:border-[rgba(255,255,255,0.12)] focus:bg-[rgba(255,255,255,0.08)] font-light text-[16px] min-h-[48px] max-h-[120px] transition-all duration-300 resize-none overflow-y-auto leading-relaxed touch-manipulation"
 
   const textareaStyle = {
     fontFamily: Typography.body.fontFamily,
@@ -174,14 +177,14 @@ export default function MayaUnifiedInput({
   }
 
   const imageButtonClass =
-    "touch-manipulation active:scale-95 shrink-0 flex items-center justify-center w-11 h-11 rounded-lg border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.1)] text-[#e5e5e5] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+    "touch-manipulation active:scale-95 shrink-0 flex items-center justify-center min-w-[92px] h-11 rounded-lg border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.08)] hover:bg-[rgba(255,255,255,0.12)] text-[#ffffff] transition-all disabled:opacity-50 disabled:cursor-not-allowed px-3"
 
   const imageButtonStyle = {
     borderRadius: BorderRadius.button,
   }
 
   const sendButtonClass =
-    "touch-manipulation active:scale-95 shrink-0 flex items-center justify-center min-w-[56px] h-11 rounded-lg border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.1)] text-[#e5e5e5] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+    "touch-manipulation active:scale-95 shrink-0 flex items-center justify-center min-w-[96px] h-11 rounded-md border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.08)] hover:bg-[rgba(255,255,255,0.12)] text-[#ffffff] transition-all disabled:opacity-50 disabled:cursor-not-allowed px-4"
 
   const sendButtonStyle = {
     borderRadius: BorderRadius.button,
@@ -194,9 +197,9 @@ export default function MayaUnifiedInput({
 
   return (
     <div
-      className={inputContainerClass}
-      style={{ ...inputContainerStyle, position: 'relative' }}
-    >
+    className={inputContainerClass}
+    style={{ ...inputContainerStyle, position: 'relative' }}
+  >
       {/* Chat Menu Dropdown - Rendered via portal to avoid positioning issues (Classic Mode only) */}
       {showSettingsButton && showChatMenu && typeof window !== 'undefined' && createPortal(
         <div 
@@ -306,7 +309,7 @@ export default function MayaUnifiedInput({
                 <div className="w-5 h-5 border-2 border-stone-400 border-t-transparent rounded-full animate-spin" />
               )
             ) : (
-              <span className="text-[10px] uppercase tracking-[0.2em] font-medium">Add</span>
+              <span className="text-[10px] uppercase tracking-[0.16em] font-medium">Add Image</span>
             )}
           </button>
 
@@ -388,7 +391,7 @@ export default function MayaUnifiedInput({
               <button
                 type="button"
                 onClick={onSettingsClick}
-                className="touch-manipulation active:scale-95 text-xs font-serif font-extralight tracking-[0.2em] uppercase text-white/60 hover:text-white transition-colors"
+                className="touch-manipulation active:scale-95 text-[11px] font-medium tracking-[0.2em] uppercase text-white/70 hover:text-white transition-colors"
                 style={{
                   backgroundColor: 'transparent',
                   border: 'none',
@@ -406,7 +409,7 @@ export default function MayaUnifiedInput({
               <button
                 type="button"
                 onClick={onNewProject}
-                className="touch-manipulation active:scale-95 text-xs font-serif font-extralight tracking-[0.2em] uppercase text-white/60 hover:text-white transition-colors"
+                className="touch-manipulation active:scale-95 text-[11px] font-medium tracking-[0.2em] uppercase text-white/70 hover:text-white transition-colors"
                 style={{
                   backgroundColor: 'transparent',
                   border: 'none',
@@ -424,7 +427,7 @@ export default function MayaUnifiedInput({
               <button
                 type="button"
                 onClick={onHistory}
-                className="touch-manipulation active:scale-95 text-xs font-serif font-extralight tracking-[0.2em] uppercase text-white/60 hover:text-white transition-colors"
+                className="touch-manipulation active:scale-95 text-[11px] font-medium tracking-[0.2em] uppercase text-white/70 hover:text-white transition-colors"
                 style={{
                   backgroundColor: 'transparent',
                   border: 'none',

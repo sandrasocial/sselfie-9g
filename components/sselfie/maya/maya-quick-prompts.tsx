@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-import { Typography, Colors } from '@/lib/maya/pro/design-system'
 
 interface QuickPrompt {
   label: string
@@ -37,26 +36,30 @@ export default function MayaQuickPrompts({
     return null
   }
 
+  const wrapperClass =
+    "rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] backdrop-blur-[20px] p-3"
+  const railClass = "flex gap-2 overflow-x-auto scrollbar-hide snap-x snap-mandatory"
+  const pillClass =
+    "shrink-0 px-4 py-2.5 rounded-lg border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.08)] transition-colors min-h-[40px] text-[11px] font-medium uppercase tracking-[0.35em] text-[#ffffff] whitespace-nowrap snap-start disabled:opacity-50 disabled:cursor-not-allowed"
+
   // Empty State - Shared layout for Classic + Pro welcome states
   if (variant === "empty-state") {
     return (
       <div className="relative w-full max-w-2xl px-2 sm:px-4 -mx-2">
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 snap-x snap-mandatory">
-          {prompts.map((item, index) => (
-            <button
-              key={index}
-              onClick={() => {
-                onSelect(item.prompt)
-              }}
-              className="shrink-0 px-4 py-2.5 sm:py-3 bg-white/50 backdrop-blur-xl border border-white/70 rounded-xl hover:bg-stone-100 hover:border-stone-300 transition-all duration-300 touch-manipulation active:scale-95 active:bg-stone-100 min-h-[44px] min-w-[120px] snap-start"
-            >
-              <span className="text-xs tracking-wide font-medium text-stone-700 whitespace-nowrap">
+        <div className={wrapperClass}>
+          <div className={`${railClass} pb-1`}>
+            {prompts.map((item, index) => (
+              <button
+                key={index}
+                onClick={() => onSelect(item.prompt)}
+                className={pillClass}
+                disabled={disabled}
+              >
                 {item.label}
-              </span>
-            </button>
-          ))}
+              </button>
+            ))}
+          </div>
         </div>
-        <div className="pointer-events-none absolute right-2 sm:right-4 top-0 bottom-2 w-10 bg-gradient-to-l from-white/95 to-transparent" />
       </div>
     )
   }
@@ -64,46 +67,27 @@ export default function MayaQuickPrompts({
   // Empty State - Pro Mode
   if (variant === "pro-mode-empty" && studioProMode) {
     return (
-      <div className="pt-6 space-y-6">
-        {/* Smart suggestions based on library intent */}
-        {/* This is handled by parent component - we just render the prompts */}
-        
-        {/* Signature style prompts */}
-        <div className="space-y-3">
-          <p className="text-xs text-stone-600 font-light tracking-wide uppercase">
-            {isEmpty
-              ? "Start with SELFIE Mode Examples"
-              : "Or Start with SELFIE Mode Examples"}
-          </p>
-          {studioProMode && (
-            <p className="text-xs text-stone-500 text-center mb-3">
-              SELFIE Mode category examples - tap to inspire Maya
-            </p>
-          )}
+      <div className="pt-6 space-y-5">
+        <p className="text-[10px] text-[#e5e5e5] font-medium uppercase tracking-[0.5em] text-center">
+          {isEmpty ? "Start With Selfie Mode Prompts" : "More Selfie Mode Prompts"}
+        </p>
+        <div className={`${wrapperClass} max-w-2xl mx-auto`}>
           {prompts.length > 0 ? (
-            <div className="flex flex-wrap gap-2 justify-center max-w-2xl mx-auto px-2">
+            <div className={`${railClass} pb-1 justify-start`}>
               {prompts.map((item, index) => (
                 <button
                   key={index}
-                  onClick={() => {
-                    onSelect(item.prompt)
-                  }}
+                  onClick={() => onSelect(item.prompt)}
                   disabled={disabled}
-                  className="px-4 py-2.5 sm:py-2 bg-white border border-stone-300 rounded-lg hover:bg-stone-50 active:bg-stone-100 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation active:scale-95 min-h-[44px] min-w-[100px] text-xs sm:text-sm"
-                  style={{
-                    fontFamily: Typography.ui.fontFamily,
-                    fontSize: Typography.ui.sizes.sm,
-                    fontWeight: Typography.ui.weights.regular,
-                    color: Colors.textSecondary,
-                  }}
+                  className={pillClass}
                 >
                   {item.label}
                 </button>
               ))}
             </div>
           ) : (
-            <div className="text-center py-2">
-              <p className="text-xs text-stone-400 italic">Loading suggestions...</p>
+            <div className="text-center py-3">
+              <p className="text-[11px] text-[#e5e5e5]/80 uppercase tracking-[0.3em]">Loading prompts</p>
             </div>
           )}
         </div>
@@ -115,24 +99,19 @@ export default function MayaQuickPrompts({
   if (variant === "input-area" && !studioProMode && !isEmpty && !uploadedImage) {
     return (
       <div className="mb-2 mt-2">
-        <div className="relative">
-          <div className="flex gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide pb-1 -mx-2 px-2 sm:mx-0 sm:px-0 snap-x snap-mandatory">
+        <div className={wrapperClass}>
+          <div className={`${railClass} pb-1`}>
             {prompts.map((item, index) => (
               <button
                 key={index}
-                onClick={() => {
-                  onSelect(item.prompt)
-                }}
+                onClick={() => onSelect(item.prompt)}
                 disabled={disabled}
-                className="shrink-0 px-3 py-2 bg-white/40 backdrop-blur-xl border border-white/60 rounded-lg hover:bg-white/60 active:bg-white/80 transition-all duration-300 disabled:opacity-50 touch-manipulation active:scale-95 min-h-[44px] min-w-[100px] snap-start"
+                className={pillClass}
               >
-                <span className="text-xs tracking-wide font-medium text-stone-700 whitespace-nowrap">
-                  {item.label}
-                </span>
+                {item.label}
               </button>
             ))}
           </div>
-          <div className="pointer-events-none absolute right-0 top-0 bottom-1 w-8 bg-gradient-to-l from-white/90 to-transparent" />
         </div>
       </div>
     )
@@ -141,24 +120,16 @@ export default function MayaQuickPrompts({
   // Pro Mode Options (collapsible section above input)
   if (variant === "pro-mode-options" && studioProMode) {
     return (
-      <div>
-        <div className="flex gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide pb-1 snap-x snap-mandatory">
+      <div className={wrapperClass}>
+        <div className={`${railClass} pb-1`}>
           {prompts.map((item, index) => (
             <button
               key={`pro-mode-prompt-${index}-${item.label}`}
-              onClick={() => {
-                onSelect(item.prompt)
-              }}
+              onClick={() => onSelect(item.prompt)}
               disabled={disabled}
-              className="shrink-0 px-3 py-2 bg-white border border-stone-300 rounded-lg hover:bg-stone-50 active:bg-stone-100 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation active:scale-95 min-h-[44px] min-w-[100px] snap-start"
-              style={{
-                fontFamily: Typography.ui.fontFamily,
-                fontSize: Typography.ui.sizes.sm,
-                fontWeight: Typography.ui.weights.regular,
-                color: Colors.textSecondary,
-              }}
+              className={pillClass}
             >
-              <span className="whitespace-nowrap">{item.label}</span>
+              {item.label}
             </button>
           ))}
         </div>

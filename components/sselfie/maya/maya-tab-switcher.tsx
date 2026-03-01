@@ -76,7 +76,7 @@ export default function MayaTabSwitcher({
   return (
     <div 
       ref={containerRef}
-      className={`flex gap-4 sm:gap-6 md:gap-8 overflow-x-auto ${className}`} 
+      className={`flex gap-2 sm:gap-3 overflow-x-auto py-3 ${className}`} 
       style={{ 
         scrollbarWidth: 'none', 
         msOverflowStyle: 'none',
@@ -96,12 +96,12 @@ export default function MayaTabSwitcher({
                 onTabChange(tab.id)
               }
             }}
-            className={`px-2 sm:px-3 md:px-4 py-3 sm:py-4 md:py-5 border-b-2 transition-all touch-manipulation active:scale-95 min-h-[44px] sm:min-h-[48px] flex items-center gap-1.5 sm:gap-2 whitespace-nowrap scroll-snap-align-start ${
+            className={`relative px-4 sm:px-5 py-2.5 rounded-full border transition-all touch-manipulation active:scale-95 min-h-[40px] flex items-center gap-1.5 sm:gap-2 whitespace-nowrap scroll-snap-align-start ${
               isActive
-                ? "border-[#ffffff] text-[#ffffff] cursor-default"
+                ? "border-[rgba(255,255,255,0.2)] text-[#ffffff] cursor-default bg-[rgba(255,255,255,0.04)]"
                 : isDisabled
-                  ? "border-transparent text-[#666666] opacity-60 cursor-not-allowed"
-                  : "border-transparent text-[#666666] hover:text-[#e5e5e5] hover:border-[#666666] cursor-pointer"
+                  ? "border-[rgba(255,255,255,0.08)] text-[#666666] opacity-60 cursor-not-allowed bg-[rgba(255,255,255,0.02)]"
+                  : "border-[rgba(255,255,255,0.08)] text-[#666666] hover:text-[#e5e5e5] hover:bg-[rgba(255,255,255,0.06)] cursor-pointer bg-[rgba(255,255,255,0.04)]"
             }`}
             aria-label={`${tab.label} tab`}
             title={isDisabled ? "Feed is temporarily unavailable" : `${tab.label} tab`}
@@ -113,6 +113,7 @@ export default function MayaTabSwitcher({
               fontWeight: 500,
               letterSpacing: "0.5em",
               textTransform: "uppercase",
+              backdropFilter: "blur(20px)",
             }}
           >
             {tab.label}
@@ -129,6 +130,9 @@ export default function MayaTabSwitcher({
               }`}>
                 ({videosCount})
               </span>
+            )}
+            {isActive && (
+              <span className="absolute bottom-0 left-4 right-4 h-[2px] bg-[#ffffff] rounded-full" />
             )}
           </button>
         )

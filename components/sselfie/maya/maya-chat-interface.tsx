@@ -6,7 +6,6 @@ import VideoCard from "../video-card"
 import MayaConceptCards from "./maya-concept-cards"
 import { PromptSuggestionCard as NewPromptSuggestionCard } from "../prompt-suggestion-card"
 import type { PromptSuggestion } from "@/lib/maya/prompt-generator"
-import { ArrowDown } from "lucide-react"
 import FeedPreviewCard from "@/components/feed-planner/feed-preview-card"
 import FeedCaptionCard from "@/components/feed-planner/feed-caption-card"
 import FeedStrategyCard from "@/components/feed-planner/feed-strategy-card"
@@ -154,9 +153,9 @@ export default function MayaChatInterface({
         // Flush current list if exists
         if (currentList.length > 0) {
           elements.push(
-            <ul key={`list-${index}`} className="list-disc list-inside space-y-1.5 my-2 ml-4">
+            <ul key={`list-${index}`} className="list-disc list-inside space-y-2 my-3 ml-6">
               {currentList.map((item, itemIdx) => (
-                <li key={itemIdx} className="text-sm leading-relaxed text-[#e5e5e5]">
+                <li key={itemIdx} className="text-[16px] leading-[1.8] font-light text-[#ffffff]">
                   {item}
                 </li>
               ))}
@@ -178,7 +177,7 @@ export default function MayaChatInterface({
           
           if (trimmedLine.length > 0) {
             elements.push(
-              <p key={`para-${index}`} className="text-sm leading-relaxed text-[#e5e5e5] mb-2 last:mb-0">
+              <p key={`para-${index}`} className="text-[16px] leading-[1.8] font-light text-[#e5e5e5] mb-4 last:mb-0">
                 {processedLine}
               </p>
             )
@@ -192,9 +191,9 @@ export default function MayaChatInterface({
     // Flush any remaining list
     if (currentList.length > 0) {
       elements.push(
-        <ul key="list-final" className="list-disc list-inside space-y-1.5 my-2 ml-4">
+        <ul key="list-final" className="list-disc list-inside space-y-2 my-3 ml-6">
           {currentList.map((item, itemIdx) => (
-            <li key={itemIdx} className="text-sm leading-relaxed text-[#e5e5e5]">
+            <li key={itemIdx} className="text-[16px] leading-[1.8] font-light text-[#ffffff]">
               {item}
             </li>
           ))}
@@ -302,12 +301,12 @@ export default function MayaChatInterface({
 
     // For user messages, keep simple styling
     if (isUser) {
-      return <p className="text-sm leading-relaxed font-medium whitespace-pre-wrap text-[#ffffff]">{removeEmojis(cleanedText)}</p>
+      return <p className="text-[16px] leading-[1.8] font-light whitespace-pre-wrap text-[#ffffff]">{removeEmojis(cleanedText)}</p>
     }
 
     // For Maya's messages (assistant), render with markdown support
     return (
-      <div className="text-sm leading-relaxed text-[#e5e5e5]">
+      <div className="text-[16px] leading-[1.8] font-light text-[#e5e5e5]">
         {renderMarkdownText(cleanedText)}
       </div>
     )
@@ -415,15 +414,15 @@ export default function MayaChatInterface({
   }
 
   return (
-    <div className="flex-1 min-h-0 px-3 sm:px-4">
+    <div className="flex-1 min-h-0 px-6 md:px-12 bg-[#0a0a0a]">
       <div
         ref={messagesContainerRef}
-        className="h-full overflow-y-auto pr-1 scroll-smooth rounded-[20px] border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.02)]"
+        className="h-full overflow-y-auto pr-1 scroll-smooth rounded-[20px] border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] backdrop-blur-[20px]"
         style={{
           // Layout contract: measured fixed header height + breathing room.
-          paddingTop: "calc(var(--maya-header-height, 124px) + 8px)",
+          paddingTop: "calc(var(--maya-header-height, 124px) + 16px)",
           // Keep last message clear of dynamic input dock + fixed bottom nav.
-          paddingBottom: "calc(var(--input-bar-height, 168px) + var(--sselfie-bottom-nav-height, 96px) + 16px)",
+          paddingBottom: "calc(var(--input-bar-height, 168px) + var(--sselfie-bottom-nav-height, 96px) + 24px)",
         }}
         role="log"
         aria-live="polite"
@@ -436,8 +435,8 @@ export default function MayaChatInterface({
               return true
             })
             .map((msg) => (
-              <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[90%] sm:max-w-[85%] ${msg.role === "user" ? "order-2" : "order-1"}`}>
+              <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end mb-8 sm:mb-10" : "justify-start mb-12 sm:mb-14"}`}>
+                <div className={`${msg.role === "user" ? "max-w-[80%] sm:max-w-[80%] order-2" : "max-w-[92%] sm:max-w-[88%] order-1"}`}>
                   {/* Handle messages with parts array (preferred format) */}
                   {msg.parts &&
                     Array.isArray(msg.parts) &&
@@ -452,10 +451,10 @@ export default function MayaChatInterface({
                           {/* Render text + image together if both exist */}
                           {(textParts.length > 0 || imageParts.length > 0) && (
                             <div
-                              className={`p-4 rounded-2xl transition-all duration-300 ${
+                              className={`rounded-xl transition-all duration-300 ${
                                 msg.role === "user"
-                                  ? "bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.12)] text-[#ffffff] backdrop-blur-[20px]"
-                                  : "bg-transparent border border-transparent text-[#e5e5e5]"
+                                  ? "bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.08)] text-[#ffffff] backdrop-blur-[20px] px-4 py-3"
+                                  : "bg-transparent border border-transparent text-[#e5e5e5] px-0 py-0"
                               }`}
                               role={msg.role === "assistant" ? "article" : undefined}
                             >
@@ -1092,10 +1091,10 @@ export default function MayaChatInterface({
                   {/* Fallback: Handle messages with content field but no parts array */}
                   {(!msg.parts || !Array.isArray(msg.parts)) && typeof (msg as any).content === "string" && (msg as any).content.trim() && (
                     <div
-                      className={`p-4 rounded-2xl transition-all duration-300 ${
+                      className={`rounded-xl transition-all duration-300 ${
                         msg.role === "user"
-                          ? "bg-[rgba(255,255,255,0.08)] border border-[rgba(255,255,255,0.12)] text-[#ffffff] backdrop-blur-[20px]"
-                          : "bg-transparent border border-transparent text-[#e5e5e5]"
+                          ? "bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.08)] text-[#ffffff] backdrop-blur-[20px] px-4 py-3"
+                          : "bg-transparent border border-transparent text-[#e5e5e5] px-0 py-0"
                       }`}
                       role={msg.role === "assistant" ? "article" : undefined}
                     >
@@ -1111,7 +1110,7 @@ export default function MayaChatInterface({
           {/* This prevents duplication with the feed creation loader below */}
           {isTyping && !isCreatingFeed && (
             <div className="flex justify-start">
-              <div className="bg-[rgba(255,255,255,0.04)] backdrop-blur-[20px] border border-[rgba(255,255,255,0.08)] p-3 rounded-2xl max-w-[85%]">
+              <div className="bg-[rgba(255,255,255,0.04)] backdrop-blur-[20px] border border-[rgba(255,255,255,0.08)] p-3 rounded-xl max-w-[85%]">
                 <div className="flex items-center gap-3">
                   <div className="flex gap-1">
                     <div className="w-1.5 h-1.5 rounded-full animate-bounce bg-[#e5e5e5]"></div>
@@ -1178,10 +1177,10 @@ export default function MayaChatInterface({
               isAtBottomRef.current = true
               scrollToBottom("smooth")
             }}
-            className="fixed bottom-32 right-4 sm:right-6 md:right-8 z-30 w-10 h-10 rounded-full bg-stone-950 text-white shadow-lg hover:bg-stone-800 transition-all duration-300 flex items-center justify-center touch-manipulation active:scale-95"
+            className="fixed bottom-32 right-4 sm:right-6 md:right-8 z-30 h-10 px-4 rounded-full border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.08)] backdrop-blur-[20px] text-white hover:bg-[rgba(255,255,255,0.12)] transition-all duration-300 flex items-center justify-center touch-manipulation active:scale-95"
             aria-label="Scroll to bottom"
           >
-            <ArrowDown size={18} strokeWidth={2} />
+            <span className="text-[10px] uppercase tracking-[0.2em] font-medium">Latest</span>
           </button>
         )}
       </div>
