@@ -1,4 +1,4 @@
-import { redirect, notFound } from "next/navigation"
+import { redirect } from "next/navigation"
 import { createServerClient } from "@/lib/supabase/server"
 import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
 import { neon } from "@neondatabase/serverless"
@@ -43,29 +43,6 @@ export default async function BlueprintCheckoutPage({
     }
   }
 
-  if (!hasPaidBlueprint) {
-    let featureEnabled = false
-    try {
-      const envFlag = process.env.FEATURE_PAID_BLUEPRINT_ENABLED
-      if (envFlag !== undefined) {
-        featureEnabled = envFlag === "true" || envFlag === "1"
-      } else {
-        const result = await sql`
-          SELECT value FROM admin_feature_flags
-          WHERE key = 'paid_blueprint_enabled'
-        `
-        featureEnabled = result[0]?.value === true || result[0]?.value === "true"
-      }
-    } catch (error) {
-      console.error("[Blueprint Checkout] Error checking feature flag:", error)
-      featureEnabled = false
-    }
-
-    if (!featureEnabled) {
-      console.log("[Blueprint Checkout] Feature disabled, returning 404")
-      return notFound()
-    }
-  }
 
   let clientSecret: string | null = null
 

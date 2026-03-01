@@ -477,7 +477,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
             <a href="https://sselfie.ai/auth/sign-up?checkout=studio_membership" className="btn-primary">
               Join Studio — €97/month
             </a>
-            <a href="https://sselfie.ai/blueprint" className="btn-secondary">
+            <a href="https://sselfie.ai/checkout/blueprint" className="btn-secondary">
               Try Feed Planner first
             </a>
           </div>
