@@ -46,11 +46,15 @@ interface MayaHeaderUnifiedProps {
   isLoggingOut?: boolean
   
   // Tab Switcher Props (integrated into header)
-  activeTab?: "photos" | "videos" | "prompts" | "training" | "feed"
-  onTabChange?: (tab: "photos" | "videos" | "prompts" | "training" | "feed") => void
+  activeTab?: "chat" | "photos" | "videos"
+  onTabChange?: (tab: "chat" | "photos" | "videos") => void
   photosCount?: number
   videosCount?: number
   disableFeedTab?: boolean
+
+  // ... (dots) menu actions — Maya-specific quick actions
+  onNewProject?: () => void
+  onHistory?: () => void
   
   // Access Control
   showModeToggle?: boolean // Show Pro/Classic toggle (only for membership users)
@@ -109,13 +113,17 @@ export default function MayaHeaderUnified({
   photosCount,
   videosCount,
   disableFeedTab = false,
+  onNewProject,
+  onHistory,
 }: MayaHeaderUnifiedProps) {
   const [isGuideMenuOpen, setIsGuideMenuOpen] = useState(false)
+  const [isDotsMenuOpen, setIsDotsMenuOpen] = useState(false)
   const [guides, setGuides] = useState<Guide[]>([])
   const [isLoadingGuides, setIsLoadingGuides] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const guidePanelRef = useRef<HTMLDivElement>(null)
+  const dotsMenuRef = useRef<HTMLDivElement>(null)
   const { toast } = useToast()
   const formattedCredits = Number.isFinite(credits) ? Math.round(credits).toLocaleString() : "0"
 
@@ -210,18 +218,28 @@ export default function MayaHeaderUnified({
       }
     }
 
+    const handleDotsMenuClickOutside = (event: MouseEvent) => {
+      if (dotsMenuRef.current && !dotsMenuRef.current.contains(event.target as Node)) {
+        setIsDotsMenuOpen(false)
+      }
+    }
+
     if (showNavMenu) {
       document.addEventListener("mousedown", handleClickOutside)
     }
     if (isGuideMenuOpen) {
       document.addEventListener("mousedown", handleGuidePanelClickOutside)
     }
+    if (isDotsMenuOpen) {
+      document.addEventListener("mousedown", handleDotsMenuClickOutside)
+    }
 
     return () => {
       document.removeEventListener("mousedown", handleClickOutside)
       document.removeEventListener("mousedown", handleGuidePanelClickOutside)
+      document.removeEventListener("mousedown", handleDotsMenuClickOutside)
     }
-  }, [showNavMenu, isGuideMenuOpen])
+  }, [showNavMenu, isGuideMenuOpen, isDotsMenuOpen])
 
   // Unified header styling - same for both modes
   // Mobile optimized: proper touch targets, safe area insets, responsive spacing
@@ -387,6 +405,58 @@ export default function MayaHeaderUnified({
               />
             )
           )}
+
+          {/* ... (Dots) Menu — Maya-specific quick actions */}
+          <div className="relative" ref={dotsMenuRef}>
+            <button
+              onClick={() => setIsDotsMenuOpen((prev) => !prev)}
+              className="touch-manipulation active:scale-95 flex items-center justify-center min-w-[44px] min-h-[44px] rounded-full border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.06)] transition-colors px-3"
+              aria-label="More options"
+              aria-expanded={isDotsMenuOpen}
+            >
+              <span className="text-[18px] font-medium text-[#ffffff] leading-none tracking-[0.05em]">···</span>
+            </button>
+            {isDotsMenuOpen && (
+              <div className="absolute right-0 top-[calc(100%+8px)] w-52 rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(10,10,10,0.92)] backdrop-blur-[20px] overflow-hidden shadow-[0_20px_40px_rgba(0,0,0,0.4)] z-[200]">
+                {onSettings && (
+                  <button
+                    onClick={() => { onSettings!(); setIsDotsMenuOpen(false) }}
+                    className="touch-manipulation w-full text-left px-5 py-3.5 hover:bg-[rgba(255,255,255,0.06)] transition-colors"
+                    style={{ fontFamily: 'var(--font-body, Inter)', fontSize: '11px', fontWeight: 500, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.25em' }}
+                  >
+                    Settings
+                  </button>
+                )}
+                {onNewProject && (
+                  <button
+                    onClick={() => { onNewProject!(); setIsDotsMenuOpen(false) }}
+                    className="touch-manipulation w-full text-left px-5 py-3.5 hover:bg-[rgba(255,255,255,0.06)] transition-colors border-t border-[rgba(255,255,255,0.06)]"
+                    style={{ fontFamily: 'var(--font-body, Inter)', fontSize: '11px', fontWeight: 500, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.25em' }}
+                  >
+                    New Project
+                  </button>
+                )}
+                {onHistory && (
+                  <button
+                    onClick={() => { onHistory!(); setIsDotsMenuOpen(false) }}
+                    className="touch-manipulation w-full text-left px-5 py-3.5 hover:bg-[rgba(255,255,255,0.06)] transition-colors border-t border-[rgba(255,255,255,0.06)]"
+                    style={{ fontFamily: 'var(--font-body, Inter)', fontSize: '11px', fontWeight: 500, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.25em' }}
+                  >
+                    History
+                  </button>
+                )}
+                {onNavigation && (
+                  <button
+                    onClick={() => { onNavigation('prompts'); setIsDotsMenuOpen(false) }}
+                    className="touch-manipulation w-full text-left px-5 py-3.5 hover:bg-[rgba(255,255,255,0.06)] transition-colors border-t border-[rgba(255,255,255,0.06)]"
+                    style={{ fontFamily: 'var(--font-body, Inter)', fontSize: '11px', fontWeight: 500, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.25em' }}
+                  >
+                    Prompts Library
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
 
           {/* Menu Button */}
           {onNavigation ? (
