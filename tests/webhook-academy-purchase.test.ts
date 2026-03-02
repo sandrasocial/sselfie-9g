@@ -169,5 +169,12 @@ describe("stripe webhook academy purchase branch", () => {
         (query) => query.includes("INSERT INTO user_tags") && query.includes("WHERE NOT EXISTS"),
       ),
     ).toBe(true)
+
+    expect(
+      queries.some(
+        (query) =>
+          query.includes("INSERT INTO user_tags (user_id, tag)") && !query.includes("created_at"),
+      ),
+    ).toBe(true)
   })
 })

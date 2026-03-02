@@ -4,9 +4,31 @@
 ---
 
 ## Last Updated
-2026-03-02 08:54 CET — Updated by Codex (Stripe academy unlock webhook hardening)
+2026-03-02 09:19 CET — Updated by Codex (Stripe academy webhook production hotfix)
 
 ## Last Task Completed
+Stripe academy webhook production hotfix completed:
+- Scope:
+  - Ran controlled signed replay against production webhook endpoint and reproduced a live failure:
+    - `checkout.session.completed` returned `500`
+    - `webhook_errors.error_message`: `column "created_at" of relation "user_tags" does not exist`
+  - Root cause: academy mini-product branch inserted `user_tags (user_id, tag, created_at)` while production schema uses `tagged_at`.
+  - Patched webhook insert to schema-safe form:
+    - `INSERT INTO user_tags (user_id, tag) ... WHERE NOT EXISTS (...)`
+    - relies on table default timestamp column, avoiding env/schema drift.
+  - Extended regression test to assert no explicit `created_at` column in user-tag insert SQL.
+- Files updated:
+  - `app/api/webhooks/stripe/route.ts`
+  - `tests/webhook-academy-purchase.test.ts`
+- Validation:
+  - Test-first:
+    - New assertion failed before patch (`expected false to be true`)
+    - Passed after patch.
+  - `pnpm vitest run tests/webhook-academy-purchase.test.ts tests/monthly-drops-access-response.test.ts tests/monthly-drops-clickthrough.test.ts tests/academy-access-gate.test.ts tests/academy-journey.test.ts` passed (11/11)
+  - `pnpm build` passed
+  - Live evidence query after replay:
+    - latest `webhook_errors` includes `checkout.session.completed` + `column "created_at" of relation "user_tags" does not exist` (captured before hotfix deploy)
+
 Stripe academy unlock webhook hardening completed:
 - Scope:
   - Reproduced and patched a high-risk unlock-path issue in `checkout.session.completed` handling for `academy_mini_product`.

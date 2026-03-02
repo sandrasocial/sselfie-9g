@@ -865,8 +865,8 @@ export async function POST(request: NextRequest) {
             }
 
             await sql`
-              INSERT INTO user_tags (user_id, tag, created_at)
-              SELECT ${academyUserId}, ${academyProduct.tag}, NOW()
+              INSERT INTO user_tags (user_id, tag)
+              SELECT ${academyUserId}, ${academyProduct.tag}
               WHERE NOT EXISTS (
                 SELECT 1
                 FROM user_tags
