@@ -28,6 +28,10 @@ Stripe academy webhook production hotfix completed:
   - `pnpm build` passed
   - Live evidence query after replay:
     - latest `webhook_errors` includes `checkout.session.completed` + `column "created_at" of relation "user_tags" does not exist` (captured before hotfix deploy)
+  - Post-deploy production verification (controlled signed replay):
+    - `POST https://sselfie.ai/api/webhooks/stripe` returned `200` with `{ "received": true }`
+    - replay event persisted in `webhook_events` (`stripe_event_id = evt_codex_live_smoke_1772439608583`)
+    - academy entitlement row remained single + active for smoke payment intent (`pi_codex_smoke_20260227`), proving idempotent unlock persistence.
 
 Stripe academy unlock webhook hardening completed:
 - Scope:
