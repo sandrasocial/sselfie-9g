@@ -4,9 +4,26 @@
 ---
 
 ## Last Updated
-2026-03-02 09:47 CET — Updated by Codex (academy pipeline smoke checkpoint)
+2026-03-02 13:52 CET — Updated by Codex (email lifecycle owner de-dup)
 
 ## Last Task Completed
+Email lifecycle owner conflict resolved (Task 1 complete):
+- Scope:
+  - Selected `onboarding-sequence` as the single owner for Studio onboarding lifecycle sends.
+  - Disabled `welcome-sequence` route to prevent accidental duplicate onboarding sends.
+  - Removed welcome route from mixed-route mail architecture contract and added explicit disabled-route assertion.
+- Files updated:
+  - `app/api/cron/welcome-sequence/route.ts`
+  - `tests/email-routing.test.ts`
+- Validation:
+  - Test-first: `pnpm vitest run tests/email-routing.test.ts --exclude '.claude/**'` failed before patch, then passed after patch (4/4).
+  - `pnpm eslint app/api/cron/welcome-sequence/route.ts tests/email-routing.test.ts` passed (0 errors/warnings).
+  - `pnpm build` passed.
+- Result:
+  - `welcome-sequence` is now a protected no-op guard route (`disabled: true`, `reason: sequence_owner_changed`).
+  - Overlap removed at runtime path level; onboarding ownership is explicit and safe.
+
+Previous milestone logs:
 Academy backend pipeline smoke checkpoint completed (no code changes in this slice):
 - Scope:
   - Ran authenticated production smoke for non-member + member flows (new test users).

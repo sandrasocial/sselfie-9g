@@ -15,7 +15,6 @@ const broadcastOnlyRoutes = [
 
 const mixedRoutes = [
   "app/api/cron/send-blueprint-followups/route.ts",
-  "app/api/cron/welcome-sequence/route.ts",
 ]
 
 const transactionalRoutes = [
@@ -26,6 +25,8 @@ const transactionalRoutes = [
   "app/api/cron/milestone-bonuses/route.ts",
   "app/api/cron/win-back-sequence/route.ts",
 ]
+
+const disabledLegacyRoutes = ["app/api/cron/welcome-sequence/route.ts"]
 
 describe("Email routing separation", () => {
   it("broadcast-only routes should not call sendEmail", () => {
@@ -40,6 +41,15 @@ describe("Email routing separation", () => {
     for (const route of mixedRoutes) {
       const contents = fs.readFileSync(path.join(ROOT, route), "utf8")
       expect(contents).toContain("enqueueAndProcessMarketingRun")
+    }
+  })
+
+  it("disabled legacy routes should not send mail directly", () => {
+    for (const route of disabledLegacyRoutes) {
+      const contents = fs.readFileSync(path.join(ROOT, route), "utf8")
+      expect(contents).toContain("DISABLED")
+      expect(contents).not.toContain("enqueueAndProcessMarketingRun")
+      expect(contents).not.toContain("sendEmail(")
     }
   })
 
