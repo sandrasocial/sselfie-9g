@@ -82,8 +82,12 @@ export default function SignUpPage() {
 
       // Success! Redirect to Studio (Maya by default for first-time flow)
       const urlParams = new URLSearchParams(window.location.search)
-      const nextParam = resolvePostAuthRedirect(urlParams.get("next"))
-      router.push(nextParam)
+      const checkoutParam = urlParams.get("checkout")
+      let redirectTo = resolvePostAuthRedirect(urlParams.get("next"))
+      if (checkoutParam === "studio_membership") {
+        redirectTo = "/checkout/membership"
+      }
+      router.push(redirectTo)
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred")
       setIsLoading(false)
@@ -146,9 +150,13 @@ export default function SignUpPage() {
       if (!signInError && signInData.session) {
         // Success! Redirect to Studio (Maya by default for first-time flow)
         const urlParams = new URLSearchParams(window.location.search)
-        const nextParam = resolvePostAuthRedirect(urlParams.get("next"))
-        console.log("[Sign Up] ✅ Signed in successfully, redirecting to:", nextParam)
-        router.push(nextParam)
+        const checkoutParam = urlParams.get("checkout")
+        let redirectTo = resolvePostAuthRedirect(urlParams.get("next"))
+        if (checkoutParam === "studio_membership") {
+          redirectTo = "/checkout/membership"
+        }
+        console.log("[Sign Up] ✅ Signed in successfully, redirecting to:", redirectTo)
+        router.push(redirectTo)
         return
       }
 
