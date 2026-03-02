@@ -4,9 +4,33 @@
 ---
 
 ## Last Updated
-2026-03-02 14:05 CET — Updated by Codex (onboarding cron schedule activation)
+2026-03-02 14:18 CET — Updated by Codex (SEQ-01 live-state verification vs North report)
 
 ## Last Task Completed
+SEQ-01 North report verification completed (live Resend + code truth check):
+- Scope:
+  - Verified all 5 claimed SEQ-01 broadcast IDs against live Resend API.
+  - Verified all 6 claimed segment IDs against live Resend API.
+  - Cross-checked runtime code path on `main` for nurture delivery ownership.
+- Results:
+  - Broadcast IDs:
+    - All 5 IDs exist, but all are `draft` with `sent_at = null` and `scheduled_at = null`.
+    - All 5 have `audience_id = null` and `segment_id = null` (not bound to recipients yet).
+  - Segment IDs:
+    - Claimed SEQ-01 segment IDs from North report are not present in current live segment list.
+    - `GET /segments` returned 58 segments; matched count for claimed IDs: `0`.
+    - Direct lookups for claimed IDs return `404 Audience not found`.
+  - CTA payload check:
+    - N3/N4/N5 drafts include `/checkout/membership` link.
+    - N1 includes strategy-link placeholder.
+    - N2 has no checkout CTA (as expected).
+  - Code-path truth:
+    - Production nurture is transactional in `app/api/cron/nurture-sequence/route.ts` (no segment/broadcast dependency).
+    - Studio onboarding owner is `onboarding-sequence`; `welcome-sequence` is disabled no-op.
+- Verdict:
+  - North claim "`SEQ-01 LIVE & READY TO ENROLL`" is **not fully confirmed** in current account state.
+  - Accurate status is: drafts exist, but enrollment wiring (valid segments + broadcast audience binding/scheduling) is not fully active.
+
 Email reboot Task 3 completed (onboarding owner now scheduled):
 - Scope:
   - Activated `onboarding-sequence` as a scheduled Vercel cron after welcome-route de-dup.
