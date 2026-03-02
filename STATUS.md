@@ -4,9 +4,31 @@
 ---
 
 ## Last Updated
-2026-03-02 09:19 CET — Updated by Codex (Stripe academy webhook production hotfix)
+2026-03-02 09:47 CET — Updated by Codex (academy pipeline smoke checkpoint)
 
 ## Last Task Completed
+Academy backend pipeline smoke checkpoint completed (no code changes in this slice):
+- Scope:
+  - Ran authenticated production smoke for non-member + member flows (new test users).
+  - Verified entitlement persistence for mini-products across relogin.
+  - Verified monthly-drops access response semantics for both member and non-member users.
+  - Cross-checked current UI behavior in `membership-home-card.tsx` and `maya-chat-screen.tsx`.
+- Results:
+  - Non-member:
+    - `/api/academy/monthly-drops` returns `200` with `hasAccess: false` (expected paywall semantics).
+    - `/api/academy/my-products` returns owned mini-product entitlements correctly.
+    - Owned mini-product entitlement persisted after logout/login.
+  - Member:
+    - `/api/academy/monthly-drops` returns `200` with `hasAccess: true`.
+    - `monthlyDrops` payload length is `0` in current production data.
+    - Membership home card "Explore →" CTA did not render because CTA is conditional on a non-empty monthly-drop title.
+  - Data verification:
+    - blocked: no published drops in academy_monthly_drops table.
+    - `academy_monthly_drops` currently has `0` published rows in production DB, so click-through/download tracking path cannot be exercised end-to-end yet.
+- Validation commands:
+  - `pnpm vitest run tests/monthly-drops-clickthrough.test.ts tests/membership-home-card.test.tsx tests/academy-access-gate.test.ts tests/monthly-drops-access-response.test.ts` (passed 8/8)
+  - `pnpm build` (passed)
+
 Stripe academy webhook production hotfix completed:
 - Scope:
   - Ran controlled signed replay against production webhook endpoint and reproduced a live failure:
