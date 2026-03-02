@@ -4,9 +4,25 @@
 ---
 
 ## Last Updated
-2026-03-02 14:01 CET — Updated by Codex (email lifecycle + blocker verification)
+2026-03-02 14:05 CET — Updated by Codex (onboarding cron schedule activation)
 
 ## Last Task Completed
+Email reboot Task 3 completed (onboarding owner now scheduled):
+- Scope:
+  - Activated `onboarding-sequence` as a scheduled Vercel cron after welcome-route de-dup.
+  - Staggered schedule to avoid 10:00 email cron collisions.
+- Files updated:
+  - `vercel.json`
+- Validation:
+  - `pnpm vitest run tests/email-routing.test.ts --exclude '.claude/**'` passed (4/4)
+  - `pnpm build` passed
+- Result:
+  - Added `/api/cron/onboarding-sequence` to Vercel cron config at `5 10 * * *` (10:05 daily UTC).
+  - Current scheduled email crons:
+    - `/api/cron/win-back-sequence` at `0 10 * * *`
+    - `/api/cron/nurture-sequence` at `0 10 * * *`
+    - `/api/cron/onboarding-sequence` at `5 10 * * *`
+
 Email reboot Task 2 validation + blockers checkpoint completed (read-only):
 - Scope:
   - Validated nurture reboot behavior directly against production DB via read-only queries (no manual send trigger).
