@@ -4,9 +4,22 @@
 ---
 
 ## Last Updated
-2026-03-02 09:39 CET — Updated by Codex (Academy monthly-drops non-member response hardening)
+2026-03-02 08:54 CET — Updated by Codex (Stripe academy unlock webhook hardening)
 
 ## Last Task Completed
+Stripe academy unlock webhook hardening completed:
+- Scope:
+  - Reproduced and patched a high-risk unlock-path issue in `checkout.session.completed` handling for `academy_mini_product`.
+  - Replaced invalid conflict targets (`ON CONFLICT (user_id, course_id)` and `ON CONFLICT (user_id, tag)`) with production-safe idempotent insert patterns that do not depend on missing unique indexes.
+  - Removed schema-mutation behavior from webhook path (no `CREATE TABLE IF NOT EXISTS` in runtime webhook handling).
+  - Ensured academy purchase insert includes required payment fields (`amount_paid`, `currency`, and `stripe_payment_intent_id`).
+- Files updated:
+  - `app/api/webhooks/stripe/route.ts`
+  - `tests/webhook-academy-purchase.test.ts` (new)
+- Validation:
+  - `pnpm vitest run tests/webhook-academy-purchase.test.ts tests/monthly-drops-access-response.test.ts tests/monthly-drops-clickthrough.test.ts tests/academy-access-gate.test.ts tests/academy-journey.test.ts` passed (11/11)
+  - `pnpm build` passed
+
 Academy monthly-drops non-member response hardening completed:
 - Scope:
   - Reproduced production console noise path: non-members hitting `/api/academy/monthly-drops` received `403`, which surfaced as repeated failed-resource errors in Studio.

@@ -774,87 +774,144 @@ export async function POST(request: NextRequest) {
             }
           }
 
-          if (productType === "academy_mini_product") {
+        if (productType === "academy_mini_product") {
             const productId = session.metadata.product_id
-            const academyUserId = session.metadata.user_id
+            let academyUserId = session.metadata.user_id as string | undefined
             const academyCustomerEmail = session.customer_details?.email || session.customer_email
+            const academyProduct = ACADEMY_PRODUCTS[productId as keyof typeof ACADEMY_PRODUCTS]
 
-            if (academyUserId && productId) {
+            if (!academyProduct) {
+              throw new Error(`Unknown academy product id in metadata: ${String(productId)}`)
+            }
+
+            if (!academyUserId && academyCustomerEmail) {
+              const resolvedUser = await sql`
+                SELECT id
+                FROM users
+                WHERE LOWER(email) = LOWER(${academyCustomerEmail})
+                LIMIT 1
+              `
+              if (resolvedUser.length > 0) {
+                academyUserId = resolvedUser[0].id
+              }
+            }
+
+            if (!academyUserId) {
+              throw new Error("Missing academy user_id for purchase unlock")
+            }
+
+            const paymentIntentId =
+              typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id || null
+            const amountPaid = typeof session.amount_total === "number" ? session.amount_total : academyProduct.price
+            const purchaseCurrency =
+              typeof session.currency === "string" && session.currency.length > 0
+                ? session.currency.toLowerCase()
+                : academyProduct.currency
+
+            if (paymentIntentId) {
               await sql`
-                CREATE TABLE IF NOT EXISTS academy_course_purchases (
-                  id SERIAL PRIMARY KEY,
-                  user_id TEXT NOT NULL,
-                  course_id TEXT NOT NULL,
-                  status TEXT NOT NULL DEFAULT 'active',
-                  purchased_at TIMESTAMP DEFAULT NOW(),
-                  UNIQUE(user_id, course_id)
+                INSERT INTO academy_course_purchases (
+                  user_id,
+                  course_id,
+                  stripe_payment_intent_id,
+                  amount_paid,
+                  currency,
+                  status,
+                  purchased_at
+                )
+                VALUES (
+                  ${academyUserId},
+                  ${productId},
+                  ${paymentIntentId},
+                  ${amountPaid},
+                  ${purchaseCurrency},
+                  'active',
+                  NOW()
+                )
+                ON CONFLICT (stripe_payment_intent_id)
+                DO UPDATE SET
+                  status = 'active',
+                  amount_paid = EXCLUDED.amount_paid,
+                  currency = EXCLUDED.currency,
+                  purchased_at = NOW()
+              `
+            } else {
+              await sql`
+                INSERT INTO academy_course_purchases (
+                  user_id,
+                  course_id,
+                  stripe_payment_intent_id,
+                  amount_paid,
+                  currency,
+                  status,
+                  purchased_at
+                )
+                SELECT
+                  ${academyUserId},
+                  ${productId},
+                  NULL,
+                  ${amountPaid},
+                  ${purchaseCurrency},
+                  'active',
+                  NOW()
+                WHERE NOT EXISTS (
+                  SELECT 1
+                  FROM academy_course_purchases
+                  WHERE user_id = ${academyUserId}
+                    AND course_id = ${productId}
+                    AND status = 'active'
                 )
               `
+            }
 
-              await sql`
-                INSERT INTO academy_course_purchases (user_id, course_id, status, purchased_at)
-                VALUES (${academyUserId}, ${productId}, 'active', NOW())
-                ON CONFLICT (user_id, course_id) DO NOTHING
-              `
+            await sql`
+              INSERT INTO user_tags (user_id, tag, created_at)
+              SELECT ${academyUserId}, ${academyProduct.tag}, NOW()
+              WHERE NOT EXISTS (
+                SELECT 1
+                FROM user_tags
+                WHERE user_id = ${academyUserId}
+                  AND tag = ${academyProduct.tag}
+              )
+            `
 
-              await sql`
-                CREATE TABLE IF NOT EXISTS user_tags (
-                  id SERIAL PRIMARY KEY,
-                  user_id TEXT NOT NULL,
-                  tag TEXT NOT NULL,
-                  created_at TIMESTAMP DEFAULT NOW(),
-                  UNIQUE(user_id, tag)
-                )
-              `
-
-              const academyProduct = ACADEMY_PRODUCTS[productId as keyof typeof ACADEMY_PRODUCTS]
-              const tag = academyProduct?.tag
-              if (tag) {
-                await sql`
-                  INSERT INTO user_tags (user_id, tag)
-                  VALUES (${academyUserId}, ${tag})
-                  ON CONFLICT (user_id, tag) DO NOTHING
-                `
+            if (academyCustomerEmail) {
+              const upsellMap: Record<string, { name: string; price: string; productId: string }> = {
+                what_to_say: { name: "Show Up", price: "EUR 27", productId: "show_up" },
+                show_up: { name: "Get Paid", price: "EUR 47", productId: "get_paid" },
+                get_paid: {
+                  name: "Creator Studio membership",
+                  price: "EUR 97/month",
+                  productId: "membership",
+                },
+                ai_photo_prompts: { name: "What To Say", price: "EUR 17", productId: "what_to_say" },
               }
-
-              if (academyCustomerEmail) {
-                const upsellMap: Record<string, { name: string; price: string; productId: string }> = {
-                  what_to_say: { name: "Show Up", price: "EUR 27", productId: "show_up" },
-                  show_up: { name: "Get Paid", price: "EUR 47", productId: "get_paid" },
-                  get_paid: {
-                    name: "Creator Studio membership",
-                    price: "EUR 97/month",
-                    productId: "membership",
-                  },
-                  ai_photo_prompts: { name: "What To Say", price: "EUR 17", productId: "what_to_say" },
-                }
-                const productNames: Record<string, string> = {
-                  what_to_say: "What To Say",
-                  show_up: "Show Up",
-                  get_paid: "Get Paid",
-                  ai_photo_prompts: "AI Photo Prompt Pack",
-                }
-                const productName = productNames[productId] || productId
-                const upsell = upsellMap[productId]
-                const firstName = academyCustomerEmail.split("@")[0]
-                const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
-
-                const upsellLine = upsell
-                  ? `\n\nReady for the next step? ${upsell.name} (${upsell.price}) is waiting for you.`
-                  : ""
-
-                const emailText = `Hey ${firstName},\n\nYou just got "${productName}" — I'm so glad you did this for yourself.\n\nLog in to access it any time: ${siteUrl}/academy${upsellLine}\n\n— Sandra`
-                const emailHtml = `<p>Hey ${firstName},</p><p>You just got <strong>${productName}</strong> — I'm so glad you did this for yourself.</p><p><a href="${siteUrl}/academy">Access it here</a></p>${upsell ? `<p>Ready for the next step? <strong>${upsell.name}</strong> (${upsell.price}) is waiting for you.</p>` : ""}<p>— Sandra</p>`
-
-                await sendEmail({
-                  to: academyCustomerEmail,
-                  subject: `You're in — here's your ${productName} 🎉`,
-                  html: emailHtml,
-                  text: emailText,
-                  emailType: "academy_purchase_confirmation",
-                  tags: ["academy", productId],
-                })
+              const productNames: Record<string, string> = {
+                what_to_say: "What To Say",
+                show_up: "Show Up",
+                get_paid: "Get Paid",
+                ai_photo_prompts: "AI Photo Prompt Pack",
               }
+              const productName = productNames[productId] || productId
+              const upsell = upsellMap[productId]
+              const firstName = academyCustomerEmail.split("@")[0]
+              const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
+
+              const upsellLine = upsell
+                ? `\n\nReady for the next step? ${upsell.name} (${upsell.price}) is waiting for you.`
+                : ""
+
+              const emailText = `Hey ${firstName},\n\nYou just got "${productName}" — I'm so glad you did this for yourself.\n\nLog in to access it any time: ${siteUrl}/academy${upsellLine}\n\n— Sandra`
+              const emailHtml = `<p>Hey ${firstName},</p><p>You just got <strong>${productName}</strong> — I'm so glad you did this for yourself.</p><p><a href="${siteUrl}/academy">Access it here</a></p>${upsell ? `<p>Ready for the next step? <strong>${upsell.name}</strong> (${upsell.price}) is waiting for you.</p>` : ""}<p>— Sandra</p>`
+
+              await sendEmail({
+                to: academyCustomerEmail,
+                subject: `You're in — here's your ${productName} 🎉`,
+                html: emailHtml,
+                text: emailText,
+                emailType: "academy_purchase_confirmation",
+                tags: ["academy", productId],
+              })
             }
 
             break
