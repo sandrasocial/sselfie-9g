@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
           productType,
           message: "Monthly Drops access requires Studio Membership",
         },
-        { status: 403 },
+        { status: 200 },
       )
     }
 

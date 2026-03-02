@@ -4,9 +4,22 @@
 ---
 
 ## Last Updated
-2026-03-01 22:31 CET — Updated by Codex (Academy backend pipeline hardening: access/unlock/monthly-drops)
+2026-03-02 09:39 CET — Updated by Codex (Academy monthly-drops non-member response hardening)
 
 ## Last Task Completed
+Academy monthly-drops non-member response hardening completed:
+- Scope:
+  - Reproduced production console noise path: non-members hitting `/api/academy/monthly-drops` received `403`, which surfaced as repeated failed-resource errors in Studio.
+  - Adjusted monthly-drops API non-member response to return a non-error payload (`200` with `hasAccess: false`) while preserving paywall semantics in body.
+  - Added regression test asserting non-member payload shape and status contract.
+- Files updated:
+  - `app/api/academy/monthly-drops/route.ts`
+  - `tests/monthly-drops-access-response.test.ts` (new)
+- Validation:
+  - `pnpm vitest run tests/monthly-drops-access-response.test.ts tests/monthly-drops-clickthrough.test.ts tests/academy-access-gate.test.ts` passed (6/6)
+  - `pnpm eslint app/api/academy/monthly-drops/route.ts tests/monthly-drops-access-response.test.ts` passed (0 errors, warnings only)
+  - `pnpm build` passed
+
 Academy backend pipeline hardening completed (access gate accuracy + monthly-drops reliability):
 - Scope:
   - Added deterministic live-vs-test entitlement selection for subscription checks used by Academy access decisions.
