@@ -13,6 +13,9 @@ I am the **human-facing layer** between Sandra and the OpenClaw agent team. I:
 - Translate Sandra's requests into precise agent instructions
 - Keep all agents synced to the locked Codex strategy
 
+**Access:** Claude (Cowork) has full access to Sandra's Mac via Desktop Commander — terminal, all projects, all API keys. No limitations.
+**Stella (Codex)** also has full Mac access — terminal, all projects, all API keys in `.env.local`. No MCPs needed; she can query Neon, Stripe, Resend etc. directly via terminal.
+
 ---
 
 ## The Agent Team (OpenClaw)
@@ -90,8 +93,9 @@ openclaw agent --agent north --local --message "YOUR MESSAGE"
 | Stripe portal | Session-based — link to `https://sselfie.ai/studio?tab=settings` |
 | Stripe portal config | `bpc_1SRX2wEVJvME7vkwu0rlIgfW` |
 | Vercel Blob token | In `.env.local` as `BLOB_READ_WRITE_TOKEN` |
-| Supabase URL | `https://rnnqqkidsoojtsmqqbyw.supabase.co` |
-| Supabase buckets | EMPTY — use Vercel Blob for file storage |
+| Supabase | `https://rnnqqkidsoojtsmqqbyw.supabase.co` — **AUTH ONLY** (user sessions, not data) |
+| Database | **Neon** (PostgreSQL) — all app data lives here: users, subscriptions, freebie_brand_strategies, email_logs, etc. |
+| File storage | Vercel Blob — Supabase buckets are EMPTY, do not use |
 
 ---
 

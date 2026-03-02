@@ -21,14 +21,14 @@
 4. **Test-first mindset** – for bugfixes write a repro or failing test before patching. If automated tests don't exist, document the manual steps and regressions.
 5. **No broad refactors** without explicit ask; focus on localized changes that support diagnostics, automations, or reliability.
 
-## Current focus areas
+## Current focus areas (updated 2026-03-02)
 
-- **14-day AI operations sprint**: Track execution in `docs/AI_OPERATIONS_EXECUTION_BOARD.md` and baseline evidence in `output/automation/day1-kickoff-2026-02-12.md`.
-- **Marketing automation**: Resend segments + broadcast loops (restrictions: 2 req/sec, `marketing_send_queue`, Upstash locks). Fix 429s, missing segments, email performance reporting, and ensure daily funnel + weekly cohort automation outputs stay accurate.
-- **Reconciliation pipelines**: `reconcile-generations`, `reconcile-subscriptions`, `reconcile-feed-posts` – ensure they log cleanly, handle Vercel Blob/Replicate transitions, and surface errors on the admin dashboard.
-- **Executive visibility**: The dashboards under `app/(admin|diagnostics)` use cron output files; keep the instrumentation (funnel, cohort, triage) running and accurate.
-- **Clawdbot / Stella**: Continue improving delegation rules, cost controls, and proactive monitoring; treat automation outputs as read-only unless requested.
-- **State + memory**: Keep `docs/CODEX_CONTEXT.md`, `AGENTS.md`, and the new `State Summary Template` updated before branching.
+- **Email system reboot**: `nurture-sequence` cron needs full rewrite for `freebie_brand_strategies` table (new freebie). New timing: Day 2/5/9/14/20. New templates: N1-N5. Task spec: `tasks/codex-EMAIL-SYSTEM-AUDIT-AND-REBOOT-2026-03-02.md`
+- **Freebie funnel**: New freebie live at `/freebie/brand-strategy`. DB table: `freebie_brand_strategies`. Upsell fix SHIPPED commit `39bf931` — `?checkout=studio_membership` now correctly redirects. Source tag: `source=freebie-strategy` in Resend.
+- **Agent V1** (Website Agent €27/mo): Spec at `docs/codex-tasks/AGENT-V1-EXECUTION-SPEC-2026-02-28.md`. Waiting Sandra go/no-go.
+- **Academy**: Monthly drops E2E blocked — no published rows in `academy_monthly_drops` table. Marked in STATUS.md commit `4b28007a`.
+- **Reconciliation pipelines**: `reconcile-generations`, `reconcile-subscriptions`, `reconcile-feed-posts` — keep running and logging cleanly.
+- **State + memory**: `CLAUDE.md` (root) is the single source of truth. `AGENTS.md` for Stella's rules. `docs/CODEX_CONTEXT.md` for tech context. North's SHARED_MEMORY.md and NORTH_TASK_QUEUE.md are RETIRED.
 
 ## File map (anchor points for future work)
 
