@@ -4,9 +4,35 @@
 ---
 
 ## Last Updated
-2026-03-02 14:18 CET — Updated by Codex (SEQ-01 live-state verification vs North report)
+2026-03-02 16:11 CET — Updated by Codex (Vercel deploy blocker investigation + recovery)
 
 ## Last Task Completed
+Vercel deploy blocker investigation completed (task: `codex-VERCEL-DEPLOY-FIX-2026-03-02.md`):
+- Scope:
+  - Compared newly-added cron routes against stable `win-back-sequence` route shape:
+    - `app/api/cron/nurture-sequence/route.ts`
+    - `app/api/cron/onboarding-sequence/route.ts`
+    - `app/api/cron/win-back-sequence/route.ts`
+  - Reviewed `next.config.mjs` and `vercel.json` for deployment-time configuration conflicts.
+  - Pulled failing and successful Vercel deployment event logs via API to isolate failure phase.
+- Findings:
+  - Cron routes compile and deploy in preview without code changes.
+  - Failing production deploys showed:
+    - Build completed successfully.
+    - Failure occurred after `Deploying outputs...` with generic platform message:
+      - `Error: We encountered an internal error. Please try again.`
+  - Root cause is deployment-path/platform-side behavior (post-build), not route code syntax/import/runtime mismatch.
+- Recovery actions executed:
+  - Preview deploy succeeded:
+    - `dpl_BWDcRayndfZdBPotLdbJWrZLd2wk` (`READY`)
+  - Promoted preview deployment to production:
+    - `dpl_4zGqFNsygxSJo5maQb7Q5GRxz3wV` (`READY`, aliases include `sselfie.ai`)
+  - Verified direct production deploy path recovered:
+    - `dpl_ExqEhrN9hHRhRicFVBHdQKk5Yihn` (`READY`, same commit `3e8daa48`)
+- Result:
+  - Production is no longer stuck on stale build.
+  - No app code changes were required for cron route handlers.
+
 SEQ-01 North report verification completed (live Resend + code truth check):
 - Scope:
   - Verified all 5 claimed SEQ-01 broadcast IDs against live Resend API.
