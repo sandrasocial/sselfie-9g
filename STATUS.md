@@ -4,9 +4,26 @@
 ---
 
 ## Last Updated
-2026-03-02 13:52 CET — Updated by Codex (email lifecycle owner de-dup)
+2026-03-02 14:01 CET — Updated by Codex (email lifecycle + blocker verification)
 
 ## Last Task Completed
+Email reboot Task 2 validation + blockers checkpoint completed (read-only):
+- Scope:
+  - Validated nurture reboot behavior directly against production DB via read-only queries (no manual send trigger).
+  - Re-checked monthly-drops blocker state in production table.
+  - Re-checked E-01 reconciliation artifact currency.
+- Results:
+  - Nurture flow (`nurture-freebie-n1..n5`):
+    - Last 14d sends: `0`
+    - Duplicate sent/delivered rows (60d): `0`
+    - Due candidates now: `0` for all five touches.
+  - Monthly drops blocker:
+    - Table `academy_monthly_drops` has `0` rows in production.
+    - Schema uses `status` (not `is_published`) and current dataset is empty, so click-through E2E remains blocked until a drop is published.
+  - E-01:
+    - Latest reconciliation snapshot remains `output/automation/e01-subscriber-reconciliation-2026-02-28T16-42-46-461Z.md`.
+    - Business sign-off is still pending (no policy change needed in code).
+
 Email lifecycle owner conflict resolved (Task 1 complete):
 - Scope:
   - Selected `onboarding-sequence` as the single owner for Studio onboarding lifecycle sends.
