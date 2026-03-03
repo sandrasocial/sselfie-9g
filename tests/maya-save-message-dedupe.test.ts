@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 const mockGetAuthenticatedUser = vi.fn()
 const mockGetEffectiveNeonUser = vi.fn()
-const mockCreateServerClient = vi.fn()
 const mockGetChatMessages = vi.fn()
 const mockLoadChatById = vi.fn()
 const mockGenerateChatTitle = vi.fn()
@@ -16,10 +15,6 @@ vi.mock("@/lib/auth-helper", () => ({
 
 vi.mock("@/lib/simple-impersonation", () => ({
   getEffectiveNeonUser: mockGetEffectiveNeonUser,
-}))
-
-vi.mock("@/lib/supabase/server", () => ({
-  createServerClient: mockCreateServerClient,
 }))
 
 vi.mock("@/lib/data/maya", () => ({
@@ -36,7 +31,6 @@ describe("POST /api/maya/save-message dedupe", () => {
     vi.resetModules()
     vi.clearAllMocks()
 
-    mockCreateServerClient.mockResolvedValue({})
     mockGetAuthenticatedUser.mockResolvedValue({
       user: { id: "auth-user-1" },
       error: null,
