@@ -24,7 +24,13 @@ describe("maya layout hygiene", () => {
 
   it("keeps mobile input controls compact to avoid horizontal overflow", () => {
     const unifiedInput = read("components/sselfie/maya/maya-unified-input.tsx")
-    expect(unifiedInput).toContain("min-w-[72px] sm:min-w-[92px]")
-    expect(unifiedInput).toContain("min-w-[72px] sm:min-w-[96px]")
+    expect(unifiedInput).toContain("min-w-[56px] sm:min-w-[92px]")
+    expect(unifiedInput).toContain("min-w-[56px] sm:min-w-[96px]")
+  })
+
+  it("uses concise mobile action labels to reduce input bar clutter", () => {
+    const unifiedInput = read("components/sselfie/maya/maya-unified-input.tsx")
+    expect(unifiedInput).toContain("sm:hidden\">Image</span>")
+    expect(unifiedInput).toContain("sm:hidden\">Go</span>")
   })
 })
