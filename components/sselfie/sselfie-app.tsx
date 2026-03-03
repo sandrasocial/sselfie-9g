@@ -51,6 +51,7 @@ import {
   resolveStudioTab,
   type StudioTab,
 } from "@/lib/studio/tab-routing"
+import { scheduleStudioTabUpdate } from "@/lib/studio/tab-sync"
 import {
   shouldApplyBlueprintFallbackRouting,
   shouldRouteMemberToFeedPlannerOnMissingOnboarding,
@@ -385,6 +386,7 @@ export default function SselfieApp({
   }, [tabFromSearchParams])
 
   useEffect(() => {
+    let cancelScheduledTabSync: (() => void) | null = null
     const handlePopState = () => {
       const tabFromQuery = readStudioTabFromSearchParams(new URLSearchParams(window.location.search))
       const tabFromHash = readStudioTabFromHash(window.location.hash)
@@ -398,11 +400,17 @@ export default function SselfieApp({
           isMembership: isMembershipUser,
         })
 
-      setActiveTab((currentTab) => (currentTab === nextTab ? currentTab : nextTab))
+      cancelScheduledTabSync?.()
+      cancelScheduledTabSync = scheduleStudioTabUpdate(() => {
+        setActiveTab((currentTab) => (currentTab === nextTab ? currentTab : nextTab))
+      })
     }
 
     window.addEventListener("popstate", handlePopState)
-    return () => window.removeEventListener("popstate", handlePopState)
+    return () => {
+      cancelScheduledTabSync?.()
+      window.removeEventListener("popstate", handlePopState)
+    }
   }, [initialTab, isMembershipUser])
 
   useEffect(() => {
