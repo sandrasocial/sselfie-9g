@@ -1,6 +1,4 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
-import { getUserByAuthId } from "@/lib/user-mapping"
 import {
   saveChatMessage,
   learnFromInteraction,
@@ -11,11 +9,37 @@ import {
 } from "@/lib/data/maya"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 
+const DUPLICATE_WINDOW_MS = 120_000
+
+function normalizeMessageText(value: unknown): string {
+  if (typeof value !== "string") {
+    return ""
+  }
+  return value.replace(/\s+/g, " ").trim()
+}
+
+function normalizeCards(value: unknown): string {
+  if (!Array.isArray(value) || value.length === 0) {
+    return "null"
+  }
+  return JSON.stringify(value)
+}
+
+function isRecentEnough(createdAt: unknown, nowMs: number): boolean {
+  if (!createdAt) return false
+  const timestamp =
+    createdAt instanceof Date
+      ? createdAt.getTime()
+      : typeof createdAt === "string"
+        ? new Date(createdAt).getTime()
+        : Number.NaN
+  if (Number.isNaN(timestamp)) return false
+  return nowMs - timestamp <= DUPLICATE_WINDOW_MS
+}
+
 export async function POST(request: NextRequest) {
   try {
     console.log("[v0] ========== save-message API START ==========")
-
-    const supabase = await createServerClient()
 
     const { user, error: authError } = await getAuthenticatedUser()
 
@@ -99,9 +123,34 @@ export async function POST(request: NextRequest) {
     }
 
     const safeContent = content || ""
+    const normalizedIncomingContent = normalizeMessageText(safeContent)
+    const normalizedIncomingConceptCards = normalizeCards(conceptCards)
+    const normalizedIncomingFeedCards = normalizeCards(feedCards)
+    const existingMessages = await getChatMessages(chatId)
+
+    const nowMs = Date.now()
+    const duplicateMessage = [...existingMessages]
+      .reverse()
+      .find((msg: any) => {
+        if (msg.role !== role) return false
+        if (!isRecentEnough(msg.created_at, nowMs)) return false
+        const matchesContent = normalizeMessageText(msg.content) === normalizedIncomingContent
+        if (!matchesContent) return false
+        const matchesConceptCards = normalizeCards(msg.concept_cards) === normalizedIncomingConceptCards
+        const matchesFeedCards = normalizeCards(msg.feed_cards) === normalizedIncomingFeedCards
+        return matchesConceptCards && matchesFeedCards
+      })
+
+    if (duplicateMessage) {
+      console.log("[v0] ♻️ Duplicate message save skipped:", {
+        chatId,
+        role,
+        existingMessageId: duplicateMessage.id,
+      })
+      return NextResponse.json({ success: true, deduplicated: true, message: duplicateMessage })
+    }
 
     if (role === "user") {
-      const existingMessages = await getChatMessages(chatId)
       const userMessages = existingMessages.filter((msg) => msg.role === "user")
 
       // If this is the first user message, generate and update the chat title

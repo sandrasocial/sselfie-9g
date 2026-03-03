@@ -1030,50 +1030,8 @@ export default function MayaChatScreen({
             return newMessages
           })
 
-          // This ensures new concept cards are persisted and show in chat history
-          if (chatId && concepts && concepts.length > 0) {
-            // Extract text content from the message
-            let textContent = ""
-            if (lastAssistantMessage?.parts && Array.isArray(lastAssistantMessage.parts)) {
-              const textParts = lastAssistantMessage.parts.filter((p: any) => p.type === "text")
-              textContent = textParts
-                .map((p: any) => p.text)
-                .join("\n")
-                .trim()
-            }
-
-            console.log("[v0] Saving concept cards to database:", concepts.length)
-
-            // Remove the message from savedMessageIds so the save effect won't skip it
-            // OR directly save/update the concepts
-            fetch("/api/maya/save-message", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              credentials: "include",
-              body: JSON.stringify({
-                chatId,
-                role: "assistant",
-                content: textContent || "",
-                conceptCards: normalizedConcepts,
-                updateExisting: true, // Signal to update if message exists
-              }),
-            })
-              .then((res) => res.json())
-              .then((data) => {
-                if (data.success) {
-                  console.log("[v0] Concept cards saved successfully to database")
-                  // Mark the message as saved now (with concepts)
-                  if (messageId) {
-                    savedMessageIds.current.add(messageId)
-                  }
-                } else {
-                  console.error("[v0] Failed to save concept cards:", data.error)
-                }
-              })
-              .catch((error) => {
-                console.error("[v0] Error saving concept cards:", error)
-              })
-          }
+          // Assistant persistence is centralized in the save effect below to avoid duplicate rows.
+          // No direct save call here.
         }
         } catch (error: any) {
           console.error("[v0] ❌ Error generating concepts:", error)
@@ -1863,7 +1821,6 @@ export default function MayaChatScreen({
     if ((messageText || uploadedImage) && !isTyping) {
       // Build message content - use array format if there's an image, otherwise use string
       let messageContent: string | Array<{ type: string; text?: string; image?: string }>
-      let savedMessageContent: string // For saving to database (keep the marker format for backward compatibility)
 
       if (uploadedImage) {
         // Use array format with both text and image for AI SDK
@@ -1882,12 +1839,9 @@ export default function MayaChatScreen({
         })
         
         messageContent = contentParts
-        // For database, keep the old format with marker for backward compatibility
-        savedMessageContent = messageText ? `${messageText}\n\n[Inspiration Image: ${uploadedImage}]` : `[Inspiration Image: ${uploadedImage}]`
         console.log("[v0] ✅ Sending message with inspiration image:", uploadedImage.substring(0, 100) + "...")
       } else {
         messageContent = messageText
-        savedMessageContent = messageText
       }
 
       console.log("[v0] 📤 Sending message with settings:", {
@@ -1923,22 +1877,6 @@ export default function MayaChatScreen({
         } catch (error) {
           console.error("[v0] Error creating new chat:", error)
         }
-      }
-
-      // Save user message with the current chatId (using savedMessageContent for backward compatibility)
-      if (currentChatId) {
-        fetch("/api/maya/save-message", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({
-            chatId: currentChatId,
-            role: "user",
-            content: savedMessageContent,
-          }),
-        }).catch((error) => {
-          console.error("[v0] Error saving user message:", error)
-        })
       }
 
       // Send message using proper format - use 'parts' array for multimodal content
