@@ -11,9 +11,9 @@ Branch audited: `codex/arch-stability-completion-2026-03-03`
 
 ## Executive verdict
 
-Current status: **Not merge-ready yet**.
+Current status: **Merge-ready for frontend/funnel stabilization scope**.
 
-Reason: there are **3 P0 funnel/telemetry integrity issues** that can produce misleading funnel data or stale route behavior, plus several P1 cleanup items required for a clean/stable branch.
+Reason: previously identified P0/P1 frontend-funnel blockers are now addressed on this branch (see "Findings" and "What is left before merge").
 
 ## Canonical funnel map (current)
 
@@ -45,17 +45,17 @@ Reason: there are **3 P0 funnel/telemetry integrity issues** that can produce mi
 
 | Surface | Owner file(s) | What works | Risk / gap |
 |---|---|---|---|
-| Landing (`/`) | `app/page.tsx`, `components/sselfie/landing-page-new.tsx` | Checkout starts + top-funnel analytics fire | `isPaidBlueprintEnabled` is never set, so paid blueprint CTA is permanently hidden though feature-flag API exists |
+| Landing (`/`) | `app/page.tsx`, `components/sselfie/landing-page-new.tsx` | Checkout starts + top-funnel analytics fire; paid blueprint CTA now follows feature-flag API | No current P0/P1 blocker |
 | Freebie form (`/freebie/brand-strategy`) | `app/freebie/brand-strategy/page.tsx` | New freebie flow posts to canonical API and redirects to token page | No analytics event emitted for form submit/view/success |
 | Freebie result (`/strategy/[token]`) | `app/strategy/[token]/page.tsx` | Reads canonical `freebie_brand_strategies` and renders strategy pack | Upsell links route into mixed legacy/canonical paths (`/checkout/blueprint` and auth query param flow) |
 | Auth (`/auth/login`, `/auth/sign-up`) | `app/auth/login/page.tsx`, `app/auth/sign-up/page.tsx` | Login honors sanitized `returnTo`; sign-up handles membership checkout param | Login -> "Sign up" link drops `returnTo`; callback route still contains legacy blueprint side-effects |
-| Auth callback | `app/auth/callback/route.ts` | Session exchange + user sync works | Always redirects `/studio`; still writes `blueprint_subscribers` for free signups (legacy funnel coupling) |
+| Auth callback | `app/auth/callback/route.ts` | Session exchange + user sync works; legacy `blueprint_subscribers` side-effect removed from general signup | Always redirects `/studio` by design (current canonical activation destination) |
 | Checkout core | `app/checkout/page.tsx`, `app/actions/landing-checkout.ts` | Embedded checkout and success redirect path work | Purchase analytics attribution path is not reliable (see P0 findings) |
 | Checkout success | `components/checkout/success-content.tsx` | Handles paid blueprint polling and product-specific post-purchase states | Complex state branches; no explicit purchase analytics call from success UI |
 | App shell (`/studio`) | `app/studio/page.tsx`, `components/sselfie/sselfie-app.tsx` | Canonical tab shell, onboarding and activation flows in place | High complexity; still substantial auth/entitlement branching in UI layer |
 | Feed planner wrapper (`/feed-planner`) | `app/feed-planner/page.tsx`, `app/feed-planner/feed-planner-client.tsx` | Activation flow and onboarding gating are integrated | Emits two event names not accepted by analytics contract |
-| Legacy blueprint paid page (`/blueprint/paid`) | `app/blueprint/paid/page.tsx` | Redirects users to `/feed-planner` | Large legacy page logic remains in file but is effectively dead; legacy emails still deep-link here |
-| Checkout upgrade (`/checkout-upgrade`) | `app/checkout-upgrade/page.tsx` | Stripe checkout surface exists | On completion it redirects to `/dashboard?upgraded=true`, but `/dashboard` page does not exist |
+| Legacy blueprint paid page (`/blueprint/paid`) | `app/blueprint/paid/page.tsx` | Route is now a minimal redirect shim to `/feed-planner` with query forwarding | Legacy path retained for backward compatibility only |
+| Checkout upgrade (`/checkout-upgrade`) | `app/checkout-upgrade/page.tsx` | Stripe checkout surface exists | Completion now routes to `/studio?upgraded=true` (valid destination) |
 
 ## Funnel telemetry audit
 
@@ -99,28 +99,40 @@ Effect:
 ### P0 (block merge)
 
 1. Analytics allowlist drift breaks quick-start tracking.
-- Files: `components/feed-planner/quick-start-card.tsx`, `lib/analytics/event-contract.ts`, `lib/analytics/events.ts`
+- Status: ✅ Resolved
+- Evidence: quick-start events are present in `ALLOWED_ANALYTICS_EVENTS` and covered by `tests/analytics-event-contract.test.ts`.
 
 2. Purchase analytics path is browser-only but called from webhook server context.
-- Files: `app/api/webhooks/stripe/route.ts`, `lib/analytics.ts`
+- Status: ✅ Resolved
+- Evidence: webhook path uses server-safe `logAnalyticsEvent` and is covered by `tests/webhook-purchase-analytics-path.test.ts`.
 
 3. Legacy freebie engagement endpoint writes obsolete table model.
-- Files: `app/api/freebie/track-engagement/route.ts`, `app/api/freebie/brand-strategy/route.ts`
+- Status: ✅ Resolved
+- Evidence: route writes canonical freebie strategy model and is covered by `tests/freebie-engagement-route-model.test.ts`.
 
 ### P1 (should fix in Phase 4 before merge)
 
 1. Broken redirect target in checkout upgrade flow (`/dashboard` missing).
+- Status: ✅ Resolved in commit `52c7e782`
 - File: `app/checkout-upgrade/page.tsx`
 
 2. Legacy blueprint paid page still carries dead logic while acting only as redirect shim.
+- Status: ✅ Resolved in commit `52c7e782`
 - File: `app/blueprint/paid/page.tsx`
-- Linked from legacy email templates in `lib/email/templates/paid-blueprint-*.tsx`
+- Guard test: `tests/legacy-paid-blueprint-redirect.test.ts`
 
 3. Paid blueprint feature flag API exists but landing CTA state is not wired.
+- Status: ✅ Resolved in commit `52c7e782`
 - Files: `components/sselfie/landing-page-new.tsx`, `app/api/feature-flags/paid-blueprint/route.ts`
 
 4. Auth callback still mutates legacy `blueprint_subscribers` path for general signup flow.
+- Status: ✅ Resolved in commit `52c7e782`
 - File: `app/auth/callback/route.ts`
+
+5. Legacy paid blueprint follow-up emails deep-link through deprecated route.
+- Status: ✅ Resolved in commit `0dd5a28a`
+- Files: `lib/email/templates/paid-blueprint-*.tsx`
+- Guard test: `tests/paid-blueprint-email-link-canonical.test.ts`
 
 ### P2 (post-merge hardening)
 
@@ -132,13 +144,16 @@ Effect:
 
 ## What is left before merge
 
-1. Resolve P0 findings (event contract, purchase tracking, legacy freebie tracking endpoint).
-2. Resolve P1 findings that affect live funnel continuity (`/checkout-upgrade`, legacy blueprint route behavior, landing feature-flag wiring, callback legacy coupling).
-3. Re-run validation after fixes:
-- `pnpm type-check`
-- `pnpm build`
-- funnel smoke: landing -> checkout start -> checkout success -> studio open
-- analytics smoke: verify all emitted events are accepted by `/api/analytics/event`
+1. Run manual funnel smoke before merge:
+- landing -> checkout start -> checkout success -> studio open
+- paid blueprint email link -> feed planner open
+2. Keep Phase 4 medium-scope workstreams for follow-up PRs (non-blocking for this merge):
+- 4A feed planner v1/v2 library consolidation
+- 4E broader `withAuth` rollout across high-traffic API routes
+3. Validation status:
+- `pnpm type-check` ✅
+- `pnpm build` ✅
+- targeted analytics/funnel regression tests ✅
 
 ## Phase 4 link
 
