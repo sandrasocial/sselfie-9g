@@ -1,26 +1,15 @@
 import { stripe } from "@/lib/stripe"
 import { CREDIT_PACKAGES } from "@/lib/products"
-import { createServerClient } from "@/lib/supabase/server"
-import { getUserByAuthId } from "@/lib/user-mapping"
+import { withAuth } from "@/lib/auth/with-auth"
 
-export async function POST(request: Request) {
-  if (process.env.ENABLE_UNUSED_ENDPOINTS !== "true") return Response.json({ error: "Endpoint disabled" }, { status: 410 })
+async function handleCreateCheckoutSession({
+  request,
+  user: neonUser,
+}: {
+  request: Request
+  user: { id: string | number }
+}) {
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user: authUser },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !authUser) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const neonUser = await getUserByAuthId(authUser.id)
-    if (!neonUser) {
-      return Response.json({ error: "User not found" }, { status: 404 })
-    }
-
     const { packageId } = await request.json()
 
     // Find the credit package
@@ -51,7 +40,7 @@ export async function POST(request: Request) {
       ],
       mode: "payment",
       metadata: {
-        user_id: neonUser.id,
+        user_id: String(neonUser.id),
         package_id: creditPackage.id,
         credits: creditPackage.credits.toString(),
         product_type: "credit_topup",
@@ -64,4 +53,14 @@ export async function POST(request: Request) {
     console.error("[v0] Error creating checkout session:", error)
     return Response.json({ error: "Failed to create checkout session" }, { status: 500 })
   }
+}
+
+const authedCreateCheckoutSession = withAuth(handleCreateCheckoutSession)
+
+export async function POST(request: Request) {
+  if (process.env.ENABLE_UNUSED_ENDPOINTS !== "true") {
+    return Response.json({ error: "Endpoint disabled" }, { status: 410 })
+  }
+
+  return authedCreateCheckoutSession(request)
 }

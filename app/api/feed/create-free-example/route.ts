@@ -1,14 +1,13 @@
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
-import { getAuthenticatedUserWithRetry } from "@/lib/auth-helper"
-import { getUserByAuthId } from "@/lib/user-mapping"
 import { getDb } from "@/lib/db/client"
-import { getFeedPlannerV2Flag } from "@/lib/feed-planner-v2/feature-flag"
+import { getFeedPlannerV2Flag } from "@/lib/feed-planner/feature-flag"
+import { withAuth } from "@/lib/auth/with-auth"
 import {
   getDefaultVariationId,
   getFeedStyleV2ByName,
   getFeedStyleVariationById,
-} from "@/lib/feed-planner-v2/prompt-loader"
+} from "@/lib/feed-planner/feed-style-prompt-loader"
 
 /**
  * Create Preview Feed
@@ -19,21 +18,14 @@ import {
  * 
  * Accepts optional feedStyle in request body to override user's default style
  */
-export async function POST(req: NextRequest) {
+async function handleCreateFreeExample({
+  request: req,
+  user,
+}: {
+  request: Request | NextRequest
+  user: { id: string | number; name?: string | null }
+}) {
   try {
-    // Authenticate user
-    const { user: authUser, error: authError } = await getAuthenticatedUserWithRetry()
-
-    if (authError || !authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const user = await getUserByAuthId(authUser.id)
-
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
-
     const useFeedPlannerV2 = await getFeedPlannerV2Flag(user.id)
     if (!useFeedPlannerV2) {
       console.warn(
@@ -217,7 +209,7 @@ export async function POST(req: NextRequest) {
         }
       }
       
-    } catch (error) {
+  } catch (error) {
       console.error("[v0] Error resolving feed style for free example:", error)
       // If feedStyle is missing at this point, return error (should have been caught above)
       if (!feedStyleToStore) {
@@ -412,3 +404,5 @@ export async function POST(req: NextRequest) {
     )
   }
 }
+
+export const POST = withAuth(handleCreateFreeExample, { authMode: "retry" })

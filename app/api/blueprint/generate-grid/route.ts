@@ -26,8 +26,8 @@ import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getBlueprintEntitlement } from "@/lib/subscription"
 import { checkCredits, deductCredits, getUserCredits, CREDIT_COSTS } from "@/lib/credits"
-import { getDefaultVariationId, getFeedStyleV2ByName } from "@/lib/feed-planner-v2/prompt-loader"
-import { getPreviewPromptForStyle } from "@/lib/feed-planner-v2/generation"
+import { getDefaultVariationId, getFeedStyleV2ByName } from "@/lib/feed-planner/feed-style-prompt-loader"
+import { getPreviewPromptForStyle } from "@/lib/feed-planner/feed-style-generation"
 
 
 export async function POST(req: NextRequest) {

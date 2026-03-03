@@ -10,7 +10,7 @@ import {
   getFeedStyleV2ByName,
   getFeedStyleVariationById,
   normalizeFeedStyleV2Name,
-} from "@/lib/feed-planner-v2/prompt-loader"
+} from "@/lib/feed-planner/feed-style-prompt-loader"
 
 
 export const maxDuration = 300

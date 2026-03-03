@@ -15,6 +15,8 @@ Current status: **Merge-ready for frontend/funnel stabilization scope**.
 
 Reason: previously identified P0/P1 frontend-funnel blockers are now addressed on this branch (see "Findings" and "What is left before merge").
 
+Phase 4 update: 4A feed planner unification and 4E auth-wrapper rollout are now completed in the same branch pass.
+
 ## Canonical funnel map (current)
 
 1. Acquisition:
@@ -126,8 +128,8 @@ Current status:
 ### P2 (post-merge hardening)
 
 1. Auth boilerplate duplication is still high:
-- `supabase.auth.getUser()` usages in API routes: ~195
-- `withAuth(...)` usages: 10
+- `supabase.auth.getUser()` usages in API routes: 186
+- `withAuth(...)` usages in API routes: 23
 
 2. Route wrappers (`/studio`, `/maya`, `/feed-planner`) all mount `SselfieApp` with overlapping boot logic.
 
@@ -136,13 +138,11 @@ Current status:
 1. Run manual funnel smoke before merge:
 - landing -> checkout start -> checkout success -> studio open
 - paid blueprint email link -> feed planner open
-2. Keep Phase 4 medium-scope workstreams for follow-up PRs (non-blocking for this merge):
-- 4A feed planner v1/v2 library consolidation
-- 4E broader `withAuth` rollout across high-traffic API routes
-3. Validation status:
+2. Validation status:
 - `pnpm type-check` ✅
 - `pnpm build` ✅
 - targeted analytics/funnel regression tests ✅
+- Phase 4 route hygiene regression suite ✅ (`tests/phase4-route-hygiene.test.ts`)
 
 ## Phase 4 link
 

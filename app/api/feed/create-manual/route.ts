@@ -1,14 +1,13 @@
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
-import { getAuthenticatedUserWithRetry } from "@/lib/auth-helper"
-import { getUserByAuthId } from "@/lib/user-mapping"
 import { getDb } from "@/lib/db/client"
-import { getFeedPlannerV2Flag } from "@/lib/feed-planner-v2/feature-flag"
+import { getFeedPlannerV2Flag } from "@/lib/feed-planner/feature-flag"
+import { withAuth } from "@/lib/auth/with-auth"
 import {
   getDefaultVariationId,
   getFeedStyleV2ByName,
   getFeedStyleVariationById,
-} from "@/lib/feed-planner-v2/prompt-loader"
+} from "@/lib/feed-planner/feed-style-prompt-loader"
 
 /**
  * Create Manual Feed
@@ -16,21 +15,14 @@ import {
  * Creates an empty feed with 9 placeholder posts that can be filled manually.
  * User can upload images or select from gallery, then add captions.
  */
-export async function POST(req: NextRequest) {
+async function handleCreateManualFeed({
+  request: req,
+  user,
+}: {
+  request: Request | NextRequest
+  user: { id: string | number; name?: string | null }
+}) {
   try {
-    // Authenticate user
-    const { user: authUser, error: authError } = await getAuthenticatedUserWithRetry()
-
-    if (authError || !authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const user = await getUserByAuthId(authUser.id)
-
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
-
     const sql = getDb()
     const useFeedPlannerV2 = await getFeedPlannerV2Flag(user.id)
     if (!useFeedPlannerV2) {
@@ -383,3 +375,4 @@ export async function POST(req: NextRequest) {
   }
 }
 
+export const POST = withAuth(handleCreateManualFeed, { authMode: "retry" })

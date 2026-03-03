@@ -1,28 +1,17 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
-import { getUserByAuthId } from "@/lib/user-mapping"
 import { generateText } from "ai"
 import { sql } from "@/lib/db/client"
+import { withAuth } from "@/lib/auth/with-auth"
 
-
-export async function POST(req: NextRequest) {
+async function handleEnhanceGoal({
+  request,
+  user,
+}: {
+  request: Request | NextRequest
+  user: { id: string | number }
+}) {
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser()
-
-    if (!authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const neonUser = await getUserByAuthId(authUser.id)
-
-    if (!neonUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
-
-    const { goalText } = await req.json()
+    const { goalText } = await request.json()
 
     if (!goalText || goalText.trim().length === 0) {
       return NextResponse.json({ error: "Goal text is required" }, { status: 400 })
@@ -30,7 +19,7 @@ export async function POST(req: NextRequest) {
 
     // Get user's brand profile data
     const [brandProfile] = await sql`
-      SELECT 
+      SELECT
         brand_voice,
         brand_vibe,
         business_type,
@@ -38,7 +27,7 @@ export async function POST(req: NextRequest) {
         content_pillars,
         color_palette
       FROM user_personal_brand
-      WHERE user_id = ${neonUser.id}
+      WHERE user_id = ${user.id}
       AND is_completed = true
       LIMIT 1
     `
@@ -47,7 +36,7 @@ export async function POST(req: NextRequest) {
     let brandContext = ""
     if (brandProfile) {
       brandContext = `\n\nHere's what we know about their brand:\n`
-      
+
       if (brandProfile.brand_voice) {
         brandContext += `- Brand Voice: ${brandProfile.brand_voice}\n`
       }
@@ -62,20 +51,21 @@ export async function POST(req: NextRequest) {
       }
       if (brandProfile.content_pillars) {
         try {
-          const pillars = typeof brandProfile.content_pillars === "string" 
-            ? JSON.parse(brandProfile.content_pillars) 
-            : brandProfile.content_pillars
+          const pillars =
+            typeof brandProfile.content_pillars === "string"
+              ? JSON.parse(brandProfile.content_pillars)
+              : brandProfile.content_pillars
           if (Array.isArray(pillars) && pillars.length > 0) {
-            const pillarNames = pillars.map((p: any) => typeof p === "object" ? p.name || p : p).join(", ")
+            const pillarNames = pillars.map((p: any) => (typeof p === "object" ? p.name || p : p)).join(", ")
             brandContext += `- Content Pillars: ${pillarNames}\n`
           }
-        } catch (e) {
+        } catch {
           if (typeof brandProfile.content_pillars === "string") {
             brandContext += `- Content Pillars: ${brandProfile.content_pillars}\n`
           }
         }
       }
-      
+
       brandContext += `\nUse this brand info to make the enhancement more specific to them and their style.\n`
     }
 
@@ -104,3 +94,5 @@ Just write the better version, no explanations.`,
     return NextResponse.json({ error: "Failed to enhance goal" }, { status: 500 })
   }
 }
+
+export const POST = withAuth(handleEnhanceGoal)

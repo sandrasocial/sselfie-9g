@@ -1,24 +1,21 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
 import { queueAllImagesForFeed } from "@/lib/feed-planner/queue-images"
+import { withAuth } from "@/lib/auth/with-auth"
 
 /**
  * Queue all images for a feed layout automatically
  * This endpoint is called after strategy creation to start generating all 9 images
  */
-export async function POST(request: NextRequest) {
+async function handleQueueAllImages({
+  request,
+  authUser,
+}: {
+  request: Request | NextRequest
+  authUser: { id: string }
+  user: { id: string | number }
+}) {
   try {
     console.log("[v0] ==================== QUEUE ALL IMAGES API CALLED ====================")
-
-    const supabase = await createServerClient()
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser()
-
-    if (!authUser) {
-      console.log("[v0] No auth user found")
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
 
     const body = await request.json()
     const { feedLayoutId } = body
@@ -28,11 +25,11 @@ export async function POST(request: NextRequest) {
     }
 
     const origin = process.env.NEXT_PUBLIC_APP_URL || request.headers.get("origin") || "http://localhost:3000"
-    
+
     try {
       const result = await queueAllImagesForFeed(feedLayoutId, authUser.id, origin)
       return NextResponse.json(result)
-    } catch (error: any) {
+    } catch (error) {
       console.error("[v0] Queue all images error:", error)
       return NextResponse.json(
         {
@@ -54,42 +51,4 @@ export async function POST(request: NextRequest) {
   }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+export const POST = withAuth(handleQueueAllImages)

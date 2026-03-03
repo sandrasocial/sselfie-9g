@@ -3,7 +3,7 @@ import {
   getFeedStyleV2ByName,
   getFeedStyleVariationsV2,
   getDefaultVariationId,
-} from "@/lib/feed-planner-v2/prompt-loader"
+} from "@/lib/feed-planner/feed-style-prompt-loader"
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)

@@ -1,27 +1,24 @@
 import { NextResponse } from "next/server"
-import { getAuthenticatedUserWithRetry } from "@/lib/auth-helper"
 import { sql } from "@/lib/db/client"
-import { getUserByAuthId } from "@/lib/user-mapping"
 import { checkCredits, deductCredits } from "@/lib/credits"
 import { generateWithNanoBanana, getStudioProCreditCost } from "@/lib/nano-banana-client"
-import { getFeedPlannerV2Flag } from "@/lib/feed-planner-v2/feature-flag"
-import { getFeedStyleV2ByName } from "@/lib/feed-planner-v2/prompt-loader"
-import { getPreviewPromptForStyle, selectPromptForPosition } from "@/lib/feed-planner-v2/generation"
+import { getFeedPlannerV2Flag } from "@/lib/feed-planner/feature-flag"
+import { getFeedStyleV2ByName } from "@/lib/feed-planner/feed-style-prompt-loader"
+import { getPreviewPromptForStyle, selectPromptForPosition } from "@/lib/feed-planner/feed-style-generation"
+import { withAuth } from "@/lib/auth/with-auth"
 
 
-export async function POST(request: Request, { params }: { params: Promise<{ feedId: string }> }) {
+async function handleRegeneratePost(
+  {
+    request,
+    user: neonUser,
+  }: {
+    request: Request
+    user: { id: string | number }
+  },
+  { params }: { params: Promise<{ feedId: string }> },
+) {
   try {
-    const { user, error: authError } = await getAuthenticatedUserWithRetry()
-
-    if (authError || !user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const neonUser = await getUserByAuthId(user.id)
-    if (!neonUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
-
     const useFeedPlannerV2 = await getFeedPlannerV2Flag(neonUser.id)
     if (!useFeedPlannerV2) {
       return NextResponse.json(
@@ -204,3 +201,5 @@ export async function POST(request: Request, { params }: { params: Promise<{ fee
     return NextResponse.json({ error: "Failed to regenerate post", details: error?.message }, { status: 500 })
   }
 }
+
+export const POST = withAuth(handleRegeneratePost, { authMode: "retry" })

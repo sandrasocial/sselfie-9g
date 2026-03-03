@@ -45,9 +45,9 @@ import { extractReplicateVersionId, ensureTriggerWordPrefix, ensureGenderInPromp
 import { validatePrompt } from "@/lib/generation/prompt"
 import { generateWithNanoBanana, getStudioProCreditCost } from "@/lib/nano-banana-client"
 import { getFeedPlannerAccess } from "@/lib/feed-planner/access-control"
-import { getFeedPlannerV2Flag } from "@/lib/feed-planner-v2/feature-flag"
-import { getFeedStyleV2ByName } from "@/lib/feed-planner-v2/prompt-loader"
-import { getPreviewPromptForStyle, selectPromptForPosition } from "@/lib/feed-planner-v2/generation"
+import { getFeedPlannerV2Flag } from "@/lib/feed-planner/feature-flag"
+import { getFeedStyleV2ByName } from "@/lib/feed-planner/feed-style-prompt-loader"
+import { getPreviewPromptForStyle, selectPromptForPosition } from "@/lib/feed-planner/feed-style-generation"
 
 /* eslint-disable no-console */
 // Console statements are used for debugging and monitoring in development

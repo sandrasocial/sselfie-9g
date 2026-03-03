@@ -4,8 +4,8 @@ import { sql } from "@/lib/db/client"
 import { generateWithNanoBanana } from "@/lib/nano-banana-client"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { getDefaultVariationId, getFeedStyleV2ByName, getFeedStyleVariationById } from "@/lib/feed-planner-v2/prompt-loader"
-import { getPreviewPromptForStyle } from "@/lib/feed-planner-v2/generation"
+import { getDefaultVariationId, getFeedStyleV2ByName, getFeedStyleVariationById } from "@/lib/feed-planner/feed-style-prompt-loader"
+import { getPreviewPromptForStyle } from "@/lib/feed-planner/feed-style-generation"
 
 const ADMIN_EMAIL = "ssa@ssasocial.com"
 

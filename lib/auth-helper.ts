@@ -52,20 +52,21 @@ export async function getAuthenticatedUser(): Promise<{
       let errorMessage = "Authentication failed"
 
       try {
-        if (error instanceof Error) {
-          errorMessage = error.message
-        } else if (typeof error === "object" && error !== null) {
-          if ("status" in error && "statusText" in error) {
-            errorMessage = `HTTP ${error.status}: ${error.statusText}`
-          } else if ("message" in error) {
-            errorMessage = String(error.message)
+        const err = error as any
+        if (err instanceof Error) {
+          errorMessage = err.message
+        } else if (typeof err === "object" && err !== null) {
+          if (typeof err.status !== "undefined" && typeof err.statusText !== "undefined") {
+            errorMessage = `HTTP ${err.status}: ${err.statusText}`
+          } else if (typeof err.message !== "undefined") {
+            errorMessage = String(err.message)
           } else {
-            errorMessage = String(error)
+            errorMessage = String(err)
           }
-        } else if (typeof error === "string") {
-          errorMessage = error
+        } else if (typeof err === "string") {
+          errorMessage = err
         } else {
-          errorMessage = String(error)
+          errorMessage = String(err)
         }
       } catch (serializationError) {
         errorMessage = "Error occurred but could not be serialized"
@@ -93,16 +94,17 @@ export async function getAuthenticatedUser(): Promise<{
     let errorMessage = "Authentication failed"
 
     try {
-      if (error instanceof Error) {
-        errorMessage = error.message
-      } else if (typeof error === "object" && error !== null) {
-        if ("status" in error && "statusText" in error) {
-          errorMessage = `HTTP ${error.status}: ${error.statusText}`
+      const err = error as any
+      if (err instanceof Error) {
+        errorMessage = err.message
+      } else if (typeof err === "object" && err !== null) {
+        if (typeof err.status !== "undefined" && typeof err.statusText !== "undefined") {
+          errorMessage = `HTTP ${err.status}: ${err.statusText}`
         } else {
-          errorMessage = String(error)
+          errorMessage = String(err)
         }
       } else {
-        errorMessage = String(error)
+        errorMessage = String(err)
       }
     } catch {
       errorMessage = "Error occurred but could not be serialized"

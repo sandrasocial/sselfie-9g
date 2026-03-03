@@ -1,34 +1,29 @@
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
-import { getAuthenticatedUserWithRetry } from "@/lib/auth-helper"
-import { getUserByAuthId } from "@/lib/user-mapping"
 import { getDb } from "@/lib/db/client"
+import { withAuth } from "@/lib/auth/with-auth"
 import {
   getFeedStyleV2ByName,
   getFeedStyleVariationById,
   getDefaultVariationId,
-} from "@/lib/feed-planner-v2/prompt-loader"
+} from "@/lib/feed-planner/feed-style-prompt-loader"
 
 /**
  * Update Feed Style and Variation
  * 
  * Updates an existing feed's feed_style and feed_style_variation_id
  */
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ feedId: string }> | { feedId: string } }) {
+async function handleUpdateFeedStyle(
+  {
+    request: req,
+    user,
+  }: {
+    request: Request | NextRequest
+    user: { id: string | number }
+  },
+  { params }: { params: Promise<{ feedId: string }> | { feedId: string } },
+) {
   try {
-    // Authenticate user
-    const { user: authUser, error: authError } = await getAuthenticatedUserWithRetry()
-
-    if (authError || !authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const user = await getUserByAuthId(authUser.id)
-
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
-
     const resolvedParams = await Promise.resolve(params)
     const feedId = resolvedParams.feedId
     const feedIdInt = Number.parseInt(feedId, 10)
@@ -119,3 +114,5 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ fe
     )
   }
 }
+
+export const PATCH = withAuth(handleUpdateFeedStyle, { authMode: "retry" })

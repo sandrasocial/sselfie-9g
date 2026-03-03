@@ -7,7 +7,13 @@ Phase 3 is complete on this branch:
 - `b6ba8770` — Phase 3B DB/stripe/alex consolidation
 - `76cf911b` — Phase 3C prompt seam + `withAuth` pilot
 
-Phase 4 is now the remaining stabilization pass before feature work and merge.
+Phase 4 completion status on this branch:
+- `86e274ab` — 4C analytics integrity (event contract + server-safe purchase logging + tests)
+- `52c7e782` — 4B/4D funnel route cleanup (legacy redirects and stale funnel paths cleaned)
+- `0dd5a28a` — 4D paid blueprint email links moved to canonical route + guard test
+- 2026-03-03 stabilization pass — 4A feed planner unification + 4E `withAuth` expansion (high-traffic routes)
+
+Phase 4 is complete for stabilization scope and ready for merge validation.
 
 ## What Phase 4 is
 
@@ -100,8 +106,8 @@ Acceptance:
 
 ## Merge gate for Phase 4 complete
 
-- Frontend + funnel audit findings labeled `P0` are closed.
-- Canonical funnel map is documented and implemented.
-- Analytics contract drift resolved (no rejected events).
-- No dead redirect targets in checkout/post-purchase flows.
-- Feed planner behavior verified after consolidation.
+- Frontend + funnel audit findings labeled `P0` are closed. ✅
+- Canonical funnel map is documented and implemented. ✅
+- Analytics contract drift resolved (no rejected events). ✅
+- No dead redirect targets in checkout/post-purchase flows. ✅
+- Feed planner behavior verified after consolidation. ✅

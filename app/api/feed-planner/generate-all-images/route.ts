@@ -1,30 +1,20 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createServerClient } from "@/lib/supabase/server"
-import { getUserByAuthId } from "@/lib/user-mapping"
 import { sql } from "@/lib/db/client"
+import { withAuth } from "@/lib/auth/with-auth"
 
-export async function POST(request: NextRequest) {
+async function handleGenerateAllImages({
+  request,
+  user,
+}: {
+  request: Request | NextRequest
+  user: { id: string | number }
+}) {
   try {
-    const supabase = await createServerClient()
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser()
-
-    if (!authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const neonUser = await getUserByAuthId(authUser.id)
-    if (!neonUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
-
     const { feedLayoutId } = await request.json()
 
     if (!feedLayoutId) {
       return NextResponse.json({ error: "Feed layout ID is required" }, { status: 400 })
     }
-
 
     // Get all posts for this feed
     const posts = await sql`
@@ -53,8 +43,7 @@ export async function POST(request: NextRequest) {
           return null
         }
 
-        const data = await response.json()
-        return data
+        return await response.json()
       } catch (error) {
         console.error(`[v0] Error generating image for post ${post.position}:`, error)
         return null
@@ -77,3 +66,5 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+
+export const POST = withAuth(handleGenerateAllImages)
