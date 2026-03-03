@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import { detectMayaToolDispatchIntent, extractLatestUserText } from "@/lib/maya/intent-dispatcher"
 import { parseMayaToolMarkers, stripMayaToolMarkers } from "@/lib/maya/tool-markers"
 
-describe("maya phase 1 tool dispatcher", () => {
+describe("maya phase 2 tool dispatcher", () => {
   it("routes gallery view intent to show_gallery marker response", () => {
     const intent = detectMayaToolDispatchIntent("can you show me my gallery?")
     expect(intent?.tool).toBe("show_gallery")
@@ -22,6 +22,18 @@ describe("maya phase 1 tool dispatcher", () => {
     expect(intent?.responseText).toContain("[SAVE_TO_GALLERY:latest]")
   })
 
+  it("routes create photo intent to generate image marker", () => {
+    const intent = detectMayaToolDispatchIntent("I want to create a photo for my offer")
+    expect(intent?.tool).toBe("generate_image")
+    expect(intent?.responseText).toContain("[GENERATE_IMAGE:choose_source]")
+  })
+
+  it("routes upload selfie intent to upload zone marker", () => {
+    const intent = detectMayaToolDispatchIntent("let me upload some selfies first")
+    expect(intent?.tool).toBe("show_upload_zone")
+    expect(intent?.responseText).toContain("[SHOW_UPLOAD_ZONE:selfies]")
+  })
+
   it("returns no tool intent for regular chat questions", () => {
     const intent = detectMayaToolDispatchIntent("how can I improve my hook?")
     expect(intent).toBeNull()
@@ -38,19 +50,21 @@ describe("maya phase 1 tool dispatcher", () => {
 })
 
 describe("maya tool markers", () => {
-  it("parses show and save markers from assistant text", () => {
+  it("parses phase 2 markers from assistant text", () => {
     const markers = parseMayaToolMarkers(
-      "Opening now [SHOW_GALLERY]\nSaved [SAVE_TO_GALLERY:ai_55]",
+      "Opening now [SHOW_GALLERY]\nSaved [SAVE_TO_GALLERY:ai_55]\nStart [GENERATE_IMAGE:base_model]\nUpload [SHOW_UPLOAD_ZONE:products]",
     )
     expect(markers).toEqual([
       { tool: "show_gallery" },
       { tool: "save_to_gallery", target: "explicit", imageId: "ai_55" },
+      { tool: "generate_image", source: "base_model" },
+      { tool: "show_upload_zone", category: "products" },
     ])
   })
 
   it("strips tool markers from persisted assistant text", () => {
     const stripped = stripMayaToolMarkers(
-      "Opening your gallery.\n[SHOW_GALLERY]\nDone.\n[SAVE_TO_GALLERY:latest]",
+      "Opening your gallery.\n[SHOW_GALLERY]\nDone.\n[SAVE_TO_GALLERY:latest]\n[GENERATE_IMAGE:choose_source]\n[SHOW_UPLOAD_ZONE:selfies]",
     )
     expect(stripped).toBe("Opening your gallery. Done.")
   })

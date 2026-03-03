@@ -710,6 +710,22 @@ export async function GET(request: NextRequest) {
                     : "Saved your latest image to your gallery.",
               },
             })
+          } else if (marker.tool === "generate_image") {
+            parts.push({
+              type: "tool-generateImage",
+              output: {
+                state: "ready",
+                source: marker.source,
+              },
+            })
+          } else if (marker.tool === "show_upload_zone") {
+            parts.push({
+              type: "tool-showUploadZone",
+              output: {
+                state: "ready",
+                category: marker.category,
+              },
+            })
           }
         }
         
@@ -795,6 +811,22 @@ export async function GET(request: NextRequest) {
                   marker.target === "explicit"
                     ? "Saved to your gallery."
                     : "Saved your latest image to your gallery.",
+              },
+            })
+          } else if (marker.tool === "generate_image") {
+            parts.push({
+              type: "tool-generateImage",
+              output: {
+                state: "ready",
+                source: marker.source,
+              },
+            })
+          } else if (marker.tool === "show_upload_zone") {
+            parts.push({
+              type: "tool-showUploadZone",
+              output: {
+                state: "ready",
+                category: marker.category,
               },
             })
           }

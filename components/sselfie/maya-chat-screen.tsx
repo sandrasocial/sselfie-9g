@@ -101,6 +101,9 @@ interface MayaChatScreenProps {
   firstTimeProductUser?: boolean
 }
 
+type PhaseTwoGenerationSource = "selfies" | "custom_model" | "base_model"
+type PhaseTwoUploadCategory = "selfies" | "products" | "people" | "vibes"
+
 export default function MayaChatScreen({ 
   onImageGenerated, 
   user, 
@@ -592,10 +595,14 @@ export default function MayaChatScreen({
     const toolMarkers = parseMayaToolMarkers(textContent)
     if (toolMarkers.length > 0) {
       const alreadyHasToolResults = lastAssistantMessage.parts?.some(
-        (p: any) => p?.type === "tool-showGallery" || p?.type === "tool-saveToGallery",
+        (p: any) =>
+          p?.type === "tool-showGallery" ||
+          p?.type === "tool-saveToGallery" ||
+          p?.type === "tool-generateImage" ||
+          p?.type === "tool-showUploadZone",
       )
 
-      const toolProcessKey = `${messageKey}-phase1-tools`
+      const toolProcessKey = `${messageKey}-phase2-tools`
       if (alreadyHasToolResults || processedToolMessagesRef.current.has(toolProcessKey)) {
         processedToolMessagesRef.current.add(toolProcessKey)
         return
@@ -638,7 +645,7 @@ export default function MayaChatScreen({
         })
       }
 
-      const resolvePhaseOneTools = async () => {
+      const resolvePhaseTwoTools = async () => {
         for (const marker of toolMarkers) {
           if (marker.tool === "show_gallery") {
             updateToolPart("tool-showGallery", { state: "loading", images: [], total: 0 })
@@ -723,10 +730,24 @@ export default function MayaChatScreen({
               })
             }
           }
+
+          if (marker.tool === "generate_image") {
+            updateToolPart("tool-generateImage", {
+              state: "ready",
+              source: marker.source,
+            })
+          }
+
+          if (marker.tool === "show_upload_zone") {
+            updateToolPart("tool-showUploadZone", {
+              state: "ready",
+              category: marker.category,
+            })
+          }
         }
       }
 
-      resolvePhaseOneTools()
+      resolvePhaseTwoTools()
     }
 
     // Feed trigger detection moved to MayaFeedTab component
@@ -1949,6 +1970,53 @@ export default function MayaChatScreen({
     }
   }
 
+  const setMayaTabAndHash = useCallback((tab: "photos" | "training") => {
+    setActiveMayaTab(tab)
+    if (typeof window !== "undefined") {
+      localStorage.setItem("mayaActiveTab", tab)
+      window.history.replaceState(null, "", tab === "training" ? "#maya/training" : "#maya")
+    }
+  }, [])
+
+  const handlePhaseTwoUploadZone = useCallback(
+    (category: PhaseTwoUploadCategory = "selfies") => {
+      setMayaTabAndHash("photos")
+      if (!proMode) {
+        setProMode(true)
+      }
+      setManageCategory(category)
+      setShowUploadFlow(true)
+    },
+    [proMode, setProMode, setMayaTabAndHash],
+  )
+
+  const handlePhaseTwoGenerationSource = useCallback(
+    (source: PhaseTwoGenerationSource) => {
+      if (source === "selfies") {
+        handlePhaseTwoUploadZone("selfies")
+        return
+      }
+
+      if (source === "custom_model") {
+        if (proMode) {
+          setProMode(false)
+        }
+        setMayaTabAndHash("training")
+        return
+      }
+
+      if (proMode) {
+        setProMode(false)
+      }
+      setMayaTabAndHash("photos")
+      toast({
+        title: "Base model ready",
+        description: "Describe the photo you want and Maya will generate it in Classic mode.",
+      })
+    },
+    [handlePhaseTwoUploadZone, proMode, setProMode, setMayaTabAndHash, toast],
+  )
+
   // Wrapper for handleNewChat that adds component-specific logic
   const handleNewChat = useCallback(async () => {
     // In Pro Mode, "New Project" should clear library (like "Start Fresh")
@@ -3119,6 +3187,8 @@ export default function MayaChatScreen({
           promptSuggestions={promptSuggestions}
           generationSettings={settings}
           enhancedAuthenticity={enhancedAuthenticity}
+          onToolSelectGenerationSource={handlePhaseTwoGenerationSource}
+          onToolOpenUploadZone={handlePhaseTwoUploadZone}
         />
       )}
           {showReturningMemberHome && (

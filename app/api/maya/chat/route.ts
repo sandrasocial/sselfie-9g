@@ -310,7 +310,7 @@ export async function POST(req: Request) {
       const dispatchedIntent = detectMayaToolDispatchIntent(latestUserText)
 
       if (dispatchedIntent) {
-        console.log("[Maya Chat] Phase 1 tool dispatcher matched intent:", {
+        console.log("[Maya Chat] Phase 2 tool dispatcher matched intent:", {
           tool: dispatchedIntent.tool,
           chatType,
         })

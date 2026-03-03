@@ -60,6 +60,8 @@ interface MayaChatInterfaceProps {
     realismStrength: number
   }
   enhancedAuthenticity?: boolean
+  onToolSelectGenerationSource?: (source: "selfies" | "custom_model" | "base_model") => void
+  onToolOpenUploadZone?: (category: "selfies" | "products" | "people" | "vibes") => void
   
 }
 
@@ -106,6 +108,8 @@ export default function MayaChatInterface({
   promptSuggestions,
   generationSettings,
   enhancedAuthenticity,
+  onToolSelectGenerationSource,
+  onToolOpenUploadZone,
 }: MayaChatInterfaceProps) {
   
   // Helper function to remove emojis from text
@@ -209,6 +213,8 @@ export default function MayaChatInterface({
     cleanedText = cleanedText.replace(/\[GENERATE_CONCEPTS\]\s*[^\n]*/gi, "").trim()
     cleanedText = cleanedText.replace(/\[SHOW_GALLERY\]/gi, "").trim()
     cleanedText = cleanedText.replace(/\[SAVE_TO_GALLERY(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
+    cleanedText = cleanedText.replace(/\[GENERATE_IMAGE(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
+    cleanedText = cleanedText.replace(/\[SHOW_UPLOAD_ZONE(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
     // Remove feed creation trigger (with JSON content)
     // Use bracket counting to properly match nested JSON structures
     // This handles complex JSON with nested arrays/objects by finding the matching closing bracket
@@ -874,6 +880,80 @@ export default function MayaChatInterface({
                               return (
                                 <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4 text-sm text-[#e5e5e5]">
                                   {output.message || "Saved to your gallery."}
+                                </div>
+                              )
+                            }
+
+                            if (part.type === "tool-generateImage") {
+                              const output = (part as any).output || {}
+                              const selectedSource = output.source || "choose_source"
+                              const options: Array<{
+                                id: "selfies" | "custom_model" | "base_model"
+                                label: string
+                                description: string
+                              }> = [
+                                { id: "selfies", label: "Use Selfies", description: "Upload or use linked references." },
+                                { id: "custom_model", label: "Train Model", description: "Go to training with your selfies." },
+                                { id: "base_model", label: "Base Model", description: "Create with the default model." },
+                              ]
+
+                              return (
+                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
+                                  <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Create Photo</div>
+                                  <p className="mt-2 text-sm text-[#d5d5d5]">Choose how you want Maya to generate this image.</p>
+                                  <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                                    {options.map((option) => {
+                                      const isSelected = selectedSource === option.id
+                                      return (
+                                        <button
+                                          key={option.id}
+                                          type="button"
+                                          onClick={() => onToolSelectGenerationSource?.(option.id)}
+                                          className={`rounded-lg border px-3 py-2 text-left transition-colors ${
+                                            isSelected
+                                              ? "border-[rgba(255,255,255,0.4)] bg-[rgba(255,255,255,0.12)]"
+                                              : "border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.03)] hover:bg-[rgba(255,255,255,0.08)]"
+                                          }`}
+                                        >
+                                          <div className="text-[11px] uppercase tracking-[0.16em] text-[#ffffff]">{option.label}</div>
+                                          <div className="mt-1 text-xs text-[#bdbdbd]">{option.description}</div>
+                                        </button>
+                                      )
+                                    })}
+                                  </div>
+                                </div>
+                              )
+                            }
+
+                            if (part.type === "tool-showUploadZone") {
+                              const output = (part as any).output || {}
+                              const category =
+                                output.category === "products" ||
+                                output.category === "people" ||
+                                output.category === "vibes"
+                                  ? output.category
+                                  : "selfies"
+                              const categoryLabelMap: Record<string, string> = {
+                                selfies: "Selfies",
+                                products: "Products",
+                                people: "People",
+                                vibes: "Vibes",
+                              }
+                              const categoryLabel = categoryLabelMap[category] || "Selfies"
+
+                              return (
+                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
+                                  <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Upload Zone</div>
+                                  <p className="mt-2 text-sm text-[#d5d5d5]">
+                                    Ready for {categoryLabel.toLowerCase()}. Open the inline uploader and drop your images.
+                                  </p>
+                                  <button
+                                    type="button"
+                                    onClick={() => onToolOpenUploadZone?.(category)}
+                                    className="mt-3 rounded-lg border border-[rgba(255,255,255,0.22)] bg-[rgba(255,255,255,0.08)] px-3 py-2 text-[11px] uppercase tracking-[0.16em] text-[#ffffff] transition-colors hover:bg-[rgba(255,255,255,0.14)]"
+                                  >
+                                    Open Upload
+                                  </button>
                                 </div>
                               )
                             }
