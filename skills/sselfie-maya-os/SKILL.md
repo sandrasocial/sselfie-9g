@@ -7,17 +7,11 @@ description: Canonical Maya-first operating model for SSELFIE user journey, scre
 
 ## Quick start
 1. Read [references/user-journey.md](references/user-journey.md).
-2. Read one additional reference based on task type:
-- UI/screen behavior: [references/screen-map.md](references/screen-map.md)
-- Scale/architecture decisions: [references/scaling-playbook.md](references/scaling-playbook.md)
-- Validation/release readiness: [references/qa-checklist.md](references/qa-checklist.md)
-3. Produce output with this structure:
-- Stage in journey
-- User intent
-- Surface/tool shown to user
-- Data writes and reads
-- Analytics events emitted
-- Success metric
+2. Read one additional reference based on task type.
+3. Use [references/screen-map.md](references/screen-map.md) for UI/screen behavior tasks.
+4. Use [references/scaling-playbook.md](references/scaling-playbook.md) for scale/architecture tasks.
+5. Use [references/qa-checklist.md](references/qa-checklist.md) for validation/release tasks.
+6. Produce output with: stage, user intent, surface/tool, data reads/writes, analytics events, and success metric.
 
 ## Non-negotiables
 - Treat Maya as the product shell, not a side assistant.
@@ -36,10 +30,7 @@ description: Canonical Maya-first operating model for SSELFIE user journey, scre
 ## Output contract for agents
 - Always name the exact route(s) affected.
 - Always name the exact API/event contracts affected.
-- Always separate:
-- What is currently true in code
-- What is target behavior
-- What migration/compat shim is temporary
+- Always separate current-state code behavior, target behavior, and temporary migration shim behavior.
 - Always include explicit merge risk: `low`, `medium`, or `high`.
 
 ## Escalate before coding when

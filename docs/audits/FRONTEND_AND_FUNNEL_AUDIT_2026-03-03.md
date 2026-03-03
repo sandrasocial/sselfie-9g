@@ -48,12 +48,12 @@ Reason: previously identified P0/P1 frontend-funnel blockers are now addressed o
 | Landing (`/`) | `app/page.tsx`, `components/sselfie/landing-page-new.tsx` | Checkout starts + top-funnel analytics fire; paid blueprint CTA now follows feature-flag API | No current P0/P1 blocker |
 | Freebie form (`/freebie/brand-strategy`) | `app/freebie/brand-strategy/page.tsx` | New freebie flow posts to canonical API and redirects to token page | No analytics event emitted for form submit/view/success |
 | Freebie result (`/strategy/[token]`) | `app/strategy/[token]/page.tsx` | Reads canonical `freebie_brand_strategies` and renders strategy pack | Upsell links route into mixed legacy/canonical paths (`/checkout/blueprint` and auth query param flow) |
-| Auth (`/auth/login`, `/auth/sign-up`) | `app/auth/login/page.tsx`, `app/auth/sign-up/page.tsx` | Login honors sanitized `returnTo`; sign-up handles membership checkout param | Login -> "Sign up" link drops `returnTo`; callback route still contains legacy blueprint side-effects |
+| Auth (`/auth/login`, `/auth/sign-up`) | `app/auth/login/page.tsx`, `app/auth/sign-up/page.tsx` | Login honors sanitized `returnTo`; sign-up handles membership checkout param | Login -> "Sign up" link still drops `returnTo` (P2 UX continuity cleanup) |
 | Auth callback | `app/auth/callback/route.ts` | Session exchange + user sync works; legacy `blueprint_subscribers` side-effect removed from general signup | Always redirects `/studio` by design (current canonical activation destination) |
-| Checkout core | `app/checkout/page.tsx`, `app/actions/landing-checkout.ts` | Embedded checkout and success redirect path work | Purchase analytics attribution path is not reliable (see P0 findings) |
+| Checkout core | `app/checkout/page.tsx`, `app/actions/landing-checkout.ts` | Embedded checkout and success redirect path work; purchase analytics path uses server-safe event logging | No current P0/P1 blocker |
 | Checkout success | `components/checkout/success-content.tsx` | Handles paid blueprint polling and product-specific post-purchase states | Complex state branches; no explicit purchase analytics call from success UI |
 | App shell (`/studio`) | `app/studio/page.tsx`, `components/sselfie/sselfie-app.tsx` | Canonical tab shell, onboarding and activation flows in place | High complexity; still substantial auth/entitlement branching in UI layer |
-| Feed planner wrapper (`/feed-planner`) | `app/feed-planner/page.tsx`, `app/feed-planner/feed-planner-client.tsx` | Activation flow and onboarding gating are integrated | Emits two event names not accepted by analytics contract |
+| Feed planner wrapper (`/feed-planner`) | `app/feed-planner/page.tsx`, `app/feed-planner/feed-planner-client.tsx` | Activation flow and onboarding gating are integrated; quick-start events are in analytics allowlist | No current P0/P1 blocker |
 | Legacy blueprint paid page (`/blueprint/paid`) | `app/blueprint/paid/page.tsx` | Route is now a minimal redirect shim to `/feed-planner` with query forwarding | Legacy path retained for backward compatibility only |
 | Checkout upgrade (`/checkout-upgrade`) | `app/checkout-upgrade/page.tsx` | Stripe checkout surface exists | Completion now routes to `/studio?upgraded=true` (valid destination) |
 
@@ -64,35 +64,24 @@ Reason: previously identified P0/P1 frontend-funnel blockers are now addressed o
 Contract source: `lib/analytics/event-contract.ts`
 Ingestion enforcement: `lib/analytics/events.ts`
 
-Observed emitted events via `trackAnalyticsEvent(...)` include two events that are **not** in the allowlist:
-- `feed_planner_quick_start_viewed`
-- `feed_planner_quick_start_clicked`
-
-Source:
-- `components/feed-planner/quick-start-card.tsx`
-
-Effect:
-- `/api/analytics/event` accepts request but `logAnalyticsEvent` rejects unsupported events.
-- Funnel reporting loses quick-start visibility.
+Current status:
+- Quick-start events are included in the allowlist.
+- Emitted quick-start events match the contract.
+- Regression coverage exists in `tests/analytics-event-contract.test.ts`.
 
 ### Purchase attribution integrity
 
-Current implementation:
-- `app/api/webhooks/stripe/route.ts` calls `trackPurchase(...)` from `lib/analytics.ts`.
-- `lib/analytics.ts` is browser-only (`window.gtag` / dynamic client tracking) and no-ops server-side.
-
-Effect:
-- Purchase events are not reliably written to `analytics_events` from webhook context.
-- Reports depending on `event_name = 'purchase'` may undercount.
+Current status:
+- Webhook purchase flows use server-safe `logAnalyticsEvent(...)`.
+- Route-level guard exists in `tests/webhook-purchase-analytics-path.test.ts`.
+- No browser-only purchase tracker call path remains in webhook context.
 
 ### Legacy engagement endpoints
 
-- `app/api/freebie/track-engagement/route.ts` writes to `freebie_subscribers` (legacy table).
-- Canonical freebie flow now writes to `freebie_brand_strategies`.
-- No current frontend call path found for `/api/freebie/track-engagement`.
-
-Effect:
-- Endpoint appears active but does not reflect current funnel model.
+Current status:
+- `app/api/freebie/track-engagement/route.ts` writes to canonical `freebie_brand_strategies`-aligned model.
+- Guard exists in `tests/freebie-engagement-route-model.test.ts`.
+- Endpoint is no longer writing the legacy `freebie_subscribers` model.
 
 ## Findings
 
