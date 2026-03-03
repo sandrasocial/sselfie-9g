@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { detectMayaRememberIntent, mergePreferenceNotes } from "@/lib/maya/memory-layer"
+import { detectMayaRememberIntent, mergePreferenceNotes, detectMayaAssetEditIntent } from "@/lib/maya/memory-layer"
 
 describe("detectMayaRememberIntent", () => {
   it("extracts explicit remember commands", () => {
@@ -36,5 +36,41 @@ describe("mergePreferenceNotes", () => {
     const merged = mergePreferenceNotes(existing, "new note")
     expect(merged.length).toBe(20)
     expect(merged[0]).toBe("new note")
+  })
+})
+
+describe("detectMayaAssetEditIntent", () => {
+  it("detects explicit landing page edit requests", () => {
+    const intent = detectMayaAssetEditIntent("Update my landing page headline to Book More Clients", null)
+    expect(intent).toEqual({
+      assetType: "page",
+      assetLabel: "Landing Page",
+      instruction: "Update my landing page headline to Book More Clients",
+      mode: "start",
+    })
+  })
+
+  it("continues edits on active context when asset is implied", () => {
+    const intent = detectMayaAssetEditIntent("Change the CTA to Start Today", {
+      assetType: "calendar",
+      assetLabel: "Content Calendar",
+      updatedAt: new Date().toISOString(),
+    })
+
+    expect(intent).toEqual({
+      assetType: "calendar",
+      assetLabel: "Content Calendar",
+      instruction: "Change the CTA to Start Today",
+      mode: "continue",
+    })
+  })
+
+  it("does not hijack image editing requests", () => {
+    const intent = detectMayaAssetEditIntent("Edit this photo to be brighter", {
+      assetType: "page",
+      assetLabel: "Landing Page",
+      updatedAt: new Date().toISOString(),
+    })
+    expect(intent).toBeNull()
   })
 })

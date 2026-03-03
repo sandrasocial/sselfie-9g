@@ -410,9 +410,36 @@ export async function getUserContextForMaya(authUserId: string): Promise<string>
             .filter(Boolean)
         : []
 
+      const activeAssetContext =
+        memoryData?.active_asset_context && typeof memoryData.active_asset_context === "object"
+          ? (memoryData.active_asset_context as Record<string, unknown>)
+          : null
+
       if (rememberedPreferenceNotes.length > 0) {
         contextParts.push(`Remembered preferences: ${rememberedPreferenceNotes.slice(0, 6).join(" | ")}`)
         contextParts.push("Apply these remembered preferences unless the user explicitly changes them.")
+      }
+
+      if (activeAssetContext) {
+        const activeAssetType =
+          activeAssetContext.assetType === "page" ||
+          activeAssetContext.assetType === "calendar" ||
+          activeAssetContext.assetType === "pdf"
+            ? activeAssetContext.assetType
+            : "page"
+        const activeAssetLabel =
+          typeof activeAssetContext.assetLabel === "string" && activeAssetContext.assetLabel.trim().length > 0
+            ? activeAssetContext.assetLabel
+            : activeAssetType === "calendar"
+              ? "Content Calendar"
+              : activeAssetType === "pdf"
+                ? "Workbook"
+                : "Landing Page"
+        contextParts.push(`Active editing workspace: ${activeAssetLabel} (${activeAssetType})`)
+        if (typeof activeAssetContext.lastInstruction === "string" && activeAssetContext.lastInstruction.trim().length > 0) {
+          contextParts.push(`Latest edit instruction: ${activeAssetContext.lastInstruction}`)
+        }
+        contextParts.push("When the user asks for updates, continue editing this active workspace unless they switch assets.")
       }
 
       const insights = memory.personal_insights as any

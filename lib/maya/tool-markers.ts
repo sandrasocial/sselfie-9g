@@ -3,14 +3,23 @@ export type MayaToolMarker =
   | { tool: "save_to_gallery"; imageId?: string; target: "latest" | "explicit" }
   | { tool: "generate_image"; source: "selfies" | "custom_model" | "base_model" | "choose_source" }
   | { tool: "show_upload_zone"; category: "selfies" | "products" | "people" | "vibes" }
+  | { tool: "edit_asset"; assetType: "page" | "calendar" | "pdf"; assetLabel: string }
 
 const SHOW_GALLERY_REGEX = /\[SHOW_GALLERY\]/gi
 const SAVE_TO_GALLERY_REGEX = /\[SAVE_TO_GALLERY(?:\s*:\s*([^\]]+))?\]/gi
 const GENERATE_IMAGE_REGEX = /\[GENERATE_IMAGE(?:\s*:\s*([^\]]+))?\]/gi
 const SHOW_UPLOAD_ZONE_REGEX = /\[SHOW_UPLOAD_ZONE(?:\s*:\s*([^\]]+))?\]/gi
+const EDIT_ASSET_REGEX = /\[EDIT_ASSET(?:\s*:\s*([^\]]+))?\]/gi
 const SAVE_TARGET_IMAGE_ID_REGEX = /^(?:ai|gen)_\d+$/i
 const GENERATE_SOURCE_SET = new Set(["selfies", "custom_model", "base_model", "choose_source"])
 const UPLOAD_CATEGORY_SET = new Set(["selfies", "products", "people", "vibes"])
+const EDIT_ASSET_SET = new Set(["page", "calendar", "pdf"])
+
+function getDefaultAssetLabel(assetType: "page" | "calendar" | "pdf"): string {
+  if (assetType === "calendar") return "Content Calendar"
+  if (assetType === "pdf") return "Workbook"
+  return "Landing Page"
+}
 
 export function parseMayaToolMarkers(text: string): MayaToolMarker[] {
   if (!text) return []
@@ -68,6 +77,31 @@ export function parseMayaToolMarkers(text: string): MayaToolMarker[] {
   }
 
   SHOW_UPLOAD_ZONE_REGEX.lastIndex = 0
+
+  let editAssetMatch: RegExpExecArray | null = null
+  while ((editAssetMatch = EDIT_ASSET_REGEX.exec(text)) !== null) {
+    const rawPayload = (editAssetMatch[1] || "").trim()
+    const [rawType = "", rawLabel = ""] = rawPayload.split("|")
+    const normalizedType = rawType.toLowerCase()
+    const parsedType = EDIT_ASSET_SET.has(normalizedType) ? (normalizedType as "page" | "calendar" | "pdf") : "page"
+    let assetLabel = getDefaultAssetLabel(parsedType)
+
+    if (rawLabel.trim().length > 0) {
+      try {
+        assetLabel = decodeURIComponent(rawLabel.trim())
+      } catch {
+        assetLabel = rawLabel.trim()
+      }
+    }
+
+    markers.push({
+      tool: "edit_asset",
+      assetType: parsedType,
+      assetLabel,
+    })
+  }
+
+  EDIT_ASSET_REGEX.lastIndex = 0
   return markers
 }
 
@@ -78,6 +112,7 @@ export function stripMayaToolMarkers(text: string): string {
     .replace(SAVE_TO_GALLERY_REGEX, "")
     .replace(GENERATE_IMAGE_REGEX, "")
     .replace(SHOW_UPLOAD_ZONE_REGEX, "")
+    .replace(EDIT_ASSET_REGEX, "")
     .replace(/\n{3,}/g, "\n\n")
     .replace(/\s{2,}/g, " ")
     .trim()

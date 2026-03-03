@@ -1,4 +1,4 @@
-export type MayaToolId = "show_gallery" | "save_to_gallery" | "generate_image" | "show_upload_zone"
+export type MayaToolId = "show_gallery" | "save_to_gallery" | "generate_image" | "show_upload_zone" | "edit_asset"
 
 export interface MayaToolDefinition {
   id: MayaToolId
@@ -31,6 +31,12 @@ export const MAYA_TOOL_REGISTRY: Record<MayaToolId, MayaToolDefinition> = {
     label: "Show Upload Zone",
     marker: "SHOW_UPLOAD_ZONE",
     resultType: "tool-showUploadZone",
+  },
+  edit_asset: {
+    id: "edit_asset",
+    label: "Edit Asset",
+    marker: "EDIT_ASSET",
+    resultType: "tool-editAsset",
   },
 }
 

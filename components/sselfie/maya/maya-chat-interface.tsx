@@ -117,6 +117,7 @@ export default function MayaChatInterface({
     "tool-saveToGallery",
     "tool-generateImage",
     "tool-showUploadZone",
+    "tool-editAsset",
     "tool-generateFeed",
     "tool-generateCaptions",
     "tool-generateStrategy",
@@ -133,6 +134,7 @@ export default function MayaChatInterface({
       .replace(/\[SAVE_TO_GALLERY(?:\s*:\s*[^\]]+)?\]/gi, "")
       .replace(/\[GENERATE_IMAGE(?:\s*:\s*[^\]]+)?\]/gi, "")
       .replace(/\[SHOW_UPLOAD_ZONE(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replace(/\[EDIT_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "")
       .replace(/\[GENERATE_CAPTIONS\]/gi, "")
       .replace(/\[GENERATE_STRATEGY\]/gi, "")
       .replace(/\[CREATE_FEED_STRATEGY(?:\s*:[\s\S]*?)?\]/gi, "")
@@ -270,6 +272,7 @@ export default function MayaChatInterface({
     cleanedText = cleanedText.replace(/\[SAVE_TO_GALLERY(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
     cleanedText = cleanedText.replace(/\[GENERATE_IMAGE(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
     cleanedText = cleanedText.replace(/\[SHOW_UPLOAD_ZONE(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
+    cleanedText = cleanedText.replace(/\[EDIT_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
     // Remove feed creation trigger (with JSON content)
     // Use bracket counting to properly match nested JSON structures
     // This handles complex JSON with nested arrays/objects by finding the matching closing bracket
@@ -1009,6 +1012,37 @@ export default function MayaChatInterface({
                                   >
                                     Open Upload
                                   </button>
+                                </div>
+                              )
+                            }
+
+                            if (part.type === "tool-editAsset") {
+                              const output = (part as any).output || {}
+                              const assetType = output.assetType || "page"
+                              const assetLabel =
+                                typeof output.assetLabel === "string" && output.assetLabel.trim().length > 0
+                                  ? output.assetLabel
+                                  : assetType === "calendar"
+                                    ? "Content Calendar"
+                                    : assetType === "pdf"
+                                      ? "Workbook"
+                                      : "Landing Page"
+                              const helperText =
+                                typeof output.message === "string" && output.message.trim().length > 0
+                                  ? output.message
+                                  : `Maya will apply your next edit instructions to this ${assetLabel}.`
+
+                              return (
+                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Editing Workspace</div>
+                                    <div className="text-[10px] uppercase tracking-[0.16em] text-[#bdbdbd]">{assetType}</div>
+                                  </div>
+                                  <div className="mt-2 text-sm text-[#ffffff]">{assetLabel}</div>
+                                  <div className="mt-1 text-xs text-[#cfcfcf]">{helperText}</div>
+                                  <div className="mt-3 rounded-lg border border-[rgba(255,255,255,0.12)] bg-[rgba(0,0,0,0.25)] px-3 py-2 text-[11px] text-[#dcdcdc]">
+                                    Next step: describe the exact change you want (headline, CTA, section copy, layout), and Maya keeps editing this same asset.
+                                  </div>
                                 </div>
                               )
                             }

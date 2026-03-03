@@ -24,7 +24,14 @@ import { getProductGenerationPrompt } from "@/lib/products-system-prompt"
 import { shouldDeductMayaChatCredit } from "@/lib/maya/chat-credit-policy"
 import { detectMayaToolDispatchIntent, extractLatestUserText } from "@/lib/maya/intent-dispatcher"
 import { stripMayaToolMarkers } from "@/lib/maya/tool-markers"
-import { detectMayaRememberIntent, persistMayaRememberedPreference } from "@/lib/maya/memory-layer"
+import { formatMayaToolMarker } from "@/lib/maya/tool-registry"
+import {
+  detectMayaRememberIntent,
+  persistMayaRememberedPreference,
+  detectMayaAssetEditIntent,
+  getMayaActiveAssetContext,
+  persistMayaActiveAssetContext,
+} from "@/lib/maya/memory-layer"
 
 import { NextResponse } from "next/server"
 
@@ -352,6 +359,52 @@ export async function POST(req: Request) {
           })
 
           return createUIMessageStreamResponse({ stream })
+        }
+      }
+
+      let activeAssetContext: Awaited<ReturnType<typeof getMayaActiveAssetContext>> = null
+      try {
+        activeAssetContext = await getMayaActiveAssetContext(dbUserId)
+      } catch (activeAssetError) {
+        console.error("[Maya Chat] Failed to load active asset context:", activeAssetError)
+      }
+
+      const assetEditIntent = detectMayaAssetEditIntent(latestUserText, activeAssetContext)
+      if (assetEditIntent) {
+        try {
+          const persistedAsset = await persistMayaActiveAssetContext(dbUserId, {
+            assetType: assetEditIntent.assetType,
+            assetLabel: assetEditIntent.assetLabel,
+            instruction: assetEditIntent.instruction,
+          })
+
+          const encodedLabel = encodeURIComponent(persistedAsset.activeAsset.assetLabel)
+          const editAssetMarker = formatMayaToolMarker(
+            "edit_asset",
+            `${persistedAsset.activeAsset.assetType}|${encodedLabel}`,
+          )
+
+          const actionVerb = assetEditIntent.mode === "continue" ? "Continuing" : "Starting"
+          const stream = createUIMessageStream({
+            originalMessages: validUIMessages as any,
+            execute: ({ writer }) => {
+              const textPartId = `asset-edit-${Date.now().toString(36)}`
+              writer.write({ type: "text-start", id: textPartId })
+              writer.write({
+                type: "text-delta",
+                id: textPartId,
+                delta:
+                  `${actionVerb} your ${persistedAsset.activeAsset.assetLabel} edits now. ` +
+                  `I’ll keep this as your active workspace so your next tweaks update the same asset.\n` +
+                  editAssetMarker,
+              })
+              writer.write({ type: "text-end", id: textPartId })
+            },
+          })
+
+          return createUIMessageStreamResponse({ stream })
+        } catch (assetPersistError) {
+          console.error("[Maya Chat] Failed saving asset edit context:", assetPersistError)
         }
       }
 

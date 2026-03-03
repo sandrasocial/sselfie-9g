@@ -726,6 +726,16 @@ export async function GET(request: NextRequest) {
                 category: marker.category,
               },
             })
+          } else if (marker.tool === "edit_asset") {
+            parts.push({
+              type: "tool-editAsset",
+              output: {
+                state: "ready",
+                assetType: marker.assetType,
+                assetLabel: marker.assetLabel,
+                message: `Active ${marker.assetLabel} editing context restored.`,
+              },
+            })
           }
         }
         
@@ -827,6 +837,16 @@ export async function GET(request: NextRequest) {
               output: {
                 state: "ready",
                 category: marker.category,
+              },
+            })
+          } else if (marker.tool === "edit_asset") {
+            parts.push({
+              type: "tool-editAsset",
+              output: {
+                state: "ready",
+                assetType: marker.assetType,
+                assetLabel: marker.assetLabel,
+                message: `Active ${marker.assetLabel} editing context restored.`,
               },
             })
           }
