@@ -77,8 +77,7 @@ export function detectMayaToolDispatchIntent(userText: string): MayaToolDispatch
         source,
         responseText:
           `Love it. We’ll use your selfies for this one.\n` +
-          `${formatMayaToolMarker("generate_image", source)}\n` +
-          `${formatMayaToolMarker("show_upload_zone", "selfies")}`,
+          `${formatMayaToolMarker("generate_image", source)}`,
       }
     }
 

@@ -3616,7 +3616,7 @@ export default function MayaChatScreen({
       {/* Tab Content - Training Tab */}
       {activeMayaTab === "training" && (
         <div
-          className="fixed inset-0 z-150 bg-stone-50/95 backdrop-blur-sm"
+          className="fixed inset-0 z-150 bg-[rgba(10,10,10,0.96)] backdrop-blur-md"
           onClick={closeTrainingTab}
           role="button"
           tabIndex={-1}
@@ -3627,7 +3627,7 @@ export default function MayaChatScreen({
           >
             <button
               onClick={closeTrainingTab}
-              className="absolute right-4 top-4 px-2 py-1.5 rounded-full bg-white/90 border border-stone-200 text-stone-500 hover:text-stone-700 shadow-sm"
+              className="absolute right-4 top-4 px-3 py-1.5 rounded-full border border-white/20 bg-[rgba(255,255,255,0.08)] text-white/80 hover:text-white hover:bg-[rgba(255,255,255,0.14)] transition-colors"
               aria-label="Close training"
             >
               <span className="text-[10px] uppercase tracking-[0.2em]">Close</span>
