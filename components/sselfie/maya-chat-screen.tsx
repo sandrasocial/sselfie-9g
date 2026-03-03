@@ -2830,6 +2830,14 @@ export default function MayaChatScreen({
             }
           }}
           onNavigation={handleNavigation}
+          onNewProject={handleNewChat}
+          onHistory={() => {
+            if (hasProFeatures) {
+              setShowProModeHistory(true)
+              return
+            }
+            setShowHistory(true)
+          }}
           onLogout={handleLogout}
           isLoggingOut={isLoggingOut}
           onSwitchToClassic={() => handleModeSwitch(false)}
