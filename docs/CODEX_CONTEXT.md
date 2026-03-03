@@ -44,6 +44,7 @@
 | `docs/features/` | **Per-feature source of truth** for research and implementation: `maya.md`, `feed-planner.md`, `gallery.md`, `academy.md`, `profile.md`, `admin.md`. **Research agents:** read the relevant feature doc, then fill "Current value / pain" and "Opportunities" using `output/automation/funnel-digest-*.md`, `output/automation/support-digest-*.md`, and feedback. See `docs/features/README.md` for how to use. |
 | `docs/codex-tasks/` | **Implementation task list for Codex.** Read `RESEARCH-SPRINT-CODEX-TASKS-2026-02-25.md` for the current 11 prioritized tasks (A-01 → E-03). Start here for implementation work. |
 | `docs/in-app-funnel/` | **Research deliverables for in-app journey + Academy funnel integration** (produced Feb 2026). Read these before implementing tasks A-01, C-01, C-02, C-03: `01-journey-map-2026-02-25.md` (4-stage funnel map), `02-content-copy-2026-02-25.md` (all CTAs, Maya system prompts, email copy), `03-designs-wireframes-2026-02-25.md` (mobile wireframes for Academy tab, post-purchase modal, Maya guided path), `04-prioritized-list-2026-02-25.md` (3-slice sprint plan + open questions for Sandra), `05-slice-1-verification-checklist.md` (QA checklist for Slice 1 tasks). |
+| `skills/sselfie-maya-os/` | **Shared agent skill for Maya-first operating model.** Contains canonical user journey, screen map, scaling playbook, and QA checklist for funnel/frontend changes. |
 
 ## Current state — Research Sprint Feb 2026
 

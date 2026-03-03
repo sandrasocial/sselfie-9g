@@ -203,6 +203,10 @@ The clean branch has 5 tabs (Maya, Gallery, Feed Planner, Academy, Account).
 **This is Phase B scaffolding.** Phase C collapses it — Gallery IS a Maya tool, Feed Planner IS a Maya tool. No tab router. One screen.
 → Do NOT get comfortable with 5 tabs as the final state.
 
+### Agent Skill (Shared Journey Source)
+- Canonical multi-agent journey/UI/scale skill: `skills/sselfie-maya-os/SKILL.md`
+- Use this when implementing or auditing funnel routes, screen behavior, and Maya-first orchestration changes.
+
 ### Pricing (Once Vision Is Live)
 "The only AI that already knows your brand — and gets smarter every time you use it."
 That's not a tool. That's a business relationship. Target: €197/month minimum. Not €97. Not €27.

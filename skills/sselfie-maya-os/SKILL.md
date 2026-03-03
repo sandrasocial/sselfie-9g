@@ -1,0 +1,49 @@
+---
+name: sselfie-maya-os
+description: Canonical Maya-first operating model for SSELFIE user journey, screen behavior, and scaling decisions. Use when planning, implementing, auditing, or QAing funnel routes, checkout flows, onboarding, in-app UI behavior, analytics events, or architecture priorities so every agent stays aligned to the same end-to-end product path.
+---
+
+# SSELFIE Maya OS
+
+## Quick start
+1. Read [references/user-journey.md](references/user-journey.md).
+2. Read one additional reference based on task type:
+- UI/screen behavior: [references/screen-map.md](references/screen-map.md)
+- Scale/architecture decisions: [references/scaling-playbook.md](references/scaling-playbook.md)
+- Validation/release readiness: [references/qa-checklist.md](references/qa-checklist.md)
+3. Produce output with this structure:
+- Stage in journey
+- User intent
+- Surface/tool shown to user
+- Data writes and reads
+- Analytics events emitted
+- Success metric
+
+## Non-negotiables
+- Treat Maya as the product shell, not a side assistant.
+- Prefer conversation-first interactions over navigation-first interactions.
+- Keep one canonical funnel path per step; avoid alias route growth.
+- Keep analytics event names inside the allowlist contract.
+- Keep changes low-blast-radius and verifiable with tests/build.
+
+## Workflow
+1. Classify request into one journey stage from `references/user-journey.md`.
+2. Map to canonical route/surface from `references/screen-map.md`.
+3. Verify telemetry and data-model alignment before proposing implementation.
+4. Choose smallest safe change that preserves canonical path.
+5. Validate with checks in `references/qa-checklist.md`.
+
+## Output contract for agents
+- Always name the exact route(s) affected.
+- Always name the exact API/event contracts affected.
+- Always separate:
+- What is currently true in code
+- What is target behavior
+- What migration/compat shim is temporary
+- Always include explicit merge risk: `low`, `medium`, or `high`.
+
+## Escalate before coding when
+- A change introduces a new canonical route for an existing step.
+- A change adds a new analytics event name.
+- A change writes to legacy tables in active funnels.
+- A change bypasses Maya-first interaction model for core flows.
