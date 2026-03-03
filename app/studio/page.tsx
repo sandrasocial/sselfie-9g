@@ -1,3 +1,4 @@
+import { sql } from "@/lib/db/client"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId, getOrCreateNeonUser } from "@/lib/user-mapping"
 import { getUserSubscription } from "@/lib/subscription"
@@ -98,8 +99,6 @@ export default async function StudioPage({
   // or whether they used the old blueprint system
   console.log(`[Studio] 🔍🔍🔍 CHECKING CREDIT GRANT for user ${neonUser.id} (email: ${neonUser.email})`)
   try {
-    const { neon } = await import("@neondatabase/serverless")
-    
     console.log(`[Studio] ✅✅✅ Database connection established`)
     
     // Check if user has active subscription (only free users get welcome credits)

@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { sql } from "@/lib/db/client"
 import { createServerClient } from "@/lib/supabase/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { generateText } from "ai"
@@ -42,7 +43,6 @@ export async function POST(req: NextRequest) {
     const userContext = await getUserContextForMaya(effectiveUser.id)
     
     // Get user gender
-    const { neon } = await import("@neondatabase/serverless")
     const userDataResult = await sql`
       SELECT u.gender
       FROM users u

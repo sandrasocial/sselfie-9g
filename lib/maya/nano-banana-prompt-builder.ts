@@ -21,6 +21,7 @@
  */
 
 import { getUserContextForMaya } from './get-user-context'
+import { sql } from "@/lib/db/client"
 
 /**
  * Studio Pro Mode Types
@@ -348,7 +349,6 @@ export async function buildNanoBananaPrompt(params: {
   }
 
   // Lookup supabase_user_id for context
-  const { neon } = await import('@neondatabase/serverless')
   const [userAuth] = await sql`
     SELECT supabase_user_id FROM users WHERE id = ${userId} LIMIT 1
   `

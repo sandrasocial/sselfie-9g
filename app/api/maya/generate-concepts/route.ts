@@ -29,6 +29,7 @@
  */
 
 import { type NextRequest, NextResponse } from "next/server"
+import { sql } from "@/lib/db/client"
 import { createServerClient } from "@/lib/supabase/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { generateText } from "ai"
@@ -854,7 +855,6 @@ export async function POST(req: NextRequest) {
     let userGender = "person"
     let userEthnicity = null
     let physicalPreferences = null
-    const { neon } = await import("@neondatabase/serverless")
 
     const userDataResult = await sql`
       SELECT u.gender, u.ethnicity, um.trigger_word, upb.physical_preferences

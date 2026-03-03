@@ -1,4 +1,5 @@
 import { streamText, convertToModelMessages, type UIMessage } from "ai"
+import { sql } from "@/lib/db/client"
 import { createAnthropic } from "@ai-sdk/anthropic"
 import { getMayaSystemPrompt, MAYA_CLASSIC_CONFIG, MAYA_PRO_CONFIG } from "@/lib/maya/mode-adapters"
 import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
@@ -167,7 +168,6 @@ export async function POST(req: Request) {
 
       let hasTrainedLoraModel = false
       try {
-        const { neon } = await import("@neondatabase/serverless")
         const modelRows = await sql`
           SELECT 1
           FROM user_models
@@ -730,7 +730,6 @@ export async function POST(req: Request) {
 
     let userGender = "person"
     try {
-      const { neon } = await import("@neondatabase/serverless")
       const genderResult = await sql`SELECT gender FROM users WHERE id = ${dbUserId} LIMIT 1`
       if (genderResult.length > 0 && genderResult[0].gender) {
         const dbGender = genderResult[0].gender.toLowerCase().trim()

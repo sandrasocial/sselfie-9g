@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
+import { sql } from "@/lib/db/client"
 import { syncUserWithNeon } from "@/lib/user-sync"
 import { NextResponse } from "next/server"
 
@@ -39,7 +40,6 @@ export async function GET(request: Request) {
       // This ensures credits are granted for all signups via callback route
       if (neonUser?.id) {
         try {
-          const { neon } = await import("@neondatabase/serverless")
           
           // Check if user has active subscription (only free users get welcome credits)
           const hasSubscription = await sql`
@@ -83,7 +83,6 @@ export async function GET(request: Request) {
       // Create blueprint_subscribers record for free app signups (idempotent)
       if (neonUser?.id && data.user.email) {
         try {
-          const { neon } = await import("@neondatabase/serverless")
 
           // Only create for non-subscribed users (free blueprint flow)
           const hasSubscription = await sql`
@@ -204,7 +203,6 @@ export async function GET(request: Request) {
       // Update last login timestamp for retention tracking
       if (neonUser?.id) {
         try {
-          const { neon } = await import("@neondatabase/serverless")
           await sql`
             UPDATE users 
             SET last_login_at = NOW() 
@@ -221,7 +219,6 @@ export async function GET(request: Request) {
       const utmSource = requestUrl.searchParams.get("utm_source")
       if (utmSource === "coldreactivation" && neonUser?.id) {
         try {
-          const { neon } = await import("@neondatabase/serverless")
           
           // Check if this is a new user (created in last 5 minutes) to avoid granting on every login
           const userCreated = await sql`
@@ -259,7 +256,6 @@ export async function GET(request: Request) {
       const referralCode = requestUrl.searchParams.get("ref")
       if (referralCode && neonUser?.id) {
         try {
-          const { neon } = await import("@neondatabase/serverless")
           
           // Check if this is a new user (created in last 5 minutes) to avoid tracking on every login
           const userCreated = await sql`
