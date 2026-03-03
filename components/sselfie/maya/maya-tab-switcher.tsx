@@ -73,7 +73,7 @@ export default function MayaTabSwitcher({
   return (
     <div 
       ref={containerRef}
-      className={`flex gap-2 sm:gap-3 overflow-x-auto py-2.5 ${className}`} 
+      className={`inline-flex w-fit max-w-full items-center gap-1 overflow-x-auto py-1.5 ${className}`} 
       style={{ 
         scrollbarWidth: 'none', 
         msOverflowStyle: 'none',
@@ -93,12 +93,12 @@ export default function MayaTabSwitcher({
                 onTabChange(tab.id)
               }
             }}
-            className={`relative px-4 sm:px-5 py-2.5 rounded-full border transition-all touch-manipulation active:scale-95 min-h-[40px] flex items-center gap-1.5 sm:gap-2 whitespace-nowrap scroll-snap-align-start ${
+            className={`relative px-3 sm:px-3.5 py-1.5 rounded-lg transition-all touch-manipulation active:scale-95 min-h-[34px] sm:min-h-[36px] flex items-center gap-1 sm:gap-1.5 whitespace-nowrap scroll-snap-align-start ${
               isActive
-                ? "border-[rgba(255,255,255,0.15)] text-[#ffffff] cursor-default"
+                ? "bg-[rgba(255,255,255,0.1)] text-[#ffffff] cursor-default"
                 : isDisabled
-                  ? "border-[rgba(255,255,255,0.08)] text-[rgba(255,255,255,0.3)] opacity-60 cursor-not-allowed"
-                  : "border-[rgba(255,255,255,0.08)] text-[rgba(255,255,255,0.5)] hover:text-[rgba(255,255,255,0.7)] hover:bg-[rgba(255,255,255,0.08)] cursor-pointer"
+                  ? "text-[rgba(255,255,255,0.3)] opacity-60 cursor-not-allowed"
+                  : "text-[rgba(255,255,255,0.52)] hover:text-[rgba(255,255,255,0.78)] hover:bg-[rgba(255,255,255,0.06)] cursor-pointer"
             }`}
             aria-label={`${tab.label} tab`}
             title={isDisabled ? "Feed is temporarily unavailable" : `${tab.label} tab`}
@@ -106,12 +106,10 @@ export default function MayaTabSwitcher({
             aria-disabled={isDisabled}
             style={{
               fontFamily: "var(--font-body)",
-              fontSize: "11px",
+              fontSize: "10px",
               fontWeight: 500,
-              letterSpacing: "0.5em",
+              letterSpacing: "0.26em",
               textTransform: "uppercase",
-              backdropFilter: "blur(20px)",
-              background: isActive ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.04)',
             }}
           >
             {tab.label}
@@ -130,7 +128,7 @@ export default function MayaTabSwitcher({
               </span>
             )}
             {isActive && (
-              <span className="absolute bottom-0 left-4 right-4 h-[2px] rounded-full" style={{ background: 'rgba(255,255,255,0.4)' }} />
+              <span className="absolute bottom-[3px] left-3 right-3 h-[1.5px] rounded-full" style={{ background: 'rgba(255,255,255,0.55)' }} />
             )}
           </button>
         )

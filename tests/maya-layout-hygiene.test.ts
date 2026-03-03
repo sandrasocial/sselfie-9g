@@ -33,4 +33,11 @@ describe("maya layout hygiene", () => {
     expect(unifiedInput).toContain("sm:hidden\">Image</span>")
     expect(unifiedInput).toContain("sm:hidden\">Go</span>")
   })
+
+  it("keeps chat and video tabs lightweight so they don't dominate the chat canvas", () => {
+    const tabSwitcher = read("components/sselfie/maya/maya-tab-switcher.tsx")
+    expect(tabSwitcher).toContain("min-h-[34px] sm:min-h-[36px]")
+    expect(tabSwitcher).toContain("letterSpacing: \"0.26em\"")
+    expect(tabSwitcher).not.toContain("rounded-full border transition-all")
+  })
 })

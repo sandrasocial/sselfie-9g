@@ -523,8 +523,8 @@ export default function MayaHeaderUnified({
 
       {/* Tab Switcher - Integrated into header */}
       {activeTab && onTabChange && (
-        <div className="w-full border-t border-[rgba(255,255,255,0.08)] bg-[rgba(10,10,10,0.42)] backdrop-blur-[14px] z-[100] relative">
-          <div className="px-3 sm:px-4 md:px-6">
+        <div className="w-full border-t border-[rgba(255,255,255,0.06)] bg-transparent z-[100] relative">
+          <div className="px-3 sm:px-4 md:px-6 py-1 flex">
             <MayaTabSwitcher
               activeTab={activeTab}
               onTabChange={onTabChange}
