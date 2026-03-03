@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 
 import { requireAdmin } from "@/lib/admin-feature-flags"
 import { buildActivationKpiFromWindow } from "@/lib/analytics/activation-kpi"
-import { getDb } from "@/lib/db"
+import { getDb } from "@/lib/db/client"
 
 const DEFAULT_WINDOW_DAYS = 7
 

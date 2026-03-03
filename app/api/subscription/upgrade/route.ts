@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { stripe } from "@/lib/stripe"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { getDb } from "@/lib/db"
+import { getDb } from "@/lib/db/client"
 import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
 
 type SupportedTier = "sselfie_studio_membership"

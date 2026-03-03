@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 
-import { sql } from "@/lib/neon"
+import { sql } from "@/lib/db/client"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import {

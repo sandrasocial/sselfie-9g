@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { sendEmail } from "@/lib/email/send-email"
 import { generateWelcomeEmail } from "@/lib/email/templates/welcome-email"
-import { neon } from "@/lib/db"
+import { sql } from "@/lib/db/client"
 
 
 export async function POST(request: Request) {

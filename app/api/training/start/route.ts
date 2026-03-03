@@ -4,7 +4,7 @@ import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
 import { createTrainingModel } from "@/lib/data/training"
 import { getReplicateClient, DEFAULT_TRAINING_PARAMS, getAdaptiveTrainingParams } from "@/lib/replicate-client"
 import { createTrainingZip } from "@/lib/storage"
-import { getDbClient } from "@/lib/db-singleton"
+import { getDbClient } from "@/lib/db/client"
 import { rateLimit } from "@/lib/rate-limit-api"
 import { checkCredits, deductCredits, getUserCredits, CREDIT_COSTS } from "@/lib/credits"
 

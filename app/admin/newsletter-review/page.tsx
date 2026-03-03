@@ -1,4 +1,4 @@
-import { getDb } from "@/lib/db"
+import { getDb } from "@/lib/db/client"
 import { NewsletterReviewClient } from "./newsletter-review-client"
 
 // Disable caching for this page

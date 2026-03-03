@@ -1,6 +1,6 @@
 import "server-only"
 import { Resend } from 'resend'
-import { getDb } from '@/lib/db'
+import { getDb } from '@/lib/db/client'
 import { processEmailLinks, validateEmailLinks } from './link-library'
 import { getAudienceContacts } from "@/lib/resend/get-audience-contacts"
 import { computeBroadcastPreflight } from "@/lib/email/broadcast-preflight"

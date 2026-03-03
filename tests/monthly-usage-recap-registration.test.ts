@@ -13,8 +13,8 @@ describe("monthly usage recap wiring", () => {
     expect(catalog).toContain("monthly-usage-recap")
   })
 
-  it("adds monthly usage recap route to vercel crons", () => {
-    const vercel = fs.readFileSync(path.join(ROOT, "vercel.json"), "utf8")
-    expect(vercel).toContain("/api/cron/monthly-usage-recap")
+  it("keeps monthly usage recap route available for manual invocation", () => {
+    const routePath = path.join(ROOT, "app/api/cron/monthly-usage-recap/route.ts")
+    expect(fs.existsSync(routePath)).toBe(true)
   })
 })

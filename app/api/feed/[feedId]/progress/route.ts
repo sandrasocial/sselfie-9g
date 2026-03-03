@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
-import { getDb } from "@/lib/db"
+import { getDb } from "@/lib/db/client"
 import { getReplicateClient } from "@/lib/replicate-client"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { hookFeedPostGeneration } from "@/lib/quality/hooks"

@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { sql } from "@/lib/neon"
+import { sql } from "@/lib/db/client"
 import { addOrUpdateResendContact } from "@/lib/resend/manage-contact"
 import { sendEmail } from "@/lib/email/send-email"
 import { generateStrategyEmail } from "@/lib/email/templates/freebie-strategy-email"

@@ -34,7 +34,7 @@ export async function autoSyncUserToResend(
 
     const { source = "app_signup", isStudioMember = false, subscriptionProduct } = options
 
-    const tags: any[] = [{ name: "source", value: source }]
+    const tags: Array<{ name: string; value: string }> = [{ name: "source", value: source }]
 
     if (isStudioMember) {
       tags.push({ name: "product", value: "studio_member_active" })
@@ -45,11 +45,13 @@ export async function autoSyncUserToResend(
       tags.push({ name: "status", value: "active" })
     }
 
+    const properties = Object.fromEntries(tags.map((tag) => [tag.name, tag.value]))
+
     const { data, error } = await resend.contacts.create({
       email,
       firstName: firstName || undefined,
       audienceId: AUDIENCE_ID,
-      tags,
+      properties,
     })
 
     if (error) {

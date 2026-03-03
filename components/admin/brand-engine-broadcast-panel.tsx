@@ -130,7 +130,7 @@ export function BrandEngineBroadcastPanel() {
 
       <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="border border-stone-200 p-4">
-          <p className="text-[10px] tracking-[0.2em] uppercase text-stone-500">Subscribers</p>
+          <p className="text-[10px] tracking-[0.2em] uppercase text-stone-500">App signups</p>
           <p className="text-lg text-stone-950 mt-1">{subscriberCountDisplay}</p>
         </div>
         <div className="border border-stone-200 p-4">

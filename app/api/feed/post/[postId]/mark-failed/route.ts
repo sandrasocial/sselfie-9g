@@ -1,4 +1,4 @@
-import { getDb } from '@/lib/db'
+import { getDb } from '@/lib/db/client'
 import { NextResponse } from 'next/server'
 import { getAuthenticatedUserWithRetry } from '@/lib/auth-helper'
 import { getUserByAuthId } from '@/lib/user-mapping'

@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getDbClient } from "@/lib/db-singleton"
+import { getDbClient } from "@/lib/db/client"
 import { requireAdmin, isProPhotoshootEnabled } from "@/lib/admin-feature-flags"
 
 const sql = getDbClient()

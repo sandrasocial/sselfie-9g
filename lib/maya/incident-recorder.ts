@@ -8,7 +8,7 @@
  */
 
 import "server-only"
-import { getDb } from "@/lib/db"
+import { getDb } from "@/lib/db/client"
 
 export interface IncidentEvent {
   severity: 'red' | 'orange' | 'yellow'

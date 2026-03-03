@@ -15,7 +15,7 @@
  * - Fire-and-forget async execution
  */
 
-import { sql } from "@/lib/neon"
+import { sql } from "@/lib/db/client"
 import crypto from "crypto"
 
 // ============================================================================

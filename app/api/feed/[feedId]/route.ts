@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { createServerClient } from "@/lib/supabase/server"
 import { getAuthenticatedUserWithRetry } from "@/lib/auth-helper"
-import { getDb } from "@/lib/db"
+import { getDb } from "@/lib/db/client"
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ feedId: string }> | { feedId: string } }) {
   try {

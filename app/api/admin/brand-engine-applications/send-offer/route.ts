@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getDb } from "@/lib/db"
+import { getDb } from "@/lib/db/client"
 import { requireAdmin } from "@/lib/admin-feature-flags"
 import { ensureBrandEngineApplicationsSchema, type BrandEngineCheckoutMode } from "@/lib/brand-engine/applications"
 import { createBrandEngineCheckoutLink } from "@/lib/brand-engine/offer-checkout"

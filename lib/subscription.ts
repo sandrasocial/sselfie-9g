@@ -1,4 +1,4 @@
-import { sql } from "@/lib/neon"
+import { sql } from "@/lib/db/client"
 
 export type ProductType = "sselfie_studio_membership" | "brand_studio_membership" | "pro" | "one_time_session" | "paid_blueprint" | "free_blueprint"
 export type SubscriptionStatus =

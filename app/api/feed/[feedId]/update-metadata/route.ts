@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
-import { getDb } from "@/lib/db"
+import { getDb } from "@/lib/db/client"
 
 /**
  * Update Feed Metadata

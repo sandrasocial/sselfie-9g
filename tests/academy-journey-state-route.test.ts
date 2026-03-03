@@ -13,7 +13,7 @@ vi.mock("@/lib/simple-impersonation", () => ({
   getEffectiveNeonUser: mockGetEffectiveNeonUser,
 }))
 
-vi.mock("@/lib/db", () => ({
+vi.mock("@/lib/db/client", () => ({
   getDb: mockGetDb,
 }))
 
@@ -68,4 +68,3 @@ describe("GET /api/onboarding/academy-journey-state", () => {
     expect(body.showAfterThreeGenerationsPrompt).toBe(false)
   })
 })
-

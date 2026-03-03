@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getDb } from "@/lib/db"
+import { getDb } from "@/lib/db/client"
 
 /**
  * Convert HTML to plain text by stripping tags

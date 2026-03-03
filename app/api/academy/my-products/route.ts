@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { sql } from "@/lib/neon"
+import { sql } from "@/lib/db/client"
 import { hasStudioMembership } from "@/lib/subscription"
 import { ACADEMY_PRODUCTS } from "@/lib/products"
 

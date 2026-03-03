@@ -3,7 +3,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 const sqlMock = vi.fn()
-const neonFactoryMock = vi.fn(() => sqlMock)
 const constructEventMock = vi.fn()
 const checkWebhookRateLimitMock = vi.fn()
 const addOrUpdateResendContactMock = vi.fn()
@@ -13,8 +12,8 @@ vi.mock("crypto", () => ({
   randomUUID: vi.fn(() => "uuid_test_123"),
 }))
 
-vi.mock("@/lib/db", () => ({
-  neon: neonFactoryMock,
+vi.mock("@/lib/db/client", () => ({
+  sql: sqlMock,
 }))
 
 vi.mock("@/lib/stripe", () => ({

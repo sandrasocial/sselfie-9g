@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { sql } from "@/lib/neon"
+import { sql } from "@/lib/db/client"
 
 /**
  * POST /api/onboarding/unified-onboarding-complete

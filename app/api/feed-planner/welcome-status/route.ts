@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { getDb } from "@/lib/db"
+import { getDb } from "@/lib/db/client"
 
 /**
  * GET /api/feed-planner/welcome-status

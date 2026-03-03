@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { stripe } from "@/lib/stripe"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { sql } from "@/lib/neon"
+import { sql } from "@/lib/db/client"
 
 const ADMIN_EMAIL = "ssa@ssasocial.com"
 

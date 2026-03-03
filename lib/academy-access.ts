@@ -1,4 +1,4 @@
-import { sql } from "@/lib/neon"
+import { sql } from "@/lib/db/client"
 import { hasStudioMembership } from "@/lib/subscription"
 
 export type CourseId =

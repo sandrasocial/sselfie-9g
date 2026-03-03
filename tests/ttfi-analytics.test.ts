@@ -7,7 +7,7 @@ vi.mock("@/lib/analytics/events", () => ({
   logAnalyticsEvent: mockLogAnalyticsEvent,
 }))
 
-vi.mock("@/lib/db", () => ({
+vi.mock("@/lib/db/client", () => ({
   getDb: () => mockSql,
 }))
 

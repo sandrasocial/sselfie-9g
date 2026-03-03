@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { getDbClient } from "@/lib/db-singleton"
+import { getDbClient } from "@/lib/db/client"
 
 const sql = getDbClient()
 

@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getDb } from "@/lib/db"
+import { getDb } from "@/lib/db/client"
 
 const SANDRA_USER_IDS = [
   "58b63fd8-ab3f-4fe6-a85d-8a5a6acd4b31",

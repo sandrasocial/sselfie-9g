@@ -51,7 +51,7 @@ export async function batchInsert<T>(
 
     const flatValues = batch.flat()
     const query = `INSERT INTO ${tableName} (${columns.join(", ")}) VALUES ${values}`
-    await (client as (q: string, p: unknown[]) => Promise<unknown>)(query, flatValues)
+    await (client as unknown as (q: string, p: unknown[]) => Promise<unknown>)(query, flatValues)
 
     if (i + batchSize < rows.length) {
       await new Promise((resolve) => setTimeout(resolve, 100))

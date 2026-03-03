@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/admin-feature-flags"
-import { sql } from "@/lib/neon"
+import { sql } from "@/lib/db/client"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { getNeonUserByEmail, getOrCreateNeonUser } from "@/lib/user-mapping"
 import { ACADEMY_PRODUCTS } from "@/lib/products"

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 
 import { getAuthenticatedUser } from "@/lib/auth-helper"
-import { getDb } from "@/lib/db"
+import { getDb } from "@/lib/db/client"
 import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
 import { getAcademyJourneyState } from "@/lib/onboarding/academy-journey"
 

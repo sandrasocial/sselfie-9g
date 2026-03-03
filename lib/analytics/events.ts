@@ -1,7 +1,7 @@
 import "server-only"
 
 import { ensureAnalyticsSchema } from "@/lib/analytics/schema"
-import { getDb } from "@/lib/db"
+import { getDb } from "@/lib/db/client"
 import {
   isAllowedAnalyticsEventName,
   type AnalyticsEventName,

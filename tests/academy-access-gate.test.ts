@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 const sqlMock = vi.fn()
 const hasStudioMembershipMock = vi.fn()
 
-vi.mock("@/lib/neon", () => ({
+vi.mock("@/lib/db/client", () => ({
   sql: sqlMock,
 }))
 

@@ -1,6 +1,6 @@
 import "server-only"
 
-import { getDb } from "@/lib/db"
+import { getDb } from "@/lib/db/client"
 import { getReplicateClient } from "@/lib/replicate-client"
 import { finalizeReplicateImageToBlob } from "@/lib/feed/finalize-replicate-image"
 import { acquireKvLock, releaseKvLock } from "@/lib/cache"

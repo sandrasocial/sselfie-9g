@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { getDb } from "@/lib/db"
+import { getDb } from "@/lib/db/client"
 
 function clampInt(v: string | null, def: number, min: number, max: number) {
   const n = Number.parseInt(String(v ?? ""), 10)

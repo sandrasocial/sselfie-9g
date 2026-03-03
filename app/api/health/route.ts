@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { logger } from "@/lib/logger"
-import { getDb } from "@/lib/db"
+import { getDb } from "@/lib/db/client"
 import { getRedisClient } from "@/lib/redis"
 
 /**

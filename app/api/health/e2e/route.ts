@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { logger } from "@/lib/logger"
-import { getDb } from "@/lib/db"
+import { getDb } from "@/lib/db/client"
 import { getUserCredits } from "@/lib/credits"
 import { getOrCreateNeonUser } from "@/lib/user-mapping"
 import { createCronLogger } from "@/lib/cron-logger"

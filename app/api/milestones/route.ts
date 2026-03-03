@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { getDb } from "@/lib/db"
+import { getDb } from "@/lib/db/client"
 
 export async function POST(req: NextRequest) {
   try {

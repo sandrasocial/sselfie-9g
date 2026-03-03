@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getDbClient } from "@/lib/db-singleton"
+import { getDbClient } from "@/lib/db/client"
 import { rateLimit } from "@/lib/rate-limit-api"
 import { getUserTrainedModel } from "@/lib/data/studio"
 import { createServerClient } from "@/lib/supabase/server"

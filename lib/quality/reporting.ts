@@ -13,7 +13,7 @@
  * - Console output or admin logs
  */
 
-import { sql } from "@/lib/neon"
+import { sql } from "@/lib/db/client"
 
 // ============================================================================
 // TYPE DEFINITIONS

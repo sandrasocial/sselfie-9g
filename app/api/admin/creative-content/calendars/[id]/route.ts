@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { neon } from '@neondatabase/serverless'
+import { sql } from "@/lib/db/client"
 
 
 export async function DELETE(
@@ -23,4 +23,3 @@ export async function DELETE(
     )
   }
 }
-

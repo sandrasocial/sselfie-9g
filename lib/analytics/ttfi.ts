@@ -1,4 +1,4 @@
-import { getDb } from "@/lib/db"
+import { getDb } from "@/lib/db/client"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 
 type AnalyticsEventRow = {

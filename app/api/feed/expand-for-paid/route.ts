@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getAuthenticatedUserWithRetry } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { sql } from "@/lib/neon"
+import { sql } from "@/lib/db/client"
 
 /**
  * POST /api/feed/expand-for-paid

@@ -1,6 +1,6 @@
 import "server-only"
 
-import { getDbClient } from "@/lib/db-singleton"
+import { getDbClient } from "@/lib/db/client"
 import { isProPhotoshootEnabled } from "@/lib/admin-feature-flags"
 import { checkNanoBananaPrediction } from "@/lib/nano-banana-client"
 import { acquireKvLock, releaseKvLock } from "@/lib/cache"

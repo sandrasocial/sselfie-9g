@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getDb } from "@/lib/db"
+import { getDb } from "@/lib/db/client"
 import { ensureBrandEngineApplicationsSchema } from "@/lib/brand-engine/applications"
 import { requireAdmin } from "@/lib/admin-feature-flags"
 

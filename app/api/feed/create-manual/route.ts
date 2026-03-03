@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
 import { getAuthenticatedUserWithRetry } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { getDb } from "@/lib/db"
+import { getDb } from "@/lib/db/client"
 import { getFeedPlannerV2Flag } from "@/lib/feed-planner-v2/feature-flag"
 import {
   getDefaultVariationId,

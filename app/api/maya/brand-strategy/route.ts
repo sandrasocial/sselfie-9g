@@ -2,7 +2,7 @@ import { generateText } from "ai"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getUserPersonalBrand } from "@/lib/data/maya"
-import { sql } from "@/lib/neon"
+import { sql } from "@/lib/db/client"
 
 export const maxDuration = 90
 

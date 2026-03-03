@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { getDb } from "@/lib/db"
+import { getDb } from "@/lib/db/client"
 import { getAudienceContactCount } from "@/lib/resend/get-audience-contacts"
 
 const AUDIENCE_ID = process.env.RESEND_AUDIENCE_ID!

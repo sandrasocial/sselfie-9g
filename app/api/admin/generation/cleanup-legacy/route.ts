@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { getDb } from "@/lib/db"
+import { getDb } from "@/lib/db/client"
 
 function getAdminEmail() {
   return String(process.env.ADMIN_EMAIL || "ssa@ssasocial.com").trim().toLowerCase()

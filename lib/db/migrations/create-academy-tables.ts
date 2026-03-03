@@ -1,4 +1,4 @@
-import { sql } from "@/lib/neon"
+import { sql } from "@/lib/db/client"
 
 export async function runAcademyMigration() {
   await sql`

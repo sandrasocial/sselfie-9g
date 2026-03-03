@@ -1,5 +1,5 @@
 import { sendEmail } from "@/lib/email/send-email"
-import { neon } from "@/lib/db"
+import { sql } from "@/lib/db/client"
 
 
 export interface WebhookError {

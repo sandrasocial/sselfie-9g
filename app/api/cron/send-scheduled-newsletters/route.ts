@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getDb } from "@/lib/db"
+import { getDb } from "@/lib/db/client"
 import { sendNewsletterBroadcast } from "@/lib/email/send-newsletter-broadcast"
 import { createCronLogger } from "@/lib/cron-logger"
 import { acquireCronLock } from "@/lib/cron-lock"

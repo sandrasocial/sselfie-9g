@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getDb } from "@/lib/db"
+import { getDb } from "@/lib/db/client"
 import { ensureBrandEngineApplicationsSchema } from "@/lib/brand-engine/applications"
 import { requireTwinBearer } from "@/lib/twin-auth"
 import { toTwinLeadStatus } from "@/lib/twin-control-plane"

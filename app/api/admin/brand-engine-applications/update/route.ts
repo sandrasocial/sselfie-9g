@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getDb } from "@/lib/db"
+import { getDb } from "@/lib/db/client"
 import {
   BRAND_ENGINE_CHECKOUT_MODES,
   BRAND_ENGINE_NEXT_ACTIONS,

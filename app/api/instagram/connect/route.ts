@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { neon } from '@neondatabase/serverless'
 
 
 const INSTAGRAM_APP_ID = process.env.INSTAGRAM_APP_ID || '1210263417166165'

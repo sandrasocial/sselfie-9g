@@ -6,6 +6,7 @@ import { getCreditPackageById, getProductById } from "@/lib/products"
 import { createServerClient } from "@/lib/supabase/server"
 import { assertStripePricingConfig } from "@/lib/stripe/validate-pricing-config"
 import { getMembershipPromoBlockReason } from "@/lib/stripe/membership-promo-policy"
+import { sql } from "@/lib/db/client"
 
 export async function startCreditCheckoutSession(packageId: string, promoCode?: string) {
   const creditPackage = getCreditPackageById(packageId)
@@ -168,8 +169,6 @@ export async function startProductCheckoutSession(productId: string, promoCode?:
 
   let customerId: string | undefined
 
-  const { neon } = await import("@/lib/db")
-  
   // Check subscriptions table first (for existing subscriptions)
   const existingSubscription = await sql`
     SELECT stripe_customer_id FROM subscriptions WHERE user_id = ${user.id} LIMIT 1

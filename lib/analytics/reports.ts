@@ -7,7 +7,7 @@ import {
   BRAND_ENGINE_TARGET_CALLS_PER_DAY,
   getDaysUntilCohortStart,
 } from "@/lib/brand-engine/launch-config"
-import { getDb } from "@/lib/db"
+import { getDb } from "@/lib/db/client"
 import { getStripe } from "@/lib/stripe"
 
 function asInt(v: any) {

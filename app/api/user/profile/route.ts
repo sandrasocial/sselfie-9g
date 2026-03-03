@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { createServerClient } from "@/lib/supabase/server"
-import { sql } from "@/lib/neon"
+import { sql } from "@/lib/db/client"
 
 export async function GET() {
   try {

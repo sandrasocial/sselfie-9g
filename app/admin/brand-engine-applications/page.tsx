@@ -1,4 +1,4 @@
-import { getDb } from "@/lib/db"
+import { getDb } from "@/lib/db/client"
 import Link from "next/link"
 import BrandEngineApplicationsClient from "./applications-client"
 import { ensureBrandEngineApplicationsSchema } from "@/lib/brand-engine/applications"
