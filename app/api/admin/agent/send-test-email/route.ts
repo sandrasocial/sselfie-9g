@@ -2,9 +2,8 @@ import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { sendEmail } from "@/lib/email/send-email"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 
-const sql = neon(process.env.DATABASE_URL!)
 const ADMIN_EMAIL = "ssa@ssasocial.com"
 
 export async function POST(request: Request) {

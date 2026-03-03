@@ -169,7 +169,6 @@ export async function startProductCheckoutSession(productId: string, promoCode?:
   let customerId: string | undefined
 
   const { neon } = await import("@/lib/db")
-  const sql = neon(process.env.DATABASE_URL!)
   
   // Check subscriptions table first (for existing subscriptions)
   const existingSubscription = await sql`

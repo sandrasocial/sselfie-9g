@@ -1,6 +1,6 @@
 import Image from "next/image"
 import { Cormorant_Garamond, Inter } from "next/font/google"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -135,7 +135,6 @@ async function getStrategy(token: string): Promise<{
   data?: StrategyResponse
 }> {
   try {
-    const sql = neon(process.env.DATABASE_URL!)
     const rows = await sql`
       SELECT name, business_type, target_audience, brand_vibe, strategy_json, created_at
       FROM freebie_brand_strategies

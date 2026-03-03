@@ -1,7 +1,6 @@
 import { sendEmail } from "@/lib/email/send-email"
 import { neon } from "@/lib/db"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 export interface WebhookError {
   eventType: string

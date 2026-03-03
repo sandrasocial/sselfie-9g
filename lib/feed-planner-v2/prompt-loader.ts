@@ -1,6 +1,5 @@
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 const FEED_STYLE_V2_NAME_MAP: Record<string, string> = {
   "dark & moody": "Dark & Moody",

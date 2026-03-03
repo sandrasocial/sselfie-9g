@@ -1,6 +1,5 @@
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 /**
  * Try to sync the latest Replicate model version into our user_models row.

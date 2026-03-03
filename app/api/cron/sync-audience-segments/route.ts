@@ -3,9 +3,8 @@ import { getAllResendContacts, runSegmentationForEmails } from "@/lib/audience/s
 import { toSegmentSyncEmailLogEntry } from "@/lib/audience/segment-sync-log"
 import { syncMarketingContacts } from "@/lib/email/marketing-sender"
 import { createCronLogger } from "@/lib/cron-logger"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 
-const sql = neon(process.env.DATABASE_URL!)
 export const maxDuration = 300
 
 /**

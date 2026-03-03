@@ -1,7 +1,6 @@
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import crypto from "crypto"
 
-const sql = neon(process.env.DATABASE_URL!)
 const MARKETING_CLEANUP_MARK_QUEUED_AS_FAILURE =
   String(process.env.MARKETING_CLEANUP_MARK_QUEUED_AS_FAILURE || "false").toLowerCase() === "true"
 

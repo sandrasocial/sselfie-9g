@@ -1,5 +1,5 @@
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { NextResponse } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 
@@ -20,7 +20,6 @@ export async function DELETE(request: Request) {
 
     console.log("[v0] Delete image - imageId:", imageId, "type:", typeof imageId)
 
-    const sql = neon(process.env.DATABASE_URL!)
 
     const imageIdStr = String(imageId)
     const isAiImage = imageIdStr.startsWith("ai_")

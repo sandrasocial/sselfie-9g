@@ -1,12 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { checkNanoBananaPrediction } from "@/lib/nano-banana-client"
 import { put } from "@vercel/blob"
 import sharp from "sharp"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 /**
  * Split 3x3 grid into 9 individual frames using Sharp

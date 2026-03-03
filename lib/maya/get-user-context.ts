@@ -1,10 +1,9 @@
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getUserPersonalMemory, getUserPersonalBrand } from "@/lib/data/maya"
 import { ACADEMY_PRODUCTS } from "@/lib/products"
 import { hasStudioMembership } from "@/lib/subscription"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 const ACADEMY_PRODUCT_GUIDANCE: Record<string, string> = {
   what_to_say: "Helps with caption writing. Offer caption starters and a 7-caption series.",

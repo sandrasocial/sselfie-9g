@@ -5,9 +5,8 @@
  * All calculations are read-only and use existing tables.
  */
 
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 /**
  * Cost per credit (actual API cost)

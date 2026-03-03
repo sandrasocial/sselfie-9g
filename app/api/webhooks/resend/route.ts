@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import crypto from "crypto"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 function resolveBroadcastId(eventData: any): string | null {
   return eventData?.broadcast_id || eventData?.broadcastId || eventData?.broadcast?.id || null

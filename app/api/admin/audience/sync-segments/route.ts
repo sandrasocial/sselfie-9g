@@ -2,10 +2,9 @@ import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getAllResendContacts, runSegmentationForEmails } from "@/lib/audience/segment-sync"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "ssa@ssasocial.com"
-const sql = neon(process.env.DATABASE_URL!)
 
 /**
  * Master Sync Route - Phase 2

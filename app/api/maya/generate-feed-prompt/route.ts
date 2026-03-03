@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import { streamText } from "ai"
@@ -10,7 +10,6 @@ import { getNanoBananaPromptingPrinciples } from "@/lib/maya/nano-banana-prompt-
 import Anthropic from "@anthropic-ai/sdk"
 import { generateMayaFeedPromptSystemPrompt, auditLogMayaChatGeneration } from "@/lib/maya/prompt-authority"
 
-const sql = neon(process.env.DATABASE_URL || "")
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 type LockedAesthetic = {

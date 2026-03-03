@@ -2,10 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
 import { stripe } from "@/lib/stripe"
 import { createCronLogger } from "@/lib/cron-logger"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { logAdminError } from "@/lib/admin-error-log"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 type ProductType = "sselfie_studio_membership" | "brand_studio_membership" | "pro"
 

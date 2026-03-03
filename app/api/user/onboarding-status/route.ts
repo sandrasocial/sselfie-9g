@@ -2,9 +2,8 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { deriveHasExtensionData, deriveHasSelfies } from "@/lib/onboarding/status"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 /**
  * API endpoint to fetch user onboarding status

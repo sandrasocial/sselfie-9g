@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import type { GalleryImage } from "@/lib/data/images"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 export async function GET(request: Request) {
   try {

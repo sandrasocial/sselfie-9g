@@ -1,11 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getBlueprintEntitlement } from "@/lib/subscription"
 import { getUserCredits } from "@/lib/credits"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 /**
  * GET /api/blueprint/state

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 
@@ -19,7 +19,6 @@ export async function POST() {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    const sql = neon(process.env.DATABASE_URL!)
 
     // Delete in correct order to respect foreign key constraints
     await sql`DELETE FROM instagram_bios WHERE user_id = ${dbUser.id}`

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { Resend } from "resend"
 import { stellaReply, parseStellaMode } from "@/lib/stella/runtime"
 import { getEmailQueue } from "@/lib/stella/email-queue"
@@ -45,7 +45,6 @@ export async function POST(req: NextRequest) {
         )
       }
 
-      const sql = neon(process.env.DATABASE_URL!)
       const now = new Date().toISOString()
       const contextPayload = JSON.stringify({
         agent_context_note: contextNote,
@@ -65,7 +64,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true })
     }
 
-    const sql = neon(process.env.DATABASE_URL!)
 
     if (action === "email_get_queue") {
       const limitPerType = Math.min(Number((body as { limitPerType?: number }).limitPerType) || 100, 200)

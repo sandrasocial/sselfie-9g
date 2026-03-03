@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { getAudienceContactCount } from "@/lib/resend/get-audience-contacts"
 
 export async function GET() {
@@ -15,7 +15,6 @@ export async function GET() {
     }
 
     console.log("[v0] No RESEND_AUDIENCE_ID, falling back to database")
-    const sql = neon(process.env.DATABASE_URL!)
     console.log("[v0] Database connection created")
 
     const result = await sql`

@@ -1,7 +1,7 @@
 // Email sending utilities using Resend
 import { Resend } from "resend"
 import { checkEmailRateLimit } from "@/lib/rate-limit"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 
 export interface EmailOptions {
   to: string | string[]
@@ -15,7 +15,6 @@ export interface EmailOptions {
   campaignId?: number // Optional: campaign ID for tracking
 }
 
-const sql = neon(process.env.DATABASE_URL!)
 
 // Initialize Resend client - will be null if API key is missing
 let resend: Resend | null = null

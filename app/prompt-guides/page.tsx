@@ -1,8 +1,7 @@
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import Link from "next/link"
 import Image from "next/image"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 export const dynamic = "force-dynamic"
 

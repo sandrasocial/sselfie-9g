@@ -4,9 +4,8 @@
  * Provides proactive notifications and recommendations for email marketing
  */
 
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 export interface EmailRecommendation {
   type: 'engagement' | 'welcome' | 'reengagement' | 'nurture'

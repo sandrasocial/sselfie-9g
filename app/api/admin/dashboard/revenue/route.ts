@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { getDBRevenueMetrics } from "@/lib/revenue/db-revenue-metrics"
 import { getSingleSourceRevenueMetrics } from "@/lib/revenue/single-source"
 
@@ -23,7 +23,6 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    const sql = neon(process.env.DATABASE_URL || "")
 
     // Get actual subscription prices from products config
     const { PRICING_PRODUCTS } = await import("@/lib/products")

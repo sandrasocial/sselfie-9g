@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { createServerClient } from "@/lib/supabase/server"
 import { getReplicateClient } from "@/lib/replicate-client"
 import { put } from "@vercel/blob"
 import { hookStudioGeneration } from "@/lib/quality/hooks"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {

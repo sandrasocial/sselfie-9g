@@ -5,11 +5,10 @@
  * Uses optional error envelope (code, message, context) for consistent log metadata.
  */
 
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { logger } from "@/lib/logger"
 import { toErrorEnvelope } from "@/lib/error-envelope"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 export interface AdminErrorContext {
   [key: string]: any

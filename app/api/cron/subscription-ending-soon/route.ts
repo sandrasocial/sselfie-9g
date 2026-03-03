@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server"
 import { stripe } from "@/lib/stripe"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { sendEmail } from "@/lib/email/send-email"
 import { createCronLogger } from "@/lib/cron-logger"
 import { generateSubscriptionEndingSoonEmail } from "@/lib/email/templates/subscription-ending-soon"
 import { logAdminError } from "@/lib/admin-error-log"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 export async function GET(request: Request) {
   const cronLogger = createCronLogger("subscription-ending-soon")

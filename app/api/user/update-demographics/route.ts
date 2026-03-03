@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
 
@@ -40,7 +40,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid ethnicity value" }, { status: 400 })
     }
 
-    const sql = neon(process.env.DATABASE_URL!)
 
     if (gender !== undefined || ethnicity !== undefined) {
       if (gender !== undefined && ethnicity !== undefined) {

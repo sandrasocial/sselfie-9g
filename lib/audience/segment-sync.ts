@@ -5,12 +5,11 @@
  * Uses tags to mark contacts with segment information.
  */
 
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { Resend } from "resend"
 import { updateContactTags as updateResendContactTags, type ContactTags, addContactToSegment, removeContactFromSegment } from "@/lib/resend/manage-contact"
 import { getAudienceContacts } from "@/lib/resend/get-audience-contacts"
 
-const sql = neon(process.env.DATABASE_URL!)
 const resend = new Resend(process.env.RESEND_API_KEY)
 const audienceId = process.env.RESEND_AUDIENCE_ID!
 

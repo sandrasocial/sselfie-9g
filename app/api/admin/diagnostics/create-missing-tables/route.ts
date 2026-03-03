@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { readFileSync, existsSync } from "fs"
 import { join } from "path"
 
-const sql = neon(process.env.DATABASE_URL!)
 const ADMIN_EMAIL = "ssa@ssasocial.com"
 
 const TARGET_TABLES = [

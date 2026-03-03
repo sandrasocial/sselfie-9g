@@ -17,7 +17,7 @@
  */
 
 import { NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { sendEmail } from "@/lib/email/send-email"
 import { createCronLogger } from "@/lib/cron-logger"
 import { generateWinBackDay3Email } from "@/lib/email/templates/win-back-day3"
@@ -25,7 +25,6 @@ import { generateWinBackDay7Email } from "@/lib/email/templates/win-back-day7"
 import { generateWinBackDay14Email } from "@/lib/email/templates/win-back-day14"
 import { logAdminError } from "@/lib/admin-error-log"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 export async function GET(request: Request) {
   const cronLogger = createCronLogger("win-back-sequence")

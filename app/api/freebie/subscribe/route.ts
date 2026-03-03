@@ -1,12 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { Resend } from "resend"
 import { addOrUpdateResendContact } from "@/lib/resend/manage-contact"
 import { generateFreebieGuideEmail } from "@/lib/email/templates/freebie-guide-email"
 import { sendEmail } from "@/lib/email/send-email"
 
 const resend = new Resend(process.env.RESEND_API_KEY!)
-const sql = neon(process.env.DATABASE_URL!)
 
 export async function POST(request: NextRequest) {
   console.log("[v0] Freebie subscribe POST handler called")

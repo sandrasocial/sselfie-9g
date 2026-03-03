@@ -1,12 +1,11 @@
 import { generateObject } from "ai"
 import { z } from "zod"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { INSTAGRAM_STRATEGIST_SYSTEM_PROMPT } from "@/lib/instagram-strategist/personality"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { hasFullAccess } from "@/lib/subscription"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 const CaptionSchema = z.object({
   caption: z

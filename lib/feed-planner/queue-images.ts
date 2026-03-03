@@ -1,6 +1,6 @@
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { CREDIT_COSTS, checkCredits, deductCredits } from "@/lib/credits"
 import { getReplicateClient } from "@/lib/replicate-client"
 import { MAYA_QUALITY_PRESETS } from "@/lib/maya/quality-settings"
@@ -8,7 +8,6 @@ import { generateWithNanoBanana } from "@/lib/nano-banana-client"
 import { buildNanoBananaPrompt } from "@/lib/maya/nano-banana-prompt-builder"
 import { getStudioProCreditCost } from "@/lib/nano-banana-client"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 /**
  * Image Library interface (user's selected images from library wizard)

@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 
 export async function GET(request: Request, { params }: { params: { feedId: string } }) {
   try {
-    const sql = neon(process.env.DATABASE_URL!)
 
     const [feed] = await sql`
       SELECT status, updated_at

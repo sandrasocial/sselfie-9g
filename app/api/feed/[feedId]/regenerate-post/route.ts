@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { getAuthenticatedUserWithRetry } from "@/lib/auth-helper"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { checkCredits, deductCredits } from "@/lib/credits"
 import { generateWithNanoBanana, getStudioProCreditCost } from "@/lib/nano-banana-client"
@@ -8,7 +8,6 @@ import { getFeedPlannerV2Flag } from "@/lib/feed-planner-v2/feature-flag"
 import { getFeedStyleV2ByName } from "@/lib/feed-planner-v2/prompt-loader"
 import { getPreviewPromptForStyle, selectPromptForPosition } from "@/lib/feed-planner-v2/generation"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 export async function POST(request: Request, { params }: { params: Promise<{ feedId: string }> }) {
   try {

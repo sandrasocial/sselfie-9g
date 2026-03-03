@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { readFile } from "node:fs/promises"
 import { resolve } from "node:path"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 type CronRegistryItem = {
   jobName: string

@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { sendEmail } from "@/lib/email/send-email"
 import { generateUpsellDay10Email } from "@/lib/email/templates/upsell-day-10"
 import { generateUpsellFreebieMembershipEmail } from "@/lib/email/templates/upsell-freebie-membership"
@@ -7,7 +7,6 @@ import { enqueueAndProcessMarketingRun } from "@/lib/email/marketing-runner"
 import { MARKETING_SEGMENTS } from "@/lib/email/config"
 import { createCronLogger } from "@/lib/cron-logger"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 const FIRST_NAME_PLACEHOLDER = "{{{FIRST_NAME|friend}}}"
 const EMAIL_PLACEHOLDER = "{{{EMAIL}}}"

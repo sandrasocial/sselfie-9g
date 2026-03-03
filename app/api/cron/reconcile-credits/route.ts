@@ -1,9 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import Stripe from "stripe"
 import { createCronLogger } from "@/lib/cron-logger"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 const WELCOME_BONUS_DESC = "Free blueprint credits (welcome bonus)"
 const WELCOME_BONUS_AMOUNT = 2

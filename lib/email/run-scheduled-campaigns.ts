@@ -28,7 +28,7 @@
  * - After processing → 'sent' (success) or 'failed' (all failed) or 'sending' (partial)
  */
 
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { sendEmail } from "./send-email"
 import { checkEmailRateLimit } from "@/lib/rate-limit"
 import { isEmailTestMode, isEmailSendingEnabled } from "./email-control"
@@ -44,7 +44,6 @@ import { generateNewsletterEmail } from "./templates/newsletter-template"
 import { generateUpsellDay10Email } from "./templates/upsell-day-10"
 import { generateWinBackOfferEmail } from "./templates/win-back-offer"
 
-const sql = neon(process.env.DATABASE_URL!)
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "ssa@ssasocial.com"
 const FIRST_NAME_PLACEHOLDER = "{{{FIRST_NAME|friend}}}"
 const EMAIL_PLACEHOLDER = "{{{EMAIL}}}"

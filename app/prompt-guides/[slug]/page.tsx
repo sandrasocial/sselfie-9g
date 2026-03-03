@@ -1,9 +1,8 @@
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { notFound } from "next/navigation"
 import { cookies } from "next/headers"
 import PromptGuidePageClient from "@/components/prompt-guides/prompt-guide-page-client"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 export const dynamic = "force-dynamic"
 

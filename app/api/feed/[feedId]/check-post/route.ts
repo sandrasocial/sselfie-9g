@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server"
 import { getAuthenticatedUserWithRetry } from "@/lib/auth-helper"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { getReplicateClient } from "@/lib/replicate-client"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { put } from "@vercel/blob"
 import { hookFeedPostGeneration } from "@/lib/quality/hooks"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 async function getReplicatePredictionWithRetry(predictionId: string, maxRetries = 3, baseDelay = 1000): Promise<any> {
   const replicate = getReplicateClient()

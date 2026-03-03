@@ -2,7 +2,7 @@
 
 import { stripe } from "@/lib/stripe"
 import { getProductById } from "@/lib/products"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import type Stripe from "stripe"
 import { assertStripePricingConfig } from "@/lib/stripe/validate-pricing-config" // Declare the Stripe variable
 import { getMembershipPromoBlockReason } from "@/lib/stripe/membership-promo-policy"
@@ -217,7 +217,6 @@ export async function getCheckoutSession(sessionId: string) {
 }
 
 export async function getUserByEmail(email: string) {
-  const sql = neon(process.env.DATABASE_URL!)
 
   try {
     const result = await sql`

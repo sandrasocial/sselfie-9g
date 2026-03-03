@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { checkMarginAlerts, wasAlertSentRecently, recordAlertSent } from "@/lib/admin/alerts"
 import { sendEmail } from "@/lib/email/send-email"
 import { createCronLogger } from "@/lib/cron-logger"
@@ -12,7 +12,6 @@ import {
   estimateClaudeCostPerActiveUser,
 } from "@/lib/admin/metrics"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 const ADMIN_EMAILS = ["ssa@ssasocial.com", "hello@sselfie.ai"]
 

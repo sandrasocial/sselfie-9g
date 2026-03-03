@@ -6,9 +6,8 @@
  * Fast, reliable, no Stripe API calls needed
  */
 
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 export interface DBRevenueMetrics {
   creditPurchaseRevenue: number

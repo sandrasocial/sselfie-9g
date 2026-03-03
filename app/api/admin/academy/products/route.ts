@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { requireAdmin } from "@/lib/admin-feature-flags"
 import { ACADEMY_PRODUCTS, type AcademyProductId } from "@/lib/products"
 import { getAcademyProducts } from "@/lib/academy-products"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 const VALID_PRODUCT_IDS = new Set(Object.keys(ACADEMY_PRODUCTS))
 

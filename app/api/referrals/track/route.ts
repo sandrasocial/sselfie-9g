@@ -1,8 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { addCredits } from "@/lib/credits"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 /**
  * POST /api/referrals/track

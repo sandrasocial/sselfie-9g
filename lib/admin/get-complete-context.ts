@@ -1,11 +1,10 @@
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import { getPersonalStoryContext } from "./get-personal-context"
 import { getProductKnowledge } from "./get-product-knowledge"
 import { getCache, setCache, CACHE_TTL } from "@/lib/cache"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 export async function getCompleteAdminContext(targetUserId?: string): Promise<string> {
   try {

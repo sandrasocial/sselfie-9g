@@ -1,11 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { Resend } from "resend"
 import { addOrUpdateResendContact, addContactToSegment } from "@/lib/resend/manage-contact"
 import { cookies } from "next/headers"
 
 const resend = new Resend(process.env.RESEND_API_KEY!)
-const sql = neon(process.env.DATABASE_URL!)
 
 // Free Prompt Guide segment ID (hardcoded for reliability)
 const FREE_PROMPT_GUIDE_SEGMENT_ID = "b25764ce-1f17-4869-9859-546cf9729355"

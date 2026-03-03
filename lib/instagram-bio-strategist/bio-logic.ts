@@ -1,6 +1,6 @@
 import { generateText } from "ai"
 import { INSTAGRAM_BIO_STRATEGIST_PERSONALITY } from "./personality"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 
 interface GenerateBioParams {
   userId: string
@@ -25,7 +25,6 @@ export async function generateInstagramBio(params: GenerateBioParams): Promise<{
   console.log("[v0] [BIO STRATEGIST] Research Data Available:", !!researchData)
 
   try {
-    const sql = neon(process.env.DATABASE_URL!)
 
     // Get user's display name (not business name)
     const [userData] = await sql`

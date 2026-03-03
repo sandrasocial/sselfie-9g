@@ -11,11 +11,10 @@
  */
 
 import { type NextRequest, NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { sendEmail } from "@/lib/email/send-email"
 import { generateWinBackDay3Email } from "@/lib/email/templates/win-back-day3"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 export async function POST(request: NextRequest) {
   const authHeader = request.headers.get("authorization")

@@ -1,8 +1,7 @@
 import { notFound } from "next/navigation"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import PaidBlueprintLanding from "@/components/paid-blueprint/paid-blueprint-landing"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 /**
  * Check if paid blueprint feature is enabled

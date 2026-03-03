@@ -5,11 +5,10 @@
  * Non-blocking - doesn't fail if email send fails
  */
 
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { sendEmail } from "@/lib/email/send-email"
 import { generateReferralInviteEmail } from "@/lib/email/templates/referral-invite"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 export async function triggerReferralEmailIfNeeded(userId: string): Promise<void> {
   try {

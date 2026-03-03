@@ -2,9 +2,8 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getOrCreateActiveChat, getChatMessages, loadChatById } from "@/lib/data/maya"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 /**
  * Helper function to detect if description is a full strategy document

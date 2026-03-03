@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server"
 import { neon } from "@/lib/db"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)

@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { getReplicateClient } from "@/lib/replicate-client"
 import { MAYA_QUALITY_PRESETS } from "@/lib/maya/quality-settings"
 import { generateObject } from "ai"
@@ -23,7 +23,6 @@ export async function POST(req: NextRequest, { params }: { params: { feedId: str
     }
 
     const { feedId } = params
-    const sql = neon(process.env.DATABASE_URL!)
 
     const [feedLayout] = await sql`
       SELECT color_palette, brand_vibe, business_type, profile_image_url, profile_image_prompt 

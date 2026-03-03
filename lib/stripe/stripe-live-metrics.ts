@@ -13,12 +13,11 @@
  * 5. Works even if Stripe API is down
  */
 
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { getDBRevenueMetrics } from "@/lib/revenue/db-revenue-metrics"
 import { PRICING_PRODUCTS } from "@/lib/products"
 import { getStripe } from "@/lib/stripe"
 
-const sql = neon(process.env.DATABASE_URL!)
 const RECURRING_MEMBERSHIP_TYPES = ["sselfie_studio_membership", "brand_studio_membership", "pro"] as const
 
 export interface StripeLiveMetrics {

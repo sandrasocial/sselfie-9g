@@ -1,11 +1,10 @@
 import { streamText } from "ai"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { CONTENT_RESEARCH_STRATEGIST_PROMPT } from "@/lib/content-research-strategist/personality"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { hasFullAccess } from "@/lib/subscription"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 export async function POST(request: Request) {
   try {

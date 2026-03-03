@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { getSegmentMembers } from "@/lib/email/segmentation"
 import { sendEmail } from "@/lib/email/send-email"
 import { createCronLogger } from "@/lib/cron-logger"
@@ -8,7 +8,6 @@ import { logAdminError } from "@/lib/admin-error-log"
 import { enqueueAndProcessMarketingRun } from "@/lib/email/marketing-runner"
 import { MARKETING_SEGMENTS } from "@/lib/email/config"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 const FIRST_NAME_PLACEHOLDER = "{{{FIRST_NAME|friend}}}"
 const REENGAGEMENT_INACTIVITY_DAYS = Number(process.env.REENGAGEMENT_INACTIVITY_DAYS || 14)

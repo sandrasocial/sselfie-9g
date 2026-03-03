@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 
 import { createCronLogger } from "@/lib/cron-logger"
 import { logAdminError } from "@/lib/admin-error-log"
 import { sendEmail } from "@/lib/email/send-email"
 import { generateMonthlyUsageRecapEmail } from "@/lib/email/templates/monthly-usage-recap"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 const MAX_RECIPIENTS = Number(process.env.MONTHLY_USAGE_RECAP_MAX_RECIPIENTS || 200)
 const SEND_DELAY_MS = Number(process.env.MONTHLY_USAGE_RECAP_SEND_DELAY_MS || 550)

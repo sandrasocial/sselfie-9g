@@ -1,6 +1,6 @@
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { NextResponse } from "next/server"
 
 export async function POST(request: Request) {
@@ -21,7 +21,6 @@ export async function POST(request: Request) {
 
     const { imageUrl } = await request.json()
 
-    const sql = neon(process.env.DATABASE_URL!)
 
     // Update user's profile image
     await sql`

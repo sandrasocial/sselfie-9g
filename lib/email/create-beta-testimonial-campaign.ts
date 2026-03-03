@@ -3,9 +3,8 @@
  * Called after a user is added to the beta segment
  */
 
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 
-const sql = neon(process.env.DATABASE_URL!)
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "ssa@ssasocial.com"
 
 export interface CreateBetaTestimonialCampaignParams {

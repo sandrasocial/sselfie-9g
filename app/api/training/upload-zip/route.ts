@@ -11,9 +11,8 @@ import {
 } from "@/lib/replicate-client"
 import { checkCredits, deductCredits, getUserCredits, CREDIT_COSTS } from "@/lib/credits"
 import { put } from "@vercel/blob"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 export const maxDuration = 300 // 5 minutes for file upload and processing
 export const runtime = "nodejs" // Ensure Node.js runtime for file handling

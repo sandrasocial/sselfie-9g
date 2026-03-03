@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { requireAdmin } from "@/lib/admin-feature-flags"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 function parseStringArray(value: unknown): string[] {
   if (Array.isArray(value)) {

@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { createServerClient } from "@/lib/supabase/server"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { generateForecast } from "@/lib/admin/forecast"
 import {
   calculateTotalRevenue,
@@ -12,7 +12,6 @@ import {
   estimateClaudeCostPerActiveUser,
 } from "@/lib/admin/metrics"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 /**
  * Check if user has admin access

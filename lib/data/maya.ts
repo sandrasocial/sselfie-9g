@@ -1,7 +1,6 @@
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { getRedisClient, CacheKeys, CacheTTL } from "@/lib/redis"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 export interface MayaChat {
   id: number

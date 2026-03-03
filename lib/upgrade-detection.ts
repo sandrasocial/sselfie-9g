@@ -1,4 +1,4 @@
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { SUBSCRIPTION_CREDITS, getUserCredits } from "@/lib/credits"
 
 type UpgradeType = "high_usage" | "frequent_topups" | "credit_depletion" | "unknown_plan"
@@ -13,13 +13,6 @@ export interface UpgradeOpportunity {
   showUpgradePrompt: boolean
 }
 
-const getDatabase = () => {
-  if (!process.env.DATABASE_URL) return null
-  return neon(process.env.DATABASE_URL)
-}
-
-const sql = getDatabase()
-
 // Thresholds can be tuned without touching detection logic
 const THRESHOLDS = {
   usageRatio: 0.8, // 80% of monthly grant
@@ -32,11 +25,6 @@ const THRESHOLDS = {
  * This is intentionally lightweight and safe: when data is missing, it returns no prompts.
  */
 export async function detectUpgradeOpportunities(userId: string): Promise<UpgradeOpportunity[]> {
-  if (!sql) {
-    console.log("[v0] [UPGRADE] Database unavailable; skipping detection")
-    return []
-  }
-
   try {
     const [subscription, currentBalance, usageLast30, topupsLast30] = await Promise.all([
       getActiveSubscription(userId),
@@ -111,7 +99,6 @@ export async function detectUpgradeOpportunities(userId: string): Promise<Upgrad
 }
 
 async function getActiveSubscription(userId: string) {
-  if (!sql) return null
   const result =
     (await sql`
       SELECT product_type, status 
@@ -124,7 +111,6 @@ async function getActiveSubscription(userId: string) {
 }
 
 async function getUsageLast30Days(userId: string): Promise<number> {
-  if (!sql) return 0
   const result =
     (await sql`
       SELECT COALESCE(SUM(amount), 0) AS total
@@ -137,7 +123,6 @@ async function getUsageLast30Days(userId: string): Promise<number> {
 }
 
 async function getTopupsLast30Days(userId: string): Promise<number> {
-  if (!sql) return 0
   const result =
     (await sql`
       SELECT COUNT(*) AS total

@@ -1,12 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserIdFromSupabase } from "@/lib/user-mapping"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { checkNanoBananaPrediction } from "@/lib/nano-banana-client"
 import { put } from "@vercel/blob"
 import { logTtfiCompletionOnFirstGallerySave } from "@/lib/analytics/ttfi"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 export async function GET(req: NextRequest) {
   try {

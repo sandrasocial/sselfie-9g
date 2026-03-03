@@ -1,11 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { createCronLogger } from "@/lib/cron-logger"
 import { logAdminError } from "@/lib/admin-error-log"
 import { getReplicateClient } from "@/lib/replicate-client"
 import { put } from "@vercel/blob"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 type SourceHint = "maya_chat" | "studio" | "unknown"
 

@@ -168,7 +168,6 @@ export async function POST(req: Request) {
       let hasTrainedLoraModel = false
       try {
         const { neon } = await import("@neondatabase/serverless")
-        const sql = neon(process.env.DATABASE_URL!)
         const modelRows = await sql`
           SELECT 1
           FROM user_models
@@ -732,7 +731,6 @@ export async function POST(req: Request) {
     let userGender = "person"
     try {
       const { neon } = await import("@neondatabase/serverless")
-      const sql = neon(process.env.DATABASE_URL!)
       const genderResult = await sql`SELECT gender FROM users WHERE id = ${dbUserId} LIMIT 1`
       if (genderResult.length > 0 && genderResult[0].gender) {
         const dbGender = genderResult[0].gender.toLowerCase().trim()

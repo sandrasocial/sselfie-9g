@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { createServerClient } from "@supabase/ssr"
 import { getUserIdFromSupabase } from "@/lib/user-mapping"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
@@ -9,7 +9,6 @@ import { cookies } from "next/headers"
 
 export async function POST(req: NextRequest) {
   try {
-    const sql = neon(process.env.DATABASE_URL!)
     
     // Authenticate user
     const cookieStore = await cookies()

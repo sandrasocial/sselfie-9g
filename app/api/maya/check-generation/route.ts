@@ -1,12 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { getReplicateClient } from "@/lib/replicate-client"
 import { put } from "@vercel/blob"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { hookMayaGeneration } from "@/lib/quality/hooks"
 import { logTtfiCompletionOnFirstGallerySave } from "@/lib/analytics/ttfi"
 
-const sql = neon(process.env.DATABASE_URL || "")
 
 export async function GET(request: NextRequest) {
   try {

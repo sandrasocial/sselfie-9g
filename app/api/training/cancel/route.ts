@@ -2,9 +2,8 @@ import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
 import { getReplicateClient } from "@/lib/replicate-client"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 export async function POST(request: NextRequest) {
   try {

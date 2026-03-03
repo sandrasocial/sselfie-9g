@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 
 const ADMIN_EMAIL = "ssa@ssasocial.com"
 
@@ -22,7 +22,6 @@ export async function GET(request: NextRequest) {
     const limit = Number.parseInt(searchParams.get("limit") || "50")
     const offset = Number.parseInt(searchParams.get("offset") || "0")
 
-    const sql = neon(process.env.DATABASE_URL!)
     
     // Get admin user ID from email
     const adminUserResult = await sql`

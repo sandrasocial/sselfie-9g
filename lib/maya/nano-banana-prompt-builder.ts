@@ -349,7 +349,6 @@ export async function buildNanoBananaPrompt(params: {
 
   // Lookup supabase_user_id for context
   const { neon } = await import('@neondatabase/serverless')
-  const sql = neon(process.env.DATABASE_URL!)
   const [userAuth] = await sql`
     SELECT supabase_user_id FROM users WHERE id = ${userId} LIMIT 1
   `

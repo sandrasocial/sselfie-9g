@@ -9,9 +9,8 @@ import {
   FLUX_LORA_TRAINER_VERSION,
   DEFAULT_TRAINING_PARAMS,
 } from "@/lib/replicate-client"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"

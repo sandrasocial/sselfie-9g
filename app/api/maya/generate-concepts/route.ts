@@ -855,7 +855,6 @@ export async function POST(req: NextRequest) {
     let userEthnicity = null
     let physicalPreferences = null
     const { neon } = await import("@neondatabase/serverless")
-    const sql = neon(process.env.DATABASE_URL!)
 
     const userDataResult = await sql`
       SELECT u.gender, u.ethnicity, um.trigger_word, upb.physical_preferences

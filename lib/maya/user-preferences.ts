@@ -2,9 +2,8 @@
  * User Preference Tracking - Learn from user behavior to improve motion selection
  */
 
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 
-const sql = neon(process.env.DATABASE_URL || "")
 
 export interface UserMotionPreferences {
   preferredIntensities: { subtle: number; moderate: number; dynamic: number }

@@ -1,10 +1,9 @@
 import { Resend } from "resend"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { EMAIL_CONFIG, EMAIL_ENV } from "./config"
 import { normalizeEmailIdentifier } from "./normalize-identifier"
 
 const resend = new Resend(process.env.RESEND_API_KEY)
-const sql = neon(process.env.DATABASE_URL!)
 
 interface MarketingBroadcastInput {
   campaignKey: string

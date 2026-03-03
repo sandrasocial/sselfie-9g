@@ -99,7 +99,6 @@ export default async function StudioPage({
   console.log(`[Studio] 🔍🔍🔍 CHECKING CREDIT GRANT for user ${neonUser.id} (email: ${neonUser.email})`)
   try {
     const { neon } = await import("@neondatabase/serverless")
-    const sql = neon(process.env.DATABASE_URL!)
     
     console.log(`[Studio] ✅✅✅ Database connection established`)
     

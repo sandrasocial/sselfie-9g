@@ -1,19 +1,6 @@
-import { neon, type NeonQueryFunction } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { createServerClient } from "@/lib/supabase/server"
 import { autoSyncUserToResend } from "@/lib/resend/auto-sync-user"
-
-let sql: NeonQueryFunction<false, false> | null = null
-
-function getSQL() {
-  if (!sql) {
-    const dbUrl = process.env.DATABASE_URL
-    if (!dbUrl) {
-      throw new Error("DATABASE_URL environment variable is not set")
-    }
-    sql = neon<false, false>(dbUrl)
-  }
-  return sql
-}
 
 export interface NeonUser {
   id: string
@@ -79,7 +66,7 @@ export async function getOrCreateNeonUser(
   name?: string | null,
 ): Promise<NeonUser> {
   try {
-    const db = getSQL()
+    const db = sql
     const existingUsers = await retryWithBackoff(
       () => db`
       SELECT * FROM users WHERE email = ${email} LIMIT 1
@@ -154,7 +141,7 @@ export async function getOrCreateNeonUser(
  * Get Neon user by email
  */
 export async function getNeonUserByEmail(email: string): Promise<NeonUser | null> {
-  const db = getSQL()
+  const db = sql
   const users = await retryWithBackoff(
     () => db`
     SELECT * FROM users WHERE email = ${email} LIMIT 1
@@ -170,7 +157,7 @@ export async function getNeonUserByEmail(email: string): Promise<NeonUser | null
  * Get Neon user by ID
  */
 export async function getNeonUserById(id: string): Promise<NeonUser | null> {
-  const db = getSQL()
+  const db = sql
   const users = await retryWithBackoff(
     () => db`
     SELECT * FROM users WHERE id = ${id} LIMIT 1
@@ -188,7 +175,7 @@ export async function getNeonUserById(id: string): Promise<NeonUser | null> {
  */
 export async function getUserByAuthId(authId: string): Promise<NeonUser | null> {
   try {
-    const db = getSQL()
+    const db = sql
     const users = await retryWithBackoff(
       () => db`
       SELECT * FROM users 

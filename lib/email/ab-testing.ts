@@ -4,10 +4,9 @@
  * Automatically splits audiences, tracks results, and declares winners
  */
 
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { sendEmail } from "./send-email"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 export interface ABTestConfig {
   testName: string

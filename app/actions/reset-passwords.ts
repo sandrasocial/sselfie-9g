@@ -1,6 +1,6 @@
 "use server"
 
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { createClient } from "@supabase/supabase-js"
 
 export async function resetAllUserPasswords() {
@@ -36,7 +36,6 @@ export async function resetAllUserPasswords() {
     })
 
     console.log("[v0] Initializing Neon database client...")
-    const sql = neon(databaseUrl)
 
     // Fetch ALL users from Neon (including those already migrated)
     console.log("[v0] Fetching all users from Neon database...")

@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,7 +25,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Feed layout ID is required" }, { status: 400 })
     }
 
-    const sql = neon(process.env.DATABASE_URL!)
 
     // Get all posts for this feed
     const posts = await sql`

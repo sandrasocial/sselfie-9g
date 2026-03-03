@@ -1,12 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { generateText } from "ai"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { FLUX_PROMPTING_PRINCIPLES } from "@/lib/maya/flux-prompting-principles"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { generateBlueprintConceptsPrompt, auditLogMayaChatGeneration } from "@/lib/maya/prompt-authority"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 const FEED_STYLE_TO_AESTHETIC = {
   luxury: "dark-moody",

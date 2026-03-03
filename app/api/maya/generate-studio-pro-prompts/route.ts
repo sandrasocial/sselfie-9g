@@ -43,7 +43,6 @@ export async function POST(req: NextRequest) {
     
     // Get user gender
     const { neon } = await import("@neondatabase/serverless")
-    const sql = neon(process.env.DATABASE_URL!)
     const userDataResult = await sql`
       SELECT u.gender
       FROM users u

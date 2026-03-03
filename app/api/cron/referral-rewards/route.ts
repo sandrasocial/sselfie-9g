@@ -1,11 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { addCredits } from "@/lib/credits"
 import { sendEmail } from "@/lib/email/send-email"
 import { generateReferralRewardEmail } from "@/lib/email/templates/referral-reward"
 import { createCronLogger } from "@/lib/cron-logger"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 /**
  * GET /api/cron/referral-rewards

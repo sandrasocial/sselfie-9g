@@ -8,14 +8,13 @@
  */
 
 import { type NextRequest, NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import { getMayaSystemPrompt, MAYA_CLASSIC_CONFIG } from "@/lib/maya/mode-adapters"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getFluxPromptingPrinciples } from "@/lib/maya/flux-prompting-principles"
 
-const sql = neon(process.env.DATABASE_URL || "")
 
 interface FeedPost {
   position: number

@@ -1,4 +1,4 @@
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { NextResponse } from "next/server"
 
 export async function GET() {
@@ -12,7 +12,6 @@ export async function GET() {
   }
 
   try {
-    const sql = neon(process.env.DATABASE_URL!)
 
     // Get waitlist count
     const waitlistResult = await sql`

@@ -3,9 +3,8 @@
  * Simple feature flag system for admin-only features
  */
 
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 /**
  * Check if Pro Photoshoot feature is enabled (admin-only)

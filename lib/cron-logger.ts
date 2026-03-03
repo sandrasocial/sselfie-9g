@@ -1,9 +1,8 @@
 import "server-only"
 import { logger } from "./logger"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { toErrorEnvelope } from "./error-envelope"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 /**
  * Cron Job Logger

@@ -4,9 +4,8 @@
  * Automatically creates and maintains segments based on engagement, purchase history, and behavior
  */
 
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 export interface SegmentCriteria {
   // Engagement criteria

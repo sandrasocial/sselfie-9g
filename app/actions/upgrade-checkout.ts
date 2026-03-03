@@ -4,7 +4,7 @@ import { stripe } from "@/lib/stripe"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getProductById } from "@/lib/products"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import type Stripe from "stripe"
 import { getMembershipPromoBlockReason } from "@/lib/stripe/membership-promo-policy"
 
@@ -98,7 +98,6 @@ export async function createUpgradeCheckoutSession(
   }
 
   // Get or create Stripe customer
-  const sql = neon(process.env.DATABASE_URL!)
   
   let customerId: string | undefined
   

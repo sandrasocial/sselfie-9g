@@ -9,10 +9,9 @@ import {
   DEFAULT_TRAINING_PARAMS,
 } from "@/lib/replicate-client"
 import { put } from "@vercel/blob"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import JSZip from "jszip"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 export const maxDuration = 300
 export const runtime = "nodejs"

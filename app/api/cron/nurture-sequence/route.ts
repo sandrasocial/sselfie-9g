@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { sendEmail } from "@/lib/email/send-email"
 import { createCronLogger } from "@/lib/cron-logger"
 import { logAdminError } from "@/lib/admin-error-log"
@@ -9,7 +9,6 @@ import { generateNurtureFreebieN3Email } from "@/lib/email/templates/nurture-fre
 import { generateNurtureFreebieN4Email } from "@/lib/email/templates/nurture-freebie-n4"
 import { generateNurtureFreebieN5Email } from "@/lib/email/templates/nurture-freebie-n5"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
 const STRATEGY_FALLBACK_URL = `${SITE_URL}/freebie/brand-strategy`

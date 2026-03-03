@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 
 export async function GET() {
   try {
@@ -30,7 +30,6 @@ export async function GET() {
 
     console.log("[v0] Profile stats: Neon user ID:", neonUser.id)
 
-    const sql = neon(process.env.DATABASE_URL!)
 
     // Get total generations
     const totalGenerations = await sql`

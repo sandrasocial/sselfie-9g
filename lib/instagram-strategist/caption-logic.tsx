@@ -1,4 +1,4 @@
-import { neon } from "@neondatabase/serverless" // Declare the neon variable
+import { sql } from "@/lib/db/client" // Declare the neon variable
 
 export async function generateCaptionsForFeed({
   feedId,
@@ -29,7 +29,6 @@ export async function generateCaptionsForFeed({
   console.log("[v0] [CAPTION STRATEGIST] Starting caption generation for feed:", feedId)
   console.log("[v0] [CAPTION STRATEGIST] Start position:", startPosition, "Count:", count || "all")
 
-  const sql = neon(process.env.DATABASE_URL!)
 
   try {
     let posts

@@ -1,10 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { generateInstagramStrategy } from "@/lib/feed-planner/instagram-strategy-agent"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 /**
  * Generate strategy document for a feed

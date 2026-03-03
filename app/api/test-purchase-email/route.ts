@@ -3,7 +3,6 @@ import { sendEmail } from "@/lib/email/send-email"
 import { generateWelcomeEmail } from "@/lib/email/templates/welcome-email"
 import { neon } from "@/lib/db"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 export async function POST(request: Request) {
   try {

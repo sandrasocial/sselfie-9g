@@ -1,8 +1,7 @@
 import { notFound } from "next/navigation"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import FeedPublishingHub from "@/components/sselfie/feed-publishing-hub"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 interface PageProps {
   params: {

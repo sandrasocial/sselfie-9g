@@ -36,7 +36,7 @@
 import { NextRequest } from "next/server"
 import { getAuthenticatedUserWithRetry, clearAuthCache } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { getReplicateClient } from "@/lib/replicate-client"
 import { MAYA_QUALITY_PRESETS } from "@/lib/maya/quality-settings"
 import { checkGenerationRateLimit } from "@/lib/rate-limit"
@@ -201,7 +201,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ fee
       )
     }
 
-    const sql = neon(process.env.DATABASE_URL!)
 
     const feedIdInt = Number.parseInt(feedId, 10)
     if (isNaN(feedIdInt)) {

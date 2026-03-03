@@ -1,5 +1,5 @@
 import { sendMarketingBroadcast, syncMarketingContacts } from "@/lib/email/marketing-sender"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { logAdminError } from "@/lib/admin-error-log"
 import { resolveMarketingTemplateContent } from "@/lib/email/marketing-template-overrides"
 import { addContactsToHistorySegment } from "@/lib/resend/segment-history"
@@ -23,7 +23,6 @@ import {
   failQueueForRun,
 } from "@/lib/email/marketing-queue"
 
-const sql = neon(process.env.DATABASE_URL!)
 const DEFAULT_BATCH_SIZE = Number.parseInt(process.env.MARKETING_SYNC_BATCH_SIZE || "25", 10)
 const DEFAULT_MAX_ATTEMPTS = Number.parseInt(process.env.MARKETING_SYNC_MAX_ATTEMPTS || "3", 10)
 const DEFAULT_MAX_RUNTIME_MS = Number.parseInt(process.env.MARKETING_RUN_MAX_MS || "60000", 10)

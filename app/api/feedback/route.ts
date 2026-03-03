@@ -1,10 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { sendEmail } from "@/lib/email/send-email"
 import { generateFeedbackAdminNotification } from "@/lib/email/templates/feedback-admin-notification"
 import { createApiLogger } from "@/lib/api-logger"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 const ADMIN_EMAILS = ["ssa@ssasocial.com", "hello@sselfie.ai"]
 

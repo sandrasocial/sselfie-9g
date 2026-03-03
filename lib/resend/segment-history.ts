@@ -1,7 +1,6 @@
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { Resend } from "resend"
 
-const sql = neon(process.env.DATABASE_URL!)
 const resend = new Resend(process.env.RESEND_API_KEY)
 const RATE_LIMIT_DELAY_MS = 600
 

@@ -5,7 +5,7 @@
  * when margins drop below safe levels.
  */
 
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import {
   calculateTotalRevenue,
   calculateMRR,
@@ -15,7 +15,6 @@ import {
   estimateClaudeCostPerActiveUser,
 } from "./metrics"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 export interface MarginAlert {
   severity: "critical" | "warning" | "info"

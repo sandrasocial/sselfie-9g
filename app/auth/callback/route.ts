@@ -40,7 +40,6 @@ export async function GET(request: Request) {
       if (neonUser?.id) {
         try {
           const { neon } = await import("@neondatabase/serverless")
-          const sql = neon(process.env.DATABASE_URL!)
           
           // Check if user has active subscription (only free users get welcome credits)
           const hasSubscription = await sql`
@@ -85,7 +84,6 @@ export async function GET(request: Request) {
       if (neonUser?.id && data.user.email) {
         try {
           const { neon } = await import("@neondatabase/serverless")
-          const sql = neon(process.env.DATABASE_URL!)
 
           // Only create for non-subscribed users (free blueprint flow)
           const hasSubscription = await sql`
@@ -207,7 +205,6 @@ export async function GET(request: Request) {
       if (neonUser?.id) {
         try {
           const { neon } = await import("@neondatabase/serverless")
-          const sql = neon(process.env.DATABASE_URL!)
           await sql`
             UPDATE users 
             SET last_login_at = NOW() 
@@ -225,7 +222,6 @@ export async function GET(request: Request) {
       if (utmSource === "coldreactivation" && neonUser?.id) {
         try {
           const { neon } = await import("@neondatabase/serverless")
-          const sql = neon(process.env.DATABASE_URL!)
           
           // Check if this is a new user (created in last 5 minutes) to avoid granting on every login
           const userCreated = await sql`
@@ -264,7 +260,6 @@ export async function GET(request: Request) {
       if (referralCode && neonUser?.id) {
         try {
           const { neon } = await import("@neondatabase/serverless")
-          const sql = neon(process.env.DATABASE_URL!)
           
           // Check if this is a new user (created in last 5 minutes) to avoid tracking on every login
           const userCreated = await sql`

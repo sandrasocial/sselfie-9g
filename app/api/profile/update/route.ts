@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { createServerClient } from "@/lib/supabase/server"
 
 export async function POST(request: Request) {
@@ -15,7 +15,6 @@ export async function POST(request: Request) {
 
     const { name, bio, location, instagram } = await request.json()
 
-    const sql = neon(process.env.DATABASE_URL!)
 
     const neonUser = await sql`
       SELECT id FROM users WHERE stack_auth_id = ${user.id} LIMIT 1

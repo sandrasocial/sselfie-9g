@@ -1,11 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { generateObject } from "ai"
 import { z } from "zod"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 export const maxDuration = 300
 

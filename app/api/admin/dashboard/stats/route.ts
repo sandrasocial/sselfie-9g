@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { PRICING_PRODUCTS } from "@/lib/products"
 import { getSingleSourceRevenueMetrics } from "@/lib/revenue/single-source"
 import { getDBRevenueMetrics } from "@/lib/revenue/db-revenue-metrics"
@@ -26,7 +26,6 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    const sql = neon(process.env.DATABASE_URL!)
 
     // Get total users (all users with email addresses)
     // This counts all registered users regardless of payment status

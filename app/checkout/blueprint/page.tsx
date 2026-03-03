@@ -1,10 +1,9 @@
 import { redirect } from "next/navigation"
 import { createServerClient } from "@/lib/supabase/server"
 import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { getUserByAuthId } from "@/lib/user-mapping"
 
-const sql = neon(process.env.DATABASE_URL!)
 
 export default async function BlueprintCheckoutPage({
   searchParams,

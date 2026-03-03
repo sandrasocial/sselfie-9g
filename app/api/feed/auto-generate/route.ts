@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getAuthenticatedUserWithRetry } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { generateText } from "ai"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 // photoshoot-session removed - using unified system instead
@@ -26,7 +26,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
-    const sql = neon(process.env.DATABASE_URL!)
 
     const brandProfileResult = await sql`
       SELECT * FROM user_personal_brand

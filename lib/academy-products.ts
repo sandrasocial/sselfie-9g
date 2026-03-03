@@ -1,4 +1,4 @@
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { ACADEMY_PRODUCTS, type AcademyProductId } from "./products"
 
 export type AcademyProductDisplay = {
@@ -23,12 +23,7 @@ type ProductOverrideRow = {
   active: boolean | null
 }
 
-function getSqlClient() {
-  return neon(process.env.DATABASE_URL!)
-}
-
 export async function getAcademyProducts(): Promise<AcademyProductDisplay[]> {
-  const sql = getSqlClient()
 
   const overrides = (await sql`
     SELECT product_id, name, tagline, description, price_cents, active

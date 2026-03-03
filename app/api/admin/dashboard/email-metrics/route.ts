@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 
 const ADMIN_EMAIL = "ssa@ssasocial.com"
 
@@ -21,7 +21,6 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    const sql = neon(process.env.DATABASE_URL!)
 
     const emailStats = await sql`
       SELECT 

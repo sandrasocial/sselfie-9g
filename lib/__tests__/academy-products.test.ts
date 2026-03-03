@@ -19,8 +19,8 @@ describe("getAcademyProducts", () => {
     const { getAcademyProducts } = await import("@/lib/academy-products")
     const products = await getAcademyProducts()
 
-    expect(neonFactoryMock).toHaveBeenCalledWith("postgres://unit-test")
-    expect(products).toHaveLength(3)
+    expect(neonFactoryMock).toHaveBeenCalledWith("postgres://unit-test", { disableWarningInBrowsers: true })
+    expect(products).toHaveLength(6)
     expect(products.find((p) => p.id === "what_to_say")?.name).toBe("What To Say")
     expect(products.every((p) => p.active)).toBe(true)
   })

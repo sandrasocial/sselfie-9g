@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server"
-import { neon } from "@neondatabase/serverless"
+import { sql } from "@/lib/db/client"
 import { stripe } from "@/lib/stripe"
 
-const sql = neon(process.env.DATABASE_URL || "")
 const BETA_USER_CAP = Number(process.env.BETA_USER_CAP || 16)
 const MEMBERSHIP_PRICE_ID = (process.env.STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID || "").trim()
 const BETA_FALLBACK_THRESHOLD_CENTS = Number(process.env.BETA_DISCOUNT_THRESHOLD_CENTS || 6000)
