@@ -27,6 +27,22 @@ describe("parseMayaToolMarkers", () => {
       },
     ])
   })
+
+  it("parses create asset marker with preview payload", () => {
+    const markers = parseMayaToolMarkers(
+      "[CREATE_ASSET:calendar|Content%20Calendar|maya_calendar_123|Weekly%20plan|%2Fstudio%3Ftab%3Dmaya]",
+    )
+    expect(markers).toEqual([
+      {
+        tool: "create_asset",
+        assetType: "calendar",
+        assetLabel: "Content Calendar",
+        assetId: "maya_calendar_123",
+        previewText: "Weekly plan",
+        url: "/studio?tab=maya",
+      },
+    ])
+  })
 })
 
 describe("stripMayaToolMarkers", () => {
@@ -35,5 +51,12 @@ describe("stripMayaToolMarkers", () => {
       'Updating now.\n[EDIT_ASSET:calendar|Content%20Calendar]\nContinue with your next tweak.',
     )
     expect(stripped).toBe("Updating now. Continue with your next tweak.")
+  })
+
+  it("removes create asset marker text from assistant message", () => {
+    const stripped = stripMayaToolMarkers(
+      "Done.\n[CREATE_ASSET:page|Landing%20Page|maya_page_1|Draft%20ready|%2Fstudio]\nNext step.",
+    )
+    expect(stripped).toBe("Done. Next step.")
   })
 })

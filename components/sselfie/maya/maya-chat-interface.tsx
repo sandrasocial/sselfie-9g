@@ -118,6 +118,7 @@ export default function MayaChatInterface({
     "tool-generateImage",
     "tool-showUploadZone",
     "tool-editAsset",
+    "tool-createAssetPreview",
     "tool-generateFeed",
     "tool-generateCaptions",
     "tool-generateStrategy",
@@ -135,6 +136,7 @@ export default function MayaChatInterface({
       .replace(/\[GENERATE_IMAGE(?:\s*:\s*[^\]]+)?\]/gi, "")
       .replace(/\[SHOW_UPLOAD_ZONE(?:\s*:\s*[^\]]+)?\]/gi, "")
       .replace(/\[EDIT_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replace(/\[CREATE_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "")
       .replace(/\[GENERATE_CAPTIONS\]/gi, "")
       .replace(/\[GENERATE_STRATEGY\]/gi, "")
       .replace(/\[CREATE_FEED_STRATEGY(?:\s*:[\s\S]*?)?\]/gi, "")
@@ -273,6 +275,7 @@ export default function MayaChatInterface({
     cleanedText = cleanedText.replace(/\[GENERATE_IMAGE(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
     cleanedText = cleanedText.replace(/\[SHOW_UPLOAD_ZONE(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
     cleanedText = cleanedText.replace(/\[EDIT_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
+    cleanedText = cleanedText.replace(/\[CREATE_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
     // Remove feed creation trigger (with JSON content)
     // Use bracket counting to properly match nested JSON structures
     // This handles complex JSON with nested arrays/objects by finding the matching closing bracket
@@ -1043,6 +1046,44 @@ export default function MayaChatInterface({
                                   <div className="mt-3 rounded-lg border border-[rgba(255,255,255,0.12)] bg-[rgba(0,0,0,0.25)] px-3 py-2 text-[11px] text-[#dcdcdc]">
                                     Next step: describe the exact change you want (headline, CTA, section copy, layout), and Maya keeps editing this same asset.
                                   </div>
+                                </div>
+                              )
+                            }
+
+                            if (part.type === "tool-createAssetPreview") {
+                              const output = (part as any).output || {}
+                              const assetType = output.assetType || "page"
+                              const assetLabel =
+                                typeof output.assetLabel === "string" && output.assetLabel.trim().length > 0
+                                  ? output.assetLabel
+                                  : assetType === "calendar"
+                                    ? "Content Calendar"
+                                    : assetType === "pdf"
+                                      ? "Workbook"
+                                      : "Landing Page"
+                              const previewText =
+                                typeof output.previewText === "string" && output.previewText.trim().length > 0
+                                  ? output.previewText
+                                  : "Draft created. Keep iterating with Maya in this chat."
+                              const url =
+                                typeof output.url === "string" && output.url.trim().length > 0 ? output.url : null
+
+                              return (
+                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.05)] p-4">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Draft Ready</div>
+                                    <div className="text-[10px] uppercase tracking-[0.16em] text-[#bdbdbd]">{assetType}</div>
+                                  </div>
+                                  <div className="mt-2 text-sm text-[#ffffff]">{assetLabel}</div>
+                                  <div className="mt-1 text-xs text-[#cfcfcf]">{previewText}</div>
+                                  {url ? (
+                                    <a
+                                      href={url}
+                                      className="mt-3 inline-flex rounded-lg border border-[rgba(255,255,255,0.22)] bg-[rgba(255,255,255,0.08)] px-3 py-2 text-[11px] uppercase tracking-[0.16em] text-[#ffffff] transition-colors hover:bg-[rgba(255,255,255,0.14)]"
+                                    >
+                                      Open Draft
+                                    </a>
+                                  ) : null}
                                 </div>
                               )
                             }

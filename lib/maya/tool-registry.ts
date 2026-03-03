@@ -1,4 +1,4 @@
-export type MayaToolId = "show_gallery" | "save_to_gallery" | "generate_image" | "show_upload_zone" | "edit_asset"
+export type MayaToolId = "show_gallery" | "save_to_gallery" | "generate_image" | "show_upload_zone" | "edit_asset" | "create_asset"
 
 export interface MayaToolDefinition {
   id: MayaToolId
@@ -37,6 +37,12 @@ export const MAYA_TOOL_REGISTRY: Record<MayaToolId, MayaToolDefinition> = {
     label: "Edit Asset",
     marker: "EDIT_ASSET",
     resultType: "tool-editAsset",
+  },
+  create_asset: {
+    id: "create_asset",
+    label: "Create Asset",
+    marker: "CREATE_ASSET",
+    resultType: "tool-createAssetPreview",
   },
 }
 

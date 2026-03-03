@@ -736,6 +736,18 @@ export async function GET(request: NextRequest) {
                 message: `Active ${marker.assetLabel} editing context restored.`,
               },
             })
+          } else if (marker.tool === "create_asset") {
+            parts.push({
+              type: "tool-createAssetPreview",
+              output: {
+                state: "ready",
+                assetType: marker.assetType,
+                assetLabel: marker.assetLabel,
+                assetId: marker.assetId || null,
+                previewText: marker.previewText || "",
+                url: marker.url || "",
+              },
+            })
           }
         }
         
@@ -847,6 +859,18 @@ export async function GET(request: NextRequest) {
                 assetType: marker.assetType,
                 assetLabel: marker.assetLabel,
                 message: `Active ${marker.assetLabel} editing context restored.`,
+              },
+            })
+          } else if (marker.tool === "create_asset") {
+            parts.push({
+              type: "tool-createAssetPreview",
+              output: {
+                state: "ready",
+                assetType: marker.assetType,
+                assetLabel: marker.assetLabel,
+                assetId: marker.assetId || null,
+                previewText: marker.previewText || "",
+                url: marker.url || "",
               },
             })
           }

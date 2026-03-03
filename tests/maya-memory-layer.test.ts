@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest"
 
-import { detectMayaRememberIntent, mergePreferenceNotes, detectMayaAssetEditIntent } from "@/lib/maya/memory-layer"
+import {
+  detectMayaRememberIntent,
+  mergePreferenceNotes,
+  detectMayaAssetEditIntent,
+  detectMayaAssetCreateIntent,
+} from "@/lib/maya/memory-layer"
 
 describe("detectMayaRememberIntent", () => {
   it("extracts explicit remember commands", () => {
@@ -71,6 +76,21 @@ describe("detectMayaAssetEditIntent", () => {
       assetLabel: "Landing Page",
       updatedAt: new Date().toISOString(),
     })
+    expect(intent).toBeNull()
+  })
+})
+
+describe("detectMayaAssetCreateIntent", () => {
+  it("detects creation requests for non-image assets", () => {
+    const intent = detectMayaAssetCreateIntent("Create a landing page for my new offer")
+    expect(intent).toEqual({
+      assetType: "page",
+      instruction: "Create a landing page for my new offer",
+    })
+  })
+
+  it("does not catch photo generation prompts", () => {
+    const intent = detectMayaAssetCreateIntent("Create a photo with urban style")
     expect(intent).toBeNull()
   })
 })

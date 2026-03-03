@@ -598,7 +598,8 @@ export default function MayaChatScreen({
           p?.type === "tool-saveToGallery" ||
           p?.type === "tool-generateImage" ||
           p?.type === "tool-showUploadZone" ||
-          p?.type === "tool-editAsset",
+          p?.type === "tool-editAsset" ||
+          p?.type === "tool-createAssetPreview",
       )
 
       const toolProcessKey = `${messageKey}-phase2-tools`
@@ -750,6 +751,17 @@ export default function MayaChatScreen({
               assetType: marker.assetType,
               assetLabel: marker.assetLabel,
               message: `Active ${marker.assetLabel} editing context ready.`,
+            })
+          }
+
+          if (marker.tool === "create_asset") {
+            updateToolPart("tool-createAssetPreview", {
+              state: "ready",
+              assetType: marker.assetType,
+              assetLabel: marker.assetLabel,
+              assetId: marker.assetId || null,
+              previewText: marker.previewText || "",
+              url: marker.url || "",
             })
           }
         }
@@ -2665,6 +2677,7 @@ export default function MayaChatScreen({
       .replace(/\[GENERATE_IMAGE(?:\s*:\s*[^\]]+)?\]/gi, "")
       .replace(/\[SHOW_UPLOAD_ZONE(?:\s*:\s*[^\]]+)?\]/gi, "")
       .replace(/\[EDIT_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replace(/\[CREATE_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "")
       .replace(/\[GENERATE_CAPTIONS\]/gi, "")
       .replace(/\[GENERATE_STRATEGY\]/gi, "")
       .replace(/\[CREATE_FEED_STRATEGY(?:\s*:[\s\S]*?)?\]/gi, "")
@@ -2687,6 +2700,7 @@ export default function MayaChatScreen({
             part.type === "tool-generateImage" ||
             part.type === "tool-showUploadZone" ||
             part.type === "tool-editAsset" ||
+            part.type === "tool-createAssetPreview" ||
             part.type === "tool-generateFeed" ||
             part.type === "tool-generateCaptions" ||
             part.type === "tool-generateStrategy" ||

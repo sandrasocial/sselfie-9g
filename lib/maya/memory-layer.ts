@@ -9,6 +9,7 @@ const REMEMBER_COMMAND_REGEX = /^\s*(?:remember(?:\s+this)?|please remember|don'
 const STYLE_FEEDBACK_REGEX =
   /\b(this (?:doesn't|does not) sound like me|this is not me|not my (?:voice|style|vibe)|from now on|i (?:don't|do not) want|avoid)\b/i
 const ASSET_EDIT_ACTION_REGEX = /\b(edit|update|revise|change|rewrite|refresh|adjust|improve|fix)\b/i
+const ASSET_CREATE_ACTION_REGEX = /\b(create|build|generate|make|draft)\b/i
 const ASSET_CONTINUE_HINT_REGEX = /\b(headline|subheadline|section|cta|copy|layout|design|hook|title|it|this|that)\b/i
 const IMAGE_EDIT_REGEX = /\b(photo|image|picture|selfie|concept|prompt)\b/i
 const PAGE_ASSET_REGEX = /\b(landing page|sales page|homepage|strategy page|web page|page)\b/i
@@ -34,6 +35,11 @@ export interface MayaAssetEditIntent {
   assetLabel: string
   instruction: string
   mode: "start" | "continue"
+}
+
+export interface MayaAssetCreateIntent {
+  assetType: MayaAssetType
+  instruction: string
 }
 
 function normalizeWhitespace(value: string): string {
@@ -180,6 +186,22 @@ export function detectMayaAssetEditIntent(
     assetLabel: activeAssetContext.assetLabel || defaultAssetLabel(activeAssetContext.assetType),
     instruction: sanitizedInstruction,
     mode: "continue",
+  }
+}
+
+export function detectMayaAssetCreateIntent(userText: string): MayaAssetCreateIntent | null {
+  if (!userText || userText.trim().length === 0) return null
+  const instruction = sanitizeAssetInstruction(userText)
+  if (!instruction) return null
+  if (!ASSET_CREATE_ACTION_REGEX.test(instruction)) return null
+  if (IMAGE_EDIT_REGEX.test(instruction)) return null
+
+  const assetType = inferAssetType(instruction)
+  if (!assetType) return null
+
+  return {
+    assetType,
+    instruction,
   }
 }
 

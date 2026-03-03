@@ -28,10 +28,12 @@ import { formatMayaToolMarker } from "@/lib/maya/tool-registry"
 import {
   detectMayaRememberIntent,
   persistMayaRememberedPreference,
+  detectMayaAssetCreateIntent,
   detectMayaAssetEditIntent,
   getMayaActiveAssetContext,
   persistMayaActiveAssetContext,
 } from "@/lib/maya/memory-layer"
+import { createMayaGeneratedAsset } from "@/lib/maya/asset-generation"
 
 import { NextResponse } from "next/server"
 
@@ -359,6 +361,59 @@ export async function POST(req: Request) {
           })
 
           return createUIMessageStreamResponse({ stream })
+        }
+      }
+
+      const assetCreateIntent = detectMayaAssetCreateIntent(latestUserText)
+      if (assetCreateIntent) {
+        try {
+          const generatedAsset = await createMayaGeneratedAsset({
+            userId: dbUserId,
+            assetType: assetCreateIntent.assetType,
+            instruction: assetCreateIntent.instruction,
+          })
+
+          await persistMayaActiveAssetContext(dbUserId, {
+            assetType: generatedAsset.assetType,
+            assetLabel: generatedAsset.title,
+            instruction: assetCreateIntent.instruction,
+          })
+
+          const createAssetMarker = formatMayaToolMarker(
+            "create_asset",
+            [
+              generatedAsset.assetType,
+              encodeURIComponent(generatedAsset.title),
+              generatedAsset.id,
+              encodeURIComponent(generatedAsset.previewText),
+              encodeURIComponent(generatedAsset.url || ""),
+            ].join("|"),
+          )
+          const editAssetMarker = formatMayaToolMarker(
+            "edit_asset",
+            `${generatedAsset.assetType}|${encodeURIComponent(generatedAsset.title)}`,
+          )
+
+          const stream = createUIMessageStream({
+            originalMessages: validUIMessages as any,
+            execute: ({ writer }) => {
+              const textPartId = `asset-create-${Date.now().toString(36)}`
+              writer.write({ type: "text-start", id: textPartId })
+              writer.write({
+                type: "text-delta",
+                id: textPartId,
+                delta:
+                  `Done. I created a draft for your ${generatedAsset.title} and loaded it inline so you can iterate fast.\n` +
+                  `${createAssetMarker}\n` +
+                  `${editAssetMarker}`,
+              })
+              writer.write({ type: "text-end", id: textPartId })
+            },
+          })
+
+          return createUIMessageStreamResponse({ stream })
+        } catch (assetCreateError) {
+          console.error("[Maya Chat] Failed to create asset draft:", assetCreateError)
         }
       }
 
