@@ -154,6 +154,80 @@ openclaw agent --agent north --local --message "YOUR MESSAGE"
 
 ---
 
+## The Maya Vision — North Star (DO NOT DRIFT FROM THIS)
+*Locked 2026-03-03 — Sandra's words, verbatim*
+
+**Maya IS the app. Not a feature. Not a chatbot on the side. Maya is the entire interface.**
+
+Users never navigate. They just talk to their agent — and their agent surfaces everything they need, right there in the conversation.
+
+### The Experience
+```
+User: "I want to create a photo for my new offer"
+Maya: "Let's do it. Do you want to use your uploaded selfies, train your custom model, or use the latest base model?"
+→ three buttons appear inline in chat
+User picks selfies
+Maya: "Perfect. Drop them here" → upload zone appears inline
+User uploads → Maya processes → generates photo
+Maya: "Here it is. Want to add your product into this shot, or save it to your gallery?"
+→ image shows in chat
+```
+No navigation. No "go to settings, click generate, find the upload button." The chat handles everything.
+
+### What's Already Built (Proof of Concept)
+- Maya's personality + system prompt (Anthropic streaming, in character)
+- Brand profile context injected into every Maya response
+- Style preferences and aesthetic defaults from wizard
+- Classic generation (Flux LoRA / custom model) + Pro generation (NanoBanana Pro)
+- **Concept cards** = the seed of the vision. `[GENERATE_CONCEPTS]` trigger → inline cards. This IS the pattern.
+- Training pipeline, Gallery, Feed Planner, Academy (as tabs — intermediate step)
+
+### The Three Missing Layers
+1. **Tool dispatcher** — Maya needs a registry: `generate_image`, `upload_zone`, `show_gallery`, `save_to_gallery`, `build_feed_plan`, `show_brand_profile`. Intent → tool → inline component result.
+2. **Inline component renderer** — chat bubble becomes a dynamic canvas: images, upload zones, action buttons, brand profile cards, feed previews — all rendered inside the conversation.
+3. **Cross-session memory** — "This doesn't sound like me" persists forever. Brand profile fed into every session from `agent_profiles` table. What they've rejected. What they've loved.
+
+### Named Agent (Personalisation)
+First open: Maya asks "What do you want to call me?" → user names their AI (e.g. Aria).
+That name is stored in `agent_profiles`, injected every session. This creates **ownership** — people don't cancel relationships.
+
+### Build Order
+1. Fix bugs (background colour + real Maya chat wired) ← Stella doing this now
+2. Verify Maya sounds like herself on preview
+3. Expand tool registry: `show_gallery` + `save_to_gallery` first (tests dispatcher pattern cheaply)
+4. Named agent + richer onboarding conversation (replaces wizard with Maya interviewing the user)
+5. Phase C: collapse 5-tab navigation into Maya tools (tabs become what Maya surfaces, not separate screens)
+
+### The 5-Tab Rebuild: Intermediate Step, NOT the Destination
+The clean branch has 5 tabs (Maya, Gallery, Feed Planner, Academy, Account).
+**This is Phase B scaffolding.** Phase C collapses it — Gallery IS a Maya tool, Feed Planner IS a Maya tool. No tab router. One screen.
+→ Do NOT get comfortable with 5 tabs as the final state.
+
+### Pricing (Once Vision Is Live)
+"The only AI that already knows your brand — and gets smarter every time you use it."
+That's not a tool. That's a business relationship. Target: €197/month minimum. Not €97. Not €27.
+
+---
+
+## Rebuild Status (sprint/clean-architecture branch)
+*Updated 2026-03-03*
+
+| Item | Status |
+|------|--------|
+| Branch created | ✅ `sprint/clean-architecture` commit `0269e304` |
+| 5-tab shell | ✅ Built, tests 30/30 pass |
+| Maya generation (Classic + Pro) | ✅ Wired to real Replicate APIs |
+| Maya chat (real AI) | ✅ FIXED — commit `15b3cf94` — streaming + `[GENERATE_CONCEPTS]` wired |
+| Background colour | ✅ FIXED — commit `15b3cf94` — full light theme cascade (22 files) |
+| All 5 screens | ✅ Skeletal layouts present |
+| Main branch (28 paying customers) | ✅ Untouched — live throughout |
+
+**Preview (NOT production):** https://v0-sselfie-qanvy6o2q-sselfie-studio.vercel.app
+**Do NOT merge to main until Sandra verifies on preview.**
+**Fix report:** `~/stella/reports/FIX-01-VERIFICATION-2026-03-02.md`
+
+---
+
 ## Protocol: How Claude Guides North
 
 1. **Check North's task queue** (`~/stella/NORTH_TASK_QUEUE.md`) before adding new tasks
