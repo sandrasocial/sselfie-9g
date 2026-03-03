@@ -1076,9 +1076,20 @@ export default function MayaChatInterface({
                                   </div>
                                   <div className="mt-2 text-sm text-[#ffffff]">{assetLabel}</div>
                                   <div className="mt-1 text-xs text-[#cfcfcf]">{previewText}</div>
+                                  {output.assetId ? (
+                                    <div className="mt-3 overflow-hidden rounded-lg border border-[rgba(255,255,255,0.12)] bg-white">
+                                      <iframe
+                                        title={`${assetLabel} preview`}
+                                        src={`/api/maya/generated-assets/${encodeURIComponent(output.assetId)}/html`}
+                                        className="h-64 w-full"
+                                      />
+                                    </div>
+                                  ) : null}
                                   {url ? (
                                     <a
                                       href={url}
+                                      target="_blank"
+                                      rel="noreferrer"
                                       className="mt-3 inline-flex rounded-lg border border-[rgba(255,255,255,0.22)] bg-[rgba(255,255,255,0.08)] px-3 py-2 text-[11px] uppercase tracking-[0.16em] text-[#ffffff] transition-colors hover:bg-[rgba(255,255,255,0.14)]"
                                     >
                                       Open Draft

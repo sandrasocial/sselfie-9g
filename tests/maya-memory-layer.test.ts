@@ -93,4 +93,12 @@ describe("detectMayaAssetCreateIntent", () => {
     const intent = detectMayaAssetCreateIntent("Create a photo with urban style")
     expect(intent).toBeNull()
   })
+
+  it("detects natural language create intent without strict create verb", () => {
+    const intent = detectMayaAssetCreateIntent("I need a landing page for my studio offer")
+    expect(intent).toEqual({
+      assetType: "page",
+      instruction: "I need a landing page for my studio offer",
+    })
+  })
 })
