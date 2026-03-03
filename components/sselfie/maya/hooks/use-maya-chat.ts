@@ -122,6 +122,7 @@ export function useMayaChat({
   // Refs for tracking state
   const hasLoadedChatRef = useRef(false)
   const savedMessageIds = useRef(new Set<string>())
+  const savedFeedCardMessagesRef = useRef(new Set<string>())
   const lastModeRef = useRef<string | null>(null)
   const hasClearedStateRef = useRef(false)
   // CRITICAL FIX: Track history checks to prevent infinite loops

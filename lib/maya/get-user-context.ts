@@ -403,6 +403,18 @@ export async function getUserContextForMaya(authUserId: string): Promise<string>
         contextParts.push(`Styling notes: ${memory.personalized_styling_notes}`)
       }
 
+      const memoryData = (memory as any).memory_data as Record<string, unknown> | undefined
+      const rememberedPreferenceNotes = Array.isArray(memoryData?.user_preference_notes)
+        ? memoryData.user_preference_notes
+            .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
+            .filter(Boolean)
+        : []
+
+      if (rememberedPreferenceNotes.length > 0) {
+        contextParts.push(`Remembered preferences: ${rememberedPreferenceNotes.slice(0, 6).join(" | ")}`)
+        contextParts.push("Apply these remembered preferences unless the user explicitly changes them.")
+      }
+
       const insights = memory.personal_insights as any
       if (insights) {
         if (insights.concepts_generated > 0) {

@@ -24,6 +24,7 @@ import { getProductGenerationPrompt } from "@/lib/products-system-prompt"
 import { shouldDeductMayaChatCredit } from "@/lib/maya/chat-credit-policy"
 import { detectMayaToolDispatchIntent, extractLatestUserText } from "@/lib/maya/intent-dispatcher"
 import { stripMayaToolMarkers } from "@/lib/maya/tool-markers"
+import { detectMayaRememberIntent, persistMayaRememberedPreference } from "@/lib/maya/memory-layer"
 
 import { NextResponse } from "next/server"
 
@@ -307,6 +308,53 @@ export async function POST(req: Request) {
     const chatFirstMayaEnabled = isChatFirstMayaEnabled(process.env.FEATURE_CHAT_FIRST_MAYA)
     if (chatFirstMayaEnabled && !isPromptBuilder && chatType !== "feed-planner" && chatType !== "pro-photoshoot") {
       const latestUserText = extractLatestUserText(validUIMessages as any)
+
+      const rememberIntent = detectMayaRememberIntent(latestUserText)
+      if (rememberIntent) {
+        try {
+          const persistedMemory = await persistMayaRememberedPreference(dbUserId, rememberIntent.note)
+          console.log("[Maya Chat] Phase 3 memory intent captured:", {
+            source: rememberIntent.source,
+            note: persistedMemory.note,
+            noteCount: persistedMemory.notes.length,
+          })
+
+          const stream = createUIMessageStream({
+            originalMessages: validUIMessages as any,
+            execute: ({ writer }) => {
+              const textPartId = `memory-save-${Date.now().toString(36)}`
+              writer.write({ type: "text-start", id: textPartId })
+              writer.write({
+                type: "text-delta",
+                id: textPartId,
+                delta: `Perfect. I saved this in your memory so I keep it in every future suggestion: "${persistedMemory.note}"`,
+              })
+              writer.write({ type: "text-end", id: textPartId })
+            },
+          })
+
+          return createUIMessageStreamResponse({ stream })
+        } catch (memoryError) {
+          console.error("[Maya Chat] Failed saving memory intent:", memoryError)
+
+          const stream = createUIMessageStream({
+            originalMessages: validUIMessages as any,
+            execute: ({ writer }) => {
+              const textPartId = `memory-save-fallback-${Date.now().toString(36)}`
+              writer.write({ type: "text-start", id: textPartId })
+              writer.write({
+                type: "text-delta",
+                id: textPartId,
+                delta: `I heard you. I couldn't save that memory right now, but I will follow it in this chat.`,
+              })
+              writer.write({ type: "text-end", id: textPartId })
+            },
+          })
+
+          return createUIMessageStreamResponse({ stream })
+        }
+      }
+
       const dispatchedIntent = detectMayaToolDispatchIntent(latestUserText)
 
       if (dispatchedIntent) {
