@@ -1,16 +1,6 @@
 // Credit system utilities
 
-import { neon } from "@neondatabase/serverless"
-
-const getDatabase = () => {
-  if (!process.env.DATABASE_URL) {
-    console.log("[v0] [CREDITS] DATABASE_URL not available - database operations will be skipped")
-    return null
-  }
-  return neon(process.env.DATABASE_URL)
-}
-
-const sql = getDatabase()
+import { sql } from "@/lib/db/client"
 
 export const CREDIT_COSTS = {
   TRAINING: 20, // $3.00 / $0.15 per credit (actual API cost)

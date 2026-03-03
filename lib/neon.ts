@@ -1,3 +1,2 @@
-import { neon } from "@neondatabase/serverless"
-
-export const sql = neon(process.env.DATABASE_URL!)
+/** @deprecated Use @/lib/db/client instead. This file is a backwards-compat shim. */
+export { sql, getDb as getNeonClient } from "@/lib/db/client"
