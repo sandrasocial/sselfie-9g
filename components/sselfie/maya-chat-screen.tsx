@@ -311,8 +311,6 @@ export default function MayaChatScreen({
     firstTimeProductUser, // Pass Feed tab flag
   })
 
-  const isProSessionEmpty = proMode && !isLoadingChat && (!messages || messages.length === 0)
-
   const [pendingConceptRequest, setPendingConceptRequest] = useState<string | null>(null)
   const [isGeneratingConcepts, setIsGeneratingConcepts] = useState(false)
   const [isCreatingFeed, setIsCreatingFeed] = useState(false)
@@ -2710,9 +2708,55 @@ export default function MayaChatScreen({
   // - Whether user has used Maya before (hasUsedMayaBefore)
   // - Whether chatId exists (new chats get chatId immediately but have no messages)
   // The key indicator of a "new chat" is: no messages
+  const stripChatControlText = (text: string): string =>
+    text
+      .replace(/\[GENERATE_PROMPTS[:\s]+[^\]]+\]/gi, "")
+      .replace(/\[GENERATE_CONCEPTS\]\s*[^\n]*/gi, "")
+      .replace(/\[SHOW_GALLERY\]/gi, "")
+      .replace(/\[SAVE_TO_GALLERY(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replace(/\[GENERATE_IMAGE(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replace(/\[SHOW_UPLOAD_ZONE(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replace(/\[GENERATE_CAPTIONS\]/gi, "")
+      .replace(/\[GENERATE_STRATEGY\]/gi, "")
+      .replace(/\[CREATE_FEED_STRATEGY(?:\s*:[\s\S]*?)?\]/gi, "")
+      .replace(/\[Inspiration Image: https?:\/\/[^\]]+\]/g, "")
+      .replace(/\s{2,}/g, " ")
+      .trim()
+
+  const hasVisibleMessages = useMemo(() => {
+    return (messages || []).some((message: any) => {
+      if (!message) return false
+
+      if (message.parts && Array.isArray(message.parts)) {
+        const hasVisiblePart = message.parts.some((part: any) => {
+          if (!part || !part.type) return false
+          if (part.type === "image") return true
+          if (
+            part.type === "tool-generateConcepts" ||
+            part.type === "tool-showGallery" ||
+            part.type === "tool-saveToGallery" ||
+            part.type === "tool-generateImage" ||
+            part.type === "tool-showUploadZone" ||
+            part.type === "tool-generateFeed" ||
+            part.type === "tool-generateCaptions" ||
+            part.type === "tool-generateStrategy" ||
+            part.type === "tool-generateVideo"
+          ) {
+            return true
+          }
+          return false
+        })
+        if (hasVisiblePart) return true
+      }
+
+      const visibleText = stripChatControlText(getMessageText(message))
+      return visibleText.length > 0
+    })
+  }, [messages, getMessageText])
+
   const isEmpty = 
     !isLoadingChat && // Don't show welcome screen while loading
-    (!messages || messages.length === 0) && // No messages = new/empty chat
+    !hasVisibleMessages && // No visible messages = new/empty chat
     hasLoadedChatRef.current // Only show empty if we've actually loaded (prevents showing during initial load)
 
   const showReturningMemberHome =
@@ -2721,11 +2765,12 @@ export default function MayaChatScreen({
     hasLoadedChatRef.current &&
     !isLoadingChat &&
     !isTyping &&
-    (!messages || messages.length === 0)
+    !hasVisibleMessages
 
-  const showProEmptyState = !showReturningMemberHome && isProSessionEmpty && hasProFeatures && !isTyping
+  const showProEmptyState = !showReturningMemberHome && !isLoadingChat && !hasVisibleMessages && hasProFeatures && !isTyping
   const showClassicEmptyState = !showReturningMemberHome && isEmpty && !proMode && !isTyping
   const showAnyEmptyState = showReturningMemberHome || showProEmptyState || showClassicEmptyState
+  const photoTabBottomSpacing = "calc(var(--input-bar-height, 168px) + max(16px, env(safe-area-inset-bottom, 0px)))"
 
   const returningMemberLastSessionTitle =
     typeof chatTitle === "string" && chatTitle.trim().length > 0 && !/^new chat$/i.test(chatTitle.trim())
@@ -3197,7 +3242,7 @@ export default function MayaChatScreen({
                 className="flex flex-col items-center justify-start py-6"
                 style={{
                   paddingTop: "calc(var(--maya-header-height, 124px) + 8px)",
-                  paddingBottom: "calc(var(--input-bar-height, 168px) + var(--sselfie-bottom-nav-height, 96px) + 20px)",
+                  paddingBottom: photoTabBottomSpacing,
                 }}
               >
                 <MembershipHomeCard
@@ -3247,7 +3292,7 @@ export default function MayaChatScreen({
                 className="mx-auto w-full max-w-2xl pt-4 pb-6 sm:pb-8"
                 style={{
                   paddingTop: "calc(var(--maya-header-height, 124px) + 8px)",
-                  paddingBottom: "calc(var(--input-bar-height, 168px) + var(--sselfie-bottom-nav-height, 96px) + 20px)",
+                  paddingBottom: photoTabBottomSpacing,
                 }}
               >
               <div className="max-w-2xl w-full space-y-8">
@@ -3329,7 +3374,7 @@ export default function MayaChatScreen({
                 className="flex flex-col items-center justify-start py-6"
                 style={{
                   paddingTop: "calc(var(--maya-header-height, 124px) + 8px)",
-                  paddingBottom: "calc(var(--input-bar-height, 168px) + var(--sselfie-bottom-nav-height, 96px) + 20px)",
+                  paddingBottom: photoTabBottomSpacing,
                 }}
               >
               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-stone-200/60 overflow-hidden mb-4 sm:mb-6">

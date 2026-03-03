@@ -111,6 +111,61 @@ export default function MayaChatInterface({
   onToolSelectGenerationSource,
   onToolOpenUploadZone,
 }: MayaChatInterfaceProps) {
+  const TOOL_RENDER_TYPES = new Set([
+    "tool-generateConcepts",
+    "tool-showGallery",
+    "tool-saveToGallery",
+    "tool-generateImage",
+    "tool-showUploadZone",
+    "tool-generateFeed",
+    "tool-generateCaptions",
+    "tool-generateStrategy",
+    "tool-generateVideo",
+  ])
+
+  const stripControlText = (text: string): string => {
+    if (!text) return ""
+
+    return text
+      .replace(/\[GENERATE_PROMPTS[:\s]+[^\]]+\]/gi, "")
+      .replace(/\[GENERATE_CONCEPTS\]\s*[^\n]*/gi, "")
+      .replace(/\[SHOW_GALLERY\]/gi, "")
+      .replace(/\[SAVE_TO_GALLERY(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replace(/\[GENERATE_IMAGE(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replace(/\[SHOW_UPLOAD_ZONE(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replace(/\[GENERATE_CAPTIONS\]/gi, "")
+      .replace(/\[GENERATE_STRATEGY\]/gi, "")
+      .replace(/\[CREATE_FEED_STRATEGY(?:\s*:[\s\S]*?)?\]/gi, "")
+      .replace(/\[Inspiration Image: https?:\/\/[^\]]+\]/g, "")
+      .replace(/\n{3,}/g, "\n\n")
+      .replace(/\s{2,}/g, " ")
+      .trim()
+  }
+
+  const hasRenderableMessage = (msg: UIMessage): boolean => {
+    if (!msg) return false
+
+    if (Array.isArray(msg.parts) && msg.parts.length > 0) {
+      const hasImagePart = msg.parts.some((part: any) => part?.type === "image")
+      if (hasImagePart) return true
+
+      const hasToolPart = msg.parts.some((part: any) => part?.type && TOOL_RENDER_TYPES.has(part.type))
+      if (hasToolPart) return true
+
+      const textContent = msg.parts
+        .filter((part: any) => part?.type === "text" && typeof part?.text === "string")
+        .map((part: any) => part.text)
+        .join(" ")
+
+      return stripControlText(textContent).length > 0
+    }
+
+    if (typeof (msg as any).content === "string") {
+      return stripControlText((msg as any).content).length > 0
+    }
+
+    return false
+  }
   
   // Helper function to remove emojis from text
   const removeEmojis = (text: string): string => {
@@ -429,8 +484,8 @@ export default function MayaChatInterface({
         style={{
           // Layout contract: measured fixed header height + breathing room.
           paddingTop: "calc(var(--maya-header-height, 124px) + 16px)",
-          // Keep last message clear of dynamic input dock + fixed bottom nav.
-          paddingBottom: "calc(var(--input-bar-height, 168px) + var(--sselfie-bottom-nav-height, 96px) + 24px)",
+          // Keep last message clear of dynamic input dock only (nav is already below the dock).
+          paddingBottom: "calc(var(--input-bar-height, 168px) + max(16px, env(safe-area-inset-bottom, 0px)))",
         }}
         role="log"
         aria-live="polite"
@@ -440,7 +495,7 @@ export default function MayaChatInterface({
           Array.isArray(filteredMessages) &&
           filteredMessages
             .filter((msg) => {
-              return true
+              return hasRenderableMessage(msg as UIMessage)
             })
             .map((msg) => (
               <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end mb-8 sm:mb-10" : "justify-start mb-12 sm:mb-14"}`}>

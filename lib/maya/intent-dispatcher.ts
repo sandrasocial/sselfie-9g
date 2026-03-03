@@ -55,7 +55,7 @@ export function detectMayaToolDispatchIntent(userText: string): MayaToolDispatch
     return {
       tool: "save_to_gallery",
       imageId,
-      responseText: `Perfect, saving that to your gallery now.\n${formatMayaToolMarker("save_to_gallery", markerPayload)}`,
+      responseText: `Done. I saved that to your gallery.\n${formatMayaToolMarker("save_to_gallery", markerPayload)}`,
     }
   }
 
@@ -64,7 +64,7 @@ export function detectMayaToolDispatchIntent(userText: string): MayaToolDispatch
     return {
       tool: "show_upload_zone",
       category,
-      responseText: `Perfect. Drop the images here and I will use them for your next result.\n${formatMayaToolMarker("show_upload_zone", category)}`,
+      responseText: `Perfect. Drop your ${category} here and I’ll build the next image with them.\n${formatMayaToolMarker("show_upload_zone", category)}`,
     }
   }
 
@@ -76,7 +76,7 @@ export function detectMayaToolDispatchIntent(userText: string): MayaToolDispatch
         tool: "generate_image",
         source,
         responseText:
-          `Perfect. We will use your uploaded selfies.\n` +
+          `Love it. We’ll use your selfies for this one.\n` +
           `${formatMayaToolMarker("generate_image", source)}\n` +
           `${formatMayaToolMarker("show_upload_zone", "selfies")}`,
       }
@@ -86,7 +86,7 @@ export function detectMayaToolDispatchIntent(userText: string): MayaToolDispatch
       return {
         tool: "generate_image",
         source,
-        responseText: `Great. We'll use your trained model flow.\n${formatMayaToolMarker("generate_image", source)}`,
+        responseText: `Beautiful. We’ll use your trained model for this shot.\n${formatMayaToolMarker("generate_image", source)}`,
       }
     }
 
@@ -94,7 +94,7 @@ export function detectMayaToolDispatchIntent(userText: string): MayaToolDispatch
       return {
         tool: "generate_image",
         source,
-        responseText: `Great. We'll use the latest base model.\n${formatMayaToolMarker("generate_image", source)}`,
+        responseText: `Perfect. We’ll use the latest base model.\n${formatMayaToolMarker("generate_image", source)}`,
       }
     }
 
@@ -102,7 +102,7 @@ export function detectMayaToolDispatchIntent(userText: string): MayaToolDispatch
       tool: "generate_image",
       source: "choose_source",
       responseText:
-        `Let's do it. Choose your path and I'll launch it inline.\n` +
+        `Love this direction. Choose how you want to create it, and I’ll launch it right here.\n` +
         `${formatMayaToolMarker("generate_image", "choose_source")}`,
     }
   }
@@ -110,7 +110,7 @@ export function detectMayaToolDispatchIntent(userText: string): MayaToolDispatch
   if (SHOW_GALLERY_INTENT_REGEX.test(userText) || /\bmy gallery\b/i.test(userText)) {
     return {
       tool: "show_gallery",
-      responseText: `Absolutely. Pulling up your latest gallery images now.\n${formatMayaToolMarker("show_gallery")}`,
+      responseText: `Absolutely. Here are your latest gallery images.\n${formatMayaToolMarker("show_gallery")}`,
     }
   }
 
