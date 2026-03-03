@@ -12,6 +12,8 @@ describe("analytics event contract", () => {
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("mode_selected")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("onboarding_step_complete")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("onboarding_abandoned")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("feed_planner_quick_start_viewed")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("feed_planner_quick_start_clicked")
   })
 
   it("rejects unknown event names", () => {

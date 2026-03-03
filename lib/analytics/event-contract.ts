@@ -8,6 +8,8 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "activation_jumpstart_opened",
   "activation_continue_clicked",
   "activation_selfie_uploaded",
+  "feed_planner_quick_start_viewed",
+  "feed_planner_quick_start_clicked",
   "signup_to_first_gen",
   "academy_opens_from_maya",
   "first_generation_guided_start",

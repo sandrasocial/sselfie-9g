@@ -1295,16 +1295,6 @@ export async function POST(request: NextRequest) {
                 customerId = typeof session.customer === 'string' ? session.customer : session.customer?.id || null
               }
               
-              // Track purchase event (server-side analytics) - best effort
-              try {
-                const { trackPurchase } = await import("@/lib/analytics")
-                const purchaseAmount = paymentAmountCents ? paymentAmountCents / 100 : 0
-                trackPurchase(purchaseAmount, "USD", [{ product_type: "paid_blueprint", quantity: 1 }])
-                console.log(`[v0] ✅ Tracked purchase event: $${purchaseAmount.toFixed(2)}`)
-              } catch (analyticsError) {
-                console.error(`[v0] ⚠️ Failed to track purchase analytics:`, analyticsError)
-              }
-
               // Store payment in stripe_payments table (comprehensive revenue tracking)
               // Fix: Handle $0 payments (discount codes) - allow processing even if paymentIntentId is null
               let userId: string | null = session.metadata?.user_id || null
