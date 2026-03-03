@@ -1,22 +1,20 @@
-import { NextResponse } from "next/server"
-import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { NextResponse, type NextRequest } from "next/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { sql } from "@/lib/db/client"
+import { withAuth } from "@/lib/auth/with-auth"
 
 
-export async function POST(request: Request, { params }: { params: { feedId: string } }) {
+async function handleSaveHighlightImage(
+  {
+    request,
+    user: neonUser,
+  }: {
+    request: Request | NextRequest
+    user: NonNullable<Awaited<ReturnType<typeof getUserByAuthId>>>
+  },
+  { params }: { params: { feedId: string } },
+) {
   try {
-    const { user: authUser, error: authError } = await getAuthenticatedUser()
-
-    if (authError || !authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const neonUser = await getUserByAuthId(authUser.id)
-    if (!neonUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
-
     const body = await request.json()
     const { highlightId, imageUrl } = body
 
@@ -44,3 +42,7 @@ export async function POST(request: Request, { params }: { params: { feedId: str
     return NextResponse.json({ error: "Failed to save highlight image" }, { status: 500 })
   }
 }
+
+export const POST = withAuth(handleSaveHighlightImage, {
+  resolveUser: getUserByAuthId,
+})

@@ -1,27 +1,21 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getReplicateClient } from "@/lib/replicate-client"
+import { withAuth } from "@/lib/auth/with-auth"
 
-export async function GET(request: NextRequest, { params }: { params: { feedId: string } }) {
+async function handleCheckProfile(
+  {
+    request,
+  }: {
+    request: NextRequest | Request
+  },
+) {
   try {
     const { searchParams } = new URL(request.url)
     const predictionId = searchParams.get("predictionId")
 
     if (!predictionId) {
       return NextResponse.json({ error: "Prediction ID is required" }, { status: 400 })
-    }
-
-    // Authenticate user
-    const { user: authUser, error: authError } = await getAuthenticatedUser()
-
-    if (authError || !authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const neonUser = await getUserByAuthId(authUser.id)
-    if (!neonUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
     const replicate = getReplicateClient()
@@ -49,3 +43,7 @@ export async function GET(request: NextRequest, { params }: { params: { feedId: 
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
+
+export const GET = withAuth(handleCheckProfile, {
+  resolveUser: getUserByAuthId,
+})

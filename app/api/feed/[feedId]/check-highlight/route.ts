@@ -1,21 +1,16 @@
 import { NextResponse } from "next/server"
-import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getReplicateClient } from "@/lib/replicate-client"
+import { withAuth } from "@/lib/auth/with-auth"
 
-export async function GET(request: Request, { params }: { params: { feedId: string } }) {
+async function handleCheckHighlight(
+  {
+    request,
+  }: {
+    request: Request | import("next/server").NextRequest
+  },
+) {
   try {
-    const { user: authUser, error: authError } = await getAuthenticatedUser()
-
-    if (authError || !authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const neonUser = await getUserByAuthId(authUser.id)
-    if (!neonUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
-
     const { searchParams } = new URL(request.url)
     const predictionId = searchParams.get("predictionId")
     const highlightId = searchParams.get("highlightId")
@@ -52,3 +47,7 @@ export async function GET(request: Request, { params }: { params: { feedId: stri
     return NextResponse.json({ error: "Failed to check highlight status" }, { status: 500 })
   }
 }
+
+export const GET = withAuth(handleCheckHighlight, {
+  resolveUser: getUserByAuthId,
+})

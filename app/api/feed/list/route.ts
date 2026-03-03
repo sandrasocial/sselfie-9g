@@ -1,7 +1,6 @@
-import type { NextRequest } from "next/server"
 import { NextResponse } from "next/server"
-import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getDb } from "@/lib/db/client"
+import { withAuth } from "@/lib/auth/with-auth"
 
 /**
  * Get Feed List
@@ -9,23 +8,12 @@ import { getDb } from "@/lib/db/client"
  * Returns all feeds for the current user, ordered by most recent first.
  * Includes basic feed info and post counts.
  */
-export async function GET(req: NextRequest) {
+async function handleGetFeedList({
+  user,
+}: {
+  user: { id: string | number }
+}) {
   try {
-    // Authenticate user (same pattern as chat history)
-    const { user: authUser, error: authError } = await getAuthenticatedUser()
-
-    if (authError || !authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    // Use same pattern as chat history - getEffectiveNeonUser handles impersonation
-    const { getEffectiveNeonUser } = await import("@/lib/simple-impersonation")
-    const user = await getEffectiveNeonUser(authUser.id)
-
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
-
     const sql = getDb()
     
     // Check user's access level to determine if preview feeds should be shown
@@ -128,3 +116,4 @@ export async function GET(req: NextRequest) {
   }
 }
 
+export const GET = withAuth(handleGetFeedList)

@@ -1,21 +1,16 @@
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { sql } from "@/lib/db/client"
-import { NextResponse } from "next/server"
-import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { NextResponse, type NextRequest } from "next/server"
+import { withAuth } from "@/lib/auth/with-auth"
 
-export async function POST(request: Request) {
+async function handleFavorite({
+  request,
+  user: neonUser,
+}: {
+  request: Request | NextRequest
+  user: NonNullable<Awaited<ReturnType<typeof getUserByAuthId>>>
+}) {
   try {
-    const { user: authUser, error: authError } = await getAuthenticatedUser()
-
-    if (authError || !authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const neonUser = await getUserByAuthId(authUser.id)
-    if (!neonUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
-
     const { imageId, isFavorite } = await request.json()
 
     console.log("[v0] Favorite image - imageId:", imageId, "type:", typeof imageId, "isFavorite:", isFavorite)
@@ -48,3 +43,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Failed to update favorite" }, { status: 500 })
   }
 }
+
+export const POST = withAuth(handleFavorite, {
+  resolveUser: getUserByAuthId,
+})

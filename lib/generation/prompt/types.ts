@@ -1,6 +1,5 @@
 /**
  * Canonical types for the prompt generation layer.
- * Re-exported from prompt-authority until the full extraction is complete.
  */
 export type {
   PromptMode,
@@ -10,6 +9,6 @@ export type {
   ValidationResult,
   BatchPromptResult,
   FeedPlannerPostContext,
-} from "@/lib/maya/prompt-authority"
+} from "./legacy-authority"
 
-export type { WorkbenchContext, PromptSuggestion } from "@/lib/maya/prompt-authority"
+export type { WorkbenchContext, PromptSuggestion } from "./legacy-authority"

@@ -1,23 +1,16 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { getAuthenticatedUserWithRetry } from "@/lib/auth-helper"
+import { NextResponse } from "next/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
+import { withAuth } from "@/lib/auth/with-auth"
 
 export const maxDuration = 60
 
-export async function POST(req: NextRequest) {
+async function handleRefreshConcepts({
+  user,
+}: {
+  user: NonNullable<Awaited<ReturnType<typeof getUserByAuthId>>>
+}) {
   try {
     console.log("[v0] Refreshing concept cards (keeping generated images)")
-
-    const { user: authUser, error: authError } = await getAuthenticatedUserWithRetry()
-
-    if (authError || !authUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    const user = await getUserByAuthId(authUser.id)
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
 
     return NextResponse.json(
       {
@@ -34,3 +27,8 @@ export async function POST(req: NextRequest) {
     )
   }
 }
+
+export const POST = withAuth(handleRefreshConcepts, {
+  authMode: "retry",
+  resolveUser: getUserByAuthId,
+})

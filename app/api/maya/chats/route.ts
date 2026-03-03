@@ -1,28 +1,20 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getUserChats } from "@/lib/data/maya"
-import { getUserByAuthId } from "@/lib/user-mapping"
-import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { withAuth } from "@/lib/auth/with-auth"
 
-export async function GET(request: NextRequest) {
+async function handleGetChats({
+  request,
+  authUser,
+  user: neonUser,
+}: {
+  request: NextRequest | Request
+  authUser: { id: string }
+  user: { id: string | number }
+}) {
   try {
     console.log("[v0] Fetching chat history...")
 
-    const { user, error: authError } = await getAuthenticatedUser()
-
-    if (authError || !user) {
-      console.log("[v0] No authenticated user")
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-
-    console.log("[v0] Supabase user ID:", user.id)
-
-    const { getEffectiveNeonUser } = await import("@/lib/simple-impersonation")
-    const neonUser = await getEffectiveNeonUser(user.id)
-
-    if (!neonUser) {
-      console.log("[v0] No Neon user found for auth user:", user.id)
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
-    }
+    console.log("[v0] Supabase user ID:", authUser.id)
 
     const neonUserId = neonUser.id.toString()
     console.log("[v0] Neon user ID:", neonUserId)
@@ -42,3 +34,5 @@ export async function GET(request: NextRequest) {
     )
   }
 }
+
+export const GET = withAuth(handleGetChats)
