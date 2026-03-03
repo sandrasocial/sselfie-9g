@@ -159,7 +159,7 @@ export default function MayaUnifiedInput({
   }
 
   const inputContainerClass =
-    "w-full rounded-[20px] border border-[rgba(255,255,255,0.08)] bg-[rgba(12,12,12,0.55)] backdrop-blur-[22px] shadow-[0_10px_30px_rgba(0,0,0,0.28)] p-3 sm:p-4"
+    "w-full overflow-hidden rounded-[20px] border border-[rgba(255,255,255,0.08)] bg-[rgba(12,12,12,0.55)] backdrop-blur-[22px] shadow-[0_10px_30px_rgba(0,0,0,0.28)] p-3 sm:p-4"
   const inputContainerStyle = {
     borderTop: "1px solid rgba(255,255,255,0.12)",
   }
@@ -177,14 +177,14 @@ export default function MayaUnifiedInput({
   }
 
   const imageButtonClass =
-    "touch-manipulation active:scale-95 shrink-0 flex items-center justify-center min-w-[92px] h-11 rounded-lg border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.08)] hover:bg-[rgba(255,255,255,0.12)] text-[#ffffff] transition-all disabled:opacity-50 disabled:cursor-not-allowed px-3"
+    "touch-manipulation active:scale-95 shrink-0 flex items-center justify-center min-w-[72px] sm:min-w-[92px] h-11 rounded-lg border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.08)] hover:bg-[rgba(255,255,255,0.12)] text-[#ffffff] transition-all disabled:opacity-50 disabled:cursor-not-allowed px-2.5 sm:px-3"
 
   const imageButtonStyle = {
     borderRadius: BorderRadius.button,
   }
 
   const sendButtonClass =
-    "touch-manipulation active:scale-95 shrink-0 flex items-center justify-center min-w-[96px] h-11 rounded-md border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.08)] hover:bg-[rgba(255,255,255,0.12)] text-[#ffffff] transition-all disabled:opacity-50 disabled:cursor-not-allowed px-4"
+    "touch-manipulation active:scale-95 shrink-0 flex items-center justify-center min-w-[72px] sm:min-w-[96px] h-11 rounded-md border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.08)] hover:bg-[rgba(255,255,255,0.12)] text-[#ffffff] transition-all disabled:opacity-50 disabled:cursor-not-allowed px-3 sm:px-4"
 
   const sendButtonStyle = {
     borderRadius: BorderRadius.button,
@@ -284,7 +284,7 @@ export default function MayaUnifiedInput({
           </div>
         )}
 
-        <div className={`flex ${proMode ? 'items-end gap-2 sm:gap-3' : 'items-end gap-2'}`}>
+        <div className={`flex min-w-0 ${proMode ? 'items-end gap-2 sm:gap-3' : 'items-end gap-2'}`}>
           {/* Image upload button */}
           <button
             type="button"
@@ -309,12 +309,12 @@ export default function MayaUnifiedInput({
                 <div className="w-5 h-5 border-2 border-stone-400 border-t-transparent rounded-full animate-spin" />
               )
             ) : (
-              <span className="text-[10px] uppercase tracking-[0.16em] font-medium">Add Image</span>
+              <span className="text-[10px] uppercase tracking-[0.12em] sm:tracking-[0.16em] font-medium">Add Image</span>
             )}
           </button>
 
           {/* Text input */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <textarea
               ref={textareaRef}
               value={inputValue}

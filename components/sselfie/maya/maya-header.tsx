@@ -124,6 +124,9 @@ export default function MayaHeaderUnified({
   const guidePanelRef = useRef<HTMLDivElement>(null)
   const { toast } = useToast()
   const formattedCredits = Number.isFinite(credits) ? Math.round(credits).toLocaleString() : "0"
+  const compactCredits = Number.isFinite(credits)
+    ? new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(Math.round(credits))
+    : "0"
 
   useEffect(() => {
     setIsMounted(true)
@@ -268,7 +271,7 @@ export default function MayaHeaderUnified({
         </div>
 
         {/* Right: Credits and Mode Toggle - Simple, clean layout */}
-        <div className="flex items-center gap-2 sm:gap-3 md:gap-4 shrink-0 relative">
+        <div className="flex min-w-0 items-center justify-end gap-1.5 sm:gap-3 md:gap-4 relative">
           {/* Pro Mode: Guide Controls Dropdown (Admin only) */}
           {/* Use suppressHydrationWarning to prevent mismatch from isMounted check */}
           <div suppressHydrationWarning>
@@ -377,11 +380,14 @@ export default function MayaHeaderUnified({
 
           {/* Credits Display - Always show when available */}
           {credits !== undefined && (
-            <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 rounded border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.06)] min-h-[36px] sm:min-h-[40px]">
-              <span className="text-[9px] sm:text-[10px] md:text-xs font-light text-[#e5e5e5] uppercase tracking-wider">
+            <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.06)] min-h-[36px] sm:min-h-[40px] shrink-0">
+              <span className="hidden sm:inline text-[10px] md:text-xs font-light text-[#e5e5e5] uppercase tracking-wider">
                 Credits
               </span>
-              <span className="text-xs sm:text-sm md:text-base font-semibold text-[#ffffff] tabular-nums">
+              <span className="sm:hidden text-[11px] font-semibold text-[#ffffff] tabular-nums">
+                {compactCredits}
+              </span>
+              <span className="hidden sm:inline text-xs sm:text-sm md:text-base font-semibold text-[#ffffff] tabular-nums">
                 {formattedCredits}
               </span>
             </div>
@@ -409,7 +415,7 @@ export default function MayaHeaderUnified({
 
           {/* Dots Menu Button */}
           {(onSettings || onNewProject || onHistory || onNavigation) && (
-            <div className="relative" ref={dotsMenuRef}>
+            <div className="relative hidden sm:block" ref={dotsMenuRef}>
               <button
                 onClick={() => setIsDotsMenuOpen(prev => !prev)}
                 data-dots-trigger
@@ -475,7 +481,7 @@ export default function MayaHeaderUnified({
             <button
               onClick={onToggleNavMenu}
               data-menu-trigger
-              className="touch-manipulation active:scale-95 flex items-center justify-center shrink-0 min-w-[44px] min-h-[44px] rounded-full border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.06)] px-4"
+              className="touch-manipulation active:scale-95 flex items-center justify-center shrink-0 min-w-[44px] min-h-[44px] rounded-full border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.06)] px-2.5 sm:px-4"
               style={proMode ? {
                 minHeight: '44px',
                 borderRadius: BorderRadius.buttonSm,
@@ -496,18 +502,20 @@ export default function MayaHeaderUnified({
               aria-label="Navigation menu"
               aria-expanded={showNavMenu}
             >
-              <span className="text-[10px] sm:text-xs uppercase tracking-[0.3em] font-medium text-[#ffffff]">Menu</span>
+              <span className="sm:hidden text-base leading-none text-[#ffffff]">≡</span>
+              <span className="hidden sm:inline text-[10px] sm:text-xs uppercase tracking-[0.3em] font-medium text-[#ffffff]">Menu</span>
             </button>
           ) : (
             // Classic Mode: Simple menu button (fallback)
             <button
               onClick={onToggleNavMenu}
               data-menu-trigger
-              className="flex items-center justify-center px-4 min-h-[44px] sm:min-h-[48px] rounded-full border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.06)] transition-colors touch-manipulation active:scale-95"
+              className="flex items-center justify-center px-2.5 sm:px-4 min-h-[44px] sm:min-h-[48px] rounded-full border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.06)] transition-colors touch-manipulation active:scale-95"
               aria-label="Navigation menu"
               aria-expanded={showNavMenu}
             >
-              <span className="text-[10px] sm:text-xs md:text-sm tracking-[0.2em] text-[#ffffff] uppercase">Menu</span>
+              <span className="sm:hidden text-base leading-none text-[#ffffff]">≡</span>
+              <span className="hidden sm:inline text-[10px] sm:text-xs md:text-sm tracking-[0.2em] text-[#ffffff] uppercase">Menu</span>
             </button>
           )}
         </div>
@@ -515,7 +523,7 @@ export default function MayaHeaderUnified({
 
       {/* Tab Switcher - Integrated into header */}
       {activeTab && onTabChange && (
-        <div className="w-full border-t border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] backdrop-blur-[20px] z-[100] relative">
+        <div className="w-full border-t border-[rgba(255,255,255,0.08)] bg-[rgba(10,10,10,0.42)] backdrop-blur-[14px] z-[100] relative">
           <div className="px-3 sm:px-4 md:px-6">
             <MayaTabSwitcher
               activeTab={activeTab}

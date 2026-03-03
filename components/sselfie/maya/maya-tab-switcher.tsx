@@ -73,16 +73,12 @@ export default function MayaTabSwitcher({
   return (
     <div 
       ref={containerRef}
-      className={`flex gap-2 sm:gap-3 overflow-x-auto py-3 ${className}`} 
+      className={`flex gap-2 sm:gap-3 overflow-x-auto py-2.5 ${className}`} 
       style={{ 
         scrollbarWidth: 'none', 
         msOverflowStyle: 'none',
         WebkitOverflowScrolling: 'touch',
         scrollSnapType: 'x proximity',
-        background: 'rgba(255,255,255,0.04)',
-        backdropFilter: 'blur(20px)',
-        borderRadius: '12px',
-        border: '1px solid rgba(255,255,255,0.08)',
       }}
     >
       {tabs.map((tab) => {

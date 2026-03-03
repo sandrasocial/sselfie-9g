@@ -2576,7 +2576,7 @@ export default function MayaChatScreen({
   return (
     <>
     <div
-      className="flex flex-col h-full relative bg-[radial-gradient(120%_90%_at_50%_0%,rgba(255,255,255,0.09)_0%,rgba(255,255,255,0.04)_18%,rgba(10,10,10,0.88)_48%,rgba(10,10,10,0.78)_100%)]"
+      className="flex flex-col h-full relative overflow-x-hidden bg-[radial-gradient(120%_90%_at_50%_0%,rgba(255,255,255,0.09)_0%,rgba(255,255,255,0.04)_18%,rgba(10,10,10,0.88)_48%,rgba(10,10,10,0.78)_100%)]"
       style={{
         paddingBottom: "var(--sselfie-bottom-nav-height, 96px)",
       }}
@@ -2599,9 +2599,9 @@ export default function MayaChatScreen({
       {/* Fixed Header with Integrated Tabs - Always visible */}
       {/* Mobile optimized: safe area insets, responsive padding */}
       {/* Using z-[100] to ensure it's above all other content */}
-      <div 
+      <div
         ref={headerRef}
-        className="fixed top-0 left-0 right-0 z-100 bg-[rgba(255,255,255,0.04)] backdrop-blur-[20px]"
+        className="fixed top-0 left-0 right-0 z-[100] border-b border-[rgba(255,255,255,0.08)] bg-[rgba(10,10,10,0.72)] backdrop-blur-[18px]"
         style={{
           paddingTop: 'max(0.625rem, env(safe-area-inset-top, 0px))',
         }}
@@ -2812,93 +2812,6 @@ export default function MayaChatScreen({
             </div>
           </div>
         </div>
-      )}
-
-      {showNavMenu && (
-        <>
-          {/* Overlay */}
-          <div
-            className="fixed inset-0 bg-stone-950/20 backdrop-blur-sm z-40 animate-in fade-in duration-200"
-            onClick={() => setShowNavMenu(false)}
-          />
-
-          {/* Sliding menu from right */}
-          <div className="fixed top-0 right-0 bottom-0 w-80 bg-[rgba(10,10,10,0.94)] backdrop-blur-[20px] border-l border-white/12 shadow-2xl z-50 animate-in slide-in-from-right duration-300 flex flex-col">
-            {/* Header with close button - fixed at top */}
-            <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-white/10">
-              <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-white">Menu</h3>
-              <button
-                onClick={() => setShowNavMenu(false)}
-                className="px-2 py-1.5 rounded-lg hover:bg-white/10 transition-colors"
-                aria-label="Close menu"
-              >
-                <span className="text-[10px] uppercase tracking-[0.2em] text-white/75">Close</span>
-              </button>
-            </div>
-
-            {/* Credits display - fixed below header */}
-            <div className="shrink-0 px-6 py-6 border-b border-white/10">
-              <div className="text-[10px] tracking-[0.15em] uppercase font-light text-white/55 mb-2">Your Credits</div>
-              <div className="text-3xl font-serif font-extralight text-white tabular-nums">
-                {formattedCreditBalance}
-              </div>
-            </div>
-
-            {/* Navigation links - scrollable middle section with bottom padding */}
-            <div className="flex-1 overflow-y-auto py-2 pb-32 min-h-0">
-              <button
-                onClick={() => handleNavigation("maya")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/10 transition-colors touch-manipulation"
-              >
-                <span className="text-xs uppercase tracking-[0.2em] text-white/75">Studio</span>
-              </button>
-              <button
-                onClick={() => {
-                  // Training moved to Account → Settings, trigger onboarding if needed
-                  window.dispatchEvent(new CustomEvent('open-onboarding'))
-                }}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/10 transition-colors touch-manipulation"
-              >
-                <span className="text-xs uppercase tracking-[0.2em] text-white/75">Training</span>
-              </button>
-              <button
-                onClick={() => handleNavigation("maya")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left bg-white/10 border-l-2 border-white"
-              >
-                <span className="text-xs uppercase tracking-[0.2em] text-white">Maya</span>
-              </button>
-              <button
-                onClick={() => handleNavigation("gallery")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/10 transition-colors touch-manipulation"
-              >
-                <span className="text-xs uppercase tracking-[0.2em] text-white/75">Gallery</span>
-              </button>
-              <button
-                onClick={() => handleNavigation("academy")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/10 transition-colors touch-manipulation"
-              >
-                <span className="text-xs uppercase tracking-[0.2em] text-white/75">Academy</span>
-              </button>
-              <button
-                onClick={() => handleNavigation("account")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/10 transition-colors touch-manipulation"
-              >
-                <span className="text-xs uppercase tracking-[0.2em] text-white/75">Account</span>
-              </button>
-            </div>
-
-            {/* Sign out button - fixed at bottom */}
-            <div className="shrink-0 px-6 py-4 border-t border-white/10 bg-[rgba(10,10,10,0.9)]">
-              <button
-                onClick={handleLogout}
-                disabled={isLoggingOut}
-                className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-medium uppercase tracking-[0.2em] text-red-300 hover:bg-red-500/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
-              >
-                <span>{isLoggingOut ? "Signing Out..." : "Sign Out"}</span>
-              </button>
-            </div>
-          </div>
-        </>
       )}
 
       {/* Classic Mode: Chat History Modal (consistent with Pro Mode) */}
@@ -3245,72 +3158,74 @@ export default function MayaChatScreen({
             paddingBottom: "max(0.25rem, env(safe-area-inset-bottom, 0px))",
           }}
         >
-          {/* Quick Actions */}
-          {shouldShowInputPrompts ? (
-            <MayaQuickPrompts
-              prompts={currentPrompts}
-              onSelect={(prompt) => {
-                handleSendMessage(prompt)
-                if (shouldCollapseInputPrompts) {
-                  setShowCollapsedPrompts(false)
+          <div className="mx-auto w-full max-w-5xl">
+            {/* Quick Actions */}
+            {shouldShowInputPrompts ? (
+              <MayaQuickPrompts
+                prompts={currentPrompts}
+                onSelect={(prompt) => {
+                  handleSendMessage(prompt)
+                  if (shouldCollapseInputPrompts) {
+                    setShowCollapsedPrompts(false)
+                  }
+                }}
+                disabled={isTyping}
+                variant={activeMayaTab === "photos" ? "quick-chips" : "input-area"}
+                studioProMode={proMode}
+                isEmpty={isEmpty}
+                uploadedImage={uploadedImage}
+              />
+            ) : (
+              <div className="mb-2 mt-1">
+                <button
+                  onClick={() => setShowCollapsedPrompts(true)}
+                  className="px-3 py-1.5 text-[11px] uppercase tracking-wide border border-[rgba(255,255,255,0.12)] rounded-full bg-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.1)] text-[#e5e5e5]"
+                >
+                  Prompts
+                </button>
+              </div>
+            )}
+
+            {/* Input Area - Unified for both Classic and Pro Mode */}
+            {/* Unified Input Component - Works for Photos and Feed tabs */}
+            <MayaUnifiedInput
+              onSend={(message, imageUrl) => {
+                // Handle message sending - match Pro Mode pattern
+                if (imageUrl) {
+                  // Set uploaded image state first, then send message
+                  setUploadedImage(imageUrl)
+                  // Use message if provided, otherwise handleSendMessage will use inputValue (though unified component manages its own)
+                  const messageToSend = message || ""
+                  if (messageToSend || imageUrl) {
+                    handleSendMessage(messageToSend || undefined)
+                  }
+                } else {
+                  // Just send text message
+                  handleSendMessage(message || undefined)
                 }
               }}
-              disabled={isTyping}
-              variant={activeMayaTab === "photos" ? "quick-chips" : "input-area"}
-              studioProMode={proMode}
-              isEmpty={isEmpty}
+              onImageUpload={hasProFeatures ? () => setShowUploadFlow(true) : undefined}
+              onFileChange={hasProFeatures ? undefined : handleImageUpload}
+              fileInputRef={hasProFeatures ? undefined : (fileInputRef as React.RefObject<HTMLInputElement>)}
               uploadedImage={uploadedImage}
+              isUploadingImage={isUploadingImage}
+              onRemoveImage={() => setUploadedImage(null)}
+              isLoading={isTyping || isGeneratingConcepts}
+              disabled={isTyping || isGeneratingConcepts}
+              placeholder="Message Maya..."
+              showSettingsButton={!hasProFeatures}
+              onSettingsClick={() => {
+                setShowSettings(true)
+              }}
+              showChatMenu={false}
+              showLibraryButton={false} // Removed - image icon handles library access
+              onManageLibrary={undefined} // Removed - image icon handles library access
+              onNewProject={handleNewChat}
+              onHistory={() => hasProFeatures ? setShowProModeHistory(true) : setShowHistory(true)}
+              proMode={proMode}
+              imageCount={hasProFeatures ? libraryTotalImages : undefined}
             />
-          ) : (
-            <div className="mb-2 mt-1">
-              <button
-                onClick={() => setShowCollapsedPrompts(true)}
-                className="px-3 py-1.5 text-[11px] uppercase tracking-wide border border-[rgba(255,255,255,0.12)] rounded-full bg-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.1)] text-[#e5e5e5]"
-              >
-                Prompts
-              </button>
-            </div>
-          )}
-
-          {/* Input Area - Unified for both Classic and Pro Mode */}
-          {/* Unified Input Component - Works for Photos and Feed tabs */}
-          <MayaUnifiedInput
-            onSend={(message, imageUrl) => {
-              // Handle message sending - match Pro Mode pattern
-              if (imageUrl) {
-                // Set uploaded image state first, then send message
-                setUploadedImage(imageUrl)
-                // Use message if provided, otherwise handleSendMessage will use inputValue (though unified component manages its own)
-                const messageToSend = message || ""
-                if (messageToSend || imageUrl) {
-                  handleSendMessage(messageToSend || undefined)
-                }
-              } else {
-                // Just send text message
-                handleSendMessage(message || undefined)
-              }
-            }}
-            onImageUpload={hasProFeatures ? () => setShowUploadFlow(true) : undefined}
-            onFileChange={hasProFeatures ? undefined : handleImageUpload}
-            fileInputRef={hasProFeatures ? undefined : (fileInputRef as React.RefObject<HTMLInputElement>)}
-            uploadedImage={uploadedImage}
-            isUploadingImage={isUploadingImage}
-            onRemoveImage={() => setUploadedImage(null)}
-            isLoading={isTyping || isGeneratingConcepts}
-            disabled={isTyping || isGeneratingConcepts}
-            placeholder="Message Maya..."
-            showSettingsButton={!hasProFeatures}
-            onSettingsClick={() => {
-              setShowSettings(true)
-            }}
-            showChatMenu={false}
-            showLibraryButton={false} // Removed - image icon handles library access
-            onManageLibrary={undefined} // Removed - image icon handles library access
-            onNewProject={handleNewChat}
-            onHistory={() => hasProFeatures ? setShowProModeHistory(true) : setShowHistory(true)}
-            proMode={proMode}
-            imageCount={hasProFeatures ? libraryTotalImages : undefined}
-          />
+          </div>
         </div>
       )}
 
