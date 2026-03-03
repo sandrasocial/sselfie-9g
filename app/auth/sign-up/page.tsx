@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
-import { resolvePostAuthRedirect } from "@/lib/studio/tab-routing"
+import { sanitizeRedirect } from "@/lib/security/url-validator"
 
 export default function SignUpPage() {
   const [email, setEmail] = useState("")
@@ -20,7 +20,20 @@ export default function SignUpPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [checkingUser, setCheckingUser] = useState(false)
   const [userExists, setUserExists] = useState(false)
+  const [loginHref, setLoginHref] = useState("/auth/login")
   const router = useRouter()
+
+  const getRoutingContext = () => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const checkoutParam = urlParams.get("checkout")
+    const returnTo = sanitizeRedirect(
+      urlParams.get("returnTo"),
+      checkoutParam === "studio_membership" ? "/checkout/membership" : "/studio",
+    )
+    const next = urlParams.get("next")
+
+    return { checkoutParam, returnTo, next }
+  }
 
   // Check if user exists when email is entered (debounced)
   useEffect(() => {
@@ -54,6 +67,11 @@ export default function SignUpPage() {
     return () => clearTimeout(timeoutId)
   }, [email])
 
+  useEffect(() => {
+    const { returnTo } = getRoutingContext()
+    setLoginHref(`/auth/login?returnTo=${encodeURIComponent(returnTo)}`)
+  }, [])
+
   // Handle login for existing users (password-only flow)
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -81,9 +99,8 @@ export default function SignUpPage() {
       }
 
       // Success! Redirect to Studio (Maya by default for first-time flow)
-      const urlParams = new URLSearchParams(window.location.search)
-      const checkoutParam = urlParams.get("checkout")
-      let redirectTo = resolvePostAuthRedirect(urlParams.get("next"))
+      const { checkoutParam, returnTo, next } = getRoutingContext()
+      let redirectTo = sanitizeRedirect(next, returnTo)
       if (checkoutParam === "studio_membership") {
         redirectTo = "/checkout/membership"
       }
@@ -149,9 +166,8 @@ export default function SignUpPage() {
 
       if (!signInError && signInData.session) {
         // Success! Redirect to Studio (Maya by default for first-time flow)
-        const urlParams = new URLSearchParams(window.location.search)
-        const checkoutParam = urlParams.get("checkout")
-        let redirectTo = resolvePostAuthRedirect(urlParams.get("next"))
+        const { checkoutParam, returnTo, next } = getRoutingContext()
+        let redirectTo = sanitizeRedirect(next, returnTo)
         if (checkoutParam === "studio_membership") {
           redirectTo = "/checkout/membership"
         }
@@ -289,7 +305,7 @@ export default function SignUpPage() {
                 </div>
                 <div className="mt-4 text-center text-sm text-zinc-400">
                   Already have an account?{" "}
-                  <Link href="/auth/login" className="text-white underline underline-offset-4">
+                  <Link href={loginHref} className="text-white underline underline-offset-4">
                     Sign in
                   </Link>
                 </div>
