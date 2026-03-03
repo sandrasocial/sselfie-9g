@@ -207,6 +207,8 @@ export default function MayaChatInterface({
   const renderMessageContent = (text: string, isUser: boolean) => {
     let cleanedText = text.replace(/\[GENERATE_PROMPTS[:\s]+[^\]]+\]/gi, "").trim()
     cleanedText = cleanedText.replace(/\[GENERATE_CONCEPTS\]\s*[^\n]*/gi, "").trim()
+    cleanedText = cleanedText.replace(/\[SHOW_GALLERY\]/gi, "").trim()
+    cleanedText = cleanedText.replace(/\[SAVE_TO_GALLERY(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
     // Remove feed creation trigger (with JSON content)
     // Use bracket counting to properly match nested JSON structures
     // This handles complex JSON with nested arrays/objects by finding the matching closing bracket
@@ -797,6 +799,83 @@ export default function MayaChatInterface({
                                 )
                               }
                               return null
+                            }
+
+                            if (part.type === "tool-showGallery") {
+                              const output = (part as any).output || {}
+                              const state = output.state || "ready"
+                              const images = Array.isArray(output.images) ? output.images : []
+
+                              if (state === "loading") {
+                                return (
+                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Gallery</div>
+                                    <div className="mt-2 text-sm text-[#e5e5e5]">Loading your latest images…</div>
+                                  </div>
+                                )
+                              }
+
+                              if (state === "error") {
+                                return (
+                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Gallery</div>
+                                    <div className="mt-2 text-sm text-[#f5c2c2]">{output.message || "Could not load gallery."}</div>
+                                  </div>
+                                )
+                              }
+
+                              return (
+                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Gallery</div>
+                                    <div className="text-[10px] uppercase tracking-[0.16em] text-[#bdbdbd]">
+                                      {Number(output.total || images.length)} images
+                                    </div>
+                                  </div>
+                                  {images.length > 0 ? (
+                                    <div className="mt-3 grid grid-cols-3 gap-2">
+                                      {images.slice(0, 6).map((image: any, index: number) => (
+                                        <div key={image.id || index} className="aspect-square overflow-hidden rounded-lg border border-[rgba(255,255,255,0.1)]">
+                                          <img
+                                            src={image.imageUrl || image.image_url}
+                                            alt="Gallery image"
+                                            className="h-full w-full object-cover"
+                                          />
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <p className="mt-2 text-sm text-[#cfcfcf]">No images yet. Generate your first photo and Maya will keep it here.</p>
+                                  )}
+                                </div>
+                              )
+                            }
+
+                            if (part.type === "tool-saveToGallery") {
+                              const output = (part as any).output || {}
+                              const state = output.state || "ready"
+
+                              if (state === "loading") {
+                                return (
+                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4 text-sm text-[#e5e5e5]">
+                                    Saving to gallery…
+                                  </div>
+                                )
+                              }
+
+                              if (state === "error") {
+                                return (
+                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4 text-sm text-[#f5c2c2]">
+                                    {output.message || "Could not save to gallery."}
+                                  </div>
+                                )
+                              }
+
+                              return (
+                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4 text-sm text-[#e5e5e5]">
+                                  {output.message || "Saved to your gallery."}
+                                </div>
+                              )
                             }
 
                             // Render feed preview card

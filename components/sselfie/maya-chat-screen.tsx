@@ -33,6 +33,7 @@ import type { PromptSuggestion } from "@/lib/maya/prompt-generator"
 import ImageUploadFlow from "./pro-mode/ImageUploadFlow"
 import { getConceptPrompt } from "@/lib/maya/concept-templates"
 import BuyCreditsModal from "./buy-credits-modal"
+import { parseMayaToolMarkers } from "@/lib/maya/tool-markers"
 // Pro Mode Components
 import MayaHeader from "./maya/maya-header"
 import ImageLibraryModal from "./pro-mode/ImageLibraryModal"
@@ -382,6 +383,7 @@ export default function MayaChatScreen({
   // processedFeedMessagesRef moved to MayaFeedTab component (feed trigger detection is now handled in FeedTab)
   // CRITICAL FIX: Track processed concept messages to prevent duplication on page refresh
   const processedConceptMessagesRef = useRef<Set<string>>(new Set())
+  const processedToolMessagesRef = useRef<Set<string>>(new Set())
   
   // Pro features onboarding state
   const [showStudioProOnboarding, setShowStudioProOnboarding] = useState(false)
@@ -455,6 +457,7 @@ export default function MayaChatScreen({
   // This prevents re-processing messages when switching chats or creating new chats
   useEffect(() => {
     processedConceptMessagesRef.current.clear()
+    processedToolMessagesRef.current.clear()
     setPendingConceptRequest(null) // Clear pending request on chat change
     console.log("[v0] ✅ Cleared processedConceptMessagesRef for new chat:", chatId)
   }, [chatId])
@@ -584,6 +587,146 @@ export default function MayaChatScreen({
         messageId,
         hasTrigger: textContent.includes('[GENERATE_CONCEPTS]')
       })
+    }
+
+    const toolMarkers = parseMayaToolMarkers(textContent)
+    if (toolMarkers.length > 0) {
+      const alreadyHasToolResults = lastAssistantMessage.parts?.some(
+        (p: any) => p?.type === "tool-showGallery" || p?.type === "tool-saveToGallery",
+      )
+
+      const toolProcessKey = `${messageKey}-phase1-tools`
+      if (alreadyHasToolResults || processedToolMessagesRef.current.has(toolProcessKey)) {
+        processedToolMessagesRef.current.add(toolProcessKey)
+        return
+      }
+
+      processedToolMessagesRef.current.add(toolProcessKey)
+      const targetMessageId = lastAssistantMessage.id
+
+      const updateToolPart = (partType: string, output: any) => {
+        setMessages((prevMessages: any[]) => {
+          const nextMessages = [...prevMessages]
+          let targetIndex = -1
+
+          if (targetMessageId) {
+            targetIndex = nextMessages.findIndex((m: any) => m.id === targetMessageId)
+          }
+          if (targetIndex < 0) {
+            for (let i = nextMessages.length - 1; i >= 0; i--) {
+              if (nextMessages[i]?.role === "assistant") {
+                targetIndex = i
+                break
+              }
+            }
+          }
+          if (targetIndex < 0) return prevMessages
+
+          const targetMessage = nextMessages[targetIndex]
+          const existingParts = Array.isArray(targetMessage.parts) ? [...targetMessage.parts] : []
+          const existingIndex = existingParts.findIndex((part: any) => part?.type === partType)
+          const nextPart = { type: partType, output }
+
+          if (existingIndex >= 0) {
+            existingParts[existingIndex] = nextPart
+          } else {
+            existingParts.push(nextPart)
+          }
+
+          nextMessages[targetIndex] = { ...targetMessage, parts: existingParts }
+          return nextMessages
+        })
+      }
+
+      const resolvePhaseOneTools = async () => {
+        for (const marker of toolMarkers) {
+          if (marker.tool === "show_gallery") {
+            updateToolPart("tool-showGallery", { state: "loading", images: [], total: 0 })
+            try {
+              const response = await fetch("/api/gallery/images?limit=6", {
+                credentials: "include",
+              })
+              const data = await response.json()
+              if (!response.ok) {
+                throw new Error(data?.error || "Failed to load gallery")
+              }
+
+              const images = Array.isArray(data?.images)
+                ? data.images.map((image: any) => ({
+                    id: `ai_${image.id}`,
+                    imageUrl: image.image_url,
+                    prompt: image.prompt || "",
+                    createdAt: image.created_at,
+                  }))
+                : []
+
+              updateToolPart("tool-showGallery", {
+                state: "ready",
+                images,
+                total: Number(data?.total ?? images.length),
+              })
+            } catch (error: any) {
+              updateToolPart("tool-showGallery", {
+                state: "error",
+                message: error?.message || "Could not load gallery",
+                images: [],
+                total: 0,
+              })
+            }
+          }
+
+          if (marker.tool === "save_to_gallery") {
+            updateToolPart("tool-saveToGallery", { state: "loading", target: marker.target })
+            try {
+              let resolvedImageId = marker.imageId
+
+              if (!resolvedImageId) {
+                const latestResponse = await fetch("/api/gallery/images?limit=1", {
+                  credentials: "include",
+                })
+                const latestData = await latestResponse.json()
+                if (!latestResponse.ok) {
+                  throw new Error(latestData?.error || "Failed to read latest gallery image")
+                }
+                const latestImage = Array.isArray(latestData?.images) ? latestData.images[0] : null
+                if (!latestImage?.id) {
+                  throw new Error("No gallery image available to save")
+                }
+                resolvedImageId = `ai_${latestImage.id}`
+              }
+
+              const saveResponse = await fetch("/api/images/bulk-save", {
+                method: "POST",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  imageIds: [resolvedImageId],
+                }),
+              })
+              const saveData = await saveResponse.json()
+              if (!saveResponse.ok || saveData?.success !== true) {
+                throw new Error(saveData?.error || "Failed to save image")
+              }
+
+              updateToolPart("tool-saveToGallery", {
+                state: "ready",
+                target: marker.target,
+                imageId: resolvedImageId,
+                savedCount: Number(saveData?.savedCount ?? 0),
+                message: "Saved to your gallery.",
+              })
+            } catch (error: any) {
+              updateToolPart("tool-saveToGallery", {
+                state: "error",
+                target: marker.target,
+                message: error?.message || "Could not save to gallery",
+              })
+            }
+          }
+        }
+      }
+
+      resolvePhaseOneTools()
     }
 
     // Feed trigger detection moved to MayaFeedTab component

@@ -3,6 +3,7 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 import { getOrCreateActiveChat, getChatMessages, loadChatById } from "@/lib/data/maya"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { sql } from "@/lib/db/client"
+import { parseMayaToolMarkers, stripMayaToolMarkers } from "@/lib/maya/tool-markers"
 
 
 /**
@@ -33,6 +34,25 @@ function getFeedCardDescription(feedDescription: string | null | undefined, fall
     return isStrategyDocument(fallback) ? '' : fallback
   }
   return feedDescription
+}
+
+async function getLatestGalleryPreview(userId: string | number, limit: number = 6): Promise<any[]> {
+  const rows = await sql`
+    SELECT id, image_url, prompt, created_at
+    FROM ai_images
+    WHERE user_id = ${userId}
+      AND generation_status = 'completed'
+      AND image_url IS NOT NULL
+    ORDER BY created_at DESC
+    LIMIT ${limit}
+  `
+
+  return rows.map((row: any) => ({
+    id: `ai_${row.id}`,
+    imageUrl: row.image_url,
+    prompt: row.prompt || "",
+    createdAt: row.created_at,
+  }))
 }
 
 /**
@@ -595,9 +615,11 @@ export async function GET(request: NextRequest) {
       // Extract inspiration image from content if present (backward compatibility)
       const inspirationImageMatch = msg.content?.match(/\[Inspiration Image: (https?:\/\/[^\]]+)\]/)
       const imageUrl = inspirationImageMatch ? inspirationImageMatch[1] : null
-      const textContent = imageUrl 
+      const rawTextContent = imageUrl 
         ? msg.content?.replace(/\[Inspiration Image: https?:\/\/[^\]]+\]/g, "").trim() || ""
         : msg.content || ""
+      const toolMarkers = parseMayaToolMarkers(rawTextContent)
+      const textContent = stripMayaToolMarkers(rawTextContent)
 
       // ============================================================================
       // PROCESS CONCEPT CARDS (Photos Tab Only)
@@ -662,6 +684,34 @@ export async function GET(request: NextRequest) {
             concepts: enrichedConcepts, // Use enriched concepts with images
           },
         })
+
+        // Restore Phase 1 tool markers for chat history continuity.
+        for (const marker of toolMarkers) {
+          if (marker.tool === "show_gallery") {
+            const images = await getLatestGalleryPreview(neonUser.id, 6)
+            parts.push({
+              type: "tool-showGallery",
+              output: {
+                state: "ready",
+                total: images.length,
+                images,
+              },
+            })
+          } else if (marker.tool === "save_to_gallery") {
+            parts.push({
+              type: "tool-saveToGallery",
+              output: {
+                state: "ready",
+                imageId: marker.imageId || null,
+                target: marker.target,
+                message:
+                  marker.target === "explicit"
+                    ? "Saved to your gallery."
+                    : "Saved your latest image to your gallery.",
+              },
+            })
+          }
+        }
         
         // NOTE: Feed cards are NOT processed here - they're in separate Feed tab
         // If a message somehow has both, it's a data inconsistency that should be fixed
@@ -720,6 +770,35 @@ export async function GET(request: NextRequest) {
         })
         
         console.log("[v0] ✅ Processed", feedCardParts.length, "feed card(s) for Feed tab message", msg.id)
+      }
+
+      if (isPhotosTab && toolMarkers.length > 0) {
+        for (const marker of toolMarkers) {
+          if (marker.tool === "show_gallery") {
+            const images = await getLatestGalleryPreview(neonUser.id, 6)
+            parts.push({
+              type: "tool-showGallery",
+              output: {
+                state: "ready",
+                total: images.length,
+                images,
+              },
+            })
+          } else if (marker.tool === "save_to_gallery") {
+            parts.push({
+              type: "tool-saveToGallery",
+              output: {
+                state: "ready",
+                imageId: marker.imageId || null,
+                target: marker.target,
+                message:
+                  marker.target === "explicit"
+                    ? "Saved to your gallery."
+                    : "Saved your latest image to your gallery.",
+              },
+            })
+          }
+        }
       }
 
       return {

@@ -1,4 +1,10 @@
-import { streamText, convertToModelMessages, type UIMessage } from "ai"
+import {
+  streamText,
+  convertToModelMessages,
+  createUIMessageStream,
+  createUIMessageStreamResponse,
+  type UIMessage,
+} from "ai"
 import { sql } from "@/lib/db/client"
 import { createAnthropic } from "@ai-sdk/anthropic"
 import { getMayaSystemPrompt, MAYA_CLASSIC_CONFIG, MAYA_PRO_CONFIG } from "@/lib/maya/mode-adapters"
@@ -16,10 +22,18 @@ import {
 } from "@/lib/maya/auto-select-mode"
 import { getProductGenerationPrompt } from "@/lib/products-system-prompt"
 import { shouldDeductMayaChatCredit } from "@/lib/maya/chat-credit-policy"
+import { detectMayaToolDispatchIntent, extractLatestUserText } from "@/lib/maya/intent-dispatcher"
+import { stripMayaToolMarkers } from "@/lib/maya/tool-markers"
 
 import { NextResponse } from "next/server"
 
 export const maxDuration = 60
+
+function isChatFirstMayaEnabled(envValue?: string | null): boolean {
+  if (!envValue) return process.env.NODE_ENV !== "production"
+  const normalized = envValue.trim().toLowerCase()
+  return normalized === "true" || normalized === "1"
+}
 
 const PROMPT_BUILDER_SYSTEM = `You are Maya in Prompt Builder Mode, helping Sandra create professional, reusable prompts for SSELFIE Studio prompt guides.
 
@@ -290,6 +304,31 @@ export async function POST(req: Request) {
     
     console.log("[v0] Filtered", uiMessages.length, "UI messages to", validUIMessages.length, "valid messages")
 
+    const chatFirstMayaEnabled = isChatFirstMayaEnabled(process.env.FEATURE_CHAT_FIRST_MAYA)
+    if (chatFirstMayaEnabled && !isPromptBuilder && chatType !== "feed-planner" && chatType !== "pro-photoshoot") {
+      const latestUserText = extractLatestUserText(validUIMessages as any)
+      const dispatchedIntent = detectMayaToolDispatchIntent(latestUserText)
+
+      if (dispatchedIntent) {
+        console.log("[Maya Chat] Phase 1 tool dispatcher matched intent:", {
+          tool: dispatchedIntent.tool,
+          chatType,
+        })
+
+        const stream = createUIMessageStream({
+          originalMessages: validUIMessages as any,
+          execute: ({ writer }) => {
+            const textPartId = `tool-dispatch-${Date.now().toString(36)}`
+            writer.write({ type: "text-start", id: textPartId })
+            writer.write({ type: "text-delta", id: textPartId, delta: dispatchedIntent.responseText })
+            writer.write({ type: "text-end", id: textPartId })
+          },
+        })
+
+        return createUIMessageStreamResponse({ stream })
+      }
+    }
+
     // Process UI messages to extract inspiration images from text markers (backward compatibility)
     // AND ensure image parts are properly formatted for AI SDK
     const messages: UIMessage[] = validUIMessages.map((m: any) => {
@@ -444,6 +483,7 @@ export async function POST(req: Request) {
         content = content.replace(/\[Inspiration Image: https?:\/\/[^\]]+\]/g, "").trim()
         // Also strip guide prompt markers from conversation summary
         content = content.replace(/\[USE_GUIDE_PROMPT\]/gi, "").trim()
+        content = stripMayaToolMarkers(content)
 
         return content ? `${role}: ${content}${content.length >= 200 ? "..." : ""}` : null
       })
@@ -500,7 +540,17 @@ export async function POST(req: Request) {
       // Also remove 'content' field if present to avoid dual-field issues
       if (m.parts && Array.isArray(m.parts) && m.parts.length > 0) {
         const { content, ...rest } = m
-        return rest // Remove 'content' field if it exists
+        const sanitizedParts = m.parts
+          .map((part: any) => {
+            if (part?.type === "text" && typeof part?.text === "string") {
+              const text = stripMayaToolMarkers(part.text)
+              return text ? { ...part, text } : null
+            }
+            return part
+          })
+          .filter((part: any) => part !== null)
+        if (sanitizedParts.length === 0) return null
+        return { ...rest, parts: sanitizedParts } // Remove 'content' field if it exists
       }
       
       // If message has empty 'parts' array, skip it (should have been filtered above)
@@ -519,9 +569,11 @@ export async function POST(req: Request) {
           return null // Will be filtered out
         }
         const { content, ...rest } = m
+        const sanitizedContent = stripMayaToolMarkers(content)
+        if (!sanitizedContent) return null
         return {
           ...rest, // Preserve id, role, timestamp, and all other metadata (excluding content)
-          parts: [{ type: "text", text: content }], // Convert content to parts format
+          parts: [{ type: "text", text: sanitizedContent }], // Convert content to parts format
         }
       }
       
@@ -534,9 +586,19 @@ export async function POST(req: Request) {
           return null // Will be filtered out
         }
         const { content, ...rest } = m
+        const sanitizedParts = content
+          .map((part: any) => {
+            if (part?.type === "text" && typeof part?.text === "string") {
+              const text = stripMayaToolMarkers(part.text)
+              return text ? { ...part, text } : null
+            }
+            return part
+          })
+          .filter((part: any) => part !== null)
+        if (sanitizedParts.length === 0) return null
         return {
           ...rest, // Preserve id, role, timestamp, and all other metadata (excluding content)
-          parts: content, // Convert content array to parts
+          parts: sanitizedParts, // Convert content array to parts
         }
       }
       
