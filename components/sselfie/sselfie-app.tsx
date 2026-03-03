@@ -921,12 +921,11 @@ export default function SselfieApp({
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button
-                          className={`flex items-center gap-1.5 px-3 py-1.5 ${DesignClasses.radius.sm} hover:bg-white/10 transition-colors text-xs font-medium text-white`}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 ${DesignClasses.radius.sm} hover:bg-white/10 transition-colors text-xs font-medium text-white min-h-[36px]`}
                           aria-label="My Feed"
                           style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}
                         >
-                          <span>My Feed</span>
-                          <span className="text-[10px] tracking-[0.2em] uppercase text-white/70">Open</span>
+                          <span>Feeds</span>
                         </button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className={`w-56 ${DesignClasses.background.overlay} ${DesignClasses.blur.md} ${DesignClasses.border.stone} shadow-lg`}>
@@ -1071,7 +1070,7 @@ export default function SselfieApp({
                       aria-label="Menu"
                       style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}
                     >
-                      <span className="text-[10px] tracking-[0.2em] uppercase text-white">Menu</span>
+                      <span className="text-base leading-none text-white">≡</span>
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className={`w-64 ${DesignClasses.background.overlay} ${DesignClasses.blur.md} ${DesignClasses.border.stone} shadow-lg`}>

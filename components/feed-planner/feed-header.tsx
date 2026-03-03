@@ -492,72 +492,75 @@ export default function FeedHeader({
   const feedColor = feedData?.feed?.display_color || "#3b82f6" // Default blue
 
   return (
-    <div className="border-b border-white/12 bg-[rgba(10,10,10,0.86)] backdrop-blur-xl">
-      <div className="flex items-center justify-between px-4 py-3">
-        {onBack && (
-          <button
-            onClick={onBack}
-            className="-ml-2 rounded-full px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-white/80 transition-colors hover:bg-white/10 hover:text-white"
-          >
-            Back
-          </button>
-        )}
-        <div className="flex items-center gap-2">
-          {/* Color badge */}
-          {feedData?.feed?.display_color && (
-            <div
-              className="w-3 h-3 rounded-full border-2 shrink-0"
-              style={{
-                backgroundColor: feedData.feed.display_color,
-                borderColor: feedData.feed.display_color,
-              }}
-              title={`Feed color: ${feedData.feed.display_color}`}
-            />
-          )}
-          <span className="text-base font-semibold text-white">{feedName}</span>
-          <span className="text-[10px] uppercase tracking-[0.2em]" style={{ color: feedColor }}>
-            Live
-          </span>
-        </div>
-        <div className="flex items-center gap-1">
-          {onOpenWizard && (
-            <button
-              onClick={onOpenWizard}
-              className="rounded-full px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-              title="Edit wizard answers"
-            >
-              Wizard
-            </button>
-          )}
-          {onOpenWelcomeWizard && access?.isPaidBlueprint && (
-            <button
-              onClick={onOpenWelcomeWizard}
-              className="rounded-full px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-white/70 transition-colors hover:bg-white/10 hover:text-white"
-              title="View welcome guide"
-            >
-              Guide
-            </button>
-          )}
-          {access?.isMembership && onToggleGenerationMode && (
-            <div className="px-1">
-              <MayaModeToggle
-                currentMode={generationMode}
-                onToggle={onToggleGenerationMode}
-                variant="compact"
+    <div className="border-b border-white/10 bg-[rgba(8,8,8,0.84)] backdrop-blur-xl">
+      <div className="px-3 sm:px-4 py-2.5 sm:py-3 space-y-2">
+        <div className="flex items-center justify-between gap-2 sm:gap-3">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="rounded-full border border-white/12 bg-white/[0.03] px-2.5 sm:px-3 py-1.5 text-[9px] uppercase tracking-[0.16em] text-white/80 transition-colors hover:bg-white/10 hover:text-white min-h-[34px] sm:min-h-[36px]"
+              >
+                Back
+              </button>
+            )}
+            {feedData?.feed?.display_color && (
+              <div
+                className="w-2.5 h-2.5 rounded-full border shrink-0"
+                style={{
+                  backgroundColor: feedData.feed.display_color,
+                  borderColor: feedData.feed.display_color,
+                }}
+                title={`Feed color: ${feedData.feed.display_color}`}
               />
-            </div>
-          )}
-          <button className="-mr-2 rounded-full px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-white transition-colors hover:bg-white/10">
-            Menu
-          </button>
+            )}
+            <span className="truncate text-sm sm:text-base font-semibold text-white">{feedName}</span>
+            <span className="shrink-0 text-[9px] uppercase tracking-[0.16em]" style={{ color: feedColor }}>
+              Live
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {access?.isMembership && onToggleGenerationMode && (
+              <div className="pl-0.5">
+                <MayaModeToggle
+                  currentMode={generationMode}
+                  onToggle={onToggleGenerationMode}
+                  variant="compact"
+                />
+              </div>
+            )}
+          </div>
         </div>
+
+        {(onOpenWizard || (onOpenWelcomeWizard && access?.isPaidBlueprint)) && (
+          <div className="flex items-center gap-1.5">
+            {onOpenWizard && (
+              <button
+                onClick={onOpenWizard}
+                className="rounded-full border border-white/12 bg-white/[0.03] px-3 py-1.5 text-[9px] uppercase tracking-[0.16em] text-white/72 transition-colors hover:bg-white/10 hover:text-white min-h-[34px] sm:min-h-[36px]"
+                title="Edit wizard answers"
+              >
+                Wizard
+              </button>
+            )}
+            {onOpenWelcomeWizard && access?.isPaidBlueprint && (
+              <button
+                onClick={onOpenWelcomeWizard}
+                className="rounded-full border border-white/12 bg-white/[0.03] px-3 py-1.5 text-[9px] uppercase tracking-[0.16em] text-white/72 transition-colors hover:bg-white/10 hover:text-white min-h-[34px] sm:min-h-[36px]"
+                title="View welcome guide"
+              >
+                Guide
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
-      <div className="px-4 md:px-8 pb-4">
-        <div className="flex flex-col md:flex-row md:items-start md:gap-12 mb-4">
+      <div className="px-3 sm:px-4 md:px-8 pb-3 sm:pb-4">
+        <div className="flex flex-col md:flex-row md:items-start md:gap-8 mb-3">
           <button
             onClick={onProfileImageClick}
-            className="relative group w-20 h-20 md:w-32 md:h-32 rounded-full border border-white/20 bg-white/4 p-[3px] mb-4 md:mb-0 shrink-0 transition-opacity hover:opacity-90"
+            className="relative group w-[72px] h-[72px] sm:w-20 sm:h-20 md:w-28 md:h-28 rounded-full border border-white/16 bg-white/[0.03] p-[2px] mb-3 md:mb-0 shrink-0 transition-opacity hover:opacity-90"
           >
             <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-full border border-white/10 bg-[var(--color-obsidian)]">
               {hasProfileImage ? (
@@ -585,45 +588,36 @@ export default function FeedHeader({
             )}
           </button>
 
-          <div className="flex-1 space-y-4">
-            <div className="flex items-center gap-8">
-              <div className="text-center">
-                <div className="text-sm md:text-base font-semibold text-white">9</div>
-                <div className="text-xs md:text-sm text-white/55">posts</div>
+          <div className="flex-1 space-y-3">
+            <div className="grid grid-cols-3 gap-2 max-w-sm">
+              <div className="rounded-lg border border-white/10 bg-white/[0.02] px-2 py-1.5 text-center">
+                <div className="text-sm font-semibold text-white">9</div>
+                <div className="text-[11px] text-white/55">posts</div>
               </div>
-              <div className="text-center">
-                <div className="text-sm md:text-base font-semibold text-white">1.2K</div>
-                <div className="text-xs md:text-sm text-white/55">followers</div>
+              <div className="rounded-lg border border-white/10 bg-white/[0.02] px-2 py-1.5 text-center">
+                <div className="text-sm font-semibold text-white">1.2K</div>
+                <div className="text-[11px] text-white/55">followers</div>
               </div>
-              <div className="text-center">
-                <div className="text-sm md:text-base font-semibold text-white">342</div>
-                <div className="text-xs md:text-sm text-white/55">following</div>
+              <div className="rounded-lg border border-white/10 bg-white/[0.02] px-2 py-1.5 text-center">
+                <div className="text-sm font-semibold text-white">342</div>
+                <div className="text-[11px] text-white/55">following</div>
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <div className="text-sm font-semibold text-white">
                 {feedData?.userDisplayName || feedData?.feed?.brand_name || "User"}
               </div>
-              <div className="whitespace-pre-wrap text-sm text-white/75">
+              <div className="whitespace-pre-wrap text-sm leading-relaxed text-white/72">
                 {hasBio ? feedData.bio.bio_text : "Your Instagram feed strategy created by Maya"}
               </div>
             </div>
 
-            <div className="flex gap-2 flex-wrap">
-              {/* Hide Write Bio and Create Highlights for free users */}
-              {!access?.isFree && (
-                <button
-                  onClick={onWriteBio}
-                  className="flex-1 md:flex-none md:px-8 rounded-xl border border-white/20 bg-white/10 px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-white/15"
-                >
-                  Write Bio
-                </button>
-              )}
+            <div className="flex gap-1.5 flex-wrap">
               <button
                 onClick={handleCreatePreviewFeed}
                 disabled={isCreatingPreviewFeed}
-                className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-white/20 bg-white/10 px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50 md:flex-none md:px-6"
+                className="rounded-full border border-white/15 bg-white/[0.05] px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] uppercase tracking-[0.16em] text-white/88 transition-colors hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-50 min-h-[34px] sm:min-h-[36px]"
               >
                 {isCreatingPreviewFeed ? (
                   <>
@@ -631,17 +625,15 @@ export default function FeedHeader({
                   </>
                 ) : (
                   <>
-                    <span>New Preview</span>
+                    <span>Preview</span>
                   </>
                 )}
               </button>
-              {/* Hide "New Feed" button for free users - show for paid blueprint users AND members */}
               {!access?.isFree && (access?.isPaidBlueprint || access?.isMembership) && (
                 <button
                   onClick={handleCreateNewFeedClick}
                   disabled={isCreatingFeed}
-                  className="flex flex-1 items-center justify-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-sm font-semibold uppercase tracking-[0.2em] text-white transition-colors hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50 md:flex-none md:px-8"
-                  style={{ fontFamily: "'Cormorant Garamond', serif" }}
+                  className="rounded-full border border-white/15 bg-white/[0.05] px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] uppercase tracking-[0.16em] text-white/88 transition-colors hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-50 min-h-[34px] sm:min-h-[36px]"
                 >
                   {isCreatingFeed ? (
                     <>
@@ -649,24 +641,32 @@ export default function FeedHeader({
                     </>
                   ) : (
                     <>
-                      <span>NEW FEED -{">"}</span>
+                      <span>New Feed</span>
                     </>
                   )}
+                </button>
+              )}
+              {!access?.isFree && (
+                <button
+                  onClick={onWriteBio}
+                  className="rounded-full border border-white/15 bg-white/[0.05] px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] uppercase tracking-[0.16em] text-white/82 transition-colors hover:bg-white/12 min-h-[34px] sm:min-h-[36px]"
+                >
+                  Bio
                 </button>
               )}
               {!access?.isFree && onCreateHighlights && (
                 <button
                   onClick={onCreateHighlights}
-                  className="flex-1 md:flex-none md:px-8 rounded-xl border border-white/20 bg-white/10 px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-white/15"
+                  className="rounded-full border border-white/15 bg-white/[0.05] px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] uppercase tracking-[0.16em] text-white/82 transition-colors hover:bg-white/12 min-h-[34px] sm:min-h-[36px]"
                 >
-                  Create Highlights
+                  Highlights
                 </button>
               )}
             </div>
 
             {/* Highlights - below buttons, mobile optimized */}
             {feedData?.highlights && feedData.highlights.length > 0 && (
-              <div className="w-full mt-4 -mx-4 px-4 md:mx-0 md:px-0">
+              <div className="w-full mt-2 -mx-3 px-3 sm:-mx-4 sm:px-4 md:mx-0 md:px-0">
                 <div className="flex gap-3 md:gap-4 overflow-x-auto pb-2 scrollbar-hide">
                   {feedData.highlights.map((highlight: any) => {
                     const isColorHighlight = !highlight.image_url || highlight.image_url.startsWith("#")
