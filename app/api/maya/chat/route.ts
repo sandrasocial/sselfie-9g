@@ -33,7 +33,7 @@ import {
   getMayaActiveAssetContext,
   persistMayaActiveAssetContext,
 } from "@/lib/maya/memory-layer"
-import { createMayaGeneratedAsset } from "@/lib/maya/asset-generation"
+import { createMayaGeneratedAsset, updateMayaGeneratedAsset } from "@/lib/maya/asset-generation"
 
 import { NextResponse } from "next/server"
 
@@ -376,6 +376,7 @@ export async function POST(req: Request) {
           await persistMayaActiveAssetContext(dbUserId, {
             assetType: generatedAsset.assetType,
             assetLabel: generatedAsset.title,
+            assetId: generatedAsset.id,
             instruction: assetCreateIntent.instruction,
           })
 
@@ -427,9 +428,18 @@ export async function POST(req: Request) {
       const assetEditIntent = detectMayaAssetEditIntent(latestUserText, activeAssetContext)
       if (assetEditIntent) {
         try {
-          const persistedAsset = await persistMayaActiveAssetContext(dbUserId, {
+          const updatedAsset = await updateMayaGeneratedAsset({
+            userId: dbUserId,
             assetType: assetEditIntent.assetType,
             assetLabel: assetEditIntent.assetLabel,
+            assetId: activeAssetContext?.assetId,
+            instruction: assetEditIntent.instruction,
+          })
+
+          const persistedAsset = await persistMayaActiveAssetContext(dbUserId, {
+            assetType: updatedAsset.assetType,
+            assetLabel: updatedAsset.title,
+            assetId: updatedAsset.id,
             instruction: assetEditIntent.instruction,
           })
 
@@ -437,6 +447,16 @@ export async function POST(req: Request) {
           const editAssetMarker = formatMayaToolMarker(
             "edit_asset",
             `${persistedAsset.activeAsset.assetType}|${encodedLabel}`,
+          )
+          const createAssetMarker = formatMayaToolMarker(
+            "create_asset",
+            [
+              updatedAsset.assetType,
+              encodeURIComponent(updatedAsset.title),
+              updatedAsset.id,
+              encodeURIComponent(updatedAsset.previewText),
+              encodeURIComponent(updatedAsset.url || ""),
+            ].join("|"),
           )
 
           const actionVerb = assetEditIntent.mode === "continue" ? "Continuing" : "Starting"
@@ -450,7 +470,8 @@ export async function POST(req: Request) {
                 id: textPartId,
                 delta:
                   `${actionVerb} your ${persistedAsset.activeAsset.assetLabel} edits now. ` +
-                  `I’ll keep this as your active workspace so your next tweaks update the same asset.\n` +
+                  `I’ve updated the draft inline and kept this as your active workspace for the next tweak.\n` +
+                  `${createAssetMarker}\n` +
                   editAssetMarker,
               })
               writer.write({ type: "text-end", id: textPartId })

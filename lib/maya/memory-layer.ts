@@ -26,6 +26,7 @@ export type MayaAssetType = "page" | "calendar" | "pdf"
 export interface MayaActiveAssetContext {
   assetType: MayaAssetType
   assetLabel: string
+  assetId?: string
   lastInstruction?: string
   updatedAt: string
 }
@@ -102,6 +103,8 @@ function parseActiveAssetContext(value: unknown): MayaActiveAssetContext | null 
       : defaultAssetLabel(assetType)
   const lastInstruction =
     typeof record.lastInstruction === "string" ? sanitizeAssetInstruction(record.lastInstruction) : undefined
+  const assetId =
+    typeof record.assetId === "string" && record.assetId.trim().length > 0 ? record.assetId.trim() : undefined
   const updatedAt =
     typeof record.updatedAt === "string" && record.updatedAt.trim().length > 0
       ? record.updatedAt
@@ -110,6 +113,7 @@ function parseActiveAssetContext(value: unknown): MayaActiveAssetContext | null 
   return {
     assetType,
     assetLabel,
+    assetId,
     lastInstruction,
     updatedAt,
   }
@@ -283,6 +287,7 @@ export async function persistMayaActiveAssetContext(
   input: {
     assetType: MayaAssetType
     assetLabel?: string
+    assetId?: string
     instruction: string
   },
 ): Promise<PersistMayaActiveAssetResult> {
@@ -319,6 +324,10 @@ export async function persistMayaActiveAssetContext(
           typeof record.assetLabel === "string" && record.assetLabel.trim().length > 0
             ? sanitizeMemoryNote(record.assetLabel)
             : assetLabel,
+        assetId:
+          typeof record.assetId === "string" && record.assetId.trim().length > 0
+            ? record.assetId.trim()
+            : undefined,
         instruction:
           typeof record.instruction === "string" ? sanitizeAssetInstruction(record.instruction) : "",
         updatedAt:
@@ -330,9 +339,11 @@ export async function persistMayaActiveAssetContext(
     .filter((entry) => entry.instruction.length > 0)
 
   const nowIso = new Date().toISOString()
+  const assetId = typeof input.assetId === "string" && input.assetId.trim().length > 0 ? input.assetId.trim() : undefined
   const activeAsset: MayaActiveAssetContext = {
     assetType: input.assetType,
     assetLabel,
+    assetId,
     lastInstruction: instruction,
     updatedAt: nowIso,
   }
@@ -341,6 +352,7 @@ export async function persistMayaActiveAssetContext(
     {
       assetType: input.assetType,
       assetLabel,
+      assetId,
       instruction,
       updatedAt: nowIso,
     },

@@ -522,6 +522,22 @@ function buildPdfHtml(title: string, previewText: string, instruction: string, i
 </html>`
 }
 
+function buildPreviewHtmlForAsset(
+  assetType: MayaGeneratedAssetType,
+  title: string,
+  previewText: string,
+  instruction: string,
+  imageUrls: string[],
+): string {
+  if (assetType === "calendar") {
+    return buildCalendarHtml(title, previewText, instruction, imageUrls)
+  }
+  if (assetType === "pdf") {
+    return buildPdfHtml(title, previewText, instruction, imageUrls)
+  }
+  return buildLandingPageHtml(title, previewText, instruction, imageUrls)
+}
+
 function parseExistingAssets(value: unknown): MayaGeneratedAsset[] {
   if (!Array.isArray(value)) return []
 
@@ -579,12 +595,7 @@ export async function createMayaGeneratedAsset(input: {
   const previewText = buildPreviewText(input.assetType, instruction)
   const imageUrls = await loadUserImageUrls(normalizedUserId)
 
-  const previewHtml =
-    input.assetType === "calendar"
-      ? buildCalendarHtml(title, previewText, instruction, imageUrls)
-      : input.assetType === "pdf"
-        ? buildPdfHtml(title, previewText, instruction, imageUrls)
-        : buildLandingPageHtml(title, previewText, instruction, imageUrls)
+  const previewHtml = buildPreviewHtmlForAsset(input.assetType, title, previewText, instruction, imageUrls)
   const url = `/maya/asset/${encodeURIComponent(id)}`
 
   const asset: MayaGeneratedAsset = {
@@ -626,6 +637,103 @@ export async function createMayaGeneratedAsset(input: {
   `
 
   return asset
+}
+
+export async function updateMayaGeneratedAsset(input: {
+  userId: string | number
+  assetType: MayaGeneratedAssetType
+  instruction: string
+  assetLabel?: string
+  assetId?: string
+}): Promise<MayaGeneratedAsset> {
+  const normalizedUserId = String(input.userId || "").trim()
+  if (!normalizedUserId) {
+    throw new Error("Cannot update Maya asset without a user id")
+  }
+
+  const editInstruction = sanitizeInstruction(input.instruction)
+  if (!editInstruction) {
+    throw new Error("Cannot update Maya asset without an edit instruction")
+  }
+
+  const existingRows = await sql`
+    SELECT memory_data
+    FROM maya_personal_memory
+    WHERE user_id = ${normalizedUserId}
+    LIMIT 1
+  `
+
+  const existingMemoryData = ((existingRows[0] as any)?.memory_data as Record<string, unknown> | undefined) ?? {}
+  const existingAssets = parseExistingAssets(existingMemoryData.generated_assets)
+  const lastGeneratedAssetId =
+    typeof (existingMemoryData.last_generated_asset as Record<string, unknown> | undefined)?.id === "string"
+      ? ((existingMemoryData.last_generated_asset as Record<string, unknown>).id as string)
+      : ""
+
+  const normalizedLabel = sanitizePreviewText(input.assetLabel || "").toLowerCase()
+  const normalizedAssetId = typeof input.assetId === "string" ? input.assetId.trim() : ""
+  const targetAsset =
+    existingAssets.find((asset) => asset.id === normalizedAssetId && asset.assetType === input.assetType) ||
+    existingAssets.find((asset) => asset.assetType === input.assetType && asset.id === lastGeneratedAssetId) ||
+    existingAssets.find(
+      (asset) =>
+        asset.assetType === input.assetType &&
+        normalizedLabel.length > 0 &&
+        asset.title.toLowerCase().includes(normalizedLabel),
+    ) ||
+    existingAssets.find((asset) => asset.assetType === input.assetType) ||
+    null
+
+  if (!targetAsset) {
+    return createMayaGeneratedAsset({
+      userId: normalizedUserId,
+      assetType: input.assetType,
+      instruction: editInstruction,
+    })
+  }
+
+  const nowIso = new Date().toISOString()
+  const imageUrls = await loadUserImageUrls(normalizedUserId)
+  const mergedInstruction = sanitizeInstruction(
+    `${targetAsset.instruction || ""}\nEdit request: ${editInstruction}`.trim(),
+  )
+  const previewText = sanitizePreviewText(
+    `Updated with your latest edit: ${extractPrimaryIntent(editInstruction)}.`,
+  )
+  const previewHtml = buildPreviewHtmlForAsset(
+    targetAsset.assetType,
+    targetAsset.title,
+    previewText,
+    mergedInstruction,
+    imageUrls,
+  )
+
+  const updatedAsset: MayaGeneratedAsset = {
+    ...targetAsset,
+    instruction: mergedInstruction,
+    previewText,
+    previewHtml,
+    createdAt: nowIso,
+    status: "draft",
+  }
+
+  const nextAssets = [updatedAsset, ...existingAssets.filter((asset) => asset.id !== targetAsset.id)].slice(0, MAX_STORED_ASSETS)
+  const memoryPatch = {
+    generated_assets: nextAssets,
+    last_generated_asset: updatedAsset,
+    generated_assets_updated_at: nowIso,
+  }
+
+  await sql`
+    INSERT INTO maya_personal_memory (user_id, memory_data, updated_at)
+    VALUES (${normalizedUserId}, ${JSON.stringify(memoryPatch)}::jsonb, NOW())
+    ON CONFLICT (user_id) DO UPDATE
+    SET
+      memory_data = COALESCE(maya_personal_memory.memory_data, '{}'::jsonb) || ${JSON.stringify(memoryPatch)}::jsonb,
+      updated_at = NOW()
+  `
+
+  return updatedAsset
 }
 
 export async function getMayaGeneratedAsset(
