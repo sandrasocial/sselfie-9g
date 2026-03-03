@@ -26,6 +26,42 @@ export default function LandingPageNew() {
     trackLandingView()
   }, [])
 
+  useEffect(() => {
+    let isMounted = true
+    const abortController = new AbortController()
+
+    const loadPaidBlueprintFlag = async () => {
+      try {
+        const response = await fetch("/api/feature-flags/paid-blueprint", {
+          method: "GET",
+          cache: "no-store",
+          signal: abortController.signal,
+        })
+
+        if (!response.ok) {
+          throw new Error(`Failed to load paid blueprint flag (${response.status})`)
+        }
+
+        const data = await response.json()
+        if (isMounted) {
+          setIsPaidBlueprintEnabled(Boolean(data?.enabled))
+        }
+      } catch (error) {
+        if (!abortController.signal.aborted) {
+          console.warn("[Landing] Failed to load paid blueprint feature flag:", error)
+          setIsPaidBlueprintEnabled(false)
+        }
+      }
+    }
+
+    loadPaidBlueprintFlag()
+
+    return () => {
+      isMounted = false
+      abortController.abort()
+    }
+  }, [])
+
   // Track pricing section view
   useEffect(() => {
     const pricingSection = document.getElementById("membership")

@@ -43,8 +43,8 @@ function CheckoutUpgradeContent() {
     console.log("[v0] ==================== PAYMENT COMPLETED ====================")
     console.log("[v0] handleComplete triggered")
     
-    // Redirect to dashboard after successful checkout
-    router.push("/dashboard?upgraded=true")
+    // Redirect to the actual app shell after successful checkout
+    router.push("/studio?upgraded=true")
     console.log("[v0] ==================== END PAYMENT COMPLETED ====================")
   }
 
@@ -143,4 +143,3 @@ export default function CheckoutUpgradePage() {
     </Suspense>
   )
 }
-
