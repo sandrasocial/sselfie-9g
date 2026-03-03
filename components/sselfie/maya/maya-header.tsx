@@ -104,6 +104,8 @@ export default function MayaHeaderUnified({
   onGuideChange,
   userId,
   onNavigation,
+  onNewProject,
+  onHistory,
   onLogout,
   isLoggingOut = false,
   activeTab,
