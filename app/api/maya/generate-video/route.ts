@@ -4,7 +4,7 @@ import { getReplicateClient } from "@/lib/replicate-client"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { checkCredits, deductCredits, CREDIT_COSTS } from "@/lib/credits"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
-import { generatePrompt } from "@/lib/maya/prompt-authority"
+import { generatePrompt } from "@/lib/generation/prompt"
 
 
 // Phase 2C-3: Keep original function as fallback

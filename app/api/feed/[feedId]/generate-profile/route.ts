@@ -6,7 +6,7 @@ import { getReplicateClient } from "@/lib/replicate-client"
 import { MAYA_QUALITY_PRESETS } from "@/lib/maya/quality-settings"
 import { generateObject } from "ai"
 import { z } from "zod"
-import { generatePrompt } from "@/lib/maya/prompt-authority"
+import { generatePrompt } from "@/lib/generation/prompt"
 
 export async function POST(req: NextRequest, { params }: { params: { feedId: string } }) {
   try {

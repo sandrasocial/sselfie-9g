@@ -6,7 +6,7 @@ import { checkCredits, deductCredits, getUserCredits, addCredits } from "@/lib/c
 import { generateWithNanoBanana, getStudioProCreditCost } from "@/lib/nano-banana-client"
 import { sql } from "@/lib/db/client"
 import { put } from "@vercel/blob"
-import { routeProModeImagePromptViaAuthority } from "@/lib/maya/prompt-authority"
+import { routeProModeImagePromptViaAuthority } from "@/lib/generation/prompt"
 
 export const maxDuration = 300 // 5 minutes for image generation
 

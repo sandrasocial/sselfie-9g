@@ -8,7 +8,7 @@ import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getFluxPromptingPrinciples } from "@/lib/maya/flux-prompting-principles"
 import { getNanoBananaPromptingPrinciples } from "@/lib/maya/nano-banana-prompt-builder"
 import Anthropic from "@anthropic-ai/sdk"
-import { generateMayaFeedPromptSystemPrompt, auditLogMayaChatGeneration } from "@/lib/maya/prompt-authority"
+import { generateMayaFeedPromptSystemPrompt, auditLogMayaChatGeneration } from "@/lib/generation/prompt"
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 

@@ -4,7 +4,7 @@ import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { generateText } from "ai"
 import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
-import { generateStudioProPromptsViaAuthority } from "@/lib/maya/prompt-authority"
+import { generateStudioProPromptsViaAuthority } from "@/lib/generation/prompt"
 
 export async function POST(req: NextRequest) {
   try {

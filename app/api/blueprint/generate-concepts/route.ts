@@ -4,7 +4,7 @@ import { sql } from "@/lib/db/client"
 import { FLUX_PROMPTING_PRINCIPLES } from "@/lib/maya/flux-prompting-principles"
 import { createServerClient } from "@/lib/supabase/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
-import { generateBlueprintConceptsPrompt, auditLogMayaChatGeneration } from "@/lib/maya/prompt-authority"
+import { generateBlueprintConceptsPrompt, auditLogMayaChatGeneration } from "@/lib/generation/prompt"
 
 
 const FEED_STYLE_TO_AESTHETIC = {

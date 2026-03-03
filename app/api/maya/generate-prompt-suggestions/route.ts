@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { generatePromptSuggestions, type WorkbenchContext } from '@/lib/maya/prompt-authority'
+import { generatePromptSuggestions, type WorkbenchContext } from '@/lib/generation/prompt'
 import { checkInternalOnly } from '@/lib/maya/internal-only-guard'
 
 /**

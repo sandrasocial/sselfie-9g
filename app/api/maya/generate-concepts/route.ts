@@ -57,7 +57,7 @@ import {
   validatePromptLength,
   type PromptConstructorParams 
 } from "@/lib/maya/prompt-constructor"
-import { generateConceptCardsViaAuthority, auditLogMayaChatGeneration } from "@/lib/maya/prompt-authority"
+import { generateConceptCardsViaAuthority, auditLogMayaChatGeneration } from "@/lib/generation/prompt"
 // prompt-constructor-enhanced removed - using unified system instead
 // import { buildEnhancedPrompt, type EnhancedPromptParams } from "@/lib/maya/prompt-constructor-enhanced"
 import {
