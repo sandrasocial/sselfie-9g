@@ -15,8 +15,8 @@ export function generatePaidBlueprintDeliveryEmail(params: PaidBlueprintDelivery
   const displayName = firstName || email.split("@")[0]
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
 
-  // Generate tracked link to paid blueprint page
-  const paidBlueprintUrl = `${siteUrl}/blueprint/paid?access=${accessToken}&utm_source=email&utm_medium=email&utm_campaign=paid_blueprint&utm_content=delivery`
+  // Canonical destination: feed planner shell (legacy /blueprint/paid is deprecated)
+  const paidBlueprintUrl = `${siteUrl}/feed-planner?access=${accessToken}&utm_source=email&utm_medium=email&utm_campaign=paid_blueprint&utm_content=delivery`
 
   // Build photo preview grid if provided (max 4 images)
   const previewImages = photoPreviewUrls?.slice(0, 4) || []

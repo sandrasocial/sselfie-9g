@@ -15,7 +15,7 @@ export function generatePaidBlueprintDay7Email(params: PaidBlueprintDay7Params):
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
 
   // Generate tracked links
-  const paidBlueprintUrl = `${siteUrl}/blueprint/paid?access=${accessToken}&utm_source=email&utm_medium=email&utm_campaign=paid_blueprint&utm_content=day7`
+  const paidBlueprintUrl = `${siteUrl}/feed-planner?access=${accessToken}&utm_source=email&utm_medium=email&utm_campaign=paid_blueprint&utm_content=day7`
   // Link to Studio membership checkout (confirmed route exists: /checkout/membership)
   const studioUrl = `${siteUrl}/checkout/membership?utm_source=email&utm_medium=email&utm_campaign=paid_blueprint&utm_content=day7&product=studio_membership`
 
