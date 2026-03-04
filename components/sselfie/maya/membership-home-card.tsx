@@ -8,6 +8,9 @@ interface MembershipHomeCardProps {
   onGeneratePhoto: () => void
   onPlanFeed: () => void
   onBrowseStyles: () => void
+  onCreateLandingPage?: () => void
+  onCreateCalendar?: () => void
+  onUploadAssets?: () => void
   onExploreMonthlyDrop?: () => void
 }
 
@@ -19,6 +22,9 @@ export default function MembershipHomeCard({
   onGeneratePhoto,
   onPlanFeed,
   onBrowseStyles,
+  onCreateLandingPage,
+  onCreateCalendar,
+  onUploadAssets,
   onExploreMonthlyDrop,
 }: MembershipHomeCardProps) {
   const normalizedCredits = Math.max(0, Math.round(creditsReady))
@@ -106,6 +112,38 @@ export default function MembershipHomeCard({
             Browse styles →
           </button>
         </section>
+
+        {(onCreateLandingPage || onCreateCalendar || onUploadAssets) && (
+          <section className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
+            {onCreateLandingPage && (
+              <button
+                type="button"
+                onClick={onCreateLandingPage}
+                className="rounded-xl border border-[rgba(255,255,255,0.15)] bg-[rgba(255,255,255,0.06)] px-3 py-3 text-[11px] uppercase tracking-[0.16em] text-[#ffffff] hover:bg-[rgba(255,255,255,0.1)] transition-colors"
+              >
+                Build landing page →
+              </button>
+            )}
+            {onCreateCalendar && (
+              <button
+                type="button"
+                onClick={onCreateCalendar}
+                className="rounded-xl border border-[rgba(255,255,255,0.15)] bg-[rgba(255,255,255,0.06)] px-3 py-3 text-[11px] uppercase tracking-[0.16em] text-[#ffffff] hover:bg-[rgba(255,255,255,0.1)] transition-colors"
+              >
+                Create calendar →
+              </button>
+            )}
+            {onUploadAssets && (
+              <button
+                type="button"
+                onClick={onUploadAssets}
+                className="rounded-xl border border-[rgba(255,255,255,0.15)] bg-[rgba(255,255,255,0.06)] px-3 py-3 text-[11px] uppercase tracking-[0.16em] text-[#ffffff] hover:bg-[rgba(255,255,255,0.1)] transition-colors"
+              >
+                Upload assets →
+              </button>
+            )}
+          </section>
+        )}
       </div>
     </div>
   )

@@ -9,6 +9,9 @@ describe("MembershipHomeCard", () => {
     const onGeneratePhoto = vi.fn()
     const onPlanFeed = vi.fn()
     const onBrowseStyles = vi.fn()
+    const onCreateLandingPage = vi.fn()
+    const onCreateCalendar = vi.fn()
+    const onUploadAssets = vi.fn()
 
     render(
       <MembershipHomeCard
@@ -19,6 +22,9 @@ describe("MembershipHomeCard", () => {
         onGeneratePhoto={onGeneratePhoto}
         onPlanFeed={onPlanFeed}
         onBrowseStyles={onBrowseStyles}
+        onCreateLandingPage={onCreateLandingPage}
+        onCreateCalendar={onCreateCalendar}
+        onUploadAssets={onUploadAssets}
       />,
     )
 
@@ -31,11 +37,17 @@ describe("MembershipHomeCard", () => {
     fireEvent.click(screen.getByRole("button", { name: /generate a photo/i }))
     fireEvent.click(screen.getByRole("button", { name: /plan my feed/i }))
     fireEvent.click(screen.getByRole("button", { name: /browse styles/i }))
+    fireEvent.click(screen.getByRole("button", { name: /build landing page/i }))
+    fireEvent.click(screen.getByRole("button", { name: /create calendar/i }))
+    fireEvent.click(screen.getByRole("button", { name: /upload assets/i }))
 
     expect(onContinue).toHaveBeenCalledTimes(1)
     expect(onGeneratePhoto).toHaveBeenCalledTimes(1)
     expect(onPlanFeed).toHaveBeenCalledTimes(1)
     expect(onBrowseStyles).toHaveBeenCalledTimes(1)
+    expect(onCreateLandingPage).toHaveBeenCalledTimes(1)
+    expect(onCreateCalendar).toHaveBeenCalledTimes(1)
+    expect(onUploadAssets).toHaveBeenCalledTimes(1)
   })
 
   it("renders monthly drop row when provided", () => {

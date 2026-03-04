@@ -1523,6 +1523,38 @@ export default function MayaChatScreen({
     return suggestions.sort(() => Math.random() - 0.5).slice(0, 4)
   }
 
+  const getOutcomeStartPrompts = (isProMode: boolean): Array<{ label: string; prompt: string }> => {
+    if (isProMode) {
+      return [
+        { label: "Create Photoshoot", prompt: "I want to create a photoshoot for my new offer" },
+        { label: "Use My Selfies", prompt: "Let's create a photo using my uploaded selfies" },
+        { label: "Upload Assets", prompt: "I want to upload product photos and brand references" },
+        { label: "Build Landing Page", prompt: "Create a landing page draft for my current offer" },
+        { label: "Create Calendar", prompt: "Create a content calendar draft for this week" },
+        { label: "Create Workbook", prompt: "Create a workbook PDF draft for this offer" },
+      ]
+    }
+
+    return [
+      { label: "Create Photoshoot", prompt: "I want to create a photo for my new offer" },
+      { label: "Train My Model", prompt: "I want to train my custom model" },
+      { label: "Upload Selfies", prompt: "I want to upload selfies first" },
+      { label: "Build Landing Page", prompt: "Create a landing page draft for my current offer" },
+      { label: "Create Calendar", prompt: "Create a content calendar draft for this week" },
+      { label: "Create Workbook", prompt: "Create a workbook PDF draft for this offer" },
+    ]
+  }
+
+  const mergeUniquePrompts = (prompts: Array<{ label: string; prompt: string }>) => {
+    const seen = new Set<string>()
+    return prompts.filter((item) => {
+      const key = `${item.label.toLowerCase()}::${item.prompt.toLowerCase()}`
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+  }
+
   const getRandomPrompts = (gender: string | null) => {
     const promptPool = gender === "woman" ? promptPoolWoman : promptPoolMan
     const allCategories = Object.values(promptPool)
@@ -1554,7 +1586,7 @@ export default function MayaChatScreen({
         item.prompt.trim().toLowerCase() !== capabilityPrompt.prompt.toLowerCase() &&
         item.label.trim().toLowerCase() !== capabilityPrompt.label.toLowerCase(),
     )
-    return [capabilityPrompt, ...filtered].slice(0, 5)
+    return [capabilityPrompt, ...filtered].slice(0, 7)
   }
 
   // Update prompts based on mode and active tab
@@ -1579,28 +1611,22 @@ export default function MayaChatScreen({
           console.log("[v0] Profile API data:", data)
           setUserGender(data.gender || null)
           
-          // 🔴 FIX: Use Pro Mode prompts if in Pro Mode
-          if (proMode) {
-            // Get Pro Mode category-specific prompts
-            const proPrompts = getProModeQuickSuggestions()
-            console.log("[v0] Setting Pro Mode prompts:", proPrompts.length)
-            setCurrentPrompts(withCapabilityPrompt(proPrompts))
-          } else {
-            // Classic Mode prompts
-            const prompts = getRandomPrompts(data.gender || null)
-            console.log("[v0] Setting Classic Mode prompts for gender:", data.gender, "Prompts:", prompts.length)
-            setCurrentPrompts(withCapabilityPrompt(prompts))
-          }
+          const starterPrompts = getOutcomeStartPrompts(proMode)
+          const stylePrompts = proMode ? getProModeQuickSuggestions() : getRandomPrompts(data.gender || null)
+          const mergedPrompts = mergeUniquePrompts([...starterPrompts, ...stylePrompts])
+          console.log("[v0] Setting prompt set:", { proMode, total: mergedPrompts.length })
+          setCurrentPrompts(withCapabilityPrompt(mergedPrompts))
         } else {
           console.error("[v0] Profile API error:", response.status, response.statusText)
-          setCurrentPrompts(
-            withCapabilityPrompt(hasProFeatures ? getProModeQuickSuggestions() : getRandomPrompts(null)),
-          )
+          const starterPrompts = getOutcomeStartPrompts(proMode)
+          const stylePrompts = hasProFeatures ? getProModeQuickSuggestions() : getRandomPrompts(null)
+          setCurrentPrompts(withCapabilityPrompt(mergeUniquePrompts([...starterPrompts, ...stylePrompts])))
         }
       } catch (error) {
         console.error("[v0] Error fetching user gender:", error)
-        // Fallback: use proMode directly if hasProFeatures not available
-        setCurrentPrompts(withCapabilityPrompt(proMode ? getProModeQuickSuggestions() : getRandomPrompts(null)))
+        const starterPrompts = getOutcomeStartPrompts(proMode)
+        const stylePrompts = proMode ? getProModeQuickSuggestions() : getRandomPrompts(null)
+        setCurrentPrompts(withCapabilityPrompt(mergeUniquePrompts([...starterPrompts, ...stylePrompts])))
       }
     }
     fetchUserGender()
@@ -3266,6 +3292,15 @@ export default function MayaChatScreen({
                       localStorage.setItem("mayaActiveTab", "prompts")
                       window.history.replaceState(null, "", "#maya/prompts")
                     }
+                  }}
+                  onCreateLandingPage={() => {
+                    handleSendMessage("Create a landing page draft for my current offer")
+                  }}
+                  onCreateCalendar={() => {
+                    handleSendMessage("Create a content calendar draft for this week")
+                  }}
+                  onUploadAssets={() => {
+                    handleSendMessage("I want to upload product photos and brand references")
                   }}
                   onExploreMonthlyDrop={() => {
                     if (typeof window !== "undefined") {

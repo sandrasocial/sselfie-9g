@@ -22,6 +22,7 @@ describe("analytics event contract", () => {
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("maya_public_page_checkout_clicked")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("maya_public_page_lead_captured")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("maya_tool_blocked_low_credits")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("maya_multi_step_executor_run")
   })
 
   it("rejects unknown event names", () => {
@@ -35,5 +36,6 @@ describe("analytics event contract", () => {
     expect(isAllowedAnalyticsEventName("first_image_generated")).toBe(true)
     expect(isAllowedAnalyticsEventName("maya_public_page_lead_captured")).toBe(true)
     expect(isAllowedAnalyticsEventName("maya_tool_blocked_low_credits")).toBe(true)
+    expect(isAllowedAnalyticsEventName("maya_multi_step_executor_run")).toBe(true)
   })
 })

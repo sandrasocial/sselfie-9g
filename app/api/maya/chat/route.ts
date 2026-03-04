@@ -436,6 +436,95 @@ export async function POST(req: Request) {
         }
       }
 
+      if (orchestration.kind === "multi_step_asset_create") {
+        try {
+          const createdAssets: Array<Awaited<ReturnType<typeof createMayaGeneratedAsset>>> = []
+
+          for (const intent of orchestration.intents) {
+            const generatedAsset = await createMayaGeneratedAsset({
+              userId: dbUserId,
+              assetType: intent.assetType,
+              instruction: intent.instruction,
+            })
+            createdAssets.push(generatedAsset)
+          }
+
+          const activeAsset = createdAssets[createdAssets.length - 1]
+          if (activeAsset) {
+            const activeIntent =
+              orchestration.intents.find((intent) => intent.assetType === activeAsset.assetType) ||
+              orchestration.intents[0]
+            await persistMayaActiveAssetContext(dbUserId, {
+              assetType: activeAsset.assetType,
+              assetLabel: activeAsset.title,
+              assetId: activeAsset.id,
+              instruction: activeIntent?.instruction || activeAsset.instruction || latestUserText,
+            })
+          }
+
+          const markers = createdAssets.flatMap((asset) => {
+            const createAssetMarker = formatMayaToolMarker(
+              "create_asset",
+              [
+                asset.assetType,
+                encodeURIComponent(asset.title),
+                asset.id,
+                encodeURIComponent(asset.previewText),
+                encodeURIComponent(asset.url || ""),
+              ].join("|"),
+            )
+            const editAssetMarker = formatMayaToolMarker(
+              "edit_asset",
+              `${asset.assetType}|${encodeURIComponent(asset.title)}`,
+            )
+            return [createAssetMarker, editAssetMarker]
+          })
+
+          const stream = createUIMessageStream({
+            originalMessages: validUIMessages as any,
+            execute: ({ writer }) => {
+              const textPartId = `asset-multistep-${Date.now().toString(36)}`
+              writer.write({ type: "text-start", id: textPartId })
+              writer.write({
+                type: "text-delta",
+                id: textPartId,
+                delta:
+                  `Done. I built ${createdAssets.length} drafts in one run so you can move faster. ` +
+                  `I loaded each one inline and set your latest draft as active.\n` +
+                  markers.join("\n"),
+              })
+              writer.write({ type: "text-end", id: textPartId })
+            },
+          })
+
+          createdAssets.forEach((asset) => {
+            void logAnalyticsEvent({
+              eventName: "maya_asset_draft_created",
+              userId: dbUserId,
+              path: "/api/maya/chat",
+              properties: {
+                assetType: asset.assetType,
+                source: "chat_first_multistep",
+              },
+            })
+          })
+
+          void logAnalyticsEvent({
+            eventName: "maya_multi_step_executor_run",
+            userId: dbUserId,
+            path: "/api/maya/chat",
+            properties: {
+              stepCount: createdAssets.length,
+              stepAssetTypes: createdAssets.map((asset) => asset.assetType),
+            },
+          })
+
+          return createUIMessageStreamResponse({ stream })
+        } catch (multiStepCreateError) {
+          console.error("[Maya Chat] Failed multi-step asset creation:", multiStepCreateError)
+        }
+      }
+
       if (orchestration.kind === "asset_edit") {
         try {
           const updatedAsset = await updateMayaGeneratedAsset({

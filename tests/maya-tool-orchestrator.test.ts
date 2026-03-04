@@ -44,6 +44,18 @@ describe("orchestrateMayaTurn", () => {
     }
   })
 
+  it("routes multi-step asset creation for combined requests", () => {
+    const result = orchestrateMayaTurn({
+      userText: "Create a landing page and a content calendar for this launch",
+      activeAssetContext: null,
+    })
+
+    expect(result.kind).toBe("multi_step_asset_create")
+    if (result.kind === "multi_step_asset_create") {
+      expect(result.intents.map((intent) => intent.assetType)).toEqual(["page", "calendar"])
+    }
+  })
+
   it("routes generate-image for mixed help + photo requests", () => {
     const result = orchestrateMayaTurn({
       userText: "help me create a photo for my new offer",

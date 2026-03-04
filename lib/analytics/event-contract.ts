@@ -23,6 +23,7 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "maya_public_page_checkout_clicked",
   "maya_public_page_lead_captured",
   "maya_tool_blocked_low_credits",
+  "maya_multi_step_executor_run",
   "onboarding_step_complete",
   "onboarding_abandoned",
   "onboarding_complete",
