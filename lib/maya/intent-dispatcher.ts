@@ -12,7 +12,7 @@ export interface MayaToolDispatchIntent {
 }
 
 const SHOW_CAPABILITIES_INTENT_REGEX =
-  /\b(what can you do|help me understand|how does this work|where do i start|what do i do now|what are you capable of|show capabilities|help)\b/i
+  /\b(what can you do|help me understand|how does this work|where do i start|what do i do now|what are you capable of|show capabilities|show me what you can do|get started)\b/i
 const SHOW_GALLERY_INTENT_REGEX = /\b(show|open|view|see|browse|pull up)\b[\s\S]{0,24}\b(gallery|photos?|images?)\b/i
 const SAVE_TO_GALLERY_INTENT_REGEX = /\b(save|store|keep)\b[\s\S]{0,36}\b(gallery|my gallery)\b/i
 const GENERATE_IMAGE_INTENT_REGEX = /\b(create|generate|make|shoot)\b[\s\S]{0,48}\b(photo|image|picture|photoshoot|shot)\b/i
@@ -49,15 +49,6 @@ function detectUploadCategory(userText: string): MayaUploadCategory {
 
 export function detectMayaToolDispatchIntent(userText: string): MayaToolDispatchIntent | null {
   if (!userText || userText.trim().length === 0) return null
-
-  if (SHOW_CAPABILITIES_INTENT_REGEX.test(userText)) {
-    return {
-      tool: "show_capabilities",
-      responseText:
-        `I’ve got you. Here’s exactly what I can run for you right now.\n` +
-        `${formatMayaToolMarker("show_capabilities")}`,
-    }
-  }
 
   if (SAVE_TO_GALLERY_INTENT_REGEX.test(userText)) {
     const imageIdMatch = userText.match(IMAGE_ID_REGEX)
@@ -127,6 +118,15 @@ export function detectMayaToolDispatchIntent(userText: string): MayaToolDispatch
     return {
       tool: "show_gallery",
       responseText: `Absolutely. Here are your latest gallery images.\n${formatMayaToolMarker("show_gallery")}`,
+    }
+  }
+
+  if (SHOW_CAPABILITIES_INTENT_REGEX.test(userText)) {
+    return {
+      tool: "show_capabilities",
+      responseText:
+        `I’ve got you. Here’s exactly what I can run for you right now.\n` +
+        `${formatMayaToolMarker("show_capabilities")}`,
     }
   }
 

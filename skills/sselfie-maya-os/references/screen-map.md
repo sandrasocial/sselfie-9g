@@ -17,6 +17,11 @@
 - Owner: `app/strategy/[token]/page.tsx`.
 - Key behavior: map toward auth and/or checkout intents.
 
+### `/p/[username]/[slug]`
+- Purpose: public delivery surface for Maya-generated landing assets.
+- Owner: `app/p/[username]/[slug]/route.ts`.
+- Key behavior: capture lead (`/api/maya/public/lead`) and route to Studio checkout.
+
 ### `/auth/login`, `/auth/sign-up`, `/auth/callback`
 - Purpose: identity and continuity.
 - Key behavior: preserve return intent and enter canonical shell.
@@ -30,7 +35,7 @@
 ### `/studio` (canonical)
 - Purpose: primary authenticated shell.
 - Owner: `app/studio/page.tsx`, `components/sselfie/sselfie-app.tsx`.
-- Key behavior: activation state, Maya surface, tab shell (temporary scaffolding).
+- Key behavior: activation state, Maya surface, capability discovery card, tab shell (temporary scaffolding).
 
 ### `/maya`
 - Purpose: direct Maya entry that mounts same app shell.

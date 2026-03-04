@@ -34,6 +34,11 @@ describe("maya phase 2 tool dispatcher", () => {
     expect(intent?.responseText).toContain("[GENERATE_IMAGE:choose_source]")
   })
 
+  it("does not misroute mixed help + photo intent to capabilities", () => {
+    const intent = detectMayaToolDispatchIntent("help me create a photo for launch week")
+    expect(intent?.tool).toBe("generate_image")
+  })
+
   it("routes upload selfie intent to upload zone marker", () => {
     const intent = detectMayaToolDispatchIntent("let me upload some selfies first")
     expect(intent?.tool).toBe("show_upload_zone")

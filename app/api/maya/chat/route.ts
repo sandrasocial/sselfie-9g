@@ -22,18 +22,16 @@ import {
 } from "@/lib/maya/auto-select-mode"
 import { getProductGenerationPrompt } from "@/lib/products-system-prompt"
 import { shouldDeductMayaChatCredit } from "@/lib/maya/chat-credit-policy"
-import { detectMayaToolDispatchIntent, extractLatestUserText } from "@/lib/maya/intent-dispatcher"
+import { extractLatestUserText } from "@/lib/maya/intent-dispatcher"
 import { stripMayaToolMarkers } from "@/lib/maya/tool-markers"
 import { formatMayaToolMarker } from "@/lib/maya/tool-registry"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 import {
-  detectMayaRememberIntent,
   persistMayaRememberedPreference,
-  detectMayaAssetCreateIntent,
-  detectMayaAssetEditIntent,
   getMayaActiveAssetContext,
   persistMayaActiveAssetContext,
 } from "@/lib/maya/memory-layer"
+import { orchestrateMayaTurn } from "@/lib/maya/tool-orchestrator"
 import { createMayaGeneratedAsset, updateMayaGeneratedAsset } from "@/lib/maya/asset-generation"
 
 import { NextResponse } from "next/server"
@@ -318,13 +316,23 @@ export async function POST(req: Request) {
     const chatFirstMayaEnabled = isChatFirstMayaEnabled(process.env.FEATURE_CHAT_FIRST_MAYA)
     if (chatFirstMayaEnabled && !isPromptBuilder && chatType !== "feed-planner" && chatType !== "pro-photoshoot") {
       const latestUserText = extractLatestUserText(validUIMessages as any)
+      let activeAssetContext: Awaited<ReturnType<typeof getMayaActiveAssetContext>> = null
+      try {
+        activeAssetContext = await getMayaActiveAssetContext(dbUserId)
+      } catch (activeAssetError) {
+        console.error("[Maya Chat] Failed to load active asset context:", activeAssetError)
+      }
 
-      const rememberIntent = detectMayaRememberIntent(latestUserText)
-      if (rememberIntent) {
+      const orchestration = orchestrateMayaTurn({
+        userText: latestUserText,
+        activeAssetContext,
+      })
+
+      if (orchestration.kind === "remember") {
         try {
-          const persistedMemory = await persistMayaRememberedPreference(dbUserId, rememberIntent.note)
+          const persistedMemory = await persistMayaRememberedPreference(dbUserId, orchestration.intent.note)
           console.log("[Maya Chat] Phase 3 memory intent captured:", {
-            source: rememberIntent.source,
+            source: orchestration.intent.source,
             note: persistedMemory.note,
             noteCount: persistedMemory.notes.length,
           })
@@ -365,20 +373,19 @@ export async function POST(req: Request) {
         }
       }
 
-      const assetCreateIntent = detectMayaAssetCreateIntent(latestUserText)
-      if (assetCreateIntent) {
+      if (orchestration.kind === "asset_create") {
         try {
           const generatedAsset = await createMayaGeneratedAsset({
             userId: dbUserId,
-            assetType: assetCreateIntent.assetType,
-            instruction: assetCreateIntent.instruction,
+            assetType: orchestration.intent.assetType,
+            instruction: orchestration.intent.instruction,
           })
 
           await persistMayaActiveAssetContext(dbUserId, {
             assetType: generatedAsset.assetType,
             assetLabel: generatedAsset.title,
             assetId: generatedAsset.id,
-            instruction: assetCreateIntent.instruction,
+            instruction: orchestration.intent.instruction,
           })
 
           const createAssetMarker = formatMayaToolMarker(
@@ -429,29 +436,21 @@ export async function POST(req: Request) {
         }
       }
 
-      let activeAssetContext: Awaited<ReturnType<typeof getMayaActiveAssetContext>> = null
-      try {
-        activeAssetContext = await getMayaActiveAssetContext(dbUserId)
-      } catch (activeAssetError) {
-        console.error("[Maya Chat] Failed to load active asset context:", activeAssetError)
-      }
-
-      const assetEditIntent = detectMayaAssetEditIntent(latestUserText, activeAssetContext)
-      if (assetEditIntent) {
+      if (orchestration.kind === "asset_edit") {
         try {
           const updatedAsset = await updateMayaGeneratedAsset({
             userId: dbUserId,
-            assetType: assetEditIntent.assetType,
-            assetLabel: assetEditIntent.assetLabel,
+            assetType: orchestration.intent.assetType,
+            assetLabel: orchestration.intent.assetLabel,
             assetId: activeAssetContext?.assetId,
-            instruction: assetEditIntent.instruction,
+            instruction: orchestration.intent.instruction,
           })
 
           const persistedAsset = await persistMayaActiveAssetContext(dbUserId, {
             assetType: updatedAsset.assetType,
             assetLabel: updatedAsset.title,
             assetId: updatedAsset.id,
-            instruction: assetEditIntent.instruction,
+            instruction: orchestration.intent.instruction,
           })
 
           const encodedLabel = encodeURIComponent(persistedAsset.activeAsset.assetLabel)
@@ -470,7 +469,7 @@ export async function POST(req: Request) {
             ].join("|"),
           )
 
-          const actionVerb = assetEditIntent.mode === "continue" ? "Continuing" : "Starting"
+          const actionVerb = orchestration.intent.mode === "continue" ? "Continuing" : "Starting"
           const stream = createUIMessageStream({
             originalMessages: validUIMessages as any,
             execute: ({ writer }) => {
@@ -505,13 +504,47 @@ export async function POST(req: Request) {
         }
       }
 
-      const dispatchedIntent = detectMayaToolDispatchIntent(latestUserText)
-
-      if (dispatchedIntent) {
+      if (orchestration.kind === "tool_dispatch") {
+        const dispatchedIntent = orchestration.intent
         console.log("[Maya Chat] Phase 2 tool dispatcher matched intent:", {
           tool: dispatchedIntent.tool,
           chatType,
+          estimatedCredits: orchestration.estimatedCredits,
         })
+
+        if (!isAdmin && orchestration.requiresCreditCheck) {
+          const hasCreditsForTool = await checkCredits(dbUserId, orchestration.estimatedCredits)
+          if (!hasCreditsForTool) {
+            void logAnalyticsEvent({
+              eventName: "maya_tool_blocked_low_credits",
+              userId: dbUserId,
+              path: "/api/maya/chat",
+              properties: {
+                tool: dispatchedIntent.tool,
+                chatType,
+                requiredCredits: orchestration.estimatedCredits,
+              },
+            })
+
+            const stream = createUIMessageStream({
+              originalMessages: validUIMessages as any,
+              execute: ({ writer }) => {
+                const textPartId = `tool-dispatch-low-credits-${Date.now().toString(36)}`
+                writer.write({ type: "text-start", id: textPartId })
+                writer.write({
+                  type: "text-delta",
+                  id: textPartId,
+                  delta:
+                    `Before I run this, you need at least ${orchestration.estimatedCredits} credit. ` +
+                    `Add credits or upgrade, then I’ll launch it instantly.`,
+                })
+                writer.write({ type: "text-end", id: textPartId })
+              },
+            })
+
+            return createUIMessageStreamResponse({ stream })
+          }
+        }
 
         void logAnalyticsEvent({
           eventName:
@@ -523,6 +556,7 @@ export async function POST(req: Request) {
           properties: {
             tool: dispatchedIntent.tool,
             chatType,
+            estimatedCredits: orchestration.estimatedCredits,
           },
         })
 
