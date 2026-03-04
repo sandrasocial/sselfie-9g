@@ -1,4 +1,5 @@
 import { sql } from "@/lib/db/client"
+import { persistMayaAssetAsPersonalPage } from "@/lib/maya/personal-pages"
 
 export type MayaGeneratedAssetType = "page" | "calendar" | "pdf"
 
@@ -610,6 +611,16 @@ export async function createMayaGeneratedAsset(input: {
     status: "draft",
   }
 
+  try {
+    const persistedPage = await persistMayaAssetAsPersonalPage({
+      userId: normalizedUserId,
+      asset,
+    })
+    asset.url = persistedPage.liveUrl
+  } catch (error) {
+    console.error("[Maya Asset] Failed to persist personal page (falling back to draft URL):", error)
+  }
+
   const existingRows = await sql`
     SELECT memory_data
     FROM maya_personal_memory
@@ -715,6 +726,16 @@ export async function updateMayaGeneratedAsset(input: {
     previewHtml,
     createdAt: nowIso,
     status: "draft",
+  }
+
+  try {
+    const persistedPage = await persistMayaAssetAsPersonalPage({
+      userId: normalizedUserId,
+      asset: updatedAsset,
+    })
+    updatedAsset.url = persistedPage.liveUrl
+  } catch (error) {
+    console.error("[Maya Asset] Failed to persist updated personal page:", error)
   }
 
   const nextAssets = [updatedAsset, ...existingAssets.filter((asset) => asset.id !== targetAsset.id)].slice(0, MAX_STORED_ASSETS)

@@ -66,6 +66,16 @@ interface SubscriptionInfo {
   stripe_subscription_id?: string
 }
 
+interface PersonalPageItem {
+  id: string
+  title: string
+  pageType: string
+  status: string
+  liveUrl: string
+  version: number
+  updatedAt: string
+}
+
 export default function AccountScreen({ user, creditBalance: _creditBalance }: AccountScreenProps) {
   const [activeSection, setActiveSection] = useState<AccountSection>("profile")
   
@@ -97,6 +107,7 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
   const [physicalPreferences, setPhysicalPreferences] = useState<string>("")
   const [isUpdatingDemographics, setIsUpdatingDemographics] = useState(false)
   const [showRetrainModal, setShowRetrainModal] = useState(false)
+  const [personalPages, setPersonalPages] = useState<PersonalPageItem[]>([])
   
   // Shared state
   const [isLoggingOut, setIsLoggingOut] = useState(false)
@@ -106,7 +117,7 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
   useEffect(() => {
     async function fetchAllData() {
       try {
-        const [statsRes, infoRes, imagesRes, bestWorkRes, userInfoRes, subscriptionRes, settingsRes] = await Promise.all([
+        const [statsRes, infoRes, imagesRes, bestWorkRes, userInfoRes, subscriptionRes, settingsRes, personalPagesRes] = await Promise.all([
           fetch("/api/profile/stats", { credentials: "include" }),
           fetch("/api/profile/info", { credentials: "include" }),
           fetch("/api/images?limit=100", { credentials: "include" }),
@@ -119,6 +130,7 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
             credentials: "include",
             body: JSON.stringify({ key: "value" }),
           }),
+          fetch("/api/maya/personal-pages", { credentials: "include" }),
         ])
 
         if (statsRes.ok) {
@@ -169,6 +181,11 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
             setSaveToGallery(data.settings.saveToGallery ?? true)
             setDataForTraining(data.settings.dataForTraining ?? true)
           }
+        }
+
+        if (personalPagesRes.ok) {
+          const data = await personalPagesRes.json()
+          setPersonalPages(Array.isArray(data?.pages) ? data.pages : [])
         }
       } catch (error) {
         console.error("[Account] Error fetching data:", error)
@@ -593,6 +610,43 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
           <div className={`${glassCard} p-4 sm:p-5`}>
             <p className={`${sectionLabel} mb-4`}>Referral</p>
             <ReferralDashboard />
+          </div>
+
+          <div className={`${glassCard} p-5 sm:p-6`}>
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h3 className="display-header text-xl font-light text-[color:var(--color-porcelain)]">Maya Pages</h3>
+              <span className="text-[10px] uppercase tracking-[0.35em] text-[color:var(--color-smoke)]">
+                {personalPages.length} total
+              </span>
+            </div>
+
+            {personalPages.length > 0 ? (
+              <div className="space-y-2">
+                {personalPages.slice(0, 8).map((page) => (
+                  <a
+                    key={page.id}
+                    href={page.liveUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={`${glassRow} block`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm text-[color:var(--color-whisper)]">{page.title}</p>
+                        <p className="mt-1 text-[10px] uppercase tracking-[0.28em] text-[color:var(--color-smoke)]">
+                          {page.pageType} · v{page.version}
+                        </p>
+                      </div>
+                      <p className="text-[10px] uppercase tracking-[0.24em] text-[color:var(--color-smoke)]">Open</p>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-[color:var(--color-smoke)]">
+                Your Maya pages will appear here after you create a landing page, calendar, or workbook in chat.
+              </p>
+            )}
           </div>
         </div>
       )}
