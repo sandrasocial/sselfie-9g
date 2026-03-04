@@ -103,14 +103,14 @@ describe("sign-up checkout redirect", () => {
     })
   })
 
-  it("keeps existing next redirect behaviour", async () => {
+  it("falls back to safe default when next path is not allowlisted", async () => {
     setSearch("?next=/some-path")
 
     render(createElement(SignUpPage))
     await submitSignUpForm()
 
     await waitFor(() => {
-      expect(pushMock).toHaveBeenCalledWith("/some-path")
+      expect(pushMock).toHaveBeenCalledWith("/studio")
     })
   })
 
@@ -121,7 +121,7 @@ describe("sign-up checkout redirect", () => {
     await submitSignUpForm()
 
     await waitFor(() => {
-      expect(pushMock).toHaveBeenCalledWith("/studio?tab=maya")
+      expect(pushMock).toHaveBeenCalledWith("/studio")
     })
   })
 
