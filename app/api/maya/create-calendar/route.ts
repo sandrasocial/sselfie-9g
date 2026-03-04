@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
 import { createMayaGeneratedAsset } from "@/lib/maya/asset-generation"
+import { logAnalyticsEvent } from "@/lib/analytics/events"
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,6 +26,16 @@ export async function POST(request: NextRequest) {
       userId: neonUser.id,
       assetType: "calendar",
       instruction,
+    })
+
+    void logAnalyticsEvent({
+      eventName: "maya_asset_draft_created",
+      userId: neonUser.id,
+      path: "/api/maya/create-calendar",
+      properties: {
+        assetType: "calendar",
+        source: "direct_route",
+      },
     })
 
     return NextResponse.json({

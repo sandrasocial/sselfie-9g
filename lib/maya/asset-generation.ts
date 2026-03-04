@@ -19,6 +19,11 @@ const MAX_STORED_ASSETS = 40
 const MAX_PREVIEW_TEXT_LENGTH = 240
 const MAX_INSTRUCTION_LENGTH = 800
 const MAX_IMAGE_SOURCES = 12
+const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || ""
+const STUDIO_CHECKOUT_URL =
+  process.env.NEXT_PUBLIC_STUDIO_CHECKOUT_URL ||
+  (APP_BASE_URL ? `${APP_BASE_URL.replace(/\/$/, "")}/checkout/membership` : "") ||
+  "https://sselfie.ai/checkout/membership"
 
 function normalizeWhitespace(value: string): string {
   return value.replace(/\s+/g, " ").trim()
@@ -230,13 +235,21 @@ async function loadUserImageUrls(userId: string): Promise<string[]> {
   return uniqueStrings(urls).slice(0, MAX_IMAGE_SOURCES)
 }
 
-function buildLandingPageHtml(title: string, previewText: string, instruction: string, imageUrls: string[]): string {
+function buildLandingPageHtml(
+  assetId: string,
+  title: string,
+  previewText: string,
+  instruction: string,
+  imageUrls: string[],
+): string {
   const direction = inferDesignDirection(instruction)
   const headline = escapeHtml(toHeadline(extractPrimaryIntent(instruction)))
   const safeTitle = escapeHtml(title)
   const safePreview = escapeHtml(previewText)
   const heroImage = imageUrls[0] || ""
   const imageTiles = imageUrls.slice(1, 5)
+  const safeCheckoutUrl = escapeHtml(STUDIO_CHECKOUT_URL)
+  const safeAssetId = escapeHtml(assetId)
 
   const imageGalleryHtml =
     imageTiles.length > 0
@@ -363,6 +376,45 @@ function buildLandingPageHtml(title: string, previewText: string, instruction: s
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 14px;
       }
+      .lead-section {
+        margin-top: 24px;
+      }
+      .lead-card {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 22px;
+      }
+      .lead-grid {
+        margin-top: 14px;
+        display: grid;
+        grid-template-columns: 1fr 1fr auto;
+        gap: 10px;
+      }
+      .field {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 11px 12px;
+        font-size: 14px;
+      }
+      .lead-btn {
+        border: 1px solid var(--accent);
+        border-radius: 12px;
+        background: var(--accent);
+        color: #fff;
+        padding: 11px 16px;
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        cursor: pointer;
+      }
+      .lead-status {
+        margin-top: 10px;
+        color: var(--muted);
+        font-size: 13px;
+        min-height: 18px;
+      }
       .image-tile {
         margin: 0;
         border: 1px solid var(--border);
@@ -391,6 +443,7 @@ function buildLandingPageHtml(title: string, previewText: string, instruction: s
       @media (max-width: 860px) {
         .hero { grid-template-columns: 1fr; }
         .gallery { grid-template-columns: 1fr; }
+        .lead-grid { grid-template-columns: 1fr; }
       }
     </style>
   </head>
@@ -401,8 +454,8 @@ function buildLandingPageHtml(title: string, previewText: string, instruction: s
           <h1>${headline}</h1>
           <p class="sub">${safePreview}</p>
           <div class="cta-row">
-            <a class="btn btn-primary" href="#contact">Book now</a>
-            <a class="btn btn-ghost" href="#proof">See work</a>
+            <a class="btn btn-primary js-checkout-btn" href="${safeCheckoutUrl}" target="_blank" rel="noreferrer">Join Studio</a>
+            <a class="btn btn-ghost" href="#lead-form">Get the offer guide</a>
           </div>
           <div class="meta">
             <strong>${safeTitle}</strong><br />
@@ -418,7 +471,92 @@ function buildLandingPageHtml(title: string, previewText: string, instruction: s
         </div>
       </section>
       <section class="gallery">${imageGalleryHtml}</section>
+      <section class="lead-section" id="lead-form">
+        <div class="lead-card">
+          <h2 style="margin:0 0 8px; font-size:22px;">Want Maya to send this offer sequence?</h2>
+          <p style="margin:0; color:var(--muted); line-height:1.5;">Drop your email and continue directly to Studio checkout.</p>
+          <form id="maya-lead-form" class="lead-grid">
+            <input class="field" type="text" name="name" placeholder="First name" maxlength="120" />
+            <input class="field" type="email" name="email" placeholder="Email address" required />
+            <button class="lead-btn" type="submit">Continue</button>
+          </form>
+          <p class="lead-status" id="maya-lead-status"></p>
+        </div>
+      </section>
     </main>
+    <script>
+      (function () {
+        const pageId = ${JSON.stringify(safeAssetId)}
+        const checkoutUrl = ${JSON.stringify(STUDIO_CHECKOUT_URL)}
+        const leadForm = document.getElementById("maya-lead-form")
+        const leadStatus = document.getElementById("maya-lead-status")
+        const checkoutButton = document.querySelector(".js-checkout-btn")
+
+        const track = (event, properties) => {
+          const payload = {
+            event,
+            path: window.location.pathname,
+            properties: properties || {},
+          }
+          if (navigator.sendBeacon) {
+            try {
+              const blob = new Blob([JSON.stringify(payload)], { type: "application/json" })
+              navigator.sendBeacon("/api/analytics/event", blob)
+              return
+            } catch {}
+          }
+          fetch("/api/analytics/event", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+            keepalive: true,
+          }).catch(() => {})
+        }
+
+        track("maya_public_page_view", { pageId })
+
+        if (checkoutButton) {
+          checkoutButton.addEventListener("click", function () {
+            track("maya_public_page_checkout_clicked", { pageId, placement: "hero" })
+          })
+        }
+
+        if (!leadForm) return
+
+        leadForm.addEventListener("submit", async function (event) {
+          event.preventDefault()
+          const formData = new FormData(leadForm)
+          const payload = {
+            pageId,
+            name: formData.get("name"),
+            email: formData.get("email"),
+            source: "landing_page_form",
+          }
+
+          if (leadStatus) leadStatus.textContent = "Saving your details..."
+
+          try {
+            const response = await fetch("/api/maya/public/lead", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            })
+
+            if (!response.ok) {
+              throw new Error("Could not save your details")
+            }
+
+            track("maya_public_page_lead_captured", { pageId, placement: "form" })
+            if (leadStatus) leadStatus.textContent = "Perfect. Redirecting you to Studio checkout..."
+            window.setTimeout(() => {
+              window.location.href = checkoutUrl
+            }, 500)
+          } catch (error) {
+            if (leadStatus) leadStatus.textContent = "Please try again, or use the Studio button above."
+          }
+        })
+      })()
+    </script>
   </body>
 </html>`
 }
@@ -524,6 +662,7 @@ function buildPdfHtml(title: string, previewText: string, instruction: string, i
 }
 
 function buildPreviewHtmlForAsset(
+  assetId: string,
   assetType: MayaGeneratedAssetType,
   title: string,
   previewText: string,
@@ -536,7 +675,7 @@ function buildPreviewHtmlForAsset(
   if (assetType === "pdf") {
     return buildPdfHtml(title, previewText, instruction, imageUrls)
   }
-  return buildLandingPageHtml(title, previewText, instruction, imageUrls)
+  return buildLandingPageHtml(assetId, title, previewText, instruction, imageUrls)
 }
 
 function parseExistingAssets(value: unknown): MayaGeneratedAsset[] {
@@ -596,7 +735,7 @@ export async function createMayaGeneratedAsset(input: {
   const previewText = buildPreviewText(input.assetType, instruction)
   const imageUrls = await loadUserImageUrls(normalizedUserId)
 
-  const previewHtml = buildPreviewHtmlForAsset(input.assetType, title, previewText, instruction, imageUrls)
+  const previewHtml = buildPreviewHtmlForAsset(id, input.assetType, title, previewText, instruction, imageUrls)
   const url = `/maya/asset/${encodeURIComponent(id)}`
 
   const asset: MayaGeneratedAsset = {
@@ -712,6 +851,7 @@ export async function updateMayaGeneratedAsset(input: {
     `Updated with your latest edit: ${extractPrimaryIntent(editInstruction)}.`,
   )
   const previewHtml = buildPreviewHtmlForAsset(
+    targetAsset.id,
     targetAsset.assetType,
     targetAsset.title,
     previewText,

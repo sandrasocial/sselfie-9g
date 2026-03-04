@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getPublishedPersonalPageByPath } from "@/lib/maya/personal-pages"
+import { logAnalyticsEvent } from "@/lib/analytics/events"
 
 interface RouteParams {
   params: Promise<{ username: string; slug: string }>
@@ -42,6 +43,17 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
         },
       })
     }
+
+    void logAnalyticsEvent({
+      eventName: "maya_public_page_view",
+      path: `/p/${username}/${slug}`,
+      properties: {
+        pageId: page.id,
+        ownerSlug: page.owner_slug,
+        pageSlug: page.slug,
+        pageType: page.page_type,
+      },
+    })
 
     return new NextResponse(page.published_html, {
       status: 200,

@@ -1,4 +1,11 @@
-export type MayaToolId = "show_gallery" | "save_to_gallery" | "generate_image" | "show_upload_zone" | "edit_asset" | "create_asset"
+export type MayaToolId =
+  | "show_capabilities"
+  | "show_gallery"
+  | "save_to_gallery"
+  | "generate_image"
+  | "show_upload_zone"
+  | "edit_asset"
+  | "create_asset"
 
 export interface MayaToolDefinition {
   id: MayaToolId
@@ -8,6 +15,12 @@ export interface MayaToolDefinition {
 }
 
 export const MAYA_TOOL_REGISTRY: Record<MayaToolId, MayaToolDefinition> = {
+  show_capabilities: {
+    id: "show_capabilities",
+    label: "Show Capabilities",
+    marker: "SHOW_CAPABILITIES",
+    resultType: "tool-showCapabilities",
+  },
   show_gallery: {
     id: "show_gallery",
     label: "Show Gallery",

@@ -594,6 +594,7 @@ export default function MayaChatScreen({
     if (toolMarkers.length > 0) {
       const alreadyHasToolResults = lastAssistantMessage.parts?.some(
         (p: any) =>
+          p?.type === "tool-showCapabilities" ||
           p?.type === "tool-showGallery" ||
           p?.type === "tool-saveToGallery" ||
           p?.type === "tool-generateImage" ||
@@ -647,6 +648,12 @@ export default function MayaChatScreen({
 
       const resolvePhaseTwoTools = async () => {
         for (const marker of toolMarkers) {
+          if (marker.tool === "show_capabilities") {
+            updateToolPart("tool-showCapabilities", {
+              state: "ready",
+            })
+          }
+
           if (marker.tool === "show_gallery") {
             updateToolPart("tool-showGallery", { state: "loading", images: [], total: 0 })
             try {
@@ -1540,6 +1547,16 @@ export default function MayaChatScreen({
     ]
   }
 
+  const withCapabilityPrompt = (prompts: Array<{ label: string; prompt: string }>) => {
+    const capabilityPrompt = { label: "What can Maya do?", prompt: "What can you do for me in this app?" }
+    const filtered = prompts.filter(
+      (item) =>
+        item.prompt.trim().toLowerCase() !== capabilityPrompt.prompt.toLowerCase() &&
+        item.label.trim().toLowerCase() !== capabilityPrompt.label.toLowerCase(),
+    )
+    return [capabilityPrompt, ...filtered].slice(0, 5)
+  }
+
   // Update prompts based on mode and active tab
   useEffect(() => {
     // Feed tab uses feed-specific prompts
@@ -1567,21 +1584,23 @@ export default function MayaChatScreen({
             // Get Pro Mode category-specific prompts
             const proPrompts = getProModeQuickSuggestions()
             console.log("[v0] Setting Pro Mode prompts:", proPrompts.length)
-            setCurrentPrompts(proPrompts)
+            setCurrentPrompts(withCapabilityPrompt(proPrompts))
           } else {
             // Classic Mode prompts
             const prompts = getRandomPrompts(data.gender || null)
             console.log("[v0] Setting Classic Mode prompts for gender:", data.gender, "Prompts:", prompts.length)
-            setCurrentPrompts(prompts)
+            setCurrentPrompts(withCapabilityPrompt(prompts))
           }
         } else {
           console.error("[v0] Profile API error:", response.status, response.statusText)
-          setCurrentPrompts(hasProFeatures ? getProModeQuickSuggestions() : getRandomPrompts(null))
+          setCurrentPrompts(
+            withCapabilityPrompt(hasProFeatures ? getProModeQuickSuggestions() : getRandomPrompts(null)),
+          )
         }
       } catch (error) {
         console.error("[v0] Error fetching user gender:", error)
         // Fallback: use proMode directly if hasProFeatures not available
-        setCurrentPrompts(proMode ? getProModeQuickSuggestions() : getRandomPrompts(null))
+        setCurrentPrompts(withCapabilityPrompt(proMode ? getProModeQuickSuggestions() : getRandomPrompts(null)))
       }
     }
     fetchUserGender()
@@ -2672,6 +2691,7 @@ export default function MayaChatScreen({
     text
       .replace(/\[GENERATE_PROMPTS[:\s]+[^\]]+\]/gi, "")
       .replace(/\[GENERATE_CONCEPTS\]\s*[^\n]*/gi, "")
+      .replace(/\[SHOW_CAPABILITIES\]/gi, "")
       .replace(/\[SHOW_GALLERY\]/gi, "")
       .replace(/\[SAVE_TO_GALLERY(?:\s*:\s*[^\]]+)?\]/gi, "")
       .replace(/\[GENERATE_IMAGE(?:\s*:\s*[^\]]+)?\]/gi, "")
@@ -2695,6 +2715,7 @@ export default function MayaChatScreen({
           if (part.type === "image") return true
           if (
             part.type === "tool-generateConcepts" ||
+            part.type === "tool-showCapabilities" ||
             part.type === "tool-showGallery" ||
             part.type === "tool-saveToGallery" ||
             part.type === "tool-generateImage" ||
@@ -3206,6 +3227,7 @@ export default function MayaChatScreen({
           enhancedAuthenticity={enhancedAuthenticity}
           onToolSelectGenerationSource={handlePhaseTwoGenerationSource}
           onToolOpenUploadZone={handlePhaseTwoUploadZone}
+          onToolPromptSelect={handleSendMessage}
         />
       )}
           {showReturningMemberHome && (

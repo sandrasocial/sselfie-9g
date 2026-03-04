@@ -3,6 +3,12 @@ import { detectMayaToolDispatchIntent, extractLatestUserText } from "@/lib/maya/
 import { parseMayaToolMarkers, stripMayaToolMarkers } from "@/lib/maya/tool-markers"
 
 describe("maya phase 2 tool dispatcher", () => {
+  it("routes onboarding/help intent to show_capabilities marker response", () => {
+    const intent = detectMayaToolDispatchIntent("what can you do for me here?")
+    expect(intent?.tool).toBe("show_capabilities")
+    expect(intent?.responseText).toContain("[SHOW_CAPABILITIES]")
+  })
+
   it("routes gallery view intent to show_gallery marker response", () => {
     const intent = detectMayaToolDispatchIntent("can you show me my gallery?")
     expect(intent?.tool).toBe("show_gallery")
@@ -52,9 +58,10 @@ describe("maya phase 2 tool dispatcher", () => {
 describe("maya tool markers", () => {
   it("parses phase 2 markers from assistant text", () => {
     const markers = parseMayaToolMarkers(
-      "Opening now [SHOW_GALLERY]\nSaved [SAVE_TO_GALLERY:ai_55]\nStart [GENERATE_IMAGE:base_model]\nUpload [SHOW_UPLOAD_ZONE:products]",
+      "Opening now [SHOW_CAPABILITIES]\n[SHOW_GALLERY]\nSaved [SAVE_TO_GALLERY:ai_55]\nStart [GENERATE_IMAGE:base_model]\nUpload [SHOW_UPLOAD_ZONE:products]",
     )
     expect(markers).toEqual([
+      { tool: "show_capabilities" },
       { tool: "show_gallery" },
       { tool: "save_to_gallery", target: "explicit", imageId: "ai_55" },
       { tool: "generate_image", source: "base_model" },
@@ -64,8 +71,8 @@ describe("maya tool markers", () => {
 
   it("strips tool markers from persisted assistant text", () => {
     const stripped = stripMayaToolMarkers(
-      "Opening your gallery.\n[SHOW_GALLERY]\nDone.\n[SAVE_TO_GALLERY:latest]\n[GENERATE_IMAGE:choose_source]\n[SHOW_UPLOAD_ZONE:selfies]",
+      "Opening your workspace.\n[SHOW_CAPABILITIES]\n[SHOW_GALLERY]\nDone.\n[SAVE_TO_GALLERY:latest]\n[GENERATE_IMAGE:choose_source]\n[SHOW_UPLOAD_ZONE:selfies]",
     )
-    expect(stripped).toBe("Opening your gallery. Done.")
+    expect(stripped).toBe("Opening your workspace. Done.")
   })
 })

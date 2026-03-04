@@ -1,4 +1,5 @@
 export type MayaToolMarker =
+  | { tool: "show_capabilities" }
   | { tool: "show_gallery" }
   | { tool: "save_to_gallery"; imageId?: string; target: "latest" | "explicit" }
   | { tool: "generate_image"; source: "selfies" | "custom_model" | "base_model" | "choose_source" }
@@ -13,6 +14,7 @@ export type MayaToolMarker =
       url?: string
     }
 
+const SHOW_CAPABILITIES_REGEX = /\[SHOW_CAPABILITIES\]/gi
 const SHOW_GALLERY_REGEX = /\[SHOW_GALLERY\]/gi
 const SAVE_TO_GALLERY_REGEX = /\[SAVE_TO_GALLERY(?:\s*:\s*([^\]]+))?\]/gi
 const GENERATE_IMAGE_REGEX = /\[GENERATE_IMAGE(?:\s*:\s*([^\]]+))?\]/gi
@@ -34,6 +36,11 @@ export function parseMayaToolMarkers(text: string): MayaToolMarker[] {
   if (!text) return []
 
   const markers: MayaToolMarker[] = []
+
+  if (SHOW_CAPABILITIES_REGEX.test(text)) {
+    markers.push({ tool: "show_capabilities" })
+  }
+  SHOW_CAPABILITIES_REGEX.lastIndex = 0
 
   if (SHOW_GALLERY_REGEX.test(text)) {
     markers.push({ tool: "show_gallery" })
@@ -163,6 +170,7 @@ export function parseMayaToolMarkers(text: string): MayaToolMarker[] {
 export function stripMayaToolMarkers(text: string): string {
   if (!text) return ""
   return text
+    .replace(SHOW_CAPABILITIES_REGEX, "")
     .replace(SHOW_GALLERY_REGEX, "")
     .replace(SAVE_TO_GALLERY_REGEX, "")
     .replace(GENERATE_IMAGE_REGEX, "")

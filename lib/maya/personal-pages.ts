@@ -25,6 +25,13 @@ export interface MayaAssetForPersistence {
   previewHtml: string
 }
 
+export interface RecordPersonalPageLeadInput {
+  pageId: string
+  email: string
+  name?: string | null
+  source?: string | null
+}
+
 let ensureTablesPromise: Promise<void> | null = null
 
 export function sanitizePublicSlug(input: string): string {
@@ -112,9 +119,22 @@ async function ensurePersonalPageTables(): Promise<void> {
       )
     `
 
+    await sql`
+      CREATE TABLE IF NOT EXISTS personal_page_leads (
+        id TEXT PRIMARY KEY,
+        page_id TEXT NOT NULL REFERENCES personal_pages(id) ON DELETE CASCADE,
+        email TEXT NOT NULL,
+        name TEXT,
+        source TEXT NOT NULL DEFAULT 'personal_page',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        UNIQUE(page_id, email)
+      )
+    `
+
     await sql`CREATE INDEX IF NOT EXISTS idx_personal_pages_user_id ON personal_pages(user_id)`
     await sql`CREATE INDEX IF NOT EXISTS idx_personal_pages_owner_slug ON personal_pages(owner_slug)`
     await sql`CREATE INDEX IF NOT EXISTS idx_maya_produced_assets_user_id ON maya_produced_assets(user_id)`
+    await sql`CREATE INDEX IF NOT EXISTS idx_personal_page_leads_page_id ON personal_page_leads(page_id)`
   })()
 
   try {
@@ -320,4 +340,42 @@ export async function listPersonalPagesForUser(
   `
 
   return rows as MayaPersonalPageRow[]
+}
+
+export async function recordPersonalPageLead(input: RecordPersonalPageLeadInput): Promise<{ saved: boolean }> {
+  const pageId = String(input.pageId || "").trim()
+  const email = String(input.email || "").trim().toLowerCase()
+  const name = typeof input.name === "string" ? input.name.trim().slice(0, 120) : null
+  const source = typeof input.source === "string" && input.source.trim().length > 0 ? input.source.trim().slice(0, 64) : "personal_page"
+
+  if (!pageId || !email) {
+    return { saved: false }
+  }
+
+  await ensurePersonalPageTables()
+
+  await sql`
+    INSERT INTO personal_page_leads (
+      id,
+      page_id,
+      email,
+      name,
+      source,
+      created_at
+    )
+    VALUES (
+      ${`lead_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`},
+      ${pageId},
+      ${email},
+      ${name},
+      ${source},
+      NOW()
+    )
+    ON CONFLICT (page_id, email) DO UPDATE
+    SET
+      name = COALESCE(EXCLUDED.name, personal_page_leads.name),
+      source = EXCLUDED.source
+  `
+
+  return { saved: true }
 }

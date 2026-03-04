@@ -25,6 +25,7 @@ import { shouldDeductMayaChatCredit } from "@/lib/maya/chat-credit-policy"
 import { detectMayaToolDispatchIntent, extractLatestUserText } from "@/lib/maya/intent-dispatcher"
 import { stripMayaToolMarkers } from "@/lib/maya/tool-markers"
 import { formatMayaToolMarker } from "@/lib/maya/tool-registry"
+import { logAnalyticsEvent } from "@/lib/analytics/events"
 import {
   detectMayaRememberIntent,
   persistMayaRememberedPreference,
@@ -412,6 +413,16 @@ export async function POST(req: Request) {
             },
           })
 
+          void logAnalyticsEvent({
+            eventName: "maya_asset_draft_created",
+            userId: dbUserId,
+            path: "/api/maya/chat",
+            properties: {
+              assetType: generatedAsset.assetType,
+              source: "chat_first",
+            },
+          })
+
           return createUIMessageStreamResponse({ stream })
         } catch (assetCreateError) {
           console.error("[Maya Chat] Failed to create asset draft:", assetCreateError)
@@ -478,6 +489,16 @@ export async function POST(req: Request) {
             },
           })
 
+          void logAnalyticsEvent({
+            eventName: "maya_asset_draft_updated",
+            userId: dbUserId,
+            path: "/api/maya/chat",
+            properties: {
+              assetType: updatedAsset.assetType,
+              source: "chat_first",
+            },
+          })
+
           return createUIMessageStreamResponse({ stream })
         } catch (assetPersistError) {
           console.error("[Maya Chat] Failed saving asset edit context:", assetPersistError)
@@ -490,6 +511,19 @@ export async function POST(req: Request) {
         console.log("[Maya Chat] Phase 2 tool dispatcher matched intent:", {
           tool: dispatchedIntent.tool,
           chatType,
+        })
+
+        void logAnalyticsEvent({
+          eventName:
+            dispatchedIntent.tool === "show_capabilities"
+              ? "maya_capabilities_opened"
+              : "maya_tool_invoked",
+          userId: dbUserId,
+          path: "/api/maya/chat",
+          properties: {
+            tool: dispatchedIntent.tool,
+            chatType,
+          },
         })
 
         const stream = createUIMessageStream({

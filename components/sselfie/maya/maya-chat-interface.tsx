@@ -62,6 +62,7 @@ interface MayaChatInterfaceProps {
   enhancedAuthenticity?: boolean
   onToolSelectGenerationSource?: (source: "selfies" | "custom_model" | "base_model") => void
   onToolOpenUploadZone?: (category: "selfies" | "products" | "people" | "vibes") => void
+  onToolPromptSelect?: (prompt: string) => void
   
 }
 
@@ -110,9 +111,11 @@ export default function MayaChatInterface({
   enhancedAuthenticity,
   onToolSelectGenerationSource,
   onToolOpenUploadZone,
+  onToolPromptSelect,
 }: MayaChatInterfaceProps) {
   const TOOL_RENDER_TYPES = new Set([
     "tool-generateConcepts",
+    "tool-showCapabilities",
     "tool-showGallery",
     "tool-saveToGallery",
     "tool-generateImage",
@@ -131,6 +134,7 @@ export default function MayaChatInterface({
     return text
       .replace(/\[GENERATE_PROMPTS[:\s]+[^\]]+\]/gi, "")
       .replace(/\[GENERATE_CONCEPTS\]\s*[^\n]*/gi, "")
+      .replace(/\[SHOW_CAPABILITIES\]/gi, "")
       .replace(/\[SHOW_GALLERY\]/gi, "")
       .replace(/\[SAVE_TO_GALLERY(?:\s*:\s*[^\]]+)?\]/gi, "")
       .replace(/\[GENERATE_IMAGE(?:\s*:\s*[^\]]+)?\]/gi, "")
@@ -270,6 +274,7 @@ export default function MayaChatInterface({
   const renderMessageContent = (text: string, isUser: boolean) => {
     let cleanedText = text.replace(/\[GENERATE_PROMPTS[:\s]+[^\]]+\]/gi, "").trim()
     cleanedText = cleanedText.replace(/\[GENERATE_CONCEPTS\]\s*[^\n]*/gi, "").trim()
+    cleanedText = cleanedText.replace(/\[SHOW_CAPABILITIES\]/gi, "").trim()
     cleanedText = cleanedText.replace(/\[SHOW_GALLERY\]/gi, "").trim()
     cleanedText = cleanedText.replace(/\[SAVE_TO_GALLERY(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
     cleanedText = cleanedText.replace(/\[GENERATE_IMAGE(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
@@ -866,6 +871,53 @@ export default function MayaChatInterface({
                                 )
                               }
                               return null
+                            }
+
+                            if (part.type === "tool-showCapabilities") {
+                              const capabilities = [
+                                {
+                                  title: "Create Photoshoots",
+                                  prompt: "I want to create a photo for my new offer",
+                                  description: "Classic, Pro, or trained model generation paths.",
+                                },
+                                {
+                                  title: "Upload Brand Assets",
+                                  prompt: "Open upload zone for products",
+                                  description: "Add selfies, product images, people, and vibe references.",
+                                },
+                                {
+                                  title: "Build Landing Pages",
+                                  prompt: "Create a landing page for my offer",
+                                  description: "Generate, preview, and iterate pages inline in chat.",
+                                },
+                                {
+                                  title: "Plan Content",
+                                  prompt: "Create a content calendar for this month",
+                                  description: "Draft your calendar and keep editing it in this thread.",
+                                },
+                              ]
+
+                              return (
+                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
+                                  <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Maya Capabilities</div>
+                                  <p className="mt-2 text-sm text-[#d5d5d5]">
+                                    Pick a workflow and I’ll run it here in chat.
+                                  </p>
+                                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                                    {capabilities.map((item) => (
+                                      <button
+                                        key={item.title}
+                                        type="button"
+                                        onClick={() => onToolPromptSelect?.(item.prompt)}
+                                        className="rounded-lg border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.03)] px-3 py-3 text-left transition-colors hover:bg-[rgba(255,255,255,0.08)]"
+                                      >
+                                        <div className="text-[11px] uppercase tracking-[0.16em] text-[#ffffff]">{item.title}</div>
+                                        <div className="mt-1 text-xs text-[#bdbdbd]">{item.description}</div>
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              )
                             }
 
                             if (part.type === "tool-showGallery") {

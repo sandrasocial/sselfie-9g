@@ -14,6 +14,13 @@ describe("analytics event contract", () => {
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("onboarding_abandoned")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("feed_planner_quick_start_viewed")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("feed_planner_quick_start_clicked")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("maya_capabilities_opened")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("maya_tool_invoked")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("maya_asset_draft_created")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("maya_asset_draft_updated")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("maya_public_page_view")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("maya_public_page_checkout_clicked")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("maya_public_page_lead_captured")
   })
 
   it("rejects unknown event names", () => {
@@ -25,5 +32,6 @@ describe("analytics event contract", () => {
     expect(isAllowedAnalyticsEventName("studio_opened")).toBe(true)
     expect(isAllowedAnalyticsEventName("mode_selected")).toBe(true)
     expect(isAllowedAnalyticsEventName("first_image_generated")).toBe(true)
+    expect(isAllowedAnalyticsEventName("maya_public_page_lead_captured")).toBe(true)
   })
 })

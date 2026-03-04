@@ -687,7 +687,14 @@ export async function GET(request: NextRequest) {
 
         // Restore Phase 1 tool markers for chat history continuity.
         for (const marker of toolMarkers) {
-          if (marker.tool === "show_gallery") {
+          if (marker.tool === "show_capabilities") {
+            parts.push({
+              type: "tool-showCapabilities",
+              output: {
+                state: "ready",
+              },
+            })
+          } else if (marker.tool === "show_gallery") {
             const images = await getLatestGalleryPreview(neonUser.id, 6)
             parts.push({
               type: "tool-showGallery",
@@ -812,7 +819,14 @@ export async function GET(request: NextRequest) {
 
       if (isPhotosTab && toolMarkers.length > 0) {
         for (const marker of toolMarkers) {
-          if (marker.tool === "show_gallery") {
+          if (marker.tool === "show_capabilities") {
+            parts.push({
+              type: "tool-showCapabilities",
+              output: {
+                state: "ready",
+              },
+            })
+          } else if (marker.tool === "show_gallery") {
             const images = await getLatestGalleryPreview(neonUser.id, 6)
             parts.push({
               type: "tool-showGallery",

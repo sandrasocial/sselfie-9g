@@ -4,13 +4,15 @@ type MayaGenerationSource = "selfies" | "custom_model" | "base_model" | "choose_
 type MayaUploadCategory = "selfies" | "products" | "people" | "vibes"
 
 export interface MayaToolDispatchIntent {
-  tool: "show_gallery" | "save_to_gallery" | "generate_image" | "show_upload_zone"
+  tool: "show_capabilities" | "show_gallery" | "save_to_gallery" | "generate_image" | "show_upload_zone"
   responseText: string
   imageId?: string
   source?: MayaGenerationSource
   category?: MayaUploadCategory
 }
 
+const SHOW_CAPABILITIES_INTENT_REGEX =
+  /\b(what can you do|help me understand|how does this work|where do i start|what do i do now|what are you capable of|show capabilities|help)\b/i
 const SHOW_GALLERY_INTENT_REGEX = /\b(show|open|view|see|browse|pull up)\b[\s\S]{0,24}\b(gallery|photos?|images?)\b/i
 const SAVE_TO_GALLERY_INTENT_REGEX = /\b(save|store|keep)\b[\s\S]{0,36}\b(gallery|my gallery)\b/i
 const GENERATE_IMAGE_INTENT_REGEX = /\b(create|generate|make|shoot)\b[\s\S]{0,48}\b(photo|image|picture|photoshoot|shot)\b/i
@@ -48,6 +50,15 @@ function detectUploadCategory(userText: string): MayaUploadCategory {
 export function detectMayaToolDispatchIntent(userText: string): MayaToolDispatchIntent | null {
   if (!userText || userText.trim().length === 0) return null
 
+  if (SHOW_CAPABILITIES_INTENT_REGEX.test(userText)) {
+    return {
+      tool: "show_capabilities",
+      responseText:
+        `I’ve got you. Here’s exactly what I can run for you right now.\n` +
+        `${formatMayaToolMarker("show_capabilities")}`,
+    }
+  }
+
   if (SAVE_TO_GALLERY_INTENT_REGEX.test(userText)) {
     const imageIdMatch = userText.match(IMAGE_ID_REGEX)
     const imageId = imageIdMatch?.[0]?.toLowerCase()
@@ -64,7 +75,9 @@ export function detectMayaToolDispatchIntent(userText: string): MayaToolDispatch
     return {
       tool: "show_upload_zone",
       category,
-      responseText: `Perfect. Drop your ${category} here and I’ll build the next image with them.\n${formatMayaToolMarker("show_upload_zone", category)}`,
+      responseText:
+        `Perfect. I’ll open your ${category} upload zone so we can build this with your own assets.\n` +
+        `${formatMayaToolMarker("show_upload_zone", category)}`,
     }
   }
 
@@ -76,7 +89,7 @@ export function detectMayaToolDispatchIntent(userText: string): MayaToolDispatch
         tool: "generate_image",
         source,
         responseText:
-          `Love it. We’ll use your selfies for this one.\n` +
+          `Beautiful. We’ll build this from your selfies so it still feels like you.\n` +
           `${formatMayaToolMarker("generate_image", source)}`,
       }
     }
@@ -85,7 +98,9 @@ export function detectMayaToolDispatchIntent(userText: string): MayaToolDispatch
       return {
         tool: "generate_image",
         source,
-        responseText: `Beautiful. We’ll use your trained model for this shot.\n${formatMayaToolMarker("generate_image", source)}`,
+        responseText:
+          `Perfect. I’ll run this through your trained model for stronger identity consistency.\n` +
+          `${formatMayaToolMarker("generate_image", source)}`,
       }
     }
 
@@ -93,7 +108,9 @@ export function detectMayaToolDispatchIntent(userText: string): MayaToolDispatch
       return {
         tool: "generate_image",
         source,
-        responseText: `Perfect. We’ll use the latest base model.\n${formatMayaToolMarker("generate_image", source)}`,
+        responseText:
+          `Got it. I’ll use the latest base model and optimize the prompt for it.\n` +
+          `${formatMayaToolMarker("generate_image", source)}`,
       }
     }
 
@@ -101,7 +118,7 @@ export function detectMayaToolDispatchIntent(userText: string): MayaToolDispatch
       tool: "generate_image",
       source: "choose_source",
       responseText:
-        `Love this direction. Choose how you want to create it, and I’ll launch it right here.\n` +
+        `Love this direction. Pick your generation path and I’ll launch it inline.\n` +
         `${formatMayaToolMarker("generate_image", "choose_source")}`,
     }
   }
