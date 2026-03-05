@@ -11,10 +11,11 @@ const REMEMBER_COMMAND_REGEX = /^\s*(?:remember(?:\s+this)?|please remember|don'
 const STYLE_FEEDBACK_REGEX =
   /\b(this (?:doesn't|does not) sound like me|this is not me|not my (?:voice|style|vibe)|from now on|i (?:don't|do not) want|avoid)\b/i
 const ASSET_EDIT_ACTION_REGEX = /\b(edit|update|revise|change|rewrite|refresh|adjust|improve|fix)\b/i
-const ASSET_CREATE_ACTION_REGEX = /\b(create|build|generate|make|draft|design|write|need|want)\b/i
-const ASSET_CONTINUE_HINT_REGEX = /\b(headline|subheadline|section|cta|copy|layout|design|hook|title|it|this|that)\b/i
+const ASSET_CREATE_ACTION_REGEX = /\b(create|build|generate|make|draft|design|write)\b/i
+const SOFT_CREATE_ACTION_REGEX = /\b(need|want)\b/i
+const ASSET_CONTINUE_HINT_REGEX = /\b(headline|subheadline|section|cta|copy|layout|design|hook|title)\b/i
 const IMAGE_EDIT_REGEX = /\b(photo|image|picture|selfie|concept|prompt)\b/i
-const PAGE_ASSET_REGEX = /\b(landing page|sales page|homepage|strategy page|web page|page)\b/i
+const PAGE_ASSET_REGEX = /\b(landing page|landing pages|sales page|sales pages|homepage|home page|strategy page|strategy pages|web page|web pages)\b/i
 const CALENDAR_ASSET_REGEX = /\b(content calendar|calendar|feed planner|planner|schedule)\b/i
 const PDF_ASSET_REGEX = /\b(pdf|workbook|ebook|guide|cheatsheet|download)\b/i
 
@@ -203,7 +204,14 @@ export function detectMayaAssetCreateIntent(userText: string): MayaAssetCreateIn
 
   const assetType = inferAssetType(instruction)
   if (!assetType) return null
-  if (!ASSET_CREATE_ACTION_REGEX.test(instruction) && ASSET_EDIT_ACTION_REGEX.test(instruction)) return null
+  if (!ASSET_CREATE_ACTION_REGEX.test(instruction)) {
+    if (!(assetType === "page" && SOFT_CREATE_ACTION_REGEX.test(instruction))) {
+      if (ASSET_EDIT_ACTION_REGEX.test(instruction)) return null
+      return null
+    }
+  } else if (ASSET_EDIT_ACTION_REGEX.test(instruction)) {
+    return null
+  }
 
   return {
     assetType,

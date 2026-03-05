@@ -955,14 +955,14 @@ export default function MayaChatInterface({
                                   description: "Run Classic, Pro, or trained-model generation in this chat.",
                                 },
                                 {
+                                  title: "Create Concept Cards",
+                                  prompt: "Generate concept cards for my next content shoot",
+                                  description: "Draft post, reel, and carousel concepts in the same thread.",
+                                },
+                                {
                                   title: "Animate to Video",
                                   prompt: "Animate my latest image into a short reel",
                                   description: "Pick an image and launch video generation inline.",
-                                },
-                                {
-                                  title: "Build Landing Page",
-                                  prompt: "Create a landing page for my offer",
-                                  description: "Generate, preview, and iterate your page without leaving chat.",
                                 },
                                 {
                                   title: "Create Content Calendar",

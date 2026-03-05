@@ -125,6 +125,35 @@ describe("orchestrateMayaTurn", () => {
 
     expect(result).toEqual({ kind: "none", reason: "empty_text" })
   })
+
+  it("pauses landing-page creation in chat when page assets are disabled", () => {
+    const result = orchestrateMayaTurn({
+      userText: "Create a landing page for my studio offer",
+      activeAssetContext: null,
+      options: {
+        allowPageAssetsInChat: false,
+      },
+    })
+
+    expect(result.kind).toBe("page_generation_paused")
+  })
+
+  it("pauses landing-page edit routing when page assets are disabled", () => {
+    const result = orchestrateMayaTurn({
+      userText: "Update this landing page headline",
+      activeAssetContext: {
+        assetType: "page",
+        assetLabel: "Landing Page",
+        assetId: "maya_page_123",
+        updatedAt: new Date().toISOString(),
+      },
+      options: {
+        allowPageAssetsInChat: false,
+      },
+    })
+
+    expect(result.kind).toBe("page_generation_paused")
+  })
 })
 
 describe("estimateToolDispatchCredits", () => {

@@ -78,6 +78,15 @@ describe("detectMayaAssetEditIntent", () => {
     })
     expect(intent).toBeNull()
   })
+
+  it("does not treat generic pronouns as an asset edit continuation", () => {
+    const intent = detectMayaAssetEditIntent("Can you help me with this?", {
+      assetType: "page",
+      assetLabel: "Landing Page",
+      updatedAt: new Date().toISOString(),
+    })
+    expect(intent).toBeNull()
+  })
 })
 
 describe("detectMayaAssetCreateIntent", () => {

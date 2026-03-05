@@ -57,6 +57,12 @@ function isChatFirstMayaEnabled(envValue?: string | null): boolean {
   return normalized === "true" || normalized === "1"
 }
 
+function isMayaLandingPagesInChatEnabled(envValue?: string | null): boolean {
+  if (!envValue) return false
+  const normalized = envValue.trim().toLowerCase()
+  return normalized === "true" || normalized === "1"
+}
+
 const OFFER_BRIEF_FIELD_LABELS: Record<MayaOfferBriefField, string> = {
   offerType: "your offer",
   transformation: "the main result",
@@ -361,6 +367,9 @@ export async function POST(req: Request) {
 
     const chatFirstMayaEnabled = isChatFirstMayaEnabled(process.env.FEATURE_CHAT_FIRST_MAYA)
     if (chatFirstMayaEnabled && !isPromptBuilder && chatType !== "feed-planner" && chatType !== "pro-photoshoot") {
+      const allowPageAssetsInChat = isMayaLandingPagesInChatEnabled(
+        process.env.FEATURE_MAYA_LANDING_PAGES_IN_CHAT,
+      )
       const latestUserText = extractLatestUserText(validUIMessages as any)
       const submittedOfferBrief = parseOfferBriefSubmissionMarker(latestUserText)
 
@@ -376,6 +385,28 @@ export async function POST(req: Request) {
           ).catch((memoryError) => {
             console.error("[Maya Chat] Failed to append offer brief summary note:", memoryError)
           })
+
+          if (!allowPageAssetsInChat) {
+            const showStudioHubMarker = formatMayaToolMarker("show_studio_hub")
+            const stream = createUIMessageStream({
+              originalMessages: validUIMessages as any,
+              execute: ({ writer }) => {
+                const textPartId = `offer-brief-submit-handoff-${Date.now().toString(36)}`
+                writer.write({ type: "text-start", id: textPartId })
+                writer.write({
+                  type: "text-delta",
+                  id: textPartId,
+                  delta:
+                    `Perfect. I saved this brief in your memory. ` +
+                    `Landing page generation is now isolated to Studio, so I opened your Studio Hub to continue there.\n` +
+                    `${showStudioHubMarker}`,
+                })
+                writer.write({ type: "text-end", id: textPartId })
+              },
+            })
+
+            return createUIMessageStreamResponse({ stream })
+          }
 
           const generatedAsset = await createMayaGeneratedAsset({
             userId: dbUserId,
@@ -442,6 +473,9 @@ export async function POST(req: Request) {
       const orchestration = orchestrateMayaTurn({
         userText: latestUserText,
         activeAssetContext,
+        options: {
+          allowPageAssetsInChat,
+        },
       })
 
       if (orchestration.kind === "remember") {
@@ -487,6 +521,27 @@ export async function POST(req: Request) {
 
           return createUIMessageStreamResponse({ stream })
         }
+      }
+
+      if (orchestration.kind === "page_generation_paused") {
+        const showStudioHubMarker = formatMayaToolMarker("show_studio_hub")
+        const stream = createUIMessageStream({
+          originalMessages: validUIMessages as any,
+          execute: ({ writer }) => {
+            const textPartId = `page-flow-paused-${Date.now().toString(36)}`
+            writer.write({ type: "text-start", id: textPartId })
+            writer.write({
+              type: "text-delta",
+              id: textPartId,
+              delta:
+                `I moved landing pages to Studio so this chat stays focused on photos, videos, and content workflows. ` +
+                `I opened your Studio Hub so you can continue page work there.\n${showStudioHubMarker}`,
+            })
+            writer.write({ type: "text-end", id: textPartId })
+          },
+        })
+
+        return createUIMessageStreamResponse({ stream })
       }
 
       if (orchestration.kind === "collect_offer_brief") {

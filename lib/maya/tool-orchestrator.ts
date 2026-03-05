@@ -20,6 +20,10 @@ export type MayaTurnAction =
       intent: MayaRememberIntent
     }
   | {
+      kind: "page_generation_paused"
+      reason: "chat_page_flow_disabled"
+    }
+  | {
       kind: "asset_edit"
       intent: MayaAssetEditIntent
     }
@@ -59,10 +63,10 @@ export function estimateToolDispatchCredits(intent: MayaToolDispatchIntent): num
   return 0
 }
 
-const CREATE_ACTION_REGEX = /\b(create|build|generate|make|draft|design|write|need|want)\b/i
+const CREATE_ACTION_REGEX = /\b(create|build|generate|make|draft|design|write)\b/i
 const MULTI_STEP_CONNECTOR_REGEX = /\b(and then|after that|then|also|plus|and)\b/i
-const PAGE_ASSET_REGEX = /\b(landing page|sales page|homepage|strategy page|web page|page)\b/i
-const PAGE_ASSET_STRICT_REGEX = /\b(landing page|sales page|homepage|strategy page|web page)\b/i
+const PAGE_ASSET_REGEX = /\b(landing page|landing pages|sales page|sales pages|homepage|home page|strategy page|strategy pages|web page|web pages)\b/i
+const PAGE_ASSET_STRICT_REGEX = /\b(landing page|landing pages|sales page|sales pages|homepage|home page|strategy page|strategy pages|web page|web pages)\b/i
 const CALENDAR_ASSET_REGEX = /\b(content calendar|calendar|feed planner|planner|schedule)\b/i
 const PDF_ASSET_REGEX = /\b(pdf|workbook|ebook|guide|cheatsheet|download)\b/i
 const PAGE_HELP_ACTION_REGEX = /\b(help|improve|optimi[sz]e|review|launch|fix)\b/i
@@ -125,11 +129,15 @@ function detectImplicitPageIntent(userText: string): MayaAssetCreateIntent | nul
 export function orchestrateMayaTurn(input: {
   userText: string
   activeAssetContext: MayaActiveAssetContext | null
+  options?: {
+    allowPageAssetsInChat?: boolean
+  }
 }): MayaTurnAction {
   const normalizedText = input.userText.trim()
   if (!normalizedText) {
     return { kind: "none", reason: "empty_text" }
   }
+  const allowPageAssetsInChat = input.options?.allowPageAssetsInChat ?? true
 
   const rememberIntent = detectMayaRememberIntent(normalizedText)
   if (rememberIntent) {
@@ -139,8 +147,25 @@ export function orchestrateMayaTurn(input: {
     }
   }
 
+  const toolIntent = detectMayaToolDispatchIntent(normalizedText)
+  if (toolIntent) {
+    const estimatedCredits = estimateToolDispatchCredits(toolIntent)
+    return {
+      kind: "tool_dispatch",
+      intent: toolIntent,
+      estimatedCredits,
+      requiresCreditCheck: estimatedCredits > 0,
+    }
+  }
+
   const assetEditIntent = detectMayaAssetEditIntent(normalizedText, input.activeAssetContext)
   if (assetEditIntent) {
+    if (!allowPageAssetsInChat && assetEditIntent.assetType === "page") {
+      return {
+        kind: "page_generation_paused",
+        reason: "chat_page_flow_disabled",
+      }
+    }
     return {
       kind: "asset_edit",
       intent: assetEditIntent,
@@ -149,6 +174,25 @@ export function orchestrateMayaTurn(input: {
 
   const multiAssetCreateIntents = detectMultiAssetCreateIntents(normalizedText)
   if (multiAssetCreateIntents.length > 1) {
+    if (!allowPageAssetsInChat) {
+      const nonPageIntents = multiAssetCreateIntents.filter((intent) => intent.assetType !== "page")
+      if (nonPageIntents.length > 1) {
+        return {
+          kind: "multi_step_asset_create",
+          intents: nonPageIntents,
+        }
+      }
+      if (nonPageIntents.length === 1) {
+        return {
+          kind: "asset_create",
+          intent: nonPageIntents[0],
+        }
+      }
+      return {
+        kind: "page_generation_paused",
+        reason: "chat_page_flow_disabled",
+      }
+    }
     return {
       kind: "multi_step_asset_create",
       intents: multiAssetCreateIntents,
@@ -157,6 +201,13 @@ export function orchestrateMayaTurn(input: {
 
   const assetCreateIntent = detectMayaAssetCreateIntent(normalizedText)
   if (assetCreateIntent) {
+    if (!allowPageAssetsInChat && assetCreateIntent.assetType === "page") {
+      return {
+        kind: "page_generation_paused",
+        reason: "chat_page_flow_disabled",
+      }
+    }
+
     if (assetCreateIntent.assetType === "page" && needsLandingPageBrief(normalizedText)) {
       return {
         kind: "collect_offer_brief",
@@ -172,6 +223,13 @@ export function orchestrateMayaTurn(input: {
 
   const implicitPageIntent = detectImplicitPageIntent(normalizedText)
   if (implicitPageIntent) {
+    if (!allowPageAssetsInChat) {
+      return {
+        kind: "page_generation_paused",
+        reason: "chat_page_flow_disabled",
+      }
+    }
+
     if (needsLandingPageBrief(normalizedText)) {
       return {
         kind: "collect_offer_brief",
@@ -182,17 +240,6 @@ export function orchestrateMayaTurn(input: {
     return {
       kind: "asset_create",
       intent: implicitPageIntent,
-    }
-  }
-
-  const toolIntent = detectMayaToolDispatchIntent(normalizedText)
-  if (toolIntent) {
-    const estimatedCredits = estimateToolDispatchCredits(toolIntent)
-    return {
-      kind: "tool_dispatch",
-      intent: toolIntent,
-      estimatedCredits,
-      requiresCreditCheck: estimatedCredits > 0,
     }
   }
 
