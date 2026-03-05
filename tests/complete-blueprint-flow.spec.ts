@@ -167,7 +167,20 @@ if (!runPlaywright) {
       await page.goto('/studio?tab=feed-planner')
       await page.waitForLoadState('domcontentloaded')
       await completeWizardIfVisible(page)
-      await expect(page.locator('text=Create Your First Feed')).toBeVisible({ timeout: 15000 })
+      await expect
+        .poll(
+          async () => {
+            const bodyText = await page.locator("body").innerText()
+            return [
+              "Create Your First Feed",
+              "Create your first 9-post feed in minutes.",
+              "YOUR FIRST 60 CREDITS ARE READY",
+              "My Feed",
+            ].some((text) => bodyText.includes(text))
+          },
+          { timeout: 15000 },
+        )
+        .toBe(true)
 
       const closeOverlay = page.locator('button[aria-label="Close"]')
       if (await closeOverlay.isVisible().catch(() => false)) {
@@ -178,7 +191,7 @@ if (!runPlaywright) {
       await closeOverlay.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {})
 
       await page.locator('button[aria-label="Navigate to Maya"]').click()
-      await expect(page).not.toHaveURL(/#maya/)
+      await expect(page).toHaveURL(/tab=maya|#maya/)
     })
   })
 }

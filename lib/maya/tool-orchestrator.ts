@@ -32,6 +32,10 @@ export type MayaTurnAction =
       intents: MayaAssetCreateIntent[]
     }
   | {
+      kind: "collect_offer_brief"
+      assetType: "page"
+    }
+  | {
       kind: "tool_dispatch"
       intent: MayaToolDispatchIntent
       estimatedCredits: number
@@ -43,16 +47,42 @@ export type MayaTurnAction =
     }
 
 export function estimateToolDispatchCredits(intent: MayaToolDispatchIntent): number {
-  if (intent.tool !== "generate_image") return 0
-  if (!intent.source || intent.source === "choose_source") return 0
-  return CREDIT_COSTS.IMAGE
+  if (intent.tool === "generate_image") {
+    if (!intent.source || intent.source === "choose_source") return 0
+    return CREDIT_COSTS.IMAGE
+  }
+
+  if (intent.tool === "generate_video") {
+    return CREDIT_COSTS.ANIMATION
+  }
+
+  return 0
 }
 
 const CREATE_ACTION_REGEX = /\b(create|build|generate|make|draft|design|write|need|want)\b/i
 const MULTI_STEP_CONNECTOR_REGEX = /\b(and then|after that|then|also|plus|and)\b/i
 const PAGE_ASSET_REGEX = /\b(landing page|sales page|homepage|strategy page|web page|page)\b/i
+const PAGE_ASSET_STRICT_REGEX = /\b(landing page|sales page|homepage|strategy page|web page)\b/i
 const CALENDAR_ASSET_REGEX = /\b(content calendar|calendar|feed planner|planner|schedule)\b/i
 const PDF_ASSET_REGEX = /\b(pdf|workbook|ebook|guide|cheatsheet|download)\b/i
+const PAGE_HELP_ACTION_REGEX = /\b(help|improve|optimi[sz]e|review|launch|fix)\b/i
+const BRIEF_HAS_OFFER_REGEX = /\b(course|coaching|service|product|membership|program|workshop|template|offer)\b/i
+const BRIEF_HAS_OUTCOME_REGEX = /\b(transform|transformation|result|outcome|help.*(?:achieve|get)|promise|benefit)\b/i
+const BRIEF_HAS_AUDIENCE_REGEX =
+  /\b(ideal client|target audience|for women|for moms|for creators|for founders|for coaches|for freelancers|for entrepreneurs|for consultants)\b/i
+const BRIEF_HAS_PRICE_REGEX = /(?:€|\$|kr|usd|eur|\bprice\b|\bpriced\b|\b\d{2,4}\b)/i
+
+function needsLandingPageBrief(userText: string): boolean {
+  if (!PAGE_ASSET_REGEX.test(userText)) return false
+
+  let signals = 0
+  if (BRIEF_HAS_OFFER_REGEX.test(userText)) signals += 1
+  if (BRIEF_HAS_OUTCOME_REGEX.test(userText)) signals += 1
+  if (BRIEF_HAS_AUDIENCE_REGEX.test(userText)) signals += 1
+  if (BRIEF_HAS_PRICE_REGEX.test(userText)) signals += 1
+
+  return signals < 3
+}
 
 function buildMultiStepInstruction(assetType: MayaAssetType, userText: string): string {
   if (assetType === "calendar") {
@@ -80,6 +110,16 @@ function detectMultiAssetCreateIntents(userText: string): MayaAssetCreateIntent[
     assetType,
     instruction: buildMultiStepInstruction(assetType, userText),
   }))
+}
+
+function detectImplicitPageIntent(userText: string): MayaAssetCreateIntent | null {
+  if (!PAGE_ASSET_STRICT_REGEX.test(userText)) return null
+  if (!PAGE_HELP_ACTION_REGEX.test(userText) && !CREATE_ACTION_REGEX.test(userText)) return null
+
+  return {
+    assetType: "page",
+    instruction: buildMultiStepInstruction("page", userText),
+  }
 }
 
 export function orchestrateMayaTurn(input: {
@@ -117,9 +157,31 @@ export function orchestrateMayaTurn(input: {
 
   const assetCreateIntent = detectMayaAssetCreateIntent(normalizedText)
   if (assetCreateIntent) {
+    if (assetCreateIntent.assetType === "page" && needsLandingPageBrief(normalizedText)) {
+      return {
+        kind: "collect_offer_brief",
+        assetType: "page",
+      }
+    }
+
     return {
       kind: "asset_create",
       intent: assetCreateIntent,
+    }
+  }
+
+  const implicitPageIntent = detectImplicitPageIntent(normalizedText)
+  if (implicitPageIntent) {
+    if (needsLandingPageBrief(normalizedText)) {
+      return {
+        kind: "collect_offer_brief",
+        assetType: "page",
+      }
+    }
+
+    return {
+      kind: "asset_create",
+      intent: implicitPageIntent,
     }
   }
 

@@ -1,6 +1,6 @@
 "use client"
 
-import type React from "react"
+import React, { useState } from "react"
 import type { UIMessage } from "@ai-sdk/react"
 import VideoCard from "../video-card"
 import MayaConceptCards from "./maya-concept-cards"
@@ -10,6 +10,10 @@ import FeedPreviewCard from "@/components/feed-planner/feed-preview-card"
 import FeedCaptionCard from "@/components/feed-planner/feed-caption-card"
 import FeedStrategyCard from "@/components/feed-planner/feed-strategy-card"
 import UnifiedLoading from "../unified-loading"
+import MayaOfferBriefForm from "./maya-offer-brief-form"
+import type { MayaOfferBrief } from "@/lib/maya/offer-brief"
+
+type OfferBriefFormValues = Omit<MayaOfferBrief, "assetType">
 
 interface MayaChatInterfaceProps {
   // Messages
@@ -63,6 +67,15 @@ interface MayaChatInterfaceProps {
   onToolSelectGenerationSource?: (source: "selfies" | "custom_model" | "base_model") => void
   onToolOpenUploadZone?: (category: "selfies" | "products" | "people" | "vibes") => void
   onToolPromptSelect?: (prompt: string) => void
+  onToolSubmitOfferBrief?: (values: OfferBriefFormValues) => void
+  onToolStartVideoGeneration?: (input: {
+    messageId: string
+    imageId: string
+    imageUrl: string
+    prompt?: string
+    description?: string
+    category?: string
+  }) => void
   
 }
 
@@ -112,14 +125,20 @@ export default function MayaChatInterface({
   onToolSelectGenerationSource,
   onToolOpenUploadZone,
   onToolPromptSelect,
+  onToolSubmitOfferBrief,
+  onToolStartVideoGeneration,
 }: MayaChatInterfaceProps) {
+  const [regeneratingPages, setRegeneratingPages] = useState<Record<string, boolean>>({})
+  const isDevVideoDebug = process.env.NODE_ENV !== "production"
   const TOOL_RENDER_TYPES = new Set([
     "tool-generateConcepts",
     "tool-showCapabilities",
+    "tool-showStudioHub",
     "tool-showGallery",
     "tool-saveToGallery",
     "tool-generateImage",
     "tool-showUploadZone",
+    "tool-collectOfferBrief",
     "tool-editAsset",
     "tool-createAssetPreview",
     "tool-generateFeed",
@@ -135,10 +154,15 @@ export default function MayaChatInterface({
       .replace(/\[GENERATE_PROMPTS[:\s]+[^\]]+\]/gi, "")
       .replace(/\[GENERATE_CONCEPTS\]\s*[^\n]*/gi, "")
       .replace(/\[SHOW_CAPABILITIES\]/gi, "")
+      .replace(/\[SHOW_STUDIO_HUB\]/gi, "")
       .replace(/\[SHOW_GALLERY\]/gi, "")
       .replace(/\[SAVE_TO_GALLERY(?:\s*:\s*[^\]]+)?\]/gi, "")
       .replace(/\[GENERATE_IMAGE(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replace(/\[GENERATE_VIDEO(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replace(/\[VIDEO_CARD:[^\]]+\]/gi, "")
       .replace(/\[SHOW_UPLOAD_ZONE(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replace(/\[COLLECT_OFFER_BRIEF(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replace(/\[SUBMIT_OFFER_BRIEF:\s*[^\]]+\]/gi, "")
       .replace(/\[EDIT_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "")
       .replace(/\[CREATE_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "")
       .replace(/\[GENERATE_CAPTIONS\]/gi, "")
@@ -173,6 +197,54 @@ export default function MayaChatInterface({
     }
 
     return false
+  }
+
+  const renderVideoDebugPanel = (debug: any): React.ReactNode => {
+    if (!isDevVideoDebug || !debug || typeof debug !== "object") return null
+
+    const authorityPrompt =
+      typeof debug.authorityMotionPrompt === "string" ? debug.authorityMotionPrompt.trim() : ""
+    const sourcePrompt = typeof debug.sourceMotionPrompt === "string" ? debug.sourceMotionPrompt.trim() : ""
+    const builder = typeof debug.authorityBuilder === "string" ? debug.authorityBuilder.trim() : ""
+    const category = typeof debug.category === "string" ? debug.category.trim() : ""
+
+    if (!authorityPrompt && !sourcePrompt && !builder && !category) return null
+
+    return (
+      <div className="mt-3 rounded-lg border border-[rgba(245,167,66,0.45)] bg-[rgba(245,167,66,0.08)] p-3 text-[11px] text-[#f5e8d0]">
+        <div className="text-[10px] uppercase tracking-[0.16em] text-[#f5c98a]">Video Debug (Dev Only)</div>
+        {builder ? <div className="mt-1">Builder: {builder}</div> : null}
+        {category ? <div className="mt-1">Category: {category}</div> : null}
+        {sourcePrompt ? <div className="mt-1">Source Prompt: {sourcePrompt}</div> : null}
+        {authorityPrompt ? <div className="mt-1">Authority Prompt: {authorityPrompt}</div> : null}
+      </div>
+    )
+  }
+
+  const handleRegeneratePage = async (pageId: string, regenerateUrl: string, fallbackOpenUrl?: string) => {
+    if (!pageId || !regenerateUrl) return
+    if (regeneratingPages[pageId]) return
+
+    setRegeneratingPages((prev) => ({ ...prev, [pageId]: true }))
+    try {
+      const response = await fetch(regenerateUrl, {
+        method: "POST",
+        credentials: "include",
+      })
+      const payload = await response.json().catch(() => null)
+      if (!response.ok || !payload?.success) {
+        throw new Error(payload?.error || "Failed to regenerate page")
+      }
+
+      const openUrl = typeof payload.liveUrl === "string" && payload.liveUrl ? payload.liveUrl : fallbackOpenUrl
+      if (openUrl) {
+        window.open(openUrl, "_blank", "noopener,noreferrer")
+      }
+    } catch (error) {
+      console.error("[Maya Chat Interface] Regenerate failed:", error)
+    } finally {
+      setRegeneratingPages((prev) => ({ ...prev, [pageId]: false }))
+    }
   }
   
   // Helper function to remove emojis from text
@@ -279,6 +351,8 @@ export default function MayaChatInterface({
     cleanedText = cleanedText.replace(/\[SAVE_TO_GALLERY(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
     cleanedText = cleanedText.replace(/\[GENERATE_IMAGE(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
     cleanedText = cleanedText.replace(/\[SHOW_UPLOAD_ZONE(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
+    cleanedText = cleanedText.replace(/\[COLLECT_OFFER_BRIEF(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
+    cleanedText = cleanedText.replace(/\[SUBMIT_OFFER_BRIEF:\s*[^\]]+\]/gi, "").trim()
     cleanedText = cleanedText.replace(/\[EDIT_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
     cleanedText = cleanedText.replace(/\[CREATE_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
     // Remove feed creation trigger (with JSON content)
@@ -876,24 +950,39 @@ export default function MayaChatInterface({
                             if (part.type === "tool-showCapabilities") {
                               const capabilities = [
                                 {
-                                  title: "Create Photoshoots",
+                                  title: "Create Photos",
                                   prompt: "I want to create a photo for my new offer",
-                                  description: "Classic, Pro, or trained model generation paths.",
+                                  description: "Run Classic, Pro, or trained-model generation in this chat.",
                                 },
                                 {
-                                  title: "Upload Brand Assets",
-                                  prompt: "Open upload zone for products",
-                                  description: "Add selfies, product images, people, and vibe references.",
+                                  title: "Animate to Video",
+                                  prompt: "Animate my latest image into a short reel",
+                                  description: "Pick an image and launch video generation inline.",
                                 },
                                 {
-                                  title: "Build Landing Pages",
+                                  title: "Build Landing Page",
                                   prompt: "Create a landing page for my offer",
-                                  description: "Generate, preview, and iterate pages inline in chat.",
+                                  description: "Generate, preview, and iterate your page without leaving chat.",
                                 },
                                 {
-                                  title: "Plan Content",
+                                  title: "Create Content Calendar",
                                   prompt: "Create a content calendar for this month",
-                                  description: "Draft your calendar and keep editing it in this thread.",
+                                  description: "Draft your monthly calendar and keep editing in-thread.",
+                                },
+                                {
+                                  title: "Create Workbook PDF",
+                                  prompt: "Create a workbook PDF for my offer",
+                                  description: "Generate a draft workbook and refine it in chat.",
+                                },
+                                {
+                                  title: "Upload Product Assets",
+                                  prompt: "Open upload zone for products",
+                                  description: "Add selfies, products, people, and vibe references.",
+                                },
+                                {
+                                  title: "Open My Studio Hub",
+                                  prompt: "Show my studio hub and everything you've created",
+                                  description: "View your latest pages, feeds, photos, and videos inline.",
                                 },
                               ]
 
@@ -903,7 +992,7 @@ export default function MayaChatInterface({
                                   <p className="mt-2 text-sm text-[#d5d5d5]">
                                     Pick a workflow and I’ll run it here in chat.
                                   </p>
-                                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                                  <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                                     {capabilities.map((item) => (
                                       <button
                                         key={item.title}
@@ -916,6 +1005,131 @@ export default function MayaChatInterface({
                                       </button>
                                     ))}
                                   </div>
+                                </div>
+                              )
+                            }
+
+                            if (part.type === "tool-showStudioHub") {
+                              const output = (part as any).output || {}
+                              const state = output.state || "ready"
+                              const stats = output.stats || { feedCount: 0, pageCount: 0, photoCount: 0, videoCount: 0 }
+                              const feeds = Array.isArray(output.feeds) ? output.feeds : []
+                              const pages = Array.isArray(output.pages) ? output.pages : []
+
+                              if (state === "loading") {
+                                return (
+                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Studio Hub</div>
+                                    <div className="mt-2 text-sm text-[#e5e5e5]">Loading your created assets…</div>
+                                  </div>
+                                )
+                              }
+
+                              if (state === "error") {
+                                return (
+                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Studio Hub</div>
+                                    <div className="mt-2 text-sm text-[#f5c2c2]">{output.message || "Could not load Studio Hub."}</div>
+                                  </div>
+                                )
+                              }
+
+                              return (
+                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Studio Hub</div>
+                                    <a
+                                      href="/studio?tab=studio#studio"
+                                      className="text-[10px] uppercase tracking-[0.16em] text-[#cfcfcf] hover:text-white"
+                                    >
+                                      Open Full Hub
+                                    </a>
+                                  </div>
+
+                                  <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                                    <div className="rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(0,0,0,0.18)] px-2 py-2">
+                                      <div className="text-[10px] uppercase tracking-[0.14em] text-[#adadad]">Feeds</div>
+                                      <div className="mt-1 text-sm text-white">{Number(stats.feedCount || 0)}</div>
+                                    </div>
+                                    <div className="rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(0,0,0,0.18)] px-2 py-2">
+                                      <div className="text-[10px] uppercase tracking-[0.14em] text-[#adadad]">Pages</div>
+                                      <div className="mt-1 text-sm text-white">{Number(stats.pageCount || 0)}</div>
+                                    </div>
+                                    <div className="rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(0,0,0,0.18)] px-2 py-2">
+                                      <div className="text-[10px] uppercase tracking-[0.14em] text-[#adadad]">Photos</div>
+                                      <div className="mt-1 text-sm text-white">{Number(stats.photoCount || 0)}</div>
+                                    </div>
+                                    <div className="rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(0,0,0,0.18)] px-2 py-2">
+                                      <div className="text-[10px] uppercase tracking-[0.14em] text-[#adadad]">Videos</div>
+                                      <div className="mt-1 text-sm text-white">{Number(stats.videoCount || 0)}</div>
+                                    </div>
+                                  </div>
+
+                                  {(pages.length > 0 || feeds.length > 0) && (
+                                    <div className="mt-3 space-y-2">
+                                      {pages.slice(0, 3).map((page: any) => (
+                                        <div
+                                          key={`hub-page-${page.id}`}
+                                          className="rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(0,0,0,0.18)] px-3 py-2"
+                                        >
+                                          <div className="flex items-center justify-between gap-2">
+                                            <div className="text-xs text-white">{page.title || "Untitled Page"}</div>
+                                            <div className="flex items-center gap-2">
+                                              {page.liveUrl ? (
+                                                <a
+                                                  href={page.liveUrl}
+                                                  target="_blank"
+                                                  rel="noreferrer"
+                                                  className="text-[10px] uppercase tracking-[0.14em] text-[#cfcfcf] hover:text-white"
+                                                >
+                                                  Open
+                                                </a>
+                                              ) : (
+                                                <a
+                                                  href="/studio?tab=maya#maya"
+                                                  className="text-[10px] uppercase tracking-[0.14em] text-[#cfcfcf] hover:text-white"
+                                                >
+                                                  Continue
+                                                </a>
+                                              )}
+                                              {page.canRegenerate && page.regenerateUrl ? (
+                                                <button
+                                                  type="button"
+                                                  onClick={() =>
+                                                    handleRegeneratePage(
+                                                      String(page.id || ""),
+                                                      String(page.regenerateUrl || ""),
+                                                      page.liveUrl || "",
+                                                    )
+                                                  }
+                                                  disabled={!!regeneratingPages[String(page.id || "")]}
+                                                  className="text-[10px] uppercase tracking-[0.14em] text-[#cfcfcf] hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                                                >
+                                                  {regeneratingPages[String(page.id || "")] ? "..." : "Regen"}
+                                                </button>
+                                              ) : null}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ))}
+                                      {feeds.slice(0, 2).map((feed: any) => (
+                                        <div
+                                          key={`hub-feed-${feed.id}`}
+                                          className="rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(0,0,0,0.18)] px-3 py-2"
+                                        >
+                                          <div className="flex items-center justify-between gap-2">
+                                            <div className="text-xs text-white">{feed.title || `Feed ${feed.id}`}</div>
+                                            <a
+                                              href={feed.openUrl || "/studio?tab=feed-planner#feed-planner"}
+                                              className="text-[10px] uppercase tracking-[0.14em] text-[#cfcfcf] hover:text-white"
+                                            >
+                                              Open
+                                            </a>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
                                 </div>
                               )
                             }
@@ -1067,6 +1281,21 @@ export default function MayaChatInterface({
                                   >
                                     Open Upload
                                   </button>
+                                </div>
+                              )
+                            }
+
+                            if (part.type === "tool-collectOfferBrief") {
+                              const output = (part as any).output || {}
+                              return (
+                                <div key={partIndex}>
+                                  <MayaOfferBriefForm
+                                    initialValues={output.prefill || {}}
+                                    missingFields={Array.isArray(output.missingFields) ? output.missingFields : []}
+                                    onSubmit={(values) => {
+                                      onToolSubmitOfferBrief?.(values)
+                                    }}
+                                  />
                                 </div>
                               )
                             }
@@ -1395,6 +1624,101 @@ export default function MayaChatInterface({
                               const toolPart = part as any
                               const output = toolPart.output
 
+                              if (output && output.state === "loading_images") {
+                                return (
+                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
+                                    <div className="flex items-center gap-2 text-[#e5e5e5]">
+                                      <div className="w-1.5 h-1.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                      <span className="text-xs tracking-[0.15em] uppercase font-light">
+                                        Loading images for video...
+                                      </span>
+                                    </div>
+                                  </div>
+                                )
+                              }
+
+                              if (output && output.state === "choose_image") {
+                                const images = Array.isArray(output.images) ? output.images : []
+                                return (
+                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Create Video</div>
+                                    <p className="mt-2 text-sm text-[#d5d5d5]">
+                                      Pick from your gallery or upload a new reference and Maya will animate it inline.
+                                    </p>
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => onToolOpenUploadZone?.("selfies")}
+                                        className="rounded-lg border border-[rgba(255,255,255,0.22)] bg-[rgba(255,255,255,0.08)] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[#ffffff] hover:bg-[rgba(255,255,255,0.14)]"
+                                      >
+                                        Upload Reference
+                                      </button>
+                                    </div>
+                                    {images.length > 0 ? (
+                                      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                                        {images.slice(0, 6).map((image: any, imageIndex: number) => {
+                                          const imageId = String(image.id || image.imageId || imageIndex)
+                                          const imageUrl = image.image_url || image.imageUrl || ""
+                                          const source = String(image.source || "").toLowerCase()
+                                          const sourceLabel =
+                                            source === "brand_assets"
+                                              ? "Uploaded"
+                                              : source === "generated_images"
+                                                ? "Generated"
+                                                : "Gallery"
+                                          if (!imageUrl) return null
+                                          return (
+                                            <button
+                                              key={`${imageId}-${imageIndex}`}
+                                              type="button"
+                                              onClick={() =>
+                                                onToolStartVideoGeneration?.({
+                                                  messageId: msg.id,
+                                                  imageId,
+                                                  imageUrl,
+                                                  prompt: image.prompt || "",
+                                                  description: image.description || "",
+                                                  category: image.category || "",
+                                                })
+                                              }
+                                              className="overflow-hidden rounded-lg border border-[rgba(255,255,255,0.14)] bg-black/20 hover:border-[rgba(255,255,255,0.28)]"
+                                            >
+                                              <img src={imageUrl} alt="Video source" className="h-24 w-full object-cover" />
+                                              <div className="px-2 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[#ffffff]">
+                                                Animate
+                                              </div>
+                                              <div className="pb-2 text-[9px] uppercase tracking-[0.12em] text-[#b8b8b8]">
+                                                {sourceLabel}
+                                              </div>
+                                            </button>
+                                          )
+                                        })}
+                                      </div>
+                                    ) : (
+                                      <div className="mt-3 rounded-lg border border-[rgba(255,255,255,0.12)] bg-black/20 p-3">
+                                        <p className="text-xs text-[#d7d7d7]">
+                                          No images found yet. Generate a photo first, then I can animate it.
+                                        </p>
+                                        <button
+                                          type="button"
+                                          onClick={() => onToolPromptSelect?.("Create a photo for my brand")}
+                                          className="mt-2 rounded-lg border border-[rgba(255,255,255,0.22)] bg-[rgba(255,255,255,0.08)] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[#ffffff] hover:bg-[rgba(255,255,255,0.14)]"
+                                        >
+                                          Create Photo First
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => onToolOpenUploadZone?.("selfies")}
+                                          className="mt-2 ml-2 rounded-lg border border-[rgba(255,255,255,0.22)] bg-[rgba(255,255,255,0.08)] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[#ffffff] hover:bg-[rgba(255,255,255,0.14)]"
+                                        >
+                                          Upload Reference
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                )
+                              }
+
                               if (output && output.state === "processing") {
                                 return (
                                   <div key={partIndex} className="mt-3">
@@ -1402,8 +1726,9 @@ export default function MayaChatInterface({
                                       videoUrl=""
                                       status="processing"
                                       progress={output.progress}
-                                      motionPrompt={toolPart.args?.motionPrompt}
+                                      motionPrompt={output.motionPrompt || toolPart.args?.motionPrompt}
                                     />
+                                    {renderVideoDebugPanel(output.debug)}
                                   </div>
                                 )
                               }
@@ -1413,9 +1738,19 @@ export default function MayaChatInterface({
                                   <div key={partIndex} className="mt-3">
                                     <VideoCard
                                       videoUrl={output.videoUrl}
-                                      motionPrompt={toolPart.args?.motionPrompt}
-                                      imageSource={toolPart.args?.imageUrl}
+                                      motionPrompt={output.motionPrompt || toolPart.args?.motionPrompt}
+                                      imageSource={output.imageUrl || toolPart.args?.imageUrl}
                                     />
+                                    {renderVideoDebugPanel(output.debug)}
+                                  </div>
+                                )
+                              }
+
+                              if (output && output.state === "error") {
+                                return (
+                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
+                                    <p className="text-sm text-[#f5c2c2]">{output.message || "Video generation failed."}</p>
+                                    {renderVideoDebugPanel(output.debug)}
                                   </div>
                                 )
                               }

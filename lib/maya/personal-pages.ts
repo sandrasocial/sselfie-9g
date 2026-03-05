@@ -23,6 +23,7 @@ export interface MayaAssetForPersistence {
   instruction: string
   previewText: string
   previewHtml: string
+  blueprint?: Record<string, unknown>
 }
 
 export interface RecordPersonalPageLeadInput {
@@ -198,6 +199,7 @@ export async function persistMayaAssetAsPersonalPage(input: {
     assetType: input.asset.assetType,
     instruction: input.asset.instruction,
     previewText: input.asset.previewText,
+    blueprint: input.asset.blueprint || null,
   }
 
   const upsertRows = await sql`

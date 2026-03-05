@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest"
-import { detectMayaToolDispatchIntent, extractLatestUserText } from "@/lib/maya/intent-dispatcher"
+import {
+  detectMayaToolDispatchIntent,
+  extractLatestUserText,
+  hydrateMayaToolDispatchIntent,
+} from "@/lib/maya/intent-dispatcher"
 import { parseMayaToolMarkers, stripMayaToolMarkers } from "@/lib/maya/tool-markers"
 
 describe("maya phase 2 tool dispatcher", () => {
@@ -13,6 +17,12 @@ describe("maya phase 2 tool dispatcher", () => {
     const intent = detectMayaToolDispatchIntent("can you show me my gallery?")
     expect(intent?.tool).toBe("show_gallery")
     expect(intent?.responseText).toContain("[SHOW_GALLERY]")
+  })
+
+  it("routes asset overview intent to studio hub marker response", () => {
+    const intent = detectMayaToolDispatchIntent("show me everything you created for me")
+    expect(intent?.tool).toBe("show_studio_hub")
+    expect(intent?.responseText).toContain("[SHOW_STUDIO_HUB]")
   })
 
   it("routes save intent with explicit image id to save_to_gallery marker response", () => {
@@ -32,6 +42,12 @@ describe("maya phase 2 tool dispatcher", () => {
     const intent = detectMayaToolDispatchIntent("I want to create a photo for my offer")
     expect(intent?.tool).toBe("generate_image")
     expect(intent?.responseText).toContain("[GENERATE_IMAGE:choose_source]")
+  })
+
+  it("routes video intent to generate video marker", () => {
+    const intent = detectMayaToolDispatchIntent("animate this into a short reel")
+    expect(intent?.tool).toBe("generate_video")
+    expect(intent?.responseText).toContain("[GENERATE_VIDEO]")
   })
 
   it("does not misroute mixed help + photo intent to capabilities", () => {
@@ -58,26 +74,122 @@ describe("maya phase 2 tool dispatcher", () => {
     ])
     expect(text).toBe("latest message")
   })
+
+  it("hydrates choose-source image intent to custom model when trained model exists", () => {
+    const intent = detectMayaToolDispatchIntent("create a photo for my launch")
+    expect(intent?.tool).toBe("generate_image")
+    if (!intent || intent.tool !== "generate_image") return
+
+    const hydrated = hydrateMayaToolDispatchIntent(intent, {
+      generation: {
+        hasTrainedModel: true,
+        canUseCustomModel: true,
+        canUseSelfies: true,
+        recommendedSource: "custom_model",
+      },
+      uploads: {
+        selfies: 8,
+        products: 2,
+        people: 0,
+        vibes: 1,
+        total: 11,
+        hasAny: true,
+      },
+      offerBrief: {
+        hasCoreFields: true,
+      },
+    })
+
+    expect(hydrated.source).toBe("custom_model")
+    expect(hydrated.responseText).toContain("[GENERATE_IMAGE:custom_model]")
+  })
+
+  it("hydrates selfie generation to upload zone when no uploads exist", () => {
+    const hydrated = hydrateMayaToolDispatchIntent({
+      tool: "generate_image",
+      source: "selfies",
+      responseText: "",
+    }, {
+      generation: {
+        hasTrainedModel: false,
+        canUseCustomModel: false,
+        canUseSelfies: false,
+        recommendedSource: "base_model",
+      },
+      uploads: {
+        selfies: 0,
+        products: 0,
+        people: 0,
+        vibes: 0,
+        total: 0,
+        hasAny: false,
+      },
+      offerBrief: {
+        hasCoreFields: false,
+      },
+    })
+
+    expect(hydrated.responseText).toContain("[SHOW_UPLOAD_ZONE:selfies]")
+  })
+
+  it("hydrates studio hub intent with snapshot-aware response", () => {
+    const hydrated = hydrateMayaToolDispatchIntent(
+      {
+        tool: "show_studio_hub",
+        responseText: "",
+      },
+      {
+        generation: {
+          hasTrainedModel: false,
+          canUseCustomModel: false,
+          canUseSelfies: true,
+          recommendedSource: "selfies",
+        },
+        uploads: {
+          selfies: 6,
+          products: 1,
+          people: 0,
+          vibes: 0,
+          total: 7,
+          hasAny: true,
+        },
+        offerBrief: {
+          hasCoreFields: true,
+        },
+      },
+    )
+
+    expect(hydrated.responseText).toContain("[SHOW_STUDIO_HUB]")
+  })
 })
 
 describe("maya tool markers", () => {
   it("parses phase 2 markers from assistant text", () => {
     const markers = parseMayaToolMarkers(
-      "Opening now [SHOW_CAPABILITIES]\n[SHOW_GALLERY]\nSaved [SAVE_TO_GALLERY:ai_55]\nStart [GENERATE_IMAGE:base_model]\nUpload [SHOW_UPLOAD_ZONE:products]",
+      "Opening now [SHOW_CAPABILITIES]\n[SHOW_STUDIO_HUB]\n[SHOW_GALLERY]\nSaved [SAVE_TO_GALLERY:ai_55]\nStart [GENERATE_IMAGE:base_model]\nAnimate [GENERATE_VIDEO]\nUpload [SHOW_UPLOAD_ZONE:products]",
     )
     expect(markers).toEqual([
       { tool: "show_capabilities" },
+      { tool: "show_studio_hub" },
       { tool: "show_gallery" },
       { tool: "save_to_gallery", target: "explicit", imageId: "ai_55" },
       { tool: "generate_image", source: "base_model" },
+      { tool: "generate_video" },
       { tool: "show_upload_zone", category: "products" },
     ])
   })
 
   it("strips tool markers from persisted assistant text", () => {
     const stripped = stripMayaToolMarkers(
-      "Opening your workspace.\n[SHOW_CAPABILITIES]\n[SHOW_GALLERY]\nDone.\n[SAVE_TO_GALLERY:latest]\n[GENERATE_IMAGE:choose_source]\n[SHOW_UPLOAD_ZONE:selfies]",
+      "Opening your workspace.\n[SHOW_CAPABILITIES]\n[SHOW_STUDIO_HUB]\n[SHOW_GALLERY]\nDone.\n[SAVE_TO_GALLERY:latest]\n[GENERATE_IMAGE:choose_source]\n[SHOW_UPLOAD_ZONE:selfies]",
     )
     expect(stripped).toBe("Opening your workspace. Done.")
+  })
+
+  it("strips generate video marker from persisted assistant text", () => {
+    const stripped = stripMayaToolMarkers(
+      "Let's animate this.\n[GENERATE_VIDEO]\nChoose your source image.",
+    )
+    expect(stripped).toBe("Let's animate this. Choose your source image.")
   })
 })

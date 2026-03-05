@@ -54,6 +54,23 @@ export async function GET(request: Request) {
         FROM generated_images
         WHERE user_id = ${neonUser.id}
           AND (selected_url IS NOT NULL OR image_urls IS NOT NULL)
+
+        UNION ALL
+
+        SELECT
+          id,
+          COALESCE(description, file_name, 'Uploaded reference') as prompt,
+          'upload' as category,
+          'brand_assets' as source,
+          file_url as image_url,
+          created_at
+        FROM brand_assets
+        WHERE user_id = ${neonUser.id}
+          AND file_url IS NOT NULL
+          AND (
+            LOWER(COALESCE(file_type, '')) LIKE 'image/%'
+            OR COALESCE(file_name, '') ~* '\\.(jpg|jpeg|png|webp|heic|heif)$'
+          )
       ),
       deduplicated AS (
         SELECT 
@@ -88,18 +105,29 @@ export async function GET(request: Request) {
 
     const countResult = await sql`
       WITH combined AS (
-        SELECT image_url
-        FROM ai_images 
-        WHERE user_id = ${neonUser.id} 
-          AND image_url IS NOT NULL 
-          AND generation_status = 'completed'
+      SELECT image_url
+      FROM ai_images 
+      WHERE user_id = ${neonUser.id} 
+        AND image_url IS NOT NULL 
+        AND generation_status = 'completed'
         
         UNION ALL
         
-        SELECT COALESCE(selected_url, (string_to_array(image_urls::text, ','))[1]) as image_url
-        FROM generated_images 
-        WHERE user_id = ${neonUser.id} 
-          AND (selected_url IS NOT NULL OR image_urls IS NOT NULL)
+      SELECT COALESCE(selected_url, (string_to_array(image_urls::text, ','))[1]) as image_url
+      FROM generated_images 
+      WHERE user_id = ${neonUser.id} 
+        AND (selected_url IS NOT NULL OR image_urls IS NOT NULL)
+
+      UNION ALL
+
+      SELECT file_url as image_url
+      FROM brand_assets
+      WHERE user_id = ${neonUser.id}
+        AND file_url IS NOT NULL
+        AND (
+          LOWER(COALESCE(file_type, '')) LIKE 'image/%'
+          OR COALESCE(file_name, '') ~* '\\.(jpg|jpeg|png|webp|heic|heif)$'
+        )
       )
       SELECT COUNT(DISTINCT image_url) as total
       FROM combined

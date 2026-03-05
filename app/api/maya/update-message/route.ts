@@ -23,10 +23,11 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { messageId, content, append = false, feedCards, conceptCards } = body
+    const { messageId, chatId, content, append = false, feedCards, conceptCards } = body
 
     console.log("[update-message] Request received:", {
       messageId,
+      chatId,
       contentLength: content?.length || 0,
       hasFeedCards: !!feedCards,
       feedCardsCount: Array.isArray(feedCards) ? feedCards.length : 0,
@@ -46,13 +47,45 @@ export async function POST(request: NextRequest) {
     // Default content to empty string if not provided (for JSONB-only updates)
     const safeContent = content !== undefined ? content : ""
 
-    // Ensure messageId is a number
-    const messageIdNum = typeof messageId === 'string' ? parseInt(messageId, 10) : messageId
-    if (isNaN(messageIdNum)) {
-      return NextResponse.json(
-        { error: "Invalid messageId format" },
-        { status: 400 }
-      )
+    // Ensure messageId is a number (or resolve from chatId when client-only IDs are used)
+    let messageIdNum = typeof messageId === "string" ? Number.parseInt(messageId, 10) : Number(messageId)
+    if (Number.isNaN(messageIdNum)) {
+      const fallbackChatId =
+        typeof chatId === "string" ? Number.parseInt(chatId, 10) : Number(chatId)
+
+      if (Number.isNaN(fallbackChatId)) {
+        return NextResponse.json(
+          { error: "Invalid messageId format" },
+          { status: 400 }
+        )
+      }
+
+      const chatForLookup = await loadChatById(fallbackChatId, neonUser.id)
+      if (!chatForLookup) {
+        return NextResponse.json({ error: "Chat not found" }, { status: 404 })
+      }
+
+      const [latestAssistantMessage] = await sql`
+        SELECT id
+        FROM maya_chat_messages
+        WHERE chat_id = ${fallbackChatId}
+          AND role = 'assistant'
+        ORDER BY created_at DESC, id DESC
+        LIMIT 1
+      `
+
+      if (!latestAssistantMessage?.id) {
+        return NextResponse.json(
+          { error: "No assistant messages found for chat" },
+          { status: 404 }
+        )
+      }
+
+      messageIdNum = Number(latestAssistantMessage.id)
+      console.log("[update-message] Resolved non-numeric messageId via latest assistant message:", {
+        fallbackChatId,
+        resolvedMessageId: messageIdNum,
+      })
     }
 
     // Get current message content

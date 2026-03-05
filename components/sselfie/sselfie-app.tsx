@@ -9,6 +9,7 @@ import GalleryScreen from "./gallery-screen"
 // Note: B-Roll functionality is accessible via Maya Videos tab (b-roll-screen.tsx kept for reference)
 import AcademyScreen from "./academy-screen"
 import AccountScreen from "./account-screen"
+import StudioHubScreen from "./studio-hub-screen"
 import { FeedPlannerClient } from "../feed-planner" // Use FeedPlannerClient to include wizard logic
 import { InstallPrompt } from "./install-prompt"
 import { InstallButton } from "./install-button"
@@ -739,6 +740,7 @@ export default function SselfieApp({
 
   const tabs = [
     { id: "maya", label: "Maya" },
+    { id: "studio", label: "Studio" },
     { id: "gallery", label: "Gallery" },
     { id: "feed-planner", label: "Feed" },
     { id: "academy", label: "Academy" },
@@ -1193,6 +1195,9 @@ export default function SselfieApp({
                     academyPurchaseProduct={academyPurchaseProduct}
                     firstTimeProductUser={firstTimeProductUser}
                   />
+                )}
+                {activeTab === "studio" && (
+                  <StudioHubScreen />
                 )}
                 {activeTab === "gallery" && (
                   !access.canUseGenerators ? (

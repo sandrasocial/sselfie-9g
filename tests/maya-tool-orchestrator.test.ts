@@ -32,9 +32,31 @@ describe("orchestrateMayaTurn", () => {
     expect(result.kind).toBe("asset_edit")
   })
 
-  it("routes asset creation when user asks for a page", () => {
+  it("routes landing-page requests with missing detail to offer brief collection", () => {
     const result = orchestrateMayaTurn({
       userText: "create a landing page for my studio membership offer",
+      activeAssetContext: null,
+    })
+
+    expect(result.kind).toBe("collect_offer_brief")
+    if (result.kind === "collect_offer_brief") {
+      expect(result.assetType).toBe("page")
+    }
+  })
+
+  it("routes implicit landing-page help requests to offer brief collection", () => {
+    const result = orchestrateMayaTurn({
+      userText: "can you help me with a landing page for my offer?",
+      activeAssetContext: null,
+    })
+
+    expect(result.kind).toBe("collect_offer_brief")
+  })
+
+  it("routes direct page creation when brief details are already present", () => {
+    const result = orchestrateMayaTurn({
+      userText:
+        "Create a landing page for my coaching offer that helps founders sign clients, target audience is female founders, price is €497",
       activeAssetContext: null,
     })
 
@@ -81,6 +103,20 @@ describe("orchestrateMayaTurn", () => {
     }
   })
 
+  it("routes video requests into tool dispatch", () => {
+    const result = orchestrateMayaTurn({
+      userText: "animate this into a reel for me",
+      activeAssetContext: null,
+    })
+
+    expect(result.kind).toBe("tool_dispatch")
+    if (result.kind === "tool_dispatch") {
+      expect(result.intent.tool).toBe("generate_video")
+      expect(result.intent.responseText).toContain("[GENERATE_VIDEO]")
+      expect(result.estimatedCredits).toBe(3)
+    }
+  })
+
   it("returns none for empty text", () => {
     const result = orchestrateMayaTurn({
       userText: "   ",
@@ -115,5 +151,12 @@ describe("estimateToolDispatchCredits", () => {
         responseText: "x",
       }),
     ).toBe(0)
+
+    expect(
+      estimateToolDispatchCredits({
+        tool: "generate_video",
+        responseText: "x",
+      }),
+    ).toBe(3)
   })
 })

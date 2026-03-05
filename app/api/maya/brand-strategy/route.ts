@@ -3,6 +3,7 @@ import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getUserPersonalBrand } from "@/lib/data/maya"
 import { sql } from "@/lib/db/client"
+import { auditPromptRoute } from "@/lib/generation/prompt/route-audit"
 
 export const maxDuration = 90
 
@@ -50,6 +51,16 @@ function parseJsonFromText(text: string) {
 
 async function generateStrategyPack(brandData: Record<string, any>) {
   const prompt = buildPrompt(brandData)
+  const startedAt = Date.now()
+  auditPromptRoute({
+    routeId: "EP-SHADOW-BRAND-STRATEGY",
+    mode: "classic",
+    feature: "brand-strategy-pack",
+    builder: MODEL,
+    prompt,
+    input: { brandData },
+    startedAt,
+  })
   const { text } = await generateText({
     model: MODEL,
     prompt,

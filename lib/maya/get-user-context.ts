@@ -410,6 +410,11 @@ export async function getUserContextForMaya(authUserId: string): Promise<string>
             .filter(Boolean)
         : []
 
+      const latestOfferBrief =
+        memoryData?.latest_offer_brief && typeof memoryData.latest_offer_brief === "object"
+          ? (memoryData.latest_offer_brief as Record<string, unknown>)
+          : null
+
       const activeAssetContext =
         memoryData?.active_asset_context && typeof memoryData.active_asset_context === "object"
           ? (memoryData.active_asset_context as Record<string, unknown>)
@@ -418,6 +423,38 @@ export async function getUserContextForMaya(authUserId: string): Promise<string>
       if (rememberedPreferenceNotes.length > 0) {
         contextParts.push(`Remembered preferences: ${rememberedPreferenceNotes.slice(0, 6).join(" | ")}`)
         contextParts.push("Apply these remembered preferences unless the user explicitly changes them.")
+      }
+
+      if (latestOfferBrief) {
+        contextParts.push("Latest offer brief:")
+        if (typeof latestOfferBrief.offerType === "string" && latestOfferBrief.offerType.trim()) {
+          contextParts.push(`- Offer: ${latestOfferBrief.offerType}`)
+        }
+        if (typeof latestOfferBrief.transformation === "string" && latestOfferBrief.transformation.trim()) {
+          contextParts.push(`- Transformation: ${latestOfferBrief.transformation}`)
+        }
+        if (typeof latestOfferBrief.idealClient === "string" && latestOfferBrief.idealClient.trim()) {
+          contextParts.push(`- Ideal client: ${latestOfferBrief.idealClient}`)
+        }
+        if (typeof latestOfferBrief.pricePoint === "string" && latestOfferBrief.pricePoint.trim()) {
+          contextParts.push(`- Price point: ${latestOfferBrief.pricePoint}`)
+        }
+        if (typeof latestOfferBrief.formatAndDuration === "string" && latestOfferBrief.formatAndDuration.trim()) {
+          contextParts.push(`- Format: ${latestOfferBrief.formatAndDuration}`)
+        }
+        if (typeof latestOfferBrief.biggestStruggle === "string" && latestOfferBrief.biggestStruggle.trim()) {
+          contextParts.push(`- Biggest struggle: ${latestOfferBrief.biggestStruggle}`)
+        }
+        if (typeof latestOfferBrief.uniqueMethod === "string" && latestOfferBrief.uniqueMethod.trim()) {
+          contextParts.push(`- Unique method: ${latestOfferBrief.uniqueMethod}`)
+        }
+        if (typeof latestOfferBrief.proofPoints === "string" && latestOfferBrief.proofPoints.trim()) {
+          contextParts.push(`- Proof points: ${latestOfferBrief.proofPoints}`)
+        }
+        if (typeof latestOfferBrief.callToAction === "string" && latestOfferBrief.callToAction.trim()) {
+          contextParts.push(`- CTA: ${latestOfferBrief.callToAction}`)
+        }
+        contextParts.push("If the user asks for a landing page, use this brief before asking repeated questions.")
       }
 
       if (activeAssetContext) {

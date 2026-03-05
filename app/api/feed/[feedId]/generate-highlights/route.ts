@@ -3,6 +3,7 @@ import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { sql } from "@/lib/db/client"
 import { generateText } from "ai"
+import { auditPromptRoute } from "@/lib/generation/prompt/route-audit"
 
 
 export async function POST(request: Request, { params }: { params: Promise<{ feedId: string }> | { feedId: string } }) {
@@ -117,21 +118,36 @@ export async function POST(request: Request, { params }: { params: Promise<{ fee
 
     // Generate highlight titles using AI
     console.log("[GENERATE-HIGHLIGHTS] Starting AI generation...")
-    let highlightsText: string
-    try {
-      const result = await generateText({
-        model: "anthropic/claude-sonnet-4",
-        system: `You are an expert Instagram strategist. Generate 3-4 Instagram story highlight titles that align with the brand's content pillars and aesthetic.
+    const systemPrompt = `You are an expert Instagram strategist. Generate 3-4 Instagram story highlight titles that align with the brand's content pillars and aesthetic.
 Return ONLY a JSON array of highlight titles, like: ["About", "Products", "Travel", "Tips"]
-Each title should be 1-2 words, relevant to the brand's content strategy and pillars.`,
-        prompt: `Generate Instagram story highlight titles that align with this brand's content pillars and aesthetic:
+Each title should be 1-2 words, relevant to the brand's content strategy and pillars.`
+    const prompt = `Generate Instagram story highlight titles that align with this brand's content pillars and aesthetic:
 
 Brand: ${brandProfile?.business_type || feedLayout.brand_name || "Personal Brand"}
 Brand Vibe: ${brandProfile?.brand_vibe || "Creative"}
 Target Audience: ${brandProfile?.target_audience || "General"}
 Content Pillars: ${brandPillars.length > 0 ? brandPillars.join(", ") : feedPosts.map((p: any) => p.content_pillar).filter(Boolean).slice(0, 5).join(", ")}
 
-Return a JSON array of 3-4 highlight titles (maximum 4) that reflect the brand's content strategy and pillars.`,
+Return a JSON array of 3-4 highlight titles (maximum 4) that reflect the brand's content strategy and pillars.`
+
+    const startedAt = Date.now()
+    auditPromptRoute({
+      routeId: "EP-SHADOW-GENERATE-HIGHLIGHTS",
+      mode: "classic",
+      feature: "generate-highlights",
+      userId: neonUser.id,
+      builder: "anthropic/claude-sonnet-4",
+      prompt: `${systemPrompt}\n\n${prompt}`,
+      input: { feedId: feedIdInt, postCount: feedPosts.length, brandPillars: brandPillars.length },
+      startedAt,
+    })
+
+    let highlightsText: string
+    try {
+      const result = await generateText({
+        model: "anthropic/claude-sonnet-4",
+        system: systemPrompt,
+        prompt,
         temperature: 0.7,
       })
       highlightsText = result.text
@@ -179,4 +195,3 @@ Return a JSON array of 3-4 highlight titles (maximum 4) that reflect the brand's
     )
   }
 }
-

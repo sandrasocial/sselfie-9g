@@ -232,8 +232,8 @@ export default function SignUpPage() {
                     />
                   </div>
                   {error && <p className="text-sm text-red-400">{error}</p>}
-                  <Button type="submit" className="w-full bg-white text-black hover:bg-zinc-200" disabled={isLoading || checkingUser}>
-                    {isLoading ? "Signing in..." : checkingUser ? "Checking..." : "Sign In"}
+                  <Button type="submit" className="w-full bg-white text-black hover:bg-zinc-200" disabled={isLoading}>
+                    {isLoading ? "Signing in..." : "Sign In"}
                   </Button>
                   <p className="text-xs text-center text-zinc-500">
                     New user?{" "}
@@ -299,8 +299,8 @@ export default function SignUpPage() {
                     />
                   </div>
                   {error && <p className="text-sm text-red-400">{error}</p>}
-                  <Button type="submit" className="w-full bg-white text-black hover:bg-zinc-200" disabled={isLoading || checkingUser}>
-                    {isLoading ? "Creating account..." : checkingUser ? "Checking..." : "Sign Up"}
+                  <Button type="submit" className="w-full bg-white text-black hover:bg-zinc-200" disabled={isLoading}>
+                    {isLoading ? "Creating account..." : "Sign Up"}
                   </Button>
                 </div>
                 <div className="mt-4 text-center text-sm text-zinc-400">

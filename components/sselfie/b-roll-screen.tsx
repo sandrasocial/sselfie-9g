@@ -204,6 +204,7 @@ export default function BRollScreen({ user }: BRollScreenProps) {
           imageId,
           motionPrompt,
           imageDescription: description,
+          category: category || "",
         }),
       })
 

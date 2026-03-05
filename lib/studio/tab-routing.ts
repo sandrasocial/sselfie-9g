@@ -1,4 +1,4 @@
-export const STUDIO_TABS = ["maya", "gallery", "feed-planner", "academy", "account"] as const
+export const STUDIO_TABS = ["maya", "studio", "gallery", "feed-planner", "academy", "account"] as const
 export const DEFAULT_STUDIO_AUTH_REDIRECT = "/studio?tab=maya"
 
 export type StudioTab = (typeof STUDIO_TABS)[number]

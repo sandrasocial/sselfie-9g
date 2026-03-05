@@ -1,5 +1,18 @@
 import { sql } from "@/lib/db/client"
 import { persistMayaAssetAsPersonalPage } from "@/lib/maya/personal-pages"
+import { mergeMayaMemoryData } from "@/lib/maya/memory-store"
+import { composeMayaLandingCopy } from "@/lib/maya/page-generation/copy-composer"
+import { isMayaPageRendererV2Enabled, STUDIO_CHECKOUT_URL } from "@/lib/maya/page-generation/constants"
+import { selectLandingImages } from "@/lib/maya/page-generation/image-selector"
+import { renderMayaLandingHtml } from "@/lib/maya/page-generation/render-landing"
+import { resolveMayaLandingSnapshot } from "@/lib/maya/page-generation/snapshot-resolver"
+import {
+  sanitizeHeadline,
+  sanitizePageTitle,
+  sanitizePreview,
+  sanitizeUserFacingText,
+} from "@/lib/maya/page-generation/sanitizers"
+import type { MayaLandingPageBlueprint } from "@/lib/maya/page-generation/types"
 
 export type MayaGeneratedAssetType = "page" | "calendar" | "pdf"
 
@@ -10,6 +23,7 @@ export interface MayaGeneratedAsset {
   instruction: string
   previewText: string
   previewHtml: string
+  blueprint?: MayaLandingPageBlueprint
   url?: string
   createdAt: string
   status: "draft"
@@ -19,11 +33,6 @@ const MAX_STORED_ASSETS = 40
 const MAX_PREVIEW_TEXT_LENGTH = 240
 const MAX_INSTRUCTION_LENGTH = 800
 const MAX_IMAGE_SOURCES = 12
-const APP_BASE_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || ""
-const STUDIO_CHECKOUT_URL =
-  process.env.NEXT_PUBLIC_STUDIO_CHECKOUT_URL ||
-  (APP_BASE_URL ? `${APP_BASE_URL.replace(/\/$/, "")}/checkout/membership` : "") ||
-  "https://sselfie.ai/checkout/membership"
 
 function normalizeWhitespace(value: string): string {
   return value.replace(/\s+/g, " ").trim()
@@ -75,13 +84,11 @@ function extractPrimaryIntent(instruction: string): string {
     .replace(/^[,:-\s]+|[,:-\s]+$/g, "")
     .trim()
 
-  return cleaned || instruction
+  return sanitizeUserFacingText(cleaned || instruction, 220)
 }
 
 function toHeadline(seed: string): string {
-  const cleaned = sanitizePreviewText(seed).replace(/[.!?]+$/, "")
-  if (!cleaned) return "Build your next launch in one page"
-  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1)
+  return sanitizeHeadline(seed)
 }
 
 type DesignDirection = {
@@ -146,21 +153,25 @@ function inferDesignDirection(instruction: string): DesignDirection {
 
 function buildTitle(assetType: MayaGeneratedAssetType, instruction: string): string {
   const seed = extractPrimaryIntent(instruction)
-  const shortSeed = seed.split(" ").slice(0, 6).join(" ")
-  if (assetType === "calendar") return shortSeed ? `Content Calendar: ${shortSeed}` : "Content Calendar"
-  if (assetType === "pdf") return shortSeed ? `Workbook: ${shortSeed}` : "Workbook"
-  return shortSeed ? `Landing Page: ${shortSeed}` : "Landing Page"
+  const shortSeed = sanitizeUserFacingText(seed.split(" ").slice(0, 6).join(" "), 72)
+  if (assetType === "calendar") {
+    return sanitizePageTitle("calendar", shortSeed ? `Content Calendar: ${shortSeed}` : "Content Calendar")
+  }
+  if (assetType === "pdf") {
+    return sanitizePageTitle("pdf", shortSeed ? `Workbook: ${shortSeed}` : "Workbook")
+  }
+  return sanitizePageTitle("page", shortSeed ? `Landing Page: ${shortSeed}` : "Landing Page")
 }
 
 function buildPreviewText(assetType: MayaGeneratedAssetType, instruction: string): string {
   const seed = extractPrimaryIntent(instruction)
   if (assetType === "calendar") {
-    return sanitizePreviewText(`Drafted a weekly content calendar around: ${seed}. Includes hooks, post directions, and CTA rhythm.`)
+    return sanitizePreview(`Drafted a weekly content calendar around: ${seed}. Includes hooks, post directions, and CTA rhythm.`)
   }
   if (assetType === "pdf") {
-    return sanitizePreviewText(`Drafted a workbook outline for: ${seed}. Includes intro, step-by-step framework, and action pages.`)
+    return sanitizePreview(`Drafted a workbook outline for: ${seed}. Includes intro, step-by-step framework, and action pages.`)
   }
-  return sanitizePreviewText(`Drafted a landing page structure for: ${seed}. Includes headline, offer, proof, and CTA sections.`)
+  return sanitizePreview(`Drafted a landing page structure for: ${seed}. Includes headline, offer, proof, and CTA sections.`)
 }
 
 async function loadUserImageUrls(userId: string): Promise<string[]> {
@@ -233,6 +244,47 @@ async function loadUserImageUrls(userId: string): Promise<string[]> {
   }
 
   return uniqueStrings(urls).slice(0, MAX_IMAGE_SOURCES)
+}
+
+interface MayaPageGenerationPayload {
+  title: string
+  previewText: string
+  previewHtml: string
+  blueprint?: MayaLandingPageBlueprint
+}
+
+async function generateLandingPageV2(input: {
+  userId: string
+  assetId: string
+  instruction: string
+}): Promise<MayaPageGenerationPayload> {
+  const snapshot = await resolveMayaLandingSnapshot(input.userId)
+  const images = await selectLandingImages({
+    userId: input.userId,
+    instruction: input.instruction,
+    styleHint: snapshot.resolvedStyle,
+    offerHint: snapshot.resolvedOffer,
+  })
+  const copy = composeMayaLandingCopy({
+    instruction: input.instruction,
+    snapshot,
+    heroImageUrl: images.heroImageUrl,
+    supportImageUrls: images.supportImageUrls,
+  })
+  const render = renderMayaLandingHtml({
+    assetId: input.assetId,
+    title: copy.title,
+    previewText: copy.previewText,
+    checkoutUrl: STUDIO_CHECKOUT_URL,
+    blueprint: copy.blueprint,
+  })
+
+  return {
+    title: sanitizePageTitle("page", render.title),
+    previewText: sanitizePreview(render.previewText),
+    previewHtml: render.html,
+    blueprint: copy.blueprint,
+  }
 }
 
 function buildLandingPageHtml(
@@ -690,10 +742,13 @@ function parseExistingAssets(value: unknown): MayaGeneratedAsset[] {
           ? (row.assetType as MayaGeneratedAssetType)
           : "page"
       const id = typeof row.id === "string" && row.id.trim().length > 0 ? row.id : makeAssetId(assetType)
-      const title = typeof row.title === "string" ? sanitizePreviewText(row.title) : buildTitle(assetType, "")
+      const title =
+        typeof row.title === "string" ? sanitizePageTitle(assetType, row.title) : buildTitle(assetType, "")
       const instruction = typeof row.instruction === "string" ? sanitizeInstruction(row.instruction) : ""
-      const previewText = typeof row.previewText === "string" ? sanitizePreviewText(row.previewText) : ""
+      const previewText = typeof row.previewText === "string" ? sanitizePreview(row.previewText) : ""
       const previewHtml = typeof row.previewHtml === "string" ? row.previewHtml : ""
+      const blueprint =
+        row.blueprint && typeof row.blueprint === "object" ? (row.blueprint as MayaLandingPageBlueprint) : undefined
       const url = typeof row.url === "string" ? row.url : undefined
       const createdAt =
         typeof row.createdAt === "string" && row.createdAt.trim().length > 0
@@ -707,6 +762,7 @@ function parseExistingAssets(value: unknown): MayaGeneratedAsset[] {
         instruction,
         previewText,
         previewHtml,
+        blueprint,
         url,
         createdAt,
         status: "draft" as const,
@@ -731,11 +787,35 @@ export async function createMayaGeneratedAsset(input: {
 
   const createdAt = new Date().toISOString()
   const id = makeAssetId(input.assetType)
-  const title = buildTitle(input.assetType, instruction)
-  const previewText = buildPreviewText(input.assetType, instruction)
-  const imageUrls = await loadUserImageUrls(normalizedUserId)
+  const v2Enabled =
+    input.assetType === "page" &&
+    isMayaPageRendererV2Enabled(process.env.FEATURE_MAYA_PAGE_RENDERER_V2)
 
-  const previewHtml = buildPreviewHtmlForAsset(id, input.assetType, title, previewText, instruction, imageUrls)
+  let title = buildTitle(input.assetType, instruction)
+  let previewText = buildPreviewText(input.assetType, instruction)
+  let previewHtml = ""
+  let blueprint: MayaLandingPageBlueprint | undefined
+
+  if (v2Enabled) {
+    try {
+      const v2Page = await generateLandingPageV2({
+        userId: normalizedUserId,
+        assetId: id,
+        instruction,
+      })
+      title = v2Page.title
+      previewText = v2Page.previewText
+      previewHtml = v2Page.previewHtml
+      blueprint = v2Page.blueprint
+    } catch (error) {
+      console.error("[Maya Asset] V2 landing generation failed, falling back to legacy renderer:", error)
+    }
+  }
+
+  if (!previewHtml) {
+    const imageUrls = await loadUserImageUrls(normalizedUserId)
+    previewHtml = buildPreviewHtmlForAsset(id, input.assetType, title, previewText, instruction, imageUrls)
+  }
   const url = `/maya/asset/${encodeURIComponent(id)}`
 
   const asset: MayaGeneratedAsset = {
@@ -745,6 +825,7 @@ export async function createMayaGeneratedAsset(input: {
     instruction,
     previewText,
     previewHtml,
+    blueprint,
     url,
     createdAt,
     status: "draft",
@@ -777,14 +858,7 @@ export async function createMayaGeneratedAsset(input: {
     generated_assets_updated_at: createdAt,
   }
 
-  await sql`
-    INSERT INTO maya_personal_memory (user_id, memory_data, updated_at)
-    VALUES (${normalizedUserId}, ${JSON.stringify(memoryPatch)}::jsonb, NOW())
-    ON CONFLICT (user_id) DO UPDATE
-    SET
-      memory_data = COALESCE(maya_personal_memory.memory_data, '{}'::jsonb) || ${JSON.stringify(memoryPatch)}::jsonb,
-      updated_at = NOW()
-  `
+  await mergeMayaMemoryData(normalizedUserId, memoryPatch)
 
   return asset
 }
@@ -843,27 +917,53 @@ export async function updateMayaGeneratedAsset(input: {
   }
 
   const nowIso = new Date().toISOString()
-  const imageUrls = await loadUserImageUrls(normalizedUserId)
   const mergedInstruction = sanitizeInstruction(
     `${targetAsset.instruction || ""}\nEdit request: ${editInstruction}`.trim(),
   )
-  const previewText = sanitizePreviewText(
-    `Updated with your latest edit: ${extractPrimaryIntent(editInstruction)}.`,
-  )
-  const previewHtml = buildPreviewHtmlForAsset(
-    targetAsset.id,
-    targetAsset.assetType,
-    targetAsset.title,
-    previewText,
-    mergedInstruction,
-    imageUrls,
-  )
+  const v2Enabled =
+    targetAsset.assetType === "page" &&
+    isMayaPageRendererV2Enabled(process.env.FEATURE_MAYA_PAGE_RENDERER_V2)
+
+  let updatedTitle = sanitizePageTitle(targetAsset.assetType, targetAsset.title)
+  let previewText = sanitizePreview(`Updated with your latest edit: ${extractPrimaryIntent(editInstruction)}.`)
+  let previewHtml = ""
+  let blueprint = targetAsset.blueprint
+
+  if (v2Enabled) {
+    try {
+      const v2Page = await generateLandingPageV2({
+        userId: normalizedUserId,
+        assetId: targetAsset.id,
+        instruction: mergedInstruction,
+      })
+      updatedTitle = v2Page.title
+      previewText = v2Page.previewText
+      previewHtml = v2Page.previewHtml
+      blueprint = v2Page.blueprint
+    } catch (error) {
+      console.error("[Maya Asset] V2 landing update failed, falling back to legacy renderer:", error)
+    }
+  }
+
+  if (!previewHtml) {
+    const imageUrls = await loadUserImageUrls(normalizedUserId)
+    previewHtml = buildPreviewHtmlForAsset(
+      targetAsset.id,
+      targetAsset.assetType,
+      updatedTitle,
+      previewText,
+      mergedInstruction,
+      imageUrls,
+    )
+  }
 
   const updatedAsset: MayaGeneratedAsset = {
     ...targetAsset,
+    title: updatedTitle,
     instruction: mergedInstruction,
     previewText,
     previewHtml,
+    blueprint,
     createdAt: nowIso,
     status: "draft",
   }
@@ -885,16 +985,143 @@ export async function updateMayaGeneratedAsset(input: {
     generated_assets_updated_at: nowIso,
   }
 
-  await sql`
-    INSERT INTO maya_personal_memory (user_id, memory_data, updated_at)
-    VALUES (${normalizedUserId}, ${JSON.stringify(memoryPatch)}::jsonb, NOW())
-    ON CONFLICT (user_id) DO UPDATE
-    SET
-      memory_data = COALESCE(maya_personal_memory.memory_data, '{}'::jsonb) || ${JSON.stringify(memoryPatch)}::jsonb,
-      updated_at = NOW()
-  `
+  await mergeMayaMemoryData(normalizedUserId, memoryPatch)
 
   return updatedAsset
+}
+
+function mapPageTypeToAssetType(pageType: string): MayaGeneratedAssetType {
+  if (pageType === "calendar") return "calendar"
+  if (pageType === "workbook") return "pdf"
+  return "page"
+}
+
+export async function regenerateMayaPersonalPageById(input: {
+  userId: string | number
+  pageId: string
+}): Promise<{
+  success: true
+  assetId: string
+  pageId: string
+  liveUrl: string
+  version: number
+  updatedAt: string
+}> {
+  const normalizedUserId = String(input.userId || "").trim()
+  const normalizedPageId = String(input.pageId || "").trim()
+  if (!normalizedUserId || !normalizedPageId) {
+    throw new Error("Cannot regenerate page without user and page id")
+  }
+
+  const rows = await sql`
+    SELECT id, page_type, title, page_jsonb
+    FROM personal_pages
+    WHERE id = ${normalizedPageId}
+      AND user_id = ${normalizedUserId}
+    LIMIT 1
+  `
+
+  const row = (rows[0] || {}) as {
+    id?: string
+    page_type?: string
+    title?: string | null
+    page_jsonb?: Record<string, unknown> | null
+  }
+
+  if (!row.id) {
+    throw new Error("Page not found")
+  }
+
+  const assetType = mapPageTypeToAssetType(String(row.page_type || "landing").trim())
+  const pageJson =
+    row.page_jsonb && typeof row.page_jsonb === "object"
+      ? (row.page_jsonb as Record<string, unknown>)
+      : {}
+  const rawInstruction =
+    (typeof pageJson.instruction === "string" && pageJson.instruction) ||
+    row.title ||
+    (assetType === "calendar"
+      ? "Create a content calendar draft for my current offer"
+      : assetType === "pdf"
+        ? "Create a workbook draft for my current offer"
+        : "Create a landing page draft for my current offer")
+  const instruction = sanitizeInstruction(rawInstruction)
+  const updatedAt = new Date().toISOString()
+
+  let title = sanitizePageTitle(assetType, String(row.title || ""))
+  let previewText = buildPreviewText(assetType, instruction)
+  let previewHtml = ""
+  let blueprint: MayaLandingPageBlueprint | undefined
+
+  const v2Enabled =
+    assetType === "page" &&
+    isMayaPageRendererV2Enabled(process.env.FEATURE_MAYA_PAGE_RENDERER_V2)
+
+  if (v2Enabled) {
+    try {
+      const v2Page = await generateLandingPageV2({
+        userId: normalizedUserId,
+        assetId: row.id,
+        instruction,
+      })
+      title = v2Page.title
+      previewText = v2Page.previewText
+      previewHtml = v2Page.previewHtml
+      blueprint = v2Page.blueprint
+    } catch (error) {
+      console.error("[Maya Asset] Regenerate V2 failed, falling back to legacy renderer:", error)
+    }
+  }
+
+  if (!previewHtml) {
+    const imageUrls = await loadUserImageUrls(normalizedUserId)
+    previewHtml = buildPreviewHtmlForAsset(row.id, assetType, title, previewText, instruction, imageUrls)
+  }
+
+  const regeneratedAsset: MayaGeneratedAsset = {
+    id: row.id,
+    assetType,
+    title,
+    instruction,
+    previewText,
+    previewHtml,
+    blueprint,
+    createdAt: updatedAt,
+    status: "draft",
+  }
+
+  const persistedPage = await persistMayaAssetAsPersonalPage({
+    userId: normalizedUserId,
+    asset: regeneratedAsset,
+  })
+
+  const existingRows = await sql`
+    SELECT memory_data
+    FROM maya_personal_memory
+    WHERE user_id = ${normalizedUserId}
+    LIMIT 1
+  `
+  const existingMemoryData = ((existingRows[0] as any)?.memory_data as Record<string, unknown> | undefined) ?? {}
+  const existingAssets = parseExistingAssets(existingMemoryData.generated_assets)
+  const nextAssets = [regeneratedAsset, ...existingAssets.filter((asset) => asset.id !== regeneratedAsset.id)].slice(
+    0,
+    MAX_STORED_ASSETS,
+  )
+
+  await mergeMayaMemoryData(normalizedUserId, {
+    generated_assets: nextAssets,
+    last_generated_asset: regeneratedAsset,
+    generated_assets_updated_at: updatedAt,
+  })
+
+  return {
+    success: true,
+    assetId: regeneratedAsset.id,
+    pageId: regeneratedAsset.id,
+    liveUrl: persistedPage.liveUrl,
+    version: persistedPage.version,
+    updatedAt,
+  }
 }
 
 export async function getMayaGeneratedAsset(
@@ -914,5 +1141,53 @@ export async function getMayaGeneratedAsset(
 
   const memoryData = ((rows[0] as any)?.memory_data as Record<string, unknown> | undefined) ?? {}
   const assets = parseExistingAssets(memoryData.generated_assets)
-  return assets.find((asset) => asset.id === normalizedAssetId) || null
+  const inMemory = assets.find((asset) => asset.id === normalizedAssetId)
+  if (inMemory) return inMemory
+
+  const pageRows = await sql`
+    SELECT id, page_type, title, page_jsonb, published_html, live_url, updated_at
+    FROM personal_pages
+    WHERE id = ${normalizedAssetId}
+      AND user_id = ${normalizedUserId}
+    LIMIT 1
+  `
+
+  const page = (pageRows[0] || {}) as {
+    id?: string
+    page_type?: string | null
+    title?: string | null
+    page_jsonb?: Record<string, unknown> | null
+    published_html?: string | null
+    live_url?: string | null
+    updated_at?: string | null
+  }
+
+  if (!page.id || !page.published_html) return null
+
+  const pageJson =
+    page.page_jsonb && typeof page.page_jsonb === "object"
+      ? (page.page_jsonb as Record<string, unknown>)
+      : {}
+  const assetType = mapPageTypeToAssetType(String(page.page_type || "landing"))
+  const title = sanitizePageTitle(assetType, String(page.title || ""))
+  const previewText =
+    typeof pageJson.previewText === "string" && pageJson.previewText.trim().length > 0
+      ? sanitizePreview(pageJson.previewText)
+      : buildPreviewText(assetType, String(pageJson.instruction || page.title || ""))
+
+  return {
+    id: page.id,
+    assetType,
+    title,
+    instruction: sanitizeInstruction(String(pageJson.instruction || page.title || "")),
+    previewText,
+    previewHtml: page.published_html,
+    blueprint:
+      pageJson.blueprint && typeof pageJson.blueprint === "object"
+        ? (pageJson.blueprint as MayaLandingPageBlueprint)
+        : undefined,
+    url: typeof page.live_url === "string" ? page.live_url : undefined,
+    createdAt: page.updated_at || new Date(0).toISOString(),
+    status: "draft",
+  }
 }

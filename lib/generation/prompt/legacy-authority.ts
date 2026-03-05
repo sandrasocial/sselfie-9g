@@ -8,6 +8,7 @@ import { buildNanoBananaPrompt, type StudioProMode } from "@/lib/maya/nano-banan
 import { ensureTriggerWordPrefix, ensureGenderInPrompt } from "@/lib/replicate-helpers"
 import { createHash } from 'crypto'
 import { PromptGenerator, type WorkbenchContext, type PromptSuggestion } from "@/lib/maya/prompt-generator"
+import { buildVideoAuthorityPrompt } from "@/lib/generation/prompt/video-authority"
 
 export type { WorkbenchContext, PromptSuggestion } from "@/lib/maya/prompt-generator"
 
@@ -409,19 +410,20 @@ export async function generatePrompt(
       if (!context.motionPrompt && !context.imageDescription) {
         throw new Error('Video generation requires motionPrompt or imageDescription')
       }
-      
-      // Phase 2C-3: Extract enhanceMotionPrompt() logic here
-      // If Maya provided a prompt, trust it completely
-      if (context.motionPrompt && context.motionPrompt.trim().length > 0) {
-        prompt = context.motionPrompt.trim()
-        builder = 'maya-motion-prompt'
-        success = true
-      } else {
-        // Fallback: minimal motion prompt
-        prompt = "Standing naturally, subtle breathing motion visible"
-        builder = 'fallback-motion-prompt'
-        success = true
-      }
+
+      const result = buildVideoAuthorityPrompt({
+        motionPrompt: context.motionPrompt,
+        imageDescription: context.imageDescription,
+        category: context.category,
+        userRequest: context.userRequest,
+        styleNotes: context.styleNotes,
+        offerBriefPrefill: context.offerBriefPrefill,
+        recommendedSource: context.recommendedSource,
+        uploadsTotal: context.uploadsTotal,
+      })
+      prompt = result.prompt
+      builder = result.builder
+      success = true
       
     } else if (mode === 'profile-image') {
       // Profile image uses hardcoded prompt

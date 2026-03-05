@@ -5,6 +5,7 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 import { checkCredits, deductCredits, CREDIT_COSTS } from "@/lib/credits"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { generatePrompt } from "@/lib/generation/prompt"
+import { getMayaUserSnapshot } from "@/lib/maya/user-snapshot"
 
 
 // Phase 2C-3: Keep original function as fallback
@@ -22,6 +23,7 @@ function enhanceMotionPrompt(userPrompt: string | undefined, imageDescription?: 
 
 export async function POST(request: NextRequest) {
   try {
+    const isDevMode = process.env.NODE_ENV !== "production"
     const { user, error: authError } = await getAuthenticatedUser()
 
     if (authError || !user) {
@@ -30,7 +32,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { imageUrl, imageId, motionPrompt, imageDescription } = body
+    const { imageUrl, imageId, motionPrompt, imageDescription, category } = body
 
     console.log("[v0] ========== VIDEO GENERATION REQUEST ==========")
     console.log("[v0] User ID:", user.id)
@@ -118,21 +120,43 @@ export async function POST(request: NextRequest) {
 
     const replicate = getReplicateClient()
 
+    const mayaSnapshot = await getMayaUserSnapshot(neonUser.id)
+    const rawPreferenceNotes =
+      mayaSnapshot.memoryData && typeof mayaSnapshot.memoryData === "object"
+        ? (mayaSnapshot.memoryData as Record<string, unknown>).user_preference_notes
+        : []
+    const styleNotes = Array.isArray(rawPreferenceNotes)
+      ? rawPreferenceNotes
+          .map((note) => (typeof note === "string" ? note.replace(/\s+/g, " ").trim() : ""))
+          .filter(Boolean)
+          .slice(0, 4)
+      : []
+
     // Phase 2C-3: Route motion prompt enhancement through Prompt Authority Layer
     const enhancementStartTime = Date.now()
     let baseMotionPrompt: string
+    let authorityBuilder = "fallback-motion-prompt"
+    const sourceMotionPrompt = typeof motionPrompt === "string" ? motionPrompt.trim() : ""
     try {
       const authorityResult = await generatePrompt('video', 'video-generation', {
         userId: neonUser.id.toString(),
         motionPrompt,
         imageDescription,
+        category: typeof category === "string" ? category : "",
+        userRequest: typeof imageDescription === "string" ? imageDescription : "",
+        styleNotes,
+        offerBriefPrefill: mayaSnapshot.offerBrief.prefill,
+        recommendedSource: mayaSnapshot.generation.recommendedSource,
+        uploadsTotal: mayaSnapshot.uploads.total,
       })
       baseMotionPrompt = authorityResult.prompt
+      authorityBuilder = authorityResult.metadata.builder
       console.log("[v0] ✅ Motion prompt enhanced via Prompt Authority Layer (", Date.now() - enhancementStartTime, "ms)")
     } catch (authorityError) {
       // Fallback to original logic if Authority Layer fails
       console.warn("[v0] ⚠️ Prompt Authority Layer failed, using fallback:", authorityError)
       baseMotionPrompt = enhanceMotionPrompt(motionPrompt, imageDescription)
+      authorityBuilder = "fallback-enhance-motion-prompt"
     }
 
     // Controlled seed variation for consistency with variety
@@ -223,14 +247,25 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] ✅ Video record created in database, ID:", videoId)
 
-    return NextResponse.json({
+    const responsePayload: Record<string, unknown> = {
       success: true,
       videoId,
       predictionId: prediction.id,
       status: "processing",
       estimatedTime: "1-3 minutes",
       creditsDeducted: CREDIT_COSTS.ANIMATION,
-    })
+    }
+
+    if (isDevMode) {
+      responsePayload.debug = {
+        sourceMotionPrompt,
+        authorityMotionPrompt: baseMotionPrompt,
+        authorityBuilder,
+        category: typeof category === "string" ? category : "",
+      }
+    }
+
+    return NextResponse.json(responsePayload)
   } catch (error) {
     console.error("[v0] ========== VIDEO GENERATION ERROR ==========")
     console.error("[v0] ❌ Error:", error)

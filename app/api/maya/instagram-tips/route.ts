@@ -4,6 +4,7 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 import { getUserPersonalBrand } from "@/lib/data/maya"
 import { generateText } from "ai"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { auditPromptRoute } from "@/lib/generation/prompt/route-audit"
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,9 +28,7 @@ export async function POST(req: NextRequest) {
 
     const { postType, caption, position } = await req.json()
 
-    const { text: tips } = await generateText({
-      model: "openai/gpt-4o-mini",
-      system: `You are Maya, an Instagram strategy expert. Research and provide specific, actionable Instagram tips.
+    const systemPrompt = `You are Maya, an Instagram strategy expert. Research and provide specific, actionable Instagram tips.
       
 Your tips should include:
 1. Best posting time for this niche
@@ -38,8 +37,8 @@ Your tips should include:
 4. Story/Reel ideas to complement this post
 5. Hashtag strategy tips
 
-Be specific, actionable, and use simple everyday language. No corporate jargon.`,
-      prompt: `Generate Instagram tips for this post:
+Be specific, actionable, and use simple everyday language. No corporate jargon.`
+    const userPrompt = `Generate Instagram tips for this post:
 
 Post Type: ${postType}
 Position in Feed: ${position} of 9
@@ -55,7 +54,23 @@ Research current Instagram best practices and provide:
 4. Story idea to complement this post
 5. Reel suggestion based on this content
 
-Format as a conversational tip from Maya, not a list.`,
+Format as a conversational tip from Maya, not a list.`
+    const startedAt = Date.now()
+    auditPromptRoute({
+      routeId: "EP-SHADOW-INSTAGRAM-TIPS",
+      mode: "classic",
+      feature: "instagram-tips",
+      userId: neonUser.id,
+      builder: "openai/gpt-4o-mini",
+      prompt: `${systemPrompt}\n\n${userPrompt}`,
+      input: { postType, position, niche, targetAudience, brandVoice },
+      startedAt,
+    })
+
+    const { text: tips } = await generateText({
+      model: "openai/gpt-4o-mini",
+      system: systemPrompt,
+      prompt: userPrompt,
     })
 
     return NextResponse.json({ tips })

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
 import { put } from "@vercel/blob"
 import { createServerClient } from "@/lib/supabase/server"
-import { getUserByAuthId } from "@/lib/user-mapping"
+import { getOrCreateNeonUser, getUserByAuthId } from "@/lib/user-mapping"
 
 
 export async function POST(req: NextRequest) {
@@ -23,7 +23,17 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const neonUser = await getUserByAuthId(authUser.id)
+    let neonUser = await getUserByAuthId(authUser.id)
+    if (!neonUser) {
+      const email = authUser.email
+      if (!email) {
+        return NextResponse.json({ error: "Authenticated user has no email" }, { status: 400 })
+      }
+
+      const metadataName = typeof authUser.user_metadata?.name === "string" ? authUser.user_metadata.name : null
+      neonUser = await getOrCreateNeonUser(authUser.id, email, metadataName)
+    }
+
     if (!neonUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }

@@ -1,11 +1,14 @@
 export type MayaToolId =
   | "show_capabilities"
+  | "show_studio_hub"
   | "show_gallery"
   | "save_to_gallery"
   | "generate_image"
+  | "generate_video"
   | "show_upload_zone"
   | "edit_asset"
   | "create_asset"
+  | "collect_offer_brief"
 
 export interface MayaToolDefinition {
   id: MayaToolId
@@ -20,6 +23,12 @@ export const MAYA_TOOL_REGISTRY: Record<MayaToolId, MayaToolDefinition> = {
     label: "Show Capabilities",
     marker: "SHOW_CAPABILITIES",
     resultType: "tool-showCapabilities",
+  },
+  show_studio_hub: {
+    id: "show_studio_hub",
+    label: "Show Studio Hub",
+    marker: "SHOW_STUDIO_HUB",
+    resultType: "tool-showStudioHub",
   },
   show_gallery: {
     id: "show_gallery",
@@ -39,6 +48,12 @@ export const MAYA_TOOL_REGISTRY: Record<MayaToolId, MayaToolDefinition> = {
     marker: "GENERATE_IMAGE",
     resultType: "tool-generateImage",
   },
+  generate_video: {
+    id: "generate_video",
+    label: "Generate Video",
+    marker: "GENERATE_VIDEO",
+    resultType: "tool-generateVideo",
+  },
   show_upload_zone: {
     id: "show_upload_zone",
     label: "Show Upload Zone",
@@ -56,6 +71,12 @@ export const MAYA_TOOL_REGISTRY: Record<MayaToolId, MayaToolDefinition> = {
     label: "Create Asset",
     marker: "CREATE_ASSET",
     resultType: "tool-createAssetPreview",
+  },
+  collect_offer_brief: {
+    id: "collect_offer_brief",
+    label: "Collect Offer Brief",
+    marker: "COLLECT_OFFER_BRIEF",
+    resultType: "tool-collectOfferBrief",
   },
 }
 

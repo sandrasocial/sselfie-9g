@@ -1,4 +1,6 @@
 import { sql } from "@/lib/db/client"
+import type { MayaOfferBrief } from "@/lib/maya/offer-brief"
+import { mergeMayaMemoryData } from "@/lib/maya/memory-store"
 
 const MAX_MEMORY_NOTE_LENGTH = 320
 const MAX_MEMORY_NOTES = 20
@@ -219,6 +221,11 @@ export interface PersistMayaActiveAssetResult {
   historyCount: number
 }
 
+export interface PersistMayaOfferBriefResult {
+  brief: MayaOfferBrief
+  updatedAt: string
+}
+
 export async function persistMayaRememberedPreference(
   userId: string | number,
   note: string,
@@ -250,18 +257,34 @@ export async function persistMayaRememberedPreference(
     remembered_preference_updated_at: nowIso,
   }
 
-  await sql`
-    INSERT INTO maya_personal_memory (user_id, memory_data, updated_at)
-    VALUES (${normalizedUserId}, ${JSON.stringify(memoryPatch)}::jsonb, NOW())
-    ON CONFLICT (user_id) DO UPDATE
-    SET
-      memory_data = COALESCE(maya_personal_memory.memory_data, '{}'::jsonb) || ${JSON.stringify(memoryPatch)}::jsonb,
-      updated_at = NOW()
-  `
+  await mergeMayaMemoryData(normalizedUserId, memoryPatch)
 
   return {
     note: sanitizedNote,
     notes,
+  }
+}
+
+export async function persistMayaOfferBrief(
+  userId: string | number,
+  brief: MayaOfferBrief,
+): Promise<PersistMayaOfferBriefResult> {
+  const normalizedUserId = String(userId || "").trim()
+  if (!normalizedUserId) {
+    throw new Error("Cannot persist Maya offer brief without a user id")
+  }
+
+  const nowIso = new Date().toISOString()
+  const memoryPatch = {
+    latest_offer_brief: brief,
+    last_offer_brief_updated_at: nowIso,
+  }
+
+  await mergeMayaMemoryData(normalizedUserId, memoryPatch)
+
+  return {
+    brief,
+    updatedAt: nowIso,
   }
 }
 
@@ -366,14 +389,7 @@ export async function persistMayaActiveAssetContext(
     asset_context_updated_at: nowIso,
   }
 
-  await sql`
-    INSERT INTO maya_personal_memory (user_id, memory_data, updated_at)
-    VALUES (${normalizedUserId}, ${JSON.stringify(memoryPatch)}::jsonb, NOW())
-    ON CONFLICT (user_id) DO UPDATE
-    SET
-      memory_data = COALESCE(maya_personal_memory.memory_data, '{}'::jsonb) || ${JSON.stringify(memoryPatch)}::jsonb,
-      updated_at = NOW()
-  `
+  await mergeMayaMemoryData(normalizedUserId, memoryPatch)
 
   return {
     activeAsset,

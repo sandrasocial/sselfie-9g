@@ -34,6 +34,14 @@ import ImageUploadFlow from "./pro-mode/ImageUploadFlow"
 import { getConceptPrompt } from "@/lib/maya/concept-templates"
 import BuyCreditsModal from "./buy-credits-modal"
 import { parseMayaToolMarkers } from "@/lib/maya/tool-markers"
+import {
+  encodeOfferBriefMarkerPayload,
+  type MayaOfferBrief,
+} from "@/lib/maya/offer-brief"
+import {
+  encodeMayaVideoCardMarker,
+  stripMayaVideoCardMarkers,
+} from "@/lib/maya/video-card-marker"
 // Pro Mode Components
 import MayaHeader from "./maya/maya-header"
 import ImageLibraryModal from "./pro-mode/ImageLibraryModal"
@@ -103,6 +111,15 @@ interface MayaChatScreenProps {
 
 type PhaseTwoGenerationSource = "selfies" | "custom_model" | "base_model"
 type PhaseTwoUploadCategory = "selfies" | "products" | "people" | "vibes"
+type PhaseTwoVideoImage = {
+  id: string
+  imageUrl: string
+  prompt?: string
+  description?: string
+  category?: string
+}
+
+type OfferBriefFormValues = Omit<MayaOfferBrief, "assetType">
 
 export default function MayaChatScreen({ 
   onImageGenerated, 
@@ -385,6 +402,7 @@ export default function MayaChatScreen({
   // CRITICAL FIX: Track processed concept messages to prevent duplication on page refresh
   const processedConceptMessagesRef = useRef<Set<string>>(new Set())
   const processedToolMessagesRef = useRef<Set<string>>(new Set())
+  const videoPollIntervalsRef = useRef<Map<string, NodeJS.Timeout>>(new Map())
   
   // Pro features onboarding state
   const [showStudioProOnboarding, setShowStudioProOnboarding] = useState(false)
@@ -425,6 +443,56 @@ export default function MayaChatScreen({
     return ""
   }, [])
 
+  const updateAssistantToolPart = useCallback(
+    (partType: string, output: any, targetMessageId?: string | null) => {
+      setMessages((prevMessages: any[]) => {
+        const nextMessages = [...prevMessages]
+        let targetIndex = -1
+
+        if (targetMessageId) {
+          targetIndex = nextMessages.findIndex((message: any) => message.id === targetMessageId)
+        }
+        if (targetIndex < 0) {
+          for (let i = nextMessages.length - 1; i >= 0; i -= 1) {
+            if (nextMessages[i]?.role === "assistant") {
+              targetIndex = i
+              break
+            }
+          }
+        }
+        if (targetIndex < 0) return prevMessages
+
+        const targetMessage = nextMessages[targetIndex]
+        const existingParts = Array.isArray(targetMessage.parts) ? [...targetMessage.parts] : []
+        const existingIndex = existingParts.findIndex((part: any) => part?.type === partType)
+        const nextPart = { type: partType, output }
+
+        if (existingIndex >= 0) {
+          existingParts[existingIndex] = nextPart
+        } else {
+          existingParts.push(nextPart)
+        }
+
+        nextMessages[targetIndex] = { ...targetMessage, parts: existingParts }
+        return nextMessages
+      })
+    },
+    [setMessages],
+  )
+
+  const clearVideoPollForMessage = useCallback((messageId: string) => {
+    const interval = videoPollIntervalsRef.current.get(messageId)
+    if (interval) {
+      clearInterval(interval)
+      videoPollIntervalsRef.current.delete(messageId)
+    }
+  }, [])
+
+  const clearAllVideoPolls = useCallback(() => {
+    videoPollIntervalsRef.current.forEach((interval) => clearInterval(interval))
+    videoPollIntervalsRef.current.clear()
+  }, [])
+
   // useChat hook and loadChat function are now managed by useMayaChat hook
   
   // Wrapper for loadChat that also closes history panel (component-specific UI state)
@@ -459,9 +527,16 @@ export default function MayaChatScreen({
   useEffect(() => {
     processedConceptMessagesRef.current.clear()
     processedToolMessagesRef.current.clear()
+    clearAllVideoPolls()
     setPendingConceptRequest(null) // Clear pending request on chat change
     console.log("[v0] ✅ Cleared processedConceptMessagesRef for new chat:", chatId)
-  }, [chatId])
+  }, [chatId, clearAllVideoPolls])
+
+  useEffect(() => {
+    return () => {
+      clearAllVideoPolls()
+    }
+  }, [clearAllVideoPolls])
 
   useEffect(() => {
     if (isMembership && firstTimeProductUser) {
@@ -595,10 +670,13 @@ export default function MayaChatScreen({
       const alreadyHasToolResults = lastAssistantMessage.parts?.some(
         (p: any) =>
           p?.type === "tool-showCapabilities" ||
+          p?.type === "tool-showStudioHub" ||
           p?.type === "tool-showGallery" ||
           p?.type === "tool-saveToGallery" ||
           p?.type === "tool-generateImage" ||
+          p?.type === "tool-generateVideo" ||
           p?.type === "tool-showUploadZone" ||
+          p?.type === "tool-collectOfferBrief" ||
           p?.type === "tool-editAsset" ||
           p?.type === "tool-createAssetPreview",
       )
@@ -612,50 +690,50 @@ export default function MayaChatScreen({
       processedToolMessagesRef.current.add(toolProcessKey)
       const targetMessageId = lastAssistantMessage.id
 
-      const updateToolPart = (partType: string, output: any) => {
-        setMessages((prevMessages: any[]) => {
-          const nextMessages = [...prevMessages]
-          let targetIndex = -1
-
-          if (targetMessageId) {
-            targetIndex = nextMessages.findIndex((m: any) => m.id === targetMessageId)
-          }
-          if (targetIndex < 0) {
-            for (let i = nextMessages.length - 1; i >= 0; i--) {
-              if (nextMessages[i]?.role === "assistant") {
-                targetIndex = i
-                break
-              }
-            }
-          }
-          if (targetIndex < 0) return prevMessages
-
-          const targetMessage = nextMessages[targetIndex]
-          const existingParts = Array.isArray(targetMessage.parts) ? [...targetMessage.parts] : []
-          const existingIndex = existingParts.findIndex((part: any) => part?.type === partType)
-          const nextPart = { type: partType, output }
-
-          if (existingIndex >= 0) {
-            existingParts[existingIndex] = nextPart
-          } else {
-            existingParts.push(nextPart)
-          }
-
-          nextMessages[targetIndex] = { ...targetMessage, parts: existingParts }
-          return nextMessages
-        })
-      }
-
       const resolvePhaseTwoTools = async () => {
         for (const marker of toolMarkers) {
           if (marker.tool === "show_capabilities") {
-            updateToolPart("tool-showCapabilities", {
+            updateAssistantToolPart("tool-showCapabilities", {
               state: "ready",
-            })
+            }, targetMessageId)
+          }
+
+          if (marker.tool === "show_studio_hub") {
+            updateAssistantToolPart("tool-showStudioHub", {
+              state: "loading",
+              stats: { feedCount: 0, pageCount: 0, photoCount: 0, videoCount: 0 },
+              feeds: [],
+              pages: [],
+            }, targetMessageId)
+
+            try {
+              const response = await fetch("/api/studio/hub", {
+                credentials: "include",
+              })
+              const data = await response.json()
+              if (!response.ok) {
+                throw new Error(data?.error || "Failed to load Studio Hub")
+              }
+
+              updateAssistantToolPart("tool-showStudioHub", {
+                state: "ready",
+                stats: data?.stats || { feedCount: 0, pageCount: 0, photoCount: 0, videoCount: 0 },
+                feeds: Array.isArray(data?.feeds) ? data.feeds : [],
+                pages: Array.isArray(data?.pages) ? data.pages : [],
+              }, targetMessageId)
+            } catch (error: any) {
+              updateAssistantToolPart("tool-showStudioHub", {
+                state: "error",
+                message: error?.message || "Could not load Studio Hub",
+                stats: { feedCount: 0, pageCount: 0, photoCount: 0, videoCount: 0 },
+                feeds: [],
+                pages: [],
+              }, targetMessageId)
+            }
           }
 
           if (marker.tool === "show_gallery") {
-            updateToolPart("tool-showGallery", { state: "loading", images: [], total: 0 })
+            updateAssistantToolPart("tool-showGallery", { state: "loading", images: [], total: 0 }, targetMessageId)
             try {
               const response = await fetch("/api/gallery/images?limit=6", {
                 credentials: "include",
@@ -674,23 +752,23 @@ export default function MayaChatScreen({
                   }))
                 : []
 
-              updateToolPart("tool-showGallery", {
+              updateAssistantToolPart("tool-showGallery", {
                 state: "ready",
                 images,
                 total: Number(data?.total ?? images.length),
-              })
+              }, targetMessageId)
             } catch (error: any) {
-              updateToolPart("tool-showGallery", {
+              updateAssistantToolPart("tool-showGallery", {
                 state: "error",
                 message: error?.message || "Could not load gallery",
                 images: [],
                 total: 0,
-              })
+              }, targetMessageId)
             }
           }
 
           if (marker.tool === "save_to_gallery") {
-            updateToolPart("tool-saveToGallery", { state: "loading", target: marker.target })
+            updateAssistantToolPart("tool-saveToGallery", { state: "loading", target: marker.target }, targetMessageId)
             try {
               let resolvedImageId = marker.imageId
 
@@ -722,54 +800,106 @@ export default function MayaChatScreen({
                 throw new Error(saveData?.error || "Failed to save image")
               }
 
-              updateToolPart("tool-saveToGallery", {
+              updateAssistantToolPart("tool-saveToGallery", {
                 state: "ready",
                 target: marker.target,
                 imageId: resolvedImageId,
                 savedCount: Number(saveData?.savedCount ?? 0),
                 message: "Saved to your gallery.",
-              })
+              }, targetMessageId)
             } catch (error: any) {
-              updateToolPart("tool-saveToGallery", {
+              updateAssistantToolPart("tool-saveToGallery", {
                 state: "error",
                 target: marker.target,
                 message: error?.message || "Could not save to gallery",
-              })
+              }, targetMessageId)
             }
           }
 
           if (marker.tool === "generate_image") {
-            updateToolPart("tool-generateImage", {
+            updateAssistantToolPart("tool-generateImage", {
               state: "ready",
               source: marker.source,
-            })
+            }, targetMessageId)
+          }
+
+          if (marker.tool === "generate_video") {
+            updateAssistantToolPart("tool-generateVideo", {
+              state: "loading_images",
+              images: [],
+            }, targetMessageId)
+
+            try {
+              const response = await fetch("/api/maya/b-roll-images?limit=8", {
+                credentials: "include",
+              })
+              const data = await response.json()
+              if (!response.ok) {
+                throw new Error(data?.error || "Failed to load images")
+              }
+
+              const images: PhaseTwoVideoImage[] = Array.isArray(data?.images)
+                ? data.images
+                    .map((image: any, index: number) => {
+                      const imageId = String(image?.id ?? `image-${index}`)
+                      const imageUrl = image?.image_url || image?.imageUrl || ""
+                      return {
+                        id: imageId,
+                        imageUrl,
+                        prompt: image?.prompt || "",
+                        description: image?.description || "",
+                        category: image?.category || "",
+                      }
+                    })
+                    .filter((image: PhaseTwoVideoImage) => image.imageUrl.length > 0)
+                : []
+
+              updateAssistantToolPart("tool-generateVideo", {
+                state: "choose_image",
+                images,
+              }, targetMessageId)
+            } catch (error: any) {
+              updateAssistantToolPart("tool-generateVideo", {
+                state: "error",
+                message: error?.message || "Could not load images for video",
+              }, targetMessageId)
+            }
           }
 
           if (marker.tool === "show_upload_zone") {
-            updateToolPart("tool-showUploadZone", {
+            updateAssistantToolPart("tool-showUploadZone", {
               state: "ready",
               category: marker.category,
-            })
+            }, targetMessageId)
+          }
+
+          if (marker.tool === "collect_offer_brief") {
+            updateAssistantToolPart("tool-collectOfferBrief", {
+              state: "ready",
+              assetType: marker.assetType,
+              prefill: marker.prefill || {},
+              missingFields: marker.missingFields || [],
+            }, targetMessageId)
           }
 
           if (marker.tool === "edit_asset") {
-            updateToolPart("tool-editAsset", {
+            updateAssistantToolPart("tool-editAsset", {
               state: "ready",
               assetType: marker.assetType,
               assetLabel: marker.assetLabel,
               message: `Active ${marker.assetLabel} editing context ready.`,
-            })
+            }, targetMessageId)
           }
 
           if (marker.tool === "create_asset") {
-            updateToolPart("tool-createAssetPreview", {
+            updateAssistantToolPart("tool-createAssetPreview", {
               state: "ready",
               assetType: marker.assetType,
               assetLabel: marker.assetLabel,
               assetId: marker.assetId || null,
               previewText: marker.previewText || "",
               url: marker.url || "",
-            })
+            }, targetMessageId)
           }
         }
       }
@@ -779,7 +909,7 @@ export default function MayaChatScreen({
 
     // Feed trigger detection moved to MayaFeedTab component
     // (Feed tab handles its own triggers: [CREATE_FEED_STRATEGY], [GENERATE_CAPTIONS], [GENERATE_STRATEGY])
-  }, [messages, status, isGeneratingConcepts, pendingConceptRequest, proMode, messagesWithUploadModule, activeMayaTab, isCreatingFeed])
+  }, [messages, status, isGeneratingConcepts, pendingConceptRequest, proMode, messagesWithUploadModule, activeMayaTab, isCreatingFeed, updateAssistantToolPart])
 
   // The problem was: message was saved BEFORE concepts were generated, so concepts were never persisted
   useEffect(() => {
@@ -1172,6 +1302,42 @@ export default function MayaChatScreen({
       console.log("[v0] Save effect - added feed card markers to content:", feedMarkers)
     }
 
+    // Extract completed video cards and persist as [VIDEO_CARD:...] markers.
+    const videoCards: Array<{ videoUrl: string; motionPrompt?: string; imageUrl?: string }> = []
+    if (lastAssistantMessage.parts && Array.isArray(lastAssistantMessage.parts)) {
+      const seenVideoUrls = new Set<string>()
+      for (const part of lastAssistantMessage.parts) {
+        if (part.type !== "tool-generateVideo") continue
+        const output = (part as any)?.output
+        const videoUrl = typeof output?.videoUrl === "string" ? output.videoUrl.trim() : ""
+        if (!videoUrl || seenVideoUrls.has(videoUrl)) continue
+        seenVideoUrls.add(videoUrl)
+        videoCards.push({
+          videoUrl,
+          motionPrompt: typeof output?.motionPrompt === "string" ? output.motionPrompt : undefined,
+          imageUrl: typeof output?.imageUrl === "string" ? output.imageUrl : undefined,
+        })
+      }
+    }
+
+    if (videoCards.length > 0) {
+      // Once a video is complete, persist card markers and remove dispatch triggers.
+      saveTextContent = stripMayaVideoCardMarkers(saveTextContent)
+      saveTextContent = saveTextContent.replace(/\[GENERATE_VIDEO(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
+
+      const videoMarkers = videoCards
+        .map((videoCard) => encodeMayaVideoCardMarker(videoCard))
+        .filter((marker) => marker.length > 0)
+        .join(" ")
+
+      if (videoMarkers) {
+        saveTextContent = `${saveTextContent}\n${videoMarkers}`.trim()
+        console.log("[v0] Save effect - added video card markers to content:", {
+          count: videoCards.length,
+        })
+      }
+    }
+
     // Extract concept cards from parts
     // 🔴 FIX: Both Classic Mode and Pro Mode now return { state: "ready", concepts: [...] }
     // This ensures consistent handling across both modes
@@ -1196,7 +1362,7 @@ export default function MayaChatScreen({
     
     // Only save if we have something to save
     // CRITICAL: Check for feed cards too, not just concepts!
-    if (!saveTextContent && conceptCards.length === 0 && feedCards.length === 0) {
+    if (!saveTextContent && conceptCards.length === 0 && feedCards.length === 0 && videoCards.length === 0) {
       return
     }
 
@@ -2020,6 +2186,282 @@ export default function MayaChatScreen({
     [handlePhaseTwoUploadZone, proMode, setProMode, setMayaTabAndHash, toast],
   )
 
+  const handleToolSubmitOfferBrief = useCallback(
+    (values: OfferBriefFormValues) => {
+      const brief: MayaOfferBrief = {
+        assetType: "page",
+        designStyle: values.designStyle.trim(),
+        offerType: values.offerType.trim(),
+        transformation: values.transformation.trim(),
+        pricePoint: values.pricePoint.trim(),
+        formatAndDuration: values.formatAndDuration.trim(),
+        idealClient: values.idealClient.trim(),
+        biggestStruggle: values.biggestStruggle.trim(),
+        uniqueMethod: values.uniqueMethod.trim(),
+        proofPoints: values.proofPoints.trim(),
+        callToAction: values.callToAction.trim(),
+      }
+
+      const markerPayload = encodeOfferBriefMarkerPayload(brief)
+      const summaryText =
+        `Here is my offer brief.\\n` +
+        (brief.designStyle ? `Design style: ${brief.designStyle}\\n` : "") +
+        `Offer: ${brief.offerType}\\n` +
+        `Transformation: ${brief.transformation}\\n` +
+        `Ideal client: ${brief.idealClient}\\n` +
+        `[SUBMIT_OFFER_BRIEF:${markerPayload}]`
+
+      void handleSendMessage(summaryText)
+    },
+    [handleSendMessage],
+  )
+
+  const persistVideoCardMarker = useCallback(
+    async (input: { messageId: string; videoUrl: string; motionPrompt?: string; imageUrl?: string }) => {
+      if (!chatId) return
+
+      const targetMessage = messages.find((message: any) => String(message?.id) === String(input.messageId))
+      const fallbackAssistant = [...messages].reverse().find((message: any) => message?.role === "assistant")
+      const messageToPersist = targetMessage || fallbackAssistant
+      if (!messageToPersist) return
+
+      let baseContent = ""
+      if (Array.isArray(messageToPersist.parts)) {
+        baseContent = messageToPersist.parts
+          .filter((part: any) => part?.type === "text" && typeof part?.text === "string")
+          .map((part: any) => part.text)
+          .join("\n")
+          .trim()
+      } else if (typeof messageToPersist.content === "string") {
+        baseContent = messageToPersist.content.trim()
+      }
+
+      const marker = encodeMayaVideoCardMarker({
+        videoUrl: input.videoUrl,
+        motionPrompt: input.motionPrompt,
+        imageUrl: input.imageUrl,
+      })
+      if (!marker) return
+
+      const cleanContent = stripMayaVideoCardMarkers(baseContent)
+        .replace(/\[GENERATE_VIDEO(?:\s*:\s*[^\]]+)?\]/gi, "")
+        .trim()
+
+      const nextContent = `${cleanContent}\n${marker}`.trim()
+      if (!nextContent) return
+
+      const response = await fetch("/api/maya/update-message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chatId,
+          messageId: messageToPersist.id,
+          content: nextContent,
+        }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null)
+        throw new Error(data?.error || "Failed to persist video marker")
+      }
+    },
+    [chatId, messages],
+  )
+
+  const handleToolStartVideoGeneration = useCallback(
+    async (input: {
+      messageId: string
+      imageId: string
+      imageUrl: string
+      prompt?: string
+      description?: string
+      category?: string
+    }) => {
+      const fallbackPrompt = input.prompt?.trim() || input.description?.trim() || "Cinematic lifestyle scene"
+
+      clearVideoPollForMessage(input.messageId)
+      updateAssistantToolPart(
+        "tool-generateVideo",
+        {
+          state: "loading",
+          imageUrl: input.imageUrl,
+        },
+        input.messageId,
+      )
+
+      try {
+        const motionResponse = await fetch("/api/maya/generate-motion-prompt", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fluxPrompt: fallbackPrompt,
+            description: input.description || "",
+            category: input.category || "",
+            imageUrl: input.imageUrl,
+          }),
+        })
+        const motionData = await motionResponse.json()
+        if (!motionResponse.ok) {
+          throw new Error(motionData?.error || "Failed to create motion prompt")
+        }
+        const motionPrompt = motionData?.motionPrompt || fallbackPrompt
+
+        updateAssistantToolPart(
+          "tool-generateVideo",
+          {
+            state: "loading",
+            imageUrl: input.imageUrl,
+            motionPrompt,
+          },
+          input.messageId,
+        )
+
+        const generateResponse = await fetch("/api/maya/generate-video", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            imageUrl: input.imageUrl,
+            imageId: input.imageId,
+            motionPrompt,
+            imageDescription: input.description || "",
+            category: input.category || "",
+          }),
+        })
+        const generateData = await generateResponse.json()
+
+        if (!generateResponse.ok) {
+          if (generateResponse.status === 402) {
+            setShowBuyCreditsModal(true)
+          }
+          throw new Error(generateData?.message || generateData?.error || "Failed to start video generation")
+        }
+
+        const predictionId = generateData?.predictionId
+        const videoId = generateData?.videoId
+        if (!predictionId || !videoId) {
+          throw new Error("Missing video job metadata")
+        }
+        const debugInfo =
+          generateData?.debug && typeof generateData.debug === "object" ? generateData.debug : undefined
+        const authorityMotionPrompt =
+          typeof debugInfo?.authorityMotionPrompt === "string" ? debugInfo.authorityMotionPrompt.trim() : ""
+        const appliedMotionPrompt = authorityMotionPrompt || motionPrompt
+
+        updateAssistantToolPart(
+          "tool-generateVideo",
+          {
+            state: "processing",
+            progress: 5,
+            motionPrompt: appliedMotionPrompt,
+            imageUrl: input.imageUrl,
+            debug: debugInfo,
+          },
+          input.messageId,
+        )
+
+        const pollInterval = setInterval(async () => {
+          try {
+            const pollResponse = await fetch(
+              `/api/maya/check-video?predictionId=${encodeURIComponent(String(predictionId))}&videoId=${encodeURIComponent(String(videoId))}`,
+              {
+                credentials: "include",
+              },
+            )
+            const pollData = await pollResponse.json()
+
+            if (!pollResponse.ok) {
+              throw new Error(pollData?.error || "Failed to check video status")
+            }
+
+            if (pollData?.status === "succeeded" && pollData?.videoUrl) {
+              clearVideoPollForMessage(input.messageId)
+              updateAssistantToolPart(
+                "tool-generateVideo",
+                {
+                  state: "ready",
+                  videoUrl: pollData.videoUrl,
+                  motionPrompt: appliedMotionPrompt,
+                  imageUrl: input.imageUrl,
+                  debug: debugInfo,
+                },
+                input.messageId,
+              )
+              await persistVideoCardMarker({
+                messageId: input.messageId,
+                videoUrl: pollData.videoUrl,
+                motionPrompt: appliedMotionPrompt,
+                imageUrl: input.imageUrl,
+              })
+
+              try {
+                const creditsRes = await fetch("/api/user/credits", { credentials: "include" })
+                const creditsData = await creditsRes.json()
+                if (creditsRes.ok && typeof creditsData?.balance === "number") {
+                  setCreditBalance(creditsData.balance)
+                }
+              } catch {
+                // Non-blocking.
+              }
+              return
+            }
+
+            if (pollData?.status === "failed") {
+              clearVideoPollForMessage(input.messageId)
+              updateAssistantToolPart(
+                "tool-generateVideo",
+                {
+                  state: "error",
+                  message: pollData?.error || "Video generation failed",
+                  debug: debugInfo,
+                },
+                input.messageId,
+              )
+              return
+            }
+
+            updateAssistantToolPart(
+              "tool-generateVideo",
+              {
+                state: "processing",
+                progress: Number.isFinite(pollData?.progress) ? pollData.progress : 50,
+                motionPrompt: appliedMotionPrompt,
+                imageUrl: input.imageUrl,
+                debug: debugInfo,
+              },
+              input.messageId,
+            )
+          } catch (error: any) {
+            clearVideoPollForMessage(input.messageId)
+            updateAssistantToolPart(
+              "tool-generateVideo",
+              {
+                state: "error",
+                message: error?.message || "Video generation failed",
+                debug: debugInfo,
+              },
+              input.messageId,
+            )
+          }
+        }, 3000)
+
+        videoPollIntervalsRef.current.set(input.messageId, pollInterval)
+      } catch (error: any) {
+        clearVideoPollForMessage(input.messageId)
+        updateAssistantToolPart(
+          "tool-generateVideo",
+          {
+            state: "error",
+            message: error?.message || "Could not start video generation",
+          },
+          input.messageId,
+        )
+      }
+    },
+    [clearVideoPollForMessage, persistVideoCardMarker, updateAssistantToolPart],
+  )
+
   // Wrapper for handleNewChat that adds component-specific logic
   const handleNewChat = useCallback(async () => {
     // In Pro Mode, "New Project" should clear library (like "Start Fresh")
@@ -2037,13 +2479,14 @@ export default function MayaChatScreen({
     setMessagesWithUploadModule(new Set())
     setPendingConceptRequest(null)
       promptGenerationTriggeredRef.current.clear() // Clear prompt generation tracking
+    clearAllVideoPolls()
 
     // Clear shared images when starting new chat
     clearSharedImages()
 
     // Call hook's base handler
     await baseHandleNewChat()
-  }, [proMode, clearLibrary, baseHandleNewChat, clearSharedImages])
+  }, [proMode, clearLibrary, baseHandleNewChat, clearSharedImages, clearAllVideoPolls])
 
   // Handle mode switching - creates a new chat when switching between Classic and Pro
   // Handle saving concept to guide (admin mode)
@@ -2661,6 +3104,10 @@ export default function MayaChatScreen({
     let cleanedText = text.replace(/\[GENERATE_PROMPTS[:\s]+[^\]]+\]/gi, "").trim()
     // Also remove GENERATE_CONCEPTS trigger
     cleanedText = cleanedText.replace(/\[GENERATE_CONCEPTS\]\s*[^\n]*/gi, "").trim()
+    cleanedText = cleanedText.replace(/\[GENERATE_VIDEO(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
+    cleanedText = cleanedText.replace(/\[VIDEO_CARD:[^\]]+\]/gi, "").trim()
+    cleanedText = cleanedText.replace(/\[COLLECT_OFFER_BRIEF(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
+    cleanedText = cleanedText.replace(/\[SUBMIT_OFFER_BRIEF:\s*[^\]]+\]/gi, "").trim()
 
     // Check if message contains an inspiration image
     const inspirationImageMatch = cleanedText.match(/\[Inspiration Image: (https?:\/\/[^\]]+)\]/)
@@ -2718,10 +3165,15 @@ export default function MayaChatScreen({
       .replace(/\[GENERATE_PROMPTS[:\s]+[^\]]+\]/gi, "")
       .replace(/\[GENERATE_CONCEPTS\]\s*[^\n]*/gi, "")
       .replace(/\[SHOW_CAPABILITIES\]/gi, "")
+      .replace(/\[SHOW_STUDIO_HUB\]/gi, "")
       .replace(/\[SHOW_GALLERY\]/gi, "")
       .replace(/\[SAVE_TO_GALLERY(?:\s*:\s*[^\]]+)?\]/gi, "")
       .replace(/\[GENERATE_IMAGE(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replace(/\[GENERATE_VIDEO(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replace(/\[VIDEO_CARD:[^\]]+\]/gi, "")
       .replace(/\[SHOW_UPLOAD_ZONE(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replace(/\[COLLECT_OFFER_BRIEF(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replace(/\[SUBMIT_OFFER_BRIEF:\s*[^\]]+\]/gi, "")
       .replace(/\[EDIT_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "")
       .replace(/\[CREATE_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "")
       .replace(/\[GENERATE_CAPTIONS\]/gi, "")
@@ -2742,10 +3194,12 @@ export default function MayaChatScreen({
           if (
             part.type === "tool-generateConcepts" ||
             part.type === "tool-showCapabilities" ||
+            part.type === "tool-showStudioHub" ||
             part.type === "tool-showGallery" ||
             part.type === "tool-saveToGallery" ||
             part.type === "tool-generateImage" ||
             part.type === "tool-showUploadZone" ||
+            part.type === "tool-collectOfferBrief" ||
             part.type === "tool-editAsset" ||
             part.type === "tool-createAssetPreview" ||
             part.type === "tool-generateFeed" ||
@@ -3254,6 +3708,8 @@ export default function MayaChatScreen({
           onToolSelectGenerationSource={handlePhaseTwoGenerationSource}
           onToolOpenUploadZone={handlePhaseTwoUploadZone}
           onToolPromptSelect={handleSendMessage}
+          onToolSubmitOfferBrief={handleToolSubmitOfferBrief}
+          onToolStartVideoGeneration={handleToolStartVideoGeneration}
         />
       )}
           {showReturningMemberHome && (

@@ -16,16 +16,20 @@ function isRecoverableLibrarySchemaError(error: any): boolean {
   const code = typeof error?.code === "string" ? error.code : ""
   const message = getErrorMessage(error).toLowerCase()
 
-  if (code === "42P01" || code === "42703") {
+  if (code === "42P01" || code === "42703" || code === "42883" || code === "22P02" || code === "42804") {
     return true
   }
 
   // Handles relation/column drift between environments.
   return (
-    message.includes("user_image_libraries") &&
-    (message.includes("does not exist") ||
-      message.includes("undefined table") ||
-      message.includes("undefined column"))
+    (message.includes("user_image_libraries") &&
+      (message.includes("does not exist") ||
+        message.includes("undefined table") ||
+        message.includes("undefined column"))) ||
+    ((message.includes("user_id") || message.includes("uuid = integer")) &&
+      (message.includes("operator does not exist") ||
+        message.includes("invalid input syntax") ||
+        message.includes("cannot cast")))
   )
 }
 
@@ -82,7 +86,7 @@ export async function POST(req: NextRequest) {
         created_at,
         updated_at
       FROM user_image_libraries
-      WHERE user_id = ${dbUserId}
+      WHERE user_id::text = ${String(dbUserId)}
       LIMIT 1
     `
 

@@ -212,6 +212,7 @@ export default function MayaVideosTab({
           imageId,
           motionPrompt,
           imageDescription: description,
+          category: category || "",
         }),
       })
 

@@ -1,6 +1,7 @@
 import { generateText } from "ai"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { auditPromptRoute } from "@/lib/generation/prompt/route-audit"
 
 export const maxDuration = 60
 
@@ -57,6 +58,18 @@ Return ONLY a valid JSON object with this structure:
   ],
   "explanation": "string - A warm, friendly explanation of why these pillars work for their brand (2-3 sentences in simple language)"
 }`
+
+    const startedAt = Date.now()
+    auditPromptRoute({
+      routeId: "EP-SHADOW-CONTENT-PILLARS",
+      mode: "classic",
+      feature: "content-pillars",
+      userId: user.id,
+      builder: "anthropic/claude-sonnet-4-20250514",
+      prompt,
+      input: { userAnswers },
+      startedAt,
+    })
 
     const { text } = await generateText({
       model: "anthropic/claude-sonnet-4-20250514",

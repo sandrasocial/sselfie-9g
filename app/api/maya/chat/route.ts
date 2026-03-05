@@ -22,7 +22,7 @@ import {
 } from "@/lib/maya/auto-select-mode"
 import { getProductGenerationPrompt } from "@/lib/products-system-prompt"
 import { shouldDeductMayaChatCredit } from "@/lib/maya/chat-credit-policy"
-import { extractLatestUserText } from "@/lib/maya/intent-dispatcher"
+import { extractLatestUserText, hydrateMayaToolDispatchIntent } from "@/lib/maya/intent-dispatcher"
 import { stripMayaToolMarkers } from "@/lib/maya/tool-markers"
 import { formatMayaToolMarker } from "@/lib/maya/tool-registry"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
@@ -30,9 +30,22 @@ import {
   persistMayaRememberedPreference,
   getMayaActiveAssetContext,
   persistMayaActiveAssetContext,
+  persistMayaOfferBrief,
 } from "@/lib/maya/memory-layer"
-import { orchestrateMayaTurn } from "@/lib/maya/tool-orchestrator"
+import { estimateToolDispatchCredits, orchestrateMayaTurn } from "@/lib/maya/tool-orchestrator"
 import { createMayaGeneratedAsset, updateMayaGeneratedAsset } from "@/lib/maya/asset-generation"
+import {
+  parseOfferBriefSubmissionMarker,
+  buildOfferBriefInstruction,
+  summarizeOfferBriefForMemory,
+  encodeOfferBriefCollectionPayload,
+  toOfferBriefFromPartial,
+  type MayaOfferBriefField,
+} from "@/lib/maya/offer-brief"
+import { getMayaUserSnapshot } from "@/lib/maya/user-snapshot"
+import { resolveMayaLandingSnapshot } from "@/lib/maya/page-generation/snapshot-resolver"
+import { isMayaPageRendererV2Enabled } from "@/lib/maya/page-generation/constants"
+import type { MayaCriticalLandingField } from "@/lib/maya/page-generation/types"
 
 import { NextResponse } from "next/server"
 
@@ -42,6 +55,39 @@ function isChatFirstMayaEnabled(envValue?: string | null): boolean {
   if (!envValue) return process.env.NODE_ENV !== "production"
   const normalized = envValue.trim().toLowerCase()
   return normalized === "true" || normalized === "1"
+}
+
+const OFFER_BRIEF_FIELD_LABELS: Record<MayaOfferBriefField, string> = {
+  offerType: "your offer",
+  transformation: "the main result",
+  pricePoint: "your price point",
+  formatAndDuration: "the format",
+  idealClient: "your ideal client",
+  biggestStruggle: "their biggest struggle",
+  uniqueMethod: "your unique method",
+  proofPoints: "your proof points",
+  callToAction: "your CTA",
+}
+
+function summarizeMissingOfferBriefFields(fields: MayaOfferBriefField[]): string {
+  const labels = fields
+    .map((field) => OFFER_BRIEF_FIELD_LABELS[field])
+    .filter((label): label is string => Boolean(label))
+
+  if (labels.length === 0) return "a couple details"
+  if (labels.length === 1) return labels[0]
+  if (labels.length === 2) return `${labels[0]} and ${labels[1]}`
+  return `${labels.slice(0, -1).join(", ")}, and ${labels[labels.length - 1]}`
+}
+
+function mapCriticalFieldsToOfferBriefFields(fields: MayaCriticalLandingField[]): MayaOfferBriefField[] {
+  const mapped: MayaOfferBriefField[] = []
+  for (const field of fields) {
+    if (field === "offer") mapped.push("offerType")
+    if (field === "audience") mapped.push("idealClient")
+    if (field === "transformation") mapped.push("transformation")
+  }
+  return Array.from(new Set(mapped))
 }
 
 const PROMPT_BUILDER_SYSTEM = `You are Maya in Prompt Builder Mode, helping Sandra create professional, reusable prompts for SSELFIE Studio prompt guides.
@@ -316,9 +362,79 @@ export async function POST(req: Request) {
     const chatFirstMayaEnabled = isChatFirstMayaEnabled(process.env.FEATURE_CHAT_FIRST_MAYA)
     if (chatFirstMayaEnabled && !isPromptBuilder && chatType !== "feed-planner" && chatType !== "pro-photoshoot") {
       const latestUserText = extractLatestUserText(validUIMessages as any)
-      let activeAssetContext: Awaited<ReturnType<typeof getMayaActiveAssetContext>> = null
+      const submittedOfferBrief = parseOfferBriefSubmissionMarker(latestUserText)
+
+      if (submittedOfferBrief) {
+        try {
+          const offerBriefInstruction = buildOfferBriefInstruction(submittedOfferBrief)
+          await persistMayaOfferBrief(dbUserId, submittedOfferBrief)
+
+          const memorySummary = summarizeOfferBriefForMemory(submittedOfferBrief)
+          await persistMayaRememberedPreference(
+            dbUserId,
+            `Latest offer brief saved. ${memorySummary}`,
+          ).catch((memoryError) => {
+            console.error("[Maya Chat] Failed to append offer brief summary note:", memoryError)
+          })
+
+          const generatedAsset = await createMayaGeneratedAsset({
+            userId: dbUserId,
+            assetType: "page",
+            instruction: offerBriefInstruction,
+          })
+
+          await persistMayaActiveAssetContext(dbUserId, {
+            assetType: generatedAsset.assetType,
+            assetLabel: generatedAsset.title,
+            assetId: generatedAsset.id,
+            instruction: offerBriefInstruction,
+          })
+
+          const createAssetMarker = formatMayaToolMarker(
+            "create_asset",
+            [
+              generatedAsset.assetType,
+              encodeURIComponent(generatedAsset.title),
+              generatedAsset.id,
+              encodeURIComponent(generatedAsset.previewText),
+              encodeURIComponent(generatedAsset.url || ""),
+            ].join("|"),
+          )
+          const editAssetMarker = formatMayaToolMarker(
+            "edit_asset",
+            `${generatedAsset.assetType}|${encodeURIComponent(generatedAsset.title)}`,
+          )
+
+          const stream = createUIMessageStream({
+            originalMessages: validUIMessages as any,
+            execute: ({ writer }) => {
+              const textPartId = `offer-brief-submit-${Date.now().toString(36)}`
+              writer.write({ type: "text-start", id: textPartId })
+              writer.write({
+                type: "text-delta",
+                id: textPartId,
+                delta:
+                  `Perfect. I saved this to your brand memory and built your first landing page draft so we can refine it together.\n` +
+                  `${createAssetMarker}\n` +
+                  `${editAssetMarker}`,
+              })
+              writer.write({ type: "text-end", id: textPartId })
+            },
+          })
+
+          return createUIMessageStreamResponse({ stream })
+        } catch (offerBriefError) {
+          console.error("[Maya Chat] Failed handling offer brief submission:", offerBriefError)
+        }
+      }
+
+      const mayaSnapshot = await getMayaUserSnapshot(dbUserId)
+
+      let activeAssetContext = mayaSnapshot.activeAssetContext
       try {
-        activeAssetContext = await getMayaActiveAssetContext(dbUserId)
+        if (!activeAssetContext) {
+          activeAssetContext = await getMayaActiveAssetContext(dbUserId)
+        }
       } catch (activeAssetError) {
         console.error("[Maya Chat] Failed to load active asset context:", activeAssetError)
       }
@@ -373,8 +489,143 @@ export async function POST(req: Request) {
         }
       }
 
+      if (orchestration.kind === "collect_offer_brief") {
+        try {
+          const seededBrief = mayaSnapshot.offerBrief
+
+          if (seededBrief.hasCoreFields) {
+            const offerBrief = toOfferBriefFromPartial(seededBrief.prefill)
+            if (offerBrief) {
+              const offerBriefInstruction = buildOfferBriefInstruction(offerBrief)
+              await persistMayaOfferBrief(dbUserId, offerBrief)
+
+              const generatedAsset = await createMayaGeneratedAsset({
+                userId: dbUserId,
+                assetType: "page",
+                instruction: offerBriefInstruction,
+              })
+
+              await persistMayaActiveAssetContext(dbUserId, {
+                assetType: generatedAsset.assetType,
+                assetLabel: generatedAsset.title,
+                assetId: generatedAsset.id,
+                instruction: offerBriefInstruction,
+              })
+
+              const createAssetMarker = formatMayaToolMarker(
+                "create_asset",
+                [
+                  generatedAsset.assetType,
+                  encodeURIComponent(generatedAsset.title),
+                  generatedAsset.id,
+                  encodeURIComponent(generatedAsset.previewText),
+                  encodeURIComponent(generatedAsset.url || ""),
+                ].join("|"),
+              )
+              const editAssetMarker = formatMayaToolMarker(
+                "edit_asset",
+                `${generatedAsset.assetType}|${encodeURIComponent(generatedAsset.title)}`,
+              )
+
+              const stream = createUIMessageStream({
+                originalMessages: validUIMessages as any,
+                execute: ({ writer }) => {
+                  const textPartId = `offer-brief-autodraft-${Date.now().toString(36)}`
+                  writer.write({ type: "text-start", id: textPartId })
+                  writer.write({
+                    type: "text-delta",
+                    id: textPartId,
+                    delta:
+                      `Love. I pulled your brand profile and memory, then drafted your page so we can refine it together.\n` +
+                      `${createAssetMarker}\n` +
+                      `${editAssetMarker}`,
+                  })
+                  writer.write({ type: "text-end", id: textPartId })
+                },
+              })
+
+              return createUIMessageStreamResponse({ stream })
+            }
+          }
+
+          const collectPayload = encodeOfferBriefCollectionPayload({
+            assetType: "page",
+            prefill: seededBrief.prefill,
+            missingFields: seededBrief.missingFields,
+          })
+          const collectBriefMarker = formatMayaToolMarker("collect_offer_brief", collectPayload)
+          const missingCount = seededBrief.missingFields.length
+          const missingSummary = summarizeMissingOfferBriefFields(seededBrief.missingFields)
+          const stream = createUIMessageStream({
+            originalMessages: validUIMessages as any,
+            execute: ({ writer }) => {
+              const textPartId = `offer-brief-request-${Date.now().toString(36)}`
+              writer.write({ type: "text-start", id: textPartId })
+              writer.write({
+                type: "text-delta",
+                id: textPartId,
+                delta:
+                  (missingCount > 0
+                    ? `I already know most of your brand. I only need ${missingSummary}. Fill those and I’ll build the page in your voice.\n`
+                    : `I already pulled your profile and memory. Tweak anything below and I’ll build the page now.\n`) +
+                  `${collectBriefMarker}`,
+              })
+              writer.write({ type: "text-end", id: textPartId })
+            },
+          })
+
+          return createUIMessageStreamResponse({ stream })
+        } catch (offerBriefSeedError) {
+          console.error("[Maya Chat] Failed handling offer brief collection:", offerBriefSeedError)
+        }
+      }
+
       if (orchestration.kind === "asset_create") {
         try {
+          if (
+            orchestration.intent.assetType === "page" &&
+            isMayaPageRendererV2Enabled(process.env.FEATURE_MAYA_PAGE_RENDERER_V2)
+          ) {
+            const landingSnapshot = await resolveMayaLandingSnapshot(dbUserId)
+            if (landingSnapshot.missingCriticalFields.length > 0) {
+              const mappedMissingFields = mapCriticalFieldsToOfferBriefFields(landingSnapshot.missingCriticalFields)
+              const missingFieldsForForm =
+                mappedMissingFields.length > 0 ? mappedMissingFields : mayaSnapshot.offerBrief.missingFields
+              const prefillValues = {
+                ...mayaSnapshot.offerBrief.prefill,
+                offerType: mayaSnapshot.offerBrief.prefill.offerType || landingSnapshot.resolvedOffer,
+                idealClient: mayaSnapshot.offerBrief.prefill.idealClient || landingSnapshot.resolvedAudience,
+                transformation:
+                  mayaSnapshot.offerBrief.prefill.transformation || landingSnapshot.resolvedTransformation,
+                designStyle: mayaSnapshot.offerBrief.prefill.designStyle || landingSnapshot.resolvedStyle,
+                proofPoints: mayaSnapshot.offerBrief.prefill.proofPoints || landingSnapshot.resolvedProofPoints,
+                callToAction: mayaSnapshot.offerBrief.prefill.callToAction || landingSnapshot.resolvedCta,
+              }
+              const collectPayload = encodeOfferBriefCollectionPayload({
+                assetType: "page",
+                prefill: prefillValues,
+                missingFields: missingFieldsForForm,
+              })
+              const collectBriefMarker = formatMayaToolMarker("collect_offer_brief", collectPayload)
+              const missingSummary = summarizeMissingOfferBriefFields(missingFieldsForForm)
+              const stream = createUIMessageStream({
+                originalMessages: validUIMessages as any,
+                execute: ({ writer }) => {
+                  const textPartId = `offer-brief-v2-gate-${Date.now().toString(36)}`
+                  writer.write({ type: "text-start", id: textPartId })
+                  writer.write({
+                    type: "text-delta",
+                    id: textPartId,
+                    delta: `I already pulled your profile and memory. I only need ${missingSummary} before I generate a high-converting page.\n${collectBriefMarker}`,
+                  })
+                  writer.write({ type: "text-end", id: textPartId })
+                },
+              })
+
+              return createUIMessageStreamResponse({ stream })
+            }
+          }
+
           const generatedAsset = await createMayaGeneratedAsset({
             userId: dbUserId,
             assetType: orchestration.intent.assetType,
@@ -438,6 +689,49 @@ export async function POST(req: Request) {
 
       if (orchestration.kind === "multi_step_asset_create") {
         try {
+          if (
+            orchestration.intents.some((intent) => intent.assetType === "page") &&
+            isMayaPageRendererV2Enabled(process.env.FEATURE_MAYA_PAGE_RENDERER_V2)
+          ) {
+            const landingSnapshot = await resolveMayaLandingSnapshot(dbUserId)
+            if (landingSnapshot.missingCriticalFields.length > 0) {
+              const mappedMissingFields = mapCriticalFieldsToOfferBriefFields(landingSnapshot.missingCriticalFields)
+              const missingFieldsForForm =
+                mappedMissingFields.length > 0 ? mappedMissingFields : mayaSnapshot.offerBrief.missingFields
+              const collectPayload = encodeOfferBriefCollectionPayload({
+                assetType: "page",
+                prefill: {
+                  ...mayaSnapshot.offerBrief.prefill,
+                  offerType: mayaSnapshot.offerBrief.prefill.offerType || landingSnapshot.resolvedOffer,
+                  idealClient: mayaSnapshot.offerBrief.prefill.idealClient || landingSnapshot.resolvedAudience,
+                  transformation:
+                    mayaSnapshot.offerBrief.prefill.transformation || landingSnapshot.resolvedTransformation,
+                  designStyle: mayaSnapshot.offerBrief.prefill.designStyle || landingSnapshot.resolvedStyle,
+                  proofPoints: mayaSnapshot.offerBrief.prefill.proofPoints || landingSnapshot.resolvedProofPoints,
+                  callToAction: mayaSnapshot.offerBrief.prefill.callToAction || landingSnapshot.resolvedCta,
+                },
+                missingFields: missingFieldsForForm,
+              })
+              const collectBriefMarker = formatMayaToolMarker("collect_offer_brief", collectPayload)
+              const missingSummary = summarizeMissingOfferBriefFields(missingFieldsForForm)
+              const stream = createUIMessageStream({
+                originalMessages: validUIMessages as any,
+                execute: ({ writer }) => {
+                  const textPartId = `offer-brief-v2-multistep-gate-${Date.now().toString(36)}`
+                  writer.write({ type: "text-start", id: textPartId })
+                  writer.write({
+                    type: "text-delta",
+                    id: textPartId,
+                    delta: `Before I run the full multi-step build, I only need ${missingSummary} for the landing page step.\n${collectBriefMarker}`,
+                  })
+                  writer.write({ type: "text-end", id: textPartId })
+                },
+              })
+
+              return createUIMessageStreamResponse({ stream })
+            }
+          }
+
           const createdAssets: Array<Awaited<ReturnType<typeof createMayaGeneratedAsset>>> = []
 
           for (const intent of orchestration.intents) {
@@ -594,24 +888,28 @@ export async function POST(req: Request) {
       }
 
       if (orchestration.kind === "tool_dispatch") {
-        const dispatchedIntent = orchestration.intent
+        const hydratedIntent = hydrateMayaToolDispatchIntent(orchestration.intent, mayaSnapshot)
+        const hydratedEstimatedCredits = estimateToolDispatchCredits(hydratedIntent)
+        const requiresHydratedCreditCheck = hydratedEstimatedCredits > 0
+
         console.log("[Maya Chat] Phase 2 tool dispatcher matched intent:", {
-          tool: dispatchedIntent.tool,
+          tool: hydratedIntent.tool,
           chatType,
-          estimatedCredits: orchestration.estimatedCredits,
+          estimatedCredits: hydratedEstimatedCredits,
+          recommendedSource: mayaSnapshot.generation.recommendedSource,
         })
 
-        if (!isAdmin && orchestration.requiresCreditCheck) {
-          const hasCreditsForTool = await checkCredits(dbUserId, orchestration.estimatedCredits)
+        if (!isAdmin && requiresHydratedCreditCheck) {
+          const hasCreditsForTool = await checkCredits(dbUserId, hydratedEstimatedCredits)
           if (!hasCreditsForTool) {
             void logAnalyticsEvent({
               eventName: "maya_tool_blocked_low_credits",
               userId: dbUserId,
               path: "/api/maya/chat",
               properties: {
-                tool: dispatchedIntent.tool,
+                tool: hydratedIntent.tool,
                 chatType,
-                requiredCredits: orchestration.estimatedCredits,
+                requiredCredits: hydratedEstimatedCredits,
               },
             })
 
@@ -624,7 +922,7 @@ export async function POST(req: Request) {
                   type: "text-delta",
                   id: textPartId,
                   delta:
-                    `Before I run this, you need at least ${orchestration.estimatedCredits} credit. ` +
+                    `Before I run this, you need at least ${hydratedEstimatedCredits} credit. ` +
                     `Add credits or upgrade, then I’ll launch it instantly.`,
                 })
                 writer.write({ type: "text-end", id: textPartId })
@@ -637,15 +935,15 @@ export async function POST(req: Request) {
 
         void logAnalyticsEvent({
           eventName:
-            dispatchedIntent.tool === "show_capabilities"
+            hydratedIntent.tool === "show_capabilities"
               ? "maya_capabilities_opened"
               : "maya_tool_invoked",
           userId: dbUserId,
           path: "/api/maya/chat",
           properties: {
-            tool: dispatchedIntent.tool,
+            tool: hydratedIntent.tool,
             chatType,
-            estimatedCredits: orchestration.estimatedCredits,
+            estimatedCredits: hydratedEstimatedCredits,
           },
         })
 
@@ -654,7 +952,7 @@ export async function POST(req: Request) {
           execute: ({ writer }) => {
             const textPartId = `tool-dispatch-${Date.now().toString(36)}`
             writer.write({ type: "text-start", id: textPartId })
-            writer.write({ type: "text-delta", id: textPartId, delta: dispatchedIntent.responseText })
+            writer.write({ type: "text-delta", id: textPartId, delta: hydratedIntent.responseText })
             writer.write({ type: "text-end", id: textPartId })
           },
         })

@@ -52,4 +52,31 @@ describe("POST /api/maya/pro/library/get fallback behavior", () => {
     expect(payload.vibes).toEqual([])
     expect(payload.current_intent).toBeNull()
   })
+
+  it("returns an empty library instead of 500 when user_id type mismatch causes query operator failure", async () => {
+    mockSql.mockRejectedValue(
+      Object.assign(
+        new Error('operator does not exist: uuid = integer'),
+        { code: "42883" },
+      ),
+    )
+
+    const { POST } = await import("@/app/api/maya/pro/library/get/route")
+
+    const request = new Request("http://localhost/api/maya/pro/library/get", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({}),
+    })
+
+    const response = await POST(request as any)
+    const payload = await response.json()
+
+    expect(response.status).toBe(200)
+    expect(payload.selfies).toEqual([])
+    expect(payload.products).toEqual([])
+    expect(payload.people).toEqual([])
+    expect(payload.vibes).toEqual([])
+    expect(payload.current_intent).toBeNull()
+  })
 })
