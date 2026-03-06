@@ -453,28 +453,28 @@ export default function MayaHeaderUnified({
                 >
                   {onSettings && (
                     <button onClick={() => { onSettings(); setIsDotsMenuOpen(false) }}
-                      className="w-full text-left px-4 py-3 rounded-xl hover:bg-white/10 transition-colors touch-manipulation"
+                      className="w-full text-left px-4 py-3 rounded-xl hover:bg-[rgba(175,170,162,0.12)] transition-colors touch-manipulation"
                       style={{ fontFamily: "Inter, sans-serif", fontSize: "14px", fontWeight: 300, color: "#f0ede8" }}>
                       Settings
                     </button>
                   )}
                   {onNewProject && (
                     <button onClick={() => { onNewProject(); setIsDotsMenuOpen(false) }}
-                      className="w-full text-left px-4 py-3 rounded-xl hover:bg-white/10 transition-colors touch-manipulation"
+                      className="w-full text-left px-4 py-3 rounded-xl hover:bg-[rgba(175,170,162,0.12)] transition-colors touch-manipulation"
                       style={{ fontFamily: "Inter, sans-serif", fontSize: "14px", fontWeight: 300, color: "#f0ede8" }}>
                       New Project
                     </button>
                   )}
                   {onHistory && (
                     <button onClick={() => { onHistory(); setIsDotsMenuOpen(false) }}
-                      className="w-full text-left px-4 py-3 rounded-xl hover:bg-white/10 transition-colors touch-manipulation"
+                      className="w-full text-left px-4 py-3 rounded-xl hover:bg-[rgba(175,170,162,0.12)] transition-colors touch-manipulation"
                       style={{ fontFamily: "Inter, sans-serif", fontSize: "14px", fontWeight: 300, color: "#f0ede8" }}>
                       History
                     </button>
                   )}
                   {onNavigation && (
                     <button onClick={() => { onNavigation('prompts'); setIsDotsMenuOpen(false) }}
-                      className="w-full text-left px-4 py-3 rounded-xl hover:bg-white/10 transition-colors touch-manipulation"
+                      className="w-full text-left px-4 py-3 rounded-xl hover:bg-[rgba(175,170,162,0.12)] transition-colors touch-manipulation"
                       style={{ fontFamily: "Inter, sans-serif", fontSize: "14px", fontWeight: 300, color: "#f0ede8" }}>
                       Prompts Library
                     </button>
@@ -591,7 +591,7 @@ export default function MayaHeaderUnified({
         <>
           {/* Overlay */}
           <div
-            className="fixed inset-0 bg-stone-950/20 backdrop-blur-sm z-[90] animate-in fade-in duration-200"
+            className="fixed inset-0 bg-stone-950/45 backdrop-blur-[20px] z-[90] animate-in fade-in duration-200"
             onClick={() => onToggleNavMenu()}
             style={{
               height: '100vh',

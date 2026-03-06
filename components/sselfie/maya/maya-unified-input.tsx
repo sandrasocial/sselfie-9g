@@ -206,7 +206,7 @@ export default function MayaUnifiedInput({
       {/* Chat Menu Dropdown - Rendered via portal to avoid positioning issues (Classic Mode only) */}
       {showSettingsButton && showChatMenu && typeof window !== 'undefined' && createPortal(
         <div 
-          className="fixed bg-[rgba(14,14,14,0.94)] backdrop-blur-3xl border border-[rgba(255,255,255,0.14)] rounded-2xl overflow-hidden shadow-xl shadow-stone-950/30 animate-in slide-in-from-bottom-2 duration-300 z-[70]"
+          className="fixed bg-[rgba(28,27,25,0.96)] backdrop-blur-[50px] border border-[rgba(195,190,182,0.25)] rounded-2xl overflow-hidden shadow-xl shadow-stone-950/30 animate-in slide-in-from-bottom-2 duration-300 z-[70]"
           style={{
             bottom: "calc(var(--sselfie-bottom-nav-height, 96px) + var(--input-bar-height, 168px) - 8px)",
             left: '12px',
@@ -221,7 +221,7 @@ export default function MayaUnifiedInput({
                 onSettingsClick() // This will close the menu and open settings (handled by parent)
               }
             }}
-            className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-white/85 hover:bg-[rgba(255,255,255,0.08)] transition-colors touch-manipulation"
+            className="w-full flex items-center gap-3 px-4 py-3 text-left text-sm text-[#f0ede8] hover:bg-[rgba(175,170,162,0.12)] transition-colors touch-manipulation"
           >
             <span className="font-medium uppercase tracking-[0.2em] text-[11px]">Generation Settings</span>
           </button>
@@ -250,7 +250,7 @@ export default function MayaUnifiedInput({
               <img
                 src={uploadedImage}
                 alt="Uploaded"
-                className={`${proMode ? 'w-16 h-16' : 'w-20 h-20 sm:w-16 sm:h-16'} object-cover rounded-lg overflow-hidden border border-white/60 shadow-lg`}
+                className={`${proMode ? 'w-16 h-16' : 'w-20 h-20 sm:w-16 sm:h-16'} object-cover rounded-lg overflow-hidden border border-[rgba(195,190,182,0.25)] shadow-lg`}
                 style={proMode ? {
                   borderRadius: BorderRadius.image,
                   border: `1px solid ${Colors.border}`,
@@ -260,7 +260,7 @@ export default function MayaUnifiedInput({
                 <button
                   type="button"
                   onClick={onRemoveImage}
-                  className={`absolute -top-1 -right-1 w-6 h-6 bg-stone-950 text-white rounded-full flex items-center justify-center hover:scale-110 transition-transform ${
+                  className={`absolute -top-1 -right-1 w-6 h-6 bg-[#0d0c0b] text-[#f0ede8] rounded-full flex items-center justify-center hover:scale-110 transition-transform ${
                     proMode ? '' : 'text-xs'
                   }`}
                   style={proMode ? {
@@ -282,7 +282,7 @@ export default function MayaUnifiedInput({
                 Image attached
               </span>
             ) : (
-              <p className="text-xs text-stone-600 mt-1 tracking-wide">Inspiration Image</p>
+              <p className="text-xs text-[#8a8780] mt-1 tracking-wide">Inspiration Image</p>
             )}
           </div>
         )}

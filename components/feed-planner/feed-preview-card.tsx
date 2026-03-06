@@ -111,33 +111,33 @@ export default function FeedPreviewCard({
   }
 
   return (
-    <div className={`rounded-none border overflow-hidden transition-colors duration-200 ${isSaved ? "bg-black border-stone-700" : "bg-white border-stone-200"}`}>
+    <div className={`rounded-2xl border overflow-hidden transition-colors duration-200 ${isSaved ? "bg-[#1c1b19] border-[rgba(195,190,182,0.25)]" : "bg-[rgba(175,170,162,0.10)] border-[rgba(195,190,182,0.20)] backdrop-blur-[50px]"}`}>
       {isSaved && (
-        <div className="bg-black border-b border-stone-700 px-3 sm:px-4 md:px-6 py-2">
-          <p className="text-[10px] sm:text-xs text-white uppercase tracking-wider sm:tracking-widest font-light">Saved to Feed</p>
+        <div className="bg-[rgba(175,170,162,0.14)] border-b border-[rgba(195,190,182,0.20)] px-3 sm:px-4 md:px-6 py-2">
+          <p className="text-[10px] sm:text-xs text-[#f0ede8] uppercase tracking-wider sm:tracking-widest font-light">Saved to Feed</p>
         </div>
       )}
 
-      <div className={`border-b px-3 sm:px-4 md:px-6 py-3 sm:py-4 ${isSaved ? "border-stone-700" : "border-stone-200"}`}>
-        <h3 className={`text-base sm:text-lg md:text-xl font-light tracking-wide break-words ${isSaved ? "text-white" : "text-stone-950"}`} style={{ fontFamily: "'Times New Roman', serif" }}>
+      <div className="border-b border-[rgba(195,190,182,0.20)] px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+        <h3 className="text-base sm:text-lg md:text-xl font-light tracking-wide break-words text-[#f0ede8]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
           {displayTitle}
         </h3>
-        <p className={`text-[10px] sm:text-xs mt-1 uppercase tracking-wider sm:tracking-widest ${isSaved ? "text-stone-300" : "text-stone-500"}`}>
+        <p className="text-[10px] sm:text-xs mt-1 uppercase tracking-wider sm:tracking-widest text-[#8a8780]">
           Instagram Feed Preview
         </p>
         {displayDescription && (
-          <p className={`text-xs sm:text-sm mt-2 font-light leading-relaxed break-words ${isSaved ? "text-stone-300" : "text-stone-600"}`}>{displayDescription}</p>
+          <p className="text-xs sm:text-sm mt-2 font-light leading-relaxed break-words text-[#a8a49c]">{displayDescription}</p>
         )}
-        <div className={`flex flex-wrap items-center gap-2 sm:gap-4 mt-3 text-[10px] sm:text-xs uppercase tracking-wider ${isSaved ? "text-stone-300" : "text-stone-500"}`}>
+        <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-3 text-[10px] sm:text-xs uppercase tracking-wider text-[#8a8780]">
           <span>{readyCount} Ready</span>
           {pendingCount > 0 && <span>{pendingCount} Pending</span>}
           {generatingCount > 0 && <span>{generatingCount} Generating</span>}
         </div>
       </div>
 
-      <div className={`p-2 sm:p-3 md:p-4 ${isSaved ? "bg-stone-900" : "bg-stone-50"}`}>
+      <div className={`p-2 sm:p-3 md:p-4 ${isSaved ? "bg-[rgba(13,12,11,0.55)]" : "bg-[rgba(13,12,11,0.42)]"}`}>
         {sortedPosts.length > 0 ? (
-          <div className={`grid grid-cols-3 gap-0.5 sm:gap-1 w-full sm:max-w-[600px] sm:mx-auto ${isSaved ? "bg-stone-800" : "bg-white"}`}>
+          <div className={`grid grid-cols-3 gap-0.5 sm:gap-1 w-full sm:max-w-[600px] sm:mx-auto ${isSaved ? "bg-[rgba(175,170,162,0.08)]" : "bg-[rgba(175,170,162,0.06)]"}`}>
             {sortedPosts.slice(0, 9).map((post, index) => {
               const isGeneratingPost =
                 post.generation_status === "generating" ||
@@ -147,52 +147,52 @@ export default function FeedPreviewCard({
               return (
                 <div
                   key={post.id || `post-${post.position || index}`}
-                  className="relative aspect-square group cursor-pointer overflow-hidden bg-stone-100"
+                  className="relative aspect-square group cursor-pointer overflow-hidden bg-[#2e2c29]"
                   onClick={() => openImageModal(post)}
                 >
                   {post.image_url ? (
                     <>
                       <Image src={post.image_url} alt={`Post ${post.position}`} fill sizes="(max-width: 640px) 33vw, 200px" className="object-cover" loading="lazy" quality={85} />
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <span className="text-white text-xs font-medium">View Post</span>
+                        <span className="text-[#f0ede8] text-xs font-medium">View Post</span>
                       </div>
                     </>
                   ) : isGeneratingPost ? (
-                    <div className="absolute inset-0 flex items-center justify-center bg-stone-50">
+                    <div className="absolute inset-0 flex items-center justify-center bg-[rgba(13,12,11,0.55)]">
                       <div className="flex flex-col items-center gap-2">
-                        <span className="h-5 w-5 rounded-full border border-stone-300 border-t-stone-500 animate-spin" />
-                        <span className="text-[10px] text-stone-500 uppercase tracking-wider">Creating</span>
+                        <span className="h-5 w-5 rounded-full border border-[rgba(195,190,182,0.30)] border-t-[#a8a49c] animate-spin" />
+                        <span className="text-[10px] text-[#8a8780] uppercase tracking-wider">Creating</span>
                       </div>
                     </div>
                   ) : (
-                    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-stone-50 to-stone-100">
+                    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-[#2e2c29] to-[#1c1b19]">
                       <div className="flex flex-col items-center gap-1 sm:gap-2">
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white shadow-sm flex items-center justify-center">
-                          <span className="text-[9px] sm:text-[10px] uppercase tracking-[0.18em] text-stone-500">Add</span>
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[rgba(175,170,162,0.16)] border border-[rgba(195,190,182,0.25)] shadow-sm flex items-center justify-center">
+                          <span className="text-[9px] sm:text-[10px] uppercase tracking-[0.18em] text-[#a8a49c]">Add</span>
                         </div>
-                        <span className="text-[9px] sm:text-[10px] text-stone-500 uppercase tracking-wider">Pending</span>
+                        <span className="text-[9px] sm:text-[10px] text-[#8a8780] uppercase tracking-wider">Pending</span>
                       </div>
                     </div>
                   )}
 
-                  <div className="absolute top-1 right-1 w-5 h-5 bg-white/90 rounded-full flex items-center justify-center">
-                    <span className="text-[10px] font-medium text-stone-700">{post.position}</span>
+                  <div className="absolute top-1 right-1 w-5 h-5 bg-[rgba(175,170,162,0.20)] border border-[rgba(195,190,182,0.25)] rounded-full flex items-center justify-center">
+                    <span className="text-[10px] font-medium text-[#f0ede8]">{post.position}</span>
                   </div>
                 </div>
               )
             })}
           </div>
         ) : (
-          <div className={`w-full sm:max-w-[600px] sm:mx-auto aspect-square flex items-center justify-center min-h-[300px] ${isSaved ? "bg-stone-800" : "bg-white"}`}>
+          <div className={`w-full sm:max-w-[600px] sm:mx-auto aspect-square flex items-center justify-center min-h-[300px] ${isSaved ? "bg-[rgba(175,170,162,0.08)]" : "bg-[rgba(175,170,162,0.06)]"}`}>
             <div className="flex flex-col items-center gap-2">
-              <span className="h-6 w-6 rounded-full border border-stone-300 border-t-stone-500 animate-spin" />
-              <span className={`text-xs uppercase tracking-wider ${isSaved ? "text-stone-300" : "text-stone-500"}`}>Loading feed posts...</span>
+              <span className="h-6 w-6 rounded-full border border-[rgba(195,190,182,0.30)] border-t-[#a8a49c] animate-spin" />
+              <span className="text-xs uppercase tracking-wider text-[#8a8780]">Loading feed posts...</span>
             </div>
           </div>
         )}
       </div>
 
-      <div className={`border-t px-3 sm:px-4 md:px-6 py-3 sm:py-4 space-y-2 sm:space-y-3 ${isSaved ? "border-stone-700 bg-black" : "border-stone-200 bg-white"}`}>
+      <div className="border-t border-[rgba(195,190,182,0.20)] px-3 sm:px-4 md:px-6 py-3 sm:py-4 space-y-2 sm:space-y-3 bg-[rgba(13,12,11,0.45)]">
         {hasFailedPosts && feedId && !isAnyGenerating && (
           <button
             onClick={() => handleGenerateFeedWithId(feedId)}
@@ -201,7 +201,7 @@ export default function FeedPreviewCard({
           >
             {isGenerating ? (
               <>
-                <span className="h-4 w-4 rounded-full border border-white/40 border-t-white animate-spin" />
+                <span className="h-4 w-4 rounded-full border border-[rgba(13,12,11,0.30)] border-t-[#0d0c0b] animate-spin" />
                 Retrying Failed Images...
               </>
             ) : (
@@ -214,16 +214,16 @@ export default function FeedPreviewCard({
           <button
             onClick={handleGenerateImages}
             disabled={isGenerating || isSaving}
-            className="w-full py-3 bg-stone-900 hover:bg-stone-800 text-white text-xs sm:text-sm uppercase disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full py-3 bg-[#c8c4bb] hover:bg-[#f0ede8] text-[#0d0c0b] text-xs sm:text-sm uppercase disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {isSaving ? (
               <>
-                <span className="h-4 w-4 rounded-full border border-white/40 border-t-white animate-spin" />
+                <span className="h-4 w-4 rounded-full border border-[rgba(13,12,11,0.30)] border-t-[#0d0c0b] animate-spin" />
                 Saving Feed...
               </>
             ) : isGenerating ? (
               <>
-                <span className="h-4 w-4 rounded-full border border-white/40 border-t-white animate-spin" />
+                <span className="h-4 w-4 rounded-full border border-[rgba(13,12,11,0.30)] border-t-[#0d0c0b] animate-spin" />
                 Starting Generation...
               </>
             ) : (
@@ -233,28 +233,28 @@ export default function FeedPreviewCard({
         )}
 
         {isAnyGenerating && (
-          <div className={`w-full py-3 text-xs uppercase text-center border ${isSaved ? "bg-stone-800 text-stone-200 border-stone-700" : "bg-stone-100 text-stone-600 border-stone-200"}`}>
+          <div className="w-full py-3 text-xs uppercase text-center border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] text-[#8a8780]">
             Generating {generatingCount > 0 ? `${generatingCount} ` : ""}Images...
           </div>
         )}
 
         {isSaved && feedId && feedStatus !== "saved" && feedStatus !== "completed" && (
-          <button onClick={handleSaveToPlanner} disabled={isSaving} className="w-full py-3 bg-stone-900 hover:bg-stone-800 text-white text-xs sm:text-sm uppercase disabled:opacity-50">
+          <button onClick={handleSaveToPlanner} disabled={isSaving} className="w-full py-3 bg-[#c8c4bb] hover:bg-[#f0ede8] text-[#0d0c0b] text-xs sm:text-sm uppercase disabled:opacity-50">
             {isSaving ? "Saving to Planner..." : "Save to Planner"}
           </button>
         )}
 
         {isSaved && feedId && (feedStatus === "saved" || feedStatus === "completed") && (
-          <button onClick={handleViewFullFeed} className="w-full py-3 bg-white border border-stone-200 text-stone-900 hover:bg-stone-50 text-xs uppercase">
+          <button onClick={handleViewFullFeed} className="w-full py-3 bg-[rgba(175,170,162,0.12)] border border-[rgba(195,190,182,0.25)] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.20)] text-xs uppercase">
             View Feed
           </button>
         )}
 
         {!isSaved && strategy && (
-          <button onClick={handleSaveFeed} disabled={isSaving || isGenerating} className="w-full py-3 bg-white border border-stone-300 text-stone-900 hover:bg-stone-50 text-xs uppercase disabled:opacity-50 flex items-center justify-center gap-2">
+          <button onClick={handleSaveFeed} disabled={isSaving || isGenerating} className="w-full py-3 bg-[#c8c4bb] border border-[rgba(195,190,182,0.25)] text-[#0d0c0b] hover:bg-[#f0ede8] text-xs uppercase disabled:opacity-50 flex items-center justify-center gap-2">
             {isSaving ? (
               <>
-                <span className="h-4 w-4 rounded-full border border-stone-300 border-t-stone-500 animate-spin" />
+                <span className="h-4 w-4 rounded-full border border-[rgba(28,27,25,0.30)] border-t-[#0d0c0b] animate-spin" />
                 Saving Feed...
               </>
             ) : (
@@ -264,7 +264,7 @@ export default function FeedPreviewCard({
         )}
 
         {postsData.length > 0 && (
-          <button onClick={() => setShowPromptModal(true)} className="w-full py-2 bg-white hover:bg-stone-50 text-stone-600 text-xs uppercase border border-stone-200 flex items-center justify-center gap-1.5">
+          <button onClick={() => setShowPromptModal(true)} className="w-full py-2 bg-[rgba(175,170,162,0.12)] hover:bg-[rgba(175,170,162,0.20)] text-[#a8a49c] text-xs uppercase border border-[rgba(195,190,182,0.20)] flex items-center justify-center gap-1.5">
             <span>View Prompts</span>
           </button>
         )}

@@ -3051,7 +3051,7 @@ export default function MayaChatScreen({
             // This is a bold pattern
             const boldText = part.replace(/\*\*/g, '')
             processedItem.push(
-              <strong key={`bold-${partIdx}`} className="font-semibold text-stone-950">
+              <strong key={`bold-${partIdx}`} className="font-semibold text-[#f0ede8]">
                 {boldText}
               </strong>
             )
@@ -3071,7 +3071,7 @@ export default function MayaChatScreen({
           elements.push(
             <ul key={`list-${index}`} className="list-disc list-inside space-y-1.5 my-2 ml-4">
               {currentList.map((item, itemIdx) => (
-                <li key={itemIdx} className="text-sm leading-relaxed text-stone-700">
+                <li key={itemIdx} className="text-sm leading-relaxed text-[#a8a49c]">
                   {item}
                 </li>
               ))}
@@ -3090,7 +3090,7 @@ export default function MayaChatScreen({
               // This is a bold pattern
               const boldText = part.replace(/\*\*/g, '')
               processedLine.push(
-                <strong key={`bold-${partIdx}`} className="font-semibold text-stone-950">
+                <strong key={`bold-${partIdx}`} className="font-semibold text-[#f0ede8]">
                   {boldText}
                 </strong>
               )
@@ -3107,7 +3107,7 @@ export default function MayaChatScreen({
           // Only add paragraph if it's not empty after processing
           if (trimmedLine.length > 0) {
             elements.push(
-              <p key={`para-${index}`} className="text-sm leading-relaxed text-stone-700 mb-2 last:mb-0">
+              <p key={`para-${index}`} className="text-sm leading-relaxed text-[#a8a49c] mb-2 last:mb-0">
                 {processedLine}
               </p>
             )
@@ -3124,7 +3124,7 @@ export default function MayaChatScreen({
       elements.push(
         <ul key="list-final" className="list-disc list-inside space-y-1.5 my-2 ml-4">
           {currentList.map((item, itemIdx) => (
-            <li key={itemIdx} className="text-sm leading-relaxed text-stone-700">
+            <li key={itemIdx} className="text-sm leading-relaxed text-[#a8a49c]">
               {item}
             </li>
           ))}
@@ -3160,7 +3160,7 @@ export default function MayaChatScreen({
             </div>
           )}
           <div className="mt-2">
-            <div className="relative w-32 h-32 rounded-xl overflow-hidden border border-white/60 shadow-lg">
+            <div className="relative w-32 h-32 rounded-xl overflow-hidden border border-[rgba(195,190,182,0.25)] shadow-lg">
               <img src={imageUrl || "/placeholder.svg"} alt="Inspiration" className="w-full h-full object-cover" />
             </div>
             <p className="text-xs text-stone-500 mt-1.5 tracking-wide">Inspiration Image</p>
@@ -3178,7 +3178,7 @@ export default function MayaChatScreen({
 
     // For Maya's messages (assistant), render with markdown support
     return (
-      <div className="text-sm leading-relaxed text-stone-700">
+      <div className="text-sm leading-relaxed text-[#a8a49c]">
         {renderMarkdownText(cleanedText)}
       </div>
     )

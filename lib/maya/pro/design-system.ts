@@ -1,12 +1,12 @@
 /**
  * Maya Pro Mode Design System
  * 
- * Sophisticated, editorial-quality design tokens for Studio Pro Mode.
+ * Earth Stone design tokens for Studio Pro Mode.
  * NO emojis in UI elements - professional, clean, minimal.
- * 
- * Typography: Canela (headers), Hatton (subheaders), Inter (body/UI/data)
- * Colors: Stone palette with warm cream background
- * Style: Editorial, luxury, creative studio feel
+ *
+ * Typography: Cormorant Garamond (display), Inter (body/UI/data)
+ * Colors: dark stone glass palette
+ * Style: editorial, quiet luxury, atmospheric
  */
 
 // ============================================================================
@@ -14,9 +14,9 @@
 // ============================================================================
 
 export const Typography = {
-  // Headers - Canela serif (e.g., "Studio Pro Mode")
+  // Display headers
   headers: {
-    fontFamily: 'Canela, serif',
+    fontFamily: "'Cormorant Garamond', serif",
     sizes: {
       xl: '32px',   // Main page headers
       lg: '24px',   // Section headers
@@ -31,9 +31,9 @@ export const Typography = {
     letterSpacing: '-0.02em',
   },
 
-  // Subheaders - Hatton serif (e.g., "Morning Ritual Glow")
+  // Section subheaders
   subheaders: {
-    fontFamily: 'Hatton, serif',
+    fontFamily: "'Cormorant Garamond', serif",
     sizes: {
       lg: '18px',   // Concept card titles
       md: '16px',   // Section subheaders
@@ -44,7 +44,7 @@ export const Typography = {
       medium: 500,
     },
     lineHeight: 1.3,
-    letterSpacing: '0.01em',
+    letterSpacing: '0.03em',
   },
 
   // Body text - Inter Light (readable, clean)
@@ -96,40 +96,40 @@ export const Typography = {
 } as const
 
 // ============================================================================
-// COLOR TOKENS (Stone Palette with Warm Cream)
+// COLOR TOKENS (Earth Stone Dark Glass)
 // ============================================================================
 
 export const Colors = {
   // Primary colors
-  primary: '#1C1917',        // stone-900 - Primary text, headers
-  secondary: '#57534E',       // stone-600 - Secondary text, descriptions
-  tertiary: '#78716C',       // stone-500 - Tertiary text
-  
+  primary: '#f0ede8',         // stone white - Primary text, headers
+  secondary: '#a8a49c',       // limestone accent
+  tertiary: '#8a8780',        // secondary text
+
   // Background colors
-  background: '#F5F1ED',     // warm cream - Main backgrounds
-  backgroundAlt: '#FAFAF9',  // stone-50 - Alternate backgrounds
-  surface: '#FFFFFF',        // white - Cards, modals
-  
+  background: '#0d0c0b',      // deepest stone
+  backgroundAlt: '#1c1b19',   // dark granite
+  surface: 'rgba(175,170,162,0.10)', // standard glass card
+
   // Accent colors
-  accent: '#292524',         // stone-800 - Accents, hover states
-  accentLight: '#44403C',    // stone-700 - Light accents
-  
+  accent: '#a8a49c',
+  accentLight: '#c8c4bb',
+
   // Border colors
-  border: 'rgba(231, 229, 228, 0.6)',  // stone-200/60 - Borders, dividers
-  borderLight: 'rgba(231, 229, 228, 0.3)', // stone-200/30 - Subtle borders
-  
+  border: 'rgba(195,190,182,0.25)',
+  borderLight: 'rgba(195,190,182,0.15)',
+
   // Text colors
-  textPrimary: '#1C1917',    // stone-900 - Primary text
-  textSecondary: '#57534E',  // stone-600 - Secondary text
-  textTertiary: '#78716C',   // stone-500 - Tertiary text
-  textMuted: '#A8A29E',      // stone-400 - Muted text
-  
+  textPrimary: '#f0ede8',
+  textSecondary: '#a8a49c',
+  textTertiary: '#8a8780',
+  textMuted: 'rgba(240,237,232,0.55)',
+
   // Interactive colors
-  hover: 'rgba(28, 25, 23, 0.05)',  // stone-900/5 - Hover backgrounds
-  active: 'rgba(28, 25, 23, 0.1)',  // stone-900/10 - Active states
-  
+  hover: 'rgba(175,170,162,0.12)',
+  active: 'rgba(175,170,162,0.20)',
+
   // Highlights (subtle, editorial)
-  highlight: 'rgba(250, 240, 230, 0.5)', // Champagne undertones
+  highlight: 'rgba(200,196,187,0.16)',
 } as const
 
 // ============================================================================
@@ -164,14 +164,14 @@ export const Spacing = {
 // ============================================================================
 
 export const BorderRadius = {
-  card: '12px',         // Cards, concept cards
-  cardSm: '8px',        // Small cards
-  button: '8px',        // Buttons
-  buttonSm: '6px',      // Small buttons
-  input: '8px',         // Input fields
-  inputSm: '6px',       // Small inputs
-  modal: '16px',        // Modals
-  image: '8px',         // Image thumbnails
+  card: '20px',         // Cards, concept cards
+  cardSm: '12px',       // Small cards
+  button: '9999px',     // Buttons
+  buttonSm: '10px',     // Small buttons
+  input: '12px',        // Input fields
+  inputSm: '10px',      // Small inputs
+  modal: '24px',        // Modals
+  image: '10px',        // Image thumbnails
 } as const
 
 // ============================================================================
@@ -182,13 +182,13 @@ export const Layout = {
   whiteSpace: 'generous',              // Lots of breathing room
   dividers: {
     width: '1px',
-    color: 'rgba(231, 229, 228, 0.6)', // stone-200/60
+    color: 'rgba(195,190,182,0.25)',
     style: 'solid',
   },
   shadows: {
-    card: '0 1px 3px rgba(0, 0, 0, 0.05)',  // Barely visible
-    modal: '0 4px 12px rgba(0, 0, 0, 0.08)', // Subtle modal shadow
-    hover: '0 2px 6px rgba(0, 0, 0, 0.06)',  // Hover state
+    card: '0 12px 30px rgba(0, 0, 0, 0.30)',
+    modal: '0 20px 48px rgba(0, 0, 0, 0.45)',
+    hover: '0 16px 40px rgba(0, 0, 0, 0.40)',
   },
   borders: 'only when necessary',      // Minimal borders
   maxWidth: {
@@ -306,11 +306,11 @@ export const ProModeDesign = {
  */
 export function getTypographyClasses(variant: 'header' | 'subheader' | 'body' | 'ui' | 'data', size: string) {
   const base = {
-    header: 'font-serif',      // Canela
-    subheader: 'font-serif',   // Hatton
-    body: 'font-sans',         // Inter
-    ui: 'font-sans',           // Inter
-    data: 'font-sans',         // Inter
+    header: 'font-serif',
+    subheader: 'font-serif',
+    body: 'font-sans',
+    ui: 'font-sans',
+    data: 'font-sans',
   }[variant]
   
   return `${base} text-${size}`

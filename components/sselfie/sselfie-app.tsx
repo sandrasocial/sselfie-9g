@@ -944,11 +944,11 @@ export default function SselfieApp({
                           <div className={`${DesignClasses.typography.label.uppercase} ${DesignClasses.text.tertiary} mb-2`}>Feed History</div>
                           <div className="max-h-64 overflow-y-auto">
                             {isLoadingFeeds ? (
-                              <div className="px-2 py-4 text-center text-xs text-stone-500">Loading feeds...</div>
+                              <div className="px-2 py-4 text-center text-xs text-[#8a8780]">Loading feeds...</div>
                             ) : feedListError ? (
                               <div className="px-2 py-4 text-center text-xs text-red-500">Failed to load feeds</div>
                             ) : feeds.length === 0 ? (
-                              <div className="px-2 py-4 text-center text-xs text-stone-500">No feeds yet</div>
+                              <div className="px-2 py-4 text-center text-xs text-[#8a8780]">No feeds yet</div>
                             ) : (
                               feeds.map((feed: any) => (
                                 <div key={feed.id} className="group relative">
@@ -959,31 +959,31 @@ export default function SselfieApp({
                                       const currentPath = window.location.pathname
                                       router.replace(`${currentPath}?feedId=${feed.id}#feed-planner`)
                                     }}
-                                    className={`cursor-pointer ${currentFeedId === feed.id ? 'bg-stone-100' : ''}`}
+                                    className={`cursor-pointer ${currentFeedId === feed.id ? 'bg-[rgba(175,170,162,0.14)]' : ''}`}
                                   >
                                     <div className="flex items-center gap-2.5 w-full">
                                       {/* Color indicator - always visible */}
                                       <div
                                         className="w-4 h-4 rounded-full shrink-0 border-2 flex-shrink-0"
                                         style={{
-                                          backgroundColor: feed.display_color || '#f5f5f4',
-                                          borderColor: feed.display_color || '#d4d4d4',
+                                          backgroundColor: feed.display_color || '#2e2c29',
+                                          borderColor: feed.display_color || '#3a3630',
                                           borderStyle: feed.display_color ? 'solid' : 'dashed',
                                         }}
                                         title={feed.display_color ? `Color: ${feed.display_color}` : 'No color set'}
                                       >
                                         {!feed.display_color && (
                                           <div className="w-full h-full flex items-center justify-center">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-stone-400"></div>
+                                            <div className="w-1.5 h-1.5 rounded-full bg-[#8a8780]"></div>
                                           </div>
                                         )}
                                       </div>
                                       <div className="flex flex-col flex-1 min-w-0">
-                                        <span className="text-sm font-medium text-stone-900 truncate">{feed.title || `Feed ${feed.id}`}</span>
+                                        <span className="text-sm font-medium text-[#f0ede8] truncate">{feed.title || `Feed ${feed.id}`}</span>
                                         {feed.layout_type === 'preview' ? (
-                                          <span className="text-xs text-stone-500">Preview Feed</span>
+                                          <span className="text-xs text-[#8a8780]">Preview Feed</span>
                                         ) : feed.image_count !== undefined ? (
-                                          <span className="text-xs text-stone-500">{feed.image_count}/{feed.layout_type === 'grid_3x4' ? '12' : '9'} images</span>
+                                          <span className="text-xs text-[#8a8780]">{feed.image_count}/{feed.layout_type === 'grid_3x4' ? '12' : '9'} images</span>
                                         ) : null}
                                       </div>
                                     </div>
@@ -994,10 +994,10 @@ export default function SselfieApp({
                                       e.stopPropagation()
                                       handleEditFeed(feed)
                                     }}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-stone-200 rounded"
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-[rgba(175,170,162,0.12)] rounded"
                                     aria-label="Edit feed"
                                   >
-                                    <span className="text-[9px] tracking-[0.2em] uppercase text-stone-600">Edit</span>
+                                    <span className="text-[9px] tracking-[0.2em] uppercase text-[#8a8780]">Edit</span>
                                   </button>
                                 </div>
                               ))
@@ -1016,7 +1016,7 @@ export default function SselfieApp({
                       </DialogHeader>
                       <div className="space-y-4 py-4">
                         <div>
-                          <label className="text-sm font-medium text-stone-700 mb-1.5 block">
+                          <label className="text-sm font-medium text-[#a8a49c] mb-1.5 block">
                             Feed Name
                           </label>
                           <Input
@@ -1028,7 +1028,7 @@ export default function SselfieApp({
                           />
                         </div>
                         <div>
-                          <label className="text-sm font-medium text-stone-700 mb-2 block">
+                          <label className="text-sm font-medium text-[#a8a49c] mb-2 block">
                             Color
                           </label>
                           <div className="grid grid-cols-6 gap-2">
@@ -1038,8 +1038,8 @@ export default function SselfieApp({
                                 onClick={() => setEditColor(color.value)}
                                 className={`w-10 h-10 rounded-full border-2 transition-all ${
                                   editColor === color.value
-                                    ? 'border-stone-900 scale-110'
-                                    : 'border-stone-300 hover:border-stone-400'
+                                    ? 'border-[#f0ede8] scale-110'
+                                    : 'border-[rgba(195,190,182,0.25)] hover:border-[rgba(195,190,182,0.40)]'
                                 }`}
                                 style={{
                                   backgroundColor: color.value || 'transparent',
@@ -1055,7 +1055,7 @@ export default function SselfieApp({
                       <DialogFooter>
                         <button
                           onClick={() => setEditingFeed(null)}
-                          className="px-4 py-2 text-sm text-stone-600 hover:text-stone-900"
+                          className="px-4 py-2 text-sm text-[#8a8780] hover:text-[#f0ede8]"
                         >
                           Cancel
                         </button>
@@ -1064,8 +1064,8 @@ export default function SselfieApp({
                           disabled={isSaving}
                           className={`px-4 py-2 text-sm font-medium rounded-md ${
                             isSaving
-                              ? 'bg-stone-300 text-stone-500 cursor-not-allowed'
-                              : 'bg-stone-900 text-white hover:bg-stone-800'
+                              ? 'bg-[rgba(175,170,162,0.16)] text-[#8a8780] cursor-not-allowed'
+                              : 'bg-[#c8c4bb] text-[#0d0c0b] hover:bg-[#f0ede8]'
                           }`}
                         >
                           {isSaving ? "Saving..." : "Save"}
@@ -1105,9 +1105,9 @@ export default function SselfieApp({
                                 handleTabChange(tab.id)
                                 setIsMenuOpen(false)
                               }}
-                              className={`flex items-center ${DesignClasses.spacing.gap.sm} px-2 py-2 ${DesignClasses.radius.sm} hover:bg-stone-100/60 text-left transition-colors`}
+                              className={`flex items-center ${DesignClasses.spacing.gap.sm} px-2 py-2 ${DesignClasses.radius.sm} hover:bg-[rgba(175,170,162,0.12)] text-left transition-colors`}
                             >
-                              <span className="text-xs font-medium text-stone-800">{tab.label}</span>
+                              <span className="text-xs font-medium text-[#f0ede8]">{tab.label}</span>
                             </button>
                           )
                         })}
@@ -1132,7 +1132,7 @@ export default function SselfieApp({
                     <DropdownMenuItem
                       onClick={handleLogout}
                       disabled={isLoggingOut}
-                      className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+                      className="cursor-pointer text-red-400 focus:text-red-300 focus:bg-red-500/10"
                     >
                       <span className="text-sm">{isLoggingOut ? "Signing Out..." : "Sign Out"}</span>
                     </DropdownMenuItem>
