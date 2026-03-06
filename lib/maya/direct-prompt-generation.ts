@@ -269,6 +269,7 @@ async function callMayaForFinalPrompt(
   
   // Import AI SDK (same as generate-concepts route)
   const { generateText } = await import('ai')
+  const { createMayaOpenRouterModel } = await import('@/lib/maya/openrouter')
   
   console.log('[DIRECT] Calling Maya with system prompt')
   console.log('[DIRECT] System prompt length:', systemPrompt.length)
@@ -276,7 +277,7 @@ async function callMayaForFinalPrompt(
   
   try {
     const { text } = await generateText({
-      model: "anthropic/claude-sonnet-4-20250514",
+      model: createMayaOpenRouterModel("chat_pro"),
       system: systemPrompt,
       messages: [
         {
@@ -382,4 +383,3 @@ export function validatePromptLight(
     warnings
   }
 }
-

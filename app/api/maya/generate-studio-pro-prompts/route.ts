@@ -6,6 +6,7 @@ import { generateText } from "ai"
 import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import { generateStudioProPromptsViaAuthority } from "@/lib/generation/prompt"
+import { createMayaOpenRouterModel } from "@/lib/maya/openrouter"
 
 export async function POST(req: NextRequest) {
   try {
@@ -63,7 +64,7 @@ export async function POST(req: NextRequest) {
     const promptGenerationPrompt = authorityResult.systemPrompt
 
     const { text } = await generateText({
-      model: "anthropic/claude-sonnet-4",
+      model: createMayaOpenRouterModel("prompt_builder"),
       prompt: promptGenerationPrompt,
       maxTokens: 4000,
     } as any)

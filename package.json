@@ -36,7 +36,18 @@
     "index-codebase": "tsx scripts/index-codebase.ts",
     "validate-columns": "tsx scripts/validate-column-names.ts",
     "check:prompt-authority": "tsx scripts/check-prompt-authority.ts",
-    "routes:inventory": "node scripts/inventory-routes.mjs"
+    "routes:inventory": "node scripts/inventory-routes.mjs",
+    "audit:repo-map": "tsx scripts/audit/repo-cartographer.ts",
+    "audit:dead-code": "tsx scripts/audit/dead-code-hunter.ts",
+    "audit:journey": "tsx scripts/audit/user-journey-scanner.ts",
+    "audit:prompt-authority": "tsx scripts/audit/prompt-authority-inspector.ts",
+    "audit:integration-health": "tsx scripts/audit/integration-health-check.ts",
+    "audit:architecture-simplifier": "tsx scripts/audit/architecture-simplifier.ts",
+    "audit:upgrade-readiness": "tsx scripts/audit/upgrade-readiness-check.ts",
+    "audit:gravity": "tsx scripts/audit/gravity-scanner.ts",
+    "audit:markdown-hygiene": "tsx scripts/audit/markdown-repo-curator.ts scan",
+    "audit:markdown-hygiene:apply": "tsx scripts/audit/markdown-repo-curator.ts apply",
+    "audit:control": "pnpm -s audit:repo-map & pnpm -s audit:dead-code & pnpm -s audit:journey & pnpm -s audit:prompt-authority & pnpm -s audit:integration-health & pnpm -s audit:architecture-simplifier & pnpm -s audit:upgrade-readiness & pnpm -s audit:gravity & wait"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "latest",

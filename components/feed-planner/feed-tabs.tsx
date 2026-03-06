@@ -31,57 +31,52 @@ export default function FeedTabs({ activeTab, onTabChange, access }: FeedTabsPro
     }
   }, [isFreeUser, activeTab, onTabChange])
 
+  const tabClass = (tab: FeedTab) =>
+    `flex min-h-[34px] sm:min-h-[36px] shrink-0 items-center justify-center rounded-lg px-3 py-1.5 transition-colors ${
+      activeTab === tab ? "bg-white/12 text-white" : "text-white/55 hover:bg-white/6 hover:text-white/78"
+    }`
+
   return (
-    <div className="mx-3 mb-3 flex rounded-full border border-white/15 bg-white/[0.04] p-1 backdrop-blur-xl">
+    <div className="mx-3 mb-2 flex items-center gap-1 overflow-x-auto rounded-xl border border-white/10 bg-white/[0.02] p-1.5 backdrop-blur-xl">
       <button
         onClick={() => onTabChange("grid")}
-        className={`flex flex-1 items-center justify-center rounded-full py-2.5 transition-colors ${
-          activeTab === "grid" ? "bg-white/14 text-white" : "text-white/50 hover:text-white/70"
-        }`}
+        className={tabClass("grid")}
       >
-        <span className="text-[11px] font-medium uppercase tracking-[0.2em]">Grid</span>
+        <span className="text-[10px] font-medium uppercase tracking-[0.16em]">Grid</span>
       </button>
       
       {/* For free users: Show Captions tab, for paid/membership: Show Posts tab */}
       {isFreeUser ? (
         <button
           onClick={() => onTabChange("captions")}
-          className={`flex flex-1 items-center justify-center rounded-full py-2.5 transition-colors ${
-            activeTab === "captions" ? "bg-white/14 text-white" : "text-white/50 hover:text-white/70"
-          }`}
+          className={tabClass("captions")}
         >
-          <span className="text-[11px] font-medium uppercase tracking-[0.2em]">Captions</span>
+          <span className="text-[10px] font-medium uppercase tracking-[0.16em]">Captions</span>
         </button>
       ) : (
         <button
           onClick={() => onTabChange("posts")}
-          className={`flex flex-1 items-center justify-center rounded-full py-2.5 transition-colors ${
-            activeTab === "posts" ? "bg-white/14 text-white" : "text-white/50 hover:text-white/70"
-          }`}
+          className={tabClass("posts")}
         >
-          <span className="text-[11px] font-medium uppercase tracking-[0.2em]">Posts</span>
+          <span className="text-[10px] font-medium uppercase tracking-[0.16em]">Posts</span>
         </button>
       )}
       
       {showStrategyTab && (
         <button
           onClick={() => onTabChange("strategy")}
-          className={`flex flex-1 items-center justify-center rounded-full py-2.5 transition-colors ${
-            activeTab === "strategy" ? "bg-white/14 text-white" : "text-white/50 hover:text-white/70"
-          }`}
+          className={tabClass("strategy")}
         >
-          <span className="text-[11px] font-medium uppercase tracking-[0.2em]">Strategy</span>
+          <span className="text-[10px] font-medium uppercase tracking-[0.16em]">Strategy</span>
         </button>
       )}
       
       {/* Brand Pillars tab - show for all users who have completed onboarding */}
       <button
         onClick={() => onTabChange("pillars")}
-        className={`flex flex-1 items-center justify-center rounded-full py-2.5 transition-colors ${
-          activeTab === "pillars" ? "bg-white/14 text-white" : "text-white/50 hover:text-white/70"
-        }`}
+        className={tabClass("pillars")}
       >
-        <span className="text-[11px] font-medium uppercase tracking-[0.2em]">Pillars</span>
+        <span className="text-[10px] font-medium uppercase tracking-[0.16em]">Pillars</span>
       </button>
     </div>
   )

@@ -4,6 +4,7 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 import { sql } from "@/lib/db/client"
 import { put } from "@vercel/blob"
 import { generateText } from "ai"
+import { auditPromptRoute } from "@/lib/generation/prompt/route-audit"
 
 
 /**
@@ -46,10 +47,9 @@ export async function POST(
 
     // Generate optimized text for overlay using AI
     // Keep it short and impactful for Instagram highlight covers
-    const { text: overlayText } = await generateText({
-      model: "anthropic/claude-haiku-4.5",
-      system: "You are a creative Instagram strategist. Generate short, impactful text for highlight cover images. Keep it to 1-3 words maximum. Make it bold, clear, and visually appealing.",
-      prompt: `Create a short, impactful text overlay for an Instagram highlight cover titled "${title}". 
+    const systemPrompt =
+      "You are a creative Instagram strategist. Generate short, impactful text for highlight cover images. Keep it to 1-3 words maximum. Make it bold, clear, and visually appealing."
+    const prompt = `Create a short, impactful text overlay for an Instagram highlight cover titled "${title}". 
 
 Requirements:
 - Maximum 3 words
@@ -58,7 +58,23 @@ Requirements:
 - Visually appealing
 - No emojis
 
-Just return the text, nothing else.`,
+Just return the text, nothing else.`
+    const startedAt = Date.now()
+    auditPromptRoute({
+      routeId: "EP-SHADOW-HIGHLIGHT-OVERLAY",
+      mode: "classic",
+      feature: "highlight-overlay",
+      userId: neonUser.id,
+      builder: "anthropic/claude-haiku-4.5",
+      prompt: `${systemPrompt}\n\n${prompt}`,
+      input: { feedId, title },
+      startedAt,
+    })
+
+    const { text: overlayText } = await generateText({
+      model: "anthropic/claude-haiku-4.5",
+      system: systemPrompt,
+      prompt,
       maxOutputTokens: 20,
       temperature: 0.7,
     })
@@ -105,5 +121,3 @@ Just return the text, nothing else.`,
     )
   }
 }
-
-

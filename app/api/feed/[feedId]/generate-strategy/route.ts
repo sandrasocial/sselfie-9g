@@ -3,6 +3,7 @@ import { sql } from "@/lib/db/client"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { generateInstagramStrategy } from "@/lib/feed-planner/instagram-strategy-agent"
+import { auditPromptRoute } from "@/lib/generation/prompt/route-audit"
 
 
 /**
@@ -138,6 +139,18 @@ Be SPECIFIC with times, days, audio names, hashtags. NO vague advice - actionabl
 Reference current 2025 Instagram algorithm insights.
 Tailor everything to the brand's niche and personal branding approach.`
 
+      const startedAt = Date.now()
+      auditPromptRoute({
+        routeId: "EP-SHADOW-FEED-STRATEGY",
+        mode: "classic",
+        feature: "feed-strategy",
+        userId: neonUser.id,
+        builder: "anthropic/claude-sonnet-4",
+        prompt: `${strategySystemPrompt}\n\n${strategyPrompt}`,
+        input: { feedId, posts: feedPosts.length },
+        startedAt,
+      })
+
       const { text: strategyMarkdown } = await generateText({
         model: "anthropic/claude-sonnet-4",
         system: strategySystemPrompt,
@@ -164,4 +177,3 @@ Tailor everything to the brand's niche and personal branding approach.`
     )
   }
 }
-

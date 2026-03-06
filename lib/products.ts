@@ -19,11 +19,17 @@ export interface PricingProduct {
   displayName: string
   description: string
   priceInCents: number
-  type: "one_time_session" | "sselfie_studio_membership" | "credit_topup" | "paid_blueprint"
+  type:
+    | "one_time_session"
+    | "sselfie_studio_membership"
+    | "credit_topup"
+    | "paid_blueprint"
+    | "brand_strategy_pack"
   features?: string[]
   credits?: number
   stripePriceId?: string
   popular?: boolean
+  tag?: string
 }
 
 export interface AcademyProduct {
@@ -102,6 +108,15 @@ export const PRICING_PRODUCTS: PricingProduct[] = [
     priceInCents: 4700, // $47 one-time
     type: "paid_blueprint",
     credits: 60, // 30 images × 2 credits per image
+  },
+  {
+    id: "brand_strategy_pack",
+    name: "Brand Strategy Pack",
+    displayName: "Brand Strategy Pack",
+    description: "Get your personalized Brand Strategy Pack instantly.",
+    priceInCents: 1900, // $19 one-time
+    type: "brand_strategy_pack",
+    tag: "bought_brand_strategy_pack",
   },
 ]
 

@@ -17,6 +17,7 @@ export async function GET(request: Request) {
       status: session.status,
       sessionId: session.id,
       product_type: session.metadata?.product_type || null,
+      return_to: session.metadata?.return_to || null,
     })
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })

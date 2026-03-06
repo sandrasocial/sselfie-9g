@@ -159,40 +159,40 @@ export default function MayaUnifiedInput({
   }
 
   const inputContainerClass =
-    "w-full rounded-[20px] border border-[rgba(255,255,255,0.08)] bg-[rgba(12,12,12,0.55)] backdrop-blur-[22px] shadow-[0_10px_30px_rgba(0,0,0,0.28)] p-3 sm:p-4"
+    "w-full overflow-hidden rounded-[18px] border border-[rgba(255,255,255,0.08)] bg-[rgba(12,12,12,0.58)] backdrop-blur-[22px] shadow-[0_10px_30px_rgba(0,0,0,0.28)] p-2.5 sm:p-4"
   const inputContainerStyle = {
     borderTop: "1px solid rgba(255,255,255,0.12)",
   }
   const inputWrapperClass = "w-full"
 
   const textareaClass =
-    "w-full px-4 py-3 bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.08)] rounded-lg text-[#ffffff] placeholder-[rgba(255,255,255,0.5)] focus:outline-none focus:ring-1 focus:ring-[rgba(255,255,255,0.12)] focus:border-[rgba(255,255,255,0.12)] focus:bg-[rgba(255,255,255,0.08)] font-light text-[16px] min-h-[48px] max-h-[120px] transition-all duration-300 resize-none overflow-y-auto leading-relaxed touch-manipulation"
+    "w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.08)] rounded-lg text-[#ffffff] placeholder-[rgba(255,255,255,0.42)] focus:outline-none focus:ring-1 focus:ring-[rgba(255,255,255,0.12)] focus:border-[rgba(255,255,255,0.12)] focus:bg-[rgba(255,255,255,0.08)] font-light text-[15px] sm:text-[16px] min-h-[44px] sm:min-h-[48px] max-h-[120px] transition-all duration-300 resize-none overflow-y-auto leading-relaxed touch-manipulation"
 
   const textareaStyle = {
     fontFamily: Typography.body.fontFamily,
-    fontSize: "16px",
+    fontSize: "clamp(15px, 3.8vw, 16px)",
     fontWeight: Typography.body.weights.regular,
-    lineHeight: Typography.body.lineHeight,
+    lineHeight: "1.45",
     letterSpacing: Typography.body.letterSpacing,
   }
 
   const imageButtonClass =
-    "touch-manipulation active:scale-95 shrink-0 flex items-center justify-center min-w-[92px] h-11 rounded-lg border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.08)] hover:bg-[rgba(255,255,255,0.12)] text-[#ffffff] transition-all disabled:opacity-50 disabled:cursor-not-allowed px-3"
+    "touch-manipulation active:scale-95 shrink-0 flex items-center justify-center min-w-[56px] sm:min-w-[92px] h-10 sm:h-11 rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.11)] text-[#ffffff] transition-all disabled:opacity-50 disabled:cursor-not-allowed px-2.5 sm:px-3"
 
   const imageButtonStyle = {
     borderRadius: BorderRadius.button,
   }
 
   const sendButtonClass =
-    "touch-manipulation active:scale-95 shrink-0 flex items-center justify-center min-w-[96px] h-11 rounded-md border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.08)] hover:bg-[rgba(255,255,255,0.12)] text-[#ffffff] transition-all disabled:opacity-50 disabled:cursor-not-allowed px-4"
+    "touch-manipulation active:scale-95 shrink-0 flex items-center justify-center min-w-[56px] sm:min-w-[96px] h-10 sm:h-11 rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.13)] text-[#ffffff] transition-all disabled:opacity-50 disabled:cursor-not-allowed px-2.5 sm:px-4"
 
   const sendButtonStyle = {
     borderRadius: BorderRadius.button,
     backgroundColor:
       (!inputValue.trim() && !uploadedImage) || isLoading || disabled
-        ? "rgba(255,255,255,0.06)"
-        : "rgba(255,255,255,0.14)",
-    color: Colors.textSecondary,
+        ? "rgba(255,255,255,0.05)"
+        : "rgba(255,255,255,0.18)",
+    color: "rgba(255,255,255,0.88)",
   }
 
   return (
@@ -284,7 +284,7 @@ export default function MayaUnifiedInput({
           </div>
         )}
 
-        <div className={`flex ${proMode ? 'items-end gap-2 sm:gap-3' : 'items-end gap-2'}`}>
+        <div className={`flex min-w-0 ${proMode ? 'items-end gap-2 sm:gap-3' : 'items-end gap-2'}`}>
           {/* Image upload button */}
           <button
             type="button"
@@ -309,12 +309,15 @@ export default function MayaUnifiedInput({
                 <div className="w-5 h-5 border-2 border-stone-400 border-t-transparent rounded-full animate-spin" />
               )
             ) : (
-              <span className="text-[10px] uppercase tracking-[0.16em] font-medium">Add Image</span>
+              <>
+                <span className="sm:hidden">Image</span>
+                <span className="hidden sm:inline text-[10px] uppercase tracking-[0.16em] font-medium">Add Image</span>
+              </>
             )}
           </button>
 
           {/* Text input */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <textarea
               ref={textareaRef}
               value={inputValue}
@@ -354,7 +357,8 @@ export default function MayaUnifiedInput({
               aria-label="Send message"
               type="button"
             >
-              <span className="text-[10px] uppercase tracking-[0.2em] font-medium">Send</span>
+              <span className="sm:hidden">Go</span>
+              <span className="hidden sm:inline text-[10px] uppercase tracking-[0.2em] font-medium">Send</span>
             </button>
           )}
 
@@ -370,7 +374,10 @@ export default function MayaUnifiedInput({
               {isLoading ? (
                 <LoadingSpinner size="sm" />
               ) : (
-                <span className="text-[10px] uppercase tracking-[0.2em] font-medium">Send</span>
+                <>
+                  <span className="sm:hidden">Go</span>
+                  <span className="hidden sm:inline text-[10px] uppercase tracking-[0.2em] font-medium">Send</span>
+                </>
               )}
             </button>
           )}

@@ -3,6 +3,8 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 import { getOrCreateActiveChat, getChatMessages, loadChatById } from "@/lib/data/maya"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { sql } from "@/lib/db/client"
+import { parseMayaToolMarkers, stripMayaToolMarkers } from "@/lib/maya/tool-markers"
+import { extractMayaVideoCardMarkers } from "@/lib/maya/video-card-marker"
 
 
 /**
@@ -33,6 +35,169 @@ function getFeedCardDescription(feedDescription: string | null | undefined, fall
     return isStrategyDocument(fallback) ? '' : fallback
   }
   return feedDescription
+}
+
+function isRecoverableVideoSourceError(error: unknown): boolean {
+  const err = error as { code?: string; message?: string }
+  const code = typeof err?.code === "string" ? err.code : ""
+  const message = String(err?.message || "").toLowerCase()
+
+  if (code === "42P01" || code === "42703" || code === "42883" || code === "22P02" || code === "42804") {
+    return true
+  }
+
+  return (
+    message.includes("brand_assets") ||
+    message.includes("generated_images") ||
+    message.includes("undefined table") ||
+    message.includes("undefined column")
+  )
+}
+
+async function getLatestGalleryPreview(userId: string | number, limit: number = 6): Promise<any[]> {
+  const rows = await sql`
+    SELECT id, image_url, prompt, created_at
+    FROM ai_images
+    WHERE user_id = ${userId}
+      AND generation_status = 'completed'
+      AND image_url IS NOT NULL
+    ORDER BY created_at DESC
+    LIMIT ${limit}
+  `
+
+  return rows.map((row: any) => ({
+    id: `ai_${row.id}`,
+    imageUrl: row.image_url,
+    prompt: row.prompt || "",
+    createdAt: row.created_at,
+  }))
+}
+
+async function getLatestVideoSourcePreview(userId: string | number, limit: number = 6): Promise<any[]> {
+  try {
+    const rows = await sql`
+      WITH combined AS (
+        SELECT
+          id,
+          image_url,
+          prompt,
+          category,
+          'ai_images' as source,
+          created_at
+        FROM ai_images
+        WHERE user_id = ${userId}
+          AND generation_status = 'completed'
+          AND image_url IS NOT NULL
+
+        UNION ALL
+
+        SELECT
+          id,
+          COALESCE(selected_url, (string_to_array(image_urls::text, ','))[1]) as image_url,
+          prompt,
+          category,
+          'generated_images' as source,
+          created_at
+        FROM generated_images
+        WHERE user_id = ${userId}
+          AND (selected_url IS NOT NULL OR image_urls IS NOT NULL)
+
+        UNION ALL
+
+        SELECT
+          id,
+          file_url as image_url,
+          COALESCE(description, file_name, 'Uploaded reference') as prompt,
+          'upload' as category,
+          'brand_assets' as source,
+          created_at
+        FROM brand_assets
+        WHERE user_id = ${userId}
+          AND file_url IS NOT NULL
+          AND (
+            LOWER(COALESCE(file_type, '')) LIKE 'image/%'
+            OR COALESCE(file_name, '') ~* '\\.(jpg|jpeg|png|webp|heic|heif)$'
+          )
+      ),
+      deduplicated AS (
+        SELECT
+          id,
+          image_url,
+          prompt,
+          category,
+          source,
+          created_at,
+          ROW_NUMBER() OVER (PARTITION BY image_url ORDER BY created_at DESC) as rn
+        FROM combined
+        WHERE image_url IS NOT NULL
+      )
+      SELECT id, image_url, prompt, category, source, created_at
+      FROM deduplicated
+      WHERE rn = 1
+      ORDER BY created_at DESC
+      LIMIT ${limit}
+    `
+
+    return rows.map((row: any) => ({
+      id: String(row.id),
+      imageUrl: row.image_url,
+      prompt: row.prompt || "",
+      category: row.category || "",
+      source: row.source || "",
+    }))
+  } catch (error) {
+    if (!isRecoverableVideoSourceError(error)) {
+      throw error
+    }
+
+    console.warn("[Maya Load Chat] Video source query fallback to ai_images only:", error)
+
+    try {
+      const rows = await sql`
+        SELECT id, image_url, prompt, category, created_at
+        FROM ai_images
+        WHERE user_id = ${userId}
+          AND generation_status = 'completed'
+          AND image_url IS NOT NULL
+        ORDER BY created_at DESC
+        LIMIT ${limit}
+      `
+
+      return rows.map((row: any) => ({
+        id: String(row.id),
+        imageUrl: row.image_url,
+        prompt: row.prompt || "",
+        category: row.category || "",
+        source: "ai_images",
+      }))
+    } catch {
+      return []
+    }
+  }
+}
+
+function buildVideoCardToolParts(rawTextContent: string): any[] {
+  const persistedVideoCards = extractMayaVideoCardMarkers(rawTextContent)
+  if (persistedVideoCards.length === 0) return []
+
+  const seenVideoUrls = new Set<string>()
+  const videoCardParts: any[] = []
+
+  for (const videoCard of persistedVideoCards) {
+    if (!videoCard.videoUrl || seenVideoUrls.has(videoCard.videoUrl)) continue
+    seenVideoUrls.add(videoCard.videoUrl)
+    videoCardParts.push({
+      type: "tool-generateVideo",
+      output: {
+        state: "ready",
+        videoUrl: videoCard.videoUrl,
+        motionPrompt: videoCard.motionPrompt || "",
+        imageUrl: videoCard.imageUrl || "",
+      },
+    })
+  }
+
+  return videoCardParts
 }
 
 /**
@@ -595,9 +760,12 @@ export async function GET(request: NextRequest) {
       // Extract inspiration image from content if present (backward compatibility)
       const inspirationImageMatch = msg.content?.match(/\[Inspiration Image: (https?:\/\/[^\]]+)\]/)
       const imageUrl = inspirationImageMatch ? inspirationImageMatch[1] : null
-      const textContent = imageUrl 
+      const rawTextContent = imageUrl 
         ? msg.content?.replace(/\[Inspiration Image: https?:\/\/[^\]]+\]/g, "").trim() || ""
         : msg.content || ""
+      const toolMarkers = parseMayaToolMarkers(rawTextContent)
+      const videoCardParts = buildVideoCardToolParts(rawTextContent)
+      const textContent = stripMayaToolMarkers(rawTextContent)
 
       // ============================================================================
       // PROCESS CONCEPT CARDS (Photos Tab Only)
@@ -662,6 +830,104 @@ export async function GET(request: NextRequest) {
             concepts: enrichedConcepts, // Use enriched concepts with images
           },
         })
+
+        for (const videoCardPart of videoCardParts) {
+          parts.push(videoCardPart)
+        }
+
+        // Restore Phase 1 tool markers for chat history continuity.
+        for (const marker of toolMarkers) {
+          if (marker.tool === "show_capabilities") {
+            parts.push({
+              type: "tool-showCapabilities",
+              output: {
+                state: "ready",
+              },
+            })
+          } else if (marker.tool === "show_gallery") {
+            const images = await getLatestGalleryPreview(neonUser.id, 6)
+            parts.push({
+              type: "tool-showGallery",
+              output: {
+                state: "ready",
+                total: images.length,
+                images,
+              },
+            })
+          } else if (marker.tool === "save_to_gallery") {
+            parts.push({
+              type: "tool-saveToGallery",
+              output: {
+                state: "ready",
+                imageId: marker.imageId || null,
+                target: marker.target,
+                message:
+                  marker.target === "explicit"
+                    ? "Saved to your gallery."
+                    : "Saved your latest image to your gallery.",
+              },
+            })
+          } else if (marker.tool === "generate_image") {
+            parts.push({
+              type: "tool-generateImage",
+              output: {
+                state: "ready",
+                source: marker.source,
+              },
+            })
+          } else if (marker.tool === "generate_video") {
+            if (videoCardParts.length === 0) {
+              const images = await getLatestVideoSourcePreview(neonUser.id, 6)
+              parts.push({
+                type: "tool-generateVideo",
+                output: {
+                  state: "choose_image",
+                  images,
+                },
+              })
+            }
+          } else if (marker.tool === "show_upload_zone") {
+            parts.push({
+              type: "tool-showUploadZone",
+              output: {
+                state: "ready",
+                category: marker.category,
+              },
+            })
+          } else if (marker.tool === "collect_offer_brief") {
+            parts.push({
+              type: "tool-collectOfferBrief",
+              output: {
+                state: "ready",
+                assetType: marker.assetType,
+                prefill: marker.prefill || {},
+                missingFields: marker.missingFields || [],
+              },
+            })
+          } else if (marker.tool === "edit_asset") {
+            parts.push({
+              type: "tool-editAsset",
+              output: {
+                state: "ready",
+                assetType: marker.assetType,
+                assetLabel: marker.assetLabel,
+                message: `Active ${marker.assetLabel} editing context restored.`,
+              },
+            })
+          } else if (marker.tool === "create_asset") {
+            parts.push({
+              type: "tool-createAssetPreview",
+              output: {
+                state: "ready",
+                assetType: marker.assetType,
+                assetLabel: marker.assetLabel,
+                assetId: marker.assetId || null,
+                previewText: marker.previewText || "",
+                url: marker.url || "",
+              },
+            })
+          }
+        }
         
         // NOTE: Feed cards are NOT processed here - they're in separate Feed tab
         // If a message somehow has both, it's a data inconsistency that should be fixed
@@ -720,6 +986,107 @@ export async function GET(request: NextRequest) {
         })
         
         console.log("[v0] ✅ Processed", feedCardParts.length, "feed card(s) for Feed tab message", msg.id)
+      }
+
+      if (isPhotosTab && videoCardParts.length > 0) {
+        for (const videoCardPart of videoCardParts) {
+          parts.push(videoCardPart)
+        }
+      }
+
+      if (isPhotosTab && toolMarkers.length > 0) {
+        for (const marker of toolMarkers) {
+          if (marker.tool === "show_capabilities") {
+            parts.push({
+              type: "tool-showCapabilities",
+              output: {
+                state: "ready",
+              },
+            })
+          } else if (marker.tool === "show_gallery") {
+            const images = await getLatestGalleryPreview(neonUser.id, 6)
+            parts.push({
+              type: "tool-showGallery",
+              output: {
+                state: "ready",
+                total: images.length,
+                images,
+              },
+            })
+          } else if (marker.tool === "save_to_gallery") {
+            parts.push({
+              type: "tool-saveToGallery",
+              output: {
+                state: "ready",
+                imageId: marker.imageId || null,
+                target: marker.target,
+                message:
+                  marker.target === "explicit"
+                    ? "Saved to your gallery."
+                    : "Saved your latest image to your gallery.",
+              },
+            })
+          } else if (marker.tool === "generate_image") {
+            parts.push({
+              type: "tool-generateImage",
+              output: {
+                state: "ready",
+                source: marker.source,
+              },
+            })
+          } else if (marker.tool === "generate_video") {
+            if (videoCardParts.length === 0) {
+              const images = await getLatestVideoSourcePreview(neonUser.id, 6)
+              parts.push({
+                type: "tool-generateVideo",
+                output: {
+                  state: "choose_image",
+                  images,
+                },
+              })
+            }
+          } else if (marker.tool === "show_upload_zone") {
+            parts.push({
+              type: "tool-showUploadZone",
+              output: {
+                state: "ready",
+                category: marker.category,
+              },
+            })
+          } else if (marker.tool === "collect_offer_brief") {
+            parts.push({
+              type: "tool-collectOfferBrief",
+              output: {
+                state: "ready",
+                assetType: marker.assetType,
+                prefill: marker.prefill || {},
+                missingFields: marker.missingFields || [],
+              },
+            })
+          } else if (marker.tool === "edit_asset") {
+            parts.push({
+              type: "tool-editAsset",
+              output: {
+                state: "ready",
+                assetType: marker.assetType,
+                assetLabel: marker.assetLabel,
+                message: `Active ${marker.assetLabel} editing context restored.`,
+              },
+            })
+          } else if (marker.tool === "create_asset") {
+            parts.push({
+              type: "tool-createAssetPreview",
+              output: {
+                state: "ready",
+                assetType: marker.assetType,
+                assetLabel: marker.assetLabel,
+                assetId: marker.assetId || null,
+                previewText: marker.previewText || "",
+                url: marker.url || "",
+              },
+            })
+          }
+        }
       }
 
       return {

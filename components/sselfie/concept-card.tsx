@@ -1003,6 +1003,7 @@ export default function ConceptCard({
           imageId: generationId,
           motionPrompt: aiGeneratedMotionPrompt,
           imageDescription: concept.description,
+          category: concept.category || "",
         }),
       })
 

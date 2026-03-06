@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { generateText } from "ai"
 import { sql } from "@/lib/db/client"
 import { withAuth } from "@/lib/auth/with-auth"
+import { auditPromptRoute } from "@/lib/generation/prompt/route-audit"
 
 async function handleEnhanceGoal({
   request,
@@ -69,9 +70,7 @@ async function handleEnhanceGoal({
       brandContext += `\nUse this brand info to make the enhancement more specific to them and their style.\n`
     }
 
-    const { text: enhancedGoal } = await generateText({
-      model: "anthropic/claude-haiku-4.5",
-      prompt: `You're Maya, a warm and friendly personal branding expert who helps people express themselves.
+    const prompt = `You're Maya, a warm and friendly personal branding expert who helps people express themselves.
 
 Someone wrote this about their Instagram feed goal:
 "${goalText}"${brandContext}
@@ -85,7 +84,22 @@ Make it better! Make it:
 - 2-3x longer with more details
 
 Keep it simple and genuine. Don't make it sound fake or corporate.
-Just write the better version, no explanations.`,
+Just write the better version, no explanations.`
+    const startedAt = Date.now()
+    auditPromptRoute({
+      routeId: "EP-SHADOW-ENHANCE-GOAL",
+      mode: "classic",
+      feature: "enhance-goal",
+      userId: user.id,
+      builder: "anthropic/claude-haiku-4.5",
+      prompt,
+      input: { goalText, hasBrandProfile: Boolean(brandProfile) },
+      startedAt,
+    })
+
+    const { text: enhancedGoal } = await generateText({
+      model: "anthropic/claude-haiku-4.5",
+      prompt,
     })
 
     return NextResponse.json({ enhancedGoal: enhancedGoal.trim() })

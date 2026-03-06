@@ -122,10 +122,9 @@ export function useMayaChat({
   // Refs for tracking state
   const hasLoadedChatRef = useRef(false)
   const savedMessageIds = useRef(new Set<string>())
+  const savedFeedCardMessagesRef = useRef(new Set<string>())
   const lastModeRef = useRef<string | null>(null)
   const hasClearedStateRef = useRef(false)
-  // CRITICAL FIX: Track saved feed cards to prevent duplicate saves
-  const savedFeedCardMessagesRef = useRef(new Set<string>())
   // CRITICAL FIX: Track history checks to prevent infinite loops
   const checkedHistoryForChatTypeRef = useRef<string | null>(null)
   const isCheckingHistoryRef = useRef(false)
@@ -192,80 +191,7 @@ export function useMayaChat({
         partsTypes: message.parts?.map((p: any) => p.type) || [],
         currentMessagesCount: currentMessages.length, // Use SDK-provided messages
       })
-      
-      // CRITICAL FIX: Save assistant message to database when streaming finishes
-      // This ensures messages exist in DB before feed cards try to update them
-      if (message.role === "assistant" && chatId) {
-        // Extract text content from message
-        let textContent = ""
-        const messageAny = message as any
-        if (messageAny.content && typeof messageAny.content === "string") {
-          textContent = messageAny.content
-        } else if (message.parts && Array.isArray(message.parts)) {
-          const textParts = message.parts.filter((p: any) => p && p.type === "text")
-          textContent = textParts.map((p: any) => p.text || "").join(" ")
-        }
-        
-        // Extract feed cards from parts if they exist
-        let feedCards: any[] | undefined = undefined
-        if (message.parts && Array.isArray(message.parts)) {
-          const feedCardParts = message.parts.filter((p: any) => p && p.type === "tool-generateFeed" && p.output)
-          if (feedCardParts.length > 0) {
-            feedCards = feedCardParts.map((p: any) => p.output)
-            console.log("[useMayaChat] 💾 Found feed cards in message parts, will save with message:", feedCards.length)
-          }
-        }
-        
-        // CRITICAL FIX: Prevent duplicate saves - check if we've already saved this message
-        const messageKey = message.id ? `feed-${message.id}` : `feed-temp-${Date.now()}`
-        if (savedFeedCardMessagesRef.current.has(messageKey)) {
-          console.log("[useMayaChat] ⚠️ Message already saved, skipping duplicate save:", messageKey)
-          return
-        }
-        
-        // Mark as saved BEFORE async operation to prevent race conditions
-        savedFeedCardMessagesRef.current.add(messageKey)
-        
-        // Save message to database (non-blocking)
-        fetch('/api/maya/save-message', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            chatId: chatId,
-            role: 'assistant',
-            content: textContent,
-            feedCards: feedCards, // Include feed cards if they exist
-          }),
-        })
-          .then(async (response) => {
-            if (response.ok) {
-              const result = await response.json()
-              console.log("[useMayaChat] ✅ Saved assistant message to database:", {
-                messageId: result.message?.id,
-                hasFeedCards: !!feedCards,
-                feedCardsCount: feedCards?.length || 0,
-              })
-              // Update messageKey with real ID if we got one
-              if (result.message?.id && messageKey.startsWith('feed-temp-')) {
-                savedFeedCardMessagesRef.current.delete(messageKey)
-                savedFeedCardMessagesRef.current.add(`feed-${result.message.id}`)
-              }
-            } else {
-              const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-              console.error("[useMayaChat] ⚠️ Failed to save assistant message:", response.status, errorData)
-              // Remove from saved set so we can retry
-              savedFeedCardMessagesRef.current.delete(messageKey)
-            }
-          })
-          .catch((error) => {
-            console.error("[useMayaChat] ⚠️ Error saving assistant message:", error.message || String(error))
-            // Remove from saved set so we can retry
-            savedFeedCardMessagesRef.current.delete(messageKey)
-            // Non-critical - message will still work in UI, just won't persist
-          })
-      }
-      
+
       // Check if feed cards are still in messages after finish
       // CRITICAL: Use currentMessages from SDK callback, not closure variable
       const feedCardMessages = currentMessages.filter((m: any) => 

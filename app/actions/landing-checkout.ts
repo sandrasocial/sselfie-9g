@@ -40,6 +40,8 @@ export async function createLandingCheckoutSession(productId: string, promoCode?
       ? "STRIPE_ONE_TIME_SESSION_PRICE_ID"
       : product.type === "paid_blueprint"
         ? "STRIPE_PAID_BLUEPRINT_PRICE_ID"
+        : product.type === "brand_strategy_pack"
+          ? "STRIPE_PRICE_BRAND_STRATEGY_PACK"
         : "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID"
   
   if (product.type === "one_time_session") {
@@ -48,6 +50,8 @@ export async function createLandingCheckoutSession(productId: string, promoCode?
     stripePriceId = process.env.STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID
   } else if (product.type === "paid_blueprint") {
     stripePriceId = process.env.STRIPE_PAID_BLUEPRINT_PRICE_ID
+  } else if (product.type === "brand_strategy_pack") {
+    stripePriceId = process.env.STRIPE_PRICE_BRAND_STRATEGY_PACK
   }
   stripePriceId = stripePriceId?.trim()
 

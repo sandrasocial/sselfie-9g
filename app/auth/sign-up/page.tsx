@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
-import { resolvePostAuthRedirect } from "@/lib/studio/tab-routing"
+import { sanitizeRedirect } from "@/lib/security/url-validator"
 
 export default function SignUpPage() {
   const [email, setEmail] = useState("")
@@ -20,7 +20,26 @@ export default function SignUpPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [checkingUser, setCheckingUser] = useState(false)
   const [userExists, setUserExists] = useState(false)
+  const [loginHref, setLoginHref] = useState("/auth/login")
   const router = useRouter()
+
+  const getRoutingContext = () => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const checkoutParam = urlParams.get("checkout")
+    const checkoutDefaultReturnTo =
+      checkoutParam === "studio_membership"
+        ? "/checkout/membership"
+        : checkoutParam === "brand_strategy_pack"
+          ? "/checkout/brand-strategy-pack"
+          : "/studio"
+    const returnTo = sanitizeRedirect(
+      urlParams.get("returnTo"),
+      checkoutDefaultReturnTo,
+    )
+    const next = urlParams.get("next")
+
+    return { checkoutParam, returnTo, next }
+  }
 
   // Check if user exists when email is entered (debounced)
   useEffect(() => {
@@ -54,6 +73,11 @@ export default function SignUpPage() {
     return () => clearTimeout(timeoutId)
   }, [email])
 
+  useEffect(() => {
+    const { returnTo } = getRoutingContext()
+    setLoginHref(`/auth/login?returnTo=${encodeURIComponent(returnTo)}`)
+  }, [])
+
   // Handle login for existing users (password-only flow)
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -81,11 +105,12 @@ export default function SignUpPage() {
       }
 
       // Success! Redirect to Studio (Maya by default for first-time flow)
-      const urlParams = new URLSearchParams(window.location.search)
-      const checkoutParam = urlParams.get("checkout")
-      let redirectTo = resolvePostAuthRedirect(urlParams.get("next"))
+      const { checkoutParam, returnTo, next } = getRoutingContext()
+      let redirectTo = sanitizeRedirect(next, returnTo)
       if (checkoutParam === "studio_membership") {
         redirectTo = "/checkout/membership"
+      } else if (checkoutParam === "brand_strategy_pack") {
+        redirectTo = "/checkout/brand-strategy-pack"
       }
       router.push(redirectTo)
     } catch (error: unknown) {
@@ -149,11 +174,12 @@ export default function SignUpPage() {
 
       if (!signInError && signInData.session) {
         // Success! Redirect to Studio (Maya by default for first-time flow)
-        const urlParams = new URLSearchParams(window.location.search)
-        const checkoutParam = urlParams.get("checkout")
-        let redirectTo = resolvePostAuthRedirect(urlParams.get("next"))
+        const { checkoutParam, returnTo, next } = getRoutingContext()
+        let redirectTo = sanitizeRedirect(next, returnTo)
         if (checkoutParam === "studio_membership") {
           redirectTo = "/checkout/membership"
+        } else if (checkoutParam === "brand_strategy_pack") {
+          redirectTo = "/checkout/brand-strategy-pack"
         }
         console.log("[Sign Up] ✅ Signed in successfully, redirecting to:", redirectTo)
         router.push(redirectTo)
@@ -216,8 +242,8 @@ export default function SignUpPage() {
                     />
                   </div>
                   {error && <p className="text-sm text-red-400">{error}</p>}
-                  <Button type="submit" className="w-full bg-white text-black hover:bg-zinc-200" disabled={isLoading || checkingUser}>
-                    {isLoading ? "Signing in..." : checkingUser ? "Checking..." : "Sign In"}
+                  <Button type="submit" className="w-full bg-white text-black hover:bg-zinc-200" disabled={isLoading}>
+                    {isLoading ? "Signing in..." : "Sign In"}
                   </Button>
                   <p className="text-xs text-center text-zinc-500">
                     New user?{" "}
@@ -283,13 +309,13 @@ export default function SignUpPage() {
                     />
                   </div>
                   {error && <p className="text-sm text-red-400">{error}</p>}
-                  <Button type="submit" className="w-full bg-white text-black hover:bg-zinc-200" disabled={isLoading || checkingUser}>
-                    {isLoading ? "Creating account..." : checkingUser ? "Checking..." : "Sign Up"}
+                  <Button type="submit" className="w-full bg-white text-black hover:bg-zinc-200" disabled={isLoading}>
+                    {isLoading ? "Creating account..." : "Sign Up"}
                   </Button>
                 </div>
                 <div className="mt-4 text-center text-sm text-zinc-400">
                   Already have an account?{" "}
-                  <Link href="/auth/login" className="text-white underline underline-offset-4">
+                  <Link href={loginHref} className="text-white underline underline-offset-4">
                     Sign in
                   </Link>
                 </div>

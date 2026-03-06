@@ -33,6 +33,16 @@ import type { PromptSuggestion } from "@/lib/maya/prompt-generator"
 import ImageUploadFlow from "./pro-mode/ImageUploadFlow"
 import { getConceptPrompt } from "@/lib/maya/concept-templates"
 import BuyCreditsModal from "./buy-credits-modal"
+import { parseMayaToolMarkers } from "@/lib/maya/tool-markers"
+import {
+  encodeOfferBriefMarkerPayload,
+  type MayaOfferBrief,
+  type MayaOfferBriefAssetType,
+} from "@/lib/maya/offer-brief"
+import {
+  encodeMayaVideoCardMarker,
+  stripMayaVideoCardMarkers,
+} from "@/lib/maya/video-card-marker"
 // Pro Mode Components
 import MayaHeader from "./maya/maya-header"
 import ImageLibraryModal from "./pro-mode/ImageLibraryModal"
@@ -82,6 +92,12 @@ const simpleFetcher = async <T,>(url: string): Promise<T> => {
   return (await response.json()) as T
 }
 
+function isFeatureEnabled(value?: string | null): boolean {
+  if (!value) return false
+  const normalized = value.trim().toLowerCase()
+  return normalized === "1" || normalized === "true"
+}
+
 interface MayaChatScreenProps {
   onImageGenerated?: () => void
   user: any | null // User object passed down (type from parent component)
@@ -99,6 +115,18 @@ interface MayaChatScreenProps {
   academyPurchaseProduct?: string
   firstTimeProductUser?: boolean
 }
+
+type PhaseTwoGenerationSource = "selfies" | "custom_model" | "base_model"
+type PhaseTwoUploadCategory = "selfies" | "products" | "people" | "vibes"
+type PhaseTwoVideoImage = {
+  id: string
+  imageUrl: string
+  prompt?: string
+  description?: string
+  category?: string
+}
+
+type OfferBriefFormValues = Omit<MayaOfferBrief, "assetType">
 
 export default function MayaChatScreen({ 
   onImageGenerated, 
@@ -118,6 +146,7 @@ export default function MayaChatScreen({
   firstTimeProductUser = false,
 }: MayaChatScreenProps) {
   const { toast } = useToast()
+  const isLandingPagesUiEnabled = isFeatureEnabled(process.env.NEXT_PUBLIC_FEATURE_MAYA_LANDING_PAGES_UI)
   const isFeedTabDisabled = true
   const [inputValue, setInputValue] = useState("")
   const [showHistory, setShowHistory] = useState(false)
@@ -307,8 +336,6 @@ export default function MayaChatScreen({
     firstTimeProductUser, // Pass Feed tab flag
   })
 
-  const isProSessionEmpty = proMode && !isLoadingChat && (!messages || messages.length === 0)
-
   const [pendingConceptRequest, setPendingConceptRequest] = useState<string | null>(null)
   const [isGeneratingConcepts, setIsGeneratingConcepts] = useState(false)
   const [isCreatingFeed, setIsCreatingFeed] = useState(false)
@@ -382,6 +409,8 @@ export default function MayaChatScreen({
   // processedFeedMessagesRef moved to MayaFeedTab component (feed trigger detection is now handled in FeedTab)
   // CRITICAL FIX: Track processed concept messages to prevent duplication on page refresh
   const processedConceptMessagesRef = useRef<Set<string>>(new Set())
+  const processedToolMessagesRef = useRef<Set<string>>(new Set())
+  const videoPollIntervalsRef = useRef<Map<string, NodeJS.Timeout>>(new Map())
   
   // Pro features onboarding state
   const [showStudioProOnboarding, setShowStudioProOnboarding] = useState(false)
@@ -422,6 +451,56 @@ export default function MayaChatScreen({
     return ""
   }, [])
 
+  const updateAssistantToolPart = useCallback(
+    (partType: string, output: any, targetMessageId?: string | null) => {
+      setMessages((prevMessages: any[]) => {
+        const nextMessages = [...prevMessages]
+        let targetIndex = -1
+
+        if (targetMessageId) {
+          targetIndex = nextMessages.findIndex((message: any) => message.id === targetMessageId)
+        }
+        if (targetIndex < 0) {
+          for (let i = nextMessages.length - 1; i >= 0; i -= 1) {
+            if (nextMessages[i]?.role === "assistant") {
+              targetIndex = i
+              break
+            }
+          }
+        }
+        if (targetIndex < 0) return prevMessages
+
+        const targetMessage = nextMessages[targetIndex]
+        const existingParts = Array.isArray(targetMessage.parts) ? [...targetMessage.parts] : []
+        const existingIndex = existingParts.findIndex((part: any) => part?.type === partType)
+        const nextPart = { type: partType, output }
+
+        if (existingIndex >= 0) {
+          existingParts[existingIndex] = nextPart
+        } else {
+          existingParts.push(nextPart)
+        }
+
+        nextMessages[targetIndex] = { ...targetMessage, parts: existingParts }
+        return nextMessages
+      })
+    },
+    [setMessages],
+  )
+
+  const clearVideoPollForMessage = useCallback((messageId: string) => {
+    const interval = videoPollIntervalsRef.current.get(messageId)
+    if (interval) {
+      clearInterval(interval)
+      videoPollIntervalsRef.current.delete(messageId)
+    }
+  }, [])
+
+  const clearAllVideoPolls = useCallback(() => {
+    videoPollIntervalsRef.current.forEach((interval) => clearInterval(interval))
+    videoPollIntervalsRef.current.clear()
+  }, [])
+
   // useChat hook and loadChat function are now managed by useMayaChat hook
   
   // Wrapper for loadChat that also closes history panel (component-specific UI state)
@@ -455,9 +534,17 @@ export default function MayaChatScreen({
   // This prevents re-processing messages when switching chats or creating new chats
   useEffect(() => {
     processedConceptMessagesRef.current.clear()
+    processedToolMessagesRef.current.clear()
+    clearAllVideoPolls()
     setPendingConceptRequest(null) // Clear pending request on chat change
     console.log("[v0] ✅ Cleared processedConceptMessagesRef for new chat:", chatId)
-  }, [chatId])
+  }, [chatId, clearAllVideoPolls])
+
+  useEffect(() => {
+    return () => {
+      clearAllVideoPolls()
+    }
+  }, [clearAllVideoPolls])
 
   useEffect(() => {
     if (isMembership && firstTimeProductUser) {
@@ -586,9 +673,277 @@ export default function MayaChatScreen({
       })
     }
 
+    const toolMarkers = parseMayaToolMarkers(textContent)
+    if (toolMarkers.length > 0) {
+      const alreadyHasToolResults = lastAssistantMessage.parts?.some(
+        (p: any) =>
+          p?.type === "tool-showCapabilities" ||
+          p?.type === "tool-showStudioHub" ||
+          p?.type === "tool-showGallery" ||
+          p?.type === "tool-saveToGallery" ||
+          p?.type === "tool-generateImage" ||
+          p?.type === "tool-generateVideo" ||
+          p?.type === "tool-showUploadZone" ||
+          p?.type === "tool-collectOfferBrief" ||
+          p?.type === "tool-editAsset" ||
+          p?.type === "tool-createAssetPreview",
+      )
+
+      const toolProcessKey = `${messageKey}-phase2-tools`
+      if (alreadyHasToolResults || processedToolMessagesRef.current.has(toolProcessKey)) {
+        processedToolMessagesRef.current.add(toolProcessKey)
+        return
+      }
+
+      processedToolMessagesRef.current.add(toolProcessKey)
+      const targetMessageId = lastAssistantMessage.id
+
+      const resolvePhaseTwoTools = async () => {
+        for (const marker of toolMarkers) {
+          if (marker.tool === "show_capabilities") {
+            updateAssistantToolPart("tool-showCapabilities", {
+              state: "ready",
+            }, targetMessageId)
+          }
+
+          if (marker.tool === "show_studio_hub") {
+            updateAssistantToolPart("tool-showStudioHub", {
+              state: "loading",
+              stats: { feedCount: 0, pageCount: 0, photoCount: 0, videoCount: 0 },
+              feeds: [],
+              pages: [],
+              recentPhotos: [],
+              recentVideos: [],
+            }, targetMessageId)
+
+            try {
+              const response = await fetch("/api/studio/hub", {
+                credentials: "include",
+              })
+              const data = await response.json()
+              if (!response.ok) {
+                throw new Error(data?.error || "Failed to load Studio Hub")
+              }
+
+              updateAssistantToolPart("tool-showStudioHub", {
+                state: "ready",
+                stats: data?.stats || { feedCount: 0, pageCount: 0, photoCount: 0, videoCount: 0 },
+                feeds: Array.isArray(data?.feeds) ? data.feeds : [],
+                pages: Array.isArray(data?.pages) ? data.pages : [],
+                recentPhotos: Array.isArray(data?.recentPhotos) ? data.recentPhotos : [],
+                recentVideos: Array.isArray(data?.recentVideos) ? data.recentVideos : [],
+              }, targetMessageId)
+            } catch (error: any) {
+              updateAssistantToolPart("tool-showStudioHub", {
+                state: "error",
+                message: error?.message || "Could not load Studio Hub",
+                stats: { feedCount: 0, pageCount: 0, photoCount: 0, videoCount: 0 },
+                feeds: [],
+                pages: [],
+                recentPhotos: [],
+                recentVideos: [],
+              }, targetMessageId)
+            }
+          }
+
+          if (marker.tool === "show_gallery") {
+            updateAssistantToolPart("tool-showGallery", { state: "loading", images: [], total: 0 }, targetMessageId)
+            try {
+              const response = await fetch("/api/gallery/images?limit=6", {
+                credentials: "include",
+              })
+              const data = await response.json()
+              if (!response.ok) {
+                throw new Error(data?.error || "Failed to load gallery")
+              }
+
+              const images = Array.isArray(data?.images)
+                ? data.images.map((image: any) => ({
+                    id: `ai_${image.id}`,
+                    imageUrl: image.image_url,
+                    prompt: image.prompt || "",
+                    createdAt: image.created_at,
+                  }))
+                : []
+
+              updateAssistantToolPart("tool-showGallery", {
+                state: "ready",
+                images,
+                total: Number(data?.total ?? images.length),
+              }, targetMessageId)
+            } catch (error: any) {
+              updateAssistantToolPart("tool-showGallery", {
+                state: "error",
+                message: error?.message || "Could not load gallery",
+                images: [],
+                total: 0,
+              }, targetMessageId)
+            }
+          }
+
+          if (marker.tool === "save_to_gallery") {
+            updateAssistantToolPart("tool-saveToGallery", { state: "loading", target: marker.target }, targetMessageId)
+            try {
+              let resolvedImageId = marker.imageId
+
+              if (!resolvedImageId) {
+                const latestResponse = await fetch("/api/gallery/images?limit=1", {
+                  credentials: "include",
+                })
+                const latestData = await latestResponse.json()
+                if (!latestResponse.ok) {
+                  throw new Error(latestData?.error || "Failed to read latest gallery image")
+                }
+                const latestImage = Array.isArray(latestData?.images) ? latestData.images[0] : null
+                if (!latestImage?.id) {
+                  throw new Error("No gallery image available to save")
+                }
+                resolvedImageId = `ai_${latestImage.id}`
+              }
+
+              const saveResponse = await fetch("/api/images/bulk-save", {
+                method: "POST",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  imageIds: [resolvedImageId],
+                }),
+              })
+              const saveData = await saveResponse.json()
+              if (!saveResponse.ok || saveData?.success !== true) {
+                throw new Error(saveData?.error || "Failed to save image")
+              }
+
+              updateAssistantToolPart("tool-saveToGallery", {
+                state: "ready",
+                target: marker.target,
+                imageId: resolvedImageId,
+                savedCount: Number(saveData?.savedCount ?? 0),
+                message: "Saved to your gallery.",
+              }, targetMessageId)
+            } catch (error: any) {
+              updateAssistantToolPart("tool-saveToGallery", {
+                state: "error",
+                target: marker.target,
+                message: error?.message || "Could not save to gallery",
+              }, targetMessageId)
+            }
+          }
+
+          if (marker.tool === "generate_image") {
+            updateAssistantToolPart("tool-generateImage", {
+              state: "ready",
+              source: marker.source,
+            }, targetMessageId)
+          }
+
+          if (marker.tool === "generate_video") {
+            updateAssistantToolPart("tool-generateVideo", {
+              state: "loading_images",
+              images: [],
+            }, targetMessageId)
+
+            try {
+              const response = await fetch("/api/maya/b-roll-images?limit=8", {
+                credentials: "include",
+              })
+              const data = await response.json()
+              if (!response.ok) {
+                throw new Error(data?.error || "Failed to load images")
+              }
+
+              const images: PhaseTwoVideoImage[] = Array.isArray(data?.images)
+                ? data.images
+                    .map((image: any, index: number) => {
+                      const imageId = String(image?.id ?? `image-${index}`)
+                      const imageUrl = image?.image_url || image?.imageUrl || ""
+                      return {
+                        id: imageId,
+                        imageUrl,
+                        prompt: image?.prompt || "",
+                        description: image?.description || "",
+                        category: image?.category || "",
+                      }
+                    })
+                    .filter((image: PhaseTwoVideoImage) => image.imageUrl.length > 0)
+                : []
+
+              updateAssistantToolPart("tool-generateVideo", {
+                state: "choose_image",
+                images,
+              }, targetMessageId)
+            } catch (error: any) {
+              updateAssistantToolPart("tool-generateVideo", {
+                state: "error",
+                message: error?.message || "Could not load images for video",
+              }, targetMessageId)
+            }
+          }
+
+          if (marker.tool === "show_upload_zone") {
+            updateAssistantToolPart("tool-showUploadZone", {
+              state: "ready",
+              category: marker.category,
+            }, targetMessageId)
+          }
+
+          if (marker.tool === "collect_offer_brief") {
+            if (!isLandingPagesUiEnabled && marker.assetType === "page") {
+              continue
+            }
+            updateAssistantToolPart("tool-collectOfferBrief", {
+              state: "ready",
+              assetType: marker.assetType,
+              prefill: marker.prefill || {},
+              missingFields: marker.missingFields || [],
+            }, targetMessageId)
+          }
+
+          if (marker.tool === "edit_asset") {
+            if (!isLandingPagesUiEnabled && marker.assetType === "page") {
+              continue
+            }
+            updateAssistantToolPart("tool-editAsset", {
+              state: "ready",
+              assetType: marker.assetType,
+              assetLabel: marker.assetLabel,
+              message: `Active ${marker.assetLabel} editing context ready.`,
+            }, targetMessageId)
+          }
+
+          if (marker.tool === "create_asset") {
+            if (!isLandingPagesUiEnabled && marker.assetType === "page") {
+              continue
+            }
+            updateAssistantToolPart("tool-createAssetPreview", {
+              state: "ready",
+              assetType: marker.assetType,
+              assetLabel: marker.assetLabel,
+              assetId: marker.assetId || null,
+              previewText: marker.previewText || "",
+              url: marker.url || "",
+            }, targetMessageId)
+          }
+        }
+      }
+
+      resolvePhaseTwoTools()
+    }
+
     // Feed trigger detection moved to MayaFeedTab component
     // (Feed tab handles its own triggers: [CREATE_FEED_STRATEGY], [GENERATE_CAPTIONS], [GENERATE_STRATEGY])
-  }, [messages, status, isGeneratingConcepts, pendingConceptRequest, proMode, messagesWithUploadModule, activeMayaTab, isCreatingFeed])
+  }, [
+    messages,
+    status,
+    isGeneratingConcepts,
+    pendingConceptRequest,
+    proMode,
+    messagesWithUploadModule,
+    activeMayaTab,
+    isCreatingFeed,
+    updateAssistantToolPart,
+    isLandingPagesUiEnabled,
+  ])
 
   // The problem was: message was saved BEFORE concepts were generated, so concepts were never persisted
   useEffect(() => {
@@ -868,50 +1223,8 @@ export default function MayaChatScreen({
             return newMessages
           })
 
-          // This ensures new concept cards are persisted and show in chat history
-          if (chatId && concepts && concepts.length > 0) {
-            // Extract text content from the message
-            let textContent = ""
-            if (lastAssistantMessage?.parts && Array.isArray(lastAssistantMessage.parts)) {
-              const textParts = lastAssistantMessage.parts.filter((p: any) => p.type === "text")
-              textContent = textParts
-                .map((p: any) => p.text)
-                .join("\n")
-                .trim()
-            }
-
-            console.log("[v0] Saving concept cards to database:", concepts.length)
-
-            // Remove the message from savedMessageIds so the save effect won't skip it
-            // OR directly save/update the concepts
-            fetch("/api/maya/save-message", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              credentials: "include",
-              body: JSON.stringify({
-                chatId,
-                role: "assistant",
-                content: textContent || "",
-                conceptCards: normalizedConcepts,
-                updateExisting: true, // Signal to update if message exists
-              }),
-            })
-              .then((res) => res.json())
-              .then((data) => {
-                if (data.success) {
-                  console.log("[v0] Concept cards saved successfully to database")
-                  // Mark the message as saved now (with concepts)
-                  if (messageId) {
-                    savedMessageIds.current.add(messageId)
-                  }
-                } else {
-                  console.error("[v0] Failed to save concept cards:", data.error)
-                }
-              })
-              .catch((error) => {
-                console.error("[v0] Error saving concept cards:", error)
-              })
-          }
+          // Assistant persistence is centralized in the save effect below to avoid duplicate rows.
+          // No direct save call here.
         }
         } catch (error: any) {
           console.error("[v0] ❌ Error generating concepts:", error)
@@ -1023,6 +1336,42 @@ export default function MayaChatScreen({
       console.log("[v0] Save effect - added feed card markers to content:", feedMarkers)
     }
 
+    // Extract completed video cards and persist as [VIDEO_CARD:...] markers.
+    const videoCards: Array<{ videoUrl: string; motionPrompt?: string; imageUrl?: string }> = []
+    if (lastAssistantMessage.parts && Array.isArray(lastAssistantMessage.parts)) {
+      const seenVideoUrls = new Set<string>()
+      for (const part of lastAssistantMessage.parts) {
+        if (part.type !== "tool-generateVideo") continue
+        const output = (part as any)?.output
+        const videoUrl = typeof output?.videoUrl === "string" ? output.videoUrl.trim() : ""
+        if (!videoUrl || seenVideoUrls.has(videoUrl)) continue
+        seenVideoUrls.add(videoUrl)
+        videoCards.push({
+          videoUrl,
+          motionPrompt: typeof output?.motionPrompt === "string" ? output.motionPrompt : undefined,
+          imageUrl: typeof output?.imageUrl === "string" ? output.imageUrl : undefined,
+        })
+      }
+    }
+
+    if (videoCards.length > 0) {
+      // Once a video is complete, persist card markers and remove dispatch triggers.
+      saveTextContent = stripMayaVideoCardMarkers(saveTextContent)
+      saveTextContent = saveTextContent.replace(/\[GENERATE_VIDEO(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
+
+      const videoMarkers = videoCards
+        .map((videoCard) => encodeMayaVideoCardMarker(videoCard))
+        .filter((marker) => marker.length > 0)
+        .join(" ")
+
+      if (videoMarkers) {
+        saveTextContent = `${saveTextContent}\n${videoMarkers}`.trim()
+        console.log("[v0] Save effect - added video card markers to content:", {
+          count: videoCards.length,
+        })
+      }
+    }
+
     // Extract concept cards from parts
     // 🔴 FIX: Both Classic Mode and Pro Mode now return { state: "ready", concepts: [...] }
     // This ensures consistent handling across both modes
@@ -1047,7 +1396,7 @@ export default function MayaChatScreen({
     
     // Only save if we have something to save
     // CRITICAL: Check for feed cards too, not just concepts!
-    if (!saveTextContent && conceptCards.length === 0 && feedCards.length === 0) {
+    if (!saveTextContent && conceptCards.length === 0 && feedCards.length === 0 && videoCards.length === 0) {
       return
     }
 
@@ -1374,6 +1723,36 @@ export default function MayaChatScreen({
     return suggestions.sort(() => Math.random() - 0.5).slice(0, 4)
   }
 
+  const getOutcomeStartPrompts = (isProMode: boolean): Array<{ label: string; prompt: string }> => {
+    if (isProMode) {
+      return [
+        { label: "Create Photoshoot", prompt: "I want to create a photoshoot for my new offer" },
+        { label: "Use My Selfies", prompt: "Let's create a photo using my uploaded selfies" },
+        { label: "Upload Assets", prompt: "I want to upload product photos and brand references" },
+        { label: "Create Calendar", prompt: "Create a content calendar draft for this week" },
+        { label: "Create Workbook", prompt: "Create a workbook PDF draft for this offer" },
+      ]
+    }
+
+    return [
+      { label: "Create Photoshoot", prompt: "I want to create a photo for my new offer" },
+      { label: "Train My Model", prompt: "I want to train my custom model" },
+      { label: "Upload Selfies", prompt: "I want to upload selfies first" },
+      { label: "Create Calendar", prompt: "Create a content calendar draft for this week" },
+      { label: "Create Workbook", prompt: "Create a workbook PDF draft for this offer" },
+    ]
+  }
+
+  const mergeUniquePrompts = (prompts: Array<{ label: string; prompt: string }>) => {
+    const seen = new Set<string>()
+    return prompts.filter((item) => {
+      const key = `${item.label.toLowerCase()}::${item.prompt.toLowerCase()}`
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+  }
+
   const getRandomPrompts = (gender: string | null) => {
     const promptPool = gender === "woman" ? promptPoolWoman : promptPoolMan
     const allCategories = Object.values(promptPool)
@@ -1398,6 +1777,16 @@ export default function MayaChatScreen({
     ]
   }
 
+  const withCapabilityPrompt = (prompts: Array<{ label: string; prompt: string }>) => {
+    const capabilityPrompt = { label: "What can Maya do?", prompt: "What can you do for me in this app?" }
+    const filtered = prompts.filter(
+      (item) =>
+        item.prompt.trim().toLowerCase() !== capabilityPrompt.prompt.toLowerCase() &&
+        item.label.trim().toLowerCase() !== capabilityPrompt.label.toLowerCase(),
+    )
+    return [capabilityPrompt, ...filtered].slice(0, 7)
+  }
+
   // Update prompts based on mode and active tab
   useEffect(() => {
     // Feed tab uses feed-specific prompts
@@ -1420,26 +1809,22 @@ export default function MayaChatScreen({
           console.log("[v0] Profile API data:", data)
           setUserGender(data.gender || null)
           
-          // 🔴 FIX: Use Pro Mode prompts if in Pro Mode
-          if (proMode) {
-            // Get Pro Mode category-specific prompts
-            const proPrompts = getProModeQuickSuggestions()
-            console.log("[v0] Setting Pro Mode prompts:", proPrompts.length)
-            setCurrentPrompts(proPrompts)
-          } else {
-            // Classic Mode prompts
-            const prompts = getRandomPrompts(data.gender || null)
-            console.log("[v0] Setting Classic Mode prompts for gender:", data.gender, "Prompts:", prompts.length)
-            setCurrentPrompts(prompts)
-          }
+          const starterPrompts = getOutcomeStartPrompts(proMode)
+          const stylePrompts = proMode ? getProModeQuickSuggestions() : getRandomPrompts(data.gender || null)
+          const mergedPrompts = mergeUniquePrompts([...starterPrompts, ...stylePrompts])
+          console.log("[v0] Setting prompt set:", { proMode, total: mergedPrompts.length })
+          setCurrentPrompts(withCapabilityPrompt(mergedPrompts))
         } else {
           console.error("[v0] Profile API error:", response.status, response.statusText)
-          setCurrentPrompts(hasProFeatures ? getProModeQuickSuggestions() : getRandomPrompts(null))
+          const starterPrompts = getOutcomeStartPrompts(proMode)
+          const stylePrompts = hasProFeatures ? getProModeQuickSuggestions() : getRandomPrompts(null)
+          setCurrentPrompts(withCapabilityPrompt(mergeUniquePrompts([...starterPrompts, ...stylePrompts])))
         }
       } catch (error) {
         console.error("[v0] Error fetching user gender:", error)
-        // Fallback: use proMode directly if hasProFeatures not available
-        setCurrentPrompts(proMode ? getProModeQuickSuggestions() : getRandomPrompts(null))
+        const starterPrompts = getOutcomeStartPrompts(proMode)
+        const stylePrompts = proMode ? getProModeQuickSuggestions() : getRandomPrompts(null)
+        setCurrentPrompts(withCapabilityPrompt(mergeUniquePrompts([...starterPrompts, ...stylePrompts])))
       }
     }
     fetchUserGender()
@@ -1701,7 +2086,6 @@ export default function MayaChatScreen({
     if ((messageText || uploadedImage) && !isTyping) {
       // Build message content - use array format if there's an image, otherwise use string
       let messageContent: string | Array<{ type: string; text?: string; image?: string }>
-      let savedMessageContent: string // For saving to database (keep the marker format for backward compatibility)
 
       if (uploadedImage) {
         // Use array format with both text and image for AI SDK
@@ -1720,12 +2104,9 @@ export default function MayaChatScreen({
         })
         
         messageContent = contentParts
-        // For database, keep the old format with marker for backward compatibility
-        savedMessageContent = messageText ? `${messageText}\n\n[Inspiration Image: ${uploadedImage}]` : `[Inspiration Image: ${uploadedImage}]`
         console.log("[v0] ✅ Sending message with inspiration image:", uploadedImage.substring(0, 100) + "...")
       } else {
         messageContent = messageText
-        savedMessageContent = messageText
       }
 
       console.log("[v0] 📤 Sending message with settings:", {
@@ -1763,22 +2144,6 @@ export default function MayaChatScreen({
         }
       }
 
-      // Save user message with the current chatId (using savedMessageContent for backward compatibility)
-      if (currentChatId) {
-        fetch("/api/maya/save-message", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({
-            chatId: currentChatId,
-            role: "user",
-            content: savedMessageContent,
-          }),
-        }).catch((error) => {
-          console.error("[v0] Error saving user message:", error)
-        })
-      }
-
       // Send message using proper format - use 'parts' array for multimodal content
       if (typeof messageContent === "string") {
         sendMessage({
@@ -1806,30 +2171,344 @@ export default function MayaChatScreen({
     }
   }
 
-  // Wrapper for handleNewChat that adds component-specific logic
-  const handleNewChat = useCallback(async () => {
-    // In Pro Mode, "New Project" should clear library (like "Start Fresh")
-    if (hasProFeatures) {
-      // Show confirmation dialog for Pro Mode (matching Start Fresh behavior)
-      if (!confirm('Are you sure you want to start a new project? This will clear your image library and start fresh.')) {
+  const setMayaTabAndHash = useCallback((tab: "photos" | "training") => {
+    setActiveMayaTab(tab)
+    if (typeof window !== "undefined") {
+      localStorage.setItem("mayaActiveTab", tab)
+      window.history.replaceState(null, "", tab === "training" ? "#maya/training" : "#maya")
+    }
+  }, [])
+
+  const handlePhaseTwoUploadZone = useCallback(
+    (category: PhaseTwoUploadCategory = "selfies") => {
+      setMayaTabAndHash("photos")
+      if (!proMode) {
+        setProMode(true)
+      }
+      setManageCategory(category)
+      setShowUploadFlow(true)
+    },
+    [proMode, setProMode, setMayaTabAndHash],
+  )
+
+  const handlePhaseTwoGenerationSource = useCallback(
+    (source: PhaseTwoGenerationSource) => {
+      if (source === "selfies") {
+        handlePhaseTwoUploadZone("selfies")
         return
       }
-      // Clear library before creating new chat
-      await clearLibrary()
-    }
-    
+
+      if (source === "custom_model") {
+        if (proMode) {
+          setProMode(false)
+        }
+        setMayaTabAndHash("training")
+        return
+      }
+
+      if (proMode) {
+        setProMode(false)
+      }
+      setMayaTabAndHash("photos")
+      toast({
+        title: "Base model ready",
+        description: "Describe the photo you want and Maya will generate it in Classic mode.",
+      })
+    },
+    [handlePhaseTwoUploadZone, proMode, setProMode, setMayaTabAndHash, toast],
+  )
+
+  const handleToolSubmitOfferBrief = useCallback(
+    (assetType: MayaOfferBriefAssetType, values: OfferBriefFormValues) => {
+      const brief: MayaOfferBrief = {
+        assetType,
+        designStyle: values.designStyle.trim(),
+        offerType: values.offerType.trim(),
+        transformation: values.transformation.trim(),
+        pricePoint: values.pricePoint.trim(),
+        formatAndDuration: values.formatAndDuration.trim(),
+        idealClient: values.idealClient.trim(),
+        biggestStruggle: values.biggestStruggle.trim(),
+        uniqueMethod: values.uniqueMethod.trim(),
+        proofPoints: values.proofPoints.trim(),
+        callToAction: values.callToAction.trim(),
+      }
+
+      const markerPayload = encodeOfferBriefMarkerPayload(brief)
+      const summaryText =
+        `Here is my ${assetType === "calendar" ? "calendar" : "offer"} brief.\\n` +
+        (brief.designStyle ? `Design style: ${brief.designStyle}\\n` : "") +
+        `Offer: ${brief.offerType}\\n` +
+        `Transformation: ${brief.transformation}\\n` +
+        `Ideal client: ${brief.idealClient}\\n` +
+        `[SUBMIT_OFFER_BRIEF:${markerPayload}]`
+
+      void handleSendMessage(summaryText)
+    },
+    [handleSendMessage],
+  )
+
+  const persistVideoCardMarker = useCallback(
+    async (input: { messageId: string; videoUrl: string; motionPrompt?: string; imageUrl?: string }) => {
+      if (!chatId) return
+
+      const targetMessage = messages.find((message: any) => String(message?.id) === String(input.messageId))
+      const fallbackAssistant = [...messages].reverse().find((message: any) => message?.role === "assistant")
+      const messageToPersist = targetMessage || fallbackAssistant
+      if (!messageToPersist) return
+
+      let baseContent = ""
+      if (Array.isArray(messageToPersist.parts)) {
+        baseContent = messageToPersist.parts
+          .filter((part: any) => part?.type === "text" && typeof part?.text === "string")
+          .map((part: any) => part.text)
+          .join("\n")
+          .trim()
+      } else if (typeof messageToPersist.content === "string") {
+        baseContent = messageToPersist.content.trim()
+      }
+
+      const marker = encodeMayaVideoCardMarker({
+        videoUrl: input.videoUrl,
+        motionPrompt: input.motionPrompt,
+        imageUrl: input.imageUrl,
+      })
+      if (!marker) return
+
+      const cleanContent = stripMayaVideoCardMarkers(baseContent)
+        .replace(/\[GENERATE_VIDEO(?:\s*:\s*[^\]]+)?\]/gi, "")
+        .trim()
+
+      const nextContent = `${cleanContent}\n${marker}`.trim()
+      if (!nextContent) return
+
+      const response = await fetch("/api/maya/update-message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chatId,
+          messageId: messageToPersist.id,
+          content: nextContent,
+        }),
+      })
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null)
+        throw new Error(data?.error || "Failed to persist video marker")
+      }
+    },
+    [chatId, messages],
+  )
+
+  const handleToolStartVideoGeneration = useCallback(
+    async (input: {
+      messageId: string
+      imageId: string
+      imageUrl: string
+      prompt?: string
+      description?: string
+      category?: string
+    }) => {
+      const fallbackPrompt = input.prompt?.trim() || input.description?.trim() || "Cinematic lifestyle scene"
+
+      clearVideoPollForMessage(input.messageId)
+      updateAssistantToolPart(
+        "tool-generateVideo",
+        {
+          state: "loading",
+          imageUrl: input.imageUrl,
+        },
+        input.messageId,
+      )
+
+      try {
+        const motionResponse = await fetch("/api/maya/generate-motion-prompt", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fluxPrompt: fallbackPrompt,
+            description: input.description || "",
+            category: input.category || "",
+            imageUrl: input.imageUrl,
+          }),
+        })
+        const motionData = await motionResponse.json()
+        if (!motionResponse.ok) {
+          throw new Error(motionData?.error || "Failed to create motion prompt")
+        }
+        const motionPrompt = motionData?.motionPrompt || fallbackPrompt
+
+        updateAssistantToolPart(
+          "tool-generateVideo",
+          {
+            state: "loading",
+            imageUrl: input.imageUrl,
+            motionPrompt,
+          },
+          input.messageId,
+        )
+
+        const generateResponse = await fetch("/api/maya/generate-video", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            imageUrl: input.imageUrl,
+            imageId: input.imageId,
+            motionPrompt,
+            imageDescription: input.description || "",
+            category: input.category || "",
+          }),
+        })
+        const generateData = await generateResponse.json()
+
+        if (!generateResponse.ok) {
+          if (generateResponse.status === 402) {
+            setShowBuyCreditsModal(true)
+          }
+          throw new Error(generateData?.message || generateData?.error || "Failed to start video generation")
+        }
+
+        const predictionId = generateData?.predictionId
+        const videoId = generateData?.videoId
+        if (!predictionId || !videoId) {
+          throw new Error("Missing video job metadata")
+        }
+        const debugInfo =
+          generateData?.debug && typeof generateData.debug === "object" ? generateData.debug : undefined
+        const authorityMotionPrompt =
+          typeof debugInfo?.authorityMotionPrompt === "string" ? debugInfo.authorityMotionPrompt.trim() : ""
+        const appliedMotionPrompt = authorityMotionPrompt || motionPrompt
+
+        updateAssistantToolPart(
+          "tool-generateVideo",
+          {
+            state: "processing",
+            progress: 5,
+            motionPrompt: appliedMotionPrompt,
+            imageUrl: input.imageUrl,
+            debug: debugInfo,
+          },
+          input.messageId,
+        )
+
+        const pollInterval = setInterval(async () => {
+          try {
+            const pollResponse = await fetch(
+              `/api/maya/check-video?predictionId=${encodeURIComponent(String(predictionId))}&videoId=${encodeURIComponent(String(videoId))}`,
+              {
+                credentials: "include",
+              },
+            )
+            const pollData = await pollResponse.json()
+
+            if (!pollResponse.ok) {
+              throw new Error(pollData?.error || "Failed to check video status")
+            }
+
+            if (pollData?.status === "succeeded" && pollData?.videoUrl) {
+              clearVideoPollForMessage(input.messageId)
+              updateAssistantToolPart(
+                "tool-generateVideo",
+                {
+                  state: "ready",
+                  videoUrl: pollData.videoUrl,
+                  motionPrompt: appliedMotionPrompt,
+                  imageUrl: input.imageUrl,
+                  debug: debugInfo,
+                },
+                input.messageId,
+              )
+              await persistVideoCardMarker({
+                messageId: input.messageId,
+                videoUrl: pollData.videoUrl,
+                motionPrompt: appliedMotionPrompt,
+                imageUrl: input.imageUrl,
+              })
+
+              try {
+                const creditsRes = await fetch("/api/user/credits", { credentials: "include" })
+                const creditsData = await creditsRes.json()
+                if (creditsRes.ok && typeof creditsData?.balance === "number") {
+                  setCreditBalance(creditsData.balance)
+                }
+              } catch {
+                // Non-blocking.
+              }
+              return
+            }
+
+            if (pollData?.status === "failed") {
+              clearVideoPollForMessage(input.messageId)
+              updateAssistantToolPart(
+                "tool-generateVideo",
+                {
+                  state: "error",
+                  message: pollData?.error || "Video generation failed",
+                  debug: debugInfo,
+                },
+                input.messageId,
+              )
+              return
+            }
+
+            updateAssistantToolPart(
+              "tool-generateVideo",
+              {
+                state: "processing",
+                progress: Number.isFinite(pollData?.progress) ? pollData.progress : 50,
+                motionPrompt: appliedMotionPrompt,
+                imageUrl: input.imageUrl,
+                debug: debugInfo,
+              },
+              input.messageId,
+            )
+          } catch (error: any) {
+            clearVideoPollForMessage(input.messageId)
+            updateAssistantToolPart(
+              "tool-generateVideo",
+              {
+                state: "error",
+                message: error?.message || "Video generation failed",
+                debug: debugInfo,
+              },
+              input.messageId,
+            )
+          }
+        }, 3000)
+
+        videoPollIntervalsRef.current.set(input.messageId, pollInterval)
+      } catch (error: any) {
+        clearVideoPollForMessage(input.messageId)
+        updateAssistantToolPart(
+          "tool-generateVideo",
+          {
+            state: "error",
+            message: error?.message || "Could not start video generation",
+          },
+          input.messageId,
+        )
+      }
+    },
+    [clearVideoPollForMessage, persistVideoCardMarker, updateAssistantToolPart],
+  )
+
+  // Wrapper for handleNewChat that adds component-specific logic
+  const handleNewChat = useCallback(async () => {
     // Reset component-specific state for new chat
     setSelectedPrompt("")
     setMessagesWithUploadModule(new Set())
     setPendingConceptRequest(null)
       promptGenerationTriggeredRef.current.clear() // Clear prompt generation tracking
+    clearAllVideoPolls()
 
     // Clear shared images when starting new chat
     clearSharedImages()
 
     // Call hook's base handler
     await baseHandleNewChat()
-  }, [proMode, clearLibrary, baseHandleNewChat, clearSharedImages])
+  }, [baseHandleNewChat, clearSharedImages, clearAllVideoPolls])
 
   // Handle mode switching - creates a new chat when switching between Classic and Pro
   // Handle saving concept to guide (admin mode)
@@ -2447,6 +3126,10 @@ export default function MayaChatScreen({
     let cleanedText = text.replace(/\[GENERATE_PROMPTS[:\s]+[^\]]+\]/gi, "").trim()
     // Also remove GENERATE_CONCEPTS trigger
     cleanedText = cleanedText.replace(/\[GENERATE_CONCEPTS\]\s*[^\n]*/gi, "").trim()
+    cleanedText = cleanedText.replace(/\[GENERATE_VIDEO(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
+    cleanedText = cleanedText.replace(/\[VIDEO_CARD:[^\]]+\]/gi, "").trim()
+    cleanedText = cleanedText.replace(/\[COLLECT_OFFER_BRIEF(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
+    cleanedText = cleanedText.replace(/\[SUBMIT_OFFER_BRIEF:\s*[^\]]+\]/gi, "").trim()
 
     // Check if message contains an inspiration image
     const inspirationImageMatch = cleanedText.match(/\[Inspiration Image: (https?:\/\/[^\]]+)\]/)
@@ -2499,9 +3182,71 @@ export default function MayaChatScreen({
   // - Whether user has used Maya before (hasUsedMayaBefore)
   // - Whether chatId exists (new chats get chatId immediately but have no messages)
   // The key indicator of a "new chat" is: no messages
+  const stripChatControlText = (text: string): string =>
+    text
+      .replace(/\[GENERATE_PROMPTS[:\s]+[^\]]+\]/gi, "")
+      .replace(/\[GENERATE_CONCEPTS\]\s*[^\n]*/gi, "")
+      .replace(/\[SHOW_CAPABILITIES\]/gi, "")
+      .replace(/\[SHOW_STUDIO_HUB\]/gi, "")
+      .replace(/\[SHOW_GALLERY\]/gi, "")
+      .replace(/\[SAVE_TO_GALLERY(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replace(/\[GENERATE_IMAGE(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replace(/\[GENERATE_VIDEO(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replace(/\[VIDEO_CARD:[^\]]+\]/gi, "")
+      .replace(/\[SHOW_UPLOAD_ZONE(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replace(/\[COLLECT_OFFER_BRIEF(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replace(/\[SUBMIT_OFFER_BRIEF:\s*[^\]]+\]/gi, "")
+      .replace(/\[EDIT_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replace(/\[CREATE_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replace(/\[GENERATE_CAPTIONS\]/gi, "")
+      .replace(/\[GENERATE_STRATEGY\]/gi, "")
+      .replace(/\[CREATE_FEED_STRATEGY(?:\s*:[\s\S]*?)?\]/gi, "")
+      .replace(/\[Inspiration Image: https?:\/\/[^\]]+\]/g, "")
+      .replace(/\s{2,}/g, " ")
+      .trim()
+
+  const hasVisibleMessages = useMemo(() => {
+    return (messages || []).some((message: any) => {
+      if (!message) return false
+
+      if (message.parts && Array.isArray(message.parts)) {
+        const hasVisiblePart = message.parts.some((part: any) => {
+          if (!part || !part.type) return false
+          if (part.type === "image") return true
+          if (
+            part.type === "tool-generateConcepts" ||
+            part.type === "tool-showCapabilities" ||
+            part.type === "tool-showStudioHub" ||
+            part.type === "tool-showGallery" ||
+            part.type === "tool-saveToGallery" ||
+            part.type === "tool-generateImage" ||
+            part.type === "tool-showUploadZone" ||
+            (part.type === "tool-collectOfferBrief" &&
+              (isLandingPagesUiEnabled || (part as any)?.output?.assetType !== "page")) ||
+            (part.type === "tool-editAsset" &&
+              (isLandingPagesUiEnabled || (part as any)?.output?.assetType !== "page")) ||
+            (part.type === "tool-createAssetPreview" &&
+              (isLandingPagesUiEnabled || (part as any)?.output?.assetType !== "page")) ||
+            part.type === "tool-generateFeed" ||
+            part.type === "tool-generateCaptions" ||
+            part.type === "tool-generateStrategy" ||
+            part.type === "tool-generateVideo"
+          ) {
+            return true
+          }
+          return false
+        })
+        if (hasVisiblePart) return true
+      }
+
+      const visibleText = stripChatControlText(getMessageText(message))
+      return visibleText.length > 0
+    })
+  }, [messages, getMessageText, isLandingPagesUiEnabled])
+
   const isEmpty = 
     !isLoadingChat && // Don't show welcome screen while loading
-    (!messages || messages.length === 0) && // No messages = new/empty chat
+    !hasVisibleMessages && // No visible messages = new/empty chat
     hasLoadedChatRef.current // Only show empty if we've actually loaded (prevents showing during initial load)
 
   const showReturningMemberHome =
@@ -2510,11 +3255,12 @@ export default function MayaChatScreen({
     hasLoadedChatRef.current &&
     !isLoadingChat &&
     !isTyping &&
-    (!messages || messages.length === 0)
+    !hasVisibleMessages
 
-  const showProEmptyState = !showReturningMemberHome && isProSessionEmpty && hasProFeatures && !isTyping
+  const showProEmptyState = !showReturningMemberHome && !isLoadingChat && !hasVisibleMessages && hasProFeatures && !isTyping
   const showClassicEmptyState = !showReturningMemberHome && isEmpty && !proMode && !isTyping
   const showAnyEmptyState = showReturningMemberHome || showProEmptyState || showClassicEmptyState
+  const photoTabBottomSpacing = "calc(var(--input-bar-height, 168px) + max(16px, env(safe-area-inset-bottom, 0px)))"
 
   const returningMemberLastSessionTitle =
     typeof chatTitle === "string" && chatTitle.trim().length > 0 && !/^new chat$/i.test(chatTitle.trim())
@@ -2576,8 +3322,10 @@ export default function MayaChatScreen({
   return (
     <>
     <div
-      className="flex flex-col h-full relative bg-[radial-gradient(120%_90%_at_50%_0%,rgba(255,255,255,0.09)_0%,rgba(255,255,255,0.04)_18%,rgba(10,10,10,0.88)_48%,rgba(10,10,10,0.78)_100%)]"
+      className="flex flex-col h-full relative overflow-x-hidden"
       style={{
+        background:
+          "var(--app-bg-primary), radial-gradient(80% 55% at 20% 0%, var(--app-bg-glow-1) 0%, transparent 70%), radial-gradient(90% 60% at 80% 10%, var(--app-bg-glow-2) 0%, transparent 72%), linear-gradient(180deg, rgba(18,14,11,0.82) 0%, rgba(14,11,9,0.9) 52%, rgba(10,8,7,0.94) 100%)",
         paddingBottom: "var(--sselfie-bottom-nav-height, 96px)",
       }}
       onDragEnter={handleDragEnter}
@@ -2599,9 +3347,9 @@ export default function MayaChatScreen({
       {/* Fixed Header with Integrated Tabs - Always visible */}
       {/* Mobile optimized: safe area insets, responsive padding */}
       {/* Using z-[100] to ensure it's above all other content */}
-      <div 
+      <div
         ref={headerRef}
-        className="fixed top-0 left-0 right-0 z-100 bg-[rgba(255,255,255,0.04)] backdrop-blur-[20px]"
+        className="fixed top-0 left-0 right-0 z-[100] border-b border-[rgba(255,255,255,0.08)] bg-[rgba(10,10,10,0.72)] backdrop-blur-[18px]"
         style={{
           paddingTop: 'max(0.625rem, env(safe-area-inset-top, 0px))',
         }}
@@ -2614,28 +3362,25 @@ export default function MayaChatScreen({
           onModeSwitch={handleModeSwitch}
           libraryCount={libraryTotalImages}
           credits={creditBalance}
-          onManageLibrary={() => setShowLibraryModal(true)}
-          onAddImages={() => setShowUploadFlow(true)}
-          onStartFresh={async () => {
-            if (confirm('Are you sure you want to start fresh? This will clear your image library.')) {
-              await clearLibrary()
-              setMessages([])
-              handleNewChat()
-            }
-          }}
+          onManageLibrary={undefined}
+          onAddImages={undefined}
+          onStartFresh={undefined}
           isAdmin={isAdmin}
           selectedGuideId={selectedGuideId}
           selectedGuideCategory={selectedGuideCategory}
           onGuideChange={onGuideChange}
           userId={userId}
           showModeToggle={isMembership && !hideModeComplexity} // Hide mode controls in unified UX
-          onEditIntent={async () => {
-            const newIntent = prompt('Enter your creative intent:', imageLibrary.intent || '')
-            if (newIntent !== null) {
-              await updateIntent(newIntent)
-            }
-          }}
+          onEditIntent={undefined}
           onNavigation={handleNavigation}
+          onNewProject={handleNewChat}
+          onHistory={() => {
+            if (hasProFeatures) {
+              setShowProModeHistory(true)
+              return
+            }
+            setShowHistory(true)
+          }}
           onLogout={handleLogout}
           isLoggingOut={isLoggingOut}
           onSwitchToClassic={() => handleModeSwitch(false)}
@@ -2814,93 +3559,6 @@ export default function MayaChatScreen({
         </div>
       )}
 
-      {showNavMenu && (
-        <>
-          {/* Overlay */}
-          <div
-            className="fixed inset-0 bg-stone-950/20 backdrop-blur-sm z-40 animate-in fade-in duration-200"
-            onClick={() => setShowNavMenu(false)}
-          />
-
-          {/* Sliding menu from right */}
-          <div className="fixed top-0 right-0 bottom-0 w-80 bg-[rgba(10,10,10,0.94)] backdrop-blur-[20px] border-l border-white/12 shadow-2xl z-50 animate-in slide-in-from-right duration-300 flex flex-col">
-            {/* Header with close button - fixed at top */}
-            <div className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-white/10">
-              <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-white">Menu</h3>
-              <button
-                onClick={() => setShowNavMenu(false)}
-                className="px-2 py-1.5 rounded-lg hover:bg-white/10 transition-colors"
-                aria-label="Close menu"
-              >
-                <span className="text-[10px] uppercase tracking-[0.2em] text-white/75">Close</span>
-              </button>
-            </div>
-
-            {/* Credits display - fixed below header */}
-            <div className="shrink-0 px-6 py-6 border-b border-white/10">
-              <div className="text-[10px] tracking-[0.15em] uppercase font-light text-white/55 mb-2">Your Credits</div>
-              <div className="text-3xl font-serif font-extralight text-white tabular-nums">
-                {formattedCreditBalance}
-              </div>
-            </div>
-
-            {/* Navigation links - scrollable middle section with bottom padding */}
-            <div className="flex-1 overflow-y-auto py-2 pb-32 min-h-0">
-              <button
-                onClick={() => handleNavigation("maya")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/10 transition-colors touch-manipulation"
-              >
-                <span className="text-xs uppercase tracking-[0.2em] text-white/75">Studio</span>
-              </button>
-              <button
-                onClick={() => {
-                  // Training moved to Account → Settings, trigger onboarding if needed
-                  window.dispatchEvent(new CustomEvent('open-onboarding'))
-                }}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/10 transition-colors touch-manipulation"
-              >
-                <span className="text-xs uppercase tracking-[0.2em] text-white/75">Training</span>
-              </button>
-              <button
-                onClick={() => handleNavigation("maya")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left bg-white/10 border-l-2 border-white"
-              >
-                <span className="text-xs uppercase tracking-[0.2em] text-white">Maya</span>
-              </button>
-              <button
-                onClick={() => handleNavigation("gallery")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/10 transition-colors touch-manipulation"
-              >
-                <span className="text-xs uppercase tracking-[0.2em] text-white/75">Gallery</span>
-              </button>
-              <button
-                onClick={() => handleNavigation("academy")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/10 transition-colors touch-manipulation"
-              >
-                <span className="text-xs uppercase tracking-[0.2em] text-white/75">Academy</span>
-              </button>
-              <button
-                onClick={() => handleNavigation("account")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left hover:bg-white/10 transition-colors touch-manipulation"
-              >
-                <span className="text-xs uppercase tracking-[0.2em] text-white/75">Account</span>
-              </button>
-            </div>
-
-            {/* Sign out button - fixed at bottom */}
-            <div className="shrink-0 px-6 py-4 border-t border-white/10 bg-[rgba(10,10,10,0.9)]">
-              <button
-                onClick={handleLogout}
-                disabled={isLoggingOut}
-                className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-sm font-medium uppercase tracking-[0.2em] text-red-300 hover:bg-red-500/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
-              >
-                <span>{isLoggingOut ? "Signing Out..." : "Sign Out"}</span>
-              </button>
-            </div>
-          </div>
-        </>
-      )}
-
       {/* Classic Mode: Chat History Modal (consistent with Pro Mode) */}
       {!hasProFeatures && (
         <MayaChatHistory
@@ -3063,6 +3721,11 @@ export default function MayaChatScreen({
           promptSuggestions={promptSuggestions}
           generationSettings={settings}
           enhancedAuthenticity={enhancedAuthenticity}
+          onToolSelectGenerationSource={handlePhaseTwoGenerationSource}
+          onToolOpenUploadZone={handlePhaseTwoUploadZone}
+          onToolPromptSelect={handleSendMessage}
+          onToolSubmitOfferBrief={handleToolSubmitOfferBrief}
+          onToolStartVideoGeneration={handleToolStartVideoGeneration}
         />
       )}
           {showReturningMemberHome && (
@@ -3071,7 +3734,7 @@ export default function MayaChatScreen({
                 className="flex flex-col items-center justify-start py-6"
                 style={{
                   paddingTop: "calc(var(--maya-header-height, 124px) + 8px)",
-                  paddingBottom: "calc(var(--input-bar-height, 168px) + var(--sselfie-bottom-nav-height, 96px) + 20px)",
+                  paddingBottom: photoTabBottomSpacing,
                 }}
               >
                 <MembershipHomeCard
@@ -3102,6 +3765,12 @@ export default function MayaChatScreen({
                       window.history.replaceState(null, "", "#maya/prompts")
                     }
                   }}
+                  onCreateCalendar={() => {
+                    handleSendMessage("Create a content calendar draft for this week")
+                  }}
+                  onUploadAssets={() => {
+                    handleSendMessage("I want to upload product photos and brand references")
+                  }}
                   onExploreMonthlyDrop={() => {
                     if (typeof window !== "undefined") {
                       const nextUrl = new URL(window.location.href)
@@ -3121,7 +3790,7 @@ export default function MayaChatScreen({
                 className="mx-auto w-full max-w-2xl pt-4 pb-6 sm:pb-8"
                 style={{
                   paddingTop: "calc(var(--maya-header-height, 124px) + 8px)",
-                  paddingBottom: "calc(var(--input-bar-height, 168px) + var(--sselfie-bottom-nav-height, 96px) + 20px)",
+                  paddingBottom: photoTabBottomSpacing,
                 }}
               >
               <div className="max-w-2xl w-full space-y-8">
@@ -3148,17 +3817,9 @@ export default function MayaChatScreen({
                         Quick Start
                       </p>
                       <p className="text-xs text-white/70 leading-relaxed">
-                        Tap <span className="text-white font-medium">Add Photos</span> to open the upload wizard and link 1-3 reference images.
+                        Use <span className="text-white font-medium">Add Image</span> in the chat input to link 1-3 reference photos.
                       </p>
                     </div>
-                    <button
-                      onClick={() => {
-                        setShowUploadFlow(true)
-                      }}
-                      className="px-6 py-2.5 bg-[rgba(255,255,255,0.12)] border border-[rgba(255,255,255,0.25)] text-white rounded-full text-sm hover:bg-[rgba(255,255,255,0.18)] transition-colors"
-                    >
-                      Add Photos
-                    </button>
                   </div>
                 ) : (
                   // Welcome message when library has images - matches Classic styling
@@ -3203,7 +3864,7 @@ export default function MayaChatScreen({
                 className="flex flex-col items-center justify-start py-6"
                 style={{
                   paddingTop: "calc(var(--maya-header-height, 124px) + 8px)",
-                  paddingBottom: "calc(var(--input-bar-height, 168px) + var(--sselfie-bottom-nav-height, 96px) + 20px)",
+                  paddingBottom: photoTabBottomSpacing,
                 }}
               >
               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-stone-200/60 overflow-hidden mb-4 sm:mb-6">
@@ -3245,72 +3906,74 @@ export default function MayaChatScreen({
             paddingBottom: "max(0.25rem, env(safe-area-inset-bottom, 0px))",
           }}
         >
-          {/* Quick Actions */}
-          {shouldShowInputPrompts ? (
-            <MayaQuickPrompts
-              prompts={currentPrompts}
-              onSelect={(prompt) => {
-                handleSendMessage(prompt)
-                if (shouldCollapseInputPrompts) {
-                  setShowCollapsedPrompts(false)
+          <div className="mx-auto w-full max-w-5xl">
+            {/* Quick Actions */}
+            {shouldShowInputPrompts ? (
+              <MayaQuickPrompts
+                prompts={currentPrompts}
+                onSelect={(prompt) => {
+                  handleSendMessage(prompt)
+                  if (shouldCollapseInputPrompts) {
+                    setShowCollapsedPrompts(false)
+                  }
+                }}
+                disabled={isTyping}
+                variant={activeMayaTab === "photos" ? "quick-chips" : "input-area"}
+                studioProMode={proMode}
+                isEmpty={isEmpty}
+                uploadedImage={uploadedImage}
+              />
+            ) : (
+              <div className="mb-2 mt-1">
+                <button
+                  onClick={() => setShowCollapsedPrompts(true)}
+                  className="px-3 py-1.5 text-[11px] uppercase tracking-wide border border-[rgba(255,255,255,0.12)] rounded-full bg-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.1)] text-[#e5e5e5]"
+                >
+                  Prompts
+                </button>
+              </div>
+            )}
+
+            {/* Input Area - Unified for both Classic and Pro Mode */}
+            {/* Unified Input Component - Works for Photos and Feed tabs */}
+            <MayaUnifiedInput
+              onSend={(message, imageUrl) => {
+                // Handle message sending - match Pro Mode pattern
+                if (imageUrl) {
+                  // Set uploaded image state first, then send message
+                  setUploadedImage(imageUrl)
+                  // Use message if provided, otherwise handleSendMessage will use inputValue (though unified component manages its own)
+                  const messageToSend = message || ""
+                  if (messageToSend || imageUrl) {
+                    handleSendMessage(messageToSend || undefined)
+                  }
+                } else {
+                  // Just send text message
+                  handleSendMessage(message || undefined)
                 }
               }}
-              disabled={isTyping}
-              variant={activeMayaTab === "photos" ? "quick-chips" : "input-area"}
-              studioProMode={proMode}
-              isEmpty={isEmpty}
+              onImageUpload={hasProFeatures ? () => setShowUploadFlow(true) : undefined}
+              onFileChange={hasProFeatures ? undefined : handleImageUpload}
+              fileInputRef={hasProFeatures ? undefined : (fileInputRef as React.RefObject<HTMLInputElement>)}
               uploadedImage={uploadedImage}
+              isUploadingImage={isUploadingImage}
+              onRemoveImage={() => setUploadedImage(null)}
+              isLoading={isTyping || isGeneratingConcepts}
+              disabled={isTyping || isGeneratingConcepts}
+              placeholder="Message Maya..."
+              showSettingsButton={!hasProFeatures}
+              onSettingsClick={() => {
+                setShowSettings(true)
+              }}
+              showChatMenu={false}
+              showLibraryButton={false} // Removed - image icon handles library access
+              onManageLibrary={undefined} // Removed - image icon handles library access
+              onNewProject={handleNewChat}
+              onHistory={() => hasProFeatures ? setShowProModeHistory(true) : setShowHistory(true)}
+              proMode={proMode}
+              imageCount={hasProFeatures ? libraryTotalImages : undefined}
             />
-          ) : (
-            <div className="mb-2 mt-1">
-              <button
-                onClick={() => setShowCollapsedPrompts(true)}
-                className="px-3 py-1.5 text-[11px] uppercase tracking-wide border border-[rgba(255,255,255,0.12)] rounded-full bg-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.1)] text-[#e5e5e5]"
-              >
-                Prompts
-              </button>
-            </div>
-          )}
-
-          {/* Input Area - Unified for both Classic and Pro Mode */}
-          {/* Unified Input Component - Works for Photos and Feed tabs */}
-          <MayaUnifiedInput
-            onSend={(message, imageUrl) => {
-              // Handle message sending - match Pro Mode pattern
-              if (imageUrl) {
-                // Set uploaded image state first, then send message
-                setUploadedImage(imageUrl)
-                // Use message if provided, otherwise handleSendMessage will use inputValue (though unified component manages its own)
-                const messageToSend = message || ""
-                if (messageToSend || imageUrl) {
-                  handleSendMessage(messageToSend || undefined)
-                }
-              } else {
-                // Just send text message
-                handleSendMessage(message || undefined)
-              }
-            }}
-            onImageUpload={hasProFeatures ? () => setShowUploadFlow(true) : undefined}
-            onFileChange={hasProFeatures ? undefined : handleImageUpload}
-            fileInputRef={hasProFeatures ? undefined : (fileInputRef as React.RefObject<HTMLInputElement>)}
-            uploadedImage={uploadedImage}
-            isUploadingImage={isUploadingImage}
-            onRemoveImage={() => setUploadedImage(null)}
-            isLoading={isTyping || isGeneratingConcepts}
-            disabled={isTyping || isGeneratingConcepts}
-            placeholder="Message Maya..."
-            showSettingsButton={!hasProFeatures}
-            onSettingsClick={() => {
-              setShowSettings(true)
-            }}
-            showChatMenu={false}
-            showLibraryButton={false} // Removed - image icon handles library access
-            onManageLibrary={undefined} // Removed - image icon handles library access
-            onNewProject={handleNewChat}
-            onHistory={() => hasProFeatures ? setShowProModeHistory(true) : setShowHistory(true)}
-            proMode={proMode}
-            imageCount={hasProFeatures ? libraryTotalImages : undefined}
-          />
+          </div>
         </div>
       )}
 
@@ -3383,7 +4046,7 @@ export default function MayaChatScreen({
             onCreditsUpdate={setCreditBalance}
             proMode={proMode}
             imageLibrary={imageLibrary}
-            onOpenUploadFlow={() => setShowUploadFlow(true)}
+            onOpenUploadFlow={undefined}
             aiPhotoPromptsLocked={!hasAiPhotoPromptsAccess}
             onUpgradeToStudio={() => startEmbeddedCheckout("sselfie_studio_membership")}
           />
@@ -3443,7 +4106,7 @@ export default function MayaChatScreen({
       {/* Tab Content - Training Tab */}
       {activeMayaTab === "training" && (
         <div
-          className="fixed inset-0 z-150 bg-stone-50/95 backdrop-blur-sm"
+          className="fixed inset-0 z-150 bg-[rgba(10,10,10,0.96)] backdrop-blur-md"
           onClick={closeTrainingTab}
           role="button"
           tabIndex={-1}
@@ -3454,7 +4117,7 @@ export default function MayaChatScreen({
           >
             <button
               onClick={closeTrainingTab}
-              className="absolute right-4 top-4 px-2 py-1.5 rounded-full bg-white/90 border border-stone-200 text-stone-500 hover:text-stone-700 shadow-sm"
+              className="absolute right-4 top-4 px-3 py-1.5 rounded-full border border-white/20 bg-[rgba(255,255,255,0.08)] text-white/80 hover:text-white hover:bg-[rgba(255,255,255,0.14)] transition-colors"
               aria-label="Close training"
             >
               <span className="text-[10px] uppercase tracking-[0.2em]">Close</span>
@@ -3493,11 +4156,14 @@ export default function MayaChatScreen({
             handleModeSwitch(true)
           }
           setActiveMayaTab("photos")
-          setShowUploadFlow(true)
           if (typeof window !== "undefined") {
             localStorage.setItem("mayaActiveTab", "photos")
             window.history.replaceState(null, "", "#maya")
           }
+          toast({
+            title: "Use Add Image",
+            description: "Upload from the Add Image button in the chat input to start creating.",
+          })
         }}
         onStartTraining={() => {
           setActiveMayaTab("training")

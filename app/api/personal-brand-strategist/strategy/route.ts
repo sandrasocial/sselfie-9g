@@ -3,6 +3,7 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 import { PERSONAL_BRAND_STRATEGIST_PROMPT } from "@/lib/personal-brand-strategist/personality"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { hasFullAccess } from "@/lib/subscription"
+import { auditPromptRoute } from "@/lib/generation/prompt/route-audit"
 
 export const maxDuration = 60
 
@@ -62,6 +63,18 @@ ${brandProfile.brand_voice || "Not specified"}
 ${brandProfile.goals || "Not specified"}
 `
       : ""
+
+    const startedAt = Date.now()
+    auditPromptRoute({
+      routeId: "EP-SHADOW-PERSONAL-BRAND-STRATEGIST",
+      mode: "classic",
+      feature: "personal-brand-strategy",
+      userId: neonUser.id,
+      builder: "anthropic/claude-sonnet-4-20250514",
+      prompt: `${PERSONAL_BRAND_STRATEGIST_PROMPT}${brandContext}\n\n${prompt}`,
+      input: { hasBrandProfile: Boolean(brandProfile), promptLength: String(prompt || "").length },
+      startedAt,
+    })
 
     console.log("[v0] Calling Brand Strategist with context")
 

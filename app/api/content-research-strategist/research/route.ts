@@ -4,6 +4,7 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 import { CONTENT_RESEARCH_STRATEGIST_PROMPT } from "@/lib/content-research-strategist/personality"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { hasFullAccess } from "@/lib/subscription"
+import { auditPromptRoute } from "@/lib/generation/prompt/route-audit"
 
 
 export async function POST(request: Request) {
@@ -66,6 +67,18 @@ Please conduct comprehensive research and provide:
    - Growth tactics specific to this niche
 
 Provide specific, actionable insights backed by current data.`
+
+    const startedAt = Date.now()
+    auditPromptRoute({
+      routeId: "EP-SHADOW-CONTENT-RESEARCH",
+      mode: "classic",
+      feature: "research-strategy",
+      userId: user.id,
+      builder: "anthropic/claude-sonnet-4",
+      prompt: `${CONTENT_RESEARCH_STRATEGIST_PROMPT}\n\n${researchPrompt}`,
+      input: { niche, hasBrandProfile: Boolean(brandProfile) },
+      startedAt,
+    })
 
     // Stream research with web search enabled
     const result = streamText({

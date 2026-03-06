@@ -6,6 +6,7 @@ import { checkCredits, deductCredits, getUserCredits, CREDIT_COSTS } from "@/lib
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { rateLimit } from "@/lib/rate-limit-api"
 import { generateText } from "ai"
+import { createMayaOpenRouterModel } from "@/lib/maya/openrouter"
 
 const sql = getDbClient()
 
@@ -195,7 +196,7 @@ Think like a real photographer shooting ${numImages} frames in ONE session:
 Generate ${numImages} lifestyle variations. Return ONLY valid JSON.`
 
   const { text } = await generateText({
-    model: "anthropic/claude-sonnet-4.5",
+    model: createMayaOpenRouterModel("pro_photoshoot"),
     prompt: mayaPrompt,
     maxOutputTokens: 4000,
     temperature: 0.7, // Reduced from 0.85 for more consistency

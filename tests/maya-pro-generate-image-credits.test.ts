@@ -32,8 +32,8 @@ vi.mock("@/lib/maya/prompt-authority", () => ({
   routeProModeImagePromptViaAuthority: mockRoutePromptViaAuthority,
 }))
 
-vi.mock("@neondatabase/serverless", () => ({
-  neon: vi.fn(() => mockSql),
+vi.mock("@/lib/db/client", () => ({
+  sql: mockSql,
 }))
 
 vi.mock("@vercel/blob", () => ({
@@ -133,4 +133,3 @@ describe("POST /api/maya/pro/generate-image credit policy", () => {
     expect(mockGenerateWithNanoBanana).not.toHaveBeenCalled()
   })
 })
-

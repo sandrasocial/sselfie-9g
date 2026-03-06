@@ -6,6 +6,45 @@ import { sql } from "@/lib/db/client"
 
 export const maxDuration = 60
 
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) return error.message
+  if (typeof error === "string") return error
+  return String(error)
+}
+
+function isRecoverableLibrarySchemaError(error: any): boolean {
+  const code = typeof error?.code === "string" ? error.code : ""
+  const message = getErrorMessage(error).toLowerCase()
+
+  if (code === "42P01" || code === "42703" || code === "42883" || code === "22P02" || code === "42804") {
+    return true
+  }
+
+  // Handles relation/column drift between environments.
+  return (
+    (message.includes("user_image_libraries") &&
+      (message.includes("does not exist") ||
+        message.includes("undefined table") ||
+        message.includes("undefined column"))) ||
+    ((message.includes("user_id") || message.includes("uuid = integer")) &&
+      (message.includes("operator does not exist") ||
+        message.includes("invalid input syntax") ||
+        message.includes("cannot cast")))
+  )
+}
+
+function emptyLibraryPayload() {
+  return {
+    selfies: [],
+    products: [],
+    people: [],
+    vibes: [],
+    current_intent: null,
+    intent: null,
+    created_at: null,
+    updated_at: null,
+  }
+}
 
 /**
  * Pro Mode Library Get API Route
@@ -47,23 +86,14 @@ export async function POST(req: NextRequest) {
         created_at,
         updated_at
       FROM user_image_libraries
-      WHERE user_id = ${dbUserId}
+      WHERE user_id::text = ${String(dbUserId)}
       LIMIT 1
     `
 
     // If no library exists, return empty library
     if (libraryResult.length === 0) {
       console.log("[v0] [PRO MODE] No library found for user, returning empty library")
-      return NextResponse.json({
-        selfies: [],
-        products: [],
-        people: [],
-        vibes: [],
-        current_intent: null,
-        intent: null, // Alias for compatibility
-        created_at: null,
-        updated_at: null,
-      })
+      return NextResponse.json(emptyLibraryPayload())
     }
 
     const library = libraryResult[0]
@@ -94,6 +124,14 @@ export async function POST(req: NextRequest) {
       updated_at: library.updated_at || null,
     })
   } catch (error: any) {
+    if (isRecoverableLibrarySchemaError(error)) {
+      console.warn("[v0] [PRO MODE] Recoverable schema drift in library get route, returning empty library:", {
+        code: error?.code,
+        message: getErrorMessage(error),
+      })
+      return NextResponse.json(emptyLibraryPayload())
+    }
+
     console.error("[v0] [PRO MODE] Library get API error:", error)
     return NextResponse.json(
       { error: error.message || "Internal server error" },

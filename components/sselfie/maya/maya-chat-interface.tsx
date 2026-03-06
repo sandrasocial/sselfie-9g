@@ -1,6 +1,6 @@
 "use client"
 
-import type React from "react"
+import React from "react"
 import type { UIMessage } from "@ai-sdk/react"
 import VideoCard from "../video-card"
 import MayaConceptCards from "./maya-concept-cards"
@@ -10,6 +10,16 @@ import FeedPreviewCard from "@/components/feed-planner/feed-preview-card"
 import FeedCaptionCard from "@/components/feed-planner/feed-caption-card"
 import FeedStrategyCard from "@/components/feed-planner/feed-strategy-card"
 import UnifiedLoading from "../unified-loading"
+import MayaOfferBriefForm from "./maya-offer-brief-form"
+import type { MayaOfferBrief, MayaOfferBriefAssetType } from "@/lib/maya/offer-brief"
+
+type OfferBriefFormValues = Omit<MayaOfferBrief, "assetType">
+
+function isFeatureEnabled(value?: string | null): boolean {
+  if (!value) return false
+  const normalized = value.trim().toLowerCase()
+  return normalized === "1" || normalized === "true"
+}
 
 interface MayaChatInterfaceProps {
   // Messages
@@ -60,6 +70,18 @@ interface MayaChatInterfaceProps {
     realismStrength: number
   }
   enhancedAuthenticity?: boolean
+  onToolSelectGenerationSource?: (source: "selfies" | "custom_model" | "base_model") => void
+  onToolOpenUploadZone?: (category: "selfies" | "products" | "people" | "vibes") => void
+  onToolPromptSelect?: (prompt: string) => void
+  onToolSubmitOfferBrief?: (assetType: MayaOfferBriefAssetType, values: OfferBriefFormValues) => void
+  onToolStartVideoGeneration?: (input: {
+    messageId: string
+    imageId: string
+    imageUrl: string
+    prompt?: string
+    description?: string
+    category?: string
+  }) => void
   
 }
 
@@ -106,8 +128,105 @@ export default function MayaChatInterface({
   promptSuggestions,
   generationSettings,
   enhancedAuthenticity,
+  onToolSelectGenerationSource,
+  onToolOpenUploadZone,
+  onToolPromptSelect,
+  onToolSubmitOfferBrief,
+  onToolStartVideoGeneration,
 }: MayaChatInterfaceProps) {
-  
+  const isDevVideoDebug = process.env.NODE_ENV !== "production"
+  const isLandingPagesUiEnabled = isFeatureEnabled(process.env.NEXT_PUBLIC_FEATURE_MAYA_LANDING_PAGES_UI)
+  const TOOL_RENDER_TYPES = new Set([
+    "tool-generateConcepts",
+    "tool-showCapabilities",
+    "tool-showStudioHub",
+    "tool-showGallery",
+    "tool-saveToGallery",
+    "tool-generateImage",
+    "tool-showUploadZone",
+    "tool-collectOfferBrief",
+    "tool-editAsset",
+    "tool-createAssetPreview",
+    "tool-generateFeed",
+    "tool-generateCaptions",
+    "tool-generateStrategy",
+    "tool-generateVideo",
+  ])
+
+  const stripControlText = (text: string): string => {
+    if (!text) return ""
+
+    return text
+      .replace(/\[GENERATE_PROMPTS[:\s]+[^\]]+\]/gi, "")
+      .replace(/\[GENERATE_CONCEPTS\]\s*[^\n]*/gi, "")
+      .replace(/\[SHOW_CAPABILITIES\]/gi, "")
+      .replace(/\[SHOW_STUDIO_HUB\]/gi, "")
+      .replace(/\[SHOW_GALLERY\]/gi, "")
+      .replace(/\[SAVE_TO_GALLERY(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replace(/\[GENERATE_IMAGE(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replace(/\[GENERATE_VIDEO(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replace(/\[VIDEO_CARD:[^\]]+\]/gi, "")
+      .replace(/\[SHOW_UPLOAD_ZONE(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replace(/\[COLLECT_OFFER_BRIEF(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replace(/\[SUBMIT_OFFER_BRIEF:\s*[^\]]+\]/gi, "")
+      .replace(/\[EDIT_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replace(/\[CREATE_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replace(/\[GENERATE_CAPTIONS\]/gi, "")
+      .replace(/\[GENERATE_STRATEGY\]/gi, "")
+      .replace(/\[CREATE_FEED_STRATEGY(?:\s*:[\s\S]*?)?\]/gi, "")
+      .replace(/\[Inspiration Image: https?:\/\/[^\]]+\]/g, "")
+      .replace(/\n{3,}/g, "\n\n")
+      .replace(/\s{2,}/g, " ")
+      .trim()
+  }
+
+  const hasRenderableMessage = (msg: UIMessage): boolean => {
+    if (!msg) return false
+
+    if (Array.isArray(msg.parts) && msg.parts.length > 0) {
+      const hasImagePart = msg.parts.some((part: any) => part?.type === "image")
+      if (hasImagePart) return true
+
+      const hasToolPart = msg.parts.some((part: any) => part?.type && TOOL_RENDER_TYPES.has(part.type))
+      if (hasToolPart) return true
+
+      const textContent = msg.parts
+        .filter((part: any) => part?.type === "text" && typeof part?.text === "string")
+        .map((part: any) => part.text)
+        .join(" ")
+
+      return stripControlText(textContent).length > 0
+    }
+
+    if (typeof (msg as any).content === "string") {
+      return stripControlText((msg as any).content).length > 0
+    }
+
+    return false
+  }
+
+  const renderVideoDebugPanel = (debug: any): React.ReactNode => {
+    if (!isDevVideoDebug || !debug || typeof debug !== "object") return null
+
+    const authorityPrompt =
+      typeof debug.authorityMotionPrompt === "string" ? debug.authorityMotionPrompt.trim() : ""
+    const sourcePrompt = typeof debug.sourceMotionPrompt === "string" ? debug.sourceMotionPrompt.trim() : ""
+    const builder = typeof debug.authorityBuilder === "string" ? debug.authorityBuilder.trim() : ""
+    const category = typeof debug.category === "string" ? debug.category.trim() : ""
+
+    if (!authorityPrompt && !sourcePrompt && !builder && !category) return null
+
+    return (
+      <div className="mt-3 rounded-lg border border-[rgba(245,167,66,0.45)] bg-[rgba(245,167,66,0.08)] p-3 text-[11px] text-[#f5e8d0]">
+        <div className="text-[10px] uppercase tracking-[0.16em] text-[#f5c98a]">Video Debug (Dev Only)</div>
+        {builder ? <div className="mt-1">Builder: {builder}</div> : null}
+        {category ? <div className="mt-1">Category: {category}</div> : null}
+        {sourcePrompt ? <div className="mt-1">Source Prompt: {sourcePrompt}</div> : null}
+        {authorityPrompt ? <div className="mt-1">Authority Prompt: {authorityPrompt}</div> : null}
+      </div>
+    )
+  }
+
   // Helper function to remove emojis from text
   const removeEmojis = (text: string): string => {
     if (!text) return text
@@ -207,6 +326,15 @@ export default function MayaChatInterface({
   const renderMessageContent = (text: string, isUser: boolean) => {
     let cleanedText = text.replace(/\[GENERATE_PROMPTS[:\s]+[^\]]+\]/gi, "").trim()
     cleanedText = cleanedText.replace(/\[GENERATE_CONCEPTS\]\s*[^\n]*/gi, "").trim()
+    cleanedText = cleanedText.replace(/\[SHOW_CAPABILITIES\]/gi, "").trim()
+    cleanedText = cleanedText.replace(/\[SHOW_GALLERY\]/gi, "").trim()
+    cleanedText = cleanedText.replace(/\[SAVE_TO_GALLERY(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
+    cleanedText = cleanedText.replace(/\[GENERATE_IMAGE(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
+    cleanedText = cleanedText.replace(/\[SHOW_UPLOAD_ZONE(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
+    cleanedText = cleanedText.replace(/\[COLLECT_OFFER_BRIEF(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
+    cleanedText = cleanedText.replace(/\[SUBMIT_OFFER_BRIEF:\s*[^\]]+\]/gi, "").trim()
+    cleanedText = cleanedText.replace(/\[EDIT_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
+    cleanedText = cleanedText.replace(/\[CREATE_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
     // Remove feed creation trigger (with JSON content)
     // Use bracket counting to properly match nested JSON structures
     // This handles complex JSON with nested arrays/objects by finding the matching closing bracket
@@ -421,8 +549,8 @@ export default function MayaChatInterface({
         style={{
           // Layout contract: measured fixed header height + breathing room.
           paddingTop: "calc(var(--maya-header-height, 124px) + 16px)",
-          // Keep last message clear of dynamic input dock + fixed bottom nav.
-          paddingBottom: "calc(var(--input-bar-height, 168px) + var(--sselfie-bottom-nav-height, 96px) + 24px)",
+          // Keep last message clear of dynamic input dock only (nav is already below the dock).
+          paddingBottom: "calc(var(--input-bar-height, 168px) + max(16px, env(safe-area-inset-bottom, 0px)))",
         }}
         role="log"
         aria-live="polite"
@@ -432,7 +560,7 @@ export default function MayaChatInterface({
           Array.isArray(filteredMessages) &&
           filteredMessages
             .filter((msg) => {
-              return true
+              return hasRenderableMessage(msg as UIMessage)
             })
             .map((msg) => (
               <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end mb-8 sm:mb-10" : "justify-start mb-12 sm:mb-14"}`}>
@@ -799,6 +927,436 @@ export default function MayaChatInterface({
                               return null
                             }
 
+                            if (part.type === "tool-showCapabilities") {
+                              const capabilities = [
+                                {
+                                  title: "Create Photos",
+                                  prompt: "I want to create a photo for my new offer",
+                                  description: "Run Classic, Pro, or trained-model generation in this chat.",
+                                },
+                                {
+                                  title: "Create Concept Cards",
+                                  prompt: "Generate concept cards for my next content shoot",
+                                  description: "Draft post, reel, and carousel concepts in the same thread.",
+                                },
+                                {
+                                  title: "Animate to Video",
+                                  prompt: "Animate my latest image into a short reel",
+                                  description: "Pick an image and launch video generation inline.",
+                                },
+                                {
+                                  title: "Create Content Calendar",
+                                  prompt: "Create a content calendar for this month",
+                                  description: "Draft your monthly calendar and keep editing in-thread.",
+                                },
+                                {
+                                  title: "Create Workbook PDF",
+                                  prompt: "Create a workbook PDF for my offer",
+                                  description: "Generate a draft workbook and refine it in chat.",
+                                },
+                                {
+                                  title: "Upload Product Assets",
+                                  prompt: "Open upload zone for products",
+                                  description: "Add selfies, products, people, and vibe references.",
+                                },
+                                {
+                                  title: "Open My Studio Hub",
+                                  prompt: "Show my studio hub and everything you've created",
+                                  description: "View your latest feeds, photos, and videos inline.",
+                                },
+                              ]
+
+                              return (
+                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
+                                  <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Maya Capabilities</div>
+                                  <p className="mt-2 text-sm text-[#d5d5d5]">
+                                    Pick a workflow and I’ll run it here in chat.
+                                  </p>
+                                  <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                                    {capabilities.map((item) => (
+                                      <button
+                                        key={item.title}
+                                        type="button"
+                                        onClick={() => onToolPromptSelect?.(item.prompt)}
+                                        className="rounded-lg border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.03)] px-3 py-3 text-left transition-colors hover:bg-[rgba(255,255,255,0.08)]"
+                                      >
+                                        <div className="text-[11px] uppercase tracking-[0.16em] text-[#ffffff]">{item.title}</div>
+                                        <div className="mt-1 text-xs text-[#bdbdbd]">{item.description}</div>
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              )
+                            }
+
+                            if (part.type === "tool-showStudioHub") {
+                              const output = (part as any).output || {}
+                              const state = output.state || "ready"
+                              const stats = output.stats || { feedCount: 0, pageCount: 0, photoCount: 0, videoCount: 0 }
+                              const feeds = Array.isArray(output.feeds) ? output.feeds : []
+                              const recentPhotos = Array.isArray(output.recentPhotos) ? output.recentPhotos : []
+                              const recentVideos = Array.isArray(output.recentVideos) ? output.recentVideos : []
+
+                              if (state === "loading") {
+                                return (
+                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Studio Hub</div>
+                                    <div className="mt-2 text-sm text-[#e5e5e5]">Loading your created assets…</div>
+                                  </div>
+                                )
+                              }
+
+                              if (state === "error") {
+                                return (
+                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Studio Hub</div>
+                                    <div className="mt-2 text-sm text-[#f5c2c2]">{output.message || "Could not load Studio Hub."}</div>
+                                  </div>
+                                )
+                              }
+
+                              return (
+                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
+                                  <div className="flex items-center justify-between gap-2">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Studio Hub</div>
+                                    <a
+                                      href="/studio?tab=studio#studio"
+                                      className="text-[10px] uppercase tracking-[0.16em] text-[#cfcfcf] hover:text-white"
+                                    >
+                                      Open Full Hub
+                                    </a>
+                                  </div>
+
+                                  <div className="mt-3 grid grid-cols-3 gap-2">
+                                    <div className="rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(0,0,0,0.18)] px-2 py-2">
+                                      <div className="text-[10px] uppercase tracking-[0.14em] text-[#adadad]">Feeds</div>
+                                      <div className="mt-1 text-sm text-white">{Number(stats.feedCount || 0)}</div>
+                                    </div>
+                                    <div className="rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(0,0,0,0.18)] px-2 py-2">
+                                      <div className="text-[10px] uppercase tracking-[0.14em] text-[#adadad]">Photos</div>
+                                      <div className="mt-1 text-sm text-white">{Number(stats.photoCount || 0)}</div>
+                                    </div>
+                                    <div className="rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(0,0,0,0.18)] px-2 py-2">
+                                      <div className="text-[10px] uppercase tracking-[0.14em] text-[#adadad]">Videos</div>
+                                      <div className="mt-1 text-sm text-white">{Number(stats.videoCount || 0)}</div>
+                                    </div>
+                                  </div>
+
+                                  {(recentPhotos.length > 0 || recentVideos.length > 0 || feeds.length > 0) && (
+                                    <div className="mt-3 space-y-2">
+                                      {feeds.slice(0, 2).map((feed: any) => (
+                                        <div
+                                          key={`hub-feed-${feed.id}`}
+                                          className="rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(0,0,0,0.18)] px-3 py-2"
+                                        >
+                                          <div className="flex items-center justify-between gap-2">
+                                            <div className="text-xs text-white">{feed.title || `Feed ${feed.id}`}</div>
+                                            <a
+                                              href={feed.openUrl || "/studio?tab=feed-planner#feed-planner"}
+                                              className="text-[10px] uppercase tracking-[0.14em] text-[#cfcfcf] hover:text-white"
+                                            >
+                                              Open
+                                            </a>
+                                          </div>
+                                        </div>
+                                      ))}
+                                      {recentPhotos.slice(0, 2).map((photo: any) => (
+                                        <div
+                                          key={`hub-photo-${photo.id}`}
+                                          className="rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(0,0,0,0.18)] px-3 py-2"
+                                        >
+                                          <div className="flex items-center justify-between gap-2">
+                                            <div className="text-xs text-white">
+                                              {photo.prompt || "Recent photo"}
+                                            </div>
+                                            <a
+                                              href={photo.openUrl || "/studio?tab=gallery#gallery"}
+                                              className="text-[10px] uppercase tracking-[0.14em] text-[#cfcfcf] hover:text-white"
+                                            >
+                                              Open
+                                            </a>
+                                          </div>
+                                        </div>
+                                      ))}
+                                      {recentVideos.slice(0, 1).map((video: any) => (
+                                        <div
+                                          key={`hub-video-${video.id}`}
+                                          className="rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(0,0,0,0.18)] px-3 py-2"
+                                        >
+                                          <div className="flex items-center justify-between gap-2">
+                                            <div className="text-xs text-white">Latest video draft</div>
+                                            <a
+                                              href={video.openUrl || "/studio?tab=maya#maya/videos"}
+                                              className="text-[10px] uppercase tracking-[0.14em] text-[#cfcfcf] hover:text-white"
+                                            >
+                                              Open
+                                            </a>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              )
+                            }
+
+                            if (part.type === "tool-showGallery") {
+                              const output = (part as any).output || {}
+                              const state = output.state || "ready"
+                              const images = Array.isArray(output.images) ? output.images : []
+
+                              if (state === "loading") {
+                                return (
+                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Gallery</div>
+                                    <div className="mt-2 text-sm text-[#e5e5e5]">Loading your latest images…</div>
+                                  </div>
+                                )
+                              }
+
+                              if (state === "error") {
+                                return (
+                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Gallery</div>
+                                    <div className="mt-2 text-sm text-[#f5c2c2]">{output.message || "Could not load gallery."}</div>
+                                  </div>
+                                )
+                              }
+
+                              return (
+                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Gallery</div>
+                                    <div className="text-[10px] uppercase tracking-[0.16em] text-[#bdbdbd]">
+                                      {Number(output.total || images.length)} images
+                                    </div>
+                                  </div>
+                                  {images.length > 0 ? (
+                                    <div className="mt-3 grid grid-cols-3 gap-2">
+                                      {images.slice(0, 6).map((image: any, index: number) => (
+                                        <div key={image.id || index} className="aspect-square overflow-hidden rounded-lg border border-[rgba(255,255,255,0.1)]">
+                                          <img
+                                            src={image.imageUrl || image.image_url}
+                                            alt="Gallery image"
+                                            className="h-full w-full object-cover"
+                                          />
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <p className="mt-2 text-sm text-[#cfcfcf]">No images yet. Generate your first photo and Maya will keep it here.</p>
+                                  )}
+                                </div>
+                              )
+                            }
+
+                            if (part.type === "tool-saveToGallery") {
+                              const output = (part as any).output || {}
+                              const state = output.state || "ready"
+
+                              if (state === "loading") {
+                                return (
+                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4 text-sm text-[#e5e5e5]">
+                                    Saving to gallery…
+                                  </div>
+                                )
+                              }
+
+                              if (state === "error") {
+                                return (
+                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4 text-sm text-[#f5c2c2]">
+                                    {output.message || "Could not save to gallery."}
+                                  </div>
+                                )
+                              }
+
+                              return (
+                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4 text-sm text-[#e5e5e5]">
+                                  {output.message || "Saved to your gallery."}
+                                </div>
+                              )
+                            }
+
+                            if (part.type === "tool-generateImage") {
+                              const output = (part as any).output || {}
+                              const selectedSource = output.source || "choose_source"
+                              const options: Array<{
+                                id: "selfies" | "custom_model" | "base_model"
+                                label: string
+                                description: string
+                              }> = [
+                                { id: "selfies", label: "Use Selfies", description: "Upload or use linked references." },
+                                { id: "custom_model", label: "Train Model", description: "Go to training with your selfies." },
+                                { id: "base_model", label: "Base Model", description: "Create with the default model." },
+                              ]
+
+                              return (
+                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
+                                  <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Create Photo</div>
+                                  <p className="mt-2 text-sm text-[#d5d5d5]">Choose how you want Maya to generate this image.</p>
+                                  <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                                    {options.map((option) => {
+                                      const isSelected = selectedSource === option.id
+                                      return (
+                                        <button
+                                          key={option.id}
+                                          type="button"
+                                          onClick={() => onToolSelectGenerationSource?.(option.id)}
+                                          className={`rounded-lg border px-3 py-2 text-left transition-colors ${
+                                            isSelected
+                                              ? "border-[rgba(255,255,255,0.4)] bg-[rgba(255,255,255,0.12)]"
+                                              : "border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.03)] hover:bg-[rgba(255,255,255,0.08)]"
+                                          }`}
+                                        >
+                                          <div className="text-[11px] uppercase tracking-[0.16em] text-[#ffffff]">{option.label}</div>
+                                          <div className="mt-1 text-xs text-[#bdbdbd]">{option.description}</div>
+                                        </button>
+                                      )
+                                    })}
+                                  </div>
+                                </div>
+                              )
+                            }
+
+                            if (part.type === "tool-showUploadZone") {
+                              const output = (part as any).output || {}
+                              const category =
+                                output.category === "products" ||
+                                output.category === "people" ||
+                                output.category === "vibes"
+                                  ? output.category
+                                  : "selfies"
+                              const categoryLabelMap: Record<string, string> = {
+                                selfies: "Selfies",
+                                products: "Products",
+                                people: "People",
+                                vibes: "Vibes",
+                              }
+                              const categoryLabel = categoryLabelMap[category] || "Selfies"
+
+                              return (
+                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
+                                  <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Upload Zone</div>
+                                  <p className="mt-2 text-sm text-[#d5d5d5]">
+                                    Ready for {categoryLabel.toLowerCase()}. Open the inline uploader and drop your images.
+                                  </p>
+                                  <button
+                                    type="button"
+                                    onClick={() => onToolOpenUploadZone?.(category)}
+                                    className="mt-3 rounded-lg border border-[rgba(255,255,255,0.22)] bg-[rgba(255,255,255,0.08)] px-3 py-2 text-[11px] uppercase tracking-[0.16em] text-[#ffffff] transition-colors hover:bg-[rgba(255,255,255,0.14)]"
+                                  >
+                                    Open Upload
+                                  </button>
+                                </div>
+                              )
+                            }
+
+                            if (part.type === "tool-collectOfferBrief") {
+                              const output = (part as any).output || {}
+                              const assetType = output.assetType || "page"
+                              if (!isLandingPagesUiEnabled && assetType === "page") {
+                                return null
+                              }
+                              return (
+                                <div key={partIndex}>
+                                  <MayaOfferBriefForm
+                                    assetType={assetType === "calendar" ? "calendar" : "page"}
+                                    initialValues={output.prefill || {}}
+                                    missingFields={Array.isArray(output.missingFields) ? output.missingFields : []}
+                                    onSubmit={(assetType, values) => {
+                                      onToolSubmitOfferBrief?.(assetType, values)
+                                    }}
+                                  />
+                                </div>
+                              )
+                            }
+
+                            if (part.type === "tool-editAsset") {
+                              const output = (part as any).output || {}
+                              const assetType = output.assetType || "page"
+                              if (!isLandingPagesUiEnabled && assetType === "page") {
+                                return null
+                              }
+                              const assetLabel =
+                                typeof output.assetLabel === "string" && output.assetLabel.trim().length > 0
+                                  ? output.assetLabel
+                                  : assetType === "calendar"
+                                    ? "Content Calendar"
+                                    : assetType === "pdf"
+                                      ? "Workbook"
+                                      : "Landing Page"
+                              const helperText =
+                                typeof output.message === "string" && output.message.trim().length > 0
+                                  ? output.message
+                                  : `Maya will apply your next edit instructions to this ${assetLabel}.`
+
+                              return (
+                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Editing Workspace</div>
+                                    <div className="text-[10px] uppercase tracking-[0.16em] text-[#bdbdbd]">{assetType}</div>
+                                  </div>
+                                  <div className="mt-2 text-sm text-[#ffffff]">{assetLabel}</div>
+                                  <div className="mt-1 text-xs text-[#cfcfcf]">{helperText}</div>
+                                  <div className="mt-3 rounded-lg border border-[rgba(255,255,255,0.12)] bg-[rgba(0,0,0,0.25)] px-3 py-2 text-[11px] text-[#dcdcdc]">
+                                    Next step: describe the exact change you want (headline, CTA, section copy, layout), and Maya keeps editing this same asset.
+                                  </div>
+                                </div>
+                              )
+                            }
+
+                            if (part.type === "tool-createAssetPreview") {
+                              const output = (part as any).output || {}
+                              const assetType = output.assetType || "page"
+                              if (!isLandingPagesUiEnabled && assetType === "page") {
+                                return null
+                              }
+                              const assetLabel =
+                                typeof output.assetLabel === "string" && output.assetLabel.trim().length > 0
+                                  ? output.assetLabel
+                                  : assetType === "calendar"
+                                    ? "Content Calendar"
+                                    : assetType === "pdf"
+                                      ? "Workbook"
+                                      : "Landing Page"
+                              const previewText =
+                                typeof output.previewText === "string" && output.previewText.trim().length > 0
+                                  ? output.previewText
+                                  : "Draft created. Keep iterating with Maya in this chat."
+                              const url =
+                                typeof output.url === "string" && output.url.trim().length > 0 ? output.url : null
+
+                              return (
+                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.05)] p-4">
+                                  <div className="flex items-center justify-between gap-3">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Draft Ready</div>
+                                    <div className="text-[10px] uppercase tracking-[0.16em] text-[#bdbdbd]">{assetType}</div>
+                                  </div>
+                                  <div className="mt-2 text-sm text-[#ffffff]">{assetLabel}</div>
+                                  <div className="mt-1 text-xs text-[#cfcfcf]">{previewText}</div>
+                                  {output.assetId ? (
+                                    <div className="mt-3 overflow-hidden rounded-lg border border-[rgba(255,255,255,0.12)] bg-white">
+                                      <iframe
+                                        title={`${assetLabel} preview`}
+                                        src={`/api/maya/generated-assets/${encodeURIComponent(output.assetId)}/html`}
+                                        className="h-64 w-full"
+                                      />
+                                    </div>
+                                  ) : null}
+                                  {url ? (
+                                    <a
+                                      href={url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="mt-3 inline-flex rounded-lg border border-[rgba(255,255,255,0.22)] bg-[rgba(255,255,255,0.08)] px-3 py-2 text-[11px] uppercase tracking-[0.16em] text-[#ffffff] transition-colors hover:bg-[rgba(255,255,255,0.14)]"
+                                    >
+                                      Open Draft
+                                    </a>
+                                  ) : null}
+                                </div>
+                              )
+                            }
+
                             // Render feed preview card
                             if (part.type === "tool-generateFeed") {
                               console.log("[FEED-CARD] 🎨 RENDERING FEED CARD IN CHAT")
@@ -1043,6 +1601,101 @@ export default function MayaChatInterface({
                               const toolPart = part as any
                               const output = toolPart.output
 
+                              if (output && output.state === "loading_images") {
+                                return (
+                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
+                                    <div className="flex items-center gap-2 text-[#e5e5e5]">
+                                      <div className="w-1.5 h-1.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                      <span className="text-xs tracking-[0.15em] uppercase font-light">
+                                        Loading images for video...
+                                      </span>
+                                    </div>
+                                  </div>
+                                )
+                              }
+
+                              if (output && output.state === "choose_image") {
+                                const images = Array.isArray(output.images) ? output.images : []
+                                return (
+                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Create Video</div>
+                                    <p className="mt-2 text-sm text-[#d5d5d5]">
+                                      Pick from your gallery or upload a new reference and Maya will animate it inline.
+                                    </p>
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => onToolOpenUploadZone?.("selfies")}
+                                        className="rounded-lg border border-[rgba(255,255,255,0.22)] bg-[rgba(255,255,255,0.08)] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[#ffffff] hover:bg-[rgba(255,255,255,0.14)]"
+                                      >
+                                        Upload Reference
+                                      </button>
+                                    </div>
+                                    {images.length > 0 ? (
+                                      <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                                        {images.slice(0, 6).map((image: any, imageIndex: number) => {
+                                          const imageId = String(image.id || image.imageId || imageIndex)
+                                          const imageUrl = image.image_url || image.imageUrl || ""
+                                          const source = String(image.source || "").toLowerCase()
+                                          const sourceLabel =
+                                            source === "brand_assets"
+                                              ? "Uploaded"
+                                              : source === "generated_images"
+                                                ? "Generated"
+                                                : "Gallery"
+                                          if (!imageUrl) return null
+                                          return (
+                                            <button
+                                              key={`${imageId}-${imageIndex}`}
+                                              type="button"
+                                              onClick={() =>
+                                                onToolStartVideoGeneration?.({
+                                                  messageId: msg.id,
+                                                  imageId,
+                                                  imageUrl,
+                                                  prompt: image.prompt || "",
+                                                  description: image.description || "",
+                                                  category: image.category || "",
+                                                })
+                                              }
+                                              className="overflow-hidden rounded-lg border border-[rgba(255,255,255,0.14)] bg-black/20 hover:border-[rgba(255,255,255,0.28)]"
+                                            >
+                                              <img src={imageUrl} alt="Video source" className="h-24 w-full object-cover" />
+                                              <div className="px-2 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[#ffffff]">
+                                                Animate
+                                              </div>
+                                              <div className="pb-2 text-[9px] uppercase tracking-[0.12em] text-[#b8b8b8]">
+                                                {sourceLabel}
+                                              </div>
+                                            </button>
+                                          )
+                                        })}
+                                      </div>
+                                    ) : (
+                                      <div className="mt-3 rounded-lg border border-[rgba(255,255,255,0.12)] bg-black/20 p-3">
+                                        <p className="text-xs text-[#d7d7d7]">
+                                          No images found yet. Generate a photo first, then I can animate it.
+                                        </p>
+                                        <button
+                                          type="button"
+                                          onClick={() => onToolPromptSelect?.("Create a photo for my brand")}
+                                          className="mt-2 rounded-lg border border-[rgba(255,255,255,0.22)] bg-[rgba(255,255,255,0.08)] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[#ffffff] hover:bg-[rgba(255,255,255,0.14)]"
+                                        >
+                                          Create Photo First
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => onToolOpenUploadZone?.("selfies")}
+                                          className="mt-2 ml-2 rounded-lg border border-[rgba(255,255,255,0.22)] bg-[rgba(255,255,255,0.08)] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[#ffffff] hover:bg-[rgba(255,255,255,0.14)]"
+                                        >
+                                          Upload Reference
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                )
+                              }
+
                               if (output && output.state === "processing") {
                                 return (
                                   <div key={partIndex} className="mt-3">
@@ -1050,8 +1703,9 @@ export default function MayaChatInterface({
                                       videoUrl=""
                                       status="processing"
                                       progress={output.progress}
-                                      motionPrompt={toolPart.args?.motionPrompt}
+                                      motionPrompt={output.motionPrompt || toolPart.args?.motionPrompt}
                                     />
+                                    {renderVideoDebugPanel(output.debug)}
                                   </div>
                                 )
                               }
@@ -1061,9 +1715,19 @@ export default function MayaChatInterface({
                                   <div key={partIndex} className="mt-3">
                                     <VideoCard
                                       videoUrl={output.videoUrl}
-                                      motionPrompt={toolPart.args?.motionPrompt}
-                                      imageSource={toolPart.args?.imageUrl}
+                                      motionPrompt={output.motionPrompt || toolPart.args?.motionPrompt}
+                                      imageSource={output.imageUrl || toolPart.args?.imageUrl}
                                     />
+                                    {renderVideoDebugPanel(output.debug)}
+                                  </div>
+                                )
+                              }
+
+                              if (output && output.state === "error") {
+                                return (
+                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
+                                    <p className="text-sm text-[#f5c2c2]">{output.message || "Video generation failed."}</p>
+                                    {renderVideoDebugPanel(output.debug)}
                                   </div>
                                 )
                               }

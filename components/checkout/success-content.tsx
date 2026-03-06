@@ -7,17 +7,20 @@ import { createClient } from "@/lib/supabase/client"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import LoadingSpinner from "@/components/sselfie/loading-spinner"
+import { sanitizeRedirect } from "@/lib/security/url-validator"
 
 interface SuccessContentProps {
   initialUserInfo: any
   initialEmail?: string
   purchaseType?: string
+  returnTo?: string
 }
 
-export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: SuccessContentProps) {
+export function SuccessContent({ initialUserInfo, initialEmail, purchaseType, returnTo }: SuccessContentProps) {
   const router = useRouter()
   const [userInfo, setUserInfo] = useState(initialUserInfo)
   const isBrandEnginePurchase = String(purchaseType || "").startsWith("brand_engine_")
+  const resolvedReturnTo = sanitizeRedirect(returnTo || null, "/brand-strategy")
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [name, setName] = useState("")
   const [password, setPassword] = useState("")
@@ -100,6 +103,17 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
         return
       }
 
+      if (purchaseType === "brand_strategy_pack") {
+        if (user) {
+          setTimeout(() => {
+            router.push(resolvedReturnTo)
+          }, 800)
+        } else {
+          router.push(`/auth/login?returnTo=${encodeURIComponent(resolvedReturnTo)}`)
+        }
+        return
+      }
+
       // For paid blueprint, poll access status until webhook completes
       if (user && purchaseType === "paid_blueprint") {
         setIsPollingAccess(true)
@@ -107,7 +121,7 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
       }
     }
     checkAuth()
-  }, [purchaseType, router])
+  }, [purchaseType, resolvedReturnTo, router])
 
   // Poll access status for paid blueprint purchases
   useEffect(() => {
@@ -724,6 +738,8 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType }: 
                         ? "One-Time Session"
                         : userInfo.productType === "credit_topup"
                           ? "Credit Top-Up"
+                          : userInfo.productType === "brand_strategy_pack"
+                            ? "Brand Strategy Pack"
                           : "Purchase"}
                   </span>
                 </div>

@@ -20,6 +20,7 @@ export default function LoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const returnTo = sanitizeRedirect(searchParams.get("returnTo"), "/studio")
+  const signUpHref = `/auth/sign-up?returnTo=${encodeURIComponent(returnTo)}`
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -162,7 +163,7 @@ export default function LoginPage() {
               </div>
               <div className="mt-4 text-center text-sm text-zinc-400">
                 Don&apos;t have an account?{" "}
-                <Link href="/auth/sign-up" className="text-white underline underline-offset-4">
+                <Link href={signUpHref} className="text-white underline underline-offset-4">
                   Sign up
                 </Link>
               </div>

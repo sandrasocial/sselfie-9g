@@ -1139,6 +1139,7 @@ export async function storeAnalyticsReport(input: {
     | "product_qa_daily"
     | "arpu_churn_weekly"
     | "cohort_delivery_load_weekly"
+    | "maya_instagram_trends_weekly"
   periodStart: Date
   periodEnd: Date
   payload: any

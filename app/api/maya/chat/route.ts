@@ -1,6 +1,11 @@
-import { streamText, convertToModelMessages, type UIMessage } from "ai"
+import {
+  streamText,
+  convertToModelMessages,
+  createUIMessageStream,
+  createUIMessageStreamResponse,
+  type UIMessage,
+} from "ai"
 import { sql } from "@/lib/db/client"
-import { createAnthropic } from "@ai-sdk/anthropic"
 import { getMayaSystemPrompt, MAYA_CLASSIC_CONFIG, MAYA_PRO_CONFIG } from "@/lib/maya/mode-adapters"
 import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
 import { createServerClient } from "@/lib/supabase/server"
@@ -16,10 +21,106 @@ import {
 } from "@/lib/maya/auto-select-mode"
 import { getProductGenerationPrompt } from "@/lib/products-system-prompt"
 import { shouldDeductMayaChatCredit } from "@/lib/maya/chat-credit-policy"
+import { extractLatestUserText, hydrateMayaToolDispatchIntent } from "@/lib/maya/intent-dispatcher"
+import { stripMayaToolMarkers } from "@/lib/maya/tool-markers"
+import { formatMayaToolMarker } from "@/lib/maya/tool-registry"
+import { logAnalyticsEvent } from "@/lib/analytics/events"
+import {
+  persistMayaRememberedPreference,
+  getMayaActiveAssetContext,
+  persistMayaActiveAssetContext,
+  persistMayaOfferBrief,
+} from "@/lib/maya/memory-layer"
+import { estimateToolDispatchCredits, orchestrateMayaTurn } from "@/lib/maya/tool-orchestrator"
+import { createMayaGeneratedAsset, updateMayaGeneratedAsset } from "@/lib/maya/asset-generation"
+import {
+  parseOfferBriefSubmissionMarker,
+  buildOfferBriefInstruction,
+  summarizeOfferBriefForMemory,
+  encodeOfferBriefCollectionPayload,
+  toOfferBriefFromPartial,
+  type MayaOfferBriefField,
+} from "@/lib/maya/offer-brief"
+import { getMayaUserSnapshot } from "@/lib/maya/user-snapshot"
+import { resolveMayaLandingSnapshot } from "@/lib/maya/page-generation/snapshot-resolver"
+import { isMayaPageRendererV2Enabled } from "@/lib/maya/page-generation/constants"
+import {
+  createMayaOpenRouterFallbackModel,
+  getMayaGatewayModel,
+  getMayaModelForTask,
+  resolveMayaChatTask,
+} from "@/lib/maya/openrouter"
+import type { MayaCriticalLandingField } from "@/lib/maya/page-generation/types"
 
 import { NextResponse } from "next/server"
 
 export const maxDuration = 60
+
+function isChatFirstMayaEnabled(envValue?: string | null): boolean {
+  if (!envValue) return process.env.NODE_ENV !== "production"
+  const normalized = envValue.trim().toLowerCase()
+  return normalized === "true" || normalized === "1"
+}
+
+function isMayaLandingPagesInChatEnabled(envValue?: string | null): boolean {
+  if (!envValue) return false
+  const normalized = envValue.trim().toLowerCase()
+  return normalized === "true" || normalized === "1"
+}
+
+function createLandingPagesPausedResponse(validUIMessages: UIMessage[], preface?: string) {
+  const stream = createUIMessageStream({
+    originalMessages: validUIMessages as any,
+    execute: ({ writer }) => {
+      const textPartId = `page-flow-paused-${Date.now().toString(36)}`
+      writer.write({ type: "text-start", id: textPartId })
+      writer.write({
+        type: "text-delta",
+        id: textPartId,
+        delta:
+          `${preface ? `${preface.trim()} ` : ""}` +
+          `Landing pages are paused right now while we finish the quality relaunch. ` +
+          `In this chat, I can run photos, videos, concept cards, feed planning, and workbook drafts.`,
+      })
+      writer.write({ type: "text-end", id: textPartId })
+    },
+  })
+
+  return createUIMessageStreamResponse({ stream })
+}
+
+const OFFER_BRIEF_FIELD_LABELS: Record<MayaOfferBriefField, string> = {
+  offerType: "your offer",
+  transformation: "the main result",
+  pricePoint: "your price point",
+  formatAndDuration: "the format",
+  idealClient: "your ideal client",
+  biggestStruggle: "their biggest struggle",
+  uniqueMethod: "your unique method",
+  proofPoints: "your proof points",
+  callToAction: "your CTA",
+}
+
+function summarizeMissingOfferBriefFields(fields: MayaOfferBriefField[]): string {
+  const labels = fields
+    .map((field) => OFFER_BRIEF_FIELD_LABELS[field])
+    .filter((label): label is string => Boolean(label))
+
+  if (labels.length === 0) return "a couple details"
+  if (labels.length === 1) return labels[0]
+  if (labels.length === 2) return `${labels[0]} and ${labels[1]}`
+  return `${labels.slice(0, -1).join(", ")}, and ${labels[labels.length - 1]}`
+}
+
+function mapCriticalFieldsToOfferBriefFields(fields: MayaCriticalLandingField[]): MayaOfferBriefField[] {
+  const mapped: MayaOfferBriefField[] = []
+  for (const field of fields) {
+    if (field === "offer") mapped.push("offerType")
+    if (field === "audience") mapped.push("idealClient")
+    if (field === "transformation") mapped.push("transformation")
+  }
+  return Array.from(new Set(mapped))
+}
 
 const PROMPT_BUILDER_SYSTEM = `You are Maya in Prompt Builder Mode, helping Sandra create professional, reusable prompts for SSELFIE Studio prompt guides.
 
@@ -290,6 +391,700 @@ export async function POST(req: Request) {
     
     console.log("[v0] Filtered", uiMessages.length, "UI messages to", validUIMessages.length, "valid messages")
 
+    const chatFirstMayaEnabled = isChatFirstMayaEnabled(process.env.FEATURE_CHAT_FIRST_MAYA)
+    if (chatFirstMayaEnabled && !isPromptBuilder && chatType !== "feed-planner" && chatType !== "pro-photoshoot") {
+      const allowPageAssetsInChat = isMayaLandingPagesInChatEnabled(
+        process.env.FEATURE_MAYA_LANDING_PAGES_IN_CHAT,
+      )
+      const latestUserText = extractLatestUserText(validUIMessages as any)
+      const submittedOfferBrief = parseOfferBriefSubmissionMarker(latestUserText)
+
+      if (submittedOfferBrief) {
+        try {
+          const offerBriefInstruction = buildOfferBriefInstruction(submittedOfferBrief)
+          const briefAssetType = submittedOfferBrief.assetType === "calendar" ? "calendar" : "page"
+          await persistMayaOfferBrief(dbUserId, submittedOfferBrief)
+
+          const memorySummary = summarizeOfferBriefForMemory(submittedOfferBrief)
+          await persistMayaRememberedPreference(
+            dbUserId,
+            `Latest offer brief saved. ${memorySummary}`,
+          ).catch((memoryError) => {
+            console.error("[Maya Chat] Failed to append offer brief summary note:", memoryError)
+          })
+
+          if (briefAssetType === "page" && !allowPageAssetsInChat) {
+            return createLandingPagesPausedResponse(
+              validUIMessages as UIMessage[],
+              "Perfect. I saved this brief in your brand memory.",
+            )
+          }
+
+          const generatedAsset = await createMayaGeneratedAsset({
+            userId: dbUserId,
+            assetType: briefAssetType,
+            instruction: offerBriefInstruction,
+          })
+
+          await persistMayaActiveAssetContext(dbUserId, {
+            assetType: generatedAsset.assetType,
+            assetLabel: generatedAsset.title,
+            assetId: generatedAsset.id,
+            instruction: offerBriefInstruction,
+          })
+
+          const createAssetMarker = formatMayaToolMarker(
+            "create_asset",
+            [
+              generatedAsset.assetType,
+              encodeURIComponent(generatedAsset.title),
+              generatedAsset.id,
+              encodeURIComponent(generatedAsset.previewText),
+              encodeURIComponent(generatedAsset.url || ""),
+            ].join("|"),
+          )
+          const editAssetMarker = formatMayaToolMarker(
+            "edit_asset",
+            `${generatedAsset.assetType}|${encodeURIComponent(generatedAsset.title)}`,
+          )
+
+          const stream = createUIMessageStream({
+            originalMessages: validUIMessages as any,
+            execute: ({ writer }) => {
+              const textPartId = `offer-brief-submit-${Date.now().toString(36)}`
+              writer.write({ type: "text-start", id: textPartId })
+              writer.write({
+                type: "text-delta",
+                id: textPartId,
+                delta:
+                  `Perfect. I saved this to your brand memory and built your ${briefAssetType === "calendar" ? "content calendar" : "landing page"} draft so we can refine it together.\n` +
+                  `${createAssetMarker}\n` +
+                  `${editAssetMarker}`,
+              })
+              writer.write({ type: "text-end", id: textPartId })
+            },
+          })
+
+          return createUIMessageStreamResponse({ stream })
+        } catch (offerBriefError) {
+          console.error("[Maya Chat] Failed handling offer brief submission:", offerBriefError)
+        }
+      }
+
+      const mayaSnapshot = await getMayaUserSnapshot(dbUserId)
+
+      let activeAssetContext = mayaSnapshot.activeAssetContext
+      try {
+        if (!activeAssetContext) {
+          activeAssetContext = await getMayaActiveAssetContext(dbUserId)
+        }
+      } catch (activeAssetError) {
+        console.error("[Maya Chat] Failed to load active asset context:", activeAssetError)
+      }
+
+      const orchestration = orchestrateMayaTurn({
+        userText: latestUserText,
+        activeAssetContext,
+        options: {
+          allowPageAssetsInChat,
+        },
+      })
+
+      if (orchestration.kind === "remember") {
+        try {
+          const persistedMemory = await persistMayaRememberedPreference(dbUserId, orchestration.intent.note)
+          console.log("[Maya Chat] Phase 3 memory intent captured:", {
+            source: orchestration.intent.source,
+            note: persistedMemory.note,
+            noteCount: persistedMemory.notes.length,
+          })
+
+          const stream = createUIMessageStream({
+            originalMessages: validUIMessages as any,
+            execute: ({ writer }) => {
+              const textPartId = `memory-save-${Date.now().toString(36)}`
+              writer.write({ type: "text-start", id: textPartId })
+              writer.write({
+                type: "text-delta",
+                id: textPartId,
+                delta: `Perfect. I saved this in your memory so I keep it in every future suggestion: "${persistedMemory.note}"`,
+              })
+              writer.write({ type: "text-end", id: textPartId })
+            },
+          })
+
+          return createUIMessageStreamResponse({ stream })
+        } catch (memoryError) {
+          console.error("[Maya Chat] Failed saving memory intent:", memoryError)
+
+          const stream = createUIMessageStream({
+            originalMessages: validUIMessages as any,
+            execute: ({ writer }) => {
+              const textPartId = `memory-save-fallback-${Date.now().toString(36)}`
+              writer.write({ type: "text-start", id: textPartId })
+              writer.write({
+                type: "text-delta",
+                id: textPartId,
+                delta: `I heard you. I couldn't save that memory right now, but I will follow it in this chat.`,
+              })
+              writer.write({ type: "text-end", id: textPartId })
+            },
+          })
+
+          return createUIMessageStreamResponse({ stream })
+        }
+      }
+
+      if (orchestration.kind === "page_generation_paused") {
+        return createLandingPagesPausedResponse(validUIMessages as UIMessage[])
+      }
+
+      if (orchestration.kind === "collect_offer_brief") {
+        if (!allowPageAssetsInChat) {
+          return createLandingPagesPausedResponse(validUIMessages as UIMessage[])
+        }
+
+        try {
+          const seededBrief = mayaSnapshot.offerBrief
+
+          if (seededBrief.hasCoreFields) {
+            const offerBrief = toOfferBriefFromPartial(seededBrief.prefill)
+            if (offerBrief) {
+              const offerBriefInstruction = buildOfferBriefInstruction(offerBrief)
+              await persistMayaOfferBrief(dbUserId, offerBrief)
+
+              const generatedAsset = await createMayaGeneratedAsset({
+                userId: dbUserId,
+                assetType: "page",
+                instruction: offerBriefInstruction,
+              })
+
+              await persistMayaActiveAssetContext(dbUserId, {
+                assetType: generatedAsset.assetType,
+                assetLabel: generatedAsset.title,
+                assetId: generatedAsset.id,
+                instruction: offerBriefInstruction,
+              })
+
+              const createAssetMarker = formatMayaToolMarker(
+                "create_asset",
+                [
+                  generatedAsset.assetType,
+                  encodeURIComponent(generatedAsset.title),
+                  generatedAsset.id,
+                  encodeURIComponent(generatedAsset.previewText),
+                  encodeURIComponent(generatedAsset.url || ""),
+                ].join("|"),
+              )
+              const editAssetMarker = formatMayaToolMarker(
+                "edit_asset",
+                `${generatedAsset.assetType}|${encodeURIComponent(generatedAsset.title)}`,
+              )
+
+              const stream = createUIMessageStream({
+                originalMessages: validUIMessages as any,
+                execute: ({ writer }) => {
+                  const textPartId = `offer-brief-autodraft-${Date.now().toString(36)}`
+                  writer.write({ type: "text-start", id: textPartId })
+                  writer.write({
+                    type: "text-delta",
+                    id: textPartId,
+                    delta:
+                      `Love. I pulled your brand profile and memory, then drafted your page so we can refine it together.\n` +
+                      `${createAssetMarker}\n` +
+                      `${editAssetMarker}`,
+                  })
+                  writer.write({ type: "text-end", id: textPartId })
+                },
+              })
+
+              return createUIMessageStreamResponse({ stream })
+            }
+          }
+
+          const collectPayload = encodeOfferBriefCollectionPayload({
+            assetType: "page",
+            prefill: seededBrief.prefill,
+            missingFields: seededBrief.missingFields,
+          })
+          const collectBriefMarker = formatMayaToolMarker("collect_offer_brief", collectPayload)
+          const missingCount = seededBrief.missingFields.length
+          const missingSummary = summarizeMissingOfferBriefFields(seededBrief.missingFields)
+          const stream = createUIMessageStream({
+            originalMessages: validUIMessages as any,
+            execute: ({ writer }) => {
+              const textPartId = `offer-brief-request-${Date.now().toString(36)}`
+              writer.write({ type: "text-start", id: textPartId })
+              writer.write({
+                type: "text-delta",
+                id: textPartId,
+                delta:
+                  (missingCount > 0
+                    ? `I already know most of your brand. I only need ${missingSummary}. Fill those and I’ll build the page in your voice.\n`
+                    : `I already pulled your profile and memory. Tweak anything below and I’ll build the page now.\n`) +
+                  `${collectBriefMarker}`,
+              })
+              writer.write({ type: "text-end", id: textPartId })
+            },
+          })
+
+          return createUIMessageStreamResponse({ stream })
+        } catch (offerBriefSeedError) {
+          console.error("[Maya Chat] Failed handling offer brief collection:", offerBriefSeedError)
+        }
+      }
+
+      if (orchestration.kind === "asset_create") {
+        if (orchestration.intent.assetType === "page" && !allowPageAssetsInChat) {
+          return createLandingPagesPausedResponse(validUIMessages as UIMessage[])
+        }
+
+        try {
+          if (
+            orchestration.intent.assetType === "page" &&
+            isMayaPageRendererV2Enabled(process.env.FEATURE_MAYA_PAGE_RENDERER_V2)
+          ) {
+            const landingSnapshot = await resolveMayaLandingSnapshot(dbUserId)
+            if (landingSnapshot.missingCriticalFields.length > 0) {
+              const mappedMissingFields = mapCriticalFieldsToOfferBriefFields(landingSnapshot.missingCriticalFields)
+              const missingFieldsForForm =
+                mappedMissingFields.length > 0 ? mappedMissingFields : mayaSnapshot.offerBrief.missingFields
+              const prefillValues = {
+                ...mayaSnapshot.offerBrief.prefill,
+                offerType: mayaSnapshot.offerBrief.prefill.offerType || landingSnapshot.resolvedOffer,
+                idealClient: mayaSnapshot.offerBrief.prefill.idealClient || landingSnapshot.resolvedAudience,
+                transformation:
+                  mayaSnapshot.offerBrief.prefill.transformation || landingSnapshot.resolvedTransformation,
+                designStyle: mayaSnapshot.offerBrief.prefill.designStyle || landingSnapshot.resolvedStyle,
+                proofPoints: mayaSnapshot.offerBrief.prefill.proofPoints || landingSnapshot.resolvedProofPoints,
+                callToAction: mayaSnapshot.offerBrief.prefill.callToAction || landingSnapshot.resolvedCta,
+              }
+              const collectPayload = encodeOfferBriefCollectionPayload({
+                assetType: "page",
+                prefill: prefillValues,
+                missingFields: missingFieldsForForm,
+              })
+              const collectBriefMarker = formatMayaToolMarker("collect_offer_brief", collectPayload)
+              const missingSummary = summarizeMissingOfferBriefFields(missingFieldsForForm)
+              const stream = createUIMessageStream({
+                originalMessages: validUIMessages as any,
+                execute: ({ writer }) => {
+                  const textPartId = `offer-brief-v2-gate-${Date.now().toString(36)}`
+                  writer.write({ type: "text-start", id: textPartId })
+                  writer.write({
+                    type: "text-delta",
+                    id: textPartId,
+                    delta: `I already pulled your profile and memory. I only need ${missingSummary} before I generate a high-converting page.\n${collectBriefMarker}`,
+                  })
+                  writer.write({ type: "text-end", id: textPartId })
+                },
+              })
+
+              return createUIMessageStreamResponse({ stream })
+            }
+          }
+
+          if (
+            orchestration.intent.assetType === "calendar" &&
+            !mayaSnapshot.offerBrief.hasCoreFields
+          ) {
+            const collectPayload = encodeOfferBriefCollectionPayload({
+              assetType: "calendar",
+              prefill: mayaSnapshot.offerBrief.prefill,
+              missingFields: mayaSnapshot.offerBrief.missingFields,
+            })
+            const collectBriefMarker = formatMayaToolMarker("collect_offer_brief", collectPayload)
+            const missingSummary = summarizeMissingOfferBriefFields(mayaSnapshot.offerBrief.missingFields)
+            const stream = createUIMessageStream({
+              originalMessages: validUIMessages as any,
+              execute: ({ writer }) => {
+                const textPartId = `calendar-brief-gate-${Date.now().toString(36)}`
+                writer.write({ type: "text-start", id: textPartId })
+                writer.write({
+                  type: "text-delta",
+                  id: textPartId,
+                  delta:
+                    `I can build this in your style. I only need ${missingSummary} before I generate your Instagram calendar.\n${collectBriefMarker}`,
+                })
+                writer.write({ type: "text-end", id: textPartId })
+              },
+            })
+
+            return createUIMessageStreamResponse({ stream })
+          }
+
+          const generatedAsset = await createMayaGeneratedAsset({
+            userId: dbUserId,
+            assetType: orchestration.intent.assetType,
+            instruction: orchestration.intent.instruction,
+          })
+
+          await persistMayaActiveAssetContext(dbUserId, {
+            assetType: generatedAsset.assetType,
+            assetLabel: generatedAsset.title,
+            assetId: generatedAsset.id,
+            instruction: orchestration.intent.instruction,
+          })
+
+          const createAssetMarker = formatMayaToolMarker(
+            "create_asset",
+            [
+              generatedAsset.assetType,
+              encodeURIComponent(generatedAsset.title),
+              generatedAsset.id,
+              encodeURIComponent(generatedAsset.previewText),
+              encodeURIComponent(generatedAsset.url || ""),
+            ].join("|"),
+          )
+          const editAssetMarker = formatMayaToolMarker(
+            "edit_asset",
+            `${generatedAsset.assetType}|${encodeURIComponent(generatedAsset.title)}`,
+          )
+
+          const stream = createUIMessageStream({
+            originalMessages: validUIMessages as any,
+            execute: ({ writer }) => {
+              const textPartId = `asset-create-${Date.now().toString(36)}`
+              writer.write({ type: "text-start", id: textPartId })
+              writer.write({
+                type: "text-delta",
+                id: textPartId,
+                delta:
+                  `Done. I created a draft for your ${generatedAsset.title} and loaded it inline so you can iterate fast.\n` +
+                  `${createAssetMarker}\n` +
+                  `${editAssetMarker}`,
+              })
+              writer.write({ type: "text-end", id: textPartId })
+            },
+          })
+
+          void logAnalyticsEvent({
+            eventName: "maya_asset_draft_created",
+            userId: dbUserId,
+            path: "/api/maya/chat",
+            properties: {
+              assetType: generatedAsset.assetType,
+              source: "chat_first",
+            },
+          })
+
+          return createUIMessageStreamResponse({ stream })
+        } catch (assetCreateError) {
+          console.error("[Maya Chat] Failed to create asset draft:", assetCreateError)
+        }
+      }
+
+      if (orchestration.kind === "multi_step_asset_create") {
+        if (orchestration.intents.some((intent) => intent.assetType === "page") && !allowPageAssetsInChat) {
+          return createLandingPagesPausedResponse(validUIMessages as UIMessage[])
+        }
+
+        try {
+          if (
+            orchestration.intents.some((intent) => intent.assetType === "page") &&
+            isMayaPageRendererV2Enabled(process.env.FEATURE_MAYA_PAGE_RENDERER_V2)
+          ) {
+            const landingSnapshot = await resolveMayaLandingSnapshot(dbUserId)
+            if (landingSnapshot.missingCriticalFields.length > 0) {
+              const mappedMissingFields = mapCriticalFieldsToOfferBriefFields(landingSnapshot.missingCriticalFields)
+              const missingFieldsForForm =
+                mappedMissingFields.length > 0 ? mappedMissingFields : mayaSnapshot.offerBrief.missingFields
+              const collectPayload = encodeOfferBriefCollectionPayload({
+                assetType: "page",
+                prefill: {
+                  ...mayaSnapshot.offerBrief.prefill,
+                  offerType: mayaSnapshot.offerBrief.prefill.offerType || landingSnapshot.resolvedOffer,
+                  idealClient: mayaSnapshot.offerBrief.prefill.idealClient || landingSnapshot.resolvedAudience,
+                  transformation:
+                    mayaSnapshot.offerBrief.prefill.transformation || landingSnapshot.resolvedTransformation,
+                  designStyle: mayaSnapshot.offerBrief.prefill.designStyle || landingSnapshot.resolvedStyle,
+                  proofPoints: mayaSnapshot.offerBrief.prefill.proofPoints || landingSnapshot.resolvedProofPoints,
+                  callToAction: mayaSnapshot.offerBrief.prefill.callToAction || landingSnapshot.resolvedCta,
+                },
+                missingFields: missingFieldsForForm,
+              })
+              const collectBriefMarker = formatMayaToolMarker("collect_offer_brief", collectPayload)
+              const missingSummary = summarizeMissingOfferBriefFields(missingFieldsForForm)
+              const stream = createUIMessageStream({
+                originalMessages: validUIMessages as any,
+                execute: ({ writer }) => {
+                  const textPartId = `offer-brief-v2-multistep-gate-${Date.now().toString(36)}`
+                  writer.write({ type: "text-start", id: textPartId })
+                  writer.write({
+                    type: "text-delta",
+                    id: textPartId,
+                    delta: `Before I run the full multi-step build, I only need ${missingSummary} for the landing page step.\n${collectBriefMarker}`,
+                  })
+                  writer.write({ type: "text-end", id: textPartId })
+                },
+              })
+
+              return createUIMessageStreamResponse({ stream })
+            }
+          }
+
+          if (
+            orchestration.intents.some((intent) => intent.assetType === "calendar") &&
+            !mayaSnapshot.offerBrief.hasCoreFields
+          ) {
+            const collectPayload = encodeOfferBriefCollectionPayload({
+              assetType: "calendar",
+              prefill: mayaSnapshot.offerBrief.prefill,
+              missingFields: mayaSnapshot.offerBrief.missingFields,
+            })
+            const collectBriefMarker = formatMayaToolMarker("collect_offer_brief", collectPayload)
+            const missingSummary = summarizeMissingOfferBriefFields(mayaSnapshot.offerBrief.missingFields)
+            const stream = createUIMessageStream({
+              originalMessages: validUIMessages as any,
+              execute: ({ writer }) => {
+                const textPartId = `calendar-brief-multistep-gate-${Date.now().toString(36)}`
+                writer.write({ type: "text-start", id: textPartId })
+                writer.write({
+                  type: "text-delta",
+                  id: textPartId,
+                  delta:
+                    `Before I run the full multi-step build, I only need ${missingSummary} for the calendar step.\n${collectBriefMarker}`,
+                })
+                writer.write({ type: "text-end", id: textPartId })
+              },
+            })
+
+            return createUIMessageStreamResponse({ stream })
+          }
+
+          const createdAssets: Array<Awaited<ReturnType<typeof createMayaGeneratedAsset>>> = []
+
+          for (const intent of orchestration.intents) {
+            const generatedAsset = await createMayaGeneratedAsset({
+              userId: dbUserId,
+              assetType: intent.assetType,
+              instruction: intent.instruction,
+            })
+            createdAssets.push(generatedAsset)
+          }
+
+          const activeAsset = createdAssets[createdAssets.length - 1]
+          if (activeAsset) {
+            const activeIntent =
+              orchestration.intents.find((intent) => intent.assetType === activeAsset.assetType) ||
+              orchestration.intents[0]
+            await persistMayaActiveAssetContext(dbUserId, {
+              assetType: activeAsset.assetType,
+              assetLabel: activeAsset.title,
+              assetId: activeAsset.id,
+              instruction: activeIntent?.instruction || activeAsset.instruction || latestUserText,
+            })
+          }
+
+          const markers = createdAssets.flatMap((asset) => {
+            const createAssetMarker = formatMayaToolMarker(
+              "create_asset",
+              [
+                asset.assetType,
+                encodeURIComponent(asset.title),
+                asset.id,
+                encodeURIComponent(asset.previewText),
+                encodeURIComponent(asset.url || ""),
+              ].join("|"),
+            )
+            const editAssetMarker = formatMayaToolMarker(
+              "edit_asset",
+              `${asset.assetType}|${encodeURIComponent(asset.title)}`,
+            )
+            return [createAssetMarker, editAssetMarker]
+          })
+
+          const stream = createUIMessageStream({
+            originalMessages: validUIMessages as any,
+            execute: ({ writer }) => {
+              const textPartId = `asset-multistep-${Date.now().toString(36)}`
+              writer.write({ type: "text-start", id: textPartId })
+              writer.write({
+                type: "text-delta",
+                id: textPartId,
+                delta:
+                  `Done. I built ${createdAssets.length} drafts in one run so you can move faster. ` +
+                  `I loaded each one inline and set your latest draft as active.\n` +
+                  markers.join("\n"),
+              })
+              writer.write({ type: "text-end", id: textPartId })
+            },
+          })
+
+          createdAssets.forEach((asset) => {
+            void logAnalyticsEvent({
+              eventName: "maya_asset_draft_created",
+              userId: dbUserId,
+              path: "/api/maya/chat",
+              properties: {
+                assetType: asset.assetType,
+                source: "chat_first_multistep",
+              },
+            })
+          })
+
+          void logAnalyticsEvent({
+            eventName: "maya_multi_step_executor_run",
+            userId: dbUserId,
+            path: "/api/maya/chat",
+            properties: {
+              stepCount: createdAssets.length,
+              stepAssetTypes: createdAssets.map((asset) => asset.assetType),
+            },
+          })
+
+          return createUIMessageStreamResponse({ stream })
+        } catch (multiStepCreateError) {
+          console.error("[Maya Chat] Failed multi-step asset creation:", multiStepCreateError)
+        }
+      }
+
+      if (orchestration.kind === "asset_edit") {
+        if (orchestration.intent.assetType === "page" && !allowPageAssetsInChat) {
+          return createLandingPagesPausedResponse(validUIMessages as UIMessage[])
+        }
+
+        try {
+          const updatedAsset = await updateMayaGeneratedAsset({
+            userId: dbUserId,
+            assetType: orchestration.intent.assetType,
+            assetLabel: orchestration.intent.assetLabel,
+            assetId: activeAssetContext?.assetId,
+            instruction: orchestration.intent.instruction,
+          })
+
+          const persistedAsset = await persistMayaActiveAssetContext(dbUserId, {
+            assetType: updatedAsset.assetType,
+            assetLabel: updatedAsset.title,
+            assetId: updatedAsset.id,
+            instruction: orchestration.intent.instruction,
+          })
+
+          const encodedLabel = encodeURIComponent(persistedAsset.activeAsset.assetLabel)
+          const editAssetMarker = formatMayaToolMarker(
+            "edit_asset",
+            `${persistedAsset.activeAsset.assetType}|${encodedLabel}`,
+          )
+          const createAssetMarker = formatMayaToolMarker(
+            "create_asset",
+            [
+              updatedAsset.assetType,
+              encodeURIComponent(updatedAsset.title),
+              updatedAsset.id,
+              encodeURIComponent(updatedAsset.previewText),
+              encodeURIComponent(updatedAsset.url || ""),
+            ].join("|"),
+          )
+
+          const actionVerb = orchestration.intent.mode === "continue" ? "Continuing" : "Starting"
+          const stream = createUIMessageStream({
+            originalMessages: validUIMessages as any,
+            execute: ({ writer }) => {
+              const textPartId = `asset-edit-${Date.now().toString(36)}`
+              writer.write({ type: "text-start", id: textPartId })
+              writer.write({
+                type: "text-delta",
+                id: textPartId,
+                delta:
+                  `${actionVerb} your ${persistedAsset.activeAsset.assetLabel} edits now. ` +
+                  `I’ve updated the draft inline and kept this as your active workspace for the next tweak.\n` +
+                  `${createAssetMarker}\n` +
+                  editAssetMarker,
+              })
+              writer.write({ type: "text-end", id: textPartId })
+            },
+          })
+
+          void logAnalyticsEvent({
+            eventName: "maya_asset_draft_updated",
+            userId: dbUserId,
+            path: "/api/maya/chat",
+            properties: {
+              assetType: updatedAsset.assetType,
+              source: "chat_first",
+            },
+          })
+
+          return createUIMessageStreamResponse({ stream })
+        } catch (assetPersistError) {
+          console.error("[Maya Chat] Failed saving asset edit context:", assetPersistError)
+        }
+      }
+
+      if (orchestration.kind === "tool_dispatch") {
+        const hydratedIntent = hydrateMayaToolDispatchIntent(orchestration.intent, mayaSnapshot)
+        const hydratedEstimatedCredits = estimateToolDispatchCredits(hydratedIntent)
+        const requiresHydratedCreditCheck = hydratedEstimatedCredits > 0
+
+        console.log("[Maya Chat] Phase 2 tool dispatcher matched intent:", {
+          tool: hydratedIntent.tool,
+          chatType,
+          estimatedCredits: hydratedEstimatedCredits,
+          recommendedSource: mayaSnapshot.generation.recommendedSource,
+        })
+
+        if (!isAdmin && requiresHydratedCreditCheck) {
+          const hasCreditsForTool = await checkCredits(dbUserId, hydratedEstimatedCredits)
+          if (!hasCreditsForTool) {
+            void logAnalyticsEvent({
+              eventName: "maya_tool_blocked_low_credits",
+              userId: dbUserId,
+              path: "/api/maya/chat",
+              properties: {
+                tool: hydratedIntent.tool,
+                chatType,
+                requiredCredits: hydratedEstimatedCredits,
+              },
+            })
+
+            const stream = createUIMessageStream({
+              originalMessages: validUIMessages as any,
+              execute: ({ writer }) => {
+                const textPartId = `tool-dispatch-low-credits-${Date.now().toString(36)}`
+                writer.write({ type: "text-start", id: textPartId })
+                writer.write({
+                  type: "text-delta",
+                  id: textPartId,
+                  delta:
+                    `Before I run this, you need at least ${hydratedEstimatedCredits} credit. ` +
+                    `Add credits or upgrade, then I’ll launch it instantly.`,
+                })
+                writer.write({ type: "text-end", id: textPartId })
+              },
+            })
+
+            return createUIMessageStreamResponse({ stream })
+          }
+        }
+
+        void logAnalyticsEvent({
+          eventName:
+            hydratedIntent.tool === "show_capabilities"
+              ? "maya_capabilities_opened"
+              : "maya_tool_invoked",
+          userId: dbUserId,
+          path: "/api/maya/chat",
+          properties: {
+            tool: hydratedIntent.tool,
+            chatType,
+            estimatedCredits: hydratedEstimatedCredits,
+          },
+        })
+
+        const stream = createUIMessageStream({
+          originalMessages: validUIMessages as any,
+          execute: ({ writer }) => {
+            const textPartId = `tool-dispatch-${Date.now().toString(36)}`
+            writer.write({ type: "text-start", id: textPartId })
+            writer.write({ type: "text-delta", id: textPartId, delta: hydratedIntent.responseText })
+            writer.write({ type: "text-end", id: textPartId })
+          },
+        })
+
+        return createUIMessageStreamResponse({ stream })
+      }
+    }
+
     // Process UI messages to extract inspiration images from text markers (backward compatibility)
     // AND ensure image parts are properly formatted for AI SDK
     const messages: UIMessage[] = validUIMessages.map((m: any) => {
@@ -444,6 +1239,7 @@ export async function POST(req: Request) {
         content = content.replace(/\[Inspiration Image: https?:\/\/[^\]]+\]/g, "").trim()
         // Also strip guide prompt markers from conversation summary
         content = content.replace(/\[USE_GUIDE_PROMPT\]/gi, "").trim()
+        content = stripMayaToolMarkers(content)
 
         return content ? `${role}: ${content}${content.length >= 200 ? "..." : ""}` : null
       })
@@ -500,7 +1296,17 @@ export async function POST(req: Request) {
       // Also remove 'content' field if present to avoid dual-field issues
       if (m.parts && Array.isArray(m.parts) && m.parts.length > 0) {
         const { content, ...rest } = m
-        return rest // Remove 'content' field if it exists
+        const sanitizedParts = m.parts
+          .map((part: any) => {
+            if (part?.type === "text" && typeof part?.text === "string") {
+              const text = stripMayaToolMarkers(part.text)
+              return text ? { ...part, text } : null
+            }
+            return part
+          })
+          .filter((part: any) => part !== null)
+        if (sanitizedParts.length === 0) return null
+        return { ...rest, parts: sanitizedParts } // Remove 'content' field if it exists
       }
       
       // If message has empty 'parts' array, skip it (should have been filtered above)
@@ -519,9 +1325,11 @@ export async function POST(req: Request) {
           return null // Will be filtered out
         }
         const { content, ...rest } = m
+        const sanitizedContent = stripMayaToolMarkers(content)
+        if (!sanitizedContent) return null
         return {
           ...rest, // Preserve id, role, timestamp, and all other metadata (excluding content)
-          parts: [{ type: "text", text: content }], // Convert content to parts format
+          parts: [{ type: "text", text: sanitizedContent }], // Convert content to parts format
         }
       }
       
@@ -534,9 +1342,19 @@ export async function POST(req: Request) {
           return null // Will be filtered out
         }
         const { content, ...rest } = m
+        const sanitizedParts = content
+          .map((part: any) => {
+            if (part?.type === "text" && typeof part?.text === "string") {
+              const text = stripMayaToolMarkers(part.text)
+              return text ? { ...part, text } : null
+            }
+            return part
+          })
+          .filter((part: any) => part !== null)
+        if (sanitizedParts.length === 0) return null
         return {
           ...rest, // Preserve id, role, timestamp, and all other metadata (excluding content)
-          parts: content, // Convert content array to parts
+          parts: sanitizedParts, // Convert content array to parts
         }
       }
       
@@ -1201,60 +2019,88 @@ You: "Love the cozy fall vibe! 🥰 Creating some concepts with warm textures, t
 - Deliver the purchased artifact immediately in your first answer.`
     }
 
-    // Create Anthropic provider with direct API key (bypasses AI Gateway)
-    // This ensures Maya uses Claude directly, not through Gateway
-    const anthropic = createAnthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
+    const mayaTask = resolveMayaChatTask({
+      chatType,
+      isPromptBuilder,
+      isStudioProMode,
+    })
+    const selectedModel = getMayaModelForTask(mayaTask)
+    const primaryModel = getMayaGatewayModel(mayaTask)
+    const openRouterFallbackModel = createMayaOpenRouterFallbackModel(mayaTask)
+    console.log("[Maya Chat] Model routing:", {
+      chatType,
+      isPromptBuilder,
+      isStudioProMode,
+      task: mayaTask,
+      selectedModel,
+      primaryProvider: "anthropic-gateway",
+      hasOpenRouterFallback: !!openRouterFallbackModel,
     })
 
     let result
     try {
       result = streamText({
-        model: anthropic("claude-sonnet-4-20250514"),
+        model: primaryModel,
         system: systemPrompt,
         messages: modelMessages,
         maxTokens: 4096, // CRITICAL: Ensure Maya has enough tokens to complete response including [GENERATE_CONCEPTS] trigger
         temperature: 0.7, // Balanced creativity and consistency
       } as any)
     } catch (streamError) {
-      console.error("[v0] Error in streamText call:", streamError)
+      console.error("[v0] Primary model call failed:", streamError)
+      if (openRouterFallbackModel) {
+        try {
+          result = streamText({
+            model: openRouterFallbackModel,
+            system: systemPrompt,
+            messages: modelMessages,
+            maxTokens: 4096,
+            temperature: 0.7,
+          } as any)
+          console.log("[Maya Chat] OpenRouter fallback activated for chat")
+        } catch (fallbackError) {
+          console.error("[v0] OpenRouter fallback failed:", fallbackError)
+        }
+      }
+
+      if (result) {
+        // Fallback succeeded
+      } else {
+        // If streamText fails (e.g., provider outage), return a streaming error response
+        const errorMessage = streamError instanceof Error 
+          ? (streamError.message.includes("Gateway") || streamError.message.includes("gateway")
+            ? "AI service temporarily unavailable. Please try again in a moment."
+            : streamError.message)
+          : "Failed to process chat request"
+        
+        console.error("[v0] ❌ Returning streaming error response:", errorMessage)
+        
+        // Return a streaming error response in the format expected by AI SDK
+        const encoder = new TextEncoder()
+        const errorStream = new ReadableStream({
+          start(controller) {
+            const errorData = {
+              type: "error",
+              error: {
+                message: errorMessage,
+              },
+            }
+            controller.enqueue(encoder.encode(`0:${JSON.stringify(errorData)}\n\n`))
+            controller.close()
+          },
+        })
+        
+        return new Response(errorStream, {
+          status: 200,
+          headers: {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+          },
+        })
+      }
       
-      // If streamText fails (e.g., Gateway error), return a streaming error response
-      // The client expects a streaming format, not JSON
-      const errorMessage = streamError instanceof Error 
-        ? (streamError.message.includes("Gateway") || streamError.message.includes("gateway")
-          ? "AI service temporarily unavailable. Please try again in a moment."
-          : streamError.message)
-        : "Failed to process chat request"
-      
-      console.error("[v0] ❌ Returning streaming error response:", errorMessage)
-      
-      // Return a streaming error response in the format expected by AI SDK
-      // The SDK expects Server-Sent Events (SSE) format with specific structure
-      const encoder = new TextEncoder()
-      const errorStream = new ReadableStream({
-        start(controller) {
-          // AI SDK expects error in this format: "0:{"type":"error","error":{"message":"..."}}"
-          const errorData = {
-            type: "error",
-            error: {
-              message: errorMessage,
-            },
-          }
-          // Format: "0:" prefix + JSON data + "\n\n"
-          controller.enqueue(encoder.encode(`0:${JSON.stringify(errorData)}\n\n`))
-          controller.close()
-        },
-      })
-      
-      return new Response(errorStream, {
-        status: 200, // Use 200 to avoid triggering HTTP error handlers
-        headers: {
-          "Content-Type": "text/event-stream",
-          "Cache-Control": "no-cache",
-          "Connection": "keep-alive",
-        },
-      })
+      // continue when fallback succeeds
     }
 
     // Save chat to database - ensure chat exists with correct chat_type

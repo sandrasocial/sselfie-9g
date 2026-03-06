@@ -43,7 +43,22 @@
 - `activation_continue_clicked`
 - `activation_selfie_uploaded`
 - `first_image_generated`
+- `maya_capabilities_opened`
+- `maya_tool_invoked`
 - Success metric: signup-to-first-output time and rate
+
+## Stage 7: Publish + Monetize
+- Entry: chat-created assets + public pages `/p/[username]/[slug]`
+- User intent: publish quickly and convert viewers into members
+- Primary actions: create draft asset in chat, publish personal page, capture lead, route to checkout
+- Data model: `personal_pages`, `personal_page_leads`, `maya_produced_assets`
+- Core events:
+- `maya_asset_draft_created`
+- `maya_asset_draft_updated`
+- `maya_public_page_view`
+- `maya_public_page_lead_captured`
+- `maya_public_page_checkout_clicked`
+- Success metric: asset-to-lead conversion and lead-to-membership checkout rate
 
 ## Maya-first target state
 - Keep routing as compatibility scaffolding.

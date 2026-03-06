@@ -53,7 +53,7 @@ export default function MayaModeToggle({
     // When in SELFIE mode, clicking MY MODEL switches modes. Clicking SELFIE does nothing (already active)
     // Mobile optimized: min 44px touch targets, responsive text sizes
     return (
-      <div className={`inline-flex rounded-lg border border-stone-300 bg-white p-0.5 ${className}`}>
+      <div className={`inline-flex max-w-full rounded-lg border border-stone-300 bg-white p-0.5 ${className}`}>
         <button
           onClick={() => {
             // Only toggle if not already in MY MODEL mode
@@ -70,8 +70,9 @@ export default function MayaModeToggle({
           title="Switch to MY MODEL - Use your trained model for consistent results"
           disabled={!isProMode}
         >
-          <span className="text-[10px] sm:text-xs md:text-sm font-serif font-extralight tracking-[0.2em] uppercase whitespace-nowrap">
-            MY MODEL
+          <span className="text-[9px] sm:text-xs md:text-sm font-serif font-extralight tracking-[0.12em] sm:tracking-[0.2em] uppercase whitespace-nowrap">
+            <span className="sm:hidden">Model</span>
+            <span className="hidden sm:inline">MY MODEL</span>
           </span>
         </button>
         <button
@@ -90,8 +91,9 @@ export default function MayaModeToggle({
           title="Switch to SELFIE - Upload selfies for faster generation"
           disabled={isProMode}
         >
-          <span className="text-[10px] sm:text-xs md:text-sm font-serif font-extralight tracking-[0.2em] uppercase whitespace-nowrap">
-            SELFIE
+          <span className="text-[9px] sm:text-xs md:text-sm font-serif font-extralight tracking-[0.12em] sm:tracking-[0.2em] uppercase whitespace-nowrap">
+            <span className="sm:hidden">Selfie</span>
+            <span className="hidden sm:inline">SELFIE</span>
           </span>
         </button>
       </div>

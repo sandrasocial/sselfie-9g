@@ -9,6 +9,7 @@ import GalleryScreen from "./gallery-screen"
 // Note: B-Roll functionality is accessible via Maya Videos tab (b-roll-screen.tsx kept for reference)
 import AcademyScreen from "./academy-screen"
 import AccountScreen from "./account-screen"
+import StudioHubScreen from "./studio-hub-screen"
 import { FeedPlannerClient } from "../feed-planner" // Use FeedPlannerClient to include wizard logic
 import { InstallPrompt } from "./install-prompt"
 import { InstallButton } from "./install-button"
@@ -51,6 +52,7 @@ import {
   resolveStudioTab,
   type StudioTab,
 } from "@/lib/studio/tab-routing"
+import { scheduleStudioTabUpdate } from "@/lib/studio/tab-sync"
 import {
   shouldApplyBlueprintFallbackRouting,
   shouldRouteMemberToFeedPlannerOnMissingOnboarding,
@@ -385,6 +387,7 @@ export default function SselfieApp({
   }, [tabFromSearchParams])
 
   useEffect(() => {
+    let cancelScheduledTabSync: (() => void) | null = null
     const handlePopState = () => {
       const tabFromQuery = readStudioTabFromSearchParams(new URLSearchParams(window.location.search))
       const tabFromHash = readStudioTabFromHash(window.location.hash)
@@ -398,11 +401,17 @@ export default function SselfieApp({
           isMembership: isMembershipUser,
         })
 
-      setActiveTab((currentTab) => (currentTab === nextTab ? currentTab : nextTab))
+      cancelScheduledTabSync?.()
+      cancelScheduledTabSync = scheduleStudioTabUpdate(() => {
+        setActiveTab((currentTab) => (currentTab === nextTab ? currentTab : nextTab))
+      })
     }
 
     window.addEventListener("popstate", handlePopState)
-    return () => window.removeEventListener("popstate", handlePopState)
+    return () => {
+      cancelScheduledTabSync?.()
+      window.removeEventListener("popstate", handlePopState)
+    }
   }, [initialTab, isMembershipUser])
 
   useEffect(() => {
@@ -731,6 +740,7 @@ export default function SselfieApp({
 
   const tabs = [
     { id: "maya", label: "Maya" },
+    { id: "studio", label: "Studio" },
     { id: "gallery", label: "Gallery" },
     { id: "feed-planner", label: "Feed" },
     { id: "academy", label: "Academy" },
@@ -831,7 +841,8 @@ export default function SselfieApp({
     <div
         className="h-screen relative overflow-hidden prevent-horizontal-scroll"
         style={{
-          background: 'radial-gradient(ellipse 150% 100% at 50% 0%, #1c1c1c 0%, #111111 50%, #0d0d0d 100%)',
+          background:
+            "var(--app-bg-primary), radial-gradient(72% 58% at 16% 4%, var(--app-bg-glow-1) 0%, transparent 72%), radial-gradient(84% 62% at 84% 9%, var(--app-bg-glow-2) 0%, transparent 75%), linear-gradient(180deg, rgba(18,14,11,0.76) 0%, rgba(14,11,9,0.9) 52%, rgba(10,8,7,0.96) 100%)",
           fontFamily:
             '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
           paddingTop: "env(safe-area-inset-top)",
@@ -840,8 +851,8 @@ export default function SselfieApp({
         <ServiceWorkerProvider />
 
       <div className="absolute inset-0">
-        <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full blur-3xl" style={{ background: 'rgba(255,255,255,0.02)' }}></div>
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 rounded-full blur-3xl" style={{ background: 'rgba(255,255,255,0.015)' }}></div>
+        <div className="absolute top-0 left-1/4 h-96 w-96 rounded-full blur-3xl" style={{ background: "var(--app-bg-glow-1)" }} />
+        <div className="absolute bottom-0 right-1/4 h-96 w-96 rounded-full blur-3xl" style={{ background: "var(--app-bg-glow-2)" }} />
       </div>
 
       {isWelcome && creditBalance === 0 && (
@@ -921,12 +932,11 @@ export default function SselfieApp({
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button
-                          className={`flex items-center gap-1.5 px-3 py-1.5 ${DesignClasses.radius.sm} hover:bg-white/10 transition-colors text-xs font-medium text-white`}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 ${DesignClasses.radius.sm} hover:bg-white/10 transition-colors text-xs font-medium text-white min-h-[36px]`}
                           aria-label="My Feed"
                           style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}
                         >
-                          <span>My Feed</span>
-                          <span className="text-[10px] tracking-[0.2em] uppercase text-white/70">Open</span>
+                          <span>Feeds</span>
                         </button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className={`w-56 ${DesignClasses.background.overlay} ${DesignClasses.blur.md} ${DesignClasses.border.stone} shadow-lg`}>
@@ -1071,7 +1081,7 @@ export default function SselfieApp({
                       aria-label="Menu"
                       style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}
                     >
-                      <span className="text-[10px] tracking-[0.2em] uppercase text-white">Menu</span>
+                      <span className="text-base leading-none text-white">≡</span>
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className={`w-64 ${DesignClasses.background.overlay} ${DesignClasses.blur.md} ${DesignClasses.border.stone} shadow-lg`}>
@@ -1186,6 +1196,9 @@ export default function SselfieApp({
                     academyPurchaseProduct={academyPurchaseProduct}
                     firstTimeProductUser={firstTimeProductUser}
                   />
+                )}
+                {activeTab === "studio" && (
+                  <StudioHubScreen />
                 )}
                 {activeTab === "gallery" && (
                   !access.canUseGenerators ? (

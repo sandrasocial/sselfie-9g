@@ -52,6 +52,12 @@ describe("studio tab routing", () => {
     expect(readStudioTabFromSearchParams(params)).toBe("account")
   })
 
+  it("accepts studio hub tab from route inputs", () => {
+    const params = new URLSearchParams("tab=studio")
+    expect(readStudioTabFromSearchParams(params)).toBe("studio")
+    expect(readStudioTabFromHash("#studio")).toBe("studio")
+  })
+
   it("ignores invalid query tabs", () => {
     const params = new URLSearchParams("tab=blueprint")
     expect(readStudioTabFromSearchParams(params)).toBeNull()

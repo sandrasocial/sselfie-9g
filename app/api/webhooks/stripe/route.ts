@@ -141,6 +141,8 @@ export async function POST(request: NextRequest) {
               productTag = "credit-topup"
             } else if (productType === "paid_blueprint") {
               productTag = "paid-blueprint"
+            } else if (productType === "brand_strategy_pack") {
+              productTag = "brand-strategy-pack"
             }
 
             // Track conversion attribution if campaign_id is present
@@ -1248,6 +1250,138 @@ export async function POST(request: NextRequest) {
                   AND stripe_payment_id = ${paymentIdForTopupCredits}
                   AND (product_type IS NULL OR payment_amount_cents IS NULL)
               `
+            }
+          } else if (productType === "brand_strategy_pack") {
+            if (!isPaymentPaid) {
+              console.log(
+                `[v0] ⚠️ Brand strategy pack checkout completed but payment not confirmed (status: '${session.payment_status}').`,
+              )
+            } else {
+              const isTestMode = !event.livemode
+              const paymentIntentId =
+                typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id
+              const paymentIdForStorage = paymentIntentId || session.id
+
+              let paymentAmountCents = session.amount_total || 0
+              let customerId =
+                typeof session.customer === "string" ? session.customer : session.customer?.id || null
+
+              if (paymentIntentId) {
+                try {
+                  const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
+                  paymentAmountCents = paymentIntent.amount || paymentAmountCents
+                  customerId =
+                    typeof paymentIntent.customer === "string"
+                      ? paymentIntent.customer
+                      : paymentIntent.customer?.id || customerId
+                } catch (piError: any) {
+                  console.error(`[v0] Error retrieving payment intent for brand strategy pack:`, piError.message)
+                }
+              }
+
+              if (customerId) {
+                try {
+                  await sql`
+                    INSERT INTO stripe_payments (
+                      stripe_payment_id,
+                      stripe_customer_id,
+                      user_id,
+                      amount_cents,
+                      currency,
+                      status,
+                      payment_type,
+                      product_type,
+                      description,
+                      metadata,
+                      payment_date,
+                      is_test_mode,
+                      created_at,
+                      updated_at
+                    )
+                    VALUES (
+                      ${paymentIdForStorage},
+                      ${customerId},
+                      ${userId},
+                      ${paymentAmountCents},
+                      'usd',
+                      'succeeded',
+                      'brand_strategy_pack',
+                      'brand_strategy_pack',
+                      ${'Brand Strategy Pack'},
+                      ${JSON.stringify(session.metadata || {})},
+                      NOW(),
+                      ${isTestMode},
+                      NOW(),
+                      NOW()
+                    )
+                    ON CONFLICT (stripe_payment_id)
+                    DO UPDATE SET
+                      status = 'succeeded',
+                      updated_at = NOW()
+                  `
+                } catch (paymentError: any) {
+                  console.error(`[v0] Error storing brand strategy pack payment:`, paymentError.message)
+                }
+              }
+
+              await sql`
+                INSERT INTO subscriptions (
+                  user_id,
+                  product_type,
+                  plan,
+                  status,
+                  stripe_customer_id,
+                  created_at,
+                  updated_at
+                )
+                SELECT
+                  ${userId},
+                  'brand_strategy_pack',
+                  'brand_strategy_pack',
+                  'active',
+                  ${customerId},
+                  NOW(),
+                  NOW()
+                WHERE NOT EXISTS (
+                  SELECT 1
+                  FROM subscriptions
+                  WHERE user_id = ${userId}
+                    AND product_type = 'brand_strategy_pack'
+                    AND status = 'active'
+                )
+              `
+
+              await sql`
+                INSERT INTO user_tags (user_id, tag, source, metadata)
+                VALUES (
+                  ${userId},
+                  'bought_brand_strategy_pack',
+                  ${source || 'freebie_upsell'},
+                  ${JSON.stringify({
+                    stripe_session_id: session.id,
+                    stripe_payment_id: paymentIdForStorage,
+                  })}
+                )
+                ON CONFLICT (user_id, tag) DO NOTHING
+              `
+
+              try {
+                await logAnalyticsEvent({
+                  eventName: "brand_strategy_pack_checkout_success",
+                  userId: String(userId),
+                  properties: {
+                    source: source || "freebie_upsell",
+                    product_type: "brand_strategy_pack",
+                    value: paymentAmountCents / 100,
+                    currency: "usd",
+                    stripe_session_id: session.id,
+                    stripe_payment_id: paymentIdForStorage,
+                    is_test_mode: isTestMode,
+                  },
+                })
+              } catch {
+                // best effort only
+              }
             }
           } else if (productType === "paid_blueprint") {
             // ✨ PAID BLUEPRINT: Log payment, tag contact, grant credits and subscription

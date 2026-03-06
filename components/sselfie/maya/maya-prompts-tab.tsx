@@ -1022,65 +1022,67 @@ export default function MayaPromptsTab({
             </div>
             
             {/* Upload/Manage Button with Thumbnails */}
-            <div className="flex flex-col items-end gap-2 shrink-0">
-              {(() => {
-                const allImages = [
-                  ...imageLibrary.selfies,
-                  ...imageLibrary.products,
-                  ...imageLibrary.people,
-                  ...imageLibrary.vibes,
-                ]
-                const hasImages = allImages.length > 0
-                const displayImages = allImages.slice(0, 4) // Show up to 4 thumbnails
-                const remainingCount = allImages.length - 4
+            {onOpenUploadFlow ? (
+              <div className="flex flex-col items-end gap-2 shrink-0">
+                {(() => {
+                  const allImages = [
+                    ...imageLibrary.selfies,
+                    ...imageLibrary.products,
+                    ...imageLibrary.people,
+                    ...imageLibrary.vibes,
+                  ]
+                  const hasImages = allImages.length > 0
+                  const displayImages = allImages.slice(0, 4) // Show up to 4 thumbnails
+                  const remainingCount = allImages.length - 4
 
-                return (
-                  <>
-                    {hasImages && (
-                      <div className="flex items-center gap-2 mb-2">
-                        {displayImages.map((imageUrl, index) => (
-                          <div
-                            key={`${imageUrl}-${index}`}
-                            className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-lg border border-stone-200/60 overflow-hidden bg-stone-100"
-                          >
-                            <img
-                              src={imageUrl || "/placeholder.svg"}
-                              alt={`Image ${index + 1}`}
-                              className="w-full h-full object-cover"
-                              loading="lazy"
-                            />
-                            {index === 3 && remainingCount > 0 && (
-                              <div className="absolute inset-0 bg-stone-950/60 flex items-center justify-center">
-                                <span className="text-[10px] sm:text-xs font-medium text-white">
-                                  +{remainingCount}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <button
-                      onClick={handleOpenUploadFlow}
-                      className={`px-4 py-2 text-xs tracking-[0.1em] uppercase font-light rounded-lg transition-all touch-manipulation active:scale-95 shrink-0 flex items-center gap-2 ${
-                        hasImages
-                          ? "bg-stone-100 text-stone-700 hover:bg-stone-200 border border-stone-200/60"
-                          : "bg-stone-950 text-white hover:bg-stone-800"
-                      }`}
-                    >
-                      {hasImages ? (
-                        <>
-                          <span className="text-[10px] uppercase tracking-[0.16em]">Manage</span>
-                          <span>Manage</span>
-                        </>
-                      ) : (
-                        <span>Upload Images</span>
+                  return (
+                    <>
+                      {hasImages && (
+                        <div className="flex items-center gap-2 mb-2">
+                          {displayImages.map((imageUrl, index) => (
+                            <div
+                              key={`${imageUrl}-${index}`}
+                              className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-lg border border-stone-200/60 overflow-hidden bg-stone-100"
+                            >
+                              <img
+                                src={imageUrl || "/placeholder.svg"}
+                                alt={`Image ${index + 1}`}
+                                className="w-full h-full object-cover"
+                                loading="lazy"
+                              />
+                              {index === 3 && remainingCount > 0 && (
+                                <div className="absolute inset-0 bg-stone-950/60 flex items-center justify-center">
+                                  <span className="text-[10px] sm:text-xs font-medium text-white">
+                                    +{remainingCount}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       )}
-                    </button>
-                  </>
-                )
-              })()}
-            </div>
+                      <button
+                        onClick={handleOpenUploadFlow}
+                        className={`px-4 py-2 text-xs tracking-[0.1em] uppercase font-light rounded-lg transition-all touch-manipulation active:scale-95 shrink-0 flex items-center gap-2 ${
+                          hasImages
+                            ? "bg-stone-100 text-stone-700 hover:bg-stone-200 border border-stone-200/60"
+                            : "bg-stone-950 text-white hover:bg-stone-800"
+                        }`}
+                      >
+                        {hasImages ? (
+                          <>
+                            <span className="text-[10px] uppercase tracking-[0.16em]">Manage</span>
+                            <span>Manage</span>
+                          </>
+                        ) : (
+                          <span>Upload Images</span>
+                        )}
+                      </button>
+                    </>
+                  )
+                })()}
+              </div>
+            ) : null}
           </div>
 
           {/* Search and Sort Controls */}

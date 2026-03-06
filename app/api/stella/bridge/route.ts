@@ -4,6 +4,7 @@ import { Resend } from "resend"
 import { stellaReply, parseStellaMode } from "@/lib/stella/runtime"
 import { getEmailQueue } from "@/lib/stella/email-queue"
 import { renderEmailTemplate } from "@/lib/stella/email-render"
+import { mergeMayaMemoryData } from "@/lib/maya/memory-store"
 
 export async function POST(req: NextRequest) {
   try {
@@ -46,19 +47,12 @@ export async function POST(req: NextRequest) {
       }
 
       const now = new Date().toISOString()
-      const contextPayload = JSON.stringify({
+      const contextData = {
         agent_context_note: contextNote,
         agent_context_updated_at: now,
-      })
+      }
 
-      await sql`
-        INSERT INTO maya_personal_memory (user_id, memory_data)
-        VALUES (${userId}, ${contextPayload}::jsonb)
-        ON CONFLICT (user_id) DO UPDATE
-        SET
-          memory_data = maya_personal_memory.memory_data || ${contextPayload}::jsonb,
-          updated_at = NOW()
-      `
+      await mergeMayaMemoryData(userId, contextData)
 
       console.log(`[Bridge] inject_maya_context: wrote context note for user ${userId}`)
       return NextResponse.json({ success: true })
