@@ -22,12 +22,13 @@ export default function VideoCard({ videoUrl, imageSource, motionPrompt, status,
   const handlePlayPause = (e?: React.MouseEvent | React.TouchEvent) => {
     e?.stopPropagation()
     if (videoRef.current) {
-      if (isPlaying) {
+      if (!videoRef.current.paused) {
         videoRef.current.pause()
       } else {
-        videoRef.current.play()
+        void videoRef.current.play().catch((error) => {
+          console.error("[v0] Error playing video:", error)
+        })
       }
-      setIsPlaying(!isPlaying)
     }
   }
 
@@ -106,13 +107,13 @@ export default function VideoCard({ videoUrl, imageSource, motionPrompt, status,
           loop
           playsInline
           webkit-playsinline="true"
+          muted
           preload="metadata"
           onClick={handlePlayPause}
         />
         <button
           onClick={handlePlayPause}
           onTouchEnd={(e) => {
-            e.preventDefault()
             handlePlayPause(e)
           }}
           className="absolute inset-0 flex items-center justify-center bg-stone-950/20 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300"

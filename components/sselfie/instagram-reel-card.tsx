@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useMemo } from "react"
 
 interface InstagramReelCardProps {
   videoUrl: string
@@ -29,31 +29,38 @@ export default function InstagramReelCard({
   const [videoError, setVideoError] = useState<string | null>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
 
+  const normalizedVideoUrl = useMemo(() => {
+    const raw = (videoUrl || "").trim()
+    if (!raw) return ""
+    if (raw.startsWith("//")) return `https:${raw}`
+    return raw
+  }, [videoUrl])
+
   const handlePlayPause = async (e?: React.MouseEvent | React.TouchEvent) => {
     e?.stopPropagation()
-    e?.preventDefault()
-    
+
     const video = videoRef.current
     if (!video) return
 
     try {
-      if (isPlaying) {
+      if (!video.paused) {
         video.pause()
-      } else {
-        // On mobile, play() returns a Promise that must be handled
-        // This is required for user-initiated playback
-        const playPromise = video.play()
-        
-        if (playPromise !== undefined) {
-          await playPromise
-          // Video started playing successfully
-          setIsPlaying(true)
-          setVideoError(null)
-        }
+        return
       }
+
+      await video.play()
+      setVideoError(null)
     } catch (error: any) {
-      console.error("[v0] Error playing video:", error)
-      setVideoError(error?.message || "Failed to play video")
+      // Retry once with muted mode to satisfy strict autoplay policies on mobile browsers.
+      try {
+        video.muted = true
+        setIsMuted(true)
+        await video.play()
+        setVideoError(null)
+      } catch (retryError: any) {
+        console.error("[v0] Error playing video:", retryError || error)
+        setVideoError((retryError || error)?.message || "Failed to play video")
+      }
     }
   }
 
@@ -75,18 +82,12 @@ export default function InstagramReelCard({
     setShowMenu(false)
 
     try {
-      console.log("[v0] Starting video download...")
-
-      // Fetch the video as a blob
-      const response = await fetch(videoUrl)
+      const response = await fetch(normalizedVideoUrl)
       if (!response.ok) throw new Error("Failed to fetch video")
 
       const blob = await response.blob()
-      console.log("[v0] Video blob fetched, size:", blob.size)
 
-      // Check if we're on mobile and can use the share API (saves to camera roll on iOS)
       if (navigator.share && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-        console.log("[v0] Mobile device detected, using share API...")
         try {
           const file = new File([blob], `sselfie-reel-${Date.now()}.mp4`, { type: "video/mp4" })
           await navigator.share({
@@ -94,17 +95,13 @@ export default function InstagramReelCard({
             title: "sselfie Video",
             text: motionPrompt || "Check out this video from sselfie!",
           })
-          console.log("[v0] ✅ Video shared successfully (will save to camera roll if user selects save)")
           setIsDownloading(false)
           return
-        } catch (shareError: any) {
-          // User cancelled or share failed - fall through to download
-          console.log("[v0] Share API failed or cancelled:", shareError?.message)
+        } catch {
+          // Fall through to direct download.
         }
       }
 
-      // Fallback: create download link (saves to Downloads folder)
-      console.log("[v0] Using download link method...")
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement("a")
       a.href = url
@@ -119,45 +116,33 @@ export default function InstagramReelCard({
         document.body.removeChild(a)
         setIsDownloading(false)
       }, 100)
-
-      console.log("[v0] ✅ Video downloaded to files")
     } catch (error) {
       console.error("[v0] Error downloading video:", error)
       setIsDownloading(false)
 
-      // Last resort fallback - direct link
       const a = document.createElement("a")
-      a.href = videoUrl
+      a.href = normalizedVideoUrl
       a.download = `sselfie-reel-${Date.now()}.mp4`
       a.target = "_blank"
       a.click()
     }
   }
 
-  // Reset state when video URL changes and validate URL
   useEffect(() => {
     setIsVideoReady(false)
     setVideoError(null)
     setIsPlaying(false)
-    
-    // Validate video URL
-    if (!videoUrl || (!videoUrl.startsWith('http://') && !videoUrl.startsWith('https://'))) {
-      console.error("[v0] Invalid video URL:", videoUrl)
+
+    if (!normalizedVideoUrl || (!normalizedVideoUrl.startsWith("http://") && !normalizedVideoUrl.startsWith("https://"))) {
+      console.error("[v0] Invalid video URL:", normalizedVideoUrl)
       setVideoError("Invalid video URL")
       return
     }
-    
-    // Ensure video element has the source set correctly
-    const video = videoRef.current
-    if (video && videoUrl) {
-      // Only update if the src has changed
-      if (video.src !== videoUrl) {
-        video.src = videoUrl
-        // Load the video to start fetching metadata
-        video.load()
-      }
+
+    if (videoRef.current) {
+      videoRef.current.load()
     }
-  }, [videoUrl])
+  }, [normalizedVideoUrl])
 
   useEffect(() => {
     const video = videoRef.current
@@ -170,41 +155,36 @@ export default function InstagramReelCard({
     const handlePause = () => setIsPlaying(false)
     const handleTimeUpdate = () => {
       if (video.duration) {
-        const progress = (video.currentTime / video.duration) * 100
-        setProgress(progress)
+        const nextProgress = (video.currentTime / video.duration) * 100
+        setProgress(nextProgress)
       }
     }
     const handleLoadedMetadata = () => {
-      console.log("[v0] Video metadata loaded, readyState:", video.readyState, "src:", video.src?.substring(0, 50))
       setIsVideoReady(true)
       setVideoError(null)
     }
     const handleLoadedData = () => {
-      console.log("[v0] Video data loaded, readyState:", video.readyState)
       setIsVideoReady(video.readyState >= 2)
     }
     const handleCanPlay = () => {
-      console.log("[v0] Video can play, readyState:", video.readyState)
       setIsVideoReady(true)
       setVideoError(null)
     }
     const handleError = (e: Event) => {
-      const videoError = (e.target as HTMLVideoElement).error
-      console.error("[v0] Video error:", videoError, "src:", (e.target as HTMLVideoElement).src)
-      
-      if (videoError) {
+      const mediaError = (e.target as HTMLVideoElement).error
+      if (mediaError) {
         let errorMessage = "Video failed to load"
-        switch (videoError.code) {
-          case videoError.MEDIA_ERR_ABORTED:
+        switch (mediaError.code) {
+          case mediaError.MEDIA_ERR_ABORTED:
             errorMessage = "Video loading was aborted"
             break
-          case videoError.MEDIA_ERR_NETWORK:
+          case mediaError.MEDIA_ERR_NETWORK:
             errorMessage = "Network error while loading video"
             break
-          case videoError.MEDIA_ERR_DECODE:
+          case mediaError.MEDIA_ERR_DECODE:
             errorMessage = "Video decoding error"
             break
-          case videoError.MEDIA_ERR_SRC_NOT_SUPPORTED:
+          case mediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
             errorMessage = "Video format not supported"
             break
         }
@@ -240,31 +220,18 @@ export default function InstagramReelCard({
 
       <video
         ref={videoRef}
-        src={videoUrl}
-        className="w-full h-full object-cover touch-none"
+        src={normalizedVideoUrl}
+        className="w-full h-full object-cover"
         loop
         playsInline
         webkit-playsinline="true"
         muted={isMuted}
         preload="metadata"
         onClick={handlePlayPause}
-        onTouchStart={(e) => {
-          // Use onTouchStart for better mobile responsiveness
-          e.stopPropagation()
-          handlePlayPause(e)
-        }}
+        onTouchEnd={handlePlayPause}
         onError={(e) => {
           const video = e.currentTarget
           const error = video.error
-          console.error("[v0] Video element error:", {
-            code: error?.code,
-            message: error?.message,
-            src: video.src,
-            currentSrc: video.currentSrc,
-            networkState: video.networkState,
-            readyState: video.readyState,
-            videoUrl: videoUrl,
-          })
           if (error) {
             let errorMessage = "Video failed to load"
             switch (error.code) {
@@ -283,7 +250,6 @@ export default function InstagramReelCard({
             }
             setVideoError(errorMessage)
           } else {
-            // Error object might not be accessible, try to infer from networkState
             if (video.networkState === 3) {
               setVideoError("Network error while loading video")
             } else if (video.networkState === 4) {
@@ -314,16 +280,11 @@ export default function InstagramReelCard({
         </div>
       )}
 
-      {!isPlaying && (
-        <div className="absolute inset-0 flex items-center justify-center bg-stone-950/20 z-10 touch-none">
+      {!isPlaying && isVideoReady && (
+        <div className="absolute inset-0 flex items-center justify-center bg-stone-950/20 z-10">
           <button
             onClick={handlePlayPause}
-            onTouchStart={(e) => {
-              // Use onTouchStart for better mobile responsiveness
-              e.stopPropagation()
-              e.preventDefault()
-              handlePlayPause(e)
-            }}
+            onTouchEnd={handlePlayPause}
             className="w-16 h-16 bg-[rgba(255,255,255,0.12)] backdrop-blur-sm rounded-full border border-[rgba(255,255,255,0.2)] flex items-center justify-center hover:scale-110 active:scale-95 transition-transform touch-manipulation"
             aria-label="Play video"
             type="button"
@@ -383,7 +344,7 @@ export default function InstagramReelCard({
             <div className="absolute right-full mr-2 bottom-0 bg-[#111111] rounded-xl shadow-2xl border border-[rgba(255,255,255,0.12)] py-2 w-48">
               <button
                 onClick={() => {
-                  window.open(videoUrl, "_blank")
+                  window.open(normalizedVideoUrl, "_blank")
                   setShowMenu(false)
                 }}
                 className="w-full px-4 py-2.5 text-left text-sm text-[#f5f5f5] hover:bg-[rgba(255,255,255,0.08)] transition-colors"

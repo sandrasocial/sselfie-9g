@@ -71,7 +71,9 @@ export function InstagramReelPreview({
   useEffect(() => {
     if (videoRef.current) {
       if (isPlaying) {
-        videoRef.current.play()
+        void videoRef.current.play().catch((error) => {
+          console.error("[v0] Preview video play error:", error)
+        })
       } else {
         videoRef.current.pause()
       }

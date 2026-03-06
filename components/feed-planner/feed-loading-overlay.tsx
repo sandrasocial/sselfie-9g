@@ -62,30 +62,30 @@ export default function FeedLoadingOverlay({
       </div>
 
       {/* Loading Overlay */}
-      <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center">
+      <div className="absolute inset-0 bg-[rgba(10,10,10,0.78)] backdrop-blur-xl flex items-center justify-center">
         <div className="text-center px-8 max-w-md">
           <div className="mb-12 relative w-40 h-40 mx-auto">
             <div className="absolute inset-0 flex items-center justify-center">
               <div
-                className="w-40 h-40 rounded-full border-2 border-transparent border-t-stone-950 animate-spin"
+                className="w-40 h-40 rounded-full border-2 border-transparent border-t-white animate-spin"
                 style={{ animationDuration: "2s" }}
               ></div>
             </div>
             <div className="absolute inset-0 flex items-center justify-center">
               <div
-                className="w-32 h-32 rounded-full border-2 border-transparent border-b-stone-400 animate-spin"
+                className="w-32 h-32 rounded-full border-2 border-transparent border-b-[#d8c2a7] animate-spin"
                 style={{ animationDuration: "1.5s", animationDirection: "reverse" }}
               ></div>
             </div>
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="w-20 h-20 flex items-center justify-center">
-                <img src="/icon-192.png" alt="SSELFIE Logo" className="w-full h-full object-contain" />
+                <img src="/brand/sselfie-logo-white-transparent.png" alt="SSELFIE Logo" className="w-full h-full object-contain" />
               </div>
             </div>
           </div>
 
           <div className="space-y-6">
-            <h2 className="text-stone-950 text-2xl font-serif font-extralight tracking-[0.3em] uppercase">
+            <h2 className="text-white text-2xl font-serif font-extralight tracking-[0.3em] uppercase">
               {feedId ? "Maya is creating your photos" : "Loading your feed"}
             </h2>
 
@@ -93,32 +93,32 @@ export default function FeedLoadingOverlay({
               <>
                 <div className="space-y-4 w-full max-w-sm mx-auto">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-light text-stone-600">Progress</span>
-                    <span className="text-sm font-medium text-stone-900">
+                    <span className="text-sm font-light text-[#e5e5e5]">Progress</span>
+                    <span className="text-sm font-medium text-white">
                       {readyPosts} of {totalPosts} complete
                     </span>
                   </div>
 
-                  <div className="w-full bg-stone-200 rounded-full h-2.5 overflow-hidden">
+                  <div className="w-full bg-[rgba(255,255,255,0.18)] rounded-full h-2.5 overflow-hidden">
                     <div
-                      className="bg-stone-900 h-2.5 rounded-full transition-all duration-500 ease-out"
+                      className="bg-white h-2.5 rounded-full transition-all duration-500 ease-out"
                       style={{ width: `${overallProgress}%` }}
                     />
                   </div>
 
                   <div className="flex items-center gap-2 justify-center">
-                    <span className="inline-flex w-3 h-3 rounded-full border border-stone-400 border-t-stone-700 animate-spin" />
-                    <p className="text-xs font-light text-stone-500">
+                    <span className="inline-flex w-3 h-3 rounded-full border border-[#e5e5e5]/70 border-t-white animate-spin" />
+                    <p className="text-xs font-light text-[#e5e5e5]">
                       {getProgressMessage()}
                     </p>
                     {isValidating && (
-                      <span className="text-xs text-stone-400 ml-2">(checking...)</span>
+                      <span className="text-xs text-[#cfcfcf] ml-2">(checking...)</span>
                     )}
                   </div>
                   
                   {isTakingLonger && (
-                    <div className="mt-6 pt-6 border-t border-stone-200">
-                      <p className="text-sm font-light text-stone-600 leading-relaxed">
+                    <div className="mt-6 pt-6 border-t border-[rgba(255,255,255,0.2)]">
+                      <p className="text-sm font-light text-[#e5e5e5] leading-relaxed">
                         This is taking a bit longer than expected. Your photos are being crafted with high-quality details.
                       </p>
                     </div>

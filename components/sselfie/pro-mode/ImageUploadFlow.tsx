@@ -53,6 +53,26 @@ interface ImageUploadFlowProps {
   onStartCreating?: (library: ImageLibrary) => void
 }
 
+const ThemeColors = {
+  ...Colors,
+  primary: '#FFFFFF',
+  secondary: '#E5E5E5',
+  tertiary: '#CFCFCF',
+  background: 'transparent',
+  backgroundAlt: 'transparent',
+  surface: '#0A0A0A',
+  accent: '#E5E5E5',
+  accentLight: '#F5F5F5',
+  border: 'rgba(255, 255, 255, 0.2)',
+  borderLight: 'rgba(255, 255, 255, 0.12)',
+  textPrimary: '#FFFFFF',
+  textSecondary: 'rgba(229, 229, 229, 0.85)',
+  textTertiary: 'rgba(229, 229, 229, 0.7)',
+  textMuted: 'rgba(229, 229, 229, 0.5)',
+  hover: 'rgba(255, 255, 255, 0.08)',
+  active: 'rgba(255, 255, 255, 0.12)',
+} as const
+
 export default function ImageUploadFlow({
   onComplete,
   onCancel,
@@ -393,7 +413,7 @@ export default function ImageUploadFlow({
               fontFamily: Typography.ui.fontFamily,
               fontSize: Typography.ui.sizes.md,
               fontWeight: Typography.ui.weights.medium,
-              color: Colors.textPrimary,
+              color: ThemeColors.textPrimary,
             }}
           >
             {labelFn(images.length)}
@@ -404,21 +424,21 @@ export default function ImageUploadFlow({
               fontFamily: Typography.ui.fontFamily,
               fontSize: Typography.ui.sizes.sm,
               fontWeight: Typography.ui.weights.medium,
-              color: Colors.primary,
+              color: ThemeColors.primary,
               backgroundColor: 'transparent',
-              border: `1px solid ${Colors.border}`,
+              border: `1px solid ${ThemeColors.border}`,
               padding: '6px 16px',
               borderRadius: BorderRadius.buttonSm,
               cursor: 'pointer',
               transition: 'all 0.2s ease',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = Colors.hover
-              e.currentTarget.style.borderColor = Colors.primary
+              e.currentTarget.style.backgroundColor = ThemeColors.hover
+              e.currentTarget.style.borderColor = ThemeColors.primary
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = 'transparent'
-              e.currentTarget.style.borderColor = Colors.border
+              e.currentTarget.style.borderColor = ThemeColors.border
             }}
             className="hover:opacity-90"
           >
@@ -465,7 +485,7 @@ export default function ImageUploadFlow({
                 fontFamily: Typography.headers.fontFamily,
                 fontSize: Typography.headers.sizes.lg,
                 fontWeight: Typography.headers.weights.medium,
-                color: Colors.textPrimary,
+                color: ThemeColors.textPrimary,
                 lineHeight: Typography.headers.lineHeight,
                 letterSpacing: Typography.headers.letterSpacing,
               }}
@@ -477,7 +497,7 @@ export default function ImageUploadFlow({
                 fontFamily: Typography.body.fontFamily,
                 fontSize: Typography.body.sizes.md,
                 fontWeight: Typography.body.weights.regular,
-                color: Colors.textSecondary,
+                color: ThemeColors.textSecondary,
                 lineHeight: Typography.body.lineHeight,
               }}
             >
@@ -489,7 +509,7 @@ export default function ImageUploadFlow({
           <div
             style={{
               height: '1px',
-              backgroundColor: Colors.border,
+              backgroundColor: ThemeColors.border,
               width: '100%',
             }}
           />
@@ -513,7 +533,7 @@ export default function ImageUploadFlow({
                   <div
                     style={{
                       height: '1px',
-                      backgroundColor: Colors.border,
+                      backgroundColor: ThemeColors.border,
                       width: '100%',
                     }}
                   />
@@ -534,7 +554,7 @@ export default function ImageUploadFlow({
                   <div
                     style={{
                       height: '1px',
-                      backgroundColor: Colors.border,
+                      backgroundColor: ThemeColors.border,
                       width: '100%',
                     }}
                   />
@@ -557,7 +577,7 @@ export default function ImageUploadFlow({
                   <div
                     style={{
                       height: '1px',
-                      backgroundColor: Colors.border,
+                      backgroundColor: ThemeColors.border,
                       width: '100%',
                     }}
                   />
@@ -578,7 +598,7 @@ export default function ImageUploadFlow({
               <div
                 style={{
                   height: '1px',
-                  backgroundColor: Colors.border,
+                  backgroundColor: ThemeColors.border,
                   width: '100%',
                 }}
               />
@@ -588,7 +608,7 @@ export default function ImageUploadFlow({
                     fontFamily: Typography.ui.fontFamily,
                     fontSize: Typography.ui.sizes.sm,
                     fontWeight: Typography.ui.weights.medium,
-                    color: Colors.textPrimary,
+                    color: ThemeColors.textPrimary,
                     textTransform: 'uppercase',
                     letterSpacing: '0.05em',
                   }}
@@ -600,7 +620,7 @@ export default function ImageUploadFlow({
                     fontFamily: Typography.body.fontFamily,
                     fontSize: Typography.body.sizes.md,
                     fontWeight: Typography.body.weights.regular,
-                    color: Colors.textSecondary,
+                    color: ThemeColors.textSecondary,
                     lineHeight: Typography.body.lineHeight,
                   }}
                 >
@@ -620,8 +640,8 @@ export default function ImageUploadFlow({
               fontSize: 'clamp(14px, 3.5vw, 16px)',
               fontWeight: Typography.ui.weights.medium,
               letterSpacing: '0.5px',
-              color: Colors.surface,
-              backgroundColor: Colors.primary,
+              color: ThemeColors.surface,
+              backgroundColor: ThemeColors.primary,
               padding: 'clamp(12px, 3vw, 14px) clamp(24px, 6vw, 32px)',
               minHeight: '44px',
               borderRadius: BorderRadius.button,
@@ -630,10 +650,10 @@ export default function ImageUploadFlow({
               transition: 'all 0.2s ease',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = Colors.accent
+              e.currentTarget.style.backgroundColor = ThemeColors.accent
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = Colors.primary
+              e.currentTarget.style.backgroundColor = ThemeColors.primary
             }}
           >
             {ButtonLabels.startCreating}
@@ -659,7 +679,7 @@ export default function ImageUploadFlow({
               fontFamily: Typography.headers.fontFamily,
               fontSize: 'clamp(24px, 6vw, 32px)',
               fontWeight: Typography.headers.weights.medium,
-              color: Colors.textPrimary,
+              color: ThemeColors.textPrimary,
               lineHeight: Typography.headers.lineHeight,
               letterSpacing: Typography.headers.letterSpacing,
             }}
@@ -673,7 +693,7 @@ export default function ImageUploadFlow({
               fontFamily: Typography.subheaders.fontFamily,
               fontSize: 'clamp(18px, 4.5vw, 22px)',
               fontWeight: Typography.subheaders.weights.regular,
-              color: Colors.accentLight,
+              color: ThemeColors.accentLight,
               lineHeight: Typography.subheaders.lineHeight,
               letterSpacing: Typography.subheaders.letterSpacing,
             }}
@@ -687,7 +707,7 @@ export default function ImageUploadFlow({
               fontFamily: Typography.body.fontFamily,
               fontSize: 'clamp(14px, 3.5vw, 16px)',
               fontWeight: Typography.body.weights.light,
-              color: Colors.textSecondary,
+              color: ThemeColors.textSecondary,
               lineHeight: Typography.body.lineHeight,
               letterSpacing: Typography.body.letterSpacing,
               maxWidth: '500px',
@@ -708,8 +728,8 @@ export default function ImageUploadFlow({
                 fontSize: 'clamp(14px, 3.5vw, 16px)',
                 fontWeight: Typography.ui.weights.medium,
                 letterSpacing: '0.5px',
-                color: Colors.surface,
-                backgroundColor: Colors.primary,
+                color: ThemeColors.surface,
+                backgroundColor: ThemeColors.primary,
                 padding: 'clamp(12px, 3vw, 14px) clamp(24px, 6vw, 32px)',
                 minHeight: '44px',
                 borderRadius: BorderRadius.button,
@@ -718,10 +738,10 @@ export default function ImageUploadFlow({
                 transition: 'all 0.2s ease',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = Colors.accent
+                e.currentTarget.style.backgroundColor = ThemeColors.accent
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = Colors.primary
+                e.currentTarget.style.backgroundColor = ThemeColors.primary
               }}
             >
               Add Photos
@@ -736,7 +756,7 @@ export default function ImageUploadFlow({
                 fontFamily: Typography.ui.fontFamily,
                 fontSize: Typography.ui.sizes.sm,
                 fontWeight: Typography.ui.weights.regular,
-                color: Colors.textSecondary,
+                color: ThemeColors.textSecondary,
                 backgroundColor: 'transparent',
                 border: 'none',
                 cursor: 'pointer',
@@ -792,7 +812,7 @@ export default function ImageUploadFlow({
               fontFamily: Typography.ui.fontFamily,
               fontSize: Typography.ui.sizes.sm,
               fontWeight: Typography.ui.weights.regular,
-              color: Colors.textSecondary,
+              color: ThemeColors.textSecondary,
               backgroundColor: 'transparent',
               border: 'none',
               cursor: 'pointer',
@@ -811,7 +831,7 @@ export default function ImageUploadFlow({
                 fontFamily: Typography.headers.fontFamily,
                 fontSize: Typography.headers.sizes.lg,
                 fontWeight: Typography.headers.weights.medium,
-                color: Colors.textPrimary,
+                color: ThemeColors.textPrimary,
                 lineHeight: Typography.headers.lineHeight,
                 letterSpacing: Typography.headers.letterSpacing,
               }}
@@ -826,7 +846,7 @@ export default function ImageUploadFlow({
                   fontFamily: Typography.ui.fontFamily,
                   fontSize: Typography.ui.sizes.xs,
                   fontWeight: Typography.ui.weights.medium,
-                  color: Colors.textSecondary,
+                  color: ThemeColors.textSecondary,
                   textTransform: 'uppercase',
                   letterSpacing: '0.05em',
                 }}
@@ -840,7 +860,7 @@ export default function ImageUploadFlow({
           <div
             style={{
               height: '1px',
-              backgroundColor: Colors.border,
+              backgroundColor: ThemeColors.border,
               width: '100%',
             }}
           />
@@ -851,7 +871,7 @@ export default function ImageUploadFlow({
               fontFamily: Typography.body.fontFamily,
               fontSize: Typography.body.sizes.md,
               fontWeight: Typography.body.weights.regular,
-              color: Colors.textSecondary,
+              color: ThemeColors.textSecondary,
               lineHeight: Typography.body.lineHeight,
               letterSpacing: Typography.body.letterSpacing,
             }}
@@ -870,23 +890,23 @@ export default function ImageUploadFlow({
               fontSize: 'clamp(14px, 3.5vw, 16px)',
               fontWeight: Typography.ui.weights.medium,
               letterSpacing: '0.01em',
-              color: Colors.primary,
+              color: ThemeColors.primary,
               backgroundColor: 'transparent',
               padding: 'clamp(12px, 3vw, 14px) clamp(20px, 5vw, 24px)',
               minHeight: '44px',
               borderRadius: BorderRadius.button,
-              border: `1px solid ${Colors.border}`,
+              border: `1px solid ${ThemeColors.border}`,
               cursor: 'pointer',
               transition: 'all 0.2s ease',
               flex: 1,
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = Colors.hover
-              e.currentTarget.style.borderColor = Colors.primary
+              e.currentTarget.style.backgroundColor = ThemeColors.hover
+              e.currentTarget.style.borderColor = ThemeColors.primary
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = 'transparent'
-              e.currentTarget.style.borderColor = Colors.border
+              e.currentTarget.style.borderColor = ThemeColors.border
             }}
           >
             {ButtonLabels.chooseFromGallery}
@@ -902,8 +922,8 @@ export default function ImageUploadFlow({
               fontSize: 'clamp(14px, 3.5vw, 16px)',
               fontWeight: Typography.ui.weights.medium,
               letterSpacing: '0.01em',
-              color: Colors.surface,
-              backgroundColor: isUploading ? Colors.border : Colors.primary,
+              color: ThemeColors.surface,
+              backgroundColor: isUploading ? ThemeColors.border : ThemeColors.primary,
               padding: 'clamp(12px, 3vw, 14px) clamp(20px, 5vw, 24px)',
               minHeight: '44px',
               borderRadius: BorderRadius.button,
@@ -915,12 +935,12 @@ export default function ImageUploadFlow({
             }}
             onMouseEnter={(e) => {
               if (!isUploading) {
-                e.currentTarget.style.backgroundColor = Colors.accent
+                e.currentTarget.style.backgroundColor = ThemeColors.accent
               }
             }}
             onMouseLeave={(e) => {
               if (!isUploading) {
-                e.currentTarget.style.backgroundColor = Colors.primary
+                e.currentTarget.style.backgroundColor = ThemeColors.primary
               }
             }}
           >
@@ -983,7 +1003,7 @@ export default function ImageUploadFlow({
               <div
                 style={{
                   height: '1px',
-                  backgroundColor: Colors.border,
+                  backgroundColor: ThemeColors.border,
                   width: '100%',
                 }}
               />
@@ -993,7 +1013,7 @@ export default function ImageUploadFlow({
                     fontFamily: Typography.ui.fontFamily,
                     fontSize: Typography.ui.sizes.sm,
                     fontWeight: Typography.ui.weights.medium,
-                    color: Colors.textPrimary,
+                    color: ThemeColors.textPrimary,
                   }}
                 >
                   {UILabels.selfies(library.selfies.length)}
@@ -1026,8 +1046,8 @@ export default function ImageUploadFlow({
                 fontSize: Typography.ui.sizes.md,
                 fontWeight: Typography.ui.weights.medium,
                 letterSpacing: '0.5px',
-                color: Colors.surface,
-                backgroundColor: (library.selfies.length > 0 || editCategory === 'selfies') ? Colors.primary : Colors.border,
+                color: ThemeColors.surface,
+                backgroundColor: (library.selfies.length > 0 || editCategory === 'selfies') ? ThemeColors.primary : ThemeColors.border,
                 padding: '12px 32px',
                 borderRadius: BorderRadius.button,
                 border: 'none',
@@ -1037,12 +1057,12 @@ export default function ImageUploadFlow({
               }}
               onMouseEnter={(e) => {
                 if (library.selfies.length > 0 || editCategory === 'selfies') {
-                  e.currentTarget.style.backgroundColor = Colors.accent
+                  e.currentTarget.style.backgroundColor = ThemeColors.accent
                 }
               }}
               onMouseLeave={(e) => {
                 if (library.selfies.length > 0 || editCategory === 'selfies') {
-                  e.currentTarget.style.backgroundColor = Colors.primary
+                  e.currentTarget.style.backgroundColor = ThemeColors.primary
                 }
               }}
               className="hover:opacity-90"
@@ -1102,7 +1122,7 @@ export default function ImageUploadFlow({
               fontFamily: Typography.headers.fontFamily,
               fontSize: Typography.headers.sizes.md,
               fontWeight: Typography.headers.weights.medium,
-              color: Colors.textPrimary,
+              color: ThemeColors.textPrimary,
               lineHeight: Typography.headers.lineHeight,
               letterSpacing: Typography.headers.letterSpacing,
             }}
@@ -1117,7 +1137,7 @@ export default function ImageUploadFlow({
                 fontFamily: Typography.ui.fontFamily,
                 fontSize: Typography.ui.sizes.xs,
                 fontWeight: Typography.ui.weights.medium,
-                color: Colors.textSecondary,
+                color: ThemeColors.textSecondary,
                 textTransform: 'uppercase',
                 letterSpacing: '0.05em',
               }}
@@ -1131,7 +1151,7 @@ export default function ImageUploadFlow({
         <div
           style={{
             height: '1px',
-            backgroundColor: Colors.border,
+            backgroundColor: ThemeColors.border,
             width: '100%',
           }}
         />
@@ -1142,7 +1162,7 @@ export default function ImageUploadFlow({
             fontFamily: Typography.body.fontFamily,
             fontSize: Typography.body.sizes.md,
             fontWeight: Typography.body.weights.regular,
-            color: Colors.textSecondary,
+            color: ThemeColors.textSecondary,
             lineHeight: Typography.body.lineHeight,
             letterSpacing: Typography.body.letterSpacing,
           }}
@@ -1160,22 +1180,22 @@ export default function ImageUploadFlow({
               fontSize: Typography.ui.sizes.md,
               fontWeight: Typography.ui.weights.medium,
               letterSpacing: '0.01em',
-              color: Colors.primary,
+              color: ThemeColors.primary,
               backgroundColor: 'transparent',
               padding: '12px 24px',
               borderRadius: BorderRadius.button,
-              border: `1px solid ${Colors.border}`,
+              border: `1px solid ${ThemeColors.border}`,
               cursor: 'pointer',
               transition: 'all 0.2s ease',
               flex: 1,
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = Colors.hover
-              e.currentTarget.style.borderColor = Colors.primary
+              e.currentTarget.style.backgroundColor = ThemeColors.hover
+              e.currentTarget.style.borderColor = ThemeColors.primary
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = 'transparent'
-              e.currentTarget.style.borderColor = Colors.border
+              e.currentTarget.style.borderColor = ThemeColors.border
             }}
             className="hover:opacity-90"
           >
@@ -1191,8 +1211,8 @@ export default function ImageUploadFlow({
               fontSize: Typography.ui.sizes.md,
               fontWeight: Typography.ui.weights.medium,
               letterSpacing: '0.01em',
-              color: Colors.surface,
-              backgroundColor: isUploading ? Colors.border : Colors.primary,
+              color: ThemeColors.surface,
+              backgroundColor: isUploading ? ThemeColors.border : ThemeColors.primary,
               padding: '12px 24px',
               borderRadius: BorderRadius.button,
               border: 'none',
@@ -1203,12 +1223,12 @@ export default function ImageUploadFlow({
             }}
             onMouseEnter={(e) => {
               if (!isUploading) {
-                e.currentTarget.style.backgroundColor = Colors.accent
+                e.currentTarget.style.backgroundColor = ThemeColors.accent
               }
             }}
             onMouseLeave={(e) => {
               if (!isUploading) {
-                e.currentTarget.style.backgroundColor = Colors.primary
+                e.currentTarget.style.backgroundColor = ThemeColors.primary
               }
             }}
             className="hover:opacity-90"
@@ -1264,7 +1284,7 @@ export default function ImageUploadFlow({
                 fontFamily: Typography.ui.fontFamily,
                 fontSize: Typography.ui.sizes.sm,
                 fontWeight: Typography.ui.weights.medium,
-                color: Colors.textPrimary,
+                color: ThemeColors.textPrimary,
               }}
             >
               {labelFn(count)}
@@ -1328,7 +1348,7 @@ export default function ImageUploadFlow({
               fontFamily: Typography.ui.fontFamily,
               fontSize: Typography.ui.sizes.sm,
               fontWeight: Typography.ui.weights.regular,
-              color: Colors.textSecondary,
+              color: ThemeColors.textSecondary,
               backgroundColor: 'transparent',
               border: 'none',
               cursor: 'pointer',
@@ -1347,7 +1367,7 @@ export default function ImageUploadFlow({
                 <div
                   style={{
                     height: '1px',
-                    backgroundColor: Colors.border,
+                    backgroundColor: ThemeColors.border,
                     width: '100%',
                     marginBottom: '3rem',
                   }}
@@ -1388,8 +1408,8 @@ export default function ImageUploadFlow({
                 fontSize: Typography.ui.sizes.md,
                 fontWeight: Typography.ui.weights.medium,
                 letterSpacing: '0.5px',
-                color: Colors.surface,
-                backgroundColor: Colors.primary,
+                color: ThemeColors.surface,
+                backgroundColor: ThemeColors.primary,
                 padding: '12px 32px',
                 borderRadius: BorderRadius.button,
                 border: 'none',
@@ -1397,10 +1417,10 @@ export default function ImageUploadFlow({
                 transition: 'all 0.2s ease',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = Colors.accent
+                e.currentTarget.style.backgroundColor = ThemeColors.accent
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = Colors.primary
+                e.currentTarget.style.backgroundColor = ThemeColors.primary
               }}
               className="hover:opacity-90"
             >
@@ -1441,7 +1461,7 @@ export default function ImageUploadFlow({
               fontFamily: Typography.ui.fontFamily,
               fontSize: Typography.ui.sizes.sm,
               fontWeight: Typography.ui.weights.regular,
-              color: Colors.textSecondary,
+              color: ThemeColors.textSecondary,
               backgroundColor: 'transparent',
               border: 'none',
               cursor: 'pointer',
@@ -1460,7 +1480,7 @@ export default function ImageUploadFlow({
                 fontFamily: Typography.headers.fontFamily,
                 fontSize: Typography.headers.sizes.lg,
                 fontWeight: Typography.headers.weights.medium,
-                color: Colors.textPrimary,
+                color: ThemeColors.textPrimary,
                 lineHeight: Typography.headers.lineHeight,
                 letterSpacing: Typography.headers.letterSpacing,
               }}
@@ -1473,7 +1493,7 @@ export default function ImageUploadFlow({
           <div
             style={{
               height: '1px',
-              backgroundColor: Colors.border,
+              backgroundColor: ThemeColors.border,
               width: '100%',
             }}
           />
@@ -1486,7 +1506,7 @@ export default function ImageUploadFlow({
                 fontFamily: Typography.ui.fontFamily,
                 fontSize: Typography.ui.sizes.sm,
                 fontWeight: Typography.ui.weights.medium,
-                color: Colors.textPrimary,
+                color: ThemeColors.textPrimary,
               }}
             >
               Describe your creative intent
@@ -1501,9 +1521,9 @@ export default function ImageUploadFlow({
                 fontFamily: Typography.body.fontFamily,
                 fontSize: Typography.body.sizes.md,
                 fontWeight: Typography.body.weights.regular,
-                color: Colors.textPrimary,
-                backgroundColor: Colors.surface,
-                border: `1px solid ${Colors.border}`,
+                color: ThemeColors.textPrimary,
+                backgroundColor: ThemeColors.surface,
+                border: `1px solid ${ThemeColors.border}`,
                 borderRadius: BorderRadius.input,
                 padding: '12px 16px',
                 width: '100%',
@@ -1513,10 +1533,10 @@ export default function ImageUploadFlow({
                 transition: 'border-color 0.2s ease',
               }}
               onFocus={(e) => {
-                e.currentTarget.style.borderColor = Colors.primary
+                e.currentTarget.style.borderColor = ThemeColors.primary
               }}
               onBlur={(e) => {
-                e.currentTarget.style.borderColor = Colors.border
+                e.currentTarget.style.borderColor = ThemeColors.border
               }}
               className="focus:outline-none"
             />
@@ -1525,7 +1545,7 @@ export default function ImageUploadFlow({
                 fontFamily: Typography.body.fontFamily,
                 fontSize: Typography.body.sizes.sm,
                 fontWeight: Typography.body.weights.light,
-                color: Colors.textTertiary,
+                color: ThemeColors.textTertiary,
                 lineHeight: Typography.body.lineHeight,
               }}
             >
@@ -1542,7 +1562,7 @@ export default function ImageUploadFlow({
               <div
                 style={{
                   height: '1px',
-                  backgroundColor: Colors.border,
+                  backgroundColor: ThemeColors.border,
                   width: '100%',
                 }}
               />
@@ -1552,7 +1572,7 @@ export default function ImageUploadFlow({
                     fontFamily: Typography.ui.fontFamily,
                     fontSize: Typography.ui.sizes.sm,
                     fontWeight: Typography.ui.weights.medium,
-                    color: Colors.textPrimary,
+                    color: ThemeColors.textPrimary,
                   }}
                 >
                   Your Library
@@ -1564,7 +1584,7 @@ export default function ImageUploadFlow({
                         fontFamily: Typography.ui.fontFamily,
                         fontSize: Typography.ui.sizes.sm,
                         fontWeight: Typography.ui.weights.regular,
-                        color: Colors.textSecondary,
+                        color: ThemeColors.textSecondary,
                       }}
                     >
                       {UILabels.selfies(library.selfies.length)}
@@ -1576,7 +1596,7 @@ export default function ImageUploadFlow({
                         fontFamily: Typography.ui.fontFamily,
                         fontSize: Typography.ui.sizes.sm,
                         fontWeight: Typography.ui.weights.regular,
-                        color: Colors.textSecondary,
+                        color: ThemeColors.textSecondary,
                       }}
                     >
                       {UILabels.products(library.products.length)}
@@ -1588,7 +1608,7 @@ export default function ImageUploadFlow({
                         fontFamily: Typography.ui.fontFamily,
                         fontSize: Typography.ui.sizes.sm,
                         fontWeight: Typography.ui.weights.regular,
-                        color: Colors.textSecondary,
+                        color: ThemeColors.textSecondary,
                       }}
                     >
                       {UILabels.people(library.people.length)}
@@ -1600,7 +1620,7 @@ export default function ImageUploadFlow({
                         fontFamily: Typography.ui.fontFamily,
                         fontSize: Typography.ui.sizes.sm,
                         fontWeight: Typography.ui.weights.regular,
-                        color: Colors.textSecondary,
+                        color: ThemeColors.textSecondary,
                       }}
                     >
                       {UILabels.vibes(library.vibes.length)}
@@ -1646,8 +1666,8 @@ export default function ImageUploadFlow({
                 fontSize: Typography.ui.sizes.md,
                 fontWeight: Typography.ui.weights.medium,
                 letterSpacing: '0.5px',
-                color: Colors.surface,
-                backgroundColor: library.intent.trim() ? Colors.primary : Colors.border,
+                color: ThemeColors.surface,
+                backgroundColor: library.intent.trim() ? ThemeColors.primary : ThemeColors.border,
                 padding: '12px 32px',
                 borderRadius: BorderRadius.button,
                 border: 'none',
@@ -1657,12 +1677,12 @@ export default function ImageUploadFlow({
               }}
               onMouseEnter={(e) => {
                 if (library.intent.trim()) {
-                  e.currentTarget.style.backgroundColor = Colors.accent
+                  e.currentTarget.style.backgroundColor = ThemeColors.accent
                 }
               }}
               onMouseLeave={(e) => {
                 if (library.intent.trim()) {
-                  e.currentTarget.style.backgroundColor = Colors.primary
+                  e.currentTarget.style.backgroundColor = ThemeColors.primary
                 }
               }}
               className="hover:opacity-90"
@@ -1693,7 +1713,7 @@ export default function ImageUploadFlow({
   return (
     <>
       <div className="flex flex-col items-center justify-center min-h-[600px] px-6 py-12">
-        <p style={{ color: Colors.textSecondary }}>
+        <p style={{ color: ThemeColors.textSecondary }}>
           Step {currentStep} - Unknown step
         </p>
       </div>
