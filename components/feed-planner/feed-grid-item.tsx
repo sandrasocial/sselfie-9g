@@ -175,7 +175,7 @@ export default function FeedGridItem({
       onDragStart={onDragStart}
       onDragOver={onDragOver}
       onDragEnd={onDragEnd}
-      className={`relative aspect-square border border-white/10 bg-white/[0.04] backdrop-blur-[2px] transition-all duration-200 ${
+      className={`relative aspect-square bg-[#1c1b19] border border-[rgba(195,190,182,0.15)] rounded-xl overflow-hidden transition-all duration-200 ${
         isDragging ? 'opacity-50 scale-95' : ''
       } ${
         isComplete && !isSavingOrder ? 'cursor-move hover:opacity-90' : 'cursor-pointer'
@@ -191,9 +191,9 @@ export default function FeedGridItem({
           onClick={() => onPostClick(post)}
         />
       ) : isGenerating ? (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/45 backdrop-blur-[1px]">
-          <span className="mb-2 h-5 w-5 rounded-full border border-white/35 border-t-white animate-spin" />
-          <div className="text-center text-[10px] font-light text-white/65">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-[rgba(13,12,11,0.7)] backdrop-blur-sm">
+          <span className="mb-2 h-5 w-5 rounded-full border border-[rgba(195,190,182,0.35)] border-t-[#c8c4bb] animate-spin" />
+          <div className="text-center text-[10px] font-['Inter'] font-medium text-[#8a8780]">
             Creating...
           </div>
           <button
@@ -201,7 +201,7 @@ export default function FeedGridItem({
             onClick={handleStopGeneration}
             disabled={!canStop || isStopping}
             className={`mt-2 text-[10px] font-light ${
-              !canStop || isStopping ? "text-white/30" : "text-white/70 hover:text-white"
+              !canStop || isStopping ? "text-[#8a8780] opacity-40" : "text-[#a8a49c] hover:text-[#f0ede8]"
             }`}
           >
             {isStopping ? "Stopping..." : "Stop generation"}
@@ -211,20 +211,20 @@ export default function FeedGridItem({
         // Show generation button for paid users, gallery selector for others
         showGenerateButton ? (
           <button
-            className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center bg-white/[0.04] p-3 transition-colors hover:bg-white/[0.1]"
+            className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center bg-[rgba(175,170,162,0.04)] p-3 transition-colors hover:bg-[rgba(175,170,162,0.10)]"
             onClick={handleGenerateClick}
             disabled={isGenerating}
           >
-            <div className="mb-2 rounded-full border border-white/20 bg-white/8 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-white/70">
+            <div className="mb-2 rounded-full border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-[#a8a49c]">
               Add
             </div>
-            <div className="text-center text-[10px] font-light uppercase tracking-[0.2em] text-white/65">
+            <div className="text-center font-['Inter'] text-[10px] font-medium uppercase tracking-[0.2em] text-[#8a8780]">
               Generate image
             </div>
           </button>
         ) : (
           <div
-            className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center bg-white/[0.04] p-3 transition-colors hover:bg-white/[0.1]"
+            className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center bg-[rgba(175,170,162,0.04)] p-3 transition-colors hover:bg-[rgba(175,170,162,0.10)]"
             onClick={(e) => {
               e.stopPropagation()
               // Open gallery selector for free users
@@ -233,10 +233,10 @@ export default function FeedGridItem({
               }
             }}
           >
-            <div className="mb-2 rounded-full border border-white/20 bg-white/8 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-white/60">
+            <div className="mb-2 rounded-full border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-[#8a8780]">
               Add
             </div>
-            <div className="text-center text-[10px] font-light uppercase tracking-[0.2em] text-white/55">
+            <div className="text-center font-['Inter'] text-[10px] font-medium uppercase tracking-[0.2em] text-[#8a8780]">
               Click to add image
             </div>
           </div>

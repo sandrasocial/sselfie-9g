@@ -17,16 +17,16 @@ export function GalleryFilters({
   ]
 
   return (
-    <div className="mb-4 border-b border-white/10 px-3">
+    <div className="mb-4 bg-[rgba(175,170,162,0.08)] border-b border-[rgba(195,190,182,0.15)] px-3">
       <div className="flex items-center gap-2 overflow-x-auto pb-1">
         {filters.map((filter) => (
           <button
             key={filter.key}
             onClick={() => onContentFilterChange(filter.key)}
-            className={`whitespace-nowrap border-b-2 px-2 py-3 text-[11px] uppercase tracking-[0.28em] transition-colors duration-200 ${
+            className={`whitespace-nowrap rounded-full px-3 py-1 text-[11px] uppercase tracking-[0.28em] transition-colors duration-200 border ${
               contentFilter === filter.key
-                ? "border-white text-white"
-                : "border-transparent text-white/45 hover:text-white/70"
+                ? "bg-[rgba(175,170,162,0.20)] border-[rgba(195,190,182,0.40)] text-[#f0ede8]"
+                : "bg-[rgba(175,170,162,0.08)] border-[rgba(195,190,182,0.20)] text-[#8a8780] hover:text-[#a8a49c]"
             }`}
             style={{
               fontFamily: 'Inter, sans-serif',

@@ -45,9 +45,9 @@ export default function BuyCreditsModal({ open, onOpenChange, onSuccess }: BuyCr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto border border-white/14 bg-[rgba(9,9,9,0.94)] text-white backdrop-blur-[18px]">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto border border-[rgba(195,190,182,0.25)] bg-[rgba(28,27,25,0.96)] text-[#f0ede8] backdrop-blur-[50px]">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-serif font-light tracking-[0.03em] text-white">Buy Credits</DialogTitle>
+          <DialogTitle className="text-2xl font-serif font-light tracking-[0.03em] text-[#f0ede8]">Buy Credits</DialogTitle>
         </DialogHeader>
 
         {!selectedPackage ? (
@@ -57,46 +57,46 @@ export default function BuyCreditsModal({ open, onOpenChange, onSuccess }: BuyCr
                 key={pkg.id}
                 className={`relative border rounded-2xl p-6 transition-all cursor-pointer ${
                   pkg.popular
-                    ? "border-white/35 shadow-[0_18px_48px_rgba(0,0,0,0.45)] bg-[rgba(255,255,255,0.06)]"
-                    : "border-white/18 bg-[rgba(255,255,255,0.03)] hover:border-white/30"
+                    ? "border-[rgba(195,190,182,0.40)] shadow-[0_18px_48px_rgba(0,0,0,0.45)] bg-[rgba(175,170,162,0.18)]"
+                    : "border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] hover:border-[rgba(195,190,182,0.40)]"
                 }`}
                 onClick={() => handlePackageSelect(pkg.id)}
               >
                 {pkg.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white text-stone-900 px-3 py-1 rounded-full text-xs font-semibold tracking-[0.08em] uppercase">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#c8c4bb] text-[#0d0c0b] px-3 py-1 rounded-full text-xs font-semibold tracking-[0.08em] uppercase">
                     Most Popular
                   </div>
                 )}
 
                 <div className="text-center space-y-4">
                   <div>
-                    <div className="text-4xl font-serif font-light text-white">{pkg.credits}</div>
-                    <div className="text-sm text-white/65 mt-1">Credits</div>
+                    <div className="text-4xl font-serif font-light text-[#f0ede8]">{pkg.credits}</div>
+                    <div className="text-sm text-[#a8a49c] mt-1">Credits</div>
                   </div>
 
-                  <div className="text-3xl font-serif font-light text-white">
+                  <div className="text-3xl font-serif font-light text-[#f0ede8]">
                     ${(pkg.priceInCents / 100).toFixed(2)}
                   </div>
 
-                  <p className="text-sm text-white/70">{pkg.description}</p>
+                  <p className="text-sm text-[#8a8780]">{pkg.description}</p>
 
                   <div className="pt-4 space-y-2">
-                    <div className="flex items-center gap-2 text-sm text-white/78">
-                      <span className="text-[10px] uppercase tracking-[0.16em] text-white/55">Included</span>
+                    <div className="flex items-center gap-2 text-sm text-[#c8c4bb]">
+                      <span className="text-[10px] uppercase tracking-[0.16em] text-[#8a8780]">Included</span>
                       <span>Generate AI images</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-white/78">
-                      <span className="text-[10px] uppercase tracking-[0.16em] text-white/55">Included</span>
+                    <div className="flex items-center gap-2 text-sm text-[#c8c4bb]">
+                      <span className="text-[10px] uppercase tracking-[0.16em] text-[#8a8780]">Included</span>
                       <span>Create Instagram feeds</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-white/78">
-                      <span className="text-[10px] uppercase tracking-[0.16em] text-white/55">Included</span>
+                    <div className="flex items-center gap-2 text-sm text-[#c8c4bb]">
+                      <span className="text-[10px] uppercase tracking-[0.16em] text-[#8a8780]">Included</span>
                       <span>Never expires</span>
                     </div>
                   </div>
 
                   <Button
-                    className="w-full bg-white text-stone-900 hover:bg-stone-100 rounded-xl font-semibold tracking-[0.04em]"
+                    className="w-full bg-[#c8c4bb] text-[#0d0c0b] hover:bg-[#f0ede8] rounded-xl font-semibold tracking-[0.04em]"
                     onClick={() => handlePackageSelect(pkg.id)}
                   >
                     Select Package

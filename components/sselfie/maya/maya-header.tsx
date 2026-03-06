@@ -251,7 +251,7 @@ export default function MayaHeaderUnified({
   // Unified header styling - same for both modes
   // Mobile optimized: proper touch targets, safe area insets, responsive spacing
   // Note: border-b removed since tabs section will have its own border
-  const headerClassName = "flex items-center justify-between w-full px-3 sm:px-6 md:px-12 py-4 sm:py-5 bg-transparent relative z-[100]"
+  const headerClassName = "flex items-center justify-between w-full px-3 sm:px-6 md:px-12 py-4 sm:py-5 bg-[rgba(175,170,162,0.08)] backdrop-blur-[50px] border-b border-[rgba(195,190,182,0.15)] relative z-[100]"
 
   return (
     <>
@@ -261,11 +261,11 @@ export default function MayaHeaderUnified({
         {/* Left: Maya title */}
         <div className="flex items-center shrink-0 min-h-[44px]">
           <h1
-            className="text-[28px] sm:text-[32px] uppercase text-[#ffffff]"
+            className="text-xl uppercase text-[#f0ede8]"
             style={{
               fontFamily: "var(--font-display, 'Cormorant Garamond')",
               fontWeight: 300,
-              letterSpacing: "-0.01em",
+              letterSpacing: "0.3em",
               lineHeight: 1,
             }}
           >
@@ -283,12 +283,12 @@ export default function MayaHeaderUnified({
                 <button
                   data-guide-trigger
                   onClick={() => setIsGuideMenuOpen((prev) => !prev)}
-                  className="touch-manipulation active:scale-95 flex items-center gap-2 px-3 py-2 rounded-full transition-colors border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.06)] min-h-[36px]"
+                  className="touch-manipulation active:scale-95 flex items-center gap-2 px-3 py-2 rounded-full transition-colors border border-[rgba(195,190,182,0.20)] bg-transparent hover:bg-[rgba(175,170,162,0.12)] min-h-[36px]"
                   style={{
                     fontFamily: "var(--font-body, Inter)",
                     fontSize: "11px",
                     fontWeight: 500,
-                    color: "#e5e5e5",
+                    color: "#8a8780",
                     textTransform: "uppercase",
                     letterSpacing: "0.2em",
                   }}
@@ -305,12 +305,12 @@ export default function MayaHeaderUnified({
                 {isGuideMenuOpen && (
                   <div
                     ref={guidePanelRef}
-                    className="absolute right-0 top-[calc(100%+8px)] w-[300px] rounded-2xl border border-[rgba(255,255,255,0.08)] bg-[rgba(10,10,10,0.86)] backdrop-blur-[20px] p-4 z-[210] shadow-[0_20px_40px_rgba(0,0,0,0.35)]"
+                    className="absolute right-0 top-[calc(100%+8px)] w-[300px] rounded-2xl border border-[rgba(195,190,182,0.20)] bg-[rgba(28,27,25,0.96)] backdrop-blur-[20px] p-4 z-[210] shadow-[0_20px_40px_rgba(0,0,0,0.35)]"
                   >
                     <div className="space-y-3">
                       <div>
                         <label
-                          className="block mb-2 text-[#e5e5e5]"
+                          className="block mb-2 text-[#8a8780]"
                           style={{
                             fontFamily: "var(--font-body, Inter)",
                             fontSize: "10px",
@@ -335,7 +335,7 @@ export default function MayaHeaderUnified({
                               onGuideChange(guide.id, guide.category)
                             }
                           }}
-                          className="w-full h-10 px-3 rounded-lg border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] text-[#ffffff] text-sm focus:outline-none focus:ring-1 focus:ring-[rgba(255,255,255,0.2)]"
+                          className="w-full h-10 px-3 rounded-lg border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.08)] text-[#f0ede8] text-sm focus:outline-none focus:ring-1 focus:ring-[rgba(195,190,182,0.35)]"
                         >
                           <option value="none">No guide selected</option>
                           {guides.map((guide) => (
@@ -347,32 +347,32 @@ export default function MayaHeaderUnified({
                       </div>
 
                       {selectedGuideId && (
-                        <div className="text-xs text-[#e5e5e5] pt-2 border-t border-[rgba(255,255,255,0.08)]">
+                        <div className="text-xs text-[#8a8780] pt-2 border-t border-[rgba(195,190,182,0.15)]">
                           Prompts save to{" "}
-                          <span className="font-semibold text-[#ffffff]">
+                          <span className="font-semibold text-[#f0ede8]">
                             {guides.find(g => g.id === selectedGuideId)?.title}
                           </span>
                         </div>
                       )}
 
-                      <div className="flex gap-2 pt-2 border-t border-[rgba(255,255,255,0.08)]">
+                      <div className="flex gap-2 pt-2 border-t border-[rgba(195,190,182,0.15)]">
                         <button
                           onClick={handleCreateNewGuide}
-                          className="flex-1 h-9 rounded-lg border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] text-[#ffffff] hover:bg-[rgba(255,255,255,0.06)] transition-colors text-[11px] uppercase tracking-[0.2em] font-medium"
+                          className="flex-1 h-9 rounded-lg border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.08)] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.15)] transition-colors text-[11px] uppercase tracking-[0.2em] font-medium"
                         >
                           New
                         </button>
                         {selectedGuideId && (
                           <button
                             onClick={handlePreviewGuide}
-                            className="flex-1 h-9 rounded-lg border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] text-[#ffffff] hover:bg-[rgba(255,255,255,0.06)] transition-colors text-[11px] uppercase tracking-[0.2em] font-medium"
+                            className="flex-1 h-9 rounded-lg border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.08)] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.15)] transition-colors text-[11px] uppercase tracking-[0.2em] font-medium"
                           >
                             Preview
                           </button>
                         )}
                       </div>
                       {isLoadingGuides && (
-                        <p className="text-[11px] text-[#e5e5e5]/80 uppercase tracking-[0.2em]">Loading guides</p>
+                        <p className="text-[11px] text-[#8a8780] uppercase tracking-[0.2em]">Loading guides</p>
                       )}
                     </div>
                   </div>
@@ -386,19 +386,19 @@ export default function MayaHeaderUnified({
             <button
               type="button"
               onClick={() => onOpenCredits?.()}
-              className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.06)] min-h-[36px] sm:min-h-[40px] shrink-0 hover:bg-[rgba(255,255,255,0.12)] transition-colors"
+              className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] min-h-[36px] sm:min-h-[40px] shrink-0 hover:bg-[rgba(175,170,162,0.18)] transition-colors"
               aria-label="Open credits and top-up options"
             >
-              <span className="hidden sm:inline text-[10px] md:text-xs font-light text-[#e5e5e5] uppercase tracking-wider">
+              <span className="hidden sm:inline text-[10px] md:text-xs font-light text-[#8a8780] uppercase tracking-wider">
                 Credits
               </span>
-              <span className="sm:hidden text-[11px] font-semibold text-[#ffffff] tabular-nums">
+              <span className="sm:hidden text-[11px] font-semibold text-[#f0ede8] tabular-nums">
                 {compactCredits}
               </span>
-              <span className="hidden sm:inline text-xs sm:text-sm md:text-base font-semibold text-[#ffffff] tabular-nums">
+              <span className="hidden sm:inline text-xs sm:text-sm md:text-base font-semibold text-[#f0ede8] tabular-nums">
                 {formattedCredits}
               </span>
-              <span className="text-[10px] sm:text-xs font-medium text-white/80 uppercase tracking-[0.14em]">+</span>
+              <span className="text-[10px] sm:text-xs font-medium text-[#a8a49c] uppercase tracking-[0.14em]">+</span>
             </button>
           )}
 
@@ -432,13 +432,13 @@ export default function MayaHeaderUnified({
                 style={{
                   width: '44px', height: '44px', minWidth: '44px', minHeight: '44px',
                   borderRadius: '12px',
-                  border: '1px solid #e5e5e5',
+                  border: '1px solid rgba(195,190,182,0.25)',
                   backgroundColor: 'transparent',
                   cursor: 'pointer',
                 }}
                 aria-label="More options"
               >
-                <span style={{ fontSize: "18px", fontWeight: 500, color: "#ffffff", letterSpacing: "0.05em" }}>···</span>
+                <span style={{ fontSize: "18px", fontWeight: 500, color: "#8a8780", letterSpacing: "0.05em" }}>···</span>
               </button>
 
               {isDotsMenuOpen && (
@@ -446,7 +446,7 @@ export default function MayaHeaderUnified({
                   className="absolute right-0 z-[200] animate-in fade-in slide-in-from-top-2 duration-150"
                   style={{
                     top: 'calc(100% + 8px)', width: '200px',
-                    backgroundColor: "rgba(10,10,10,0.96)", border: "1px solid rgba(255,255,255,0.12)",
+                    backgroundColor: "rgba(28,27,25,0.96)", border: "1px solid rgba(195,190,182,0.20)",
                     borderRadius: '16px', padding: '8px',
                     boxShadow: "0 8px 32px rgba(0,0,0,0.35)",
                   }}
@@ -454,28 +454,28 @@ export default function MayaHeaderUnified({
                   {onSettings && (
                     <button onClick={() => { onSettings(); setIsDotsMenuOpen(false) }}
                       className="w-full text-left px-4 py-3 rounded-xl hover:bg-white/10 transition-colors touch-manipulation"
-                      style={{ fontFamily: "Inter, sans-serif", fontSize: "14px", fontWeight: 300, color: "#ffffff" }}>
+                      style={{ fontFamily: "Inter, sans-serif", fontSize: "14px", fontWeight: 300, color: "#f0ede8" }}>
                       Settings
                     </button>
                   )}
                   {onNewProject && (
                     <button onClick={() => { onNewProject(); setIsDotsMenuOpen(false) }}
                       className="w-full text-left px-4 py-3 rounded-xl hover:bg-white/10 transition-colors touch-manipulation"
-                      style={{ fontFamily: "Inter, sans-serif", fontSize: "14px", fontWeight: 300, color: "#ffffff" }}>
+                      style={{ fontFamily: "Inter, sans-serif", fontSize: "14px", fontWeight: 300, color: "#f0ede8" }}>
                       New Project
                     </button>
                   )}
                   {onHistory && (
                     <button onClick={() => { onHistory(); setIsDotsMenuOpen(false) }}
                       className="w-full text-left px-4 py-3 rounded-xl hover:bg-white/10 transition-colors touch-manipulation"
-                      style={{ fontFamily: "Inter, sans-serif", fontSize: "14px", fontWeight: 300, color: "#ffffff" }}>
+                      style={{ fontFamily: "Inter, sans-serif", fontSize: "14px", fontWeight: 300, color: "#f0ede8" }}>
                       History
                     </button>
                   )}
                   {onNavigation && (
                     <button onClick={() => { onNavigation('prompts'); setIsDotsMenuOpen(false) }}
                       className="w-full text-left px-4 py-3 rounded-xl hover:bg-white/10 transition-colors touch-manipulation"
-                      style={{ fontFamily: "Inter, sans-serif", fontSize: "14px", fontWeight: 300, color: "#ffffff" }}>
+                      style={{ fontFamily: "Inter, sans-serif", fontSize: "14px", fontWeight: 300, color: "#f0ede8" }}>
                       Prompts Library
                     </button>
                   )}
@@ -490,41 +490,41 @@ export default function MayaHeaderUnified({
             <button
               onClick={onToggleNavMenu}
               data-menu-trigger
-              className="touch-manipulation active:scale-95 flex items-center justify-center shrink-0 min-w-[44px] min-h-[44px] rounded-full border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.06)] px-2.5 sm:px-4"
+              className="touch-manipulation active:scale-95 flex items-center justify-center shrink-0 min-w-[44px] min-h-[44px] rounded-full border border-[rgba(195,190,182,0.20)] bg-transparent hover:bg-[rgba(175,170,162,0.12)] px-2.5 sm:px-4"
               style={proMode ? {
                 minHeight: '44px',
                 borderRadius: BorderRadius.buttonSm,
-                border: `1px solid rgba(255,255,255,0.08)`,
-                backgroundColor: 'rgba(255,255,255,0.04)',
-                color: '#ffffff',
+                border: `1px solid rgba(195,190,182,0.20)`,
+                backgroundColor: 'transparent',
+                color: '#8a8780',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
               } : {}}
               onMouseEnter={proMode ? (e) => {
-                e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.06)"
-                e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"
+                e.currentTarget.style.backgroundColor = "rgba(175,170,162,0.12)"
+                e.currentTarget.style.borderColor = "rgba(195,190,182,0.30)"
               } : undefined}
               onMouseLeave={proMode ? (e) => {
-                e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.04)"
-                e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"
+                e.currentTarget.style.backgroundColor = "transparent"
+                e.currentTarget.style.borderColor = "rgba(195,190,182,0.20)"
               } : undefined}
               aria-label="Navigation menu"
               aria-expanded={showNavMenu}
             >
-              <span className="sm:hidden text-base leading-none text-[#ffffff]">≡</span>
-              <span className="hidden sm:inline text-[10px] sm:text-xs uppercase tracking-[0.3em] font-medium text-[#ffffff]">Menu</span>
+              <span className="sm:hidden text-base leading-none text-[#8a8780]">≡</span>
+              <span className="hidden sm:inline text-[10px] sm:text-xs uppercase tracking-[0.3em] font-medium text-[#8a8780]">Menu</span>
             </button>
           ) : (
             // Classic Mode: Simple menu button (fallback)
             <button
               onClick={onToggleNavMenu}
               data-menu-trigger
-              className="flex items-center justify-center px-2.5 sm:px-4 min-h-[44px] sm:min-h-[48px] rounded-full border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.06)] transition-colors touch-manipulation active:scale-95"
+              className="flex items-center justify-center px-2.5 sm:px-4 min-h-[44px] sm:min-h-[48px] rounded-full border border-[rgba(195,190,182,0.20)] bg-transparent hover:bg-[rgba(175,170,162,0.12)] transition-colors touch-manipulation active:scale-95"
               aria-label="Navigation menu"
               aria-expanded={showNavMenu}
             >
-              <span className="sm:hidden text-base leading-none text-[#ffffff]">≡</span>
-              <span className="hidden sm:inline text-[10px] sm:text-xs md:text-sm tracking-[0.2em] text-[#ffffff] uppercase">Menu</span>
+              <span className="sm:hidden text-base leading-none text-[#8a8780]">≡</span>
+              <span className="hidden sm:inline text-[10px] sm:text-xs md:text-sm tracking-[0.2em] text-[#8a8780] uppercase">Menu</span>
             </button>
           )}
         </div>
@@ -532,7 +532,7 @@ export default function MayaHeaderUnified({
 
       {/* Tab Switcher - Integrated into header */}
       {activeTab && onTabChange && (
-        <div className="w-full border-t border-[rgba(255,255,255,0.06)] bg-transparent z-[100] relative">
+        <div className="w-full border-t border-[rgba(195,190,182,0.12)] bg-transparent z-[100] relative">
           <div className="px-3 sm:px-4 md:px-6 py-1.5 flex items-center gap-2">
             <div className="min-w-0 flex-1">
               <MayaTabSwitcher
@@ -549,14 +549,14 @@ export default function MayaHeaderUnified({
                 {onHistory && (
                   <button
                     onClick={onHistory}
-                    className="touch-manipulation active:scale-95 min-h-[34px] px-3 rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.09)] transition-colors"
+                    className="touch-manipulation active:scale-95 min-h-[34px] px-3 rounded-lg border border-[rgba(195,190,182,0.20)] bg-transparent hover:bg-[rgba(175,170,162,0.12)] transition-colors"
                     style={{
                       fontFamily: "var(--font-body, Inter)",
                       fontSize: "10px",
                       fontWeight: 500,
                       textTransform: "uppercase",
                       letterSpacing: "0.18em",
-                      color: "#e5e5e5",
+                      color: "#8a8780",
                     }}
                     aria-label="Open chat history"
                   >
@@ -566,14 +566,14 @@ export default function MayaHeaderUnified({
                 {onNewProject && (
                   <button
                     onClick={onNewProject}
-                    className="touch-manipulation active:scale-95 min-h-[34px] px-3 rounded-lg border border-[rgba(255,255,255,0.16)] bg-[rgba(255,255,255,0.1)] hover:bg-[rgba(255,255,255,0.16)] transition-colors"
+                    className="touch-manipulation active:scale-95 min-h-[34px] px-3 rounded-lg border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.15)] hover:bg-[rgba(175,170,162,0.22)] transition-colors"
                     style={{
                       fontFamily: "var(--font-body, Inter)",
                       fontSize: "10px",
                       fontWeight: 500,
                       textTransform: "uppercase",
                       letterSpacing: "0.18em",
-                      color: "#ffffff",
+                      color: "#f0ede8",
                     }}
                     aria-label="Start a new chat"
                   >
@@ -601,9 +601,9 @@ export default function MayaHeaderUnified({
           {/* Sliding menu from right */}
           <div
             ref={menuRef}
-            className="fixed top-0 right-0 bottom-0 w-80 bg-[rgba(10,10,10,0.92)] backdrop-blur-[20px] border-l border-[rgba(255,255,255,0.08)] shadow-2xl z-[100] animate-in slide-in-from-right duration-300 flex flex-col"
+            className="fixed top-0 right-0 bottom-0 w-80 bg-[rgba(28,27,25,0.96)] backdrop-blur-[20px] border-l border-[rgba(195,190,182,0.18)] shadow-2xl z-[100] animate-in slide-in-from-right duration-300 flex flex-col"
             style={{
-              borderColor: "rgba(255,255,255,0.08)",
+              borderColor: "rgba(195,190,182,0.18)",
               height: '100vh',
               maxHeight: '100vh',
             }}
@@ -612,7 +612,7 @@ export default function MayaHeaderUnified({
             <div
                 className="shrink-0 flex items-center justify-between px-6 py-4 border-b"
                 style={{
-                borderColor: "rgba(255,255,255,0.08)",
+                borderColor: "rgba(195,190,182,0.15)",
                 }}
             >
               <h3
@@ -625,16 +625,16 @@ export default function MayaHeaderUnified({
                 } : {
                   fontFamily: 'inherit',
                 }}
-                className={!proMode ? "text-sm font-serif font-extralight tracking-[0.2em] uppercase text-[#ffffff]" : ""}
+                className={!proMode ? "text-sm font-serif font-extralight tracking-[0.2em] uppercase text-[#f0ede8]" : ""}
               >
                 Menu
               </h3>
               <button
                 onClick={() => onToggleNavMenu()}
-                className="touch-manipulation active:scale-95 min-w-[44px] h-11 flex items-center justify-center px-3 rounded-full border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.06)] transition-colors"
+                className="touch-manipulation active:scale-95 min-w-[44px] h-11 flex items-center justify-center px-3 rounded-full border border-[rgba(195,190,182,0.20)] bg-transparent hover:bg-[rgba(175,170,162,0.12)] transition-colors"
                 aria-label="Close menu"
               >
-                <span className="text-[10px] uppercase tracking-[0.2em] text-[#ffffff]">Close</span>
+                <span className="text-[10px] uppercase tracking-[0.2em] text-[#8a8780]">Close</span>
               </button>
             </div>
 
@@ -643,7 +643,7 @@ export default function MayaHeaderUnified({
               <div
                 className="shrink-0 px-6 py-6 border-b"
                 style={{
-                  borderColor: "rgba(255,255,255,0.08)",
+                  borderColor: "rgba(195,190,182,0.15)",
                 }}
               >
                 {proMode ? (
@@ -653,7 +653,7 @@ export default function MayaHeaderUnified({
                         fontFamily: Typography.ui.fontFamily,
                         fontSize: Typography.ui.sizes.xs,
                         fontWeight: Typography.ui.weights.regular,
-                        color: "#e5e5e5",
+                        color: "#8a8780",
                         textTransform: 'uppercase',
                         letterSpacing: '0.1em',
                         marginBottom: '8px',
@@ -666,7 +666,7 @@ export default function MayaHeaderUnified({
                         fontFamily: Typography.data.fontFamily,
                         fontSize: '28px',
                         fontWeight: Typography.data.weights.semibold,
-                        color: "#ffffff",
+                        color: "#f0ede8",
                       }}
                     >
                       {formattedCredits}
@@ -674,8 +674,8 @@ export default function MayaHeaderUnified({
                   </>
                 ) : (
                   <>
-                    <div className="text-[10px] tracking-[0.15em] uppercase font-light text-[#e5e5e5] mb-2">Your Credits</div>
-                    <div className="text-3xl font-serif font-extralight text-[#ffffff] tabular-nums">
+                    <div className="text-[10px] tracking-[0.15em] uppercase font-light text-[#8a8780] mb-2">Your Credits</div>
+                    <div className="text-3xl font-serif font-extralight text-[#f0ede8] tabular-nums">
                       {formattedCredits}
                     </div>
                   </>
@@ -692,12 +692,12 @@ export default function MayaHeaderUnified({
                     onNavigation("studio")
                     onToggleNavMenu()
                   }}
-                  className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-[rgba(255,255,255,0.06)]"
+                  className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-[rgba(175,170,162,0.10)]"
                   style={proMode ? {
                     fontFamily: Typography.ui.fontFamily,
                     fontSize: Typography.ui.sizes.md,
                     fontWeight: Typography.ui.weights.medium,
-                    color: "#ffffff",
+                    color: "#f0ede8",
                     textTransform: "uppercase",
                     letterSpacing: "0.12em",
                   } : {}}
@@ -713,12 +713,12 @@ export default function MayaHeaderUnified({
                     }
                     onToggleNavMenu()
                   }}
-                  className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-[rgba(255,255,255,0.06)]"
+                  className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-[rgba(175,170,162,0.10)]"
                   style={proMode ? {
                     fontFamily: Typography.ui.fontFamily,
                     fontSize: Typography.ui.sizes.md,
                     fontWeight: Typography.ui.weights.medium,
-                    color: "#ffffff",
+                    color: "#f0ede8",
                     textTransform: "uppercase",
                     letterSpacing: "0.12em",
                   } : {}}
@@ -730,17 +730,17 @@ export default function MayaHeaderUnified({
                     onNavigation("maya")
                     onToggleNavMenu()
                   }}
-                  className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors bg-[rgba(255,255,255,0.06)] border-l-2"
+                  className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors bg-[rgba(175,170,162,0.10)] border-l-2"
                   style={proMode ? {
                     fontFamily: Typography.ui.fontFamily,
                     fontSize: Typography.ui.sizes.md,
                     fontWeight: Typography.ui.weights.medium,
-                    color: "#ffffff",
-                    borderColor: "#ffffff",
+                    color: "#f0ede8",
+                    borderColor: "#a8a49c",
                     textTransform: "uppercase",
                     letterSpacing: "0.12em",
                   } : {
-                    borderColor: '#ffffff',
+                    borderColor: '#a8a49c',
                   }}
                 >
                   Maya
@@ -750,12 +750,12 @@ export default function MayaHeaderUnified({
                     onNavigation("gallery")
                     onToggleNavMenu()
                   }}
-                  className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-[rgba(255,255,255,0.06)]"
+                  className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-[rgba(175,170,162,0.10)]"
                   style={proMode ? {
                     fontFamily: Typography.ui.fontFamily,
                     fontSize: Typography.ui.sizes.md,
                     fontWeight: Typography.ui.weights.medium,
-                    color: "#ffffff",
+                    color: "#f0ede8",
                     textTransform: "uppercase",
                     letterSpacing: "0.12em",
                   } : {}}
@@ -767,12 +767,12 @@ export default function MayaHeaderUnified({
                     onNavigation("academy")
                     onToggleNavMenu()
                   }}
-                  className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-[rgba(255,255,255,0.06)]"
+                  className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-[rgba(175,170,162,0.10)]"
                   style={proMode ? {
                     fontFamily: Typography.ui.fontFamily,
                     fontSize: Typography.ui.sizes.md,
                     fontWeight: Typography.ui.weights.medium,
-                    color: "#ffffff",
+                    color: "#f0ede8",
                     textTransform: "uppercase",
                     letterSpacing: "0.12em",
                   } : {}}
@@ -784,12 +784,12 @@ export default function MayaHeaderUnified({
                     onNavigation("account")
                     onToggleNavMenu()
                   }}
-                  className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-[rgba(255,255,255,0.06)]"
+                  className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-[rgba(175,170,162,0.10)]"
                   style={proMode ? {
                     fontFamily: Typography.ui.fontFamily,
                     fontSize: Typography.ui.sizes.md,
                     fontWeight: Typography.ui.weights.medium,
-                    color: "#ffffff",
+                    color: "#f0ede8",
                     textTransform: "uppercase",
                     letterSpacing: "0.12em",
                   } : {}}
@@ -802,7 +802,7 @@ export default function MayaHeaderUnified({
                     <div
                       className="border-t my-2"
                       style={{
-                        borderColor: "rgba(255,255,255,0.08)",
+                        borderColor: "rgba(195,190,182,0.15)",
                       }}
                     />
                     {onHistory && (
@@ -811,12 +811,12 @@ export default function MayaHeaderUnified({
                           onHistory()
                           onToggleNavMenu()
                         }}
-                        className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-[rgba(255,255,255,0.06)]"
+                        className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-[rgba(175,170,162,0.10)]"
                         style={proMode ? {
                           fontFamily: Typography.ui.fontFamily,
                           fontSize: Typography.ui.sizes.md,
                           fontWeight: Typography.ui.weights.medium,
-                          color: "#ffffff",
+                          color: "#f0ede8",
                           textTransform: "uppercase",
                           letterSpacing: "0.12em",
                         } : {}}
@@ -830,12 +830,12 @@ export default function MayaHeaderUnified({
                           onNewProject()
                           onToggleNavMenu()
                         }}
-                        className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-[rgba(255,255,255,0.06)]"
+                        className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-[rgba(175,170,162,0.10)]"
                         style={proMode ? {
                           fontFamily: Typography.ui.fontFamily,
                           fontSize: Typography.ui.sizes.md,
                           fontWeight: Typography.ui.weights.medium,
-                          color: "#ffffff",
+                          color: "#f0ede8",
                           textTransform: "uppercase",
                           letterSpacing: "0.12em",
                         } : {}}
@@ -853,12 +853,12 @@ export default function MayaHeaderUnified({
                       onSettings()
                       onToggleNavMenu()
                     }}
-                    className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-[rgba(255,255,255,0.06)]"
+                    className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-[rgba(175,170,162,0.10)]"
                     style={{
                       fontFamily: Typography.ui.fontFamily,
                       fontSize: Typography.ui.sizes.md,
                       fontWeight: Typography.ui.weights.medium,
-                      color: "#ffffff",
+                      color: "#f0ede8",
                       textTransform: "uppercase",
                       letterSpacing: "0.12em",
                     }}
@@ -881,12 +881,12 @@ export default function MayaHeaderUnified({
                         onSwitchToClassic()
                         onToggleNavMenu()
                       }}
-                      className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-[rgba(255,255,255,0.06)]"
+                      className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-[rgba(175,170,162,0.10)]"
                       style={{
                         fontFamily: Typography.ui.fontFamily,
                         fontSize: Typography.ui.sizes.md,
                         fontWeight: Typography.ui.weights.medium,
-                        color: "#e5e5e5",
+                        color: "#8a8780",
                         textTransform: "uppercase",
                         letterSpacing: "0.12em",
                       }}
@@ -902,7 +902,7 @@ export default function MayaHeaderUnified({
                     <div
                       className="border-t my-2"
                       style={{
-                        borderColor: "rgba(255,255,255,0.08)",
+                        borderColor: "rgba(195,190,182,0.15)",
                       }}
                     />
                     <div className="px-6 py-4">
@@ -911,7 +911,7 @@ export default function MayaHeaderUnified({
                           fontFamily: Typography.ui.fontFamily,
                           fontSize: Typography.ui.sizes.sm,
                           fontWeight: Typography.ui.weights.medium,
-                          color: "#e5e5e5",
+                          color: "#8a8780",
                           textTransform: 'uppercase',
                           letterSpacing: '0.2em',
                           marginBottom: '12px',
@@ -926,12 +926,12 @@ export default function MayaHeaderUnified({
                               onManageLibrary()
                               onToggleNavMenu()
                             }}
-                            className="touch-manipulation active:scale-[0.98] w-full text-left px-4 py-2 rounded transition-colors hover:bg-[rgba(255,255,255,0.06)]"
+                            className="touch-manipulation active:scale-[0.98] w-full text-left px-4 py-2 rounded transition-colors hover:bg-[rgba(175,170,162,0.10)]"
                             style={{
                               fontFamily: Typography.ui.fontFamily,
                               fontSize: Typography.ui.sizes.sm,
                               fontWeight: Typography.ui.weights.regular,
-                              color: "#ffffff",
+                              color: "#f0ede8",
                             }}
                           >
                             {ButtonLabels.openLibrary}
@@ -943,12 +943,12 @@ export default function MayaHeaderUnified({
                               onAddImages()
                               onToggleNavMenu()
                             }}
-                            className="touch-manipulation active:scale-[0.98] w-full text-left px-4 py-2 rounded transition-colors hover:bg-[rgba(255,255,255,0.06)]"
+                            className="touch-manipulation active:scale-[0.98] w-full text-left px-4 py-2 rounded transition-colors hover:bg-[rgba(175,170,162,0.10)]"
                             style={{
                               fontFamily: Typography.ui.fontFamily,
                               fontSize: Typography.ui.sizes.sm,
                               fontWeight: Typography.ui.weights.regular,
-                              color: "#ffffff",
+                              color: "#f0ede8",
                             }}
                           >
                             {ButtonLabels.addImages}
@@ -960,12 +960,12 @@ export default function MayaHeaderUnified({
                               onEditIntent()
                               onToggleNavMenu()
                             }}
-                            className="touch-manipulation active:scale-[0.98] w-full text-left px-4 py-2 rounded transition-colors hover:bg-[rgba(255,255,255,0.06)]"
+                            className="touch-manipulation active:scale-[0.98] w-full text-left px-4 py-2 rounded transition-colors hover:bg-[rgba(175,170,162,0.10)]"
                             style={{
                               fontFamily: Typography.ui.fontFamily,
                               fontSize: Typography.ui.sizes.sm,
                               fontWeight: Typography.ui.weights.regular,
-                              color: "#ffffff",
+                              color: "#f0ede8",
                             }}
                           >
                             {ButtonLabels.editIntent}
@@ -977,12 +977,12 @@ export default function MayaHeaderUnified({
                               onStartFresh()
                               onToggleNavMenu()
                             }}
-                            className="touch-manipulation active:scale-[0.98] w-full text-left px-4 py-2 rounded transition-colors hover:bg-[rgba(255,255,255,0.06)]"
+                            className="touch-manipulation active:scale-[0.98] w-full text-left px-4 py-2 rounded transition-colors hover:bg-[rgba(175,170,162,0.10)]"
                             style={{
                               fontFamily: Typography.ui.fontFamily,
                               fontSize: Typography.ui.sizes.sm,
                               fontWeight: Typography.ui.weights.regular,
-                              color: "#e5e5e5",
+                              color: "#8a8780",
                             }}
                           >
                             {ButtonLabels.startFresh}
@@ -998,10 +998,10 @@ export default function MayaHeaderUnified({
             {/* Sign out button - fixed at bottom */}
             {onLogout && (
               <div
-                className="shrink-0 px-6 py-4 border-t bg-white/95"
+                className="shrink-0 px-6 py-4 border-t"
                 style={{
-                  borderColor: "rgba(255,255,255,0.08)",
-                  backgroundColor: "rgba(10,10,10,0.92)",
+                  borderColor: "rgba(195,190,182,0.15)",
+                  backgroundColor: "rgba(28,27,25,0.98)",
                 }}
               >
                 <button
@@ -1015,20 +1015,20 @@ export default function MayaHeaderUnified({
                     fontFamily: Typography.ui.fontFamily,
                     fontSize: Typography.ui.sizes.sm,
                     fontWeight: Typography.ui.weights.medium,
-                    color: '#ffffff',
+                    color: '#f0ede8',
                     textTransform: "uppercase",
                     letterSpacing: "0.2em",
-                    backgroundColor: 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(255,255,255,0.12)',
+                    backgroundColor: 'rgba(175,170,162,0.08)',
+                    border: '1px solid rgba(195,190,182,0.20)',
                   }}
                   onMouseEnter={(e) => {
                     if (!isLoggingOut) {
-                      e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.08)'
+                      e.currentTarget.style.backgroundColor = 'rgba(175,170,162,0.15)'
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (!isLoggingOut) {
-                      e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)'
+                      e.currentTarget.style.backgroundColor = 'rgba(175,170,162,0.08)'
                     }
                   }}
                 >

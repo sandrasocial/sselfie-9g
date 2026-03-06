@@ -93,7 +93,7 @@ export default function FeedLoadingOverlay({
               <>
                 <div className="space-y-4 w-full max-w-sm mx-auto">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-light text-[#e5e5e5]">Progress</span>
+                    <span className="text-sm font-light text-[#8a8780]">Progress</span>
                     <span className="text-sm font-medium text-white">
                       {readyPosts} of {totalPosts} complete
                     </span>
@@ -107,8 +107,8 @@ export default function FeedLoadingOverlay({
                   </div>
 
                   <div className="flex items-center gap-2 justify-center">
-                    <span className="inline-flex w-3 h-3 rounded-full border border-[#e5e5e5]/70 border-t-white animate-spin" />
-                    <p className="text-xs font-light text-[#e5e5e5]">
+                    <span className="inline-flex w-3 h-3 rounded-full border border-[#a8a49c]/70 border-t-[#f0ede8] animate-spin" />
+                    <p className="text-xs font-light text-[#8a8780]">
                       {getProgressMessage()}
                     </p>
                     {isValidating && (
@@ -118,7 +118,7 @@ export default function FeedLoadingOverlay({
                   
                   {isTakingLonger && (
                     <div className="mt-6 pt-6 border-t border-[rgba(255,255,255,0.2)]">
-                      <p className="text-sm font-light text-[#e5e5e5] leading-relaxed">
+                      <p className="text-sm font-light text-[#8a8780] leading-relaxed">
                         This is taking a bit longer than expected. Your photos are being crafted with high-quality details.
                       </p>
                     </div>

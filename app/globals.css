@@ -119,43 +119,83 @@
 
 /* Removed @theme inline block and moved font definitions to :root for Tailwind v4 compatibility */
 :root {
-  --background: #0a0a0a;
-  --foreground: #ffffff;
-  --color-obsidian: #0a0a0a;
-  --color-porcelain: #ffffff;
-  --color-pearl: #f5f5f5;
-  --color-smoke: #666666;
-  --color-whisper: #e5e5e5;
-  --glass-bg: rgba(255, 255, 255, 0.04);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-input-bg: rgba(255, 255, 255, 0.06);
-  --glass-input-border: rgba(255, 255, 255, 0.12);
-  --app-bg-primary: radial-gradient(120% 105% at 50% 0%, #25211d 0%, #161310 46%, #0e0c0a 100%);
-  --app-bg-glow-1: rgba(196, 177, 150, 0.2);
-  --app-bg-glow-2: rgba(238, 229, 215, 0.12);
-  --app-bg-glass: rgba(20, 16, 13, 0.6);
-  --app-bg-glass-strong: rgba(14, 11, 9, 0.8);
+  /* Earth Stone Palette */
+  --stone-deepest: #0d0c0b;
+  --stone-dark: #1c1b19;
+  --stone-mid: #2e2c29;
+  --stone-raw: #2a2720;
+  --stone-granite: #1a1815;
+  --stone-quarry: #3a3630;
+  --stone-accent: #a8a49c;
+  --stone-pale: #c8c4bb;
+  --color-obsidian: #0d0c0b;
+  --color-porcelain: #f0ede8;
+  --color-pearl: #2e2c29;
+  --color-smoke: #8a8780;
+  --color-whisper: #c8c4bb;
+
+  /* Text */
+  --text-primary: #f0ede8;
+  --text-secondary: #8a8780;
+  --text-accent: #a8a49c;
+  --text-cta: #c8c4bb;
+
+  /* Glass */
+  --glass-bg: rgba(175, 170, 162, 0.10);
+  --glass-bg-mid: rgba(175, 170, 162, 0.18);
+  --glass-bg-heavy: rgba(175, 170, 162, 0.25);
+  --glass-border: rgba(195, 190, 182, 0.25);
+  --glass-border-subtle: rgba(195, 190, 182, 0.15);
+  --glass-divider: rgba(175, 170, 162, 0.12);
+  --glass-input-bg: rgba(175, 170, 162, 0.08);
+  --glass-input-border: rgba(195, 190, 182, 0.20);
+
+  /* Blur */
+  --blur-light: 20px;
+  --blur-standard: 50px;
+  --blur-heavy: 70px;
+
+  /* App backgrounds */
+  --app-bg-primary: #0d0c0b;
+  --app-bg-surface: #1c1b19;
+  --app-bg-elevated: #2e2c29;
+  --app-bg-glow-1: rgba(42, 39, 32, 0.7);
+  --app-bg-glow-2: rgba(26, 24, 21, 0.5);
+  --app-bg-glass: rgba(175, 170, 162, 0.10);
+  --app-bg-glass-strong: rgba(175, 170, 162, 0.18);
+
+  /* Fonts */
+  --font-display: 'Cormorant Garamond', serif;
+  --font-body: 'Inter', sans-serif;
+
+  /* Font families defined in :root for proper CSS variable resolution */
+  --font-serif: var(--font-display);
+  --font-sans: var(--font-body);
+  --font-mono: "Geist Mono", "Courier New", monospace;
+
   --radius-card: 20px;
-  --font-display: "Cormorant Garamond", serif;
-  --font-body: "Inter", system-ui, -apple-system, sans-serif;
-  --card: #ffffff;
-  --card-foreground: #0a0a0a;
-  --popover: #ffffff;
-  --popover-foreground: #0a0a0a;
-  --primary: #171717;
-  --primary-foreground: #fafafa;
-  --secondary: #f5f5f5;
-  --secondary-foreground: #171717;
-  --muted: #f5f5f5;
-  --muted-foreground: #737373;
-  --accent: #f5f5f5;
-  --accent-foreground: #171717;
-  --destructive: #ef4444;
-  --destructive-foreground: #fef2f2;
-  --border: #e5e5e5;
-  --input: #e5e5e5;
-  --ring: #a3a3a3;
-  --radius: 0.625rem;
+
+  /* shadcn semantic tokens — map to stone */
+  --background: 0 0% 5%;
+  --foreground: 30 20% 94%;
+  --card: 30 8% 10%;
+  --card-foreground: 30 20% 94%;
+  --popover: 30 8% 10%;
+  --popover-foreground: 30 20% 94%;
+  --primary: 35 10% 75%;
+  --primary-foreground: 0 0% 5%;
+  --secondary: 30 5% 18%;
+  --secondary-foreground: 30 20% 94%;
+  --muted: 30 5% 18%;
+  --muted-foreground: 30 5% 54%;
+  --accent: 30 7% 64%;
+  --accent-foreground: 0 0% 5%;
+  --destructive: 0 62% 40%;
+  --destructive-foreground: 30 20% 94%;
+  --border: rgba(195, 190, 182, 0.20);
+  --input: rgba(175, 170, 162, 0.10);
+  --ring: rgba(195, 190, 182, 0.40);
+  --radius: 0.75rem;
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -169,33 +209,28 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
-
-  /* Font families defined in :root for proper CSS variable resolution */
-  --font-serif: var(--font-display);
-  --font-sans: var(--font-body);
-  --font-mono: "Geist Mono", "Courier New", monospace;
 }
 
 .dark {
-  --background: #0a0a0a;
-  --foreground: #ffffff;
-  --card: #0a0a0a;
-  --card-foreground: #fafafa;
-  --popover: #0a0a0a;
-  --popover-foreground: #fafafa;
-  --primary: #fafafa;
-  --primary-foreground: #171717;
-  --secondary: #262626;
-  --secondary-foreground: #fafafa;
-  --muted: #262626;
-  --muted-foreground: #a3a3a3;
-  --accent: #262626;
-  --accent-foreground: #fafafa;
-  --destructive: #7f1d1d;
-  --destructive-foreground: #fef2f2;
-  --border: #262626;
-  --input: #262626;
-  --ring: #525252;
+  --background: 0 0% 5%;
+  --foreground: 30 20% 94%;
+  --card: 30 8% 10%;
+  --card-foreground: 30 20% 94%;
+  --popover: 30 8% 10%;
+  --popover-foreground: 30 20% 94%;
+  --primary: 35 10% 75%;
+  --primary-foreground: 0 0% 5%;
+  --secondary: 30 5% 18%;
+  --secondary-foreground: 30 20% 94%;
+  --muted: 30 5% 18%;
+  --muted-foreground: 30 5% 54%;
+  --accent: 30 7% 64%;
+  --accent-foreground: 0 0% 5%;
+  --destructive: 0 62% 40%;
+  --destructive-foreground: 30 20% 94%;
+  --border: rgba(195, 190, 182, 0.20);
+  --input: rgba(175, 170, 162, 0.10);
+  --ring: rgba(195, 190, 182, 0.40);
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
@@ -209,11 +244,13 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(0.269 0 0);
   --sidebar-ring: oklch(0.439 0 0);
-  --app-bg-primary: radial-gradient(120% 105% at 50% 0%, #25211d 0%, #161310 46%, #0e0c0a 100%);
-  --app-bg-glow-1: rgba(196, 177, 150, 0.2);
-  --app-bg-glow-2: rgba(238, 229, 215, 0.12);
-  --app-bg-glass: rgba(20, 16, 13, 0.6);
-  --app-bg-glass-strong: rgba(14, 11, 9, 0.8);
+  --app-bg-primary: #0d0c0b;
+  --app-bg-surface: #1c1b19;
+  --app-bg-elevated: #2e2c29;
+  --app-bg-glow-1: rgba(42, 39, 32, 0.7);
+  --app-bg-glow-2: rgba(26, 24, 21, 0.5);
+  --app-bg-glass: rgba(175, 170, 162, 0.10);
+  --app-bg-glass-strong: rgba(175, 170, 162, 0.18);
 }
 
 /* Simplified @theme block without inline keyword and without var() references that cause parsing errors */
@@ -266,7 +303,11 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    background-color: #0d0c0b;
+    background-image:
+      radial-gradient(ellipse at 20% 20%, rgba(42, 39, 32, 0.7) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 80%, rgba(26, 24, 21, 0.5) 0%, transparent 60%);
+    color: #f0ede8;
     font-family: var(--font-body);
   }
   /* Prevent horizontal scrolling on mobile */
@@ -280,10 +321,11 @@
 /* Add safe area inset utilities for mobile notch/home indicator support */
 @layer utilities {
   .glass-card {
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-card);
-    backdrop-filter: blur(20px);
+    background: rgba(175, 170, 162, 0.10);
+    backdrop-filter: blur(50px);
+    -webkit-backdrop-filter: blur(50px);
+    border: 1px solid rgba(195, 190, 182, 0.25);
+    border-radius: 16px;
   }
 
   .glass-input {

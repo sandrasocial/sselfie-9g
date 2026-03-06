@@ -243,13 +243,13 @@ export default function WelcomeFirstGenerationFlow({
 
   if (generatedImageUrl) {
     return (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0a0a0a]/80 backdrop-blur-sm p-4">
-        <div className="w-full max-w-md bg-white border border-[#e5e5e5] rounded-sm p-8 sm:p-12 shadow-xl">
-          <h2 className="font-serif text-sm font-extralight tracking-[0.2em] uppercase text-[#666] mb-2" style={{ letterSpacing: "0.2em" }}>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[rgba(13,12,11,0.80)] backdrop-blur-sm p-4">
+        <div className="w-full max-w-md bg-[rgba(175,170,162,0.15)] backdrop-blur-[70px] border border-[rgba(195,190,182,0.25)] rounded-3xl p-8 sm:p-12">
+          <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780] mb-2">
             YOUR FIRST PHOTO
-          </h2>
-          <p className="font-serif text-xl sm:text-2xl font-light text-[#0a0a0a] mb-6">Perfect! Your first photo is ready.</p>
-          <img src={generatedImageUrl} alt="Your first brand photo" className="w-full aspect-square object-cover rounded-sm mb-6 border border-[#e5e5e5]" />
+          </p>
+          <p className="font-['Cormorant_Garamond'] font-light text-2xl sm:text-3xl text-[#f0ede8] tracking-wide mb-6">Your first photo is ready.</p>
+          <img src={generatedImageUrl} alt="Your first brand photo" className="w-full aspect-square object-cover rounded-2xl mb-6 border border-[rgba(195,190,182,0.20)]" />
           <div className="space-y-3">
             <button
               type="button"
@@ -257,14 +257,14 @@ export default function WelcomeFirstGenerationFlow({
                 onDone()
                 if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent("maya-first-gen-photoshoot", { detail: { imageUrl: generatedImageUrl } }))
               }}
-              className="w-full py-4 bg-[#0a0a0a] text-white text-xs font-medium tracking-[0.12em] uppercase hover:bg-[#1a1a1a] transition-colors rounded-sm"
+              className="w-full inline-flex items-center justify-center bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[#f0ede8] transition-colors"
             >
               Photoshoot — Create 6–9 photos in this style
             </button>
             <button
               type="button"
               onClick={onDone}
-              className="w-full py-3 border border-[#e5e5e5] text-[#0a0a0a] text-xs font-light tracking-[0.1em] uppercase hover:bg-[#f5f5f5] transition-colors rounded-sm"
+              className="w-full py-3 text-[#8a8780] hover:text-[#f0ede8] text-xs font-medium tracking-[0.12em] uppercase transition-colors text-center"
             >
               Go to chat
             </button>
@@ -275,13 +275,13 @@ export default function WelcomeFirstGenerationFlow({
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0a0a0a]/80 backdrop-blur-sm p-4 min-h-screen">
-      <div className="w-full max-w-md bg-white border border-[#e5e5e5] rounded-sm shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-[#e5e5e5]">
-          <h2 className="font-serif text-xs font-extralight tracking-[0.2em] uppercase text-[#666]" style={{ letterSpacing: "0.2em" }}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[rgba(13,12,11,0.80)] backdrop-blur-sm p-4 min-h-screen">
+      <div className="w-full max-w-md bg-[rgba(175,170,162,0.15)] backdrop-blur-[70px] border border-[rgba(195,190,182,0.25)] rounded-3xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-[rgba(195,190,182,0.20)]">
+          <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780]">
             YOUR FIRST PHOTO IN 3 STEPS
-          </h2>
-          <button type="button" onClick={handleSkip} className="p-2 -m-2 text-[#666] hover:text-[#0a0a0a]" aria-label="Close">
+          </p>
+          <button type="button" onClick={handleSkip} className="text-[#8a8780] hover:text-[#f0ede8] transition-colors" aria-label="Close">
             <span className="text-[11px] tracking-[0.12em] uppercase">Close</span>
           </button>
         </div>
@@ -289,7 +289,7 @@ export default function WelcomeFirstGenerationFlow({
           {([1, 2, 3] as const).map((s) => (
             <div
               key={s}
-              className={`h-1.5 w-8 rounded-full transition-colors ${step >= s ? "bg-[#0a0a0a]" : "bg-[#e5e5e5]"}`}
+              className={`h-1.5 w-8 rounded-full transition-colors ${step >= s ? "bg-[#c8c4bb]" : "bg-[rgba(175,170,162,0.25)]"}`}
               aria-hidden
             />
           ))}
@@ -297,7 +297,7 @@ export default function WelcomeFirstGenerationFlow({
         <div className="flex-1 overflow-y-auto px-6 pb-6">
           {step === 1 && (
             <>
-              <p className="font-serif text-xs font-extralight tracking-[0.15em] uppercase text-[#666] mb-6" style={{ letterSpacing: "0.15em" }}>
+              <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780] mb-6">
                 STEP 1: CHOOSE A STYLE
               </p>
               <div className="grid grid-cols-2 gap-4 mb-8">
@@ -306,11 +306,13 @@ export default function WelcomeFirstGenerationFlow({
                     key={opt.id}
                     type="button"
                     onClick={() => setSelectedStyle(opt.id)}
-                    className={`aspect-[3/4] rounded-sm border-2 p-3 flex flex-col items-center justify-end text-center transition-all ${
-                      selectedStyle === opt.id ? "border-[#0a0a0a] bg-[#f5f5f5]" : "border-[#e5e5e5] bg-white hover:border-[#999]"
+                    className={`aspect-[3/4] rounded-2xl border-2 p-3 flex flex-col items-center justify-end text-center transition-all ${
+                      selectedStyle === opt.id
+                        ? "border-[#a8a49c] bg-[rgba(168,164,156,0.15)]"
+                        : "border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.06)] hover:border-[rgba(195,190,182,0.45)]"
                     }`}
                   >
-                    <span className="font-serif text-[10px] sm:text-xs font-extralight tracking-[0.2em] uppercase text-[#0a0a0a]">
+                    <span className="font-['Inter'] font-medium text-[10px] tracking-[0.3em] uppercase text-[#f0ede8]">
                       {opt.label}
                     </span>
                   </button>
@@ -319,11 +321,11 @@ export default function WelcomeFirstGenerationFlow({
               <button
                 type="button"
                 onClick={() => setStep(2)}
-                className="w-full py-3.5 bg-[#0a0a0a] text-white text-xs font-medium tracking-[0.1em] uppercase hover:bg-[#1a1a1a] transition-colors rounded-sm"
+                className="w-full inline-flex items-center justify-center bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[#f0ede8] transition-colors"
               >
-                Next →
+                Next
               </button>
-              <button type="button" onClick={handleSkip} className="w-full mt-3 text-xs font-light text-[#666] hover:text-[#0a0a0a]">
+              <button type="button" onClick={handleSkip} className="w-full mt-3 text-xs text-[#8a8780] hover:text-[#f0ede8] transition-colors text-center">
                 Skip for now
               </button>
             </>
@@ -331,7 +333,7 @@ export default function WelcomeFirstGenerationFlow({
 
           {step === 2 && (
             <>
-              <p className="font-serif text-xs font-extralight tracking-[0.15em] uppercase text-[#666] mb-6" style={{ letterSpacing: "0.15em" }}>
+              <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780] mb-6">
                 STEP 2: PICK YOUR MODE
               </p>
               <div className="space-y-3 mb-8">
@@ -339,31 +341,47 @@ export default function WelcomeFirstGenerationFlow({
                   <button
                     type="button"
                     onClick={() => setSelectedMode("classic")}
-                    className={`w-full text-left p-4 rounded-sm border-2 transition-all ${selectedMode === "classic" ? "border-[#0a0a0a] bg-[#f5f5f5]" : "border-[#e5e5e5] bg-white hover:border-[#999]"}`}
+                    className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
+                      selectedMode === "classic"
+                        ? "border-[#a8a49c] bg-[rgba(168,164,156,0.15)]"
+                        : "border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.06)] hover:border-[rgba(195,190,182,0.45)]"
+                    }`}
                   >
-                    <span className="font-serif text-xs font-extralight tracking-[0.15em] uppercase text-[#0a0a0a] block mb-1">
+                    <span className="font-['Inter'] font-medium text-[10px] tracking-[0.3em] uppercase text-[#f0ede8] block mb-1">
                       MY MODEL
                     </span>
-                    <span className="text-sm font-light text-[#666] leading-relaxed">Use your trained model (Fast, consistent)</span>
+                    <span className="text-sm text-[#8a8780] leading-relaxed">Use your trained model (Fast, consistent)</span>
                   </button>
                 )}
                 <button
                   type="button"
                   onClick={() => setSelectedMode("pro")}
-                  className={`w-full text-left p-4 rounded-sm border-2 transition-all ${selectedMode === "pro" ? "border-[#0a0a0a] bg-[#f5f5f5]" : "border-[#e5e5e5] bg-white hover:border-[#999]"}`}
+                  className={`w-full text-left p-4 rounded-xl border-2 transition-all ${
+                    selectedMode === "pro"
+                      ? "border-[#a8a49c] bg-[rgba(168,164,156,0.15)]"
+                      : "border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.06)] hover:border-[rgba(195,190,182,0.45)]"
+                  }`}
                 >
-                  <span className="font-serif text-xs font-extralight tracking-[0.15em] uppercase text-[#0a0a0a] block mb-1">
+                  <span className="font-['Inter'] font-medium text-[10px] tracking-[0.3em] uppercase text-[#f0ede8] block mb-1">
                     SELFIE
                   </span>
-                  <span className="text-sm font-light text-[#666] leading-relaxed">Use reference selfies (More control)</span>
+                  <span className="text-sm text-[#8a8780] leading-relaxed">Use reference selfies (More control)</span>
                 </button>
               </div>
               <div className="flex gap-3">
-                <button type="button" onClick={() => setStep(1)} className="flex-1 py-3 border border-[#e5e5e5] text-[#0a0a0a] text-xs font-light uppercase rounded-sm hover:bg-[#f5f5f5]">
-                  ← Back
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="flex-1 py-3 border border-[rgba(195,190,182,0.30)] text-[#8a8780] hover:text-[#f0ede8] hover:border-[rgba(195,190,182,0.55)] text-xs uppercase tracking-[0.1em] rounded-full transition-colors"
+                >
+                  Back
                 </button>
-                <button type="button" onClick={() => setStep(3)} className="flex-1 py-3 bg-[#0a0a0a] text-white text-xs font-medium uppercase rounded-sm hover:bg-[#1a1a1a]">
-                  Next →
+                <button
+                  type="button"
+                  onClick={() => setStep(3)}
+                  className="flex-1 py-3 bg-[#c8c4bb] text-[#0d0c0b] text-xs font-medium uppercase tracking-[0.1em] rounded-full hover:bg-[#f0ede8] transition-colors"
+                >
+                  Next
                 </button>
               </div>
             </>
@@ -371,42 +389,46 @@ export default function WelcomeFirstGenerationFlow({
 
           {step === 3 && (
             <>
-              <p className="font-serif text-xs font-extralight tracking-[0.15em] uppercase text-[#666] mb-2" style={{ letterSpacing: "0.15em" }}>
+              <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780] mb-2">
                 STEP 3: GENERATE
               </p>
-              <p className="text-sm font-light text-[#666] leading-relaxed mb-6">Let&apos;s create your first photo in this style.</p>
+              <p className="text-sm text-[#8a8780] leading-relaxed mb-6">Let&apos;s create your first photo in this style.</p>
               {selectedMode === "pro" && (
                 <div className="mb-6">
-                  <label className="block text-[10px] uppercase tracking-[0.12em] text-[#666] mb-2">Upload one selfie</label>
+                  <label className="block font-['Inter'] font-medium text-[10px] uppercase tracking-[0.4em] text-[#8a8780] mb-2">Upload one selfie</label>
                   <input
                     type="file"
                     accept="image/*"
                     onChange={(e) => setSelfieFile(e.target.files?.[0] ?? null)}
-                    className="block w-full text-sm text-[#666] file:mr-4 file:py-2 file:px-4 file:rounded-sm file:border file:border-[#e5e5e5] file:bg-white file:text-[#0a0a0a]"
+                    className="block w-full text-sm text-[#8a8780] file:mr-4 file:py-2 file:px-4 file:rounded-full file:border file:border-[rgba(195,190,182,0.30)] file:bg-[rgba(175,170,162,0.10)] file:text-[#f0ede8] file:text-xs"
                   />
                 </div>
               )}
               {(status === "uploading" || status === "generating" || status === "polling") && (
-                <div className="rounded-sm border border-[#e5e5e5] bg-[#f5f5f5] px-4 py-3 text-sm text-[#666] mb-4 flex items-center gap-2">
-                  <div className="h-4 w-4 rounded-full border-2 border-[#d4d4d4] border-t-[#4a4a4a] animate-spin shrink-0" />
-                  Creating your photo…
+                <div className="rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] px-4 py-3 text-sm text-[#8a8780] mb-4 flex items-center gap-2">
+                  <div className="h-4 w-4 rounded-full border-2 border-[rgba(195,190,182,0.30)] border-t-[#c8c4bb] animate-spin shrink-0" />
+                  Creating your photo...
                 </div>
               )}
-              {errorMessage && <p className="text-sm text-red-600 mb-4">{errorMessage}</p>}
+              {errorMessage && <p className="text-sm text-red-300 mb-4">{errorMessage}</p>}
               <div className="flex gap-3">
-                <button type="button" onClick={() => setStep(2)} className="py-3 border border-[#e5e5e5] text-[#0a0a0a] text-xs font-light uppercase rounded-sm hover:bg-[#f5f5f5]">
-                  ← Back
+                <button
+                  type="button"
+                  onClick={() => setStep(2)}
+                  className="py-3 px-5 border border-[rgba(195,190,182,0.30)] text-[#8a8780] hover:text-[#f0ede8] hover:border-[rgba(195,190,182,0.55)] text-xs uppercase tracking-[0.1em] rounded-full transition-colors"
+                >
+                  Back
                 </button>
                 <button
                   type="button"
                   onClick={handleGenerate}
                   disabled={!canGenerateStep3 || status === "uploading" || status === "generating" || status === "polling"}
-                  className="flex-1 py-3.5 bg-[#0a0a0a] text-white text-xs font-medium uppercase rounded-sm hover:bg-[#1a1a1a] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 py-3 bg-[#c8c4bb] text-[#0d0c0b] text-xs font-medium uppercase tracking-[0.1em] rounded-full hover:bg-[#f0ede8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Generate Now →
+                  Generate Now
                 </button>
               </div>
-              <button type="button" onClick={handleSkip} className="w-full mt-3 text-xs font-light text-[#666] hover:text-[#0a0a0a]">
+              <button type="button" onClick={handleSkip} className="w-full mt-3 text-xs text-[#8a8780] hover:text-[#f0ede8] transition-colors text-center">
                 Skip for now
               </button>
             </>

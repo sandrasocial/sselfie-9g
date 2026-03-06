@@ -86,8 +86,8 @@ export default function MayaConceptCards({
   return (
     <div className="mt-2 space-y-1.5">
       <div className="flex items-center gap-2">
-        <div className="w-1 h-1 rounded-full bg-stone-600"></div>
-        <span className="text-xs tracking-[0.15em] uppercase font-light text-stone-600">
+        <div className="w-1 h-1 rounded-full bg-[#a8a49c]"></div>
+        <span className="text-xs tracking-[0.15em] uppercase font-light text-[#8a8780]">
           Photo Ideas
         </span>
       </div>

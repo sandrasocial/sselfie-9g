@@ -59,28 +59,28 @@ export default async function AcademyProductPage({
   const includedItems = INCLUDED_BY_PRODUCT[product.id] ?? [product.description]
 
   return (
-    <main className="min-h-screen min-w-[375px] bg-[#0a0a0a] text-[#ffffff]">
+    <main className="min-h-screen min-w-[375px] bg-[#0d0c0b] text-[#f0ede8]">
       <div className="mx-auto max-w-4xl px-6 py-16 md:px-20 md:py-20">
-        <p className={`${inter.className} text-[11px] uppercase tracking-[0.5em] text-[#666666]`} style={{ fontWeight: 500 }}>
+        <p className={`${inter.className} text-[11px] uppercase tracking-[0.5em] text-[#8a8780]`} style={{ fontWeight: 500 }}>
           SSELFIE Academy
         </p>
         <h1
-          className={`${cormorant.className} mt-6 text-5xl uppercase text-[#ffffff] md:text-7xl`}
+          className={`${cormorant.className} mt-6 text-5xl uppercase text-[#f0ede8] md:text-7xl`}
           style={{ fontWeight: 200, lineHeight: 0.95 }}
         >
           {product.name}
         </h1>
-        <p className={`${inter.className} mt-4 text-sm text-[#e5e5e5]`} style={{ fontWeight: 300, lineHeight: 1.8 }}>
+        <p className={`${inter.className} mt-4 text-sm text-[#f0ede8]`} style={{ fontWeight: 300, lineHeight: 1.8 }}>
           {product.tagline}
         </p>
 
-        <section className="mt-10 border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] p-6 md:p-8">
-          <p className={`${inter.className} text-[11px] uppercase tracking-[0.32em] text-[#666666]`} style={{ fontWeight: 500 }}>
+        <section className="mt-10 border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] p-6 md:p-8">
+          <p className={`${inter.className} text-[11px] uppercase tracking-[0.32em] text-[#8a8780]`} style={{ fontWeight: 500 }}>
             What&apos;s included
           </p>
           <ul className="mt-5 space-y-3">
             {includedItems.map((item) => (
-              <li key={item} className={`${inter.className} text-sm text-[#f5f5f5]`} style={{ fontWeight: 300, lineHeight: 1.8 }}>
+              <li key={item} className={`${inter.className} text-sm text-[#f0ede8]`} style={{ fontWeight: 300, lineHeight: 1.8 }}>
                 {item}
               </li>
             ))}
@@ -88,26 +88,26 @@ export default async function AcademyProductPage({
         </section>
 
         {!hasAccess ? (
-          <section className="mt-8 border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] p-6 md:p-8">
-            <p className={`${inter.className} text-[11px] uppercase tracking-[0.32em] text-[#ffffff]`} style={{ fontWeight: 500 }}>
+          <section className="mt-8 border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] p-6 md:p-8">
+            <p className={`${inter.className} text-[11px] uppercase tracking-[0.32em] text-[#f0ede8]`} style={{ fontWeight: 500 }}>
               {product.price / 100} EUR
             </p>
-            <p className={`${inter.className} mt-3 text-sm text-[#e5e5e5]`} style={{ fontWeight: 300 }}>
+            <p className={`${inter.className} mt-3 text-sm text-[#8a8780]`} style={{ fontWeight: 300 }}>
               This product isn&apos;t in your library yet.
             </p>
             <PurchaseButton productId={product.id} price={product.price / 100} />
           </section>
         ) : (
-          <section className="mt-8 border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] p-6 md:p-8">
-            <p className={`${inter.className} text-[11px] uppercase tracking-[0.32em] text-[#666666]`} style={{ fontWeight: 500 }}>
+          <section className="mt-8 border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] p-6 md:p-8">
+            <p className={`${inter.className} text-[11px] uppercase tracking-[0.32em] text-[#8a8780]`} style={{ fontWeight: 500 }}>
               Your Library
             </p>
-            <p className={`${inter.className} mt-3 text-sm text-[#e5e5e5]`} style={{ fontWeight: 300 }}>
+            <p className={`${inter.className} mt-3 text-sm text-[#8a8780]`} style={{ fontWeight: 300 }}>
               Your product is unlocked and ready.
             </p>
             <a
               href={`/academy/${productId}/index.html`}
-              className={`${inter.className} mt-6 inline-flex rounded-[20px] border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.08)] px-6 py-3 text-[11px] uppercase tracking-[0.2em] text-[#ffffff] hover:bg-[rgba(255,255,255,0.14)]`}
+              className={`${inter.className} mt-6 inline-flex rounded-[20px] border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] px-6 py-3 text-[11px] uppercase tracking-[0.2em] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.20)]`}
               style={{ fontWeight: 500 }}
             >
               Open {product.name} {"->"}

@@ -44,10 +44,10 @@ export default function MayaHeaderSimplified({
 }: MayaHeaderSimplifiedProps) {
   
   return (
-    <div className="flex items-center justify-between w-full px-3 sm:px-4 md:px-6 py-3 sm:py-4 border-b border-stone-200/50 bg-white/80 backdrop-blur-xl">
+    <div className="flex items-center justify-between w-full px-3 sm:px-4 md:px-6 py-3 sm:py-4 border-b border-[rgba(195,190,182,0.15)] bg-[rgba(175,170,162,0.08)] backdrop-blur-[50px]">
       {/* Left: SSELFIE */}
       <div className="flex items-center shrink-0">
-        <h1 className="text-lg sm:text-xl font-serif font-normal text-stone-950 uppercase tracking-wide">
+        <h1 className="text-lg sm:text-xl font-serif font-normal text-[#f0ede8] uppercase tracking-wide">
           SSELFIE
         </h1>
       </div>
@@ -56,11 +56,11 @@ export default function MayaHeaderSimplified({
       <div className="flex items-center gap-3 sm:gap-4 shrink-0">
         {/* Credits Display */}
         {credits !== undefined && (
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded border border-stone-200 bg-stone-50/50">
-            <span className="text-[10px] sm:text-xs font-light text-stone-500 uppercase tracking-wider">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.08)]">
+            <span className="text-[10px] sm:text-xs font-light text-[#8a8780] uppercase tracking-wider">
               Credits
             </span>
-            <span className="text-sm sm:text-base font-semibold text-stone-950 tabular-nums">
+            <span className="text-sm sm:text-base font-semibold text-[#f0ede8] tabular-nums">
               {credits.toFixed(1)}
             </span>
           </div>

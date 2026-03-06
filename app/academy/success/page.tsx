@@ -80,9 +80,9 @@ export default async function AcademySuccessPage({ searchParams }: SuccessPagePr
     : null
 
   return (
-    <main className="min-h-screen min-w-[375px] bg-[#0a0a0a] text-[#ffffff]">
+    <main className="min-h-screen min-w-[375px] bg-[#0d0c0b] text-[#f0ede8]">
       <div className="mx-auto max-w-4xl px-6 py-16 md:px-20 md:py-20">
-        <p className={`${inter.className} text-[11px] uppercase tracking-[0.5em] text-[#666666]`} style={{ fontWeight: 500 }}>
+        <p className={`${inter.className} text-[11px] uppercase tracking-[0.5em] text-[#8a8780]`} style={{ fontWeight: 500 }}>
           SSELFIE Academy
         </p>
         <h1
@@ -93,20 +93,20 @@ export default async function AcademySuccessPage({ searchParams }: SuccessPagePr
         </h1>
 
         {product ? (
-          <p className={`${inter.className} mt-4 text-sm text-[#e5e5e5]`} style={{ fontWeight: 300, lineHeight: 1.8 }}>
+          <p className={`${inter.className} mt-4 text-sm text-[#8a8780]`} style={{ fontWeight: 300, lineHeight: 1.8 }}>
             {product.name} is unlocked in your library.
           </p>
         ) : null}
 
         {product && NEXT_STEP_BY_PRODUCT[product.id] ? (
-          <section className="mt-10 border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] p-6 md:p-8">
-            <p className={`${inter.className} text-[11px] uppercase tracking-[0.32em] text-[#666666]`} style={{ fontWeight: 500 }}>
+          <section className="mt-10 border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] p-6 md:p-8">
+            <p className={`${inter.className} text-[11px] uppercase tracking-[0.32em] text-[#8a8780]`} style={{ fontWeight: 500 }}>
               Next Step
             </p>
             <h2 className={`${cormorant.className} mt-4 text-3xl uppercase`} style={{ fontWeight: 300 }}>
               {NEXT_STEP_BY_PRODUCT[product.id].headline}
             </h2>
-            <p className={`${inter.className} mt-3 text-sm text-[#e5e5e5]`} style={{ fontWeight: 300, lineHeight: 1.8 }}>
+            <p className={`${inter.className} mt-3 text-sm text-[#8a8780]`} style={{ fontWeight: 300, lineHeight: 1.8 }}>
               {NEXT_STEP_BY_PRODUCT[product.id].subText}
             </p>
             <Link
@@ -115,7 +115,7 @@ export default async function AcademySuccessPage({ searchParams }: SuccessPagePr
               )}&source=academy_purchase&product=${encodeURIComponent(
                 product.id,
               )}&first_time_product_user=true`}
-              className={`${inter.className} mt-6 inline-flex rounded-[20px] border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.08)] px-6 py-3 text-[11px] uppercase tracking-[0.2em] text-[#ffffff] hover:bg-[rgba(255,255,255,0.14)]`}
+              className={`${inter.className} mt-6 inline-flex rounded-[20px] border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] px-6 py-3 text-[11px] uppercase tracking-[0.2em] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.20)]`}
               style={{ fontWeight: 500 }}
             >
               {NEXT_STEP_BY_PRODUCT[product.id].cta} {"->"}
@@ -124,7 +124,7 @@ export default async function AcademySuccessPage({ searchParams }: SuccessPagePr
         ) : (
           <Link
             href="/academy"
-            className={`${inter.className} mt-8 inline-flex rounded-[20px] border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.08)] px-6 py-3 text-[11px] uppercase tracking-[0.2em] text-[#ffffff] hover:bg-[rgba(255,255,255,0.14)]`}
+            className={`${inter.className} mt-8 inline-flex rounded-[20px] border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] px-6 py-3 text-[11px] uppercase tracking-[0.2em] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.20)]`}
             style={{ fontWeight: 500 }}
           >
             Go to Academy {"->"}
@@ -132,32 +132,32 @@ export default async function AcademySuccessPage({ searchParams }: SuccessPagePr
         )}
 
         {upsell ? (
-          <section className="mt-10 border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] p-6 md:p-8">
-            <p className={`${inter.className} text-[11px] uppercase tracking-[0.32em] text-[#666666]`} style={{ fontWeight: 500 }}>
+          <section className="mt-10 border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] p-6 md:p-8">
+            <p className={`${inter.className} text-[11px] uppercase tracking-[0.32em] text-[#8a8780]`} style={{ fontWeight: 500 }}>
               Ready for the next step
             </p>
             <h2 className={`${cormorant.className} mt-4 text-3xl uppercase`} style={{ fontWeight: 300 }}>
               {upsell.name}
             </h2>
-            <p className={`${inter.className} mt-3 text-sm text-[#e5e5e5]`} style={{ fontWeight: 300 }}>
+            <p className={`${inter.className} mt-3 text-sm text-[#8a8780]`} style={{ fontWeight: 300 }}>
               {upsell.tagline}
             </p>
             <PurchaseButton productId={upsell.id} price={upsell.price / 100} />
           </section>
         ) : upsellName === MEMBERSHIP_UPSELL_NAME ? (
-          <section className="mt-10 border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] p-6 md:p-8">
-            <p className={`${inter.className} text-[11px] uppercase tracking-[0.32em] text-[#666666]`} style={{ fontWeight: 500 }}>
+          <section className="mt-10 border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] p-6 md:p-8">
+            <p className={`${inter.className} text-[11px] uppercase tracking-[0.32em] text-[#8a8780]`} style={{ fontWeight: 500 }}>
               Ready for everything
             </p>
             <h2 className={`${cormorant.className} mt-4 text-3xl uppercase`} style={{ fontWeight: 300 }}>
               Creator Studio Membership
             </h2>
-            <p className={`${inter.className} mt-3 text-sm text-[#e5e5e5]`} style={{ fontWeight: 300 }}>
+            <p className={`${inter.className} mt-3 text-sm text-[#8a8780]`} style={{ fontWeight: 300 }}>
               All products, all tools, one workflow.
             </p>
             <Link
               href="/checkout/membership"
-              className={`${inter.className} mt-6 inline-flex rounded-[20px] border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.08)] px-6 py-3 text-[11px] uppercase tracking-[0.2em] text-[#ffffff] hover:bg-[rgba(255,255,255,0.14)]`}
+              className={`${inter.className} mt-6 inline-flex rounded-[20px] border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] px-6 py-3 text-[11px] uppercase tracking-[0.2em] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.20)]`}
               style={{ fontWeight: 500 }}
             >
               Join the Membership {"->"}

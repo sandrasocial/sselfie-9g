@@ -12,13 +12,13 @@ interface SmartUpgradeBannerProps {
 
 export function SmartUpgradeBanner({ opportunity, onUpgrade, onDismiss }: SmartUpgradeBannerProps) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-stone-200 bg-white/70 backdrop-blur-xl shadow-md shadow-stone-900/10 px-4 py-3">
-      <div className="p-2 rounded-lg bg-stone-900 text-white shadow-sm shadow-stone-900/20">
+    <div className="flex items-center gap-3 bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.20)] rounded-xl px-4 py-3">
+      <div className="p-2 rounded-lg bg-[rgba(175,170,162,0.18)] text-[#a8a49c]">
         <Lightbulb size={16} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-xs uppercase tracking-[0.18em] text-stone-500">{opportunity.type.replace("_", " ")}</p>
-        <p className="text-sm text-stone-800">{opportunity.message}</p>
+        <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780]">{opportunity.type.replace("_", " ")}</p>
+        <p className="text-sm text-[#f0ede8]">{opportunity.message}</p>
       </div>
       <button
         onClick={(e) => {
@@ -28,7 +28,7 @@ export function SmartUpgradeBanner({ opportunity, onUpgrade, onDismiss }: SmartU
           trackCTAClick("smart_upgrade_banner", "Upgrade", "/checkout")
           onUpgrade(opportunity.suggestedTier)
         }}
-        className="inline-flex items-center gap-2 rounded-lg bg-stone-900 text-white px-3 py-2 text-xs font-semibold tracking-[0.16em] uppercase hover:bg-stone-800 transition-colors active:scale-[0.98]"
+        className="inline-flex items-center gap-2 bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-4 py-2 rounded-full hover:bg-[#f0ede8] transition-colors active:scale-[0.98]"
       >
         Upgrade
         <ArrowRight size={14} />
@@ -36,7 +36,7 @@ export function SmartUpgradeBanner({ opportunity, onUpgrade, onDismiss }: SmartU
       {onDismiss && (
         <button
           onClick={() => onDismiss(opportunity.type)}
-          className="text-stone-400 hover:text-stone-700 transition-colors"
+          className="text-[#8a8780] hover:text-[#f0ede8] transition-colors"
           aria-label="Dismiss upgrade banner"
         >
           <X size={14} />

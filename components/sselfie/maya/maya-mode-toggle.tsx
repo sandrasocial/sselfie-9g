@@ -42,18 +42,18 @@ export default function MayaModeToggle({
     if (className.includes("pointer-events-none")) {
       return (
         <div className={`flex items-center ${className}`}>
-          <span className="text-sm font-medium text-stone-600">
+          <span className="text-sm font-medium text-[#8a8780]">
             {isProMode ? "SELFIE" : "MY MODEL"}
           </span>
         </div>
       )
     }
-    
+
     // Segmented control: shows both MY MODEL and SELFIE, with active one highlighted
     // When in SELFIE mode, clicking MY MODEL switches modes. Clicking SELFIE does nothing (already active)
     // Mobile optimized: min 44px touch targets, responsive text sizes
     return (
-      <div className={`inline-flex max-w-full rounded-lg border border-stone-300 bg-white p-0.5 ${className}`}>
+      <div className={`inline-flex max-w-full rounded-lg border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] p-0.5 ${className}`}>
         <button
           onClick={() => {
             // Only toggle if not already in MY MODEL mode
@@ -63,8 +63,8 @@ export default function MayaModeToggle({
           }}
           className={`px-2 sm:px-3 py-1.5 rounded-md transition-all touch-manipulation active:scale-95 min-h-[36px] sm:min-h-[40px] flex items-center justify-center ${
             isProMode
-              ? "bg-white text-stone-600 hover:bg-stone-50 cursor-pointer"
-              : "bg-stone-950 text-white cursor-default"
+              ? "bg-transparent text-[#8a8780] hover:bg-[rgba(175,170,162,0.10)] cursor-pointer"
+              : "bg-[rgba(175,170,162,0.25)] text-[#f0ede8] cursor-default"
           }`}
           aria-label="Switch to MY MODEL - Use your trained model for consistent results"
           title="Switch to MY MODEL - Use your trained model for consistent results"
@@ -84,8 +84,8 @@ export default function MayaModeToggle({
           }}
           className={`px-2 sm:px-3 py-1.5 rounded-md transition-all touch-manipulation active:scale-95 min-h-[36px] sm:min-h-[40px] flex items-center justify-center ${
             isProMode
-              ? "bg-stone-950 text-white cursor-default"
-              : "bg-white text-stone-600 hover:bg-stone-50 cursor-pointer"
+              ? "bg-[rgba(175,170,162,0.25)] text-[#f0ede8] cursor-default"
+              : "bg-transparent text-[#8a8780] hover:bg-[rgba(175,170,162,0.10)] cursor-pointer"
           }`}
           aria-label="Switch to SELFIE - Upload selfies for faster generation"
           title="Switch to SELFIE - Upload selfies for faster generation"
@@ -105,7 +105,7 @@ export default function MayaModeToggle({
     <div className={`flex items-center gap-2 ${className}`}>
       <button
         onClick={onToggle}
-        className="touch-manipulation active:scale-95 px-4 py-2 rounded-lg transition-colors bg-stone-100 text-stone-900 hover:bg-stone-200 border border-stone-300 min-h-[36px]"
+        className="touch-manipulation active:scale-95 px-4 py-2 rounded-lg transition-colors bg-[rgba(175,170,162,0.10)] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.20)] border border-[rgba(195,190,182,0.25)] min-h-[36px]"
         aria-label={isClassicMode
           ? "Switch to SELFIE - Upload selfies for faster generation"
           : "Switch to MY MODEL - Use your trained model for consistent results"}

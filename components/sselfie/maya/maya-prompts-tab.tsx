@@ -966,18 +966,18 @@ export default function MayaPromptsTab({
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
           <div className="rounded-2xl border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.05)] backdrop-blur-[20px] p-5 sm:p-6">
             <h3
-              className="text-xs sm:text-sm tracking-[0.2em] uppercase text-[#ffffff]"
+              className="text-xs sm:text-sm tracking-[0.2em] uppercase text-[#f0ede8]"
               style={{ fontFamily: "var(--font-display)" }}
             >
               Unlock 100+ Curated Prompts
             </h3>
-            <p className="text-sm text-[#e5e5e5] mt-2 leading-relaxed">
+            <p className="text-sm text-[#8a8780] mt-2 leading-relaxed">
               AI Photo Prompts gives you Sandra&apos;s best-performing styles.
             </p>
             <button
               type="button"
               onClick={onUpgradeToStudio}
-              className="mt-4 text-[11px] uppercase tracking-[0.16em] text-[#ffffff] hover:text-[#f5f5f5] transition-colors"
+              className="mt-4 text-[11px] uppercase tracking-[0.16em] text-[#f0ede8] hover:text-[#f0ede8] transition-colors"
             >
               Upgrade to Studio — includes everything →
             </button>
@@ -989,10 +989,10 @@ export default function MayaPromptsTab({
                 key={prompt.id}
                 className="opacity-50 rounded-xl border border-[rgba(255,255,255,0.16)] bg-[rgba(255,255,255,0.06)] p-4"
               >
-                <p className="text-[10px] uppercase tracking-[0.14em] text-[#e5e5e5]">
+                <p className="text-[10px] uppercase tracking-[0.14em] text-[#8a8780]">
                   Preview
                 </p>
-                <p className="text-sm text-[#ffffff] mt-2 leading-relaxed line-clamp-5">
+                <p className="text-sm text-[#f0ede8] mt-2 leading-relaxed line-clamp-5">
                   {prompt.prompt_text}
                 </p>
               </div>

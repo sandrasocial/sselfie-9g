@@ -169,8 +169,8 @@ export default function SelfieGuideLanding() {
 
       <style jsx>{`
         .selfie-guide-page {
-          background: #0a0a0a;
-          color: #ffffff;
+          background: #0d0c0b;
+          color: #f0ede8;
           min-height: 100vh;
         }
 
@@ -179,11 +179,11 @@ export default function SelfieGuideLanding() {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+          border-bottom: 1px solid rgba(195, 190, 182, 0.15);
           position: sticky;
           top: 0;
-          background: rgba(10, 10, 10, 0.94);
-          backdrop-filter: blur(20px);
+          background: rgba(13, 12, 11, 0.92);
+          backdrop-filter: blur(50px);
           z-index: 100;
         }
 
@@ -192,7 +192,7 @@ export default function SelfieGuideLanding() {
           font-size: 17px;
           letter-spacing: 0.3em;
           text-transform: uppercase;
-          color: #ffffff;
+          color: #f0ede8;
           text-decoration: none;
         }
 
@@ -201,7 +201,7 @@ export default function SelfieGuideLanding() {
           font-weight: 500;
           letter-spacing: 0.5em;
           text-transform: uppercase;
-          color: rgba(255, 255, 255, 0.5);
+          color: #8a8780;
         }
 
         .hero {
@@ -222,7 +222,7 @@ export default function SelfieGuideLanding() {
         .hero-bg {
           object-fit: cover;
           object-position: center 26%;
-          filter: brightness(0.53);
+          filter: brightness(0.45);
         }
 
         .hero-overlay {
@@ -230,10 +230,10 @@ export default function SelfieGuideLanding() {
           inset: 0;
           background: linear-gradient(
             to bottom,
-            rgba(10, 10, 10, 0.15) 0%,
-            rgba(10, 10, 10, 0.05) 38%,
-            rgba(10, 10, 10, 0.68) 74%,
-            rgba(10, 10, 10, 1) 100%
+            rgba(13, 12, 11, 0.15) 0%,
+            rgba(13, 12, 11, 0.05) 38%,
+            rgba(13, 12, 11, 0.72) 74%,
+            rgba(13, 12, 11, 1) 100%
           );
         }
 
@@ -249,7 +249,7 @@ export default function SelfieGuideLanding() {
           font-weight: 500;
           letter-spacing: 0.5em;
           text-transform: uppercase;
-          color: rgba(255, 255, 255, 0.5);
+          color: #8a8780;
         }
 
         .hero-title {
@@ -259,13 +259,14 @@ export default function SelfieGuideLanding() {
           line-height: 1;
           letter-spacing: -0.02em;
           text-transform: uppercase;
+          color: #f0ede8;
         }
 
         .hero-copy {
           margin: 24px 0 0;
           font-size: 16px;
           line-height: 1.8;
-          color: rgba(255, 255, 255, 0.75);
+          color: #8a8780;
           max-width: 680px;
         }
 
@@ -281,19 +282,21 @@ export default function SelfieGuideLanding() {
           font-weight: 500;
           letter-spacing: 0.5em;
           text-transform: uppercase;
-          color: rgba(255, 255, 255, 0.35);
+          color: #8a8780;
           padding-bottom: 16px;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+          border-bottom: 1px solid rgba(175, 170, 162, 0.12);
         }
 
         .capture-split {
           display: grid;
           grid-template-columns: 1fr 1.3fr;
-          border: 1px solid rgba(255, 255, 255, 0.09);
+          border: 1px solid rgba(195, 190, 182, 0.25);
+          border-radius: 16px;
+          overflow: hidden;
         }
 
         .intro-panel {
-          border-right: 1px solid rgba(255, 255, 255, 0.09);
+          border-right: 1px solid rgba(195, 190, 182, 0.25);
           display: flex;
           flex-direction: column;
         }
@@ -302,7 +305,7 @@ export default function SelfieGuideLanding() {
           position: relative;
           min-height: 280px;
           overflow: hidden;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+          border-bottom: 1px solid rgba(195, 190, 182, 0.25);
         }
 
         .cover-image {
@@ -311,7 +314,7 @@ export default function SelfieGuideLanding() {
         }
 
         .intro-body {
-          background: rgba(255, 255, 255, 0.04);
+          background: rgba(175, 170, 162, 0.08);
           padding: 32px 30px;
           flex: 1;
         }
@@ -322,7 +325,7 @@ export default function SelfieGuideLanding() {
           font-weight: 500;
           letter-spacing: 0.45em;
           text-transform: uppercase;
-          color: rgba(255, 255, 255, 0.35);
+          color: #8a8780;
         }
 
         .intro-heading {
@@ -331,6 +334,7 @@ export default function SelfieGuideLanding() {
           font-weight: 300;
           line-height: 1.3;
           letter-spacing: -0.01em;
+          color: #f0ede8;
         }
 
         .intro-list {
@@ -341,11 +345,11 @@ export default function SelfieGuideLanding() {
 
         .intro-list li {
           font-size: 14px;
-          color: rgba(255, 255, 255, 0.72);
+          color: #8a8780;
           line-height: 1.75;
           padding: 6px 0 6px 18px;
           position: relative;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+          border-bottom: 1px solid rgba(175, 170, 162, 0.12);
         }
 
         .intro-list li:last-child {
@@ -356,11 +360,11 @@ export default function SelfieGuideLanding() {
           content: "→";
           position: absolute;
           left: 0;
-          color: rgba(255, 255, 255, 0.35);
+          color: #a8a49c;
         }
 
         .form-panel {
-          background: rgba(255, 255, 255, 0.03);
+          background: rgba(175, 170, 162, 0.05);
           padding: 34px 32px 30px;
           display: grid;
           gap: 12px;
@@ -372,52 +376,54 @@ export default function SelfieGuideLanding() {
           font-weight: 500;
           letter-spacing: 0.4em;
           text-transform: uppercase;
-          color: rgba(255, 255, 255, 0.45);
+          color: #8a8780;
         }
 
         input {
           width: 100%;
-          border: 1px solid rgba(255, 255, 255, 0.12);
-          background: rgba(255, 255, 255, 0.04);
-          color: #ffffff;
+          border: 1px solid rgba(195, 190, 182, 0.25);
+          background: rgba(175, 170, 162, 0.08);
+          color: #f0ede8;
           padding: 13px 14px;
           font-size: 14px;
           font-family: inherit;
           line-height: 1.6;
           outline: none;
           transition: border-color 0.16s ease;
+          border-radius: 8px;
         }
 
         input::placeholder {
-          color: rgba(255, 255, 255, 0.4);
+          color: #8a8780;
         }
 
         input:focus {
-          border-color: rgba(255, 255, 255, 0.28);
+          border-color: rgba(195, 190, 182, 0.5);
         }
 
         .error-msg {
           margin: 2px 0 0;
-          color: #ff9d9d;
+          color: #fca5a5;
           font-size: 13px;
         }
 
         .btn-primary {
           margin-top: 8px;
           border: none;
-          background: #ffffff;
-          color: #0a0a0a;
+          background: #c8c4bb;
+          color: #0d0c0b;
           padding: 16px 18px;
           font-size: 11px;
           font-weight: 500;
           letter-spacing: 0.28em;
           text-transform: uppercase;
           cursor: pointer;
-          transition: opacity 0.2s;
+          transition: background 0.2s;
+          border-radius: 9999px;
         }
 
         .btn-primary:hover:enabled {
-          opacity: 0.88;
+          background: #f0ede8;
         }
 
         .btn-primary:disabled {
@@ -435,26 +441,26 @@ export default function SelfieGuideLanding() {
           width: 12px;
           height: 12px;
           border-radius: 9999px;
-          border: 2px solid rgba(10, 10, 10, 0.25);
-          border-top-color: rgba(10, 10, 10, 1);
+          border: 2px solid rgba(13, 12, 11, 0.25);
+          border-top-color: rgba(13, 12, 11, 1);
           animation: spin 0.8s linear infinite;
         }
 
         .form-note {
           margin: 2px 0 0;
           font-size: 12px;
-          color: rgba(255, 255, 255, 0.5);
+          color: #8a8780;
         }
 
         .footer {
-          border-top: 1px solid rgba(255, 255, 255, 0.09);
+          border-top: 1px solid rgba(175, 170, 162, 0.12);
           padding: 30px 24px;
           text-align: center;
         }
 
         .footer-note {
           font-size: 12px;
-          color: rgba(255, 255, 255, 0.35);
+          color: #8a8780;
         }
 
         @keyframes spin {
@@ -470,7 +476,7 @@ export default function SelfieGuideLanding() {
 
           .intro-panel {
             border-right: none;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+            border-bottom: 1px solid rgba(195, 190, 182, 0.25);
           }
         }
 

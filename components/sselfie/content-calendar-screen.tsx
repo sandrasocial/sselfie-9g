@@ -116,18 +116,18 @@ export default function ContentCalendarScreen({ onNavigateToFeed, userId }: Cont
   }
 
   return (
-    <div className="flex flex-col h-screen bg-stone-50">
+    <div className="flex flex-col h-screen bg-[#0d0c0b]">
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-[1600px] mx-auto p-4 md:p-6 space-y-6">
           {/* Header */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between bg-[rgba(175,170,162,0.08)] backdrop-blur-[50px] border-b border-[rgba(195,190,182,0.15)] px-4 py-3 -mx-4 md:-mx-6">
             <div>
-              <h1 className="text-sm font-serif uppercase tracking-[0.2em] text-stone-400 mb-1">CONTENT CALENDAR</h1>
-              <p className="text-sm text-stone-600">Schedule and manage your posts</p>
+              <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780] mb-1">Content Calendar</p>
+              <p className="text-sm text-[#8a8780]">Schedule and manage your posts</p>
             </div>
 
             {onNavigateToFeed && (
-              <Button onClick={onNavigateToFeed} size="sm" className="gap-2">
+              <Button onClick={onNavigateToFeed} size="sm" className="gap-2 bg-[#c8c4bb] text-[#0d0c0b] hover:bg-[#f0ede8] border-0 rounded-full text-xs font-medium tracking-[0.15em] uppercase">
                 <Plus className="w-4 h-4" />
                 New Post
               </Button>
@@ -135,20 +135,20 @@ export default function ContentCalendarScreen({ onNavigateToFeed, userId }: Cont
           </div>
 
           {/* Week Navigation */}
-          <div className="flex items-center justify-between border-y border-stone-200 py-4">
+          <div className="flex items-center justify-between border-y border-[rgba(195,190,182,0.15)] py-4">
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={goToPreviousWeek} className="h-8 w-8 p-0">
+              <Button variant="ghost" size="sm" onClick={goToPreviousWeek} className="h-8 w-8 p-0 text-[#a8a49c] hover:text-[#f0ede8] hover:bg-[rgba(175,170,162,0.10)]">
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               <div className="flex items-center gap-2 min-w-[200px] justify-center">
-                <Calendar className="h-4 w-4 text-stone-500" />
-                <span className="font-medium text-stone-950 text-sm">{formatWeekDisplay()}</span>
+                <Calendar className="h-4 w-4 text-[#8a8780]" />
+                <span className="font-medium text-[#f0ede8] text-sm">{formatWeekDisplay()}</span>
               </div>
-              <Button variant="ghost" size="sm" onClick={goToNextWeek} className="h-8 w-8 p-0">
+              <Button variant="ghost" size="sm" onClick={goToNextWeek} className="h-8 w-8 p-0 text-[#a8a49c] hover:text-[#f0ede8] hover:bg-[rgba(175,170,162,0.10)]">
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
-            <Button variant="outline" size="sm" onClick={goToToday} className="text-xs bg-transparent">
+            <Button variant="outline" size="sm" onClick={goToToday} className="text-xs bg-[rgba(175,170,162,0.10)] border-[rgba(195,190,182,0.25)] text-[#a8a49c] hover:bg-[rgba(175,170,162,0.18)] hover:text-[#f0ede8] rounded-full tracking-[0.15em] uppercase">
               Today
             </Button>
           </div>
@@ -158,8 +158,8 @@ export default function ContentCalendarScreen({ onNavigateToFeed, userId }: Cont
           ) : error ? (
             <div className="flex h-64 items-center justify-center">
               <div className="text-center space-y-3">
-                <p className="text-sm text-stone-600">Failed to load calendar</p>
-                <Button variant="outline" size="sm" onClick={() => mutate()}>
+                <p className="text-sm text-[#8a8780]">Failed to load calendar</p>
+                <Button variant="outline" size="sm" onClick={() => mutate()} className="bg-[rgba(175,170,162,0.10)] border-[rgba(195,190,182,0.25)] text-[#a8a49c] hover:bg-[rgba(175,170,162,0.18)] rounded-full text-xs uppercase tracking-[0.15em]">
                   Retry
                 </Button>
               </div>
@@ -175,19 +175,19 @@ export default function ContentCalendarScreen({ onNavigateToFeed, userId }: Cont
                   return (
                     <div
                       key={index}
-                      className={`border rounded-lg bg-white min-h-[300px] flex flex-col ${
-                        today ? "border-stone-950 shadow-sm" : "border-stone-200"
+                      className={`bg-[rgba(175,170,162,0.04)] rounded-xl border min-h-[300px] flex flex-col ${
+                        today ? "border-[#a8a49c]" : "border-[rgba(195,190,182,0.10)]"
                       }`}
                     >
                       {/* Day Header */}
                       <div
-                        className={`p-2 md:p-3 border-b ${today ? "border-stone-950 bg-stone-50" : "border-stone-100"}`}
+                        className={`p-2 md:p-3 border-b ${today ? "border-[#a8a49c] bg-[rgba(168,164,156,0.08)]" : "border-[rgba(195,190,182,0.10)]"}`}
                       >
-                        <div className="text-[10px] uppercase tracking-wider text-stone-500 font-medium">
+                        <div className="font-['Inter'] text-[10px] uppercase tracking-[0.3em] text-[#8a8780] font-medium">
                           {day.toLocaleDateString("en-US", { weekday: "short" })}
                         </div>
                         <div
-                          className={`text-lg md:text-xl font-light ${today ? "text-stone-950 font-normal" : "text-stone-700"}`}
+                          className={`text-lg md:text-xl font-light ${today ? "text-[#f0ede8]" : "text-[#8a8780]"}`}
                         >
                           {day.getDate()}
                         </div>
@@ -197,16 +197,16 @@ export default function ContentCalendarScreen({ onNavigateToFeed, userId }: Cont
                       <div className="flex-1 p-2 space-y-2 overflow-y-auto">
                         {dayPosts.length === 0 ? (
                           <div className="h-full flex items-center justify-center">
-                            <div className="text-center opacity-20">
-                              <ImageIcon className="w-6 h-6 mx-auto mb-1 text-stone-300" />
-                              <p className="text-[10px] text-stone-400">No posts</p>
+                            <div className="text-center opacity-30">
+                              <ImageIcon className="w-6 h-6 mx-auto mb-1 text-[#8a8780]" />
+                              <p className="text-[10px] text-[#8a8780]">No posts</p>
                             </div>
                           </div>
                         ) : (
                           dayPosts.map((post: any) => (
                             <div
                               key={post.id}
-                              className="group relative border border-stone-200 rounded-md overflow-hidden hover:border-stone-950 transition-colors bg-white"
+                              className="group relative bg-[rgba(175,170,162,0.12)] border border-[rgba(195,190,182,0.15)] rounded-lg overflow-hidden hover:border-[rgba(195,190,182,0.30)] transition-colors"
                             >
                               {/* Post Image/Preview */}
                               {post.image_url ? (
@@ -218,27 +218,27 @@ export default function ContentCalendarScreen({ onNavigateToFeed, userId }: Cont
                                   />
                                 </div>
                               ) : (
-                                <div className="aspect-square bg-stone-100 flex items-center justify-center">
-                                  <ImageIcon className="w-6 h-6 text-stone-300" />
+                                <div className="aspect-square bg-[rgba(175,170,162,0.08)] flex items-center justify-center">
+                                  <ImageIcon className="w-6 h-6 text-[#8a8780]" />
                                 </div>
                               )}
 
                               {/* Post Info */}
                               <div className="p-2 space-y-1">
                                 {post.scheduled_time && (
-                                  <div className="flex items-center gap-1 text-[10px] text-stone-500">
+                                  <div className="flex items-center gap-1 text-[10px] text-[#8a8780]">
                                     <Clock className="w-3 h-3" />
                                     {post.scheduled_time}
                                   </div>
                                 )}
                                 {post.caption && (
-                                  <p className="text-[10px] text-stone-700 line-clamp-2 leading-relaxed">
+                                  <p className="text-[10px] text-[#a8a49c] line-clamp-2 leading-relaxed">
                                     {post.caption}
                                   </p>
                                 )}
                                 {post.content_pillar && (
                                   <div className="inline-block">
-                                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-stone-100 text-stone-600 uppercase tracking-wider font-medium">
+                                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[rgba(168,164,156,0.15)] text-[#a8a49c] uppercase tracking-wider font-medium">
                                       {post.content_pillar}
                                     </span>
                                   </div>
@@ -252,7 +252,7 @@ export default function ContentCalendarScreen({ onNavigateToFeed, userId }: Cont
                                     <Button
                                       variant="ghost"
                                       size="sm"
-                                      className="h-6 w-6 p-0 bg-white/90 hover:bg-white"
+                                      className="h-6 w-6 p-0 bg-[rgba(175,170,162,0.20)] hover:bg-[rgba(175,170,162,0.35)] text-[#f0ede8]"
                                     >
                                       <MoreHorizontal className="h-3 w-3" />
                                     </Button>
@@ -260,7 +260,7 @@ export default function ContentCalendarScreen({ onNavigateToFeed, userId }: Cont
                                   <DropdownMenuContent align="end">
                                     <DropdownMenuItem
                                       onClick={() => handleDeletePost(post.id)}
-                                      className="text-red-600"
+                                      className="text-red-400"
                                     >
                                       Delete
                                     </DropdownMenuItem>
@@ -279,10 +279,10 @@ export default function ContentCalendarScreen({ onNavigateToFeed, userId }: Cont
               {/* Empty State */}
               {scheduledPosts.length === 0 && (
                 <div className="text-center py-12 space-y-4">
-                  <Calendar className="w-12 h-12 mx-auto text-stone-300" />
+                  <Calendar className="w-12 h-12 mx-auto text-[#8a8780]" />
                   <div className="space-y-2">
-                    <h3 className="text-lg font-light text-stone-900">No posts scheduled</h3>
-                    <p className="text-sm text-stone-600 max-w-md mx-auto">
+                    <h3 className="text-lg font-['Cormorant_Garamond'] font-light text-[#f0ede8]">No posts scheduled</h3>
+                    <p className="text-sm text-[#8a8780] max-w-md mx-auto">
                       Start planning your content by asking the Content Creator agent to generate a calendar
                     </p>
                   </div>

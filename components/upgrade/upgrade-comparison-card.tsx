@@ -70,19 +70,19 @@ export function UpgradeComparisonCard({
   const studio = buildTierMeta("sselfie_studio_membership")
 
   return (
-    <div className="bg-white/70 backdrop-blur-2xl border border-stone-200/70 shadow-xl shadow-stone-900/10 rounded-2xl p-5 sm:p-6 space-y-4">
+    <div className="bg-[rgba(175,170,162,0.15)] backdrop-blur-[70px] border border-[rgba(195,190,182,0.25)] rounded-3xl p-5 sm:p-6 space-y-4">
       <div className="flex items-start gap-3">
         <div className="flex-1 space-y-1">
-          <p className="text-xs tracking-[0.15em] uppercase text-stone-500">Upgrade available</p>
-          <h3 className="text-lg sm:text-xl font-serif font-extralight tracking-[0.25em] text-stone-900 uppercase">
+          <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780]">Upgrade available</p>
+          <h3 className="font-['Cormorant_Garamond'] font-light text-lg sm:text-xl tracking-wide text-[#f0ede8] uppercase">
             {target.name}
           </h3>
-          <p className="text-sm text-stone-600">Move from {current.name} to {target.name}</p>
+          <p className="text-sm text-[#8a8780]">Move from {current.name} to {target.name}</p>
         </div>
         {onClose && (
           <button
             onClick={onClose}
-            className="text-stone-400 hover:text-stone-700 text-sm font-medium tracking-wider uppercase"
+            className="text-[#8a8780] hover:text-[#f0ede8] text-sm font-medium tracking-wider uppercase transition-colors"
           >
             Close
           </button>
@@ -112,7 +112,7 @@ export function UpgradeComparisonCard({
           }
         }}
         disabled={loading}
-        className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-stone-900 text-white px-4 py-3 text-sm font-semibold tracking-[0.18em] uppercase hover:bg-stone-800 transition-all disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.98]"
+        className="w-full inline-flex items-center justify-center gap-2 bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[#f0ede8] transition-colors disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.98]"
       >
         {loading ? "Upgrading..." : "Upgrade now"}
         {!loading && <ArrowRight size={16} />}
@@ -126,23 +126,23 @@ function TierSummary({ title, tier, highlight }: { title: string; tier: TierMeta
     <div
       className={`rounded-xl border p-4 space-y-2 ${
         highlight
-          ? "border-stone-900 bg-stone-900 text-white shadow-lg shadow-stone-900/20"
-          : "border-stone-200 bg-white"
+          ? "border-[#a8a49c] bg-[rgba(168,164,156,0.15)]"
+          : "border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.06)]"
       }`}
     >
-      <p className={`text-xs tracking-[0.15em] uppercase ${highlight ? "text-white/80" : "text-stone-500"}`}>
+      <p className={`font-['Inter'] font-medium text-[10px] tracking-[0.5em] uppercase ${highlight ? "text-[#a8a49c]" : "text-[#8a8780]"}`}>
         {title}
       </p>
       <div className="flex items-center justify-between">
-        <h4 className="text-base font-semibold">{tier.name}</h4>
-        <span className="text-sm font-medium">{tier.price}</span>
+        <h4 className={`text-base font-medium ${highlight ? "text-[#f0ede8]" : "text-[#f0ede8]"}`}>{tier.name}</h4>
+        <span className={`text-sm ${highlight ? "text-[#c8c4bb]" : "text-[#8a8780]"}`}>{tier.price}</span>
       </div>
-      <p className={`text-sm ${highlight ? "text-white/80" : "text-stone-600"}`}>{tier.credits}</p>
+      <p className={`text-sm ${highlight ? "text-[#a8a49c]" : "text-[#8a8780]"}`}>{tier.credits}</p>
       <ul className="space-y-1.5">
         {tier.features.map((item) => (
           <li key={item} className="flex items-center gap-2 text-sm">
-            <Check size={14} className={highlight ? "text-white" : "text-stone-700"} />
-            <span className={highlight ? "text-white/90" : "text-stone-700"}>{item}</span>
+            <Check size={14} className={highlight ? "text-[#a8a49c]" : "text-[#8a8780]"} />
+            <span className={highlight ? "text-[#f0ede8]" : "text-[#8a8780]"}>{item}</span>
           </li>
         ))}
       </ul>

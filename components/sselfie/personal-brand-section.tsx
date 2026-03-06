@@ -64,20 +64,20 @@ export default function PersonalBrandSection({ userId: _userId }: PersonalBrandS
   return (
     <>
       {!brandData ? (
-        <div className="rounded-[20px] border border-[color:var(--glass-border)] bg-[color:var(--glass-bg)] p-6 backdrop-blur-[20px] sm:p-8">
+        <div className="bg-[rgba(175,170,162,0.10)] backdrop-blur-[50px] border border-[rgba(195,190,182,0.25)] rounded-2xl p-6 sm:p-8">
           <div className="flex items-start gap-4">
-            <div className="rounded-xl border border-white/15 bg-white/8 p-3">
-              <span className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--color-whisper)]">Brand</span>
+            <div className="rounded-xl border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.12)] p-3">
+              <span className="font-['Inter'] text-[10px] uppercase tracking-[0.5em] font-medium text-[#8a8780]">Brand</span>
             </div>
             <div className="flex-1">
-              <h3 className="display-header mb-2 text-lg font-light text-[color:var(--color-porcelain)]">Create Your Brand Profile</h3>
-              <p className="mb-4 text-sm text-[color:var(--color-whisper)]">
+              <h3 className="font-['Cormorant_Garamond'] font-light text-xl text-[#f0ede8] mb-2">Create Your Brand Profile</h3>
+              <p className="mb-4 text-sm text-[#8a8780]">
                 Help Maya understand your unique style and vision. Complete your personal brand profile so she can
                 create photos that truly represent you.
               </p>
               <Button
                 onClick={handleStartBrandProfile}
-                className="border border-white/20 bg-white/10 text-[11px] font-medium uppercase tracking-[0.35em] text-[color:var(--color-porcelain)] hover:bg-white/16"
+                className="bg-[#c8c4bb] text-[#0d0c0b] font-['Inter'] font-medium text-xs tracking-[0.15em] uppercase px-6 py-3 rounded-full hover:bg-[#f0ede8] transition-colors border-0"
               >
                 Start Brand Profile
               </Button>
@@ -85,16 +85,16 @@ export default function PersonalBrandSection({ userId: _userId }: PersonalBrandS
           </div>
         </div>
       ) : (
-        <div className="rounded-[20px] border border-[color:var(--glass-border)] bg-[color:var(--glass-bg)] p-6 backdrop-blur-[20px] sm:p-8">
+        <div className="bg-[rgba(175,170,162,0.10)] backdrop-blur-[50px] border border-[rgba(195,190,182,0.25)] rounded-2xl p-6 sm:p-8">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <h3 className="display-header text-lg font-light text-[color:var(--color-porcelain)]">Personal Brand</h3>
+              <h3 className="font-['Cormorant_Garamond'] font-light text-xl text-[#f0ede8]">Personal Brand</h3>
             </div>
             <Button
               onClick={handleEdit}
               variant="ghost"
               size="sm"
-              className="rounded-full border border-white/15 px-4 text-[10px] uppercase tracking-[0.35em] text-[color:var(--color-whisper)] hover:bg-white/10"
+              className="rounded-full border border-[rgba(195,190,182,0.25)] px-4 font-['Inter'] text-[10px] uppercase tracking-[0.5em] font-medium text-[#8a8780] hover:bg-[rgba(175,170,162,0.12)] hover:text-[#f0ede8]"
             >
               Edit Brand
             </Button>
@@ -103,43 +103,43 @@ export default function PersonalBrandSection({ userId: _userId }: PersonalBrandS
           <div className="space-y-6">
             {brandData.name && (
               <div>
-                <h4 className="mb-2 text-[11px] font-medium uppercase tracking-[0.35em] text-[color:var(--color-smoke)]">Brand Name</h4>
-                <p className="text-sm text-[color:var(--color-whisper)]">{brandData.name}</p>
+                <h4 className="mb-2 font-['Inter'] text-[10px] font-medium uppercase tracking-[0.5em] text-[#8a8780]">Brand Name</h4>
+                <p className="text-sm text-[#f0ede8]">{brandData.name}</p>
               </div>
             )}
 
             {brandData.businessType && (
               <div>
-                <h4 className="mb-2 text-[11px] font-medium uppercase tracking-[0.35em] text-[color:var(--color-smoke)]">Business Type</h4>
-                <p className="text-sm text-[color:var(--color-whisper)]">{brandData.businessType}</p>
+                <h4 className="mb-2 font-['Inter'] text-[10px] font-medium uppercase tracking-[0.5em] text-[#8a8780]">Business Type</h4>
+                <p className="text-sm text-[#f0ede8]">{brandData.businessType}</p>
               </div>
             )}
 
             {brandData.photoGoals && (
               <div>
-                <h4 className="mb-2 text-[11px] font-medium uppercase tracking-[0.35em] text-[color:var(--color-smoke)]">Photo Goals</h4>
-                <p className="text-sm text-[color:var(--color-whisper)]">{brandData.photoGoals}</p>
+                <h4 className="mb-2 font-['Inter'] text-[10px] font-medium uppercase tracking-[0.5em] text-[#8a8780]">Photo Goals</h4>
+                <p className="text-sm text-[#f0ede8]">{brandData.photoGoals}</p>
               </div>
             )}
 
             {brandData.stylePreferences && (
               <div>
-                <h4 className="mb-2 text-[11px] font-medium uppercase tracking-[0.35em] text-[color:var(--color-smoke)]">
+                <h4 className="mb-2 font-['Inter'] text-[10px] font-medium uppercase tracking-[0.5em] text-[#8a8780]">
                   Style Preferences
                 </h4>
-                <p className="text-sm text-[color:var(--color-whisper)]">{brandData.stylePreferences}</p>
+                <p className="text-sm text-[#f0ede8]">{brandData.stylePreferences}</p>
               </div>
             )}
 
             {brandData.transformationStory && (
               <div>
-                <h4 className="mb-2 text-[11px] font-medium uppercase tracking-[0.35em] text-[color:var(--color-smoke)]">Your Story</h4>
-                <p className="line-clamp-3 text-sm text-[color:var(--color-whisper)]">{brandData.transformationStory}</p>
+                <h4 className="mb-2 font-['Inter'] text-[10px] font-medium uppercase tracking-[0.5em] text-[#8a8780]">Your Story</h4>
+                <p className="line-clamp-3 text-sm text-[#f0ede8]">{brandData.transformationStory}</p>
               </div>
             )}
 
-            <div className="border-t border-white/10 pt-4">
-              <p className="text-xs italic text-[color:var(--color-smoke)]">
+            <div className="border-t border-[rgba(195,190,182,0.10)] pt-4">
+              <p className="text-xs italic text-[#8a8780]">
                 Maya uses this information to create personalized photo concepts that align with your brand and vision.
               </p>
             </div>

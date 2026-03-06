@@ -1748,27 +1748,27 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
   }
 
   return (
-    <div className={`bg-[rgba(255,255,255,0.04)] border rounded-[20px] overflow-hidden backdrop-blur-[20px] transition-all duration-300 hover:border-[rgba(255,255,255,0.16) ${
+    <div className={`bg-[rgba(175,170,162,0.10)] backdrop-blur-[50px] border rounded-[20px] overflow-hidden transition-all duration-300 hover:border-[rgba(195,190,182,0.30)] ${
       isProMode
-        ? 'border-[rgba(255,255,255,0.12)]'
-        : 'border-[rgba(255,255,255,0.08)]'
+        ? 'border-[rgba(195,190,182,0.25)]'
+        : 'border-[rgba(195,190,182,0.20)]'
     }`}>
-      <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 border-b border-[rgba(255,255,255,0.08)]">
+      <div className="flex items-center justify-between px-3 sm:px-4 py-2 sm:py-3 border-b border-[rgba(195,190,182,0.12)] bg-[rgba(175,170,162,0.08)]">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full border border-[rgba(255,255,255,0.2)] bg-[rgba(255,255,255,0.08)] flex items-center justify-center">
-            <span className="text-xs font-serif text-[#ffffff]">S</span>
+          <div className="w-8 h-8 rounded-full border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.15)] flex items-center justify-center">
+            <span className="text-xs font-serif text-[#f0ede8]">S</span>
           </div>
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-serif font-light tracking-[0.1em] uppercase text-[#ffffff]">SSELFIE</span>
+              <span className="text-sm font-serif font-light tracking-[0.1em] uppercase text-[#f0ede8]">SSELFIE</span>
               {isProMode && (
-                <span className="text-[9px] font-light tracking-[0.2em] uppercase text-[#e5e5e5] px-2 py-0.5 border border-[rgba(255,255,255,0.2)] rounded">
+                <span className="text-[9px] font-light tracking-[0.2em] uppercase text-[#a8a49c] px-2 py-0.5 border border-[rgba(195,190,182,0.25)] rounded">
                   Studio Pro
                 </span>
               )}
             </div>
             {categoryLabel && (
-              <span className="text-xs text-[#666666] font-light">{categoryLabel}</span>
+              <span className="text-xs text-[#8a8780] font-light">{categoryLabel}</span>
             )}
           </div>
         </div>
@@ -1776,21 +1776,21 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setShowMenu(!showMenu)}
-              className="p-1 hover:bg-[rgba(255,255,255,0.08)] rounded-full transition-colors"
+              className="p-1 hover:bg-[rgba(175,170,162,0.12)] rounded-full transition-colors"
               aria-label="More options"
             >
-              <span className="text-[10px] uppercase tracking-[0.18em] text-[#e5e5e5]">Menu</span>
+              <span className="text-[10px] uppercase tracking-[0.18em] text-[#a8a49c]">Menu</span>
             </button>
 
             {showMenu && (
-              <div className="absolute right-0 top-8 z-50 w-48 bg-[#111111] border border-[rgba(255,255,255,0.12)] rounded-lg shadow-lg py-1">
+              <div className="absolute right-0 top-8 z-50 w-48 bg-[#2e2c29] border border-[rgba(195,190,182,0.15)] rounded-lg shadow-lg py-1">
                 {isProMode && (
                   <button
                     onClick={() => {
                       setShowPromptEditor(true)
                       setShowMenu(false)
                     }}
-                    className="w-full px-4 py-2 text-left text-sm text-[#e5e5e5] hover:bg-[rgba(255,255,255,0.08)] flex items-center gap-2 transition-colors"
+                    className="w-full px-4 py-2 text-left text-sm text-[#a8a49c] hover:bg-[rgba(175,170,162,0.12)] flex items-center gap-2 transition-colors"
                   >
                     <span className="text-[10px] uppercase tracking-[0.16em]">Edit</span>
                     <span>View/Edit Prompt</span>
@@ -1800,7 +1800,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                   <button
                     onClick={handleSaveToGuide}
                     disabled={isSavingToGuide}
-                    className="w-full px-4 py-2 text-left text-sm text-[#e5e5e5] hover:bg-[rgba(255,255,255,0.08)] flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full px-4 py-2 text-left text-sm text-[#a8a49c] hover:bg-[rgba(175,170,162,0.12)] flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <span className="text-[10px] uppercase tracking-[0.16em]">Save</span>
                     <span>{isSavingToGuide ? "Saving..." : "Save to Guide"}</span>
@@ -1814,10 +1814,10 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
 
       <div className="px-3 sm:px-4 py-3 sm:py-4 space-y-3 sm:space-y-4">
         <div className="space-y-2">
-          <p className="text-sm leading-relaxed text-[#ffffff] font-serif font-light">
+          <p className="text-sm leading-relaxed text-[#f0ede8] font-serif font-light">
             {concept.title}
           </p>
-          <p className="text-xs leading-relaxed text-[#e5e5e5] font-light line-clamp-2">{concept.description}</p>
+          <p className="text-xs leading-relaxed text-[#a8a49c] font-light line-clamp-2">{concept.description}</p>
         </div>
 
         {error && (
@@ -1836,12 +1836,12 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
           <div className="space-y-4">
             {/* Reference Images Preview - Studio Pro Only (Read-only when images provided from upload module) */}
             {isProMode && baseImages.length > 0 && (
-              <div className="space-y-3 border-t border-[rgba(255,255,255,0.08)] pt-4">
+              <div className="space-y-3 border-t border-[rgba(195,190,182,0.12)] pt-4">
                 <div className="flex items-center justify-between px-1">
-                  <span className="text-[10px] tracking-[0.15em] uppercase text-[#666666] font-light">
+                  <span className="text-[10px] tracking-[0.15em] uppercase text-[#8a8780] font-light">
                     Reference Images
                   </span>
-                  <span className="text-[10px] text-[#666666] font-light">
+                  <span className="text-[10px] text-[#8a8780] font-light">
                     {baseImages.length} image{baseImages.length !== 1 ? "s" : ""}
                   </span>
                 </div>
@@ -1851,17 +1851,17 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                       <img
                         src={imageUrl}
                         alt={`Reference ${index + 1}`}
-                        className="w-20 h-20 object-cover rounded-lg border border-[rgba(255,255,255,0.12)]"
+                        className="w-20 h-20 object-cover rounded-lg border border-[rgba(195,190,182,0.15)]"
                       />
-                      <div className="absolute bottom-0 left-0 right-0 bg-stone-950/80 p-1.5">
-                        <span className="text-[9px] text-white font-light tracking-[0.1em] uppercase block text-center">
+                      <div className="absolute bottom-0 left-0 right-0 bg-[rgba(13,12,11,0.80)] p-1.5">
+                        <span className="text-[9px] text-[#f0ede8] font-light tracking-[0.1em] uppercase block text-center">
                           Ref {index + 1}
                         </span>
                       </div>
                     </div>
                   ))}
                 </div>
-                <p className="text-[10px] text-[#666666] leading-relaxed px-1 font-light">
+                <p className="text-[10px] text-[#8a8780] leading-relaxed px-1 font-light">
                   Images analyzed and incorporated into prompts
                 </p>
               </div>
@@ -1875,10 +1875,10 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                 disabled={isGenerating || (isProMode && baseImages.length === 0 && selectedImages.filter((img) => img !== null).length === 0)}
                 className={`flex-1 py-3.5 rounded-lg text-xs font-light tracking-[0.2em] uppercase transition-all duration-300 ${
                   isGenerating
-                    ? "bg-stone-300 text-stone-600 cursor-wait"
+                    ? "bg-[rgba(175,170,162,0.30)] text-[#8a8780] cursor-wait"
                     : isProMode && baseImages.length === 0 && selectedImages.filter((img) => img !== null).length === 0
-                    ? "bg-stone-200 text-stone-500 cursor-not-allowed"
-                    : "bg-[rgba(255,255,255,0.1)] hover:bg-[rgba(255,255,255,0.16)] text-white border border-[rgba(255,255,255,0.12)]"
+                    ? "bg-[rgba(175,170,162,0.15)] text-[#8a8780] cursor-not-allowed"
+                    : "bg-[rgba(175,170,162,0.10)] hover:bg-[rgba(175,170,162,0.18)] text-[#f0ede8] border border-[rgba(195,190,182,0.25)]"
                 }`}
               >
                 {isGenerating
@@ -1903,7 +1903,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                 <button
                   onClick={handleSaveToGuide}
                   disabled={!selectedGuideId || isSavingToGuide}
-                  className="flex-1 px-4 py-2 bg-[rgba(255,255,255,0.1)] text-white rounded-lg border border-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.16)] disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
+                  className="flex-1 px-4 py-2 bg-[rgba(175,170,162,0.10)] text-[#f0ede8] rounded-lg border border-[rgba(195,190,182,0.25)] hover:bg-[rgba(175,170,162,0.18)] disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium transition-colors"
                   title={!selectedGuideId ? "Select a guide first" : "Save this prompt to your guide"}
                 >
                   <div className="flex items-center justify-center gap-2">
@@ -1916,7 +1916,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
 
             {/* Status Message Below Button */}
             <div className="text-center">
-              <p className="text-[10px] text-[#666666] leading-relaxed font-light">
+              <p className="text-[10px] text-[#8a8780] leading-relaxed font-light">
                 {isProMode
                   ? baseImages.length > 0
                     ? "Professional quality • 5 credits per generation"
@@ -1932,17 +1932,17 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
         {isGenerating && (
           <div className="flex flex-col items-center justify-center py-6 space-y-3">
             <div className="flex gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-[#ffffff] animate-pulse"></div>
+              <div className="w-2 h-2 rounded-full bg-[#f0ede8] animate-pulse"></div>
               <div
-                className="w-2 h-2 rounded-full bg-[#e5e5e5] animate-pulse"
+                className="w-2 h-2 rounded-full bg-[#a8a49c] animate-pulse"
                 style={{ animationDelay: "0.2s" }}
               ></div>
               <div
-                className="w-2 h-2 rounded-full bg-[#666666] animate-pulse"
+                className="w-2 h-2 rounded-full bg-[#8a8780] animate-pulse"
                 style={{ animationDelay: "0.4s" }}
               ></div>
             </div>
-            <span className="text-xs font-light text-[#e5e5e5] tracking-wide">
+            <span className="text-xs font-light text-[#a8a49c] tracking-wide">
               {isProMode ? 'Creating with Studio Pro...' : 'Creating your photo'}
             </span>
           </div>
@@ -2031,30 +2031,30 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
             )}
 
             {showPhotoshootConfirm && (
-              <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-4 pb-44 sm:pb-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-                <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden animate-in zoom-in-95 duration-200">
-                  <div className="px-6 pt-6 pb-4 border-b border-stone-100">
-                    <h3 className="text-lg font-semibold text-stone-950">Create Carousel?</h3>
+              <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-4 pb-44 sm:pb-4 bg-[rgba(13,12,11,0.60)] backdrop-blur-sm animate-in fade-in duration-200">
+                <div className="bg-[#1c1b19] border border-[rgba(195,190,182,0.20)] rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden animate-in zoom-in-95 duration-200">
+                  <div className="px-6 pt-6 pb-4 border-b border-[rgba(195,190,182,0.12)]">
+                    <h3 className="text-lg font-semibold text-[#f0ede8]">Create Carousel?</h3>
                   </div>
 
                   <div className="px-6 py-4 space-y-3">
-                    <p className="text-sm text-stone-700 leading-relaxed">
-                      We&apos;ll create <span className="font-semibold text-stone-950">6-9 photos</span> with the same outfit
+                    <p className="text-sm text-[#a8a49c] leading-relaxed">
+                      We&apos;ll create <span className="font-semibold text-[#f0ede8]">6-9 photos</span> with the same outfit
                       and vibe, perfect for a carousel post.
                     </p>
 
-                    <div className="bg-stone-50 rounded-lg p-3 space-y-1.5">
+                    <div className="bg-[rgba(175,170,162,0.08)] rounded-lg p-3 space-y-1.5">
                       <div className="flex items-center gap-2">
-                        <div className="w-1 h-1 rounded-full bg-stone-500"></div>
-                        <span className="text-xs text-stone-600">Same outfit & style</span>
+                        <div className="w-1 h-1 rounded-full bg-[#8a8780]"></div>
+                        <span className="text-xs text-[#8a8780]">Same outfit & style</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="w-1 h-1 rounded-full bg-stone-500"></div>
-                        <span className="text-xs text-stone-600">Different poses & angles</span>
+                        <div className="w-1 h-1 rounded-full bg-[#8a8780]"></div>
+                        <span className="text-xs text-[#8a8780]">Different poses & angles</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="w-1 h-1 rounded-full bg-stone-500"></div>
-                        <span className="text-xs text-stone-600">Takes 2-3 minutes</span>
+                        <div className="w-1 h-1 rounded-full bg-[#8a8780]"></div>
+                        <span className="text-xs text-[#8a8780]">Takes 2-3 minutes</span>
                       </div>
                     </div>
                   </div>
@@ -2062,13 +2062,13 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                   <div className="px-6 pb-6 flex flex-col gap-2">
                     <button
                       onClick={handleCreatePhotoshoot}
-                      className="w-full bg-gradient-to-br from-stone-600 via-stone-700 to-stone-800 text-white px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] hover:from-stone-700 hover:via-stone-800 hover:to-stone-900"
+                      className="w-full bg-[#c8c4bb] text-[#0d0c0b] px-4 py-3 rounded-xl font-semibold text-sm transition-all duration-300 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] hover:bg-[#f0ede8]"
                     >
                       Let&apos;s Go
                     </button>
                     <button
                       onClick={() => setShowPhotoshootConfirm(false)}
-                      className="w-full bg-stone-100 text-stone-700 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 hover:bg-stone-200 active:scale-[0.98]"
+                      className="w-full bg-[rgba(175,170,162,0.12)] text-[#a8a49c] px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200 hover:bg-[rgba(175,170,162,0.20)] active:scale-[0.98]"
                     >
                       Not Now
                     </button>
@@ -2081,17 +2081,17 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <div className="flex gap-1">
-                    <div className="w-1 h-1 rounded-full bg-stone-600 animate-pulse"></div>
+                    <div className="w-1 h-1 rounded-full bg-[#a8a49c] animate-pulse"></div>
                     <div
-                      className="w-1 h-1 rounded-full bg-stone-600 animate-pulse"
+                      className="w-1 h-1 rounded-full bg-[#a8a49c] animate-pulse"
                       style={{ animationDelay: "0.2s" }}
                     ></div>
                     <div
-                      className="w-1 h-1 rounded-full bg-stone-600 animate-pulse"
+                      className="w-1 h-1 rounded-full bg-[#a8a49c] animate-pulse"
                       style={{ animationDelay: "0.4s" }}
                     ></div>
                   </div>
-                  <span className="text-xs tracking-[0.15em] uppercase font-light text-stone-600">
+                  <span className="text-xs tracking-[0.15em] uppercase font-light text-[#8a8780]">
                     {photoshootGenerations.length === 0
                       ? "Starting photoshoot creation..."
                       : `Creating Carousel (${photoshootGenerations.filter((p) => p.url || p.imageUrl).length}/${photoshootGenerations.length})`}
@@ -2101,7 +2101,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                 {photoshootGenerations.length > 0 && (
                   <div className="grid grid-cols-2 gap-2">
                     {photoshootGenerations.map((gen, idx) => (
-                      <div key={idx} className="aspect-square bg-stone-100 rounded-lg overflow-hidden relative">
+                      <div key={idx} className="aspect-square bg-[#1c1b19] rounded-lg overflow-hidden relative border border-[rgba(195,190,182,0.12)]">
                         {gen.url || gen.imageUrl ? (
                           <img
                             src={gen.url || gen.imageUrl || "/placeholder.svg"}
@@ -2110,8 +2110,8 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                           />
                         ) : (
                           <div className="w-full h-full flex flex-col items-center justify-center gap-2">
-                            <div className="w-6 h-6 border-2 border-stone-300 border-t-stone-900 rounded-full animate-spin" />
-                            <span className="text-[10px] text-stone-400 font-medium">Generating...</span>
+                            <div className="w-6 h-6 border-2 border-[rgba(195,190,182,0.25)] border-t-[#f0ede8] rounded-full animate-spin" />
+                            <span className="text-[10px] text-[#8a8780] font-medium">Generating...</span>
                           </div>
                         )}
                       </div>
@@ -2120,9 +2120,9 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                 )}
 
                 {photoshootGenerations.length > 0 && (
-                  <div className="w-full bg-stone-200 rounded-full h-1.5 overflow-hidden">
+                  <div className="w-full bg-[rgba(175,170,162,0.20)] rounded-full h-1.5 overflow-hidden">
                     <div
-                      className="bg-gradient-to-r from-stone-600 to-stone-900 h-full transition-all duration-500 ease-out"
+                      className="bg-[#a8a49c] h-full transition-all duration-500 ease-out"
                       style={{
                         width: `${(photoshootGenerations.filter((p) => p.url || p.imageUrl).length / photoshootGenerations.length) * 100}%`,
                       }}
@@ -2185,13 +2185,13 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
 
       {/* Prompt Editor Modal */}
       {showPromptEditor && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="bg-[#0f0f0f] rounded-2xl border border-[rgba(255,255,255,0.12)] shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(13,12,11,0.60)] backdrop-blur-sm p-4">
+          <div className="bg-[#1c1b19] rounded-2xl border border-[rgba(195,190,182,0.20)] shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[rgba(255,255,255,0.1)]">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-[rgba(195,190,182,0.12)]">
               <div>
-                <h3 className="text-lg font-semibold text-[#ffffff]">Edit Prompt</h3>
-                <p className="text-sm text-[#666666] mt-1">{concept.title}</p>
+                <h3 className="text-lg font-semibold text-[#f0ede8]">Edit Prompt</h3>
+                <p className="text-sm text-[#8a8780] mt-1">{concept.title}</p>
               </div>
               <button
                 onClick={() => {
@@ -2201,10 +2201,10 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                     setEditedPrompt(null)
                   }
                 }}
-                className="p-2 hover:bg-[rgba(255,255,255,0.08)] rounded-full transition-colors"
+                className="p-2 hover:bg-[rgba(175,170,162,0.12)] rounded-full transition-colors"
                 aria-label="Close"
               >
-                <span className="text-[10px] uppercase tracking-[0.18em] text-[#e5e5e5]">Close</span>
+                <span className="text-[10px] uppercase tracking-[0.18em] text-[#a8a49c]">Close</span>
               </button>
             </div>
 
@@ -2212,16 +2212,16 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
             <div className="flex-1 overflow-y-auto px-6 py-4">
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-[#e5e5e5] mb-2">
+                  <label className="block text-sm font-medium text-[#a8a49c] mb-2">
                     Prompt Text
                   </label>
                   <textarea
                     value={editedPrompt ?? concept.prompt ?? `${concept.title}: ${concept.description}`}
                     onChange={(e) => setEditedPrompt(e.target.value)}
-                    className="w-full h-64 px-4 py-3 border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.05)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[rgba(255,255,255,0.25)] focus:border-transparent resize-none font-mono text-sm text-[#ffffff]"
+                    className="w-full h-64 px-4 py-3 border border-[rgba(195,190,182,0.15)] bg-[rgba(175,170,162,0.08)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[rgba(195,190,182,0.30)] focus:border-transparent resize-none font-mono text-sm text-[#f0ede8]"
                     placeholder="Enter your prompt..."
                   />
-                  <p className="text-xs text-[#666666] mt-2">
+                  <p className="text-xs text-[#8a8780] mt-2">
                     {editedPrompt ? editedPrompt.length : (concept.prompt?.length || 0)} characters
                     {editedPrompt && editedPrompt !== concept.prompt && (
                       <span className="ml-2 text-orange-400">• Modified</span>
@@ -2230,10 +2230,10 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                 </div>
 
                 {concept.prompt && (
-                  <div className="pt-4 border-t border-[rgba(255,255,255,0.1)]">
-                    <p className="text-xs font-medium text-[#666666] mb-2">Original Maya Prompt:</p>
-                    <div className="bg-[rgba(255,255,255,0.04)] rounded-lg p-3 border border-[rgba(255,255,255,0.1)]">
-                      <p className="text-xs text-[#e5e5e5] font-mono leading-relaxed">
+                  <div className="pt-4 border-t border-[rgba(195,190,182,0.12)]">
+                    <p className="text-xs font-medium text-[#8a8780] mb-2">Original Maya Prompt:</p>
+                    <div className="bg-[rgba(175,170,162,0.08)] rounded-lg p-3 border border-[rgba(195,190,182,0.12)]">
+                      <p className="text-xs text-[#a8a49c] font-mono leading-relaxed">
                         {concept.prompt}
                       </p>
                     </div>
@@ -2241,7 +2241,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                       onClick={() => {
                         setEditedPrompt(concept.prompt)
                       }}
-                      className="mt-2 text-xs text-[#666666] hover:text-[#ffffff] underline"
+                      className="mt-2 text-xs text-[#8a8780] hover:text-[#f0ede8] underline"
                     >
                       Restore original
                     </button>
@@ -2251,13 +2251,13 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.03)]">
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[rgba(195,190,182,0.12)] bg-[rgba(175,170,162,0.05)]">
               <button
                 onClick={() => {
                   setShowPromptEditor(false)
                   setEditedPrompt(null)
                 }}
-                className="px-4 py-2 text-sm font-medium text-[#e5e5e5] hover:bg-[rgba(255,255,255,0.08)] rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium text-[#a8a49c] hover:bg-[rgba(175,170,162,0.12)] rounded-lg transition-colors"
               >
                 Cancel
               </button>
@@ -2265,7 +2265,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                 onClick={() => {
                   setShowPromptEditor(false)
                 }}
-                className="px-4 py-2 text-sm font-medium text-white bg-[rgba(255,255,255,0.12)] hover:bg-[rgba(255,255,255,0.2)] rounded-lg transition-colors border border-[rgba(255,255,255,0.14)]"
+                className="px-4 py-2 text-sm font-medium text-[#f0ede8] bg-[rgba(175,170,162,0.15)] hover:bg-[rgba(175,170,162,0.25)] rounded-lg transition-colors border border-[rgba(195,190,182,0.25)]"
               >
                 Save Changes
               </button>

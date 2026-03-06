@@ -123,7 +123,7 @@ export function InstagramReelPreview({
 
   const modalContent = (
     <div
-      className="fixed inset-0 z-[9999] bg-stone-950 flex items-center justify-center p-4"
+      className="fixed inset-0 z-[9999] bg-[rgba(13,12,11,0.95)] backdrop-blur-sm flex items-center justify-center p-4"
       style={{
         paddingTop: `max(env(safe-area-inset-top), 1rem)`,
         paddingBottom: `max(env(safe-area-inset-bottom), 1rem)`,
@@ -134,7 +134,7 @@ export function InstagramReelPreview({
       {/* Close button - top right corner, always visible */}
       <button
         onClick={onClose}
-        className="absolute z-[100] min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-black/80 hover:bg-black transition-colors backdrop-blur-md shadow-2xl border border-white/20 px-3 text-[10px] uppercase tracking-[0.2em] text-white"
+        className="absolute z-[100] min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-[rgba(13,12,11,0.80)] hover:bg-[rgba(13,12,11,0.95)] transition-colors backdrop-blur-md shadow-2xl border border-[rgba(195,190,182,0.25)] px-3 text-[10px] uppercase tracking-[0.2em] text-[#f0ede8]"
         style={{
           top: `max(calc(env(safe-area-inset-top) + 0.5rem), 0.5rem)`,
           right: `max(calc(env(safe-area-inset-right) + 0.5rem), 0.5rem)`,
@@ -149,7 +149,7 @@ export function InstagramReelPreview({
         <>
           <button
             onClick={handlePrevious}
-            className="absolute z-20 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-stone-950/80 hover:bg-stone-950/90 transition-colors backdrop-blur-sm"
+            className="absolute z-20 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-[rgba(13,12,11,0.80)] hover:bg-[rgba(13,12,11,0.95)] transition-colors backdrop-blur-sm"
             style={{
               left: `max(env(safe-area-inset-left), 1rem)`,
               top: "50%",
@@ -157,11 +157,11 @@ export function InstagramReelPreview({
             }}
             aria-label="Previous video"
           >
-            <span className="text-[10px] uppercase tracking-[0.2em] text-white">Prev</span>
+            <span className="text-[10px] uppercase tracking-[0.2em] text-[#f0ede8]">Prev</span>
           </button>
           <button
             onClick={handleNext}
-            className="absolute z-20 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-stone-950/80 hover:bg-stone-950/90 transition-colors backdrop-blur-sm"
+            className="absolute z-20 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-[rgba(13,12,11,0.80)] hover:bg-[rgba(13,12,11,0.95)] transition-colors backdrop-blur-sm"
             style={{
               right: `max(env(safe-area-inset-right), 1rem)`,
               top: "50%",
@@ -169,13 +169,13 @@ export function InstagramReelPreview({
             }}
             aria-label="Next video"
           >
-            <span className="text-[10px] uppercase tracking-[0.2em] text-white">Next</span>
+            <span className="text-[10px] uppercase tracking-[0.2em] text-[#f0ede8]">Next</span>
           </button>
         </>
       )}
 
       {/* Instagram Reel Style - with proper constraints */}
-      <div className="relative w-full max-w-md aspect-[9/16] bg-stone-950 rounded-xl overflow-hidden flex flex-col max-h-[calc(100vh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-2rem)]">
+      <div className="relative w-full max-w-md aspect-[9/16] bg-[#0d0c0b] rounded-xl overflow-hidden flex flex-col max-h-[calc(100vh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-2rem)]">
         {/* Video */}
         <div className="relative flex-1 overflow-hidden">
           <video
@@ -192,16 +192,16 @@ export function InstagramReelPreview({
         </div>
 
         {/* Top gradient overlay */}
-        <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-stone-950/80 to-transparent pointer-events-none" />
+        <div className="absolute top-0 left-0 right-0 h-32 bg-gradient-to-b from-[rgba(13,12,11,0.80)] to-transparent pointer-events-none" />
 
         {/* Bottom gradient overlay */}
-        <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-stone-950/90 to-transparent pointer-events-none" />
+        <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-[rgba(13,12,11,0.90)] to-transparent pointer-events-none" />
 
         {/* Right sidebar actions */}
         <div className="absolute right-3 bottom-20 flex flex-col items-end gap-2 z-10">
           <button
             onClick={() => setLiked(!liked)}
-            className="px-3 py-1.5 rounded-full bg-stone-950/50 border border-[rgba(255,255,255,0.2)] text-[10px] tracking-[0.2em] uppercase text-white transition-colors hover:bg-stone-950/80"
+            className="px-3 py-1.5 rounded-full bg-[rgba(13,12,11,0.50)] border border-[rgba(195,190,182,0.25)] text-[10px] tracking-[0.2em] uppercase text-[#f0ede8] transition-colors hover:bg-[rgba(13,12,11,0.80)]"
           >
             {liked ? "Favourited" : "Favourite"}
           </button>
@@ -212,7 +212,7 @@ export function InstagramReelPreview({
 
           <button
             onClick={handleDownload}
-            className="px-3 py-1.5 rounded-full bg-stone-950/50 border border-[rgba(255,255,255,0.2)] text-[10px] tracking-[0.2em] uppercase text-white transition-colors hover:bg-stone-950/80"
+            className="px-3 py-1.5 rounded-full bg-[rgba(13,12,11,0.50)] border border-[rgba(195,190,182,0.25)] text-[10px] tracking-[0.2em] uppercase text-[#f0ede8] transition-colors hover:bg-[rgba(13,12,11,0.80)]"
           >
             Download
           </button>
@@ -226,7 +226,7 @@ export function InstagramReelPreview({
 
           <button
             onClick={toggleMute}
-            className="px-3 py-1.5 rounded-full bg-stone-950/50 border border-[rgba(255,255,255,0.2)] text-[10px] tracking-[0.2em] uppercase text-white transition-colors hover:bg-stone-950/80"
+            className="px-3 py-1.5 rounded-full bg-[rgba(13,12,11,0.50)] border border-[rgba(195,190,182,0.25)] text-[10px] tracking-[0.2em] uppercase text-[#f0ede8] transition-colors hover:bg-[rgba(13,12,11,0.80)]"
           >
             {isMuted ? "Muted" : "Audio"}
           </button>
@@ -235,22 +235,22 @@ export function InstagramReelPreview({
         {/* Bottom info */}
         <div className="absolute bottom-0 left-0 right-0 p-4 z-10">
           <div className="flex items-center gap-3 mb-3">
-            <Avatar className="w-10 h-10 border-2 border-white">
+            <Avatar className="w-10 h-10 border-2 border-[rgba(195,190,182,0.25)]">
               <AvatarImage src={userAvatar || "/placeholder.svg"} alt={userName} />
-              <AvatarFallback className="bg-stone-700 text-white text-sm font-medium">{userInitial}</AvatarFallback>
+              <AvatarFallback className="bg-[#2e2c29] text-[#f0ede8] text-sm font-medium">{userInitial}</AvatarFallback>
             </Avatar>
-            <span className="text-sm font-medium text-white">{userName}</span>
-            <button className="ml-auto rounded-full border border-white/20 px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-white">
+            <span className="text-sm font-medium text-[#f0ede8]">{userName}</span>
+            <button className="ml-auto rounded-full border border-[rgba(195,190,182,0.25)] px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-[#a8a49c]">
               Menu
             </button>
           </div>
 
           {currentVideo.motion_prompt && (
-            <p className="text-sm text-white mb-2 line-clamp-3">{currentVideo.motion_prompt}</p>
+            <p className="text-sm text-[#f0ede8] mb-2 line-clamp-3">{currentVideo.motion_prompt}</p>
           )}
 
           {videos.length > 1 && (
-            <div className="text-xs text-white/60 text-center">
+            <div className="text-xs text-[#8a8780] text-center">
               {currentIndex + 1} of {videos.length}
             </div>
           )}

@@ -58,61 +58,61 @@ export default function EditProfileDialog({ open, onOpenChange, currentData, onS
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="border border-[color:var(--glass-border)] bg-[color:var(--color-obsidian)]/95 text-[color:var(--color-porcelain)] backdrop-blur-[20px] sm:max-w-[520px]">
+      <DialogContent className="border border-[rgba(195,190,182,0.25)] bg-[rgba(28,27,25,0.97)] text-[#f0ede8] backdrop-blur-[50px] sm:max-w-[520px]">
         <DialogHeader>
-          <DialogTitle className="display-header text-2xl font-light text-[color:var(--color-porcelain)]">
+          <DialogTitle className="font-['Cormorant_Garamond'] font-light text-2xl text-[#f0ede8]">
             Edit Profile
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6 py-4">
           <div className="space-y-2">
-            <Label htmlFor="name" className="text-[11px] font-medium uppercase tracking-[0.35em] text-[color:var(--color-smoke)]">
+            <Label htmlFor="name" className="font-['Inter'] text-[10px] font-medium uppercase tracking-[0.5em] text-[#8a8780]">
               Name
             </Label>
             <Input
               id="name"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="h-12 border-white/15 bg-white/6 text-[color:var(--color-whisper)] placeholder:text-[color:var(--color-smoke)] focus:border-white/30"
+              className="h-12 border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] text-[#f0ede8] placeholder:text-[#8a8780] focus:border-[rgba(195,190,182,0.50)]"
               required
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="bio" className="text-[11px] font-medium uppercase tracking-[0.35em] text-[color:var(--color-smoke)]">
+            <Label htmlFor="bio" className="font-['Inter'] text-[10px] font-medium uppercase tracking-[0.5em] text-[#8a8780]">
               Bio
             </Label>
             <Textarea
               id="bio"
               value={formData.bio}
               onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-              className="min-h-[100px] border-white/15 bg-white/6 text-[color:var(--color-whisper)] placeholder:text-[color:var(--color-smoke)] focus:border-white/30"
+              className="min-h-[100px] border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] text-[#f0ede8] placeholder:text-[#8a8780] focus:border-[rgba(195,190,182,0.50)]"
               placeholder="Tell us about yourself..."
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="location" className="text-[11px] font-medium uppercase tracking-[0.35em] text-[color:var(--color-smoke)]">
+            <Label htmlFor="location" className="font-['Inter'] text-[10px] font-medium uppercase tracking-[0.5em] text-[#8a8780]">
               Location
             </Label>
             <Input
               id="location"
               value={formData.location}
               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-              className="h-12 border-white/15 bg-white/6 text-[color:var(--color-whisper)] placeholder:text-[color:var(--color-smoke)] focus:border-white/30"
+              className="h-12 border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] text-[#f0ede8] placeholder:text-[#8a8780] focus:border-[rgba(195,190,182,0.50)]"
               placeholder="City, Country"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="instagram" className="text-[11px] font-medium uppercase tracking-[0.35em] text-[color:var(--color-smoke)]">
+            <Label htmlFor="instagram" className="font-['Inter'] text-[10px] font-medium uppercase tracking-[0.5em] text-[#8a8780]">
               Instagram Handle
             </Label>
             <Input
               id="instagram"
               value={formData.instagram}
               onChange={(e) => setFormData({ ...formData, instagram: e.target.value })}
-              className="h-12 border-white/15 bg-white/6 text-[color:var(--color-whisper)] placeholder:text-[color:var(--color-smoke)] focus:border-white/30"
+              className="h-12 border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] text-[#f0ede8] placeholder:text-[#8a8780] focus:border-[rgba(195,190,182,0.50)]"
               placeholder="@username"
             />
           </div>
@@ -123,14 +123,14 @@ export default function EditProfileDialog({ open, onOpenChange, currentData, onS
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={loading}
-              className="border-white/20 bg-white/5 text-[color:var(--color-whisper)] hover:bg-white/10"
+              className="border-[rgba(195,190,182,0.25)] bg-transparent text-[#8a8780] hover:bg-[rgba(175,170,162,0.10)] hover:text-[#f0ede8]"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={loading}
-              className="border border-white/20 bg-white/10 font-medium uppercase tracking-[0.2em] text-[color:var(--color-porcelain)] hover:bg-white/15"
+              className="bg-[#c8c4bb] text-[#0d0c0b] font-['Inter'] font-medium uppercase tracking-[0.15em] text-xs px-6 py-3 rounded-full hover:bg-[#f0ede8] transition-colors border-0"
             >
               {loading ? (
                 <>

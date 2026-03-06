@@ -137,14 +137,14 @@ export default function FullscreenImageModal({
 
   const modalContent = (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-sm animate-in fade-in duration-200"
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-[rgba(13,12,11,0.95)] backdrop-blur-sm animate-in fade-in duration-200"
       onClick={onClose}
     >
-      <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-4 sm:p-6 bg-gradient-to-b from-black/80 to-transparent pt-[max(env(safe-area-inset-top),1rem)] pb-4">
-        <h3 className="text-base sm:text-lg font-semibold text-white truncate max-w-[60%]">{title}</h3>
+      <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-4 sm:p-6 bg-gradient-to-b from-[rgba(13,12,11,0.80)] to-transparent pt-[max(env(safe-area-inset-top),1rem)] pb-4">
+        <h3 className="text-base sm:text-lg font-semibold text-[#f0ede8] truncate max-w-[60%]">{title}</h3>
         <button
           onClick={onClose}
-          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full border border-white/20 bg-white/10 px-3 text-[10px] uppercase tracking-[0.2em] text-white hover:bg-white/20 transition-colors backdrop-blur-xl"
+          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.15)] px-3 text-[10px] uppercase tracking-[0.2em] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.25)] transition-colors backdrop-blur-xl"
           aria-label="Close fullscreen view"
         >
           Close
@@ -173,8 +173,8 @@ export default function FullscreenImageModal({
         </div>
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 bg-gradient-to-t from-black/85 to-transparent pb-[max(env(safe-area-inset-bottom),1rem)]">
-        <div className="mx-auto flex w-fit max-w-full flex-wrap items-center justify-center gap-2 rounded-full border border-white/20 bg-white/8 px-3 py-2 backdrop-blur-2xl sm:gap-3 sm:px-4">
+      <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 bg-gradient-to-t from-[rgba(13,12,11,0.85)] to-transparent pb-[max(env(safe-area-inset-bottom),1rem)]">
+        <div className="mx-auto flex w-fit max-w-full flex-wrap items-center justify-center gap-2 rounded-full border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] px-3 py-2 backdrop-blur-2xl sm:gap-3 sm:px-4">
           {onFavoriteToggle && (
             <button
               onClick={(e) => {
@@ -182,8 +182,8 @@ export default function FullscreenImageModal({
                 handleFavorite()
               }}
               disabled={isFavoriting}
-              className={`min-h-[44px] rounded-full border px-4 py-2 text-[11px] uppercase tracking-[0.22em] text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
-                isFavorite ? "border-white/45 bg-white/20 hover:bg-white/25" : "border-white/25 bg-white/8 hover:bg-white/14"
+              className={`min-h-[44px] rounded-full border px-4 py-2 text-[11px] uppercase tracking-[0.22em] text-[#f0ede8] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
+                isFavorite ? "border-[rgba(195,190,182,0.45)] bg-[rgba(175,170,162,0.20)] hover:bg-[rgba(175,170,162,0.28)]" : "border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] hover:bg-[rgba(175,170,162,0.18)]"
               }`}
               aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
             >
@@ -196,7 +196,7 @@ export default function FullscreenImageModal({
               e.stopPropagation()
               handleDownload()
             }}
-            className="min-h-[44px] rounded-full border border-white/25 bg-white/8 px-4 py-2 text-[11px] uppercase tracking-[0.22em] text-white transition-all duration-200 hover:bg-white/14"
+            className="min-h-[44px] rounded-full border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] px-4 py-2 text-[11px] uppercase tracking-[0.22em] text-[#f0ede8] transition-all duration-200 hover:bg-[rgba(175,170,162,0.18)]"
             aria-label="Download image"
           >
             DOWNLOAD
@@ -209,14 +209,14 @@ export default function FullscreenImageModal({
                 handleDelete()
               }}
               disabled={isDeleting}
-              className="min-h-[44px] rounded-full border border-white/30 bg-white/14 px-4 py-2 text-[11px] uppercase tracking-[0.22em] text-white transition-all duration-200 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="min-h-[44px] rounded-full border border-[rgba(195,190,182,0.30)] bg-[rgba(175,170,162,0.14)] px-4 py-2 text-[11px] uppercase tracking-[0.22em] text-[#f0ede8] transition-all duration-200 hover:bg-[rgba(175,170,162,0.22)] disabled:opacity-50 disabled:cursor-not-allowed"
               aria-label="Delete image"
             >
               {isDeleting ? "DELETING..." : "DELETE"}
             </button>
           )}
         </div>
-        <p className="mt-2 text-center text-[10px] uppercase tracking-[0.2em] text-white/45">ID {imageId}</p>
+        <p className="mt-2 text-center text-[10px] uppercase tracking-[0.2em] text-[#8a8780]">ID {imageId}</p>
       </div>
     </div>
   )

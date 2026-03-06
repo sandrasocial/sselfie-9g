@@ -492,14 +492,14 @@ export default function FeedHeader({
   const feedColor = feedData?.feed?.display_color || "#3b82f6" // Default blue
 
   return (
-    <div className="border-b border-white/10 bg-[rgba(8,8,8,0.84)] backdrop-blur-xl">
+    <div className="bg-[rgba(175,170,162,0.08)] backdrop-blur-[50px] border-b border-[rgba(195,190,182,0.15)]">
       <div className="px-3 sm:px-4 py-2.5 sm:py-3 space-y-2">
         <div className="flex items-center justify-between gap-2 sm:gap-3">
           <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
             {onBack && (
               <button
                 onClick={onBack}
-                className="rounded-full border border-white/12 bg-white/[0.03] px-2.5 sm:px-3 py-1.5 text-[9px] uppercase tracking-[0.16em] text-white/80 transition-colors hover:bg-white/10 hover:text-white min-h-[34px] sm:min-h-[36px]"
+                className="rounded-full border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] px-2.5 sm:px-3 py-1.5 text-[9px] uppercase tracking-[0.16em] text-[#a8a49c] transition-colors hover:bg-[rgba(175,170,162,0.18)] hover:text-[#f0ede8] min-h-[34px] sm:min-h-[36px]"
               >
                 Back
               </button>
@@ -514,7 +514,7 @@ export default function FeedHeader({
                 title={`Feed color: ${feedData.feed.display_color}`}
               />
             )}
-            <span className="truncate text-sm sm:text-base font-semibold text-white">{feedName}</span>
+            <span className="truncate text-sm sm:text-base font-['Cormorant_Garamond'] font-light text-[#f0ede8]">{feedName}</span>
             <span className="shrink-0 text-[9px] uppercase tracking-[0.16em]" style={{ color: feedColor }}>
               Live
             </span>
@@ -537,7 +537,7 @@ export default function FeedHeader({
             {onOpenWizard && (
               <button
                 onClick={onOpenWizard}
-                className="rounded-full border border-white/12 bg-white/[0.03] px-3 py-1.5 text-[9px] uppercase tracking-[0.16em] text-white/72 transition-colors hover:bg-white/10 hover:text-white min-h-[34px] sm:min-h-[36px]"
+                className="rounded-full border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] px-3 py-1.5 text-[9px] uppercase tracking-[0.16em] text-[#a8a49c] transition-colors hover:bg-[rgba(175,170,162,0.18)] hover:text-[#f0ede8] min-h-[34px] sm:min-h-[36px]"
                 title="Edit wizard answers"
               >
                 Wizard
@@ -546,7 +546,7 @@ export default function FeedHeader({
             {onOpenWelcomeWizard && access?.isPaidBlueprint && (
               <button
                 onClick={onOpenWelcomeWizard}
-                className="rounded-full border border-white/12 bg-white/[0.03] px-3 py-1.5 text-[9px] uppercase tracking-[0.16em] text-white/72 transition-colors hover:bg-white/10 hover:text-white min-h-[34px] sm:min-h-[36px]"
+                className="rounded-full border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] px-3 py-1.5 text-[9px] uppercase tracking-[0.16em] text-[#a8a49c] transition-colors hover:bg-[rgba(175,170,162,0.18)] hover:text-[#f0ede8] min-h-[34px] sm:min-h-[36px]"
                 title="View welcome guide"
               >
                 Guide
@@ -590,25 +590,25 @@ export default function FeedHeader({
 
           <div className="flex-1 space-y-3">
             <div className="grid grid-cols-3 gap-2 max-w-sm">
-              <div className="rounded-lg border border-white/10 bg-white/[0.02] px-2 py-1.5 text-center">
-                <div className="text-sm font-semibold text-white">9</div>
-                <div className="text-[11px] text-white/55">posts</div>
+              <div className="rounded-lg border border-[rgba(195,190,182,0.15)] bg-[rgba(175,170,162,0.08)] px-2 py-1.5 text-center">
+                <div className="text-sm font-semibold text-[#f0ede8]">9</div>
+                <div className="text-[11px] text-[#8a8780]">posts</div>
               </div>
-              <div className="rounded-lg border border-white/10 bg-white/[0.02] px-2 py-1.5 text-center">
-                <div className="text-sm font-semibold text-white">1.2K</div>
-                <div className="text-[11px] text-white/55">followers</div>
+              <div className="rounded-lg border border-[rgba(195,190,182,0.15)] bg-[rgba(175,170,162,0.08)] px-2 py-1.5 text-center">
+                <div className="text-sm font-semibold text-[#f0ede8]">1.2K</div>
+                <div className="text-[11px] text-[#8a8780]">followers</div>
               </div>
-              <div className="rounded-lg border border-white/10 bg-white/[0.02] px-2 py-1.5 text-center">
-                <div className="text-sm font-semibold text-white">342</div>
-                <div className="text-[11px] text-white/55">following</div>
+              <div className="rounded-lg border border-[rgba(195,190,182,0.15)] bg-[rgba(175,170,162,0.08)] px-2 py-1.5 text-center">
+                <div className="text-sm font-semibold text-[#f0ede8]">342</div>
+                <div className="text-[11px] text-[#8a8780]">following</div>
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <div className="text-sm font-semibold text-white">
+              <div className="text-sm font-['Cormorant_Garamond'] font-light text-[#f0ede8]">
                 {feedData?.userDisplayName || feedData?.feed?.brand_name || "User"}
               </div>
-              <div className="whitespace-pre-wrap text-sm leading-relaxed text-white/72">
+              <div className="whitespace-pre-wrap text-sm leading-relaxed text-[#8a8780]">
                 {hasBio ? feedData.bio.bio_text : "Your Instagram feed strategy created by Maya"}
               </div>
             </div>
@@ -617,7 +617,7 @@ export default function FeedHeader({
               <button
                 onClick={handleCreatePreviewFeed}
                 disabled={isCreatingPreviewFeed}
-                className="rounded-full border border-white/15 bg-white/[0.05] px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] uppercase tracking-[0.16em] text-white/88 transition-colors hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-50 min-h-[34px] sm:min-h-[36px]"
+                className="rounded-full border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] uppercase tracking-[0.16em] text-[#a8a49c] transition-colors hover:bg-[rgba(175,170,162,0.18)] hover:text-[#f0ede8] disabled:cursor-not-allowed disabled:opacity-50 min-h-[34px] sm:min-h-[36px]"
               >
                 {isCreatingPreviewFeed ? (
                   <>
@@ -633,7 +633,7 @@ export default function FeedHeader({
                 <button
                   onClick={handleCreateNewFeedClick}
                   disabled={isCreatingFeed}
-                  className="rounded-full border border-white/15 bg-white/[0.05] px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] uppercase tracking-[0.16em] text-white/88 transition-colors hover:bg-white/12 disabled:cursor-not-allowed disabled:opacity-50 min-h-[34px] sm:min-h-[36px]"
+                  className="rounded-full border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] uppercase tracking-[0.16em] text-[#a8a49c] transition-colors hover:bg-[rgba(175,170,162,0.18)] hover:text-[#f0ede8] disabled:cursor-not-allowed disabled:opacity-50 min-h-[34px] sm:min-h-[36px]"
                 >
                   {isCreatingFeed ? (
                     <>
@@ -649,7 +649,7 @@ export default function FeedHeader({
               {!access?.isFree && (
                 <button
                   onClick={onWriteBio}
-                  className="rounded-full border border-white/15 bg-white/[0.05] px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] uppercase tracking-[0.16em] text-white/82 transition-colors hover:bg-white/12 min-h-[34px] sm:min-h-[36px]"
+                  className="rounded-full border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] uppercase tracking-[0.16em] text-[#a8a49c] transition-colors hover:bg-[rgba(175,170,162,0.18)] hover:text-[#f0ede8] min-h-[34px] sm:min-h-[36px]"
                 >
                   Bio
                 </button>
@@ -657,7 +657,7 @@ export default function FeedHeader({
               {!access?.isFree && onCreateHighlights && (
                 <button
                   onClick={onCreateHighlights}
-                  className="rounded-full border border-white/15 bg-white/[0.05] px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] uppercase tracking-[0.16em] text-white/82 transition-colors hover:bg-white/12 min-h-[34px] sm:min-h-[36px]"
+                  className="rounded-full border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] uppercase tracking-[0.16em] text-[#a8a49c] transition-colors hover:bg-[rgba(175,170,162,0.18)] hover:text-[#f0ede8] min-h-[34px] sm:min-h-[36px]"
                 >
                   Highlights
                 </button>

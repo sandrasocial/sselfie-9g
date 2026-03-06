@@ -97,7 +97,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#000000",
+  themeColor: "#0d0c0b",
   interactiveWidget: "resizes-content",
 }
 
@@ -177,7 +177,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`font-sans antialiased`}>
+      <body className="bg-[#0d0c0b] text-[#f0ede8] antialiased min-h-screen">
         {/* Google Analytics 4 */}
         {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
           <>

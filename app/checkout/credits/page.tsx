@@ -45,7 +45,7 @@ export default function CreditsCheckoutPage() {
 
   if (clientSecret) {
     return (
-      <div className="min-h-screen bg-black text-white flex flex-col">
+      <div className="min-h-screen bg-[#0d0c0b] text-[#f0ede8] flex flex-col">
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-4xl mx-auto p-4 md:p-8">
             <EmbeddedCheckoutProvider stripe={stripePromise} options={{ clientSecret }}>
@@ -58,13 +58,14 @@ export default function CreditsCheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-[#0d0c0b] text-[#f0ede8]">
       <div className="max-w-4xl mx-auto px-6 py-16">
         <div className="text-center mb-12">
-          <h1 className="text-3xl md:text-4xl font-light mb-4" style={{ fontFamily: "'Times New Roman', serif" }}>
+          <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780] mb-4">Credits</p>
+          <h1 className="font-['Cormorant_Garamond'] font-light text-4xl text-[#f0ede8] tracking-wide mb-4">
             One-Time Credit Packs
           </h1>
-          <p className="text-stone-400 text-sm md:text-base">
+          <p className="text-[#8a8780] text-sm">
             Purchase credits to use whenever you need them. No subscription required.
           </p>
         </div>
@@ -73,15 +74,15 @@ export default function CreditsCheckoutPage() {
           {CREDIT_PACKAGES.map((pkg) => (
             <div
               key={pkg.id}
-              className="bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-white/20 transition-all"
+              className="bg-[rgba(175,170,162,0.10)] backdrop-blur-[50px] border border-[rgba(195,190,182,0.25)] rounded-2xl p-6 hover:border-[rgba(195,190,182,0.40)] transition-all"
             >
               <div className="mb-4">
-                <h3 className="text-xl font-light mb-2" style={{ fontFamily: "'Times New Roman', serif" }}>
+                <h3 className="font-['Cormorant_Garamond'] text-2xl text-[#f0ede8] mb-2">
                   {pkg.displayName || pkg.name}
                 </h3>
-                <p className="text-stone-400 text-xs mb-4">{pkg.description}</p>
+                <p className="text-[#8a8780] text-xs mb-4">{pkg.description}</p>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-light" style={{ fontFamily: "'Times New Roman', serif" }}>
+                  <span className="font-['Cormorant_Garamond'] font-light text-3xl text-[#f0ede8]">
                     ${(pkg.priceInCents / 100).toFixed(0)}
                   </span>
                 </div>
@@ -89,7 +90,7 @@ export default function CreditsCheckoutPage() {
               <button
                 onClick={() => handleSelectPackage(pkg.id)}
                 disabled={loading}
-                className="w-full bg-white text-black px-6 py-3 rounded-full text-xs uppercase tracking-wider hover:bg-stone-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+                className="w-full bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[#f0ede8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
               >
                 {loading && selectedPackage === pkg.id ? "Loading..." : "Purchase"}
               </button>
@@ -100,7 +101,7 @@ export default function CreditsCheckoutPage() {
         <div className="text-center mt-12">
           <button
             onClick={() => router.back()}
-            className="text-sm text-stone-400 hover:text-white transition-colors"
+            className="text-sm text-[#8a8780] hover:text-[#f0ede8] transition-colors"
           >
             ← Back
           </button>

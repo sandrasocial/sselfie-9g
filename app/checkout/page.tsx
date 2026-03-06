@@ -82,15 +82,15 @@ function CheckoutContent() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#0d0c0b] flex items-center justify-center p-4">
         <div className="max-w-md text-center">
-          <div className="font-serif text-2xl sm:text-3xl font-extralight tracking-[0.3em] uppercase text-stone-900 mb-4">
+          <div className="font-['Cormorant_Garamond'] font-light text-2xl sm:text-3xl tracking-[0.3em] uppercase text-[#f0ede8] mb-4">
             Something went wrong
           </div>
-          <p className="text-sm text-stone-600 font-light mb-6">We couldn&apos;t find your checkout session.</p>
+          <p className="text-sm text-[#8a8780] font-light mb-6">We couldn&apos;t find your checkout session.</p>
           <button
             onClick={() => router.push("/")}
-            className="bg-stone-950 text-stone-50 px-6 py-3 rounded-lg text-xs font-medium uppercase tracking-wider hover:bg-stone-800 transition-all duration-200"
+            className="bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[#f0ede8] transition-colors"
           >
             Go back to Home
           </button>
@@ -101,12 +101,12 @@ function CheckoutContent() {
 
   if (!clientSecret) {
     return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[#0d0c0b] flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="font-serif text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extralight tracking-[0.3em] uppercase text-white mb-3">
+          <div className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.3em] uppercase text-[#f0ede8] mb-3">
             S S E L F I E
           </div>
-          <p className="text-sm sm:text-base text-white/90 font-light">Complete your order</p>
+          <p className="text-sm sm:text-base text-[#8a8780] font-light">Complete your order</p>
         </div>
       </div>
     )
@@ -115,7 +115,7 @@ function CheckoutContent() {
   console.log("[v0] Checkout page - Rendering EmbeddedCheckout component")
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="min-h-screen bg-[#0d0c0b]">
       {/* Hero Image Section */}
       <div className="relative h-[30vh] sm:h-[35vh] md:h-[40vh] overflow-hidden">
         <Image
@@ -125,28 +125,29 @@ function CheckoutContent() {
           className="object-cover object-center"
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/20 to-stone-50" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#0d0c0b]/60 via-[#0d0c0b]/30 to-[#0d0c0b]" />
 
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-          <div className="font-serif text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extralight tracking-[0.3em] uppercase text-white mb-3">
+          <div className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.3em] uppercase text-[#f0ede8] mb-3">
             Complete your SSELFIE Studio order
           </div>
-          <p className="text-sm sm:text-base text-white/90 font-light">Join the Visibility Studio and start showing up with confidence.</p>
+          <p className="text-sm sm:text-base text-[#c8c4bb] font-light">Join the Visibility Studio and start showing up with confidence.</p>
         </div>
       </div>
 
       {/* Checkout Form Section */}
       <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
         <div className="text-center mb-6 sm:mb-8">
-          <h1 className="font-serif text-xl sm:text-2xl md:text-3xl font-extralight tracking-[0.15em] sm:tracking-[0.2em] uppercase text-stone-900 mb-3">
-            SECURE CHECKOUT
+          <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780] mb-3">Secure Checkout</p>
+          <h1 className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl text-[#f0ede8] tracking-wide mb-3">
+            Secure Checkout
           </h1>
-          <p className="text-xs sm:text-sm text-stone-600 font-light leading-relaxed max-w-xl mx-auto">
+          <p className="text-xs sm:text-sm text-[#8a8780] font-light leading-relaxed max-w-xl mx-auto">
             Your payment is encrypted and protected with Stripe.
           </p>
         </div>
 
-        <div className="bg-white rounded-2xl p-4 sm:p-6 md:p-8 border border-stone-200 shadow-sm">
+        <div className="bg-[rgba(175,170,162,0.10)] backdrop-blur-[50px] border border-[rgba(195,190,182,0.25)] rounded-2xl p-4 sm:p-6 md:p-8">
           <EmbeddedCheckoutProvider
             stripe={stripePromise}
             options={{
@@ -159,10 +160,10 @@ function CheckoutContent() {
         </div>
 
         <div className="mt-6 text-center">
-          <p className="text-[10px] sm:text-xs text-stone-500 font-light leading-relaxed">
+          <p className="text-[10px] sm:text-xs text-[#8a8780] font-light leading-relaxed">
             Protected by Stripe · SSL Encrypted · PCI Compliant
           </p>
-          <p className="text-[10px] sm:text-xs text-stone-500 font-light leading-relaxed mt-2">
+          <p className="text-[10px] sm:text-xs text-[#8a8780] font-light leading-relaxed mt-2">
             Cancel anytime. 30-day refund if you&apos;re not happy.
           </p>
         </div>
@@ -175,12 +176,12 @@ export default function CheckoutPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
+        <div className="min-h-screen bg-[#0d0c0b] flex items-center justify-center p-4">
           <div className="text-center">
-            <div className="font-serif text-xl sm:text-2xl font-extralight tracking-[0.3em] uppercase text-stone-900 mb-4">
+            <div className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl tracking-[0.3em] uppercase text-[#f0ede8] mb-4">
               Loading your checkout
             </div>
-            <p className="text-sm text-stone-600 font-light">Please wait a moment...</p>
+            <p className="text-sm text-[#8a8780] font-light">Please wait a moment...</p>
           </div>
         </div>
       }

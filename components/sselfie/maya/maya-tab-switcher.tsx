@@ -96,7 +96,7 @@ export default function MayaTabSwitcher({
             }}
             className={`relative px-3 sm:px-3.5 py-1.5 rounded-lg transition-all touch-manipulation active:scale-95 min-h-[34px] sm:min-h-[36px] flex items-center gap-1 sm:gap-1.5 whitespace-nowrap scroll-snap-align-start ${
               isActive
-                ? "bg-[rgba(255,255,255,0.1)] text-[#ffffff] cursor-default"
+                ? "bg-[rgba(175,170,162,0.18)] text-[#f0ede8] cursor-default"
                 : isDisabled
                   ? "text-[rgba(255,255,255,0.3)] opacity-60 cursor-not-allowed"
                   : "text-[rgba(255,255,255,0.52)] hover:text-[rgba(255,255,255,0.78)] hover:bg-[rgba(255,255,255,0.06)] cursor-pointer"

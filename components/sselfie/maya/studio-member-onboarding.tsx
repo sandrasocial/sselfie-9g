@@ -34,55 +34,49 @@ export default function StudioMemberOnboarding({
   }
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
-      <div className="w-full max-w-md rounded-2xl border border-[rgba(255,255,255,0.15)] bg-[rgba(10,10,10,0.95)] text-[#ffffff] shadow-2xl overflow-hidden">
-        <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-[rgba(255,255,255,0.1)]">
-          <h2
-            className="text-xs tracking-[0.2em] uppercase text-[#e5e5e5]"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
+    <div className="fixed inset-0 z-[9999] bg-[rgba(13,12,11,0.80)] backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+      <div className="w-full max-w-md rounded-3xl border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.15)] backdrop-blur-[70px] overflow-hidden">
+        <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-[rgba(195,190,182,0.20)]">
+          <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780]">
             Studio Onboarding
-          </h2>
+          </p>
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full border border-[rgba(255,255,255,0.2)] flex items-center justify-center hover:bg-[rgba(255,255,255,0.1)] transition-colors"
+            className="h-8 px-3 rounded-full border border-[rgba(195,190,182,0.25)] flex items-center justify-center hover:bg-[rgba(175,170,162,0.18)] transition-colors"
             aria-label="Close onboarding"
           >
-            <span className="text-[10px] uppercase tracking-[0.18em] text-[#e5e5e5]">Close</span>
+            <span className="text-[10px] uppercase tracking-[0.18em] text-[#8a8780]">Close</span>
           </button>
         </div>
 
         <div className="px-5 py-5">
           <div className="flex gap-1.5 mb-5">
-            <div className={`h-1.5 flex-1 rounded-full ${step >= 1 ? "bg-[#ffffff]" : "bg-[rgba(255,255,255,0.2)]"}`} />
-            <div className={`h-1.5 flex-1 rounded-full ${step >= 2 ? "bg-[#ffffff]" : "bg-[rgba(255,255,255,0.2)]"}`} />
-            <div className={`h-1.5 flex-1 rounded-full ${step >= 3 ? "bg-[#ffffff]" : "bg-[rgba(255,255,255,0.2)]"}`} />
+            <div className={`h-1.5 flex-1 rounded-full ${step >= 1 ? "bg-[#c8c4bb]" : "bg-[rgba(175,170,162,0.25)]"}`} />
+            <div className={`h-1.5 flex-1 rounded-full ${step >= 2 ? "bg-[#c8c4bb]" : "bg-[rgba(175,170,162,0.25)]"}`} />
+            <div className={`h-1.5 flex-1 rounded-full ${step >= 3 ? "bg-[#c8c4bb]" : "bg-[rgba(175,170,162,0.25)]"}`} />
           </div>
 
           {step === 1 && (
             <div className="space-y-4">
-              <h3
-                className="text-lg uppercase tracking-[0.12em] text-[#ffffff]"
-                style={{ fontFamily: "var(--font-display)" }}
-              >
+              <h3 className="font-['Cormorant_Garamond'] font-light text-xl tracking-wide text-[#f0ede8] uppercase">
                 Your Studio Is Ready
               </h3>
-              <div className="rounded-xl border border-[rgba(255,255,255,0.18)] bg-[rgba(255,255,255,0.05)] p-3 grid grid-cols-3 gap-2 text-center">
+              <div className="rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-3 grid grid-cols-3 gap-2 text-center">
                 <div>
-                  <p className="text-[10px] uppercase tracking-[0.12em] text-[#e5e5e5]">Credits</p>
-                  <p className="text-sm text-[#ffffff] mt-1">{Math.round(creditBalance)}</p>
+                  <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.3em] text-[#8a8780]">Credits</p>
+                  <p className="text-sm text-[#f0ede8] mt-1">{Math.round(creditBalance)}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase tracking-[0.12em] text-[#e5e5e5]">SELFIE</p>
-                  <p className="text-sm text-[#ffffff] mt-1">On</p>
+                  <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.3em] text-[#8a8780]">SELFIE</p>
+                  <p className="text-sm text-[#f0ede8] mt-1">On</p>
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase tracking-[0.12em] text-[#e5e5e5]">Training</p>
-                  <p className="text-sm text-[#ffffff] mt-1">Ready</p>
+                  <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.3em] text-[#8a8780]">Training</p>
+                  <p className="text-sm text-[#f0ede8] mt-1">Ready</p>
                 </div>
               </div>
-              <p className="text-sm text-[#e5e5e5] leading-relaxed">
+              <p className="text-sm text-[#8a8780] leading-relaxed">
                 Two ways to create photos that look like you. Start with the fastest.
               </p>
               <button
@@ -91,22 +85,19 @@ export default function StudioMemberOnboarding({
                   onShowSelfieMode()
                   setStep(2)
                 }}
-                className="w-full py-3 rounded-xl bg-[rgba(255,255,255,0.1)] border border-[rgba(255,255,255,0.25)] text-xs uppercase tracking-[0.14em] hover:bg-[rgba(255,255,255,0.16)] transition-colors"
+                className="w-full py-3 rounded-full bg-[#c8c4bb] text-[#0d0c0b] text-xs font-medium uppercase tracking-[0.14em] hover:bg-[#f0ede8] transition-colors"
               >
-                Show Me SELFIE Mode →
+                Show Me SELFIE Mode
               </button>
             </div>
           )}
 
           {step === 2 && (
             <div className="space-y-4">
-              <h3
-                className="text-lg uppercase tracking-[0.12em] text-[#ffffff]"
-                style={{ fontFamily: "var(--font-display)" }}
-              >
+              <h3 className="font-['Cormorant_Garamond'] font-light text-xl tracking-wide text-[#f0ede8] uppercase">
                 This Is SELFIE Mode
               </h3>
-              <p className="text-sm text-[#e5e5e5] leading-relaxed">
+              <p className="text-sm text-[#8a8780] leading-relaxed">
                 Upload one selfie here. Maya does the rest.
               </p>
               <button
@@ -115,14 +106,14 @@ export default function StudioMemberOnboarding({
                   onUploadSelfie()
                   setStep(3)
                 }}
-                className="w-full py-3 rounded-xl bg-[rgba(255,255,255,0.1)] border border-[rgba(255,255,255,0.25)] text-xs uppercase tracking-[0.14em] hover:bg-[rgba(255,255,255,0.16)] transition-colors"
+                className="w-full py-3 rounded-full bg-[#c8c4bb] text-[#0d0c0b] text-xs font-medium uppercase tracking-[0.14em] hover:bg-[#f0ede8] transition-colors"
               >
-                Upload a Selfie →
+                Upload a Selfie
               </button>
               <button
                 type="button"
                 onClick={onClose}
-                className="w-full py-3 rounded-xl border border-[rgba(255,255,255,0.2)] text-xs uppercase tracking-[0.14em] text-[#e5e5e5] hover:bg-[rgba(255,255,255,0.08)] transition-colors"
+                className="w-full py-3 rounded-full border border-[rgba(195,190,182,0.30)] text-xs uppercase tracking-[0.14em] text-[#8a8780] hover:text-[#f0ede8] hover:border-[rgba(195,190,182,0.55)] transition-colors"
               >
                 I&apos;ll Explore First
               </button>
@@ -131,13 +122,10 @@ export default function StudioMemberOnboarding({
 
           {step === 3 && (
             <div className="space-y-4">
-              <h3
-                className="text-lg uppercase tracking-[0.12em] text-[#ffffff]"
-                style={{ fontFamily: "var(--font-display)" }}
-              >
+              <h3 className="font-['Cormorant_Garamond'] font-light text-xl tracking-wide text-[#f0ede8] uppercase">
                 Want Even Better Results?
               </h3>
-              <p className="text-sm text-[#e5e5e5] leading-relaxed">
+              <p className="text-sm text-[#8a8780] leading-relaxed">
                 Train AI on 10-15 photos. Around 30 minutes. Your model runs forever.
               </p>
               <button
@@ -146,14 +134,14 @@ export default function StudioMemberOnboarding({
                   onStartTraining()
                   onClose()
                 }}
-                className="w-full py-3 rounded-xl bg-[rgba(255,255,255,0.1)] border border-[rgba(255,255,255,0.25)] text-xs uppercase tracking-[0.14em] hover:bg-[rgba(255,255,255,0.16)] transition-colors"
+                className="w-full py-3 rounded-full bg-[#c8c4bb] text-[#0d0c0b] text-xs font-medium uppercase tracking-[0.14em] hover:bg-[#f0ede8] transition-colors"
               >
-                Start Training →
+                Start Training
               </button>
               <button
                 type="button"
                 onClick={onClose}
-                className="w-full py-3 rounded-xl border border-[rgba(255,255,255,0.2)] text-xs uppercase tracking-[0.14em] text-[#e5e5e5] hover:bg-[rgba(255,255,255,0.08)] transition-colors"
+                className="w-full py-3 rounded-full border border-[rgba(195,190,182,0.30)] text-xs uppercase tracking-[0.14em] text-[#8a8780] hover:text-[#f0ede8] hover:border-[rgba(195,190,182,0.55)] transition-colors"
               >
                 Not Now - I&apos;ll Explore
               </button>

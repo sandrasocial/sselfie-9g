@@ -213,9 +213,9 @@ export default function InstagramReelCard({
   }, [])
 
   return (
-    <div className="relative aspect-9/16 bg-[#0a0a0a] rounded-[20px] overflow-hidden border border-[rgba(255,255,255,0.08)] max-w-[400px] mx-auto group">
-      <div className="absolute top-0 left-0 right-0 h-0.5 bg-white/20 z-20">
-        <div className="h-full bg-white transition-all duration-100" style={{ width: `${progress}%` }} />
+    <div className="relative aspect-9/16 bg-[#1c1b19] rounded-[20px] overflow-hidden border border-[rgba(195,190,182,0.20)] max-w-[400px] mx-auto group">
+      <div className="absolute top-0 left-0 right-0 h-0.5 bg-[rgba(175,170,162,0.20)] z-20">
+        <div className="h-full bg-[#a8a49c] transition-all duration-100" style={{ width: `${progress}%` }} />
       </div>
 
       <video
@@ -262,9 +262,9 @@ export default function InstagramReelCard({
       />
       
       {videoError && (
-        <div className="absolute inset-0 flex items-center justify-center bg-stone-950/80 z-30 p-4">
+        <div className="absolute inset-0 flex items-center justify-center bg-[rgba(13,12,11,0.80)] z-30 p-4">
           <div className="text-center space-y-2">
-            <p className="text-sm text-white font-light">{videoError}</p>
+            <p className="text-sm text-[#f0ede8] font-light">{videoError}</p>
             <button
               onClick={() => {
                 setVideoError(null)
@@ -272,7 +272,7 @@ export default function InstagramReelCard({
                   videoRef.current.load()
                 }
               }}
-              className="px-4 py-2 text-xs tracking-[0.15em] uppercase font-light bg-white text-stone-950 rounded-xl hover:bg-stone-100 transition-all"
+              className="px-4 py-2 text-xs tracking-[0.15em] uppercase font-light bg-[#c8c4bb] text-[#0d0c0b] rounded-xl hover:bg-[#f0ede8] transition-all"
             >
               Retry
             </button>
@@ -281,22 +281,22 @@ export default function InstagramReelCard({
       )}
 
       {!isPlaying && isVideoReady && (
-        <div className="absolute inset-0 flex items-center justify-center bg-stone-950/20 z-10">
+        <div className="absolute inset-0 flex items-center justify-center bg-[rgba(13,12,11,0.20)] z-10">
           <button
             onClick={handlePlayPause}
             onTouchEnd={handlePlayPause}
-            className="w-16 h-16 bg-[rgba(255,255,255,0.12)] backdrop-blur-sm rounded-full border border-[rgba(255,255,255,0.2)] flex items-center justify-center hover:scale-110 active:scale-95 transition-transform touch-manipulation"
+            className="w-16 h-16 bg-[rgba(175,170,162,0.20)] backdrop-blur-sm rounded-full border border-[rgba(195,190,182,0.25)] flex items-center justify-center hover:scale-110 active:scale-95 transition-transform touch-manipulation"
             aria-label="Play video"
             type="button"
           >
-            <span className="text-[11px] tracking-[0.2em] uppercase text-[#ffffff]">Play</span>
+            <span className="text-[11px] tracking-[0.2em] uppercase text-[#f0ede8]">Play</span>
           </button>
         </div>
       )}
 
       <button
         onClick={handleMuteToggle}
-        className="absolute top-4 right-4 px-3 py-1.5 bg-stone-950/60 backdrop-blur-sm rounded-full border border-[rgba(255,255,255,0.2)] hover:bg-stone-950/80 transition-colors z-20 text-[10px] text-[#ffffff] tracking-[0.2em] uppercase"
+        className="absolute top-4 right-4 px-3 py-1.5 bg-[rgba(13,12,11,0.60)] backdrop-blur-sm rounded-full border border-[rgba(195,190,182,0.25)] hover:bg-[rgba(13,12,11,0.80)] transition-colors z-20 text-[10px] text-[#f0ede8] tracking-[0.2em] uppercase"
         aria-label={isMuted ? "Unmute" : "Mute"}
       >
         {isMuted ? "Muted" : "Audio"}
@@ -305,14 +305,14 @@ export default function InstagramReelCard({
       <div className="absolute right-3 bottom-20 flex flex-col items-end gap-2 z-20">
         <button
           onClick={handleLike}
-          className="px-3 py-1.5 rounded-full bg-stone-950/60 border border-[rgba(255,255,255,0.2)] text-[10px] tracking-[0.2em] uppercase text-[#ffffff] hover:bg-stone-950/80 transition-colors"
+          className="px-3 py-1.5 rounded-full bg-[rgba(13,12,11,0.60)] border border-[rgba(195,190,182,0.25)] text-[10px] tracking-[0.2em] uppercase text-[#f0ede8] hover:bg-[rgba(13,12,11,0.80)] transition-colors"
           aria-label={liked ? "Unlike" : "Like"}
         >
           {liked ? "Favourited" : "Favourite"}
         </button>
 
         <button
-          className="px-3 py-1.5 rounded-full bg-stone-950/60 border border-[rgba(255,255,255,0.2)] text-[10px] tracking-[0.2em] uppercase text-[#ffffff] hover:bg-stone-950/80 transition-colors"
+          className="px-3 py-1.5 rounded-full bg-[rgba(13,12,11,0.60)] border border-[rgba(195,190,182,0.25)] text-[10px] tracking-[0.2em] uppercase text-[#f0ede8] hover:bg-[rgba(13,12,11,0.80)] transition-colors"
           aria-label="Comment"
         >
           Preview
@@ -321,14 +321,14 @@ export default function InstagramReelCard({
         <button
           onClick={handleDownload}
           disabled={isDownloading}
-          className="px-3 py-1.5 rounded-full bg-stone-950/60 border border-[rgba(255,255,255,0.2)] text-[10px] tracking-[0.2em] uppercase text-[#ffffff] hover:bg-stone-950/80 transition-colors disabled:opacity-50"
+          className="px-3 py-1.5 rounded-full bg-[rgba(13,12,11,0.60)] border border-[rgba(195,190,182,0.25)] text-[10px] tracking-[0.2em] uppercase text-[#f0ede8] hover:bg-[rgba(13,12,11,0.80)] transition-colors disabled:opacity-50"
           aria-label="Download video"
         >
           {isDownloading ? "Downloading" : "Download"}
         </button>
 
         <button
-          className="px-3 py-1.5 rounded-full bg-stone-950/60 border border-[rgba(255,255,255,0.2)] text-[10px] tracking-[0.2em] uppercase text-[#ffffff] hover:bg-stone-950/80 transition-colors"
+          className="px-3 py-1.5 rounded-full bg-[rgba(13,12,11,0.60)] border border-[rgba(195,190,182,0.25)] text-[10px] tracking-[0.2em] uppercase text-[#f0ede8] hover:bg-[rgba(13,12,11,0.80)] transition-colors"
           aria-label="Share"
         >
           Photoshoot
@@ -336,18 +336,18 @@ export default function InstagramReelCard({
 
         <button
           onClick={() => setShowMenu(!showMenu)}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-stone-950/60 border border-[rgba(255,255,255,0.2)] text-[10px] tracking-[0.2em] uppercase text-[#ffffff] hover:bg-stone-950/80 transition-colors relative"
+          className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-[rgba(13,12,11,0.60)] border border-[rgba(195,190,182,0.25)] text-[10px] tracking-[0.2em] uppercase text-[#f0ede8] hover:bg-[rgba(13,12,11,0.80)] transition-colors relative"
           aria-label="More options"
         >
           More
           {showMenu && (
-            <div className="absolute right-full mr-2 bottom-0 bg-[#111111] rounded-xl shadow-2xl border border-[rgba(255,255,255,0.12)] py-2 w-48">
+            <div className="absolute right-full mr-2 bottom-0 bg-[#2e2c29] rounded-xl shadow-2xl border border-[rgba(195,190,182,0.15)] py-2 w-48">
               <button
                 onClick={() => {
                   window.open(normalizedVideoUrl, "_blank")
                   setShowMenu(false)
                 }}
-                className="w-full px-4 py-2.5 text-left text-sm text-[#f5f5f5] hover:bg-[rgba(255,255,255,0.08)] transition-colors"
+                className="w-full px-4 py-2.5 text-left text-sm text-[#a8a49c] hover:bg-[rgba(175,170,162,0.12)] transition-colors"
               >
                 View Fullscreen
               </button>
@@ -367,17 +367,17 @@ export default function InstagramReelCard({
         </button>
       </div>
 
-      <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-stone-950/80 via-stone-950/40 to-transparent z-10">
+      <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[rgba(13,12,11,0.80)] via-[rgba(13,12,11,0.40)] to-transparent z-10">
         <div className="flex items-center gap-2 mb-2">
-          <div className="w-8 h-8 rounded-full border border-[rgba(255,255,255,0.2)] bg-[rgba(255,255,255,0.08)] p-[2px]">
-            <div className="w-full h-full rounded-full bg-[#0a0a0a] flex items-center justify-center">
-              <span className="text-xs font-semibold text-[#ffffff]">S</span>
+          <div className="w-8 h-8 rounded-full border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.15)] p-[2px]">
+            <div className="w-full h-full rounded-full bg-[#1c1b19] flex items-center justify-center">
+              <span className="text-xs font-semibold text-[#f0ede8]">S</span>
             </div>
           </div>
-          <span className="text-sm font-medium text-white drop-shadow-lg">sselfie</span>
+          <span className="text-sm font-medium text-[#f0ede8] drop-shadow-lg">sselfie</span>
         </div>
         {motionPrompt && (
-          <p className="text-sm text-white drop-shadow-lg line-clamp-2 leading-relaxed">{motionPrompt}</p>
+          <p className="text-sm text-[#f0ede8] drop-shadow-lg line-clamp-2 leading-relaxed">{motionPrompt}</p>
         )}
       </div>
     </div>

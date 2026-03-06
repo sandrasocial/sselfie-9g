@@ -276,7 +276,7 @@ export default function MayaChatInterface({
           elements.push(
             <ul key={`list-${index}`} className="list-disc list-inside space-y-2 my-3 ml-6">
               {currentList.map((item, itemIdx) => (
-                <li key={itemIdx} className="text-[16px] leading-[1.8] font-light text-[#ffffff]">
+                <li key={itemIdx} className="text-[16px] leading-[1.8] font-light text-[#f0ede8]">
                   {item}
                 </li>
               ))}
@@ -298,7 +298,7 @@ export default function MayaChatInterface({
           
           if (trimmedLine.length > 0) {
             elements.push(
-              <p key={`para-${index}`} className="text-[16px] leading-[1.8] font-light text-[#e5e5e5] mb-4 last:mb-0">
+              <p key={`para-${index}`} className="text-[16px] leading-[1.8] font-light text-[#f0ede8] mb-4 last:mb-0">
                 {processedLine}
               </p>
             )
@@ -314,7 +314,7 @@ export default function MayaChatInterface({
       elements.push(
         <ul key="list-final" className="list-disc list-inside space-y-2 my-3 ml-6">
           {currentList.map((item, itemIdx) => (
-            <li key={itemIdx} className="text-[16px] leading-[1.8] font-light text-[#ffffff]">
+            <li key={itemIdx} className="text-[16px] leading-[1.8] font-light text-[#f0ede8]">
               {item}
             </li>
           ))}
@@ -431,12 +431,12 @@ export default function MayaChatInterface({
 
     // For user messages, keep simple styling
     if (isUser) {
-      return <p className="text-[16px] leading-[1.8] font-light whitespace-pre-wrap text-[#ffffff]">{removeEmojis(cleanedText)}</p>
+      return <p className="text-[16px] leading-[1.8] font-light whitespace-pre-wrap text-[#f0ede8]">{removeEmojis(cleanedText)}</p>
     }
 
     // For Maya's messages (assistant), render with markdown support
     return (
-      <div className="text-[16px] leading-[1.8] font-light text-[#e5e5e5]">
+      <div className="text-[16px] leading-[1.8] font-light text-[#f0ede8]">
         {renderMarkdownText(cleanedText)}
       </div>
     )
@@ -544,10 +544,10 @@ export default function MayaChatInterface({
   }
 
   return (
-    <div className="flex-1 min-h-0 px-6 md:px-12 bg-[#0a0a0a]">
+    <div className="flex-1 min-h-0 px-6 md:px-12 bg-transparent">
       <div
         ref={messagesContainerRef}
-        className="h-full overflow-y-auto pr-1 scroll-smooth rounded-[20px] border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.04)] backdrop-blur-[20px]"
+        className="h-full overflow-y-auto pr-1 scroll-smooth"
         style={{
           // Layout contract: measured fixed header height + breathing room.
           paddingTop: "calc(var(--maya-header-height, 124px) + 16px)",
@@ -581,10 +581,10 @@ export default function MayaChatInterface({
                           {/* Render text + image together if both exist */}
                           {(textParts.length > 0 || imageParts.length > 0) && (
                             <div
-                              className={`rounded-xl transition-all duration-300 ${
+                              className={`transition-all duration-300 ${
                                 msg.role === "user"
-                                  ? "bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.08)] text-[#ffffff] backdrop-blur-[20px] px-4 py-3"
-                                  : "bg-transparent border border-transparent text-[#e5e5e5] px-0 py-0"
+                                  ? "bg-[rgba(175,170,162,0.20)] backdrop-blur-sm border border-[rgba(195,190,182,0.25)] rounded-2xl rounded-tr-sm text-[#f0ede8] px-4 py-3"
+                                  : "bg-[rgba(175,170,162,0.12)] backdrop-blur-sm border border-[rgba(195,190,182,0.15)] rounded-2xl rounded-tl-sm text-[#f0ede8] px-4 py-3"
                               }`}
                               role={msg.role === "assistant" ? "article" : undefined}
                             >
@@ -759,7 +759,7 @@ export default function MayaChatInterface({
                                           promptSuggestions.length > 0 &&
                                           msg.id === messages[messages.length - 1]?.id && (
                                       <div className="mt-4 space-y-3">
-                                        <div className="text-xs text-[#e5e5e5] mb-1">
+                                        <div className="text-xs text-[#8a8780] mb-1">
                                           Step 2 – Pick a concept you like, then send it to your Workbench below.
                                         </div>
                                         {promptSuggestions.map((suggestion) => (
@@ -969,8 +969,8 @@ export default function MayaChatInterface({
                               ]
 
                               return (
-                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
-                                  <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Maya Capabilities</div>
+                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4">
+                                  <div className="text-xs uppercase tracking-[0.2em] text-[#8a8780]">Maya Capabilities</div>
                                   <p className="mt-2 text-sm text-[#d5d5d5]">
                                     Pick a workflow and I’ll run it here in chat.
                                   </p>
@@ -980,9 +980,9 @@ export default function MayaChatInterface({
                                         key={item.title}
                                         type="button"
                                         onClick={() => onToolPromptSelect?.(item.prompt)}
-                                        className="rounded-lg border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.03)] px-3 py-3 text-left transition-colors hover:bg-[rgba(255,255,255,0.08)]"
+                                        className="rounded-lg border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.06)] px-3 py-3 text-left transition-colors hover:bg-[rgba(175,170,162,0.15)]"
                                       >
-                                        <div className="text-[11px] uppercase tracking-[0.16em] text-[#ffffff]">{item.title}</div>
+                                        <div className="text-[11px] uppercase tracking-[0.16em] text-[#f0ede8]">{item.title}</div>
                                         <div className="mt-1 text-xs text-[#bdbdbd]">{item.description}</div>
                                       </button>
                                     ))}
@@ -1001,26 +1001,26 @@ export default function MayaChatInterface({
 
                               if (state === "loading") {
                                 return (
-                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
-                                    <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Studio Hub</div>
-                                    <div className="mt-2 text-sm text-[#e5e5e5]">Loading your created assets…</div>
+                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-[#8a8780]">Studio Hub</div>
+                                    <div className="mt-2 text-sm text-[#f0ede8]">Loading your created assets…</div>
                                   </div>
                                 )
                               }
 
                               if (state === "error") {
                                 return (
-                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
-                                    <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Studio Hub</div>
+                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-[#8a8780]">Studio Hub</div>
                                     <div className="mt-2 text-sm text-[#f5c2c2]">{output.message || "Could not load Studio Hub."}</div>
                                   </div>
                                 )
                               }
 
                               return (
-                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
+                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4">
                                   <div className="flex items-center justify-between gap-2">
-                                    <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Studio Hub</div>
+                                    <div className="text-xs uppercase tracking-[0.2em] text-[#8a8780]">Studio Hub</div>
                                     <a
                                       href="/studio?tab=studio#studio"
                                       className="text-[10px] uppercase tracking-[0.16em] text-[#cfcfcf] hover:text-white"
@@ -1030,15 +1030,15 @@ export default function MayaChatInterface({
                                   </div>
 
                                   <div className="mt-3 grid grid-cols-3 gap-2">
-                                    <div className="rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(0,0,0,0.18)] px-2 py-2">
+                                    <div className="rounded-lg border border-[rgba(195,190,182,0.15)] bg-[rgba(28,27,25,0.40)] px-2 py-2">
                                       <div className="text-[10px] uppercase tracking-[0.14em] text-[#adadad]">Feeds</div>
                                       <div className="mt-1 text-sm text-white">{Number(stats.feedCount || 0)}</div>
                                     </div>
-                                    <div className="rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(0,0,0,0.18)] px-2 py-2">
+                                    <div className="rounded-lg border border-[rgba(195,190,182,0.15)] bg-[rgba(28,27,25,0.40)] px-2 py-2">
                                       <div className="text-[10px] uppercase tracking-[0.14em] text-[#adadad]">Photos</div>
                                       <div className="mt-1 text-sm text-white">{Number(stats.photoCount || 0)}</div>
                                     </div>
-                                    <div className="rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(0,0,0,0.18)] px-2 py-2">
+                                    <div className="rounded-lg border border-[rgba(195,190,182,0.15)] bg-[rgba(28,27,25,0.40)] px-2 py-2">
                                       <div className="text-[10px] uppercase tracking-[0.14em] text-[#adadad]">Videos</div>
                                       <div className="mt-1 text-sm text-white">{Number(stats.videoCount || 0)}</div>
                                     </div>
@@ -1049,7 +1049,7 @@ export default function MayaChatInterface({
                                       {feeds.slice(0, 2).map((feed: any) => (
                                         <div
                                           key={`hub-feed-${feed.id}`}
-                                          className="rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(0,0,0,0.18)] px-3 py-2"
+                                          className="rounded-lg border border-[rgba(195,190,182,0.15)] bg-[rgba(28,27,25,0.40)] px-3 py-2"
                                         >
                                           <div className="flex items-center justify-between gap-2">
                                             <div className="text-xs text-white">{feed.title || `Feed ${feed.id}`}</div>
@@ -1065,7 +1065,7 @@ export default function MayaChatInterface({
                                       {recentPhotos.slice(0, 2).map((photo: any) => (
                                         <div
                                           key={`hub-photo-${photo.id}`}
-                                          className="rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(0,0,0,0.18)] px-3 py-2"
+                                          className="rounded-lg border border-[rgba(195,190,182,0.15)] bg-[rgba(28,27,25,0.40)] px-3 py-2"
                                         >
                                           <div className="flex items-center justify-between gap-2">
                                             <div className="text-xs text-white">
@@ -1083,7 +1083,7 @@ export default function MayaChatInterface({
                                       {recentVideos.slice(0, 1).map((video: any) => (
                                         <div
                                           key={`hub-video-${video.id}`}
-                                          className="rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(0,0,0,0.18)] px-3 py-2"
+                                          className="rounded-lg border border-[rgba(195,190,182,0.15)] bg-[rgba(28,27,25,0.40)] px-3 py-2"
                                         >
                                           <div className="flex items-center justify-between gap-2">
                                             <div className="text-xs text-white">Latest video draft</div>
@@ -1109,26 +1109,26 @@ export default function MayaChatInterface({
 
                               if (state === "loading") {
                                 return (
-                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
-                                    <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Gallery</div>
-                                    <div className="mt-2 text-sm text-[#e5e5e5]">Loading your latest images…</div>
+                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-[#8a8780]">Gallery</div>
+                                    <div className="mt-2 text-sm text-[#f0ede8]">Loading your latest images…</div>
                                   </div>
                                 )
                               }
 
                               if (state === "error") {
                                 return (
-                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
-                                    <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Gallery</div>
+                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-[#8a8780]">Gallery</div>
                                     <div className="mt-2 text-sm text-[#f5c2c2]">{output.message || "Could not load gallery."}</div>
                                   </div>
                                 )
                               }
 
                               return (
-                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
+                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4">
                                   <div className="flex items-center justify-between gap-3">
-                                    <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Gallery</div>
+                                    <div className="text-xs uppercase tracking-[0.2em] text-[#8a8780]">Gallery</div>
                                     <div className="text-[10px] uppercase tracking-[0.16em] text-[#bdbdbd]">
                                       {Number(output.total || images.length)} images
                                     </div>
@@ -1136,7 +1136,7 @@ export default function MayaChatInterface({
                                   {images.length > 0 ? (
                                     <div className="mt-3 grid grid-cols-3 gap-2">
                                       {images.slice(0, 6).map((image: any, index: number) => (
-                                        <div key={image.id || index} className="aspect-square overflow-hidden rounded-lg border border-[rgba(255,255,255,0.1)]">
+                                        <div key={image.id || index} className="aspect-square overflow-hidden rounded-lg border border-[rgba(195,190,182,0.20)]">
                                           <img
                                             src={image.imageUrl || image.image_url}
                                             alt="Gallery image"
@@ -1158,7 +1158,7 @@ export default function MayaChatInterface({
 
                               if (state === "loading") {
                                 return (
-                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4 text-sm text-[#e5e5e5]">
+                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4 text-sm text-[#f0ede8]">
                                     Saving to gallery…
                                   </div>
                                 )
@@ -1166,14 +1166,14 @@ export default function MayaChatInterface({
 
                               if (state === "error") {
                                 return (
-                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4 text-sm text-[#f5c2c2]">
+                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4 text-sm text-[#f5c2c2]">
                                     {output.message || "Could not save to gallery."}
                                   </div>
                                 )
                               }
 
                               return (
-                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4 text-sm text-[#e5e5e5]">
+                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4 text-sm text-[#f0ede8]">
                                   {output.message || "Saved to your gallery."}
                                 </div>
                               )
@@ -1193,8 +1193,8 @@ export default function MayaChatInterface({
                               ]
 
                               return (
-                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
-                                  <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Create Photo</div>
+                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4">
+                                  <div className="text-xs uppercase tracking-[0.2em] text-[#8a8780]">Create Photo</div>
                                   <p className="mt-2 text-sm text-[#d5d5d5]">Choose how you want Maya to generate this image.</p>
                                   <div className="mt-3 grid gap-2 sm:grid-cols-3">
                                     {options.map((option) => {
@@ -1206,11 +1206,11 @@ export default function MayaChatInterface({
                                           onClick={() => onToolSelectGenerationSource?.(option.id)}
                                           className={`rounded-lg border px-3 py-2 text-left transition-colors ${
                                             isSelected
-                                              ? "border-[rgba(255,255,255,0.4)] bg-[rgba(255,255,255,0.12)]"
-                                              : "border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.03)] hover:bg-[rgba(255,255,255,0.08)]"
+                                              ? "border-[rgba(195,190,182,0.50)] bg-[rgba(175,170,162,0.25)]"
+                                              : "border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.06)] hover:bg-[rgba(175,170,162,0.15)]"
                                           }`}
                                         >
-                                          <div className="text-[11px] uppercase tracking-[0.16em] text-[#ffffff]">{option.label}</div>
+                                          <div className="text-[11px] uppercase tracking-[0.16em] text-[#f0ede8]">{option.label}</div>
                                           <div className="mt-1 text-xs text-[#bdbdbd]">{option.description}</div>
                                         </button>
                                       )
@@ -1237,15 +1237,15 @@ export default function MayaChatInterface({
                               const categoryLabel = categoryLabelMap[category] || "Selfies"
 
                               return (
-                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
-                                  <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Upload Zone</div>
+                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4">
+                                  <div className="text-xs uppercase tracking-[0.2em] text-[#8a8780]">Upload Zone</div>
                                   <p className="mt-2 text-sm text-[#d5d5d5]">
                                     Ready for {categoryLabel.toLowerCase()}. Open the inline uploader and drop your images.
                                   </p>
                                   <button
                                     type="button"
                                     onClick={() => onToolOpenUploadZone?.(category)}
-                                    className="mt-3 rounded-lg border border-[rgba(255,255,255,0.22)] bg-[rgba(255,255,255,0.08)] px-3 py-2 text-[11px] uppercase tracking-[0.16em] text-[#ffffff] transition-colors hover:bg-[rgba(255,255,255,0.14)]"
+                                    className="mt-3 rounded-lg border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.12)] px-3 py-2 text-[11px] uppercase tracking-[0.16em] text-[#f0ede8] transition-colors hover:bg-[rgba(175,170,162,0.22)]"
                                   >
                                     Open Upload
                                   </button>
@@ -1293,14 +1293,14 @@ export default function MayaChatInterface({
                                   : `Maya will apply your next edit instructions to this ${assetLabel}.`
 
                               return (
-                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
+                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4">
                                   <div className="flex items-center justify-between gap-3">
-                                    <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Editing Workspace</div>
+                                    <div className="text-xs uppercase tracking-[0.2em] text-[#8a8780]">Editing Workspace</div>
                                     <div className="text-[10px] uppercase tracking-[0.16em] text-[#bdbdbd]">{assetType}</div>
                                   </div>
-                                  <div className="mt-2 text-sm text-[#ffffff]">{assetLabel}</div>
+                                  <div className="mt-2 text-sm text-[#f0ede8]">{assetLabel}</div>
                                   <div className="mt-1 text-xs text-[#cfcfcf]">{helperText}</div>
-                                  <div className="mt-3 rounded-lg border border-[rgba(255,255,255,0.12)] bg-[rgba(0,0,0,0.25)] px-3 py-2 text-[11px] text-[#dcdcdc]">
+                                  <div className="mt-3 rounded-lg border border-[rgba(195,190,182,0.20)] bg-[rgba(28,27,25,0.40)] px-3 py-2 text-[11px] text-[#8a8780]">
                                     Next step: describe the exact change you want (headline, CTA, section copy, layout), and Maya keeps editing this same asset.
                                   </div>
                                 </div>
@@ -1329,12 +1329,12 @@ export default function MayaChatInterface({
                                 typeof output.url === "string" && output.url.trim().length > 0 ? output.url : null
 
                               return (
-                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.05)] p-4">
+                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4">
                                   <div className="flex items-center justify-between gap-3">
-                                    <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Draft Ready</div>
+                                    <div className="text-xs uppercase tracking-[0.2em] text-[#8a8780]">Draft Ready</div>
                                     <div className="text-[10px] uppercase tracking-[0.16em] text-[#bdbdbd]">{assetType}</div>
                                   </div>
-                                  <div className="mt-2 text-sm text-[#ffffff]">{assetLabel}</div>
+                                  <div className="mt-2 text-sm text-[#f0ede8]">{assetLabel}</div>
                                   <div className="mt-1 text-xs text-[#cfcfcf]">{previewText}</div>
                                   {output.assetId ? (
                                     <div className="mt-3 overflow-hidden rounded-lg border border-[rgba(255,255,255,0.12)] bg-white">
@@ -1350,7 +1350,7 @@ export default function MayaChatInterface({
                                       href={url}
                                       target="_blank"
                                       rel="noreferrer"
-                                      className="mt-3 inline-flex rounded-lg border border-[rgba(255,255,255,0.22)] bg-[rgba(255,255,255,0.08)] px-3 py-2 text-[11px] uppercase tracking-[0.16em] text-[#ffffff] transition-colors hover:bg-[rgba(255,255,255,0.14)]"
+                                      className="mt-3 inline-flex rounded-lg border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.12)] px-3 py-2 text-[11px] uppercase tracking-[0.16em] text-[#f0ede8] transition-colors hover:bg-[rgba(175,170,162,0.22)]"
                                     >
                                       Open Draft
                                     </a>
@@ -1385,30 +1385,30 @@ export default function MayaChatInterface({
                               return (
                                 <div
                                   key={partIndex}
-                                  className="mt-3 rounded-xl border border-[rgba(255,255,255,0.18)] bg-[rgba(255,255,255,0.06)] p-4"
+                                  className="mt-3 rounded-xl border border-[rgba(195,190,182,0.22)] bg-[rgba(175,170,162,0.12)] p-4"
                                 >
-                                  <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Need One Detail</div>
-                                  <div className="mt-2 text-sm text-[#ffffff]">
+                                  <div className="text-xs uppercase tracking-[0.2em] text-[#8a8780]">Need One Detail</div>
+                                  <div className="mt-2 text-sm text-[#f0ede8]">
                                     I’m ready to build your {assetType} in template mode.
                                   </div>
                                   <div className="mt-1 text-xs text-[#d0d0d0]">
                                     I only need {missingLabel} before execution.
                                   </div>
-                                  <div className="mt-3 rounded-lg border border-[rgba(255,255,255,0.12)] bg-[rgba(0,0,0,0.22)] px-3 py-2 text-[11px] text-[#e2e2e2]">
+                                  <div className="mt-3 rounded-lg border border-[rgba(195,190,182,0.20)] bg-[rgba(28,27,25,0.40)] px-3 py-2 text-[11px] text-[#8a8780]">
                                     {recoveryHint}
                                   </div>
                                   <div className="mt-3 flex flex-wrap gap-2">
                                     <button
                                       type="button"
                                       onClick={() => onToolPromptSelect?.(quickRetryPrompt)}
-                                      className="rounded-lg border border-[rgba(255,255,255,0.22)] bg-[rgba(255,255,255,0.1)] px-3 py-2 text-[11px] uppercase tracking-[0.16em] text-[#ffffff] transition-colors hover:bg-[rgba(255,255,255,0.16)]"
+                                      className="rounded-lg border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.15)] px-3 py-2 text-[11px] uppercase tracking-[0.16em] text-[#f0ede8] transition-colors hover:bg-[rgba(175,170,162,0.25)]"
                                     >
                                       Retry Build
                                     </button>
                                     <button
                                       type="button"
                                       onClick={() => onToolPromptSelect?.("I need one quick form to fill the missing details.")}
-                                      className="rounded-lg border border-[rgba(255,255,255,0.18)] bg-[rgba(255,255,255,0.04)] px-3 py-2 text-[11px] uppercase tracking-[0.16em] text-[#ffffff] transition-colors hover:bg-[rgba(255,255,255,0.1)]"
+                                      className="rounded-lg border border-[rgba(195,190,182,0.20)] bg-transparent px-3 py-2 text-[11px] uppercase tracking-[0.16em] text-[#8a8780] transition-colors hover:bg-[rgba(175,170,162,0.12)]"
                                     >
                                       Missing Detail Form
                                     </button>
@@ -1663,9 +1663,9 @@ export default function MayaChatInterface({
 
                               if (output && output.state === "loading_images") {
                                 return (
-                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
-                                    <div className="flex items-center gap-2 text-[#e5e5e5]">
-                                      <div className="w-1.5 h-1.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4">
+                                    <div className="flex items-center gap-2 text-[#8a8780]">
+                                      <div className="w-1.5 h-1.5 border-2 border-[#a8a49c] border-t-transparent rounded-full animate-spin" />
                                       <span className="text-xs tracking-[0.15em] uppercase font-light">
                                         Loading images for video...
                                       </span>
@@ -1677,8 +1677,8 @@ export default function MayaChatInterface({
                               if (output && output.state === "choose_image") {
                                 const images = Array.isArray(output.images) ? output.images : []
                                 return (
-                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
-                                    <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Create Video</div>
+                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4">
+                                    <div className="text-xs uppercase tracking-[0.2em] text-[#8a8780]">Create Video</div>
                                     <p className="mt-2 text-sm text-[#d5d5d5]">
                                       Pick from your gallery or upload a new reference and Maya will animate it inline.
                                     </p>
@@ -1686,7 +1686,7 @@ export default function MayaChatInterface({
                                       <button
                                         type="button"
                                         onClick={() => onToolOpenUploadZone?.("selfies")}
-                                        className="rounded-lg border border-[rgba(255,255,255,0.22)] bg-[rgba(255,255,255,0.08)] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[#ffffff] hover:bg-[rgba(255,255,255,0.14)]"
+                                        className="rounded-lg border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.12)] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.22)]"
                                       >
                                         Upload Reference
                                       </button>
@@ -1718,10 +1718,10 @@ export default function MayaChatInterface({
                                                   category: image.category || "",
                                                 })
                                               }
-                                              className="overflow-hidden rounded-lg border border-[rgba(255,255,255,0.14)] bg-black/20 hover:border-[rgba(255,255,255,0.28)]"
+                                              className="overflow-hidden rounded-lg border border-[rgba(195,190,182,0.20)] bg-[rgba(28,27,25,0.30)] hover:border-[rgba(195,190,182,0.40)]"
                                             >
                                               <img src={imageUrl} alt="Video source" className="h-24 w-full object-cover" />
-                                              <div className="px-2 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[#ffffff]">
+                                              <div className="px-2 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[#f0ede8]">
                                                 Animate
                                               </div>
                                               <div className="pb-2 text-[9px] uppercase tracking-[0.12em] text-[#b8b8b8]">
@@ -1732,21 +1732,21 @@ export default function MayaChatInterface({
                                         })}
                                       </div>
                                     ) : (
-                                      <div className="mt-3 rounded-lg border border-[rgba(255,255,255,0.12)] bg-black/20 p-3">
+                                      <div className="mt-3 rounded-lg border border-[rgba(195,190,182,0.20)] bg-[rgba(28,27,25,0.30)] p-3">
                                         <p className="text-xs text-[#d7d7d7]">
                                           No images found yet. Generate a photo first, then I can animate it.
                                         </p>
                                         <button
                                           type="button"
                                           onClick={() => onToolPromptSelect?.("Create a photo for my brand")}
-                                          className="mt-2 rounded-lg border border-[rgba(255,255,255,0.22)] bg-[rgba(255,255,255,0.08)] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[#ffffff] hover:bg-[rgba(255,255,255,0.14)]"
+                                          className="mt-2 rounded-lg border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.12)] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.22)]"
                                         >
                                           Create Photo First
                                         </button>
                                         <button
                                           type="button"
                                           onClick={() => onToolOpenUploadZone?.("selfies")}
-                                          className="mt-2 ml-2 rounded-lg border border-[rgba(255,255,255,0.22)] bg-[rgba(255,255,255,0.08)] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[#ffffff] hover:bg-[rgba(255,255,255,0.14)]"
+                                          className="mt-2 ml-2 rounded-lg border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.12)] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.22)]"
                                         >
                                           Upload Reference
                                         </button>
@@ -1785,7 +1785,7 @@ export default function MayaChatInterface({
 
                               if (output && output.state === "error") {
                                 return (
-                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
+                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4">
                                     <p className="text-sm text-[#f5c2c2]">{output.message || "Video generation failed."}</p>
                                     {renderVideoDebugPanel(output.debug)}
                                   </div>
@@ -1817,8 +1817,8 @@ export default function MayaChatInterface({
                     <div
                       className={`rounded-xl transition-all duration-300 ${
                         msg.role === "user"
-                          ? "bg-[rgba(255,255,255,0.06)] border border-[rgba(255,255,255,0.08)] text-[#ffffff] backdrop-blur-[20px] px-4 py-3"
-                          : "bg-transparent border border-transparent text-[#e5e5e5] px-0 py-0"
+                          ? "bg-[rgba(175,170,162,0.20)] backdrop-blur-sm border border-[rgba(195,190,182,0.25)] rounded-2xl rounded-tr-sm text-[#f0ede8] px-4 py-3"
+                          : "bg-[rgba(175,170,162,0.12)] backdrop-blur-sm border border-[rgba(195,190,182,0.15)] rounded-2xl rounded-tl-sm text-[#f0ede8] px-4 py-3"
                       }`}
                       role={msg.role === "assistant" ? "article" : undefined}
                     >
@@ -1834,20 +1834,20 @@ export default function MayaChatInterface({
           {/* This prevents duplication with the feed creation loader below */}
           {isTyping && !isCreatingFeed && (
             <div className="flex justify-start">
-              <div className="bg-[rgba(255,255,255,0.04)] backdrop-blur-[20px] border border-[rgba(255,255,255,0.08)] p-3 rounded-xl max-w-[85%]">
+              <div className="bg-[rgba(175,170,162,0.12)] backdrop-blur-sm border border-[rgba(195,190,182,0.15)] p-3 rounded-2xl rounded-tl-sm max-w-[85%]">
                 <div className="flex items-center gap-3">
                   <div className="flex gap-1">
-                    <div className="w-1.5 h-1.5 rounded-full animate-bounce bg-[#e5e5e5]"></div>
+                    <div className="w-1.5 h-1.5 rounded-full animate-bounce bg-[#a8a49c]"></div>
                     <div
-                      className="w-1.5 h-1.5 rounded-full animate-bounce bg-[#e5e5e5]"
+                      className="w-1.5 h-1.5 rounded-full animate-bounce bg-[#a8a49c]"
                       style={{ animationDelay: "0.2s" }}
                     ></div>
                     <div
-                      className="w-1.5 h-1.5 rounded-full animate-bounce bg-[#e5e5e5]"
+                      className="w-1.5 h-1.5 rounded-full animate-bounce bg-[#a8a49c]"
                       style={{ animationDelay: "0.4s" }}
                     ></div>
                   </div>
-                  <span className="text-xs font-light text-[#e5e5e5]">Maya is thinking...</span>
+                  <span className="text-xs font-light text-[#8a8780]">Maya is thinking...</span>
                 </div>
               </div>
             </div>
@@ -1901,7 +1901,7 @@ export default function MayaChatInterface({
               isAtBottomRef.current = true
               scrollToBottom("smooth")
             }}
-            className="fixed bottom-32 right-4 sm:right-6 md:right-8 z-30 h-10 px-4 rounded-full border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.08)] backdrop-blur-[20px] text-white hover:bg-[rgba(255,255,255,0.12)] transition-all duration-300 flex items-center justify-center touch-manipulation active:scale-95"
+            className="fixed bottom-32 right-4 sm:right-6 md:right-8 z-30 h-10 px-4 rounded-full border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.18)] backdrop-blur-[20px] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.28)] transition-all duration-300 flex items-center justify-center touch-manipulation active:scale-95"
             aria-label="Scroll to bottom"
           >
             <span className="text-[10px] uppercase tracking-[0.2em] font-medium">Latest</span>

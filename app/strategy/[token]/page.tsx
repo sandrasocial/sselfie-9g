@@ -177,8 +177,8 @@ function StrategyStatus({ title, body }: { title: string; body: string }) {
       <style>{`
         .strategy-status {
           min-height: 100vh;
-          background: #0a0a0a;
-          color: rgba(255, 255, 255, 0.75);
+          background: #0d0c0b;
+          color: #8a8780;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -187,9 +187,11 @@ function StrategyStatus({ title, body }: { title: string; body: string }) {
 
         .status-card {
           max-width: 580px;
-          border: 1px solid rgba(255, 255, 255, 0.09);
-          background: rgba(255, 255, 255, 0.04);
+          border: 1px solid rgba(195, 190, 182, 0.25);
+          background: rgba(175, 170, 162, 0.10);
+          backdrop-filter: blur(50px);
           padding: 38px 32px;
+          border-radius: 16px;
         }
 
         .status-label {
@@ -198,7 +200,7 @@ function StrategyStatus({ title, body }: { title: string; body: string }) {
           font-weight: 500;
           letter-spacing: 0.5em;
           text-transform: uppercase;
-          color: rgba(255, 255, 255, 0.45);
+          color: #8a8780;
         }
 
         h1 {
@@ -207,7 +209,7 @@ function StrategyStatus({ title, body }: { title: string; body: string }) {
           font-weight: 300;
           text-transform: uppercase;
           letter-spacing: 0.03em;
-          color: #ffffff;
+          color: #f0ede8;
           line-height: 1;
         }
 
@@ -489,8 +491,8 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
 
       <style>{`
         .strategy-page {
-          background: #0a0a0a;
-          color: #ffffff;
+          background: #0d0c0b;
+          color: #f0ede8;
           min-height: 100vh;
         }
 
@@ -499,11 +501,11 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+          border-bottom: 1px solid rgba(195, 190, 182, 0.15);
           position: sticky;
           top: 0;
-          background: rgba(10, 10, 10, 0.94);
-          backdrop-filter: blur(20px);
+          background: rgba(13, 12, 11, 0.92);
+          backdrop-filter: blur(50px);
           z-index: 100;
         }
 
@@ -512,7 +514,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           font-size: 17px;
           letter-spacing: 0.3em;
           text-transform: uppercase;
-          color: #ffffff;
+          color: #f0ede8;
           text-decoration: none;
         }
 
@@ -521,7 +523,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           font-weight: 500;
           letter-spacing: 0.5em;
           text-transform: uppercase;
-          color: rgba(255, 255, 255, 0.5);
+          color: #8a8780;
         }
 
         .hero {
@@ -551,7 +553,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
         .hero-bg {
           object-fit: cover;
           object-position: center 30%;
-          filter: brightness(0.55);
+          filter: brightness(0.45);
         }
 
         .hero-overlay {
@@ -559,10 +561,10 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           inset: 0;
           background: linear-gradient(
             to bottom,
-            rgba(10, 10, 10, 0.15) 0%,
-            rgba(10, 10, 10, 0) 40%,
-            rgba(10, 10, 10, 0.7) 75%,
-            rgba(10, 10, 10, 1) 100%
+            rgba(13, 12, 11, 0.15) 0%,
+            rgba(13, 12, 11, 0) 40%,
+            rgba(13, 12, 11, 0.75) 75%,
+            rgba(13, 12, 11, 1) 100%
           );
         }
 
@@ -577,7 +579,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           font-weight: 500;
           letter-spacing: 0.5em;
           text-transform: uppercase;
-          color: rgba(255, 255, 255, 0.5);
+          color: #8a8780;
           margin-bottom: 20px;
         }
 
@@ -588,7 +590,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           line-height: 1;
           letter-spacing: -0.02em;
           text-transform: uppercase;
-          color: #ffffff;
+          color: #f0ede8;
         }
 
         .hero-meta {
@@ -597,7 +599,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           gap: 28px;
           flex-wrap: wrap;
           padding-top: 30px;
-          border-top: 1px solid rgba(255, 255, 255, 0.09);
+          border-top: 1px solid rgba(175, 170, 162, 0.12);
         }
 
         .meta-label {
@@ -605,13 +607,13 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           font-weight: 500;
           letter-spacing: 0.45em;
           text-transform: uppercase;
-          color: rgba(255, 255, 255, 0.35);
+          color: #8a8780;
           margin-bottom: 5px;
         }
 
         .meta-value {
           font-size: 15px;
-          color: #f0f0f0;
+          color: #c8c4bb;
           max-width: 280px;
         }
 
@@ -627,17 +629,19 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           font-weight: 500;
           letter-spacing: 0.5em;
           text-transform: uppercase;
-          color: rgba(255, 255, 255, 0.35);
+          color: #8a8780;
           padding-bottom: 16px;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+          border-bottom: 1px solid rgba(175, 170, 162, 0.12);
         }
 
         .positioning-split {
           display: grid;
           grid-template-columns: 1fr 1.4fr;
-          border: 1px solid rgba(255, 255, 255, 0.09);
+          border: 1px solid rgba(195, 190, 182, 0.25);
           margin-bottom: 16px;
           min-height: 340px;
+          border-radius: 12px;
+          overflow: hidden;
         }
 
         .positioning-image-wrap {
@@ -654,7 +658,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
         }
 
         .positioning-text {
-          background: rgba(255, 255, 255, 0.04);
+          background: rgba(175, 170, 162, 0.08);
           backdrop-filter: blur(20px);
           padding: 44px 40px;
           display: flex;
@@ -668,11 +672,12 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           font-weight: 500;
           letter-spacing: 0.45em;
           text-transform: uppercase;
-          color: rgba(255, 255, 255, 0.35);
-          border: 1px solid rgba(255, 255, 255, 0.09);
+          color: #8a8780;
+          border: 1px solid rgba(195, 190, 182, 0.25);
           padding: 5px 12px;
           margin-bottom: 20px;
           align-self: flex-start;
+          border-radius: 4px;
         }
 
         .positioning-statement {
@@ -681,30 +686,31 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           font-size: clamp(20px, 2.5vw, 28px);
           line-height: 1.4;
           letter-spacing: -0.01em;
-          color: #ffffff;
+          color: #f0ede8;
         }
 
         .positioning-alt {
-          background: rgba(255, 255, 255, 0.04);
-          border: 1px solid rgba(255, 255, 255, 0.09);
+          background: rgba(175, 170, 162, 0.08);
+          border: 1px solid rgba(195, 190, 182, 0.25);
           padding: 32px 36px;
+          border-radius: 12px;
         }
 
         .positioning-alt .positioning-statement {
           font-size: clamp(17px, 2vw, 22px);
-          color: rgba(255, 255, 255, 0.75);
+          color: #a8a49c;
         }
 
         .divider {
           border: none;
-          border-top: 1px solid rgba(255, 255, 255, 0.09);
+          border-top: 1px solid rgba(175, 170, 162, 0.12);
         }
 
         .editorial-strip {
           display: grid;
           grid-template-columns: 2fr 1fr;
-          border-top: 1px solid rgba(255, 255, 255, 0.09);
-          border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+          border-top: 1px solid rgba(175, 170, 162, 0.12);
+          border-bottom: 1px solid rgba(175, 170, 162, 0.12);
           min-height: 320px;
         }
 
@@ -713,7 +719,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           display: flex;
           flex-direction: column;
           justify-content: center;
-          background: #0a0a0a;
+          background: #0d0c0b;
         }
 
         .editorial-eyebrow {
@@ -722,7 +728,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           font-weight: 500;
           letter-spacing: 0.5em;
           text-transform: uppercase;
-          color: rgba(255, 255, 255, 0.35);
+          color: #8a8780;
         }
 
         .editorial-quote {
@@ -730,7 +736,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           font-size: clamp(24px, 3vw, 36px);
           line-height: 1.3;
           letter-spacing: -0.01em;
-          color: #ffffff;
+          color: #f0ede8;
           font-style: italic;
         }
 
@@ -747,13 +753,13 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           font-weight: 500;
           letter-spacing: 0.38em;
           text-transform: uppercase;
-          color: rgba(255, 255, 255, 0.35);
+          color: #8a8780;
         }
 
         .editorial-sub-copy {
           margin: 0;
           font-size: 14px;
-          color: rgba(255, 255, 255, 0.5);
+          color: #8a8780;
           line-height: 1.8;
         }
 
@@ -765,9 +771,9 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
 
         .phrases-list li {
           font-size: 14px;
-          color: rgba(255, 255, 255, 0.75);
+          color: #a8a49c;
           padding: 8px 0;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+          border-bottom: 1px solid rgba(175, 170, 162, 0.12);
           font-style: italic;
         }
 
@@ -788,8 +794,9 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
         .pillar-card {
           display: flex;
           flex-direction: column;
-          border: 1px solid rgba(255, 255, 255, 0.09);
+          border: 1px solid rgba(195, 190, 182, 0.25);
           overflow: hidden;
+          border-radius: 12px;
         }
 
         .pillar-image-wrap {
@@ -800,7 +807,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
         .pillar-image-overlay {
           position: absolute;
           inset: 0;
-          background: linear-gradient(to bottom, transparent 40%, rgba(10, 10, 10, 0.85) 100%);
+          background: linear-gradient(to bottom, transparent 40%, rgba(13, 12, 11, 0.85) 100%);
         }
 
         .pillar-number-on-image {
@@ -811,11 +818,11 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           font-weight: 500;
           letter-spacing: 0.45em;
           text-transform: uppercase;
-          color: rgba(255, 255, 255, 0.5);
+          color: #a8a49c;
         }
 
         .pillar-body {
-          background: rgba(255, 255, 255, 0.04);
+          background: rgba(175, 170, 162, 0.08);
           padding: 24px 24px 28px;
           flex: 1;
         }
@@ -826,14 +833,14 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           font-size: 20px;
           letter-spacing: -0.01em;
           text-transform: uppercase;
-          color: #ffffff;
+          color: #f0ede8;
           line-height: 1.1;
         }
 
         .pillar-desc {
           margin: 0 0 18px;
           font-size: 13px;
-          color: rgba(255, 255, 255, 0.75);
+          color: #8a8780;
           line-height: 1.7;
         }
 
@@ -842,7 +849,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           font-weight: 500;
           letter-spacing: 0.4em;
           text-transform: uppercase;
-          color: rgba(255, 255, 255, 0.35);
+          color: #8a8780;
           margin-bottom: 8px;
         }
 
@@ -854,11 +861,11 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
 
         .pillar-ideas li {
           font-size: 13px;
-          color: rgba(255, 255, 255, 0.75);
+          color: #a8a49c;
           line-height: 1.65;
           padding: 5px 0 5px 18px;
           position: relative;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+          border-bottom: 1px solid rgba(175, 170, 162, 0.12);
         }
 
         .pillar-ideas li:last-child {
@@ -869,7 +876,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           content: "→";
           position: absolute;
           left: 0;
-          color: rgba(255, 255, 255, 0.35);
+          color: #a8a49c;
           font-size: 11px;
           top: 6px;
         }
@@ -881,19 +888,21 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
         }
 
         .starter-chip {
-          background: rgba(255, 255, 255, 0.04);
-          border: 1px solid rgba(255, 255, 255, 0.09);
+          background: rgba(175, 170, 162, 0.08);
+          border: 1px solid rgba(195, 190, 182, 0.25);
           padding: 18px 22px;
           font-size: 14px;
-          color: rgba(255, 255, 255, 0.75);
+          color: #a8a49c;
           line-height: 1.55;
+          border-radius: 8px;
         }
 
         .post-card {
-          background: rgba(255, 255, 255, 0.04);
-          border: 1px solid rgba(255, 255, 255, 0.09);
+          background: rgba(175, 170, 162, 0.08);
+          border: 1px solid rgba(195, 190, 182, 0.25);
           padding: 40px 44px;
           margin-bottom: 12px;
+          border-radius: 12px;
         }
 
         .post-meta-label {
@@ -901,7 +910,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           font-weight: 500;
           letter-spacing: 0.5em;
           text-transform: uppercase;
-          color: rgba(255, 255, 255, 0.35);
+          color: #8a8780;
           margin-bottom: 8px;
           margin-top: 20px;
         }
@@ -913,17 +922,17 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
         .post-hook {
           margin: 0 0 4px;
           font-size: clamp(20px, 2.5vw, 26px);
-          color: #ffffff;
+          color: #f0ede8;
           line-height: 1.35;
         }
 
         .post-body {
           margin: 0;
           font-size: 15px;
-          color: rgba(255, 255, 255, 0.75);
+          color: #a8a49c;
           line-height: 1.8;
           padding-bottom: 20px;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+          border-bottom: 1px solid rgba(175, 170, 162, 0.12);
           white-space: pre-wrap;
         }
 
@@ -931,7 +940,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           margin: 0;
           font-size: 14px;
           font-weight: 400;
-          color: rgba(255, 255, 255, 0.5);
+          color: #8a8780;
         }
 
         .upsell-section {
@@ -948,7 +957,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
         .upsell-overlay {
           position: absolute;
           inset: 0;
-          background: linear-gradient(135deg, rgba(10, 10, 10, 0.75) 0%, rgba(10, 10, 10, 0.55) 100%);
+          background: linear-gradient(135deg, rgba(13, 12, 11, 0.85) 0%, rgba(13, 12, 11, 0.65) 100%);
         }
 
         .upsell-content {
@@ -966,7 +975,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           font-weight: 500;
           letter-spacing: 0.5em;
           text-transform: uppercase;
-          color: rgba(255, 255, 255, 0.35);
+          color: #8a8780;
         }
 
         .upsell-heading {
@@ -975,13 +984,13 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           line-height: 1.05;
           letter-spacing: -0.01em;
           text-transform: uppercase;
-          color: #ffffff;
+          color: #f0ede8;
         }
 
         .upsell-body {
           margin: 0 auto 40px;
           font-size: 16px;
-          color: rgba(255, 255, 255, 0.75);
+          color: #8a8780;
           max-width: 620px;
           line-height: 1.8;
         }
@@ -996,47 +1005,50 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
 
         .btn-primary {
           display: inline-block;
-          background: #ffffff;
-          color: #0a0a0a;
+          background: #c8c4bb;
+          color: #0d0c0b;
           padding: 18px 52px;
           font-size: 11px;
           font-weight: 500;
-          letter-spacing: 0.12em;
+          letter-spacing: 0.15em;
           text-transform: uppercase;
           text-decoration: none;
-          transition: opacity 0.2s;
+          transition: background 0.2s;
+          border-radius: 9999px;
         }
 
         .btn-primary:hover {
-          opacity: 0.88;
+          background: #f0ede8;
         }
 
         .btn-secondary {
           display: inline-block;
-          border: 1px solid rgba(255, 255, 255, 0.25);
-          color: rgba(255, 255, 255, 0.75);
+          border: 1px solid rgba(195, 190, 182, 0.25);
+          color: #a8a49c;
           padding: 14px 40px;
           font-size: 11px;
           font-weight: 500;
           letter-spacing: 0.12em;
           text-transform: uppercase;
           text-decoration: none;
-          transition: border-color 0.2s;
+          transition: border-color 0.2s, color 0.2s;
+          border-radius: 9999px;
         }
 
         .btn-secondary:hover {
-          border-color: rgba(255, 255, 255, 0.5);
+          border-color: #a8a49c;
+          color: #c8c4bb;
         }
 
         .footer {
-          border-top: 1px solid rgba(255, 255, 255, 0.09);
+          border-top: 1px solid rgba(175, 170, 162, 0.12);
           padding: 30px 24px;
           text-align: center;
         }
 
         .footer-note {
           font-size: 12px;
-          color: rgba(255, 255, 255, 0.35);
+          color: #8a8780;
         }
 
         @media (max-width: 700px) {
