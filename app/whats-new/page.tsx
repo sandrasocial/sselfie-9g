@@ -7,6 +7,7 @@ import { useScroll, useTransform, motion } from "framer-motion"
 import { useRef } from "react"
 import TestimonialGrid from "@/components/testimonials/testimonial-grid"
 import { startEmbeddedCheckout } from "@/lib/start-embedded-checkout"
+import { handleCheckoutFailure } from "@/lib/checkout-failure"
 
 export default function WhatsNewPage() {
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null)
@@ -24,7 +25,12 @@ export default function WhatsNewPage() {
       window.location.href = `/checkout?client_secret=${clientSecret}`
     } catch (error) {
       console.error("Checkout error:", error)
-      alert("Failed to start checkout. Please try again.")
+      handleCheckoutFailure({
+        error,
+        source: "whats_new_checkout",
+        productId: tierId,
+        fallbackPath: tierId === "one_time_session" ? "/checkout/one-time" : "/checkout/membership",
+      })
       setCheckoutLoading(null)
     }
   }

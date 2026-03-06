@@ -5,6 +5,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { trackCTAClick, trackPricingView, trackCheckoutStart, trackLandingView } from "@/lib/analytics"
 import { startEmbeddedCheckout } from "@/lib/start-embedded-checkout"
+import { handleCheckoutFailure } from "@/lib/checkout-failure"
 import TestimonialCarousel from "@/components/testimonials/testimonial-carousel"
 import { formatPriceFromCents, getProductById } from "@/lib/products"
 
@@ -144,7 +145,12 @@ export default function LandingPageNew() {
       if (process.env.NODE_ENV === "development") {
         console.error("Checkout error:", error)
       }
-      alert("Failed to start checkout. Please try again.")
+      handleCheckoutFailure({
+        error,
+        source: "landing_new_pricing",
+        productId: tierId,
+        fallbackPath: tierId === "one_time_session" ? "/checkout/one-time" : "/checkout/membership",
+      })
       setCheckoutLoading(null)
     }
   }

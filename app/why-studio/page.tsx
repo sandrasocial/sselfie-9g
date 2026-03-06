@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { trackCTAClick, trackPricingView, trackCheckoutStart } from "@/lib/analytics"
 import { startEmbeddedCheckout } from "@/lib/start-embedded-checkout"
+import { handleCheckoutFailure } from "@/lib/checkout-failure"
 import TestimonialGrid from "@/components/testimonials/testimonial-grid"
 
 export default function WhyStudioPage() {
@@ -97,7 +98,12 @@ export default function WhyStudioPage() {
       if (process.env.NODE_ENV === "development") {
         console.error("Checkout error:", error)
       }
-      alert("Failed to start checkout. Please try again.")
+      handleCheckoutFailure({
+        error,
+        source: "why_studio_pricing",
+        productId: tierId,
+        fallbackPath: tierId === "one_time_session" ? "/checkout/one-time" : "/checkout/membership",
+      })
       setCheckoutLoading(null)
     }
   }

@@ -7,6 +7,7 @@ import { Play, Heart, GraduationCap, Instagram } from 'lucide-react'
 import { useScroll, useTransform, motion } from 'framer-motion'
 import { trackEvent, trackCTAClick, trackCheckoutStart } from '@/lib/analytics'
 import { startEmbeddedCheckout } from '@/lib/start-embedded-checkout'
+import { handleCheckoutFailure } from "@/lib/checkout-failure"
 
 export default function BioPage() {
   const heroContainer = useRef<HTMLDivElement>(null)
@@ -52,7 +53,12 @@ export default function BioPage() {
       if (process.env.NODE_ENV === "development") {
         console.error("Checkout error:", error)
       }
-      alert("Failed to start checkout. Please try again.")
+      handleCheckoutFailure({
+        error,
+        source: "bio_checkout",
+        productId,
+        fallbackPath: productId === "one_time_session" ? "/checkout/one-time" : "/checkout/membership",
+      })
       setCheckoutLoading(null)
     }
   }

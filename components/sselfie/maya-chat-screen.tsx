@@ -3383,6 +3383,7 @@ export default function MayaChatScreen({
           }}
           onLogout={handleLogout}
           isLoggingOut={isLoggingOut}
+          onOpenCredits={() => setShowBuyCreditsModal(true)}
           onSwitchToClassic={() => handleModeSwitch(false)}
           onSettings={() => setShowSettings(true)}
           activeTab={activeMayaTab}
@@ -3411,66 +3412,73 @@ export default function MayaChatScreen({
         />
       </div>
 
-      {/* Credit welcome banner — shown to non-members with credits on an empty session.
-          Creates urgency and clarity: "you have X free photos, go use them." */}
-      {!isMembership && creditBalance > 0 && (!messages || messages.length === 0) && (
-        <div className="shrink-0 mx-3 sm:mx-4 mt-4 mb-1">
-          <div className="border border-white/12 bg-[rgba(10,10,10,0.8)] rounded-xl p-4 flex items-center gap-3">
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-white mb-0.5">
-                You have {creditBalance} credit{creditBalance !== 1 ? "s" : ""} ready
-              </p>
-              <p className="text-xs text-white/60 leading-relaxed">Upload a selfie → Maya creates your first brand photo in 2 minutes.</p>
+      {activeMayaTab === "photos" && (
+        <div
+          className="shrink-0"
+          style={{ marginTop: "calc(var(--maya-header-height, 124px) + 8px)" }}
+        >
+          {/* Credit welcome banner — shown to non-members with credits on an empty session.
+              Creates urgency and clarity: "you have X free photos, go use them." */}
+          {!isMembership && creditBalance > 0 && (!messages || messages.length === 0) && (
+            <div className="mx-3 sm:mx-4 mb-1">
+              <div className="border border-white/12 bg-[rgba(10,10,10,0.8)] rounded-xl p-4 flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-white mb-0.5">
+                    You have {creditBalance} credit{creditBalance !== 1 ? "s" : ""} ready
+                  </p>
+                  <p className="text-xs text-white/60 leading-relaxed">Upload a selfie → Maya creates your first brand photo in 2 minutes.</p>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          )}
 
-      {/* Zero-credits upgrade nudge — shown inline when a free (non-membership) user
-          has exhausted their credits on the Photos tab. */}
-      {!isMembership && creditBalance === 0 && activeMayaTab === "photos" && (
-        <div className="shrink-0 mx-3 sm:mx-4 mt-4 mb-1">
-          <div className="border border-white/12 bg-[rgba(10,10,10,0.82)] rounded-xl p-4 flex items-start gap-3">
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-white mb-0.5">You&apos;ve used your free photos</p>
-              <p className="text-xs text-stone-300 leading-relaxed">
-                Upgrade to Studio — 200 credits/month. Or grab a one-time credit pack.
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
+          {/* Zero-credits upgrade nudge — shown inline when a free (non-membership) user
+              has exhausted their credits on the Photos tab. */}
+          {!isMembership && creditBalance === 0 && (
+            <div className="mx-3 sm:mx-4 mb-1">
+              <div className="border border-white/12 bg-[rgba(10,10,10,0.82)] rounded-xl p-4 flex items-start gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-white mb-0.5">You&apos;ve used your free photos</p>
+                  <p className="text-xs text-stone-300 leading-relaxed">
+                    Upgrade to Studio — 200 credits/month. Or grab a one-time credit pack.
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button
+                      onClick={() => startEmbeddedCheckout("sselfie_studio_membership")}
+                      className="shrink-0 text-xs font-medium text-stone-900 bg-white rounded-lg px-3 py-1.5 hover:bg-stone-100 transition-colors whitespace-nowrap"
+                    >
+                      Upgrade to Studio →
+                    </button>
+                    <button
+                      onClick={() => setShowBuyCreditsModal(true)}
+                      className="shrink-0 text-xs font-medium text-stone-300 bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 hover:bg-white/20 transition-colors whitespace-nowrap"
+                    >
+                      Buy credits
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Training Prompt - shown as a secondary option when user has no trained model.
+              Does NOT block the interface — Pro mode is always available without training. */}
+          {!hasTrainedModel && (
+            <div className="mx-3 sm:mx-4 mb-1">
+              <div className="border border-white/12 bg-[rgba(10,10,10,0.7)] rounded-xl p-4 flex items-start gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-white mb-0.5">Train your personal AI</p>
+                  <p className="text-xs text-white/60 leading-relaxed">Get photos that always look exactly like you — no selfie upload needed each time.</p>
+                </div>
                 <button
-                  onClick={() => startEmbeddedCheckout("sselfie_studio_membership")}
-                  className="shrink-0 text-xs font-medium text-stone-900 bg-white rounded-lg px-3 py-1.5 hover:bg-stone-100 transition-colors whitespace-nowrap"
+                  onClick={() => setMayaTabAndHash("training")}
+                  className="shrink-0 text-xs font-medium text-white bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 hover:bg-white/20 transition-colors whitespace-nowrap"
                 >
-                  Upgrade to Studio →
-                </button>
-                <button
-                  onClick={() => setShowBuyCreditsModal(true)}
-                  className="shrink-0 text-xs font-medium text-stone-300 bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 hover:bg-white/20 transition-colors whitespace-nowrap"
-                >
-                  Buy credits
+                  Train →
                 </button>
               </div>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Training Prompt - shown as a secondary option when user has no trained model.
-          Does NOT block the interface — Pro mode is always available without training. */}
-      {!hasTrainedModel && (
-        <div className="shrink-0 mx-3 sm:mx-4 mt-4 mb-1">
-          <div className="border border-white/12 bg-[rgba(10,10,10,0.7)] rounded-xl p-4 flex items-start gap-3">
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-medium text-white mb-0.5">Train your personal AI</p>
-              <p className="text-xs text-white/60 leading-relaxed">Get photos that always look exactly like you — no selfie upload needed each time.</p>
-            </div>
-            <button
-              onClick={() => window.dispatchEvent(new CustomEvent('open-onboarding'))}
-              className="shrink-0 text-xs font-medium text-white bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 hover:bg-white/20 transition-colors whitespace-nowrap"
-            >
-              Train →
-            </button>
-          </div>
+          )}
         </div>
       )}
 
@@ -4106,34 +4114,21 @@ export default function MayaChatScreen({
       {/* Tab Content - Training Tab */}
       {activeMayaTab === "training" && (
         <div
-          className="fixed inset-0 z-150 bg-[rgba(10,10,10,0.96)] backdrop-blur-md"
-          onClick={closeTrainingTab}
-          role="button"
-          tabIndex={-1}
+          className="flex-1 min-h-0 overflow-y-auto"
+          style={{
+            paddingTop: "calc(var(--maya-header-height, 124px) + 8px)",
+            paddingBottom: "20px",
+          }}
         >
-          <div
-            className="absolute inset-0 overflow-y-auto"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <button
-              onClick={closeTrainingTab}
-              className="absolute right-4 top-4 px-3 py-1.5 rounded-full border border-white/20 bg-[rgba(255,255,255,0.08)] text-white/80 hover:text-white hover:bg-[rgba(255,255,255,0.14)] transition-colors"
-              aria-label="Close training"
-            >
-              <span className="text-[10px] uppercase tracking-[0.2em]">Close</span>
-            </button>
-            <div className="pt-safe pb-24">
-              <MayaTrainingTab 
-                userId={userId} 
-                setActiveTab={setActiveTab}
-                userName={user?.name || user?.email?.split('@')[0] || null}
-                creditBalance={creditBalance}
-                isMembership={isMembership}
-                onBuyCredits={() => setShowBuyCreditsModal(true)}
-                onJoinStudio={() => startEmbeddedCheckout("sselfie_studio_membership")}
-              />
-            </div>
-          </div>
+          <MayaTrainingTab
+            userId={userId}
+            setActiveTab={setActiveTab}
+            userName={user?.name || user?.email?.split('@')[0] || null}
+            creditBalance={creditBalance}
+            isMembership={isMembership}
+            onBuyCredits={() => setShowBuyCreditsModal(true)}
+            onJoinStudio={() => startEmbeddedCheckout("sselfie_studio_membership")}
+          />
         </div>
       )}
 

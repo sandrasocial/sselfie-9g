@@ -46,6 +46,7 @@ interface MayaHeaderUnifiedProps {
   onHistory?: () => void
   onLogout?: () => void
   isLoggingOut?: boolean
+  onOpenCredits?: () => void
   
   // Tab Switcher Props (integrated into header)
   activeTab?: "photos" | "videos" | "prompts" | "training" | "feed"
@@ -108,6 +109,7 @@ export default function MayaHeaderUnified({
   onHistory,
   onLogout,
   isLoggingOut = false,
+  onOpenCredits,
   activeTab,
   onTabChange,
   photosCount,
@@ -381,7 +383,12 @@ export default function MayaHeaderUnified({
 
           {/* Credits Display - Always show when available */}
           {credits !== undefined && (
-            <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.06)] min-h-[36px] sm:min-h-[40px] shrink-0">
+            <button
+              type="button"
+              onClick={() => onOpenCredits?.()}
+              className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.06)] min-h-[36px] sm:min-h-[40px] shrink-0 hover:bg-[rgba(255,255,255,0.12)] transition-colors"
+              aria-label="Open credits and top-up options"
+            >
               <span className="hidden sm:inline text-[10px] md:text-xs font-light text-[#e5e5e5] uppercase tracking-wider">
                 Credits
               </span>
@@ -391,7 +398,8 @@ export default function MayaHeaderUnified({
               <span className="hidden sm:inline text-xs sm:text-sm md:text-base font-semibold text-[#ffffff] tabular-nums">
                 {formattedCredits}
               </span>
-            </div>
+              <span className="text-[10px] sm:text-xs font-medium text-white/80 uppercase tracking-[0.14em]">+</span>
+            </button>
           )}
 
           {/* Mode Toggle - Show only for membership users (segmented control showing both options)
@@ -698,8 +706,11 @@ export default function MayaHeaderUnified({
                 </button>
                 <button
                   onClick={() => {
-                    // Training moved to Account → Settings, trigger onboarding if needed
-                    window.dispatchEvent(new CustomEvent('open-onboarding'))
+                    if (onTabChange) {
+                      onTabChange("training")
+                    } else {
+                      window.dispatchEvent(new CustomEvent("open-onboarding"))
+                    }
                     onToggleNavMenu()
                   }}
                   className="touch-manipulation active:scale-[0.98] w-full text-left px-6 py-4 transition-colors hover:bg-[rgba(255,255,255,0.06)]"

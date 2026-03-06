@@ -7,6 +7,7 @@ import { EmbeddedCheckoutProvider, EmbeddedCheckout } from "@stripe/react-stripe
 import { CREDIT_PACKAGES } from "@/lib/products"
 import { startCreditCheckoutSession } from "@/app/actions/stripe"
 import { trackCTAClick } from "@/lib/analytics"
+import { handleCheckoutFailure } from "@/lib/checkout-failure"
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
@@ -26,7 +27,12 @@ export default function CreditsCheckoutPage() {
       setClientSecret(secret)
     } catch (error) {
       console.error("[v0] Error starting checkout:", error)
-      alert("Failed to start checkout. Please try again.")
+      handleCheckoutFailure({
+        error,
+        source: "credits_checkout_page",
+        productId: packageId,
+        fallbackPath: "/checkout/credits",
+      })
       setSelectedPackage(null)
     } finally {
       setLoading(false)
@@ -103,4 +109,3 @@ export default function CreditsCheckoutPage() {
     </div>
   )
 }
-

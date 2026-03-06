@@ -12,6 +12,7 @@ import MiniProductCard from "./mini-product-card"
 import UnifiedLoading from "./unified-loading"
 import { useRouter, useSearchParams } from 'next/navigation'
 import { parseAcademyViewParam } from "@/lib/academy/view-routing"
+import { handleCheckoutFailure } from "@/lib/checkout-failure"
 
 const fetcher = async (url: string) => {
   console.log("[v0] Fetching Academy data from:", url)
@@ -177,7 +178,12 @@ export default function AcademyScreen() {
       }
     } catch (error) {
       console.error("[v0] Error creating checkout:", error)
-      alert("Failed to start checkout. Please try again.")
+      handleCheckoutFailure({
+        error,
+        source: "academy_upgrade",
+        productId: "sselfie_studio_membership",
+        fallbackPath: "/checkout/membership",
+      })
     } finally {
       setIsUpgrading(false)
     }

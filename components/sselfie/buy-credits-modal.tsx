@@ -45,9 +45,9 @@ export default function BuyCreditsModal({ open, onOpenChange, onSuccess }: BuyCr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto border border-white/14 bg-[rgba(9,9,9,0.94)] text-white backdrop-blur-[18px]">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-serif font-light text-stone-900">Buy Credits</DialogTitle>
+          <DialogTitle className="text-2xl font-serif font-light tracking-[0.03em] text-white">Buy Credits</DialogTitle>
         </DialogHeader>
 
         {!selectedPackage ? (
@@ -55,46 +55,48 @@ export default function BuyCreditsModal({ open, onOpenChange, onSuccess }: BuyCr
             {CREDIT_PACKAGES.map((pkg) => (
               <div
                 key={pkg.id}
-                className={`relative border rounded-2xl p-6 hover:border-stone-400 transition-all cursor-pointer ${
-                  pkg.popular ? "border-stone-900 shadow-lg" : "border-stone-200"
+                className={`relative border rounded-2xl p-6 transition-all cursor-pointer ${
+                  pkg.popular
+                    ? "border-white/35 shadow-[0_18px_48px_rgba(0,0,0,0.45)] bg-[rgba(255,255,255,0.06)]"
+                    : "border-white/18 bg-[rgba(255,255,255,0.03)] hover:border-white/30"
                 }`}
                 onClick={() => handlePackageSelect(pkg.id)}
               >
                 {pkg.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-stone-900 text-white px-3 py-1 rounded-full text-xs font-medium">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white text-stone-900 px-3 py-1 rounded-full text-xs font-semibold tracking-[0.08em] uppercase">
                     Most Popular
                   </div>
                 )}
 
                 <div className="text-center space-y-4">
                   <div>
-                    <div className="text-4xl font-serif font-light text-stone-900">{pkg.credits}</div>
-                    <div className="text-sm text-stone-500 mt-1">Credits</div>
+                    <div className="text-4xl font-serif font-light text-white">{pkg.credits}</div>
+                    <div className="text-sm text-white/65 mt-1">Credits</div>
                   </div>
 
-                  <div className="text-3xl font-serif font-light text-stone-900">
+                  <div className="text-3xl font-serif font-light text-white">
                     ${(pkg.priceInCents / 100).toFixed(2)}
                   </div>
 
-                  <p className="text-sm text-stone-600">{pkg.description}</p>
+                  <p className="text-sm text-white/70">{pkg.description}</p>
 
                   <div className="pt-4 space-y-2">
-                    <div className="flex items-center gap-2 text-sm text-stone-700">
-                      <span className="text-[10px] uppercase tracking-[0.16em] text-stone-900">Included</span>
+                    <div className="flex items-center gap-2 text-sm text-white/78">
+                      <span className="text-[10px] uppercase tracking-[0.16em] text-white/55">Included</span>
                       <span>Generate AI images</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-stone-700">
-                      <span className="text-[10px] uppercase tracking-[0.16em] text-stone-900">Included</span>
+                    <div className="flex items-center gap-2 text-sm text-white/78">
+                      <span className="text-[10px] uppercase tracking-[0.16em] text-white/55">Included</span>
                       <span>Create Instagram feeds</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-stone-700">
-                      <span className="text-[10px] uppercase tracking-[0.16em] text-stone-900">Included</span>
+                    <div className="flex items-center gap-2 text-sm text-white/78">
+                      <span className="text-[10px] uppercase tracking-[0.16em] text-white/55">Included</span>
                       <span>Never expires</span>
                     </div>
                   </div>
 
                   <Button
-                    className="w-full bg-stone-900 hover:bg-stone-800 text-white rounded-xl"
+                    className="w-full bg-white text-stone-900 hover:bg-stone-100 rounded-xl font-semibold tracking-[0.04em]"
                     onClick={() => handlePackageSelect(pkg.id)}
                   >
                     Select Package
