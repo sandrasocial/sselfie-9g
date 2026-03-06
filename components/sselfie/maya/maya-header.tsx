@@ -127,6 +127,7 @@ export default function MayaHeaderUnified({
   const compactCredits = Number.isFinite(credits)
     ? new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 }).format(Math.round(credits))
     : "0"
+  const hasLibraryActions = Boolean(onManageLibrary || onAddImages || onEditIntent || onStartFresh)
 
   useEffect(() => {
     setIsMounted(true)
@@ -885,7 +886,7 @@ export default function MayaHeaderUnified({
                 )}
 
                 {/* Pro Mode: Manage Library section (if available) */}
-                {proMode && libraryCount > 0 && (
+                {proMode && libraryCount > 0 && hasLibraryActions && (
                   <>
                     <div
                       className="border-t my-2"

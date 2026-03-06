@@ -4,10 +4,11 @@ import { getUserByAuthId } from "@/lib/user-mapping"
 import { getUserPersonalBrand } from "@/lib/data/maya"
 import { sql } from "@/lib/db/client"
 import { auditPromptRoute } from "@/lib/generation/prompt/route-audit"
+import { createMayaOpenRouterModel, getMayaModelForTask } from "@/lib/maya/openrouter"
 
 export const maxDuration = 90
 
-const MODEL = "anthropic/claude-sonnet-4-20250514"
+const MODEL = getMayaModelForTask("chat_pro")
 const MAX_OUTPUT_TOKENS = 2400
 
 function buildPrompt(brandData: Record<string, any>) {
@@ -62,7 +63,7 @@ async function generateStrategyPack(brandData: Record<string, any>) {
     startedAt,
   })
   const { text } = await generateText({
-    model: MODEL,
+    model: createMayaOpenRouterModel("chat_pro"),
     prompt,
     maxOutputTokens: MAX_OUTPUT_TOKENS,
   })
@@ -71,7 +72,7 @@ async function generateStrategyPack(brandData: Record<string, any>) {
   } catch {
     const retryPrompt = `${prompt}\n\nIMPORTANT: Return ONLY valid JSON. No markdown. No commentary.`
     const retry = await generateText({
-      model: MODEL,
+      model: createMayaOpenRouterModel("chat_pro"),
       prompt: retryPrompt,
       maxOutputTokens: MAX_OUTPUT_TOKENS,
     })

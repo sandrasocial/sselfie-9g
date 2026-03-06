@@ -37,6 +37,7 @@ import { parseMayaToolMarkers } from "@/lib/maya/tool-markers"
 import {
   encodeOfferBriefMarkerPayload,
   type MayaOfferBrief,
+  type MayaOfferBriefAssetType,
 } from "@/lib/maya/offer-brief"
 import {
   encodeMayaVideoCardMarker,
@@ -91,6 +92,12 @@ const simpleFetcher = async <T,>(url: string): Promise<T> => {
   return (await response.json()) as T
 }
 
+function isFeatureEnabled(value?: string | null): boolean {
+  if (!value) return false
+  const normalized = value.trim().toLowerCase()
+  return normalized === "1" || normalized === "true"
+}
+
 interface MayaChatScreenProps {
   onImageGenerated?: () => void
   user: any | null // User object passed down (type from parent component)
@@ -139,6 +146,7 @@ export default function MayaChatScreen({
   firstTimeProductUser = false,
 }: MayaChatScreenProps) {
   const { toast } = useToast()
+  const isLandingPagesUiEnabled = isFeatureEnabled(process.env.NEXT_PUBLIC_FEATURE_MAYA_LANDING_PAGES_UI)
   const isFeedTabDisabled = true
   const [inputValue, setInputValue] = useState("")
   const [showHistory, setShowHistory] = useState(false)
@@ -704,6 +712,8 @@ export default function MayaChatScreen({
               stats: { feedCount: 0, pageCount: 0, photoCount: 0, videoCount: 0 },
               feeds: [],
               pages: [],
+              recentPhotos: [],
+              recentVideos: [],
             }, targetMessageId)
 
             try {
@@ -720,6 +730,8 @@ export default function MayaChatScreen({
                 stats: data?.stats || { feedCount: 0, pageCount: 0, photoCount: 0, videoCount: 0 },
                 feeds: Array.isArray(data?.feeds) ? data.feeds : [],
                 pages: Array.isArray(data?.pages) ? data.pages : [],
+                recentPhotos: Array.isArray(data?.recentPhotos) ? data.recentPhotos : [],
+                recentVideos: Array.isArray(data?.recentVideos) ? data.recentVideos : [],
               }, targetMessageId)
             } catch (error: any) {
               updateAssistantToolPart("tool-showStudioHub", {
@@ -728,6 +740,8 @@ export default function MayaChatScreen({
                 stats: { feedCount: 0, pageCount: 0, photoCount: 0, videoCount: 0 },
                 feeds: [],
                 pages: [],
+                recentPhotos: [],
+                recentVideos: [],
               }, targetMessageId)
             }
           }
@@ -874,6 +888,9 @@ export default function MayaChatScreen({
           }
 
           if (marker.tool === "collect_offer_brief") {
+            if (!isLandingPagesUiEnabled && marker.assetType === "page") {
+              continue
+            }
             updateAssistantToolPart("tool-collectOfferBrief", {
               state: "ready",
               assetType: marker.assetType,
@@ -883,6 +900,9 @@ export default function MayaChatScreen({
           }
 
           if (marker.tool === "edit_asset") {
+            if (!isLandingPagesUiEnabled && marker.assetType === "page") {
+              continue
+            }
             updateAssistantToolPart("tool-editAsset", {
               state: "ready",
               assetType: marker.assetType,
@@ -892,6 +912,9 @@ export default function MayaChatScreen({
           }
 
           if (marker.tool === "create_asset") {
+            if (!isLandingPagesUiEnabled && marker.assetType === "page") {
+              continue
+            }
             updateAssistantToolPart("tool-createAssetPreview", {
               state: "ready",
               assetType: marker.assetType,
@@ -909,7 +932,18 @@ export default function MayaChatScreen({
 
     // Feed trigger detection moved to MayaFeedTab component
     // (Feed tab handles its own triggers: [CREATE_FEED_STRATEGY], [GENERATE_CAPTIONS], [GENERATE_STRATEGY])
-  }, [messages, status, isGeneratingConcepts, pendingConceptRequest, proMode, messagesWithUploadModule, activeMayaTab, isCreatingFeed, updateAssistantToolPart])
+  }, [
+    messages,
+    status,
+    isGeneratingConcepts,
+    pendingConceptRequest,
+    proMode,
+    messagesWithUploadModule,
+    activeMayaTab,
+    isCreatingFeed,
+    updateAssistantToolPart,
+    isLandingPagesUiEnabled,
+  ])
 
   // The problem was: message was saved BEFORE concepts were generated, so concepts were never persisted
   useEffect(() => {
@@ -1695,7 +1729,6 @@ export default function MayaChatScreen({
         { label: "Create Photoshoot", prompt: "I want to create a photoshoot for my new offer" },
         { label: "Use My Selfies", prompt: "Let's create a photo using my uploaded selfies" },
         { label: "Upload Assets", prompt: "I want to upload product photos and brand references" },
-        { label: "Build Landing Page", prompt: "Create a landing page draft for my current offer" },
         { label: "Create Calendar", prompt: "Create a content calendar draft for this week" },
         { label: "Create Workbook", prompt: "Create a workbook PDF draft for this offer" },
       ]
@@ -1705,7 +1738,6 @@ export default function MayaChatScreen({
       { label: "Create Photoshoot", prompt: "I want to create a photo for my new offer" },
       { label: "Train My Model", prompt: "I want to train my custom model" },
       { label: "Upload Selfies", prompt: "I want to upload selfies first" },
-      { label: "Build Landing Page", prompt: "Create a landing page draft for my current offer" },
       { label: "Create Calendar", prompt: "Create a content calendar draft for this week" },
       { label: "Create Workbook", prompt: "Create a workbook PDF draft for this offer" },
     ]
@@ -2187,9 +2219,9 @@ export default function MayaChatScreen({
   )
 
   const handleToolSubmitOfferBrief = useCallback(
-    (values: OfferBriefFormValues) => {
+    (assetType: MayaOfferBriefAssetType, values: OfferBriefFormValues) => {
       const brief: MayaOfferBrief = {
-        assetType: "page",
+        assetType,
         designStyle: values.designStyle.trim(),
         offerType: values.offerType.trim(),
         transformation: values.transformation.trim(),
@@ -2204,7 +2236,7 @@ export default function MayaChatScreen({
 
       const markerPayload = encodeOfferBriefMarkerPayload(brief)
       const summaryText =
-        `Here is my offer brief.\\n` +
+        `Here is my ${assetType === "calendar" ? "calendar" : "offer"} brief.\\n` +
         (brief.designStyle ? `Design style: ${brief.designStyle}\\n` : "") +
         `Offer: ${brief.offerType}\\n` +
         `Transformation: ${brief.transformation}\\n` +
@@ -2464,16 +2496,6 @@ export default function MayaChatScreen({
 
   // Wrapper for handleNewChat that adds component-specific logic
   const handleNewChat = useCallback(async () => {
-    // In Pro Mode, "New Project" should clear library (like "Start Fresh")
-    if (hasProFeatures) {
-      // Show confirmation dialog for Pro Mode (matching Start Fresh behavior)
-      if (!confirm('Are you sure you want to start a new project? This will clear your image library and start fresh.')) {
-        return
-      }
-      // Clear library before creating new chat
-      await clearLibrary()
-    }
-    
     // Reset component-specific state for new chat
     setSelectedPrompt("")
     setMessagesWithUploadModule(new Set())
@@ -2486,7 +2508,7 @@ export default function MayaChatScreen({
 
     // Call hook's base handler
     await baseHandleNewChat()
-  }, [proMode, clearLibrary, baseHandleNewChat, clearSharedImages, clearAllVideoPolls])
+  }, [baseHandleNewChat, clearSharedImages, clearAllVideoPolls])
 
   // Handle mode switching - creates a new chat when switching between Classic and Pro
   // Handle saving concept to guide (admin mode)
@@ -3199,9 +3221,12 @@ export default function MayaChatScreen({
             part.type === "tool-saveToGallery" ||
             part.type === "tool-generateImage" ||
             part.type === "tool-showUploadZone" ||
-            part.type === "tool-collectOfferBrief" ||
-            part.type === "tool-editAsset" ||
-            part.type === "tool-createAssetPreview" ||
+            (part.type === "tool-collectOfferBrief" &&
+              (isLandingPagesUiEnabled || (part as any)?.output?.assetType !== "page")) ||
+            (part.type === "tool-editAsset" &&
+              (isLandingPagesUiEnabled || (part as any)?.output?.assetType !== "page")) ||
+            (part.type === "tool-createAssetPreview" &&
+              (isLandingPagesUiEnabled || (part as any)?.output?.assetType !== "page")) ||
             part.type === "tool-generateFeed" ||
             part.type === "tool-generateCaptions" ||
             part.type === "tool-generateStrategy" ||
@@ -3217,7 +3242,7 @@ export default function MayaChatScreen({
       const visibleText = stripChatControlText(getMessageText(message))
       return visibleText.length > 0
     })
-  }, [messages, getMessageText])
+  }, [messages, getMessageText, isLandingPagesUiEnabled])
 
   const isEmpty = 
     !isLoadingChat && // Don't show welcome screen while loading
@@ -3297,8 +3322,10 @@ export default function MayaChatScreen({
   return (
     <>
     <div
-      className="flex flex-col h-full relative overflow-x-hidden bg-[radial-gradient(120%_90%_at_50%_0%,rgba(255,255,255,0.09)_0%,rgba(255,255,255,0.04)_18%,rgba(10,10,10,0.88)_48%,rgba(10,10,10,0.78)_100%)]"
+      className="flex flex-col h-full relative overflow-x-hidden"
       style={{
+        background:
+          "var(--app-bg-primary), radial-gradient(80% 55% at 20% 0%, var(--app-bg-glow-1) 0%, transparent 70%), radial-gradient(90% 60% at 80% 10%, var(--app-bg-glow-2) 0%, transparent 72%), linear-gradient(180deg, rgba(18,14,11,0.82) 0%, rgba(14,11,9,0.9) 52%, rgba(10,8,7,0.94) 100%)",
         paddingBottom: "var(--sselfie-bottom-nav-height, 96px)",
       }}
       onDragEnter={handleDragEnter}
@@ -3335,27 +3362,16 @@ export default function MayaChatScreen({
           onModeSwitch={handleModeSwitch}
           libraryCount={libraryTotalImages}
           credits={creditBalance}
-          onManageLibrary={() => setShowLibraryModal(true)}
-          onAddImages={() => setShowUploadFlow(true)}
-          onStartFresh={async () => {
-            if (confirm('Are you sure you want to start fresh? This will clear your image library.')) {
-              await clearLibrary()
-              setMessages([])
-              handleNewChat()
-            }
-          }}
+          onManageLibrary={undefined}
+          onAddImages={undefined}
+          onStartFresh={undefined}
           isAdmin={isAdmin}
           selectedGuideId={selectedGuideId}
           selectedGuideCategory={selectedGuideCategory}
           onGuideChange={onGuideChange}
           userId={userId}
           showModeToggle={isMembership && !hideModeComplexity} // Hide mode controls in unified UX
-          onEditIntent={async () => {
-            const newIntent = prompt('Enter your creative intent:', imageLibrary.intent || '')
-            if (newIntent !== null) {
-              await updateIntent(newIntent)
-            }
-          }}
+          onEditIntent={undefined}
           onNavigation={handleNavigation}
           onNewProject={handleNewChat}
           onHistory={() => {
@@ -3749,9 +3765,6 @@ export default function MayaChatScreen({
                       window.history.replaceState(null, "", "#maya/prompts")
                     }
                   }}
-                  onCreateLandingPage={() => {
-                    handleSendMessage("Create a landing page draft for my current offer")
-                  }}
                   onCreateCalendar={() => {
                     handleSendMessage("Create a content calendar draft for this week")
                   }}
@@ -3804,17 +3817,9 @@ export default function MayaChatScreen({
                         Quick Start
                       </p>
                       <p className="text-xs text-white/70 leading-relaxed">
-                        Tap <span className="text-white font-medium">Add Photos</span> to open the upload wizard and link 1-3 reference images.
+                        Use <span className="text-white font-medium">Add Image</span> in the chat input to link 1-3 reference photos.
                       </p>
                     </div>
-                    <button
-                      onClick={() => {
-                        setShowUploadFlow(true)
-                      }}
-                      className="px-6 py-2.5 bg-[rgba(255,255,255,0.12)] border border-[rgba(255,255,255,0.25)] text-white rounded-full text-sm hover:bg-[rgba(255,255,255,0.18)] transition-colors"
-                    >
-                      Add Photos
-                    </button>
                   </div>
                 ) : (
                   // Welcome message when library has images - matches Classic styling
@@ -4041,7 +4046,7 @@ export default function MayaChatScreen({
             onCreditsUpdate={setCreditBalance}
             proMode={proMode}
             imageLibrary={imageLibrary}
-            onOpenUploadFlow={() => setShowUploadFlow(true)}
+            onOpenUploadFlow={undefined}
             aiPhotoPromptsLocked={!hasAiPhotoPromptsAccess}
             onUpgradeToStudio={() => startEmbeddedCheckout("sselfie_studio_membership")}
           />
@@ -4151,11 +4156,14 @@ export default function MayaChatScreen({
             handleModeSwitch(true)
           }
           setActiveMayaTab("photos")
-          setShowUploadFlow(true)
           if (typeof window !== "undefined") {
             localStorage.setItem("mayaActiveTab", "photos")
             window.history.replaceState(null, "", "#maya")
           }
+          toast({
+            title: "Use Add Image",
+            description: "Upload from the Add Image button in the chat input to start creating.",
+          })
         }}
         onStartTraining={() => {
           setActiveMayaTab("training")

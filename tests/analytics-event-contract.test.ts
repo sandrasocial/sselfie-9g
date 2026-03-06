@@ -23,6 +23,10 @@ describe("analytics event contract", () => {
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("maya_public_page_lead_captured")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("maya_tool_blocked_low_credits")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("maya_multi_step_executor_run")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("brand_strategy_pack_upsell_view")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("brand_strategy_pack_checkout_start")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("brand_strategy_pack_checkout_success")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("brand_strategy_pack_studio_click")
   })
 
   it("rejects unknown event names", () => {
@@ -37,5 +41,6 @@ describe("analytics event contract", () => {
     expect(isAllowedAnalyticsEventName("maya_public_page_lead_captured")).toBe(true)
     expect(isAllowedAnalyticsEventName("maya_tool_blocked_low_credits")).toBe(true)
     expect(isAllowedAnalyticsEventName("maya_multi_step_executor_run")).toBe(true)
+    expect(isAllowedAnalyticsEventName("brand_strategy_pack_checkout_success")).toBe(true)
   })
 })

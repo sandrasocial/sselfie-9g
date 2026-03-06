@@ -51,6 +51,21 @@ describe("maya offer brief marker parsing", () => {
     expect(memorySummary).toContain("Ideal client: Female founders")
   })
 
+  it("supports calendar briefs and returns instagram-specific instruction", () => {
+    const calendarBrief = {
+      ...brief,
+      assetType: "calendar" as const,
+    }
+
+    const instruction = buildOfferBriefInstruction(calendarBrief)
+    const payload = encodeOfferBriefMarkerPayload(calendarBrief)
+    const parsed = parseOfferBriefSubmissionMarker(`[SUBMIT_OFFER_BRIEF:${payload}]`)
+
+    expect(instruction).toContain("Instagram content calendar draft")
+    expect(instruction).toContain("9-post Instagram plan")
+    expect(parsed?.assetType).toBe("calendar")
+  })
+
   it("encodes and parses collection payload for prefilled briefs", () => {
     const payload = encodeOfferBriefCollectionPayload({
       assetType: "page",

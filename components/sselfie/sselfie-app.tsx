@@ -841,7 +841,8 @@ export default function SselfieApp({
     <div
         className="h-screen relative overflow-hidden prevent-horizontal-scroll"
         style={{
-          background: 'radial-gradient(ellipse 150% 100% at 50% 0%, #1c1c1c 0%, #111111 50%, #0d0d0d 100%)',
+          background:
+            "var(--app-bg-primary), radial-gradient(72% 58% at 16% 4%, var(--app-bg-glow-1) 0%, transparent 72%), radial-gradient(84% 62% at 84% 9%, var(--app-bg-glow-2) 0%, transparent 75%), linear-gradient(180deg, rgba(18,14,11,0.76) 0%, rgba(14,11,9,0.9) 52%, rgba(10,8,7,0.96) 100%)",
           fontFamily:
             '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
           paddingTop: "env(safe-area-inset-top)",
@@ -850,8 +851,8 @@ export default function SselfieApp({
         <ServiceWorkerProvider />
 
       <div className="absolute inset-0">
-        <div className="absolute top-0 left-1/4 w-96 h-96 rounded-full blur-3xl" style={{ background: 'rgba(255,255,255,0.02)' }}></div>
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 rounded-full blur-3xl" style={{ background: 'rgba(255,255,255,0.015)' }}></div>
+        <div className="absolute top-0 left-1/4 h-96 w-96 rounded-full blur-3xl" style={{ background: "var(--app-bg-glow-1)" }} />
+        <div className="absolute bottom-0 right-1/4 h-96 w-96 rounded-full blur-3xl" style={{ background: "var(--app-bg-glow-2)" }} />
       </div>
 
       {isWelcome && creditBalance === 0 && (

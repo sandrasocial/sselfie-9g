@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react"
+import React from "react"
 import type { UIMessage } from "@ai-sdk/react"
 import VideoCard from "../video-card"
 import MayaConceptCards from "./maya-concept-cards"
@@ -11,9 +11,15 @@ import FeedCaptionCard from "@/components/feed-planner/feed-caption-card"
 import FeedStrategyCard from "@/components/feed-planner/feed-strategy-card"
 import UnifiedLoading from "../unified-loading"
 import MayaOfferBriefForm from "./maya-offer-brief-form"
-import type { MayaOfferBrief } from "@/lib/maya/offer-brief"
+import type { MayaOfferBrief, MayaOfferBriefAssetType } from "@/lib/maya/offer-brief"
 
 type OfferBriefFormValues = Omit<MayaOfferBrief, "assetType">
+
+function isFeatureEnabled(value?: string | null): boolean {
+  if (!value) return false
+  const normalized = value.trim().toLowerCase()
+  return normalized === "1" || normalized === "true"
+}
 
 interface MayaChatInterfaceProps {
   // Messages
@@ -67,7 +73,7 @@ interface MayaChatInterfaceProps {
   onToolSelectGenerationSource?: (source: "selfies" | "custom_model" | "base_model") => void
   onToolOpenUploadZone?: (category: "selfies" | "products" | "people" | "vibes") => void
   onToolPromptSelect?: (prompt: string) => void
-  onToolSubmitOfferBrief?: (values: OfferBriefFormValues) => void
+  onToolSubmitOfferBrief?: (assetType: MayaOfferBriefAssetType, values: OfferBriefFormValues) => void
   onToolStartVideoGeneration?: (input: {
     messageId: string
     imageId: string
@@ -128,8 +134,8 @@ export default function MayaChatInterface({
   onToolSubmitOfferBrief,
   onToolStartVideoGeneration,
 }: MayaChatInterfaceProps) {
-  const [regeneratingPages, setRegeneratingPages] = useState<Record<string, boolean>>({})
   const isDevVideoDebug = process.env.NODE_ENV !== "production"
+  const isLandingPagesUiEnabled = isFeatureEnabled(process.env.NEXT_PUBLIC_FEATURE_MAYA_LANDING_PAGES_UI)
   const TOOL_RENDER_TYPES = new Set([
     "tool-generateConcepts",
     "tool-showCapabilities",
@@ -221,32 +227,6 @@ export default function MayaChatInterface({
     )
   }
 
-  const handleRegeneratePage = async (pageId: string, regenerateUrl: string, fallbackOpenUrl?: string) => {
-    if (!pageId || !regenerateUrl) return
-    if (regeneratingPages[pageId]) return
-
-    setRegeneratingPages((prev) => ({ ...prev, [pageId]: true }))
-    try {
-      const response = await fetch(regenerateUrl, {
-        method: "POST",
-        credentials: "include",
-      })
-      const payload = await response.json().catch(() => null)
-      if (!response.ok || !payload?.success) {
-        throw new Error(payload?.error || "Failed to regenerate page")
-      }
-
-      const openUrl = typeof payload.liveUrl === "string" && payload.liveUrl ? payload.liveUrl : fallbackOpenUrl
-      if (openUrl) {
-        window.open(openUrl, "_blank", "noopener,noreferrer")
-      }
-    } catch (error) {
-      console.error("[Maya Chat Interface] Regenerate failed:", error)
-    } finally {
-      setRegeneratingPages((prev) => ({ ...prev, [pageId]: false }))
-    }
-  }
-  
   // Helper function to remove emojis from text
   const removeEmojis = (text: string): string => {
     if (!text) return text
@@ -982,7 +962,7 @@ export default function MayaChatInterface({
                                 {
                                   title: "Open My Studio Hub",
                                   prompt: "Show my studio hub and everything you've created",
-                                  description: "View your latest pages, feeds, photos, and videos inline.",
+                                  description: "View your latest feeds, photos, and videos inline.",
                                 },
                               ]
 
@@ -1014,7 +994,8 @@ export default function MayaChatInterface({
                               const state = output.state || "ready"
                               const stats = output.stats || { feedCount: 0, pageCount: 0, photoCount: 0, videoCount: 0 }
                               const feeds = Array.isArray(output.feeds) ? output.feeds : []
-                              const pages = Array.isArray(output.pages) ? output.pages : []
+                              const recentPhotos = Array.isArray(output.recentPhotos) ? output.recentPhotos : []
+                              const recentVideos = Array.isArray(output.recentVideos) ? output.recentVideos : []
 
                               if (state === "loading") {
                                 return (
@@ -1046,14 +1027,10 @@ export default function MayaChatInterface({
                                     </a>
                                   </div>
 
-                                  <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                                  <div className="mt-3 grid grid-cols-3 gap-2">
                                     <div className="rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(0,0,0,0.18)] px-2 py-2">
                                       <div className="text-[10px] uppercase tracking-[0.14em] text-[#adadad]">Feeds</div>
                                       <div className="mt-1 text-sm text-white">{Number(stats.feedCount || 0)}</div>
-                                    </div>
-                                    <div className="rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(0,0,0,0.18)] px-2 py-2">
-                                      <div className="text-[10px] uppercase tracking-[0.14em] text-[#adadad]">Pages</div>
-                                      <div className="mt-1 text-sm text-white">{Number(stats.pageCount || 0)}</div>
                                     </div>
                                     <div className="rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(0,0,0,0.18)] px-2 py-2">
                                       <div className="text-[10px] uppercase tracking-[0.14em] text-[#adadad]">Photos</div>
@@ -1065,53 +1042,8 @@ export default function MayaChatInterface({
                                     </div>
                                   </div>
 
-                                  {(pages.length > 0 || feeds.length > 0) && (
+                                  {(recentPhotos.length > 0 || recentVideos.length > 0 || feeds.length > 0) && (
                                     <div className="mt-3 space-y-2">
-                                      {pages.slice(0, 3).map((page: any) => (
-                                        <div
-                                          key={`hub-page-${page.id}`}
-                                          className="rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(0,0,0,0.18)] px-3 py-2"
-                                        >
-                                          <div className="flex items-center justify-between gap-2">
-                                            <div className="text-xs text-white">{page.title || "Untitled Page"}</div>
-                                            <div className="flex items-center gap-2">
-                                              {page.liveUrl ? (
-                                                <a
-                                                  href={page.liveUrl}
-                                                  target="_blank"
-                                                  rel="noreferrer"
-                                                  className="text-[10px] uppercase tracking-[0.14em] text-[#cfcfcf] hover:text-white"
-                                                >
-                                                  Open
-                                                </a>
-                                              ) : (
-                                                <a
-                                                  href="/studio?tab=maya#maya"
-                                                  className="text-[10px] uppercase tracking-[0.14em] text-[#cfcfcf] hover:text-white"
-                                                >
-                                                  Continue
-                                                </a>
-                                              )}
-                                              {page.canRegenerate && page.regenerateUrl ? (
-                                                <button
-                                                  type="button"
-                                                  onClick={() =>
-                                                    handleRegeneratePage(
-                                                      String(page.id || ""),
-                                                      String(page.regenerateUrl || ""),
-                                                      page.liveUrl || "",
-                                                    )
-                                                  }
-                                                  disabled={!!regeneratingPages[String(page.id || "")]}
-                                                  className="text-[10px] uppercase tracking-[0.14em] text-[#cfcfcf] hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
-                                                >
-                                                  {regeneratingPages[String(page.id || "")] ? "..." : "Regen"}
-                                                </button>
-                                              ) : null}
-                                            </div>
-                                          </div>
-                                        </div>
-                                      ))}
                                       {feeds.slice(0, 2).map((feed: any) => (
                                         <div
                                           key={`hub-feed-${feed.id}`}
@@ -1121,6 +1053,40 @@ export default function MayaChatInterface({
                                             <div className="text-xs text-white">{feed.title || `Feed ${feed.id}`}</div>
                                             <a
                                               href={feed.openUrl || "/studio?tab=feed-planner#feed-planner"}
+                                              className="text-[10px] uppercase tracking-[0.14em] text-[#cfcfcf] hover:text-white"
+                                            >
+                                              Open
+                                            </a>
+                                          </div>
+                                        </div>
+                                      ))}
+                                      {recentPhotos.slice(0, 2).map((photo: any) => (
+                                        <div
+                                          key={`hub-photo-${photo.id}`}
+                                          className="rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(0,0,0,0.18)] px-3 py-2"
+                                        >
+                                          <div className="flex items-center justify-between gap-2">
+                                            <div className="text-xs text-white">
+                                              {photo.prompt || "Recent photo"}
+                                            </div>
+                                            <a
+                                              href={photo.openUrl || "/studio?tab=gallery#gallery"}
+                                              className="text-[10px] uppercase tracking-[0.14em] text-[#cfcfcf] hover:text-white"
+                                            >
+                                              Open
+                                            </a>
+                                          </div>
+                                        </div>
+                                      ))}
+                                      {recentVideos.slice(0, 1).map((video: any) => (
+                                        <div
+                                          key={`hub-video-${video.id}`}
+                                          className="rounded-lg border border-[rgba(255,255,255,0.1)] bg-[rgba(0,0,0,0.18)] px-3 py-2"
+                                        >
+                                          <div className="flex items-center justify-between gap-2">
+                                            <div className="text-xs text-white">Latest video draft</div>
+                                            <a
+                                              href={video.openUrl || "/studio?tab=maya#maya/videos"}
                                               className="text-[10px] uppercase tracking-[0.14em] text-[#cfcfcf] hover:text-white"
                                             >
                                               Open
@@ -1287,13 +1253,18 @@ export default function MayaChatInterface({
 
                             if (part.type === "tool-collectOfferBrief") {
                               const output = (part as any).output || {}
+                              const assetType = output.assetType || "page"
+                              if (!isLandingPagesUiEnabled && assetType === "page") {
+                                return null
+                              }
                               return (
                                 <div key={partIndex}>
                                   <MayaOfferBriefForm
+                                    assetType={assetType === "calendar" ? "calendar" : "page"}
                                     initialValues={output.prefill || {}}
                                     missingFields={Array.isArray(output.missingFields) ? output.missingFields : []}
-                                    onSubmit={(values) => {
-                                      onToolSubmitOfferBrief?.(values)
+                                    onSubmit={(assetType, values) => {
+                                      onToolSubmitOfferBrief?.(assetType, values)
                                     }}
                                   />
                                 </div>
@@ -1303,6 +1274,9 @@ export default function MayaChatInterface({
                             if (part.type === "tool-editAsset") {
                               const output = (part as any).output || {}
                               const assetType = output.assetType || "page"
+                              if (!isLandingPagesUiEnabled && assetType === "page") {
+                                return null
+                              }
                               const assetLabel =
                                 typeof output.assetLabel === "string" && output.assetLabel.trim().length > 0
                                   ? output.assetLabel
@@ -1334,6 +1308,9 @@ export default function MayaChatInterface({
                             if (part.type === "tool-createAssetPreview") {
                               const output = (part as any).output || {}
                               const assetType = output.assetType || "page"
+                              if (!isLandingPagesUiEnabled && assetType === "page") {
+                                return null
+                              }
                               const assetLabel =
                                 typeof output.assetLabel === "string" && output.assetLabel.trim().length > 0
                                   ? output.assetLabel

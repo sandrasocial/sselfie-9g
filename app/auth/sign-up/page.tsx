@@ -26,9 +26,15 @@ export default function SignUpPage() {
   const getRoutingContext = () => {
     const urlParams = new URLSearchParams(window.location.search)
     const checkoutParam = urlParams.get("checkout")
+    const checkoutDefaultReturnTo =
+      checkoutParam === "studio_membership"
+        ? "/checkout/membership"
+        : checkoutParam === "brand_strategy_pack"
+          ? "/checkout/brand-strategy-pack"
+          : "/studio"
     const returnTo = sanitizeRedirect(
       urlParams.get("returnTo"),
-      checkoutParam === "studio_membership" ? "/checkout/membership" : "/studio",
+      checkoutDefaultReturnTo,
     )
     const next = urlParams.get("next")
 
@@ -103,6 +109,8 @@ export default function SignUpPage() {
       let redirectTo = sanitizeRedirect(next, returnTo)
       if (checkoutParam === "studio_membership") {
         redirectTo = "/checkout/membership"
+      } else if (checkoutParam === "brand_strategy_pack") {
+        redirectTo = "/checkout/brand-strategy-pack"
       }
       router.push(redirectTo)
     } catch (error: unknown) {
@@ -170,6 +178,8 @@ export default function SignUpPage() {
         let redirectTo = sanitizeRedirect(next, returnTo)
         if (checkoutParam === "studio_membership") {
           redirectTo = "/checkout/membership"
+        } else if (checkoutParam === "brand_strategy_pack") {
+          redirectTo = "/checkout/brand-strategy-pack"
         }
         console.log("[Sign Up] ✅ Signed in successfully, redirecting to:", redirectTo)
         router.push(redirectTo)

@@ -4,7 +4,7 @@ import { SuccessContent } from "@/components/checkout/success-content"
 export default async function CheckoutSuccessPage({
   searchParams,
 }: {
-  searchParams: Promise<{ session_id?: string; email?: string; type?: string }>
+  searchParams: Promise<{ session_id?: string; email?: string; type?: string; return_to?: string }>
 }) {
   const params = await searchParams
 
@@ -21,7 +21,12 @@ export default async function CheckoutSuccessPage({
         </div>
       }
     >
-      <SuccessContent initialUserInfo={null} initialEmail={params.email} purchaseType={params.type} />
+      <SuccessContent
+        initialUserInfo={null}
+        initialEmail={params.email}
+        purchaseType={params.type}
+        returnTo={params.return_to}
+      />
     </Suspense>
   )
 }

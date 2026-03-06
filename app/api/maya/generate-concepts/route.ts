@@ -68,6 +68,7 @@ import {
 } from '@/lib/maya/direct-prompt-generation'
 import { generateWithNanoBanana, checkNanoBananaPrediction } from '@/lib/nano-banana-client'
 import { put } from '@vercel/blob'
+import { createMayaOpenRouterModel } from "@/lib/maya/openrouter"
 
 /**
  * Direct Prompt Generation
@@ -988,7 +989,7 @@ Keep it conversational and specific. I need to recreate this EXACT vibe.`
       })
 
       const { text: visionText } = await generateText({
-        model: "anthropic/claude-sonnet-4-20250514",
+        model: createMayaOpenRouterModel("chat_pro"),
         messages: [
           {
             role: "user",
@@ -1125,7 +1126,7 @@ Keep it brief (2-3 paragraphs) and actionable for a fashion photographer creatin
       }
 
       const { text: researchText } = await generateText({
-        model: "anthropic/claude-sonnet-4-20250514",
+        model: createMayaOpenRouterModel("chat_pro"),
         messages: [
           {
             role: "user",
@@ -2829,7 +2830,7 @@ Same quality/luxury/styling as professional concepts, but with:
         async (prompt: string) => {
           // Delegate to existing Maya chat logic
           return await generateText({
-            model: 'anthropic/claude-sonnet-4-20250514',
+            model: createMayaOpenRouterModel("chat_pro"),
             messages: [
               {
                 role: 'user',
@@ -2862,7 +2863,7 @@ Same quality/luxury/styling as professional concepts, but with:
       // Generate concepts using Maya's AI generation
       // Generate all concepts using Maya's AI
       const { text } = await generateText({
-        model: 'anthropic/claude-sonnet-4-20250514',
+        model: createMayaOpenRouterModel("chat_pro"),
         messages: [
           {
             role: 'user',

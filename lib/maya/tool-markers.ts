@@ -14,7 +14,7 @@ export type MayaToolMarker =
   | { tool: "show_upload_zone"; category: "selfies" | "products" | "people" | "vibes" }
   | {
       tool: "collect_offer_brief"
-      assetType: "page"
+      assetType: "page" | "calendar"
       prefill?: Partial<MayaOfferBriefFormValues>
       missingFields?: MayaOfferBriefField[]
     }
@@ -130,10 +130,16 @@ export function parseMayaToolMarkers(text: string): MayaToolMarker[] {
   let collectOfferBriefMatch: RegExpExecArray | null = null
   while ((collectOfferBriefMatch = COLLECT_OFFER_BRIEF_REGEX.exec(text)) !== null) {
     const rawPayload = (collectOfferBriefMatch[1] || "").trim()
-    const parsedPayload = parseOfferBriefCollectionPayload(rawPayload)
+    const parsedPayload =
+      parseOfferBriefCollectionPayload(rawPayload) ||
+      (rawPayload.toLowerCase() === "calendar"
+        ? { assetType: "calendar" as const, prefill: {}, missingFields: [] }
+        : rawPayload.toLowerCase() === "page"
+          ? { assetType: "page" as const, prefill: {}, missingFields: [] }
+          : null)
     const marker: MayaToolMarker = {
       tool: "collect_offer_brief",
-      assetType: "page",
+      assetType: parsedPayload?.assetType === "calendar" ? "calendar" : "page",
     }
 
     if (parsedPayload?.prefill && Object.keys(parsedPayload.prefill).length > 0) {

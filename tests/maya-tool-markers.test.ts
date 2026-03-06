@@ -66,6 +66,29 @@ describe("parseMayaToolMarkers", () => {
     ])
   })
 
+  it("parses collect brief marker with calendar payload", () => {
+    const payload = encodeURIComponent(
+      JSON.stringify({
+        assetType: "calendar",
+        prefill: {
+          offerType: "Studio Membership",
+        },
+        missingFields: ["idealClient"],
+      }),
+    )
+    const markers = parseMayaToolMarkers(`[COLLECT_OFFER_BRIEF:${payload}]`)
+    expect(markers).toEqual([
+      {
+        tool: "collect_offer_brief",
+        assetType: "calendar",
+        prefill: {
+          offerType: "Studio Membership",
+        },
+        missingFields: ["idealClient"],
+      },
+    ])
+  })
+
   it("parses generate video marker", () => {
     const markers = parseMayaToolMarkers(
       "Let's animate this shot.\n[GENERATE_VIDEO]",

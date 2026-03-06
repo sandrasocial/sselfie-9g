@@ -29,6 +29,10 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "onboarding_complete",
   "credits_used",
   "mode_selected",
+  "brand_strategy_pack_upsell_view",
+  "brand_strategy_pack_checkout_start",
+  "brand_strategy_pack_checkout_success",
+  "brand_strategy_pack_studio_click",
 ] as const
 
 export type AnalyticsEventName = (typeof ALLOWED_ANALYTICS_EVENTS)[number]

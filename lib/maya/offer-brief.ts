@@ -1,4 +1,4 @@
-export type MayaOfferBriefAssetType = "page"
+export type MayaOfferBriefAssetType = "page" | "calendar"
 
 export interface MayaOfferBrief {
   assetType: MayaOfferBriefAssetType
@@ -96,9 +96,10 @@ function toOfferBriefRecord(value: unknown): Record<string, unknown> | null {
 export function normalizeOfferBrief(input: unknown): MayaOfferBrief | null {
   const record = toOfferBriefRecord(input)
   if (!record) return null
+  const assetType: MayaOfferBriefAssetType = record.assetType === "calendar" ? "calendar" : "page"
 
   const brief: MayaOfferBrief = {
-    assetType: "page",
+    assetType,
     designStyle: normalizeField(record.designStyle),
     offerType: normalizeField(record.offerType),
     transformation: normalizeField(record.transformation),
@@ -129,8 +130,15 @@ export function isOfferBriefCoreComplete(values: Partial<MayaOfferBriefFormValue
 }
 
 export function toOfferBriefFromPartial(values: Partial<MayaOfferBriefFormValues>): MayaOfferBrief | null {
+  return toOfferBriefFromPartialForAsset(values, "page")
+}
+
+export function toOfferBriefFromPartialForAsset(
+  values: Partial<MayaOfferBriefFormValues>,
+  assetType: MayaOfferBriefAssetType,
+): MayaOfferBrief | null {
   const brief: MayaOfferBrief = {
-    assetType: "page",
+    assetType,
     designStyle: normalizeField(values.designStyle),
     offerType: normalizeField(values.offerType),
     transformation: normalizeField(values.transformation),
@@ -153,7 +161,7 @@ export function encodeOfferBriefMarkerPayload(brief: MayaOfferBrief): string {
 
 export function encodeOfferBriefCollectionPayload(payload: MayaOfferBriefCollectionPayload): string {
   const normalizedPayload: MayaOfferBriefCollectionPayload = {
-    assetType: "page",
+    assetType: payload.assetType === "calendar" ? "calendar" : "page",
     prefill: normalizePartialFormValues(payload.prefill),
     missingFields: normalizeMissingFieldList(payload.missingFields),
   }
@@ -177,7 +185,7 @@ export function parseOfferBriefCollectionPayload(rawPayload: string): MayaOfferB
   if (!parsedPayload || typeof parsedPayload !== "object") return null
   const record = parsedPayload as Record<string, unknown>
 
-  const assetType = record.assetType === "page" ? "page" : "page"
+  const assetType: MayaOfferBriefAssetType = record.assetType === "calendar" ? "calendar" : "page"
   const prefill = normalizePartialFormValues(record.prefill)
   const missingFields = normalizeMissingFieldList(record.missingFields)
 
@@ -234,8 +242,11 @@ export function summarizeOfferBriefForMemory(brief: MayaOfferBrief): string {
 }
 
 export function buildOfferBriefInstruction(brief: MayaOfferBrief): string {
+  const isCalendar = brief.assetType === "calendar"
   const sections = [
-    `Create a high-converting landing page draft for this offer: ${brief.offerType}.`,
+    isCalendar
+      ? `Create an Instagram content calendar draft for this offer: ${brief.offerType}.`
+      : `Create a high-converting landing page draft for this offer: ${brief.offerType}.`,
     brief.designStyle ? `Design direction: ${brief.designStyle}.` : null,
     `Main transformation: ${brief.transformation}.`,
     `Ideal client: ${brief.idealClient}.`,
@@ -245,7 +256,9 @@ export function buildOfferBriefInstruction(brief: MayaOfferBrief): string {
     brief.uniqueMethod ? `Unique mechanism/framework: ${brief.uniqueMethod}.` : null,
     brief.proofPoints ? `Proof points/testimonials to include: ${brief.proofPoints}.` : null,
     brief.callToAction ? `Primary CTA: ${brief.callToAction}.` : null,
-    "Keep copy premium, clear, and conversion-focused while matching the user's established brand voice.",
+    isCalendar
+      ? "Return a 9-post Instagram plan with post type mix (reel/carousel/photo), hook-first captions, and hashtags ready to copy."
+      : "Keep copy premium, clear, and conversion-focused while matching the user's established brand voice.",
   ].filter(Boolean)
 
   return sections.join(" ")

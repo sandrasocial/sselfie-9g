@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
 
             const productionUrl =
               process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai"
-            const guideUrl = `${productionUrl}/freebie/selfie-guide/access/${subscriber.access_token}`
+            const guideUrl = `${productionUrl}/selfie-guide/access/${subscriber.access_token}`
             const firstName = subscriber.name.split(" ")[0] || subscriber.name
 
             const emailContent = generateFreebieGuideEmail({
@@ -177,7 +177,7 @@ export async function POST(request: NextRequest) {
 
         const productionUrl =
           process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai"
-        const guideUrl = `${productionUrl}/freebie/selfie-guide/access/${accessToken}`
+        const guideUrl = `${productionUrl}/selfie-guide/access/${accessToken}`
 
         const emailContent = generateFreebieGuideEmail({
           firstName,

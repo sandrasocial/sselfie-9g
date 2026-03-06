@@ -2,18 +2,20 @@
  * Batch Feed Prompt Generation
  * 
  * Generates all 9 feed prompts in a single API call for cost optimization.
- * Uses direct Anthropic API with prompt caching for maximum efficiency.
+ * Uses OpenRouter as the single provider path for Maya model calls.
  * 
  * Week 2 Optimization: Reduces 9 API calls to 1 (89% reduction)
  */
 
 import { type NextRequest, NextResponse } from "next/server"
+import { generateText } from "ai"
 import { sql } from "@/lib/db/client"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
 import { getMayaSystemPrompt, MAYA_CLASSIC_CONFIG } from "@/lib/maya/mode-adapters"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getFluxPromptingPrinciples } from "@/lib/maya/flux-prompting-principles"
+import { createMayaOpenRouterModel, getMayaModelForTask } from "@/lib/maya/openrouter"
 
 
 interface FeedPost {
@@ -233,54 +235,18 @@ Return ONLY a JSON array of 9 prompts in this exact format:
 
 No other text, no markdown formatting, just the JSON array.`
 
-    // Call Anthropic API with caching
-    
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-API-Key': process.env.ANTHROPIC_API_KEY!,
-        'anthropic-version': '2023-06-01',
-        'anthropic-beta': 'prompt-caching-2024-07-31',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 4000, // Enough for all 9 prompts
-        system: [
-          {
-            type: 'text',
-            text: systemPrompt,
-            cache_control: { type: 'ephemeral' }
-          }
-        ],
-        messages: [
-          {
-            role: 'user',
-            content: userMessage
-          }
-        ],
-        temperature: 0.8,
-      })
+    const selectedModel = getMayaModelForTask("feed_prompt_batch")
+    const completion = await generateText({
+      model: createMayaOpenRouterModel("feed_prompt_batch"),
+      system: systemPrompt,
+      prompt: userMessage,
+      maxTokens: 4000,
+      temperature: 0.8,
     })
 
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('[Maya] [BATCH-FEED-PROMPT] Anthropic API error:', response.status, errorText)
-      throw new Error(`Anthropic API error: ${response.status} - ${errorText}`)
-    }
-
-    const data = await response.json()
-    
-    // Log cache usage
-    if (data.usage) {
-      const cacheRead = data.usage.cache_read_input_tokens || 0
-      const inputTokens = data.usage.input_tokens
-      const outputTokens = data.usage.output_tokens
-      const cacheHitRate = cacheRead > 0 ? (cacheRead / (inputTokens + cacheRead) * 100).toFixed(1) : '0.0'
-    }
-
+    const usage = completion.usage
     const duration = Date.now() - startTime
-    const outputText = (data?.content?.[0]?.text as string | undefined) ?? ""
+    const outputText = completion.text ?? ""
 
     let prompts: PromptResult[] = []
     try {
@@ -304,8 +270,9 @@ No other text, no markdown formatting, just the JSON array.`
     return NextResponse.json({
       success: true,
       prompts: prompts,
-      tokenUsage: data.usage,
+      tokenUsage: usage,
       duration: duration,
+      model: selectedModel,
     })
 
   } catch (error: any) {
@@ -319,4 +286,3 @@ No other text, no markdown formatting, just the JSON array.`
     )
   }
 }
-

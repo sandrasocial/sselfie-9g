@@ -130,6 +130,11 @@
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-input-bg: rgba(255, 255, 255, 0.06);
   --glass-input-border: rgba(255, 255, 255, 0.12);
+  --app-bg-primary: radial-gradient(120% 105% at 50% 0%, #25211d 0%, #161310 46%, #0e0c0a 100%);
+  --app-bg-glow-1: rgba(196, 177, 150, 0.2);
+  --app-bg-glow-2: rgba(238, 229, 215, 0.12);
+  --app-bg-glass: rgba(20, 16, 13, 0.6);
+  --app-bg-glass-strong: rgba(14, 11, 9, 0.8);
   --radius-card: 20px;
   --font-display: "Cormorant Garamond", serif;
   --font-body: "Inter", system-ui, -apple-system, sans-serif;
@@ -204,6 +209,11 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(0.269 0 0);
   --sidebar-ring: oklch(0.439 0 0);
+  --app-bg-primary: radial-gradient(120% 105% at 50% 0%, #25211d 0%, #161310 46%, #0e0c0a 100%);
+  --app-bg-glow-1: rgba(196, 177, 150, 0.2);
+  --app-bg-glow-2: rgba(238, 229, 215, 0.12);
+  --app-bg-glass: rgba(20, 16, 13, 0.6);
+  --app-bg-glass-strong: rgba(14, 11, 9, 0.8);
 }
 
 /* Simplified @theme block without inline keyword and without var() references that cause parsing errors */

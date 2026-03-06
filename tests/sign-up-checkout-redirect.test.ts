@@ -78,25 +78,9 @@ describe("sign-up checkout redirect", () => {
 
   it("redirects to /checkout/membership when checkout=studio_membership", async () => {
     setSearch("?checkout=studio_membership")
-    mockUserLookup(true)
 
     render(createElement(SignUpPage))
-
-    fireEvent.change(screen.getByLabelText(/^Email$/i), {
-      target: { value: "existing@example.com" },
-    })
-
-    await waitFor(
-      () => {
-        expect(screen.getByRole("button", { name: /^sign in$/i })).toBeInTheDocument()
-      },
-      { timeout: 2000 },
-    )
-
-    fireEvent.change(screen.getByLabelText(/^Password$/i), {
-      target: { value: "super-secret" },
-    })
-    fireEvent.click(screen.getByRole("button", { name: /^sign in$/i }))
+    await submitSignUpForm()
 
     await waitFor(() => {
       expect(pushMock).toHaveBeenCalledWith("/checkout/membership")

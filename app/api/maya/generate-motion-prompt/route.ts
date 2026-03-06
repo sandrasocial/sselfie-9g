@@ -4,6 +4,7 @@ import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getMayaUserSnapshot } from "@/lib/maya/user-snapshot"
 import { buildMayaMotionPromptInput, cleanGeneratedMotionPrompt } from "@/lib/maya/video-motion-context"
 import { auditPromptRoute } from "@/lib/generation/prompt/route-audit"
+import { createMayaOpenRouterModel, getMayaModelForTask } from "@/lib/maya/openrouter"
 
 const MOTION_PROMPT_SYSTEM = `You are Maya, SSELFIE Studio's brand-safe motion director for Wan 2.5 I2V.
 
@@ -58,19 +59,20 @@ export async function POST(request: Request) {
     }
 
     const startedAt = Date.now()
+    const selectedModel = getMayaModelForTask("chat_pro")
     auditPromptRoute({
       routeId: "EP-SHADOW-MOTION-PROMPT",
       mode: "video",
       feature: "video-generation",
       userId: neonUser.id,
-      builder: "anthropic/claude-sonnet-4-20250514",
+      builder: selectedModel,
       prompt: `${MOTION_PROMPT_SYSTEM}\n\n${promptInput}`,
       input: { hasImage: hasValidImageInput(imageUrl), category, description },
       startedAt,
     })
 
     const { text: generatedPrompt } = await generateText({
-      model: "anthropic/claude-sonnet-4-20250514",
+      model: createMayaOpenRouterModel("chat_pro"),
       system: MOTION_PROMPT_SYSTEM,
       messages: [
         {

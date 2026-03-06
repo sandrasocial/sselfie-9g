@@ -46,6 +46,7 @@ import {
   type ReferenceImages,
 } from "@/lib/maya/prompt-builders/guide-prompt-handler"
 import { generateCompleteOutfit } from "@/lib/maya/brand-library-2025"
+import { createMayaOpenRouterModel } from "@/lib/maya/openrouter"
 
 export const maxDuration = 120 // Increased to 2 minutes to handle slow AI responses
 
@@ -688,7 +689,7 @@ Make each concept unique, sophisticated, and based on the user's request. Use yo
 
     try {
       const { text } = await generateText({
-        model: "anthropic/claude-sonnet-4-20250514",
+        model: createMayaOpenRouterModel("chat_pro"),
         prompt: aiPrompt,
         temperature: 0.85,
       })

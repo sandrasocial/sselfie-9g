@@ -84,7 +84,11 @@ export async function startCreditCheckoutSession(packageId: string, promoCode?: 
   return session.client_secret
 }
 
-export async function startProductCheckoutSession(productId: string, promoCode?: string) {
+export async function startProductCheckoutSession(
+  productId: string,
+  promoCode?: string,
+  options?: { source?: string; returnTo?: string },
+) {
   // FIX B3: Validate pricing configuration on first use
   await assertStripePricingConfig()
   
@@ -109,6 +113,7 @@ export async function startProductCheckoutSession(productId: string, promoCode?:
 
   const isSubscription = product.type === "sselfie_studio_membership"
   const allowManualPromotionCodes = !isSubscription
+  const checkoutSource = options?.source?.trim() || "app"
   
   // Validate promo code if provided (consistent with startCreditCheckoutSession)
   let validatedCoupon: string | null = null
@@ -148,6 +153,8 @@ export async function startProductCheckoutSession(productId: string, promoCode?:
       ? "STRIPE_ONE_TIME_SESSION_PRICE_ID"
       : product.type === "paid_blueprint"
         ? "STRIPE_PAID_BLUEPRINT_PRICE_ID"
+        : product.type === "brand_strategy_pack"
+          ? "STRIPE_PRICE_BRAND_STRATEGY_PACK"
         : "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID"
   
   if (product.type === "one_time_session") {
@@ -156,6 +163,8 @@ export async function startProductCheckoutSession(productId: string, promoCode?:
     stripePriceId = process.env.STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID
   } else if (product.type === "paid_blueprint") {
     stripePriceId = process.env.STRIPE_PAID_BLUEPRINT_PRICE_ID
+  } else if (product.type === "brand_strategy_pack") {
+    stripePriceId = process.env.STRIPE_PRICE_BRAND_STRATEGY_PACK
   }
   stripePriceId = stripePriceId?.trim()
 
@@ -258,8 +267,9 @@ export async function startProductCheckoutSession(productId: string, promoCode?:
           product_id: productId,
           product_type: product.type,
           credits: product.credits?.toString() || "0",
-          source: "app",
+          source: checkoutSource,
           ...(promoCode && { promo_code: promoCode }),
+          ...(options?.returnTo && { return_to: options.returnTo }),
         },
       },
     }),
@@ -268,8 +278,9 @@ export async function startProductCheckoutSession(productId: string, promoCode?:
       product_id: productId,
       product_type: product.type,
       credits: product.credits?.toString() || "0",
-      source: "app",
+      source: checkoutSource,
       ...(promoCode && { promo_code: promoCode }),
+      ...(options?.returnTo && { return_to: options.returnTo }),
     },
   }
 

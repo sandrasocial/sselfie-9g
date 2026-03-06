@@ -8,7 +8,6 @@ interface MembershipHomeCardProps {
   onGeneratePhoto: () => void
   onPlanFeed: () => void
   onBrowseStyles: () => void
-  onCreateLandingPage?: () => void
   onCreateCalendar?: () => void
   onUploadAssets?: () => void
   onExploreMonthlyDrop?: () => void
@@ -22,7 +21,6 @@ export default function MembershipHomeCard({
   onGeneratePhoto,
   onPlanFeed,
   onBrowseStyles,
-  onCreateLandingPage,
   onCreateCalendar,
   onUploadAssets,
   onExploreMonthlyDrop,
@@ -113,17 +111,8 @@ export default function MembershipHomeCard({
           </button>
         </section>
 
-        {(onCreateLandingPage || onCreateCalendar || onUploadAssets) && (
+        {(onCreateCalendar || onUploadAssets) && (
           <section className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
-            {onCreateLandingPage && (
-              <button
-                type="button"
-                onClick={onCreateLandingPage}
-                className="rounded-xl border border-[rgba(255,255,255,0.15)] bg-[rgba(255,255,255,0.06)] px-3 py-3 text-[11px] uppercase tracking-[0.16em] text-[#ffffff] hover:bg-[rgba(255,255,255,0.1)] transition-colors"
-              >
-                Build landing page →
-              </button>
-            )}
             {onCreateCalendar && (
               <button
                 type="button"

@@ -1,6 +1,11 @@
 import { sql } from "@/lib/db/client"
 import { persistMayaAssetAsPersonalPage } from "@/lib/maya/personal-pages"
 import { mergeMayaMemoryData } from "@/lib/maya/memory-store"
+import {
+  getDefaultMayaInstagramTrendSignals,
+  getLatestMayaInstagramTrendSignals,
+  type MayaInstagramTrendSignals,
+} from "@/lib/maya/calendar-trends"
 import { composeMayaLandingCopy } from "@/lib/maya/page-generation/copy-composer"
 import { isMayaPageRendererV2Enabled, STUDIO_CHECKOUT_URL } from "@/lib/maya/page-generation/constants"
 import { selectLandingImages } from "@/lib/maya/page-generation/image-selector"
@@ -155,7 +160,8 @@ function buildTitle(assetType: MayaGeneratedAssetType, instruction: string): str
   const seed = extractPrimaryIntent(instruction)
   const shortSeed = sanitizeUserFacingText(seed.split(" ").slice(0, 6).join(" "), 72)
   if (assetType === "calendar") {
-    return sanitizePageTitle("calendar", shortSeed ? `Content Calendar: ${shortSeed}` : "Content Calendar")
+    const calendarSeed = shortSeed && !/\?|can you|please/i.test(shortSeed) ? shortSeed : ""
+    return sanitizePageTitle("calendar", calendarSeed ? `${calendarSeed} - Instagram Calendar` : "Instagram Content Calendar")
   }
   if (assetType === "pdf") {
     return sanitizePageTitle("pdf", shortSeed ? `Workbook: ${shortSeed}` : "Workbook")
@@ -166,7 +172,7 @@ function buildTitle(assetType: MayaGeneratedAssetType, instruction: string): str
 function buildPreviewText(assetType: MayaGeneratedAssetType, instruction: string): string {
   const seed = extractPrimaryIntent(instruction)
   if (assetType === "calendar") {
-    return sanitizePreview(`Drafted a weekly content calendar around: ${seed}. Includes hooks, post directions, and CTA rhythm.`)
+    return sanitizePreview(`Built an Instagram-ready calendar around ${seed || "your offer"} with hooks, story-led captions, and copy-ready hashtags.`)
   }
   if (assetType === "pdf") {
     return sanitizePreview(`Drafted a workbook outline for: ${seed}. Includes intro, step-by-step framework, and action pages.`)
@@ -284,6 +290,73 @@ async function generateLandingPageV2(input: {
     previewText: sanitizePreview(render.previewText),
     previewHtml: render.html,
     blueprint: copy.blueprint,
+  }
+}
+
+async function generateCalendarAsset(input: {
+  userId: string
+  assetId: string
+  instruction: string
+}): Promise<MayaPageGenerationPayload> {
+  const [snapshot, imageUrls, trendSignals] = await Promise.all([
+    resolveMayaLandingSnapshot(input.userId),
+    loadUserImageUrls(input.userId),
+    getLatestMayaInstagramTrendSignals(),
+  ])
+
+  const fallbackIntent = sanitizeUserFacingText(extractPrimaryIntent(input.instruction), 120)
+  const fallbackOffer =
+    fallbackIntent && !/\b(could|can you|please|amazing maya|help me)\b/i.test(fallbackIntent)
+      ? fallbackIntent
+      : "signature offer"
+  const offer = normalizeCalendarContextValue(snapshot.resolvedOffer || fallbackOffer, "signature offer", {
+    maxLength: 84,
+    maxWords: 7,
+  })
+  const audience = normalizeCalendarContextValue(snapshot.resolvedAudience, "your ideal audience", {
+    maxLength: 84,
+    maxWords: 8,
+  })
+  const transformation = normalizeCalendarContextValue(
+    snapshot.resolvedTransformation,
+    "a clear transformation outcome",
+    {
+      maxLength: 96,
+      maxWords: 10,
+    },
+  )
+  const style = normalizeCalendarContextValue(snapshot.resolvedStyle, "minimal refined", {
+    maxLength: 64,
+    maxWords: 5,
+  })
+  const title =
+    offer === "signature offer"
+      ? sanitizePageTitle("calendar", "Instagram Content Calendar")
+      : sanitizePageTitle("calendar", `${offer} - Instagram Calendar`)
+  const previewText = sanitizePreview(
+    `9-post IG calendar for ${offer}. Story-led hooks, copy-ready captions, and hashtag sets tuned for ${audience}.`,
+  )
+  const posts = buildCalendarPosts({
+    instruction: `${input.instruction} Style: ${style}`,
+    imageUrls,
+    trendSignals,
+    offer,
+    audience,
+    transformation,
+  })
+  const previewHtml = buildCalendarHtml({
+    title,
+    previewText,
+    instruction: input.instruction,
+    imageUrls,
+    posts,
+    trendSignals,
+  })
+
+  return {
+    title,
+    previewText,
+    previewHtml,
   }
 }
 
@@ -613,11 +686,390 @@ function buildLandingPageHtml(
 </html>`
 }
 
-function buildCalendarHtml(title: string, previewText: string, instruction: string, imageUrls: string[]): string {
-  const direction = inferDesignDirection(instruction)
-  const safeTitle = escapeHtml(title)
-  const safePreview = escapeHtml(previewText)
-  const heroImage = imageUrls[0] || ""
+type CalendarPostType = "Reel" | "Carousel" | "Post"
+
+interface MayaCalendarCarouselSlide {
+  id: string
+  overlay: string
+  direction: string
+}
+
+interface MayaCalendarPostPlan {
+  id: string
+  dayLabel: string
+  postType: CalendarPostType
+  hook: string
+  direction: string
+  cta: string
+  caption: string
+  hashtags: string
+  coverOverlay: string
+  carouselSlides: MayaCalendarCarouselSlide[]
+  imageUrl?: string
+}
+
+interface MayaCalendarRenderInput {
+  title: string
+  previewText: string
+  instruction: string
+  imageUrls: string[]
+  posts: MayaCalendarPostPlan[]
+  trendSignals: MayaInstagramTrendSignals
+}
+
+const CALENDAR_DAY_LABELS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday", "Bonus A", "Bonus B"]
+const CALENDAR_POST_TYPES: CalendarPostType[] = ["Reel", "Carousel", "Post", "Reel", "Carousel", "Post", "Reel", "Carousel", "Post"]
+const CALENDAR_FALLBACK_IMAGES = [
+  "/assets/brand-strategy/pillar1.png",
+  "/assets/brand-strategy/pillar2.png",
+  "/assets/brand-strategy/journals.png",
+  "/assets/brand-strategy/flowers.png",
+  "/assets/brand-strategy/ocean.png",
+]
+const CALENDAR_CONTEXT_STOPWORDS = new Set([
+  "create",
+  "build",
+  "generate",
+  "draft",
+  "calendar",
+  "content",
+  "instagram",
+  "landing",
+  "page",
+  "could",
+  "can",
+  "you",
+  "please",
+  "help",
+  "maya",
+  "amazing",
+  "this",
+  "that",
+  "with",
+  "for",
+  "and",
+  "the",
+])
+
+function keywordToHashtag(value: string): string {
+  const normalized = value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+  if (!normalized) return ""
+  return `#${normalized.replace(/\s+/g, "")}`
+}
+
+function normalizeCalendarContextValue(
+  value: string,
+  fallback: string,
+  options: {
+    maxLength?: number
+    maxWords?: number
+  } = {},
+): string {
+  const maxLength = options.maxLength ?? 96
+  const maxWords = options.maxWords ?? 8
+  const cleaned = sanitizeUserFacingText(value || "", maxLength)
+    .replace(/\b(could you|can you|please|help me|amazing maya)\b/gi, " ")
+    .replace(/\b(create|build|generate|draft)\b/gi, " ")
+    .replace(/\b(content calendar|instagram calendar|landing page)\b/gi, " ")
+    .replace(/[?]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+
+  if (!cleaned) return fallback
+
+  const tokens = cleaned
+    .split(/\s+/)
+    .filter(Boolean)
+    .filter((token) => !CALENDAR_CONTEXT_STOPWORDS.has(token.toLowerCase()))
+    .slice(0, maxWords)
+
+  if (tokens.length < 2) return fallback
+  return sanitizeUserFacingText(tokens.join(" "), maxLength) || fallback
+}
+
+function extractContextKeywords(value: string): string[] {
+  return sanitizeUserFacingText(value || "", 180)
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter((token) => token.length >= 4)
+    .filter((token) => !CALENDAR_CONTEXT_STOPWORDS.has(token))
+}
+
+function buildKeywordPool(input: { instruction: string; offer: string; audience: string; transformation: string }): string[] {
+  const tokens = [
+    ...extractContextKeywords(input.offer),
+    ...extractContextKeywords(input.audience),
+    ...extractContextKeywords(input.transformation),
+    ...extractContextKeywords(input.instruction),
+  ]
+
+  const deduped: string[] = []
+  const seen = new Set<string>()
+  for (const token of tokens) {
+    if (seen.has(token)) continue
+    seen.add(token)
+    deduped.push(token)
+    if (deduped.length >= 10) break
+  }
+
+  return deduped
+}
+
+function buildHashtagSet(baseSeed: string, keywords: string[]): string {
+  const seedHashtags = uniqueStrings((baseSeed.match(/#[a-z0-9_]+/gi) || []).map((tag) => tag.toLowerCase()))
+  const keywordHashtags = uniqueStrings(keywords.map(keywordToHashtag).filter(Boolean))
+  const combined = uniqueStrings([...seedHashtags, ...keywordHashtags]).slice(0, 8)
+
+  if (combined.length === 0) {
+    return "#personalbrand #contentstrategy #instagramtips #creatorbusiness"
+  }
+
+  return combined.join(" ")
+}
+
+function composeCaption(input: {
+  hook: string
+  direction: string
+  cta: string
+  hashtags: string
+}): string {
+  const lines = [
+    sanitizeUserFacingText(input.hook, 120),
+    "",
+    sanitizeUserFacingText(input.direction, 200),
+    sanitizeUserFacingText(input.cta, 120),
+    "",
+    sanitizeUserFacingText(input.hashtags, 180),
+  ].filter(Boolean)
+
+  return lines.join("\n")
+}
+
+function buildCarouselSlides(input: {
+  postId: string
+  hook: string
+  direction: string
+  cta: string
+}): MayaCalendarCarouselSlide[] {
+  const educationalLine = sanitizeUserFacingText(input.direction, 64)
+    .replace(/^Tell\s+/i, "")
+    .replace(/^Share\s+/i, "")
+    .replace(/^Break down\s+/i, "")
+    .replace(/^Use\s+/i, "")
+    .trim()
+
+  return [
+    {
+      id: `${input.postId}-slide-1`,
+      overlay: sanitizeUserFacingText(input.hook, 48),
+      direction: "Slide 01 - Hook",
+    },
+    {
+      id: `${input.postId}-slide-2`,
+      overlay: sanitizeUserFacingText(educationalLine || input.direction, 52),
+      direction: "Slide 02 - Value",
+    },
+    {
+      id: `${input.postId}-slide-3`,
+      overlay: sanitizeUserFacingText(input.cta, 52),
+      direction: "Slide 03 - CTA",
+    },
+  ]
+}
+
+function buildCalendarPosts(input: {
+  instruction: string
+  imageUrls: string[]
+  trendSignals: MayaInstagramTrendSignals
+  offer: string
+  audience: string
+  transformation: string
+}): MayaCalendarPostPlan[] {
+  const hooks = input.trendSignals.hookPatterns.length > 0 ? input.trendSignals.hookPatterns : ["Start with one clear hook."]
+  const ctas = input.trendSignals.ctaPatterns.length > 0 ? input.trendSignals.ctaPatterns : ["Save this for your next post."]
+  const hashtagSeeds = input.trendSignals.hashtagSets.length > 0 ? input.trendSignals.hashtagSets : ["#contentstrategy #personalbrand #instagramtips"]
+  const keywords = buildKeywordPool({
+    instruction: input.instruction,
+    offer: input.offer,
+    audience: input.audience,
+    transformation: input.transformation,
+  })
+
+  const storyDirections = [
+    `Tell a real moment where ${input.audience} felt stuck before finding your approach.`,
+    `Break down a 3-step framework you use to create ${input.transformation}.`,
+    `Share a single client-style win and what made it work.`,
+    `Show your process behind one result from ${input.offer}.`,
+    `Post a myth-vs-truth carousel about the mistake your audience keeps repeating.`,
+    `Share a calm behind-the-scenes day to humanize your brand.`,
+    `Teach one repeatable tactic people can use today.`,
+    `Use a before/after narrative that highlights emotional change, not just numbers.`,
+    `Close the week with a direct invitation into your offer with confidence.`,
+  ]
+
+  const posts: MayaCalendarPostPlan[] = []
+
+  for (let index = 0; index < 9; index += 1) {
+    const dayLabel = CALENDAR_DAY_LABELS[index] || `Day ${index + 1}`
+    const postType = CALENDAR_POST_TYPES[index] || "Post"
+    const hook = sanitizeHeadline(hooks[index % hooks.length] || hooks[0])
+    const cta = sanitizeUserFacingText(ctas[index % ctas.length] || ctas[0], 120)
+    const direction = sanitizeUserFacingText(storyDirections[index] || storyDirections[0], 220)
+    const baseHashtagSet = sanitizeUserFacingText(hashtagSeeds[index % hashtagSeeds.length] || hashtagSeeds[0], 180)
+    const hashtags = sanitizeUserFacingText(
+      buildHashtagSet(baseHashtagSet, keywords.slice(index % 3, (index % 3) + 4)),
+      200,
+    )
+    const postId = `post-${index + 1}`
+    const carouselSlides =
+      postType === "Carousel"
+        ? buildCarouselSlides({
+            postId,
+            hook,
+            direction,
+            cta,
+          })
+        : []
+    const caption = composeCaption({
+      hook,
+      direction,
+      cta,
+      hashtags,
+    })
+
+    posts.push({
+      id: postId,
+      dayLabel,
+      postType,
+      hook,
+      direction,
+      cta,
+      caption,
+      hashtags,
+      coverOverlay: postType === "Carousel" ? carouselSlides[0]?.overlay || hook : hook,
+      carouselSlides,
+      imageUrl: input.imageUrls[index % Math.max(1, input.imageUrls.length)] || undefined,
+    })
+  }
+
+  return posts
+}
+
+function buildCalendarHtml(input: MayaCalendarRenderInput): string {
+  const safeTitle = escapeHtml(input.title)
+  const safePreview = escapeHtml(input.previewText)
+  const heroImage = input.imageUrls[0] || CALENDAR_FALLBACK_IMAGES[0]
+  const trendNotesHtml = input.trendSignals.formatNotes
+    .slice(0, 5)
+    .map((note) => `<li>${escapeHtml(note)}</li>`)
+    .join("")
+
+  const feedGridHtml = input.posts
+    .map((post) => {
+      const tileImage = post.imageUrl || CALENDAR_FALLBACK_IMAGES[(Number(post.id.replace("post-", "")) - 1) % CALENDAR_FALLBACK_IMAGES.length]
+      const overlayText = post.postType === "Carousel" ? post.coverOverlay : ""
+      return `
+        <a class="feed-tile" href="#${escapeHtml(post.id)}">
+          <img src="${escapeHtml(tileImage)}" alt="${escapeHtml(post.dayLabel)} ${escapeHtml(post.postType)}" loading="lazy" />
+          <div class="feed-tile-overlay"></div>
+          <div class="feed-tile-meta">
+            <span>${escapeHtml(post.dayLabel)}</span>
+            <span>${escapeHtml(post.postType)}</span>
+          </div>
+          ${
+            overlayText
+              ? `<div class="feed-overlay-copy">${escapeHtml(overlayText)}</div>`
+              : ""
+          }
+        </a>
+      `
+    })
+    .join("")
+
+  const cardsHtml = input.posts
+    .map((post) => {
+      const captionId = `caption-${post.id}`
+      const captionPreviewId = `caption-preview-${post.id}`
+      const mediaImage = post.imageUrl || CALENDAR_FALLBACK_IMAGES[(Number(post.id.replace("post-", "")) - 1) % CALENDAR_FALLBACK_IMAGES.length]
+      const carouselSlidesHtml =
+        post.carouselSlides.length > 0
+          ? `
+            <div class="carousel-preview">
+              ${post.carouselSlides
+                .map(
+                  (slide) => `
+                    <div class="carousel-slide">
+                      <div class="carousel-slide-label">${escapeHtml(slide.direction)}</div>
+                      <div class="carousel-slide-copy">${escapeHtml(slide.overlay)}</div>
+                    </div>
+                  `,
+                )
+                .join("")}
+            </div>
+          `
+          : ""
+
+      return `
+        <article class="post-card" id="${escapeHtml(post.id)}">
+          <div class="post-header">
+            <div class="post-profile">
+              <span class="profile-dot">S</span>
+              <div class="profile-meta">
+                <p class="profile-name">sselfie</p>
+                <p class="profile-sub">${escapeHtml(post.postType)}</p>
+              </div>
+            </div>
+            <button class="menu-pill" type="button">MENU</button>
+          </div>
+          <div class="post-media">
+            <img src="${escapeHtml(mediaImage)}" alt="${escapeHtml(post.postType)} concept image" loading="lazy" />
+            <div class="post-media-dim"></div>
+            <div class="post-meta">
+              <span class="post-pill">${escapeHtml(post.dayLabel)}</span>
+              <span class="post-pill post-pill-type">${escapeHtml(post.postType)}</span>
+            </div>
+            ${
+              post.postType === "Carousel"
+                ? `<div class="overlay-pill">
+                     <div class="overlay-label">TEXT OVERLAY</div>
+                     <div class="overlay-copy">${escapeHtml(post.coverOverlay)}</div>
+                   </div>`
+                : ""
+            }
+          </div>
+          <div class="post-body">
+            <div class="post-hook">${escapeHtml(post.hook)}</div>
+            <p class="post-direction">${escapeHtml(post.direction)}</p>
+            <p class="post-cta">${escapeHtml(post.cta)}</p>
+            ${carouselSlidesHtml}
+            <div class="caption-block">
+              <p class="caption-preview is-collapsed" id="${escapeHtml(captionPreviewId)}">
+                <span class="caption-author">sselfie</span>
+                <span>${escapeHtml(post.caption)}</span>
+              </p>
+              <button
+                class="caption-toggle"
+                type="button"
+                data-caption-toggle
+                data-target="${escapeHtml(captionPreviewId)}"
+                data-expanded="false"
+                aria-expanded="false"
+              >
+                Read full caption
+              </button>
+            </div>
+            <div class="hashtag-row">${escapeHtml(post.hashtags)}</div>
+            <textarea id="${escapeHtml(captionId)}" class="caption-copy-source">${escapeHtml(post.caption)}</textarea>
+            <button class="copy-btn" data-copy-target="${escapeHtml(captionId)}">Copy Caption</button>
+          </div>
+        </article>
+      `
+    })
+    .join("")
 
   return `<!doctype html>
 <html lang="en">
@@ -626,41 +1078,595 @@ function buildCalendarHtml(title: string, previewText: string, instruction: stri
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>${safeTitle}</title>
     <style>
-      body { margin: 0; font-family: Inter, sans-serif; background: ${direction.bg}; color: ${direction.text}; }
-      .wrap { max-width: 980px; margin: 0 auto; padding: 30px 20px 50px; }
-      .card { background: #fff; border: 1px solid ${direction.border}; border-radius: 20px; padding: 20px; }
-      h1 { margin: 0 0 8px; font-size: 34px; }
-      p { margin: 0 0 18px; color: ${direction.muted}; }
-      .hero { width: 100%; border-radius: 14px; margin: 14px 0 20px; max-height: 300px; object-fit: cover; border: 1px solid ${direction.border}; }
-      table { width: 100%; border-collapse: collapse; overflow: hidden; border-radius: 14px; border: 1px solid ${direction.border}; }
-      th, td { border-bottom: 1px solid ${direction.border}; padding: 12px; text-align: left; vertical-align: top; }
-      th { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: ${direction.muted}; background: ${direction.accentSoft}; }
-      tr:last-child td { border-bottom: none; }
-      .pill { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; border: 1px solid ${direction.border}; }
+      :root {
+        --obsidian: #0a0a0a;
+        --porcelain: #ffffff;
+        --pearl: #f5f5f5;
+        --smoke: #666666;
+        --whisper: #e5e5e5;
+        --bg-base: #0b0d10;
+        --glass-1: rgba(255, 255, 255, 0.04);
+        --glass-2: rgba(255, 255, 255, 0.07);
+        --glass-3: rgba(255, 255, 255, 0.1);
+        --glass-4: rgba(255, 255, 255, 0.14);
+        --border-faint: rgba(255, 255, 255, 0.07);
+        --border-subtle: rgba(255, 255, 255, 0.12);
+        --border-medium: rgba(255, 255, 255, 0.18);
+        --text-1: #ffffff;
+        --text-2: rgba(255, 255, 255, 0.75);
+        --text-3: rgba(255, 255, 255, 0.5);
+        --text-4: rgba(255, 255, 255, 0.3);
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        color: var(--text-1);
+        font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at 12% 0%, rgba(255, 255, 255, 0.08), transparent 46%),
+          radial-gradient(circle at 88% 10%, rgba(255, 255, 255, 0.05), transparent 44%),
+          var(--bg-base);
+      }
+      .wrap {
+        max-width: 1240px;
+        margin: 0 auto;
+        padding: 24px 20px 48px;
+      }
+      .site-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        border-bottom: 1px solid var(--border-subtle);
+        background: rgba(10, 10, 10, 0.9);
+        backdrop-filter: blur(20px);
+        position: sticky;
+        top: 0;
+        z-index: 30;
+        padding: 16px clamp(16px, 4vw, 48px);
+      }
+      .logo {
+        font-family: "Cormorant Garamond", Georgia, serif;
+        font-size: 20px;
+        letter-spacing: 0.24em;
+        text-transform: uppercase;
+        color: var(--text-1);
+      }
+      .header-label {
+        font-size: 10px;
+        font-weight: 500;
+        letter-spacing: 0.5em;
+        text-transform: uppercase;
+        color: var(--text-4);
+      }
+      .hero-fullbleed {
+        position: relative;
+        min-height: min(86vh, 760px);
+        display: flex;
+        align-items: flex-end;
+        padding: clamp(22px, 5vw, 56px);
+        overflow: hidden;
+        border-bottom: 1px solid var(--border-subtle);
+        margin-bottom: 6px;
+      }
+      .hero-bg {
+        position: absolute;
+        inset: 0;
+      }
+      .hero-bg img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center 30%;
+        filter: brightness(0.58);
+      }
+      .hero-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          to bottom,
+          rgba(10, 10, 10, 0.18) 0%,
+          rgba(10, 10, 10, 0.05) 40%,
+          rgba(10, 10, 10, 0.74) 76%,
+          rgba(10, 10, 10, 1) 100%
+        );
+      }
+      .hero-content {
+        position: relative;
+        z-index: 2;
+        width: min(100%, 980px);
+      }
+      .hero-eyebrow {
+        margin: 0 0 14px;
+        color: var(--text-4);
+        font-size: 10px;
+        font-weight: 500;
+        letter-spacing: 0.5em;
+        text-transform: uppercase;
+      }
+      .hero-title {
+        margin: 0 0 10px;
+        font-family: "Cormorant Garamond", Georgia, serif;
+        text-transform: uppercase;
+        font-weight: 300;
+        font-size: clamp(42px, 7vw, 94px);
+        line-height: 1.04;
+        letter-spacing: -0.01em;
+      }
+      .hero-preview {
+        margin: 0;
+        color: var(--text-2);
+        font-weight: 300;
+        line-height: 1.8;
+        font-size: clamp(14px, 1.65vw, 20px);
+        max-width: 760px;
+      }
+      .hero-meta {
+        margin-top: 28px;
+        padding-top: 20px;
+        border-top: 1px solid var(--border-subtle);
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+      .hero-meta span {
+        border: 1px solid var(--border-medium);
+        border-radius: 999px;
+        padding: 6px 12px;
+        font-size: 10px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.24em;
+        color: var(--text-2);
+        background: rgba(10, 10, 10, 0.5);
+      }
+      .section {
+        margin-top: 18px;
+        border: 1px solid var(--border-subtle);
+        border-radius: 14px;
+        background: var(--glass-2);
+        backdrop-filter: blur(20px);
+        overflow: hidden;
+      }
+      .section-label {
+        margin: 0;
+        padding: 16px 18px;
+        border-bottom: 1px solid var(--border-faint);
+        color: var(--text-4);
+        font-size: 10px;
+        font-weight: 500;
+        letter-spacing: 0.5em;
+        text-transform: uppercase;
+      }
+      .trend-notes {
+        padding: 14px 18px 16px;
+      }
+      .trend-notes ul {
+        margin: 0;
+        padding-left: 18px;
+        color: var(--text-2);
+        line-height: 1.7;
+        font-size: 14px;
+        font-weight: 300;
+      }
+      .feed-grid {
+        padding: 12px;
+        display: grid;
+        gap: 1px;
+        background: var(--border-faint);
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .feed-tile {
+        position: relative;
+        aspect-ratio: 1 / 1;
+        overflow: hidden;
+        background: var(--obsidian);
+        text-decoration: none;
+      }
+      .feed-tile img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+      .feed-tile-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to top, rgba(10, 10, 10, 0.84), rgba(10, 10, 10, 0.15) 56%, rgba(10, 10, 10, 0.08));
+      }
+      .feed-tile-meta {
+        position: absolute;
+        left: 8px;
+        right: 8px;
+        bottom: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 6px;
+      }
+      .feed-tile-meta span {
+        border: 1px solid var(--border-medium);
+        border-radius: 999px;
+        background: var(--glass-3);
+        color: var(--text-1);
+        font-size: 9px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        padding: 5px 8px;
+      }
+      .feed-overlay-copy {
+        position: absolute;
+        left: 8px;
+        right: 8px;
+        top: 8px;
+        border: 1px solid var(--border-medium);
+        border-radius: 8px;
+        background: rgba(10, 10, 10, 0.72);
+        color: var(--text-1);
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.04em;
+        line-height: 1.35;
+        padding: 7px 8px;
+      }
+      .cards-grid {
+        margin-top: 18px;
+        display: grid;
+        gap: 14px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .post-card {
+        border-radius: 16px;
+        border: 1px solid var(--border-subtle);
+        background: var(--glass-2);
+        backdrop-filter: blur(20px);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        min-height: 460px;
+      }
+      .post-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--border-faint);
+      }
+      .post-profile {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .profile-dot {
+        width: 28px;
+        height: 28px;
+        border-radius: 999px;
+        border: 1px solid var(--border-medium);
+        background: var(--glass-3);
+        color: var(--text-1);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 500;
+      }
+      .profile-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+      }
+      .profile-name {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-1);
+      }
+      .profile-sub {
+        margin: 0;
+        font-size: 12px;
+        font-weight: 300;
+        color: var(--text-3);
+      }
+      .menu-pill {
+        border: 1px solid var(--border-medium);
+        border-radius: 999px;
+        background: var(--glass-2);
+        color: var(--text-2);
+        font-size: 10px;
+        font-weight: 500;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        padding: 7px 11px;
+      }
+      .post-media {
+        position: relative;
+        height: 250px;
+        background: var(--glass-2);
+      }
+      .post-media img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+      .post-media-dim {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(to top, rgba(10, 10, 10, 0.85), rgba(10, 10, 10, 0.2) 55%, rgba(10, 10, 10, 0));
+      }
+      .post-meta {
+        position: absolute;
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .post-pill {
+        border-radius: 999px;
+        border: 1px solid var(--border-medium);
+        background: var(--glass-4);
+        color: var(--text-1);
+        font-size: 10px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.2em;
+        padding: 5px 9px;
+      }
+      .post-pill-type {
+        color: var(--text-2);
+      }
+      .overlay-pill {
+        position: absolute;
+        left: 10px;
+        right: 10px;
+        top: 10px;
+        border: 1px solid var(--border-medium);
+        border-radius: 10px;
+        background: rgba(10, 10, 10, 0.74);
+        padding: 8px;
+      }
+      .overlay-label {
+        font-size: 9px;
+        font-weight: 500;
+        letter-spacing: 0.25em;
+        text-transform: uppercase;
+        color: var(--text-4);
+      }
+      .overlay-copy {
+        margin-top: 4px;
+        color: var(--text-1);
+        font-size: 12px;
+        font-weight: 500;
+        line-height: 1.35;
+      }
+      .post-body {
+        display: flex;
+        flex-direction: column;
+        padding: 14px 14px 16px;
+        gap: 10px;
+      }
+      .post-hook {
+        font-family: "Cormorant Garamond", Georgia, serif;
+        text-transform: uppercase;
+        font-size: 28px;
+        line-height: 1.08;
+        letter-spacing: -0.01em;
+        color: var(--text-1);
+        font-weight: 300;
+      }
+      .post-direction {
+        margin: 0;
+        color: var(--text-2);
+        font-size: 14px;
+        font-weight: 300;
+        line-height: 1.8;
+      }
+      .post-cta {
+        margin: 0;
+        color: var(--text-2);
+        font-size: 12px;
+        font-weight: 500;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        line-height: 1.35;
+      }
+      .carousel-preview {
+        display: grid;
+        gap: 6px;
+      }
+      .carousel-slide {
+        border: 1px solid var(--border-faint);
+        border-radius: 8px;
+        background: var(--glass-1);
+        padding: 7px 9px;
+      }
+      .carousel-slide-label {
+        font-size: 9px;
+        font-weight: 500;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--text-4);
+      }
+      .carousel-slide-copy {
+        margin-top: 3px;
+        font-size: 12px;
+        font-weight: 300;
+        line-height: 1.5;
+        color: var(--text-2);
+      }
+      .caption-block {
+        border: 1px solid var(--border-faint);
+        border-radius: 10px;
+        background: var(--glass-1);
+        padding: 8px 9px;
+      }
+      .caption-preview {
+        margin: 0;
+        color: var(--text-2);
+        font-size: 12px;
+        font-weight: 300;
+        line-height: 1.55;
+      }
+      .caption-preview.is-collapsed {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 3;
+        overflow: hidden;
+      }
+      .caption-author {
+        color: var(--text-1);
+        font-weight: 500;
+        margin-right: 6px;
+      }
+      .caption-toggle {
+        margin-top: 8px;
+        border: 0;
+        background: transparent;
+        color: var(--text-3);
+        font-size: 10px;
+        font-weight: 500;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        padding: 0;
+        cursor: pointer;
+      }
+      .caption-toggle:hover {
+        color: var(--text-1);
+      }
+      .hashtag-row {
+        font-size: 11px;
+        color: var(--text-3);
+        line-height: 1.5;
+      }
+      .caption-copy-source {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+      }
+      .copy-btn {
+        margin-top: auto;
+        border: 1px solid var(--border-medium);
+        border-radius: 10px;
+        background: var(--glass-2);
+        color: var(--text-1);
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        padding: 10px 10px;
+        cursor: pointer;
+      }
+      .copy-btn:hover {
+        background: var(--glass-3);
+      }
+      @media (max-width: 1024px) {
+        .cards-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .hero-fullbleed { min-height: min(72vh, 620px); }
+      }
+      @media (max-width: 640px) {
+        .wrap { padding: 14px 10px 24px; }
+        .site-header { padding: 12px 14px; }
+        .logo { font-size: 18px; letter-spacing: 0.16em; }
+        .header-label { display: none; }
+        .hero-fullbleed { min-height: min(68vh, 520px); padding: 20px 14px; }
+        .hero-title { font-size: clamp(34px, 11vw, 56px); }
+        .hero-preview { font-size: 14px; line-height: 1.7; }
+        .hero-meta { margin-top: 20px; padding-top: 14px; gap: 8px; }
+        .hero-meta span { letter-spacing: 0.14em; }
+        .section-label { padding: 12px 14px; letter-spacing: 0.38em; }
+        .trend-notes { padding: 12px 14px 14px; }
+        .feed-grid { padding: 8px; }
+        .cards-grid { grid-template-columns: 1fr; gap: 12px; }
+      }
     </style>
   </head>
   <body>
+    <header class="site-header">
+      <div class="logo">SSELFIE</div>
+      <div class="header-label">INSTAGRAM CALENDAR</div>
+    </header>
+    <section class="hero-fullbleed">
+      <div class="hero-bg">
+        <img src="${escapeHtml(heroImage)}" alt="Calendar hero image" />
+      </div>
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <p class="hero-eyebrow">CREATED INSIDE MAYA</p>
+        <h1 class="hero-title">${safeTitle}</h1>
+        <p class="hero-preview">${safePreview}</p>
+        <div class="hero-meta">
+          <span>9 posts planned</span>
+          <span>Hooks ready</span>
+          <span>Captions copy-ready</span>
+          <span>IG mix: reels + carousels + post</span>
+        </div>
+      </div>
+    </section>
     <main class="wrap">
-      <section class="card">
-        <h1>${safeTitle}</h1>
-        <p>${safePreview}</p>
-        ${
-          heroImage
-            ? `<img class="hero" src="${escapeHtml(heroImage)}" alt="Calendar cover image" />`
-            : ""
-        }
-        <table>
-          <thead>
-            <tr><th>Day</th><th>Post Direction</th><th>CTA</th></tr>
-          </thead>
-          <tbody>
-            <tr><td><span class="pill">Monday</span></td><td>Authority post linked to your current offer.</td><td>Comment "PLAN" for details.</td></tr>
-            <tr><td><span class="pill">Wednesday</span></td><td>Behind-the-scenes storytelling and proof.</td><td>Save this for later.</td></tr>
-            <tr><td><span class="pill">Friday</span></td><td>Direct invitation with offer framing.</td><td>Send me "START" in DM.</td></tr>
-          </tbody>
-        </table>
+      <section class="section">
+        <p class="section-label">01 — CURRENT INSTAGRAM DIRECTION</p>
+        <div class="trend-notes">
+          <ul>${trendNotesHtml}</ul>
+        </div>
       </section>
+      <section class="section">
+        <p class="section-label">02 — FEED GRID PREVIEW</p>
+        <div class="feed-grid">${feedGridHtml}</div>
+      </section>
+      <section class="cards-grid">${cardsHtml}</section>
     </main>
+    <script>
+      (function () {
+        const copyButtons = Array.from(document.querySelectorAll(".copy-btn"))
+        copyButtons.forEach((button) => {
+          button.addEventListener("click", async () => {
+            const id = button.getAttribute("data-copy-target")
+            const target = id ? document.getElementById(id) : null
+            if (!target) return
+            const value = target.textContent || ""
+            try {
+              await navigator.clipboard.writeText(value)
+              button.textContent = "Copied"
+              setTimeout(() => {
+                button.textContent = "Copy Caption"
+              }, 1200)
+            } catch {
+              button.textContent = "Copy Failed"
+              setTimeout(() => {
+                button.textContent = "Copy Caption"
+              }, 1200)
+            }
+          })
+        })
+
+        const captionToggles = Array.from(document.querySelectorAll("[data-caption-toggle]"))
+        captionToggles.forEach((button) => {
+          button.addEventListener("click", () => {
+            const targetId = button.getAttribute("data-target")
+            const target = targetId ? document.getElementById(targetId) : null
+            if (!target) return
+
+            const expanded = button.getAttribute("data-expanded") === "true"
+            if (expanded) {
+              target.classList.add("is-collapsed")
+              button.setAttribute("data-expanded", "false")
+              button.setAttribute("aria-expanded", "false")
+              button.textContent = "Read full caption"
+              return
+            }
+
+            target.classList.remove("is-collapsed")
+            button.setAttribute("data-expanded", "true")
+            button.setAttribute("aria-expanded", "true")
+            button.textContent = "Show less"
+          })
+        })
+      })()
+    </script>
   </body>
 </html>`
 }
@@ -722,7 +1728,31 @@ function buildPreviewHtmlForAsset(
   imageUrls: string[],
 ): string {
   if (assetType === "calendar") {
-    return buildCalendarHtml(title, previewText, instruction, imageUrls)
+    const trendSignals = getDefaultMayaInstagramTrendSignals()
+    const fallbackOffer = normalizeCalendarContextValue(
+      sanitizeUserFacingText(extractPrimaryIntent(instruction), 120),
+      "signature offer",
+      {
+        maxLength: 84,
+        maxWords: 7,
+      },
+    )
+    const posts = buildCalendarPosts({
+      instruction,
+      imageUrls,
+      trendSignals,
+      offer: fallbackOffer,
+      audience: "your ideal audience",
+      transformation: "a clear transformation",
+    })
+    return buildCalendarHtml({
+      title,
+      previewText,
+      instruction,
+      imageUrls,
+      posts,
+      trendSignals,
+    })
   }
   if (assetType === "pdf") {
     return buildPdfHtml(title, previewText, instruction, imageUrls)
@@ -790,13 +1820,27 @@ export async function createMayaGeneratedAsset(input: {
   const v2Enabled =
     input.assetType === "page" &&
     isMayaPageRendererV2Enabled(process.env.FEATURE_MAYA_PAGE_RENDERER_V2)
+  const calendarRendererEnabled = input.assetType === "calendar"
 
   let title = buildTitle(input.assetType, instruction)
   let previewText = buildPreviewText(input.assetType, instruction)
   let previewHtml = ""
   let blueprint: MayaLandingPageBlueprint | undefined
 
-  if (v2Enabled) {
+  if (calendarRendererEnabled) {
+    try {
+      const calendarAsset = await generateCalendarAsset({
+        userId: normalizedUserId,
+        assetId: id,
+        instruction,
+      })
+      title = calendarAsset.title
+      previewText = calendarAsset.previewText
+      previewHtml = calendarAsset.previewHtml
+    } catch (error) {
+      console.error("[Maya Asset] Calendar generation failed, falling back to legacy renderer:", error)
+    }
+  } else if (v2Enabled) {
     try {
       const v2Page = await generateLandingPageV2({
         userId: normalizedUserId,
@@ -923,13 +1967,28 @@ export async function updateMayaGeneratedAsset(input: {
   const v2Enabled =
     targetAsset.assetType === "page" &&
     isMayaPageRendererV2Enabled(process.env.FEATURE_MAYA_PAGE_RENDERER_V2)
+  const calendarRendererEnabled = targetAsset.assetType === "calendar"
 
   let updatedTitle = sanitizePageTitle(targetAsset.assetType, targetAsset.title)
   let previewText = sanitizePreview(`Updated with your latest edit: ${extractPrimaryIntent(editInstruction)}.`)
   let previewHtml = ""
   let blueprint = targetAsset.blueprint
 
-  if (v2Enabled) {
+  if (calendarRendererEnabled) {
+    try {
+      const calendarAsset = await generateCalendarAsset({
+        userId: normalizedUserId,
+        assetId: targetAsset.id,
+        instruction: mergedInstruction,
+      })
+      updatedTitle = calendarAsset.title
+      previewText = calendarAsset.previewText
+      previewHtml = calendarAsset.previewHtml
+      blueprint = undefined
+    } catch (error) {
+      console.error("[Maya Asset] Calendar update failed, falling back to legacy renderer:", error)
+    }
+  } else if (v2Enabled) {
     try {
       const v2Page = await generateLandingPageV2({
         userId: normalizedUserId,
@@ -1056,8 +2115,23 @@ export async function regenerateMayaPersonalPageById(input: {
   const v2Enabled =
     assetType === "page" &&
     isMayaPageRendererV2Enabled(process.env.FEATURE_MAYA_PAGE_RENDERER_V2)
+  const calendarRendererEnabled = assetType === "calendar"
 
-  if (v2Enabled) {
+  if (calendarRendererEnabled) {
+    try {
+      const calendarAsset = await generateCalendarAsset({
+        userId: normalizedUserId,
+        assetId: row.id,
+        instruction,
+      })
+      title = calendarAsset.title
+      previewText = calendarAsset.previewText
+      previewHtml = calendarAsset.previewHtml
+      blueprint = undefined
+    } catch (error) {
+      console.error("[Maya Asset] Calendar regenerate failed, falling back to legacy renderer:", error)
+    }
+  } else if (v2Enabled) {
     try {
       const v2Page = await generateLandingPageV2({
         userId: normalizedUserId,

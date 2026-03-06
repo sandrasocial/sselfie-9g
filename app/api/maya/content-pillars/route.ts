@@ -2,6 +2,7 @@ import { generateText } from "ai"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { auditPromptRoute } from "@/lib/generation/prompt/route-audit"
+import { createMayaOpenRouterModel, getMayaModelForTask } from "@/lib/maya/openrouter"
 
 export const maxDuration = 60
 
@@ -60,19 +61,20 @@ Return ONLY a valid JSON object with this structure:
 }`
 
     const startedAt = Date.now()
+    const selectedModel = getMayaModelForTask("chat_pro")
     auditPromptRoute({
       routeId: "EP-SHADOW-CONTENT-PILLARS",
       mode: "classic",
       feature: "content-pillars",
       userId: user.id,
-      builder: "anthropic/claude-sonnet-4-20250514",
+      builder: selectedModel,
       prompt,
       input: { userAnswers },
       startedAt,
     })
 
     const { text } = await generateText({
-      model: "anthropic/claude-sonnet-4-20250514",
+      model: createMayaOpenRouterModel("chat_pro"),
       prompt,
       maxOutputTokens: 2000,
     })

@@ -75,6 +75,12 @@ export async function assertStripePricingConfig(): Promise<void> {
       expectedAmount: 4700, // $47
       expectedRecurring: false,
     },
+    {
+      envVarName: "STRIPE_PRICE_BRAND_STRATEGY_PACK",
+      productType: "brand_strategy_pack",
+      expectedAmount: 1900, // $19
+      expectedRecurring: false,
+    },
   ]
   
   for (const config of expectedConfigs) {
@@ -186,6 +192,7 @@ export async function assertStripePricingConfig(): Promise<void> {
       "  STRIPE_BRAND_STUDIO_MEMBERSHIP_PRICE_ID = Active price for Brand Studio subscription",
       "  STRIPE_ONE_TIME_SESSION_PRICE_ID = Active price for $49 one-time payment",
       "  STRIPE_PAID_BLUEPRINT_PRICE_ID = Active price for $47 one-time payment",
+      "  STRIPE_PRICE_BRAND_STRATEGY_PACK = Active price for $19 one-time payment",
       "",
       "=" .repeat(80),
       "",

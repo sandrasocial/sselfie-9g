@@ -6,7 +6,6 @@ import {
   type UIMessage,
 } from "ai"
 import { sql } from "@/lib/db/client"
-import { createAnthropic } from "@ai-sdk/anthropic"
 import { getMayaSystemPrompt, MAYA_CLASSIC_CONFIG, MAYA_PRO_CONFIG } from "@/lib/maya/mode-adapters"
 import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
 import { createServerClient } from "@/lib/supabase/server"
@@ -45,6 +44,12 @@ import {
 import { getMayaUserSnapshot } from "@/lib/maya/user-snapshot"
 import { resolveMayaLandingSnapshot } from "@/lib/maya/page-generation/snapshot-resolver"
 import { isMayaPageRendererV2Enabled } from "@/lib/maya/page-generation/constants"
+import {
+  createMayaOpenRouterFallbackModel,
+  getMayaGatewayModel,
+  getMayaModelForTask,
+  resolveMayaChatTask,
+} from "@/lib/maya/openrouter"
 import type { MayaCriticalLandingField } from "@/lib/maya/page-generation/types"
 
 import { NextResponse } from "next/server"
@@ -61,6 +66,27 @@ function isMayaLandingPagesInChatEnabled(envValue?: string | null): boolean {
   if (!envValue) return false
   const normalized = envValue.trim().toLowerCase()
   return normalized === "true" || normalized === "1"
+}
+
+function createLandingPagesPausedResponse(validUIMessages: UIMessage[], preface?: string) {
+  const stream = createUIMessageStream({
+    originalMessages: validUIMessages as any,
+    execute: ({ writer }) => {
+      const textPartId = `page-flow-paused-${Date.now().toString(36)}`
+      writer.write({ type: "text-start", id: textPartId })
+      writer.write({
+        type: "text-delta",
+        id: textPartId,
+        delta:
+          `${preface ? `${preface.trim()} ` : ""}` +
+          `Landing pages are paused right now while we finish the quality relaunch. ` +
+          `In this chat, I can run photos, videos, concept cards, feed planning, and workbook drafts.`,
+      })
+      writer.write({ type: "text-end", id: textPartId })
+    },
+  })
+
+  return createUIMessageStreamResponse({ stream })
 }
 
 const OFFER_BRIEF_FIELD_LABELS: Record<MayaOfferBriefField, string> = {
@@ -376,6 +402,7 @@ export async function POST(req: Request) {
       if (submittedOfferBrief) {
         try {
           const offerBriefInstruction = buildOfferBriefInstruction(submittedOfferBrief)
+          const briefAssetType = submittedOfferBrief.assetType === "calendar" ? "calendar" : "page"
           await persistMayaOfferBrief(dbUserId, submittedOfferBrief)
 
           const memorySummary = summarizeOfferBriefForMemory(submittedOfferBrief)
@@ -386,31 +413,16 @@ export async function POST(req: Request) {
             console.error("[Maya Chat] Failed to append offer brief summary note:", memoryError)
           })
 
-          if (!allowPageAssetsInChat) {
-            const showStudioHubMarker = formatMayaToolMarker("show_studio_hub")
-            const stream = createUIMessageStream({
-              originalMessages: validUIMessages as any,
-              execute: ({ writer }) => {
-                const textPartId = `offer-brief-submit-handoff-${Date.now().toString(36)}`
-                writer.write({ type: "text-start", id: textPartId })
-                writer.write({
-                  type: "text-delta",
-                  id: textPartId,
-                  delta:
-                    `Perfect. I saved this brief in your memory. ` +
-                    `Landing page generation is now isolated to Studio, so I opened your Studio Hub to continue there.\n` +
-                    `${showStudioHubMarker}`,
-                })
-                writer.write({ type: "text-end", id: textPartId })
-              },
-            })
-
-            return createUIMessageStreamResponse({ stream })
+          if (briefAssetType === "page" && !allowPageAssetsInChat) {
+            return createLandingPagesPausedResponse(
+              validUIMessages as UIMessage[],
+              "Perfect. I saved this brief in your brand memory.",
+            )
           }
 
           const generatedAsset = await createMayaGeneratedAsset({
             userId: dbUserId,
-            assetType: "page",
+            assetType: briefAssetType,
             instruction: offerBriefInstruction,
           })
 
@@ -445,7 +457,7 @@ export async function POST(req: Request) {
                 type: "text-delta",
                 id: textPartId,
                 delta:
-                  `Perfect. I saved this to your brand memory and built your first landing page draft so we can refine it together.\n` +
+                  `Perfect. I saved this to your brand memory and built your ${briefAssetType === "calendar" ? "content calendar" : "landing page"} draft so we can refine it together.\n` +
                   `${createAssetMarker}\n` +
                   `${editAssetMarker}`,
               })
@@ -524,27 +536,14 @@ export async function POST(req: Request) {
       }
 
       if (orchestration.kind === "page_generation_paused") {
-        const showStudioHubMarker = formatMayaToolMarker("show_studio_hub")
-        const stream = createUIMessageStream({
-          originalMessages: validUIMessages as any,
-          execute: ({ writer }) => {
-            const textPartId = `page-flow-paused-${Date.now().toString(36)}`
-            writer.write({ type: "text-start", id: textPartId })
-            writer.write({
-              type: "text-delta",
-              id: textPartId,
-              delta:
-                `I moved landing pages to Studio so this chat stays focused on photos, videos, and content workflows. ` +
-                `I opened your Studio Hub so you can continue page work there.\n${showStudioHubMarker}`,
-            })
-            writer.write({ type: "text-end", id: textPartId })
-          },
-        })
-
-        return createUIMessageStreamResponse({ stream })
+        return createLandingPagesPausedResponse(validUIMessages as UIMessage[])
       }
 
       if (orchestration.kind === "collect_offer_brief") {
+        if (!allowPageAssetsInChat) {
+          return createLandingPagesPausedResponse(validUIMessages as UIMessage[])
+        }
+
         try {
           const seededBrief = mayaSnapshot.offerBrief
 
@@ -636,6 +635,10 @@ export async function POST(req: Request) {
       }
 
       if (orchestration.kind === "asset_create") {
+        if (orchestration.intent.assetType === "page" && !allowPageAssetsInChat) {
+          return createLandingPagesPausedResponse(validUIMessages as UIMessage[])
+        }
+
         try {
           if (
             orchestration.intent.assetType === "page" &&
@@ -679,6 +682,35 @@ export async function POST(req: Request) {
 
               return createUIMessageStreamResponse({ stream })
             }
+          }
+
+          if (
+            orchestration.intent.assetType === "calendar" &&
+            !mayaSnapshot.offerBrief.hasCoreFields
+          ) {
+            const collectPayload = encodeOfferBriefCollectionPayload({
+              assetType: "calendar",
+              prefill: mayaSnapshot.offerBrief.prefill,
+              missingFields: mayaSnapshot.offerBrief.missingFields,
+            })
+            const collectBriefMarker = formatMayaToolMarker("collect_offer_brief", collectPayload)
+            const missingSummary = summarizeMissingOfferBriefFields(mayaSnapshot.offerBrief.missingFields)
+            const stream = createUIMessageStream({
+              originalMessages: validUIMessages as any,
+              execute: ({ writer }) => {
+                const textPartId = `calendar-brief-gate-${Date.now().toString(36)}`
+                writer.write({ type: "text-start", id: textPartId })
+                writer.write({
+                  type: "text-delta",
+                  id: textPartId,
+                  delta:
+                    `I can build this in your style. I only need ${missingSummary} before I generate your Instagram calendar.\n${collectBriefMarker}`,
+                })
+                writer.write({ type: "text-end", id: textPartId })
+              },
+            })
+
+            return createUIMessageStreamResponse({ stream })
           }
 
           const generatedAsset = await createMayaGeneratedAsset({
@@ -743,6 +775,10 @@ export async function POST(req: Request) {
       }
 
       if (orchestration.kind === "multi_step_asset_create") {
+        if (orchestration.intents.some((intent) => intent.assetType === "page") && !allowPageAssetsInChat) {
+          return createLandingPagesPausedResponse(validUIMessages as UIMessage[])
+        }
+
         try {
           if (
             orchestration.intents.some((intent) => intent.assetType === "page") &&
@@ -785,6 +821,35 @@ export async function POST(req: Request) {
 
               return createUIMessageStreamResponse({ stream })
             }
+          }
+
+          if (
+            orchestration.intents.some((intent) => intent.assetType === "calendar") &&
+            !mayaSnapshot.offerBrief.hasCoreFields
+          ) {
+            const collectPayload = encodeOfferBriefCollectionPayload({
+              assetType: "calendar",
+              prefill: mayaSnapshot.offerBrief.prefill,
+              missingFields: mayaSnapshot.offerBrief.missingFields,
+            })
+            const collectBriefMarker = formatMayaToolMarker("collect_offer_brief", collectPayload)
+            const missingSummary = summarizeMissingOfferBriefFields(mayaSnapshot.offerBrief.missingFields)
+            const stream = createUIMessageStream({
+              originalMessages: validUIMessages as any,
+              execute: ({ writer }) => {
+                const textPartId = `calendar-brief-multistep-gate-${Date.now().toString(36)}`
+                writer.write({ type: "text-start", id: textPartId })
+                writer.write({
+                  type: "text-delta",
+                  id: textPartId,
+                  delta:
+                    `Before I run the full multi-step build, I only need ${missingSummary} for the calendar step.\n${collectBriefMarker}`,
+                })
+                writer.write({ type: "text-end", id: textPartId })
+              },
+            })
+
+            return createUIMessageStreamResponse({ stream })
           }
 
           const createdAssets: Array<Awaited<ReturnType<typeof createMayaGeneratedAsset>>> = []
@@ -875,6 +940,10 @@ export async function POST(req: Request) {
       }
 
       if (orchestration.kind === "asset_edit") {
+        if (orchestration.intent.assetType === "page" && !allowPageAssetsInChat) {
+          return createLandingPagesPausedResponse(validUIMessages as UIMessage[])
+        }
+
         try {
           const updatedAsset = await updateMayaGeneratedAsset({
             userId: dbUserId,
@@ -1950,60 +2019,88 @@ You: "Love the cozy fall vibe! 🥰 Creating some concepts with warm textures, t
 - Deliver the purchased artifact immediately in your first answer.`
     }
 
-    // Create Anthropic provider with direct API key (bypasses AI Gateway)
-    // This ensures Maya uses Claude directly, not through Gateway
-    const anthropic = createAnthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
+    const mayaTask = resolveMayaChatTask({
+      chatType,
+      isPromptBuilder,
+      isStudioProMode,
+    })
+    const selectedModel = getMayaModelForTask(mayaTask)
+    const primaryModel = getMayaGatewayModel(mayaTask)
+    const openRouterFallbackModel = createMayaOpenRouterFallbackModel(mayaTask)
+    console.log("[Maya Chat] Model routing:", {
+      chatType,
+      isPromptBuilder,
+      isStudioProMode,
+      task: mayaTask,
+      selectedModel,
+      primaryProvider: "anthropic-gateway",
+      hasOpenRouterFallback: !!openRouterFallbackModel,
     })
 
     let result
     try {
       result = streamText({
-        model: anthropic("claude-sonnet-4-20250514"),
+        model: primaryModel,
         system: systemPrompt,
         messages: modelMessages,
         maxTokens: 4096, // CRITICAL: Ensure Maya has enough tokens to complete response including [GENERATE_CONCEPTS] trigger
         temperature: 0.7, // Balanced creativity and consistency
       } as any)
     } catch (streamError) {
-      console.error("[v0] Error in streamText call:", streamError)
+      console.error("[v0] Primary model call failed:", streamError)
+      if (openRouterFallbackModel) {
+        try {
+          result = streamText({
+            model: openRouterFallbackModel,
+            system: systemPrompt,
+            messages: modelMessages,
+            maxTokens: 4096,
+            temperature: 0.7,
+          } as any)
+          console.log("[Maya Chat] OpenRouter fallback activated for chat")
+        } catch (fallbackError) {
+          console.error("[v0] OpenRouter fallback failed:", fallbackError)
+        }
+      }
+
+      if (result) {
+        // Fallback succeeded
+      } else {
+        // If streamText fails (e.g., provider outage), return a streaming error response
+        const errorMessage = streamError instanceof Error 
+          ? (streamError.message.includes("Gateway") || streamError.message.includes("gateway")
+            ? "AI service temporarily unavailable. Please try again in a moment."
+            : streamError.message)
+          : "Failed to process chat request"
+        
+        console.error("[v0] ❌ Returning streaming error response:", errorMessage)
+        
+        // Return a streaming error response in the format expected by AI SDK
+        const encoder = new TextEncoder()
+        const errorStream = new ReadableStream({
+          start(controller) {
+            const errorData = {
+              type: "error",
+              error: {
+                message: errorMessage,
+              },
+            }
+            controller.enqueue(encoder.encode(`0:${JSON.stringify(errorData)}\n\n`))
+            controller.close()
+          },
+        })
+        
+        return new Response(errorStream, {
+          status: 200,
+          headers: {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+          },
+        })
+      }
       
-      // If streamText fails (e.g., Gateway error), return a streaming error response
-      // The client expects a streaming format, not JSON
-      const errorMessage = streamError instanceof Error 
-        ? (streamError.message.includes("Gateway") || streamError.message.includes("gateway")
-          ? "AI service temporarily unavailable. Please try again in a moment."
-          : streamError.message)
-        : "Failed to process chat request"
-      
-      console.error("[v0] ❌ Returning streaming error response:", errorMessage)
-      
-      // Return a streaming error response in the format expected by AI SDK
-      // The SDK expects Server-Sent Events (SSE) format with specific structure
-      const encoder = new TextEncoder()
-      const errorStream = new ReadableStream({
-        start(controller) {
-          // AI SDK expects error in this format: "0:{"type":"error","error":{"message":"..."}}"
-          const errorData = {
-            type: "error",
-            error: {
-              message: errorMessage,
-            },
-          }
-          // Format: "0:" prefix + JSON data + "\n\n"
-          controller.enqueue(encoder.encode(`0:${JSON.stringify(errorData)}\n\n`))
-          controller.close()
-        },
-      })
-      
-      return new Response(errorStream, {
-        status: 200, // Use 200 to avoid triggering HTTP error handlers
-        headers: {
-          "Content-Type": "text/event-stream",
-          "Cache-Control": "no-cache",
-          "Connection": "keep-alive",
-        },
-      })
+      // continue when fallback succeeds
     }
 
     // Save chat to database - ensure chat exists with correct chat_type

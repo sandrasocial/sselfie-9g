@@ -4,6 +4,7 @@ import type React from "react"
 import { useMemo, useState } from "react"
 import type {
   MayaOfferBrief,
+  MayaOfferBriefAssetType,
   MayaOfferBriefField,
   MayaOfferBriefFormValues,
 } from "@/lib/maya/offer-brief"
@@ -11,7 +12,8 @@ import type {
 type OfferBriefFormValues = Omit<MayaOfferBrief, "assetType">
 
 interface MayaOfferBriefFormProps {
-  onSubmit: (values: OfferBriefFormValues) => void
+  assetType?: MayaOfferBriefAssetType
+  onSubmit: (assetType: MayaOfferBriefAssetType, values: OfferBriefFormValues) => void
   initialValues?: Partial<MayaOfferBriefFormValues>
   missingFields?: MayaOfferBriefField[]
 }
@@ -91,7 +93,12 @@ function dedupeMissingFields(fields: MayaOfferBriefField[]): MayaOfferBriefField
   return deduped
 }
 
-export default function MayaOfferBriefForm({ onSubmit, initialValues = {}, missingFields = [] }: MayaOfferBriefFormProps) {
+export default function MayaOfferBriefForm({
+  assetType = "page",
+  onSubmit,
+  initialValues = {},
+  missingFields = [],
+}: MayaOfferBriefFormProps) {
   const [values, setValues] = useState<OfferBriefFormValues>({
     ...INITIAL_VALUES,
     ...initialValues,
@@ -120,13 +127,15 @@ export default function MayaOfferBriefForm({ onSubmit, initialValues = {}, missi
     event.preventDefault()
 
     if (!hasCoreData) {
-      setError("I still need your offer, transformation, and ideal client before I build the page.")
+      setError(
+        `I still need your offer, transformation, and ideal client before I build the ${assetType === "calendar" ? "calendar" : "page"}.`,
+      )
       return
     }
 
     setError(null)
     setSubmitted(true)
-    onSubmit({
+    onSubmit(assetType, {
       designStyle: normalizeText(values.designStyle),
       offerType: normalizeText(values.offerType),
       transformation: normalizeText(values.transformation),
@@ -150,7 +159,9 @@ export default function MayaOfferBriefForm({ onSubmit, initialValues = {}, missi
   return (
     <form onSubmit={handleSubmit} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.04)] p-4">
       <div className="flex items-center justify-between gap-3">
-        <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Page Brief</div>
+        <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">
+          {assetType === "calendar" ? "Calendar Brief" : "Page Brief"}
+        </div>
         <div className="text-[10px] uppercase tracking-[0.16em] text-[#9a9a9a]">
           {normalizedMissingFields.length > 0 ? `${normalizedMissingFields.length} needed` : "Memory loaded"}
         </div>
@@ -158,8 +169,8 @@ export default function MayaOfferBriefForm({ onSubmit, initialValues = {}, missi
 
       <p className="mt-2 text-xs text-[#cfcfcf]">
         {normalizedMissingFields.length > 0
-          ? "I already filled what I know from your profile and memory. Add the missing bits and I’ll build the draft."
-          : "I already pulled your profile and memory. Use this as-is, or tweak details below."}
+          ? `I already filled what I know from your profile and memory. Add the missing bits and I’ll build the ${assetType === "calendar" ? "calendar" : "page"} draft.`
+          : `I already pulled your profile and memory. Use this as-is, or tweak details below before I build the ${assetType === "calendar" ? "calendar" : "page"}.`}
       </p>
 
       <div className="mt-3 rounded-lg border border-[rgba(255,255,255,0.12)] bg-[rgba(0,0,0,0.25)] p-3">
@@ -261,15 +272,19 @@ export default function MayaOfferBriefForm({ onSubmit, initialValues = {}, missi
         </button>
       </div>
 
-      {error ? <p className="mt-2 text-xs text-[#f3b2b2]">{error}</p> : null}
-      {submitted ? <p className="mt-2 text-xs text-[#b9d8b9]">Saved. I’m building your page draft now.</p> : null}
+    {error ? <p className="mt-2 text-xs text-[#f3b2b2]">{error}</p> : null}
+      {submitted ? (
+        <p className="mt-2 text-xs text-[#b9d8b9]">
+          Saved. I’m building your {assetType === "calendar" ? "calendar" : "page"} draft now.
+        </p>
+      ) : null}
 
       <button
         type="submit"
         disabled={submitted || !hasCoreData}
         className="mt-3 rounded-lg border border-[rgba(255,255,255,0.22)] bg-[rgba(255,255,255,0.08)] px-4 py-2 text-[11px] uppercase tracking-[0.16em] text-[#ffffff] transition-colors hover:bg-[rgba(255,255,255,0.14)] disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {submitted ? "Submitted" : "Build Page Draft"}
+        {submitted ? "Submitted" : assetType === "calendar" ? "Build Calendar Draft" : "Build Page Draft"}
       </button>
     </form>
   )

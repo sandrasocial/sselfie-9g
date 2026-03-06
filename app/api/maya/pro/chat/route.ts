@@ -7,6 +7,7 @@ import { checkCredits, deductCredits } from "@/lib/credits"
 import { detectCategory } from "@/lib/maya/pro/category-system"
 import type { ImageLibrary } from "@/lib/maya/pro/category-system"
 import { getProductGenerationPrompt } from "@/lib/products-system-prompt"
+import { createMayaOpenRouterModel, getMayaModelForTask } from "@/lib/maya/openrouter"
 
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
@@ -173,10 +174,12 @@ ${categoryInfo ? `- Reference the user's category (${categoryInfo.name}) and bra
     const modelMessages = await convertToModelMessages(conversationHistory as any)
 
     console.log("[v0] [PRO MODE] Streaming response with", modelMessages.length, "messages")
+    const selectedModel = getMayaModelForTask("chat_pro")
+    console.log("[v0] [PRO MODE] Model route:", selectedModel)
 
     // Stream response using AI SDK
     const result = streamText({
-      model: "anthropic/claude-sonnet-4-20250514",
+      model: createMayaOpenRouterModel("chat_pro"),
       system: systemPrompt,
       messages: modelMessages,
       temperature: 0.7,

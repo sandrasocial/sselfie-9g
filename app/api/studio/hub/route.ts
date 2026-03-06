@@ -24,6 +24,22 @@ interface HubPageRow {
   updated_at: string | null
 }
 
+interface HubPhotoRow {
+  id: string | number
+  image_url: string | null
+  prompt: string | null
+  source: string | null
+  created_at: string | null
+}
+
+interface HubVideoRow {
+  id: string | number
+  video_url: string | null
+  image_source: string | null
+  motion_prompt: string | null
+  created_at: string | null
+}
+
 function toInt(value: unknown): number {
   const parsed = Number(value)
   if (!Number.isFinite(parsed)) return 0
@@ -35,14 +51,22 @@ function toIso(value: unknown): string {
   return new Date(0).toISOString()
 }
 
+function isFeatureEnabled(value?: string | null): boolean {
+  if (!value) return false
+  const normalized = value.trim().toLowerCase()
+  return normalized === "true" || normalized === "1"
+}
+
 function isMissingRelationError(error: unknown): boolean {
   const err = error as { code?: string; message?: string }
   const code = typeof err?.code === "string" ? err.code : ""
   const message = String(err?.message || "").toLowerCase()
   return (
     code === "42P01" ||
+    code === "42703" ||
     message.includes("does not exist") ||
-    message.includes("undefined table")
+    message.includes("undefined table") ||
+    message.includes("undefined column")
   )
 }
 
@@ -69,8 +93,10 @@ async function handleGetStudioHub({
 }) {
   try {
     const userId = String(user.id)
+    const landingPagesUiEnabled = isFeatureEnabled(process.env.NEXT_PUBLIC_FEATURE_MAYA_LANDING_PAGES_UI)
+    const landingPagesPaused = !landingPagesUiEnabled
 
-    const [feeds, pages, generatedImageCount, aiImageCount, videoCount] = await Promise.all([
+    const [feeds, pages, recentPhotos, recentVideos, generatedImageCount, aiImageCount, videoCount] = await Promise.all([
       safeQueryRows(async () => {
         const rows = await sql`
           SELECT
@@ -99,16 +125,91 @@ async function handleGetStudioHub({
         `
         return rows as HubFeedRow[]
       }, [] as HubFeedRow[]),
+      landingPagesPaused
+        ? Promise.resolve([] as HubPageRow[])
+        : safeQueryRows(async () => {
+            const rows = await sql`
+              SELECT id, title, page_type, status, live_url, version, updated_at
+              FROM personal_pages
+              WHERE user_id = ${userId}
+              ORDER BY updated_at DESC
+              LIMIT 24
+            `
+            return rows as HubPageRow[]
+          }, [] as HubPageRow[]),
       safeQueryRows(async () => {
         const rows = await sql`
-          SELECT id, title, page_type, status, live_url, version, updated_at
-          FROM personal_pages
-          WHERE user_id = ${userId}
-          ORDER BY updated_at DESC
-          LIMIT 24
+          WITH combined AS (
+            SELECT
+              id::text AS id,
+              image_url,
+              COALESCE(prompt, 'Maya photo') AS prompt,
+              'ai_images' AS source,
+              created_at
+            FROM ai_images
+            WHERE user_id = ${userId}
+              AND generation_status = 'completed'
+              AND image_url IS NOT NULL
+
+            UNION ALL
+
+            SELECT
+              id::text AS id,
+              COALESCE(selected_url, (string_to_array(image_urls::text, ','))[1]) AS image_url,
+              COALESCE(prompt, 'Generated photo') AS prompt,
+              'generated_images' AS source,
+              created_at
+            FROM generated_images
+            WHERE user_id = ${userId}
+              AND (selected_url IS NOT NULL OR image_urls IS NOT NULL)
+
+            UNION ALL
+
+            SELECT
+              id::text AS id,
+              file_url AS image_url,
+              COALESCE(description, file_name, 'Brand asset') AS prompt,
+              'brand_assets' AS source,
+              created_at
+            FROM brand_assets
+            WHERE user_id = ${userId}
+              AND file_url IS NOT NULL
+              AND (
+                LOWER(COALESCE(file_type, '')) LIKE 'image/%'
+                OR COALESCE(file_name, '') ~* '\\.(jpg|jpeg|png|webp|heic|heif)$'
+              )
+          ),
+          dedup AS (
+            SELECT
+              id,
+              image_url,
+              prompt,
+              source,
+              created_at,
+              ROW_NUMBER() OVER (PARTITION BY image_url ORDER BY created_at DESC) AS rn
+            FROM combined
+            WHERE image_url IS NOT NULL
+          )
+          SELECT id, image_url, prompt, source, created_at
+          FROM dedup
+          WHERE rn = 1
+          ORDER BY created_at DESC
+          LIMIT 10
         `
-        return rows as HubPageRow[]
-      }, [] as HubPageRow[]),
+        return rows as HubPhotoRow[]
+      }, [] as HubPhotoRow[]),
+      safeQueryRows(async () => {
+        const rows = await sql`
+          SELECT id, video_url, image_source, motion_prompt, created_at
+          FROM generated_videos
+          WHERE user_id = ${userId}
+            AND status = 'completed'
+            AND video_url IS NOT NULL
+          ORDER BY created_at DESC
+          LIMIT 10
+        `
+        return rows as HubVideoRow[]
+      }, [] as HubVideoRow[]),
       safeCount(async () => (await sql`
         SELECT COUNT(*)::int AS count
         FROM generated_images
@@ -152,16 +253,39 @@ async function handleGetStudioHub({
       regenerateUrl: `/api/maya/personal-pages/${encodeURIComponent(page.id)}/regenerate`,
     }))
 
+    const serializedRecentPhotos = recentPhotos.map((photo) => ({
+      id: String(photo.id),
+      imageUrl: photo.image_url || "",
+      prompt: photo.prompt || "",
+      source: photo.source || "ai_images",
+      updatedAt: toIso(photo.created_at),
+      openUrl: "/studio?tab=gallery#gallery",
+    }))
+
+    const serializedRecentVideos = recentVideos.map((video) => ({
+      id: String(video.id),
+      videoUrl: video.video_url || "",
+      thumbnailUrl: video.image_source || "",
+      motionPrompt: video.motion_prompt || "",
+      updatedAt: toIso(video.created_at),
+      openUrl: "/studio?tab=maya#maya/videos",
+    }))
+
+    const safePages = landingPagesPaused ? [] : serializedPages
+
     return NextResponse.json({
       success: true,
+      landingPagesPaused,
       stats: {
         feedCount: serializedFeeds.length,
-        pageCount: serializedPages.length,
+        pageCount: safePages.length,
         photoCount: generatedImageCount + aiImageCount,
         videoCount,
       },
       feeds: serializedFeeds,
-      pages: serializedPages,
+      pages: safePages,
+      recentPhotos: serializedRecentPhotos,
+      recentVideos: serializedRecentVideos,
     })
   } catch (error) {
     console.error("[Studio Hub] Failed to load hub data:", error)

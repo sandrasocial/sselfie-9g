@@ -2,9 +2,18 @@
 
 import { useState, useEffect } from "react"
 import { X, CheckCircle } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { trackEvent } from "@/lib/analytics"
+import { Cormorant_Garamond, Inter } from "next/font/google"
+
+const cormorant = Cormorant_Garamond({
+  subsets: ["latin"],
+  weight: ["300"],
+})
+
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["300", "400", "500"],
+})
 
 interface PromptEmailCaptureProps {
   onSuccess: () => void
@@ -27,7 +36,6 @@ export default function PromptEmailCapture({
   const [error, setError] = useState("")
   const [showSuccess, setShowSuccess] = useState(false)
 
-  // Track modal open
   useEffect(() => {
     trackEvent("prompt_guide_email_modal_open", {
       guide_id: pageId,
@@ -63,7 +71,6 @@ export default function PromptEmailCapture({
         throw new Error(data.error || "Something went wrong")
       }
 
-      // Track successful email signup with guide name
       trackEvent("prompt_guide_email_signup", {
         guide_id: pageId,
         guide_title: guideTitle || "unknown",
@@ -71,10 +78,8 @@ export default function PromptEmailCapture({
         source: "prompt_guide_modal",
       })
 
-      // Show success message
       setShowSuccess(true)
 
-      // Auto-close after 2 seconds
       setTimeout(() => {
         onSuccess()
       }, 2000)
@@ -87,88 +92,266 @@ export default function PromptEmailCapture({
 
   if (showSuccess) {
     return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl p-8 max-w-md w-full relative">
-          <div className="text-center space-y-4">
-            <div className="flex justify-center">
-              <CheckCircle className="text-green-600" size={48} />
-            </div>
-            <h2 className="font-serif text-2xl font-extralight tracking-[0.2em] uppercase text-stone-950">
-              Check Your Email!
-            </h2>
-            <p className="text-sm text-stone-600 font-light">
-              We\u0027ve sent you instant access to this guide. Check your inbox for the link.
-            </p>
+      <div className={`overlay ${inter.className}`}>
+        <div className="panel success-panel">
+          <div className="icon-wrap" aria-hidden="true">
+            <CheckCircle size={44} />
           </div>
+          <p className="label">ACCESS UNLOCKED</p>
+          <h2 className={`title ${cormorant.className}`}>Check Your Email</h2>
+          <p className="copy">We sent your instant-access link. Open your inbox and you&apos;re in.</p>
         </div>
+
+        <style jsx>{`
+          .overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            background: rgba(10, 10, 10, 0.68);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+          }
+
+          .panel {
+            width: 100%;
+            max-width: 520px;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            background: rgba(10, 10, 10, 0.92);
+            padding: 38px 32px;
+          }
+
+          .success-panel {
+            text-align: center;
+          }
+
+          .icon-wrap {
+            color: #a7efc3;
+            margin-bottom: 18px;
+            display: flex;
+            justify-content: center;
+          }
+
+          .label {
+            margin: 0 0 10px;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.45);
+          }
+
+          .title {
+            margin: 0;
+            font-size: clamp(34px, 8vw, 48px);
+            font-weight: 300;
+            text-transform: uppercase;
+            letter-spacing: -0.01em;
+            color: #ffffff;
+            line-height: 1;
+          }
+
+          .copy {
+            margin: 16px 0 0;
+            font-size: 15px;
+            line-height: 1.8;
+            color: rgba(255, 255, 255, 0.75);
+          }
+        `}</style>
       </div>
     )
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl p-8 max-w-md w-full relative">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-stone-400 hover:text-stone-950 transition-colors"
-          aria-label="Close"
-          disabled={isSubmitting}
-        >
-          <X size={20} />
+    <div className={`overlay ${inter.className}`}>
+      <div className="panel">
+        <button onClick={onClose} className="close" aria-label="Close" disabled={isSubmitting}>
+          <X size={18} />
         </button>
 
-        <div className="space-y-6">
-          <div>
-            <h2 className="font-serif text-2xl font-extralight tracking-[0.2em] uppercase text-stone-950 mb-2">
-              Unlock This Guide
-            </h2>
-            <p className="text-sm text-stone-600 font-light">
-              Enter your email to access this exclusive prompt guide.
-            </p>
-          </div>
+        <p className="label">FREE ACCESS</p>
+        <h2 className={`title ${cormorant.className}`}>Unlock This Guide</h2>
+        <p className="copy">Enter your details to access this full prompt guide instantly.</p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Input
-                type="text"
-                placeholder="Your name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                disabled={isSubmitting}
-                className="w-full"
-              />
-            </div>
-            <div>
-              <Input
-                type="email"
-                placeholder="your@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                disabled={isSubmitting}
-                className="w-full"
-              />
-            </div>
+        <form onSubmit={handleSubmit} className="form">
+          <label className="field-label" htmlFor="name">
+            Name
+          </label>
+          <input
+            id="name"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Your name"
+            required
+            disabled={isSubmitting}
+          />
 
-            <p className="text-xs text-stone-500 font-light text-center">
-              We&apos;ll only send you valuable content, never spam.
-            </p>
+          <label className="field-label" htmlFor="email">
+            Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="your@email.com"
+            required
+            disabled={isSubmitting}
+          />
 
-            {error && (
-              <p className="text-sm text-red-600 font-light">{error}</p>
-            )}
+          <p className="note">No spam. Only useful prompts and relevant updates.</p>
 
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full bg-stone-950 text-white hover:bg-stone-800 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSubmitting ? "Subscribing..." : "Get Access"}
-            </Button>
-          </form>
-        </div>
+          {error ? <p className="error">{error}</p> : null}
+
+          <button type="submit" disabled={isSubmitting} className="submit">
+            {isSubmitting ? "SUBSCRIBING..." : "GET INSTANT ACCESS"}
+          </button>
+        </form>
       </div>
+
+      <style jsx>{`
+        .overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 200;
+          background: rgba(10, 10, 10, 0.68);
+          backdrop-filter: blur(8px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+        }
+
+        .panel {
+          position: relative;
+          width: 100%;
+          max-width: 560px;
+          border: 1px solid rgba(255, 255, 255, 0.14);
+          background: rgba(10, 10, 10, 0.95);
+          padding: 38px 32px;
+        }
+
+        .close {
+          position: absolute;
+          top: 12px;
+          right: 12px;
+          border: none;
+          background: transparent;
+          color: rgba(255, 255, 255, 0.5);
+          padding: 6px;
+          cursor: pointer;
+          transition: color 0.2s;
+        }
+
+        .close:hover:enabled {
+          color: #ffffff;
+        }
+
+        .label {
+          margin: 0 0 10px;
+          font-size: 10px;
+          font-weight: 500;
+          letter-spacing: 0.5em;
+          text-transform: uppercase;
+          color: rgba(255, 255, 255, 0.45);
+        }
+
+        .title {
+          margin: 0;
+          font-size: clamp(34px, 8vw, 50px);
+          font-weight: 300;
+          text-transform: uppercase;
+          letter-spacing: -0.01em;
+          color: #ffffff;
+          line-height: 1;
+        }
+
+        .copy {
+          margin: 14px 0 0;
+          font-size: 15px;
+          line-height: 1.8;
+          color: rgba(255, 255, 255, 0.72);
+        }
+
+        .form {
+          margin-top: 24px;
+          display: grid;
+          gap: 10px;
+        }
+
+        .field-label {
+          font-size: 10px;
+          font-weight: 500;
+          letter-spacing: 0.4em;
+          text-transform: uppercase;
+          color: rgba(255, 255, 255, 0.45);
+        }
+
+        input {
+          width: 100%;
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          background: rgba(255, 255, 255, 0.04);
+          color: #ffffff;
+          padding: 13px 14px;
+          font-size: 14px;
+          font-family: inherit;
+          line-height: 1.5;
+          outline: none;
+          transition: border-color 0.16s ease;
+        }
+
+        input::placeholder {
+          color: rgba(255, 255, 255, 0.4);
+        }
+
+        input:focus {
+          border-color: rgba(255, 255, 255, 0.28);
+        }
+
+        .note {
+          margin: 4px 0 0;
+          font-size: 12px;
+          color: rgba(255, 255, 255, 0.45);
+        }
+
+        .error {
+          margin: 6px 0 0;
+          color: #ff9a9a;
+          font-size: 13px;
+        }
+
+        .submit {
+          margin-top: 8px;
+          border: none;
+          background: #ffffff;
+          color: #0a0a0a;
+          padding: 14px 16px;
+          font-size: 11px;
+          font-weight: 500;
+          letter-spacing: 0.28em;
+          text-transform: uppercase;
+          cursor: pointer;
+          transition: opacity 0.2s;
+        }
+
+        .submit:hover:enabled {
+          opacity: 0.88;
+        }
+
+        .submit:disabled {
+          opacity: 0.7;
+          cursor: default;
+        }
+
+        @media (max-width: 700px) {
+          .panel {
+            padding: 30px 22px;
+          }
+        }
+      `}</style>
     </div>
   )
 }

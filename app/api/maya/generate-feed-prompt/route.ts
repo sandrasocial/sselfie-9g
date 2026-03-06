@@ -2,15 +2,13 @@ import { type NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getUserContextForMaya } from "@/lib/maya/get-user-context"
-import { streamText } from "ai"
+import { generateText, streamText } from "ai"
 import { getMayaSystemPrompt, MAYA_CLASSIC_CONFIG, MAYA_PRO_CONFIG } from "@/lib/maya/mode-adapters"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getFluxPromptingPrinciples } from "@/lib/maya/flux-prompting-principles"
 import { getNanoBananaPromptingPrinciples } from "@/lib/maya/nano-banana-prompt-builder"
-import Anthropic from "@anthropic-ai/sdk"
 import { generateMayaFeedPromptSystemPrompt, auditLogMayaChatGeneration } from "@/lib/generation/prompt"
-
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+import { createMayaOpenRouterModel, getMayaModelForTask } from "@/lib/maya/openrouter"
 
 type LockedAesthetic = {
   vibe: string
@@ -293,12 +291,13 @@ export async function POST(request: NextRequest) {
     console.log(`[v0] [FEED-PROMPT] System prompt generated via Authority Layer, fingerprint: ${authorityResult.metadata.fingerprint}`)
 
     // Call AI to generate the prompt
-    console.log("[v0] [FEED-PROMPT] Calling AI SDK with model: anthropic/claude-sonnet-4-20250514")
+    const selectedModel = getMayaModelForTask("feed_prompt")
+    console.log("[v0] [FEED-PROMPT] Calling OpenRouter model:", selectedModel)
     const generationStartTime = Date.now() // Phase 2C-3: Track generation time for audit logging
     let result
     try {
       result = streamText({
-        model: "anthropic/claude-sonnet-4-20250514", // Same model as concept cards for consistency
+        model: createMayaOpenRouterModel("feed_prompt"),
         messages: [
           {
             role: "system",
@@ -953,16 +952,15 @@ Output ONLY the prompt text, nothing else.`
 Remember: EXACT same vibe, colors, setting, outfit, lighting. ONLY vary the pose/angle/composition.`
 
   try {
-    const completion = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 500,
+    const completion = await generateText({
+      model: createMayaOpenRouterModel("feed_prompt_locked_aesthetic"),
       system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }],
+      prompt: userPrompt,
+      maxTokens: 500,
+      temperature: 0.7,
     })
     
-    const generatedPrompt = completion.content[0].type === 'text' 
-      ? completion.content[0].text.trim()
-      : ''
+    const generatedPrompt = completion.text.trim()
     
     // Clean up any markdown or formatting
     const cleanedPrompt = generatedPrompt
@@ -1062,16 +1060,15 @@ Remember: Setting is ${lockedAesthetic.setting}, outfit is ${lockedAesthetic.out
 Generate creative variation ONLY (pose, angle, composition, framing).`
 
   try {
-    const completion = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 150, // Shorter since we only want variation
+    const completion = await generateText({
+      model: createMayaOpenRouterModel("feed_prompt_locked_aesthetic"),
       system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }],
+      prompt: userPrompt,
+      maxTokens: 150, // Shorter since we only want variation
+      temperature: 0.7,
     })
     
-    const mayaVariation = completion.content[0].type === 'text' 
-      ? completion.content[0].text.trim()
-      : ''
+    const mayaVariation = completion.text.trim()
     
     // Clean up any markdown or formatting
     const cleanedVariation = mayaVariation
