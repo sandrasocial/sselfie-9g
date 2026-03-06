@@ -70,28 +70,28 @@ export function CreditRenewalBanner() {
   const creditsGranted = data?.history?.[0]?.amount || 200
 
   return (
-    <div className="relative bg-stone-900 text-white border-b border-stone-800 px-4 py-4 sm:py-5">
-      <div className={`${DesignClasses.container} flex items-center justify-between gap-4`}>
+    <div className="relative bg-[#1c1b19] text-[#f0ede8] border-b border-[rgba(195,190,182,0.25)] px-4 py-4 sm:py-5">
+      <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className="flex-shrink-0 w-10 h-10 bg-stone-800 rounded-xl flex items-center justify-center">
-            <Gift size={20} className="text-stone-200" />
+          <div className="flex-shrink-0 w-10 h-10 bg-[rgba(175,170,162,0.12)] border border-[rgba(195,190,182,0.25)] rounded-xl flex items-center justify-center">
+            <Gift size={20} className="text-[#a8a49c]" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className={`${DesignClasses.typography.body.medium} text-stone-50`}>
-              Your monthly <strong className="font-medium">{creditsGranted} credits</strong> have been added! 🎉
+            <p className="font-['Inter'] text-sm text-[#f0ede8]">
+              Your monthly <strong className="font-medium">{creditsGranted} credits</strong> have been added!
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <button
             onClick={handleStartCreating}
-            className={`px-4 py-2 ${DesignClasses.radius.sm} bg-white text-stone-900 ${DesignClasses.typography.label.normal} hover:bg-stone-100 transition-all duration-200 whitespace-nowrap`}
+            className="px-4 py-2 rounded-full bg-[#c8c4bb] text-[#0d0c0b] font-['Inter'] font-medium text-xs tracking-[0.15em] uppercase hover:bg-[#f0ede8] transition-all duration-200 whitespace-nowrap"
           >
             Start creating
           </button>
           <button
             onClick={handleDismiss}
-            className="p-2 text-stone-400 hover:text-stone-200 transition-colors"
+            className="p-2 text-[#8a8780] hover:text-[#f0ede8] transition-colors"
             aria-label="Dismiss banner"
           >
             <X size={18} />

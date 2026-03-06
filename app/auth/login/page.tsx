@@ -105,18 +105,21 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center p-6 bg-black">
+    <div className="flex min-h-screen w-full items-center justify-center p-6 bg-[#0d0c0b]" style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(168,164,156,0.08) 0%, #0d0c0b 70%)" }}>
       <div className="w-full max-w-sm">
-        <Card className="bg-zinc-900 border-zinc-800">
-          <CardHeader>
-            <CardTitle className="text-2xl text-white">Welcome to SSELFIE</CardTitle>
-            <CardDescription className="text-zinc-400">Sign in to access your AI photography studio</CardDescription>
+        <Card className="bg-[rgba(175,170,162,0.10)] backdrop-blur-[50px] border border-[rgba(195,190,182,0.25)] rounded-2xl">
+          <CardHeader className="pb-6">
+            <div className="mb-2">
+              <span className="font-['Cormorant_Garamond'] text-3xl text-[#f0ede8] tracking-[0.3em] uppercase font-light">SSELFIE</span>
+            </div>
+            <CardTitle className="font-['Cormorant_Garamond'] font-light text-2xl text-[#f0ede8] tracking-wide">Welcome back</CardTitle>
+            <CardDescription className="font-['Inter'] text-[#8a8780] text-sm">Sign in to access your AI photography studio</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleLogin}>
-              <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-5">
                 <div className="grid gap-2">
-                  <Label htmlFor="email" className="text-zinc-200">
+                  <Label htmlFor="email" className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.4em] text-[#8a8780]">
                     Email
                   </Label>
                   <Input
@@ -126,18 +129,18 @@ export default function LoginPage() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="bg-zinc-800 border-zinc-700 text-white"
+                    className="bg-[rgba(175,170,162,0.08)] border-[rgba(195,190,182,0.25)] text-[#f0ede8] placeholder:text-[#8a8780] focus:border-[rgba(195,190,182,0.5)]"
                     disabled={isLoading}
                   />
                 </div>
                 <div className="grid gap-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="password" className="text-zinc-200">
+                    <Label htmlFor="password" className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.4em] text-[#8a8780]">
                       Password
                     </Label>
                     <Link
                       href="/auth/forgot-password"
-                      className="text-sm text-zinc-400 hover:text-white transition-colors underline underline-offset-4"
+                      className="text-xs text-[#a8a49c] hover:text-[#c8c4bb] transition-colors"
                     >
                       Forgot password?
                     </Link>
@@ -148,22 +151,22 @@ export default function LoginPage() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="bg-zinc-800 border-zinc-700 text-white"
+                    className="bg-[rgba(175,170,162,0.08)] border-[rgba(195,190,182,0.25)] text-[#f0ede8] placeholder:text-[#8a8780] focus:border-[rgba(195,190,182,0.5)]"
                     disabled={isLoading}
                   />
                 </div>
                 {error && (
-                  <div className="p-3 rounded-md bg-red-500/10 border border-red-500/20">
-                    <p className="text-sm text-red-400">{error}</p>
+                  <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                    <p className="text-sm text-red-300">{error}</p>
                   </div>
                 )}
-                <Button type="submit" className="w-full bg-white text-black hover:bg-zinc-200" disabled={isLoading}>
+                <Button type="submit" className="w-full bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[#f0ede8] transition-colors" disabled={isLoading}>
                   {isLoading ? "Signing in..." : "Sign In"}
                 </Button>
               </div>
-              <div className="mt-4 text-center text-sm text-zinc-400">
+              <div className="mt-5 text-center text-sm text-[#8a8780]">
                 Don&apos;t have an account?{" "}
-                <Link href={signUpHref} className="text-white underline underline-offset-4">
+                <Link href={signUpHref} className="text-[#a8a49c] hover:text-[#c8c4bb] transition-colors">
                   Sign up
                 </Link>
               </div>

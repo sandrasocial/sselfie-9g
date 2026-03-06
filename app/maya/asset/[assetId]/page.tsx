@@ -25,15 +25,15 @@ export default async function MayaAssetPage({ params }: MayaAssetPageProps) {
   }
 
   return (
-    <main className="min-h-screen bg-[#0a0a0a] p-4 md:p-8">
-      <div className="mx-auto max-w-6xl rounded-2xl border border-[rgba(255,255,255,0.12)] bg-black/30 p-3 md:p-5">
+    <main className="min-h-screen bg-[#0d0c0b] p-4 md:p-8">
+      <div className="mx-auto max-w-6xl rounded-2xl border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] p-3 md:p-5">
         <div className="mb-3 flex items-center justify-between gap-3">
-          <div className="text-xs uppercase tracking-[0.16em] text-[#d0d0d0]">{asset.title}</div>
+          <div className="text-xs uppercase tracking-[0.16em] text-[#a8a49c]">{asset.title}</div>
           <a
             href={`/api/maya/generated-assets/${encodeURIComponent(asset.id)}/html`}
             target="_blank"
             rel="noreferrer"
-            className="rounded-full border border-[rgba(255,255,255,0.2)] px-3 py-1 text-[11px] uppercase tracking-[0.14em] text-white"
+            className="rounded-full border border-[rgba(195,190,182,0.25)] px-3 py-1 text-[11px] uppercase tracking-[0.14em] text-[#f0ede8]"
           >
             Open Raw HTML
           </a>
@@ -41,7 +41,7 @@ export default async function MayaAssetPage({ params }: MayaAssetPageProps) {
         <iframe
           title={asset.title}
           src={`/api/maya/generated-assets/${encodeURIComponent(asset.id)}/html`}
-          className="h-[84vh] w-full rounded-xl border border-[rgba(255,255,255,0.12)] bg-white"
+          className="h-[84vh] w-full rounded-xl border border-[rgba(195,190,182,0.15)] bg-white"
         />
       </div>
     </main>

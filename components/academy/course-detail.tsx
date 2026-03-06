@@ -138,18 +138,18 @@ export default function CourseDetail({ courseId, onBack }: CourseDetailProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="h-8 w-8 rounded-full border-2 border-white/20 border-t-white/60 animate-spin" />
+        <div className="h-8 w-8 rounded-full border-2 border-[rgba(195,190,182,0.25)] border-t-[#a8a49c] animate-spin" />
       </div>
     )
   }
 
   if (error || !course) {
     return (
-      <div className="bg-[rgba(255,255,255,0.04)] backdrop-blur-xl border border-white/10 rounded-[1.75rem] p-8 text-center">
-        <p className="text-white/60 font-light mb-4">{error || "Course not found"}</p>
+      <div className="bg-[rgba(175,170,162,0.10)] backdrop-blur-[50px] border border-[rgba(195,190,182,0.25)] rounded-2xl p-8 text-center">
+        <p className="text-[#8a8780] font-light mb-4">{error || "Course not found"}</p>
         <button
           onClick={onBack}
-          className="px-6 py-3 bg-[rgba(255,255,255,0.08)] border border-white/10 text-white/80 rounded-xl font-light tracking-[0.15em] uppercase text-sm hover:bg-[rgba(255,255,255,0.12)] transition-all duration-200"
+          className="px-6 py-3 bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.25)] text-[#f0ede8] rounded-full font-['Inter'] font-medium tracking-[0.15em] uppercase text-xs hover:bg-[rgba(175,170,162,0.18)] transition-all duration-200"
         >
           Back to Courses
         </button>
@@ -170,16 +170,16 @@ export default function CourseDetail({ courseId, onBack }: CourseDetailProps) {
       {/* Back Button */}
       <button
         onClick={onBack}
-        className="text-sm font-light tracking-[0.15em] uppercase text-white/60 hover:text-white transition-colors"
+        className="font-['Inter'] text-xs font-medium tracking-[0.5em] uppercase text-[#8a8780] hover:text-[#f0ede8] transition-colors"
       >
         ← Back to Courses
       </button>
 
       {/* Course Header */}
-      <div className="bg-[rgba(255,255,255,0.04)] backdrop-blur-xl border border-white/10 rounded-[1.75rem] overflow-hidden shadow-xl shadow-black/30">
+      <div className="bg-[rgba(175,170,162,0.10)] backdrop-blur-[50px] border border-[rgba(195,190,182,0.25)] rounded-2xl overflow-hidden shadow-xl shadow-black/30">
         {/* Thumbnail */}
         {course.thumbnail_url && (
-          <div className="aspect-video relative overflow-hidden bg-[rgba(255,255,255,0.07)]">
+          <div className="aspect-video relative overflow-hidden bg-[#1c1b19]">
             <img
               src={course.thumbnail_url || "/placeholder.svg"}
               alt={course.title}
@@ -193,23 +193,23 @@ export default function CourseDetail({ courseId, onBack }: CourseDetailProps) {
           {/* Title & Description */}
           <div className="space-y-4">
             <div className="flex items-start justify-between gap-4">
-              <h1 className="text-3xl sm:text-4xl font-serif font-extralight tracking-[0.2em] uppercase text-white leading-tight">
+              <h1 className="font-['Cormorant_Garamond'] font-light text-3xl sm:text-4xl text-[#f0ede8] leading-tight">
                 {course.title}
               </h1>
               {course.is_completed && (
-                <span className="px-4 py-2 bg-[rgba(11,13,16,0.8)] border border-white/15 text-white/80 rounded-full text-xs tracking-[0.15em] uppercase font-light whitespace-nowrap">
+                <span className="px-4 py-2 bg-[rgba(168,164,156,0.20)] border border-[rgba(195,190,182,0.25)] text-[#a8a49c] rounded-full text-xs tracking-[0.5em] uppercase font-['Inter'] font-medium whitespace-nowrap">
                   Completed
                 </span>
               )}
             </div>
 
             {course.description && (
-              <p className="text-base font-light text-white/50 leading-relaxed">{course.description}</p>
+              <p className="text-base text-[#8a8780] leading-relaxed">{course.description}</p>
             )}
           </div>
 
           {/* Meta Info */}
-          <div className="flex flex-wrap items-center gap-6 text-xs tracking-[0.1em] uppercase font-light text-white/40">
+          <div className="flex flex-wrap items-center gap-6 font-['Inter'] text-[10px] tracking-[0.5em] uppercase font-medium text-[#8a8780]">
             {course.instructor_name && <span>By {course.instructor_name}</span>}
             <span>{formatTotalDuration(course.total_duration)}</span>
             <span>{course.lesson_count} Lessons</span>
@@ -218,16 +218,16 @@ export default function CourseDetail({ courseId, onBack }: CourseDetailProps) {
           {/* Progress Bar */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs tracking-[0.15em] uppercase font-light text-white/40">Course Progress</span>
-              <span className="text-sm font-light text-white">{Math.round(progressPercentage)}%</span>
+              <span className="font-['Inter'] text-[10px] tracking-[0.5em] uppercase font-medium text-[#8a8780]">Course Progress</span>
+              <span className="font-['Inter'] text-sm text-[#f0ede8]">{Math.round(progressPercentage)}%</span>
             </div>
-            <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+            <div className="w-full h-2 bg-[rgba(175,170,162,0.12)] rounded-full overflow-hidden">
               <div
-                className="h-full bg-white/70 transition-all duration-500"
+                className="h-full bg-[#a8a49c] transition-all duration-500"
                 style={{ width: `${progressPercentage}%` }}
               />
             </div>
-            <p className="text-xs font-light text-white/40">
+            <p className="font-['Inter'] text-xs text-[#8a8780]">
               {completedLessons} of {lessonCount} lessons completed
             </p>
           </div>
@@ -236,7 +236,7 @@ export default function CourseDetail({ courseId, onBack }: CourseDetailProps) {
           {course.is_completed && course.certificate_url && (
             <button
               onClick={handleDownloadCertificate}
-              className="w-full bg-white/90 text-[#0b0d10] py-4 rounded-[1.25rem] font-light tracking-[0.15em] uppercase text-sm hover:bg-white transition-all duration-200 shadow-xl shadow-black/30"
+              className="w-full bg-[#c8c4bb] text-[#0d0c0b] py-4 rounded-full font-['Inter'] font-medium tracking-[0.15em] uppercase text-xs hover:bg-[#f0ede8] transition-all duration-200"
             >
               Download Certificate
             </button>
@@ -245,8 +245,8 @@ export default function CourseDetail({ courseId, onBack }: CourseDetailProps) {
       </div>
 
       {/* Lesson List */}
-      <div className="bg-[rgba(255,255,255,0.04)] backdrop-blur-xl border border-white/10 rounded-[1.75rem] p-6 sm:p-8 shadow-xl shadow-black/30">
-        <h2 className="text-2xl font-serif font-extralight tracking-[0.2em] uppercase text-white mb-6">
+      <div className="bg-[rgba(175,170,162,0.10)] backdrop-blur-[50px] border border-[rgba(195,190,182,0.25)] rounded-2xl p-6 sm:p-8 shadow-xl shadow-black/30">
+        <h2 className="font-['Cormorant_Garamond'] font-light text-2xl text-[#f0ede8] mb-6">
           Course Content
         </h2>
 
@@ -258,23 +258,23 @@ export default function CourseDetail({ courseId, onBack }: CourseDetailProps) {
               disabled={lesson.is_locked}
               className={`w-full text-left p-4 rounded-xl border transition-all ${
                 lesson.is_locked
-                  ? "border-white/10 bg-[rgba(255,255,255,0.04)] opacity-60 cursor-not-allowed"
-                  : "border-white/10 hover:border-white/20 hover:bg-[rgba(255,255,255,0.07)] cursor-pointer"
+                  ? "border-[rgba(195,190,182,0.10)] bg-[rgba(175,170,162,0.05)] opacity-60 cursor-not-allowed"
+                  : "border-b border-[rgba(195,190,182,0.10)] hover:border-[rgba(195,190,182,0.25)] hover:bg-[rgba(175,170,162,0.10)] cursor-pointer"
               }`}
             >
               <div className="flex items-start gap-4">
                 {/* Status Icon */}
                 <div className="flex-shrink-0 mt-1">
                   {lesson.is_locked ? (
-                    <div className="w-6 h-6 rounded-full bg-[rgba(255,255,255,0.07)] border border-white/10 flex items-center justify-center">
-                      <span className="text-[9px] tracking-[0.08em] uppercase text-white/55">L</span>
+                    <div className="w-6 h-6 rounded-full bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.15)] flex items-center justify-center">
+                      <span className="text-[9px] tracking-[0.08em] uppercase text-[#8a8780]">L</span>
                     </div>
                   ) : lesson.is_completed ? (
-                    <div className="w-6 h-6 rounded-full bg-white/90 text-[#0b0d10] flex items-center justify-center text-[9px] tracking-[0.08em] uppercase">
+                    <div className="w-6 h-6 rounded-full bg-[#a8a49c] text-[#0d0c0b] flex items-center justify-center text-[9px] tracking-[0.08em] uppercase font-['Inter'] font-medium">
                       OK
                     </div>
                   ) : (
-                    <div className="w-6 h-6 rounded-full border border-white/20 bg-white/[0.03]" />
+                    <div className="w-6 h-6 rounded-full border border-[rgba(195,190,182,0.25)] bg-transparent" />
                   )}
                 </div>
 
@@ -283,27 +283,27 @@ export default function CourseDetail({ courseId, onBack }: CourseDetailProps) {
                   <div className="flex items-start justify-between gap-4 mb-2">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-1">
-                        <span className="text-xs tracking-[0.15em] uppercase font-light text-white/40">
+                        <span className="font-['Inter'] text-[10px] tracking-[0.5em] uppercase font-medium text-[#8a8780]">
                           Lesson {index + 1}
                         </span>
                         {lesson.is_completed && (
-                          <span className="px-2 py-0.5 bg-[rgba(11,13,16,0.8)] border border-white/15 text-white/80 rounded-full text-[10px] tracking-[0.15em] uppercase font-light">
+                          <span className="px-2 py-0.5 bg-[rgba(168,164,156,0.20)] border border-[rgba(195,190,182,0.25)] text-[#a8a49c] rounded-full text-[10px] tracking-[0.5em] uppercase font-['Inter'] font-medium">
                             Done
                           </span>
                         )}
                       </div>
-                      <h3 className="text-sm font-medium text-white mb-1">{lesson.title}</h3>
+                      <h3 className="text-sm font-['Inter'] font-medium text-[#f0ede8] mb-1">{lesson.title}</h3>
                       {lesson.description && (
-                        <p className="text-xs font-light text-white/50 line-clamp-2">{lesson.description}</p>
+                        <p className="text-xs text-[#8a8780] line-clamp-2">{lesson.description}</p>
                       )}
                     </div>
-                    <span className="text-xs font-light text-white/40 whitespace-nowrap">
+                    <span className="font-['Inter'] text-xs text-[#8a8780] whitespace-nowrap">
                       {formatDuration(lesson.duration_seconds)}
                     </span>
                   </div>
 
                   {lesson.is_locked && (
-                    <p className="text-xs font-light text-white/40 italic">Complete previous lessons to unlock</p>
+                    <p className="text-xs text-[#8a8780] italic">Complete previous lessons to unlock</p>
                   )}
                 </div>
               </div>

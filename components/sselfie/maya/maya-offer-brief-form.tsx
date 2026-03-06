@@ -71,7 +71,7 @@ const FIELD_PLACEHOLDERS: Record<MayaOfferBriefField, string> = {
 }
 
 const INPUT_CLASS =
-  "w-full rounded-lg border border-[rgba(255,255,255,0.16)] bg-[rgba(10,10,10,0.72)] px-3 py-2 text-sm text-[#ffffff] placeholder:text-[#9a9a9a] focus:border-[rgba(255,255,255,0.32)] focus:outline-none"
+  "w-full rounded-lg border border-[rgba(255,255,255,0.16)] bg-[rgba(13,12,11,0.82)] px-3 py-2 text-sm text-[#f0ede8] placeholder:text-[#9a9a9a] focus:border-[rgba(255,255,255,0.32)] focus:outline-none"
 
 const STYLE_OPTIONS = [
   { label: "Scandinavian", value: "scandinavian minimal" },
@@ -159,7 +159,7 @@ export default function MayaOfferBriefForm({
   return (
     <form onSubmit={handleSubmit} className="mt-3 rounded-xl border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.04)] p-4">
       <div className="flex items-center justify-between gap-3">
-        <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">
+        <div className="text-xs uppercase tracking-[0.2em] text-[#8a8780]">
           {assetType === "calendar" ? "Calendar Brief" : "Page Brief"}
         </div>
         <div className="text-[10px] uppercase tracking-[0.16em] text-[#9a9a9a]">
@@ -186,7 +186,7 @@ export default function MayaOfferBriefForm({
                 onClick={() => updateField("designStyle", option.value)}
                 className={`rounded-md border px-2.5 py-1.5 text-[10px] uppercase tracking-[0.14em] transition-colors ${
                   selected
-                    ? "border-[rgba(255,255,255,0.34)] bg-[rgba(255,255,255,0.12)] text-[#ffffff]"
+                    ? "border-[rgba(255,255,255,0.34)] bg-[rgba(255,255,255,0.12)] text-[#f0ede8]"
                     : "border-[rgba(255,255,255,0.18)] text-[#d7d7d7] hover:bg-[rgba(255,255,255,0.08)]"
                 }`}
               >
@@ -282,7 +282,7 @@ export default function MayaOfferBriefForm({
       <button
         type="submit"
         disabled={submitted || !hasCoreData}
-        className="mt-3 rounded-lg border border-[rgba(255,255,255,0.22)] bg-[rgba(255,255,255,0.08)] px-4 py-2 text-[11px] uppercase tracking-[0.16em] text-[#ffffff] transition-colors hover:bg-[rgba(255,255,255,0.14)] disabled:cursor-not-allowed disabled:opacity-60"
+        className="mt-3 rounded-lg border border-[rgba(255,255,255,0.22)] bg-[rgba(255,255,255,0.08)] px-4 py-2 text-[11px] uppercase tracking-[0.16em] text-[#f0ede8] transition-colors hover:bg-[rgba(255,255,255,0.14)] disabled:cursor-not-allowed disabled:opacity-60"
       >
         {submitted ? "Submitted" : assetType === "calendar" ? "Build Calendar Draft" : "Build Page Draft"}
       </button>

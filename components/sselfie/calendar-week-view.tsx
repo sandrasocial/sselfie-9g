@@ -81,25 +81,24 @@ export function CalendarWeekView({ currentWeek, posts, onRefresh, onWeekChange, 
 
   return (
     <div className="space-y-6">
-      {/* Week Navigation - Scandinavian minimal */}
+      {/* Week Navigation */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-sm font-serif uppercase tracking-[0.2em] text-stone-400 mb-1">WEEK VIEW</h2>
-          <p className="text-2xl font-light text-stone-900">{formatDateRange()}</p>
+          <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780] mb-1">Week View</p>
+          <p className="text-2xl font-['Cormorant_Garamond'] font-light text-[#f0ede8]">{formatDateRange()}</p>
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={goToToday} className="text-xs tracking-wider bg-transparent">
-            TODAY
+          <Button variant="outline" size="sm" onClick={goToToday} className="text-xs tracking-[0.15em] uppercase bg-[rgba(175,170,162,0.10)] border-[rgba(195,190,182,0.25)] text-[#a8a49c] hover:bg-[rgba(175,170,162,0.18)] hover:text-[#f0ede8] rounded-full">
+            Today
           </Button>
-          <Button variant="ghost" size="icon" onClick={goToPreviousWeek} className="h-8 w-8">
+          <Button variant="ghost" size="icon" onClick={goToPreviousWeek} className="h-8 w-8 text-[#a8a49c] hover:text-[#f0ede8] hover:bg-[rgba(175,170,162,0.10)]">
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={goToNextWeek} className="h-8 w-8">
+          <Button variant="ghost" size="icon" onClick={goToNextWeek} className="h-8 w-8 text-[#a8a49c] hover:text-[#f0ede8] hover:bg-[rgba(175,170,162,0.10)]">
             <ChevronRight className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" onClick={onRefresh} className="h-8 w-8">
-            {/* Assuming a refresh icon is used here */}
+          <Button variant="ghost" size="icon" onClick={onRefresh} className="h-8 w-8 text-[#a8a49c] hover:text-[#f0ede8] hover:bg-[rgba(175,170,162,0.10)]">
             <svg
               className="h-4 w-4"
               fill="none"
@@ -118,7 +117,7 @@ export function CalendarWeekView({ currentWeek, posts, onRefresh, onWeekChange, 
         </div>
       </div>
 
-      {/* Calendar Grid - Scandinavian aesthetic */}
+      {/* Calendar Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-4">
         {weekDates.map((date, index) => {
           const datePosts = getPostsForDate(date)
@@ -127,27 +126,27 @@ export function CalendarWeekView({ currentWeek, posts, onRefresh, onWeekChange, 
             <div
               key={index}
               className={`
-                bg-white rounded-xl border transition-all
-                ${isToday(date) ? "border-stone-950 shadow-sm" : "border-stone-100 hover:border-stone-200"}
+                bg-[rgba(175,170,162,0.04)] rounded-xl border transition-all
+                ${isToday(date) ? "border-[#a8a49c]" : "border-[rgba(195,190,182,0.10)] hover:border-[rgba(195,190,182,0.20)]"}
               `}
             >
               {/* Day Header */}
-              <div className="p-4 border-b border-stone-100">
-                <div className="text-xs font-serif uppercase tracking-[0.15em] text-stone-400 mb-1">
+              <div className="p-4 border-b border-[rgba(195,190,182,0.10)]">
+                <div className="font-['Inter'] text-[10px] uppercase tracking-[0.3em] text-[#8a8780] font-medium mb-1">
                   {weekDays[index]}
                 </div>
-                <div className={`text-3xl font-light ${isToday(date) ? "text-stone-950" : "text-stone-300"}`}>
+                <div className={`text-3xl font-light ${isToday(date) ? "text-[#f0ede8]" : "text-[#8a8780]"}`}>
                   {date.getDate()}
                 </div>
               </div>
 
               <div className="p-4 min-h-[200px] space-y-2">
                 {datePosts.length === 0 ? (
-                  <div className="flex items-center justify-center h-full text-xs text-stone-400">No posts</div>
+                  <div className="flex items-center justify-center h-full text-xs text-[#8a8780]">No posts</div>
                 ) : (
                   datePosts.map((post: any) => (
                     <div key={post.id} className="relative group">
-                      <div className="aspect-square rounded-lg overflow-hidden border border-stone-200">
+                      <div className="aspect-square rounded-lg overflow-hidden bg-[rgba(175,170,162,0.12)] border border-[rgba(195,190,182,0.15)]">
                         <img
                           src={post.image_url || "/placeholder.svg?height=200&width=200"}
                           alt={post.caption || "Post"}
@@ -155,7 +154,7 @@ export function CalendarWeekView({ currentWeek, posts, onRefresh, onWeekChange, 
                         />
                       </div>
                       <div className="mt-1 flex items-center justify-between">
-                        <span className="text-xs text-stone-600">{post.scheduled_time}</span>
+                        <span className="text-xs text-[#8a8780]">{post.scheduled_time}</span>
                         {post.content_pillar && (
                           <div className="scale-75 origin-right">
                             <ContentPillarTag pillar={post.content_pillar} />

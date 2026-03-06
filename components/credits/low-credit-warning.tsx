@@ -26,31 +26,27 @@ export function LowCreditWarning({ credits, onBuyCredits }: LowCreditWarningProp
   const cannotTrain = credits < 20
 
   return (
-    <div
-      className={`fixed bottom-4 right-4 z-40 max-w-md p-6 rounded-lg shadow-lg ${
-        isVeryLow ? "bg-red-50 border-2 border-red-200" : "bg-yellow-50 border-2 border-yellow-200"
-      }`}
-    >
+    <div className="fixed bottom-4 right-4 z-40 max-w-md p-6 bg-[rgba(28,27,25,0.97)] backdrop-blur-[70px] border border-[rgba(195,190,182,0.25)] rounded-2xl shadow-2xl shadow-black/40">
       <div className="flex items-start justify-between mb-4">
-        <h3 className="font-serif text-xl font-extralight tracking-[0.2em] uppercase text-stone-900">
+        <h3 className="font-['Cormorant_Garamond'] font-light text-xl tracking-[0.2em] uppercase text-[#f0ede8]">
           {isVeryLow ? "CREDITS LOW" : "RUNNING LOW"}
         </h3>
         <button
           onClick={() => setDismissed(true)}
-          className="text-stone-500 hover:text-stone-900 text-sm font-light tracking-wider uppercase"
+          className="font-['Inter'] text-[#8a8780] hover:text-[#f0ede8] text-xs font-medium tracking-[0.3em] uppercase transition-colors"
         >
           DISMISS
         </button>
       </div>
 
-      <p className="text-sm text-stone-700 font-light mb-4">
+      <p className="font-['Inter'] text-sm text-[#8a8780] mb-4">
         {isVeryLow ? (
           <>
-            You have <strong>{credits} credits</strong> remaining. You need at least 20 credits to train a model.
+            You have <strong className="text-[#f0ede8] font-medium">{credits} credits</strong> remaining. You need at least 20 credits to train a model.
           </>
         ) : cannotTrain ? (
           <>
-            You have <strong>{credits} credits</strong> remaining. You need 20 credits to train a model, but you can
+            You have <strong className="text-[#f0ede8] font-medium">{credits} credits</strong> remaining. You need 20 credits to train a model, but you can
             still generate images.
           </>
         ) : null}
@@ -58,7 +54,7 @@ export function LowCreditWarning({ credits, onBuyCredits }: LowCreditWarningProp
 
       <button
         onClick={onBuyCredits}
-        className="w-full bg-stone-900 text-stone-50 px-6 py-3 rounded-lg text-sm font-medium uppercase tracking-wider hover:bg-stone-800 transition-all"
+        className="w-full bg-[#c8c4bb] text-[#0d0c0b] px-6 py-3 rounded-full font-['Inter'] text-xs font-medium uppercase tracking-[0.15em] hover:bg-[#f0ede8] transition-all"
       >
         BUY MORE CREDITS
       </button>

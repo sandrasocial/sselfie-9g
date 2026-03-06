@@ -3351,12 +3351,12 @@ export default function MayaChatScreen({
       onDrop={handleDrop}
     >
       {isDragging && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-200">
-          <div className="bg-[rgba(10,10,10,0.94)] backdrop-blur-[20px] border border-white/15 rounded-3xl p-12 text-center max-w-md mx-4">
-            <h3 className="text-xl font-serif font-extralight tracking-[0.2em] uppercase text-white mb-2">
+        <div className="fixed inset-0 z-50 bg-[rgba(13,12,11,0.80)] backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-200">
+          <div className="bg-[rgba(28,27,25,0.96)] backdrop-blur-[50px] border border-[rgba(195,190,182,0.20)] rounded-3xl p-12 text-center max-w-md mx-4">
+            <h3 className="text-xl font-serif font-extralight tracking-[0.2em] uppercase text-[#f0ede8] mb-2">
               Drop Image Here
             </h3>
-            <p className="text-sm text-white/65 tracking-wide">Upload a reference image for Maya to work with</p>
+            <p className="text-sm text-[#8a8780] tracking-wide">Upload a reference image for Maya to work with</p>
           </div>
         </div>
       )}
@@ -3366,7 +3366,7 @@ export default function MayaChatScreen({
       {/* Using z-[100] to ensure it's above all other content */}
       <div
         ref={headerRef}
-        className="fixed top-0 left-0 right-0 z-[100] border-b border-[rgba(255,255,255,0.08)] bg-[rgba(10,10,10,0.72)] backdrop-blur-[18px]"
+        className="fixed top-0 left-0 right-0 z-[100] border-b border-[rgba(195,190,182,0.15)] bg-[rgba(175,170,162,0.08)] backdrop-blur-[50px]"
         style={{
           paddingTop: 'max(0.625rem, env(safe-area-inset-top, 0px))',
         }}
@@ -3438,12 +3438,12 @@ export default function MayaChatScreen({
               Creates urgency and clarity: "you have X free photos, go use them." */}
           {!isMembership && creditBalance > 0 && (!messages || messages.length === 0) && (
             <div className="mx-3 sm:mx-4 mb-1">
-              <div className="border border-white/12 bg-[rgba(10,10,10,0.8)] rounded-xl p-4 flex items-center gap-3">
+              <div className="border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] backdrop-blur-[20px] rounded-xl p-4 flex items-center gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold text-white mb-0.5">
+                  <p className="text-xs font-semibold text-[#f0ede8] mb-0.5">
                     You have {creditBalance} credit{creditBalance !== 1 ? "s" : ""} ready
                   </p>
-                  <p className="text-xs text-white/60 leading-relaxed">Upload a selfie → Maya creates your first brand photo in 2 minutes.</p>
+                  <p className="text-xs text-[#8a8780] leading-relaxed">Upload a selfie → Maya creates your first brand photo in 2 minutes.</p>
                 </div>
               </div>
             </div>
@@ -3453,22 +3453,22 @@ export default function MayaChatScreen({
               has exhausted their credits on the Photos tab. */}
           {!isMembership && creditBalance === 0 && (
             <div className="mx-3 sm:mx-4 mb-1">
-              <div className="border border-white/12 bg-[rgba(10,10,10,0.82)] rounded-xl p-4 flex items-start gap-3">
+              <div className="border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] backdrop-blur-[20px] rounded-xl p-4 flex items-start gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-white mb-0.5">You&apos;ve used your free photos</p>
-                  <p className="text-xs text-stone-300 leading-relaxed">
+                  <p className="text-xs font-medium text-[#f0ede8] mb-0.5">You&apos;ve used your free photos</p>
+                  <p className="text-xs text-[#8a8780] leading-relaxed">
                     Upgrade to Studio — 200 credits/month. Or grab a one-time credit pack.
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <button
                       onClick={() => startEmbeddedCheckout("sselfie_studio_membership")}
-                      className="shrink-0 text-xs font-medium text-stone-900 bg-white rounded-lg px-3 py-1.5 hover:bg-stone-100 transition-colors whitespace-nowrap"
+                      className="shrink-0 text-xs font-medium text-[#0d0c0b] bg-[#c8c4bb] rounded-lg px-3 py-1.5 hover:bg-[#f0ede8] transition-colors whitespace-nowrap"
                     >
                       Upgrade to Studio →
                     </button>
                     <button
                       onClick={() => setShowBuyCreditsModal(true)}
-                      className="shrink-0 text-xs font-medium text-stone-300 bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 hover:bg-white/20 transition-colors whitespace-nowrap"
+                      className="shrink-0 text-xs font-medium text-[#8a8780] bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.20)] rounded-lg px-3 py-1.5 hover:bg-[rgba(175,170,162,0.18)] transition-colors whitespace-nowrap"
                     >
                       Buy credits
                     </button>
@@ -3482,14 +3482,14 @@ export default function MayaChatScreen({
               Does NOT block the interface — Pro mode is always available without training. */}
           {!hasTrainedModel && (
             <div className="mx-3 sm:mx-4 mb-1">
-              <div className="border border-white/12 bg-[rgba(10,10,10,0.7)] rounded-xl p-4 flex items-start gap-3">
+              <div className="border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] backdrop-blur-[20px] rounded-xl p-4 flex items-start gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-white mb-0.5">Train your personal AI</p>
-                  <p className="text-xs text-white/60 leading-relaxed">Get photos that always look exactly like you — no selfie upload needed each time.</p>
+                  <p className="text-xs font-medium text-[#f0ede8] mb-0.5">Train your personal AI</p>
+                  <p className="text-xs text-[#8a8780] leading-relaxed">Get photos that always look exactly like you — no selfie upload needed each time.</p>
                 </div>
                 <button
                   onClick={() => setMayaTabAndHash("training")}
-                  className="shrink-0 text-xs font-medium text-white bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 hover:bg-white/20 transition-colors whitespace-nowrap"
+                  className="shrink-0 text-xs font-medium text-[#8a8780] bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.20)] rounded-lg px-3 py-1.5 hover:bg-[rgba(175,170,162,0.18)] transition-colors whitespace-nowrap"
                 >
                   Train →
                 </button>
@@ -3505,20 +3505,20 @@ export default function MayaChatScreen({
 
       {/* Gallery Selector Modal */}
       {showGallerySelector && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col">
-            <div className="p-4 border-b border-stone-200 flex items-center justify-between">
+        <div className="fixed inset-0 z-50 bg-[rgba(13,12,11,0.80)] backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-[rgba(28,27,25,0.96)] backdrop-blur-[50px] border border-[rgba(195,190,182,0.20)] rounded-2xl max-w-4xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="p-4 border-b border-[rgba(195,190,182,0.15)] flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-medium">Select Base Images from Gallery</h3>
-                <p className="text-xs text-stone-600 mt-1">
+                <h3 className="text-lg font-medium text-[#f0ede8]">Select Base Images from Gallery</h3>
+                <p className="text-xs text-[#8a8780] mt-1">
                   {uploadedImages.length} / 14 images selected • Click images to add
                 </p>
               </div>
               <button
                 onClick={() => setShowGallerySelector(false)}
-                className="px-2 py-1.5 hover:bg-stone-100 rounded-lg transition-colors"
+                className="px-2 py-1.5 hover:bg-[rgba(175,170,162,0.12)] rounded-lg transition-colors"
               >
-                <span className="text-[10px] uppercase tracking-[0.2em] text-stone-600">Close</span>
+                <span className="text-[10px] uppercase tracking-[0.2em] text-[#8a8780]">Close</span>
               </button>
             </div>
             
@@ -3558,15 +3558,15 @@ export default function MayaChatScreen({
                       }
                     }}
                     disabled={uploadedImages.length >= 14 || uploadedImages.some(img => img.url === image.image_url)}
-                    className="relative aspect-square rounded-lg overflow-hidden border-2 border-transparent hover:border-stone-900 transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="relative aspect-square rounded-lg overflow-hidden border-2 border-transparent hover:border-[rgba(195,190,182,0.50)] transition-all group disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <img 
-                      src={image.image_url} 
+                    <img
+                      src={image.image_url}
                       alt="Gallery image"
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center p-2">
-                      <span className="text-white text-xs font-medium">Select</span>
+                      <span className="text-[#f0ede8] text-xs font-medium">Select</span>
                     </div>
                   </button>
                 ))}
@@ -3574,9 +3574,9 @@ export default function MayaChatScreen({
               
               {galleryImages.length === 0 && (
                 <div className="text-center py-12">
-                  <div className="mx-auto mb-3 text-[10px] uppercase tracking-[0.25em] text-stone-400">No Images</div>
-                  <p className="text-sm text-stone-600">No images in gallery yet</p>
-                  <p className="text-xs text-stone-400 mt-1">Generate some photos with Maya first!</p>
+                  <div className="mx-auto mb-3 text-[10px] uppercase tracking-[0.25em] text-[#8a8780]">No Images</div>
+                  <p className="text-sm text-[#8a8780]">No images in gallery yet</p>
+                  <p className="text-xs text-[#8a8780] mt-1">Generate some photos with Maya first!</p>
                 </div>
               )}
             </div>
@@ -3628,25 +3628,25 @@ export default function MayaChatScreen({
           >
       {!isLoadingAcademyJourneyState && academyJourneyPrompt && (
         <div className="px-4 sm:px-6 py-3">
-          <div className="rounded-2xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
+          <div className="rounded-2xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] backdrop-blur-[20px] p-4">
             {academyJourneyPrompt === "first_gen" ? (
               <>
-                <p className="text-sm text-[#e5e5e5]">
+                <p className="text-sm text-[#f0ede8]">
                   Want to see exactly how to use this image for your Instagram?
                 </p>
-                <p className="text-sm text-[#e5e5e5] mt-1">
+                <p className="text-sm text-[#f0ede8] mt-1">
                   I have a quick 2-minute tutorial. Type SHOW ME to see it.
                 </p>
               </>
             ) : (
               <>
-                <p className="text-sm text-[#e5e5e5]">
+                <p className="text-sm text-[#f0ede8]">
                   You&apos;ve created some beautiful images.
                 </p>
-                <p className="text-sm text-[#e5e5e5] mt-1">
+                <p className="text-sm text-[#f0ede8] mt-1">
                   Want me to show you how to turn these into a full month of content?
                 </p>
-                <p className="text-sm text-[#e5e5e5] mt-1">
+                <p className="text-sm text-[#f0ede8] mt-1">
                   I have a system that takes 20 minutes.
                 </p>
               </>
@@ -3655,14 +3655,14 @@ export default function MayaChatScreen({
               <button
                 type="button"
                 onClick={handleOpenAcademyFromMaya}
-                className="px-3 py-2 text-xs tracking-wide uppercase rounded-lg bg-[rgba(255,255,255,0.08)] text-[#ffffff] border border-[rgba(255,255,255,0.12)]"
+                className="px-3 py-2 text-xs tracking-wide uppercase rounded-lg bg-[rgba(175,170,162,0.18)] text-[#f0ede8] border border-[rgba(195,190,182,0.25)]"
               >
                 Show Me
               </button>
               <button
                 type="button"
                 onClick={() => setAcademyJourneyPrompt(null)}
-                className="px-3 py-2 text-xs tracking-wide uppercase rounded-lg border border-[rgba(255,255,255,0.12)] text-[#e5e5e5]"
+                className="px-3 py-2 text-xs tracking-wide uppercase rounded-lg border border-[rgba(195,190,182,0.20)] text-[#8a8780]"
               >
                 Not now
               </button>
@@ -3673,20 +3673,20 @@ export default function MayaChatScreen({
 
       {showWhatToSayUpsellCard && (
         <div className="px-4 sm:px-6 py-3">
-          <div className="rounded-2xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
+          <div className="rounded-2xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] backdrop-blur-[20px] p-4">
             <p
-              className="text-[11px] tracking-[0.18em] uppercase text-[#ffffff]"
+              className="text-[11px] tracking-[0.18em] uppercase text-[#f0ede8]"
               style={{ fontFamily: "var(--font-display)" }}
             >
               Want This With Captions?
             </p>
-            <p className="text-sm text-[#e5e5e5] mt-2">
+            <p className="text-sm text-[#8a8780] mt-2">
               What To Say includes 30 caption templates matched to your brand pillars.
             </p>
             <button
               type="button"
               onClick={() => startEmbeddedCheckout("sselfie_studio_membership")}
-              className="mt-3 text-[11px] uppercase tracking-[0.16em] text-[#ffffff] hover:text-[#f5f5f5] transition-colors"
+              className="mt-3 text-[11px] uppercase tracking-[0.16em] text-[#f0ede8] hover:text-[#c8c4bb] transition-colors"
             >
               Upgrade to Studio — includes everything →
             </button>
@@ -3696,20 +3696,20 @@ export default function MayaChatScreen({
 
       {showShowUpUpsellCard && (
         <div className="px-4 sm:px-6 py-3">
-          <div className="rounded-2xl border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.04)] p-4">
+          <div className="rounded-2xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] backdrop-blur-[20px] p-4">
             <p
-              className="text-[11px] tracking-[0.18em] uppercase text-[#ffffff]"
+              className="text-[11px] tracking-[0.18em] uppercase text-[#f0ede8]"
               style={{ fontFamily: "var(--font-display)" }}
             >
               Want a 7-day posting plan?
             </p>
-            <p className="text-sm text-[#e5e5e5] mt-2">
+            <p className="text-sm text-[#8a8780] mt-2">
               Show Up builds your consistency schedule around your content.
             </p>
             <button
               type="button"
               onClick={() => startEmbeddedCheckout("sselfie_studio_membership")}
-              className="mt-3 text-[11px] uppercase tracking-[0.16em] text-[#ffffff] hover:text-[#f5f5f5] transition-colors"
+              className="mt-3 text-[11px] uppercase tracking-[0.16em] text-[#f0ede8] hover:text-[#c8c4bb] transition-colors"
             >
               Upgrade to Studio — includes everything →
             </button>
@@ -3822,7 +3822,7 @@ export default function MayaChatScreen({
                 {/* Show ImageUploadFlow if library is empty, otherwise show welcome */}
                 {libraryTotalImages === 0 ? (
                   <div className="flex flex-col items-center justify-center text-center space-y-6 py-8">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-stone-200/60 overflow-hidden">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-[rgba(195,190,182,0.40)] overflow-hidden">
                       <img
                         src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
                         alt="Maya"
@@ -3830,19 +3830,19 @@ export default function MayaChatScreen({
                       />
                     </div>
                     <div className="space-y-3">
-                      <h2 className="text-xl sm:text-2xl font-serif font-extralight tracking-[0.3em] text-white uppercase">
+                      <h2 className="text-xl sm:text-2xl font-serif font-extralight tracking-[0.3em] text-[#f0ede8] uppercase">
                         Welcome
                       </h2>
-                      <p className="text-xs sm:text-sm text-white/70 tracking-wide max-w-md leading-relaxed px-4">
+                      <p className="text-xs sm:text-sm text-[#8a8780] tracking-wide max-w-md leading-relaxed px-4">
                         Hi, I&apos;m Maya. SELFIE mode uses your linked reference photos instead of your trained model. Perfect for product shots, lifestyle content, and trying new looks.
                       </p>
                     </div>
-                    <div className="w-full max-w-sm rounded-2xl border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.05)] p-4 text-left">
-                      <p className="text-[11px] uppercase tracking-[0.2em] text-white/75 mb-2">
+                    <div className="w-full max-w-sm rounded-2xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4 text-left">
+                      <p className="text-[11px] uppercase tracking-[0.2em] text-[#8a8780] mb-2">
                         Quick Start
                       </p>
-                      <p className="text-xs text-white/70 leading-relaxed">
-                        Use <span className="text-white font-medium">Add Image</span> in the chat input to link 1-3 reference photos.
+                      <p className="text-xs text-[#8a8780] leading-relaxed">
+                        Use <span className="text-[#f0ede8] font-medium">Add Image</span> in the chat input to link 1-3 reference photos.
                       </p>
                     </div>
                   </div>
@@ -3850,7 +3850,7 @@ export default function MayaChatScreen({
                   // Welcome message when library has images - matches Classic styling
                   <div className="flex flex-col items-center justify-center text-center space-y-6">
                     {/* Maya's Avatar - same styling as Classic */}
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-stone-200/60 overflow-hidden">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-[rgba(195,190,182,0.40)] overflow-hidden">
                       <img
                         src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
                         alt="Maya"
@@ -3858,10 +3858,10 @@ export default function MayaChatScreen({
                       />
                     </div>
                         <div className="space-y-3">
-                      <h2 className="text-xl sm:text-2xl font-serif font-extralight tracking-[0.3em] text-white uppercase">
+                      <h2 className="text-xl sm:text-2xl font-serif font-extralight tracking-[0.3em] text-[#f0ede8] uppercase">
                         Welcome
                       </h2>
-                      <p className="text-xs sm:text-sm text-white/70 tracking-wide max-w-md leading-relaxed px-4">
+                      <p className="text-xs sm:text-sm text-[#8a8780] tracking-wide max-w-md leading-relaxed px-4">
                         Hi, I&apos;m Maya. Your reference photos are linked. Choose a quick prompt below to start creating.
                       </p>
                         </div>
@@ -3892,17 +3892,17 @@ export default function MayaChatScreen({
                   paddingBottom: photoTabBottomSpacing,
                 }}
               >
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-stone-200/60 overflow-hidden mb-4 sm:mb-6">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-[rgba(195,190,182,0.40)] overflow-hidden mb-4 sm:mb-6">
                 <img
                   src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
                   alt="Maya"
                   className="w-full h-full object-cover"
                 />
               </div>
-              <h2 className="text-xl sm:text-2xl font-serif font-extralight tracking-[0.3em] text-white uppercase mb-2 sm:mb-3 text-center">
+              <h2 className="text-xl sm:text-2xl font-serif font-extralight tracking-[0.3em] text-[#f0ede8] uppercase mb-2 sm:mb-3 text-center">
                 Welcome
               </h2>
-              <p className="text-xs sm:text-sm text-white/70 tracking-wide text-center mb-4 sm:mb-6 max-w-md leading-relaxed px-4">
+              <p className="text-xs sm:text-sm text-[#8a8780] tracking-wide text-center mb-4 sm:mb-6 max-w-md leading-relaxed px-4">
                 Hi, I&apos;m Maya. I&apos;ll help you create beautiful photos and videos.
               </p>
               <MayaQuickPrompts
@@ -3924,7 +3924,7 @@ export default function MayaChatScreen({
       {(activeMayaTab === "photos" || activeMayaTab === "feed") && (
         <div
           ref={inputBarRef}
-          className="fixed left-0 right-0 bg-[rgba(12,12,12,0.55)] backdrop-blur-[22px] border-t border-[rgba(255,255,255,0.12)] px-3 sm:px-4 py-2 sm:py-2.5 z-[90] flex flex-col"
+          className="fixed left-0 right-0 bg-[rgba(175,170,162,0.06)] backdrop-blur-[30px] border-t border-[rgba(195,190,182,0.15)] px-3 sm:px-4 py-2 sm:py-2.5 z-[90] flex flex-col"
           style={{
             // Dock above bottom nav; avoid blocking the chat area while scrolling.
             bottom: "calc(var(--sselfie-bottom-nav-height, 96px) + 4px)",
@@ -3952,7 +3952,7 @@ export default function MayaChatScreen({
               <div className="mb-2 mt-1">
                 <button
                   onClick={() => setShowCollapsedPrompts(true)}
-                  className="px-3 py-1.5 text-[11px] uppercase tracking-wide border border-[rgba(255,255,255,0.12)] rounded-full bg-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.1)] text-[#e5e5e5]"
+                  className="px-3 py-1.5 text-[11px] uppercase tracking-wide border border-[rgba(195,190,182,0.20)] rounded-full bg-[rgba(175,170,162,0.08)] hover:bg-[rgba(175,170,162,0.15)] text-[#8a8780]"
                 >
                   Prompts
                 </button>
@@ -4188,29 +4188,29 @@ export default function MayaChatScreen({
 
         {/* Pro Mode Onboarding Modal - Rendered via Portal to avoid stacking context issues */}
         {showStudioProOnboarding && typeof window !== 'undefined' && createPortal(
-          <div 
-            className="fixed inset-0 bg-black/50 flex items-start sm:items-center justify-center p-4 overflow-y-auto" 
+          <div
+            className="fixed inset-0 bg-[rgba(13,12,11,0.80)] flex items-start sm:items-center justify-center p-4 overflow-y-auto"
             onClick={() => setShowStudioProOnboarding(false)}
             style={{ zIndex: 9999 }}
           >
             <div
-              className="bg-[rgba(10,10,10,0.96)] border border-white/12 rounded-2xl p-6 sm:p-8 max-w-md w-full my-4 sm:my-8 shadow-xl relative flex flex-col max-h-[calc(100vh-2rem)] text-white"
+              className="bg-[rgba(28,27,25,0.96)] backdrop-blur-[50px] border border-[rgba(195,190,182,0.20)] rounded-2xl p-6 sm:p-8 max-w-md w-full my-4 sm:my-8 shadow-xl relative flex flex-col max-h-[calc(100vh-2rem)] text-[#f0ede8]"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Close button */}
               <button
                 onClick={() => setShowStudioProOnboarding(false)}
-                className="absolute top-4 right-4 px-2 py-1.5 text-white/60 hover:text-white transition-colors rounded-full hover:bg-white/10 z-10"
+                className="absolute top-4 right-4 px-2 py-1.5 text-[#8a8780] hover:text-[#f0ede8] transition-colors rounded-full hover:bg-[rgba(175,170,162,0.12)] z-10"
                 aria-label="Close"
               >
                 <span className="text-[10px] uppercase tracking-[0.2em]">Close</span>
               </button>
-              
+
               {/* Header */}
-              <h2 className="text-xl font-serif font-light tracking-[0.15em] uppercase text-white mb-2 pr-8">
+              <h2 className="text-xl font-serif font-light tracking-[0.15em] uppercase text-[#f0ede8] mb-2 pr-8">
                 SELFIE
               </h2>
-              <p className="text-sm text-white/65 mb-6 leading-relaxed">
+              <p className="text-sm text-[#8a8780] mb-6 leading-relaxed">
                 Professional content creation guided by Maya
               </p>
               
@@ -4220,14 +4220,14 @@ export default function MayaChatScreen({
                 {/* Step 1 */}
                 <div className="space-y-2">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-stone-900 flex items-center justify-center shrink-0">
-                      <span className="text-white text-sm font-serif">1</span>
+                    <div className="w-8 h-8 rounded-full bg-[rgba(175,170,162,0.18)] border border-[rgba(195,190,182,0.25)] flex items-center justify-center shrink-0">
+                      <span className="text-[#f0ede8] text-sm font-serif">1</span>
                     </div>
-                    <h3 className="text-sm font-medium text-stone-900 tracking-wide">
+                    <h3 className="text-sm font-medium text-[#f0ede8] tracking-wide">
                       Tell Maya What You Want
                     </h3>
                   </div>
-                  <p className="text-xs text-stone-600 leading-relaxed ml-11">
+                  <p className="text-xs text-[#8a8780] leading-relaxed ml-11">
                     Describe the content you want to create. Examples: &quot;Alo Yoga style workout photos&quot;, &quot;Professional LinkedIn headshot&quot;, or &quot;Coffee shop entrepreneur vibes&quot;
                   </p>
                 </div>
@@ -4235,14 +4235,14 @@ export default function MayaChatScreen({
                 {/* Step 2 */}
                 <div className="space-y-2">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-stone-900 flex items-center justify-center shrink-0">
-                      <span className="text-white text-sm font-serif">2</span>
+                    <div className="w-8 h-8 rounded-full bg-[rgba(175,170,162,0.18)] border border-[rgba(195,190,182,0.25)] flex items-center justify-center shrink-0">
+                      <span className="text-[#f0ede8] text-sm font-serif">2</span>
                     </div>
-                    <h3 className="text-sm font-medium text-stone-900 tracking-wide">
+                    <h3 className="text-sm font-medium text-[#f0ede8] tracking-wide">
                       Choose Your Concept
                     </h3>
                   </div>
-                  <p className="text-xs text-stone-600 leading-relaxed ml-11">
+                  <p className="text-xs text-[#8a8780] leading-relaxed ml-11">
                     Maya creates 3 professional concepts for you. Each concept includes a detailed prompt you can use as-is or customize.
                   </p>
                 </div>
@@ -4250,14 +4250,14 @@ export default function MayaChatScreen({
                 {/* Step 3 */}
                 <div className="space-y-2">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-stone-900 flex items-center justify-center shrink-0">
-                      <span className="text-white text-sm font-serif">3</span>
+                    <div className="w-8 h-8 rounded-full bg-[rgba(175,170,162,0.18)] border border-[rgba(195,190,182,0.25)] flex items-center justify-center shrink-0">
+                      <span className="text-[#f0ede8] text-sm font-serif">3</span>
                     </div>
-                    <h3 className="text-sm font-medium text-stone-900 tracking-wide">
+                    <h3 className="text-sm font-medium text-[#f0ede8] tracking-wide">
                       Add Your Images
                     </h3>
                   </div>
-                  <p className="text-xs text-stone-600 leading-relaxed ml-11">
+                  <p className="text-xs text-[#8a8780] leading-relaxed ml-11">
                     Select at least one image from your gallery or upload new photos. You can add up to 4 reference images per concept.
                   </p>
                 </div>
@@ -4265,33 +4265,33 @@ export default function MayaChatScreen({
                 {/* Step 4 */}
                 <div className="space-y-2">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-stone-900 flex items-center justify-center shrink-0">
-                      <span className="text-white text-sm font-serif">4</span>
+                    <div className="w-8 h-8 rounded-full bg-[rgba(175,170,162,0.18)] border border-[rgba(195,190,182,0.25)] flex items-center justify-center shrink-0">
+                      <span className="text-[#f0ede8] text-sm font-serif">4</span>
                     </div>
-                    <h3 className="text-sm font-medium text-stone-900 tracking-wide">
+                    <h3 className="text-sm font-medium text-[#f0ede8] tracking-wide">
                       Generate
                     </h3>
                   </div>
-                  <p className="text-xs text-stone-600 leading-relaxed ml-11">
+                  <p className="text-xs text-[#8a8780] leading-relaxed ml-11">
                     Click the generate button to create your professional content. Each generation costs 5 credits and takes about 30 seconds.
                   </p>
                 </div>
                 
                 {/* SELFIE Tips */}
-                <div className="border-t border-stone-200 pt-4 mt-6">
-                  <h3 className="text-xs tracking-[0.15em] uppercase text-stone-900 font-medium mb-3">
+                <div className="border-t border-[rgba(195,190,182,0.20)] pt-4 mt-6">
+                  <h3 className="text-xs tracking-[0.15em] uppercase text-[#f0ede8] font-medium mb-3">
                     SELFIE Tips
                   </h3>
                   <ul className="space-y-2">
                     <li className="flex items-start gap-2">
-                      <span className="text-xs text-stone-900 mt-0.5">—</span>
-                      <p className="text-xs text-stone-600 leading-relaxed flex-1">
+                      <span className="text-xs text-[#8a8780] mt-0.5">—</span>
+                      <p className="text-xs text-[#8a8780] leading-relaxed flex-1">
                         Click the three-dot menu on any concept to view or edit the detailed prompt
                       </p>
                     </li>
                     <li className="flex items-start gap-2">
-                      <span className="text-xs text-stone-900 mt-0.5">—</span>
-                      <p className="text-xs text-stone-600 leading-relaxed flex-1">
+                      <span className="text-xs text-[#8a8780] mt-0.5">—</span>
+                      <p className="text-xs text-[#8a8780] leading-relaxed flex-1">
                         Your first image should be your main photo. Additional images can be style references
                       </p>
                     </li>
@@ -4301,10 +4301,10 @@ export default function MayaChatScreen({
               </div>
               
               {/* Footer Button */}
-              <div className="pt-4 border-t border-stone-200">
+              <div className="pt-4 border-t border-[rgba(195,190,182,0.20)]">
                 <button
                   onClick={() => setShowStudioProOnboarding(false)}
-                  className="w-full py-3 bg-stone-900 text-white rounded-lg hover:bg-stone-800 transition-colors text-sm font-medium tracking-wide uppercase"
+                  className="w-full py-3 bg-[#c8c4bb] text-[#0d0c0b] rounded-lg hover:bg-[#f0ede8] transition-colors text-sm font-medium tracking-wide uppercase"
                 >
                   Got It
                 </button>
@@ -4396,15 +4396,15 @@ export default function MayaChatScreen({
       {/* Pro Feature: Image Upload Flow Modal (Pro Mode only - for library management) */}
       {/* Modal must be above header (z-[100]) and bottom nav (z-[70]) */}
       {hasProFeatures && showUploadFlow && (
-        <div className="fixed inset-0 z-150 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4" style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
-          <div className="bg-[rgba(10,10,10,0.96)] border border-white/12 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-            <div className="p-4 border-b border-white/12 flex items-center justify-between">
-              <h3 className="text-lg font-medium text-white">Add Images to Library</h3>
+        <div className="fixed inset-0 z-150 bg-[rgba(13,12,11,0.80)] backdrop-blur-sm flex items-center justify-center p-4" style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
+          <div className="bg-[rgba(28,27,25,0.96)] backdrop-blur-[50px] border border-[rgba(195,190,182,0.20)] rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="p-4 border-b border-[rgba(195,190,182,0.15)] flex items-center justify-between">
+              <h3 className="text-lg font-medium text-[#f0ede8]">Add Images to Library</h3>
               <button
                 onClick={() => setShowUploadFlow(false)}
-                className="px-2 py-1.5 hover:bg-white/10 rounded-lg transition-colors"
+                className="px-2 py-1.5 hover:bg-[rgba(175,170,162,0.12)] rounded-lg transition-colors"
               >
-                <span className="text-[10px] uppercase tracking-[0.2em] text-white/70">Close</span>
+                <span className="text-[10px] uppercase tracking-[0.2em] text-[#8a8780]">Close</span>
               </button>
             </div>
             <div className="p-4 overflow-y-auto max-h-[calc(90vh-120px)]">

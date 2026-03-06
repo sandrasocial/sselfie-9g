@@ -79,8 +79,8 @@ export function UpgradeModal({ open, currentTier: _currentTier, targetTier = "ss
   const isSubscription = targetTier !== "one_time_session"
 
   return (
-    <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-xl animate-fade-in"
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(13,12,11,0.80)] p-4 backdrop-blur-sm animate-fade-in"
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           onClose()
@@ -88,31 +88,31 @@ export function UpgradeModal({ open, currentTier: _currentTier, targetTier = "ss
       }}
     >
       <div
-        className="relative w-full max-w-sm rounded-[20px] border border-[color:var(--glass-border)] bg-[color:var(--color-obsidian)]/95 p-6 backdrop-blur-[20px] sm:p-8"
+        className="relative w-full max-w-sm bg-[rgba(175,170,162,0.15)] backdrop-blur-[70px] border border-[rgba(195,190,182,0.25)] rounded-3xl p-6 sm:p-8"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="display-header mb-3 text-center text-2xl font-light text-[color:var(--color-porcelain)] sm:text-3xl">
+        <h2 className="font-['Cormorant_Garamond'] font-light mb-3 text-center text-2xl text-[#f0ede8] sm:text-3xl">
           Ready to keep going?
         </h2>
 
-        <p className="mb-6 text-center text-sm font-light text-[color:var(--color-whisper)]">
+        <p className="mb-6 text-center text-sm font-light text-[#8a8780]">
           {isSubscription
             ? (
               <>
                 Creator Studio gives you{" "}
-                <strong className="text-[color:var(--color-porcelain)]">{targetCredits} credits a month</strong> - that&apos;s{" "}
+                <strong className="text-[#f0ede8]">{targetCredits} credits a month</strong> — that&apos;s{" "}
                 {Math.floor(targetCredits / 2)} brand photos. One monthly plan, everything you need to show up consistently without scrambling for content.
               </>
             ) : (
               <>
-                <strong className="text-[color:var(--color-porcelain)]">{targetName}</strong> gives you{" "}
-                <strong className="text-[color:var(--color-porcelain)]">{targetCredits} credits</strong> to use whenever you need them.
+                <strong className="text-[#f0ede8]">{targetName}</strong> gives you{" "}
+                <strong className="text-[#f0ede8]">{targetCredits} credits</strong> to use whenever you need them.
               </>
             )}
         </p>
 
         {error && (
-          <div className="mb-4 rounded-lg border border-red-300/35 bg-red-500/15 p-3">
+          <div className="mb-4 rounded-xl border border-red-300/35 bg-red-500/15 p-3">
             <p className="text-center text-sm text-red-100">{error}</p>
           </div>
         )}
@@ -121,15 +121,15 @@ export function UpgradeModal({ open, currentTier: _currentTier, targetTier = "ss
           <button
             onClick={handleUpgrade}
             disabled={loading}
-            className="w-full rounded-xl border border-white/25 bg-white/12 px-6 py-3 text-xs font-medium uppercase tracking-[0.3em] text-[color:var(--color-porcelain)] transition-all hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50"
+            className="w-full bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[#f0ede8] transition-colors disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? "Processing..." : isSubscription ? "Yes, join Studio" : `Get ${targetName}`}
           </button>
           <button
             onClick={onClose}
-            className="w-full rounded-xl border border-white/15 bg-white/5 px-6 py-3 text-xs font-medium uppercase tracking-[0.3em] text-[color:var(--color-whisper)] transition-colors hover:bg-white/10"
+            className="w-full text-sm text-[#8a8780] hover:text-[#f0ede8] transition-colors text-center py-2"
           >
-            Not right now
+            Maybe later
           </button>
         </div>
       </div>

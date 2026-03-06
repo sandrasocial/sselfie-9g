@@ -88,7 +88,7 @@ function BuyButton({
       <button
         onClick={handleBuy}
         disabled={loading}
-        className={`${inter.className} text-[11px] uppercase tracking-[0.22em] text-[#ffffff] hover:text-[#f5f5f5] disabled:opacity-50`}
+        className={`${inter.className} text-[10px] uppercase tracking-[0.5em] text-[#c8c4bb] hover:text-[#f0ede8] disabled:opacity-50`}
         style={{ fontWeight: 500 }}
       >
         {loading ? "Opening checkout" : `Get it -> ${price} EUR`}
@@ -100,13 +100,13 @@ function BuyButton({
 
 export default function AcademyPage() {
   return (
-    <main className="min-h-screen min-w-[375px] bg-[#0a0a0a] text-[#ffffff]">
-      <section className="px-6 py-16 md:px-20 md:py-20 border-b border-[rgba(255,255,255,0.08)]">
-        <p className={`${inter.className} text-[11px] uppercase tracking-[0.5em] text-[#666666]`} style={{ fontWeight: 500 }}>
+    <main className="min-h-screen min-w-[375px] bg-[#0d0c0b] text-[#f0ede8]">
+      <section className="px-6 py-16 md:px-20 md:py-20 border-b border-[rgba(195,190,182,0.15)]">
+        <p className={`${inter.className} text-[10px] uppercase tracking-[0.5em] text-[#8a8780]`} style={{ fontWeight: 500 }}>
           SSELFIE Academy
         </p>
         <h1
-          className={`${cormorant.className} mt-6 uppercase text-[#ffffff] text-5xl md:text-7xl`}
+          className={`${cormorant.className} mt-6 uppercase text-[#f0ede8] text-5xl md:text-7xl`}
           style={{ fontWeight: 200, lineHeight: 0.95 }}
         >
           From 12 EUR
@@ -118,14 +118,14 @@ export default function AcademyPage() {
       </section>
 
       <section className="px-6 py-10 md:px-20 md:py-14">
-        <ol className="space-y-0 border-t border-[rgba(255,255,255,0.08)]">
+        <ol className="space-y-0 border-t border-[rgba(195,190,182,0.15)]">
           {PRODUCTS.map((product, index) => (
             <li
               key={product.id}
-              className="grid grid-cols-[80px_1fr] gap-4 border-b border-[rgba(255,255,255,0.08)] py-8 md:grid-cols-[120px_1fr] md:gap-6"
+              className="grid grid-cols-[80px_1fr] gap-4 border-b border-[rgba(195,190,182,0.15)] py-8 md:grid-cols-[120px_1fr] md:gap-6"
             >
               <p
-                className={`${cormorant.className} text-4xl md:text-5xl text-[#f5f5f5]`}
+                className={`${cormorant.className} text-4xl md:text-5xl text-[#c8c4bb]`}
                 style={{ fontWeight: 300, lineHeight: 1 }}
               >
                 {String(index + 1).padStart(2, "0")}
@@ -133,15 +133,15 @@ export default function AcademyPage() {
 
               <div>
                 <p
-                  className={`${inter.className} text-[11px] uppercase tracking-[0.38em] text-[#ffffff]`}
+                  className={`${inter.className} text-[10px] uppercase tracking-[0.5em] text-[#f0ede8]`}
                   style={{ fontWeight: 500 }}
                 >
                   {product.name}
                 </p>
-                <p className={`${inter.className} mt-3 text-sm text-[#666666] max-w-xl`} style={{ fontWeight: 300, lineHeight: 1.8 }}>
+                <p className={`${inter.className} mt-3 text-sm text-[#8a8780] max-w-xl`} style={{ fontWeight: 300, lineHeight: 1.8 }}>
                   {product.description}
                 </p>
-                <p className={`${inter.className} mt-4 text-[11px] uppercase tracking-[0.22em] text-[#ffffff]`} style={{ fontWeight: 500 }}>
+                <p className={`${inter.className} mt-4 text-[10px] uppercase tracking-[0.5em] text-[#f0ede8]`} style={{ fontWeight: 500 }}>
                   {product.price} EUR
                 </p>
                 <BuyButton productId={product.id} price={product.price} />
@@ -152,22 +152,22 @@ export default function AcademyPage() {
       </section>
 
       <section className="px-6 pb-16 md:px-20 md:pb-20">
-        <div className="grid grid-cols-3 gap-3 border border-[rgba(255,255,255,0.08)] bg-[rgba(255,255,255,0.03)] p-5 md:gap-6 md:p-8">
+        <div className="grid grid-cols-3 gap-3 border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] backdrop-blur-[50px] p-5 md:gap-6 md:p-8 rounded-2xl">
           <div>
-            <p className={`${cormorant.className} text-3xl md:text-5xl text-[#ffffff]`} style={{ fontWeight: 200 }}>180K+</p>
-            <p className={`${inter.className} mt-1 text-[11px] uppercase tracking-[0.22em] text-[#666666]`} style={{ fontWeight: 300 }}>
+            <p className={`${cormorant.className} text-3xl md:text-5xl text-[#f0ede8]`} style={{ fontWeight: 200 }}>180K+</p>
+            <p className={`${inter.className} mt-1 text-[10px] uppercase tracking-[0.5em] text-[#8a8780]`} style={{ fontWeight: 300 }}>
               Audience
             </p>
           </div>
           <div>
-            <p className={`${cormorant.className} text-3xl md:text-5xl text-[#ffffff]`} style={{ fontWeight: 200 }}>12 EUR</p>
-            <p className={`${inter.className} mt-1 text-[11px] uppercase tracking-[0.22em] text-[#666666]`} style={{ fontWeight: 300 }}>
+            <p className={`${cormorant.className} text-3xl md:text-5xl text-[#f0ede8]`} style={{ fontWeight: 200 }}>12 EUR</p>
+            <p className={`${inter.className} mt-1 text-[10px] uppercase tracking-[0.5em] text-[#8a8780]`} style={{ fontWeight: 300 }}>
               Starting Point
             </p>
           </div>
           <div>
-            <p className={`${cormorant.className} text-3xl md:text-5xl text-[#ffffff]`} style={{ fontWeight: 200 }}>8 Months</p>
-            <p className={`${inter.className} mt-1 text-[11px] uppercase tracking-[0.22em] text-[#666666]`} style={{ fontWeight: 300 }}>
+            <p className={`${cormorant.className} text-3xl md:text-5xl text-[#f0ede8]`} style={{ fontWeight: 200 }}>8 Months</p>
+            <p className={`${inter.className} mt-1 text-[10px] uppercase tracking-[0.5em] text-[#8a8780]`} style={{ fontWeight: 300 }}>
               Build Window
             </p>
           </div>

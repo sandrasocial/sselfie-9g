@@ -51,8 +51,8 @@ export default function UnifiedLoading({
         {/* Logo with spinning circle */}
         <div className={`relative ${config.spinner} mx-auto`}>
           {/* Spinning circle */}
-          <div className="absolute inset-0 border-2 border-[rgba(255,255,255,0.24)] rounded-full"></div>
-          <div className="absolute inset-0 border-2 border-[#ffffff] border-t-transparent rounded-full animate-spin"></div>
+          <div className="absolute inset-0 border-2 border-[rgba(168,164,156,0.24)] rounded-full"></div>
+          <div className="absolute inset-0 border-2 border-[#a8a49c] border-t-transparent rounded-full animate-spin"></div>
 
           {/* Logo in center */}
           <div className={`absolute inset-0 flex items-center justify-center ${config.logo}`}>
@@ -66,7 +66,7 @@ export default function UnifiedLoading({
 
         {/* Loading text - only show for screen and section variants, or if custom message provided for inline */}
         {showMessage && (
-          <p className={`${config.message} tracking-[0.15em] uppercase font-light text-[#e5e5e5]`}>
+          <p className={`${config.message} tracking-[0.15em] uppercase font-light text-[#f0ede8]`}>
             {message}
           </p>
         )}

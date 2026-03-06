@@ -100,7 +100,7 @@ export default function LessonModal({
   return (
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent
-        className="max-w-[95vw] sm:max-w-6xl lg:max-w-7xl max-h-[95vh] overflow-y-auto p-0 bg-[rgba(13,15,19,0.96)] border-white/20 backdrop-blur-3xl"
+        className="max-w-[95vw] sm:max-w-6xl lg:max-w-7xl max-h-[95vh] overflow-y-auto p-0 bg-[rgba(175,170,162,0.12)] backdrop-blur-[70px] border border-[rgba(195,190,182,0.25)] rounded-3xl"
         showCloseButton={false}
       >
         {/* DialogTitle must be a direct child of DialogContent for accessibility */}
@@ -110,14 +110,14 @@ export default function LessonModal({
         
         {loading ? (
           <div className="flex items-center justify-center min-h-[400px]">
-            <div className="h-8 w-8 rounded-full border-2 border-white/20 border-t-white/60 animate-spin" />
+            <div className="h-8 w-8 rounded-full border-2 border-[rgba(195,190,182,0.25)] border-t-[#a8a49c] animate-spin" />
           </div>
         ) : error || !lesson ? (
           <div className="p-8 text-center">
-            <p className="text-white/60 font-light mb-4">{error || "Lesson not found"}</p>
+            <p className="text-[#8a8780] mb-4">{error || "Lesson not found"}</p>
             <button
               onClick={onClose}
-              className="px-6 py-3 bg-[rgba(255,255,255,0.08)] border border-white/10 text-white/80 rounded-xl font-light tracking-[0.15em] uppercase text-sm hover:bg-[rgba(255,255,255,0.12)] transition-all duration-200"
+              className="px-6 py-3 bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.25)] text-[#f0ede8] rounded-full font-['Inter'] font-medium tracking-[0.15em] uppercase text-xs hover:bg-[rgba(175,170,162,0.18)] transition-all duration-200"
             >
               Close
             </button>
@@ -125,35 +125,35 @@ export default function LessonModal({
         ) : (
           <div className="relative">
             {/* Header with Close Button */}
-            <div className="sticky top-0 z-10 bg-[rgba(11,13,16,0.90)] backdrop-blur-xl border-b border-white/10 p-3 sm:p-4 flex items-center justify-between">
+            <div className="sticky top-0 z-10 bg-[rgba(13,12,11,0.90)] backdrop-blur-xl border-b border-[rgba(195,190,182,0.15)] p-3 sm:p-4 flex items-center justify-between">
               <div className="flex items-center gap-2 sm:gap-4">
                 {/* Navigation Buttons */}
                 {onPrevLesson && (
                   <button
                     onClick={onPrevLesson}
-                    className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                    className="px-3 py-2 bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.25)] rounded-full hover:bg-[rgba(175,170,162,0.18)] transition-colors"
                     aria-label="Previous lesson"
                   >
-                    <span className="text-[11px] tracking-[0.12em] uppercase text-white/70">Prev</span>
+                    <span className="font-['Inter'] text-[10px] tracking-[0.5em] uppercase font-medium text-[#8a8780] hover:text-[#f0ede8]">Prev</span>
                   </button>
                 )}
                 {onNextLesson && (
                   <button
                     onClick={onNextLesson}
-                    className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                    className="px-3 py-2 bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.25)] rounded-full hover:bg-[rgba(175,170,162,0.18)] transition-colors"
                     aria-label="Next lesson"
                   >
-                    <span className="text-[11px] tracking-[0.12em] uppercase text-white/70">Next</span>
+                    <span className="font-['Inter'] text-[10px] tracking-[0.5em] uppercase font-medium text-[#8a8780] hover:text-[#f0ede8]">Next</span>
                   </button>
                 )}
               </div>
 
               <button
                 onClick={onClose}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                className="p-2 text-[#8a8780] hover:text-[#f0ede8] transition-colors"
                 aria-label="Close"
               >
-                <span className="text-[11px] tracking-[0.12em] uppercase text-white/70">Close</span>
+                <span className="font-['Inter'] text-[10px] tracking-[0.5em] uppercase font-medium">Close</span>
               </button>
             </div>
 
@@ -162,25 +162,25 @@ export default function LessonModal({
               {/* Lesson Header */}
               <div className="px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 space-y-3 sm:space-y-4">
                 <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-                  <span className="px-2 sm:px-3 py-1 bg-white/10 border border-white/10 rounded-full text-[10px] sm:text-xs tracking-[0.1em] uppercase font-light text-white/70">
+                  <span className="px-2 sm:px-3 py-1 bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.25)] rounded-full font-['Inter'] text-[10px] tracking-[0.5em] uppercase font-medium text-[#8a8780]">
                     Lesson {(lesson.order_index ?? 0) + 1}
                   </span>
                   {isCompleted && (
-                    <span className="px-2 sm:px-3 py-1 bg-[rgba(11,13,16,0.8)] border border-white/15 text-white/80 rounded-full text-[10px] sm:text-xs tracking-[0.1em] uppercase font-light">
+                    <span className="px-2 sm:px-3 py-1 bg-[rgba(168,164,156,0.20)] border border-[rgba(195,190,182,0.25)] text-[#a8a49c] rounded-full font-['Inter'] text-[10px] tracking-[0.5em] uppercase font-medium">
                       Completed
                     </span>
                   )}
                 </div>
 
-                <h1 className="text-xl sm:text-2xl lg:text-3xl font-serif font-extralight tracking-[0.15em] sm:tracking-[0.2em] uppercase text-white leading-tight">
+                <h1 className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl lg:text-3xl text-[#f0ede8] leading-tight">
                   {lesson.title}
                 </h1>
 
                 {lesson.description && (
-                  <p className="text-sm sm:text-base font-light text-white/50 leading-relaxed">{lesson.description}</p>
+                  <p className="text-sm sm:text-base text-[#f0ede8] leading-relaxed">{lesson.description}</p>
                 )}
 
-                <div className="flex items-center gap-2 text-[10px] sm:text-xs tracking-[0.1em] uppercase font-light text-white/40">
+                <div className="flex items-center gap-2 font-['Inter'] text-[10px] tracking-[0.5em] uppercase font-medium text-[#8a8780]">
                   <span>{Math.floor((lesson.duration_seconds ?? 0) / 60)} MINUTES</span>
                 </div>
               </div>
@@ -196,8 +196,8 @@ export default function LessonModal({
                   />
                 </div>
               ) : (
-                <div className="mx-4 sm:mx-6 lg:mx-8 bg-[rgba(255,255,255,0.04)] backdrop-blur-xl border border-white/10 rounded-[1.75rem] p-6 sm:p-8 text-center">
-                  <p className="text-sm sm:text-base text-white/60 font-light">
+                <div className="mx-4 sm:mx-6 lg:mx-8 bg-[rgba(175,170,162,0.10)] backdrop-blur-[50px] border border-[rgba(195,190,182,0.25)] rounded-2xl p-6 sm:p-8 text-center">
+                  <p className="text-sm sm:text-base text-[#8a8780]">
                     This lesson type is not yet supported.
                   </p>
                 </div>
@@ -205,20 +205,20 @@ export default function LessonModal({
 
               {/* Progress Indicator */}
               <div className="px-4 sm:px-6 lg:px-8 pb-4 sm:pb-6 space-y-4">
-                <div className="bg-[rgba(255,255,255,0.04)] backdrop-blur-xl border border-white/10 rounded-[1.75rem] p-4 sm:p-6">
+                <div className="bg-[rgba(175,170,162,0.10)] backdrop-blur-[50px] border border-[rgba(195,190,182,0.25)] rounded-2xl p-4 sm:p-6">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-[10px] sm:text-xs tracking-[0.15em] uppercase font-light text-white/40">
+                    <span className="font-['Inter'] text-[10px] tracking-[0.5em] uppercase font-medium text-[#8a8780]">
                       Your Progress
                     </span>
-                    <span className="text-xs sm:text-sm font-light text-white">
+                    <span className="font-['Inter'] text-xs sm:text-sm text-[#f0ede8]">
                       {isCompleted
                         ? "100%"
                         : `${Math.round((watchTimeSeconds / (lesson.duration_seconds ?? 1)) * 100)}%`}
                     </span>
                   </div>
-                  <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                  <div className="w-full h-2 bg-[rgba(175,170,162,0.12)] rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-white/70 transition-all duration-300"
+                      className="h-full bg-[#c8c4bb] transition-all duration-300"
                       style={{
                         width: isCompleted
                           ? "100%"
@@ -233,16 +233,16 @@ export default function LessonModal({
                   <button
                     onClick={handleMarkAsDone}
                     disabled={isMarkingComplete}
-                    className="w-full bg-[rgba(255,255,255,0.04)] border border-white/20 text-white/75 py-3 sm:py-4 rounded-[1.25rem] font-light tracking-[0.15em] uppercase text-xs sm:text-sm hover:bg-[rgba(255,255,255,0.1)] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="w-full bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.25)] text-[#f0ede8] py-3 sm:py-4 rounded-full font-['Inter'] font-medium tracking-[0.15em] uppercase text-xs sm:text-sm hover:bg-[rgba(175,170,162,0.18)] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
                     {isMarkingComplete ? (
                       <>
-                        <div className="h-4 w-4 rounded-full border-2 border-white/20 border-t-white/70 animate-spin" />
+                        <div className="h-4 w-4 rounded-full border-2 border-[rgba(195,190,182,0.25)] border-t-[#a8a49c] animate-spin" />
                         <span>Marking Complete...</span>
                       </>
                     ) : (
                       <>
-                        <span className="text-[10px] tracking-[0.12em] uppercase text-white/60">Done</span>
+                        <span className="font-['Inter'] text-[10px] tracking-[0.5em] uppercase font-medium text-[#8a8780]">Done</span>
                         <span>Mark as Done</span>
                       </>
                     )}
@@ -253,7 +253,7 @@ export default function LessonModal({
                 {onNextLesson && (
                   <button
                     onClick={onNextLesson}
-                    className="w-full bg-white/90 text-[#0b0d10] py-3 sm:py-4 rounded-[1.25rem] font-light tracking-[0.15em] uppercase text-xs sm:text-sm hover:bg-white transition-all duration-200 shadow-xl shadow-black/30"
+                    className="w-full bg-[#c8c4bb] text-[#0d0c0b] py-3 sm:py-4 rounded-full font-['Inter'] font-medium tracking-[0.15em] uppercase text-xs sm:text-sm hover:bg-[#f0ede8] transition-all duration-200"
                   >
                     Next Lesson
                   </button>

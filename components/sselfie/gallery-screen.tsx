@@ -441,9 +441,9 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
 
   if (isCurrentlyLoading) {
     return (
-      <div className="space-y-4 sm:space-y-6 pb-24 pt-3 sm:pt-4">
-        <div className="flex items-center justify-between mb-4 sm:mb-6">
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-serif font-extralight tracking-[0.2em] sm:tracking-[0.3em] text-stone-950 uppercase">
+      <div className="space-y-4 sm:space-y-6 pb-24 pt-3 sm:pt-4 bg-[#0d0c0b]">
+        <div className="flex items-center justify-between mb-4 sm:mb-6 px-4">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-['Cormorant_Garamond'] font-light text-[#f0ede8]">
             Gallery
           </h1>
         </div>
@@ -457,9 +457,9 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
 
   if (currentError) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex items-center justify-center min-h-[400px] bg-[#0d0c0b]">
         <div className="text-center space-y-4">
-          <p className="text-sm font-light text-red-600">Failed to load images</p>
+          <p className="text-sm font-light text-red-400">Failed to load images</p>
           <button
             onClick={() => {
               mutate()
@@ -467,7 +467,7 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
                 mutateFeed()
               }
             }}
-            className={`px-4 py-2 ${DesignClasses.typography.label.uppercase} bg-stone-100/50 ${DesignClasses.border.stone} ${DesignClasses.radius.md} hover:bg-stone-100/70 transition-all duration-200`}
+            className="px-4 py-2 text-[10px] uppercase tracking-[0.3em] font-['Inter'] font-medium bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.25)] rounded-lg text-[#a8a49c] hover:bg-[rgba(175,170,162,0.18)] transition-all duration-200"
           >
             Retry
           </button>
@@ -479,13 +479,13 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
   const displayName = user.name || user.email?.split("@")[0] || "User"
 
   return (
-    <div className="space-y-4 sm:space-y-6 pb-24" ref={scrollContainerRef}>
+    <div className="space-y-4 sm:space-y-6 pb-24 bg-[#0d0c0b]" ref={scrollContainerRef}>
       {isPulling && (
         <div
           className="fixed top-0 left-0 right-0 flex items-center justify-center z-50 transition-all"
           style={{ transform: `translateY(${Math.min(pullDistance - 40, 60)}px)` }}
         >
-          <div className={`bg-stone-950 text-white px-4 py-2 ${DesignClasses.radius.full} ${DesignClasses.typography.body.small}`}>
+          <div className="bg-[#1c1b19] border border-[rgba(195,190,182,0.25)] text-[#f0ede8] px-4 py-2 rounded-full text-xs font-['Inter']">
             {pullDistance > 80 ? "Release to refresh" : "Pull to refresh"}
           </div>
         </div>
@@ -544,14 +544,14 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
           onLongPressEnd={handleLongPressEnd}
         />
       ) : (
-        <div className="rounded-3xl border border-white/10 bg-white/4 p-8 text-center sm:p-12">
+        <div className="bg-[rgba(175,170,162,0.10)] backdrop-blur-[50px] border border-[rgba(195,190,182,0.25)] rounded-2xl p-8 text-center sm:p-12 mx-4">
           {contentFilter === "videos" ? (
             <>
-              <div className="mx-auto mb-6 text-[10px] uppercase tracking-[0.25em] text-white/45">Videos</div>
-              <h3 className="mb-3 text-xl font-serif font-extralight uppercase tracking-[0.15em] text-white">
+              <div className="mx-auto mb-6 font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780]">Videos</div>
+              <h3 className="mb-3 text-xl font-['Cormorant_Garamond'] font-light text-[#f0ede8]">
                 No Videos Yet
               </h3>
-              <p className="mx-auto mb-6 max-w-md text-sm font-light text-white/65">
+              <p className="mx-auto mb-6 max-w-md text-sm font-light text-[#8a8780]">
                 Bring your photos to life! Go to Maya and ask her to animate any of your images into stunning videos.
               </p>
               <button
@@ -559,50 +559,50 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
                   const mayaTab = document.querySelector('[data-tab="maya"]') as HTMLButtonElement
                   mayaTab?.click()
                 }}
-                className="rounded-full border border-white/20 bg-white/8 px-6 py-3 text-xs font-light uppercase tracking-[0.2em] text-white transition-all duration-200 hover:bg-white/14"
+                className="bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[#f0ede8] transition-colors"
               >
                 Go to Maya
               </button>
             </>
           ) : contentFilter === "feed" ? (
             <>
-              <div className="mx-auto mb-6 text-[10px] uppercase tracking-[0.25em] text-white/45">Feed</div>
-              <h3 className="mb-3 text-xl font-serif font-extralight uppercase tracking-[0.15em] text-white">
+              <div className="mx-auto mb-6 font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780]">Feed</div>
+              <h3 className="mb-3 text-xl font-['Cormorant_Garamond'] font-light text-[#f0ede8]">
                 No Feed Images Yet
               </h3>
-              <p className="mx-auto mb-6 max-w-md text-sm font-light text-white/65">
+              <p className="mx-auto mb-6 max-w-md text-sm font-light text-[#8a8780]">
                 Create your first Instagram feed with the Feed Planner to see your feed images here.
               </p>
               <button
                 onClick={() => {
                   window.location.hash = "feed-planner"
                 }}
-                className="rounded-full border border-white/20 bg-white/8 px-6 py-3 text-xs font-light uppercase tracking-[0.2em] text-white transition-all duration-200 hover:bg-white/14"
+                className="bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[#f0ede8] transition-colors"
               >
                 Go to Feed Planner
               </button>
             </>
           ) : searchQuery ? (
             <>
-              <div className="mx-auto mb-6 text-[10px] uppercase tracking-[0.25em] text-white/45">Search</div>
-              <h3 className="mb-3 text-xl font-serif font-extralight uppercase tracking-[0.15em] text-white">
+              <div className="mx-auto mb-6 font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780]">Search</div>
+              <h3 className="mb-3 text-xl font-['Cormorant_Garamond'] font-light text-[#f0ede8]">
                 No Results Found
               </h3>
-              <p className="mx-auto mb-6 max-w-md text-sm font-light text-white/65">
+              <p className="mx-auto mb-6 max-w-md text-sm font-light text-[#8a8780]">
                 No images match &quot;{searchQuery}&quot;. Try a different search term or clear the search to see all images.
               </p>
               <button
                 onClick={() => setSearchQuery("")}
-                className="rounded-full border border-white/20 bg-white/8 px-6 py-3 text-xs font-light uppercase tracking-[0.2em] text-white transition-all duration-200 hover:bg-white/14"
+                className="bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[#f0ede8] transition-colors"
               >
                 Clear Search
               </button>
             </>
           ) : contentFilter === "favorited" ? (
             <>
-              <div className="mx-auto mb-6 text-[10px] uppercase tracking-[0.25em] text-white/45">Saved</div>
-              <h3 className="mb-3 text-xl font-serif font-extralight uppercase tracking-[0.15em] text-white">No Favorites Yet</h3>
-              <p className="mx-auto mb-6 max-w-md text-sm font-light text-white/65">
+              <div className="mx-auto mb-6 font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780]">Saved</div>
+              <h3 className="mb-3 text-xl font-['Cormorant_Garamond'] font-light text-[#f0ede8]">No Favorites Yet</h3>
+              <p className="mx-auto mb-6 max-w-md text-sm font-light text-[#8a8780]">
                 Save any image to add it to your favorites collection.
               </p>
             </>

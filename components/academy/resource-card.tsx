@@ -68,9 +68,9 @@ export default function ResourceCard({ resource, onDownload }: ResourceCardProps
   }
 
   return (
-    <div className="bg-[rgba(255,255,255,0.04)] border border-white/10 rounded-2xl overflow-hidden hover:border-white/20 hover:bg-[rgba(255,255,255,0.07)] transition-all group">
+    <div className="bg-[rgba(175,170,162,0.10)] backdrop-blur-[50px] border border-[rgba(195,190,182,0.25)] rounded-2xl overflow-hidden hover:border-[rgba(195,190,182,0.40)] hover:bg-[rgba(175,170,162,0.18)] transition-all group">
       {/* Thumbnail */}
-      <div className="relative aspect-[4/3] bg-[rgba(255,255,255,0.07)] overflow-hidden">
+      <div className="relative aspect-[4/3] bg-[#1c1b19] overflow-hidden">
         {resource.thumbnail_url ? (
           <img
             src={resource.thumbnail_url || "/placeholder.svg"}
@@ -79,11 +79,11 @@ export default function ResourceCard({ resource, onDownload }: ResourceCardProps
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <div className="text-white/30 text-sm tracking-wider uppercase">No Preview</div>
+            <div className="text-[#8a8780] text-sm tracking-wider uppercase font-['Inter']">No Preview</div>
           </div>
         )}
         {resource.month && (
-          <div className="absolute top-3 left-3 px-3 py-1 bg-[rgba(11,13,16,0.8)] border border-white/15 text-white/75 text-[10px] tracking-wider uppercase rounded-full">
+          <div className="absolute top-3 left-3 px-3 py-1 bg-[rgba(168,164,156,0.20)] border border-[rgba(195,190,182,0.25)] text-[#a8a49c] font-['Inter'] text-[10px] tracking-[0.5em] uppercase font-medium rounded-full">
             {resource.month}
           </div>
         )}
@@ -93,32 +93,32 @@ export default function ResourceCard({ resource, onDownload }: ResourceCardProps
       <div className="p-6 space-y-4">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] tracking-wider uppercase text-white/30">
+            <span className="font-['Inter'] text-[10px] tracking-[0.5em] uppercase font-medium text-[#8a8780]">
               {getResourceTypeLabel(resource.resource_type)}
             </span>
             {resource.category && (
               <>
-                <span className="text-white/20">•</span>
-                <span className="text-[10px] tracking-wider uppercase text-white/30">{resource.category}</span>
+                <span className="text-[#8a8780]">•</span>
+                <span className="font-['Inter'] text-[10px] tracking-[0.5em] uppercase font-medium text-[#8a8780]">{resource.category}</span>
               </>
             )}
           </div>
-          <h3 className="font-serif text-xl tracking-wider text-white">{resource.title}</h3>
+          <h3 className="font-['Cormorant_Garamond'] font-light text-xl text-[#f0ede8]">{resource.title}</h3>
           {resource.description && (
-            <p className="text-sm text-white/50 leading-relaxed line-clamp-2">{resource.description}</p>
+            <p className="text-sm text-[#8a8780] leading-relaxed line-clamp-2">{resource.description}</p>
           )}
         </div>
 
         <button
           onClick={handleClick}
-          className="w-full flex items-center justify-center gap-2 bg-[rgba(255,255,255,0.07)] border border-white/10 text-white/75 py-3 rounded-xl text-sm tracking-wider uppercase hover:bg-[rgba(255,255,255,0.1)] hover:border-white/20 transition-all active:scale-95"
+          className="w-full flex items-center justify-center gap-2 bg-[#c8c4bb] text-[#0d0c0b] py-3 rounded-full font-['Inter'] font-medium text-xs tracking-[0.15em] uppercase hover:bg-[#f0ede8] transition-all active:scale-95"
           style={{ touchAction: "manipulation" }}
         >
-          <span className="text-[10px] tracking-[0.12em] uppercase text-white/50">File</span>
+          <span className="font-['Inter'] text-[10px] tracking-[0.5em] uppercase font-medium text-[#0d0c0b]">File</span>
           {isExternalLink ? "Open" : "Download"}
         </button>
 
-        <div className="text-[10px] tracking-wider uppercase text-white/30 text-center">
+        <div className="font-['Inter'] text-[10px] tracking-[0.5em] uppercase font-medium text-[#8a8780] text-center">
           {resource.download_count} downloads
         </div>
       </div>

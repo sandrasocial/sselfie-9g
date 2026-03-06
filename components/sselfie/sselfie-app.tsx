@@ -865,12 +865,12 @@ export default function SselfieApp({
 
       {/* First-photo celebration toast — fires once when the first credit is spent */}
       {showFirstPhotoToast && (
-        <div className="fixed top-0 left-0 right-0 z-[100] bg-stone-950 text-white px-4 py-3 flex items-center justify-between animate-in slide-in-from-top-2 duration-500">
+        <div className="fixed top-0 left-0 right-0 z-[100] bg-[rgba(28,27,25,0.96)] backdrop-blur-[50px] border-b border-[rgba(195,190,182,0.15)] px-4 py-3 flex items-center justify-between animate-in slide-in-from-top-2 duration-500">
           <div>
-            <p className="text-sm font-medium">Your first brand photo is done.</p>
-            <p className="text-xs text-white/60 mt-0.5">You just proved this works. Feed Planner, Gallery &amp; Academy are now yours — go explore.</p>
+            <p className="text-sm font-medium text-[#f0ede8]">Your first brand photo is done.</p>
+            <p className="text-xs text-[#8a8780] mt-0.5">You just proved this works. Feed Planner, Gallery &amp; Academy are now yours — go explore.</p>
           </div>
-          <button onClick={() => setShowFirstPhotoToast(false)} className="text-white/40 hover:text-white ml-4 shrink-0" aria-label="Dismiss">
+          <button onClick={() => setShowFirstPhotoToast(false)} className="text-[#8a8780] hover:text-[#f0ede8] ml-4 shrink-0" aria-label="Dismiss">
             <span className="text-[10px] tracking-[0.2em] uppercase">Close</span>
           </button>
         </div>
@@ -885,7 +885,7 @@ export default function SselfieApp({
         academyPurchaseProduct &&
         ACADEMY_PRODUCT_TO_TAB[academyPurchaseProduct] && (
           <div className="sticky top-0 z-20 mx-1 sm:mx-2 md:mx-3 mt-2 sm:mt-3 md:mt-4">
-            <div className="bg-stone-950 text-white rounded-xl border border-stone-700 shadow-lg overflow-hidden">
+            <div className="bg-[rgba(175,170,162,0.10)] backdrop-blur-[30px] text-[#f0ede8] rounded-xl border border-[rgba(195,190,182,0.20)] shadow-lg overflow-hidden">
               <div className="flex items-center justify-between gap-3 px-4 py-3">
                 <button
                   type="button"
@@ -896,18 +896,18 @@ export default function SselfieApp({
                   }}
                   className="flex-1 flex items-center justify-between gap-2 text-left group"
                 >
-                  <span className="text-sm font-medium">Welcome! Let&apos;s get started</span>
-                  <span className="text-[10px] tracking-[0.2em] uppercase text-white/80 shrink-0 group-hover:text-white transition-colors" aria-hidden>
+                  <span className="text-sm font-medium text-[#f0ede8]">Welcome! Let&apos;s get started</span>
+                  <span className="text-[10px] tracking-[0.2em] uppercase text-[#8a8780] shrink-0 group-hover:text-[#f0ede8] transition-colors" aria-hidden>
                     Open
                   </span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowAcademyWelcomeBanner(false)}
-                  className="shrink-0 p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+                  className="shrink-0 p-1.5 rounded-lg hover:bg-[rgba(175,170,162,0.12)] transition-colors"
                   aria-label="Dismiss welcome banner"
                 >
-                  <span className="text-[10px] tracking-[0.2em] uppercase text-white">Close</span>
+                  <span className="text-[10px] tracking-[0.2em] uppercase text-[#8a8780]">Close</span>
                 </button>
               </div>
             </div>
@@ -918,10 +918,10 @@ export default function SselfieApp({
         <div className={`h-full ${DesignClasses.container} ${activeTab === "maya" ? "overflow-visible" : "overflow-hidden"}`}>
           {/* Hide header when in Maya tab - it has its own header */}
           {activeTab !== "maya" && (
-            <header className={`sticky top-0 z-10 border-b ${DesignClasses.border.stone} ${DesignClasses.spacing.paddingX.sm} py-3 pt-safe`} style={{ background: 'rgba(16,16,16,0.88)', backdropFilter: 'blur(20px)' }}>
+            <header className={`sticky top-0 z-10 border-b ${DesignClasses.border.stone} ${DesignClasses.spacing.paddingX.sm} py-3 pt-safe`} style={{ background: 'rgba(175,170,162,0.08)', backdropFilter: 'blur(50px)' }}>
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 shrink-0">
-                  <div className={`${DesignClasses.typography.heading.h4} text-white`}>
+                  <div className={`${DesignClasses.typography.heading.h4} text-[#f0ede8]`}>
                     SSELFIE
                   </div>
                 </div>
@@ -932,9 +932,9 @@ export default function SselfieApp({
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <button
-                          className={`flex items-center gap-1.5 px-3 py-1.5 ${DesignClasses.radius.sm} hover:bg-white/10 transition-colors text-xs font-medium text-white min-h-[36px]`}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 ${DesignClasses.radius.sm} hover:bg-[rgba(175,170,162,0.12)] transition-colors text-xs font-medium text-[#f0ede8] min-h-[36px]`}
                           aria-label="My Feed"
-                          style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}
+                          style={{ background: 'rgba(175,170,162,0.10)', border: '1px solid rgba(195,190,182,0.20)' }}
                         >
                           <span>Feeds</span>
                         </button>
@@ -1077,11 +1077,11 @@ export default function SselfieApp({
                   <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
                   <DropdownMenuTrigger asChild>
                     <button
-                      className={`flex items-center justify-center w-9 h-9 ${DesignClasses.radius.sm} hover:bg-white/10 transition-colors`}
+                      className={`flex items-center justify-center w-9 h-9 ${DesignClasses.radius.sm} hover:bg-[rgba(175,170,162,0.12)] transition-colors`}
                       aria-label="Menu"
-                      style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}
+                      style={{ background: 'rgba(175,170,162,0.10)', border: '1px solid rgba(195,190,182,0.20)' }}
                     >
-                      <span className="text-base leading-none text-white">≡</span>
+                      <span className="text-base leading-none text-[#f0ede8]">≡</span>
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className={`w-64 ${DesignClasses.background.overlay} ${DesignClasses.blur.md} ${DesignClasses.border.stone} shadow-lg`}>
@@ -1226,7 +1226,7 @@ export default function SselfieApp({
           aria-label="Main navigation"
           aria-hidden={!isNavVisible}
         >
-          <div className={`${DesignClasses.radius.xl} ${DesignClasses.shadows.container}`} style={{ background: 'rgba(16,16,16,0.88)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.1)' }}>
+          <div className={`${DesignClasses.radius.xl} ${DesignClasses.shadows.container}`} style={{ background: 'rgba(175,170,162,0.08)', backdropFilter: 'blur(60px)', border: '1px solid rgba(195,190,182,0.15)' }}>
             <div className="overflow-x-auto scrollbar-hide px-1.5 sm:px-2 md:px-3 py-2 sm:py-2.5 md:py-3">
               <div className="flex gap-1 sm:gap-2 min-w-max sm:justify-around">
                 {(isNewUser ? tabs.filter((t) => t.id === "maya" || t.id === "account") : tabs).map((tab) => {
@@ -1243,13 +1243,13 @@ export default function SselfieApp({
                       aria-current={isActive ? "page" : undefined}
                     >
                       {isActive && (
-                        <div className={`absolute inset-0 ${DesignClasses.radius.lg} ${DesignClasses.shadows.card}`} style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)' }}></div>
+                        <div className={`absolute inset-0 ${DesignClasses.radius.lg} ${DesignClasses.shadows.card}`} style={{ background: 'rgba(175,170,162,0.18)', border: '1px solid rgba(195,190,182,0.25)' }}></div>
                       )}
                       <span
                         className={`relative z-10 px-3 py-2 sm:px-4 sm:py-2.5 md:px-5 md:py-3 rounded-full text-[9px] sm:text-[10px] md:text-[11px] font-semibold uppercase tracking-[0.2em] transition-all duration-500 whitespace-nowrap ${
-                          isActive ? "text-white" : "text-white opacity-50"
+                          isActive ? "text-[#f0ede8]" : "text-[#8a8780]"
                         }`}
-                        style={isActive ? { background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" } : { background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+                        style={isActive ? { background: "rgba(175,170,162,0.18)", border: "1px solid rgba(195,190,182,0.25)" } : { background: "rgba(175,170,162,0.06)", border: "1px solid rgba(195,190,182,0.12)" }}
                       >
                         {tab.label}
                       </span>
@@ -1259,7 +1259,7 @@ export default function SselfieApp({
               </div>
             </div>
             {isNewUser && (
-              <p className="text-xs text-center py-1" style={{ color: 'rgba(255,255,255,0.5)' }}>
+              <p className="text-xs text-center py-1" style={{ color: '#8a8780' }}>
                 Feed Planner, Gallery &amp; Academy unlock after your first photo
               </p>
             )}

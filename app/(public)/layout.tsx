@@ -4,5 +4,9 @@ export default function PublicLayout({
 }: {
   children: React.ReactNode
 }) {
-  return children
+  return (
+    <div className="min-h-screen bg-[#0d0c0b]">
+      {children}
+    </div>
+  )
 }

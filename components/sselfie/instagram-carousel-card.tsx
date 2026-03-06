@@ -79,34 +79,34 @@ export default function InstagramCarouselCard({
 
   return (
     <>
-      <div className="bg-[rgba(255,255,255,0.04)] backdrop-blur-[20px] rounded-[20px] border border-[rgba(255,255,255,0.08)] overflow-hidden max-w-[470px] mx-auto">
+      <div className="bg-[#1c1b19] border border-[rgba(195,190,182,0.20)] rounded-[20px] overflow-hidden max-w-[470px] mx-auto">
         {/* Instagram Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-[rgba(255,255,255,0.08)]">
+        <div className="flex items-center justify-between px-4 py-3 bg-[rgba(175,170,162,0.08)] border-b border-[rgba(195,190,182,0.12)]">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full border border-[rgba(255,255,255,0.2)] bg-[rgba(255,255,255,0.08)] p-[2px]">
-              <div className="w-full h-full rounded-full bg-[#0a0a0a] flex items-center justify-center">
-                <span className="text-xs font-semibold text-[#ffffff]">S</span>
+            <div className="w-8 h-8 rounded-full border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.15)] p-[2px]">
+              <div className="w-full h-full rounded-full bg-[#1c1b19] flex items-center justify-center">
+                <span className="text-xs font-semibold text-[#f0ede8]">S</span>
               </div>
             </div>
             <div>
-              <p className="text-sm font-medium text-[#ffffff]">sselfie</p>
-              <p className="text-xs text-[#666666]">{category}</p>
+              <p className="text-sm font-medium text-[#f0ede8]">sselfie</p>
+              <p className="text-xs text-[#8a8780]">{category}</p>
             </div>
           </div>
           <button
             onClick={() => setShowMenu(!showMenu)}
-            className="rounded-full border border-[rgba(255,255,255,0.2)] px-3 py-1.5 hover:bg-[rgba(255,255,255,0.08)] transition-colors relative"
+            className="rounded-full border border-[rgba(195,190,182,0.25)] px-3 py-1.5 hover:bg-[rgba(175,170,162,0.12)] transition-colors relative"
             aria-label="More options"
           >
-            <span className="text-[10px] uppercase tracking-[0.2em] text-[#e5e5e5]">Menu</span>
+            <span className="text-[10px] uppercase tracking-[0.2em] text-[#a8a49c]">Menu</span>
             {showMenu && (
-              <div className="absolute right-0 top-full mt-1 bg-[#111111] rounded-xl shadow-2xl border border-[rgba(255,255,255,0.12)] py-2 w-48 z-10">
+              <div className="absolute right-0 top-full mt-1 bg-[#2e2c29] rounded-xl shadow-2xl border border-[rgba(195,190,182,0.15)] py-2 w-48 z-10">
                 <button
                   onClick={() => {
                     setIsViewerOpen(true)
                     setShowMenu(false)
                   }}
-                  className="w-full px-4 py-2.5 text-left text-sm text-[#f5f5f5] hover:bg-[rgba(255,255,255,0.08)] transition-colors"
+                  className="w-full px-4 py-2.5 text-left text-sm text-[#a8a49c] hover:bg-[rgba(175,170,162,0.12)] transition-colors"
                 >
                   View Full Size
                 </button>
@@ -127,7 +127,7 @@ export default function InstagramCarouselCard({
         {/* Instagram Carousel with Navigation */}
         <div 
           ref={imageContainerRef}
-          className="relative aspect-[4/5] bg-[#121212] group cursor-pointer touch-pan-y"
+          className="relative aspect-[4/5] bg-[#1c1b19] group cursor-pointer touch-pan-y"
           onClick={() => setIsViewerOpen(true)}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
@@ -150,20 +150,20 @@ export default function InstagramCarouselCard({
                   e.stopPropagation()
                   handlePrevious()
                 }}
-                className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-[#0a0a0a]/80 backdrop-blur-sm rounded-full border border-[rgba(255,255,255,0.2)] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 active:scale-95 sm:opacity-100"
+                className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-[rgba(175,170,162,0.15)] backdrop-blur-sm rounded-full border border-[rgba(195,190,182,0.25)] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 active:scale-95 sm:opacity-100"
                 aria-label="Previous image"
               >
-                <span className="text-[10px] uppercase tracking-[0.2em] text-[#ffffff]">Prev</span>
+                <span className="text-[10px] uppercase tracking-[0.2em] text-[#f0ede8]">Prev</span>
               </button>
               <button
                 onClick={(e) => {
                   e.stopPropagation()
                   handleNext()
                 }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-[#0a0a0a]/80 backdrop-blur-sm rounded-full border border-[rgba(255,255,255,0.2)] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 active:scale-95 sm:opacity-100"
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-[rgba(175,170,162,0.15)] backdrop-blur-sm rounded-full border border-[rgba(195,190,182,0.25)] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110 active:scale-95 sm:opacity-100"
                 aria-label="Next image"
               >
-                <span className="text-[10px] uppercase tracking-[0.2em] text-[#ffffff]">Next</span>
+                <span className="text-[10px] uppercase tracking-[0.2em] text-[#f0ede8]">Next</span>
               </button>
             </>
           )}
@@ -179,7 +179,7 @@ export default function InstagramCarouselCard({
                     setCurrentIndex(index)
                   }}
                   className={`h-1.5 rounded-full transition-all ${
-                    index === currentIndex ? "bg-white w-6" : "bg-white/40 w-1.5 hover:bg-white/70"
+                    index === currentIndex ? "bg-[#f0ede8] w-6" : "bg-[#8a8780] w-1.5 hover:bg-[#a8a49c]"
                   }`}
                   aria-label={`Go to slide ${index + 1}`}
                 />
@@ -188,61 +188,61 @@ export default function InstagramCarouselCard({
           )}
 
           {/* Slide Counter */}
-          <div className="absolute top-3 right-3 px-2 py-1 bg-stone-950/70 backdrop-blur-sm rounded-lg border border-[rgba(255,255,255,0.18)]">
-            <span className="text-xs text-white font-medium tracking-wide">
+          <div className="absolute top-3 right-3 px-2 py-1 bg-[rgba(13,12,11,0.70)] backdrop-blur-sm rounded-lg border border-[rgba(195,190,182,0.18)]">
+            <span className="text-xs text-[#8a8780] font-medium tracking-wide">
               {currentIndex + 1}/{images.length}
             </span>
           </div>
 
           {images.length > 1 && (
-            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-stone-950/60 backdrop-blur-sm px-3 py-1 rounded-full text-xs text-white/70 sm:hidden pointer-events-none">
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-[rgba(13,12,11,0.60)] backdrop-blur-sm px-3 py-1 rounded-full text-xs text-[#8a8780] sm:hidden pointer-events-none">
               Swipe to navigate
             </div>
           )}
         </div>
 
         {/* Instagram Action Bar */}
-        <div className="px-4 py-3 space-y-3">
+        <div className="px-4 py-3 space-y-3 bg-[rgba(175,170,162,0.10)] backdrop-blur-sm border-t border-[rgba(195,190,182,0.12)]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setIsViewerOpen(true)}
-                className="text-[10px] uppercase tracking-[0.2em] text-[#e5e5e5] hover:text-[#ffffff] transition-colors"
+                className="text-[10px] uppercase tracking-[0.2em] text-[#8a8780] hover:text-[#f0ede8] transition-colors"
                 aria-label="Download"
               >
                 Download
               </button>
               <button
                 onClick={handleLike}
-                className="text-[10px] uppercase tracking-[0.2em] text-[#e5e5e5] hover:text-[#ffffff] transition-colors"
+                className="text-[10px] uppercase tracking-[0.2em] text-[#8a8780] hover:text-[#f0ede8] transition-colors"
                 aria-label={liked ? "Unlike" : "Like"}
               >
                 {liked ? "Favourited" : "Favourite"}
               </button>
               <button
                 onClick={() => setIsViewerOpen(true)}
-                className="text-[10px] uppercase tracking-[0.2em] text-[#e5e5e5] hover:text-[#ffffff] transition-colors"
+                className="text-[10px] uppercase tracking-[0.2em] text-[#8a8780] hover:text-[#f0ede8] transition-colors"
                 aria-label="Photoshoot"
               >
                 Photoshoot
               </button>
             </div>
-            <span className="text-[10px] uppercase tracking-[0.2em] text-[#666666]">{category}</span>
+            <span className="text-[10px] uppercase tracking-[0.2em] text-[#8a8780]">{category}</span>
           </div>
 
           {/* Engagement */}
           <div className="space-y-1">
             {liked && (
-              <p className="text-sm font-semibold text-[#ffffff]">
+              <p className="text-sm font-semibold text-[#f0ede8]">
                 Liked by <span className="font-bold">you</span>
               </p>
             )}
             <div className="text-sm">
-              <span className="font-semibold text-[#ffffff]">sselfie</span>{" "}
-              <span className="text-[#f5f5f5] whitespace-pre-wrap">{description}</span>
+              <span className="font-semibold text-[#f0ede8]">sselfie</span>{" "}
+              <span className="text-[#a8a49c] whitespace-pre-wrap">{description}</span>
             </div>
-            <p className="text-[10px] text-[#666666] tracking-wide uppercase">AI-generated photoshoot • {images.length} photos</p>
-            <p className="text-xs text-[#666666] uppercase tracking-wide">Just now</p>
+            <p className="text-[10px] text-[#8a8780] tracking-wide uppercase">AI-generated photoshoot • {images.length} photos</p>
+            <p className="text-xs text-[#8a8780] uppercase tracking-wide">Just now</p>
           </div>
         </div>
       </div>

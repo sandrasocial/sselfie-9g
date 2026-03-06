@@ -472,17 +472,17 @@ export default function VideoPlayer({
   if (isInvalidVideoUrl) {
     console.warn("[v0] VideoPlayer: Invalid or missing video URL", { videoUrl, lessonId })
     return (
-      <div className="bg-stone-950 p-8 text-center">
-        <p className="text-stone-50 font-light mb-4">Video URL is not available</p>
-        <p className="text-stone-400 text-sm">Please contact support if this issue persists.</p>
+      <div className="bg-[#1c1b19] border border-[rgba(195,190,182,0.15)] rounded-xl overflow-hidden p-8 text-center">
+        <p className="text-[#f0ede8] mb-4">Video URL is not available</p>
+        <p className="text-[#8a8780] text-sm">Please contact support if this issue persists.</p>
       </div>
     )
   }
 
   return (
-    <div ref={containerRef} className="bg-stone-950 overflow-hidden">
+    <div ref={containerRef} className="bg-[#1c1b19] rounded-xl overflow-hidden border border-[rgba(195,190,182,0.15)]">
       {/* Video Element with proper 16:9 aspect ratio */}
-      <div className="relative w-full aspect-video bg-stone-950">
+      <div className="relative w-full aspect-video bg-[#1c1b19]">
         {isVimeo && vimeoEmbedUrl ? (
           <iframe
             ref={iframeRef}
@@ -511,11 +511,11 @@ export default function VideoPlayer({
             }}
           />
         ) : isVimeo && !vimeoEmbedUrl ? (
-          <div className="absolute inset-0 flex items-center justify-center bg-stone-950/90 z-20">
+          <div className="absolute inset-0 flex items-center justify-center bg-[rgba(13,12,11,0.90)] z-20">
             <div className="text-center p-6 max-w-md">
-              <p className="text-stone-50 font-light mb-2">Failed to generate Vimeo embed URL</p>
-              <p className="text-stone-400 text-sm mb-4">Video URL: {videoUrl.substring(0, 80)}...</p>
-              <p className="text-stone-400 text-xs">Please check the video URL format.</p>
+              <p className="text-[#f0ede8] mb-2">Failed to generate Vimeo embed URL</p>
+              <p className="text-[#8a8780] text-sm mb-4">Video URL: {videoUrl.substring(0, 80)}...</p>
+              <p className="text-[#8a8780] text-xs">Please check the video URL format.</p>
             </div>
           </div>
         ) : isYouTube && youtubeEmbedUrl ? (
@@ -579,10 +579,10 @@ export default function VideoPlayer({
 
         {/* Error Message */}
         {videoError && (
-          <div className="absolute inset-0 flex items-center justify-center bg-stone-950/90 z-20">
+          <div className="absolute inset-0 flex items-center justify-center bg-[rgba(13,12,11,0.90)] z-20">
             <div className="text-center p-6 max-w-md">
-              <p className="text-stone-50 font-light mb-2">{videoError}</p>
-              <p className="text-stone-400 text-sm mb-4">Video URL: {videoUrl.substring(0, 50)}...</p>
+              <p className="text-[#f0ede8] mb-2">{videoError}</p>
+              <p className="text-[#8a8780] text-sm mb-4">Video URL: {videoUrl.substring(0, 50)}...</p>
               <button
                 onClick={() => {
                   setVideoError(null)
@@ -590,7 +590,7 @@ export default function VideoPlayer({
                     videoRef.current.load()
                   }
                 }}
-                className="px-4 py-2 bg-stone-50 text-stone-950 rounded-lg text-sm hover:bg-stone-200 transition-colors"
+                className="px-4 py-2 bg-[#c8c4bb] text-[#0d0c0b] rounded-full font-['Inter'] font-medium text-xs tracking-[0.15em] uppercase hover:bg-[#f0ede8] transition-colors"
               >
                 Retry
               </button>
@@ -600,13 +600,13 @@ export default function VideoPlayer({
 
         {/* Play/Pause Overlay - Only show for native video when not playing */}
         {!isEmbedded && !isPlaying && !videoError && (
-          <div className="absolute inset-0 flex items-center justify-center bg-stone-950/40">
+          <div className="absolute inset-0 flex items-center justify-center bg-[rgba(13,12,11,0.40)]">
             <button
               onClick={handlePlayPause}
-              className="w-16 h-16 sm:w-20 sm:h-20 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:scale-110 transition-transform shadow-2xl"
+              className="w-16 h-16 sm:w-20 sm:h-20 bg-[rgba(175,170,162,0.20)] backdrop-blur-sm rounded-full flex items-center justify-center hover:scale-110 transition-transform shadow-2xl text-[#f0ede8]"
               aria-label="Play video"
             >
-              <div className="w-0 h-0 border-t-[12px] sm:border-t-[16px] border-t-transparent border-l-[20px] sm:border-l-[28px] border-l-stone-950 border-b-[12px] sm:border-b-[16px] border-b-transparent ml-1 sm:ml-2" />
+              <div className="w-0 h-0 border-t-[12px] sm:border-t-[16px] border-t-transparent border-l-[20px] sm:border-l-[28px] border-l-[#f0ede8] border-b-[12px] sm:border-b-[16px] border-b-transparent ml-1 sm:ml-2" />
             </button>
           </div>
         )}
@@ -618,17 +618,17 @@ export default function VideoPlayer({
       </div>
 
       {/* Controls */}
-      <div className="bg-stone-950 p-3 sm:p-4 space-y-3 sm:space-y-4">
+      <div className="bg-[rgba(175,170,162,0.10)] backdrop-blur-sm p-3 sm:p-4 space-y-3 sm:space-y-4">
         {/* Progress Bar */}
-        <div onClick={handleSeek} className="w-full h-1.5 sm:h-2 bg-stone-800 rounded-full cursor-pointer group">
+        <div onClick={handleSeek} className="w-full h-1.5 sm:h-2 bg-[rgba(175,170,162,0.20)] rounded-full cursor-pointer group">
           <div
-            className="h-full bg-stone-50 rounded-full transition-all duration-100 group-hover:bg-stone-200"
+            className="h-full bg-[#c8c4bb] rounded-full transition-all duration-100 group-hover:bg-[#f0ede8]"
             style={{ width: `${progressPercentage}%` }}
           />
         </div>
 
         {/* Time Display */}
-        <div className="flex items-center justify-between text-stone-400 text-xs sm:text-sm font-light">
+        <div className="flex items-center justify-between font-['Inter'] text-[#8a8780] text-xs sm:text-sm">
           <span>{formatTime(currentTime)}</span>
           <span>{formatTime(duration)}</span>
         </div>
@@ -638,24 +638,24 @@ export default function VideoPlayer({
           {/* Play/Pause Button */}
           <button
             onClick={handlePlayPause}
-            className="px-6 py-3 bg-stone-50 text-stone-950 rounded-xl font-light tracking-[0.15em] uppercase text-xs sm:text-sm hover:bg-stone-200 transition-all duration-200 min-w-[100px] sm:min-w-[120px]"
+            className="px-6 py-3 bg-[#c8c4bb] text-[#0d0c0b] rounded-full font-['Inter'] font-medium tracking-[0.15em] uppercase text-xs sm:text-sm hover:bg-[#f0ede8] transition-all duration-200 min-w-[100px] sm:min-w-[120px]"
           >
             {isPlaying ? "PAUSE" : "PLAY"}
           </button>
 
           {/* Speed Controls */}
           <div className="flex items-center justify-center gap-2">
-            <span className="text-[10px] sm:text-xs tracking-[0.15em] uppercase font-light text-stone-400 mr-1 sm:mr-2">
+            <span className="font-['Inter'] text-[10px] tracking-[0.5em] uppercase font-medium text-[#8a8780] mr-1 sm:mr-2">
               SPEED
             </span>
             {[0.5, 1, 1.5, 2].map((speed) => (
               <button
                 key={speed}
                 onClick={() => changeSpeed(speed)}
-                className={`px-2.5 sm:px-3 py-2 rounded-lg text-[10px] sm:text-xs font-light tracking-wider transition-all duration-200 ${
+                className={`px-2.5 sm:px-3 py-2 rounded-full font-['Inter'] text-[10px] sm:text-xs font-medium tracking-wider transition-all duration-200 ${
                   playbackSpeed === speed
-                    ? "bg-stone-50 text-stone-950"
-                    : "bg-stone-800 text-stone-400 hover:bg-stone-700"
+                    ? "bg-[#c8c4bb] text-[#0d0c0b]"
+                    : "bg-[rgba(175,170,162,0.12)] text-[#8a8780] hover:bg-[rgba(175,170,162,0.20)]"
                 }`}
               >
                 {speed}x
@@ -666,7 +666,7 @@ export default function VideoPlayer({
           {/* Fullscreen Button */}
           <button
             onClick={toggleFullscreen}
-            className="px-4 sm:px-6 py-3 bg-stone-800 text-stone-50 rounded-xl font-light tracking-[0.15em] uppercase text-xs sm:text-sm hover:bg-stone-700 transition-all duration-200"
+            className="px-4 sm:px-6 py-3 bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.25)] text-[#f0ede8] rounded-full font-['Inter'] font-medium tracking-[0.15em] uppercase text-xs sm:text-sm hover:bg-[rgba(175,170,162,0.18)] transition-all duration-200"
           >
             {isFullscreen ? "EXIT" : "FULL"}
           </button>

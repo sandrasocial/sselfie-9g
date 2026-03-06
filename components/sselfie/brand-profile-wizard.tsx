@@ -439,25 +439,25 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-[rgba(175,170,162,0.15)] backdrop-blur-[70px] border border-[rgba(195,190,182,0.25)] rounded-3xl text-[#f0ede8]">
         <div className="space-y-8 py-6">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-light tracking-[0.2em] uppercase text-stone-500">{step.subtitle}</span>
-              <span className="text-xs font-light text-stone-400">{Math.round(progress)}%</span>
+              <span className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780]">{step.subtitle}</span>
+              <span className="text-xs text-[#8a8780]">{Math.round(progress)}%</span>
             </div>
-            <Progress value={progress} className="h-1 bg-stone-100" />
+            <Progress value={progress} className="h-1 bg-[rgba(175,170,162,0.20)]" />
           </div>
 
-          <div className="bg-stone-50 rounded-lg p-6 border border-stone-200">
+          <div className="bg-[rgba(175,170,162,0.10)] rounded-xl p-6 border border-[rgba(195,190,182,0.20)]">
             <div className="space-y-3">
-              <p className="text-xs font-light tracking-[0.3em] uppercase text-stone-950">MAYA</p>
-              <p className="text-base font-normal leading-relaxed text-stone-700">{step.mayaMessage}</p>
+              <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780]">MAYA</p>
+              <p className="text-sm leading-relaxed text-[#8a8780]">{step.mayaMessage}</p>
             </div>
           </div>
 
           <div className="space-y-6">
-            <h2 className="font-serif text-3xl md:text-4xl font-extralight tracking-widest text-stone-950">
+            <h2 className="font-['Cormorant_Garamond'] font-light text-3xl md:text-4xl tracking-wide text-[#f0ede8]">
               {step.title}
             </h2>
 
@@ -468,10 +468,10 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                     <button
                       key={theme.id}
                       onClick={() => handleColorThemeSelect(theme.id)}
-                      className={`relative p-6 rounded-lg border transition-all text-left hover:shadow-sm ${
+                      className={`relative p-6 rounded-xl border transition-all text-left ${
                         formData.colorTheme === theme.id
-                          ? "border-stone-950 bg-stone-50"
-                          : "border-stone-200 hover:border-stone-400"
+                          ? "border-[#a8a49c] bg-[rgba(168,164,156,0.15)]"
+                          : "border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.06)] hover:border-[rgba(195,190,182,0.45)]"
                       }`}
                     >
                       <div className="flex gap-2 mb-4">
@@ -479,45 +479,45 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                           ? customColors.map((color, idx) => (
                               <div
                                 key={idx}
-                                className="w-10 h-10 rounded-full border border-stone-200"
+                                className="w-10 h-10 rounded-full border border-[rgba(195,190,182,0.25)]"
                                 style={{ backgroundColor: color }}
                               />
                             ))
                           : theme.colors.map((color, idx) => (
                               <div
                                 key={idx}
-                                className="w-10 h-10 rounded-full border border-stone-200"
+                                className="w-10 h-10 rounded-full border border-[rgba(195,190,182,0.25)]"
                                 style={{ backgroundColor: color }}
                               />
                             ))}
                       </div>
 
                       <div className="space-y-2">
-                        <p className="text-sm font-medium tracking-wider uppercase text-stone-950">{theme.name}</p>
-                        <p className="text-sm font-light text-stone-600">{theme.description}</p>
+                        <p className="font-['Inter'] font-medium text-[10px] tracking-[0.4em] uppercase text-[#f0ede8]">{theme.name}</p>
+                        <p className="text-sm text-[#8a8780]">{theme.description}</p>
                       </div>
 
                       {formData.colorTheme === theme.id && (
-                        <div className="absolute top-4 right-4 w-6 h-6 bg-stone-950 rounded-full" />
+                        <div className="absolute top-4 right-4 w-6 h-6 bg-[#a8a49c] rounded-full" />
                       )}
                     </button>
                   ))}
                 </div>
 
                 {formData.colorTheme === "custom" && (
-                  <div className="bg-stone-50 border border-stone-200 rounded-lg p-6 space-y-6">
+                  <div className="bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.20)] rounded-xl p-6 space-y-6">
                     <div className="space-y-2">
-                      <h3 className="text-sm font-medium tracking-wider uppercase text-stone-950">
+                      <h3 className="font-['Inter'] font-medium text-[10px] tracking-[0.5em] uppercase text-[#a8a49c]">
                         CUSTOMIZE YOUR BRAND COLORS
                       </h3>
-                      <p className="text-sm font-light text-stone-600">
+                      <p className="text-sm text-[#8a8780]">
                         Choose 4 colors that represent your brand. These will be used throughout your content.
                       </p>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {customColors.map((color, index) => (
                         <div key={index} className="space-y-2">
-                          <label className="text-xs font-light tracking-[0.2em] uppercase text-stone-500">
+                          <label className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.4em] text-[#8a8780]">
                             Color {index + 1}
                           </label>
                           <div className="flex gap-2">
@@ -526,13 +526,13 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                               value={color}
                               onChange={(e) => handleCustomColorChange(index, e.target.value)}
                               placeholder="#000000"
-                              className="flex-1 px-4 py-3 text-sm border border-stone-200 rounded-lg bg-white text-stone-950 focus:border-stone-400 focus:outline-none transition-colors"
+                              className="flex-1 px-4 py-3 text-sm border border-[rgba(195,190,182,0.25)] rounded-xl bg-[rgba(175,170,162,0.10)] text-[#f0ede8] placeholder:text-[#8a8780] focus:border-[#a8a49c] focus:outline-none transition-colors"
                             />
                             <input
                               type="color"
                               value={color}
                               onChange={(e) => handleCustomColorChange(index, e.target.value)}
-                              className="w-14 h-12 rounded-lg border border-stone-200 cursor-pointer"
+                              className="w-14 h-12 rounded-xl border border-[rgba(195,190,182,0.25)] cursor-pointer bg-transparent"
                             />
                           </div>
                         </div>
@@ -544,7 +544,7 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
             ) : step.isVisualAestheticSelector ? (
               <div className="space-y-4">
                 <div className="space-y-3">
-                  <p className="text-xs font-light tracking-[0.2em] uppercase text-stone-500">SELECT ALL THAT APPLY</p>
+                  <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780]">SELECT ALL THAT APPLY</p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {VISUAL_AESTHETICS.map((aesthetic) => {
                       const isSelected = formData.visualAesthetic.includes(aesthetic.id)
@@ -552,19 +552,19 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                         <button
                           key={aesthetic.id}
                           onClick={() => handleMultiSelectToggle("visualAesthetic", aesthetic.id)}
-                          className={`relative p-6 rounded-lg border transition-all text-left hover:shadow-sm ${
-                            isSelected ? "border-stone-950 bg-stone-50" : "border-stone-200 hover:border-stone-400"
+                          className={`relative p-6 rounded-xl border transition-all text-left ${
+                            isSelected ? "border-[#a8a49c] bg-[rgba(168,164,156,0.15)]" : "border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.06)] hover:border-[rgba(195,190,182,0.45)]"
                           }`}
                         >
                           <div className="space-y-2">
-                            <p className="text-sm font-medium tracking-wider uppercase text-stone-950">
+                            <p className="font-['Inter'] font-medium text-[10px] tracking-[0.4em] uppercase text-[#f0ede8]">
                               {aesthetic.name}
                             </p>
-                            <p className="text-sm font-light text-stone-600">{aesthetic.description}</p>
+                            <p className="text-sm text-[#8a8780]">{aesthetic.description}</p>
                           </div>
                           {isSelected && (
-                            <div className="absolute top-4 right-4 w-6 h-6 bg-stone-950 rounded-full flex items-center justify-center">
-                              <div className="w-3 h-3 bg-white rounded-sm" />
+                            <div className="absolute top-4 right-4 w-6 h-6 bg-[#a8a49c] rounded-full flex items-center justify-center">
+                              <div className="w-3 h-3 bg-[#0d0c0b] rounded-sm" />
                             </div>
                           )}
                         </button>
@@ -576,7 +576,7 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                 {formData.visualAesthetic.length > 0 && (
                   <div className="space-y-4 pt-4">
                     <div className="space-y-2">
-                      <label className="text-xs font-light tracking-[0.2em] uppercase text-stone-500">
+                      <label className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780]">
                         PREFERRED SETTINGS (SELECT ALL THAT APPLY)
                       </label>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -586,18 +586,18 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                             <button
                               key={setting.id}
                               onClick={() => handleMultiSelectToggle("settingsPreference", setting.id)}
-                              className={`p-4 rounded-lg border text-left transition-all ${
-                                isSelected ? "border-stone-950 bg-stone-50" : "border-stone-200 hover:border-stone-400"
+                              className={`p-4 rounded-xl border text-left transition-all ${
+                                isSelected ? "border-[#a8a49c] bg-[rgba(168,164,156,0.15)]" : "border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.06)] hover:border-[rgba(195,190,182,0.45)]"
                               }`}
                             >
                               <div className="flex items-start justify-between gap-2">
                                 <div>
-                                  <p className="text-sm font-medium text-stone-950">{setting.name}</p>
-                                  <p className="text-xs font-light text-stone-600 mt-1">{setting.description}</p>
+                                  <p className="text-sm text-[#f0ede8]">{setting.name}</p>
+                                  <p className="text-xs text-[#8a8780] mt-1">{setting.description}</p>
                                 </div>
                                 {isSelected && (
-                                  <div className="w-5 h-5 bg-stone-950 rounded-full flex items-center justify-center shrink-0">
-                                    <div className="w-2.5 h-2.5 bg-white rounded-sm" />
+                                  <div className="w-5 h-5 bg-[#a8a49c] rounded-full flex items-center justify-center shrink-0">
+                                    <div className="w-2.5 h-2.5 bg-[#0d0c0b] rounded-sm" />
                                   </div>
                                 )}
                               </div>
@@ -608,7 +608,7 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-xs font-light tracking-[0.2em] uppercase text-stone-500">
+                      <label className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780]">
                         FASHION STYLE (SELECT ALL THAT APPLY)
                       </label>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -618,18 +618,18 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                             <button
                               key={style.id}
                               onClick={() => handleMultiSelectToggle("fashionStyle", style.id)}
-                              className={`p-4 rounded-lg border text-left transition-all ${
-                                isSelected ? "border-stone-950 bg-stone-50" : "border-stone-200 hover:border-stone-400"
+                              className={`p-4 rounded-xl border text-left transition-all ${
+                                isSelected ? "border-[#a8a49c] bg-[rgba(168,164,156,0.15)]" : "border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.06)] hover:border-[rgba(195,190,182,0.45)]"
                               }`}
                             >
                               <div className="flex items-start justify-between gap-2">
                                 <div>
-                                  <p className="text-sm font-medium text-stone-950">{style.name}</p>
-                                  <p className="text-xs font-light text-stone-600 mt-1">{style.description}</p>
+                                  <p className="text-sm text-[#f0ede8]">{style.name}</p>
+                                  <p className="text-xs text-[#8a8780] mt-1">{style.description}</p>
                                 </div>
                                 {isSelected && (
-                                  <div className="w-5 h-5 bg-stone-950 rounded-full flex items-center justify-center shrink-0">
-                                    <div className="w-2.5 h-2.5 bg-white rounded-sm" />
+                                  <div className="w-5 h-5 bg-[#a8a49c] rounded-full flex items-center justify-center shrink-0">
+                                    <div className="w-2.5 h-2.5 bg-[#0d0c0b] rounded-sm" />
                                   </div>
                                 )}
                               </div>
@@ -644,46 +644,46 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
             ) : step.isAudienceBuilder ? (
               <div className="space-y-6">
                 <div className="space-y-2">
-                  <label className="text-xs font-light tracking-[0.2em] uppercase text-stone-500">
+                  <label className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780]">
                     DESCRIBE YOUR IDEAL CLIENT/FOLLOWER
                   </label>
                   <Textarea
                     value={formData.idealAudience}
                     onChange={(e) => handleInputChange("idealAudience", e.target.value)}
                     placeholder="e.g., Female entrepreneurs in their 30s-40s who want to build a personal brand..."
-                    className="min-h-[100px] resize-none border-stone-200 focus:border-stone-400 text-base leading-relaxed"
+                    className="min-h-[100px] resize-none border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] text-[#f0ede8] placeholder:text-[#8a8780] focus:border-[#a8a49c] text-sm leading-relaxed rounded-xl"
                     autoFocus
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-light tracking-[0.2em] uppercase text-stone-500">
+                  <label className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780]">
                     WHAT&apos;S THEIR BIGGEST CHALLENGE?
                   </label>
                   <Textarea
                     value={formData.audienceChallenge}
                     onChange={(e) => handleInputChange("audienceChallenge", e.target.value)}
                     placeholder="e.g., They struggle with showing up consistently on social media..."
-                    className="min-h-[80px] resize-none border-stone-200 focus:border-stone-400 text-base leading-relaxed"
+                    className="min-h-[80px] resize-none border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] text-[#f0ede8] placeholder:text-[#8a8780] focus:border-[#a8a49c] text-sm leading-relaxed rounded-xl"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-light tracking-[0.2em] uppercase text-stone-500">
+                  <label className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780]">
                     WHAT TRANSFORMATION DO THEY WANT?
                   </label>
                   <Textarea
                     value={formData.audienceTransformation}
                     onChange={(e) => handleInputChange("audienceTransformation", e.target.value)}
                     placeholder="e.g., They want to become confident, visible leaders in their industry..."
-                    className="min-h-[80px] resize-none border-stone-200 focus:border-stone-400 text-base leading-relaxed"
+                    className="min-h-[80px] resize-none border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] text-[#f0ede8] placeholder:text-[#8a8780] focus:border-[#a8a49c] text-sm leading-relaxed rounded-xl"
                   />
                 </div>
               </div>
             ) : step.isCommunicationVoiceSelector ? (
               <div className="space-y-6">
                 <div className="space-y-3">
-                  <p className="text-xs font-light tracking-[0.2em] uppercase text-stone-500">SELECT ALL THAT APPLY</p>
+                  <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780]">SELECT ALL THAT APPLY</p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {COMMUNICATION_VOICES.map((voice) => {
                       const isSelected = formData.communicationVoice.includes(voice.id)
@@ -691,17 +691,17 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                         <button
                           key={voice.id}
                           onClick={() => handleMultiSelectToggle("communicationVoice", voice.id)}
-                          className={`relative p-6 rounded-lg border transition-all text-left hover:shadow-sm ${
-                            isSelected ? "border-stone-950 bg-stone-50" : "border-stone-200 hover:border-stone-400"
+                          className={`relative p-6 rounded-xl border transition-all text-left ${
+                            isSelected ? "border-[#a8a49c] bg-[rgba(168,164,156,0.15)]" : "border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.06)] hover:border-[rgba(195,190,182,0.45)]"
                           }`}
                         >
                           <div className="space-y-2">
-                            <p className="text-sm font-medium tracking-wider uppercase text-stone-950">{voice.name}</p>
-                            <p className="text-sm font-light text-stone-600">{voice.description}</p>
+                            <p className="font-['Inter'] font-medium text-[10px] tracking-[0.4em] uppercase text-[#f0ede8]">{voice.name}</p>
+                            <p className="text-sm text-[#8a8780]">{voice.description}</p>
                           </div>
                           {isSelected && (
-                            <div className="absolute top-4 right-4 w-6 h-6 bg-stone-950 rounded-full flex items-center justify-center">
-                              <div className="w-3 h-3 bg-white rounded-sm" />
+                            <div className="absolute top-4 right-4 w-6 h-6 bg-[#a8a49c] rounded-full flex items-center justify-center">
+                              <div className="w-3 h-3 bg-[#0d0c0b] rounded-sm" />
                             </div>
                           )}
                         </button>
@@ -712,14 +712,14 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
 
                 {formData.communicationVoice.length > 0 && (
                   <div className="space-y-2 pt-4">
-                    <label className="text-xs font-light tracking-[0.2em] uppercase text-stone-500">
+                    <label className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780]">
                       ANY SIGNATURE PHRASES OR WORDS YOU USE? (OPTIONAL)
                     </label>
                     <Input
                       value={formData.signaturePhrases}
                       onChange={(e) => handleInputChange("signaturePhrases", e.target.value)}
                       placeholder="e.g., Let's make it happen, Your time is now, etc."
-                      className="border-stone-200 focus:border-stone-400 text-base"
+                      className="border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] text-[#f0ede8] placeholder:text-[#8a8780] focus:border-[#a8a49c] rounded-xl text-sm"
                     />
                   </div>
                 )}
@@ -737,7 +737,7 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                     value={formData[step.field as keyof typeof formData]}
                     onChange={(e) => handleInputChange(step.field!, e.target.value)}
                     placeholder={step.placeholder}
-                    className="min-h-[140px] resize-none border-stone-200 focus:border-stone-400 text-base leading-relaxed"
+                    className="min-h-[140px] resize-none border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] text-[#f0ede8] placeholder:text-[#8a8780] focus:border-[#a8a49c] text-sm leading-relaxed rounded-xl"
                     autoFocus
                   />
                 ) : (
@@ -745,24 +745,24 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                     value={formData[step.field as keyof typeof formData]}
                     onChange={(e) => handleInputChange(step.field!, e.target.value)}
                     placeholder={step.placeholder}
-                    className="border-stone-200 focus:border-stone-400 text-base"
+                    className="border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] text-[#f0ede8] placeholder:text-[#8a8780] focus:border-[#a8a49c] rounded-xl text-sm"
                     autoFocus
                   />
                 )}
                 {step.isOptional && (
-                  <p className="text-xs font-light text-stone-500 italic">This step is optional - skip if you prefer</p>
+                  <p className="text-xs text-[#8a8780] italic">This step is optional - skip if you prefer</p>
                 )}
               </div>
             ) : null}
           </div>
 
           {!step.isContentPillarBuilder && (
-            <div className="flex items-center justify-between pt-6 border-t border-stone-200">
+            <div className="flex items-center justify-between pt-6 border-t border-[rgba(195,190,182,0.20)]">
               <Button
                 variant="ghost"
                 onClick={handleBack}
                 disabled={currentStep === 0}
-                className="text-sm font-medium tracking-wider uppercase text-stone-600 hover:text-stone-950 hover:bg-stone-50 disabled:opacity-30"
+                className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780] hover:text-[#f0ede8] hover:bg-transparent disabled:opacity-30"
               >
                 BACK
               </Button>
@@ -773,14 +773,14 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                     onClick={() => handleComplete({ redirectToStrategy: true })}
                     disabled={!canProceed() || isSaving}
                     variant="outline"
-                    className="border-stone-300 text-stone-700 hover:bg-stone-50 text-sm font-medium tracking-wider uppercase px-6 py-6 rounded-lg transition-all duration-200"
+                    className="border-[rgba(195,190,182,0.35)] bg-transparent text-[#8a8780] hover:bg-[rgba(175,170,162,0.10)] hover:text-[#f0ede8] font-['Inter'] font-medium text-[10px] uppercase tracking-[0.4em] px-6 py-3 rounded-full transition-colors"
                   >
                     Generate my Brand Strategy
                   </Button>
                   <Button
                     onClick={() => handleComplete()}
                     disabled={!canProceed() || isSaving}
-                    className="bg-stone-950 hover:bg-stone-800 text-white text-sm font-medium tracking-wider uppercase px-8 py-6 rounded-lg transition-all duration-200"
+                    className="bg-[#c8c4bb] hover:bg-[#f0ede8] text-[#0d0c0b] font-['Inter'] font-medium text-[10px] uppercase tracking-[0.4em] px-8 py-3 rounded-full transition-colors disabled:opacity-50"
                   >
                     {isSaving ? "SAVING..." : "COMPLETE"}
                   </Button>
@@ -789,9 +789,9 @@ export default function BrandProfileWizard({ isOpen, onClose, onComplete, existi
                 <Button
                   onClick={handleNext}
                   disabled={!canProceed()}
-                  className="bg-stone-950 hover:bg-stone-800 text-white text-sm font-medium tracking-wider uppercase px-8 py-6 rounded-lg transition-all duration-200"
+                  className="bg-[#c8c4bb] hover:bg-[#f0ede8] text-[#0d0c0b] font-['Inter'] font-medium text-[10px] uppercase tracking-[0.4em] px-8 py-3 rounded-full transition-colors disabled:opacity-50"
                 >
-                  {isIntroStep ? "LET\u0027S START" : step.isOptional ? "SKIP" : "NEXT"}
+                  {isIntroStep ? "LET'S START" : step.isOptional ? "SKIP" : "NEXT"}
                 </Button>
               )}
             </div>

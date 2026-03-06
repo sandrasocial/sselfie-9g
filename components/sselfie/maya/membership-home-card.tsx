@@ -34,53 +34,44 @@ export default function MembershipHomeCard({
 
   return (
     <div className="w-full max-w-2xl mx-auto px-4 sm:px-6">
-      <div className="rounded-[20px] border border-[rgba(255,255,255,0.12)] bg-[rgba(255,255,255,0.05)] backdrop-blur-[20px] p-4 sm:p-5 space-y-4">
-        <section className="rounded-2xl border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.04)] p-3.5 sm:p-4">
-          <p
-            className="text-[10px] tracking-[0.24em] uppercase text-[#e5e5e5]"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
+      <div className="rounded-3xl border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.15)] backdrop-blur-[50px] p-4 sm:p-5 space-y-4">
+        <section className="rounded-2xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-3.5 sm:p-4">
+          <p className="font-['Inter'] font-medium text-[10px] tracking-[0.5em] uppercase text-[#8a8780]">
             Your Credits
           </p>
-          <p className="mt-2 text-2xl sm:text-[28px] leading-none text-[#ffffff] font-medium tracking-[0.03em]">
+          <p className="mt-2 text-2xl sm:text-[28px] leading-none text-[#f0ede8] font-medium tracking-[0.03em]">
             {normalizedCredits.toLocaleString()} ready
           </p>
         </section>
 
-        <section className="rounded-2xl border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.04)] p-3.5 sm:p-4">
-          <p
-            className="text-[10px] tracking-[0.24em] uppercase text-[#e5e5e5]"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
+        <section className="rounded-2xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-3.5 sm:p-4">
+          <p className="font-['Inter'] font-medium text-[10px] tracking-[0.5em] uppercase text-[#8a8780]">
             Continue
           </p>
-          <p className="mt-2 text-sm sm:text-[15px] leading-relaxed text-[#f5f5f5]">
+          <p className="mt-2 text-sm sm:text-[15px] leading-relaxed text-[#f0ede8]">
             {safeLastSessionTitle}
           </p>
           <button
             type="button"
             onClick={onContinue}
-            className="mt-3 text-[11px] sm:text-xs uppercase tracking-[0.18em] text-[#ffffff] hover:text-[#f5f5f5] transition-colors"
+            className="mt-3 text-[11px] sm:text-xs uppercase tracking-[0.18em] text-[#a8a49c] hover:text-[#f0ede8] transition-colors"
           >
             Pick up where you left off →
           </button>
         </section>
 
         {hasMonthlyDrop && (
-          <section className="rounded-2xl border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.04)] p-3.5 sm:p-4">
-            <p
-              className="text-[10px] tracking-[0.24em] uppercase text-[#e5e5e5]"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
+          <section className="rounded-2xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-3.5 sm:p-4">
+            <p className="font-['Inter'] font-medium text-[10px] tracking-[0.5em] uppercase text-[#8a8780]">
               This Month
             </p>
-            <p className="mt-2 text-sm sm:text-[15px] leading-relaxed text-[#f5f5f5]">
+            <p className="mt-2 text-sm sm:text-[15px] leading-relaxed text-[#f0ede8]">
               {monthlyDropName}
             </p>
             <button
               type="button"
               onClick={onExploreMonthlyDrop ?? onBrowseStyles}
-              className="mt-3 text-[11px] sm:text-xs uppercase tracking-[0.18em] text-[#ffffff] hover:text-[#f5f5f5] transition-colors"
+              className="mt-3 text-[11px] sm:text-xs uppercase tracking-[0.18em] text-[#a8a49c] hover:text-[#f0ede8] transition-colors"
             >
               Explore →
             </button>
@@ -91,21 +82,21 @@ export default function MembershipHomeCard({
           <button
             type="button"
             onClick={onGeneratePhoto}
-            className="rounded-xl border border-[rgba(255,255,255,0.15)] bg-[rgba(255,255,255,0.06)] px-3 py-3 text-[11px] uppercase tracking-[0.16em] text-[#ffffff] hover:bg-[rgba(255,255,255,0.1)] transition-colors"
+            className="rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] px-3 py-3 text-[11px] uppercase tracking-[0.16em] text-[#a8a49c] hover:bg-[rgba(175,170,162,0.18)] hover:text-[#f0ede8] transition-colors"
           >
             Generate a photo →
           </button>
           <button
             type="button"
             onClick={onPlanFeed}
-            className="rounded-xl border border-[rgba(255,255,255,0.15)] bg-[rgba(255,255,255,0.06)] px-3 py-3 text-[11px] uppercase tracking-[0.16em] text-[#ffffff] hover:bg-[rgba(255,255,255,0.1)] transition-colors"
+            className="rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] px-3 py-3 text-[11px] uppercase tracking-[0.16em] text-[#a8a49c] hover:bg-[rgba(175,170,162,0.18)] hover:text-[#f0ede8] transition-colors"
           >
             Plan my feed →
           </button>
           <button
             type="button"
             onClick={onBrowseStyles}
-            className="rounded-xl border border-[rgba(255,255,255,0.15)] bg-[rgba(255,255,255,0.06)] px-3 py-3 text-[11px] uppercase tracking-[0.16em] text-[#ffffff] hover:bg-[rgba(255,255,255,0.1)] transition-colors"
+            className="rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] px-3 py-3 text-[11px] uppercase tracking-[0.16em] text-[#a8a49c] hover:bg-[rgba(175,170,162,0.18)] hover:text-[#f0ede8] transition-colors"
           >
             Browse styles →
           </button>
@@ -117,7 +108,7 @@ export default function MembershipHomeCard({
               <button
                 type="button"
                 onClick={onCreateCalendar}
-                className="rounded-xl border border-[rgba(255,255,255,0.15)] bg-[rgba(255,255,255,0.06)] px-3 py-3 text-[11px] uppercase tracking-[0.16em] text-[#ffffff] hover:bg-[rgba(255,255,255,0.1)] transition-colors"
+                className="rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] px-3 py-3 text-[11px] uppercase tracking-[0.16em] text-[#a8a49c] hover:bg-[rgba(175,170,162,0.18)] hover:text-[#f0ede8] transition-colors"
               >
                 Create calendar →
               </button>
@@ -126,7 +117,7 @@ export default function MembershipHomeCard({
               <button
                 type="button"
                 onClick={onUploadAssets}
-                className="rounded-xl border border-[rgba(255,255,255,0.15)] bg-[rgba(255,255,255,0.06)] px-3 py-3 text-[11px] uppercase tracking-[0.16em] text-[#ffffff] hover:bg-[rgba(255,255,255,0.1)] transition-colors"
+                className="rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] px-3 py-3 text-[11px] uppercase tracking-[0.16em] text-[#a8a49c] hover:bg-[rgba(175,170,162,0.18)] hover:text-[#f0ede8] transition-colors"
               >
                 Upload assets →
               </button>

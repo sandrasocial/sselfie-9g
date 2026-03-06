@@ -12,9 +12,9 @@ export default async function CheckoutSuccessPage({
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-stone-50 flex items-center justify-center p-4">
+        <div className="min-h-screen bg-[#0d0c0b] flex items-center justify-center p-4">
           <div className="text-center">
-            <div className="font-serif text-xl sm:text-2xl font-extralight tracking-[0.3em] uppercase text-stone-900 mb-4">
+            <div className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl tracking-[0.3em] uppercase text-[#f0ede8] mb-4">
               LOADING
             </div>
           </div>

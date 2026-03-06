@@ -446,7 +446,7 @@ export default function OnboardingWizard({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-stone-950/60 backdrop-blur-sm z-[100]"
+            className="fixed inset-0 bg-[rgba(13,12,11,0.80)] backdrop-blur-sm z-[100]"
             onClick={onDismiss}
           />
 
@@ -459,16 +459,12 @@ export default function OnboardingWizard({
             style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 6rem)" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className={`w-full max-w-2xl max-h-[90vh] overflow-y-auto ${currentStep === "welcome" ? "bg-stone-950/95 backdrop-blur-xl" : ComponentClasses.card} ${DesignClasses.spacing.padding.lg} relative ${currentStep === "welcome" ? "border border-stone-800" : ""}`}>
+            <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-[rgba(175,170,162,0.15)] backdrop-blur-[70px] border border-[rgba(195,190,182,0.25)] rounded-3xl p-6 sm:p-8 relative">
               {/* Close Button */}
               {onDismiss && currentStep !== "training" && (
                 <button
                   onClick={onDismiss}
-                  className={`absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg transition-colors z-10 ${
-                    currentStep === "welcome" 
-                      ? "hover:bg-stone-800 text-white/80 hover:text-white" 
-                      : "hover:bg-stone-100 text-stone-600"
-                  }`}
+                  className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg transition-colors z-10 text-[#8a8780] hover:text-[#f0ede8]"
                   aria-label="Close"
                 >
                   <X size={18} />
@@ -485,7 +481,7 @@ export default function OnboardingWizard({
                     exit={{ opacity: 0, x: -20 }}
                     className="text-center space-y-6"
                   >
-                    <div className="w-20 h-20 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full flex items-center justify-center mx-auto shadow-2xl">
+                    <div className="w-20 h-20 bg-[rgba(175,170,162,0.18)] backdrop-blur-sm border border-[rgba(195,190,182,0.25)] rounded-full flex items-center justify-center mx-auto">
                       <div className="w-12 h-12 relative">
                         <Image
                           src="/icon.svg"
@@ -496,21 +492,18 @@ export default function OnboardingWizard({
                         />
                       </div>
                     </div>
-                    <h2 className={`${DesignClasses.typography.heading.h2} text-white`}>
+                    <h2 className="font-['Cormorant_Garamond'] font-light text-3xl sm:text-4xl text-[#f0ede8] tracking-wide">
                       Welcome to SSELFIE!
                     </h2>
-                    <p className={`${DesignClasses.typography.body.medium} text-white/90 max-w-md mx-auto`}>
+                    <p className="text-sm text-[#8a8780] max-w-md mx-auto leading-relaxed">
                       Let&apos;s train your personal AI model with your selfies. This takes about 5 minutes and you only need to do it once.
                     </p>
                     <button
                       onClick={() => setCurrentStep("upload")}
-                      className="group relative bg-white text-stone-950 px-6 py-3 rounded-lg font-medium min-h-[52px] overflow-hidden hover:bg-stone-100 transition-all"
+                      className="inline-flex items-center justify-center gap-2 bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[#f0ede8] transition-colors active:scale-[0.98]"
                     >
-                      <div className="absolute inset-0 bg-stone-950/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                      <span className="relative z-10 flex items-center justify-center gap-2">
-                        Get Started
-                        <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
-                      </span>
+                      Get Started
+                      <ChevronRight size={16} />
                     </button>
                   </motion.div>
                 )}
@@ -525,26 +518,26 @@ export default function OnboardingWizard({
                     className="space-y-6"
                   >
                     <div className="text-center">
-                      <h2 className={`${DesignClasses.typography.heading.h3} ${DesignClasses.text.primary} mb-2`}>
+                      <h2 className="font-['Cormorant_Garamond'] font-light text-2xl sm:text-3xl text-[#f0ede8] tracking-wide mb-2">
                         Train Your AI Model
                       </h2>
-                      <p className={`${DesignClasses.typography.body.small} ${DesignClasses.text.tertiary}`}>
+                      <p className="text-sm text-[#8a8780]">
                         Upload 10-20 selfies to get started
                       </p>
                     </div>
 
                     {/* Gender Selection */}
-                    <div className={`${DesignClasses.spacing.padding.md} ${DesignClasses.background.secondary} ${DesignClasses.radius.md} ${DesignClasses.border.medium}`}>
-                      <label className="block text-sm font-medium text-stone-950 mb-3">Select Your Gender</label>
+                    <div className="p-4 bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.20)] rounded-2xl">
+                      <label className="block font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780] mb-3">Select Your Gender</label>
                       <div className="grid grid-cols-3 gap-2">
                         {["woman", "man", "non-binary"].map((option) => (
                           <button
                             key={option}
                             onClick={() => setSelectedGender(option)}
-                            className={`px-4 py-3 text-sm rounded-xl border transition-all ${
+                            className={`px-4 py-3 text-xs rounded-xl border transition-all tracking-[0.1em] uppercase ${
                               selectedGender === option
-                                ? "bg-stone-950 text-white border-stone-950"
-                                : "bg-white text-stone-600 border-stone-300/40 hover:border-stone-400"
+                                ? "bg-[#c8c4bb] text-[#0d0c0b] border-[#c8c4bb]"
+                                : "bg-transparent text-[#8a8780] border-[rgba(195,190,182,0.30)] hover:border-[rgba(195,190,182,0.60)] hover:text-[#f0ede8]"
                             }`}
                           >
                             {option.charAt(0).toUpperCase() + option.slice(1)}
@@ -555,29 +548,29 @@ export default function OnboardingWizard({
 
                     {/* Ethnicity Selection */}
                     {selectedGender && (
-                      <div className={`${DesignClasses.spacing.padding.md} ${DesignClasses.background.secondary} ${DesignClasses.radius.md} ${DesignClasses.border.medium}`}>
-                        <label className="block text-sm font-medium text-stone-950 mb-3">Select Your Ethnicity</label>
+                      <div className="p-4 bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.20)] rounded-2xl">
+                        <label className="block font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780] mb-3">Select Your Ethnicity</label>
                         <select
                           value={selectedEthnicity}
                           onChange={(e) => setSelectedEthnicity(e.target.value)}
-                          className="w-full px-4 py-3 text-sm rounded-xl border border-stone-300/40 bg-white text-stone-950 focus:outline-none focus:border-stone-400"
+                          className="w-full px-4 py-3 text-sm rounded-xl border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] text-[#f0ede8] focus:outline-none focus:border-[#a8a49c]"
                         >
-                          <option value="">Select ethnicity</option>
-                          <option value="Black">Black</option>
-                          <option value="White">White</option>
-                          <option value="Asian">Asian</option>
-                          <option value="Latina/Latino">Latina/Latino</option>
-                          <option value="Middle Eastern">Middle Eastern</option>
-                          <option value="South Asian">South Asian</option>
-                          <option value="Mixed">Mixed</option>
-                          <option value="Other">Other</option>
-                          <option value="Prefer not to say">Prefer not to say</option>
+                          <option value="" className="bg-[#1c1b19]">Select ethnicity</option>
+                          <option value="Black" className="bg-[#1c1b19]">Black</option>
+                          <option value="White" className="bg-[#1c1b19]">White</option>
+                          <option value="Asian" className="bg-[#1c1b19]">Asian</option>
+                          <option value="Latina/Latino" className="bg-[#1c1b19]">Latina/Latino</option>
+                          <option value="Middle Eastern" className="bg-[#1c1b19]">Middle Eastern</option>
+                          <option value="South Asian" className="bg-[#1c1b19]">South Asian</option>
+                          <option value="Mixed" className="bg-[#1c1b19]">Mixed</option>
+                          <option value="Other" className="bg-[#1c1b19]">Other</option>
+                          <option value="Prefer not to say" className="bg-[#1c1b19]">Prefer not to say</option>
                         </select>
                       </div>
                     )}
 
                     {/* Upload Area */}
-                    <label className="block border-2 border-dashed border-stone-300/60 rounded-xl p-8 text-center bg-white/30 backdrop-blur-xl hover:bg-white/50 hover:border-stone-400/60 transition-all duration-300 cursor-pointer group">
+                    <label className="block border-2 border-dashed border-[rgba(195,190,182,0.30)] rounded-2xl p-8 text-center bg-[rgba(175,170,162,0.06)] hover:bg-[rgba(175,170,162,0.12)] hover:border-[rgba(195,190,182,0.55)] transition-all duration-300 cursor-pointer group">
                       <input
                         type="file"
                         multiple
@@ -586,14 +579,14 @@ export default function OnboardingWizard({
                         className="hidden"
                         disabled={isUploading}
                       />
-                      <div className="w-16 h-16 bg-stone-950 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-xl group-hover:scale-110 transition-transform">
-                        <Camera size={28} className="text-white" strokeWidth={2.5} />
+                      <div className="w-16 h-16 bg-[rgba(175,170,162,0.18)] rounded-xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform">
+                        <Camera size={28} className="text-[#a8a49c]" strokeWidth={2.5} />
                       </div>
-                      <h4 className="text-base font-semibold text-stone-950 mb-2">Click to Upload Photos</h4>
-                      <p className="text-sm text-stone-600 mb-4">or drag and drop</p>
-                      <div className="inline-flex items-center gap-2 px-4 py-2 bg-stone-100/60 rounded-full">
-                        <div className="w-2 h-2 bg-stone-950 rounded-full"></div>
-                        <span className="text-xs tracking-wider uppercase font-semibold text-stone-700">
+                      <h4 className="text-base font-medium text-[#f0ede8] mb-2">Click to Upload Photos</h4>
+                      <p className="text-sm text-[#8a8780] mb-4">or drag and drop</p>
+                      <div className="inline-flex items-center gap-2 px-4 py-2 bg-[rgba(175,170,162,0.12)] rounded-full">
+                        <div className="w-2 h-2 bg-[#a8a49c] rounded-full"></div>
+                        <span className="text-xs tracking-wider uppercase font-medium text-[#8a8780]">
                           {uploadedImages.length} / 10 minimum
                         </span>
                       </div>
@@ -603,7 +596,7 @@ export default function OnboardingWizard({
                     {uploadedImages.length > 0 && !isUploading && (
                       <div className="grid grid-cols-4 gap-2">
                         {uploadedImages.map((file, i) => (
-                          <div key={i} className="relative aspect-square bg-stone-200/30 rounded-lg border border-stone-300/30 overflow-hidden group">
+                          <div key={i} className="relative aspect-square bg-[rgba(175,170,162,0.10)] rounded-lg border border-[rgba(195,190,182,0.20)] overflow-hidden group">
                             <img
                               src={URL.createObjectURL(file) || "/placeholder.svg"}
                               alt={`Upload ${i + 1}`}
@@ -611,7 +604,7 @@ export default function OnboardingWizard({
                             />
                             <button
                               onClick={() => handleRemoveUploadedImage(i)}
-                              className="absolute top-1 right-1 w-6 h-6 bg-stone-950/80 hover:bg-stone-950 active:bg-stone-900 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="absolute top-1 right-1 w-6 h-6 bg-[rgba(13,12,11,0.80)] hover:bg-[#0d0c0b] text-[#f0ede8] rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                             >
                               <X size={14} />
                             </button>
@@ -622,20 +615,20 @@ export default function OnboardingWizard({
 
                     {/* Upload Progress */}
                     {(isUploading || compressionProgress.total > 0) && (
-                      <div className="p-4 bg-white/50 rounded-xl border border-white/60">
+                      <div className="p-4 bg-[rgba(175,170,162,0.10)] rounded-xl border border-[rgba(195,190,182,0.20)]">
                         {compressionProgress.total > 0 && (
                           <>
                             <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm font-semibold text-stone-950">
+                              <span className="text-sm text-[#f0ede8]">
                                 {compressionProgress.stage || "Processing images..."}
                               </span>
-                              <span className="text-sm font-semibold text-stone-950">
+                              <span className="text-sm text-[#8a8780]">
                                 {compressionProgress.current} / {compressionProgress.total}
                               </span>
                             </div>
-                            <div className="relative w-full h-2 bg-stone-200/40 rounded-full overflow-hidden mb-4">
+                            <div className="relative w-full h-2 bg-[rgba(175,170,162,0.20)] rounded-full overflow-hidden mb-4">
                               <div
-                                className="h-full bg-stone-950 rounded-full transition-all duration-300"
+                                className="h-full bg-[#c8c4bb] rounded-full transition-all duration-300"
                                 style={{ width: `${(compressionProgress.current / compressionProgress.total) * 100}%` }}
                               ></div>
                             </div>
@@ -644,14 +637,14 @@ export default function OnboardingWizard({
                         {uploadProgress.total > 0 && (
                           <>
                             <div className="flex items-center justify-between mb-2">
-                              <span className="text-sm font-semibold text-stone-950">Uploading to server...</span>
-                              <span className="text-sm font-semibold text-stone-950">
+                              <span className="text-sm text-[#f0ede8]">Uploading to server...</span>
+                              <span className="text-sm text-[#8a8780]">
                                 {uploadProgress.current} / {uploadProgress.total}
                               </span>
                             </div>
-                            <div className="relative w-full h-2 bg-stone-200/40 rounded-full overflow-hidden">
+                            <div className="relative w-full h-2 bg-[rgba(175,170,162,0.20)] rounded-full overflow-hidden">
                               <div
-                                className="h-full bg-stone-950 rounded-full transition-all duration-300"
+                                className="h-full bg-[#c8c4bb] rounded-full transition-all duration-300"
                                 style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }}
                               ></div>
                             </div>
@@ -665,7 +658,7 @@ export default function OnboardingWizard({
                       <button
                         onClick={startTraining}
                         disabled={isUploading || compressionProgress.total > 0}
-                        className={`w-full ${ComponentClasses.buttonPrimary} min-h-[52px] disabled:opacity-50 disabled:cursor-not-allowed`}
+                        className="w-full inline-flex items-center justify-center gap-2 bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[#f0ede8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         {isUploading || compressionProgress.total > 0 ? (
                           <span className="flex items-center justify-center gap-2">
@@ -690,27 +683,27 @@ export default function OnboardingWizard({
                     className="text-center space-y-6"
                   >
                     <div className="relative w-24 h-24 mx-auto">
-                      <div className="absolute inset-0 rounded-full bg-stone-200/30 animate-ping"></div>
-                      <div className="relative w-24 h-24 rounded-full bg-stone-950 flex items-center justify-center shadow-2xl">
-                        <div className="text-white text-2xl font-bold">{trainingProgress}%</div>
+                      <div className="absolute inset-0 rounded-full bg-[rgba(168,164,156,0.20)] animate-ping"></div>
+                      <div className="relative w-24 h-24 rounded-full bg-[rgba(175,170,162,0.18)] border border-[rgba(195,190,182,0.25)] flex items-center justify-center">
+                        <div className="text-[#f0ede8] text-2xl font-medium">{trainingProgress}%</div>
                       </div>
                     </div>
-                    <h2 className={`${DesignClasses.typography.heading.h3} ${DesignClasses.text.primary}`}>
+                    <h2 className="font-['Cormorant_Garamond'] font-light text-2xl sm:text-3xl text-[#f0ede8] tracking-wide">
                       Training Your Model
                     </h2>
-                    <p className={`${DesignClasses.typography.body.medium} ${DesignClasses.text.secondary}`}>
+                    <p className="text-sm text-[#8a8780] leading-relaxed">
                       Your AI is learning from your photos. This usually takes a couple of minutes.
                     </p>
-                    <div className="w-full bg-stone-200/40 rounded-full h-3 overflow-hidden">
+                    <div className="w-full bg-[rgba(175,170,162,0.20)] rounded-full h-2 overflow-hidden">
                       <div
-                        className="h-full bg-stone-950 rounded-full transition-all duration-500"
+                        className="h-full bg-[#c8c4bb] rounded-full transition-all duration-500"
                         style={{ width: `${trainingProgress}%` }}
                       ></div>
                     </div>
                     <button
                       onClick={handleCancelTraining}
                       disabled={isCanceling}
-                      className="text-sm text-stone-600 hover:text-stone-950 transition-colors disabled:opacity-50"
+                      className="text-sm text-[#8a8780] hover:text-[#f0ede8] transition-colors disabled:opacity-50"
                     >
                       {isCanceling ? "Stopping..." : "Stop Training"}
                     </button>
@@ -727,26 +720,23 @@ export default function OnboardingWizard({
                     className="text-center space-y-6"
                   >
                     <div className="relative w-20 h-20 mx-auto">
-                      <div className="absolute inset-0 bg-stone-200/30 rounded-full animate-ping"></div>
-                      <div className="relative w-20 h-20 bg-stone-950 rounded-full flex items-center justify-center shadow-2xl">
-                        <Aperture size={32} className="text-white" strokeWidth={2.5} />
+                      <div className="absolute inset-0 bg-[rgba(168,164,156,0.20)] rounded-full animate-ping"></div>
+                      <div className="relative w-20 h-20 bg-[rgba(175,170,162,0.18)] border border-[rgba(195,190,182,0.25)] rounded-full flex items-center justify-center">
+                        <Aperture size={32} className="text-[#a8a49c]" strokeWidth={2.5} />
                       </div>
                     </div>
-                    <h2 className={`${DesignClasses.typography.heading.h2} ${DesignClasses.text.primary}`}>
-                      Success! 🎉
+                    <h2 className="font-['Cormorant_Garamond'] font-light text-3xl sm:text-4xl text-[#f0ede8] tracking-wide">
+                      Your model is ready
                     </h2>
-                    <p className={`${DesignClasses.typography.body.medium} ${DesignClasses.text.secondary} max-w-md mx-auto`}>
-                      Your AI model is ready! You can now create stunning professional photos.
+                    <p className="text-sm text-[#8a8780] max-w-md mx-auto leading-relaxed">
+                      Your AI model is ready. You can now create stunning professional photos.
                     </p>
                     <button
                       onClick={onComplete}
-                      className={`group relative ${ComponentClasses.buttonPrimary} min-h-[52px] overflow-hidden w-full`}
+                      className="inline-flex items-center justify-center gap-2 bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[#f0ede8] transition-colors active:scale-[0.98] w-full"
                     >
-                      <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                      <span className="relative z-10 flex items-center justify-center gap-2">
-                        Start Creating
-                        <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
-                      </span>
+                      Start Creating
+                      <ChevronRight size={16} />
                     </button>
                   </motion.div>
                 )}

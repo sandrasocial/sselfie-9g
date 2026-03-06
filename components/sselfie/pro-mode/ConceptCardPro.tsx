@@ -58,7 +58,7 @@ const PRO_CARD_BG = "rgba(255,255,255,0.04)"
 const PRO_CARD_BORDER = "rgba(255,255,255,0.08)"
 const PRO_INPUT_BG = "rgba(255,255,255,0.06)"
 const PRO_INPUT_BORDER = "rgba(255,255,255,0.12)"
-const PRO_TEXT_PRIMARY = "#f5f5f5"
+const PRO_TEXT_PRIMARY = "#f0ede8"
 const PRO_TEXT_SECONDARY = "rgba(245,245,245,0.74)"
 const PRO_TEXT_MUTED = "rgba(245,245,245,0.58)"
 

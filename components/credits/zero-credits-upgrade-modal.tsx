@@ -82,13 +82,13 @@ export function ZeroCreditsUpgradeModal({ credits, onClose }: ZeroCreditsUpgrade
   return (
     <>
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/80 p-4 animate-fade-in">
-          <div className="relative w-full max-w-sm bg-stone-50 rounded-lg p-6 sm:p-8">
-            <h2 className="font-serif text-2xl sm:text-3xl font-extralight tracking-[0.2em] uppercase text-stone-900 text-center mb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(13,12,11,0.90)] backdrop-blur-sm p-4 animate-fade-in">
+          <div className="relative w-full max-w-sm bg-[rgba(28,27,25,0.97)] border border-[rgba(195,190,182,0.25)] backdrop-blur-[70px] rounded-2xl p-6 sm:p-8">
+            <h2 className="font-['Cormorant_Garamond'] font-light text-2xl sm:text-3xl tracking-[0.2em] uppercase text-[#f0ede8] text-center mb-3">
               You&apos;ve been creating.
             </h2>
 
-            <p className="text-center text-stone-600 font-light text-sm mb-6">
+            <p className="text-center text-[#8a8780] font-['Inter'] text-sm mb-6">
               You&apos;ve used every credit — that means you&apos;ve been showing up. Keep the momentum going.
               <br /><br />
               Studio gives you 200 credits a month — that&apos;s 100 brand photos, consistently, without having to think about it. Or top up now with a one-time pack if you want to keep it flexible.
@@ -98,20 +98,20 @@ export function ZeroCreditsUpgradeModal({ credits, onClose }: ZeroCreditsUpgrade
               <button
                 onClick={handleUpgrade}
                 disabled={isUpgrading}
-                className="w-full bg-stone-900 text-stone-50 px-6 py-3 rounded-lg text-xs font-medium uppercase tracking-wider hover:bg-stone-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-[#c8c4bb] text-[#0d0c0b] px-6 py-3 rounded-full font-['Inter'] text-xs font-medium uppercase tracking-[0.15em] hover:bg-[#f0ede8] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isUpgrading ? "Processing..." : "Join Studio — 200 credits/mo"}
               </button>
               <button
                 onClick={handleBuyCredits}
                 disabled={isUpgrading}
-                className="w-full bg-stone-100 text-stone-900 px-6 py-3 rounded-lg text-xs font-medium uppercase tracking-wider hover:bg-stone-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-stone-300/40"
+                className="w-full bg-[rgba(175,170,162,0.10)] text-[#f0ede8] px-6 py-3 rounded-full font-['Inter'] text-xs font-medium uppercase tracking-[0.15em] hover:bg-[rgba(175,170,162,0.18)] transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-[rgba(195,190,182,0.25)]"
               >
                 Top up with a credit pack
               </button>
               <button
                 onClick={handleDismiss}
-                className="w-full text-stone-600 hover:text-stone-900 px-6 py-3 text-xs font-light tracking-wider uppercase transition-colors"
+                className="w-full text-[#8a8780] hover:text-[#f0ede8] px-6 py-3 font-['Inter'] text-xs font-light tracking-[0.15em] uppercase transition-colors"
               >
                 Not right now
               </button>

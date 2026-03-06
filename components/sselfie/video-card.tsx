@@ -85,14 +85,14 @@ export default function VideoCard({ videoUrl, imageSource, motionPrompt, status,
         <div className="flex items-center gap-4 mb-4">
           <LoadingSpinner size="md" className="text-stone-600" />
           <div className="flex-1">
-            <p className="text-sm font-medium text-[#ffffff] mb-1">Generating Video</p>
-            <p className="text-xs text-[#e5e5e5]">{progress || 0}% complete</p>
+            <p className="text-sm font-medium text-[#f0ede8] mb-1">Generating Video</p>
+            <p className="text-xs text-[#8a8780]">{progress || 0}% complete</p>
           </div>
         </div>
         <div className="w-full rounded-full h-2 overflow-hidden bg-[rgba(255,255,255,0.12)]">
-          <div className="h-full transition-all duration-300 bg-[#ffffff]" style={{ width: `${progress || 0}%` }} />
+          <div className="h-full transition-all duration-300 bg-[#a8a49c]" style={{ width: `${progress || 0}%` }} />
         </div>
-        {motionPrompt && <p className="text-xs text-[#e5e5e5] mt-3 leading-relaxed">{motionPrompt}</p>}
+        {motionPrompt && <p className="text-xs text-[#8a8780] mt-3 leading-relaxed">{motionPrompt}</p>}
       </div>
     )
   }
@@ -120,7 +120,7 @@ export default function VideoCard({ videoUrl, imageSource, motionPrompt, status,
           aria-label={isPlaying ? "Pause video" : "Play video"}
         >
           <div className="px-5 py-2 bg-[rgba(10,10,10,0.84)] rounded-full border border-[rgba(255,255,255,0.2)]">
-            <span className="text-xs font-medium uppercase tracking-[0.18em] text-[#ffffff]">
+            <span className="text-xs font-medium uppercase tracking-[0.18em] text-[#f0ede8]">
               {isPlaying ? "Pause" : "Play"}
             </span>
           </div>
@@ -128,11 +128,11 @@ export default function VideoCard({ videoUrl, imageSource, motionPrompt, status,
       </div>
 
       <div className="p-4">
-        {motionPrompt && <p className="text-xs text-[#e5e5e5] mb-3 leading-relaxed line-clamp-2">{motionPrompt}</p>}
+        {motionPrompt && <p className="text-xs text-[#8a8780] mb-3 leading-relaxed line-clamp-2">{motionPrompt}</p>}
         <div className="flex items-center gap-2">
           <button
             onClick={handleDownload}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[rgba(255,255,255,0.1)] text-[#ffffff] rounded-xl border border-[rgba(255,255,255,0.2)] hover:bg-[rgba(255,255,255,0.16)] transition-all duration-300 hover:scale-105 active:scale-95"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[rgba(255,255,255,0.1)] text-[#f0ede8] rounded-xl border border-[rgba(255,255,255,0.2)] hover:bg-[rgba(255,255,255,0.16)] transition-all duration-300 hover:scale-105 active:scale-95"
             aria-label="Download video"
           >
             <span className="text-xs font-medium uppercase tracking-[0.18em]">Download</span>
@@ -141,7 +141,7 @@ export default function VideoCard({ videoUrl, imageSource, motionPrompt, status,
             <button
               onClick={handleDelete}
               disabled={isDeleting}
-              className="px-4 py-2.5 rounded-xl border border-[rgba(255,255,255,0.2)] text-[#e5e5e5] bg-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.14)] transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2.5 rounded-xl border border-[rgba(255,255,255,0.2)] text-[#8a8780] bg-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.14)] transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               aria-label="Delete video"
             >
               {isDeleting ? <LoadingSpinner size="sm" /> : <span className="text-xs font-medium uppercase tracking-[0.18em]">Delete</span>}
