@@ -43,6 +43,8 @@ export default function MayaQuickPrompts({
 
   // **NEW: Quick Chips variant** — rendered above input in Chat Focus mode
   if (variant === "quick-chips") {
+    const chipClass =
+      "shrink-0 px-3 py-1.5 rounded-full border border-[rgba(242,234,220,0.35)] bg-[rgba(18,16,13,0.58)] hover:bg-[rgba(34,29,23,0.72)] active:bg-[rgba(44,37,29,0.8)] transition-colors text-[13px] font-medium text-[#f4ede1] whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(255,226,177,0.55)]"
     return (
       <div className="flex overflow-x-auto scrollbar-hide gap-2 px-4 py-2 w-full">
         {prompts.map((item, index) => (
@@ -50,7 +52,7 @@ export default function MayaQuickPrompts({
             key={`quick-chip-${index}`}
             onClick={() => onSelect(item.prompt)}
             disabled={disabled}
-            className="shrink-0 px-3 py-1.5 rounded-full border border-[rgba(255,255,255,0.1)] bg-[rgba(255,255,255,0.06)] hover:bg-[rgba(255,255,255,0.12)] active:bg-[rgba(255,255,255,0.15)] transition-colors text-[12px] font-light text-[rgba(255,255,255,0.7)] whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
+            className={chipClass}
           >
             {item.label}
           </button>

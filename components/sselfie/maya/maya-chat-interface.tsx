@@ -147,6 +147,7 @@ export default function MayaChatInterface({
     "tool-collectOfferBrief",
     "tool-editAsset",
     "tool-createAssetPreview",
+    "tool-structuredAssetBlocked",
     "tool-generateFeed",
     "tool-generateCaptions",
     "tool-generateStrategy",
@@ -171,6 +172,7 @@ export default function MayaChatInterface({
       .replace(/\[SUBMIT_OFFER_BRIEF:\s*[^\]]+\]/gi, "")
       .replace(/\[EDIT_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "")
       .replace(/\[CREATE_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replace(/\[STRUCTURED_ASSET_BLOCKED(?:\s*:\s*[^\]]+)?\]/gi, "")
       .replace(/\[GENERATE_CAPTIONS\]/gi, "")
       .replace(/\[GENERATE_STRATEGY\]/gi, "")
       .replace(/\[CREATE_FEED_STRATEGY(?:\s*:[\s\S]*?)?\]/gi, "")
@@ -1353,6 +1355,64 @@ export default function MayaChatInterface({
                                       Open Draft
                                     </a>
                                   ) : null}
+                                </div>
+                              )
+                            }
+
+                            if (part.type === "tool-structuredAssetBlocked") {
+                              const output = (part as any).output || {}
+                              const assetType = output.assetType || "calendar"
+                              if (!isLandingPagesUiEnabled && assetType === "page") {
+                                return null
+                              }
+                              const recoveryHint =
+                                typeof output.recoveryHint === "string" && output.recoveryHint.trim().length > 0
+                                  ? output.recoveryHint
+                                  : "Tell me exactly what to build and I’ll run it in your template flow."
+                              const missingFields = Array.isArray(output.missingFields)
+                                ? output.missingFields
+                                : []
+                              const missingLabel = missingFields.includes("action_verb")
+                                ? "what to create"
+                                : "one missing detail"
+                              const quickRetryPrompt =
+                                assetType === "calendar"
+                                  ? "Create a content calendar for my current offer this week."
+                                  : assetType === "pdf"
+                                    ? "Create a workbook draft for my current offer."
+                                    : "Create a landing page draft for my current offer."
+
+                              return (
+                                <div
+                                  key={partIndex}
+                                  className="mt-3 rounded-xl border border-[rgba(255,255,255,0.18)] bg-[rgba(255,255,255,0.06)] p-4"
+                                >
+                                  <div className="text-xs uppercase tracking-[0.2em] text-[#e5e5e5]">Need One Detail</div>
+                                  <div className="mt-2 text-sm text-[#ffffff]">
+                                    I’m ready to build your {assetType} in template mode.
+                                  </div>
+                                  <div className="mt-1 text-xs text-[#d0d0d0]">
+                                    I only need {missingLabel} before execution.
+                                  </div>
+                                  <div className="mt-3 rounded-lg border border-[rgba(255,255,255,0.12)] bg-[rgba(0,0,0,0.22)] px-3 py-2 text-[11px] text-[#e2e2e2]">
+                                    {recoveryHint}
+                                  </div>
+                                  <div className="mt-3 flex flex-wrap gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => onToolPromptSelect?.(quickRetryPrompt)}
+                                      className="rounded-lg border border-[rgba(255,255,255,0.22)] bg-[rgba(255,255,255,0.1)] px-3 py-2 text-[11px] uppercase tracking-[0.16em] text-[#ffffff] transition-colors hover:bg-[rgba(255,255,255,0.16)]"
+                                    >
+                                      Retry Build
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => onToolPromptSelect?.("I need one quick form to fill the missing details.")}
+                                      className="rounded-lg border border-[rgba(255,255,255,0.18)] bg-[rgba(255,255,255,0.04)] px-3 py-2 text-[11px] uppercase tracking-[0.16em] text-[#ffffff] transition-colors hover:bg-[rgba(255,255,255,0.1)]"
+                                    >
+                                      Missing Detail Form
+                                    </button>
+                                  </div>
                                 </div>
                               )
                             }

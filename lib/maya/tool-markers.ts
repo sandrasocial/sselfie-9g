@@ -27,6 +27,13 @@ export type MayaToolMarker =
       previewText?: string
       url?: string
     }
+  | {
+      tool: "structured_asset_blocked"
+      assetType: "page" | "calendar" | "pdf"
+      reason: "intent_match_failed" | "tool_failed" | "validation_failed"
+      missingFields: Array<"action_verb" | "asset_target">
+      recoveryHint?: string
+    }
 
 const SHOW_CAPABILITIES_REGEX = /\[SHOW_CAPABILITIES\]/gi
 const SHOW_STUDIO_HUB_REGEX = /\[SHOW_STUDIO_HUB\]/gi
@@ -39,6 +46,7 @@ const COLLECT_OFFER_BRIEF_REGEX = /\[COLLECT_OFFER_BRIEF(?:\s*:\s*([^\]]+))?\]/g
 const SUBMIT_OFFER_BRIEF_REGEX = /\[SUBMIT_OFFER_BRIEF:\s*[^\]]+\]/gi
 const EDIT_ASSET_REGEX = /\[EDIT_ASSET(?:\s*:\s*([^\]]+))?\]/gi
 const CREATE_ASSET_REGEX = /\[CREATE_ASSET(?:\s*:\s*([^\]]+))?\]/gi
+const STRUCTURED_ASSET_BLOCKED_REGEX = /\[STRUCTURED_ASSET_BLOCKED(?:\s*:\s*([^\]]+))?\]/gi
 const VIDEO_CARD_REGEX = /\[VIDEO_CARD:[^\]]+\]/gi
 const SAVE_TARGET_IMAGE_ID_REGEX = /^(?:ai|gen)_\d+$/i
 const GENERATE_SOURCE_SET = new Set(["selfies", "custom_model", "base_model", "choose_source"])
@@ -224,6 +232,41 @@ export function parseMayaToolMarkers(text: string): MayaToolMarker[] {
   }
 
   CREATE_ASSET_REGEX.lastIndex = 0
+
+  let structuredBlockedMatch: RegExpExecArray | null = null
+  while ((structuredBlockedMatch = STRUCTURED_ASSET_BLOCKED_REGEX.exec(text)) !== null) {
+    const rawPayload = (structuredBlockedMatch[1] || "").trim()
+    const [rawType = "", rawReason = "", rawMissing = "", rawHint = ""] = rawPayload.split("|")
+    const normalizedType = rawType.toLowerCase()
+    const parsedType = EDIT_ASSET_SET.has(normalizedType) ? (normalizedType as "page" | "calendar" | "pdf") : "calendar"
+    const parsedReason =
+      rawReason === "intent_match_failed" || rawReason === "tool_failed" || rawReason === "validation_failed"
+        ? rawReason
+        : "intent_match_failed"
+    const missingFields = rawMissing
+      .split(",")
+      .map((field) => field.trim().toLowerCase())
+      .filter((field): field is "action_verb" | "asset_target" => field === "action_verb" || field === "asset_target")
+
+    let recoveryHint = ""
+    if (rawHint.trim().length > 0) {
+      try {
+        recoveryHint = decodeURIComponent(rawHint.trim())
+      } catch {
+        recoveryHint = rawHint.trim()
+      }
+    }
+
+    markers.push({
+      tool: "structured_asset_blocked",
+      assetType: parsedType,
+      reason: parsedReason,
+      missingFields: missingFields.length > 0 ? missingFields : ["action_verb"],
+      recoveryHint: recoveryHint || undefined,
+    })
+  }
+
+  STRUCTURED_ASSET_BLOCKED_REGEX.lastIndex = 0
   return markers
 }
 
@@ -241,6 +284,7 @@ export function stripMayaToolMarkers(text: string): string {
     .replace(SUBMIT_OFFER_BRIEF_REGEX, "")
     .replace(EDIT_ASSET_REGEX, "")
     .replace(CREATE_ASSET_REGEX, "")
+    .replace(STRUCTURED_ASSET_BLOCKED_REGEX, "")
     .replace(VIDEO_CARD_REGEX, "")
     .replace(/\n{3,}/g, "\n\n")
     .replace(/\s{2,}/g, " ")

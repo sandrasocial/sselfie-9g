@@ -686,7 +686,8 @@ export default function MayaChatScreen({
           p?.type === "tool-showUploadZone" ||
           p?.type === "tool-collectOfferBrief" ||
           p?.type === "tool-editAsset" ||
-          p?.type === "tool-createAssetPreview",
+          p?.type === "tool-createAssetPreview" ||
+          p?.type === "tool-structuredAssetBlocked",
       )
 
       const toolProcessKey = `${messageKey}-phase2-tools`
@@ -922,6 +923,19 @@ export default function MayaChatScreen({
               assetId: marker.assetId || null,
               previewText: marker.previewText || "",
               url: marker.url || "",
+            }, targetMessageId)
+          }
+
+          if (marker.tool === "structured_asset_blocked") {
+            if (!isLandingPagesUiEnabled && marker.assetType === "page") {
+              continue
+            }
+            updateAssistantToolPart("tool-structuredAssetBlocked", {
+              state: "blocked",
+              assetType: marker.assetType,
+              reason: marker.reason,
+              missingFields: marker.missingFields || [],
+              recoveryHint: marker.recoveryHint || "",
             }, targetMessageId)
           }
         }
@@ -3198,6 +3212,7 @@ export default function MayaChatScreen({
       .replace(/\[SUBMIT_OFFER_BRIEF:\s*[^\]]+\]/gi, "")
       .replace(/\[EDIT_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "")
       .replace(/\[CREATE_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replace(/\[STRUCTURED_ASSET_BLOCKED(?:\s*:\s*[^\]]+)?\]/gi, "")
       .replace(/\[GENERATE_CAPTIONS\]/gi, "")
       .replace(/\[GENERATE_STRATEGY\]/gi, "")
       .replace(/\[CREATE_FEED_STRATEGY(?:\s*:[\s\S]*?)?\]/gi, "")
@@ -3226,6 +3241,8 @@ export default function MayaChatScreen({
             (part.type === "tool-editAsset" &&
               (isLandingPagesUiEnabled || (part as any)?.output?.assetType !== "page")) ||
             (part.type === "tool-createAssetPreview" &&
+              (isLandingPagesUiEnabled || (part as any)?.output?.assetType !== "page")) ||
+            (part.type === "tool-structuredAssetBlocked" &&
               (isLandingPagesUiEnabled || (part as any)?.output?.assetType !== "page")) ||
             part.type === "tool-generateFeed" ||
             part.type === "tool-generateCaptions" ||

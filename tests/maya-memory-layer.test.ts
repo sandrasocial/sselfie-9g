@@ -5,6 +5,7 @@ import {
   mergePreferenceNotes,
   detectMayaAssetEditIntent,
   detectMayaAssetCreateIntent,
+  detectMayaAssetIntentResult,
 } from "@/lib/maya/memory-layer"
 
 describe("detectMayaRememberIntent", () => {
@@ -109,5 +110,26 @@ describe("detectMayaAssetCreateIntent", () => {
       assetType: "page",
       instruction: "I need a landing page for my studio offer",
     })
+  })
+})
+
+describe("detectMayaAssetIntentResult", () => {
+  it("returns structured class and confidence for calendar asks missing action verb", () => {
+    const intent = detectMayaAssetIntentResult("content calendar for my launch this week")
+    expect(intent.intentClass).toBe("calendar")
+    expect(intent.confidence).toBeGreaterThanOrEqual(0.55)
+    expect(intent.missingFields).toContain("action_verb")
+    expect(intent.createIntent).toBeNull()
+  })
+
+  it("returns create intent for explicit structured create requests", () => {
+    const intent = detectMayaAssetIntentResult("Create a workbook for my coaching offer")
+    expect(intent.intentClass).toBe("pdf")
+    expect(intent.createIntent?.assetType).toBe("pdf")
+  })
+
+  it("does not classify image asks as structured asset intents", () => {
+    const intent = detectMayaAssetIntentResult("create a photo with soft natural light")
+    expect(intent.intentClass).toBe("none")
   })
 })

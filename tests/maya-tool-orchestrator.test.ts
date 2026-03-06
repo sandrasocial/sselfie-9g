@@ -154,6 +154,21 @@ describe("orchestrateMayaTurn", () => {
 
     expect(result.kind).toBe("page_generation_paused")
   })
+
+  it("returns structured blocked action when structured ask misses runnable intent", () => {
+    const result = orchestrateMayaTurn({
+      userText: "content calendar for my launch this week",
+      activeAssetContext: null,
+    })
+
+    expect(result.kind).toBe("structured_asset_blocked")
+    if (result.kind === "structured_asset_blocked") {
+      expect(result.intentClass).toBe("calendar")
+      expect(result.errorReason).toBe("intent_match_failed")
+      expect(result.executionMode).toBe("blocked")
+      expect(result.requiresStructuredRender).toBe(true)
+    }
+  })
 })
 
 describe("estimateToolDispatchCredits", () => {

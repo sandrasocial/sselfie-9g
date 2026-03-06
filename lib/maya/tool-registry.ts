@@ -9,6 +9,7 @@ export type MayaToolId =
   | "edit_asset"
   | "create_asset"
   | "collect_offer_brief"
+  | "structured_asset_blocked"
 
 export interface MayaToolDefinition {
   id: MayaToolId
@@ -77,6 +78,12 @@ export const MAYA_TOOL_REGISTRY: Record<MayaToolId, MayaToolDefinition> = {
     label: "Collect Offer Brief",
     marker: "COLLECT_OFFER_BRIEF",
     resultType: "tool-collectOfferBrief",
+  },
+  structured_asset_blocked: {
+    id: "structured_asset_blocked",
+    label: "Structured Asset Blocked",
+    marker: "STRUCTURED_ASSET_BLOCKED",
+    resultType: "tool-structuredAssetBlocked",
   },
 }
 

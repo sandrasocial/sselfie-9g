@@ -1,11 +1,13 @@
 import { CREDIT_COSTS } from "@/lib/credits"
 import {
   detectMayaAssetCreateIntent,
+  detectMayaAssetIntentResult,
   detectMayaAssetEditIntent,
   detectMayaRememberIntent,
   type MayaActiveAssetContext,
   type MayaAssetCreateIntent,
   type MayaAssetEditIntent,
+  type MayaAssetIntentClass,
   type MayaAssetType,
   type MayaRememberIntent,
 } from "@/lib/maya/memory-layer"
@@ -26,24 +28,41 @@ export type MayaTurnAction =
   | {
       kind: "asset_edit"
       intent: MayaAssetEditIntent
+      executionMode: "tool"
+      requiresStructuredRender: true
     }
   | {
       kind: "asset_create"
       intent: MayaAssetCreateIntent
+      executionMode: "tool"
+      requiresStructuredRender: true
     }
   | {
       kind: "multi_step_asset_create"
       intents: MayaAssetCreateIntent[]
+      executionMode: "tool"
+      requiresStructuredRender: true
     }
   | {
       kind: "collect_offer_brief"
       assetType: "page"
+      executionMode: "tool"
+      requiresStructuredRender: false
     }
   | {
       kind: "tool_dispatch"
       intent: MayaToolDispatchIntent
       estimatedCredits: number
       requiresCreditCheck: boolean
+    }
+  | {
+      kind: "structured_asset_blocked"
+      intentClass: Exclude<MayaAssetIntentClass, "none">
+      executionMode: "blocked"
+      requiresStructuredRender: true
+      errorReason: "intent_match_failed" | "tool_failed" | "validation_failed"
+      missingFields: Array<"action_verb" | "asset_target">
+      recoveryHint: string
     }
   | {
       kind: "none"
@@ -169,6 +188,8 @@ export function orchestrateMayaTurn(input: {
     return {
       kind: "asset_edit",
       intent: assetEditIntent,
+      executionMode: "tool",
+      requiresStructuredRender: true,
     }
   }
 
@@ -180,12 +201,16 @@ export function orchestrateMayaTurn(input: {
         return {
           kind: "multi_step_asset_create",
           intents: nonPageIntents,
+          executionMode: "tool",
+          requiresStructuredRender: true,
         }
       }
       if (nonPageIntents.length === 1) {
         return {
           kind: "asset_create",
           intent: nonPageIntents[0],
+          executionMode: "tool",
+          requiresStructuredRender: true,
         }
       }
       return {
@@ -196,6 +221,8 @@ export function orchestrateMayaTurn(input: {
     return {
       kind: "multi_step_asset_create",
       intents: multiAssetCreateIntents,
+      executionMode: "tool",
+      requiresStructuredRender: true,
     }
   }
 
@@ -212,12 +239,16 @@ export function orchestrateMayaTurn(input: {
       return {
         kind: "collect_offer_brief",
         assetType: "page",
+        executionMode: "tool",
+        requiresStructuredRender: false,
       }
     }
 
     return {
       kind: "asset_create",
       intent: assetCreateIntent,
+      executionMode: "tool",
+      requiresStructuredRender: true,
     }
   }
 
@@ -234,12 +265,30 @@ export function orchestrateMayaTurn(input: {
       return {
         kind: "collect_offer_brief",
         assetType: "page",
+        executionMode: "tool",
+        requiresStructuredRender: false,
       }
     }
 
     return {
       kind: "asset_create",
       intent: implicitPageIntent,
+      executionMode: "tool",
+      requiresStructuredRender: true,
+    }
+  }
+
+  const structuredIntent = detectMayaAssetIntentResult(normalizedText)
+  if (structuredIntent.intentClass !== "none" && structuredIntent.confidence >= 0.55) {
+    return {
+      kind: "structured_asset_blocked",
+      intentClass: structuredIntent.intentClass,
+      executionMode: "blocked",
+      requiresStructuredRender: true,
+      errorReason: "intent_match_failed",
+      missingFields:
+        structuredIntent.missingFields.length > 0 ? structuredIntent.missingFields : ["action_verb"],
+      recoveryHint: "Tell me exactly what to build, for example: Create a content calendar for my offer.",
     }
   }
 

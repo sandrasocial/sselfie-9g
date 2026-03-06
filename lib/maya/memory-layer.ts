@@ -46,6 +46,15 @@ export interface MayaAssetCreateIntent {
   instruction: string
 }
 
+export type MayaAssetIntentClass = MayaAssetType | "none"
+
+export interface MayaAssetIntentResult {
+  intentClass: MayaAssetIntentClass
+  confidence: number
+  missingFields: Array<"action_verb" | "asset_target">
+  createIntent: MayaAssetCreateIntent | null
+}
+
 function normalizeWhitespace(value: string): string {
   return value.replace(/\s+/g, " ").trim()
 }
@@ -216,6 +225,65 @@ export function detectMayaAssetCreateIntent(userText: string): MayaAssetCreateIn
   return {
     assetType,
     instruction,
+  }
+}
+
+function clampConfidence(value: number): number {
+  if (Number.isNaN(value)) return 0
+  if (value < 0) return 0
+  if (value > 1) return 1
+  return Number(value.toFixed(2))
+}
+
+export function detectMayaAssetIntentResult(userText: string): MayaAssetIntentResult {
+  if (!userText || userText.trim().length === 0) {
+    return {
+      intentClass: "none",
+      confidence: 0,
+      missingFields: ["asset_target", "action_verb"],
+      createIntent: null,
+    }
+  }
+
+  const instruction = sanitizeAssetInstruction(userText)
+  if (!instruction) {
+    return {
+      intentClass: "none",
+      confidence: 0,
+      missingFields: ["asset_target", "action_verb"],
+      createIntent: null,
+    }
+  }
+
+  const assetType = inferAssetType(instruction)
+  if (!assetType || IMAGE_EDIT_REGEX.test(instruction)) {
+    return {
+      intentClass: "none",
+      confidence: 0.05,
+      missingFields: ["asset_target", "action_verb"],
+      createIntent: null,
+    }
+  }
+
+  const hasCreateAction = ASSET_CREATE_ACTION_REGEX.test(instruction)
+  const hasSoftCreateAction = SOFT_CREATE_ACTION_REGEX.test(instruction)
+  const hasEditAction = ASSET_EDIT_ACTION_REGEX.test(instruction)
+
+  let confidence = 0.55
+  if (hasCreateAction) confidence += 0.28
+  else if (hasSoftCreateAction) confidence += 0.12
+  if (hasEditAction) confidence -= 0.22
+
+  const missingFields: MayaAssetIntentResult["missingFields"] = []
+  if (!hasCreateAction && !hasSoftCreateAction) {
+    missingFields.push("action_verb")
+  }
+
+  return {
+    intentClass: assetType,
+    confidence: clampConfidence(confidence),
+    missingFields,
+    createIntent: detectMayaAssetCreateIntent(instruction),
   }
 }
 

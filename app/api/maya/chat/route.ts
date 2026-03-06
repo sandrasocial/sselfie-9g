@@ -30,6 +30,7 @@ import {
   getMayaActiveAssetContext,
   persistMayaActiveAssetContext,
   persistMayaOfferBrief,
+  detectMayaAssetIntentResult,
 } from "@/lib/maya/memory-layer"
 import { estimateToolDispatchCredits, orchestrateMayaTurn } from "@/lib/maya/tool-orchestrator"
 import { createMayaGeneratedAsset, updateMayaGeneratedAsset } from "@/lib/maya/asset-generation"
@@ -51,6 +52,7 @@ import {
   resolveMayaChatTask,
 } from "@/lib/maya/openrouter"
 import type { MayaCriticalLandingField } from "@/lib/maya/page-generation/types"
+import { selectMayaSkill } from "@/lib/maya/skills/skill-router"
 
 import { NextResponse } from "next/server"
 
@@ -63,6 +65,12 @@ function isChatFirstMayaEnabled(envValue?: string | null): boolean {
 }
 
 function isMayaLandingPagesInChatEnabled(envValue?: string | null): boolean {
+  if (!envValue) return false
+  const normalized = envValue.trim().toLowerCase()
+  return normalized === "true" || normalized === "1"
+}
+
+function isMayaStrictAssetToolRoutingEnabled(envValue?: string | null): boolean {
   if (!envValue) return false
   const normalized = envValue.trim().toLowerCase()
   return normalized === "true" || normalized === "1"
@@ -81,6 +89,41 @@ function createLandingPagesPausedResponse(validUIMessages: UIMessage[], preface?
           `${preface ? `${preface.trim()} ` : ""}` +
           `Landing pages are paused right now while we finish the quality relaunch. ` +
           `In this chat, I can run photos, videos, concept cards, feed planning, and workbook drafts.`,
+      })
+      writer.write({ type: "text-end", id: textPartId })
+    },
+  })
+
+  return createUIMessageStreamResponse({ stream })
+}
+
+function createStructuredAssetBlockedResponse(input: {
+  validUIMessages: UIMessage[]
+  assetType: "page" | "calendar" | "pdf"
+  reason: "intent_match_failed" | "tool_failed" | "validation_failed"
+  recoveryHint: string
+  missingFields?: Array<"action_verb" | "asset_target">
+}) {
+  const missingPayload = (input.missingFields || []).join(",")
+  const markerPayload = [
+    input.assetType,
+    input.reason,
+    missingPayload,
+    encodeURIComponent(input.recoveryHint),
+  ].join("|")
+  const blockedMarker = formatMayaToolMarker("structured_asset_blocked", markerPayload)
+
+  const stream = createUIMessageStream({
+    originalMessages: input.validUIMessages as any,
+    execute: ({ writer }) => {
+      const textPartId = `structured-asset-blocked-${Date.now().toString(36)}`
+      writer.write({ type: "text-start", id: textPartId })
+      writer.write({
+        type: "text-delta",
+        id: textPartId,
+        delta:
+          `I’m ready to build this in your template flow. I only need one clearer instruction so I can run it correctly.\n` +
+          `${blockedMarker}`,
       })
       writer.write({ type: "text-end", id: textPartId })
     },
@@ -390,14 +433,18 @@ export async function POST(req: Request) {
     })
     
     console.log("[v0] Filtered", uiMessages.length, "UI messages to", validUIMessages.length, "valid messages")
+    const latestUserTextForSkills = extractLatestUserText(validUIMessages as any)
 
     const chatFirstMayaEnabled = isChatFirstMayaEnabled(process.env.FEATURE_CHAT_FIRST_MAYA)
     if (chatFirstMayaEnabled && !isPromptBuilder && chatType !== "feed-planner" && chatType !== "pro-photoshoot") {
       const allowPageAssetsInChat = isMayaLandingPagesInChatEnabled(
         process.env.FEATURE_MAYA_LANDING_PAGES_IN_CHAT,
       )
-      const latestUserText = extractLatestUserText(validUIMessages as any)
-      const submittedOfferBrief = parseOfferBriefSubmissionMarker(latestUserText)
+      const strictStructuredRouting = isMayaStrictAssetToolRoutingEnabled(
+        process.env.FEATURE_MAYA_STRICT_ASSET_TOOL_ROUTING,
+      )
+      const latestStructuredUserText = latestUserTextForSkills
+      const submittedOfferBrief = parseOfferBriefSubmissionMarker(latestStructuredUserText)
 
       if (submittedOfferBrief) {
         try {
@@ -483,12 +530,39 @@ export async function POST(req: Request) {
       }
 
       const orchestration = orchestrateMayaTurn({
-        userText: latestUserText,
+        userText: latestStructuredUserText,
         activeAssetContext,
         options: {
           allowPageAssetsInChat,
         },
       })
+
+      if (
+        orchestration.kind === "asset_create" ||
+        orchestration.kind === "multi_step_asset_create" ||
+        orchestration.kind === "asset_edit" ||
+        orchestration.kind === "collect_offer_brief" ||
+        orchestration.kind === "structured_asset_blocked"
+      ) {
+        const structuredAssetType =
+          orchestration.kind === "asset_create" || orchestration.kind === "asset_edit"
+            ? orchestration.intent.assetType
+            : orchestration.kind === "multi_step_asset_create"
+              ? orchestration.intents[0]?.assetType || "calendar"
+              : orchestration.kind === "collect_offer_brief"
+                ? orchestration.assetType
+                : orchestration.intentClass
+
+        void logAnalyticsEvent({
+          eventName: "maya_structured_intent_detected",
+          userId: dbUserId,
+          path: "/api/maya/chat",
+          properties: {
+            assetType: structuredAssetType,
+            orchestrationKind: orchestration.kind,
+          },
+        })
+      }
 
       if (orchestration.kind === "remember") {
         try {
@@ -537,6 +611,27 @@ export async function POST(req: Request) {
 
       if (orchestration.kind === "page_generation_paused") {
         return createLandingPagesPausedResponse(validUIMessages as UIMessage[])
+      }
+
+      if (orchestration.kind === "structured_asset_blocked") {
+        void logAnalyticsEvent({
+          eventName: "maya_structured_tool_blocked",
+          userId: dbUserId,
+          path: "/api/maya/chat",
+          properties: {
+            assetType: orchestration.intentClass,
+            reason: orchestration.errorReason,
+            source: "orchestrator",
+          },
+        })
+
+        return createStructuredAssetBlockedResponse({
+          validUIMessages: validUIMessages as UIMessage[],
+          assetType: orchestration.intentClass,
+          reason: orchestration.errorReason,
+          missingFields: orchestration.missingFields,
+          recoveryHint: orchestration.recoveryHint,
+        })
       }
 
       if (orchestration.kind === "collect_offer_brief") {
@@ -767,10 +862,38 @@ export async function POST(req: Request) {
               source: "chat_first",
             },
           })
+          void logAnalyticsEvent({
+            eventName: "maya_structured_tool_executed",
+            userId: dbUserId,
+            path: "/api/maya/chat",
+            properties: {
+              assetType: generatedAsset.assetType,
+              source: "asset_create",
+            },
+          })
 
           return createUIMessageStreamResponse({ stream })
         } catch (assetCreateError) {
           console.error("[Maya Chat] Failed to create asset draft:", assetCreateError)
+          if (strictStructuredRouting) {
+            void logAnalyticsEvent({
+              eventName: "maya_structured_tool_blocked",
+              userId: dbUserId,
+              path: "/api/maya/chat",
+              properties: {
+                assetType: orchestration.intent.assetType,
+                reason: "tool_failed",
+                source: "asset_create",
+              },
+            })
+            return createStructuredAssetBlockedResponse({
+              validUIMessages: validUIMessages as UIMessage[],
+              assetType: orchestration.intent.assetType,
+              reason: "tool_failed",
+              missingFields: [],
+              recoveryHint: "Tap retry and I’ll generate this again in the template view.",
+            })
+          }
         }
       }
 
@@ -872,7 +995,7 @@ export async function POST(req: Request) {
               assetType: activeAsset.assetType,
               assetLabel: activeAsset.title,
               assetId: activeAsset.id,
-              instruction: activeIntent?.instruction || activeAsset.instruction || latestUserText,
+              instruction: activeIntent?.instruction || activeAsset.instruction || latestStructuredUserText,
             })
           }
 
@@ -921,6 +1044,15 @@ export async function POST(req: Request) {
                 source: "chat_first_multistep",
               },
             })
+            void logAnalyticsEvent({
+              eventName: "maya_structured_tool_executed",
+              userId: dbUserId,
+              path: "/api/maya/chat",
+              properties: {
+                assetType: asset.assetType,
+                source: "multi_step_asset_create",
+              },
+            })
           })
 
           void logAnalyticsEvent({
@@ -936,6 +1068,26 @@ export async function POST(req: Request) {
           return createUIMessageStreamResponse({ stream })
         } catch (multiStepCreateError) {
           console.error("[Maya Chat] Failed multi-step asset creation:", multiStepCreateError)
+          if (strictStructuredRouting) {
+            const primaryAssetType = orchestration.intents[0]?.assetType || "calendar"
+            void logAnalyticsEvent({
+              eventName: "maya_structured_tool_blocked",
+              userId: dbUserId,
+              path: "/api/maya/chat",
+              properties: {
+                assetType: primaryAssetType,
+                reason: "tool_failed",
+                source: "multi_step_asset_create",
+              },
+            })
+            return createStructuredAssetBlockedResponse({
+              validUIMessages: validUIMessages as UIMessage[],
+              assetType: primaryAssetType,
+              reason: "tool_failed",
+              missingFields: [],
+              recoveryHint: "I can rerun the build now. Try again and I’ll keep it in template mode.",
+            })
+          }
         }
       }
 
@@ -1004,10 +1156,38 @@ export async function POST(req: Request) {
               source: "chat_first",
             },
           })
+          void logAnalyticsEvent({
+            eventName: "maya_structured_tool_executed",
+            userId: dbUserId,
+            path: "/api/maya/chat",
+            properties: {
+              assetType: updatedAsset.assetType,
+              source: "asset_edit",
+            },
+          })
 
           return createUIMessageStreamResponse({ stream })
         } catch (assetPersistError) {
           console.error("[Maya Chat] Failed saving asset edit context:", assetPersistError)
+          if (strictStructuredRouting) {
+            void logAnalyticsEvent({
+              eventName: "maya_structured_tool_blocked",
+              userId: dbUserId,
+              path: "/api/maya/chat",
+              properties: {
+                assetType: orchestration.intent.assetType,
+                reason: "tool_failed",
+                source: "asset_edit",
+              },
+            })
+            return createStructuredAssetBlockedResponse({
+              validUIMessages: validUIMessages as UIMessage[],
+              assetType: orchestration.intent.assetType,
+              reason: "tool_failed",
+              missingFields: [],
+              recoveryHint: "Share the exact change again and I’ll apply it to the active draft.",
+            })
+          }
         }
       }
 
@@ -1082,6 +1262,30 @@ export async function POST(req: Request) {
         })
 
         return createUIMessageStreamResponse({ stream })
+      }
+
+      if (strictStructuredRouting && orchestration.kind === "none") {
+        const structuredIntent = detectMayaAssetIntentResult(latestStructuredUserText)
+        if (structuredIntent.intentClass !== "none" && structuredIntent.confidence >= 0.55) {
+          void logAnalyticsEvent({
+            eventName: "maya_structured_fallback_prevented",
+            userId: dbUserId,
+            path: "/api/maya/chat",
+            properties: {
+              assetType: structuredIntent.intentClass,
+              confidence: structuredIntent.confidence,
+              missingFields: structuredIntent.missingFields,
+            },
+          })
+
+          return createStructuredAssetBlockedResponse({
+            validUIMessages: validUIMessages as UIMessage[],
+            assetType: structuredIntent.intentClass,
+            reason: "intent_match_failed",
+            missingFields: structuredIntent.missingFields,
+            recoveryHint: "Try: Create a content calendar for my offer this week.",
+          })
+        }
       }
     }
 
@@ -2019,6 +2223,16 @@ You: "Love the cozy fall vibe! 🥰 Creating some concepts with warm textures, t
 - Deliver the purchased artifact immediately in your first answer.`
     }
 
+    const mayaSkillSelection = selectMayaSkill({
+      latestUserText: latestUserTextForSkills,
+      chatType,
+      isStudioProMode,
+    })
+    systemPrompt += `\n\n## MAYA SKILL PACK (${mayaSkillSelection.skillId}:${mayaSkillSelection.version})
+${mayaSkillSelection.promptAddendum}
+
+You must apply this skill pack for prompt composition while preserving Maya's conversational voice.`
+
     const mayaTask = resolveMayaChatTask({
       chatType,
       isPromptBuilder,
@@ -2031,6 +2245,8 @@ You: "Love the cozy fall vibe! 🥰 Creating some concepts with warm textures, t
       chatType,
       isPromptBuilder,
       isStudioProMode,
+      skillId: mayaSkillSelection.skillId,
+      skillSource: mayaSkillSelection.source,
       task: mayaTask,
       selectedModel,
       primaryProvider: "anthropic-gateway",
