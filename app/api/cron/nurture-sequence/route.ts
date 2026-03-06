@@ -22,6 +22,8 @@ type CandidateLead = {
   name: string | null
   access_token: string | null
   created_at: string
+  lead_source: "freebie_brand_strategies" | "freebie_subscribers"
+  source: string | null
 }
 
 type TouchConfig = {
@@ -55,28 +57,61 @@ function firstNameFromLead(lead: CandidateLead): string | undefined {
   return emailPrefix || undefined
 }
 
-function strategyUrlForLead(lead: CandidateLead): string {
+function contentUrlForLead(lead: CandidateLead): string {
   const token = typeof lead.access_token === "string" ? lead.access_token.trim() : ""
+  if (lead.lead_source === "freebie_subscribers") {
+    if (!token) return `${SITE_URL}/selfie-guide`
+    return `${SITE_URL}/selfie-guide/access/${token}`
+  }
   if (!token) return STRATEGY_FALLBACK_URL
   return `${SITE_URL}/strategy/${token}`
 }
 
 async function getCandidatesForTouch(touch: TouchConfig): Promise<CandidateLead[]> {
   return (await sql`
-    SELECT DISTINCT ON (LOWER(fbs.email))
-      fbs.id,
-      fbs.email,
-      fbs.name,
-      fbs.access_token,
-      fbs.created_at
-    FROM freebie_brand_strategies fbs
-    WHERE fbs.email IS NOT NULL
-      AND fbs.email <> ''
-      AND fbs.created_at <= NOW() - (${`${touch.days} days`}::interval)
+    WITH all_leads AS (
+      SELECT
+        fbs.id,
+        fbs.email,
+        fbs.name,
+        fbs.access_token,
+        fbs.created_at,
+        'freebie_brand_strategies'::text AS lead_source,
+        'freebie-strategy'::text AS source
+      FROM freebie_brand_strategies fbs
+      WHERE fbs.email IS NOT NULL
+        AND fbs.email <> ''
+      UNION ALL
+      SELECT
+        fs.id,
+        fs.email,
+        fs.name,
+        fs.access_token,
+        fs.created_at,
+        'freebie_subscribers'::text AS lead_source,
+        COALESCE(fs.source, 'selfie-guide')::text AS source
+      FROM freebie_subscribers fs
+      WHERE fs.email IS NOT NULL
+        AND fs.email <> ''
+        AND (
+          COALESCE(fs.source, 'selfie-guide') IN ('selfie-guide', 'freebie-selfie-guide')
+          OR ('sselfie-guide' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[])))
+        )
+    )
+    SELECT DISTINCT ON (LOWER(al.email))
+      al.id,
+      al.email,
+      al.name,
+      al.access_token,
+      al.created_at,
+      al.lead_source,
+      al.source
+    FROM all_leads al
+    WHERE al.created_at <= NOW() - (${`${touch.days} days`}::interval)
       AND NOT EXISTS (
         SELECT 1
         FROM email_logs el
-        WHERE LOWER(el.user_email) = LOWER(fbs.email)
+        WHERE LOWER(el.user_email) = LOWER(al.email)
           AND el.email_type = ${touch.emailType}
           AND el.status IN ('sent', 'delivered')
       )
@@ -84,11 +119,11 @@ async function getCandidatesForTouch(touch: TouchConfig): Promise<CandidateLead[
         SELECT 1
         FROM subscriptions s
         INNER JOIN users u ON u.id::varchar = s.user_id
-        WHERE LOWER(u.email) = LOWER(fbs.email)
+        WHERE LOWER(u.email) = LOWER(al.email)
           AND s.status = 'active'
           AND s.product_type = ANY(${STUDIO_PRODUCT_TYPES}::text[])
       )
-    ORDER BY LOWER(fbs.email), fbs.created_at ASC
+    ORDER BY LOWER(al.email), al.created_at ASC
     LIMIT 200
   `) as CandidateLead[]
 }
@@ -102,7 +137,7 @@ async function sendTouchEmail(touch: TouchConfig, lead: CandidateLead) {
       const email = generateNurtureFreebieN1Email({
         firstName,
         recipientEmail,
-        strategyUrl: strategyUrlForLead(lead),
+        strategyUrl: contentUrlForLead(lead),
       })
       return sendEmail({
         to: recipientEmail,

@@ -4,6 +4,7 @@ import { Resend } from "resend"
 import { addOrUpdateResendContact } from "@/lib/resend/manage-contact"
 import { generateFreebieGuideEmail } from "@/lib/email/templates/freebie-guide-email"
 import { sendEmail } from "@/lib/email/send-email"
+import { normalizeFreebieEmailTags, resolveAccessToken } from "@/lib/freebie/subscribe-utils"
 
 const resend = new Resend(process.env.RESEND_API_KEY!)
 
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] Checking if email already exists")
     const existingSubscriber = await sql`
-      SELECT id, access_token, guide_access_email_sent, name, resend_contact_id, email
+      SELECT id, access_token, guide_access_email_sent, name, resend_contact_id, email, source, email_tags
       FROM freebie_subscribers
       WHERE email = ${email}
       LIMIT 1
@@ -34,6 +35,44 @@ export async function POST(request: NextRequest) {
     if (existingSubscriber.length > 0) {
       console.log("[v0] Existing subscriber found:", existingSubscriber[0].id)
       const subscriber = existingSubscriber[0]
+      const { accessToken, wasGenerated } = resolveAccessToken(subscriber.access_token)
+      const normalizedEmailTags = normalizeFreebieEmailTags(
+        Array.isArray(subscriber.email_tags) ? (subscriber.email_tags as string[]) : null,
+      )
+      const existingTagCount = Array.isArray(subscriber.email_tags) ? subscriber.email_tags.length : 0
+      const incomingSource = typeof source === "string" && source.trim().length > 0 ? source.trim() : "selfie-guide"
+
+      if (wasGenerated || !subscriber.source || normalizedEmailTags.length !== existingTagCount) {
+        await sql`
+          UPDATE freebie_subscribers
+          SET access_token = ${accessToken},
+              source = COALESCE(source, ${incomingSource}),
+              email_tags = ${normalizedEmailTags}::text[],
+              updated_at = NOW()
+          WHERE id = ${subscriber.id}
+        `
+      }
+
+      if (process.env.RESEND_API_KEY) {
+        const firstName = subscriber.name?.split(" ")[0] || name.split(" ")[0] || name
+        const resendResult = await addOrUpdateResendContact(email, firstName, {
+          source: "freebie-selfie-guide",
+          status: "lead",
+          product: "sselfie-guide",
+          journey: "nurture",
+          segment: "freebie-subscriber",
+          signup_date: new Date().toISOString().split("T")[0],
+        })
+
+        if (resendResult.success && resendResult.contactId) {
+          await sql`
+            UPDATE freebie_subscribers
+            SET resend_contact_id = ${resendResult.contactId},
+                updated_at = NOW()
+            WHERE id = ${subscriber.id}
+          `
+        }
+      }
 
       const emailAlreadySent = subscriber.guide_access_email_sent !== false
 
@@ -48,8 +87,8 @@ export async function POST(request: NextRequest) {
 
             const productionUrl =
               process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai"
-            const guideUrl = `${productionUrl}/selfie-guide/access/${subscriber.access_token}`
-            const firstName = subscriber.name.split(" ")[0] || subscriber.name
+            const guideUrl = `${productionUrl}/selfie-guide/access/${accessToken}`
+            const firstName = (subscriber.name || name).split(" ")[0] || name
 
             const emailContent = generateFreebieGuideEmail({
               firstName,
@@ -87,7 +126,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
           success: true,
-          accessToken: subscriber.access_token,
+          accessToken,
           emailSent,
           emailError,
           alreadySubscribed: true,
@@ -98,7 +137,7 @@ export async function POST(request: NextRequest) {
       console.log("[v0] Email was already sent, returning access")
       return NextResponse.json({
         success: true,
-        accessToken: subscriber.access_token,
+        accessToken,
         emailSent: true,
         alreadySubscribed: true,
         message: "Welcome back! Redirecting to your guide...",
@@ -106,6 +145,7 @@ export async function POST(request: NextRequest) {
     }
 
     const accessToken = crypto.randomUUID()
+    const normalizedEmailTags = normalizeFreebieEmailTags(null)
     console.log("[v0] Generated access token for new subscriber")
 
     console.log("[v0] Inserting new subscriber into database")
@@ -125,7 +165,7 @@ export async function POST(request: NextRequest) {
         ${utm_campaign || null},
         ${referrer || null},
         ${user_agent || null},
-        ARRAY['freebie-subscriber', 'sselfie-guide']::text[],
+        ${normalizedEmailTags}::text[],
         NOW(),
         NOW(),
         false,
@@ -149,10 +189,11 @@ export async function POST(request: NextRequest) {
 
     const firstName = name.split(" ")[0] || name
     const resendResult = await addOrUpdateResendContact(email, firstName, {
-      source: "freebie-subscriber",
+      source: "freebie-selfie-guide",
       status: "lead",
       product: "sselfie-guide",
       journey: "nurture",
+      segment: "freebie-subscriber",
       signup_date: new Date().toISOString().split("T")[0],
     })
 

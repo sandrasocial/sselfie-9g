@@ -15,6 +15,9 @@ const inter = Inter({
   weight: ["300", "500"],
 })
 
+const SELFIE_GUIDE_CAPTURE_IMAGE_URL =
+  "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/maya-pro-generations/6vc2ty3vndrmr0cwr8r9p1rd6w-z3vkF7lRWhn2aoxEQRyAZoVkBfOGOL.png"
+
 export default function SelfieGuideLanding() {
   const router = useRouter()
   const [name, setName] = useState("")
@@ -50,11 +53,12 @@ export default function SelfieGuideLanding() {
         throw new Error(data?.error || "Failed to unlock your guide")
       }
 
-      if (!data?.accessToken) {
+      const accessToken = data?.accessToken || data?.access_token
+      if (!accessToken) {
         throw new Error("Missing access token in response")
       }
 
-      router.push(`/selfie-guide/access/${data.accessToken}`)
+      router.push(`/selfie-guide/access/${accessToken}`)
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Something went wrong. Please try again.")
       setLoading(false)
@@ -92,7 +96,7 @@ export default function SelfieGuideLanding() {
           <div className="intro-panel">
             <div className="intro-image-wrap">
               <Image
-                src="/assets/brand-strategy/woman.png"
+                src={SELFIE_GUIDE_CAPTURE_IMAGE_URL}
                 alt="Portrait"
                 fill
                 sizes="(max-width: 700px) 100vw, 40vw"

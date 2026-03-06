@@ -370,17 +370,20 @@ export default async function SelfieGuideAccessPage({ params }: PageProps) {
         <div className="upsell-overlay" />
         <div className="upsell-content">
           <p className="upsell-eyebrow">READY FOR THE NEXT STEP?</p>
-          <h2 className={`upsell-heading ${cormorant.className}`}>Build Your Full Brand Strategy</h2>
+          <h2 className={`upsell-heading ${cormorant.className}`}>Build Your Full Brand Strategy + Test Maya</h2>
           <p className="upsell-body">
-            If this guide helped, your next step is strategy clarity. Get a personalized brand strategy blueprint in
-            15 minutes.
+            Start with the low-ticket brand strategy, then jump into Maya and create your first selfie generation
+            directly in Studio.
           </p>
           <div className="upsell-buttons">
             <a href="/brand-strategy" className="btn-primary">
               Get Your EUR 17 Brand Strategy
             </a>
-            <a href="https://sselfie.ai/auth/sign-up?checkout=studio_membership" className="btn-secondary">
-              Or Join Studio Membership
+            <a href="/studio?tab=maya" className="btn-secondary">
+              Try Maya for Free
+            </a>
+            <a href="/checkout/credits" className="btn-tertiary">
+              Need more generations? Add credits
             </a>
           </div>
         </div>
@@ -757,6 +760,21 @@ export default async function SelfieGuideAccessPage({ params }: PageProps) {
 
         .btn-secondary:hover {
           border-color: rgba(255, 255, 255, 0.5);
+        }
+
+        .btn-tertiary {
+          width: 100%;
+          text-align: center;
+          font-size: 10px;
+          letter-spacing: 0.22em;
+          text-transform: uppercase;
+          color: rgba(255, 255, 255, 0.72);
+          text-decoration: none;
+          margin-top: 2px;
+        }
+
+        .btn-tertiary:hover {
+          color: rgba(255, 255, 255, 0.95);
         }
 
         .footer {
