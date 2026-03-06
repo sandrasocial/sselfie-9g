@@ -1161,22 +1161,7 @@ export default function SselfieApp({
             )}
 
             <AnimatePresence mode="wait">
-              {activeTab === "maya" &&
-            (!access.canUseGenerators || isPaidBlueprintUserForAccess) ? (
-                <motion.div
-                  key="upgrade-or-credits"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                >
-              <UpgradeOrCredits
-                    feature={activeTab === "maya" ? "Maya" : "Training"}
-                    isPaidBlueprintUser={isPaidBlueprintUserForAccess}
-                    requiresMembership={true}
-              />
-                </motion.div>
-              ) : (
+              {activeTab === "maya" ? (
                 <motion.div
                   key={activeTab}
                   initial={{ opacity: 0 }}
@@ -1184,7 +1169,6 @@ export default function SselfieApp({
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.2, ease: "easeInOut" }}
                 >
-                {activeTab === "maya" && (
                   <MayaChatScreen 
                     onImageGenerated={refreshCredits} 
                     user={user} 
@@ -1196,7 +1180,15 @@ export default function SselfieApp({
                     academyPurchaseProduct={academyPurchaseProduct}
                     firstTimeProductUser={firstTimeProductUser}
                   />
-                )}
+                </motion.div>
+              ) : (
+                <motion.div
+                  key={activeTab}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2, ease: "easeInOut" }}
+                >
                 {activeTab === "studio" && (
                   <StudioHubScreen />
                 )}

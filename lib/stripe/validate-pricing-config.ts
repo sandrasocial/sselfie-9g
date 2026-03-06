@@ -23,6 +23,13 @@ interface PriceConfigValidation {
   errors: string[]
 }
 
+interface ExpectedStripeConfig {
+  envVarName: string
+  productType: string
+  expectedAmount: number
+  expectedRecurring: boolean
+}
+
 let validationCache: {
   validated: boolean
   errors: string[]
@@ -30,6 +37,77 @@ let validationCache: {
 } | null = null
 
 const VALIDATION_CACHE_TTL = 60 * 60 * 1000 // 1 hour
+
+const EXPECTED_CONFIGS: ExpectedStripeConfig[] = [
+  {
+    envVarName: "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID",
+    productType: "sselfie_studio_membership",
+    expectedAmount: 9700, // $97/month
+    expectedRecurring: true,
+  },
+  {
+    envVarName: "STRIPE_BRAND_STUDIO_MEMBERSHIP_PRICE_ID",
+    productType: "brand_studio_membership",
+    expectedAmount: 0, // validate presence + recurring only (amount may vary)
+    expectedRecurring: true,
+  },
+  {
+    envVarName: "STRIPE_ONE_TIME_SESSION_PRICE_ID",
+    productType: "one_time_session",
+    expectedAmount: 4900, // $49
+    expectedRecurring: false,
+  },
+  {
+    envVarName: "STRIPE_PAID_BLUEPRINT_PRICE_ID",
+    productType: "paid_blueprint",
+    expectedAmount: 4700, // $47
+    expectedRecurring: false,
+  },
+  {
+    envVarName: "STRIPE_PRICE_BRAND_STRATEGY_PACK",
+    productType: "brand_strategy_pack",
+    expectedAmount: 1900, // $19
+    expectedRecurring: false,
+  },
+]
+
+export function getExpectedStripeConfigForProduct(productType: string): ExpectedStripeConfig | null {
+  return EXPECTED_CONFIGS.find((cfg) => cfg.productType === productType) ?? null
+}
+
+export async function assertStripePriceConfigForProduct(productType: string): Promise<void> {
+  const config = getExpectedStripeConfigForProduct(productType)
+  if (!config) return
+
+  const priceId = process.env[config.envVarName]?.trim()
+  if (!priceId) {
+    throw new Error(`Stripe Price ID not configured. Please contact support. (Missing: ${config.envVarName})`)
+  }
+
+  const priceObj = await stripe.prices.retrieve(priceId)
+
+  if (!priceObj.active) {
+    throw new Error(
+      `The configured price for ${productType} is inactive in Stripe. ` +
+      `Please contact support. (Price ID: ${priceId}, Env: ${config.envVarName})`,
+    )
+  }
+
+  if (config.expectedAmount > 0 && priceObj.unit_amount !== config.expectedAmount) {
+    const actual = priceObj.unit_amount || 0
+    throw new Error(
+      `Price mismatch for ${productType}: expected $${(config.expectedAmount / 100).toFixed(2)}, ` +
+      `got $${(actual / 100).toFixed(2)}.`,
+    )
+  }
+
+  const isRecurring = !!priceObj.recurring
+  if (isRecurring !== config.expectedRecurring) {
+    const expectedType = config.expectedRecurring ? "subscription" : "one-time"
+    const actualType = isRecurring ? "subscription" : "one-time"
+    throw new Error(`Price type mismatch for ${productType}: expected ${expectedType}, got ${actualType}.`)
+  }
+}
 
 /**
  * Validates all Stripe pricing configuration
@@ -50,40 +128,7 @@ export async function assertStripePricingConfig(): Promise<void> {
   const criticalErrors: string[] = []
   
   // Define expected configuration
-  const expectedConfigs = [
-    {
-      envVarName: "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID",
-      productType: "sselfie_studio_membership",
-      expectedAmount: 9700, // $97/month
-      expectedRecurring: true,
-    },
-    {
-      envVarName: "STRIPE_BRAND_STUDIO_MEMBERSHIP_PRICE_ID",
-      productType: "brand_studio_membership",
-      expectedAmount: 0, // validate presence + recurring only (amount may vary)
-      expectedRecurring: true,
-    },
-    {
-      envVarName: "STRIPE_ONE_TIME_SESSION_PRICE_ID",
-      productType: "one_time_session",
-      expectedAmount: 4900, // $49
-      expectedRecurring: false,
-    },
-    {
-      envVarName: "STRIPE_PAID_BLUEPRINT_PRICE_ID",
-      productType: "paid_blueprint",
-      expectedAmount: 4700, // $47
-      expectedRecurring: false,
-    },
-    {
-      envVarName: "STRIPE_PRICE_BRAND_STRATEGY_PACK",
-      productType: "brand_strategy_pack",
-      expectedAmount: 1900, // $19
-      expectedRecurring: false,
-    },
-  ]
-  
-  for (const config of expectedConfigs) {
+  for (const config of EXPECTED_CONFIGS) {
     const validation: PriceConfigValidation = {
       envVarName: config.envVarName,
       priceId: process.env[config.envVarName],

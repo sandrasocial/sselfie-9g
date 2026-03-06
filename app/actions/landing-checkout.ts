@@ -4,13 +4,10 @@ import { stripe } from "@/lib/stripe"
 import { getProductById } from "@/lib/products"
 import { sql } from "@/lib/db/client"
 import type Stripe from "stripe"
-import { assertStripePricingConfig } from "@/lib/stripe/validate-pricing-config" // Declare the Stripe variable
+import { assertStripePriceConfigForProduct } from "@/lib/stripe/validate-pricing-config"
 import { getMembershipPromoBlockReason } from "@/lib/stripe/membership-promo-policy"
 
 export async function createLandingCheckoutSession(productId: string, promoCode?: string, customerEmail?: string | null) {
-  // FIX B3: Validate pricing configuration on first use
-  await assertStripePricingConfig()
-  
   console.log("[v0] Creating checkout session for product:", productId, promoCode ? `with promo: ${promoCode}` : "")
 
   const product = getProductById(productId)
@@ -24,6 +21,9 @@ export async function createLandingCheckoutSession(productId: string, promoCode?
   const allowManualPromotionCodes = !isSubscription
 
   const actualPrice = product.priceInCents
+
+  // Validate only the requested product pricing so unrelated SKU misconfig doesn't block this checkout.
+  await assertStripePriceConfigForProduct(product.type)
 
   console.log("[v0] Checkout config:", {
     productId,

@@ -1,0 +1,529 @@
+# Upgrade and Checkout Surface Inventory
+
+## Immediate Findings (Revenue Risk)
+- Embedded checkout failure path used blocking `alert(...)` and stopped conversion on critical upsell surfaces.
+- Maya tab hard-block replaced user context with full-page membership paywall when credits were exhausted.
+- Pricing validation in landing checkout validated **all** product price IDs, so one unrelated SKU misconfig could block membership checkout.
+- Upgrade UI surfaces are fragmented across many components with inconsistent style/copy and inconsistent fallback behavior.
+
+## Hotfixes Applied In This Pass
+- Added embedded-checkout fallback redirect to hosted checkout in:
+  - `components/UpgradeOrCredits.tsx`
+  - `components/credits/zero-credits-upgrade-modal.tsx`
+- Removed hard Maya full-screen gate and always render Maya chat context in:
+  - `components/sselfie/sselfie-app.tsx`
+- Changed checkout pricing validation from global-all-SKUs to product-scoped validation in:
+  - `app/actions/landing-checkout.ts`
+  - `lib/stripe/validate-pricing-config.ts`
+
+## Cleanup Plan (Next)
+1. Unify checkout launcher behavior:
+   - One helper for `embedded -> hosted fallback -> telemetry`.
+   - Replace all `alert("Failed to start checkout")` callsites.
+2. Normalize upsell timing:
+   - Post-result upsell only (never before user sees generated output).
+   - Credit-topup first for credit exhaustion; membership upsell second.
+3. Consolidate upgrade UI system:
+   - Single style system + copy map for all upgrade modals/banners.
+   - Standard CTA labels and value framing by trigger context.
+4. Route/price hardening:
+   - Add checkout route smoke tests for all product IDs.
+   - Add startup diagnostics endpoint/report for product-scoped Stripe config.
+5. Analytics:
+   - Track `upsell_impression`, `upsell_cta_click`, `checkout_fallback_used`, `checkout_failed`.
+
+## Components
+- components/credits/credit-balance.tsx:71:        <button onClick={() => (window.location.href = "/checkout/credits")} className="w-full mt-4 bg-stone-950 text-stone-50 py-3 rounded-xl text-sm font-medium tracking-[0.15em] uppercase hover:bg-stone-800 transition-all duration-200 flex items-center justify-center gap-2">
+- components/strategy/brand-strategy-pack-upsell.tsx:11:  const checkoutHref = `/checkout/brand-strategy-pack?strategyToken=${encodeURIComponent(strategyToken)}`
+- components/strategy/brand-strategy-pack-upsell.tsx:24:      event: "brand_strategy_pack_checkout_start",
+- components/strategy/brand-strategy-pack-upsell.tsx:33:      <a href={checkoutHref} className="btn-primary" onClick={handleCheckoutClick}>
+- components/strategy/brand-strategy-pack-upsell.tsx:36:      <a href="https://sselfie.ai/auth/sign-up?checkout=studio_membership" className="btn-secondary">
+- components/credits/low-credit-modal.tsx:4:import { BuyCreditsDialog } from "./buy-credits-dialog"
+- components/credits/low-credit-modal.tsx:48:  const handleBuyCredits = () => {
+- components/credits/low-credit-modal.tsx:73:                onClick={handleBuyCredits}
+- components/credits/low-credit-modal.tsx:89:      {showBuyDialog && <BuyCreditsDialog onClose={() => setShowBuyDialog(false)} />}
+- components/paid-blueprint/paid-blueprint-landing.tsx:16: * - Same feature flag logic as checkout page
+- components/paid-blueprint/paid-blueprint-landing.tsx:36:  // Handle email capture success - route to checkout
+- components/paid-blueprint/paid-blueprint-landing.tsx:39:    // Route to checkout with email
+- components/paid-blueprint/paid-blueprint-landing.tsx:40:    router.push(`/checkout/blueprint?email=${encodeURIComponent(email)}`)
+- components/credits/low-credit-warning.tsx:7:  onBuyCredits: () => void
+- components/credits/low-credit-warning.tsx:10:export function LowCreditWarning({ credits, onBuyCredits }: LowCreditWarningProps) {
+- components/credits/low-credit-warning.tsx:60:        onClick={onBuyCredits}
+- components/feed-planner/feed-single-placeholder.tsx:665:          {/* "Continue Creating" button - shows embedded checkout modal (BuyBlueprintModal) */}
+- components/feed-planner/feed-single-placeholder.tsx:669:              // Always show the embedded checkout modal with 30 photos card
+- components/feed-planner/feed-single-placeholder.tsx:670:              trackCTAClick("feed_preview_placeholder", "Continue Creating", "/checkout/blueprint")
+- components/feed-planner/feed-single-placeholder.tsx:682:      {/* Embedded checkout modal (for users with < 2 credits) */}
+- components/UpgradeOrCredits.tsx:6:import BuyCreditsModal from "@/components/sselfie/buy-credits-modal"
+- components/UpgradeOrCredits.tsx:7:import { startEmbeddedCheckout } from "@/lib/start-embedded-checkout"
+- components/UpgradeOrCredits.tsx:10:interface UpgradeOrCreditsProps {
+- components/UpgradeOrCredits.tsx:16:export function UpgradeOrCredits({ 
+- components/UpgradeOrCredits.tsx:20:}: UpgradeOrCreditsProps) {
+- components/UpgradeOrCredits.tsx:21:  const [showBuyCredits, setShowBuyCredits] = useState(false)
+- components/UpgradeOrCredits.tsx:24:  const handleUpgrade = async () => {
+- components/UpgradeOrCredits.tsx:27:      trackCTAClick("upgrade_or_credits", "Upgrade to Membership", "/checkout")
+- components/UpgradeOrCredits.tsx:28:      const clientSecret = await startEmbeddedCheckout("sselfie_studio_membership")
+- components/UpgradeOrCredits.tsx:29:      window.location.href = `/checkout?client_secret=${clientSecret}`
+- components/UpgradeOrCredits.tsx:31:      console.error("[UpgradeOrCredits] Error creating checkout:", error)
+- components/UpgradeOrCredits.tsx:32:      // Revenue-protect fallback: route to hosted checkout page if embedded checkout fails.
+- components/UpgradeOrCredits.tsx:33:      window.location.href = "/checkout/membership?fallback=embedded_failed&source=upgrade_or_credits"
+- components/UpgradeOrCredits.tsx:37:  const handleBuyCredits = () => {
+- components/UpgradeOrCredits.tsx:38:    trackCTAClick("upgrade_or_credits", "Buy Credits", "/checkout/credits")
+- components/UpgradeOrCredits.tsx:39:    setShowBuyCredits(true)
+- components/UpgradeOrCredits.tsx:48:    ? `${feature} is available exclusively for Studio Members. Upgrade to unlock ${feature} and all premium features.`
+- components/UpgradeOrCredits.tsx:50:      ? `You have access to Feed Planner. Upgrade to Studio Membership to unlock ${feature} and all features.`
+- components/UpgradeOrCredits.tsx:72:              onClick={handleUpgrade}
+- components/UpgradeOrCredits.tsx:83:                onClick={handleBuyCredits}
+- components/UpgradeOrCredits.tsx:107:      <BuyCreditsModal
+- components/UpgradeOrCredits.tsx:108:        open={showBuyCredits}
+- components/UpgradeOrCredits.tsx:109:        onOpenChange={setShowBuyCredits}
+- components/UpgradeOrCredits.tsx:111:          setShowBuyCredits(false)
+- components/credits/buy-credits-dialog.tsx:12:export function BuyCreditsDialog({ onClose }: { onClose?: () => void }) {
+- components/credits/buy-credits-dialog.tsx:25:      setPromoError(error.message || "Failed to start checkout")
+- components/credits/buy-credits-dialog.tsx:33:    router.push("/checkout/success?type=credit_topup")
+- components/credits/buy-credits-dialog.tsx:128:          {promoCode && <p className="mt-1 text-xs text-stone-500 font-light">Code will be applied at checkout</p>}
+- components/credits/zero-credits-upgrade-modal.tsx:4:import { startEmbeddedCheckout } from "@/lib/start-embedded-checkout"
+- components/credits/zero-credits-upgrade-modal.tsx:5:import { BuyCreditsDialog } from "./buy-credits-dialog"
+- components/credits/zero-credits-upgrade-modal.tsx:9:interface ZeroCreditsUpgradeModalProps {
+- components/credits/zero-credits-upgrade-modal.tsx:16:export function ZeroCreditsUpgradeModal({ credits, onClose }: ZeroCreditsUpgradeModalProps) {
+- components/credits/zero-credits-upgrade-modal.tsx:52:  const handleUpgrade = async () => {
+- components/credits/zero-credits-upgrade-modal.tsx:55:      trackCTAClick("zero_credits_modal", "Upgrade to Studio", "/checkout")
+- components/credits/zero-credits-upgrade-modal.tsx:56:      const clientSecret = await startEmbeddedCheckout("sselfie_studio_membership")
+- components/credits/zero-credits-upgrade-modal.tsx:57:      window.location.href = `/checkout?client_secret=${clientSecret}`
+- components/credits/zero-credits-upgrade-modal.tsx:59:      console.error("[v0] Error creating checkout:", error)
+- components/credits/zero-credits-upgrade-modal.tsx:60:      // Revenue-protect fallback: send users to hosted membership checkout if embedded fails.
+- components/credits/zero-credits-upgrade-modal.tsx:61:      window.location.href = "/checkout/membership?fallback=embedded_failed&source=zero_credits_modal"
+- components/credits/zero-credits-upgrade-modal.tsx:65:  const handleBuyCredits = () => {
+- components/credits/zero-credits-upgrade-modal.tsx:66:    trackCTAClick("zero_credits_modal", "Buy Credits", "/checkout/credits")
+- components/credits/zero-credits-upgrade-modal.tsx:99:                onClick={handleUpgrade}
+- components/credits/zero-credits-upgrade-modal.tsx:106:                onClick={handleBuyCredits}
+- components/credits/zero-credits-upgrade-modal.tsx:123:      {showBuyDialog && <BuyCreditsDialog onClose={() => setShowBuyDialog(false)} />}
+- components/feed-planner/welcome-wizard.tsx:68:  // Fetch preview feed data (only for paid users who upgraded from free)
+- components/feed-planner/free-mode-upsell-modal.tsx:41:    // Close upsell modal and navigate to credits checkout page with 10-credit pack highlighted
+- components/feed-planner/free-mode-upsell-modal.tsx:42:    trackCTAClick("free_mode_upsell", "Test More", "/checkout/credits")
+- components/feed-planner/free-mode-upsell-modal.tsx:44:    router.push("/checkout/credits")
+- components/feed-planner/free-mode-upsell-modal.tsx:49:    trackCTAClick("free_mode_upsell", "Unlock Full Blueprint", "/checkout/blueprint")
+- components/feed-planner/free-mode-upsell-modal.tsx:58:    // Close upsell modal and navigate to credits checkout page
+- components/feed-planner/free-mode-upsell-modal.tsx:59:    trackCTAClick("free_mode_upsell", "Get More Credits", "/checkout/credits")
+- components/feed-planner/free-mode-upsell-modal.tsx:61:    router.push("/checkout/credits")
+- components/feed-planner/free-mode-upsell-modal.tsx:125:      {/* Embedded checkout modal */}
+- components/sselfie/landing-page-new.tsx:7:import { startEmbeddedCheckout } from "@/lib/start-embedded-checkout"
+- components/sselfie/landing-page-new.tsx:13:  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null)
+- components/sselfie/landing-page-new.tsx:139:      trackCTAClick("pricing", productName, "/checkout")
+- components/sselfie/landing-page-new.tsx:141:      const clientSecret = await startEmbeddedCheckout(tierId)
+- components/sselfie/landing-page-new.tsx:142:      window.location.href = `/checkout?client_secret=${clientSecret}`
+- components/sselfie/landing-page-new.tsx:147:      alert("Failed to start checkout. Please try again.")
+- components/sselfie/landing-page-new.tsx:731:                    disabled={checkoutLoading === "one_time_session"}
+- components/sselfie/landing-page-new.tsx:734:                    {checkoutLoading === "one_time_session" ? "Loading..." : "Get Started"}
+- components/sselfie/landing-page-new.tsx:759:                    disabled={checkoutLoading === "sselfie_studio_membership"}
+- components/sselfie/landing-page-new.tsx:762:                    {checkoutLoading === "sselfie_studio_membership" ? "Loading..." : "See Inside →"}
+- components/sselfie/landing-page-new.tsx:771:                  href="/checkout/credits"
+- components/sselfie/landing-page-new.tsx:772:                  onClick={() => trackCTAClick("pricing", "See Credit Packs", "/checkout/credits")}
+- components/upgrade/upgrade-comparison-card.tsx:50:interface UpgradeComparisonCardProps {
+- components/upgrade/upgrade-comparison-card.tsx:53:  onUpgrade: () => void
+- components/upgrade/upgrade-comparison-card.tsx:59:export function UpgradeComparisonCard({
+- components/upgrade/upgrade-comparison-card.tsx:62:  onUpgrade,
+- components/upgrade/upgrade-comparison-card.tsx:66:}: UpgradeComparisonCardProps) {
+- components/upgrade/upgrade-comparison-card.tsx:76:          <p className="text-xs tracking-[0.15em] uppercase text-stone-500">Upgrade available</p>
+- components/upgrade/upgrade-comparison-card.tsx:100:          <TierSummary title="Upgrade to" tier={target} highlight />
+- components/upgrade/upgrade-comparison-card.tsx:108:          console.log("[UPGRADE-CARD] Upgrade button clicked")
+- components/upgrade/upgrade-comparison-card.tsx:109:          trackCTAClick("upgrade_comparison_card", "Upgrade now", "/checkout")
+- components/upgrade/upgrade-comparison-card.tsx:110:          if (!loading && onUpgrade) {
+- components/upgrade/upgrade-comparison-card.tsx:111:            onUpgrade()
+- components/upgrade/upgrade-comparison-card.tsx:117:        {loading ? "Upgrading..." : "Upgrade now"}
+- components/sselfie/maya/maya-videos-tab.tsx:9:import BuyCreditsModal from "../buy-credits-modal"
+- components/sselfie/maya/maya-videos-tab.tsx:80:  const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false)
+- components/sselfie/maya/maya-videos-tab.tsx:228:          setShowBuyCreditsModal(true)
+- components/sselfie/maya/maya-videos-tab.tsx:253:        setShowBuyCreditsModal(true)
+- components/sselfie/maya/maya-videos-tab.tsx:664:        <BuyCreditsModal
+- components/sselfie/maya/maya-videos-tab.tsx:665:          open={showBuyCreditsModal}
+- components/sselfie/maya/maya-videos-tab.tsx:666:          onOpenChange={setShowBuyCreditsModal}
+- components/sselfie/maya/maya-videos-tab.tsx:668:            setShowBuyCreditsModal(false)
+- components/upgrade/upgrade-modal.tsx:9:interface UpgradeModalProps {
+- components/upgrade/upgrade-modal.tsx:16:export function UpgradeModal({ open, currentTier: _currentTier, targetTier = "sselfie_studio_membership", onClose }: UpgradeModalProps) {
+- components/upgrade/upgrade-modal.tsx:22:  const handleUpgrade = async () => {
+- components/upgrade/upgrade-modal.tsx:26:      trackCTAClick("upgrade_modal", `Upgrade to ${targetName}`, "/checkout")
+- components/upgrade/upgrade-modal.tsx:27:      const response = await fetch("/api/subscription/upgrade", {
+- components/upgrade/upgrade-modal.tsx:37:        let errorMsg = data.error || "Upgrade failed. Please try again."
+- components/upgrade/upgrade-modal.tsx:41:          errorMsg = "Upgrade service is temporarily unavailable. Please contact support or try again later."
+- components/upgrade/upgrade-modal.tsx:43:          errorMsg = "Upgrade service is temporarily unavailable. Please contact support."
+- components/upgrade/upgrade-modal.tsx:53:        // No existing subscription: start embedded checkout
+- components/upgrade/upgrade-modal.tsx:55:        window.location.href = `/checkout?client_secret=${clientSecret}`
+- components/upgrade/upgrade-modal.tsx:66:      setError("Upgrade completed but response was unexpected. Please refresh the page.")
+- components/upgrade/upgrade-modal.tsx:69:      setError(err instanceof Error ? err.message : "Upgrade failed. Please try again.")
+- components/upgrade/upgrade-modal.tsx:122:            onClick={handleUpgrade}
+- components/upgrade/smart-upgrade-banner.tsx:4:import { UpgradeOpportunity } from "@/lib/upgrade-detection"
+- components/upgrade/smart-upgrade-banner.tsx:7:interface SmartUpgradeBannerProps {
+- components/upgrade/smart-upgrade-banner.tsx:8:  opportunity: UpgradeOpportunity
+- components/upgrade/smart-upgrade-banner.tsx:9:  onUpgrade: (targetTier: UpgradeOpportunity["suggestedTier"]) => void
+- components/upgrade/smart-upgrade-banner.tsx:10:  onDismiss?: (type: UpgradeOpportunity["type"]) => void
+- components/upgrade/smart-upgrade-banner.tsx:13:export function SmartUpgradeBanner({ opportunity, onUpgrade, onDismiss }: SmartUpgradeBannerProps) {
+- components/upgrade/smart-upgrade-banner.tsx:27:          console.log("[UPGRADE-BANNER] Upgrade button clicked, tier:", opportunity.suggestedTier)
+- components/upgrade/smart-upgrade-banner.tsx:28:          trackCTAClick("smart_upgrade_banner", "Upgrade", "/checkout")
+- components/upgrade/smart-upgrade-banner.tsx:29:          onUpgrade(opportunity.suggestedTier)
+- components/upgrade/smart-upgrade-banner.tsx:33:        Upgrade
+- components/upgrade/smart-upgrade-banner.tsx:40:          aria-label="Dismiss upgrade banner"
+- components/admin/beta-program-manager.tsx:161:                    <li>Or update the discount logic in app/actions/landing-checkout.ts</li>
+- components/admin/beta-countdown.tsx:102:              <code className="bg-stone-200 px-2 py-0.5 rounded text-xs">app/actions/landing-checkout.ts</code>
+- components/admin/beta-countdown.tsx:195:              Open <code className="bg-stone-100 px-1 py-0.5 rounded">app/actions/landing-checkout.ts</code>
+- components/sselfie/maya/maya-prompts-tab.tsx:51:  onUpgradeToStudio?: () => void
+- components/sselfie/maya/maya-prompts-tab.tsx:64:  onUpgradeToStudio,
+- components/sselfie/maya/maya-prompts-tab.tsx:979:              onClick={onUpgradeToStudio}
+- components/sselfie/maya/maya-prompts-tab.tsx:982:              Upgrade to Studio — includes everything →
+- components/sselfie/settings-screen.tsx:27:import { UpgradeModal } from "@/components/upgrade/upgrade-modal"
+- components/sselfie/settings-screen.tsx:68:  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+- components/sselfie/settings-screen.tsx:235:  // Only show upgrade for users without Creator Studio membership
+- components/sselfie/settings-screen.tsx:236:  const upgradeTargetTier =
+- components/sselfie/settings-screen.tsx:510:        {userInfo && upgradeTargetTier && (
+- components/sselfie/settings-screen.tsx:518:                  Upgrade to Creator Studio
+- components/sselfie/settings-screen.tsx:536:                label="Upgrade to"
+- components/sselfie/settings-screen.tsx:549:                console.log("[SETTINGS] Upgrade button clicked, opening modal")
+- components/sselfie/settings-screen.tsx:550:                setShowUpgradeModal(true)
+- components/sselfie/settings-screen.tsx:554:              Upgrade now
+- components/sselfie/settings-screen.tsx:801:      {upgradeTargetTier && (
+- components/sselfie/settings-screen.tsx:802:        <UpgradeModal
+- components/sselfie/settings-screen.tsx:803:          open={showUpgradeModal}
+- components/sselfie/settings-screen.tsx:805:          targetTier={upgradeTargetTier}
+- components/sselfie/settings-screen.tsx:806:          onClose={() => setShowUpgradeModal(false)}
+- components/sselfie/maya/maya-training-tab.tsx:14:  onBuyCredits?: () => void
+- components/sselfie/maya/maya-training-tab.tsx:26:  onBuyCredits,
+- components/sselfie/maya/maya-training-tab.tsx:122:                onClick={onBuyCredits}
+- components/sselfie/buy-credits-modal.tsx:13:interface BuyCreditsModalProps {
+- components/sselfie/buy-credits-modal.tsx:19:export default function BuyCreditsModal({ open, onOpenChange, onSuccess }: BuyCreditsModalProps) {
+- components/sselfie/buy-credits-modal.tsx:29:      console.error("[v0] Error starting checkout:", error)
+- components/sselfie/pro-mode/ProModeChat.tsx:205:            `Need ${data.required || 2} credit${data.required > 1 ? 's' : ''}. ${data.message || 'Please purchase more credits or upgrade your plan.'}`
+- components/sselfie/buy-blueprint-modal.tsx:10:import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
+- components/sselfie/buy-blueprint-modal.tsx:49:        console.log("[BuyBlueprintModal] ✅ Authenticated user, using product checkout session", promoCode ? `with promo: ${promoCode}` : "without promo code")
+- components/sselfie/buy-blueprint-modal.tsx:53:        console.log("[BuyBlueprintModal] 👤 Unauthenticated user, using landing checkout session", promoCode ? `with promo: ${promoCode}` : "without promo code")
+- components/sselfie/buy-blueprint-modal.tsx:65:      console.error("[BuyBlueprintModal] Error starting checkout:", error)
+- components/sselfie/buy-blueprint-modal.tsx:84:        const response = await fetch(`/api/checkout-session?session_id=${sessionId}`)
+- components/sselfie/buy-blueprint-modal.tsx:88:          router.push(`/checkout/success?session_id=${sessionId}&email=${encodeURIComponent(sessionData.email)}&type=paid_blueprint`)
+- components/sselfie/buy-blueprint-modal.tsx:90:          router.push(`/checkout/success?session_id=${sessionId}&type=paid_blueprint`)
+- components/sselfie/buy-blueprint-modal.tsx:95:        router.push(`/checkout/success?session_id=${sessionId}&type=paid_blueprint`)
+- components/sselfie/buy-blueprint-modal.tsx:100:      router.push("/checkout/success?type=paid_blueprint")
+- components/sselfie/buy-blueprint-modal.tsx:153:                    trackCTAClick("buy_blueprint_modal", "Continue to Checkout", "/checkout/blueprint")
+- components/sselfie/buy-blueprint-modal.tsx:164:          // Embedded checkout view
+- components/sselfie/buy-blueprint-modal.tsx:168:                <p className="text-stone-600">Loading checkout...</p>
+- components/sselfie/story-highlight-card.tsx:223:            `Need ${data.required || 1} credit${data.required > 1 ? "s" : ""}. Please purchase more credits or upgrade your plan.`,
+- components/sselfie/blueprint-screen.tsx:762:                      <BlueprintUpsell onUpgrade={() => {
+- components/sselfie/blueprint-screen.tsx:845:                      <BlueprintUpsell onUpgrade={() => {
+- components/sselfie/blueprint-screen.tsx:905:                      <BlueprintUpsell onUpgrade={() => {
+- components/sselfie/blueprint-screen.tsx:913:              {/* Embedded checkout modal */}
+- components/sselfie/blueprint-screen.tsx:957:function BlueprintUpsell({ onUpgrade }: { onUpgrade: () => void }) {
+- components/sselfie/blueprint-screen.tsx:1001:              trackCTAClick("blueprint_screen_upsell", "Get my 30 photos", "/checkout/blueprint")
+- components/sselfie/blueprint-screen.tsx:1002:              onUpgrade()
+- components/sselfie/b-roll-screen.tsx:22:import BuyCreditsModal from "./buy-credits-modal"
+- components/sselfie/b-roll-screen.tsx:63:  const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false)
+- components/sselfie/b-roll-screen.tsx:221:          setShowBuyCreditsModal(true)
+- components/sselfie/b-roll-screen.tsx:249:        setShowBuyCreditsModal(true)
+- components/sselfie/b-roll-screen.tsx:727:      <BuyCreditsModal
+- components/sselfie/b-roll-screen.tsx:728:        open={showBuyCreditsModal}
+- components/sselfie/b-roll-screen.tsx:729:        onOpenChange={setShowBuyCreditsModal}
+- components/sselfie/b-roll-screen.tsx:731:          setShowBuyCreditsModal(false)
+- components/sselfie/access.ts:21:      showUpgradeUI: false,
+- components/sselfie/access.ts:35:      showUpgradeUI: false,
+- components/sselfie/access.ts:45:      showUpgradeUI: true, // Show upsell to membership (for more credits, monthly access)
+- components/sselfie/access.ts:52:  // The API deducts credits and returns 402 when exhausted — that triggers the upgrade modal.
+- components/sselfie/access.ts:58:    showUpgradeUI: true,
+- components/sselfie/sselfie-app.tsx:17:import BuyCreditsModal from "./buy-credits-modal"
+- components/sselfie/sselfie-app.tsx:19:import { ZeroCreditsUpgradeModal } from "@/components/credits/zero-credits-upgrade-modal"
+- components/sselfie/sselfie-app.tsx:22:import { UpgradeOrCredits } from "@/components/UpgradeOrCredits"
+- components/sselfie/sselfie-app.tsx:26:import { SmartUpgradeBanner } from "@/components/upgrade/smart-upgrade-banner"
+- components/sselfie/sselfie-app.tsx:27:import { UpgradeModal } from "@/components/upgrade/upgrade-modal"
+- components/sselfie/sselfie-app.tsx:28:import type { UpgradeOpportunity } from "@/lib/upgrade-detection"
+- components/sselfie/sselfie-app.tsx:204:  const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false)
+- components/sselfie/sselfie-app.tsx:376:  const upgradeImpressionsLogged = useRef<Set<string>>(new Set())
+- components/sselfie/sselfie-app.tsx:377:  const [upgradeOpportunities, setUpgradeOpportunities] = useState<UpgradeOpportunity[]>([])
+- components/sselfie/sselfie-app.tsx:378:  const [dismissedUpgradeTypes, setDismissedUpgradeTypes] = useState<Set<string>>(new Set())
+- components/sselfie/sselfie-app.tsx:379:  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+- components/sselfie/sselfie-app.tsx:380:  const [currentTierForUpgrade] = useState<"one_time_session" | "sselfie_studio_membership">(
+- components/sselfie/sselfie-app.tsx:419:    const loadUpgradeOpportunities = async () => {
+- components/sselfie/sselfie-app.tsx:421:        const response = await fetch("/api/subscription/upgrade-opportunities", { credentials: "include" })
+- components/sselfie/sselfie-app.tsx:425:          setUpgradeOpportunities(data.opportunities)
+- components/sselfie/sselfie-app.tsx:428:        console.error("[v0] [UPGRADE] Failed to fetch upgrade opportunities", error)
+- components/sselfie/sselfie-app.tsx:432:    loadUpgradeOpportunities()
+- components/sselfie/sselfie-app.tsx:457:    // but the generation API will surface the upgrade modal naturally when they try.
+- components/sselfie/sselfie-app.tsx:804:  const activeUpgrade = upgradeOpportunities.find((op) => !dismissedUpgradeTypes.has(op.type))
+- components/sselfie/sselfie-app.tsx:805:  const shouldShowUpgradeBanner =
+- components/sselfie/sselfie-app.tsx:806:    ["gallery", "maya"].includes(activeTab) && !!activeUpgrade && access.canUseGenerators
+- components/sselfie/sselfie-app.tsx:808:  const logUpgradeEvent = async (eventType: "impression" | "dismiss" | "cta_click", opportunityType?: string) => {
+- components/sselfie/sselfie-app.tsx:810:      await fetch("/api/subscription/upgrade-analytics", {
+- components/sselfie/sselfie-app.tsx:821:  const dismissUpgrade = (type: string) => {
+- components/sselfie/sselfie-app.tsx:822:    setDismissedUpgradeTypes((prev) => new Set([...Array.from(prev), type]))
+- components/sselfie/sselfie-app.tsx:823:    logUpgradeEvent("dismiss", type)
+- components/sselfie/sselfie-app.tsx:827:    if (shouldShowUpgradeBanner && activeUpgrade) {
+- components/sselfie/sselfie-app.tsx:828:      const key = `${activeUpgrade.type}-impression`
+- components/sselfie/sselfie-app.tsx:829:      if (!upgradeImpressionsLogged.current.has(key)) {
+- components/sselfie/sselfie-app.tsx:830:        upgradeImpressionsLogged.current.add(key)
+- components/sselfie/sselfie-app.tsx:831:        logUpgradeEvent("impression", activeUpgrade.type)
+- components/sselfie/sselfie-app.tsx:834:  }, [shouldShowUpgradeBanner, activeUpgrade])
+- components/sselfie/sselfie-app.tsx:1119:                        setShowBuyCreditsModal(true)
+- components/sselfie/sselfie-app.tsx:1150:            {shouldShowUpgradeBanner && activeUpgrade && (
+- components/sselfie/sselfie-app.tsx:1152:                <SmartUpgradeBanner
+- components/sselfie/sselfie-app.tsx:1153:                  opportunity={activeUpgrade}
+- components/sselfie/sselfie-app.tsx:1154:                  onUpgrade={() => {
+- components/sselfie/sselfie-app.tsx:1155:                    logUpgradeEvent("cta_click", activeUpgrade.type)
+- components/sselfie/sselfie-app.tsx:1156:                    setShowUpgradeModal(true)
+- components/sselfie/sselfie-app.tsx:1158:                  onDismiss={dismissUpgrade}
+- components/sselfie/sselfie-app.tsx:1197:                    <UpgradeOrCredits feature="Gallery" isPaidBlueprintUser={isPaidBlueprintUserForAccess} requiresMembership={true} />
+- components/sselfie/sselfie-app.tsx:1205:                    <UpgradeOrCredits feature="Academy" isPaidBlueprintUser={isPaidBlueprintUserForAccess} requiresMembership={true} />
+- components/sselfie/sselfie-app.tsx:1271:      <BuyCreditsModal
+- components/sselfie/sselfie-app.tsx:1272:        open={showBuyCreditsModal}
+- components/sselfie/sselfie-app.tsx:1273:        onOpenChange={setShowBuyCreditsModal}
+- components/sselfie/sselfie-app.tsx:1277:      <UpgradeModal
+- components/sselfie/sselfie-app.tsx:1278:        open={showUpgradeModal}
+- components/sselfie/sselfie-app.tsx:1279:        currentTier={currentTierForUpgrade}
+- components/sselfie/sselfie-app.tsx:1281:        onClose={() => setShowUpgradeModal(false)}
+- components/sselfie/sselfie-app.tsx:1286:          - ZeroCreditsUpgradeModal: Only for paid users when credits = 0 (handled inside component)
+- components/sselfie/sselfie-app.tsx:1290:      <ZeroCreditsUpgradeModal credits={creditBalance} />
+- components/sselfie/account-screen.tsx:11:import { UpgradeModal } from "@/components/upgrade/upgrade-modal"
+- components/sselfie/account-screen.tsx:99:  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+- components/sselfie/account-screen.tsx:421:  // Only show upgrade for users without Creator Studio membership
+- components/sselfie/account-screen.tsx:422:  const upgradeTargetTier =
+- components/sselfie/account-screen.tsx:709:          {userInfo && upgradeTargetTier && (
+- components/sselfie/account-screen.tsx:711:              <p className={sectionLabel}>Upgrade</p>
+- components/sselfie/account-screen.tsx:723:                <InfoPill label="Upgrade to" value="Creator Studio" />
+- components/sselfie/account-screen.tsx:731:                  trackCTAClick("account_screen_upgrade", "Upgrade now", "/checkout")
+- components/sselfie/account-screen.tsx:732:                  setShowUpgradeModal(true)
+- components/sselfie/account-screen.tsx:736:                Upgrade To Studio
+- components/sselfie/account-screen.tsx:955:      {upgradeTargetTier && (
+- components/sselfie/account-screen.tsx:956:        <UpgradeModal
+- components/sselfie/account-screen.tsx:957:          open={showUpgradeModal}
+- components/sselfie/account-screen.tsx:959:          targetTier={upgradeTargetTier}
+- components/sselfie/account-screen.tsx:960:          onClose={() => setShowUpgradeModal(false)}
+- components/sselfie/concept-card.tsx:11:import BuyCreditsModal from "./buy-credits-modal"
+- components/sselfie/concept-card.tsx:89:  const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false)
+- components/sselfie/concept-card.tsx:750:            setShowBuyCreditsModal(true)
+- components/sselfie/concept-card.tsx:898:          setShowBuyCreditsModal(true)
+- components/sselfie/concept-card.tsx:915:        setShowBuyCreditsModal(true)
+- components/sselfie/concept-card.tsx:1016:          setShowBuyCreditsModal(true)
+- components/sselfie/concept-card.tsx:1034:        setShowBuyCreditsModal(true)
+- components/sselfie/concept-card.tsx:2277:      <BuyCreditsModal
+- components/sselfie/concept-card.tsx:2278:        open={showBuyCreditsModal}
+- components/sselfie/concept-card.tsx:2279:        onOpenChange={setShowBuyCreditsModal}
+- components/sselfie/concept-card.tsx:2281:          setShowBuyCreditsModal(false)
+- components/sselfie/maya-chat-screen.tsx:35:import BuyCreditsModal from "./buy-credits-modal"
+- components/sselfie/maya-chat-screen.tsx:53:import { startEmbeddedCheckout } from "@/lib/start-embedded-checkout"
+- components/sselfie/maya-chat-screen.tsx:173:  const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false)
+- components/sselfie/maya-chat-screen.tsx:2368:            setShowBuyCreditsModal(true)
+- components/sselfie/maya-chat-screen.tsx:3429:      {/* Zero-credits upgrade nudge — shown inline when a free (non-membership) user
+- components/sselfie/maya-chat-screen.tsx:3437:                Upgrade to Studio — 200 credits/month. Or grab a one-time credit pack.
+- components/sselfie/maya-chat-screen.tsx:3441:                  onClick={() => startEmbeddedCheckout("sselfie_studio_membership")}
+- components/sselfie/maya-chat-screen.tsx:3444:                  Upgrade to Studio →
+- components/sselfie/maya-chat-screen.tsx:3447:                  onClick={() => setShowBuyCreditsModal(true)}
+- components/sselfie/maya-chat-screen.tsx:3663:              onClick={() => startEmbeddedCheckout("sselfie_studio_membership")}
+- components/sselfie/maya-chat-screen.tsx:3666:              Upgrade to Studio — includes everything →
+- components/sselfie/maya-chat-screen.tsx:3686:              onClick={() => startEmbeddedCheckout("sselfie_studio_membership")}
+- components/sselfie/maya-chat-screen.tsx:3689:              Upgrade to Studio — includes everything →
+- components/sselfie/maya-chat-screen.tsx:4051:            onUpgradeToStudio={() => startEmbeddedCheckout("sselfie_studio_membership")}
+- components/sselfie/maya-chat-screen.tsx:4132:                onBuyCredits={() => setShowBuyCreditsModal(true)}
+- components/sselfie/maya-chat-screen.tsx:4133:                onJoinStudio={() => startEmbeddedCheckout("sselfie_studio_membership")}
+- components/sselfie/maya-chat-screen.tsx:4307:      <BuyCreditsModal
+- components/sselfie/maya-chat-screen.tsx:4308:        open={showBuyCreditsModal}
+- components/sselfie/maya-chat-screen.tsx:4309:        onOpenChange={setShowBuyCreditsModal}
+- components/sselfie/maya-chat-screen.tsx:4311:          setShowBuyCreditsModal(false)
+- components/sselfie/academy-screen.tsx:163:  const handleUpgrade = async () => {
+- components/sselfie/academy-screen.tsx:166:      const response = await fetch("/api/landing/checkout", {
+- components/sselfie/academy-screen.tsx:174:        window.location.href = `/checkout?client_secret=${data.clientSecret}`
+- components/sselfie/academy-screen.tsx:176:        throw new Error(data?.error || "Failed to start checkout")
+- components/sselfie/academy-screen.tsx:179:      console.error("[v0] Error creating checkout:", error)
+- components/sselfie/academy-screen.tsx:180:      alert("Failed to start checkout. Please try again.")
+- components/sselfie/academy-screen.tsx:377:              onClick={handleUpgrade}
+- components/sselfie/academy-screen.tsx:381:              {isUpgrading ? "Processing..." : "Upgrade to Studio"}
+- components/sselfie/academy-screen.tsx:508:              onClick={handleUpgrade}
+- components/sselfie/academy-screen.tsx:512:              {isUpgrading ? "Processing..." : "Upgrade to Studio"}
+- components/sselfie/academy-screen.tsx:585:              onClick={handleUpgrade}
+- components/sselfie/academy-screen.tsx:589:              {isUpgrading ? "Processing..." : "Upgrade to Studio"}
+
+## API routes
+- app/api/stripe/create-checkout-session/route.ts:5:async function handleCreateCheckoutSession({
+- app/api/stripe/create-checkout-session/route.ts:22:    console.log("[v0] Creating embedded checkout session for package:", creditPackage.name)
+- app/api/stripe/create-checkout-session/route.ts:24:    // Create Stripe checkout session
+- app/api/stripe/create-checkout-session/route.ts:25:    const session = await stripe.checkout.sessions.create({
+- app/api/stripe/create-checkout-session/route.ts:53:    console.error("[v0] Error creating checkout session:", error)
+- app/api/stripe/create-checkout-session/route.ts:54:    return Response.json({ error: "Failed to create checkout session" }, { status: 500 })
+- app/api/stripe/create-checkout-session/route.ts:58:const authedCreateCheckoutSession = withAuth(handleCreateCheckoutSession)
+- app/api/stripe/create-checkout-session/route.ts:65:  return authedCreateCheckoutSession(request)
+- app/api/landing/checkout/route.ts:2:import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
+- app/api/landing/checkout/route.ts:11:    const clientSecret = await createLandingCheckoutSession(productId)
+- app/api/landing/checkout/route.ts:14:    console.error("[v0] [LANDING_CHECKOUT] Error creating checkout session:", error)
+- app/api/landing/checkout/route.ts:15:    return NextResponse.json({ error: error?.message || "Failed to create checkout" }, { status: 500 })
+- app/api/cron/reactivation-campaigns/route.ts:40: * - Day 2: "Why professional selfies just got an upgrade"
+- app/api/cron/reactivation-campaigns/route.ts:340:          subjectFallback: "Why professional selfies just got an upgrade",
+- app/api/maya/generate-image/route.ts:97:          message: `Image generation requires ${CREDIT_COSTS.IMAGE} credit. You currently have ${currentBalance} credits. Please purchase more credits or upgrade your plan.`,
+- app/api/email/track-click/route.ts:16:  const safeRedirect = sanitizeRedirect(redirect, "/checkout")
+- app/api/email/track-click/route.ts:33:    // Redirect to checkout
+- app/api/maya/generate-video/route.ts:61:          message: `Video generation requires ${CREDIT_COSTS.ANIMATION} credits. Please purchase more credits or upgrade your plan.`,
+- app/api/feature-flags/paid-blueprint/route.ts:9: * Uses the SAME logic as server-side checkout page to ensure consistency.
+- app/api/feature-flags/paid-blueprint/route.ts:16: * This ensures CTA visibility matches checkout page availability.
+- app/api/admin/stripe/backfill-customer-ids/route.ts:164:      // Try searching checkout sessions as fallback
+- app/api/admin/stripe/backfill-customer-ids/route.ts:165:      console.log(`[v0] [BACKFILL] No Stripe customer found for ${email}, searching checkout sessions...`)
+- app/api/admin/stripe/backfill-customer-ids/route.ts:166:      const customerIdFromSessions = await findCustomerIdFromCheckoutSessions(email)
+- app/api/admin/stripe/backfill-customer-ids/route.ts:187:        status: "No Stripe customer or checkout sessions found",
+- app/api/admin/stripe/backfill-customer-ids/route.ts:220:async function findCustomerIdFromCheckoutSessions(email: string): Promise<string | null> {
+- app/api/admin/stripe/backfill-customer-ids/route.ts:222:    // Search for checkout sessions - we need to list them and filter by metadata or customer_details
+- app/api/admin/stripe/backfill-customer-ids/route.ts:224:    const sessions = await stripe.checkout.sessions.list({
+- app/api/admin/stripe/backfill-customer-ids/route.ts:228:    // Search through checkout sessions for this email
+- app/api/admin/stripe/backfill-customer-ids/route.ts:235:        console.log(`[v0] [BACKFILL] Found customer ID ${customerId} from checkout session for ${email}`)
+- app/api/admin/stripe/backfill-customer-ids/route.ts:255:    console.error(`[v0] [BACKFILL] Error searching checkout sessions:`, error)
+- app/api/user-by-email/route.ts:2:import { getUserByEmail } from "@/app/actions/landing-checkout"
+- app/api/blueprint/generate-grid/route.ts:126:            error: `Insufficient credits. Grid generation requires ${gridGenerationCost} credits. You currently have ${currentBalance} credits. Please purchase more credits or upgrade your plan.`,
+- app/api/subscription/upgrade-analytics/route.ts:35:      CREATE TABLE IF NOT EXISTS upgrade_analytics (
+- app/api/subscription/upgrade-analytics/route.ts:45:      INSERT INTO upgrade_analytics (user_id, event_type, opportunity_type)
+- app/api/subscription/upgrade-analytics/route.ts:51:    console.error("[v0] [UPGRADE_ANALYTICS] Error recording event:", error)
+- app/api/academy/checkout/route.ts:7:type CheckoutRequestBody = {
+- app/api/academy/checkout/route.ts:13:    const { productId } = (await request.json()) as CheckoutRequestBody
+- app/api/academy/checkout/route.ts:49:    const session = await stripe.checkout.sessions.create({
+- app/api/academy/checkout/route.ts:67:    console.error("[v0] Error creating academy checkout session:", error)
+- app/api/academy/checkout/route.ts:68:    return NextResponse.json({ error: "Failed to create checkout session" }, { status: 500 })
+- app/api/subscription/upgrade/route.ts:6:import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
+- app/api/subscription/upgrade/route.ts:10:interface UpgradeRequestBody {
+- app/api/subscription/upgrade/route.ts:16:    const body = (await req.json().catch(() => ({}))) as UpgradeRequestBody
+- app/api/subscription/upgrade/route.ts:20:      return NextResponse.json({ error: "Unsupported upgrade target" }, { status: 400 })
+- app/api/subscription/upgrade/route.ts:50:      // No subscription on record — fall back to creating a new embedded checkout
+- app/api/subscription/upgrade/route.ts:52:        const clientSecret = await createLandingCheckoutSession(targetTier)
+- app/api/subscription/upgrade/route.ts:53:        return NextResponse.json({ requiresCheckout: true, clientSecret })
+- app/api/subscription/upgrade/route.ts:54:      } catch (checkoutError: any) {
+- app/api/subscription/upgrade/route.ts:55:        console.error("[UPGRADE_API] Error creating checkout session:", checkoutError)
+- app/api/subscription/upgrade/route.ts:58:            error: checkoutError?.message || "Failed to create checkout session. Please ensure STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID is configured." 
+- app/api/subscription/upgrade/route.ts:69:    // For existing subscriptions, try to upgrade via subscription update first
+- app/api/subscription/upgrade/route.ts:70:    // But use the same price lookup as landing checkout for consistency
+- app/api/subscription/upgrade/route.ts:74:      // If env var not set, fall back to checkout session (same as landing page)
+- app/api/subscription/upgrade/route.ts:75:      console.log("[UPGRADE_API] Price ID not in env, using checkout session approach")
+- app/api/subscription/upgrade/route.ts:77:        const clientSecret = await createLandingCheckoutSession(targetTier)
+- app/api/subscription/upgrade/route.ts:78:        return NextResponse.json({ requiresCheckout: true, clientSecret })
+- app/api/subscription/upgrade/route.ts:79:      } catch (checkoutError: any) {
+- app/api/subscription/upgrade/route.ts:80:        console.error("[UPGRADE_API] Error creating checkout session:", checkoutError)
+- app/api/subscription/upgrade/route.ts:83:            error: checkoutError?.message || "Failed to create checkout session" 
+- app/api/subscription/upgrade/route.ts:96:        // Fall back to checkout if subscription structure is unexpected
+- app/api/subscription/upgrade/route.ts:97:        console.log("[UPGRADE_API] No subscription items found, using checkout session")
+- app/api/subscription/upgrade/route.ts:98:        const clientSecret = await createLandingCheckoutSession(targetTier)
+- app/api/subscription/upgrade/route.ts:99:        return NextResponse.json({ requiresCheckout: true, clientSecret })
+- app/api/subscription/upgrade/route.ts:114:          upgraded_from: subscription.product_type ?? "unknown",
+- app/api/subscription/upgrade/route.ts:115:          upgraded_to: targetTier,
+- app/api/subscription/upgrade/route.ts:116:          upgrade_date: new Date().toISOString(),
+- app/api/subscription/upgrade/route.ts:123:        `[UPGRADE_API] ✅ Subscription upgraded. New price will apply at next renewal (${stripeSubAny.current_period_end ? new Date(stripeSubAny.current_period_end * 1000).toISOString().split('T')[0] : "unknown"})`
+- app/api/subscription/upgrade/route.ts:135:      // If subscription update fails, fall back to checkout session
+- app/api/subscription/upgrade/route.ts:136:      console.warn("[UPGRADE_API] Subscription update failed, falling back to checkout:", updateError)
+- app/api/subscription/upgrade/route.ts:138:        const clientSecret = await createLandingCheckoutSession(targetTier)
+- app/api/subscription/upgrade/route.ts:139:        return NextResponse.json({ requiresCheckout: true, clientSecret })
+- app/api/subscription/upgrade/route.ts:140:      } catch (checkoutError: any) {
+- app/api/subscription/upgrade/route.ts:141:        console.error("[UPGRADE_API] Error creating checkout session:", checkoutError)
+- app/api/subscription/upgrade/route.ts:144:            error: checkoutError?.message || "Failed to upgrade subscription" 
+- app/api/subscription/upgrade/route.ts:151:    console.error("[v0] [UPGRADE_API] Error upgrading subscription:", error)
+- app/api/subscription/upgrade/route.ts:152:    return NextResponse.json({ error: error?.message ?? "Failed to upgrade" }, { status: 500 })
+- app/api/subscription/upgrade-opportunities/route.ts:4:import { detectUpgradeOpportunities } from "@/lib/upgrade-detection"
+- app/api/subscription/upgrade-opportunities/route.ts:22:    const opportunities = await detectUpgradeOpportunities(neonUser.id)
+- app/api/subscription/upgrade-opportunities/route.ts:25:    console.error("[v0] [UPGRADE_OPPS] Error fetching opportunities:", error)
+- app/api/blueprint/email-concepts/route.ts:151:                <a href="${process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"}/checkout/one-time" class="cta">Join SSELFIE Studio →</a>
+- app/api/maya/generate-concepts/route.ts:3752:        // Upgrade to stronger film grain if enhanced authenticity is enabled
+- app/api/maya/generate-concepts/route.ts:3754:        console.log("[v0] Upgraded film grain for enhanced authenticity")
+- app/api/maya/generate-concepts/route.ts:3907:        // Upgrade existing iPhone aesthetic to stronger version if enhanced authenticity is enabled
+- app/api/maya/generate-concepts/route.ts:3910:          console.log("[v0] Upgraded iPhone aesthetic for enhanced authenticity")
+- app/api/diagnostics/webhook-config/route.ts:25:      step5: "If no attempts, verify events are selected (checkout.session.completed, etc.)",
+- app/api/webhooks/stripe/route.ts:23:import { isBrandEngineCheckoutProductType } from "@/lib/brand-engine/offer-checkout-config"
+- app/api/webhooks/stripe/route.ts:106:      case "checkout.session.completed": {
+- app/api/webhooks/stripe/route.ts:109:        console.log("[v0] 🎉 Checkout session completed!")
+- app/api/webhooks/stripe/route.ts:121:          console.log(`[v0] ⚠️ Subscription checkout completed but payment status is '${session.payment_status}'. Credits will be granted when invoice.payment_succeeded fires.`)
+- app/api/webhooks/stripe/route.ts:181:              source: "stripe-checkout",
+- app/api/webhooks/stripe/route.ts:324:          if (isBrandEngineCheckoutProductType(productType)) {
+- app/api/webhooks/stripe/route.ts:329:            const checkoutMode = String(session.metadata.checkout_mode || "payment_link")
+- app/api/webhooks/stripe/route.ts:405:              const paymentNote = `[payment ${new Date().toISOString()}] stripe_session=${session.id}; stripe_payment=${paymentIdForStorage}; mode=${checkoutMode}; amount_cents=${paymentAmountCents}`
+- app/api/webhooks/stripe/route.ts:414:                  closed_reason = COALESCE(closed_reason, 'paid_via_checkout'),
+- app/api/webhooks/stripe/route.ts:419:                  checkout_mode = CASE
+- app/api/webhooks/stripe/route.ts:420:                    WHEN checkout_mode IS NULL OR checkout_mode = 'none' THEN ${checkoutMode}
+- app/api/webhooks/stripe/route.ts:421:                    ELSE checkout_mode
+- app/api/webhooks/stripe/route.ts:423:                  checkout_mode_reason = COALESCE(checkout_mode_reason, 'checkout_completed'),
+- app/api/webhooks/stripe/route.ts:436:                console.log(`[v0] ✅ Brand Engine application ${applicationId} marked closed_won from checkout`)
+- app/api/webhooks/stripe/route.ts:964:              `[v0] ⚠️ Subscription checkout completed. Credits will be granted when invoice.payment_succeeded fires (after payment confirmation).`,
+- app/api/webhooks/stripe/route.ts:1096:            // This segment is for one-time buyers who haven't upgraded to membership
+- app/api/webhooks/stripe/route.ts:1257:                `[v0] ⚠️ Brand strategy pack checkout completed but payment not confirmed (status: '${session.payment_status}').`,
+- app/api/webhooks/stripe/route.ts:1370:                  eventName: "brand_strategy_pack_checkout_success",
+- app/api/webhooks/stripe/route.ts:1390:              console.log(`[v0] ⚠️ Paid Blueprint checkout completed but payment not confirmed (status: '${session.payment_status}'). Skipping processing until payment succeeds.`)
+- app/api/webhooks/stripe/route.ts:1514:                console.log(`[v0] Using user_id from session.metadata (authenticated checkout): ${userId}`)
+- app/api/webhooks/stripe/route.ts:1516:                // Fallback: Try to find user by email (guest checkout)
+- app/api/webhooks/stripe/route.ts:1673:              // Prioritize linking to user_id if authenticated, otherwise use email (guest checkout)
+- app/api/webhooks/stripe/route.ts:1702:                    // FIX 2: Expand user's feed from 1 post to 9 posts (free → paid upgrade)
+- app/api/webhooks/stripe/route.ts:1806:                  // FIX 2: Expand user's feed from 1 post to 9 posts (free → paid upgrade)
+- app/api/webhooks/stripe/route.ts:1877:                  // Guest checkout: Use email-based lookup (for later migration)
+- app/api/webhooks/stripe/route.ts:1878:                  console.log(`[v0] 🔍 Guest checkout - checking for existing blueprint_subscriber with email: ${customerEmail}`)
+- app/api/webhooks/stripe/route.ts:1902:                    console.log(`[v0] ✅ Updated blueprint_subscribers with paid blueprint purchase for ${customerEmail} (guest checkout)`)
+- app/api/webhooks/stripe/route.ts:1933:                    console.log(`[v0] ✅ Created blueprint_subscribers record for guest checkout: ${customerEmail} (will be linked to user_id on signup)`)
+- app/api/webhooks/stripe/route.ts:2061:                    `[v0] Subscription checkout completed. Credits will be granted when invoice.payment_succeeded fires (after payment confirmation).`,
+- app/api/webhooks/stripe/route.ts:2189:                    `[v0] Subscription checkout completed for new user. Credits will be granted when invoice.payment_succeeded fires (after payment confirmation).`,
+- app/api/webhooks/stripe/route.ts:2311:                await stripe.checkout.sessions.update(session.id, {
+- app/api/webhooks/stripe/route.ts:2396:            console.log("[v0] Subscription checkout completed for existing user")
+- app/api/webhooks/stripe/route.ts:2403:                `[v0] Subscription checkout completed. Credits will be granted when invoice.payment_succeeded fires (after payment confirmation).`,
+- app/api/webhooks/stripe/route.ts:2516:        // 2. checkout.session.completed with payment_status === 'paid' (for initial subscription)
+- app/api/webhooks/stripe/route.ts:3150:        // Derive product_type so upgrades (e.g. old product → membership) are reflected in our DB.
+- app/api/maya/chat/route.ts:1050:                    `Add credits or upgrade, then I’ll launch it instantly.`,
+- app/api/diagnostics/test-webhook/route.ts:77:    instructions: "Use Stripe CLI to test: stripe trigger checkout.session.completed",
+- app/api/feed-planner/preview-feed/route.ts:10: * Returns preview feed information for paid blueprint users who upgraded from free.
+- app/api/feed-planner/create-from-strategy/route.ts:685:        userMessage = "You don't have enough credits to create this feed. Please purchase more credits or upgrade your plan."
+- app/api/admin/populate-high-ticket-tasks/route.ts:134:      // PHASE 4: BOOKING & CHECKOUT - Medium Priority
+- app/api/admin/populate-high-ticket-tasks/route.ts:144:        title: "Build checkout flow with Stripe",
+- app/api/admin/populate-high-ticket-tasks/route.ts:145:        description: "Create checkout page with payment processing. Set up payment confirmation emails.",
+- app/api/admin/populate-high-ticket-tasks/route.ts:171:        description: "Test: Landing page → Application → Approval → Booking → Checkout → Confirmation",
+- app/api/apply/brand-engine/route.ts:5:  deriveCheckoutExperienceDecision,
+- app/api/apply/brand-engine/route.ts:91:    const checkoutExperience = deriveCheckoutExperienceDecision({
+- app/api/apply/brand-engine/route.ts:100:      checkoutMode: checkoutExperience.checkoutMode,
+- app/api/apply/brand-engine/route.ts:101:      checkoutModeReason: checkoutExperience.reason,
+- app/api/apply/brand-engine/route.ts:116:      `checkout:${sourceAwareRouting.checkoutMode}`,
+- app/api/apply/brand-engine/route.ts:160:        checkout_mode,
+- app/api/apply/brand-engine/route.ts:161:        checkout_mode_reason,
+- app/api/apply/brand-engine/route.ts:191:        ${sourceAwareRouting.checkoutMode},
+- app/api/apply/brand-engine/route.ts:192:        ${sourceAwareRouting.checkoutModeReason},
+- app/api/apply/brand-engine/route.ts:206:      checkoutMode: sourceAwareRouting.checkoutMode,
+- app/api/apply/brand-engine/route.ts:210:          ? sourceAwareRouting.checkoutMode === "embedded_checkout"
+- app/api/apply/brand-engine/route.ts:211:            ? "Application received! If it's a fit, I'll send your checkout link within 24 hours."
+- app/api/admin/brand-engine-applications/quick-add/route.ts:56:      checkoutMode: "none",
+- app/api/admin/brand-engine-applications/quick-add/route.ts:57:      checkoutModeReason: "dm_bridge_fit_call_required",
+- app/api/admin/brand-engine-applications/quick-add/route.ts:98:      `checkout:${sourceAwareRouting.checkoutMode}`,
+- app/api/admin/brand-engine-applications/quick-add/route.ts:128:        checkout_mode,
+- app/api/admin/brand-engine-applications/quick-add/route.ts:129:        checkout_mode_reason,
+- app/api/admin/brand-engine-applications/quick-add/route.ts:160:        ${sourceAwareRouting.checkoutMode},
+- app/api/admin/brand-engine-applications/quick-add/route.ts:161:        ${sourceAwareRouting.checkoutModeReason || "non_direct_offer_route"},
+- app/api/admin/brand-engine-applications/send-offer/route.ts:4:import { ensureBrandEngineApplicationsSchema, type BrandEngineCheckoutMode } from "@/lib/brand-engine/applications"
+- app/api/admin/brand-engine-applications/send-offer/route.ts:5:import { createBrandEngineCheckoutLink } from "@/lib/brand-engine/offer-checkout"
+- app/api/admin/brand-engine-applications/send-offer/route.ts:12:function toTextCheckoutMode(checkoutMode: Exclude<BrandEngineCheckoutMode, "none">) {
+- app/api/admin/brand-engine-applications/send-offer/route.ts:13:  return checkoutMode === "embedded_checkout" ? "embedded checkout" : "payment link"
+- app/api/admin/brand-engine-applications/send-offer/route.ts:16:function buildOfferEmail(params: { name: string; checkoutUrl: string; checkoutMode: Exclude<BrandEngineCheckoutMode, "none"> }) {
+- app/api/admin/brand-engine-applications/send-offer/route.ts:18:  const modeLabel = toTextCheckoutMode(params.checkoutMode)
+- app/api/admin/brand-engine-applications/send-offer/route.ts:26:        <a href="${params.checkoutUrl}" style="display:inline-block;padding:12px 20px;background:#1c1917;color:#fafaf9;text-decoration:none;border-radius:6px;">
+- app/api/admin/brand-engine-applications/send-offer/route.ts:31:      <p style="word-break: break-all;">${params.checkoutUrl}</p>
+- app/api/admin/brand-engine-applications/send-offer/route.ts:40:    params.checkoutUrl,
+- app/api/admin/brand-engine-applications/send-offer/route.ts:75:        checkout_mode,
+- app/api/admin/brand-engine-applications/send-offer/route.ts:87:    const checkout = await createBrandEngineCheckoutLink({
+- app/api/admin/brand-engine-applications/send-offer/route.ts:92:      checkoutMode: (app.checkout_mode || "payment_link") as BrandEngineCheckoutMode,
+- app/api/admin/brand-engine-applications/send-offer/route.ts:95:    const noteLine = `[offer_sent ${new Date().toISOString()}] checkout_mode=${checkout.checkoutMode}; session_id=${checkout.sessionId}; checkout_url=${checkout.checkoutUrl}`
+- app/api/admin/brand-engine-applications/send-offer/route.ts:105:        checkout_mode = ${checkout.checkoutMode},
+- app/api/admin/brand-engine-applications/send-offer/route.ts:106:        checkout_mode_reason = ${checkout.checkoutModeReason},
+- app/api/admin/brand-engine-applications/send-offer/route.ts:113:      RETURNING id, pipeline_stage, offer_sent_at, checkout_mode
+- app/api/admin/brand-engine-applications/send-offer/route.ts:118:      checkoutUrl: checkout.checkoutUrl,
+- app/api/admin/brand-engine-applications/send-offer/route.ts:119:      checkoutMode: checkout.checkoutMode,
+- app/api/admin/brand-engine-applications/send-offer/route.ts:127:      tags: ["brand-engine", "offer", checkout.checkoutMode],
+- app/api/admin/brand-engine-applications/send-offer/route.ts:133:      checkoutUrl: checkout.checkoutUrl,
+- app/api/admin/brand-engine-applications/send-offer/route.ts:134:      checkoutMode: checkout.checkoutMode,
+- app/api/admin/brand-engine-applications/send-offer/route.ts:135:      checkoutModeReason: checkout.checkoutModeReason,
+- app/api/admin/brand-engine-applications/send-offer/route.ts:136:      stripeSessionId: checkout.sessionId,
+- app/api/admin/update-high-ticket-tasks/route.ts:81:        description: "Configure checkout: $2,997 one-time (beta) → $4,997 one-time OR $1,897 × 3 payment plan. Add confirmation emails.",
+- app/api/admin/brand-engine-applications/update/route.ts:4:  BRAND_ENGINE_CHECKOUT_MODES,
+- app/api/admin/brand-engine-applications/update/route.ts:24:function isValidCheckoutMode(value: string) {
+- app/api/admin/brand-engine-applications/update/route.ts:25:  return BRAND_ENGINE_CHECKOUT_MODES.includes(value as (typeof BRAND_ENGINE_CHECKOUT_MODES)[number])
+- app/api/admin/brand-engine-applications/update/route.ts:50:      checkoutMode,
+- app/api/admin/brand-engine-applications/update/route.ts:51:      checkoutModeReason,
+- app/api/admin/brand-engine-applications/update/route.ts:113:    if (typeof checkoutMode === "string") {
+- app/api/admin/brand-engine-applications/update/route.ts:114:      if (!isValidCheckoutMode(checkoutMode)) {
+- app/api/admin/brand-engine-applications/update/route.ts:115:        return NextResponse.json({ success: false, error: "Invalid checkout mode." }, { status: 400 })
+- app/api/admin/brand-engine-applications/update/route.ts:117:      updates.push(`checkout_mode = $${updates.length + 1}`)
+- app/api/admin/brand-engine-applications/update/route.ts:118:      values.push(checkoutMode)
+- app/api/admin/brand-engine-applications/update/route.ts:121:    if (typeof checkoutModeReason === "string") {
+- app/api/admin/brand-engine-applications/update/route.ts:122:      updates.push(`checkout_mode_reason = $${updates.length + 1}`)
+- app/api/admin/brand-engine-applications/update/route.ts:123:      values.push(checkoutModeReason.trim() || null)
+- app/api/feed/expand-for-paid/route.ts:10: * Used when webhook expansion fails or user upgrades before webhook completes
+- app/api/admin/run-migration/route.ts:131:        checkout_mode VARCHAR(40) DEFAULT 'none',
+- app/api/admin/run-migration/route.ts:132:        checkout_mode_reason VARCHAR(120),
+- app/api/admin/run-migration/route.ts:155:    await sql`ALTER TABLE brand_engine_applications ADD COLUMN IF NOT EXISTS checkout_mode VARCHAR(40) DEFAULT 'none'`
+- app/api/admin/run-migration/route.ts:156:    await sql`ALTER TABLE brand_engine_applications ADD COLUMN IF NOT EXISTS checkout_mode_reason VARCHAR(120)`
+- app/api/admin/run-migration/route.ts:168:    await sql`CREATE INDEX IF NOT EXISTS idx_brand_engine_applications_checkout_mode ON brand_engine_applications(checkout_mode)`
+- app/api/admin/run-migration/route.ts:179:          'Create and launch premium service offering with landing page, booking system, and checkout flow',
+- app/api/checkout-session/route.ts:13:    const session = await stripe.checkout.sessions.retrieve(sessionId)

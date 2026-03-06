@@ -57,8 +57,8 @@ export function ZeroCreditsUpgradeModal({ credits, onClose }: ZeroCreditsUpgrade
       window.location.href = `/checkout?client_secret=${clientSecret}`
     } catch (error) {
       console.error("[v0] Error creating checkout:", error)
-      alert("Failed to start checkout. Please try again.")
-      setIsUpgrading(false)
+      // Revenue-protect fallback: send users to hosted membership checkout if embedded fails.
+      window.location.href = "/checkout/membership?fallback=embedded_failed&source=zero_credits_modal"
     }
   }
 
@@ -124,7 +124,6 @@ export function ZeroCreditsUpgradeModal({ credits, onClose }: ZeroCreditsUpgrade
     </>
   )
 }
-
 
 
 
