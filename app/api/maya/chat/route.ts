@@ -59,7 +59,7 @@ import { NextResponse } from "next/server"
 export const maxDuration = 60
 
 function isChatFirstMayaEnabled(envValue?: string | null): boolean {
-  if (!envValue) return process.env.NODE_ENV !== "production"
+  if (!envValue) return true
   const normalized = envValue.trim().toLowerCase()
   return normalized === "true" || normalized === "1"
 }
@@ -71,7 +71,7 @@ function isMayaLandingPagesInChatEnabled(envValue?: string | null): boolean {
 }
 
 function isMayaStrictAssetToolRoutingEnabled(envValue?: string | null): boolean {
-  if (!envValue) return false
+  if (!envValue) return true
   const normalized = envValue.trim().toLowerCase()
   return normalized === "true" || normalized === "1"
 }
