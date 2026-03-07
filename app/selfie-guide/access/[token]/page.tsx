@@ -15,7 +15,7 @@ const inter = Inter({
   weight: ["300", "400", "500"],
 })
 
-const GUIDE_CONTENT_PATH = path.join(process.cwd(), "content-templates", "selfie-guide-content-v2.md")
+const GUIDE_CONTENT_PATH = path.join(process.cwd(), "content-templates", "selfie-guide-content-v3.md")
 
 const FALLBACK_GUIDE_MARKDOWN = `## Guide Content Unavailable
 

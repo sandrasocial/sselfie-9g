@@ -62,6 +62,12 @@ type VisualSpec = {
   alt?: string
 }
 
+type ChallengeDay = {
+  day: string
+  title: string
+  description: string
+}
+
 const VISUAL_LIBRARY: Record<string, VisualSpec> = {
   "iphone-settings-mockup.png": {
     label: "SETTINGS CHEAT SHEET",
@@ -101,6 +107,44 @@ const VISUAL_LIBRARY: Record<string, VisualSpec> = {
   },
 }
 
+const SEVEN_DAY_CHALLENGE_DAYS: ChallengeDay[] = [
+  {
+    day: "Day 1",
+    title: "Window Light Selfie",
+    description: "Take one selfie using natural window light. No ring light. Just you and a window.",
+  },
+  {
+    day: "Day 2",
+    title: "Rule of Thirds",
+    description: "Turn on your grid. Frame your eyes on the top third line. Take 5 shots.",
+  },
+  {
+    day: "Day 3",
+    title: "High Angle Test",
+    description: "Hold your phone 15 degrees above eye level. Slightly tilt your chin down. Take 3 shots.",
+  },
+  {
+    day: "Day 4",
+    title: "Editing Pass",
+    description: "Take your best selfie from days 1-3. Apply only light and warmth adjustments. No filters.",
+  },
+  {
+    day: "Day 5",
+    title: "Confidence Shot",
+    description: "Take a selfie while doing something you love. No posing. Just do the thing.",
+  },
+  {
+    day: "Day 6",
+    title: "Caption Writing",
+    description: "Write 3 different captions for your day 5 photo. Short, medium, and story format.",
+  },
+  {
+    day: "Day 7",
+    title: "Post It",
+    description: "Choose your best selfie from this week. Write a caption. Post it. You're done.",
+  },
+]
+
 function getPlainText(node: unknown): string {
   if (typeof node === "string" || typeof node === "number") return String(node)
   if (Array.isArray(node)) return node.map(getPlainText).join("")
@@ -109,6 +153,12 @@ function getPlainText(node: unknown): string {
     return getPlainText(maybeChildren)
   }
   return ""
+}
+
+function parseChecklistItem(value: string): string | null {
+  const text = String(value || "").replace(/\s+/g, " ").trim()
+  const match = text.match(/^\[\s\]\s*(.+)$/)
+  return match?.[1]?.trim() || null
 }
 
 function MayaGallery() {
@@ -153,6 +203,49 @@ function FeedPreview() {
   )
 }
 
+function SevenDayChallenge() {
+  const [completedDays, setCompletedDays] = useState<Set<number>>(() => new Set())
+
+  return (
+    <section className="challenge-wrap" aria-label="7-day challenge tracker">
+      <div className="challenge-grid">
+        {SEVEN_DAY_CHALLENGE_DAYS.map((item, index) => {
+          const dayNumber = index + 1
+          const isComplete = completedDays.has(dayNumber)
+
+          return (
+            <button
+              key={item.day}
+              type="button"
+              className={`challenge-card ${isComplete ? "is-complete" : ""}`}
+              onClick={() => {
+                setCompletedDays((prev) => {
+                  const next = new Set(prev)
+                  if (next.has(dayNumber)) {
+                    next.delete(dayNumber)
+                  } else {
+                    next.add(dayNumber)
+                  }
+                  return next
+                })
+              }}
+              aria-pressed={isComplete}
+              aria-label={`Mark ${item.day} as ${isComplete ? "incomplete" : "complete"}`}
+            >
+              <span className="challenge-day">
+                {isComplete ? "✓ " : ""}
+                {item.day}
+              </span>
+              <h4 className={`challenge-title ${cormorant.className}`}>{item.title}</h4>
+              <p className="challenge-copy">{item.description}</p>
+            </button>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
 function MissingVisual({ spec }: { spec: VisualSpec }) {
   return (
     <figure className="teaching-visual">
@@ -191,8 +284,10 @@ export default function SelfieGuideExperience({ firstName, guideMarkdown }: Self
   }, [guideMarkdown])
 
   const [activeChapterIndex, setActiveChapterIndex] = useState(0)
+  const [checkedChecklistItems, setCheckedChecklistItems] = useState<Set<string>>(() => new Set())
   const currentChapter = chapters[Math.min(activeChapterIndex, Math.max(chapters.length - 1, 0))]
   const progressPercent = chapters.length > 1 ? Math.round(((activeChapterIndex + 1) / chapters.length) * 100) : 100
+  const showSevenDayChallenge = /7[-\s]?day|challenge/i.test(currentChapter.title)
 
   useEffect(() => {
     const hash = window.location.hash.replace("#", "")
@@ -263,7 +358,41 @@ export default function SelfieGuideExperience({ firstName, guideMarkdown }: Self
       },
       ul: ({ children }) => <ul className="guide-ul">{children}</ul>,
       ol: ({ children }) => <ol className="guide-ol">{children}</ol>,
-      li: ({ children }) => <li className="guide-li">{children}</li>,
+      li: ({ children }) => {
+        const plainText = getPlainText(children)
+        const checklistText = parseChecklistItem(plainText)
+
+        if (!checklistText) {
+          return <li className="guide-li">{children}</li>
+        }
+
+        const isChecked = checkedChecklistItems.has(checklistText)
+
+        return (
+          <li className={`guide-li checklist-li ${isChecked ? "is-checked" : ""}`}>
+            <button
+              type="button"
+              className="checklist-toggle"
+              onClick={() => {
+                setCheckedChecklistItems((prev) => {
+                  const next = new Set(prev)
+                  if (next.has(checklistText)) {
+                    next.delete(checklistText)
+                  } else {
+                    next.add(checklistText)
+                  }
+                  return next
+                })
+              }}
+              aria-pressed={isChecked}
+              aria-label={`Mark "${checklistText}" as ${isChecked ? "incomplete" : "complete"}`}
+            >
+              <span className={`checklist-box ${isChecked ? "is-checked" : ""}`} aria-hidden />
+              <span className={`checklist-label ${isChecked ? "is-checked" : ""}`}>{checklistText}</span>
+            </button>
+          </li>
+        )
+      },
       hr: () => <hr className="guide-hr" />,
       a: ({ href, children }) => {
         const resolvedHref = href || "#"
@@ -274,7 +403,7 @@ export default function SelfieGuideExperience({ firstName, guideMarkdown }: Self
         )
       },
     }),
-    [],
+    [checkedChecklistItems],
   )
 
   return (
@@ -321,6 +450,7 @@ export default function SelfieGuideExperience({ firstName, guideMarkdown }: Self
             <h2 className={`chapter-title ${cormorant.className}`}>{normalizeChapterTitle(currentChapter.title)}</h2>
           </div>
           <ReactMarkdown components={markdownComponents}>{currentChapter.markdown}</ReactMarkdown>
+          {showSevenDayChallenge ? <SevenDayChallenge /> : null}
 
           <div className="chapter-controls">
             <button
@@ -602,6 +732,71 @@ export default function SelfieGuideExperience({ firstName, guideMarkdown }: Self
           margin: 3px 0;
         }
 
+        .checklist-li {
+          list-style: none;
+          margin: 7px 0;
+          padding-left: 0;
+        }
+
+        .checklist-toggle {
+          width: 100%;
+          display: flex;
+          align-items: flex-start;
+          gap: 10px;
+          text-align: left;
+          padding: 0;
+          border: 0;
+          background: transparent;
+          color: inherit;
+          cursor: pointer;
+          font: inherit;
+          line-height: 1.78;
+        }
+
+        .checklist-box {
+          width: 18px;
+          height: 18px;
+          margin-top: 4px;
+          flex-shrink: 0;
+          border: 1px solid rgba(195, 190, 182, 0.32);
+          border-radius: 4px;
+          position: relative;
+          transition: background 0.2s ease, border-color 0.2s ease;
+        }
+
+        .checklist-box::after {
+          content: "";
+          position: absolute;
+          left: 5px;
+          top: 2px;
+          width: 4px;
+          height: 9px;
+          border-right: 2px solid #0d0c0b;
+          border-bottom: 2px solid #0d0c0b;
+          transform: rotate(45deg);
+          opacity: 0;
+          transition: opacity 0.2s ease;
+        }
+
+        .checklist-box.is-checked {
+          background: #c8c4bb;
+          border-color: #c8c4bb;
+        }
+
+        .checklist-box.is-checked::after {
+          opacity: 1;
+        }
+
+        .checklist-label {
+          color: rgba(240, 237, 232, 0.9);
+          transition: color 0.2s ease, text-decoration-color 0.2s ease;
+        }
+
+        .checklist-label.is-checked {
+          text-decoration: line-through;
+          color: var(--stone-muted);
+        }
+
         .guide-hr {
           border: 0;
           border-top: 1px solid rgba(175, 170, 162, 0.2);
@@ -680,6 +875,58 @@ export default function SelfieGuideExperience({ firstName, guideMarkdown }: Self
           color: rgba(240, 237, 232, 0.68);
           font-style: italic;
           text-align: center;
+        }
+
+        .challenge-wrap {
+          margin-top: 24px;
+          padding-top: 16px;
+          border-top: 1px solid rgba(175, 170, 162, 0.2);
+        }
+
+        .challenge-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+          gap: 12px;
+        }
+
+        .challenge-card {
+          text-align: left;
+          border: 1px solid rgba(195, 190, 182, 0.2);
+          background: rgba(175, 170, 162, 0.08);
+          border-radius: 14px;
+          padding: 14px;
+          cursor: pointer;
+          transition: border-color 0.2s ease, background 0.2s ease;
+        }
+
+        .challenge-card.is-complete {
+          border-color: rgba(200, 196, 187, 0.5);
+          background: rgba(200, 196, 187, 0.14);
+        }
+
+        .challenge-day {
+          display: block;
+          margin: 0;
+          font-size: 10px;
+          letter-spacing: 0.34em;
+          text-transform: uppercase;
+          color: var(--stone-muted);
+        }
+
+        .challenge-title {
+          margin: 10px 0 8px;
+          font-size: 20px;
+          line-height: 1.12;
+          text-transform: uppercase;
+          font-weight: 300;
+          color: var(--stone-text);
+        }
+
+        .challenge-copy {
+          margin: 0;
+          font-size: 14px;
+          color: rgba(240, 237, 232, 0.78);
+          line-height: 1.7;
         }
 
         .teaching-label {
