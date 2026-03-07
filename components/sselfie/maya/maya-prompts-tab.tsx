@@ -47,6 +47,8 @@ interface MayaPromptsTabProps {
     intent: string
   }
   onOpenUploadFlow?: () => void
+  onOpenTrainingFlow?: () => void
+  onOpenCreditsModal?: () => void
   aiPhotoPromptsLocked?: boolean
   onUpgradeToStudio?: () => void
 }
@@ -60,6 +62,8 @@ export default function MayaPromptsTab({
   proMode = false, // 🔴 FIX: Changed from studioProMode to proMode
   imageLibrary: externalImageLibrary,
   onOpenUploadFlow,
+  onOpenTrainingFlow,
+  onOpenCreditsModal,
   aiPhotoPromptsLocked = false,
   onUpgradeToStudio,
 }: MayaPromptsTabProps) {
@@ -842,6 +846,29 @@ export default function MayaPromptsTab({
       }
 
       if (!response.ok) {
+        const requiresTraining =
+          response.status === 409 ||
+          data?.code === "training_required" ||
+          data?.action === "open_training_upload"
+
+        if (requiresTraining) {
+          setGeneratedImages((prev) => {
+            const newMap = new Map(prev)
+            newMap.set(prompt.id, {
+              promptId: prompt.id,
+              imageUrl: existingGen?.imageUrl || null,
+              predictionId: null,
+              generationId: null,
+              isGenerating: false,
+              isGenerated: false,
+              error: data.message || data.error || "Train your model to use Custom Model mode.",
+            })
+            return newMap
+          })
+          onOpenTrainingFlow?.()
+          return
+        }
+
         if (response.status === 402) {
           // Insufficient credits
           setGeneratedImages((prev) => {
@@ -857,6 +884,7 @@ export default function MayaPromptsTab({
             })
             return newMap
           })
+          onOpenCreditsModal?.()
           return
         }
         throw new Error(data.error || data.details || "Failed to generate image")

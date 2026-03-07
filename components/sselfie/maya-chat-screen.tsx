@@ -4071,7 +4071,9 @@ export default function MayaChatScreen({
             onCreditsUpdate={setCreditBalance}
             proMode={proMode}
             imageLibrary={imageLibrary}
-            onOpenUploadFlow={undefined}
+            onOpenUploadFlow={() => handlePhaseTwoUploadZone("selfies")}
+            onOpenTrainingFlow={() => handlePhaseTwoGenerationSource("custom_model")}
+            onOpenCreditsModal={() => setShowBuyCreditsModal(true)}
             aiPhotoPromptsLocked={!hasAiPhotoPromptsAccess}
             onUpgradeToStudio={() => startEmbeddedCheckout("sselfie_studio_membership")}
           />

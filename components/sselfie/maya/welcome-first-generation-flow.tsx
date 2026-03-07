@@ -191,7 +191,15 @@ export default function WelcomeFirstGenerationFlow({
           }),
         })
         const data = await response.json()
-        if (!response.ok) throw new Error(data?.error || data?.details || "Failed to generate image.")
+        if (!response.ok) {
+          if (response.status === 409 || data?.code === "training_required") {
+            throw new Error(data?.message || "Train your custom model first, then try again.")
+          }
+          if (response.status === 402) {
+            throw new Error(data?.message || "You need more credits to generate this image.")
+          }
+          throw new Error(data?.error || data?.details || "Failed to generate image.")
+        }
         creditsUsed = Number(data?.creditsDeducted ?? 0)
         if (data?.predictionId) {
           const checkUrl = `/api/maya/check-generation?predictionId=${data.predictionId}&generationId=${data.generationId ?? ""}`

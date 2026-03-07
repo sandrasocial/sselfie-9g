@@ -28,6 +28,7 @@ interface MayaConceptCardsProps {
   chatId?: number
   uploadedImages: Array<{ url: string; type: 'base' | 'product' }>
   onCreditsUpdate?: (newBalance: number) => void
+  onTrainingRequired?: () => void
   
   // Pro Mode props
   messages?: any[] // Messages array to get latest concept data
@@ -67,6 +68,7 @@ export default function MayaConceptCards({
   chatId,
   uploadedImages,
   onCreditsUpdate,
+  onTrainingRequired,
   messages = [],
   onPromptUpdate,
   onImageGenerated,
@@ -229,6 +231,7 @@ export default function MayaConceptCards({
               chatId={chatId}
               messageId={messageId}
               onCreditsUpdate={onCreditsUpdate}
+              onTrainingRequired={onTrainingRequired}
               studioProMode={false}
               baseImages={allBaseImages}
               selfies={[]}

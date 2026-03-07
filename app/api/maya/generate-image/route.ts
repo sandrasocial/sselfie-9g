@@ -5,12 +5,9 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getDbClient } from "@/lib/db/client"
 import { getReplicateClient } from "@/lib/replicate-client"
-import { getUserByAuthId } from "@/lib/user-mapping"
 import { checkCredits, deductCredits, getUserCredits, CREDIT_COSTS } from "@/lib/credits"
-import { hasStudioMembership } from "@/lib/subscription"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { rateLimit } from "@/lib/rate-limit-api"
-import { guardClassicModeRoute } from "@/lib/maya/type-guards"
 import { extractReplicateVersionId, ensureTriggerWordPrefix, ensureGenderInPrompt, buildClassicModeReplicateInput } from "@/lib/replicate-helpers"
 import { logger } from "@/lib/logger"
 
@@ -73,17 +70,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "User not found in database" }, { status: 404 })
     }
 
-    const hasMembership = await hasStudioMembership(neonUser.id)
-    if (!hasMembership) {
-      return NextResponse.json(
-        {
-          error: "Membership required",
-          message: "Studio image generation requires an active Studio Membership.",
-        },
-        { status: 403 },
-      )
-    }
-
     const hasEnoughCredits = await checkCredits(neonUser.id, CREDIT_COSTS.IMAGE)
 
     if (!hasEnoughCredits) {
@@ -92,6 +78,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: "Insufficient credits",
+          code: "insufficient_credits",
+          action: "open_credits_topup",
           required: CREDIT_COSTS.IMAGE,
           current: currentBalance,
           message: `Image generation requires ${CREDIT_COSTS.IMAGE} credit. You currently have ${currentBalance} credits. Please purchase more credits or upgrade your plan.`,
@@ -120,7 +108,15 @@ export async function POST(request: NextRequest) {
     `
 
     if (userDataResult.length === 0) {
-      return NextResponse.json({ error: "No trained model found. Please complete training first." }, { status: 400 })
+      return NextResponse.json(
+        {
+          error: "No trained model found. Please complete training first.",
+          code: "training_required",
+          action: "open_training_upload",
+          message: "Train your model to use Custom Model mode.",
+        },
+        { status: 409 },
+      )
     }
 
     const userData = userDataResult[0]
@@ -378,7 +374,6 @@ export async function POST(request: NextRequest) {
       generationId,
       predictionId: prediction.id,
       status: "processing",
-      fluxPrompt: finalPrompt,
       textOverlay: addTextOverlay ? textOverlayConfig : null,
       creditsDeducted: CREDIT_COSTS.IMAGE,
       newBalance: deductionResult.success ? deductionResult.newBalance : undefined,

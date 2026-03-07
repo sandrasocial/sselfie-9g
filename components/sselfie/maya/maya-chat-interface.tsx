@@ -880,6 +880,7 @@ export default function MayaChatInterface({
                                     chatId={chatId}
                                     uploadedImages={uploadedImages}
                                     onCreditsUpdate={setCreditBalance}
+                                    onTrainingRequired={() => onToolSelectGenerationSource?.("custom_model")}
                                     generationSettings={generationSettings}
                                     enhancedAuthenticity={enhancedAuthenticity}
                                     messages={messages}

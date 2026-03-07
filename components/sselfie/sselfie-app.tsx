@@ -66,6 +66,7 @@ interface SselfieAppProps {
   shouldShowCheckout?: boolean
   subscriptionStatus?: string | null
   productType?: string | null // NEW: "paid_blueprint" | "sselfie_studio_membership" | null
+  userRole?: string | null
   purchaseSuccess?: boolean // Decision 2: Purchase success flag
   initialTab?: string // Decision 2: Initial tab from URL param
   academyPurchaseSource?: string
@@ -90,6 +91,7 @@ export default function SselfieApp({
   shouldShowCheckout = false,
   subscriptionStatus = null,
   productType = null,
+  userRole = null,
   purchaseSuccess = false,
   initialTab,
   academyPurchaseSource,
@@ -441,6 +443,7 @@ export default function SselfieApp({
     subscriptionStatus,
     productType,
     userEmail,
+    userRole,
   })
   // New users: not a member, has welcome credits (just signed up), and hasn't trained a model yet.
   // Once credits hit 0 OR they train a model, they've experienced value and see the full tab bar.

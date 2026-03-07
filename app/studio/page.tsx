@@ -184,6 +184,7 @@ export default async function StudioPage({
         shouldShowCheckout={shouldShowCheckout}
         subscriptionStatus={subscription?.status ?? null}
         productType={subscription?.product_type ?? null}
+        userRole={neonUser.role ?? null}
         purchaseSuccess={purchaseSuccess}
         initialTab={initialTab}
         academyPurchaseSource={academyPurchaseSource}

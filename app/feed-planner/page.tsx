@@ -58,6 +58,8 @@ export default async function FeedPlannerPage({
       isWelcome={false}
       shouldShowCheckout={false}
       subscriptionStatus={subscription?.status ?? null}
+      productType={subscription?.product_type ?? null}
+      userRole={neonUser.role ?? null}
       purchaseSuccess={purchaseSuccess}
       initialTab={initialTab}
     />

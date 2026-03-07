@@ -5,14 +5,17 @@ export function getAccessState({
   subscriptionStatus,
   productType,
   userEmail,
+  userRole,
 }: {
   credits: number
   subscriptionStatus: string | null
   productType?: string | null
   userEmail?: string | null
+  userRole?: string | null
 }) {
   // Admin users get full access regardless of subscription status
-  const isAdmin = userEmail?.toLowerCase() === ADMIN_EMAIL.toLowerCase()
+  const normalizedRole = userRole?.toLowerCase() || null
+  const isAdmin = normalizedRole === "admin" || userEmail?.toLowerCase() === ADMIN_EMAIL.toLowerCase()
   
   if (isAdmin) {
     return {

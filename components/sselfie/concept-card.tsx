@@ -15,6 +15,7 @@ interface ConceptCardProps {
   chatId?: number
   messageId?: string // Message ID for updating JSONB when image is generated
   onCreditsUpdate?: (newBalance: number) => void
+  onTrainingRequired?: () => void
   studioProMode?: boolean
   baseImages?: string[] // Base images for Studio Pro mode (actively used)
   selfies?: string[] // Selfie images from upload module
@@ -41,6 +42,7 @@ export default function ConceptCard({
   chatId,
   messageId,
   onCreditsUpdate, 
+  onTrainingRequired,
   studioProMode = false, 
   baseImages = [],
   selfies = [],
@@ -87,6 +89,7 @@ export default function ConceptCard({
   const [photoshootError, setPhotoshootError] = useState<string | null>(null)
   const [photoshootId, setPhotoshootId] = useState<number | null>(null)
   const [showBuyCreditsModal, setShowBuyCreditsModal] = useState(false)
+  const [requiresTraining, setRequiresTraining] = useState(false)
   
   // Pro Photoshoot state
   const [isCreatingProPhotoshoot, setIsCreatingProPhotoshoot] = useState(false)
@@ -653,6 +656,7 @@ export default function ConceptCard({
   const handleGenerate = async () => {
     setIsGenerating(true)
     setError(null)
+    setRequiresTraining(false)
 
     try {
       // If Studio Pro mode is active, use Nano Banana Pro
@@ -893,6 +897,19 @@ export default function ConceptCard({
       const data = await response.json()
 
       if (!response.ok) {
+        const needsTraining =
+          response.status === 409 ||
+          data?.code === "training_required" ||
+          data?.action === "open_training_upload"
+
+        if (needsTraining) {
+          setRequiresTraining(true)
+          setError(data.message || data.error || "Train your model to use Custom Model mode.")
+          setIsGenerating(false)
+          onTrainingRequired?.()
+          return
+        }
+
         // Show buy credits modal for insufficient credits
         if (response.status === 402) {
           setShowBuyCreditsModal(true)
@@ -1823,6 +1840,14 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
         {error && (
           <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-xs text-red-600">{error}</p>
+            {requiresTraining && onTrainingRequired && (
+              <button
+                onClick={onTrainingRequired}
+                className="mt-2 mr-2 text-xs font-semibold text-stone-900 hover:text-stone-700 min-h-[44px] px-3 py-2 rounded-lg transition-colors border border-stone-300"
+              >
+                Open Training
+              </button>
+            )}
             <button
               onClick={handleGenerate}
               className="mt-2 text-xs font-semibold text-red-700 hover:text-red-900 min-h-[44px] px-3 py-2 rounded-lg transition-colors"
