@@ -22,6 +22,8 @@ export default function SelfieGuideLanding() {
   const router = useRouter()
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
+  const [accessToken, setAccessToken] = useState("")
+  const [tokenError, setTokenError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -63,6 +65,18 @@ export default function SelfieGuideLanding() {
       setError(submitError instanceof Error ? submitError.message : "Something went wrong. Please try again.")
       setLoading(false)
     }
+  }
+
+  const handleAccessTokenSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const normalized = accessToken.trim()
+    if (!normalized) {
+      setTokenError("Enter your guide token to continue.")
+      return
+    }
+
+    setTokenError(null)
+    router.push(`/selfie-guide/access/${encodeURIComponent(normalized)}`)
   }
 
   return (
@@ -161,6 +175,43 @@ export default function SelfieGuideLanding() {
             <p className="form-note">Instant access. No spam. Unsubscribe anytime.</p>
           </form>
         </div>
+      </section>
+
+      <section className="section section-journey">
+        <p className="section-label">02 — WHAT HAPPENS NEXT</p>
+        <div className="journey-grid">
+          <article className="journey-card">
+            <p className="journey-step">STEP 1</p>
+            <h3 className={`journey-title ${cormorant.className}`}>Learn the selfie system</h3>
+            <p className="journey-copy">Follow the interactive chapter flow and apply each lesson in real time.</p>
+          </article>
+          <article className="journey-card">
+            <p className="journey-step">STEP 2</p>
+            <h3 className={`journey-title ${cormorant.className}`}>Unlock your brand strategy</h3>
+            <p className="journey-copy">Get the EUR 17 personalized strategy so your selfies become a clear growth engine.</p>
+          </article>
+          <article className="journey-card">
+            <p className="journey-step">STEP 3</p>
+            <h3 className={`journey-title ${cormorant.className}`}>Create weekly with Maya</h3>
+            <p className="journey-copy">Join membership and generate on-brand content in Studio with Maya.</p>
+          </article>
+        </div>
+
+        <form className="token-panel" onSubmit={handleAccessTokenSubmit}>
+          <p className="token-title">Already have your guide link?</p>
+          <div className="token-row">
+            <input
+              value={accessToken}
+              onChange={(event) => setAccessToken(event.target.value)}
+              placeholder="Paste token"
+              aria-label="Access token"
+            />
+            <button type="submit" className="btn-token">
+              OPEN GUIDE
+            </button>
+          </div>
+          {tokenError ? <p className="error-msg">{tokenError}</p> : null}
+        </form>
       </section>
 
       <footer className="footer">
@@ -458,6 +509,81 @@ export default function SelfieGuideLanding() {
           text-align: center;
         }
 
+        .section-journey {
+          padding-top: 24px;
+        }
+
+        .journey-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 12px;
+        }
+
+        .journey-card {
+          border: 1px solid rgba(195, 190, 182, 0.25);
+          background: rgba(175, 170, 162, 0.08);
+          border-radius: 14px;
+          padding: 20px;
+        }
+
+        .journey-step {
+          margin: 0;
+          font-size: 9px;
+          letter-spacing: 0.4em;
+          text-transform: uppercase;
+          color: #8a8780;
+        }
+
+        .journey-title {
+          margin: 8px 0 6px;
+          font-size: 26px;
+          line-height: 1.1;
+          text-transform: uppercase;
+          color: #f0ede8;
+          font-weight: 300;
+        }
+
+        .journey-copy {
+          margin: 0;
+          font-size: 14px;
+          line-height: 1.7;
+          color: #8a8780;
+        }
+
+        .token-panel {
+          margin-top: 14px;
+          border: 1px solid rgba(195, 190, 182, 0.25);
+          border-radius: 14px;
+          background: rgba(175, 170, 162, 0.06);
+          padding: 18px;
+        }
+
+        .token-title {
+          margin: 0 0 10px;
+          font-size: 12px;
+          letter-spacing: 0.22em;
+          text-transform: uppercase;
+          color: #8a8780;
+        }
+
+        .token-row {
+          display: grid;
+          grid-template-columns: 1fr auto;
+          gap: 8px;
+        }
+
+        .btn-token {
+          border: 1px solid rgba(195, 190, 182, 0.28);
+          background: rgba(175, 170, 162, 0.16);
+          color: #f0ede8;
+          padding: 0 16px;
+          border-radius: 999px;
+          font-size: 10px;
+          letter-spacing: 0.22em;
+          text-transform: uppercase;
+          cursor: pointer;
+        }
+
         .footer-note {
           font-size: 12px;
           color: #8a8780;
@@ -477,6 +603,10 @@ export default function SelfieGuideLanding() {
           .intro-panel {
             border-right: none;
             border-bottom: 1px solid rgba(195, 190, 182, 0.25);
+          }
+
+          .journey-grid {
+            grid-template-columns: 1fr;
           }
         }
 
@@ -501,6 +631,14 @@ export default function SelfieGuideLanding() {
           .intro-body,
           .form-panel {
             padding: 24px;
+          }
+
+          .token-row {
+            grid-template-columns: 1fr;
+          }
+
+          .btn-token {
+            min-height: 44px;
           }
         }
       `}</style>
