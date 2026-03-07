@@ -66,26 +66,38 @@ const VISUAL_LIBRARY: Record<string, VisualSpec> = {
   "iphone-settings-mockup.png": {
     label: "SETTINGS CHEAT SHEET",
     caption: "Your iPhone camera settings in 60 seconds. These three changes make a bigger difference than any filter.",
+    src: "/images/selfie-guide/iphone-settings-mockup.png",
+    alt: "Collage of iPhone camera settings steps from the original selfie guide showing menu toggles and recommended setup",
   },
   "window-lighting-setup.png": {
     label: "THE WINDOW TECHNIQUE",
     caption: "Face the light, stand 3 feet back, shoot. That's it.",
+    src: "/images/selfie-guide/window-lighting-setup.png",
+    alt: "Example of window lighting setup with subject standing beside a window facing natural light",
   },
   "lighting-comparison-grid.png": {
     label: "LIGHTING COMPARISON",
     caption: "Same face, same phone, four totally different outcomes. Light changes everything.",
+    src: "/images/selfie-guide/lighting-comparison-grid.png",
+    alt: "Four-panel lighting comparison showing window light, golden hour, ring light, and cloudy day examples",
   },
   "angle-comparison-grid.png": {
     label: "ANGLE GUIDE",
     caption: "15 degrees above eye level. Remember this number.",
+    src: "/images/selfie-guide/angle-comparison-grid.png",
+    alt: "Three selfie angle examples comparing side angle, eye level, and slightly high angle camera positions",
   },
   "pose-guide-grid.png": {
     label: "NATURAL POSES",
     caption: "Four poses that work for everyone. Try all four and keep your top two.",
+    src: "/images/selfie-guide/pose-guide-grid.png",
+    alt: "Grid of four natural portrait pose variations for selfie practice",
   },
   "editing-before-after.png": {
     label: "EDITING BEFORE & AFTER",
     caption: "Small edits are enough. Keep your face real and your style consistent.",
+    src: "/images/selfie-guide/editing-before-after.png",
+    alt: "Before and after selfie editing comparison showing subtle improvements in light and contrast",
   },
 }
 
@@ -805,7 +817,7 @@ export default function SelfieGuideExperience({ firstName, guideMarkdown }: Self
           }
 
           .chapter-pill {
-            min-width: 220px;
+            min-width: 190px;
           }
         }
 
@@ -831,12 +843,65 @@ export default function SelfieGuideExperience({ firstName, guideMarkdown }: Self
             border-radius: 16px;
           }
 
+          .chapter-pill {
+            min-width: 168px;
+            padding: 8px 10px;
+          }
+
+          .chapter-pill-title {
+            font-size: 12px;
+            line-height: 1.3;
+          }
+
+          .guide-p,
+          .guide-ul,
+          .guide-ol {
+            font-size: 14px;
+            line-height: 1.7;
+          }
+
+          .guide-h2 {
+            margin-top: 24px;
+          }
+
+          .teaching-label {
+            letter-spacing: 0.26em;
+            font-size: 8px;
+          }
+
+          .visual-card figcaption,
+          .teaching-caption,
+          .feed-preview figcaption {
+            font-size: 12px;
+            line-height: 1.5;
+          }
+
           .maya-grid {
             grid-template-columns: 1fr;
           }
 
           .visual-card:last-child {
             grid-column: auto;
+          }
+
+          .chapter-controls {
+            gap: 8px;
+          }
+
+          .control-btn {
+            width: 100%;
+            text-align: center;
+          }
+
+          .funnel-ctas {
+            gap: 8px;
+          }
+
+          .cta-primary,
+          .cta-secondary,
+          .cta-tertiary {
+            width: 100%;
+            text-align: center;
           }
         }
       `}</style>
