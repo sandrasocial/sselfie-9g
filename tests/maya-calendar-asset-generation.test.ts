@@ -5,6 +5,7 @@ const mockPersist = vi.fn()
 const mockMerge = vi.fn()
 const mockResolveLandingSnapshot = vi.fn()
 const mockGetLatestTrends = vi.fn()
+const mockGenerateInstagramCaption = vi.fn()
 
 vi.mock("@/lib/db/client", () => ({
   sql: mockSql,
@@ -33,6 +34,16 @@ vi.mock("@/lib/maya/calendar-trends", () => ({
     formatNotes: ["Lead with a strong hook in line one."],
   })),
 }))
+
+vi.mock("@/lib/feed-planner/caption-writer", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/feed-planner/caption-writer")>(
+    "@/lib/feed-planner/caption-writer",
+  )
+  return {
+    ...actual,
+    generateInstagramCaption: mockGenerateInstagramCaption,
+  }
+})
 
 describe("maya calendar asset generation", () => {
   beforeEach(() => {
@@ -73,6 +84,14 @@ describe("maya calendar asset generation", () => {
     })
 
     mockSql.mockResolvedValue([])
+
+    mockGenerateInstagramCaption.mockResolvedValue({
+      caption:
+        "POST CONTEXT: ignored\n\n" +
+        "This is a story-led caption with enough words to feel human and strategic for a calendar.\n\n" +
+        "Tell me if you want the full framework.\n\n" +
+        "#personalbrand #contentstrategy #instagramtips #storytelling #creatorbusiness #growthhacks",
+    })
   })
 
   it("builds instagram-style calendar html with copy-ready captions", async () => {
@@ -95,6 +114,9 @@ describe("maya calendar asset generation", () => {
     expect(asset.previewHtml).toContain("carousel-slide")
     expect(asset.previewHtml).toContain("hero-fullbleed")
     expect(asset.previewHtml).toContain("Read full caption")
+    expect(asset.previewHtml).toContain("#personalbrand #contentstrategy #instagramtips #storytelling #creatorbusiness")
+    expect(asset.previewHtml).not.toContain("#growthhacks")
+    expect(mockGenerateInstagramCaption).toHaveBeenCalled()
     expect(asset.url).toBe("/p/sandra/calendar-v2")
   })
 })

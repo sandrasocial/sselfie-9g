@@ -35,6 +35,126 @@ interface BioCaptionWriterParams {
   niche: string
 }
 
+const CAPTION_PLACEHOLDER_MARKERS = [
+  "generating caption",
+  "check out this post! #instagram #feed",
+]
+
+const PROMPT_LEAK_MARKERS: RegExp[] = [
+  /post context[:\s]/i,
+  /brand profile[:\s]/i,
+  /critical requirements[:\s]/i,
+  /research phase[:\s]/i,
+  /caption specs[:\s]/i,
+  /output[:\s]only the caption/i,
+]
+
+function countWords(value: string): number {
+  return value
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean).length
+}
+
+function normalizeHashtag(tag: string): string {
+  const cleaned = String(tag || "")
+    .trim()
+    .replace(/^#+/, "")
+    .replace(/[^a-zA-Z0-9_]/g, "")
+    .toLowerCase()
+  return cleaned
+}
+
+function normalizeSpacing(value: string): string {
+  return value
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim()
+}
+
+export function extractHashtagsFromCaption(caption: string): string[] {
+  const matches = String(caption || "").match(/#[a-zA-Z0-9_]+/g) || []
+  const deduped: string[] = []
+  const seen = new Set<string>()
+
+  for (const match of matches) {
+    const normalized = normalizeHashtag(match)
+    if (!normalized || seen.has(normalized)) continue
+    seen.add(normalized)
+    deduped.push(normalized)
+  }
+
+  return deduped
+}
+
+export function limitHashtags(hashtags: string[], max = 5): string[] {
+  const deduped: string[] = []
+  const seen = new Set<string>()
+
+  for (const hashtag of hashtags) {
+    const normalized = normalizeHashtag(hashtag)
+    if (!normalized || seen.has(normalized)) continue
+    seen.add(normalized)
+    deduped.push(normalized)
+    if (deduped.length >= max) break
+  }
+
+  return deduped
+}
+
+function stripHashtags(value: string): string {
+  return normalizeSpacing(
+    String(value || "")
+      .replace(/#[a-zA-Z0-9_]+/g, "")
+      .replace(/[ \t]+\./g, ".")
+  )
+}
+
+function removePromptLeakLines(value: string): string {
+  return String(value || "")
+    .split("\n")
+    .filter((line) => !PROMPT_LEAK_MARKERS.some((marker) => marker.test(line)))
+    .join("\n")
+}
+
+export function enforceCaptionPublishingRules(input: {
+  caption: string
+  strategyHashtags?: string[]
+}): string {
+  const noLeakText = removePromptLeakLines(input.caption || "")
+    .replace(/\\n/g, "\n")
+    .replace(/\r/g, "")
+
+  const cleanedBody = stripHashtags(noLeakText)
+  const strategyTags = Array.isArray(input.strategyHashtags) ? input.strategyHashtags : []
+  const combinedTags = limitHashtags([...extractHashtagsFromCaption(noLeakText), ...strategyTags], 5)
+  const hashtagLine = combinedTags.map((tag) => `#${tag}`).join(" ")
+
+  if (!cleanedBody) {
+    return hashtagLine
+      ? `Start with one real moment your audience will feel.\n\n${hashtagLine}`
+      : "Start with one real moment your audience will feel."
+  }
+
+  return hashtagLine ? `${cleanedBody}\n\n${hashtagLine}` : cleanedBody
+}
+
+export function shouldRegenerateCaption(caption: string | null | undefined): boolean {
+  const raw = String(caption || "").trim()
+  if (!raw) return true
+
+  const lowered = raw.toLowerCase()
+  if (CAPTION_PLACEHOLDER_MARKERS.some((marker) => lowered.includes(marker))) return true
+  if (PROMPT_LEAK_MARKERS.some((pattern) => pattern.test(raw))) return true
+
+  const hashtags = extractHashtagsFromCaption(raw)
+  if (hashtags.length > 5) return true
+
+  const bodyWordCount = countWords(stripHashtags(raw))
+  return bodyWordCount < 65
+}
+
 export async function generateInstagramCaption(params: CaptionWriterParams): Promise<{ caption: string }> {
   const { 
     postPosition, 
@@ -188,7 +308,7 @@ ${strategyConcepts}
 
 ${researchContext}
 
-## CRITICAL REQUIREMENTS (2025 Human-Sounding Research):
+## CRITICAL REQUIREMENTS (2026 Human-Sounding Research):
 
 1. **THE "TEXT A FRIEND" TEST**: Read your caption out loud. If you wouldn't say it to a friend over coffee, rewrite it. That's the whole game.
 
@@ -205,19 +325,19 @@ ${researchContext}
    - ❌ NEVER: "Today I'm excited to share..." or "As a [job title], I believe..."
    - ✅ ALWAYS: Specific, real, and aligned with the caption type
 
-3. **2025 Caption Structure: Hook → Story/Context → One Ask**
+4. **2026 Caption Structure: Hook -> Story/Context -> One Ask**
    - Hook: 1-2 lines that stop the scroll (something real and specific)
    - Story/Context: 2-4 sentences, personal and specific (what happened, why it matters)
    - One Ask: Clear next step (question, CTA, or invitation)
 
-4. **Anti-AI Formula (MANDATORY)**:
+5. **Anti-AI Formula (MANDATORY)**:
    - ✅ Mix up sentence rhythm: Short. Then long. Then something in between.
    - ✅ Use contractions: "I'm" not "I am", "you'll" not "you will", "gonna" not "going to"
    - ✅ Kill AI phrases: NO "unlock the power of", "in today's digital landscape", "dive deep into", "game-changer", "revolutionize", "embark on journey", "delve into"
    - ✅ Add tiny imperfections: Start sentences with "And" or "But", use sentence fragments, casual language
    - ✅ Be specific: "6am" not "early morning", "$5k" not "expensive", "47 minutes" not "a while"
 
-5. **Authentic Voice (Maya's Style)**:
+6. **Authentic Voice (Maya's Style)**:
    - Write like texting a friend
    - Simple, everyday language
    - Use "you" and "I" - make it a conversation
@@ -228,14 +348,14 @@ ${researchContext}
    - NO "Let's dive in" or "Drop a comment"
    - Sound like a REAL person, not AI
 
-6. **Formatting**:
+7. **Formatting**:
    - Double line breaks (\\n\\n) between sections
    - 2-3 emojis TOTAL, naturally placed (max 3)
-   - 5-10 strategic hashtags at the end
+   - Include up to 5 strategic hashtags at the end (MAX 5)
 
-7. **Length**: 80-150 words (optimal for engagement)
+8. **Length**: 90-170 words (optimal for engagement)
 
-8. **The Edit Checklist** (apply before finalizing):
+9. **The Edit Checklist** (apply before finalizing):
    - Would I text this to my friend? ✓
    - Did I vary my sentence length? ✓
    - Am I using normal words? ✓
@@ -256,9 +376,6 @@ OUTPUT: Only the caption text, ready to post. NO explanations, NO research notes
 
   let caption = text.trim()
 
-  // Fix escaped newlines - convert literal \n\n to actual newlines
-  caption = caption.replace(/\\n/g, '\n')
-  
   // Remove any research headers or strategy sections
   if (caption.includes("RESEARCH PHASE") || caption.includes("CAPTION SPECS") || caption.includes("WHY THIS LENGTH")) {
     // Extract the actual caption between research and specs
@@ -269,26 +386,36 @@ OUTPUT: Only the caption text, ready to post. NO explanations, NO research notes
     }
   }
   
-  // Ensure proper double line breaks between sections (normalize to \n\n)
-  caption = caption.replace(/\n{3,}/g, '\n\n') // Replace 3+ newlines with double
-  caption = caption.replace(/\n\n\n/g, '\n\n') // Replace triple with double
+  caption = enforceCaptionPublishingRules({
+    caption,
+    strategyHashtags,
+  })
 
-  // Integrate hashtags if provided and not already in caption
-  if (strategyHashtags && strategyHashtags.length > 0) {
-    const captionHashtags = caption.match(/#\w+/g) || []
-    const newHashtags = strategyHashtags
-      .map(h => h.replace("#", ""))
-      .filter(h => !captionHashtags.some(ch => ch.toLowerCase() === `#${h.toLowerCase()}`))
-    
-    if (newHashtags.length > 0) {
-      // If caption doesn't have hashtags, add them
-      if (captionHashtags.length === 0) {
-        caption = `${caption}\n\n${newHashtags.map(h => `#${h}`).join(" ")}`
-      } else {
-        // Append new hashtags
-        caption = `${caption} ${newHashtags.map(h => `#${h}`).join(" ")}`
-      }
-    }
+  // If output is still too short after cleanup, ask for one rewrite pass.
+  const bodyWordCount = countWords(stripHashtags(caption))
+  if (bodyWordCount < 70) {
+    const { text: revised } = await generateText({
+      model: "anthropic/claude-sonnet-4",
+      system: INSTAGRAM_STRATEGIST_SYSTEM_PROMPT,
+      prompt: `Rewrite this caption so it sounds human, story-led, and naturally detailed.
+
+Rules:
+- Keep Maya voice (warm, direct, conversational).
+- 90-170 words.
+- Hook -> story/context -> one ask.
+- No prompt notes, no sections, no meta text.
+- Maximum 5 hashtags.
+
+Caption to rewrite:
+${caption}`,
+      maxOutputTokens: 1200,
+      temperature: 0.8,
+    })
+
+    caption = enforceCaptionPublishingRules({
+      caption: revised,
+      strategyHashtags,
+    })
   }
 
   console.log(`[v0] Caption Writer: Caption created for post ${postPosition} (${caption.length} characters)`)

@@ -15,7 +15,7 @@ const CaptionSchema = z.object({
     ),
   hashtags: z
     .array(z.string())
-    .describe("5-10 researched hashtags specific to THIS post's topic. Mix trending, niche, and branded tags."),
+    .describe("Up to 5 researched hashtags specific to THIS post's topic. Mix trending and niche tags."),
 })
 
 export async function POST(request: Request) {
@@ -153,7 +153,7 @@ ${
                   : "Strong call-to-action. Invite them to take the next step with you."
 }
 
-${researchData && researchData.trending_hashtags ? `\n## Hashtag Strategy:\nSelect 5-10 hashtags from the trending list that are most relevant to THIS specific post's topic. Mix high-volume and niche-specific tags.\n` : ""}
+${researchData && researchData.trending_hashtags ? `\n## Hashtag Strategy:\nSelect up to 5 hashtags from the trending list that are most relevant to THIS specific post's topic. Use only high-signal tags.\n` : ""}
 
 Generate the caption now. Make it COMPLETELY different from the previous ${captionResults.length} captions.`,
         temperature: 0.9, // High temperature for more creativity and uniqueness

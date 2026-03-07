@@ -18,6 +18,7 @@ import {
   sanitizeUserFacingText,
 } from "@/lib/maya/page-generation/sanitizers"
 import type { MayaLandingPageBlueprint } from "@/lib/maya/page-generation/types"
+import { generateInstagramCaption, extractHashtagsFromCaption, limitHashtags } from "@/lib/feed-planner/caption-writer"
 
 export type MayaGeneratedAssetType = "page" | "calendar" | "pdf"
 
@@ -344,12 +345,20 @@ async function generateCalendarAsset(input: {
     audience,
     transformation,
   })
+  const postsWithStoryCaptions = await enrichCalendarPostsWithCaptions({
+    posts,
+    offer,
+    audience,
+    transformation,
+    trendSignals,
+    brandProfile: snapshot.brandProfile || {},
+  })
   const previewHtml = buildCalendarHtml({
     title,
     previewText,
     instruction: input.instruction,
     imageUrls,
-    posts,
+    posts: postsWithStoryCaptions,
     trendSignals,
   })
 
@@ -822,10 +831,10 @@ function buildKeywordPool(input: { instruction: string; offer: string; audience:
 function buildHashtagSet(baseSeed: string, keywords: string[]): string {
   const seedHashtags = uniqueStrings((baseSeed.match(/#[a-z0-9_]+/gi) || []).map((tag) => tag.toLowerCase()))
   const keywordHashtags = uniqueStrings(keywords.map(keywordToHashtag).filter(Boolean))
-  const combined = uniqueStrings([...seedHashtags, ...keywordHashtags]).slice(0, 8)
+  const combined = uniqueStrings([...seedHashtags, ...keywordHashtags]).slice(0, 5)
 
   if (combined.length === 0) {
-    return "#personalbrand #contentstrategy #instagramtips #creatorbusiness"
+    return "#personalbrand #contentstrategy #instagramtips #storytelling #creatorbusiness"
   }
 
   return combined.join(" ")
@@ -957,6 +966,125 @@ function buildCalendarPosts(input: {
   }
 
   return posts
+}
+
+function getCalendarCaptionType(position: number): "story" | "value" | "motivational" {
+  const pattern: Array<"story" | "value" | "motivational"> = [
+    "story",
+    "value",
+    "motivational",
+    "story",
+    "value",
+    "motivational",
+    "story",
+    "value",
+    "motivational",
+  ]
+  return pattern[position - 1] || "story"
+}
+
+function parseCalendarHashtagSeeds(trendSignals: MayaInstagramTrendSignals): string[] {
+  const parsed = trendSignals.hashtagSets.flatMap((set) =>
+    String(set || "")
+      .split(/\s+/)
+      .map((token) => token.trim())
+      .filter((token) => token.startsWith("#")),
+  )
+  return limitHashtags(parsed, 5).map((tag) => `#${tag}`)
+}
+
+function parseCalendarContentPillars(brandProfile: Record<string, unknown>): any[] {
+  const raw = brandProfile?.content_pillars
+  if (!raw) return []
+  try {
+    const parsed = typeof raw === "string" ? JSON.parse(raw) : raw
+    if (Array.isArray(parsed)) return parsed
+    if (parsed && typeof parsed === "object" && Array.isArray((parsed as { pillars?: unknown[] }).pillars)) {
+      return (parsed as { pillars: unknown[] }).pillars
+    }
+  } catch {
+    return []
+  }
+  return []
+}
+
+async function enrichCalendarPostsWithCaptions(input: {
+  posts: MayaCalendarPostPlan[]
+  offer: string
+  audience: string
+  transformation: string
+  trendSignals: MayaInstagramTrendSignals
+  brandProfile: Record<string, unknown>
+}): Promise<MayaCalendarPostPlan[]> {
+  const trendHashtags = parseCalendarHashtagSeeds(input.trendSignals)
+  const previousCaptions: Array<{ position: number; caption: string }> = []
+  const contentPillars = parseCalendarContentPillars(input.brandProfile)
+  const brandVoice =
+    String(input.brandProfile?.brand_voice || input.brandProfile?.brand_vibe || "authentic").trim() || "authentic"
+
+  const enrichedPosts: MayaCalendarPostPlan[] = []
+
+  for (const post of input.posts) {
+    const captionType = getCalendarCaptionType(Number(post.id.replace("post-", "")))
+    const fallbackCaption = post.caption
+    const fallbackHashtags = post.hashtags
+
+    try {
+      const generated = await generateInstagramCaption({
+        postPosition: Number(post.id.replace("post-", "")),
+        shotType: post.postType.toLowerCase(),
+        purpose: `${input.offer} ${post.postType}`,
+        emotionalTone: captionType === "motivational" ? "inspiring" : captionType === "value" ? "helpful" : "warm",
+        brandProfile: input.brandProfile,
+        targetAudience: input.audience,
+        brandVoice,
+        contentPillar: post.postType,
+        hookConcept: post.hook,
+        storyConcept: post.direction,
+        ctaConcept: post.cta,
+        hashtags: trendHashtags,
+        previousCaptions,
+        researchData: {
+          research_summary: input.trendSignals.formatNotes.join(" "),
+          best_hooks: input.trendSignals.hookPatterns.slice(0, 6),
+          trending_hashtags: trendHashtags,
+        },
+        captionType,
+        contentPillars,
+      })
+
+      const nextCaption = String(generated.caption || "").trim() || fallbackCaption
+      const hashtags = limitHashtags(extractHashtagsFromCaption(nextCaption), 5)
+      const hashtagString = hashtags.length > 0 ? hashtags.map((tag) => `#${tag}`).join(" ") : fallbackHashtags
+      const captionWithHashtags = hashtags.length > 0
+        ? nextCaption.replace(/\s*(#[a-zA-Z0-9_]+\s*)+$/g, "").trim() + `\n\n${hashtagString}`
+        : nextCaption
+
+      enrichedPosts.push({
+        ...post,
+        caption: captionWithHashtags,
+        hashtags: hashtagString,
+      })
+
+      previousCaptions.push({
+        position: Number(post.id.replace("post-", "")),
+        caption: captionWithHashtags,
+      })
+    } catch (error) {
+      console.error("[Maya Calendar] Caption generation failed, using fallback:", error)
+      enrichedPosts.push({
+        ...post,
+        caption: fallbackCaption,
+        hashtags: fallbackHashtags,
+      })
+      previousCaptions.push({
+        position: Number(post.id.replace("post-", "")),
+        caption: fallbackCaption,
+      })
+    }
+  }
+
+  return enrichedPosts
 }
 
 function buildCalendarHtml(input: MayaCalendarRenderInput): string {

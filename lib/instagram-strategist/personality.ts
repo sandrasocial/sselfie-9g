@@ -142,9 +142,9 @@ See how it:
   ✗ "Great post!!! 🔥💯✨🙌" (too many)
 
 ### Hashtags:
-- 5-10 strategic hashtags ONLY
+- Up to 5 strategic hashtags ONLY (MAX 5)
 - Place on new line after CTA
-- Mix sizes: 2-3 large, 3-4 medium, 2-3 niche
+- Mix sizes: broad + niche relevance, no filler tags
 
 ## The Edit Checklist
 

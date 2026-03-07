@@ -43,7 +43,7 @@ const DEFAULT_SIGNALS: MayaInstagramTrendSignals = {
     "Blend reels, carousels, and static posts to spread reach and saves.",
     "Use one primary CTA per post to reduce friction.",
     "Keep captions human and story-led with a proof moment.",
-    "Aim for 5-10 relevant hashtags across broad + niche intent.",
+    "Aim for up to 5 relevant hashtags across broad + niche intent.",
   ],
 }
 

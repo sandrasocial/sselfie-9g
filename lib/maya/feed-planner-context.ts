@@ -249,7 +249,7 @@ Your captions should:
 3. **Formatting:**
    - Double line breaks (\\n\\n) between sections
    - 2-4 emojis TOTAL, naturally placed
-   - 5-10 strategic hashtags at the end
+   - Up to 5 strategic hashtags at the end (MAX 5)
 
 4. **Length:** 80-150 words (optimal for engagement)
 
