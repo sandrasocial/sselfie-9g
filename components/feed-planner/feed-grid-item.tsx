@@ -285,6 +285,28 @@ export default function FeedGridItem({
   })
   const isComplete = !!displayImageUrl
   const canStop = !!predictionId && !predictionId.startsWith("temp-")
+  const completeInteractionClassName = isSavingOrder ? "cursor-pointer" : "cursor-move hover:opacity-90"
+
+  const handleGenerateClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    void startGeneration({
+      event,
+      postId: post.id,
+      onGenerate,
+      setPredictionId,
+    })
+  }
+
+  const handleStopGeneration = (event: React.MouseEvent<HTMLButtonElement>) => {
+    void stopGeneration({
+      event,
+      canStop,
+      isStopping,
+      postId: post.id,
+      onGenerateImage,
+      setPredictionId,
+      setIsStopping,
+    })
+  }
 
   const content = renderContent({
     displayImageUrl,
@@ -294,23 +316,8 @@ export default function FeedGridItem({
     showGenerateButton,
     post,
     onAddImage,
-    onGenerateClick: (event) =>
-      startGeneration({
-        event,
-        postId: post.id,
-        onGenerate,
-        setPredictionId,
-      }),
-    onStopGeneration: (event) =>
-      stopGeneration({
-        event,
-        canStop,
-        isStopping,
-        postId: post.id,
-        onGenerateImage,
-        setPredictionId,
-        setIsStopping,
-      }),
+    onGenerateClick: handleGenerateClick,
+    onStopGeneration: handleStopGeneration,
   })
 
   const baseClassName = `relative block aspect-square w-full overflow-hidden rounded-[18px] border border-[color:var(--glass-border-subtle)] bg-[rgba(175,170,162,0.08)] backdrop-blur-[28px] transition-all duration-200 ${
@@ -327,7 +334,7 @@ export default function FeedGridItem({
         onDragEnd={onDragEnd}
         onClick={() => onPostClick(post)}
         aria-label={`Open post ${post.position}`}
-        className={`${baseClassName} ${!isSavingOrder ? "cursor-move hover:opacity-90" : "cursor-pointer"}`}
+        className={`${baseClassName} ${completeInteractionClassName}`}
       >
         {content}
       </button>
