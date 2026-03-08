@@ -25,6 +25,8 @@ export interface PricingProduct {
     | "credit_topup"
     | "paid_blueprint"
     | "brand_strategy_pack"
+    | "selfie_guide_bundle"
+    | "selfie_guide"
   features?: string[]
   credits?: number
   stripePriceId?: string
@@ -117,6 +119,37 @@ export const PRICING_PRODUCTS: PricingProduct[] = [
     priceInCents: 1900, // $19 one-time
     type: "brand_strategy_pack",
     tag: "bought_brand_strategy_pack",
+  },
+  {
+    id: "selfie_guide_bundle",
+    name: "Selfie Guide + Brand Strategy Bundle",
+    displayName: "Selfie Guide + Brand Strategy Bundle",
+    description: "Get the Selfie Guide and Brand Strategy Pack together at the bundle price.",
+    priceInCents: 2700, // $27 one-time
+    type: "selfie_guide_bundle",
+    tag: "bought_selfie_guide_bundle",
+    features: [
+      "Full Selfie Guide access",
+      "Personal Brand Strategy Pack unlocked",
+      "Interactive checklists and 7-Day Selfie Challenge",
+      "Lightroom preset pack bonus",
+    ],
+  },
+  {
+    id: "selfie_guide",
+    name: "Selfie Guide",
+    displayName: "Selfie Guide",
+    description: "Turn one good selfie into your brand",
+    priceInCents: 1700, // EUR 17 one-time
+    type: "selfie_guide",
+    tag: "bought_selfie_guide",
+    features: [
+      "9 chapters of personal branding strategy",
+      "Interactive checklists for every step",
+      "7-Day Selfie Challenge",
+      "Meet Maya - your AI branding assistant",
+      "Lightroom preset pack bonus",
+    ],
   },
 ]
 

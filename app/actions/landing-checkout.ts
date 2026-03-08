@@ -42,7 +42,11 @@ export async function createLandingCheckoutSession(productId: string, promoCode?
         ? "STRIPE_PAID_BLUEPRINT_PRICE_ID"
         : product.type === "brand_strategy_pack"
           ? "STRIPE_PRICE_BRAND_STRATEGY_PACK"
-        : "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID"
+          : product.type === "selfie_guide_bundle"
+            ? "STRIPE_PRICE_SELFIE_GUIDE_BUNDLE"
+          : product.type === "selfie_guide"
+            ? "STRIPE_PRICE_SELFIE_GUIDE"
+            : "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID"
   
   if (product.type === "one_time_session") {
     stripePriceId = process.env.STRIPE_ONE_TIME_SESSION_PRICE_ID
@@ -52,6 +56,10 @@ export async function createLandingCheckoutSession(productId: string, promoCode?
     stripePriceId = process.env.STRIPE_PAID_BLUEPRINT_PRICE_ID
   } else if (product.type === "brand_strategy_pack") {
     stripePriceId = process.env.STRIPE_PRICE_BRAND_STRATEGY_PACK
+  } else if (product.type === "selfie_guide_bundle") {
+    stripePriceId = process.env.STRIPE_PRICE_SELFIE_GUIDE_BUNDLE
+  } else if (product.type === "selfie_guide") {
+    stripePriceId = process.env.STRIPE_PRICE_SELFIE_GUIDE
   }
   stripePriceId = stripePriceId?.trim()
 

@@ -1,77 +1,34 @@
 "use client"
 
 import Image from "next/image"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { FormEvent, useState } from "react"
 import { Cormorant_Garamond, Inter } from "next/font/google"
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
-  weight: ["300"],
+  weight: ["300", "400"],
 })
 
 const inter = Inter({
   subsets: ["latin"],
-  weight: ["300", "500"],
+  weight: ["300", "400", "500"],
 })
 
-const SELFIE_GUIDE_CAPTURE_IMAGE_URL =
-  "https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/maya-pro-generations/6vc2ty3vndrmr0cwr8r9p1rd6w-z3vkF7lRWhn2aoxEQRyAZoVkBfOGOL.png"
+const HERO_IMAGE = "/images/selfie-guide/window-editorial-portrait.jpg"
 
 export default function SelfieGuideLanding() {
   const router = useRouter()
-  const [name, setName] = useState("")
-  const [email, setEmail] = useState("")
   const [accessToken, setAccessToken] = useState("")
   const [tokenError, setTokenError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    if (loading) return
-
-    setLoading(true)
-    setError(null)
-
-    try {
-      const response = await fetch("/api/freebie/subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          name,
-          source: "selfie-guide",
-          utm_source: new URLSearchParams(window.location.search).get("utm_source"),
-          utm_medium: new URLSearchParams(window.location.search).get("utm_medium"),
-          utm_campaign: new URLSearchParams(window.location.search).get("utm_campaign"),
-          referrer: document.referrer,
-          user_agent: navigator.userAgent,
-        }),
-      })
-
-      const data = await response.json().catch(() => ({}))
-      if (!response.ok) {
-        throw new Error(data?.error || "Failed to unlock your guide")
-      }
-
-      const accessToken = data?.accessToken || data?.access_token
-      if (!accessToken) {
-        throw new Error("Missing access token in response")
-      }
-
-      router.push(`/selfie-guide/access/${accessToken}`)
-    } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Something went wrong. Please try again.")
-      setLoading(false)
-    }
-  }
 
   const handleAccessTokenSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+
     const normalized = accessToken.trim()
     if (!normalized) {
-      setTokenError("Enter your guide token to continue.")
+      setTokenError("Paste your guide token to continue.")
       return
     }
 
@@ -80,568 +37,130 @@ export default function SelfieGuideLanding() {
   }
 
   return (
-    <main className={`selfie-guide-page ${inter.className}`}>
-      <header className="site-header">
-        <a href="https://sselfie.ai" className={`logo ${cormorant.className}`}>
-          SSELFIE
-        </a>
-        <span className="header-label">FREEBIE · SELFIE GUIDE</span>
-      </header>
-
-      <section className="hero">
-        <div className="hero-bg-wrap">
-          <Image src="/assets/brand-strategy/hero.png" alt="Hero background" fill priority sizes="100vw" className="hero-bg" />
-        </div>
-        <div className="hero-overlay" />
-        <div className="hero-content">
-          <p className="hero-eyebrow">FREE GUIDE</p>
-          <h1 className={`hero-title ${cormorant.className}`}>BECOME A SELFIE QUEEN</h1>
-          <p className="hero-copy">
-            Learn the exact selfie framework Sandra uses to create confident brand photos with just your phone and
-            natural light.
-          </p>
-        </div>
-      </section>
-
-      <section className="section">
-        <p className="section-label">01 — GET INSTANT ACCESS</p>
-
-        <div className="capture-split">
-          <div className="intro-panel">
-            <div className="intro-image-wrap">
-              <Image
-                src={SELFIE_GUIDE_CAPTURE_IMAGE_URL}
-                alt="Portrait"
-                fill
-                sizes="(max-width: 700px) 100vw, 40vw"
-                className="cover-image"
-              />
+    <main className={`min-h-screen bg-[#0d0c0b] text-[#f0ede8] ${inter.className}`}>
+      <section className="relative overflow-hidden border-b border-[rgba(195,190,182,0.16)]">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(240,237,232,0.08),transparent_48%)]" />
+        <div className="relative mx-auto grid min-h-[100svh] max-w-[1600px] lg:grid-cols-[1.02fr_0.98fr]">
+          <div className="flex flex-col justify-between px-6 pb-10 pt-6 sm:px-10 sm:pb-14 sm:pt-8 lg:px-14 lg:pb-16 lg:pt-10">
+            <div className="flex items-center justify-between gap-4">
+              <Link
+                href="https://sselfie.ai"
+                className={`${cormorant.className} text-[30px] font-light uppercase tracking-[0.28em] text-[#f0ede8]`}
+              >
+                SSELFIE
+              </Link>
+              <p className="text-[10px] uppercase tracking-[0.4em] text-[#8a8780]">Guide Preview</p>
             </div>
-            <div className="intro-body">
-              <p className="intro-eyebrow">WHAT'S INSIDE</p>
-              <h2 className={`intro-heading ${cormorant.className}`}>6 core chapters to elevate your selfie content.</h2>
-              <ul className="intro-list">
-                <li>Lighting setups that flatter every face</li>
-                <li>Camera angles and pose formulas</li>
-                <li>Natural expressions that look confident</li>
-                <li>Simple editing workflow for polished results</li>
-                <li>How to build a reusable content library</li>
-              </ul>
+
+            <div className="max-w-[640px] py-14 sm:py-16 lg:py-20">
+              <p className="text-[11px] uppercase tracking-[0.42em] text-[#a8a49c]">Selfie Guide · 2026 Edition</p>
+              <h1
+                className={`${cormorant.className} mt-5 max-w-[12ch] text-[clamp(52px,8vw,110px)] font-light uppercase leading-[0.9] tracking-[0.05em] text-[#f0ede8]`}
+              >
+                One guide. Better selfies. Clearer content.
+              </h1>
+              <p className="mt-6 max-w-[31ch] text-[18px] font-light leading-8 text-[rgba(240,237,232,0.78)] sm:text-[20px]">
+                The paid guide, the better typography, the stronger image direction, and the next step into Brand
+                Strategy are now one clean flow.
+              </p>
+
+              <div className="mt-10 grid gap-4 sm:grid-cols-2">
+                <div className="rounded-[28px] border border-[rgba(195,190,182,0.16)] bg-[rgba(175,170,162,0.08)] p-6 backdrop-blur-[30px]">
+                  <p className="text-[10px] uppercase tracking-[0.34em] text-[#8a8780]">Guide only</p>
+                  <p className={`${cormorant.className} mt-3 text-[34px] font-light uppercase tracking-[0.08em] text-[#f0ede8]`}>
+                    €17
+                  </p>
+                  <p className="mt-3 text-sm font-light leading-7 text-[rgba(240,237,232,0.74)]">
+                    Full course access, the 7-day challenge, and the preset bonus.
+                  </p>
+                  <Link
+                    href="/checkout/selfie-guide"
+                    className="mt-6 inline-flex min-h-[50px] w-full items-center justify-center rounded-full border border-[rgba(240,237,232,0.16)] px-6 text-[11px] font-medium uppercase tracking-[0.26em] text-[#f0ede8] transition hover:border-[rgba(240,237,232,0.42)] hover:bg-[rgba(240,237,232,0.06)]"
+                  >
+                    Checkout the guide
+                  </Link>
+                </div>
+
+                <div className="rounded-[28px] border border-[rgba(240,237,232,0.24)] bg-[linear-gradient(180deg,rgba(240,237,232,0.14),rgba(175,170,162,0.08))] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)] backdrop-blur-[30px]">
+                  <p className="text-[10px] uppercase tracking-[0.34em] text-[#8a8780]">Bundle</p>
+                  <p className={`${cormorant.className} mt-3 text-[34px] font-light uppercase tracking-[0.08em] text-[#f0ede8]`}>
+                    $27
+                  </p>
+                  <p className="mt-3 text-sm font-light leading-7 text-[rgba(240,237,232,0.8)]">
+                    Add the Brand Strategy Pack now and skip the separate $19 upsell later.
+                  </p>
+                  <Link
+                    href="/checkout/selfie-guide?plan=bundle"
+                    className="mt-6 inline-flex min-h-[50px] w-full items-center justify-center rounded-full bg-[#f0ede8] px-6 text-[11px] font-medium uppercase tracking-[0.26em] text-[#0d0c0b] transition hover:bg-white"
+                  >
+                    Checkout the $27 bundle
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-4 border-t border-[rgba(195,190,182,0.14)] pt-6 text-sm font-light leading-6 text-[#a8a49c] sm:grid-cols-3">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.3em] text-[#8a8780]">Read</p>
+                <p className="mt-2">Move chapter by chapter through Sandra&apos;s actual selfie framework.</p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.3em] text-[#8a8780]">Practice</p>
+                <p className="mt-2">Use the challenge cards and image references while you shoot.</p>
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.3em] text-[#8a8780]">Build</p>
+                <p className="mt-2">Take the bundle if you want the strategy behind the visuals at the same time.</p>
+              </div>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="form-panel">
-            <label className="field-label" htmlFor="name">
-              Name
-            </label>
-            <input
-              id="name"
-              name="name"
-              type="text"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              placeholder="Your name"
-              required
-              autoComplete="name"
+          <div className="relative min-h-[420px] border-t border-[rgba(195,190,182,0.14)] lg:min-h-full lg:border-l lg:border-t-0">
+            <Image
+              src={HERO_IMAGE}
+              alt="Sandra beside the window in editorial black styling"
+              fill
+              priority
+              sizes="(max-width: 1024px) 100vw, 48vw"
+              className="object-cover"
             />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0d0c0b] via-transparent to-transparent lg:bg-gradient-to-l lg:from-transparent lg:via-transparent lg:to-[#0d0c0b]/24" />
 
-            <label className="field-label" htmlFor="email">
-              Email
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="your@email.com"
-              required
-              autoComplete="email"
-            />
+            <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8">
+              <form
+                onSubmit={handleAccessTokenSubmit}
+                className="max-w-[420px] rounded-[26px] border border-[rgba(240,237,232,0.16)] bg-[rgba(13,12,11,0.56)] p-5 backdrop-blur-xl"
+              >
+                <p className="text-[10px] uppercase tracking-[0.32em] text-[#a8a49c]">Already bought?</p>
+                <p className={`${cormorant.className} mt-3 text-3xl font-light uppercase tracking-[0.08em] text-[#f0ede8]`}>
+                  Open your guide
+                </p>
+                <p className="mt-3 text-sm font-light leading-6 text-[rgba(240,237,232,0.78)]">
+                  Paste your access token and jump straight back into the course.
+                </p>
 
-            {error ? <p className="error-msg">{error}</p> : null}
+                <div className="mt-5 grid gap-3">
+                  <input
+                    value={accessToken}
+                    onChange={(event) => setAccessToken(event.target.value)}
+                    placeholder="Paste token"
+                    aria-label="Access token"
+                    className="min-h-[48px] rounded-full border border-[rgba(240,237,232,0.16)] bg-[rgba(240,237,232,0.04)] px-5 text-sm font-light text-[#f0ede8] outline-none transition placeholder:text-[#8a8780] focus:border-[rgba(240,237,232,0.34)]"
+                  />
+                  <button
+                    type="submit"
+                    className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-[#f0ede8] px-6 text-[11px] font-medium uppercase tracking-[0.26em] text-[#0d0c0b] transition hover:bg-white"
+                  >
+                    Open guide
+                  </button>
+                </div>
 
-            <button type="submit" className="btn-primary" disabled={loading}>
-              {loading ? (
-                <span className="loading-wrap">
-                  <span className="spinner" aria-hidden="true" />
-                  <span>UNLOCKING...</span>
-                </span>
-              ) : (
-                "GET INSTANT ACCESS →"
-              )}
-            </button>
-
-            <p className="form-note">Instant access. No spam. Unsubscribe anytime.</p>
-          </form>
-        </div>
-      </section>
-
-      <section className="section section-journey">
-        <p className="section-label">02 — WHAT HAPPENS NEXT</p>
-        <div className="journey-grid">
-          <article className="journey-card">
-            <p className="journey-step">STEP 1</p>
-            <h3 className={`journey-title ${cormorant.className}`}>Learn the selfie system</h3>
-            <p className="journey-copy">Follow the interactive chapter flow and apply each lesson in real time.</p>
-          </article>
-          <article className="journey-card">
-            <p className="journey-step">STEP 2</p>
-            <h3 className={`journey-title ${cormorant.className}`}>Unlock your brand strategy</h3>
-            <p className="journey-copy">Get the EUR 17 personalized strategy so your selfies become a clear growth engine.</p>
-          </article>
-          <article className="journey-card">
-            <p className="journey-step">STEP 3</p>
-            <h3 className={`journey-title ${cormorant.className}`}>Create weekly with Maya</h3>
-            <p className="journey-copy">Join membership and generate on-brand content in Studio with Maya.</p>
-          </article>
-        </div>
-
-        <form className="token-panel" onSubmit={handleAccessTokenSubmit}>
-          <p className="token-title">Already have your guide link?</p>
-          <div className="token-row">
-            <input
-              value={accessToken}
-              onChange={(event) => setAccessToken(event.target.value)}
-              placeholder="Paste token"
-              aria-label="Access token"
-            />
-            <button type="submit" className="btn-token">
-              OPEN GUIDE
-            </button>
+                {tokenError ? <p className="mt-3 text-sm text-[#fca5a5]">{tokenError}</p> : null}
+              </form>
+            </div>
           </div>
-          {tokenError ? <p className="error-msg">{tokenError}</p> : null}
-        </form>
+        </div>
       </section>
-
-      <footer className="footer">
-        <span className="footer-note">© 2026 SSELFIE Studio · sselfie.ai</span>
-      </footer>
-
-      <style jsx>{`
-        .selfie-guide-page {
-          background: #0d0c0b;
-          color: #f0ede8;
-          min-height: 100vh;
-        }
-
-        .site-header {
-          padding: 28px 48px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          border-bottom: 1px solid rgba(195, 190, 182, 0.15);
-          position: sticky;
-          top: 0;
-          background: rgba(13, 12, 11, 0.92);
-          backdrop-filter: blur(50px);
-          z-index: 100;
-        }
-
-        .logo {
-          font-weight: 300;
-          font-size: 17px;
-          letter-spacing: 0.3em;
-          text-transform: uppercase;
-          color: #f0ede8;
-          text-decoration: none;
-        }
-
-        .header-label {
-          font-size: 10px;
-          font-weight: 500;
-          letter-spacing: 0.5em;
-          text-transform: uppercase;
-          color: #8a8780;
-        }
-
-        .hero {
-          position: relative;
-          min-height: 72vh;
-          display: flex;
-          flex-direction: column;
-          justify-content: flex-end;
-          padding: 80px 56px;
-          overflow: hidden;
-        }
-
-        .hero-bg-wrap {
-          position: absolute;
-          inset: 0;
-        }
-
-        .hero-bg {
-          object-fit: cover;
-          object-position: center 26%;
-          filter: brightness(0.45);
-        }
-
-        .hero-overlay {
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(
-            to bottom,
-            rgba(13, 12, 11, 0.15) 0%,
-            rgba(13, 12, 11, 0.05) 38%,
-            rgba(13, 12, 11, 0.72) 74%,
-            rgba(13, 12, 11, 1) 100%
-          );
-        }
-
-        .hero-content {
-          position: relative;
-          z-index: 2;
-          max-width: 900px;
-        }
-
-        .hero-eyebrow {
-          margin: 0 0 20px;
-          font-size: 10px;
-          font-weight: 500;
-          letter-spacing: 0.5em;
-          text-transform: uppercase;
-          color: #8a8780;
-        }
-
-        .hero-title {
-          margin: 0;
-          font-weight: 300;
-          font-size: clamp(46px, 8vw, 92px);
-          line-height: 1;
-          letter-spacing: -0.02em;
-          text-transform: uppercase;
-          color: #f0ede8;
-        }
-
-        .hero-copy {
-          margin: 24px 0 0;
-          font-size: 16px;
-          line-height: 1.8;
-          color: #8a8780;
-          max-width: 680px;
-        }
-
-        .section {
-          padding: 80px 56px;
-          max-width: 1120px;
-          margin: 0 auto;
-        }
-
-        .section-label {
-          margin: 0 0 40px;
-          font-size: 10px;
-          font-weight: 500;
-          letter-spacing: 0.5em;
-          text-transform: uppercase;
-          color: #8a8780;
-          padding-bottom: 16px;
-          border-bottom: 1px solid rgba(175, 170, 162, 0.12);
-        }
-
-        .capture-split {
-          display: grid;
-          grid-template-columns: 1fr 1.3fr;
-          border: 1px solid rgba(195, 190, 182, 0.25);
-          border-radius: 16px;
-          overflow: hidden;
-        }
-
-        .intro-panel {
-          border-right: 1px solid rgba(195, 190, 182, 0.25);
-          display: flex;
-          flex-direction: column;
-        }
-
-        .intro-image-wrap {
-          position: relative;
-          min-height: 280px;
-          overflow: hidden;
-          border-bottom: 1px solid rgba(195, 190, 182, 0.25);
-        }
-
-        .cover-image {
-          object-fit: cover;
-          object-position: center top;
-        }
-
-        .intro-body {
-          background: rgba(175, 170, 162, 0.08);
-          padding: 32px 30px;
-          flex: 1;
-        }
-
-        .intro-eyebrow {
-          margin: 0 0 14px;
-          font-size: 9px;
-          font-weight: 500;
-          letter-spacing: 0.45em;
-          text-transform: uppercase;
-          color: #8a8780;
-        }
-
-        .intro-heading {
-          margin: 0;
-          font-size: clamp(22px, 2.2vw, 30px);
-          font-weight: 300;
-          line-height: 1.3;
-          letter-spacing: -0.01em;
-          color: #f0ede8;
-        }
-
-        .intro-list {
-          list-style: none;
-          margin: 18px 0 0;
-          padding: 0;
-        }
-
-        .intro-list li {
-          font-size: 14px;
-          color: #8a8780;
-          line-height: 1.75;
-          padding: 6px 0 6px 18px;
-          position: relative;
-          border-bottom: 1px solid rgba(175, 170, 162, 0.12);
-        }
-
-        .intro-list li:last-child {
-          border-bottom: none;
-        }
-
-        .intro-list li::before {
-          content: "→";
-          position: absolute;
-          left: 0;
-          color: #a8a49c;
-        }
-
-        .form-panel {
-          background: rgba(175, 170, 162, 0.05);
-          padding: 34px 32px 30px;
-          display: grid;
-          gap: 12px;
-          align-content: start;
-        }
-
-        .field-label {
-          font-size: 10px;
-          font-weight: 500;
-          letter-spacing: 0.4em;
-          text-transform: uppercase;
-          color: #8a8780;
-        }
-
-        input {
-          width: 100%;
-          border: 1px solid rgba(195, 190, 182, 0.25);
-          background: rgba(175, 170, 162, 0.08);
-          color: #f0ede8;
-          padding: 13px 14px;
-          font-size: 14px;
-          font-family: inherit;
-          line-height: 1.6;
-          outline: none;
-          transition: border-color 0.16s ease;
-          border-radius: 8px;
-        }
-
-        input::placeholder {
-          color: #8a8780;
-        }
-
-        input:focus {
-          border-color: rgba(195, 190, 182, 0.5);
-        }
-
-        .error-msg {
-          margin: 2px 0 0;
-          color: #fca5a5;
-          font-size: 13px;
-        }
-
-        .btn-primary {
-          margin-top: 8px;
-          border: none;
-          background: #c8c4bb;
-          color: #0d0c0b;
-          padding: 16px 18px;
-          font-size: 11px;
-          font-weight: 500;
-          letter-spacing: 0.28em;
-          text-transform: uppercase;
-          cursor: pointer;
-          transition: background 0.2s;
-          border-radius: 9999px;
-        }
-
-        .btn-primary:hover:enabled {
-          background: #f0ede8;
-        }
-
-        .btn-primary:disabled {
-          cursor: default;
-          opacity: 0.75;
-        }
-
-        .loading-wrap {
-          display: inline-flex;
-          align-items: center;
-          gap: 10px;
-        }
-
-        .spinner {
-          width: 12px;
-          height: 12px;
-          border-radius: 9999px;
-          border: 2px solid rgba(13, 12, 11, 0.25);
-          border-top-color: rgba(13, 12, 11, 1);
-          animation: spin 0.8s linear infinite;
-        }
-
-        .form-note {
-          margin: 2px 0 0;
-          font-size: 12px;
-          color: #8a8780;
-        }
-
-        .footer {
-          border-top: 1px solid rgba(175, 170, 162, 0.12);
-          padding: 30px 24px;
-          text-align: center;
-        }
-
-        .section-journey {
-          padding-top: 24px;
-        }
-
-        .journey-grid {
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 12px;
-        }
-
-        .journey-card {
-          border: 1px solid rgba(195, 190, 182, 0.25);
-          background: rgba(175, 170, 162, 0.08);
-          border-radius: 14px;
-          padding: 20px;
-        }
-
-        .journey-step {
-          margin: 0;
-          font-size: 9px;
-          letter-spacing: 0.4em;
-          text-transform: uppercase;
-          color: #8a8780;
-        }
-
-        .journey-title {
-          margin: 8px 0 6px;
-          font-size: 26px;
-          line-height: 1.1;
-          text-transform: uppercase;
-          color: #f0ede8;
-          font-weight: 300;
-        }
-
-        .journey-copy {
-          margin: 0;
-          font-size: 14px;
-          line-height: 1.7;
-          color: #8a8780;
-        }
-
-        .token-panel {
-          margin-top: 14px;
-          border: 1px solid rgba(195, 190, 182, 0.25);
-          border-radius: 14px;
-          background: rgba(175, 170, 162, 0.06);
-          padding: 18px;
-        }
-
-        .token-title {
-          margin: 0 0 10px;
-          font-size: 12px;
-          letter-spacing: 0.22em;
-          text-transform: uppercase;
-          color: #8a8780;
-        }
-
-        .token-row {
-          display: grid;
-          grid-template-columns: 1fr auto;
-          gap: 8px;
-        }
-
-        .btn-token {
-          border: 1px solid rgba(195, 190, 182, 0.28);
-          background: rgba(175, 170, 162, 0.16);
-          color: #f0ede8;
-          padding: 0 16px;
-          border-radius: 999px;
-          font-size: 10px;
-          letter-spacing: 0.22em;
-          text-transform: uppercase;
-          cursor: pointer;
-        }
-
-        .footer-note {
-          font-size: 12px;
-          color: #8a8780;
-        }
-
-        @keyframes spin {
-          to {
-            transform: rotate(360deg);
-          }
-        }
-
-        @media (max-width: 900px) {
-          .capture-split {
-            grid-template-columns: 1fr;
-          }
-
-          .intro-panel {
-            border-right: none;
-            border-bottom: 1px solid rgba(195, 190, 182, 0.25);
-          }
-
-          .journey-grid {
-            grid-template-columns: 1fr;
-          }
-        }
-
-        @media (max-width: 700px) {
-          .site-header {
-            padding: 20px 24px;
-          }
-
-          .hero {
-            min-height: 68vh;
-            padding: 48px 28px;
-          }
-
-          .section {
-            padding: 56px 28px;
-          }
-
-          .intro-image-wrap {
-            min-height: 220px;
-          }
-
-          .intro-body,
-          .form-panel {
-            padding: 24px;
-          }
-
-          .token-row {
-            grid-template-columns: 1fr;
-          }
-
-          .btn-token {
-            min-height: 44px;
-          }
-        }
-      `}</style>
     </main>
   )
 }

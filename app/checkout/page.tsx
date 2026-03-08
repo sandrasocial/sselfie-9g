@@ -9,11 +9,52 @@ import { trackCheckoutStart } from "@/lib/analytics"
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!)
 
+const CHECKOUT_COPY: Record<
+  string,
+  {
+    heroTitle: string
+    heroBody: string
+    heading: string
+    blurb: string
+    footer: string
+  }
+> = {
+  selfie_guide: {
+    heroTitle: "Complete your Selfie Guide order",
+    heroBody: "Secure your guide, challenge, and preset bonus.",
+    heading: "Secure checkout",
+    blurb: "You are buying the Selfie Guide with encrypted Stripe checkout.",
+    footer: "Digital purchase. Your guide access is delivered right after payment.",
+  },
+  selfie_guide_bundle: {
+    heroTitle: "Complete your bundle order",
+    heroBody: "Secure the Selfie Guide and Brand Strategy Pack together.",
+    heading: "Secure checkout",
+    blurb: "You are buying the $27 bundle with encrypted Stripe checkout.",
+    footer: "Digital purchase. Your bundle access is delivered right after payment.",
+  },
+  brand_strategy_pack: {
+    heroTitle: "Complete your Brand Strategy order",
+    heroBody: "Get your Brand Strategy Pack right after payment.",
+    heading: "Secure checkout",
+    blurb: "You are buying the Brand Strategy Pack with encrypted Stripe checkout.",
+    footer: "Digital purchase. Your Brand Strategy access is delivered right after payment.",
+  },
+}
+
 function CheckoutContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const productType = searchParams.get("product_type") || "unknown"
+  const checkoutCopy = CHECKOUT_COPY[productType] ?? {
+    heroTitle: "Complete your SSELFIE Studio order",
+    heroBody: "Secure your purchase and keep moving.",
+    heading: "Secure checkout",
+    blurb: "Your payment is encrypted and protected with Stripe.",
+    footer: "Cancel anytime. 30-day refund if you're not happy.",
+  }
 
   useEffect(() => {
     const secret = searchParams.get("client_secret")
@@ -28,12 +69,11 @@ function CheckoutContent() {
     }
 
     // Track checkout page view (checkout started)
-    const productType = searchParams.get("product_type") || "unknown"
     trackCheckoutStart(productType)
 
     console.log("[v0] Checkout page - Setting client secret")
     setClientSecret(secret)
-  }, [searchParams])
+  }, [productType, searchParams])
 
   const handleComplete = async () => {
     console.log("[v0] ==================== PAYMENT COMPLETED ====================")
@@ -129,9 +169,9 @@ function CheckoutContent() {
 
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
           <div className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-[0.3em] uppercase text-[#f0ede8] mb-3">
-            Complete your SSELFIE Studio order
+            {checkoutCopy.heroTitle}
           </div>
-          <p className="text-sm sm:text-base text-[#c8c4bb] font-light">Join the Visibility Studio and start showing up with confidence.</p>
+          <p className="text-sm sm:text-base text-[#c8c4bb] font-light">{checkoutCopy.heroBody}</p>
         </div>
       </div>
 
@@ -140,10 +180,10 @@ function CheckoutContent() {
         <div className="text-center mb-6 sm:mb-8">
           <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780] mb-3">Secure Checkout</p>
           <h1 className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl md:text-3xl text-[#f0ede8] tracking-wide mb-3">
-            Secure Checkout
+            {checkoutCopy.heading}
           </h1>
           <p className="text-xs sm:text-sm text-[#8a8780] font-light leading-relaxed max-w-xl mx-auto">
-            Your payment is encrypted and protected with Stripe.
+            {checkoutCopy.blurb}
           </p>
         </div>
 
@@ -164,7 +204,7 @@ function CheckoutContent() {
             Protected by Stripe · SSL Encrypted · PCI Compliant
           </p>
           <p className="text-[10px] sm:text-xs text-[#8a8780] font-light leading-relaxed mt-2">
-            Cancel anytime. 30-day refund if you&apos;re not happy.
+            {checkoutCopy.footer}
           </p>
         </div>
       </div>
