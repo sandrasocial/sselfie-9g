@@ -52,7 +52,7 @@ export function generateReferralInviteEmail(params: ReferralInviteParams): {
               </div>
               <p style="margin: 40px 0 0; font-size: 14px; line-height: 20px; color: #57534e;">
                 You've got this,<br/>
-                — Maya + The SSELFIE Studio Team
+                Sandra
               </p>
             </td>
           </tr>
@@ -74,7 +74,7 @@ SSELFIE helps you create professional photos that look like you, powered by AI. 
 Claim Your 25 Free Credits →: ${referralLink}
 
 You've got this,
-— Maya + The SSELFIE Studio Team
+Sandra
   `
 
   return {

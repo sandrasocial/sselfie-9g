@@ -3,142 +3,134 @@ import { sql } from "@/lib/db/client"
 import { sendEmail } from "@/lib/email/send-email"
 import { createCronLogger } from "@/lib/cron-logger"
 import { logAdminError } from "@/lib/admin-error-log"
+import { getFirstNameForEmail } from "@/lib/email/recipient-name"
+import {
+  FREEBIE_STRATEGY_EMAIL_TOUCHES,
+  SELFIE_GUIDE_EMAIL_TOUCHES,
+} from "@/lib/email/selfie-guide-email-sequence"
 import { generateNurtureFreebieN1Email } from "@/lib/email/templates/nurture-freebie-n1"
 import { generateNurtureFreebieN2Email } from "@/lib/email/templates/nurture-freebie-n2"
 import { generateNurtureFreebieN3Email } from "@/lib/email/templates/nurture-freebie-n3"
 import { generateNurtureFreebieN4Email } from "@/lib/email/templates/nurture-freebie-n4"
 import { generateNurtureFreebieN5Email } from "@/lib/email/templates/nurture-freebie-n5"
-
+import { generateSelfieGuideActivationDay0Email } from "@/lib/email/templates/selfie-guide-activation-day0"
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
 const STRATEGY_FALLBACK_URL = `${SITE_URL}/freebie/brand-strategy`
-const STUDIO_PRODUCT_TYPES = ["sselfie_studio_membership", "brand_studio_membership"] as const
 const FROM_EMAIL = "Sandra from SSELFIE <hello@sselfie.ai>"
 const REPLY_TO_EMAIL = "hello@sselfie.ai"
 
-type CandidateLead = {
+type StrategyTouchKey = "n1" | "n2" | "n3" | "n4" | "n5"
+
+interface StrategyLeadCandidate {
   id: number
   email: string
   name: string | null
   access_token: string | null
   created_at: string
-  lead_source: "freebie_brand_strategies" | "freebie_subscribers"
-  source: string | null
 }
 
-type TouchConfig = {
-  key: "n1" | "n2" | "n3" | "n4" | "n5"
-  days: number
-  emailType: string
+interface SelfieGuideActivationCandidate {
+  email: string
+  name: string | null
+  access_token: string | null
+  subscription_created_at: string
 }
 
-const TOUCHES: TouchConfig[] = [
-  { key: "n1", days: 2, emailType: "nurture-freebie-n1" },
-  { key: "n2", days: 5, emailType: "nurture-freebie-n2" },
-  { key: "n3", days: 9, emailType: "nurture-freebie-n3" },
-  { key: "n4", days: 14, emailType: "nurture-freebie-n4" },
-  { key: "n5", days: 20, emailType: "nurture-freebie-n5" },
-]
+const STRATEGY_TOUCH_KEYS: StrategyTouchKey[] = ["n1", "n2", "n3", "n4", "n5"]
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 function errorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message
+  if (error instanceof Error) {
+    return error.message
+  }
+
   return "unknown"
 }
 
-function firstNameFromLead(lead: CandidateLead): string | undefined {
-  const fromName = typeof lead.name === "string" ? lead.name.trim() : ""
-  if (fromName.length > 0) {
-    return fromName.split(/\s+/)[0]
-  }
-
-  const emailPrefix = lead.email.split("@")[0]?.trim()
-  return emailPrefix || undefined
-}
-
-function contentUrlForLead(lead: CandidateLead): string {
+function strategyUrlForLead(lead: StrategyLeadCandidate): string {
   const token = typeof lead.access_token === "string" ? lead.access_token.trim() : ""
-  if (lead.lead_source === "freebie_subscribers") {
-    if (!token) return `${SITE_URL}/selfie-guide`
-    return `${SITE_URL}/selfie-guide/access/${token}`
-  }
-  if (!token) return STRATEGY_FALLBACK_URL
-  return `${SITE_URL}/strategy/${token}`
+  return token.length > 0 ? `${SITE_URL}/strategy/${token}` : STRATEGY_FALLBACK_URL
 }
 
-async function getCandidatesForTouch(touch: TouchConfig): Promise<CandidateLead[]> {
+function selfieGuideAccessUrl(candidate: SelfieGuideActivationCandidate): string {
+  const token = typeof candidate.access_token === "string" ? candidate.access_token.trim() : ""
+  return token.length > 0 ? `${SITE_URL}/selfie-guide/access/${token}` : `${SITE_URL}/selfie-guide`
+}
+
+async function getStrategyCandidatesForTouch(days: number, emailType: string): Promise<StrategyLeadCandidate[]> {
   return (await sql`
-    WITH all_leads AS (
-      SELECT
-        fbs.id,
-        fbs.email,
-        fbs.name,
-        fbs.access_token,
-        fbs.created_at,
-        'freebie_brand_strategies'::text AS lead_source,
-        'freebie-strategy'::text AS source
-      FROM freebie_brand_strategies fbs
-      WHERE fbs.email IS NOT NULL
-        AND fbs.email <> ''
-      UNION ALL
-      SELECT
-        fs.id,
-        fs.email,
-        fs.name,
-        fs.access_token,
-        fs.created_at,
-        'freebie_subscribers'::text AS lead_source,
-        COALESCE(fs.source, 'selfie-guide')::text AS source
-      FROM freebie_subscribers fs
-      WHERE fs.email IS NOT NULL
-        AND fs.email <> ''
-        AND (
-          COALESCE(fs.source, 'selfie-guide') IN ('selfie-guide', 'freebie-selfie-guide')
-          OR ('sselfie-guide' = ANY(COALESCE(fs.email_tags, ARRAY[]::text[])))
-        )
-    )
-    SELECT DISTINCT ON (LOWER(al.email))
-      al.id,
-      al.email,
-      al.name,
-      al.access_token,
-      al.created_at,
-      al.lead_source,
-      al.source
-    FROM all_leads al
-    WHERE al.created_at <= NOW() - (${`${touch.days} days`}::interval)
+    SELECT
+      fbs.id,
+      fbs.email,
+      fbs.name,
+      fbs.access_token,
+      fbs.created_at
+    FROM freebie_brand_strategies fbs
+    WHERE fbs.email IS NOT NULL
+      AND fbs.email <> ''
+      AND fbs.created_at <= NOW() - (${`${days} days`}::interval)
       AND NOT EXISTS (
         SELECT 1
         FROM email_logs el
-        WHERE LOWER(el.user_email) = LOWER(al.email)
-          AND el.email_type = ${touch.emailType}
+        WHERE LOWER(el.user_email) = LOWER(fbs.email)
+          AND el.email_type = ${emailType}
           AND el.status IN ('sent', 'delivered')
       )
       AND NOT EXISTS (
         SELECT 1
         FROM subscriptions s
         INNER JOIN users u ON u.id::varchar = s.user_id
-        WHERE LOWER(u.email) = LOWER(al.email)
+        WHERE LOWER(u.email) = LOWER(fbs.email)
           AND s.status = 'active'
-          AND s.product_type = ANY(${STUDIO_PRODUCT_TYPES}::text[])
+          AND s.product_type IN ('sselfie_studio_membership', 'brand_studio_membership')
       )
-    ORDER BY LOWER(al.email), al.created_at ASC
+    ORDER BY fbs.created_at ASC
     LIMIT 200
-  `) as CandidateLead[]
+  `) as StrategyLeadCandidate[]
 }
 
-async function sendTouchEmail(touch: TouchConfig, lead: CandidateLead) {
-  const firstName = firstNameFromLead(lead)
+async function getSelfieGuideActivationCandidates(): Promise<SelfieGuideActivationCandidate[]> {
+  return (await sql`
+    SELECT DISTINCT ON (LOWER(u.email))
+      u.email,
+      COALESCE(NULLIF(BTRIM(fs.name), ''), NULLIF(BTRIM(u.display_name), ''), NULLIF(BTRIM(u.name), '')) AS name,
+      fs.access_token,
+      s.created_at AS subscription_created_at
+    FROM subscriptions s
+    INNER JOIN users u ON u.id::varchar = s.user_id
+    INNER JOIN freebie_subscribers fs ON LOWER(fs.email) = LOWER(u.email)
+    WHERE s.product_type = 'selfie_guide'
+      AND s.status = 'active'
+      AND s.created_at <= NOW()
+      AND s.created_at > NOW() - INTERVAL '3 days'
+      AND u.email IS NOT NULL
+      AND u.email <> ''
+      AND NOT EXISTS (
+        SELECT 1
+        FROM email_logs el
+        WHERE LOWER(el.user_email) = LOWER(u.email)
+          AND el.email_type = 'selfie-guide-activation-day0'
+          AND el.status IN ('sent', 'delivered')
+      )
+    ORDER BY LOWER(u.email), s.created_at DESC
+    LIMIT 200
+  `) as SelfieGuideActivationCandidate[]
+}
+
+async function sendStrategyTouchEmail(touchKey: StrategyTouchKey, lead: StrategyLeadCandidate, emailType: string) {
+  const firstName = getFirstNameForEmail({ fullName: lead.name, email: lead.email })
   const recipientEmail = lead.email
 
-  switch (touch.key) {
+  switch (touchKey) {
     case "n1": {
       const email = generateNurtureFreebieN1Email({
         firstName,
         recipientEmail,
-        strategyUrl: contentUrlForLead(lead),
+        strategyUrl: strategyUrlForLead(lead),
       })
+
       return sendEmail({
         to: recipientEmail,
         from: FROM_EMAIL,
@@ -146,8 +138,8 @@ async function sendTouchEmail(touch: TouchConfig, lead: CandidateLead) {
         subject: email.subject,
         html: email.html,
         text: email.text,
-        emailType: touch.emailType,
-        tags: ["nurture-freebie", touch.key],
+        emailType,
+        tags: ["nurture-freebie", touchKey],
       })
     }
     case "n2": {
@@ -159,8 +151,8 @@ async function sendTouchEmail(touch: TouchConfig, lead: CandidateLead) {
         subject: email.subject,
         html: email.html,
         text: email.text,
-        emailType: touch.emailType,
-        tags: ["nurture-freebie", touch.key],
+        emailType,
+        tags: ["nurture-freebie", touchKey],
       })
     }
     case "n3": {
@@ -172,8 +164,8 @@ async function sendTouchEmail(touch: TouchConfig, lead: CandidateLead) {
         subject: email.subject,
         html: email.html,
         text: email.text,
-        emailType: touch.emailType,
-        tags: ["nurture-freebie", touch.key],
+        emailType,
+        tags: ["nurture-freebie", touchKey],
       })
     }
     case "n4": {
@@ -185,8 +177,8 @@ async function sendTouchEmail(touch: TouchConfig, lead: CandidateLead) {
         subject: email.subject,
         html: email.html,
         text: email.text,
-        emailType: touch.emailType,
-        tags: ["nurture-freebie", touch.key],
+        emailType,
+        tags: ["nurture-freebie", touchKey],
       })
     }
     case "n5": {
@@ -198,11 +190,31 @@ async function sendTouchEmail(touch: TouchConfig, lead: CandidateLead) {
         subject: email.subject,
         html: email.html,
         text: email.text,
-        emailType: touch.emailType,
-        tags: ["nurture-freebie", touch.key],
+        emailType,
+        tags: ["nurture-freebie", touchKey],
       })
     }
   }
+}
+
+async function sendSelfieGuideActivationEmail(candidate: SelfieGuideActivationCandidate) {
+  const firstName = getFirstNameForEmail({ fullName: candidate.name, email: candidate.email })
+  const email = generateSelfieGuideActivationDay0Email({
+    firstName,
+    recipientEmail: candidate.email,
+    accessUrl: selfieGuideAccessUrl(candidate),
+  })
+
+  return sendEmail({
+    to: candidate.email,
+    from: FROM_EMAIL,
+    replyTo: REPLY_TO_EMAIL,
+    subject: email.subject,
+    html: email.html,
+    text: email.text,
+    emailType: SELFIE_GUIDE_EMAIL_TOUCHES[0].emailType,
+    tags: ["selfie-guide", "selfie-guide-activation"],
+  })
 }
 
 export async function GET(request: Request) {
@@ -214,14 +226,13 @@ export async function GET(request: Request) {
     const cronSecret = process.env.CRON_SECRET
     const isProduction = process.env.VERCEL_ENV === "production" || process.env.NODE_ENV === "production"
 
-    if (isProduction && cronSecret) {
-      if (authHeader !== `Bearer ${cronSecret}`) {
-        await cronLogger.error(new Error("Unauthorized"), { reason: "Invalid CRON_SECRET" })
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-      }
+    if (isProduction && cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+      await cronLogger.error(new Error("Unauthorized"), { reason: "Invalid CRON_SECRET" })
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const results = {
+      selfieGuideDay0: { found: 0, sent: 0, failed: 0 },
       n1: { found: 0, sent: 0, failed: 0 },
       n2: { found: 0, sent: 0, failed: 0 },
       n3: { found: 0, sent: 0, failed: 0 },
@@ -230,28 +241,57 @@ export async function GET(request: Request) {
       errors: [] as Array<{ email: string; touch: string; error: string }>,
     }
 
-    for (const touch of TOUCHES) {
-      const candidates = await getCandidatesForTouch(touch)
-      results[touch.key].found = candidates.length
+    const selfieGuideCandidates = await getSelfieGuideActivationCandidates()
+    results.selfieGuideDay0.found = selfieGuideCandidates.length
+
+    for (const candidate of selfieGuideCandidates) {
+      try {
+        const result = await sendSelfieGuideActivationEmail(candidate)
+        if (result.success) {
+          results.selfieGuideDay0.sent += 1
+        } else {
+          results.selfieGuideDay0.failed += 1
+          results.errors.push({
+            email: candidate.email,
+            touch: "selfie-guide-day0",
+            error: result.error || "unknown",
+          })
+        }
+      } catch (error: unknown) {
+        results.selfieGuideDay0.failed += 1
+        results.errors.push({
+          email: candidate.email,
+          touch: "selfie-guide-day0",
+          error: errorMessage(error),
+        })
+      }
+
+      await sleep(150)
+    }
+
+    for (const [index, touch] of FREEBIE_STRATEGY_EMAIL_TOUCHES.entries()) {
+      const touchKey = STRATEGY_TOUCH_KEYS[index]
+      const candidates = await getStrategyCandidatesForTouch(touch.days, touch.emailType)
+      results[touchKey].found = candidates.length
 
       for (const lead of candidates) {
         try {
-          const result = await sendTouchEmail(touch, lead)
+          const result = await sendStrategyTouchEmail(touchKey, lead, touch.emailType)
           if (result.success) {
-            results[touch.key].sent += 1
+            results[touchKey].sent += 1
           } else {
-            results[touch.key].failed += 1
+            results[touchKey].failed += 1
             results.errors.push({
               email: lead.email,
-              touch: touch.key,
+              touch: touchKey,
               error: result.error || "unknown",
             })
           }
         } catch (error: unknown) {
-          results[touch.key].failed += 1
+          results[touchKey].failed += 1
           results.errors.push({
             email: lead.email,
-            touch: touch.key,
+            touch: touchKey,
             error: errorMessage(error),
           })
         }
@@ -260,11 +300,23 @@ export async function GET(request: Request) {
       }
     }
 
-    const totalSent = results.n1.sent + results.n2.sent + results.n3.sent + results.n4.sent + results.n5.sent
+    const totalSent =
+      results.selfieGuideDay0.sent +
+      results.n1.sent +
+      results.n2.sent +
+      results.n3.sent +
+      results.n4.sent +
+      results.n5.sent
     const totalFailed =
-      results.n1.failed + results.n2.failed + results.n3.failed + results.n4.failed + results.n5.failed
+      results.selfieGuideDay0.failed +
+      results.n1.failed +
+      results.n2.failed +
+      results.n3.failed +
+      results.n4.failed +
+      results.n5.failed
 
     await cronLogger.success({
+      selfieGuideDay0: results.selfieGuideDay0,
       n1: results.n1,
       n2: results.n2,
       n3: results.n3,

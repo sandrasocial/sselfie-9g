@@ -9,9 +9,9 @@ import { sendEmail } from "@/lib/email/send-email"
 import { generateWelcomeEmail } from "@/lib/email/templates/welcome-email"
 import { generatePaidBlueprintDeliveryEmail, PAID_BLUEPRINT_DELIVERY_SUBJECT } from "@/lib/email/templates/paid-blueprint-delivery"
 import {
-  generateSelfieGuideDeliveryEmail,
-  SELFIE_GUIDE_DELIVERY_SUBJECT,
-} from "@/lib/email/templates/selfie-guide-delivery"
+  generateSelfieGuidePaidDeliveryEmail,
+  SELFIE_GUIDE_PAID_DELIVERY_SUBJECT,
+} from "@/lib/email/templates/selfie-guide-paid-delivery"
 import { generatePaymentFailedEmail } from "@/lib/email/templates/payment-failed"
 import { ACADEMY_PRODUCTS } from "@/lib/products"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
@@ -25,6 +25,77 @@ import {
 } from "@/lib/resend/manage-contact"
 import { hasStudioMembership } from "@/lib/subscription"
 import { isBrandEngineCheckoutProductType } from "@/lib/brand-engine/offer-checkout-config"
+import { normalizeFreebieEmailTags, resolveAccessToken } from "@/lib/freebie/subscribe-utils"
+import { getFirstNameForEmail } from "@/lib/email/recipient-name"
+
+async function ensurePaidSelfieGuideSubscriber(email: string, name?: string | null) {
+  const cleanedName = typeof name === "string" && name.trim().length > 0 ? name.trim() : null
+  const existingSubscriber = await sql`
+    SELECT id, access_token, email_tags
+    FROM freebie_subscribers
+    WHERE LOWER(email) = LOWER(${email})
+    LIMIT 1
+  `
+
+  const existing = existingSubscriber[0] as { id: number; access_token?: string | null; email_tags?: string[] | null } | undefined
+  const { accessToken } = resolveAccessToken(existing?.access_token, randomUUID)
+  const tags = new Set(
+    normalizeFreebieEmailTags(Array.isArray(existing?.email_tags) ? (existing?.email_tags as string[]) : null),
+  )
+  tags.add("purchased")
+  tags.add("customer")
+  tags.add("selfie-guide-paid")
+  const normalizedTags = Array.from(tags)
+
+  if (existing) {
+    await sql`
+      UPDATE freebie_subscribers
+      SET
+        name = COALESCE(${cleanedName}, name),
+        source = 'selfie-guide-paid',
+        access_token = ${accessToken},
+        email_tags = ${normalizedTags}::text[],
+        converted_to_user = TRUE,
+        converted_at = COALESCE(converted_at, NOW()),
+        updated_at = NOW()
+      WHERE id = ${existing.id}
+    `
+
+    return { subscriberId: existing.id, accessToken }
+  }
+
+  const inserted = await sql`
+    INSERT INTO freebie_subscribers (
+      email,
+      name,
+      source,
+      access_token,
+      email_tags,
+      converted_to_user,
+      converted_at,
+      guide_access_email_sent,
+      guide_access_email_sent_at,
+      created_at,
+      updated_at
+    )
+    VALUES (
+      ${email},
+      ${cleanedName},
+      'selfie-guide-paid',
+      ${accessToken},
+      ${normalizedTags}::text[],
+      TRUE,
+      NOW(),
+      FALSE,
+      NULL,
+      NOW(),
+      NOW()
+    )
+    RETURNING id
+  `
+
+  return { subscriberId: inserted[0].id as number, accessToken }
+}
 
 
 export async function POST(request: NextRequest) {
@@ -131,8 +202,10 @@ export async function POST(request: NextRequest) {
         const customerEmail = session.customer_details?.email || session.customer_email || session.metadata?.customer_email
         if (customerEmail) {
           try {
-            const customerName = session.customer_details?.name || customerEmail.split("@")[0]
-            const firstName = customerName.split(" ")[0] || customerName
+            const firstName = getFirstNameForEmail({
+              fullName: session.customer_details?.name,
+              email: customerEmail,
+            })
 
             const productType = session.metadata.product_type
             let productTag = "unknown"
@@ -147,10 +220,6 @@ export async function POST(request: NextRequest) {
               productTag = "paid-blueprint"
             } else if (productType === "brand_strategy_pack") {
               productTag = "brand-strategy-pack"
-            } else if (productType === "selfie_guide") {
-              productTag = "selfie-guide"
-            } else if (productType === "selfie_guide_bundle") {
-              productTag = "selfie-guide-bundle"
             }
 
             // Track conversion attribution if campaign_id is present
@@ -451,7 +520,10 @@ export async function POST(request: NextRequest) {
 
             if (customerEmail && isPaymentPaid) {
               try {
-                const firstName = customerEmail.split("@")[0]
+                const firstName = getFirstNameForEmail({
+                  fullName: session.customer_details?.name,
+                  email: customerEmail,
+                })
                 const receiptText = [
                   `Hi ${firstName},`,
                   "",
@@ -502,7 +574,7 @@ export async function POST(request: NextRequest) {
                 const productName = "CREDIT PURCHASE"
 
                 const emailContent = generateWelcomeEmail({
-                  customerName: customerEmail.split("@")[0],
+                  customerName: getFirstNameForEmail({ fullName: session.customer_details?.name, email: customerEmail }),
                   customerEmail: customerEmail,
                   creditsGranted: credits,
                   packageName: productName,
@@ -539,15 +611,15 @@ export async function POST(request: NextRequest) {
                 } else {
                   console.error(`[v0] Failed to send credit top-up confirmation email: ${emailResult.error}`)
                 }
-              } else if (source === "landing_page" && productType !== "paid_blueprint") {
-                // ⚠️ Skip welcome email for paid_blueprint - delivery email is sent separately
+              } else if (source === "landing_page" && productType !== "paid_blueprint" && productType !== "selfie_guide") {
+                // ⚠️ Skip for paid_blueprint / selfie_guide - delivery email is sent separately
                 console.log(`[v0] Sending purchase confirmation email to existing user ${customerEmail}`)
 
                 const productName = productType === "one_time_session" ? "ONE-TIME SESSION" : "CREDIT PACKAGE"
                 const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
 
                 const emailContent = generateWelcomeEmail({
-                  customerName: customerEmail.split("@")[0],
+                  customerName: getFirstNameForEmail({ fullName: session.customer_details?.name, email: customerEmail }),
                   customerEmail: customerEmail,
                   creditsGranted: credits,
                   packageName: productName,
@@ -588,6 +660,7 @@ export async function POST(request: NextRequest) {
                 console.log(`[v0] ⚠️ Skipping welcome email for paid_blueprint - delivery email will be sent separately`)
               }
             } else if (source === "landing_page" && productType !== "paid_blueprint") {
+              // selfie_guide is intentionally included here — account creation runs, welcome email is skipped above
               console.log(`[v0] Creating new account for landing page purchase: ${customerEmail}`)
 
               try {
@@ -680,15 +753,15 @@ export async function POST(request: NextRequest) {
 
                   console.log(`[v0] Step 7: Generated password setup link`)
 
-                  // ⚠️ Skip welcome email for paid_blueprint - delivery email is sent separately
-                  if (productType === "paid_blueprint") {
-                    console.log(`[v0] ⚠️ Skipping welcome email for paid_blueprint - delivery email will be sent separately`)
+                  // ⚠️ Skip welcome email for paid_blueprint / selfie_guide - delivery email is sent separately
+                  if (productType === "paid_blueprint" || productType === "selfie_guide") {
+                    console.log(`[v0] ⚠️ Skipping welcome email for ${productType} - delivery email will be sent separately`)
                   } else {
                     const productName = productType === "one_time_session" ? "ONE-TIME SESSION" : "CREDIT PACKAGE"
 
                     console.log(`[v0] Step 8: Generating welcome email...`)
                     const emailContent = generateWelcomeEmail({
-                      customerName: customerEmail.split("@")[0],
+                      customerName: getFirstNameForEmail({ fullName: session.customer_details?.name, email: customerEmail }),
                       customerEmail: customerEmail,
                       creditsGranted: credits,
                       packageName: productName,
@@ -903,7 +976,10 @@ export async function POST(request: NextRequest) {
               }
               const productName = productNames[productId] || productId
               const upsell = upsellMap[productId]
-              const firstName = academyCustomerEmail.split("@")[0]
+              const firstName = getFirstNameForEmail({
+                fullName: session.customer_details?.name,
+                email: academyCustomerEmail,
+              })
               const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
 
               const upsellLine = upsell
@@ -1391,37 +1467,38 @@ export async function POST(request: NextRequest) {
                 // best effort only
               }
             }
-          } else if (productType === "selfie_guide" || productType === "selfie_guide_bundle") {
+          } else if (productType === "selfie_guide") {
+            // ✨ SELFIE GUIDE: Log payment, grant access, send delivery email with download link
             if (!isPaymentPaid) {
-              const selfieGuideLabel = productType === "selfie_guide_bundle" ? "Selfie guide bundle" : "Selfie guide"
               console.log(
-                `[v0] ⚠️ ${selfieGuideLabel} checkout completed but payment not confirmed (status: '${session.payment_status}').`,
+                `[v0] ⚠️ Selfie Guide checkout completed but payment not confirmed (status: '${session.payment_status}').`,
               )
             } else {
-              const isBundle = productType === "selfie_guide_bundle"
+              console.log(`[v0] 📖 Selfie Guide purchase from ${customerEmail} - Payment confirmed`)
+
               const isTestMode = !event.livemode
               const paymentIntentId =
                 typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id
               const paymentIdForStorage = paymentIntentId || session.id
 
               let paymentAmountCents = session.amount_total || 0
-              let stripeCustomerId =
+              let customerId =
                 typeof session.customer === "string" ? session.customer : session.customer?.id || null
 
               if (paymentIntentId) {
                 try {
                   const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
                   paymentAmountCents = paymentIntent.amount || paymentAmountCents
-                  stripeCustomerId =
+                  customerId =
                     typeof paymentIntent.customer === "string"
                       ? paymentIntent.customer
-                      : paymentIntent.customer?.id || stripeCustomerId
+                      : paymentIntent.customer?.id || customerId
                 } catch (piError: any) {
                   console.error(`[v0] Error retrieving payment intent for selfie guide:`, piError.message)
                 }
               }
 
-              if (stripeCustomerId) {
+              if (customerId) {
                 try {
                   await sql`
                     INSERT INTO stripe_payments (
@@ -1442,14 +1519,14 @@ export async function POST(request: NextRequest) {
                     )
                     VALUES (
                       ${paymentIdForStorage},
-                      ${stripeCustomerId},
+                      ${customerId},
                       ${userId},
                       ${paymentAmountCents},
-                      ${session.currency || (isBundle ? "usd" : "eur")},
+                      'usd',
                       'succeeded',
-                      ${productType},
-                      ${productType},
-                      ${isBundle ? "Selfie Guide + Brand Strategy Bundle" : "Selfie Guide"},
+                      'selfie_guide',
+                      'selfie_guide',
+                      ${'Selfie Guide'},
                       ${JSON.stringify(session.metadata || {})},
                       NOW(),
                       ${isTestMode},
@@ -1481,7 +1558,7 @@ export async function POST(request: NextRequest) {
                   'selfie_guide',
                   'selfie_guide',
                   'active',
-                  ${stripeCustomerId},
+                  ${customerId},
                   NOW(),
                   NOW()
                 WHERE NOT EXISTS (
@@ -1498,7 +1575,7 @@ export async function POST(request: NextRequest) {
                 VALUES (
                   ${userId},
                   'bought_selfie_guide',
-                  ${source || (isBundle ? 'selfie_guide_bundle' : 'selfie_guide_paid')},
+                  ${'selfie_guide_purchase'},
                   ${JSON.stringify({
                     stripe_session_id: session.id,
                     stripe_payment_id: paymentIdForStorage,
@@ -1507,174 +1584,98 @@ export async function POST(request: NextRequest) {
                 ON CONFLICT (user_id, tag) DO NOTHING
               `
 
-              if (isBundle) {
-                await sql`
-                  INSERT INTO user_tags (user_id, tag, source, metadata)
-                  VALUES (
-                    ${userId},
-                    'bought_brand_strategy_pack',
-                    ${source || 'selfie_guide_bundle'},
-                    ${JSON.stringify({
-                      stripe_session_id: session.id,
-                      stripe_payment_id: paymentIdForStorage,
-                    })}
-                  )
-                  ON CONFLICT (user_id, tag) DO NOTHING
-                `
+              // Send delivery email with download link
+              try {
+                const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
+                const presetPackUrl = process.env.SELFIE_GUIDE_PRESET_DOWNLOAD_URL || undefined
+                const firstName = getFirstNameForEmail({
+                  fullName: session.customer_details?.name,
+                  email: customerEmail,
+                })
+                const subscriberRecord = await ensurePaidSelfieGuideSubscriber(customerEmail!, session.customer_details?.name)
+                const accessUrl = `${productionUrl}/selfie-guide/access/${subscriberRecord.accessToken}`
 
-                await sql`
-                  INSERT INTO user_tags (user_id, tag, source, metadata)
-                  VALUES (
-                    ${userId},
-                    'bought_selfie_guide_bundle',
-                    ${source || 'selfie_guide_bundle'},
-                    ${JSON.stringify({
-                      stripe_session_id: session.id,
-                      stripe_payment_id: paymentIdForStorage,
-                    })}
-                  )
-                  ON CONFLICT (user_id, tag) DO NOTHING
-                `
+                // Generate a fresh password setup link if user was just created (has no password set up)
+                let passwordSetupLink: string | undefined
+                if (userId) {
+                  try {
+                    const userRecord = await sql`
+                      SELECT password_setup_complete FROM users WHERE id = ${userId} LIMIT 1
+                    `
+                    if (userRecord[0]?.password_setup_complete === false) {
+                      const supabaseAdmin = createAdminClient()
+                      const { data: resetData, error: resetError } = await supabaseAdmin.auth.admin.generateLink({
+                        type: "recovery",
+                        email: customerEmail!,
+                        options: { redirectTo: `${productionUrl}/auth/setup-password` },
+                      })
+                      if (!resetError && resetData?.properties?.action_link) {
+                        let link = resetData.properties.action_link
+                        if (link.includes("localhost") || link.includes("supabase.co")) {
+                          const url = new URL(link)
+                          const token = url.searchParams.get("token")
+                          const type = url.searchParams.get("type") || "recovery"
+                          if (token) {
+                            link = `${productionUrl}/auth/confirm?token=${token}&type=${type}&redirect_to=/auth/setup-password`
+                          }
+                        }
+                        passwordSetupLink = link
+                      }
+                    }
+                  } catch (linkError: any) {
+                    console.error(`[v0] Error generating password setup link for selfie guide:`, linkError.message)
+                  }
+                }
+
+                const emailContent = generateSelfieGuidePaidDeliveryEmail({
+                  firstName,
+                  email: customerEmail!,
+                  accessUrl,
+                  presetPackUrl,
+                  passwordSetupLink,
+                })
+
+                const emailResult = await sendEmail({
+                  to: customerEmail!,
+                  subject: SELFIE_GUIDE_PAID_DELIVERY_SUBJECT,
+                  html: emailContent.html,
+                  text: emailContent.text,
+                  emailType: "selfie_guide_delivery",
+                  tags: ["selfie-guide-delivery", "purchase-confirmation"],
+                })
+
+                if (emailResult.success) {
+                  console.log(`[v0] ✅ Selfie Guide delivery email sent to ${customerEmail}, ID: ${emailResult.messageId}`)
+                  await sql`
+                    UPDATE freebie_subscribers
+                    SET guide_access_email_sent = TRUE,
+                        guide_access_email_sent_at = NOW(),
+                        updated_at = NOW()
+                    WHERE id = ${subscriberRecord.subscriberId}
+                  `
+                } else {
+                  console.error(`[v0] ❌ Failed to send Selfie Guide delivery email: ${emailResult.error}`)
+                }
+              } catch (emailError: any) {
+                console.error(`[v0] Error sending Selfie Guide delivery email:`, emailError.message)
               }
 
               try {
                 await logAnalyticsEvent({
-                  eventName: "purchase",
+                  eventName: "selfie_guide_checkout_success",
                   userId: String(userId),
                   properties: {
-                    source: source || (isBundle ? "selfie_guide_bundle" : "selfie_guide_paid"),
-                    payment_type: productType,
-                    product_type: productType,
+                    source: source || "landing_page",
+                    product_type: "selfie_guide",
                     value: paymentAmountCents / 100,
-                    currency: session.currency || (isBundle ? "usd" : "eur"),
-                    stripe_payment_id: paymentIdForStorage,
+                    currency: "usd",
                     stripe_session_id: session.id,
+                    stripe_payment_id: paymentIdForStorage,
                     is_test_mode: isTestMode,
                   },
                 })
               } catch {
                 // best effort only
-              }
-
-              if (customerEmail) {
-                try {
-                  const accessToken = randomUUID()
-                  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai"
-                  const guideAccessLink = `${siteUrl}/selfie-guide/access/${accessToken}`
-                  const presetDownloadLink =
-                    process.env.SELFIE_GUIDE_PRESET_DOWNLOAD_URL?.trim() || "https://sselfie.ai/selfie-guide"
-                  const fallbackName = session.customer_details?.name || customerEmail.split("@")[0]
-
-                  const existingSubscriber = await sql`
-                    SELECT id, name, email_tags
-                    FROM freebie_subscribers
-                    WHERE LOWER(email) = LOWER(${customerEmail})
-                    LIMIT 1
-                  `
-
-                  const nextEmailTags = Array.from(
-                    new Set([
-                      "freebie-subscriber",
-                      "sselfie-guide",
-                      "freebie-selfie-guide",
-                      "purchased",
-                      "customer",
-                      "bought_selfie_guide",
-                      ...(isBundle ? ["bought_brand_strategy_pack", "bought_selfie_guide_bundle"] : []),
-                      ...((existingSubscriber[0]?.email_tags as string[] | undefined) || []),
-                    ]),
-                  )
-
-                  if (existingSubscriber.length > 0) {
-                    await sql`
-                      UPDATE freebie_subscribers
-                      SET
-                        name = COALESCE(name, ${fallbackName}),
-                        access_token = ${accessToken},
-                        source = COALESCE(source, 'selfie-guide'),
-                        converted_to_user = TRUE,
-                        converted_at = COALESCE(converted_at, NOW()),
-                        guide_access_email_sent = FALSE,
-                        guide_access_email_sent_at = NULL,
-                        email_tags = ${nextEmailTags}::text[],
-                        updated_at = NOW()
-                      WHERE id = ${existingSubscriber[0].id}
-                    `
-                  } else {
-                    await sql`
-                      INSERT INTO freebie_subscribers (
-                        email,
-                        name,
-                        source,
-                        access_token,
-                        guide_access_email_sent,
-                        guide_access_email_sent_at,
-                        converted_to_user,
-                        converted_at,
-                        email_tags,
-                        created_at,
-                        updated_at
-                      )
-                      VALUES (
-                        ${customerEmail},
-                        ${fallbackName},
-                        'selfie-guide',
-                        ${accessToken},
-                        FALSE,
-                        NULL,
-                        TRUE,
-                        NOW(),
-                        ${nextEmailTags}::text[],
-                        NOW(),
-                        NOW()
-                      )
-                    `
-                  }
-
-                  const existingEmail = await sql`
-                    SELECT id
-                    FROM email_logs
-                    WHERE LOWER(user_email) = LOWER(${customerEmail})
-                      AND email_type = 'selfie-guide-delivery'
-                    LIMIT 1
-                  `
-
-                  if (existingEmail.length === 0) {
-                    const emailContent = generateSelfieGuideDeliveryEmail({
-                      firstName: fallbackName.split(" ")[0] || undefined,
-                      email: customerEmail,
-                      guideAccessLink,
-                      presetDownloadLink,
-                      includesBrandStrategyPack: isBundle,
-                    })
-
-                    const emailResult = await sendEmail({
-                      to: customerEmail,
-                      subject: SELFIE_GUIDE_DELIVERY_SUBJECT,
-                      html: emailContent.html,
-                      text: emailContent.text,
-                      emailType: "selfie-guide-delivery",
-                      tags: ["selfie-guide", "delivery"],
-                    })
-
-                    if (emailResult.success) {
-                      await sql`
-                        UPDATE freebie_subscribers
-                        SET
-                          guide_access_email_sent = TRUE,
-                          guide_access_email_sent_at = NOW(),
-                          updated_at = NOW()
-                        WHERE LOWER(email) = LOWER(${customerEmail})
-                      `
-                    } else {
-                      console.error(`[v0] ⚠️ Failed to send selfie guide delivery email: ${emailResult.error}`)
-                    }
-                  } else {
-                    console.log(`[v0] Skipping duplicate selfie-guide-delivery email for ${customerEmail}`)
-                  }
-                } catch (deliveryError: any) {
-                  console.error(`[v0] ⚠️ Error delivering selfie guide purchase:`, deliveryError.message)
-                }
               }
             }
           } else if (productType === "paid_blueprint") {
@@ -2065,7 +2066,11 @@ export async function POST(request: NextRequest) {
                     }
                   } else {
                     // No blueprint_subscribers record - create one linked to user_id
-                    const customerName = session.customer_details?.name || customerEmail?.split("@")[0] || "User"
+                    const customerName = getFirstNameForEmail({
+                      fullName: session.customer_details?.name,
+                      email: customerEmail || undefined,
+                      fallback: "User",
+                    })
                     await sql`
                       INSERT INTO blueprint_subscribers (
                         user_id,
@@ -2197,7 +2202,10 @@ export async function POST(request: NextRequest) {
                 } else {
                     // New subscriber - create record (will be linked to user_id when user signs up)
                     const accessToken = randomUUID()
-                  const customerName = session.customer_details?.name || customerEmail.split("@")[0]
+                  const customerName = getFirstNameForEmail({
+                    fullName: session.customer_details?.name,
+                    email: customerEmail,
+                  })
                   await sql`
                     INSERT INTO blueprint_subscribers (
                       email,
@@ -2508,9 +2516,13 @@ export async function POST(request: NextRequest) {
 
                 const creditsGranted = credits
                 const productName = productType === "sselfie_studio_membership" ? "STUDIO MEMBERSHIP" : "SUBSCRIPTION"
+                const welcomeCustomerName = getFirstNameForEmail({
+                  fullName: session.customer_details?.name,
+                  email: customerEmail,
+                })
 
                 console.log("[v0] Generating welcome email with params:", {
-                  customerName: customerEmail.split("@")[0],
+                  customerName: welcomeCustomerName,
                   customerEmail: customerEmail,
                   creditsGranted: creditsGranted,
                   packageName: productName,
@@ -2518,7 +2530,7 @@ export async function POST(request: NextRequest) {
                 })
 
                 const emailContent = generateWelcomeEmail({
-                  customerName: customerEmail.split("@")[0],
+                  customerName: welcomeCustomerName,
                   customerEmail: customerEmail,
                   creditsGranted: creditsGranted,
                   packageName: productName,
@@ -2569,7 +2581,10 @@ export async function POST(request: NextRequest) {
                       const { createBetaTestimonialCampaign } = await import("@/lib/email/create-beta-testimonial-campaign")
                       const campaignResult = await createBetaTestimonialCampaign({
                         userEmail: customerEmail,
-                        firstName: customerEmail.split("@")[0],
+                        firstName: getFirstNameForEmail({
+                          fullName: session.customer_details?.name,
+                          email: customerEmail,
+                        }),
                         userId: userId,
                         purchaseDate: new Date(),
                       })

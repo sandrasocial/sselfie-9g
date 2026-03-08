@@ -26,53 +26,14 @@ const SEQUENCE_SEGMENTS: Array<{
   segmentKeys: Array<keyof typeof MARKETING_SEGMENTS>
 }> = [
   {
-    jobName: "send-blueprint-followups",
-    label: "Blueprint Follow-ups",
-    segmentKeys: ["blueprintDay3", "blueprintDay7", "blueprintDay14"],
-  },
-  {
     jobName: "nurture-sequence",
     label: "Nurture Sequence",
     segmentKeys: ["nurtureDay1", "nurtureDay3", "nurtureDay7", "nurtureDay10"],
   },
   {
-    jobName: "welcome-sequence",
-    label: "Welcome Sequence",
-    segmentKeys: ["welcomeDay0", "welcomeDay3", "welcomeDay7", "welcomeDay14", "welcomeDay21", "welcomeDay28"],
-  },
-  {
-    jobName: "monthly-usage-recap",
-    label: "Monthly Usage Recap",
-    segmentKeys: ["monthlyUsageRecap"],
-  },
-  {
-    jobName: "reactivation-campaigns",
-    label: "Reactivation Campaigns",
-    segmentKeys: [
-      "reactivationDay0",
-      "reactivationDay2",
-      "reactivationDay5",
-      "reactivationDay7",
-      "reactivationDay10",
-      "reactivationDay14",
-      "reactivationDay20",
-      "reactivationDay25",
-    ],
-  },
-  {
-    jobName: "reengagement-campaigns",
-    label: "Reengagement Campaigns",
-    segmentKeys: ["reengagementDay0", "reengagementDay7", "reengagementDay14"],
-  },
-  {
-    jobName: "upsell-campaigns",
-    label: "Upsell Campaigns",
-    segmentKeys: ["upsellDay10", "upsellFreebieMembership"],
-  },
-  {
-    jobName: "blueprint-discovery-funnel",
-    label: "Blueprint Discovery Funnel",
-    segmentKeys: ["discoveryDay0", "discoveryDay3", "discoveryDay5", "discoveryDay7", "discoveryDay10"],
+    jobName: "onboarding-sequence",
+    label: "Onboarding Sequence",
+    segmentKeys: ["onboardingDay0", "onboardingDay2", "onboardingDay7"],
   },
 ]
 

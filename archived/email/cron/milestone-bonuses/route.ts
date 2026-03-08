@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
 import { addCredits } from "@/lib/credits"
 import { sendEmail } from "@/lib/email/send-email"
-import { generateMilestoneBonusEmail } from "@/lib/email/templates/milestone-bonus"
+import { generateMilestoneBonusEmail } from "@/archived/email/templates/milestone-bonus"
 import { createCronLogger } from "@/lib/cron-logger"
 
 

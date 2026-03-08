@@ -1,399 +1,103 @@
 import type { WelcomeEmailParams } from "./welcome-email-params"
+import { getFirstNameForEmail } from "@/lib/email/recipient-name"
+import { renderStoneButton, renderStonePanel, renderStoneShell } from "./stone-email"
 
 export function generateWelcomeEmail(params: WelcomeEmailParams): {
   html: string
   text: string
 } {
   const { customerName, customerEmail, creditsGranted, packageName, productType, passwordSetupUrl } = params
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
+  const studioUrl = `${siteUrl}/studio`
+  const name = getFirstNameForEmail({ fullName: customerName, email: customerEmail })
 
   if (productType === "credit_topup") {
-    const html = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Credits Added to Your Account</title>
-</head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #fafaf9;">
-  <table role="presentation" style="width: 100%; border-collapse: collapse;">
-    <tr>
-      <td align="center" style="padding: 20px;">
-        <table role="presentation" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 12px; overflow: hidden;">
-          
-          <tr>
-            <td style="padding: 40px 30px 20px; text-align: center;">
-              <h1 style="margin: 0 0 20px; color: #1c1917; font-size: 28px; font-weight: 300; letter-spacing: 0.3em; text-transform: uppercase; font-family: Georgia, serif;">
-                S S E L F I E
-              </h1>
-              <p style="margin: 0; color: #57534e; font-size: 16px; font-weight: 300; line-height: 1.6;">
-                Payment Confirmed
-              </p>
-            </td>
-          </tr>
-          
-          <tr>
-            <td style="padding: 0 30px 30px;">
-              <p style="margin: 0 0 16px; color: #292524; font-size: 15px; font-weight: 300; line-height: 1.7;">
-                ${customerName ? `Hey ${customerName}` : "Hey there"}, your credits have been added to your account.
-              </p>
-            </td>
-          </tr>
-          
-          <tr>
-            <td style="padding: 0 30px 30px;">
-              <table role="presentation" style="width: 100%; background-color: #fafaf9; border-radius: 8px; padding: 24px;">
-                <tr>
-                  <td>
-                    <p style="margin: 0 0 16px; color: #78716c; font-size: 11px; font-weight: 300; letter-spacing: 0.15em; text-transform: uppercase;">
-                      ORDER SUMMARY
-                    </p>
-                    
-                    <table role="presentation" style="width: 100%;">
-                      <tr>
-                        <td style="padding: 12px 0; border-bottom: 1px solid #e7e5e4;">
-                          <table role="presentation" style="width: 100%;">
-                            <tr>
-                              <td style="color: #78716c; font-size: 13px; font-weight: 300;">
-                                Credits Purchased
-                              </td>
-                              <td align="right" style="color: #1c1917; font-size: 18px; font-weight: 400;">
-                                ${creditsGranted} credits
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                      </tr>
-                      
-                      <tr>
-                        <td style="padding: 12px 0;">
-                          <table role="presentation" style="width: 100%;">
-                            <tr>
-                              <td style="color: #78716c; font-size: 13px; font-weight: 300;">
-                                ${packageName}
-                              </td>
-                              <td align="right" style="color: #1c1917; font-size: 14px; font-weight: 400;">
-                                ${creditsGranted} credits
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-          
-          <tr>
-            <td style="padding: 0 30px 40px; text-align: center;">
-              <a href="${process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"}/studio" style="display: inline-block; background-color: #1c1917; color: #fafaf9; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-size: 13px; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase;">
-                Start Creating
-              </a>
-            </td>
-          </tr>
-          
-          <tr>
-            <td style="padding: 30px; background-color: #fafaf9; border-top: 1px solid #e7e5e4;">
-              <p style="margin: 0 0 12px; color: #57534e; font-size: 13px; font-weight: 300; line-height: 1.6; text-align: center;">
-                Need help? Reply to this email.
-              </p>
-              <p style="margin: 0; color: #57534e; font-size: 13px; font-weight: 300; text-align: center;">
-                XoXo Sandra 💋
-              </p>
-              <p style="margin: 16px 0 0; color: #a8a29e; font-size: 11px; font-weight: 300; text-align: center;">
-                © ${new Date().getFullYear()} SSELFIE. All rights reserved.
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
+    const bodyHtml = `
+      <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${name},</p>
+      <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Your credits are in and ready to use.</p>
+      ${renderStonePanel(
+        `<p style="margin:0 0 8px;font-size:15px;line-height:1.75;color:#f0ede8;">Order:</p>
+         <p style="margin:0;font-size:15px;line-height:1.8;color:#a8a49c;">${packageName}<br />${creditsGranted} credits added to your account</p>`,
+        "Payment Confirmed",
+      )}
+      <div style="margin:26px 0 22px;">${renderStoneButton("Open Studio", studioUrl)}</div>
+      <p style="margin:0;font-size:15px;line-height:1.75;color:#a8a49c;">Use them while the idea is fresh.</p>
     `
 
-    const text = `
-S S E L F I E
+    const html = renderStoneShell({
+      title: "Credits added",
+      eyebrow: "Payment Confirmed",
+      subtitle: "Your next image is ready when you are.",
+      bodyHtml,
+    })
 
-Payment Confirmed
+    const text = `Payment Confirmed
 
-${customerName ? `Hey ${customerName}` : "Hey there"}, your credits have been added to your account.
+Hey ${name},
 
-ORDER SUMMARY
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Your credits are in and ready to use.
 
-Credits Purchased: ${creditsGranted} credits
-${packageName}: ${creditsGranted} credits
+${packageName}
+${creditsGranted} credits added to your account
 
-Start creating: ${process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"}/studio
+Open Studio: ${studioUrl}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Use them while the idea is fresh.
 
-Need help? Reply to this email.
-
-XoXo Sandra 💋
-
-© ${new Date().getFullYear()} SSELFIE. All rights reserved.
-    `
+Sandra`
 
     return { html, text }
   }
 
   const isMembership = productType === "sselfie_studio_membership"
-  const heroImage = isMembership
-    ? "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/887-JHliMtQOFFLmPDRmabtQ9DAuiPDTOv-OivTIIUeMpb1tqbk2R5tU2kzoe1hsN.png"
-    : "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/_%20%2841%29-4vcnjHmEyRfK3XJz48N3olzSa1JHQu.jpeg"
+  const ctaUrl = passwordSetupUrl || studioUrl
+  const ctaText = passwordSetupUrl ? "Set your password" : "Open Studio"
 
-  const welcomeMessage = isMembership
-    ? "You just joined the Studio. Welcome to the inner circle."
-    : "You just took the first step toward building your brand empire, and trust me-this is where the magic happens."
-
-  const secondMessage = isMembership
-    ? "This is where we create the content that builds empires. Every month, you get fresh tools, new styles, and exclusive drops that keep your brand ahead of the curve."
-    : "No more waiting for the \"perfect\" photoshoot. No more feeling invisible online. You're about to create professional photos that actually look like you-and they're going to be stunning."
-
-  const ctaUrl = passwordSetupUrl || `${process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"}/studio`
-  const ctaText = passwordSetupUrl ? "Set Up Your Password" : "Go to Studio"
-  const ctaDescription = passwordSetupUrl
-    ? "First, let's secure your account. Click below to create your password and get started."
-    : ""
-
-  const html = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Welcome to SSELFIE</title>
-</head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #fafaf9;">
-  <table role="presentation" style="width: 100%; border-collapse: collapse;">
-    <tr>
-      <td align="center" style="padding: 20px;">
-        <!-- Main Container -->
-        <table role="presentation" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 12px; overflow: hidden;">
-          
-          <!-- Hero Image -->
-          <tr>
-            <td style="padding: 0;">
-              <img src="${heroImage}" alt="Welcome to SSELFIE" style="width: 100%; height: auto; display: block; max-height: 300px; object-fit: cover;" />
-            </td>
-          </tr>
-          
-          <!-- Logo & Welcome -->
-          <tr>
-            <td style="padding: 40px 30px 20px; text-align: center;">
-              <h1 style="margin: 0 0 20px; color: #1c1917; font-size: 28px; font-weight: 300; letter-spacing: 0.3em; text-transform: uppercase; font-family: Georgia, serif;">
-                S S E L F I E
-              </h1>
-              <p style="margin: 0; color: #57534e; font-size: 16px; font-weight: 300; line-height: 1.6;">
-                ${customerName ? `Hey ${customerName}` : "Hey there"}, you're officially in! 
-              </p>
-            </td>
-          </tr>
-          
-          <!-- Personal Message -->
-          <tr>
-            <td style="padding: 0 30px 30px;">
-              <p style="margin: 0 0 16px; color: #292524; font-size: 15px; font-weight: 300; line-height: 1.7;">
-                I'm so excited to have you here. ${welcomeMessage}
-              </p>
-              <p style="margin: 0 0 16px; color: #292524; font-size: 15px; font-weight: 300; line-height: 1.7;">
-                ${secondMessage}
-              </p>
-            </td>
-          </tr>
-          
-          <!-- Order Details -->
-          <tr>
-            <td style="padding: 0 30px 30px;">
-              <table role="presentation" style="width: 100%; background-color: #fafaf9; border-radius: 8px; padding: 24px;">
-                <tr>
-                  <td>
-                    <p style="margin: 0 0 16px; color: #78716c; font-size: 11px; font-weight: 300; letter-spacing: 0.15em; text-transform: uppercase;">
-                      YOUR ORDER
-                    </p>
-                    
-                    <table role="presentation" style="width: 100%;">
-                      <tr>
-                        <td style="padding: 12px 0; border-bottom: 1px solid #e7e5e4;">
-                          <table role="presentation" style="width: 100%;">
-                            <tr>
-                              <td style="color: #78716c; font-size: 13px; font-weight: 300;">
-                                ${packageName}
-                              </td>
-                              <td align="right" style="color: #1c1917; font-size: 14px; font-weight: 400;">
-                                ${creditsGranted} credits
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                      </tr>
-                      
-                      <tr>
-                        <td style="padding: 12px 0;">
-                          <table role="presentation" style="width: 100%;">
-                            <tr>
-                              <td style="color: #78716c; font-size: 13px; font-weight: 300;">
-                                ${packageName}
-                              </td>
-                              <td align="right" style="color: #1c1917; font-size: 14px; font-weight: 400;">
-                                ${creditsGranted} credits
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                      </tr>
-                    </table>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-          
-          <!-- What's Next -->
-          <tr>
-            <td style="padding: 0 30px 30px;">
-              <h2 style="margin: 0 0 16px; color: #1c1917; font-size: 18px; font-weight: 300; letter-spacing: 0.1em; text-transform: uppercase; font-family: Georgia, serif;">
-                What's Next
-              </h2>
-              
-              ${
-                passwordSetupUrl
-                  ? `
-              <p style="margin: 0 0 12px; color: #57534e; font-size: 14px; font-weight: 300; line-height: 1.7;">
-                ${ctaDescription}
-              </p>
-              `
-                  : `
-              <p style="margin: 0 0 12px; color: #57534e; font-size: 14px; font-weight: 300; line-height: 1.7;">
-                Here's how to get started:
-              </p>
-              
-              <table role="presentation" style="width: 100%;">
-                <tr>
-                  <td style="padding: 8px 0;">
-                    <p style="margin: 0; color: #57534e; font-size: 14px; font-weight: 300; line-height: 1.6;">
-                      <strong style="color: #1c1917; font-weight: 400;">1.</strong> Upload 10-20 selfies (the more variety, the better)
-                    </p>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px 0;">
-                    <p style="margin: 0; color: #57534e; font-size: 14px; font-weight: 300; line-height: 1.6;">
-                      <strong style="color: #1c1917; font-weight: 400;">2.</strong> Let the AI train on your unique look
-                    </p>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px 0;">
-                    <p style="margin: 0; color: #57534e; font-size: 14px; font-weight: 300; line-height: 1.6;">
-                      <strong style="color: #1c1917; font-weight: 400;">3.</strong> Create your first professional photos
-                    </p>
-                  </td>
-                </tr>
-                <tr>
-                  <td style="padding: 8px 0;">
-                    <p style="margin: 0; color: #57534e; font-size: 14px; font-weight: 300; line-height: 1.6;">
-                      <strong style="color: #1c1917; font-weight: 400;">4.</strong> Start building your brand empire
-                    </p>
-                  </td>
-                </tr>
-              </table>
-              `
-              }
-            </td>
-          </tr>
-          
-          <!-- Personal Note -->
-          <tr>
-            <td style="padding: 0 30px 30px;">
-              <div style="background-color: #fafaf9; border-left: 3px solid #292524; padding: 20px; border-radius: 4px;">
-                <p style="margin: 0 0 12px; color: #292524; font-size: 14px; font-weight: 300; line-height: 1.7; font-style: italic;">
-                  "I built my business from nothing but selfies and a story. Now it's your turn."
-                </p>
-                <p style="margin: 0; color: #57534e; font-size: 13px; font-weight: 300;">
-                  - Sandra
-                </p>
-              </div>
-            </td>
-          </tr>
-          
-          <!-- CTA Button -->
-          <tr>
-            <td style="padding: 0 30px 40px; text-align: center;">
-              <a href="${ctaUrl}" style="display: inline-block; background-color: #1c1917; color: #fafaf9; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-size: 13px; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase;">
-                ${ctaText}
-              </a>
-            </td>
-          </tr>
-          
-          <!-- Footer -->
-          <tr>
-            <td style="padding: 30px; background-color: #fafaf9; border-top: 1px solid #e7e5e4;">
-              <p style="margin: 0 0 12px; color: #57534e; font-size: 13px; font-weight: 300; line-height: 1.6; text-align: center;">
-                Need help? Just reply to this email-I read every message.
-              </p>
-              <p style="margin: 0; color: #57534e; font-size: 13px; font-weight: 300; text-align: center;">
-                XoXo Sandra 💋
-              </p>
-              <p style="margin: 16px 0 0; color: #a8a29e; font-size: 11px; font-weight: 300; text-align: center;">
-                © ${new Date().getFullYear()} SSELFIE. All rights reserved.
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
+  const bodyHtml = `
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">Hey ${name},</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">You're officially in.</p>
+    <p style="margin:0 0 16px;font-size:16px;line-height:1.75;">${isMembership ? "Studio is ready for you now." : "Your account is ready now."} The fastest way to make this feel real is to get one result on the board today.</p>
+    ${renderStonePanel(
+      `<p style="margin:0 0 8px;font-size:15px;line-height:1.75;color:#f0ede8;">Your order:</p>
+       <p style="margin:0;font-size:15px;line-height:1.8;color:#a8a49c;">${packageName}<br />${creditsGranted} credits included</p>`,
+      "What You Have",
+    )}
+    ${
+      passwordSetupUrl
+        ? renderStonePanel(
+            `<p style="margin:0;font-size:15px;line-height:1.8;color:#a8a49c;">Set your password first, then you'll land inside Studio and can start creating straight away.</p>`,
+            "First Step",
+          )
+        : ""
+    }
+    <div style="margin:26px 0 22px;">${renderStoneButton(ctaText, ctaUrl)}</div>
+    <p style="margin:0;font-size:15px;line-height:1.75;color:#a8a49c;">If you want the best first win, open Maya and make one image today.</p>
   `
 
-  const text = `
-S S E L F I E
+  const html = renderStoneShell({
+    title: isMembership ? "You're in" : "Welcome in",
+    eyebrow: isMembership ? "Studio Membership" : "Purchase Confirmed",
+    subtitle: "Let's make your first result happen fast.",
+    bodyHtml,
+  })
 
-${customerName ? `Hey ${customerName}` : "Hey there"}, you're officially in!
+  const text = `${isMembership ? "Studio Membership" : "Purchase Confirmed"}
 
-I'm so excited to have you here. ${welcomeMessage}
+Hey ${name},
 
-${secondMessage}
+You're officially in.
 
-YOUR ORDER
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${isMembership ? "Studio is ready for you now." : "Your account is ready now."} The fastest way to make this feel real is to get one result on the board today.
 
-${packageName}: ${creditsGranted} credits
+Your order:
+${packageName}
+${creditsGranted} credits included
 
-WHAT'S NEXT
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${passwordSetupUrl ? `Set your password: ${passwordSetupUrl}` : `Open Studio: ${studioUrl}`}
 
-${
-  passwordSetupUrl
-    ? `${ctaDescription}
+If you want the best first win, open Maya and make one image today.
 
-${ctaText}: ${ctaUrl}`
-    : `Here's how to get started:
-
-1. Upload 10-20 selfies (the more variety, the better)
-2. Let the AI train on your unique look
-3. Create your first professional photos
-4. Start building your brand empire`
-}
-
-"I built my business from nothing but selfies and a story. Now it's your turn."
-- Sandra
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Need help? Just reply to this email-I read every message.
-
-XoXo Sandra 💋
-
-© ${new Date().getFullYear()} SSELFIE. All rights reserved.
-  `
+Sandra`
 
   return { html, text }
 }

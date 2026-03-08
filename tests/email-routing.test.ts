@@ -6,23 +6,25 @@ const ROOT = process.cwd()
 
 const broadcastOnlyRoutes = [
   "app/api/cron/onboarding-sequence/route.ts",
-  "app/api/cron/cold-reeducation-sequence/route.ts",
-  "app/api/cron/blueprint-discovery-funnel/route.ts",
-  "app/api/cron/reactivation-campaigns/route.ts",
-  "app/api/cron/reengagement-campaigns/route.ts",
-  "app/api/cron/upsell-campaigns/route.ts",
 ]
 
-const mixedRoutes = [
-  "app/api/cron/send-blueprint-followups/route.ts",
+const archivedRoutes = [
+  "archived/email/cron/blueprint-discovery-funnel/route.ts",
+  "archived/email/cron/cold-reeducation-sequence/route.ts",
+  "archived/email/cron/milestone-bonuses/route.ts",
+  "archived/email/cron/monthly-usage-recap/route.ts",
+  "archived/email/cron/reactivation-campaigns/route.ts",
+  "archived/email/cron/reengagement-campaigns/route.ts",
+  "archived/email/cron/referral-rewards/route.ts",
+  "archived/email/cron/send-blueprint-followups/route.ts",
+  "archived/email/cron/send-scheduled-campaigns/route.ts",
+  "archived/email/cron/subscription-ending-soon/route.ts",
+  "archived/email/cron/upsell-campaigns/route.ts",
 ]
 
 const transactionalRoutes = [
   "app/api/cron/nurture-sequence/route.ts",
-  "app/api/cron/subscription-ending-soon/route.ts",
   "app/api/cron/admin-alerts/route.ts",
-  "app/api/cron/referral-rewards/route.ts",
-  "app/api/cron/milestone-bonuses/route.ts",
   "app/api/cron/win-back-sequence/route.ts",
 ]
 
@@ -33,13 +35,6 @@ describe("Email routing separation", () => {
     for (const route of broadcastOnlyRoutes) {
       const contents = fs.readFileSync(path.join(ROOT, route), "utf8")
       expect(contents).not.toContain("sendEmail(")
-      expect(contents).toContain("enqueueAndProcessMarketingRun")
-    }
-  })
-
-  it("mixed routes should include broadcast path", () => {
-    for (const route of mixedRoutes) {
-      const contents = fs.readFileSync(path.join(ROOT, route), "utf8")
       expect(contents).toContain("enqueueAndProcessMarketingRun")
     }
   })
@@ -57,6 +52,12 @@ describe("Email routing separation", () => {
     for (const route of transactionalRoutes) {
       const contents = fs.readFileSync(path.join(ROOT, route), "utf8")
       expect(contents).toContain("sendEmail(")
+    }
+  })
+
+  it("archives unscheduled cron routes outside the live app tree", () => {
+    for (const route of archivedRoutes) {
+      expect(fs.existsSync(path.join(ROOT, route))).toBe(true)
     }
   })
 })
