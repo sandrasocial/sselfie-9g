@@ -44,21 +44,14 @@ export default function ProductAccessCard({
   }
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
+    <button
+      type="button"
       onClick={handleClick}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault()
-          handleClick()
-        }
-      }}
-      className="shrink-0 w-[200px] min-h-[180px] rounded-2xl border border-white/15 bg-[rgba(255,255,255,0.07)] overflow-hidden flex flex-col backdrop-blur-xl transition-all hover:border-white/20 hover:bg-[rgba(255,255,255,0.1)] active:scale-[0.98]"
+      className="stone-panel flex min-h-[180px] w-[200px] shrink-0 flex-col overflow-hidden rounded-2xl transition-all hover:bg-[rgba(175,170,162,0.16)] active:scale-[0.98]"
       style={{ minWidth: 200 }}
     >
       {/* Image area */}
-      <div className="relative w-full h-[88px] bg-[rgba(255,255,255,0.07)] overflow-hidden">
+      <div className="relative h-[88px] w-full overflow-hidden bg-[rgba(175,170,162,0.10)]">
         {imageUrl ? (
           <img
             src={imageUrl}
@@ -66,21 +59,14 @@ export default function ProductAccessCard({
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[rgba(255,255,255,0.08)] to-[rgba(255,255,255,0.04)]">
-            <span className="font-serif text-2xl font-extralight tracking-wider uppercase text-white/30">
+          <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(135deg,rgba(240,237,232,0.14),rgba(175,170,162,0.06))]">
+            <span className="font-serif text-2xl font-extralight tracking-wider uppercase text-white/35">
               {name.charAt(0)}
             </span>
           </div>
         )}
         {/* Badge */}
-        <div
-          className="absolute top-1.5 right-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-medium tracking-[0.15em] uppercase"
-          style={{
-            background: "rgba(34, 197, 94, 0.12)",
-            border: "1px solid rgba(34, 197, 94, 0.25)",
-            color: "rgba(134, 239, 172, 0.9)",
-          }}
-        >
+        <div className="stone-chip absolute right-1.5 top-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.15em] text-[#f0ede8]">
           You have access
         </div>
       </div>
@@ -93,13 +79,13 @@ export default function ProductAccessCard({
         >
           {name}
         </h3>
-        <p className="text-[11px] font-light text-white/50 leading-snug line-clamp-2 mt-1 flex-1">
+        <p className="mt-1 flex-1 line-clamp-2 text-[11px] font-light leading-snug text-[color:var(--color-smoke)]">
           {subText}
         </p>
-        <span className="text-[11px] font-medium tracking-[0.15em] uppercase text-white/80 mt-auto pt-2 transition-colors">
+        <span className="mt-auto pt-2 text-[11px] font-medium uppercase tracking-[0.15em] text-[color:var(--color-porcelain)] transition-colors">
           {ctaLabel} →
         </span>
       </div>
-    </div>
+    </button>
   )
 }

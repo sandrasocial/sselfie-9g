@@ -17,7 +17,7 @@ export function GalleryFilters({
   ]
 
   return (
-    <div className="mb-4 bg-[rgba(175,170,162,0.08)] border-b border-[rgba(195,190,182,0.15)] px-3">
+    <div className="mx-4 mb-4 rounded-[22px] stone-panel px-3 py-2 sm:mx-6">
       <div className="flex items-center gap-2 overflow-x-auto pb-1">
         {filters.map((filter) => (
           <button

@@ -22,7 +22,7 @@ export function GalleryHeader({
   onSelectClick,
 }: GalleryHeaderProps) {
   return (
-    <div className="pt-6 pb-4 bg-[rgba(175,170,162,0.08)] backdrop-blur-[50px] border-b border-[rgba(195,190,182,0.15)] px-4">
+    <div className="mx-4 mt-4 rounded-[28px] stone-panel px-4 pt-6 pb-4 sm:mx-6">
       <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780] mb-2">Gallery</p>
       <h1 className="mb-3 text-[28px] font-['Cormorant_Garamond'] font-light text-[#f0ede8]">
         Your Photos
@@ -65,7 +65,7 @@ export function GalleryHeader({
         <select
           value={sortBy}
           onChange={(e) => onSortChange(e.target.value as any)}
-          className="px-4 py-2.5 rounded-lg border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] text-[#a8a49c] backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-[rgba(195,190,182,0.30)] transition-all cursor-pointer appearance-none pr-8 text-[12px] font-medium"
+          className="px-4 py-2.5 rounded-lg border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] text-[#a8a49c] backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-[rgba(195,190,182,0.30)] transition-all cursor-pointer appearance-none pr-8 text-[12px] font-medium stone-chip"
         >
           <option value="date-desc">Newest First</option>
           <option value="date-asc">Oldest First</option>
@@ -74,7 +74,7 @@ export function GalleryHeader({
 
         <button
           onClick={onSelectClick}
-          className="px-4 py-2.5 rounded-lg border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] text-[#a8a49c] backdrop-blur-xl hover:bg-[rgba(175,170,162,0.18)] transition-all text-[11px] font-medium uppercase tracking-[0.15em]"
+          className="px-4 py-2.5 rounded-lg border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] text-[#a8a49c] backdrop-blur-xl hover:bg-[rgba(175,170,162,0.18)] transition-all text-[11px] font-medium uppercase tracking-[0.15em] stone-chip"
         >
           Select
         </button>

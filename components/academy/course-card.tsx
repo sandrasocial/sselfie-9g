@@ -51,14 +51,14 @@ export default function CourseCard({ course, userTier, progress, onCourseClick }
     <button
       onClick={() => !isLocked && onCourseClick(course.id)}
       disabled={isLocked}
-      className={`group relative bg-[rgba(175,170,162,0.10)] backdrop-blur-[50px] border border-[rgba(195,190,182,0.25)] rounded-2xl overflow-hidden text-left transition-all duration-300 shadow-xl shadow-black/30 ${
+      className={`group relative stone-panel rounded-2xl overflow-hidden text-left transition-all duration-300 shadow-[0_20px_60px_rgba(0,0,0,0.18)] ${
         isLocked
           ? "opacity-60 cursor-not-allowed"
-          : "hover:bg-[rgba(175,170,162,0.18)] hover:border-[rgba(195,190,182,0.40)] hover:shadow-2xl hover:shadow-black/40 hover:scale-[1.02]"
+          : "hover:bg-[rgba(175,170,162,0.18)] hover:border-[rgba(195,190,182,0.40)] hover:shadow-[0_28px_80px_rgba(0,0,0,0.22)] hover:scale-[1.02]"
       }`}
     >
       {/* Thumbnail */}
-      <div className="aspect-video relative overflow-hidden bg-[#1c1b19] rounded-xl overflow-hidden">
+      <div className="relative aspect-video overflow-hidden rounded-xl bg-[rgba(28,27,25,0.68)]">
         {course.thumbnail_url ? (
           <img
             src={course.thumbnail_url || "/placeholder.svg"}
@@ -66,7 +66,7 @@ export default function CourseCard({ course, userTier, progress, onCourseClick }
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-[#1c1b19]">
+          <div className="flex h-full w-full items-center justify-center bg-[rgba(28,27,25,0.68)]">
             <span className="text-4xl font-['Cormorant_Garamond'] font-light tracking-[0.2em] uppercase text-[#8a8780]">
               {course.title.charAt(0)}
             </span>
@@ -75,9 +75,9 @@ export default function CourseCard({ course, userTier, progress, onCourseClick }
 
         {/* Lock overlay for higher-tier courses */}
         {isLocked && (
-          <div className="absolute inset-0 bg-[rgba(13,12,11,0.75)] backdrop-blur-sm flex items-center justify-center">
+          <div className="absolute inset-0 flex items-center justify-center bg-[rgba(23,20,17,0.72)] backdrop-blur-md">
             <div className="text-center space-y-2">
-              <div className="w-12 h-12 bg-[rgba(175,170,162,0.12)] backdrop-blur-xl rounded-full flex items-center justify-center mx-auto border border-[rgba(195,190,182,0.25)]">
+              <div className="stone-chip mx-auto flex h-12 w-12 items-center justify-center rounded-full">
                 <span className="text-[10px] tracking-[0.5em] uppercase text-[#8a8780]">Locked</span>
               </div>
               <p className="text-xs tracking-[0.5em] uppercase font-['Inter'] font-medium text-[#a8a49c]">{course.tier} tier required</p>
@@ -87,7 +87,7 @@ export default function CourseCard({ course, userTier, progress, onCourseClick }
 
         {/* Completion badge */}
         {isCompleted && !isLocked && (
-          <div className="absolute top-3 right-3 px-3 py-1.5 bg-[rgba(168,164,156,0.20)] backdrop-blur-xl rounded-full border border-[rgba(195,190,182,0.25)]">
+          <div className="stone-chip absolute right-3 top-3 rounded-full px-3 py-1.5">
             <span className="text-xs tracking-[0.5em] uppercase font-['Inter'] font-medium text-[#a8a49c]">Completed</span>
           </div>
         )}
@@ -128,7 +128,7 @@ export default function CourseCard({ course, userTier, progress, onCourseClick }
         {/* Action button */}
         {!isLocked && (
           <div className="pt-2">
-            <div className="w-full text-center bg-[#c8c4bb] text-[#0d0c0b] py-3 rounded-full font-['Inter'] font-medium tracking-[0.15em] uppercase text-xs transition-all duration-200 group-hover:bg-[#f0ede8] min-h-[48px] flex items-center justify-center">
+            <div className="flex min-h-[48px] w-full items-center justify-center rounded-full bg-[color:var(--color-porcelain)] py-3 text-center font-['Inter'] text-xs font-medium uppercase tracking-[0.15em] text-[#0d0c0b] transition-all duration-200 group-hover:bg-[#f0ede8]">
               {isCompleted ? "Review" : hasStarted ? "Continue" : "Start"}
             </div>
           </div>

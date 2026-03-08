@@ -71,6 +71,27 @@ const PRODUCT_ACCESS_COPY: Record<
 
 const PRODUCT_IDS_WITH_ACCESS: Set<string> = new Set(Object.keys(PRODUCT_ACCESS_COPY))
 
+const academyPrimaryActionClass =
+  "rounded-full bg-[color:var(--color-porcelain)] px-8 py-4 text-sm tracking-[0.18em] uppercase text-[#0d0c0b] transition-colors hover:bg-[#f0ede8] disabled:opacity-50"
+
+const academyCompactActionClass =
+  "rounded-full bg-[color:var(--color-porcelain)] px-6 py-3 text-sm tracking-[0.18em] uppercase text-[#0d0c0b] transition-colors hover:bg-[#f0ede8]"
+
+const academyBackLinkClass =
+  "text-sm tracking-wider uppercase text-[color:var(--color-smoke)] transition-colors hover:text-[color:var(--color-porcelain)]"
+
+const academySearchShellClass = "stone-chip rounded-xl p-4"
+
+const academyEmptyStateClass = "stone-panel rounded-2xl p-16 text-center"
+
+const academyPromoCardClass =
+  "stone-panel rounded-2xl p-8 text-center space-y-6 sm:p-10"
+
+const academyFeatureCardClass =
+  "stone-panel rounded-2xl p-8 text-left transition-all hover:bg-[rgba(175,170,162,0.16)] sm:p-10"
+
+const academyStatCardClass = "stone-panel rounded-[18px] p-3 text-center sm:p-4"
+
 export default function AcademyScreen() {
   const searchParams = useSearchParams()
   const initialAcademyView = parseAcademyViewParam(
@@ -372,7 +393,7 @@ export default function AcademyScreen() {
     if (templatesError || !hasAccess) {
       return (
         <div className="flex items-center justify-center min-h-[400px] px-4">
-          <div className="text-center space-y-6 max-w-md bg-[rgba(255,255,255,0.07)] border border-white/15 rounded-2xl p-8 backdrop-blur-xl">
+          <div className={`max-w-md ${academyPromoCardClass}`}>
             <div className="space-y-3">
               <h3 className="font-serif text-2xl tracking-wider text-white">Studio Membership Required</h3>
               <p className="text-sm text-white/70 leading-relaxed">
@@ -382,7 +403,7 @@ export default function AcademyScreen() {
             <button
               onClick={handleUpgrade}
               disabled={isUpgrading}
-              className="px-8 py-4 text-sm tracking-wider uppercase bg-white/90 text-[#0b0d10] rounded-xl hover:bg-white transition-all disabled:opacity-50"
+              className={academyPrimaryActionClass}
             >
               {isUpgrading ? "Processing..." : "Upgrade to Studio"}
             </button>
@@ -397,7 +418,7 @@ export default function AcademyScreen() {
           <div className="pt-8">
             <button
               onClick={() => setSelectedView("overview")}
-              className="text-sm tracking-wider uppercase text-white/70 hover:text-white transition-colors"
+              className={academyBackLinkClass}
             >
               ← Back
             </button>
@@ -448,7 +469,7 @@ export default function AcademyScreen() {
               setShowCategoryGrid(true)
               setSelectedTemplateCategory("all")
             }}
-            className="text-sm tracking-wider uppercase text-white/70 hover:text-white transition-colors"
+            className={academyBackLinkClass}
           >
             ← Back to Categories
           </button>
@@ -463,7 +484,7 @@ export default function AcademyScreen() {
           </p>
         </div>
 
-        <div className="bg-[rgba(255,255,255,0.04)] border border-white/10 rounded-xl p-4 backdrop-blur-xl">
+        <div className={academySearchShellClass}>
           <input
             type="text"
             placeholder="Search templates..."
@@ -474,7 +495,7 @@ export default function AcademyScreen() {
         </div>
 
         {filteredTemplates.length === 0 ? (
-          <div className="bg-[rgba(255,255,255,0.04)] border border-white/10 rounded-2xl p-16 text-center">
+          <div className={academyEmptyStateClass}>
             <p className="text-white/70 text-sm">No templates found in this category. Try adjusting your search.</p>
           </div>
         ) : (
@@ -503,7 +524,7 @@ export default function AcademyScreen() {
     if (monthlyDropsError || !hasAccess) {
       return (
         <div className="flex items-center justify-center min-h-[400px] px-4">
-          <div className="text-center space-y-6 max-w-md bg-[rgba(255,255,255,0.07)] border border-white/15 rounded-2xl p-8 backdrop-blur-xl">
+          <div className={`max-w-md ${academyPromoCardClass}`}>
             <div className="space-y-3">
               <h3 className="font-serif text-2xl tracking-wider text-white">Studio Membership Required</h3>
               <p className="text-sm text-white/70 leading-relaxed">
@@ -513,7 +534,7 @@ export default function AcademyScreen() {
             <button
               onClick={handleUpgrade}
               disabled={isUpgrading}
-              className="px-8 py-4 text-sm tracking-wider uppercase bg-white/90 text-[#0b0d10] rounded-xl hover:bg-white transition-all disabled:opacity-50"
+              className={academyPrimaryActionClass}
             >
               {isUpgrading ? "Processing..." : "Upgrade to Studio"}
             </button>
@@ -527,7 +548,7 @@ export default function AcademyScreen() {
         <div className="pt-8">
           <button
             onClick={() => setSelectedView("overview")}
-            className="text-sm tracking-wider uppercase text-white/70 hover:text-white transition-colors"
+            className={academyBackLinkClass}
           >
             ← Back
           </button>
@@ -540,7 +561,7 @@ export default function AcademyScreen() {
           </p>
         </div>
 
-        <div className="bg-[rgba(255,255,255,0.04)] border border-white/10 rounded-xl p-4 backdrop-blur-xl">
+        <div className={academySearchShellClass}>
           <input
             type="text"
             placeholder="Search monthly drops..."
@@ -551,7 +572,7 @@ export default function AcademyScreen() {
         </div>
 
         {filteredMonthlyDrops.length === 0 ? (
-          <div className="bg-[rgba(255,255,255,0.04)] border border-white/10 rounded-2xl p-16 text-center">
+          <div className={academyEmptyStateClass}>
             <p className="text-white/70 text-sm">No monthly drops found. Try adjusting your search.</p>
           </div>
         ) : (
@@ -580,7 +601,7 @@ export default function AcademyScreen() {
     if (flatlayImagesError || !hasAccess) {
       return (
         <div className="flex items-center justify-center min-h-[400px] px-4">
-          <div className="text-center space-y-6 max-w-md bg-[rgba(255,255,255,0.07)] border border-white/15 rounded-2xl p-8 backdrop-blur-xl">
+          <div className={`max-w-md ${academyPromoCardClass}`}>
             <div className="space-y-3">
               <h3 className="font-serif text-2xl tracking-wider text-white">Studio Membership Required</h3>
               <p className="text-sm text-white/70 leading-relaxed">
@@ -590,7 +611,7 @@ export default function AcademyScreen() {
             <button
               onClick={handleUpgrade}
               disabled={isUpgrading}
-              className="px-8 py-4 text-sm tracking-wider uppercase bg-white/90 text-[#0b0d10] rounded-xl hover:bg-white transition-all disabled:opacity-50"
+              className={academyPrimaryActionClass}
             >
               {isUpgrading ? "Processing..." : "Upgrade to Studio"}
             </button>
@@ -604,7 +625,7 @@ export default function AcademyScreen() {
         <div className="pt-8">
           <button
             onClick={() => setSelectedView("overview")}
-            className="text-sm tracking-wider uppercase text-white/70 hover:text-white transition-colors"
+            className={academyBackLinkClass}
           >
             ← Back
           </button>
@@ -617,7 +638,7 @@ export default function AcademyScreen() {
           </p>
         </div>
 
-        <div className="bg-[rgba(255,255,255,0.04)] border border-white/10 rounded-xl p-4 backdrop-blur-xl">
+        <div className={academySearchShellClass}>
           <input
             type="text"
             placeholder="Search flatlay images..."
@@ -628,7 +649,7 @@ export default function AcademyScreen() {
         </div>
 
         {filteredFlatlayImages.length === 0 ? (
-          <div className="bg-[rgba(255,255,255,0.04)] border border-white/10 rounded-2xl p-16 text-center">
+          <div className={academyEmptyStateClass}>
             <p className="text-white/70 text-sm">No flatlay images found. Try adjusting your search.</p>
           </div>
         ) : (
@@ -661,11 +682,11 @@ export default function AcademyScreen() {
     if (coursesError) {
       return (
         <div className="flex items-center justify-center min-h-[400px] px-4">
-          <div className="text-center space-y-4 bg-[rgba(255,255,255,0.07)] border border-white/15 rounded-2xl p-8 backdrop-blur-xl">
+          <div className={academyPromoCardClass}>
             <p className="text-sm text-white/70">We couldn&apos;t load the courses right now</p>
             <button
               onClick={() => window.location.reload()}
-              className="px-6 py-3 text-sm tracking-wider uppercase bg-white/90 text-[#0b0d10] rounded-xl hover:bg-white transition-all"
+              className={academyCompactActionClass}
             >
               Try Again
             </button>
@@ -679,7 +700,7 @@ export default function AcademyScreen() {
         <div className="pt-8">
           <button
             onClick={() => setSelectedView("overview")}
-            className="text-sm tracking-wider uppercase text-white/70 hover:text-white transition-colors"
+            className={academyBackLinkClass}
           >
             ← Back
           </button>
@@ -692,7 +713,7 @@ export default function AcademyScreen() {
           </p>
         </div>
 
-        <div className="bg-[rgba(255,255,255,0.04)] border border-white/10 rounded-xl p-4 backdrop-blur-xl">
+        <div className={academySearchShellClass}>
           <input
             type="text"
             placeholder="Search courses..."
@@ -726,7 +747,7 @@ export default function AcademyScreen() {
         <div className="space-y-6">
           <h2 className="font-serif text-2xl tracking-wider text-white">All Courses</h2>
           {filteredCourses.length === 0 ? (
-            <div className="bg-[rgba(255,255,255,0.04)] border border-white/10 rounded-2xl p-16 text-center">
+            <div className={academyEmptyStateClass}>
               <p className="text-white/70 text-sm">No courses found. Try adjusting your search.</p>
             </div>
           ) : (
@@ -788,7 +809,7 @@ export default function AcademyScreen() {
   const totalEnrolledCourses = myCourses.length
 
   return (
-    <div className="pb-32 bg-[#0b0d10] text-white">
+    <div className="pb-32 text-white">
       {showNavMenu && (
         <>
           <div
@@ -796,19 +817,19 @@ export default function AcademyScreen() {
             onClick={() => setShowNavMenu(false)}
           />
 
-          <div className="fixed top-0 right-0 bottom-0 w-80 bg-[rgba(11,13,16,0.95)] backdrop-blur-3xl border-l border-white/10 shadow-2xl shadow-black/40 z-50 animate-in slide-in-from-right duration-300 flex flex-col">
-            <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-white/10">
+          <div className="stone-shell-panel fixed top-0 right-0 bottom-0 z-50 flex w-80 animate-in slide-in-from-right flex-col border-l border-[color:var(--glass-border)] shadow-2xl shadow-black/30 duration-300">
+            <div className="flex-shrink-0 flex items-center justify-between border-b border-[color:var(--glass-divider)] px-6 py-4">
               <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-white">Menu</h3>
               <button
                 onClick={() => setShowNavMenu(false)}
-                className="h-8 px-3 inline-flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors text-[11px] tracking-[0.12em] uppercase text-white/70"
+                className="stone-chip inline-flex h-8 items-center justify-center rounded-lg px-3 text-[11px] tracking-[0.12em] uppercase text-white/70 transition-colors hover:bg-[rgba(175,170,162,0.16)]"
                 aria-label="Close menu"
               >
                 Close
               </button>
             </div>
 
-            <div className="flex-shrink-0 px-6 py-6 border-b border-white/10">
+            <div className="flex-shrink-0 border-b border-[color:var(--glass-divider)] px-6 py-6">
               <div className="text-[10px] tracking-[0.15em] uppercase font-light text-white/50 mb-2">Your Credits</div>
               <div className="text-3xl font-serif font-extralight text-white tabular-nums">
                 {creditBalance.toFixed(1)}
@@ -859,7 +880,7 @@ export default function AcademyScreen() {
               </button>
               <button
                 onClick={() => handleNavigation("academy")}
-                className="w-full flex items-center gap-3 px-6 py-4 text-left bg-white/10 border-l-2 border-white/40"
+                className="w-full flex items-center gap-3 px-6 py-4 text-left bg-[rgba(175,170,162,0.14)] border-l-2 border-[color:var(--glass-border)]"
               >
                 <span className="text-[11px] tracking-[0.12em] uppercase text-white">Learn</span>
                 <span className="text-sm font-medium text-white">Academy</span>
@@ -880,7 +901,7 @@ export default function AcademyScreen() {
               </button>
             </div>
 
-            <div className="flex-shrink-0 px-6 py-4 border-t border-white/10 bg-[rgba(11,13,16,0.92)]">
+            <div className="flex-shrink-0 border-t border-[color:var(--glass-divider)] px-6 py-4">
               <button
                 onClick={handleLogout}
                 disabled={isLoggingOut}
@@ -894,39 +915,41 @@ export default function AcademyScreen() {
       )}
 
       {/* Add top padding to content to account for fixed header */}
-      <div className="pt-16">
-        <div className="relative h-[40vh] sm:h-[45vh] w-full overflow-hidden">
-          <img
-            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/887-JHliMtQOFFLmPDRmabtQ9DAuiPDTOv-I0ltnA6ru3zz4C0YmuHYD8y66QZDB7.png"
-            alt="Academy"
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70" />
-          <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
-            <h1 className="font-serif text-5xl sm:text-7xl tracking-wider text-white">Academy</h1>
-          </div>
-        </div>
-
-        <div className="px-4 sm:px-6 -mt-8 relative z-10">
-          <div className="grid grid-cols-3 gap-2 sm:gap-3 max-w-2xl mx-auto">
-            <div className="bg-[rgba(13,15,19,0.92)] backdrop-blur-xl border border-white/15 rounded-lg p-3 sm:p-4 text-center">
-              <div className="text-[10px] sm:text-xs tracking-wider uppercase text-white/50 mb-1">Your Plan</div>
-              <div className="font-serif text-base sm:text-lg text-white">{getFriendlyTierName(userTier)}</div>
+      <div className="px-4 pt-16 sm:px-6">
+        <div className="stone-shell-panel overflow-hidden rounded-[32px]">
+          <div className="relative h-[40vh] w-full overflow-hidden sm:h-[45vh]">
+            <img
+              src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/887-JHliMtQOFFLmPDRmabtQ9DAuiPDTOv-I0ltnA6ru3zz4C0YmuHYD8y66QZDB7.png"
+              alt="Academy"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(240,237,232,0.08)_0%,rgba(44,36,28,0.28)_34%,rgba(17,14,12,0.62)_100%)]" />
+            <div className="absolute inset-y-0 left-[12%] hidden w-[34%] bg-[linear-gradient(90deg,transparent,rgba(240,237,232,0.20),transparent)] opacity-60 blur-3xl sm:block" />
+            <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
+              <h1 className="font-serif text-5xl sm:text-7xl tracking-wider text-white">Academy</h1>
             </div>
-            <div className="bg-[rgba(13,15,19,0.92)] backdrop-blur-xl border border-white/15 rounded-lg p-3 sm:p-4 text-center">
-              <div className="text-[10px] sm:text-xs tracking-wider uppercase text-white/50 mb-1">Completed</div>
-              <div className="font-serif text-base sm:text-lg text-white">
-                {completedCoursesCount}/{totalEnrolledCourses}
+          </div>
+
+          <div className="relative z-10 -mt-8 px-4 sm:px-6">
+            <div className="mx-auto grid max-w-2xl grid-cols-3 gap-2 sm:gap-3">
+              <div className={academyStatCardClass}>
+                <div className="mb-1 text-[10px] uppercase tracking-wider text-[color:var(--color-smoke)] sm:text-xs">Your Plan</div>
+                <div className="font-serif text-base text-white sm:text-lg">{getFriendlyTierName(userTier)}</div>
+              </div>
+              <div className={academyStatCardClass}>
+                <div className="mb-1 text-[10px] uppercase tracking-wider text-[color:var(--color-smoke)] sm:text-xs">Completed</div>
+                <div className="font-serif text-base text-white sm:text-lg">
+                  {completedCoursesCount}/{totalEnrolledCourses}
+                </div>
+              </div>
+              <div className={academyStatCardClass}>
+                <div className="mb-1 text-[10px] uppercase tracking-wider text-[color:var(--color-smoke)] sm:text-xs">Learning</div>
+                <div className="font-serif text-base text-white sm:text-lg">{inProgressCourses.length}</div>
               </div>
             </div>
-            <div className="bg-[rgba(13,15,19,0.92)] backdrop-blur-xl border border-white/15 rounded-lg p-3 sm:p-4 text-center">
-              <div className="text-[10px] sm:text-xs tracking-wider uppercase text-white/50 mb-1">Learning</div>
-              <div className="font-serif text-base sm:text-lg text-white">{inProgressCourses.length}</div>
-            </div>
           </div>
-        </div>
 
-        <div className="space-y-6 mt-8 px-4 sm:px-6">
+          <div className="mt-8 space-y-6 px-4 pb-8 sm:px-6 sm:pb-10">
           {/* Slice 1.2: You Have Access — owned Academy mini-products with deep-link CTAs */}
           {ownedForAccess.length > 0 && (
             <section className="pt-6 pb-3">
@@ -989,7 +1012,7 @@ export default function AcademyScreen() {
 
           <button
             onClick={() => setSelectedView("courses")}
-            className="w-full border border-white/10 rounded-2xl p-8 sm:p-10 text-left bg-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.07)] hover:border-white/20 transition-all"
+            className={`w-full ${academyFeatureCardClass}`}
           >
             <h2 className="font-serif text-2xl sm:text-3xl tracking-wider text-white mb-3">Browse Courses</h2>
             <p className="text-white/70 text-sm sm:text-base font-light leading-relaxed mb-6">
@@ -1001,7 +1024,7 @@ export default function AcademyScreen() {
 
           <button
             onClick={() => setSelectedView("templates")}
-            className="w-full border border-white/10 rounded-2xl p-8 sm:p-10 text-left bg-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.07)] hover:border-white/20 transition-all"
+            className={`w-full ${academyFeatureCardClass}`}
           >
             <h2 className="font-serif text-2xl sm:text-3xl tracking-wider text-white mb-3">Templates</h2>
             <p className="text-white/70 text-sm sm:text-base font-light leading-relaxed mb-6">
@@ -1012,7 +1035,7 @@ export default function AcademyScreen() {
 
           <button
             onClick={() => setSelectedView("monthly-drops")}
-            className="w-full border border-white/10 rounded-2xl p-8 sm:p-10 text-left bg-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.07)] hover:border-white/20 transition-all"
+            className={`w-full ${academyFeatureCardClass}`}
           >
             <h2 className="font-serif text-2xl sm:text-3xl tracking-wider text-white mb-3">Monthly Drops</h2>
             <p className="text-white/70 text-sm sm:text-base font-light leading-relaxed mb-6">
@@ -1023,7 +1046,7 @@ export default function AcademyScreen() {
 
           <button
             onClick={() => setSelectedView("flatlay-images")}
-            className="w-full border border-white/10 rounded-2xl p-8 sm:p-10 text-left bg-[rgba(255,255,255,0.04)] hover:bg-[rgba(255,255,255,0.07)] hover:border-white/20 transition-all"
+            className={`w-full ${academyFeatureCardClass}`}
           >
             <h2 className="font-serif text-2xl sm:text-3xl tracking-wider text-white mb-3">Flatlay Images</h2>
             <p className="text-white/70 text-sm sm:text-base font-light leading-relaxed mb-6">
@@ -1033,10 +1056,10 @@ export default function AcademyScreen() {
           </button>
 
           {(inProgressCourses[0] || allCourses[0]) && (
-            <div className="border border-white/15 bg-[rgba(255,255,255,0.07)] text-white rounded-2xl p-8 sm:p-10">
+            <div className="stone-panel-strong rounded-2xl p-8 text-white sm:p-10">
               <div className="space-y-6">
                 <div>
-                  <div className="inline-block px-3 py-1 bg-white/10 border border-white/10 rounded-full text-xs tracking-wider uppercase text-white/70 mb-4">
+                  <div className="stone-chip mb-4 inline-block rounded-full px-3 py-1 text-xs uppercase tracking-wider text-white/70">
                     {inProgressCourses[0] ? "Continue Learning" : "Recommended"}
                   </div>
                   <h2 className="font-serif text-2xl sm:text-3xl tracking-wider mb-3">
@@ -1057,13 +1080,14 @@ export default function AcademyScreen() {
 
                 <button
                   onClick={() => handleCourseClick((inProgressCourses[0] || allCourses[0])?.id)}
-                  className="w-full bg-white/90 text-[#0b0d10] py-4 rounded-xl text-sm tracking-wider uppercase hover:bg-white transition-all"
+                  className={`w-full ${academyPrimaryActionClass}`}
                 >
                   {inProgressCourses[0] ? "Continue" : "Start Learning"}
                 </button>
               </div>
             </div>
           )}
+          </div>
         </div>
       </div>
     </div>

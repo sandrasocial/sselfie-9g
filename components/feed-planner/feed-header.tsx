@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { toast } from "@/hooks/use-toast"
@@ -23,6 +23,14 @@ interface FeedHeaderProps {
 }
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
+
+const feedHeaderCompactChipClass =
+  "stone-chip rounded-full px-2.5 py-1.5 text-[9px] uppercase tracking-[0.16em] text-[#a8a49c] transition-colors hover:bg-[rgba(175,170,162,0.18)] hover:text-[#f0ede8] sm:px-3 min-h-[34px] sm:min-h-[36px]"
+
+const feedHeaderChipClass =
+  "stone-chip rounded-full px-3 py-1.5 text-[10px] uppercase tracking-[0.16em] text-[#a8a49c] transition-colors hover:bg-[rgba(175,170,162,0.18)] hover:text-[#f0ede8] sm:px-4 sm:text-[11px] min-h-[34px] sm:min-h-[36px]"
+
+const feedHeaderStatClass = "stone-panel rounded-lg px-2 py-1.5 text-center"
 
 export default function FeedHeader({
   feedData,
@@ -51,15 +59,6 @@ export default function FeedHeader({
     {
       revalidateOnFocus: false,
       dedupingInterval: 60000, // Cache for 1 minute
-    }
-  )
-
-  const { data: userInfo } = useSWR(
-    showFeedStyleModal ? "/api/user/info" : null,
-    fetcher,
-    {
-      revalidateOnFocus: false,
-      dedupingInterval: 60000,
     }
   )
 
@@ -492,14 +491,14 @@ export default function FeedHeader({
   const feedColor = feedData?.feed?.display_color || "#3b82f6" // Default blue
 
   return (
-    <div className="bg-[rgba(175,170,162,0.08)] backdrop-blur-[50px] border-b border-[rgba(195,190,182,0.15)]">
+    <div className="stone-shell-panel overflow-hidden rounded-[28px]">
       <div className="px-3 sm:px-4 py-2.5 sm:py-3 space-y-2">
         <div className="flex items-center justify-between gap-2 sm:gap-3">
           <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
             {onBack && (
               <button
                 onClick={onBack}
-                className="rounded-full border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] px-2.5 sm:px-3 py-1.5 text-[9px] uppercase tracking-[0.16em] text-[#a8a49c] transition-colors hover:bg-[rgba(175,170,162,0.18)] hover:text-[#f0ede8] min-h-[34px] sm:min-h-[36px]"
+                className={feedHeaderCompactChipClass}
               >
                 Back
               </button>
@@ -537,7 +536,7 @@ export default function FeedHeader({
             {onOpenWizard && (
               <button
                 onClick={onOpenWizard}
-                className="rounded-full border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] px-3 py-1.5 text-[9px] uppercase tracking-[0.16em] text-[#a8a49c] transition-colors hover:bg-[rgba(175,170,162,0.18)] hover:text-[#f0ede8] min-h-[34px] sm:min-h-[36px]"
+                className={feedHeaderCompactChipClass}
                 title="Edit wizard answers"
               >
                 Wizard
@@ -546,7 +545,7 @@ export default function FeedHeader({
             {onOpenWelcomeWizard && access?.isPaidBlueprint && (
               <button
                 onClick={onOpenWelcomeWizard}
-                className="rounded-full border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] px-3 py-1.5 text-[9px] uppercase tracking-[0.16em] text-[#a8a49c] transition-colors hover:bg-[rgba(175,170,162,0.18)] hover:text-[#f0ede8] min-h-[34px] sm:min-h-[36px]"
+                className={feedHeaderCompactChipClass}
                 title="View welcome guide"
               >
                 Guide
@@ -560,9 +559,9 @@ export default function FeedHeader({
         <div className="flex flex-col md:flex-row md:items-start md:gap-8 mb-3">
           <button
             onClick={onProfileImageClick}
-            className="relative group w-[72px] h-[72px] sm:w-20 sm:h-20 md:w-28 md:h-28 rounded-full border border-white/16 bg-white/[0.03] p-[2px] mb-3 md:mb-0 shrink-0 transition-opacity hover:opacity-90"
+            className="stone-chip relative group mb-3 h-[72px] w-[72px] shrink-0 rounded-full p-[2px] transition-opacity hover:opacity-90 sm:h-20 sm:w-20 md:mb-0 md:h-28 md:w-28"
           >
-            <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-full border border-white/10 bg-[var(--color-obsidian)]">
+            <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-full border border-[color:var(--glass-border-subtle)] bg-[rgba(15,13,11,0.88)]">
               {hasProfileImage ? (
                 <Image
                   src={feedData.feed.profile_image_url}
@@ -576,13 +575,13 @@ export default function FeedHeader({
                 <span className="relative z-10 text-2xl font-bold text-white md:text-4xl">S</span>
               )}
             </div>
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-full bg-black/0 transition-all group-hover:bg-black/45">
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-full bg-[rgba(15,13,11,0)] transition-all group-hover:bg-[rgba(15,13,11,0.42)]">
               <span className="text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity font-medium text-center px-2">
                 {hasProfileImage ? "Change" : "Add photo"}
               </span>
             </div>
             {!hasProfileImage && (
-              <div className="pointer-events-none absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/20 bg-[rgba(10,10,10,0.9)] px-2 py-0.5 text-[10px] text-white opacity-0 transition-opacity group-hover:opacity-100">
+              <div className="stone-chip pointer-events-none absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] text-white opacity-0 transition-opacity group-hover:opacity-100">
                 Click to add profile picture
               </div>
             )}
@@ -590,15 +589,15 @@ export default function FeedHeader({
 
           <div className="flex-1 space-y-3">
             <div className="grid grid-cols-3 gap-2 max-w-sm">
-              <div className="rounded-lg border border-[rgba(195,190,182,0.15)] bg-[rgba(175,170,162,0.08)] px-2 py-1.5 text-center">
+              <div className={feedHeaderStatClass}>
                 <div className="text-sm font-semibold text-[#f0ede8]">9</div>
                 <div className="text-[11px] text-[#8a8780]">posts</div>
               </div>
-              <div className="rounded-lg border border-[rgba(195,190,182,0.15)] bg-[rgba(175,170,162,0.08)] px-2 py-1.5 text-center">
+              <div className={feedHeaderStatClass}>
                 <div className="text-sm font-semibold text-[#f0ede8]">1.2K</div>
                 <div className="text-[11px] text-[#8a8780]">followers</div>
               </div>
-              <div className="rounded-lg border border-[rgba(195,190,182,0.15)] bg-[rgba(175,170,162,0.08)] px-2 py-1.5 text-center">
+              <div className={feedHeaderStatClass}>
                 <div className="text-sm font-semibold text-[#f0ede8]">342</div>
                 <div className="text-[11px] text-[#8a8780]">following</div>
               </div>
@@ -617,7 +616,7 @@ export default function FeedHeader({
               <button
                 onClick={handleCreatePreviewFeed}
                 disabled={isCreatingPreviewFeed}
-                className="rounded-full border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] uppercase tracking-[0.16em] text-[#a8a49c] transition-colors hover:bg-[rgba(175,170,162,0.18)] hover:text-[#f0ede8] disabled:cursor-not-allowed disabled:opacity-50 min-h-[34px] sm:min-h-[36px]"
+                className={`${feedHeaderChipClass} disabled:cursor-not-allowed disabled:opacity-50`}
               >
                 {isCreatingPreviewFeed ? (
                   <>
@@ -633,7 +632,7 @@ export default function FeedHeader({
                 <button
                   onClick={handleCreateNewFeedClick}
                   disabled={isCreatingFeed}
-                  className="rounded-full border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] uppercase tracking-[0.16em] text-[#a8a49c] transition-colors hover:bg-[rgba(175,170,162,0.18)] hover:text-[#f0ede8] disabled:cursor-not-allowed disabled:opacity-50 min-h-[34px] sm:min-h-[36px]"
+                  className={`${feedHeaderChipClass} disabled:cursor-not-allowed disabled:opacity-50`}
                 >
                   {isCreatingFeed ? (
                     <>
@@ -649,7 +648,7 @@ export default function FeedHeader({
               {!access?.isFree && (
                 <button
                   onClick={onWriteBio}
-                  className="rounded-full border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] uppercase tracking-[0.16em] text-[#a8a49c] transition-colors hover:bg-[rgba(175,170,162,0.18)] hover:text-[#f0ede8] min-h-[34px] sm:min-h-[36px]"
+                  className={feedHeaderChipClass}
                 >
                   Bio
                 </button>
@@ -657,7 +656,7 @@ export default function FeedHeader({
               {!access?.isFree && onCreateHighlights && (
                 <button
                   onClick={onCreateHighlights}
-                  className="rounded-full border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] px-3 sm:px-4 py-1.5 text-[10px] sm:text-[11px] uppercase tracking-[0.16em] text-[#a8a49c] transition-colors hover:bg-[rgba(175,170,162,0.18)] hover:text-[#f0ede8] min-h-[34px] sm:min-h-[36px]"
+                  className={feedHeaderChipClass}
                 >
                   Highlights
                 </button>
@@ -696,8 +695,8 @@ export default function FeedHeader({
 
                     return (
                       <div key={highlight.id || highlight.title} className="flex flex-col items-center gap-2 min-w-[64px] md:min-w-[70px] shrink-0">
-                        <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-linear-to-tr from-yellow-400 via-pink-500 to-purple-600 p-[2px]">
-                          <div className="h-full w-full rounded-full border border-white/10 bg-[var(--color-obsidian)] p-[2px]">
+                        <div className="stone-chip h-14 w-14 rounded-full p-[2px] md:h-16 md:w-16">
+                          <div className="h-full w-full rounded-full border border-[color:var(--glass-border-subtle)] bg-[rgba(15,13,11,0.88)] p-[2px]">
                             {isColorHighlight ? (
                               <div
                                 className="w-full h-full rounded-full flex items-center justify-center"

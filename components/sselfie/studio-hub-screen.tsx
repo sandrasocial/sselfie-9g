@@ -59,6 +59,20 @@ const fallbackHubImages = [
   "/assets/brand-strategy/pillar2.png",
 ]
 
+const sectionClass =
+  "group stone-panel rounded-[24px] overflow-hidden"
+
+const sectionInsetClass =
+  "stone-panel rounded-[20px]"
+
+const shellActionClass =
+  "inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--glass-border)] px-4 text-[10px] uppercase tracking-[0.24em] transition-all duration-300"
+
+const secondaryActionClass = `${shellActionClass} stone-chip text-[color:var(--color-porcelain)] hover:bg-[rgba(175,170,162,0.16)]`
+
+const quickActionClass =
+  "stone-panel rounded-[20px] px-4 py-3 text-left transition-all duration-300 hover:bg-[rgba(175,170,162,0.16)]"
+
 const fetcher = async (url: string): Promise<StudioHubResponse> => {
   const response = await fetch(url, { credentials: "include" })
   const payload = await response.json().catch(() => null)
@@ -93,20 +107,19 @@ function Section({
   children: React.ReactNode
 }) {
   return (
-    <details
-      open={defaultOpen}
-      className="group rounded-2xl border border-white/12 bg-[rgba(10,12,18,0.62)] backdrop-blur-xl"
-    >
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-4 sm:px-5">
-        <div>
-          <p className="text-[10px] uppercase tracking-[0.24em] text-white/55">{title}</p>
-          <p className="mt-1 text-sm text-white/75">{subtitle}</p>
+    <details open={defaultOpen} className={sectionClass}>
+      <summary className="relative z-[1] flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-4 sm:px-5">
+        <div className="min-w-0">
+          <p className="text-[10px] uppercase tracking-[0.24em] text-[color:var(--color-smoke)]">{title}</p>
+          <p className="mt-1 text-sm text-[color:var(--text-accent)]">{subtitle}</p>
         </div>
-        <span className="text-[10px] uppercase tracking-[0.2em] text-white/55 transition-transform group-open:rotate-180">
+        <span className="stone-chip inline-flex items-center rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-[color:var(--color-smoke)] transition-transform group-open:rotate-180">
           Open
         </span>
       </summary>
-      <div className="border-t border-white/10 px-4 pb-4 pt-4 sm:px-5 sm:pb-5">{children}</div>
+      <div className="relative z-[1] border-t border-[color:var(--glass-divider)] px-4 pb-4 pt-4 sm:px-5 sm:pb-5">
+        {children}
+      </div>
     </details>
   )
 }
@@ -128,7 +141,7 @@ export default function StudioHubScreen() {
   if (error || !data) {
     return (
       <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6">
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 text-sm text-white/80">
+        <div className="stone-panel rounded-[24px] p-5 text-sm text-[color:var(--text-accent)]">
           Could not load your Content Hub right now.
         </div>
       </div>
@@ -155,33 +168,34 @@ export default function StudioHubScreen() {
 
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-5 sm:px-6 sm:py-7">
-      <div className="relative overflow-hidden rounded-[28px] border border-white/14 bg-[rgba(7,9,14,0.78)] shadow-[0_28px_80px_rgba(0,0,0,0.45)] backdrop-blur-2xl">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_8%,rgba(196,177,150,0.22),transparent_45%),radial-gradient(circle_at_84%_15%,rgba(238,229,215,0.14),transparent_42%),linear-gradient(170deg,rgba(24,19,15,0.95),rgba(14,11,9,0.84))]" />
+      <div className="stone-shell-panel relative overflow-hidden rounded-[32px]">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_16%_12%,rgba(240,237,232,0.18),transparent_24%),radial-gradient(circle_at_74%_16%,rgba(168,164,156,0.16),transparent_22%),linear-gradient(118deg,rgba(240,237,232,0.08)_0%,rgba(201,184,160,0.16)_18%,rgba(89,72,54,0.14)_42%,rgba(18,15,13,0.46)_100%)] opacity-90" />
+        <div className="pointer-events-none absolute inset-y-0 left-[16%] hidden w-[38%] bg-[linear-gradient(90deg,transparent,rgba(240,237,232,0.22),transparent)] opacity-60 blur-3xl sm:block" />
 
         <div className="relative p-4 sm:p-6">
-          <div className="flex flex-col gap-4 border-b border-white/10 pb-5 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex flex-col gap-4 border-b border-[color:var(--glass-divider)] pb-5 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="text-[10px] uppercase tracking-[0.34em] text-white/55">Studio</p>
+              <p className="text-[10px] uppercase tracking-[0.34em] text-[color:var(--color-smoke)]">Studio</p>
               <h2
-                className="mt-3 text-3xl font-extralight uppercase tracking-[0.08em] text-white sm:text-4xl"
+                className="mt-3 text-3xl font-extralight uppercase tracking-[0.08em] text-[color:var(--color-porcelain)] sm:text-4xl"
                 style={{ fontFamily: "var(--font-display)" }}
               >
                 Content Hub
               </h2>
-              <p className="mt-2 max-w-2xl text-sm text-white/70">
+              <p className="mt-2 max-w-2xl text-sm text-[color:var(--text-accent)]">
                 Your photos, videos, and feed systems in one curated workspace.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
               <Link
                 href="/studio?tab=maya#maya"
-                className="inline-flex h-10 items-center justify-center rounded-full border border-white/25 px-4 text-[10px] uppercase tracking-[0.24em] text-white/90 transition-colors hover:bg-white hover:text-black"
+                className={`${shellActionClass} bg-[color:var(--color-whisper)] text-[color:var(--color-obsidian)] shadow-[0_12px_32px_rgba(0,0,0,0.18)] hover:bg-[color:var(--color-porcelain)]`}
               >
                 Open Maya
               </Link>
               <Link
                 href="/studio?tab=feed-planner#feed-planner"
-                className="inline-flex h-10 items-center justify-center rounded-full border border-white/20 px-4 text-[10px] uppercase tracking-[0.24em] text-white/80 transition-colors hover:bg-white/15"
+                className={secondaryActionClass}
               >
                 Open Feed
               </Link>
@@ -189,23 +203,23 @@ export default function StudioHubScreen() {
           </div>
 
           {landingPagesPaused ? (
-            <div className="mt-4 rounded-2xl border border-white/12 bg-[rgba(255,255,255,0.04)] px-4 py-3 text-xs text-white/70">
+            <div className="stone-chip mt-4 rounded-[22px] px-4 py-3 text-xs text-[color:var(--text-accent)]">
               Landing pages are intentionally paused in Maya and Studio while the V2 quality relaunch is in progress.
             </div>
           ) : null}
 
-          <div className="mt-5 grid gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10 sm:grid-cols-3">
-            <div className="bg-[rgba(10,12,18,0.82)] px-4 py-3">
-              <p className="text-[10px] uppercase tracking-[0.2em] text-white/55">Photos</p>
-              <p className="mt-1 text-2xl text-white">{stats.photoCount}</p>
+          <div className="mt-5 grid gap-px overflow-hidden rounded-[24px] border border-[color:var(--glass-border-subtle)] bg-[color:var(--glass-divider)] sm:grid-cols-3">
+            <div className={`${sectionInsetClass} px-4 py-3`}>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--color-smoke)]">Photos</p>
+              <p className="mt-1 text-2xl text-[color:var(--color-porcelain)]">{stats.photoCount}</p>
             </div>
-            <div className="bg-[rgba(10,12,18,0.82)] px-4 py-3">
-              <p className="text-[10px] uppercase tracking-[0.2em] text-white/55">Videos</p>
-              <p className="mt-1 text-2xl text-white">{stats.videoCount}</p>
+            <div className={`${sectionInsetClass} px-4 py-3`}>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--color-smoke)]">Videos</p>
+              <p className="mt-1 text-2xl text-[color:var(--color-porcelain)]">{stats.videoCount}</p>
             </div>
-            <div className="bg-[rgba(10,12,18,0.82)] px-4 py-3">
-              <p className="text-[10px] uppercase tracking-[0.2em] text-white/55">Feed Systems</p>
-              <p className="mt-1 text-2xl text-white">{stats.feedCount}</p>
+            <div className={`${sectionInsetClass} px-4 py-3`}>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--color-smoke)]">Feed Systems</p>
+              <p className="mt-1 text-2xl text-[color:var(--color-porcelain)]">{stats.feedCount}</p>
             </div>
           </div>
 
@@ -216,9 +230,9 @@ export default function StudioHubScreen() {
                   <a
                     key={photo.id}
                     href={photo.openUrl || "/studio?tab=gallery#gallery"}
-                    className="group overflow-hidden rounded-2xl border border-white/12 bg-[rgba(0,0,0,0.2)]"
+                    className="group stone-panel overflow-hidden rounded-[22px]"
                   >
-                    <div className="relative aspect-[4/5] overflow-hidden bg-black/35">
+                    <div className="relative aspect-[4/5] overflow-hidden bg-[rgba(17,15,13,0.44)]">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={photo.imageUrl}
@@ -227,9 +241,9 @@ export default function StudioHubScreen() {
                         loading="lazy"
                       />
                     </div>
-                    <div className="space-y-1 border-t border-white/10 px-3 py-2">
-                      <p className="line-clamp-1 text-xs text-white">{photo.prompt || "Studio image"}</p>
-                      <p className="text-[10px] uppercase tracking-[0.16em] text-white/55">
+                    <div className="relative z-[1] space-y-1 border-t border-[color:var(--glass-divider)] px-3 py-2">
+                      <p className="line-clamp-1 text-xs text-[color:var(--color-porcelain)]">{photo.prompt || "Studio image"}</p>
+                      <p className="text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-smoke)]">
                         {photo.source} · {formatRelativeDate(photo.updatedAt)}
                       </p>
                     </div>
@@ -240,7 +254,7 @@ export default function StudioHubScreen() {
 
             <Section title="Recent Videos" subtitle="Completed reels and motion drafts generated with Maya.">
               {recentVideos.length === 0 ? (
-                <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-sm text-white/65">
+                <div className="stone-panel rounded-[20px] p-4 text-sm text-[color:var(--text-accent)]">
                   No completed videos yet. Ask Maya to animate one of your gallery images.
                 </div>
               ) : (
@@ -249,27 +263,27 @@ export default function StudioHubScreen() {
                     <a
                       key={video.id}
                       href={video.openUrl || "/studio?tab=maya#maya/videos"}
-                      className="flex items-start gap-3 rounded-xl border border-white/10 bg-black/30 p-3 transition-colors hover:bg-white/[0.06]"
+                      className="stone-panel flex items-start gap-3 rounded-[20px] p-3 transition-colors hover:bg-[rgba(175,170,162,0.12)]"
                     >
-                      <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-white/10 bg-black/40">
+                      <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-[color:var(--glass-border-subtle)] bg-[rgba(17,15,13,0.42)]">
                         {video.thumbnailUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={video.thumbnailUrl} alt="Video thumbnail" className="h-full w-full object-cover" />
                         ) : (
-                          <div className="flex h-full w-full items-center justify-center text-[10px] uppercase tracking-[0.2em] text-white/45">
+                          <div className="flex h-full w-full items-center justify-center text-[10px] uppercase tracking-[0.2em] text-[color:var(--color-smoke)]">
                             Video
                           </div>
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="line-clamp-1 text-sm text-white">
+                        <p className="line-clamp-1 text-sm text-[color:var(--color-porcelain)]">
                           {video.motionPrompt || "Motion prompt generated by Maya"}
                         </p>
-                        <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-white/55">
+                        <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-smoke)]">
                           {formatRelativeDate(video.updatedAt)}
                         </p>
                       </div>
-                      <span className="text-[10px] uppercase tracking-[0.16em] text-white/70">Open</span>
+                      <span className="text-[10px] uppercase tracking-[0.16em] text-[color:var(--text-accent)]">Open</span>
                     </a>
                   ))}
                 </div>
@@ -278,24 +292,24 @@ export default function StudioHubScreen() {
 
             <Section title="Feed Systems" subtitle="Open active feed layouts and keep publishing momentum.">
               {feeds.length === 0 ? (
-                <div className="rounded-xl border border-white/10 bg-black/30 p-4 text-sm text-white/65">
+                <div className="stone-panel rounded-[20px] p-4 text-sm text-[color:var(--text-accent)]">
                   No feed systems yet. Ask Maya to build a 9-post system for your next launch.
                 </div>
               ) : (
                 <div className="space-y-3">
                   {feeds.slice(0, 8).map((feed) => (
-                    <div key={feed.id} className="rounded-xl border border-white/10 bg-black/30 px-3 py-3">
+                    <div key={feed.id} className="stone-panel rounded-[20px] px-3 py-3">
                       <div className="flex items-start justify-between gap-3">
                         <div>
-                          <p className="text-sm text-white">{feed.title}</p>
-                          <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-white/55">
+                          <p className="text-sm text-[color:var(--color-porcelain)]">{feed.title}</p>
+                          <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-smoke)]">
                             {feed.layoutType} · {feed.imageCount}/{feed.postCount} assets ·{" "}
                             {formatRelativeDate(feed.updatedAt)}
                           </p>
                         </div>
                         <Link
                           href={feed.openUrl}
-                          className="text-[10px] uppercase tracking-[0.16em] text-white/75 hover:text-white"
+                          className="text-[10px] uppercase tracking-[0.16em] text-[color:var(--text-accent)] hover:text-[color:var(--color-porcelain)]"
                         >
                           Open
                         </Link>
@@ -303,7 +317,7 @@ export default function StudioHubScreen() {
                       <div className="mt-2">
                         <Link
                           href={feed.manageUrl}
-                          className="inline-flex rounded-full border border-white/20 px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-white/80 transition-colors hover:bg-white hover:text-black"
+                          className="stone-chip inline-flex rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-porcelain)] transition-colors hover:bg-[rgba(175,170,162,0.16)]"
                         >
                           Edit Layout
                         </Link>
@@ -318,31 +332,31 @@ export default function StudioHubScreen() {
               <div className="grid gap-2 sm:grid-cols-2">
                 <Link
                   href="/studio?tab=maya#maya"
-                  className="rounded-xl border border-white/15 bg-white/[0.03] px-4 py-3 text-left transition-colors hover:bg-white/[0.08]"
+                  className={quickActionClass}
                 >
-                  <p className="text-[10px] uppercase tracking-[0.18em] text-white/55">Maya Chat</p>
-                  <p className="mt-1 text-sm text-white">Create photos, videos, and concept cards</p>
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-smoke)]">Maya Chat</p>
+                  <p className="mt-1 text-sm text-[color:var(--color-porcelain)]">Create photos, videos, and concept cards</p>
                 </Link>
                 <Link
                   href="/studio?tab=gallery#gallery"
-                  className="rounded-xl border border-white/15 bg-white/[0.03] px-4 py-3 text-left transition-colors hover:bg-white/[0.08]"
+                  className={quickActionClass}
                 >
-                  <p className="text-[10px] uppercase tracking-[0.18em] text-white/55">Gallery</p>
-                  <p className="mt-1 text-sm text-white">Review and organize your saved visuals</p>
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-smoke)]">Gallery</p>
+                  <p className="mt-1 text-sm text-[color:var(--color-porcelain)]">Review and organize your saved visuals</p>
                 </Link>
                 <Link
                   href="/studio?tab=feed-planner#feed-planner"
-                  className="rounded-xl border border-white/15 bg-white/[0.03] px-4 py-3 text-left transition-colors hover:bg-white/[0.08]"
+                  className={quickActionClass}
                 >
-                  <p className="text-[10px] uppercase tracking-[0.18em] text-white/55">Feed Planner</p>
-                  <p className="mt-1 text-sm text-white">Edit post, reel, and carousel layout systems</p>
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-smoke)]">Feed Planner</p>
+                  <p className="mt-1 text-sm text-[color:var(--color-porcelain)]">Edit post, reel, and carousel layout systems</p>
                 </Link>
                 <Link
                   href="/studio?tab=academy#academy"
-                  className="rounded-xl border border-white/15 bg-white/[0.03] px-4 py-3 text-left transition-colors hover:bg-white/[0.08]"
+                  className={quickActionClass}
                 >
-                  <p className="text-[10px] uppercase tracking-[0.18em] text-white/55">Academy</p>
-                  <p className="mt-1 text-sm text-white">Open guides and execution playbooks</p>
+                  <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-smoke)]">Academy</p>
+                  <p className="mt-1 text-sm text-[color:var(--color-porcelain)]">Open guides and execution playbooks</p>
                 </Link>
               </div>
             </Section>
