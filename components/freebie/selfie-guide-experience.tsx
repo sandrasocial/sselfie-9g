@@ -3,9 +3,13 @@
 import Image from "next/image"
 import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
-import ReactMarkdown, { type Components } from "react-markdown"
 import { Cormorant_Garamond, Inter } from "next/font/google"
-import { extractImageMarker, parseSelfieGuideChapters, type SelfieGuideChapter } from "@/lib/selfie-guide/experience"
+import ReactMarkdown, { type Components } from "react-markdown"
+import {
+  extractImageMarker,
+  parseSelfieGuideChapters,
+  type SelfieGuideChapter,
+} from "@/lib/selfie-guide/experience"
 
 const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
@@ -17,11 +21,53 @@ const inter = Inter({
   weight: ["300", "400", "500"],
 })
 
-const MAYA_GALLERY_IMAGES = [
+// ─── Types ──────────────────────────────────────────────────────────────────
+
+type GuideImage = {
+  src: string
+  alt: string
+  caption: string
+  width: number
+  height: number
+  layout?: "feature" | "feature-wide" | "portrait" | "landscape" | "square"
+}
+
+type VisualSpec = {
+  label: string
+  caption: string
+  src?: string
+  alt?: string
+}
+
+type ChallengeDay = {
+  day: string
+  title: string
+  description: string
+}
+
+type ChapterMoodSpec = {
+  match: RegExp
+  eyebrow: string
+  title: string
+  copy: string
+  items: GuideImage[]
+}
+
+// ─── Image Data ─────────────────────────────────────────────────────────────
+
+const HERO_IMAGE: GuideImage = {
+  src: "/images/selfie-guide/window-editorial-portrait.jpg",
+  alt: "Sandra standing beside a bright window in a black blazer, showing clean natural light on her face",
+  caption: "",
+  width: 762,
+  height: 1143,
+}
+
+const MAYA_GALLERY_IMAGES: readonly GuideImage[] = [
   {
     src: "/images/selfie-guide/feed-post-1.png",
     alt: "Before and after comparison showing Sandra's selfie enhanced with AI to create professional brand photography",
-    caption: "Original selfie -> AI-enhanced brand photo",
+    caption: "Original selfie → AI-enhanced brand photo",
     width: 1856,
     height: 2304,
   },
@@ -55,31 +101,197 @@ const MAYA_GALLERY_IMAGES = [
   },
 ] as const
 
-type VisualSpec = {
-  label: string
-  caption: string
-  src?: string
-  alt?: string
-}
-
-type ChallengeDay = {
-  day: string
-  title: string
-  description: string
-}
+const CHAPTER_MOOD_LIBRARY: readonly ChapterMoodSpec[] = [
+  {
+    match: /camera|iphone|settings/i,
+    eyebrow: "The Foundation",
+    title: "Set the phone up like you mean it",
+    copy: "A clean settings setup and a camera you can trust will make every chapter after this feel easier.",
+    items: [
+      {
+        src: "/images/selfie-guide/iphone-settings-mockup.png",
+        alt: "Close-up of an iPhone camera settings screen reflected through a ring light",
+        caption: "A 60-second setup removes half the friction.",
+        width: 1856,
+        height: 2304,
+        layout: "feature",
+      },
+      {
+        src: "/images/selfie-guide/mirror-selfie-closeup.jpg",
+        alt: "Close-up mirror selfie of Sandra holding her phone near her face",
+        caption: "Clean framing starts before you press the shutter.",
+        width: 908,
+        height: 1613,
+        layout: "portrait",
+      },
+      {
+        src: "/images/selfie-guide/studio-black-portrait.png",
+        alt: "Sandra in a black long-sleeve top seated in soft studio light",
+        caption: "Even simple setups look elevated when the technical basics are right.",
+        width: 645,
+        height: 1398,
+        layout: "portrait",
+      },
+    ],
+  },
+  {
+    match: /light/i,
+    eyebrow: "Light Direction",
+    title: "This is the difference-maker",
+    copy: "The guide reads better when the lesson is visual. Use these references to see exactly how light changes the whole mood of a selfie.",
+    items: [
+      {
+        src: "/images/selfie-guide/window-editorial-portrait.jpg",
+        alt: "Sandra standing beside a bright window in a black blazer, showing clean natural light on her face",
+        caption: "Window light gives shape without harshness.",
+        width: 762,
+        height: 1143,
+        layout: "portrait",
+      },
+      {
+        src: "/images/selfie-guide/ring-light-setup.jpg",
+        alt: "Simple ring light setup on a neutral wall background",
+        caption: "A ring light works when it stays directly in front of you.",
+        width: 1272,
+        height: 850,
+        layout: "landscape",
+      },
+    ],
+  },
+  {
+    match: /angle|pose|presence/i,
+    eyebrow: "Presence On Camera",
+    title: "Structure the shot before you judge the face",
+    copy: "Angles and posture should support your expression, not overpower it. The visual goal is relaxed control.",
+    items: [
+      {
+        src: "/images/selfie-guide/studio-black-portrait.png",
+        alt: "Sandra in a black long-sleeve top seated in soft studio light",
+        caption: "Shoulders relaxed. Chin soft. Eyes steady.",
+        width: 645,
+        height: 1398,
+        layout: "portrait",
+      },
+      {
+        src: "/images/selfie-guide/mirror-selfie-closeup.jpg",
+        alt: "Close-up mirror selfie of Sandra holding her phone near her face",
+        caption: "Micro-adjustments are what make a selfie feel expensive.",
+        width: 908,
+        height: 1613,
+        layout: "portrait",
+      },
+    ],
+  },
+  {
+    match: /edit/i,
+    eyebrow: "Refine, Don't Overwork",
+    title: "Editing should support what was already there",
+    copy: "The best edit still looks like skin, daylight, and a human being. Keep it close to reality.",
+    items: [
+      {
+        src: "/images/selfie-guide/laptop-lifestyle.png",
+        alt: "Sandra smiling while seated with a laptop in a warm interior",
+        caption: "A polished image still needs real texture and expression.",
+        width: 324,
+        height: 324,
+        layout: "square",
+      },
+      {
+        src: "/images/selfie-guide/cloudy-day-portrait.jpg",
+        alt: "Sandra standing outdoors on an overcast day in front of a mountain landscape",
+        caption: "Flat light can become elegant with the right edit.",
+        width: 576,
+        height: 1024,
+        layout: "portrait",
+      },
+    ],
+  },
+  {
+    match: /confidence/i,
+    eyebrow: "Confidence",
+    title: "Visibility gets easier when the frame feels familiar",
+    copy: "You do not need a different face for the camera. You need repetition, calm, and a setup that already works for you.",
+    items: [
+      {
+        src: "/images/selfie-guide/window-editorial-portrait.jpg",
+        alt: "Sandra standing beside a bright window in a black blazer, showing clean natural light on her face",
+        caption: "Calm expression reads stronger than a forced smile.",
+        width: 762,
+        height: 1143,
+        layout: "portrait",
+      },
+      {
+        src: "/images/selfie-guide/studio-black-portrait.png",
+        alt: "Sandra in a black long-sleeve top seated in soft studio light",
+        caption: "Presence is usually a quieter choice than people think.",
+        width: 645,
+        height: 1398,
+        layout: "portrait",
+      },
+    ],
+  },
+  {
+    match: /audience|social|visibility|grow/i,
+    eyebrow: "Distribution",
+    title: "One shoot can fuel a lot more than one post",
+    copy: "When the visuals are coherent, one selfie becomes a post, a reel, stories, and the seed of a real brand system.",
+    items: [
+      {
+        src: "/images/selfie-guide/feed-post-1.png",
+        alt: "Editorial lifestyle photo of Sandra lounging on a dark sofa in a black dress",
+        caption: "A single visual direction travels well across formats.",
+        width: 1856,
+        height: 2304,
+        layout: "portrait",
+      },
+      {
+        src: "/images/selfie-guide/feed-post-5.png",
+        alt: "Editorial-style portrait of Sandra in neutral tailoring outside a city building",
+        caption: "The content feels more premium when the aesthetic is consistent.",
+        width: 1856,
+        height: 2304,
+        layout: "portrait",
+      },
+    ],
+  },
+  {
+    match: /7[-\s]?day|challenge/i,
+    eyebrow: "Practice",
+    title: "Make the challenge feel tangible",
+    copy: "The challenge should look achievable, not abstract. Use the cards below as your tracker.",
+    items: [
+      {
+        src: "/images/selfie-guide/window-lighting-setup.png",
+        alt: "Sandra taking a selfie in soft window light with her phone raised at a flattering angle",
+        caption: "Day 1 starts with a window and a phone.",
+        width: 1856,
+        height: 2304,
+        layout: "feature",
+      },
+      {
+        src: "/images/selfie-guide/cloudy-day-portrait.jpg",
+        alt: "Sandra standing outdoors on an overcast day in front of a mountain landscape",
+        caption: "Simple location. Strong result.",
+        width: 576,
+        height: 1024,
+        layout: "portrait",
+      },
+    ],
+  },
+] as const
 
 const VISUAL_LIBRARY: Record<string, VisualSpec> = {
   "iphone-settings-mockup.png": {
     label: "SETTINGS CHEAT SHEET",
     caption: "Your iPhone camera settings in 60 seconds. These three changes make a bigger difference than any filter.",
     src: "/images/selfie-guide/iphone-settings-mockup.png",
-    alt: "Collage of iPhone camera settings steps from the original selfie guide showing menu toggles and recommended setup",
+    alt: "Close-up of an iPhone camera settings screen reflected through a ring light",
   },
   "window-lighting-setup.png": {
     label: "THE WINDOW TECHNIQUE",
-    caption: "Face the light, stand 3 feet back, shoot. That's it.",
+    caption: "Face the light, stand back a little, and let the phone do less work.",
     src: "/images/selfie-guide/window-lighting-setup.png",
-    alt: "Example of window lighting setup with subject standing beside a window facing natural light",
+    alt: "Sandra taking a selfie in soft window light with her phone raised at a flattering angle",
   },
   "lighting-comparison-grid.png": {
     label: "LIGHTING COMPARISON",
@@ -89,19 +301,19 @@ const VISUAL_LIBRARY: Record<string, VisualSpec> = {
   },
   "angle-comparison-grid.png": {
     label: "ANGLE GUIDE",
-    caption: "15 degrees above eye level. Remember this number.",
+    caption: "15 degrees above eye level. That's the range to remember.",
     src: "/images/selfie-guide/angle-comparison-grid.png",
     alt: "Three selfie angle examples comparing side angle, eye level, and slightly high angle camera positions",
   },
   "pose-guide-grid.png": {
     label: "NATURAL POSES",
-    caption: "Four poses that work for everyone. Try all four and keep your top two.",
+    caption: "Four small shifts that stop the shot from feeling stiff.",
     src: "/images/selfie-guide/pose-guide-grid.png",
     alt: "Grid of four natural portrait pose variations for selfie practice",
   },
   "editing-before-after.png": {
     label: "EDITING BEFORE & AFTER",
-    caption: "Small edits are enough. Keep your face real and your style consistent.",
+    caption: "Small edits are enough. Keep the skin real and the light believable.",
     src: "/images/selfie-guide/editing-before-after.png",
     alt: "Before and after selfie editing comparison showing subtle improvements in light and contrast",
   },
@@ -126,7 +338,7 @@ const SEVEN_DAY_CHALLENGE_DAYS: ChallengeDay[] = [
   {
     day: "Day 4",
     title: "Editing Pass",
-    description: "Take your best selfie from days 1-3. Apply only light and warmth adjustments. No filters.",
+    description: "Take your best selfie from days 1–3. Apply only light and warmth adjustments. No filters.",
   },
   {
     day: "Day 5",
@@ -145,6 +357,8 @@ const SEVEN_DAY_CHALLENGE_DAYS: ChallengeDay[] = [
   },
 ]
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
 function getPlainText(node: unknown): string {
   if (typeof node === "string" || typeof node === "number") return String(node)
   if (Array.isArray(node)) return node.map(getPlainText).join("")
@@ -155,32 +369,73 @@ function getPlainText(node: unknown): string {
   return ""
 }
 
+function normalizeChapterTitle(value: string): string {
+  return String(value || "").trim() || "Chapter"
+}
+
+function normalizeComparableText(value: string): string {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
 function parseChecklistItem(value: string): string | null {
   const text = String(value || "").replace(/\s+/g, " ").trim()
   const match = text.match(/^\[\s\]\s*(.+)$/)
   return match?.[1]?.trim() || null
 }
 
-function MayaGallery() {
+function getChapterMood(title: string) {
+  return CHAPTER_MOOD_LIBRARY.find(spec => spec.match.test(title)) || null
+}
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+function ChapterImages({ spec }: { spec: ChapterMoodSpec }) {
   return (
-    <div className="maya-gallery" aria-label="AI-enhanced selfie examples">
-      <div className="maya-grid">
-        {MAYA_GALLERY_IMAGES.map((image) => (
-          <figure key={image.src} className="visual-card">
-            <div className="visual-image-wrap">
+    <div className="chapter-images">
+      {spec.items.slice(0, 2).map(image => {
+        const isWide = image.layout === "feature" || image.layout === "feature-wide" || image.layout === "landscape"
+        return (
+          <figure key={image.src} className={`chapter-img-item ${isWide ? "is-wide" : "is-narrow"}`}>
+            <div className="chapter-img-wrap">
               <Image
                 src={image.src}
                 alt={image.alt}
                 width={image.width}
                 height={image.height}
-                sizes="(max-width: 700px) 100vw, (max-width: 1200px) 40vw, 320px"
-                className="visual-image"
+                sizes="(max-width: 900px) 100vw, 50vw"
+                className="chapter-img"
               />
             </div>
-            <figcaption>{image.caption}</figcaption>
+            <figcaption className="chapter-img-caption">{image.caption}</figcaption>
           </figure>
-        ))}
-      </div>
+        )
+      })}
+    </div>
+  )
+}
+
+function MayaGallery() {
+  return (
+    <div className="maya-gallery">
+      {MAYA_GALLERY_IMAGES.map(image => (
+        <figure key={image.src} className="maya-item">
+          <div className="maya-img-wrap">
+            <Image
+              src={image.src}
+              alt={image.alt}
+              width={image.width}
+              height={image.height}
+              sizes="(max-width: 900px) 50vw, 20vw"
+              className="maya-img"
+            />
+          </div>
+          <figcaption>{image.caption}</figcaption>
+        </figure>
+      ))}
     </div>
   )
 }
@@ -188,17 +443,17 @@ function MayaGallery() {
 function FeedPreview() {
   return (
     <figure className="feed-preview">
-      <div className="feed-preview-image-wrap">
+      <div className="feed-preview-wrap">
         <Image
           src="/images/selfie-guide/img-editorial-dark.png"
           alt="Instagram feed grid preview showing nine cohesive brand photos with consistent editorial style"
           width={1536}
           height={2752}
-          sizes="(max-width: 700px) 100vw, 720px"
-          className="feed-preview-image"
+          sizes="(max-width: 700px) 100vw, 760px"
+          className="feed-preview-img"
         />
       </div>
-      <figcaption>This is what a cohesive feed looks like when your visuals follow one strategy.</figcaption>
+      <figcaption>This is what a coherent visual system looks like when one good selfie becomes a brand asset.</figcaption>
     </figure>
   )
 }
@@ -207,63 +462,40 @@ function SevenDayChallenge() {
   const [completedDays, setCompletedDays] = useState<Set<number>>(() => new Set())
 
   return (
-    <section className="challenge-wrap" aria-label="7-day challenge tracker">
+    <div className="challenge">
+      <p className="challenge-eyebrow">Your 7-Day Practice Plan</p>
       <div className="challenge-grid">
         {SEVEN_DAY_CHALLENGE_DAYS.map((item, index) => {
           const dayNumber = index + 1
           const isComplete = completedDays.has(dayNumber)
-
           return (
             <button
               key={item.day}
               type="button"
-              className={`challenge-card ${isComplete ? "is-complete" : ""}`}
+              className={`challenge-card ${isComplete ? "is-done" : ""}`}
               onClick={() => {
-                setCompletedDays((prev) => {
+                setCompletedDays(prev => {
                   const next = new Set(prev)
-                  if (next.has(dayNumber)) {
-                    next.delete(dayNumber)
-                  } else {
-                    next.add(dayNumber)
-                  }
+                  if (next.has(dayNumber)) next.delete(dayNumber)
+                  else next.add(dayNumber)
                   return next
                 })
               }}
               aria-pressed={isComplete}
               aria-label={`Mark ${item.day} as ${isComplete ? "incomplete" : "complete"}`}
             >
-              <span className="challenge-day">
-                {isComplete ? "✓ " : ""}
-                {item.day}
-              </span>
-              <h4 className={`challenge-title ${cormorant.className}`}>{item.title}</h4>
-              <p className="challenge-copy">{item.description}</p>
+              <span className="challenge-num">{isComplete ? "✓" : String(dayNumber).padStart(2, "0")}</span>
+              <span className="challenge-title">{item.title}</span>
+              <span className="challenge-desc">{item.description}</span>
             </button>
           )
         })}
       </div>
-    </section>
+    </div>
   )
 }
 
-function MissingVisual({ spec }: { spec: VisualSpec }) {
-  return (
-    <figure className="teaching-visual">
-      <div className="teaching-label">{spec.label}</div>
-      <div className="missing-visual">
-        <p>Visual block ready</p>
-        <span>{spec.caption}</span>
-      </div>
-      <figcaption className="teaching-caption">Image placeholder active. Upload final visual to replace this block.</figcaption>
-    </figure>
-  )
-}
-
-function normalizeChapterTitle(value: string): string {
-  const text = String(value || "").trim()
-  if (!text) return "Chapter"
-  return text
-}
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 interface SelfieGuideExperienceProps {
   firstName: string
@@ -274,25 +506,26 @@ export default function SelfieGuideExperience({ firstName, guideMarkdown }: Self
   const chapters = useMemo(() => {
     const parsed = parseSelfieGuideChapters(guideMarkdown)
     if (parsed.length > 0) return parsed
-    return [
-      {
-        id: "guide-1",
-        title: "Guide",
-        markdown: guideMarkdown,
-      },
-    ] satisfies SelfieGuideChapter[]
+    return [{ id: "guide-1", title: "Guide", markdown: guideMarkdown }] satisfies SelfieGuideChapter[]
   }, [guideMarkdown])
 
   const [activeChapterIndex, setActiveChapterIndex] = useState(0)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [checkedChecklistItems, setCheckedChecklistItems] = useState<Set<string>>(() => new Set())
+
   const currentChapter = chapters[Math.min(activeChapterIndex, Math.max(chapters.length - 1, 0))]
-  const progressPercent = chapters.length > 1 ? Math.round(((activeChapterIndex + 1) / chapters.length) * 100) : 100
+  const currentChapterTitle = normalizeChapterTitle(currentChapter.title)
+  const currentChapterComparable = normalizeComparableText(currentChapterTitle)
+  const progressPercent =
+    chapters.length > 1 ? Math.round(((activeChapterIndex + 1) / chapters.length) * 100) : 100
   const showSevenDayChallenge = /7[-\s]?day|challenge/i.test(currentChapter.title)
+  const currentChapterMood = getChapterMood(currentChapter.title)
+  const partNumber = activeChapterIndex + 1
 
   useEffect(() => {
     const hash = window.location.hash.replace("#", "")
     if (!hash) return
-    const index = chapters.findIndex((chapter) => chapter.id === hash)
+    const index = chapters.findIndex(ch => ch.id === hash)
     if (index >= 0) setActiveChapterIndex(index)
   }, [chapters])
 
@@ -302,85 +535,76 @@ export default function SelfieGuideExperience({ firstName, guideMarkdown }: Self
     window.history.replaceState(null, "", `#${target.id}`)
   }, [activeChapterIndex, chapters])
 
+  // Close sidebar on chapter select (mobile)
+  function goToChapter(index: number) {
+    setActiveChapterIndex(index)
+    setSidebarOpen(false)
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
+
   const markdownComponents = useMemo<Components>(
     () => ({
-      h1: ({ children }) => <h1 className={`guide-h1 ${cormorant.className}`}>{children}</h1>,
-      h2: ({ children }) => <h2 className={`guide-h2 ${cormorant.className}`}>{children}</h2>,
-      h3: ({ children }) => <h3 className={`guide-h3 ${cormorant.className}`}>{children}</h3>,
+      h1: ({ children }) => {
+        const text = getPlainText(children)
+        if (normalizeComparableText(text) === currentChapterComparable) return null
+        return <h1 className={`prose-h1 ${cormorant.className}`}>{children}</h1>
+      },
+      h2: ({ children }) => {
+        const text = getPlainText(children)
+        if (normalizeComparableText(text) === currentChapterComparable) return null
+        return <h2 className={`prose-h2 ${cormorant.className}`}>{children}</h2>
+      },
+      h3: ({ children }) => <h3 className="prose-h3">{children}</h3>,
+      strong: ({ children }) => <strong className="prose-strong">{children}</strong>,
+      em: ({ children }) => <em className="prose-em">{children}</em>,
       p: ({ children }) => {
         const text = getPlainText(children).replace(/\s+/g, " ").trim()
         const imageMarker = extractImageMarker(text)
 
-        if (!imageMarker) {
-          return <p className="guide-p">{children}</p>
-        }
+        if (!imageMarker) return <p className="prose-p">{children}</p>
 
-        if (imageMarker === "feed-post-1.png") {
-          return <MayaGallery />
-        }
-
-        if (imageMarker === "img-editorial-dark.png") {
-          return <FeedPreview />
-        }
+        if (imageMarker === "feed-post-1.png") return <MayaGallery />
+        if (imageMarker === "img-editorial-dark.png") return <FeedPreview />
 
         const spec = VISUAL_LIBRARY[imageMarker]
-        if (!spec) {
-          return (
-            <MissingVisual
-              spec={{
-                label: "VISUAL SECTION",
-                caption: "This guide step references a visual block.",
-              }}
-            />
-          )
-        }
-
-        if (!spec.src || !spec.alt) {
-          return <MissingVisual spec={spec} />
-        }
+        if (!spec?.src || !spec?.alt) return null
 
         return (
-          <figure className="teaching-visual">
-            <div className="teaching-label">{spec.label}</div>
-            <div className="teaching-image-wrap">
+          <figure className="prose-img-block">
+            <p className="prose-img-label">{spec.label}</p>
+            <div className="prose-img-wrap">
               <Image
                 src={spec.src}
                 alt={spec.alt}
                 width={1200}
                 height={800}
-                sizes="(max-width: 700px) 100vw, 900px"
-                className="teaching-image"
+                sizes="(max-width: 900px) 100vw, 860px"
+                className="prose-img"
               />
             </div>
-            <figcaption className="teaching-caption">{spec.caption}</figcaption>
+            <figcaption className="prose-img-caption">{spec.caption}</figcaption>
           </figure>
         )
       },
-      ul: ({ children }) => <ul className="guide-ul">{children}</ul>,
-      ol: ({ children }) => <ol className="guide-ol">{children}</ol>,
+      ul: ({ children }) => <ul className="prose-ul">{children}</ul>,
+      ol: ({ children }) => <ol className="prose-ol">{children}</ol>,
       li: ({ children }) => {
         const plainText = getPlainText(children)
         const checklistText = parseChecklistItem(plainText)
 
-        if (!checklistText) {
-          return <li className="guide-li">{children}</li>
-        }
+        if (!checklistText) return <li className="prose-li">{children}</li>
 
         const isChecked = checkedChecklistItems.has(checklistText)
-
         return (
-          <li className={`guide-li checklist-li ${isChecked ? "is-checked" : ""}`}>
+          <li className={`prose-li checklist-li ${isChecked ? "is-checked" : ""}`}>
             <button
               type="button"
-              className="checklist-toggle"
+              className="checklist-btn"
               onClick={() => {
-                setCheckedChecklistItems((prev) => {
+                setCheckedChecklistItems(prev => {
                   const next = new Set(prev)
-                  if (next.has(checklistText)) {
-                    next.delete(checklistText)
-                  } else {
-                    next.add(checklistText)
-                  }
+                  if (next.has(checklistText)) next.delete(checklistText)
+                  else next.add(checklistText)
                   return next
                 })
               }}
@@ -393,765 +617,1104 @@ export default function SelfieGuideExperience({ firstName, guideMarkdown }: Self
           </li>
         )
       },
-      hr: () => <hr className="guide-hr" />,
-      a: ({ href, children }) => {
-        const resolvedHref = href || "#"
-        return (
-          <a href={resolvedHref} className="guide-link">
-            {children}
-          </a>
-        )
-      },
+      hr: () => <hr className="prose-hr" />,
+      a: ({ href, children }) => (
+        <a href={href || "#"} className="prose-link">
+          {children}
+        </a>
+      ),
     }),
-    [checkedChecklistItems],
+    [checkedChecklistItems, currentChapterComparable],
   )
 
   return (
-    <main className={`guide-shell ${inter.className}`}>
-      <header className="guide-header">
-        <a href="https://sselfie.ai" className={`logo ${cormorant.className}`}>
-          SSELFIE
-        </a>
-        <span className="header-label">INTERACTIVE SELFIE GUIDE</span>
-      </header>
+    <div className={`sg ${inter.className}`}>
+      {/* ── Sidebar overlay (mobile) ────────────────── */}
+      {sidebarOpen && (
+        <div
+          className="sg-overlay"
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden
+        />
+      )}
 
-      <section className="hero-card">
-        <p className="hero-label">Created for</p>
-        <h1 className={`hero-title ${cormorant.className}`}>{firstName}</h1>
-        <p className="hero-copy">Tap through chapter by chapter. Apply one action before moving to the next.</p>
-        <div className="progress-wrap" aria-label="Guide progress">
-          <div className="progress-track">
-            <div className="progress-fill" style={{ width: `${progressPercent}%` }} />
-          </div>
-          <span className="progress-copy">
-            Chapter {activeChapterIndex + 1} of {chapters.length}
-          </span>
+      {/* ── Sidebar ─────────────────────────────────── */}
+      <aside className={`sg-sidebar ${sidebarOpen ? "is-open" : ""}`} aria-label="Guide navigation">
+        <div className="sg-sidebar-logo">
+          <a href="https://sselfie.ai" className={`sg-logo-text ${cormorant.className}`}>SSELFIE</a>
+          <p className="sg-logo-sub">INTERACTIVE SELFIE GUIDE</p>
         </div>
-      </section>
 
-      <section className="experience-layout">
-        <aside className="chapter-rail" aria-label="Guide chapters">
+        <div className="sg-sidebar-progress">
+          <p className="sg-progress-label">Progress</p>
+          <div className="sg-progress-track">
+            <div className="sg-progress-fill" style={{ width: `${progressPercent}%` }} />
+          </div>
+          <p className="sg-progress-pct">{partNumber} of {chapters.length} chapters</p>
+        </div>
+
+        <nav className="sg-sidebar-nav">
           {chapters.map((chapter, index) => (
             <button
               key={chapter.id}
               type="button"
-              className={`chapter-pill ${index === activeChapterIndex ? "is-active" : ""}`}
-              onClick={() => setActiveChapterIndex(index)}
+              className={`sg-nav-item ${index === activeChapterIndex ? "is-active" : ""} ${index < activeChapterIndex ? "is-done" : ""}`}
+              onClick={() => goToChapter(index)}
+              aria-current={index === activeChapterIndex ? "step" : undefined}
             >
-              <span className="chapter-pill-index">{String(index + 1).padStart(2, "0")}</span>
-              <span className="chapter-pill-title">{normalizeChapterTitle(chapter.title)}</span>
+              <span className="sg-nav-num">{String(index + 1).padStart(2, "0")}</span>
+              <span className="sg-nav-title">{normalizeChapterTitle(chapter.title)}</span>
             </button>
           ))}
-        </aside>
+        </nav>
+      </aside>
 
-        <article className="chapter-card" id={currentChapter.id}>
-          <div className="chapter-head">
-            <span className="chapter-kicker">Now reading</span>
-            <h2 className={`chapter-title ${cormorant.className}`}>{normalizeChapterTitle(currentChapter.title)}</h2>
+      {/* ── Main ────────────────────────────────────── */}
+      <main className="sg-main">
+        {/* Mobile header */}
+        <header className="sg-mobile-header">
+          <button
+            type="button"
+            className="sg-menu-btn"
+            onClick={() => setSidebarOpen(prev => !prev)}
+            aria-label="Toggle chapter navigation"
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+          <a href="https://sselfie.ai" className={`sg-mobile-logo ${cormorant.className}`}>SSELFIE</a>
+          <span className="sg-mobile-progress">{partNumber}/{chapters.length}</span>
+        </header>
+
+        {/* ── Hero ──────────────────────────────────── */}
+        <section className="sg-hero" aria-label="Guide hero">
+          <div className="sg-hero-image-fill">
+            <Image
+              src={HERO_IMAGE.src}
+              alt={HERO_IMAGE.alt}
+              fill
+              priority
+              sizes="100vw"
+              className="sg-hero-img"
+            />
           </div>
-          <ReactMarkdown components={markdownComponents}>{currentChapter.markdown}</ReactMarkdown>
-          {showSevenDayChallenge ? <SevenDayChallenge /> : null}
+          <div className="sg-hero-gradient" />
 
-          <div className="chapter-controls">
+          <div className="sg-hero-content">
+            <p className="sg-eyebrow">Selfie Guide · 2026 Edition</p>
+            <h1 className={`sg-hero-title ${cormorant.className}`}>
+              One Good Selfie<br />Can Build Your Brand
+            </h1>
+            <p className={`sg-hero-for ${cormorant.className}`}>
+              Built for {firstName}
+            </p>
+            <p className="sg-hero-sub">
+              8 chapters. Real techniques. One phone. No excuses.
+            </p>
+            <div className="sg-hero-badges">
+              <span>Studio-looking results</span>
+              <span>7-day challenge</span>
+              <span>Maya bonus inside</span>
+            </div>
+          </div>
+
+          <div className="sg-hero-scroll">
+            <span>Begin reading</span>
+            <span className="sg-scroll-arrow" aria-hidden>↓</span>
+          </div>
+        </section>
+
+        {/* ── Chapter ───────────────────────────────── */}
+        <section className="sg-chapter" id={currentChapter.id}>
+
+          {/* Chapter header */}
+          <header className="sg-chapter-header">
+            <p className="sg-eyebrow">Part {String(partNumber).padStart(2, "0")} / {String(chapters.length).padStart(2, "0")}</p>
+            {currentChapterMood && (
+              <p className="sg-chapter-eyebrow">{currentChapterMood.eyebrow}</p>
+            )}
+            <h2 className={`sg-chapter-title ${cormorant.className}`}>{currentChapterTitle}</h2>
+            {currentChapterMood && (
+              <p className={`sg-chapter-sub ${cormorant.className}`}>{currentChapterMood.copy}</p>
+            )}
+          </header>
+
+          {/* Chapter images — editorial pair */}
+          {currentChapterMood && <ChapterImages spec={currentChapterMood} />}
+
+          {/* Chapter body prose */}
+          <div className="sg-prose">
+            <ReactMarkdown components={markdownComponents}>{currentChapter.markdown}</ReactMarkdown>
+          </div>
+
+          {/* 7-day challenge (if applicable) */}
+          {showSevenDayChallenge && <SevenDayChallenge />}
+
+          {/* Chapter navigation */}
+          <div className="sg-chapter-nav">
             <button
               type="button"
-              className="control-btn"
+              className="sg-nav-btn sg-nav-prev"
               disabled={activeChapterIndex === 0}
-              onClick={() => setActiveChapterIndex((prev) => Math.max(prev - 1, 0))}
+              onClick={() => {
+                setActiveChapterIndex(prev => Math.max(prev - 1, 0))
+                window.scrollTo({ top: 0, behavior: "smooth" })
+              }}
             >
-              Previous Chapter
+              <span>←</span>
+              <span>Previous</span>
             </button>
+
+            <span className="sg-nav-divider" aria-hidden />
+
             <button
               type="button"
-              className="control-btn is-primary"
-              onClick={() => setActiveChapterIndex((prev) => Math.min(prev + 1, chapters.length - 1))}
+              className="sg-nav-btn sg-nav-next"
+              onClick={() => {
+                setActiveChapterIndex(prev => Math.min(prev + 1, chapters.length - 1))
+                window.scrollTo({ top: 0, behavior: "smooth" })
+              }}
             >
-              {activeChapterIndex === chapters.length - 1 ? "Finish Guide" : "Next Chapter"}
+              <span>{activeChapterIndex === chapters.length - 1 ? "Finish Guide" : "Next Chapter"}</span>
+              <span>{activeChapterIndex === chapters.length - 1 ? "" : "→"}</span>
             </button>
           </div>
-        </article>
-      </section>
+        </section>
 
-      <section className="funnel-card">
-        <p className="funnel-kicker">Next steps</p>
-        <h3 className={`funnel-title ${cormorant.className}`}>From freebie to full brand system</h3>
-        <ol className="funnel-steps">
-          <li>Complete this guide and practice your next 10 selfies.</li>
-          <li>Unlock your personalized EUR 17 Brand Strategy.</li>
-          <li>Join Studio Membership to generate with Maya every week.</li>
-        </ol>
-        <div className="funnel-ctas">
-          <Link href="/brand-strategy" className="cta-primary">
-            Get EUR 17 Brand Strategy
-          </Link>
-          <Link href="/checkout/membership" className="cta-secondary">
-            Join Membership
-          </Link>
-          <Link href="/studio?tab=maya" className="cta-tertiary">
-            Open Maya in Studio
-          </Link>
-        </div>
-      </section>
+        {/* ── Funnel CTA ────────────────────────────── */}
+        <section className="sg-funnel">
+          <div className="sg-funnel-inner">
+            <p className="sg-eyebrow">Next step</p>
+            <h3 className={`sg-funnel-title ${cormorant.className}`}>
+              Get your Brand Strategy
+            </h3>
+            <p className="sg-funnel-copy">
+              Turn the visuals into a message people actually remember.
+            </p>
+            <div className="sg-funnel-ctas">
+              <Link href="/checkout/brand-strategy-pack" className="sg-cta-primary">
+                Checkout Brand Strategy Pack
+              </Link>
+            </div>
+          </div>
+        </section>
+      </main>
 
-      <style jsx>{`
-        :global(html, body) {
+      {/* ── Styles ──────────────────────────────────── */}
+      <style jsx global>{`
+        html, body {
           background: #0d0c0b;
+          margin: 0;
+          padding: 0;
         }
 
-        .guide-shell {
-          --stone-black: #0d0c0b;
-          --stone-surface: #1c1b19;
-          --stone-mid: #2e2c29;
-          --stone-text: #f0ede8;
-          --stone-muted: #8a8780;
-          --stone-accent: #a8a49c;
-          --stone-pale: #c8c4bb;
+        .sg {
+          --c-black:   #0d0c0b;
+          --c-surface: #161514;
+          --c-char:    #1c1b19;
+          --c-border:  rgba(168, 164, 156, 0.14);
+          --c-stone:   #a8a49c;
+          --c-smoke:   #8a8780;
+          --c-cream:   #f0ede8;
+          --c-pale:    rgba(240, 237, 232, 0.72);
+          --sidebar-w: 260px;
+          --prose-w:   700px;
+          --gap:       clamp(24px, 5vw, 64px);
           min-height: 100vh;
-          background: radial-gradient(circle at 20% 10%, rgba(200, 196, 187, 0.08), transparent 45%), #0d0c0b;
-          color: var(--stone-text);
-          padding-bottom: 60px;
+          background: var(--c-black);
+          color: var(--c-cream);
         }
 
-        .guide-header {
+        /* ── Sidebar ──────────────────── */
+
+        .sg-sidebar {
+          position: fixed;
+          left: 0; top: 0; bottom: 0;
+          width: var(--sidebar-w);
+          background: var(--c-char);
+          border-right: 1px solid var(--c-border);
+          display: flex;
+          flex-direction: column;
+          z-index: 80;
+          overflow-y: auto;
+          overscroll-behavior: contain;
+        }
+
+        .sg-sidebar-logo {
+          padding: 32px 28px 24px;
+          border-bottom: 1px solid var(--c-border);
+          flex-shrink: 0;
+        }
+
+        .sg-logo-text {
+          display: block;
+          font-size: 17px;
+          font-weight: 300;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          color: var(--c-cream);
+          text-decoration: none;
+        }
+
+        .sg-logo-sub {
+          margin: 4px 0 0;
+          font-size: 8px;
+          font-weight: 500;
+          letter-spacing: 0.42em;
+          text-transform: uppercase;
+          color: var(--c-smoke);
+        }
+
+        .sg-sidebar-progress {
+          padding: 16px 28px;
+          border-bottom: 1px solid var(--c-border);
+          flex-shrink: 0;
+        }
+
+        .sg-progress-label {
+          font-size: 9px;
+          font-weight: 500;
+          letter-spacing: 0.38em;
+          text-transform: uppercase;
+          color: var(--c-smoke);
+          margin-bottom: 8px;
+        }
+
+        .sg-progress-track {
+          height: 1px;
+          background: var(--c-border);
+        }
+
+        .sg-progress-fill {
+          height: 1px;
+          background: var(--c-cream);
+          transition: width 0.35s ease;
+        }
+
+        .sg-progress-pct {
+          margin-top: 6px;
+          font-size: 11px;
+          color: var(--c-smoke);
+        }
+
+        .sg-sidebar-nav {
+          padding: 12px 0;
+          flex: 1;
+        }
+
+        .sg-nav-item {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          width: 100%;
+          padding: 10px 28px;
+          text-align: left;
+          background: none;
+          border: none;
+          border-left: 2px solid transparent;
+          cursor: pointer;
+          transition: background 0.18s ease, border-color 0.18s ease;
+        }
+
+        .sg-nav-item:hover {
+          background: rgba(240, 237, 232, 0.04);
+        }
+
+        .sg-nav-item.is-active {
+          border-left-color: var(--c-cream);
+          background: rgba(240, 237, 232, 0.05);
+        }
+
+        .sg-nav-num {
+          font-size: 9px;
+          font-weight: 500;
+          letter-spacing: 0.3em;
+          color: var(--c-smoke);
+          min-width: 22px;
+          line-height: 1.6;
+          flex-shrink: 0;
+        }
+
+        .sg-nav-item.is-active .sg-nav-num,
+        .sg-nav-item.is-done .sg-nav-num {
+          color: var(--c-cream);
+        }
+
+        .sg-nav-title {
+          font-size: 11px;
+          font-weight: 300;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          color: var(--c-smoke);
+          line-height: 1.55;
+        }
+
+        .sg-nav-item.is-active .sg-nav-title {
+          color: var(--c-cream);
+        }
+
+        /* ── Overlay (mobile) ─────────── */
+
+        .sg-overlay {
+          display: none;
+          position: fixed;
+          inset: 0;
+          z-index: 70;
+          background: rgba(0, 0, 0, 0.6);
+          backdrop-filter: blur(4px);
+        }
+
+        /* ── Mobile header ────────────── */
+
+        .sg-mobile-header {
+          display: none;
           position: sticky;
           top: 0;
-          z-index: 50;
-          display: flex;
-          justify-content: space-between;
+          z-index: 60;
           align-items: center;
-          padding: 20px 24px;
-          border-bottom: 1px solid rgba(175, 170, 162, 0.2);
-          backdrop-filter: blur(28px);
-          background: rgba(13, 12, 11, 0.84);
+          justify-content: space-between;
+          padding: 14px 20px;
+          background: rgba(13, 12, 11, 0.92);
+          border-bottom: 1px solid var(--c-border);
+          backdrop-filter: blur(20px);
         }
 
-        .logo {
-          color: var(--stone-text);
-          text-decoration: none;
-          text-transform: uppercase;
-          letter-spacing: 0.3em;
-          font-size: 16px;
+        .sg-menu-btn {
+          display: flex;
+          flex-direction: column;
+          gap: 5px;
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 4px;
         }
 
-        .header-label {
-          font-size: 10px;
-          letter-spacing: 0.32em;
-          color: var(--stone-muted);
-          text-transform: uppercase;
+        .sg-menu-btn span {
+          display: block;
+          width: 22px;
+          height: 1px;
+          background: var(--c-cream);
         }
 
-        .hero-card,
-        .experience-layout,
-        .funnel-card {
-          width: min(1180px, calc(100% - 32px));
-          margin: 18px auto 0;
-        }
-
-        .hero-card,
-        .chapter-card,
-        .chapter-pill,
-        .funnel-card {
-          border: 1px solid rgba(195, 190, 182, 0.25);
-          background: rgba(175, 170, 162, 0.1);
-          backdrop-filter: blur(56px);
-        }
-
-        .hero-card {
-          padding: 26px;
-          border-radius: 22px;
-        }
-
-        .hero-label {
-          margin: 0;
-          font-size: 10px;
-          letter-spacing: 0.46em;
-          text-transform: uppercase;
-          color: var(--stone-muted);
-        }
-
-        .hero-title {
-          margin: 10px 0 8px;
-          font-size: clamp(38px, 6vw, 68px);
-          line-height: 1;
-          text-transform: uppercase;
-          font-weight: 300;
-        }
-
-        .hero-copy {
-          margin: 0;
-          color: var(--stone-muted);
-          line-height: 1.8;
+        .sg-mobile-logo {
           font-size: 15px;
+          font-weight: 300;
+          letter-spacing: 0.2em;
+          text-transform: uppercase;
+          color: var(--c-cream);
+          text-decoration: none;
         }
 
-        .progress-wrap {
-          margin-top: 16px;
+        .sg-mobile-progress {
+          font-size: 10px;
+          letter-spacing: 0.2em;
+          color: var(--c-smoke);
         }
 
-        .progress-track {
-          width: 100%;
-          height: 8px;
+        /* ── Main ────────────────────── */
+
+        .sg-main {
+          margin-left: var(--sidebar-w);
+          min-height: 100vh;
+        }
+
+        /* ── Hero ─────────────────────── */
+
+        .sg-hero {
+          position: relative;
+          height: 100vh;
+          min-height: 600px;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-end;
+        }
+
+        .sg-hero-image-fill {
+          position: absolute;
+          inset: 0;
+          z-index: 0;
+        }
+
+        .sg-hero-img {
+          object-fit: cover;
+          object-position: center 20%;
+        }
+
+        .sg-hero-gradient {
+          position: absolute;
+          inset: 0;
+          z-index: 1;
+          background:
+            linear-gradient(
+              to bottom,
+              rgba(13, 12, 11, 0.08) 0%,
+              rgba(13, 12, 11, 0.22) 30%,
+              rgba(13, 12, 11, 0.72) 62%,
+              rgba(13, 12, 11, 0.97) 100%
+            );
+        }
+
+        .sg-hero-content {
+          position: relative;
+          z-index: 2;
+          padding: 0 clamp(28px, 6vw, 80px) 48px;
+          max-width: 860px;
+        }
+
+        .sg-eyebrow {
+          display: block;
+          font-size: 9px;
+          font-weight: 500;
+          letter-spacing: 0.48em;
+          text-transform: uppercase;
+          color: var(--c-stone);
+          margin-bottom: 14px;
+        }
+
+        .sg-hero-title {
+          font-size: clamp(48px, 8vw, 108px);
+          font-weight: 300;
+          line-height: 0.94;
+          letter-spacing: -0.02em;
+          text-transform: uppercase;
+          color: var(--c-cream);
+          margin: 0 0 18px;
+        }
+
+        .sg-hero-for {
+          font-size: clamp(18px, 2.4vw, 28px);
+          font-weight: 300;
+          font-style: italic;
+          color: var(--c-stone);
+          margin: 0 0 14px;
+        }
+
+        .sg-hero-sub {
+          font-size: clamp(13px, 1.4vw, 16px);
+          font-weight: 300;
+          line-height: 1.75;
+          color: rgba(240, 237, 232, 0.68);
+          max-width: 460px;
+          margin: 0 0 20px;
+        }
+
+        .sg-hero-badges {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 8px;
+        }
+
+        .sg-hero-badges span {
+          border: 1px solid rgba(168, 164, 156, 0.22);
+          background: rgba(240, 237, 232, 0.06);
+          padding: 8px 14px;
           border-radius: 999px;
-          background: rgba(175, 170, 162, 0.18);
+          font-size: 9px;
+          letter-spacing: 0.24em;
+          text-transform: uppercase;
+          color: rgba(240, 237, 232, 0.78);
+        }
+
+        .sg-hero-scroll {
+          position: absolute;
+          bottom: 28px;
+          right: clamp(28px, 5vw, 64px);
+          z-index: 2;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 6px;
+          color: var(--c-smoke);
+        }
+
+        .sg-hero-scroll span {
+          font-size: 8px;
+          letter-spacing: 0.4em;
+          text-transform: uppercase;
+        }
+
+        .sg-scroll-arrow {
+          font-size: 14px;
+          animation: sg-bob 2s ease-in-out infinite;
+        }
+
+        @keyframes sg-bob {
+          0%, 100% { transform: translateY(0); }
+          50%       { transform: translateY(5px); }
+        }
+
+        /* ── Chapter ─────────────────── */
+
+        .sg-chapter {
+          padding: clamp(56px, 8vw, 96px) 0 64px;
+          animation: sg-fade-in 0.4s ease;
+        }
+
+        @keyframes sg-fade-in {
+          from { opacity: 0; transform: translateY(12px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .sg-chapter-header {
+          max-width: var(--prose-w);
+          margin: 0 auto;
+          padding: 0 clamp(24px, 5vw, 64px) 40px;
+        }
+
+        .sg-chapter-eyebrow {
+          font-size: 9px;
+          font-weight: 500;
+          letter-spacing: 0.44em;
+          text-transform: uppercase;
+          color: var(--c-stone);
+          margin: 8px 0 0;
+        }
+
+        .sg-chapter-title {
+          font-size: clamp(34px, 5vw, 64px);
+          font-weight: 300;
+          line-height: 1.0;
+          letter-spacing: -0.01em;
+          text-transform: uppercase;
+          color: var(--c-cream);
+          margin: 10px 0 0;
+        }
+
+        .sg-chapter-sub {
+          font-size: clamp(15px, 1.8vw, 19px);
+          font-weight: 300;
+          font-style: italic;
+          line-height: 1.7;
+          color: var(--c-stone);
+          margin: 14px 0 0;
+          max-width: 52ch;
+        }
+
+        /* ── Chapter images ──────────── */
+
+        .chapter-images {
+          display: flex;
+          gap: 12px;
+          padding: 0 clamp(24px, 5vw, 64px) 48px;
+          max-width: calc(var(--prose-w) + 200px);
+          margin: 0 auto;
           overflow: hidden;
         }
 
-        .progress-fill {
-          height: 100%;
-          background: linear-gradient(90deg, #a8a49c 0%, #c8c4bb 100%);
-          transition: width 0.3s ease;
-        }
-
-        .progress-copy {
-          display: inline-block;
-          margin-top: 10px;
-          font-size: 10px;
-          letter-spacing: 0.24em;
-          text-transform: uppercase;
-          color: var(--stone-muted);
-        }
-
-        .experience-layout {
-          display: grid;
-          grid-template-columns: 300px minmax(0, 1fr);
-          gap: 16px;
-          align-items: start;
-        }
-
-        .chapter-rail {
-          position: sticky;
-          top: 84px;
-          display: grid;
-          gap: 8px;
-          max-height: calc(100vh - 104px);
-          overflow: auto;
-          padding-right: 4px;
-        }
-
-        .chapter-pill {
-          text-align: left;
-          border-radius: 14px;
-          padding: 10px 12px;
-          display: grid;
-          gap: 4px;
-          cursor: pointer;
-        }
-
-        .chapter-pill-index {
-          font-size: 10px;
-          letter-spacing: 0.3em;
-          text-transform: uppercase;
-          color: var(--stone-muted);
-        }
-
-        .chapter-pill-title {
-          font-size: 13px;
-          color: var(--stone-text);
-          line-height: 1.4;
-        }
-
-        .chapter-pill.is-active {
-          background: rgba(200, 196, 187, 0.24);
-        }
-
-        .chapter-card {
-          border-radius: 22px;
-          padding: clamp(20px, 3.3vw, 38px);
-        }
-
-        .chapter-head {
-          padding-bottom: 16px;
-          margin-bottom: 20px;
-          border-bottom: 1px solid rgba(175, 170, 162, 0.2);
-        }
-
-        .chapter-kicker {
-          font-size: 10px;
-          letter-spacing: 0.34em;
-          text-transform: uppercase;
-          color: var(--stone-muted);
-        }
-
-        .chapter-title {
-          margin: 9px 0 0;
-          font-size: clamp(30px, 4.2vw, 54px);
-          text-transform: uppercase;
-          font-weight: 300;
-          line-height: 1.06;
-        }
-
-        .guide-h1 {
-          margin: 0 0 18px;
-          font-size: clamp(33px, 4.7vw, 58px);
-          text-transform: uppercase;
-          line-height: 1.05;
-          font-weight: 300;
-        }
-
-        .guide-h2 {
-          margin: 34px 0 14px;
-          font-size: clamp(27px, 3.8vw, 44px);
-          line-height: 1.08;
-          text-transform: uppercase;
-          font-weight: 300;
-        }
-
-        .guide-h3 {
-          margin: 24px 0 8px;
-          font-size: clamp(21px, 2.8vw, 30px);
-          line-height: 1.12;
-          font-weight: 300;
-        }
-
-        .guide-p {
+        .chapter-img-item {
           margin: 0;
-          font-size: 15px;
-          line-height: 1.86;
-          color: rgba(240, 237, 232, 0.9);
         }
 
-        .guide-p + .guide-p,
-        .guide-p + .guide-ul,
-        .guide-p + .guide-ol,
-        .guide-ul + .guide-p,
-        .guide-ol + .guide-p,
-        .guide-ul + .guide-ul,
-        .guide-ol + .guide-ol {
-          margin-top: 12px;
+        .chapter-img-item.is-wide {
+          flex: 1.6;
         }
 
-        .guide-ul,
-        .guide-ol {
-          margin: 0;
-          padding-left: 1.2rem;
-          color: rgba(240, 237, 232, 0.86);
-          line-height: 1.78;
+        .chapter-img-item.is-narrow {
+          flex: 1;
         }
 
-        .guide-li {
-          margin: 3px 0;
+        .chapter-img-wrap {
+          overflow: hidden;
+          border-radius: 3px;
+          background: var(--c-surface);
         }
 
-        .checklist-li {
-          list-style: none;
-          margin: 7px 0;
-          padding-left: 0;
-        }
-
-        .checklist-toggle {
+        .chapter-img {
           width: 100%;
-          display: flex;
-          align-items: flex-start;
-          gap: 10px;
-          text-align: left;
-          padding: 0;
-          border: 0;
-          background: transparent;
-          color: inherit;
-          cursor: pointer;
-          font: inherit;
-          line-height: 1.78;
+          height: auto;
+          display: block;
         }
 
-        .checklist-box {
-          width: 18px;
-          height: 18px;
-          margin-top: 4px;
-          flex-shrink: 0;
-          border: 1px solid rgba(195, 190, 182, 0.32);
-          border-radius: 4px;
+        .chapter-img-caption {
+          margin-top: 8px;
+          font-size: 11px;
+          font-style: italic;
+          color: var(--c-smoke);
+          line-height: 1.55;
+        }
+
+        /* ── Prose ───────────────────── */
+
+        .sg-prose {
+          max-width: var(--prose-w);
+          margin: 0 auto;
+          padding: 0 clamp(24px, 5vw, 64px);
+        }
+
+        .prose-p {
+          font-size: 16px;
+          font-weight: 300;
+          line-height: 1.9;
+          color: var(--c-stone);
+          margin: 0 0 18px;
+        }
+
+        .prose-h1,
+        .prose-h2 {
+          font-size: clamp(22px, 3vw, 32px);
+          font-weight: 400;
+          line-height: 1.15;
+          letter-spacing: 0.01em;
+          text-transform: uppercase;
+          color: var(--c-cream);
+          margin: 48px 0 14px;
+        }
+
+        .prose-h3 {
+          font-size: 10px;
+          font-weight: 500;
+          letter-spacing: 0.42em;
+          text-transform: uppercase;
+          color: var(--c-cream);
+          margin: 32px 0 10px;
+        }
+
+        .prose-strong {
+          color: var(--c-cream);
+          font-weight: 400;
+        }
+
+        .prose-em {
+          font-style: italic;
+          color: var(--c-pale);
+        }
+
+        .prose-ul,
+        .prose-ol {
+          padding-left: 0;
+          margin: 0 0 18px;
+          list-style: none;
+        }
+
+        .prose-li {
+          font-size: 16px;
+          font-weight: 300;
+          line-height: 1.8;
+          color: var(--c-stone);
+          padding: 4px 0 4px 20px;
           position: relative;
-          transition: background 0.2s ease, border-color 0.2s ease;
         }
 
-        .checklist-box::after {
-          content: "";
+        .prose-li::before {
+          content: "—";
           position: absolute;
-          left: 5px;
-          top: 2px;
-          width: 4px;
-          height: 9px;
-          border-right: 2px solid #0d0c0b;
-          border-bottom: 2px solid #0d0c0b;
-          transform: rotate(45deg);
-          opacity: 0;
-          transition: opacity 0.2s ease;
+          left: 0;
+          color: var(--c-smoke);
+          font-size: 12px;
         }
 
-        .checklist-box.is-checked {
-          background: #c8c4bb;
-          border-color: #c8c4bb;
+        .prose-hr {
+          border: none;
+          border-top: 1px solid var(--c-border);
+          margin: 40px 0;
         }
 
-        .checklist-box.is-checked::after {
-          opacity: 1;
-        }
-
-        .checklist-label {
-          color: rgba(240, 237, 232, 0.9);
-          transition: color 0.2s ease, text-decoration-color 0.2s ease;
-        }
-
-        .checklist-label.is-checked {
-          text-decoration: line-through;
-          color: var(--stone-muted);
-        }
-
-        .guide-hr {
-          border: 0;
-          border-top: 1px solid rgba(175, 170, 162, 0.2);
-          margin: 28px 0;
-        }
-
-        .guide-link {
-          color: var(--stone-pale);
+        .prose-link {
+          color: var(--c-cream);
           text-underline-offset: 3px;
         }
 
-        .maya-gallery {
-          margin: 20px 0;
+        /* ── Checklist items ─────────── */
+
+        .checklist-li {
+          padding: 0;
+          margin: 4px 0;
         }
 
-        .maya-grid {
-          display: grid;
-          grid-template-columns: repeat(2, minmax(0, 1fr));
+        .checklist-li::before {
+          display: none;
+        }
+
+        .checklist-btn {
+          display: flex;
+          align-items: flex-start;
           gap: 12px;
+          width: 100%;
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 8px 0;
+          text-align: left;
         }
 
-        .visual-card,
-        .teaching-visual {
-          margin: 0;
-          border: 1px solid rgba(175, 170, 162, 0.2);
-          background: rgba(28, 27, 25, 0.55);
+        .checklist-box {
+          flex-shrink: 0;
+          width: 16px;
+          height: 16px;
+          border: 1px solid rgba(168, 164, 156, 0.4);
+          margin-top: 3px;
+          transition: background 0.18s ease, border-color 0.18s ease;
+        }
+
+        .checklist-box.is-checked {
+          background: var(--c-cream);
+          border-color: var(--c-cream);
+        }
+
+        .checklist-label {
+          font-size: 15px;
+          font-weight: 300;
+          line-height: 1.7;
+          color: var(--c-stone);
+          transition: color 0.18s ease;
+        }
+
+        .checklist-label.is-checked {
+          color: var(--c-smoke);
+          text-decoration: line-through;
+          text-decoration-color: rgba(168, 164, 156, 0.4);
+        }
+
+        /* ── Inline image blocks ─────── */
+
+        .prose-img-block {
+          margin: 36px -24px;
+          padding: 0;
+        }
+
+        .prose-img-label {
+          font-size: 9px;
+          font-weight: 500;
+          letter-spacing: 0.42em;
+          text-transform: uppercase;
+          color: var(--c-smoke);
+          padding: 0 24px;
+          margin-bottom: 10px;
+        }
+
+        .prose-img-wrap {
           overflow: hidden;
+          background: var(--c-surface);
         }
 
-        .visual-card:last-child {
-          grid-column: 1 / -1;
-        }
-
-        .visual-image-wrap,
-        .teaching-image-wrap {
-          line-height: 0;
-          background: #1c1b19;
-        }
-
-        .visual-image,
-        .teaching-image {
+        .prose-img {
           width: 100%;
           height: auto;
           display: block;
         }
 
-        .visual-card figcaption,
-        .teaching-caption {
-          padding: 10px 12px 12px;
-          font-size: 13px;
-          color: rgba(240, 237, 232, 0.72);
-          line-height: 1.6;
+        .prose-img-caption {
+          font-size: 11px;
+          font-style: italic;
+          color: var(--c-smoke);
+          line-height: 1.55;
+          padding: 8px 24px 0;
         }
+
+        /* ── Maya gallery ────────────── */
+
+        .maya-gallery {
+          display: grid;
+          grid-template-columns: repeat(5, 1fr);
+          gap: 8px;
+          margin: 32px 0;
+        }
+
+        .maya-item {
+          margin: 0;
+        }
+
+        .maya-img-wrap {
+          overflow: hidden;
+          border-radius: 2px;
+          background: var(--c-surface);
+        }
+
+        .maya-img {
+          width: 100%;
+          height: auto;
+          display: block;
+        }
+
+        .maya-item figcaption {
+          margin-top: 6px;
+          font-size: 10px;
+          font-style: italic;
+          color: var(--c-smoke);
+          line-height: 1.4;
+        }
+
+        /* ── Feed preview ────────────── */
 
         .feed-preview {
-          margin: 18px 0;
+          margin: 32px 0;
         }
 
-        .feed-preview-image-wrap {
-          border: 1px solid rgba(175, 170, 162, 0.2);
-          padding: 8px;
-          background: rgba(28, 27, 25, 0.55);
+        .feed-preview-wrap {
+          overflow: hidden;
+          border-radius: 2px;
+          max-width: 480px;
+          background: var(--c-surface);
         }
 
-        .feed-preview-image {
+        .feed-preview-img {
           width: 100%;
-          max-width: 680px;
           height: auto;
           display: block;
-          margin: 0 auto;
         }
 
         .feed-preview figcaption {
-          margin-top: 8px;
-          font-size: 13px;
-          color: rgba(240, 237, 232, 0.68);
+          margin-top: 10px;
+          font-size: 12px;
           font-style: italic;
-          text-align: center;
+          color: var(--c-smoke);
+          line-height: 1.6;
+          max-width: 480px;
         }
 
-        .challenge-wrap {
-          margin-top: 24px;
-          padding-top: 16px;
-          border-top: 1px solid rgba(175, 170, 162, 0.2);
+        /* ── 7-Day challenge ─────────── */
+
+        .challenge {
+          max-width: var(--prose-w);
+          margin: 48px auto 0;
+          padding: 0 clamp(24px, 5vw, 64px);
+        }
+
+        .challenge-eyebrow {
+          font-size: 9px;
+          font-weight: 500;
+          letter-spacing: 0.44em;
+          text-transform: uppercase;
+          color: var(--c-smoke);
+          margin-bottom: 20px;
         }
 
         .challenge-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-          gap: 12px;
+          grid-template-columns: repeat(7, 1fr);
+          gap: 8px;
         }
 
         .challenge-card {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          padding: 14px 12px;
+          background: rgba(28, 27, 25, 0.8);
+          border: 1px solid var(--c-border);
+          border-radius: 2px;
           text-align: left;
-          border: 1px solid rgba(195, 190, 182, 0.2);
-          background: rgba(175, 170, 162, 0.08);
-          border-radius: 14px;
-          padding: 14px;
           cursor: pointer;
           transition: border-color 0.2s ease, background 0.2s ease;
         }
 
-        .challenge-card.is-complete {
-          border-color: rgba(200, 196, 187, 0.5);
-          background: rgba(200, 196, 187, 0.14);
+        .challenge-card:hover {
+          border-color: rgba(168, 164, 156, 0.3);
         }
 
-        .challenge-day {
-          display: block;
-          margin: 0;
-          font-size: 10px;
-          letter-spacing: 0.34em;
-          text-transform: uppercase;
-          color: var(--stone-muted);
+        .challenge-card.is-done {
+          border-color: rgba(240, 237, 232, 0.28);
+          background: rgba(240, 237, 232, 0.05);
+        }
+
+        .challenge-num {
+          font-size: 20px;
+          font-weight: 300;
+          font-family: 'Cormorant Garamond', serif;
+          color: var(--c-cream);
+          line-height: 1;
+        }
+
+        .challenge-card.is-done .challenge-num {
+          color: var(--c-stone);
         }
 
         .challenge-title {
-          margin: 10px 0 8px;
-          font-size: 20px;
-          line-height: 1.12;
-          text-transform: uppercase;
-          font-weight: 300;
-          color: var(--stone-text);
-        }
-
-        .challenge-copy {
-          margin: 0;
-          font-size: 14px;
-          color: rgba(240, 237, 232, 0.78);
-          line-height: 1.7;
-        }
-
-        .teaching-label {
-          padding: 10px 12px;
           font-size: 9px;
-          letter-spacing: 0.42em;
+          font-weight: 500;
+          letter-spacing: 0.14em;
           text-transform: uppercase;
-          color: rgba(240, 237, 232, 0.52);
-          border-bottom: 1px solid rgba(175, 170, 162, 0.18);
+          color: var(--c-cream);
+          line-height: 1.4;
         }
 
-        .missing-visual {
-          padding: 24px 18px;
-          text-align: left;
-          border-top: 1px solid rgba(175, 170, 162, 0.18);
+        .challenge-desc {
+          font-size: 11px;
+          font-weight: 300;
+          line-height: 1.55;
+          color: var(--c-smoke);
         }
 
-        .missing-visual p {
-          margin: 0;
-          font-size: 12px;
-          letter-spacing: 0.24em;
-          text-transform: uppercase;
-          color: rgba(240, 237, 232, 0.5);
-        }
+        /* ── Chapter nav ─────────────── */
 
-        .missing-visual span {
-          display: block;
-          margin-top: 8px;
-          color: rgba(240, 237, 232, 0.82);
-          line-height: 1.7;
-          font-size: 14px;
-        }
-
-        .chapter-controls {
-          margin-top: 28px;
+        .sg-chapter-nav {
           display: flex;
-          flex-wrap: wrap;
+          align-items: center;
+          gap: 0;
+          max-width: var(--prose-w);
+          margin: 64px auto 0;
+          padding: 0 clamp(24px, 5vw, 64px);
+          border-top: 1px solid var(--c-border);
+        }
+
+        .sg-nav-btn {
+          display: flex;
+          align-items: center;
           gap: 10px;
-        }
-
-        .control-btn {
-          border: 1px solid rgba(195, 190, 182, 0.32);
-          background: rgba(175, 170, 162, 0.08);
-          color: var(--stone-text);
-          padding: 12px 18px;
-          border-radius: 999px;
-          text-transform: uppercase;
-          font-size: 10px;
-          letter-spacing: 0.2em;
+          padding: 20px 0;
+          background: none;
+          border: none;
           cursor: pointer;
+          font-size: 10px;
+          font-weight: 500;
+          letter-spacing: 0.32em;
+          text-transform: uppercase;
+          color: var(--c-stone);
+          transition: color 0.18s ease;
         }
 
-        .control-btn:disabled {
-          opacity: 0.45;
+        .sg-nav-btn:hover:not(:disabled) {
+          color: var(--c-cream);
+        }
+
+        .sg-nav-btn:disabled {
+          opacity: 0.28;
           cursor: default;
         }
 
-        .control-btn.is-primary {
-          background: var(--stone-pale);
-          border-color: var(--stone-pale);
-          color: #0d0c0b;
+        .sg-nav-prev { margin-right: auto; }
+        .sg-nav-next { margin-left: auto; }
+
+        .sg-nav-divider {
+          width: 1px;
+          height: 32px;
+          background: var(--c-border);
         }
 
-        .funnel-card {
-          border-radius: 22px;
-          padding: 26px;
-          margin-top: 18px;
+        /* ── Funnel CTA ──────────────── */
+
+        .sg-funnel {
+          background: var(--c-char);
+          border-top: 1px solid var(--c-border);
+          padding: clamp(48px, 7vw, 96px) clamp(24px, 5vw, 64px);
         }
 
-        .funnel-kicker {
-          margin: 0;
-          font-size: 10px;
-          letter-spacing: 0.44em;
-          text-transform: uppercase;
-          color: var(--stone-muted);
+        .sg-funnel-inner {
+          max-width: var(--prose-w);
+          margin: 0 auto;
         }
 
-        .funnel-title {
-          margin: 8px 0 10px;
-          font-size: clamp(28px, 3.8vw, 44px);
+        .sg-funnel-title {
+          font-size: clamp(30px, 4vw, 52px);
           font-weight: 300;
           line-height: 1.08;
+          letter-spacing: -0.01em;
           text-transform: uppercase;
+          color: var(--c-cream);
+          margin: 10px 0 16px;
         }
 
-        .funnel-steps {
-          margin: 0;
-          padding-left: 1.2rem;
-          color: rgba(240, 237, 232, 0.86);
-          line-height: 1.75;
+        .sg-funnel-copy {
+          font-size: 16px;
+          font-weight: 300;
+          line-height: 1.85;
+          color: var(--c-stone);
+          max-width: 52ch;
+          margin-bottom: 28px;
         }
 
-        .funnel-ctas {
-          margin-top: 18px;
+        .sg-funnel-ctas {
           display: flex;
-          flex-wrap: wrap;
-          gap: 10px;
+          justify-content: center;
         }
 
-        .cta-primary,
-        .cta-secondary,
-        .cta-tertiary {
-          border-radius: 999px;
-          padding: 12px 16px;
+        .sg-cta-primary {
+          display: inline-block;
+          padding: 13px 22px;
+          background: var(--c-cream);
+          color: var(--c-black);
           text-decoration: none;
+          font-size: 9px;
+          font-weight: 500;
+          letter-spacing: 0.36em;
           text-transform: uppercase;
-          font-size: 10px;
-          letter-spacing: 0.18em;
+          border-radius: 999px;
+          transition: opacity 0.18s ease;
         }
 
-        .cta-primary {
-          background: var(--stone-pale);
-          color: #0d0c0b;
-        }
+        .sg-cta-primary:hover { opacity: 0.88; }
 
-        .cta-secondary,
-        .cta-tertiary {
-          border: 1px solid rgba(195, 190, 182, 0.32);
-          color: var(--stone-text);
-          background: rgba(175, 170, 162, 0.08);
-        }
+        /* ── Mobile responsive ────────── */
 
-        @media (max-width: 980px) {
-          .experience-layout {
-            grid-template-columns: 1fr;
+        @media (max-width: 900px) {
+          .sg-sidebar {
+            transform: translateX(-100%);
+            transition: transform 0.28s ease;
+            z-index: 90;
           }
 
-          .chapter-rail {
-            position: static;
-            max-height: none;
+          .sg-sidebar.is-open {
+            transform: translateX(0);
+          }
+
+          .sg-overlay {
+            display: block;
+          }
+
+          .sg-mobile-header {
             display: flex;
-            gap: 8px;
-            overflow: auto;
-            padding-bottom: 4px;
           }
 
-          .chapter-pill {
-            min-width: 190px;
+          .sg-main {
+            margin-left: 0;
+          }
+
+          .sg-hero {
+            height: 90vh;
+          }
+
+          .sg-hero-img {
+            object-position: 70% 10%;
+          }
+
+          .chapter-images {
+            flex-direction: column;
+          }
+
+          .chapter-img-item.is-wide,
+          .chapter-img-item.is-narrow {
+            flex: none;
+            width: 100%;
+          }
+
+          .challenge-grid {
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+          }
+
+          .maya-gallery {
+            grid-template-columns: repeat(3, 1fr);
+          }
+
+          .prose-img-block {
+            margin: 28px 0;
           }
         }
 
-        @media (max-width: 720px) {
-          .guide-header {
-            padding: 18px 16px;
+        @media (max-width: 480px) {
+          .sg-hero-title {
+            font-size: clamp(40px, 11vw, 64px);
           }
 
-          .header-label {
-            display: none;
+          .challenge-grid {
+            grid-template-columns: 1fr 1fr;
           }
 
-          .hero-card,
-          .experience-layout,
-          .funnel-card {
-            width: calc(100% - 20px);
+          .maya-gallery {
+            grid-template-columns: repeat(2, 1fr);
           }
 
-          .hero-card,
-          .chapter-card,
-          .funnel-card {
-            padding: 18px;
-            border-radius: 16px;
+          .sg-funnel-ctas {
+            flex-direction: column;
           }
 
-          .chapter-pill {
-            min-width: 168px;
-            padding: 8px 10px;
-          }
-
-          .chapter-pill-title {
-            font-size: 12px;
-            line-height: 1.3;
-          }
-
-          .guide-p,
-          .guide-ul,
-          .guide-ol {
-            font-size: 14px;
-            line-height: 1.7;
-          }
-
-          .guide-h2 {
-            margin-top: 24px;
-          }
-
-          .teaching-label {
-            letter-spacing: 0.26em;
-            font-size: 8px;
-          }
-
-          .visual-card figcaption,
-          .teaching-caption,
-          .feed-preview figcaption {
-            font-size: 12px;
-            line-height: 1.5;
-          }
-
-          .maya-grid {
-            grid-template-columns: 1fr;
-          }
-
-          .visual-card:last-child {
-            grid-column: auto;
-          }
-
-          .chapter-controls {
-            gap: 8px;
-          }
-
-          .control-btn {
-            width: 100%;
-            text-align: center;
-          }
-
-          .funnel-ctas {
-            gap: 8px;
-          }
-
-          .cta-primary,
-          .cta-secondary,
-          .cta-tertiary {
-            width: 100%;
+          .sg-cta-primary {
             text-align: center;
           }
         }
       `}</style>
-    </main>
+    </div>
   )
 }

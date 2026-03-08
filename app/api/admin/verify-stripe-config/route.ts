@@ -29,6 +29,9 @@ export async function GET(request: NextRequest) {
       "STRIPE_SSELFIE_STUDIO_MEMBERSHIP_PRICE_ID",
       "STRIPE_ONE_TIME_SESSION_PRICE_ID",
       "STRIPE_PAID_BLUEPRINT_PRICE_ID",
+      "STRIPE_PRICE_BRAND_STRATEGY_PACK",
+      "STRIPE_PRICE_SELFIE_GUIDE_BUNDLE",
+      "STRIPE_PRICE_SELFIE_GUIDE",
     ]
     
     for (const envVar of envVars) {
@@ -88,6 +91,24 @@ export async function GET(request: NextRequest) {
         envVar: "STRIPE_PAID_BLUEPRINT_PRICE_ID",
         expectedAmount: 4700,
         expectedAmountFormatted: "$47.00",
+        expectedRecurring: false,
+      },
+      brand_strategy_pack: {
+        envVar: "STRIPE_PRICE_BRAND_STRATEGY_PACK",
+        expectedAmount: 1900,
+        expectedAmountFormatted: "$19.00",
+        expectedRecurring: false,
+      },
+      selfie_guide_bundle: {
+        envVar: "STRIPE_PRICE_SELFIE_GUIDE_BUNDLE",
+        expectedAmount: 2700,
+        expectedAmountFormatted: "$27.00",
+        expectedRecurring: false,
+      },
+      selfie_guide: {
+        envVar: "STRIPE_PRICE_SELFIE_GUIDE",
+        expectedAmount: 1700,
+        expectedAmountFormatted: "EUR 17.00",
         expectedRecurring: false,
       },
     }

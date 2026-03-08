@@ -1,4 +1,4 @@
-# YOUR FREE SELFIE GUIDE
+# YOUR SELFIE GUIDE
 ## One Good Selfie Can Build Your Brand
 
 Here's the thing...
@@ -62,9 +62,9 @@ Go to **Settings → Camera → Record Video** and select 1080p HD at 30 fps.
 
 I want you to understand something before we go any further.
 
-You can have perfect settings, the right angles, and a great outfit. But if the light is wrong, the photo will look wrong. Every time.
-
-Good light is not optional. It is the whole thing.
+> You can have perfect settings, the right angles, and a great outfit. But if the light is wrong, the photo will look wrong. Every time.
+>
+> Good light is not optional. It is the whole thing.
 
 [IMAGE: window-lighting-setup.png — Example of window lighting setup with subject standing beside a window facing natural light]
 
@@ -184,9 +184,9 @@ Here's what nobody tells you about personal branding photos.
 
 The technical things, settings, light, angles, editing, are all learnable in a weekend. And yes, they matter.
 
-But the thing that makes someone's content magnetic is not technique. It is presence.
-
-It is whether you actually showed up in the photo, or whether you were hiding behind your best angle.
+> The thing that makes someone's content magnetic is not technique. It is presence.
+>
+> It is whether you actually showed up in the photo, or whether you were hiding behind your best angle.
 
 ### Why This Feels Hard
 
@@ -232,7 +232,9 @@ Every photo you post is a touchpoint. Every caption is a conversation. Every sto
 
 **The first 3 seconds.** On TikTok and Reels, watch time is everything. If someone scrolls past in the first 3 seconds, the algorithm buries your content. Your hook has to be immediate.
 
-**Consistency over virality.** One viral post does not build a business. Showing up regularly, even imperfectly, does.
+**Consistency over virality.**
+
+> One viral post does not build a business. Showing up regularly, even imperfectly, does.
 
 ### The Content Formula That Works
 
@@ -339,7 +341,7 @@ The selfie she works from has to be good. The better your selfie, the better the
 
 ### Try Maya Free
 
-If you are not already inside SSELFIE Studio, you can start a free trial and generate your first brand photos today.
+If you are not already inside SSELFIE Studio, you can join and generate your first brand photos today.
 
 [Open Maya in Studio](/studio?tab=maya)
 
@@ -367,14 +369,18 @@ Sandra x
 
 ---
 
-### Your Next Step
+### Here's Where To Go Next
 
-You have completed the free guide. Here is where to go from here:
+Here's the thing.
 
-**If you want your personalized brand strategy** (what to post, who to talk to, what to offer) grab the EUR 17 Brand Strategy. It is built around your specific business and goals.
+You've just learned everything you need to take a great selfie. But a great selfie on its own isn't a brand. It's a start.
 
-**If you are ready to generate brand photos with Maya** and access the full content creation system, join Studio Membership.
+The women I know who are actually building audiences — they're not winging it. They've got a system. They know who they're talking to. They know what to say. They show up consistently because they're not spending hours staring at a blank caption box.
 
-**If you want to try Maya right now**, your first session is free.
+**That's what the €17 Brand Strategy gives you.** Not just "what to post." But why people follow someone like you, who your actual audience is, and exactly how to turn one selfie into a week of content that sounds like you — not like you're trying too hard.
 
-[Get EUR 17 Brand Strategy](/brand-strategy)
+Ready?
+
+[Get the €17 Brand Strategy](/brand-strategy)
+
+[Join Studio Membership](/checkout/membership)

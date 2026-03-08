@@ -89,7 +89,7 @@ async function getSubscriber(token: string): Promise<{
   }
 }
 
-function StatusView({ title, body }: { title: string; body: string }) {
+function StatusView({ title, body, ctaLabel = "Back to Selfie Guide" }: { title: string; body: string; ctaLabel?: string }) {
   return (
     <main className={`status-page ${inter.className}`}>
       <div className="status-card">
@@ -97,7 +97,7 @@ function StatusView({ title, body }: { title: string; body: string }) {
         <h1 className={cormorant.className}>{title}</h1>
         <p>{body}</p>
         <Link href="/selfie-guide" className="status-cta">
-          GET NEW ACCESS
+          {ctaLabel}
         </Link>
       </div>
 
@@ -176,7 +176,7 @@ export default async function SelfieGuideAccessPage({ params }: PageProps) {
     return (
       <StatusView
         title="INVALID ACCESS LINK"
-        body="This guide link has expired or doesn't exist. Enter your email again to get a fresh link."
+        body="This guide link is not valid right now. Go back to the Selfie Guide page, use the link from your email, or contact support if you need help."
       />
     )
   }

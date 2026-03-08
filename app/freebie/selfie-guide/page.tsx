@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation"
+import SelfieGuideLanding from "@/components/freebie/selfie-guide-landing"
 
 export default function LegacyFreebieSelfieGuidePage() {
-  redirect("/selfie-guide")
+  return <SelfieGuideLanding />
 }

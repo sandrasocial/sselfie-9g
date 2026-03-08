@@ -39,6 +39,8 @@ Go to: **Settings → Camera**
 - ❌ **Live Photos** — Uses extra storage and you rarely need the motion
 - ❌ **View Outside the Frame** — Distracting while you're shooting
 
+[IMAGE: iphone-settings-mockup.png — iPhone Settings → Camera screen showing Grid, Mirror Front Camera, Smart HDR enabled and Live Photos disabled]
+
 ### For iPhone 15/16 Users (2026 Pro Tip):
 - Use **Photographic Styles** → Try "Natural" or "Vibrant" for more control over skin tones
 - Enable **Action Mode** if you're filming video content (stabilizes shaky hands)
@@ -81,6 +83,8 @@ Stand about 3 feet from a large window. Face the window directly. Natural light 
 
 If the light is too bright, put a sheer white curtain over the window. Instant diffusion.
 
+[IMAGE: window-lighting-setup.png — Woman standing 3 feet from a large window, facing the light, phone in hand, showing correct window light selfie positioning with soft natural lighting on her face]
+
 ### Artificial Light (When Natural Light Isn't Enough)
 
 **Ring lights.**  
@@ -103,6 +107,8 @@ My current favorite setup:
 
 **The rule:** Light on your face, not behind it.
 
+[IMAGE: lighting-comparison-grid.png — 4-panel comparison: overhead harsh light vs window light vs golden hour vs backlighting, showing the difference in how each lights the face]
+
 ---
 
 ## PART 3: Angles & Composition
@@ -113,10 +119,12 @@ You don't need to be a model. You just need to understand what works for your fa
 
 ### The Classic High Angle
 
-**Slightly above eye level.**  
+**Slightly above eye level.**
 This is the most universally flattering angle. Makes your eyes look bigger, jaw look sharper.
 
 Hold your phone slightly above your head, angle it down about 15-20 degrees. Not so high that you're looking up at the camera (awkward), but high enough that it's not straight-on.
+
+[IMAGE: angle-comparison-grid.png — Side-by-side: phone held too low (unflattering double chin angle) vs phone at eye level (neutral) vs phone held 15 degrees above eye level (most flattering) with labels showing camera position]
 
 ### Find Your Best Side
 
@@ -146,14 +154,16 @@ Where you look matters.
 
 ### Posture Tricks
 
-**Chin forward and down slightly.**  
+**Chin forward and down slightly.**
 This eliminates double chin shadows and defines your jawline. Feels weird. Looks amazing.
 
-**Shoulders back.**  
+**Shoulders back.**
 Good posture reads as confidence.
 
-**Relax your face.**  
+**Relax your face.**
 Soft smile or neutral expression. Think "I just heard good news" not "CHEESE!"
+
+[IMAGE: pose-guide-grid.png — 4 natural poses: standing facing forward with good posture, slight body turn with hand on hip, laughing candidly, looking slightly off-camera with soft smile — each labeled with pose name]
 
 ### Add Depth
 
@@ -241,6 +251,8 @@ Open your photo → Tap **Edit** → Here's what I adjust:
 **Sharpness:** Subtle increase brings out detail (don't overdo it)
 
 **Pro tip:** Use the "Auto" button first. Sometimes it nails it. If not, tweak from there.
+
+[IMAGE: editing-before-after.png — Split-screen showing: left side raw selfie (slightly flat, no adjustments), right side after light editing (brighter, more contrast, warmer skin tone) with editing sliders visible showing Exposure +0.3, Contrast +10, Warmth +8]
 
 ### Apps I Actually Use (Optional):
 

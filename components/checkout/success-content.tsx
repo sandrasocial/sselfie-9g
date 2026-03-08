@@ -20,6 +20,7 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType, re
   const router = useRouter()
   const [userInfo, setUserInfo] = useState(initialUserInfo)
   const isBrandEnginePurchase = String(purchaseType || "").startsWith("brand_engine_")
+  const isSelfieGuidePurchase = purchaseType === "selfie_guide" || purchaseType === "selfie_guide_bundle"
   const resolvedReturnTo = sanitizeRedirect(returnTo || null, "/brand-strategy")
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [name, setName] = useState("")
@@ -86,6 +87,10 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType, re
   const [pollingMessage, setPollingMessage] = useState("Processing your payment. This can take up to 2 minutes.")
   const [timeRemaining, setTimeRemaining] = useState(120)
   const [showTimeoutActions, setShowTimeoutActions] = useState(false)
+  const [isPollingSelfieGuideAccess, setIsPollingSelfieGuideAccess] = useState(false)
+  const [selfieGuidePollAttempts, setSelfieGuidePollAttempts] = useState(0)
+  const [selfieGuideStatus, setSelfieGuideStatus] = useState("Preparing your guide. This can take up to 2 minutes.")
+  const [showSelfieGuideTimeout, setShowSelfieGuideTimeout] = useState(false)
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -114,6 +119,12 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType, re
         return
       }
 
+      if (user && isSelfieGuidePurchase) {
+        setIsPollingSelfieGuideAccess(true)
+        setSelfieGuidePollAttempts(0)
+        return
+      }
+
       // For paid blueprint, poll access status until webhook completes
       if (user && purchaseType === "paid_blueprint") {
         setIsPollingAccess(true)
@@ -121,7 +132,63 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType, re
       }
     }
     checkAuth()
-  }, [purchaseType, resolvedReturnTo, router])
+  }, [isSelfieGuidePurchase, purchaseType, resolvedReturnTo, router])
+
+  useEffect(() => {
+    if (!isPollingSelfieGuideAccess || !isAuthenticated || !isSelfieGuidePurchase) {
+      return
+    }
+
+    const pollGuideAccess = async () => {
+      try {
+        const response = await fetch("/api/selfie-guide/access-token", { cache: "no-store" })
+        const data = await response.json()
+
+        if (response.ok && data.accessToken) {
+          setIsPollingSelfieGuideAccess(false)
+          setSelfieGuideStatus("Guide ready. Opening now...")
+          setTimeout(() => {
+            router.push(`/selfie-guide/access/${encodeURIComponent(data.accessToken)}`)
+          }, 400)
+          return
+        }
+
+        setSelfieGuidePollAttempts((prev) => {
+          const next = prev + 1
+
+          if (next < 20) {
+            setSelfieGuideStatus("Preparing your guide. This can take up to 2 minutes.")
+          } else if (next < 40) {
+            setSelfieGuideStatus("Payment confirmed. Finalizing your guide access...")
+          } else {
+            setSelfieGuideStatus("Almost there. Your guide link is still syncing.")
+          }
+
+          if (next >= MAX_POLL_ATTEMPTS) {
+            setIsPollingSelfieGuideAccess(false)
+            setShowSelfieGuideTimeout(true)
+          }
+
+          return next
+        })
+      } catch (error) {
+        console.error("[SUCCESS PAGE] Selfie guide polling error:", error)
+        setSelfieGuidePollAttempts((prev) => {
+          const next = prev + 1
+          if (next >= MAX_POLL_ATTEMPTS) {
+            setIsPollingSelfieGuideAccess(false)
+            setShowSelfieGuideTimeout(true)
+          }
+          return next
+        })
+      }
+    }
+
+    const interval = setInterval(pollGuideAccess, 2000)
+    pollGuideAccess()
+
+    return () => clearInterval(interval)
+  }, [isAuthenticated, isPollingSelfieGuideAccess, isSelfieGuidePurchase, router])
 
   // Poll access status for paid blueprint purchases
   useEffect(() => {
@@ -203,6 +270,56 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType, re
 
     return () => clearInterval(interval)
   }, [isPollingAccess, isAuthenticated, purchaseType, pollAttempts, router, initialEmail, userInfo])
+
+  if (isPollingSelfieGuideAccess && isSelfieGuidePurchase) {
+    return (
+      <div className="min-h-screen bg-[#0d0c0b] flex flex-col items-center justify-center min-h-[400px] space-y-4 p-4">
+        <LoadingSpinner size="lg" />
+        <p className="text-lg font-medium text-[#f0ede8]">{selfieGuideStatus}</p>
+        <p className="text-sm text-[#8a8780]">
+          Estimated time remaining: {Math.max(0, 120 - (selfieGuidePollAttempts * 2))}s
+        </p>
+        <div className="w-64 bg-[rgba(175,170,162,0.20)] rounded-full h-2">
+          <div
+            className="bg-[#c8c4bb] h-2 rounded-full transition-all duration-1000"
+            style={{ width: `${(selfieGuidePollAttempts / MAX_POLL_ATTEMPTS) * 100}%` }}
+          />
+        </div>
+      </div>
+    )
+  }
+
+  if (showSelfieGuideTimeout && isSelfieGuidePurchase) {
+    return (
+      <div className="min-h-screen bg-[#0d0c0b] flex flex-col items-center justify-center space-y-6 p-6">
+        <div className="bg-[rgba(175,170,162,0.10)] backdrop-blur-[50px] border border-[rgba(195,190,182,0.25)] rounded-2xl p-8 max-w-md w-full text-center space-y-4">
+          <h2 className="font-['Cormorant_Garamond'] font-light text-3xl text-[#f0ede8]">
+            Your guide is on the way
+          </h2>
+          <p className="text-[#8a8780] max-w-md">
+            Payment went through. Your guide link is still syncing, and the email with your guide and preset pack is on
+            the way.
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Button
+            onClick={() => window.location.reload()}
+            variant="default"
+            className="bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[#f0ede8] transition-colors"
+          >
+            Refresh Status
+          </Button>
+          <Button
+            onClick={() => router.push("/selfie-guide")}
+            variant="outline"
+            className="border-[rgba(195,190,182,0.25)] text-[#f0ede8] tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[rgba(175,170,162,0.10)] transition-colors"
+          >
+            Back to Selfie Guide
+          </Button>
+        </div>
+      </div>
+    )
+  }
 
   // Decision 2: Removed access token polling - authenticated users redirect via checkAuth
   // Unauthenticated users will see account creation form (same as one-time session)
@@ -742,7 +859,11 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType, re
                           ? "Credit Top-Up"
                           : userInfo.productType === "brand_strategy_pack"
                             ? "Brand Strategy Pack"
-                          : "Purchase"}
+                            : userInfo.productType === "selfie_guide"
+                              ? "Selfie Guide"
+                              : userInfo.productType === "selfie_guide_bundle"
+                                ? "Selfie Guide + Brand Strategy Bundle"
+                                : "Purchase"}
                   </span>
                 </div>
                 {userInfo.credits && Number(userInfo.credits) > 0 && (
