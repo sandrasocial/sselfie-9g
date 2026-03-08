@@ -44,16 +44,9 @@ export default function ProductAccessCard({
   }
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
+    <button
+      type="button"
       onClick={handleClick}
-      onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault()
-          handleClick()
-        }
-      }}
       className="stone-panel flex min-h-[180px] w-[200px] shrink-0 flex-col overflow-hidden rounded-2xl transition-all hover:bg-[rgba(175,170,162,0.16)] active:scale-[0.98]"
       style={{ minWidth: 200 }}
     >
@@ -93,6 +86,6 @@ export default function ProductAccessCard({
           {ctaLabel} →
         </span>
       </div>
-    </div>
+    </button>
   )
 }

@@ -692,8 +692,19 @@ export default function InstagramFeedView({
 
       {/* Bio Editing Modal */}
       {showBioModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={() => !isSavingBio && setShowBioModal(false)}>
-          <div className="stone-shell-panel w-full max-w-md space-y-4 rounded-[20px] p-6 text-white" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
+          <button
+            type="button"
+            className="absolute inset-0"
+            aria-label="Close bio editor"
+            onClick={() => !isSavingBio && setShowBioModal(false)}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Edit bio"
+            className="stone-shell-panel relative z-[1] w-full max-w-md space-y-4 rounded-[20px] p-6 text-white"
+          >
             <h2 className="text-lg font-light uppercase tracking-[0.12em]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
               {isSavingBio && !bioText ? "Creating Your Bio" : "Edit Bio"}
             </h2>

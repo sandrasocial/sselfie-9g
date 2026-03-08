@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, type ReactNode } from "react"
 import Image from "next/image"
 import { useFeedPostPolling } from "@/lib/hooks/use-feed-post-polling"
 import { toast } from "@/hooks/use-toast"
@@ -169,79 +169,108 @@ export default function FeedGridItem({
     }
   }
 
+  const handleOpenPost = () => {
+    if (isComplete) {
+      onPostClick(post)
+    }
+  }
+
+  const handleRootKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (!isComplete) return
+
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault()
+      handleOpenPost()
+    }
+  }
+
+  let content: ReactNode
+
+  if (displayImageUrl && !isGenerating) {
+    content = (
+      <Image
+        src={displayImageUrl || "/placeholder.svg"}
+        alt={`Post ${post.position}`}
+        fill
+        className="object-cover"
+        sizes="(max-width: 768px) 33vw, 311px"
+      />
+    )
+  } else if (isGenerating) {
+    content = (
+      <div className="absolute inset-0 flex flex-col items-center justify-center bg-[rgba(28,27,25,0.72)] backdrop-blur-sm">
+        <span className="mb-2 h-5 w-5 rounded-full border border-[rgba(195,190,182,0.35)] border-t-[#c8c4bb] animate-spin" />
+        <div className="text-center text-[10px] font-['Inter'] font-medium text-[#8a8780]">
+          Creating...
+        </div>
+        <button
+          type="button"
+          onClick={handleStopGeneration}
+          disabled={!canStop || isStopping}
+          className={`mt-2 text-[10px] font-light ${
+            !canStop || isStopping ? "text-[#8a8780] opacity-40" : "text-[#a8a49c] hover:text-[#f0ede8]"
+          }`}
+        >
+          {isStopping ? "Stopping..." : "Stop generation"}
+        </button>
+      </div>
+    )
+  } else if (showGenerateButton) {
+    content = (
+      <button
+        type="button"
+        className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center bg-[rgba(175,170,162,0.04)] p-3 transition-colors hover:bg-[rgba(175,170,162,0.10)]"
+        onClick={handleGenerateClick}
+        disabled={isGenerating}
+      >
+        <div className="stone-chip mb-2 rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-[#a8a49c]">
+          Add
+        </div>
+        <div className="text-center font-['Inter'] text-[10px] font-medium uppercase tracking-[0.2em] text-[#8a8780]">
+          Generate image
+        </div>
+      </button>
+    )
+  } else {
+    content = (
+      <button
+        type="button"
+        className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center bg-[rgba(175,170,162,0.04)] p-3 transition-colors hover:bg-[rgba(175,170,162,0.10)]"
+        onClick={(event) => {
+          event.stopPropagation()
+          if (onAddImage) {
+            onAddImage(post.id)
+          }
+        }}
+      >
+        <div className="stone-chip mb-2 rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-[#8a8780]">
+          Add
+        </div>
+        <div className="text-center font-['Inter'] text-[10px] font-medium uppercase tracking-[0.2em] text-[#8a8780]">
+          Click to add image
+        </div>
+      </button>
+    )
+  }
+
   return (
     <div
       draggable={isComplete && !isSavingOrder}
       onDragStart={onDragStart}
       onDragOver={onDragOver}
       onDragEnd={onDragEnd}
+      onClick={isComplete ? handleOpenPost : undefined}
+      onKeyDown={handleRootKeyDown}
+      role={isComplete ? "button" : undefined}
+      tabIndex={isComplete ? 0 : undefined}
+      aria-label={isComplete ? `Open post ${post.position}` : undefined}
       className={`relative aspect-square overflow-hidden rounded-[18px] border border-[color:var(--glass-border-subtle)] bg-[rgba(175,170,162,0.08)] backdrop-blur-[28px] transition-all duration-200 ${
         isDragging ? 'opacity-50 scale-95' : ''
       } ${
         isComplete && !isSavingOrder ? 'cursor-move hover:opacity-90' : 'cursor-pointer'
       }`}
     >
-      {displayImageUrl && !isGenerating ? (
-        <Image
-          src={displayImageUrl || "/placeholder.svg"}
-          alt={`Post ${post.position}`}
-          fill
-          className="object-cover"
-          sizes="(max-width: 768px) 33vw, 311px"
-          onClick={() => onPostClick(post)}
-        />
-      ) : isGenerating ? (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-[rgba(28,27,25,0.72)] backdrop-blur-sm">
-          <span className="mb-2 h-5 w-5 rounded-full border border-[rgba(195,190,182,0.35)] border-t-[#c8c4bb] animate-spin" />
-          <div className="text-center text-[10px] font-['Inter'] font-medium text-[#8a8780]">
-            Creating...
-          </div>
-          <button
-            type="button"
-            onClick={handleStopGeneration}
-            disabled={!canStop || isStopping}
-            className={`mt-2 text-[10px] font-light ${
-              !canStop || isStopping ? "text-[#8a8780] opacity-40" : "text-[#a8a49c] hover:text-[#f0ede8]"
-            }`}
-          >
-            {isStopping ? "Stopping..." : "Stop generation"}
-          </button>
-        </div>
-      ) : (
-        // Show generation button for paid users, gallery selector for others
-        showGenerateButton ? (
-          <button
-            className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center bg-[rgba(175,170,162,0.04)] p-3 transition-colors hover:bg-[rgba(175,170,162,0.10)]"
-            onClick={handleGenerateClick}
-            disabled={isGenerating}
-          >
-            <div className="stone-chip mb-2 rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-[#a8a49c]">
-              Add
-            </div>
-            <div className="text-center font-['Inter'] text-[10px] font-medium uppercase tracking-[0.2em] text-[#8a8780]">
-              Generate image
-            </div>
-          </button>
-        ) : (
-          <div
-            className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center bg-[rgba(175,170,162,0.04)] p-3 transition-colors hover:bg-[rgba(175,170,162,0.10)]"
-            onClick={(e) => {
-              e.stopPropagation()
-              // Open gallery selector for free users
-              if (onAddImage) {
-                onAddImage(post.id)
-              }
-            }}
-          >
-            <div className="stone-chip mb-2 rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-[#8a8780]">
-              Add
-            </div>
-            <div className="text-center font-['Inter'] text-[10px] font-medium uppercase tracking-[0.2em] text-[#8a8780]">
-              Click to add image
-            </div>
-          </div>
-        )
-      )}
+      {content}
     </div>
   )
 }

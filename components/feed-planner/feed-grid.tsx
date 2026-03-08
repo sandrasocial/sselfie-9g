@@ -41,7 +41,7 @@ export default function FeedGrid({
   onDragStart,
   onDragOver,
   onDragEnd,
-}: FeedGridProps) {
+}: Readonly<FeedGridProps>) {
   // Phase 5.1: Handle direct image generation for paid users
   const handleGenerateImage = async (postId: number) => {
     if (!access?.canGenerateImages) {

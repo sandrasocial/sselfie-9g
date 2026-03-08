@@ -47,14 +47,228 @@ interface GeneratedVideo {
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
-export default function GalleryScreen({ user, userId: _userId }: GalleryScreenProps) {
+function usePullToRefresh(params: {
+  pullDistance: number
+  setPullDistance: (distance: number) => void
+  setIsPulling: (isPulling: boolean) => void
+  mutate: () => void
+  mutateVideos: () => void
+  mutateFeed: () => void
+  contentFilter: string
+}) {
+  const { pullDistance, setPullDistance, setIsPulling, mutate, mutateVideos, mutateFeed, contentFilter } = params
+
+  useEffect(() => {
+    let touchStartY = 0
+
+    const handleTouchStart = (event: TouchEvent) => {
+      if (window.scrollY === 0) {
+        touchStartY = event.touches[0].clientY
+      }
+    }
+
+    const handleTouchMove = (event: TouchEvent) => {
+      if (window.scrollY === 0 && touchStartY > 0) {
+        const touchY = event.touches[0].clientY
+        const distance = touchY - touchStartY
+
+        if (distance > 0 && distance < 150) {
+          setPullDistance(distance)
+          setIsPulling(true)
+        }
+      }
+    }
+
+    const handleTouchEnd = () => {
+      if (pullDistance > 80) {
+        mutate()
+        mutateVideos()
+        if (contentFilter === "feed") {
+          mutateFeed()
+        }
+      }
+      setIsPulling(false)
+      setPullDistance(0)
+      touchStartY = 0
+    }
+
+    window.addEventListener("touchstart", handleTouchStart)
+    window.addEventListener("touchmove", handleTouchMove)
+    window.addEventListener("touchend", handleTouchEnd)
+
+    return () => {
+      window.removeEventListener("touchstart", handleTouchStart)
+      window.removeEventListener("touchmove", handleTouchMove)
+      window.removeEventListener("touchend", handleTouchEnd)
+    }
+  }, [contentFilter, mutate, mutateFeed, mutateVideos, pullDistance, setIsPulling, setPullDistance])
+}
+
+function useFirstImageGeneratedToast(allImages: GalleryImage[] | undefined, toast: ReturnType<typeof useToast>["toast"]) {
+  const firstImageToastShownRef = useRef(false)
+  const previousImageCountRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    if (!Array.isArray(allImages)) return
+    const count = allImages.length
+
+    if (previousImageCountRef.current === null) {
+      previousImageCountRef.current = count
+      return
+    }
+
+    if (previousImageCountRef.current === 0 && count > 0 && !firstImageToastShownRef.current) {
+      firstImageToastShownRef.current = true
+      toast({
+        title: "Your first brand photo is ready",
+        description: "Next: Create your first feed",
+        action: (
+          <ToastAction altText="Create feed" onClick={() => (window.location.hash = "feed-planner")}>
+            Create Feed
+          </ToastAction>
+        ),
+      })
+
+      fetch("/api/milestones", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          milestoneType: "first_image_generated",
+          title: "First brand photo",
+          description: "Generated your first brand photo",
+        }),
+      }).catch(() => {})
+    }
+
+    previousImageCountRef.current = count
+  }, [allImages, toast])
+}
+
+function renderGalleryLoadingState() {
+  return (
+    <div className="space-y-4 pb-24 pt-3 sm:space-y-6 sm:pt-4">
+      <div className="mb-4 flex items-center justify-between px-4 sm:mb-6">
+        <h1 className="text-xl font-['Cormorant_Garamond'] font-light text-[#f0ede8] sm:text-2xl md:text-3xl">
+          Gallery
+        </h1>
+      </div>
+      <GalleryInstagramSkeleton />
+    </div>
+  )
+}
+
+function GalleryErrorState({ onRetry }: Readonly<{ onRetry: () => void }>) {
+  return (
+    <div className="flex min-h-[400px] items-center justify-center px-4">
+      <div className="stone-panel space-y-4 rounded-[24px] p-8 text-center">
+        <p className="text-sm font-light text-red-400">Failed to load images</p>
+        <button
+          type="button"
+          onClick={onRetry}
+          className="stone-chip rounded-lg px-4 py-2 font-['Inter'] text-[10px] font-medium uppercase tracking-[0.3em] text-[#a8a49c] transition-all duration-200 hover:bg-[rgba(175,170,162,0.18)]"
+        >
+          Retry
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function GalleryContentEmptyState({
+  contentFilter,
+  searchQuery,
+  onStartNow,
+  onClearSearch,
+  onGoToFeedPlanner,
+  onGoToMaya,
+}: Readonly<{
+  contentFilter: string
+  searchQuery: string
+  onStartNow: () => void
+  onClearSearch: () => void
+  onGoToFeedPlanner: () => void
+  onGoToMaya: () => void
+}>) {
+  const baseButtonClass =
+    "rounded-full bg-[#c8c4bb] px-6 py-3 text-xs font-medium uppercase tracking-[0.15em] text-[#0d0c0b] transition-colors hover:bg-[#f0ede8]"
+
+  if (contentFilter === "videos") {
+    return (
+      <div className="stone-panel mx-4 rounded-2xl p-8 text-center sm:p-12">
+        <div className="mx-auto mb-6 font-['Inter'] text-[10px] font-medium uppercase tracking-[0.5em] text-[#8a8780]">Videos</div>
+        <h3 className="mb-3 text-xl font-['Cormorant_Garamond'] font-light text-[#f0ede8]">
+          No Videos Yet
+        </h3>
+        <p className="mx-auto mb-6 max-w-md text-sm font-light text-[#8a8780]">
+          Bring your photos to life! Go to Maya and ask her to animate any of your images into stunning videos.
+        </p>
+        <button type="button" onClick={onGoToMaya} className={baseButtonClass}>
+          Go to Maya
+        </button>
+      </div>
+    )
+  }
+
+  if (contentFilter === "feed") {
+    return (
+      <div className="stone-panel mx-4 rounded-2xl p-8 text-center sm:p-12">
+        <div className="mx-auto mb-6 font-['Inter'] text-[10px] font-medium uppercase tracking-[0.5em] text-[#8a8780]">Feed</div>
+        <h3 className="mb-3 text-xl font-['Cormorant_Garamond'] font-light text-[#f0ede8]">
+          No Feed Images Yet
+        </h3>
+        <p className="mx-auto mb-6 max-w-md text-sm font-light text-[#8a8780]">
+          Create your first Instagram feed with the Feed Planner to see your feed images here.
+        </p>
+        <button type="button" onClick={onGoToFeedPlanner} className={baseButtonClass}>
+          Go to Feed Planner
+        </button>
+      </div>
+    )
+  }
+
+  if (searchQuery) {
+    return (
+      <div className="stone-panel mx-4 rounded-2xl p-8 text-center sm:p-12">
+        <div className="mx-auto mb-6 font-['Inter'] text-[10px] font-medium uppercase tracking-[0.5em] text-[#8a8780]">Search</div>
+        <h3 className="mb-3 text-xl font-['Cormorant_Garamond'] font-light text-[#f0ede8]">
+          No Results Found
+        </h3>
+        <p className="mx-auto mb-6 max-w-md text-sm font-light text-[#8a8780]">
+          No images match &quot;{searchQuery}&quot;. Try a different search term or clear the search to see all images.
+        </p>
+        <button type="button" onClick={onClearSearch} className={baseButtonClass}>
+          Clear Search
+        </button>
+      </div>
+    )
+  }
+
+  if (contentFilter === "favorited") {
+    return (
+      <div className="stone-panel mx-4 rounded-2xl p-8 text-center sm:p-12">
+        <div className="mx-auto mb-6 font-['Inter'] text-[10px] font-medium uppercase tracking-[0.5em] text-[#8a8780]">Saved</div>
+        <h3 className="mb-3 text-xl font-['Cormorant_Garamond'] font-light text-[#f0ede8]">No Favorites Yet</h3>
+        <p className="mx-auto mb-6 max-w-md text-sm font-light text-[#8a8780]">
+          Save any image to add it to your favorites collection.
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mx-4">
+      <GalleryEmptyState onStartNow={onStartNow} />
+    </div>
+  )
+}
+
+export default function GalleryScreen({ user, userId: _userId }: Readonly<GalleryScreenProps>) {
   const [favorites, setFavorites] = useState<Set<string>>(new Set())
   const [lightboxImage, setLightboxImage] = useState<GalleryImage | null>(null)
   const [previewVideo, setPreviewVideo] = useState<GeneratedVideo | null>(null)
   const [showProfileSelector, setShowProfileSelector] = useState(false)
   const [profileImage, setProfileImage] = useState(user.avatar || "/placeholder.svg")
   const [isPulling, setIsPulling] = useState(false)
-  const touchStartY = useRef(0)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [pullDistance, setPullDistance] = useState(0)
 
@@ -132,8 +346,6 @@ export default function GalleryScreen({ user, userId: _userId }: GalleryScreenPr
   // Use bulk operations hook
   const { isProcessing: isBulkProcessing, bulkDelete, bulkFavorite, bulkSave, bulkDownload } = useBulkOperations()
   const { toast } = useToast()
-  const firstImageToastShownRef = useRef(false)
-  const previousImageCountRef = useRef<number | null>(null)
 
   const topImages = useMemo(() => rankTopImages(allImages || []), [allImages])
   const profileSelectorImages = useMemo(() => {
@@ -192,48 +404,15 @@ export default function GalleryScreen({ user, userId: _userId }: GalleryScreenPr
     }
   }
 
-  useEffect(() => {
-    const handleTouchStart = (e: TouchEvent) => {
-      if (window.scrollY === 0) {
-        touchStartY.current = e.touches[0].clientY
-      }
-    }
-
-    const handleTouchMove = (e: TouchEvent) => {
-      if (window.scrollY === 0 && touchStartY.current > 0) {
-        const touchY = e.touches[0].clientY
-        const distance = touchY - touchStartY.current
-
-        if (distance > 0 && distance < 150) {
-          setPullDistance(distance)
-          setIsPulling(true)
-        }
-      }
-    }
-
-    const handleTouchEnd = () => {
-      if (pullDistance > 80) {
-        mutate()
-        mutateVideos()
-        if (contentFilter === "feed") {
-          mutateFeed()
-        }
-      }
-      setIsPulling(false)
-      setPullDistance(0)
-      touchStartY.current = 0
-    }
-
-    window.addEventListener("touchstart", handleTouchStart)
-    window.addEventListener("touchmove", handleTouchMove)
-    window.addEventListener("touchend", handleTouchEnd)
-
-    return () => {
-      window.removeEventListener("touchstart", handleTouchStart)
-      window.removeEventListener("touchmove", handleTouchMove)
-      window.removeEventListener("touchend", handleTouchEnd)
-    }
-  }, [pullDistance, mutate, mutateVideos, mutateFeed, contentFilter])
+  usePullToRefresh({
+    pullDistance,
+    setPullDistance,
+    setIsPulling,
+    mutate,
+    mutateVideos,
+    mutateFeed,
+    contentFilter,
+  })
 
   // Long-press handlers for selection mode
   const handleLongPressStart = useCallback((imageId: string) => {
@@ -282,40 +461,7 @@ export default function GalleryScreen({ user, userId: _userId }: GalleryScreenPr
     }
   }, [userData]) // Only userData - this effect syncs API data to state, not vice versa
 
-  useEffect(() => {
-    if (!Array.isArray(allImages)) return
-    const count = allImages.length
-
-    if (previousImageCountRef.current === null) {
-      previousImageCountRef.current = count
-      return
-    }
-
-    if (previousImageCountRef.current === 0 && count > 0 && !firstImageToastShownRef.current) {
-      firstImageToastShownRef.current = true
-      toast({
-        title: "Your first brand photo is ready",
-        description: "Next: Create your first feed",
-        action: (
-          <ToastAction altText="Create feed" onClick={() => (window.location.hash = "feed-planner")}>
-            Create Feed
-          </ToastAction>
-        ),
-      })
-
-      fetch("/api/milestones", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          milestoneType: "first_image_generated",
-          title: "First brand photo",
-          description: "Generated your first brand photo",
-        }),
-      }).catch(() => {})
-    }
-
-    previousImageCountRef.current = count
-  }, [allImages, toast])
+  useFirstImageGeneratedToast(allImages, toast)
 
   // Filtering and sorting is now handled by useGalleryFilters hook
 
@@ -439,40 +585,20 @@ export default function GalleryScreen({ user, userId: _userId }: GalleryScreenPr
   const isCurrentlyLoading = contentFilter === "feed" ? isLoadingFeed : isLoading
 
   if (isCurrentlyLoading) {
-    return (
-      <div className="space-y-4 sm:space-y-6 pb-24 pt-3 sm:pt-4">
-        <div className="flex items-center justify-between mb-4 sm:mb-6 px-4">
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-['Cormorant_Garamond'] font-light text-[#f0ede8]">
-            Gallery
-          </h1>
-        </div>
-        <GalleryInstagramSkeleton />
-      </div>
-    )
+    return renderGalleryLoadingState()
   }
 
   // Determine error state based on active filter
   const currentError = contentFilter === "feed" ? feedError : error
+  const handleRetry = () => {
+    mutate()
+    if (contentFilter === "feed") {
+      mutateFeed()
+    }
+  }
 
   if (currentError) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px] px-4">
-        <div className="stone-panel rounded-[24px] p-8 text-center space-y-4">
-          <p className="text-sm font-light text-red-400">Failed to load images</p>
-          <button
-            onClick={() => {
-              mutate()
-              if (contentFilter === "feed") {
-                mutateFeed()
-              }
-            }}
-            className="stone-chip px-4 py-2 text-[10px] uppercase tracking-[0.3em] font-['Inter'] font-medium text-[#a8a49c] hover:bg-[rgba(175,170,162,0.18)] transition-all duration-200 rounded-lg"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    )
+    return <GalleryErrorState onRetry={handleRetry} />
   }
 
   const displayName = user.name || user.email?.split("@")[0] || "User"
@@ -543,72 +669,19 @@ export default function GalleryScreen({ user, userId: _userId }: GalleryScreenPr
           onLongPressEnd={handleLongPressEnd}
         />
       ) : (
-        <div className="stone-panel rounded-2xl p-8 text-center sm:p-12 mx-4">
-          {contentFilter === "videos" ? (
-            <>
-              <div className="mx-auto mb-6 font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780]">Videos</div>
-              <h3 className="mb-3 text-xl font-['Cormorant_Garamond'] font-light text-[#f0ede8]">
-                No Videos Yet
-              </h3>
-              <p className="mx-auto mb-6 max-w-md text-sm font-light text-[#8a8780]">
-                Bring your photos to life! Go to Maya and ask her to animate any of your images into stunning videos.
-              </p>
-              <button
-                onClick={() => {
-                  const mayaTab = document.querySelector('[data-tab="maya"]') as HTMLButtonElement
-                  mayaTab?.click()
-                }}
-                className="bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[#f0ede8] transition-colors"
-              >
-                Go to Maya
-              </button>
-            </>
-          ) : contentFilter === "feed" ? (
-            <>
-              <div className="mx-auto mb-6 font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780]">Feed</div>
-              <h3 className="mb-3 text-xl font-['Cormorant_Garamond'] font-light text-[#f0ede8]">
-                No Feed Images Yet
-              </h3>
-              <p className="mx-auto mb-6 max-w-md text-sm font-light text-[#8a8780]">
-                Create your first Instagram feed with the Feed Planner to see your feed images here.
-              </p>
-              <button
-                onClick={() => {
-                  window.location.hash = "feed-planner"
-                }}
-                className="bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[#f0ede8] transition-colors"
-              >
-                Go to Feed Planner
-              </button>
-            </>
-          ) : searchQuery ? (
-            <>
-              <div className="mx-auto mb-6 font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780]">Search</div>
-              <h3 className="mb-3 text-xl font-['Cormorant_Garamond'] font-light text-[#f0ede8]">
-                No Results Found
-              </h3>
-              <p className="mx-auto mb-6 max-w-md text-sm font-light text-[#8a8780]">
-                No images match &quot;{searchQuery}&quot;. Try a different search term or clear the search to see all images.
-              </p>
-              <button
-                onClick={() => setSearchQuery("")}
-                className="bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[#f0ede8] transition-colors"
-              >
-                Clear Search
-              </button>
-            </>
-          ) : contentFilter === "favorited" ? (
-            <>
-              <div className="mx-auto mb-6 font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780]">Saved</div>
-              <h3 className="mb-3 text-xl font-['Cormorant_Garamond'] font-light text-[#f0ede8]">No Favorites Yet</h3>
-              <p className="mx-auto mb-6 max-w-md text-sm font-light text-[#8a8780]">
-                Save any image to add it to your favorites collection.
-              </p>
-            </>
-          ) : (
-            <GalleryEmptyState onStartNow={handleStartNow} />
-          )}
-        </div>
+        <GalleryContentEmptyState
+          contentFilter={contentFilter}
+          searchQuery={searchQuery}
+          onStartNow={handleStartNow}
+          onClearSearch={() => setSearchQuery("")}
+          onGoToFeedPlanner={() => {
+            window.location.hash = "feed-planner"
+          }}
+          onGoToMaya={() => {
+            const mayaTab = document.querySelector('[data-tab="maya"]') as HTMLButtonElement
+            mayaTab?.click()
+          }}
+        />
       )}
 
       {selectionMode && (
