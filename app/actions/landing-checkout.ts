@@ -7,7 +7,17 @@ import type Stripe from "stripe"
 import { assertStripePriceConfigForProduct } from "@/lib/stripe/validate-pricing-config"
 import { getMembershipPromoBlockReason } from "@/lib/stripe/membership-promo-policy"
 
-export async function createLandingCheckoutSession(productId: string, promoCode?: string, customerEmail?: string | null) {
+type LandingCheckoutOptions = {
+  source?: string
+  returnTo?: string
+}
+
+export async function createLandingCheckoutSession(
+  productId: string,
+  promoCode?: string,
+  customerEmail?: string | null,
+  options?: LandingCheckoutOptions,
+) {
   console.log("[v0] Creating checkout session for product:", productId, promoCode ? `with promo: ${promoCode}` : "")
 
   const product = getProductById(productId)
@@ -19,6 +29,7 @@ export async function createLandingCheckoutSession(productId: string, promoCode?
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://sselfie.ai"
   const isSubscription = product.type === "sselfie_studio_membership"
   const allowManualPromotionCodes = !isSubscription
+  const checkoutSource = options?.source?.trim() || "landing_page"
 
   const actualPrice = product.priceInCents
 
@@ -180,7 +191,8 @@ export async function createLandingCheckoutSession(productId: string, promoCode?
           product_id: productId,
           product_type: product.type,
           credits: product.credits?.toString() || "0",
-          source: "landing_page",
+          source: checkoutSource,
+          ...(options?.returnTo && { return_to: options.returnTo }),
         },
       },
     }),
@@ -188,9 +200,10 @@ export async function createLandingCheckoutSession(productId: string, promoCode?
       product_id: productId,
       product_type: product.type,
       credits: product.credits?.toString() || "0",
-      source: "landing_page",
+      source: checkoutSource,
       ...(customerEmail && { customer_email: customerEmail }),
       ...(promoCode && { promo_code: promoCode }),
+      ...(options?.returnTo && { return_to: options.returnTo }),
     },
   }
 

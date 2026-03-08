@@ -4,7 +4,7 @@ import { stripe } from "@/lib/stripe"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getCreditPackageById, getProductById } from "@/lib/products"
 import { createServerClient } from "@/lib/supabase/server"
-import { assertStripePricingConfig } from "@/lib/stripe/validate-pricing-config"
+import { assertStripePriceConfigForProduct } from "@/lib/stripe/validate-pricing-config"
 import { getMembershipPromoBlockReason } from "@/lib/stripe/membership-promo-policy"
 import { sql } from "@/lib/db/client"
 
@@ -89,13 +89,13 @@ export async function startProductCheckoutSession(
   promoCode?: string,
   options?: { source?: string; returnTo?: string },
 ) {
-  // FIX B3: Validate pricing configuration on first use
-  await assertStripePricingConfig()
-  
   const product = getProductById(productId)
   if (!product) {
     throw new Error(`Product with id "${productId}" not found`)
   }
+
+  // Validate only the requested product pricing so one broken SKU cannot block another checkout.
+  await assertStripePriceConfigForProduct(product.type)
 
   const supabase = await createServerClient()
   const {

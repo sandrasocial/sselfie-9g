@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation"
+import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
+import { startProductCheckoutSession } from "@/app/actions/stripe"
 import { createServerClient } from "@/lib/supabase/server"
 import { sanitizeRedirect } from "@/lib/security/url-validator"
-import { startProductCheckoutSession } from "@/app/actions/stripe"
 
 type BrandStrategyPackCheckoutParams = {
   returnTo?: string
@@ -20,6 +21,10 @@ function resolveReturnTo(params: BrandStrategyPackCheckoutParams) {
   return "/brand-strategy"
 }
 
+function buildFailedCheckoutRedirect(returnTo: string) {
+  return `${returnTo}${returnTo.includes("?") ? "&" : "?"}checkout=failed`
+}
+
 export default async function BrandStrategyPackCheckoutPage({
   searchParams,
 }: {
@@ -27,29 +32,35 @@ export default async function BrandStrategyPackCheckoutPage({
 }) {
   const params = await searchParams
   const returnTo = resolveReturnTo(params)
-  const checkoutPath = `/checkout/brand-strategy-pack?returnTo=${encodeURIComponent(returnTo)}`
 
   const supabase = await createServerClient()
   const {
     data: { user: authUser },
   } = await supabase.auth.getUser()
 
-  if (!authUser) {
-    redirect(`/auth/login?returnTo=${encodeURIComponent(checkoutPath)}`)
-  }
-
   try {
-    const clientSecret = await startProductCheckoutSession("brand_strategy_pack", undefined, {
-      source: "freebie_upsell",
-      returnTo,
-    })
+    const clientSecret = authUser
+      ? await startProductCheckoutSession("brand_strategy_pack", undefined, {
+          source: "freebie_upsell",
+          returnTo,
+        })
+      : await createLandingCheckoutSession("brand_strategy_pack", undefined, null, {
+          source: "freebie_upsell",
+          returnTo,
+        })
 
     if (clientSecret) {
-      redirect(`/checkout?client_secret=${clientSecret}&product_type=brand_strategy_pack`)
+      redirect(
+        `/checkout?client_secret=${clientSecret}&product_type=brand_strategy_pack&return_to=${encodeURIComponent(returnTo)}`,
+      )
     }
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.digest?.startsWith("NEXT_REDIRECT")) {
+      throw error
+    }
+
     console.error("[Brand Strategy Pack Checkout] Error creating checkout session:", error)
   }
 
-  redirect(`/brand-strategy?checkout=failed`)
+  redirect(buildFailedCheckoutRedirect(returnTo))
 }
