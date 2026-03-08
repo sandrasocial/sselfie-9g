@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
-import { trackCTAClick, trackPricingView, trackCheckoutStart } from "@/lib/analytics"
+import { trackCTAClick, trackPricingView, trackCheckoutStart, trackSelfieGuideEntryClick } from "@/lib/analytics"
 import { startEmbeddedCheckout } from "@/lib/start-embedded-checkout"
 import { handleCheckoutFailure } from "@/lib/checkout-failure"
 import TestimonialGrid from "@/components/testimonials/testimonial-grid"
@@ -85,8 +85,7 @@ export default function WhyStudioPage() {
       setCheckoutLoading(tierId)
       
       const productNames: Record<string, string> = {
-        one_time_session: "Starter Photoshoot",
-        sselfie_studio_membership: "Creator Studio",
+        sselfie_studio_membership: "Studio Membership",
       }
       const productName = productNames[tierId] || tierId
       trackCheckoutStart(tierId, undefined)
@@ -102,7 +101,7 @@ export default function WhyStudioPage() {
         error,
         source: "why_studio_pricing",
         productId: tierId,
-        fallbackPath: tierId === "one_time_session" ? "/checkout/one-time" : "/checkout/membership",
+        fallbackPath: "/checkout/membership",
       })
       setCheckoutLoading(null)
     }
@@ -209,15 +208,15 @@ export default function WhyStudioPage() {
             </p>
             <div className="fade-up" style={{ transitionDelay: "0.2s", marginTop: "10px" }}>
               <a
-                href="#pricing"
+                href="/selfie-guide"
                 onClick={(e) => {
                   e.preventDefault()
-                  trackCTAClick("hero", "Join The Visibility Studio", "#pricing")
-                  scrollToPricing()
+                  trackSelfieGuideEntryClick("why-studio-hero")
+                  window.location.href = "/selfie-guide"
                 }}
                 className="btn shadow-xl"
               >
-                Join The Visibility Studio →
+                Start with the Selfie Guide →
               </a>
             </div>
             <p className="description fade-up mx-auto max-w-sm mt-4" style={{ textShadow: "0 1px 5px rgba(0,0,0,0.3)", fontSize: "14px", marginTop: "16px" }}>
@@ -321,15 +320,15 @@ export default function WhyStudioPage() {
               </p>
               <div className="fade-up mt-6">
                 <a
-                  href="#pricing"
+                  href="/selfie-guide"
                   onClick={(e) => {
                     e.preventDefault()
-                    trackCTAClick("why-studio", "Join now", "#pricing")
-                    scrollToPricing()
+                    trackSelfieGuideEntryClick("why-studio-midpage")
+                    window.location.href = "/selfie-guide"
                   }}
                   className="btn"
                 >
-                  Join now →
+                  Start here →
                 </a>
               </div>
             </div>
@@ -560,9 +559,9 @@ export default function WhyStudioPage() {
             <h2 className="hero-title text-center mb-4 fade-up" style={{ fontSize: "32px", fontFamily: "'Times New Roman', serif" }}>
               Choose your visibility plan
             </h2>
-            <p className="description text-center mb-8 fade-up" style={{ color: "rgba(250, 250, 249, 0.9)" }}>
-              Whether you want to try the Studio or go all in, we&apos;ve made it simple.
-            </p>
+              <p className="description text-center mb-8 fade-up" style={{ color: "rgba(250, 250, 249, 0.9)" }}>
+                Start with the guide. Step into Studio when you want the full visibility system.
+              </p>
             <div
               style={{
                 display: "flex",
@@ -574,31 +573,33 @@ export default function WhyStudioPage() {
               }}
               className="md:flex-row md:gap-8"
             >
-              {/* Starter Plan */}
+              {/* Selfie Guide */}
               <div className="pricing-card fade-up relative overflow-hidden group flex-1">
-                <h3 className="text-lg font-serif text-white mb-4">Starter Plan — Try your first Studio session</h3>
+                <h3 className="text-lg font-serif text-white mb-4">Selfie Guide — Start your visibility system</h3>
                 <div className="space-y-2 text-xs text-stone-300 font-light mb-6">
-                  <p>• 50 credits (one-time)</p>
-                  <p>• Basic Maya AI assistant</p>
-                  <p>• Perfect for testing</p>
+                  <p>• Sandra&apos;s exact selfie framework</p>
+                  <p>• 7-day challenge to help you show up fast</p>
+                  <p>• Instant access right after payment</p>
                 </div>
                 <div className="mb-6">
-                  <span className="text-xl font-serif text-white">$49</span>
+                  <span className="text-xl font-serif text-white">$17</span>
                   <span className="text-[9px] uppercase text-stone-500 block">one-time</span>
                 </div>
-                <button
-                  onClick={() => handleStartCheckout("one_time_session")}
-                  disabled={checkoutLoading === "one_time_session"}
-                  className="btn w-full text-[10px] disabled:opacity-50 disabled:cursor-not-allowed"
+                <Link
+                  href="/selfie-guide"
+                  onClick={() => {
+                    trackSelfieGuideEntryClick("why-studio-comparison")
+                  }}
+                  className="btn w-full text-[10px] text-center"
                 >
-                  {checkoutLoading === "one_time_session" ? "Loading..." : "Start now →"}
-                </button>
+                  Start here →
+                </Link>
               </div>
 
               {/* Full Membership */}
               <div className="pricing-card fade-up relative overflow-hidden group flex-1">
                 <div className="absolute top-0 left-0 w-1 h-full bg-white" />
-                <h3 className="text-lg font-serif text-white mb-4">Full Membership — Join the Visibility System</h3>
+                <h3 className="text-lg font-serif text-white mb-4">Studio Membership — Join the Visibility System</h3>
                 <div className="space-y-2 text-xs text-stone-300 font-light mb-6">
                   <p>• 200 credits every month</p>
                   <p>• Full Maya AI assistant</p>
@@ -689,7 +690,7 @@ export default function WhyStudioPage() {
                 Join The Visibility Studio
               </h2>
               <p className="description text-center mb-8 fade-up" style={{ color: "rgba(250, 250, 249, 0.9)" }}>
-                One membership. All the tools you need to stay visible and confident.
+                Start with the guide. Step into Studio when you want everything in one place.
               </p>
 
               <div
@@ -703,39 +704,41 @@ export default function WhyStudioPage() {
                 }}
                 className="md:flex-row md:gap-8"
               >
-                {/* Starter Photoshoot Card */}
+                {/* Selfie Guide Card */}
                 <div className="pricing-card fade-up relative overflow-hidden group flex-1">
                   <div className="flex justify-between items-center mb-4">
                     <div>
-                      <h3 className="text-lg font-serif text-white">Starter Photoshoot</h3>
-                      <p className="text-stone-400 text-[10px] uppercase tracking-wider">Try It First</p>
+                      <h3 className="text-lg font-serif text-white">Selfie Guide</h3>
+                      <p className="text-stone-400 text-[10px] uppercase tracking-wider">Start Here</p>
                     </div>
                     <div className="text-right">
-                      <span className="text-xl font-serif">$49</span>
+                      <span className="text-xl font-serif">$17</span>
                       <span className="text-[9px] uppercase text-stone-500 block">one-time</span>
                     </div>
                   </div>
                   <div className="space-y-2 text-xs text-stone-300 font-light mb-6">
-                    <p>• Trained model that looks exactly like you</p>
-                    <p>• Basic Maya AI assistant</p>
-                    <p>• Perfect for testing</p>
+                    <p>• The exact framework Sandra uses</p>
+                    <p>• 7-day challenge + preset bonus</p>
+                    <p>• Instant access right after payment</p>
                   </div>
-                  <button
-                    onClick={() => handleStartCheckout("one_time_session")}
-                    disabled={checkoutLoading === "one_time_session"}
-                    className="btn w-full text-[10px] disabled:opacity-50 disabled:cursor-not-allowed"
+                  <Link
+                    href="/selfie-guide"
+                    onClick={() => {
+                      trackSelfieGuideEntryClick("why-studio-pricing")
+                    }}
+                    className="btn w-full text-[10px] text-center"
                   >
-                    {checkoutLoading === "one_time_session" ? "Loading..." : "Start now →"}
-                  </button>
+                    Start here →
+                  </Link>
                 </div>
 
-                {/* Creator Studio Card */}
+                {/* Studio Card */}
                 <div className="pricing-card fade-up relative overflow-hidden group flex-1">
                   <div className="absolute top-0 left-0 w-1 h-full bg-white" />
                   <div className="flex justify-between items-center mb-4">
                     <div>
-                      <h3 className="text-lg font-serif text-white">Creator Studio</h3>
-                      <p className="text-stone-400 text-[10px] uppercase tracking-wider">Most Popular</p>
+                      <h3 className="text-lg font-serif text-white">Studio Membership</h3>
+                      <p className="text-stone-400 text-[10px] uppercase tracking-wider">Next Step</p>
                     </div>
                     <div className="text-right">
                       <span className="text-xl font-serif">$97</span>
@@ -805,15 +808,15 @@ export default function WhyStudioPage() {
                   You don&apos;t need perfect photos. You just need to show up.
                 </h2>
                 <a
-                  href="#pricing"
+                  href="/selfie-guide"
                   onClick={(e) => {
                     e.preventDefault()
-                    trackCTAClick("closing", "Join The Studio Today", "#pricing")
-                    scrollToPricing()
+                    trackSelfieGuideEntryClick("why-studio-closing")
+                    window.location.href = "/selfie-guide"
                   }}
                   className="btn"
                 >
-                  Join The Studio Today →
+                  Start with the Selfie Guide →
                 </a>
               </div>
             </div>

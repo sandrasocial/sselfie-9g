@@ -175,3 +175,15 @@ export const trackLandingView = () => {
     .then(({ trackAnalyticsEvent }) => trackAnalyticsEvent({ event: "landing_view" }))
     .catch(() => {})
 }
+
+export const trackSelfieGuideEntryClick = (source: string) => {
+  trackCTAClick(source, "Start with the Selfie Guide", "/selfie-guide")
+  import("./analytics/client")
+    .then(({ trackAnalyticsEvent }) =>
+      trackAnalyticsEvent({
+        event: "selfie_guide_entry_click",
+        properties: { source },
+      }),
+    )
+    .catch(() => {})
+}

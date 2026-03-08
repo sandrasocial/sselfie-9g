@@ -33,6 +33,10 @@ export const ALLOWED_ANALYTICS_EVENTS = [
   "brand_strategy_pack_checkout_start",
   "brand_strategy_pack_checkout_success",
   "brand_strategy_pack_studio_click",
+  "one_time_session_studio_click",
+  "selfie_guide_entry_click",
+  "selfie_guide_access_resolved",
+  "selfie_guide_access_failed",
 ] as const
 
 export type AnalyticsEventName = (typeof ALLOWED_ANALYTICS_EVENTS)[number]

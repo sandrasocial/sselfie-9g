@@ -24,6 +24,7 @@ export default async function CheckoutSuccessPage({
       <SuccessContent
         initialUserInfo={null}
         initialEmail={params.email}
+        sessionId={params.session_id}
         purchaseType={params.type}
         returnTo={params.return_to}
       />
