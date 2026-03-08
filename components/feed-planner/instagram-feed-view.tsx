@@ -22,6 +22,7 @@ import FeedLoadingOverlay from "./feed-loading-overlay"
 import FeedHighlightsModal from "./feed-highlights-modal"
 import FeedSinglePlaceholder from "./feed-single-placeholder"
 import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
+import { getBrandColorThemeColors } from "@/lib/style-presets"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -108,19 +109,6 @@ export default function InstagramFeedView({
       window.dispatchEvent(new CustomEvent("feedPlannerModeChanged", { detail: { mode: nextMode === "pro" } }))
     }
   }
-  // Helper function to get colors from theme ID
-  const getColorsFromTheme = (theme: string | null): string[] => {
-    const themeColors: Record<string, string[]> = {
-      'dark-moody': ["#000000", "#2C2C2C", "#4A4A4A", "#6B6B6B"],
-      'minimalist-clean': ["#FFFFFF", "#F5F5F0", "#E8E4DC", "#D4CFC4"],
-      'beige-creamy': ["#F5F1E8", "#E8DCC8", "#D4C4A8", "#B8A88A"],
-      'pastel-coastal': ["#E8F4F8", "#B8E0E8", "#88CCD8", "#5BA8B8"],
-      'warm-terracotta': ["#E8D4C8", "#C8A898", "#A88878", "#886858"],
-      'bold-colorful': ["#FF6B9D", "#FFA07A", "#FFD700", "#98D8C8"],
-    }
-    return themeColors[theme || ''] || []
-  }
-
   // Fetch brand colors from user profile
   useEffect(() => {
     fetch('/api/profile/personal-brand')
@@ -149,7 +137,7 @@ export default function InstagramFeedView({
           }
           // Fallback to theme-based colors if no palette
           if (colors.length === 0 && data.data.colorTheme) {
-            colors = getColorsFromTheme(data.data.colorTheme)
+            colors = getBrandColorThemeColors(data.data.colorTheme)
           }
           if (colors.length > 0) {
             setBrandColors(colors)

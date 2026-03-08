@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress"
 import { motion, AnimatePresence } from "framer-motion"
 import { X } from "lucide-react"
 import { DesignClasses, ComponentClasses } from "@/lib/design-tokens"
+import { BRAND_COLOR_THEMES } from "@/lib/style-presets"
 
 interface BaseWizardProps {
   isOpen: boolean
@@ -22,58 +23,7 @@ interface BaseWizardProps {
   }
 }
 
-const COLOR_THEMES = [
-  {
-    id: "dark-moody",
-    name: "Dark & Moody",
-    description: "Dramatic blacks and grays with high contrast",
-    colors: ["#000000", "#2C2C2C", "#4A4A4A", "#6B6B6B"],
-    gradient: "from-black via-stone-800 to-stone-600",
-  },
-  {
-    id: "minimalist-clean",
-    name: "Minimalistic & Clean",
-    description: "Soft whites, creams, and beiges",
-    colors: ["#FFFFFF", "#F5F5F0", "#E8E4DC", "#D4CFC4"],
-    gradient: "from-white via-stone-50 to-stone-200",
-  },
-  {
-    id: "beige-creamy",
-    name: "Beige & Creamy",
-    description: "Warm neutrals and earthy tones",
-    colors: ["#F5F1E8", "#E8DCC8", "#D4C4A8", "#B8A88A"],
-    gradient: "from-stone-100 via-stone-200 to-stone-300",
-  },
-  {
-    id: "pastel-coastal",
-    name: "Pastel & Coastal",
-    description: "Soft blues, teals, and aqua tones",
-    colors: ["#E8F4F8", "#B8E0E8", "#88CCD8", "#5BA8B8"],
-    gradient: "from-cyan-50 via-cyan-100 to-cyan-200",
-  },
-  {
-    id: "warm-terracotta",
-    name: "Warm & Terracotta",
-    description: "Rust, terracotta, and warm earth tones",
-    colors: ["#E8D4C8", "#C8A898", "#A88878", "#886858"],
-    gradient: "from-orange-100 via-orange-200 to-orange-300",
-  },
-  {
-    id: "bold-colorful",
-    name: "Bold & Colorful",
-    description: "Vibrant colors with high energy",
-    colors: ["#FF6B9D", "#FFA07A", "#FFD700", "#98D8C8"],
-    gradient: "from-pink-300 via-orange-300 to-yellow-300",
-  },
-  {
-    id: "custom",
-    name: "Custom Colors",
-    description: "Choose your own brand colors",
-    colors: ["#D4C5B9", "#A89B8E", "#8B7E71", "#6E6154"],
-    gradient: "from-stone-200 via-stone-300 to-stone-400",
-    isCustom: true,
-  },
-]
+const COLOR_THEMES = BRAND_COLOR_THEMES
 
 const VISUAL_AESTHETICS = [
   { id: "minimalist", name: "Minimalist & Clean", description: "Simple, uncluttered, lots of white space" },

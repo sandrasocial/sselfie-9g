@@ -9,16 +9,17 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-[#c8c4bb] text-[#0d0c0b] hover:bg-[#f0ede8] shadow-sm',
+        default:
+          'bg-[color:var(--color-whisper)] border border-[color:var(--glass-border)] text-[color:var(--color-obsidian)] hover:bg-[color:var(--color-porcelain)] shadow-[0_12px_32px_rgba(0,0,0,0.18)]',
         destructive:
-          'bg-[rgba(220,50,50,0.15)] border border-[rgba(220,50,50,0.30)] text-red-300 hover:bg-[rgba(220,50,50,0.25)]',
+          'bg-[rgba(164,59,46,0.16)] border border-[rgba(164,59,46,0.35)] text-[color:var(--color-porcelain)] hover:bg-[rgba(164,59,46,0.24)]',
         outline:
-          'border border-[rgba(195,190,182,0.25)] bg-transparent text-[#f0ede8] hover:bg-[rgba(175,170,162,0.10)] backdrop-blur-sm',
+          'border border-[color:var(--glass-border)] bg-transparent text-[color:var(--color-porcelain)] hover:bg-[color:var(--glass-input-bg)] backdrop-blur-sm',
         secondary:
-          'bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.25)] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.20)] backdrop-blur-sm',
+          'bg-[color:var(--glass-bg)] border border-[color:var(--glass-border)] text-[color:var(--color-porcelain)] hover:bg-[color:var(--glass-bg-mid)] backdrop-blur-sm',
         ghost:
-          'text-[#8a8780] hover:text-[#f0ede8] hover:bg-[rgba(175,170,162,0.08)]',
-        link: 'text-[#a8a49c] underline-offset-4 hover:underline hover:text-[#c8c4bb]',
+          'text-[color:var(--color-smoke)] hover:text-[color:var(--color-porcelain)] hover:bg-[color:var(--glass-input-bg)]',
+        link: 'text-[color:var(--text-accent)] underline-offset-4 hover:underline hover:text-[color:var(--color-whisper)]',
       },
       size: {
         default: 'h-9 px-4 py-2 has-[>svg]:px-3',

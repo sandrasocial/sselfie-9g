@@ -5,31 +5,33 @@ import { CheckCircle2, Mail } from "lucide-react"
 
 export default function SignUpSuccessPage() {
   return (
-    <div className="flex min-h-screen w-full items-center justify-center p-4 sm:p-6 bg-stone-50">
+    <div className="flex min-h-screen w-full items-center justify-center bg-[color:var(--app-bg-primary)] p-4 sm:p-6">
       <div className="w-full max-w-md">
-        <Card className="border-stone-200 shadow-sm">
-          <CardHeader className="text-center space-y-4 pb-6">
-            <div className="mx-auto w-16 h-16 rounded-full bg-stone-100 flex items-center justify-center">
-              <Mail className="w-8 h-8 text-stone-600" />
+        <Card>
+          <CardHeader className="space-y-4 pb-6 text-center">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full border border-[color:var(--glass-border)] bg-[color:var(--glass-input-bg)]">
+              <Mail className="h-8 w-8 text-[color:var(--color-whisper)]" />
             </div>
             <div className="space-y-2">
-              <CardTitle className="text-2xl font-serif text-stone-900">Check Your Email</CardTitle>
-              <CardDescription className="text-stone-600">We&apos;ve sent you a confirmation link</CardDescription>
+              <CardTitle className="text-2xl uppercase tracking-[0.08em]">Check Your Email</CardTitle>
+              <CardDescription>We&apos;ve sent you a confirmation link</CardDescription>
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-4">
-              <div className="flex gap-3 p-4 bg-stone-50 rounded-lg border border-stone-100">
-                <CheckCircle2 className="w-5 h-5 text-stone-600 flex-shrink-0 mt-0.5" />
-                <p className="text-sm text-stone-700 leading-relaxed">
+              <div className="flex gap-3 rounded-xl border border-[color:var(--glass-border-subtle)] bg-[color:var(--glass-input-bg)] p-4">
+                <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-[color:var(--color-whisper)]" />
+                <p className="text-sm leading-relaxed text-[color:var(--color-smoke)]">
                   Click the confirmation link in your email to activate your account. Once confirmed, you&apos;ll be ready to
                   start creating professional selfies.
                 </p>
               </div>
 
               <div className="pt-2 space-y-3">
-                <p className="text-sm font-medium text-stone-900">What&apos;s Next?</p>
-                <p className="text-sm text-stone-600 leading-relaxed">
+                <p className="text-sm font-medium uppercase tracking-[0.12em] text-[color:var(--color-porcelain)]">
+                  What&apos;s Next?
+                </p>
+                <p className="text-sm leading-relaxed text-[color:var(--color-smoke)]">
                   After confirming your email, you can purchase a One-Time Session ($24.50) to start creating your
                   professional feed with our AI photo generator.
                 </p>
@@ -37,14 +39,14 @@ export default function SignUpSuccessPage() {
             </div>
 
             <div className="pt-2">
-              <Link href="/checkout/one-time" className="w-full">
-                <Button className="w-full bg-stone-900 text-white hover:bg-stone-800 h-12">
+              <Button asChild className="h-12 w-full">
+                <Link href="/checkout/one-time">
                   View Pricing & Get Started
-                </Button>
-              </Link>
-              <p className="text-xs text-center text-stone-500 mt-3">
+                </Link>
+              </Button>
+              <p className="mt-3 text-center text-xs text-[color:var(--color-smoke)]">
                 Already confirmed?{" "}
-                <Link href="/auth/login" className="text-stone-900 underline underline-offset-2">
+                <Link href="/auth/login" className="text-[color:var(--color-whisper)] underline underline-offset-2">
                   Sign in here
                 </Link>
               </p>

@@ -12,6 +12,7 @@ import { BlueprintSelfieUpload } from "@/components/blueprint/blueprint-selfie-u
 import useSWR from "swr"
 import { Loader2, ArrowRight } from "lucide-react"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
+import { CURATED_FEED_STYLE_MAP } from "@/lib/style-presets"
 
 interface UnifiedOnboardingWizardProps {
   isOpen: boolean
@@ -65,43 +66,7 @@ interface UnifiedOnboardingWizardProps {
 
 // Feed style examples (V2 - 7 curated styles)
 // V1 code removed - V2 is always enabled
-const FEED_EXAMPLES = {
-  "Dark & Moody": {
-    name: "Dark & Moody",
-    colors: ["#0b0b0f", "#2a2a2f", "#4a4a4f"],
-    grid: ["selfie", "selfie", "flatlay", "selfie", "selfie", "detail", "selfie", "flatlay", "selfie"],
-  },
-  "Beige Aesthetic": {
-    name: "Beige Aesthetic",
-    colors: ["#d2c2b0", "#b59f8a", "#8c7a67"],
-    grid: ["selfie", "flatlay", "selfie", "selfie", "detail", "selfie", "selfie", "flatlay", "selfie"],
-  },
-  "Light & Minimalistic": {
-    name: "Light & Minimalistic",
-    colors: ["#f7f7f5", "#e6e6e2", "#d6d6d0"],
-    grid: ["selfie", "selfie", "selfie", "flatlay", "selfie", "selfie", "selfie", "flatlay", "selfie"],
-  },
-  "Luxury Future Self": {
-    name: "Luxury Future Self",
-    colors: ["#1b1b1f", "#5a4d3f", "#c2b6a8"],
-    grid: ["selfie", "selfie", "flatlay", "selfie", "detail", "selfie", "selfie", "flatlay", "selfie"],
-  },
-  "Casual Bohemian": {
-    name: "Casual Bohemian",
-    colors: ["#c4a58c", "#9c7f63", "#6e5a45"],
-    grid: ["selfie", "flatlay", "selfie", "selfie", "detail", "selfie", "selfie", "flatlay", "selfie"],
-  },
-  "Athletic & Wellness": {
-    name: "Athletic & Wellness",
-    colors: ["#dfe6e3", "#9bb1a6", "#6b7a74"],
-    grid: ["selfie", "selfie", "flatlay", "selfie", "detail", "selfie", "selfie", "flatlay", "selfie"],
-  },
-  "Coastal Aesthetics": {
-    name: "Coastal Aesthetics",
-    colors: ["#f3e9df", "#c7d7dd", "#a8b9c2"],
-    grid: ["selfie", "selfie", "flatlay", "selfie", "detail", "selfie", "selfie", "flatlay", "selfie"],
-  },
-}
+const FEED_EXAMPLES = CURATED_FEED_STYLE_MAP
 
 interface FeedStyleVariationOption {
   id: number

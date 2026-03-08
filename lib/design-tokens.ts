@@ -1,23 +1,74 @@
 /**
- * SSELFIE Design Tokens (Earth Stone)
+ * SSELFIE Design Tokens
  *
- * Single in-app source of truth for palette, glass, typography, and utility classes.
+ * Dark glass design primitives aligned to the current app chrome.
  */
+
+const cardClass = [
+  "bg-[color:var(--glass-bg)]",
+  "backdrop-blur-[50px]",
+  "border",
+  "border-[color:var(--glass-border)]",
+  "rounded-2xl",
+  "sm:rounded-3xl",
+  "p-4",
+  "sm:p-6",
+  "text-[color:var(--color-porcelain)]",
+  "shadow-[0_24px_80px_rgba(0,0,0,0.28)]",
+].join(" ")
+
+const buttonPrimaryClass = [
+  "bg-[color:var(--color-whisper)]",
+  "text-[color:var(--color-obsidian)]",
+  "rounded-full",
+  "border",
+  "border-[color:var(--glass-border)]",
+  "shadow-[0_12px_32px_rgba(0,0,0,0.18)]",
+  "px-6",
+  "sm:px-8",
+  "py-3",
+  "sm:py-4",
+  "text-xs",
+  "font-medium",
+  "uppercase",
+  "tracking-[0.15em]",
+  "transition-all",
+  "duration-200",
+  "hover:bg-[color:var(--color-porcelain)]",
+  "hover:scale-[1.02]",
+  "active:scale-[0.98]",
+].join(" ")
+
+const containerClass = [
+  "bg-[color:var(--app-bg-glass)]",
+  "backdrop-blur-[70px]",
+  "border",
+  "border-[color:var(--glass-border-subtle)]",
+  "rounded-3xl",
+  "sm:rounded-4xl",
+  "shadow-[0_30px_120px_rgba(0,0,0,0.32)]",
+].join(" ")
 
 export const COLORS = {
   obsidian: "#0d0c0b",
+  surface: "#1c1b19",
+  elevated: "#2e2c29",
   porcelain: "#f0ede8",
-  pearl: "#2e2c29",
+  whisper: "#c8c4bb",
+  accent: "#a8a49c",
   smoke: "#8a8780",
-  whisper: "#1c1b19",
 } as const
 
 export const GLASS = {
   cardBg: "rgba(175,170,162,0.10)",
+  cardBgStrong: "rgba(175,170,162,0.18)",
+  cardBgSoft: "rgba(175,170,162,0.08)",
+  overlayBg: "rgba(28,27,25,0.96)",
   cardBorder: "rgba(195,190,182,0.25)",
-  inputBg: "rgba(175,170,162,0.08)",
-  inputBorder: "rgba(195,190,182,0.20)",
+  cardBorderSubtle: "rgba(195,190,182,0.15)",
+  cardBorderStrong: "rgba(195,190,182,0.40)",
   blur: "50px",
+  blurHeavy: "70px",
   radius: "20px",
 } as const
 
@@ -58,12 +109,12 @@ export const DesignTokens = {
     full: "9999px",
   },
   shadows: {
-    sm: "0 1px 2px rgb(0 0 0 / 0.2)",
-    md: "0 6px 18px rgb(0 0 0 / 0.28)",
-    lg: "0 12px 30px rgb(0 0 0 / 0.36)",
-    xl: "0 20px 45px rgb(0 0 0 / 0.45)",
-    "2xl": "0 30px 60px rgb(0 0 0 / 0.55)",
-    inner: "inset 0 1px 0 rgb(240 237 232 / 0.06)",
+    sm: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+    md: "0 4px 6px -1px rgb(0 0 0 / 0.12)",
+    lg: "0 10px 20px -6px rgb(0 0 0 / 0.18)",
+    xl: "0 24px 80px rgb(0 0 0 / 0.28)",
+    "2xl": "0 36px 120px rgb(0 0 0 / 0.32)",
+    inner: "inset 0 1px 0 rgb(255 255 255 / 0.04)",
   },
 } as const
 
@@ -98,6 +149,7 @@ export const DesignClasses = {
       lg: "space-y-6 sm:space-y-8",
     },
   },
+
   radius: {
     sm: "rounded-lg",
     md: "rounded-xl",
@@ -105,96 +157,76 @@ export const DesignClasses = {
     xl: "rounded-3xl sm:rounded-4xl",
     full: "rounded-full",
   },
+
   shadows: {
-    card: "shadow-[0_12px_30px_rgba(0,0,0,0.30)]",
-    cardHover: "hover:shadow-[0_18px_40px_rgba(0,0,0,0.40)]",
-    button: "shadow-[0_8px_22px_rgba(0,0,0,0.30)]",
-    buttonHover: "hover:shadow-[0_12px_30px_rgba(0,0,0,0.40)]",
-    inner: "shadow-inner shadow-black/25",
-    container: "shadow-[0_22px_52px_rgba(0,0,0,0.45)]",
+    card: "shadow-[0_24px_80px_rgba(0,0,0,0.28)]",
+    cardHover: "hover:shadow-[0_28px_96px_rgba(0,0,0,0.34)]",
+    button: "shadow-[0_12px_32px_rgba(0,0,0,0.18)]",
+    buttonHover: "hover:shadow-[0_16px_40px_rgba(0,0,0,0.24)]",
+    inner: "shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]",
+    container: "shadow-[0_30px_120px_rgba(0,0,0,0.32)]",
   },
+
   background: {
-    primary: "bg-[rgba(175,170,162,0.10)]",
-    secondary: "bg-[rgba(175,170,162,0.14)]",
-    tertiary: "bg-[rgba(175,170,162,0.18)]",
+    primary: "bg-[color:var(--glass-bg)]",
+    secondary: "bg-[color:var(--glass-bg-mid)]",
+    tertiary: "bg-[color:var(--glass-input-bg)]",
     overlay: "bg-[rgba(28,27,25,0.96)]",
-    glass: "bg-[rgba(175,170,162,0.10)]",
+    glass: "bg-[color:var(--app-bg-glass)]",
   },
+
   border: {
-    light: "border-[rgba(195,190,182,0.15)]",
-    medium: "border-[rgba(195,190,182,0.25)]",
-    strong: "border-[rgba(195,190,182,0.35)]",
-    stone: "border-[rgba(195,190,182,0.20)]",
+    light: "border-[color:var(--glass-border-subtle)]",
+    medium: "border-[color:var(--glass-border)]",
+    strong: "border-[rgba(195,190,182,0.40)]",
+    stone: "border-[color:var(--glass-divider)]",
   },
+
   text: {
-    primary: "text-[#f0ede8]",
-    secondary: "text-[#a8a49c]",
-    tertiary: "text-[#8a8780]",
-    muted: "text-[rgba(240,237,232,0.55)]",
+    primary: "text-[color:var(--color-porcelain)]",
+    secondary: "text-[color:var(--color-whisper)]",
+    tertiary: "text-[color:var(--color-smoke)]",
+    muted: "text-[color:var(--text-accent)]",
   },
+
   typography: {
     heading: {
-      h1: "text-4xl sm:text-5xl md:text-6xl font-['Cormorant_Garamond'] font-light tracking-wide",
-      h2: "text-2xl sm:text-3xl md:text-4xl font-['Cormorant_Garamond'] font-light tracking-wide",
-      h3: "text-xl sm:text-2xl md:text-3xl font-['Cormorant_Garamond'] font-light tracking-wide",
-      h4: "text-lg sm:text-xl md:text-2xl font-['Cormorant_Garamond'] font-light tracking-[0.18em] uppercase",
+      small: "text-lg sm:text-xl font-serif font-light tracking-[0.15em] uppercase",
+      medium: "text-2xl sm:text-3xl font-serif font-light tracking-[0.18em] uppercase",
+      h1: "text-4xl sm:text-5xl md:text-6xl font-serif font-light tracking-[0.5em] uppercase",
+      h2: "text-2xl sm:text-3xl md:text-4xl font-serif font-light tracking-[0.3em] uppercase",
+      h3: "text-xl sm:text-2xl md:text-3xl font-serif font-light tracking-[0.2em] uppercase",
+      h4: "text-lg sm:text-xl md:text-2xl font-serif font-light tracking-[0.15em] uppercase",
     },
     body: {
       large: "text-base sm:text-lg font-light",
       medium: "text-sm sm:text-base font-light",
       small: "text-xs sm:text-sm font-light",
       tiny: "text-[10px] sm:text-xs font-light",
+      xsmall: "text-[11px] font-light",
     },
     label: {
-      uppercase: "text-xs tracking-[0.18em] uppercase font-medium",
+      uppercase: "text-xs tracking-[0.15em] uppercase font-medium",
       normal: "text-sm font-medium",
+      small: "text-[10px] tracking-[0.18em] uppercase font-medium",
+      button: "text-xs tracking-[0.15em] uppercase font-medium",
     },
   },
+
   blur: {
     sm: "backdrop-blur-[20px]",
     md: "backdrop-blur-[50px]",
-    lg: "backdrop-blur-[60px]",
+    lg: "backdrop-blur-[70px]",
   },
+
+  card: cardClass,
+  buttonPrimary: buttonPrimaryClass,
+  container: containerClass,
 } as const
 
 export const ComponentClasses = {
-  card: [
-    DesignClasses.background.primary,
-    DesignClasses.blur.md,
-    DesignClasses.border.medium,
-    DesignClasses.radius.lg,
-    DesignClasses.spacing.padding.md,
-    DesignClasses.shadows.card,
-  ].join(" "),
-  cardHover: [
-    DesignClasses.background.primary,
-    DesignClasses.blur.md,
-    DesignClasses.border.medium,
-    DesignClasses.radius.lg,
-    DesignClasses.spacing.padding.md,
-    DesignClasses.shadows.card,
-    DesignClasses.shadows.cardHover,
-    "transition-all duration-300",
-  ].join(" "),
-  buttonPrimary: [
-    "bg-[#c8c4bb]",
-    "text-[#0d0c0b]",
-    "rounded-full",
-    DesignClasses.shadows.button,
-    "px-6 sm:px-8",
-    "py-3 sm:py-4",
-    "text-xs sm:text-sm",
-    "font-medium",
-    "uppercase",
-    "tracking-[0.2em]",
-    "hover:bg-[#f0ede8]",
-    "transition-colors duration-200",
-  ].join(" "),
-  container: [
-    DesignClasses.background.glass,
-    DesignClasses.blur.lg,
-    DesignClasses.radius.xl,
-    DesignClasses.border.light,
-    DesignClasses.shadows.container,
-  ].join(" "),
+  card: cardClass,
+  cardHover: [cardClass, DesignClasses.shadows.cardHover, "transition-all duration-500"].join(" "),
+  buttonPrimary: buttonPrimaryClass,
+  container: containerClass,
 } as const

@@ -13,6 +13,7 @@ import {
 import { DynamicHeroCarousel } from "./dynamic-hero-carousel"
 import { ContextualTips } from "./contextual-tips"
 import { DesignClasses } from "@/lib/design-tokens"
+import { BRAND_COLOR_THEME_MAP } from "@/lib/style-presets"
 
 interface StudioScreenProps {
   user: any
@@ -30,36 +31,7 @@ export default function StudioScreen({ user, hasTrainedModel, setActiveTab, onIm
   const [showSecondaryContent, setShowSecondaryContent] = useState(false)
   const [selectedGeneration, setSelectedGeneration] = useState<any>(null)
 
-  const COLOR_THEME_MAP: Record<string, { name: string; colors: string[] }> = {
-    "dark-moody": {
-      name: "Dark & Moody",
-      colors: ["#000000", "#2C2C2C", "#4A4A4A", "#6B6B6B"],
-    },
-    "minimalist-clean": {
-      name: "Minimalistic & Clean",
-      colors: ["#FFFFFF", "#F5F5F0", "#E8E4DC", "#D4C5F0"],
-    },
-    "beige-creamy": {
-      name: "Beige & Creamy",
-      colors: ["#F5F1E8", "#E8DCC8", "#D4C4A8", "#B8A88A"],
-    },
-    "pastel-coastal": {
-      name: "Pastel & Coastal",
-      colors: ["#E8F4F8", "#B8E0E8", "#88CCD8", "#5BA8B8"],
-    },
-    "warm-terracotta": {
-      name: "Warm & Terracotta",
-      colors: ["#E8DCC8", "#C8A898", "#A88878", "#886858"],
-    },
-    "bold-colorful": {
-      name: "Bold & Colorful",
-      colors: ["#FF6B9D", "#FFA07A", "#FFD700", "#98D8C8"],
-    },
-    custom: {
-      name: "Custom Colors",
-      colors: ["#D4C5B9", "#A89B8E", "#8B7E71", "#6E6154"],
-    },
-  }
+  const COLOR_THEME_MAP = BRAND_COLOR_THEME_MAP
 
   const { data: brandStatus } = useSWR(hasTrainedModel ? "/api/profile/personal-brand/status" : null, fetcher, {
     refreshInterval: 0,

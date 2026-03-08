@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { X } from "lucide-react"
 import { DesignClasses, ComponentClasses } from "@/lib/design-tokens"
 import Image from "next/image"
+import { FEED_STARTER_STYLE_MAP } from "@/lib/style-presets"
 
 interface BlueprintExtensionProps {
   isOpen: boolean
@@ -22,29 +23,7 @@ interface BlueprintExtensionProps {
   }
 }
 
-const FEED_STYLES = [
-  {
-    id: "luxury",
-    name: "Dark & Moody",
-    colors: ["#0a0a0a", "#2d2d2d", "#4a4a4a"],
-    grid: ["selfie", "selfie", "flatlay", "selfie", "selfie", "selfie", "flatlay", "selfie", "selfie"],
-    description: "Dramatic blacks and grays with high contrast",
-  },
-  {
-    id: "minimal",
-    name: "Light & Minimalistic",
-    colors: ["#f5f5f5", "#e5e5e5", "#d4d4d4"],
-    grid: ["selfie", "selfie", "selfie", "flatlay", "selfie", "selfie", "selfie", "flatlay", "selfie"],
-    description: "Soft whites, creams, and beiges",
-  },
-  {
-    id: "beige",
-    name: "Beige Aesthetic",
-    colors: ["#c9b8a8", "#a89384", "#8a7968"],
-    grid: ["selfie", "flatlay", "selfie", "selfie", "selfie", "selfie", "selfie", "flatlay", "selfie"],
-    description: "Warm neutrals and earthy tones",
-  },
-]
+const FEED_STYLES = Object.values(FEED_STARTER_STYLE_MAP)
 
 // Blueprint Extension steps (3 steps)
 const EXTENSION_STEPS = [
