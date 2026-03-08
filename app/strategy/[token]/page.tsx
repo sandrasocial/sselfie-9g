@@ -176,9 +176,14 @@ function StrategyStatus({ title, body }: { title: string; body: string }) {
 
       <style>{`
         .strategy-status {
+          --strategy-bg: var(--color-obsidian);
+          --strategy-panel: var(--glass-bg);
+          --strategy-border: var(--glass-border);
+          --strategy-muted: var(--color-smoke);
+          --strategy-text: var(--color-porcelain);
           min-height: 100vh;
-          background: #0d0c0b;
-          color: #8a8780;
+          background: var(--strategy-bg);
+          color: var(--strategy-muted);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -187,8 +192,8 @@ function StrategyStatus({ title, body }: { title: string; body: string }) {
 
         .status-card {
           max-width: 580px;
-          border: 1px solid rgba(195, 190, 182, 0.25);
-          background: rgba(175, 170, 162, 0.10);
+          border: 1px solid var(--strategy-border);
+          background: var(--strategy-panel);
           backdrop-filter: blur(50px);
           padding: 38px 32px;
           border-radius: 16px;
@@ -200,7 +205,7 @@ function StrategyStatus({ title, body }: { title: string; body: string }) {
           font-weight: 500;
           letter-spacing: 0.5em;
           text-transform: uppercase;
-          color: #8a8780;
+          color: var(--strategy-muted);
         }
 
         h1 {
@@ -209,7 +214,7 @@ function StrategyStatus({ title, body }: { title: string; body: string }) {
           font-weight: 300;
           text-transform: uppercase;
           letter-spacing: 0.03em;
-          color: #f0ede8;
+          color: var(--strategy-text);
           line-height: 1;
         }
 
@@ -491,8 +496,17 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
 
       <style>{`
         .strategy-page {
-          background: #0d0c0b;
-          color: #f0ede8;
+          --strategy-bg: var(--color-obsidian);
+          --strategy-panel: var(--glass-bg);
+          --strategy-panel-soft: var(--glass-input-bg);
+          --strategy-border: var(--glass-border);
+          --strategy-border-soft: var(--glass-divider);
+          --strategy-text: var(--color-porcelain);
+          --strategy-muted: var(--color-smoke);
+          --strategy-accent: var(--color-accent);
+          --strategy-cta: var(--color-whisper);
+          background: var(--strategy-bg);
+          color: var(--strategy-text);
           min-height: 100vh;
         }
 
@@ -501,10 +515,10 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          border-bottom: 1px solid rgba(195, 190, 182, 0.15);
+          border-bottom: 1px solid var(--glass-border-subtle);
           position: sticky;
           top: 0;
-          background: rgba(13, 12, 11, 0.92);
+          background: var(--app-overlay-soft);
           backdrop-filter: blur(50px);
           z-index: 100;
         }
@@ -514,7 +528,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           font-size: 17px;
           letter-spacing: 0.3em;
           text-transform: uppercase;
-          color: #f0ede8;
+          color: var(--strategy-text);
           text-decoration: none;
         }
 
@@ -523,7 +537,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           font-weight: 500;
           letter-spacing: 0.5em;
           text-transform: uppercase;
-          color: #8a8780;
+          color: var(--strategy-muted);
         }
 
         .hero {
@@ -579,7 +593,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           font-weight: 500;
           letter-spacing: 0.5em;
           text-transform: uppercase;
-          color: #8a8780;
+          color: var(--strategy-muted);
           margin-bottom: 20px;
         }
 
@@ -590,7 +604,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           line-height: 1;
           letter-spacing: -0.02em;
           text-transform: uppercase;
-          color: #f0ede8;
+          color: var(--strategy-text);
         }
 
         .hero-meta {
@@ -599,7 +613,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           gap: 28px;
           flex-wrap: wrap;
           padding-top: 30px;
-          border-top: 1px solid rgba(175, 170, 162, 0.12);
+          border-top: 1px solid var(--strategy-border-soft);
         }
 
         .meta-label {
@@ -607,13 +621,13 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           font-weight: 500;
           letter-spacing: 0.45em;
           text-transform: uppercase;
-          color: #8a8780;
+          color: var(--strategy-muted);
           margin-bottom: 5px;
         }
 
         .meta-value {
           font-size: 15px;
-          color: #c8c4bb;
+          color: var(--strategy-cta);
           max-width: 280px;
         }
 
@@ -629,15 +643,15 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           font-weight: 500;
           letter-spacing: 0.5em;
           text-transform: uppercase;
-          color: #8a8780;
+          color: var(--strategy-muted);
           padding-bottom: 16px;
-          border-bottom: 1px solid rgba(175, 170, 162, 0.12);
+          border-bottom: 1px solid var(--strategy-border-soft);
         }
 
         .positioning-split {
           display: grid;
           grid-template-columns: 1fr 1.4fr;
-          border: 1px solid rgba(195, 190, 182, 0.25);
+          border: 1px solid var(--strategy-border);
           margin-bottom: 16px;
           min-height: 340px;
           border-radius: 12px;
@@ -658,7 +672,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
         }
 
         .positioning-text {
-          background: rgba(175, 170, 162, 0.08);
+          background: var(--strategy-panel-soft);
           backdrop-filter: blur(20px);
           padding: 44px 40px;
           display: flex;
@@ -672,8 +686,8 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           font-weight: 500;
           letter-spacing: 0.45em;
           text-transform: uppercase;
-          color: #8a8780;
-          border: 1px solid rgba(195, 190, 182, 0.25);
+          color: var(--strategy-muted);
+          border: 1px solid var(--strategy-border);
           padding: 5px 12px;
           margin-bottom: 20px;
           align-self: flex-start;
@@ -686,31 +700,31 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           font-size: clamp(20px, 2.5vw, 28px);
           line-height: 1.4;
           letter-spacing: -0.01em;
-          color: #f0ede8;
+          color: var(--strategy-text);
         }
 
         .positioning-alt {
-          background: rgba(175, 170, 162, 0.08);
-          border: 1px solid rgba(195, 190, 182, 0.25);
+          background: var(--strategy-panel-soft);
+          border: 1px solid var(--strategy-border);
           padding: 32px 36px;
           border-radius: 12px;
         }
 
         .positioning-alt .positioning-statement {
           font-size: clamp(17px, 2vw, 22px);
-          color: #a8a49c;
+          color: var(--strategy-accent);
         }
 
         .divider {
           border: none;
-          border-top: 1px solid rgba(175, 170, 162, 0.12);
+          border-top: 1px solid var(--strategy-border-soft);
         }
 
         .editorial-strip {
           display: grid;
           grid-template-columns: 2fr 1fr;
-          border-top: 1px solid rgba(175, 170, 162, 0.12);
-          border-bottom: 1px solid rgba(175, 170, 162, 0.12);
+          border-top: 1px solid var(--strategy-border-soft);
+          border-bottom: 1px solid var(--strategy-border-soft);
           min-height: 320px;
         }
 
@@ -719,7 +733,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           display: flex;
           flex-direction: column;
           justify-content: center;
-          background: #0d0c0b;
+          background: var(--strategy-bg);
         }
 
         .editorial-eyebrow {
@@ -728,7 +742,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           font-weight: 500;
           letter-spacing: 0.5em;
           text-transform: uppercase;
-          color: #8a8780;
+          color: var(--strategy-muted);
         }
 
         .editorial-quote {
@@ -736,7 +750,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           font-size: clamp(24px, 3vw, 36px);
           line-height: 1.3;
           letter-spacing: -0.01em;
-          color: #f0ede8;
+          color: var(--strategy-text);
           font-style: italic;
         }
 
@@ -753,13 +767,13 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           font-weight: 500;
           letter-spacing: 0.38em;
           text-transform: uppercase;
-          color: #8a8780;
+          color: var(--strategy-muted);
         }
 
         .editorial-sub-copy {
           margin: 0;
           font-size: 14px;
-          color: #8a8780;
+          color: var(--strategy-muted);
           line-height: 1.8;
         }
 
@@ -771,9 +785,9 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
 
         .phrases-list li {
           font-size: 14px;
-          color: #a8a49c;
+          color: var(--strategy-accent);
           padding: 8px 0;
-          border-bottom: 1px solid rgba(175, 170, 162, 0.12);
+          border-bottom: 1px solid var(--strategy-border-soft);
           font-style: italic;
         }
 
@@ -794,7 +808,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
         .pillar-card {
           display: flex;
           flex-direction: column;
-          border: 1px solid rgba(195, 190, 182, 0.25);
+          border: 1px solid var(--strategy-border);
           overflow: hidden;
           border-radius: 12px;
         }
@@ -818,11 +832,11 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           font-weight: 500;
           letter-spacing: 0.45em;
           text-transform: uppercase;
-          color: #a8a49c;
+          color: var(--strategy-accent);
         }
 
         .pillar-body {
-          background: rgba(175, 170, 162, 0.08);
+          background: var(--strategy-panel-soft);
           padding: 24px 24px 28px;
           flex: 1;
         }
@@ -833,14 +847,14 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           font-size: 20px;
           letter-spacing: -0.01em;
           text-transform: uppercase;
-          color: #f0ede8;
+          color: var(--strategy-text);
           line-height: 1.1;
         }
 
         .pillar-desc {
           margin: 0 0 18px;
           font-size: 13px;
-          color: #8a8780;
+          color: var(--strategy-muted);
           line-height: 1.7;
         }
 
@@ -849,7 +863,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           font-weight: 500;
           letter-spacing: 0.4em;
           text-transform: uppercase;
-          color: #8a8780;
+          color: var(--strategy-muted);
           margin-bottom: 8px;
         }
 
@@ -861,11 +875,11 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
 
         .pillar-ideas li {
           font-size: 13px;
-          color: #a8a49c;
+          color: var(--strategy-accent);
           line-height: 1.65;
           padding: 5px 0 5px 18px;
           position: relative;
-          border-bottom: 1px solid rgba(175, 170, 162, 0.12);
+          border-bottom: 1px solid var(--strategy-border-soft);
         }
 
         .pillar-ideas li:last-child {
@@ -876,7 +890,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           content: "→";
           position: absolute;
           left: 0;
-          color: #a8a49c;
+          color: var(--strategy-accent);
           font-size: 11px;
           top: 6px;
         }
@@ -888,18 +902,18 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
         }
 
         .starter-chip {
-          background: rgba(175, 170, 162, 0.08);
-          border: 1px solid rgba(195, 190, 182, 0.25);
+          background: var(--strategy-panel-soft);
+          border: 1px solid var(--strategy-border);
           padding: 18px 22px;
           font-size: 14px;
-          color: #a8a49c;
+          color: var(--strategy-accent);
           line-height: 1.55;
           border-radius: 8px;
         }
 
         .post-card {
-          background: rgba(175, 170, 162, 0.08);
-          border: 1px solid rgba(195, 190, 182, 0.25);
+          background: var(--strategy-panel-soft);
+          border: 1px solid var(--strategy-border);
           padding: 40px 44px;
           margin-bottom: 12px;
           border-radius: 12px;
@@ -910,7 +924,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           font-weight: 500;
           letter-spacing: 0.5em;
           text-transform: uppercase;
-          color: #8a8780;
+          color: var(--strategy-muted);
           margin-bottom: 8px;
           margin-top: 20px;
         }
@@ -922,17 +936,17 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
         .post-hook {
           margin: 0 0 4px;
           font-size: clamp(20px, 2.5vw, 26px);
-          color: #f0ede8;
+          color: var(--strategy-text);
           line-height: 1.35;
         }
 
         .post-body {
           margin: 0;
           font-size: 15px;
-          color: #a8a49c;
+          color: var(--strategy-accent);
           line-height: 1.8;
           padding-bottom: 20px;
-          border-bottom: 1px solid rgba(175, 170, 162, 0.12);
+          border-bottom: 1px solid var(--strategy-border-soft);
           white-space: pre-wrap;
         }
 
@@ -940,7 +954,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           margin: 0;
           font-size: 14px;
           font-weight: 400;
-          color: #8a8780;
+          color: var(--strategy-muted);
         }
 
         .upsell-section {
@@ -975,7 +989,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           font-weight: 500;
           letter-spacing: 0.5em;
           text-transform: uppercase;
-          color: #8a8780;
+          color: var(--strategy-muted);
         }
 
         .upsell-heading {
@@ -984,13 +998,13 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           line-height: 1.05;
           letter-spacing: -0.01em;
           text-transform: uppercase;
-          color: #f0ede8;
+          color: var(--strategy-text);
         }
 
         .upsell-body {
           margin: 0 auto 40px;
           font-size: 16px;
-          color: #8a8780;
+          color: var(--strategy-muted);
           max-width: 620px;
           line-height: 1.8;
         }
@@ -1005,8 +1019,8 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
 
         .btn-primary {
           display: inline-block;
-          background: #c8c4bb;
-          color: #0d0c0b;
+          background: var(--strategy-cta);
+          color: var(--strategy-bg);
           padding: 18px 52px;
           font-size: 11px;
           font-weight: 500;
@@ -1018,13 +1032,13 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
         }
 
         .btn-primary:hover {
-          background: #f0ede8;
+          background: var(--strategy-text);
         }
 
         .btn-secondary {
           display: inline-block;
-          border: 1px solid rgba(195, 190, 182, 0.25);
-          color: #a8a49c;
+          border: 1px solid var(--strategy-border);
+          color: var(--strategy-accent);
           padding: 14px 40px;
           font-size: 11px;
           font-weight: 500;
@@ -1036,19 +1050,19 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
         }
 
         .btn-secondary:hover {
-          border-color: #a8a49c;
-          color: #c8c4bb;
+          border-color: var(--strategy-accent);
+          color: var(--strategy-cta);
         }
 
         .footer {
-          border-top: 1px solid rgba(175, 170, 162, 0.12);
+          border-top: 1px solid var(--strategy-border-soft);
           padding: 30px 24px;
           text-align: center;
         }
 
         .footer-note {
           font-size: 12px;
-          color: #8a8780;
+          color: var(--strategy-muted);
         }
 
         @media (max-width: 700px) {

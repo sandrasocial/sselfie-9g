@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { STORY_HIGHLIGHT_PALETTES } from "@/lib/style-presets"
 
 interface StoryHighlightCardProps {
   highlight: {
@@ -56,23 +57,13 @@ export default function StoryHighlightCard({
   const [description, setDescription] = useState(highlight.description || "")
   const [mode, setMode] = useState<"image" | "color">("color")
   const [selectedColor, setSelectedColor] = useState(
-    highlight.coverUrl && highlight.coverUrl.startsWith("#") ? highlight.coverUrl : "#D4C5B9",
+    highlight.coverUrl && highlight.coverUrl.startsWith("#") ? highlight.coverUrl : "#D4C4A8",
   )
 
-  // Color palettes based on brand themes
-  const colorPalettes = {
-    "Dark & Moody": ["#1A1A1A", "#2D2D2D", "#3D3D3D", "#4A4A4A"],
-    "Minimalistic & Clean": ["#FFFFFF", "#F5F5F5", "#E8E8E8", "#D4D4D4"],
-    "Bold & Colorful": ["#FF6B6B", "#4ECDC4", "#FFE66D", "#A8E6CF"],
-    "Beige & Creamy": ["#F5E6D3", "#E8D5C4", "#D4C5B9", "#C9B8A8"],
-    "Pastel & Coastal": ["#B8E6E1", "#C4E8E6", "#A8D5D1", "#8FC5C1"],
-    Monochrome: ["#000000", "#808080", "#C0C0C0", "#FFFFFF"],
-  }
-
   const currentPalette =
-    userColorTheme && colorPalettes[userColorTheme as keyof typeof colorPalettes]
-      ? colorPalettes[userColorTheme as keyof typeof colorPalettes]
-      : colorPalettes["Beige & Creamy"]
+    userColorTheme && userColorTheme in STORY_HIGHLIGHT_PALETTES
+      ? STORY_HIGHLIGHT_PALETTES[userColorTheme as keyof typeof STORY_HIGHLIGHT_PALETTES]
+      : STORY_HIGHLIGHT_PALETTES["Beige & Creamy"]
 
   useEffect(() => {
     if (!predictionId || !generationId || isGenerated) {
@@ -373,7 +364,7 @@ export default function StoryHighlightCard({
                             setSelectedColor("#" + value.replace(/[^0-9A-Fa-f]/g, ""))
                           }
                         }}
-                        placeholder="#D4C5B9"
+                        placeholder="#D4C4A8"
                         className="text-sm font-mono flex-1"
                         maxLength={7}
                       />

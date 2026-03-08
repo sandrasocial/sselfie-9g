@@ -10,6 +10,7 @@ import { DesignClasses, ComponentClasses } from "@/lib/design-tokens"
 import Image from "next/image"
 import { BlueprintSelfieUpload } from "@/components/blueprint/blueprint-selfie-upload"
 import useSWR from "swr"
+import { FEED_STARTER_STYLE_MAP } from "@/lib/style-presets"
 
 interface BlueprintOnboardingWizardProps {
   isOpen: boolean
@@ -43,23 +44,7 @@ interface BlueprintOnboardingWizardProps {
 }
 
 // Feed style examples (from old blueprint form)
-const feedExamples = {
-  luxury: {
-    name: "Dark & Moody",
-    colors: ["#0a0a0a", "#2d2d2d", "#4a4a4a"],
-    grid: ["selfie", "selfie", "flatlay", "selfie", "selfie", "selfie", "flatlay", "selfie", "selfie"],
-  },
-  minimal: {
-    name: "Light & Minimalistic",
-    colors: ["#f5f5f5", "#e5e5e5", "#d4d4d4"],
-    grid: ["selfie", "selfie", "selfie", "flatlay", "selfie", "selfie", "selfie", "flatlay", "selfie"],
-  },
-  beige: {
-    name: "Beige Aesthetic",
-    colors: ["#c9b8a8", "#a89384", "#8a7968"],
-    grid: ["selfie", "flatlay", "selfie", "selfie", "selfie", "selfie", "selfie", "flatlay", "selfie"],
-  },
-}
+const feedExamples = FEED_STARTER_STYLE_MAP
 
 const VIBES = ["Luxury", "Minimal", "Beige", "Warm", "Edgy", "Professional"]
 

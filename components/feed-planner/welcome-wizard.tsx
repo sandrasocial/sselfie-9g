@@ -7,29 +7,14 @@ import { motion, AnimatePresence } from "framer-motion"
 import { DesignClasses } from "@/lib/design-tokens"
 import useSWR from "swr"
 import Image from "next/image"
+import { FEED_STARTER_STYLE_MAP, type FeedStarterStyleId } from "@/lib/style-presets"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 // Feed style examples (matching unified wizard)
-const feedExamples = {
-  luxury: {
-    name: "Dark & Moody",
-    colors: ["#0b0d10", "#2d2f34", "#4a4d52"],
-    grid: ["selfie", "selfie", "flatlay", "selfie", "selfie", "selfie", "flatlay", "selfie", "selfie"],
-  },
-  minimal: {
-    name: "Light & Minimalistic",
-    colors: ["#f5f5f5", "#e5e5e5", "#d4d4d4"],
-    grid: ["selfie", "selfie", "selfie", "flatlay", "selfie", "selfie", "selfie", "flatlay", "selfie"],
-  },
-  beige: {
-    name: "Beige Aesthetic",
-    colors: ["#c9b8a8", "#a89384", "#8a7968"],
-    grid: ["selfie", "flatlay", "selfie", "selfie", "selfie", "selfie", "selfie", "flatlay", "selfie"],
-  },
-}
+const feedExamples = FEED_STARTER_STYLE_MAP
 
-export type FeedStyle = "luxury" | "minimal" | "beige"
+export type FeedStyle = FeedStarterStyleId
 
 interface WelcomeWizardProps {
   open: boolean

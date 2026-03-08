@@ -24,7 +24,7 @@ const config: Config = {
         porcelain: "#f0ede8",
         pearl: "#2e2c29",
         smoke: "#8a8780",
-        whisper: "#1c1b19",
+        whisper: "#c8c4bb",
       },
     },
   },
