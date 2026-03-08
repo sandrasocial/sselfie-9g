@@ -20,7 +20,7 @@ interface FeedGridProps {
   onRequireFeedStyle?: () => void
   onRequireOnboarding?: () => void
   onDragStart: (index: number) => void
-  onDragOver: (e: React.DragEvent<HTMLDivElement>, index: number) => void
+  onDragOver: (e: React.DragEvent<HTMLElement>, index: number) => void
   onDragEnd: () => void
 }
 

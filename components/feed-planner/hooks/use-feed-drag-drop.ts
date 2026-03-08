@@ -56,7 +56,7 @@ export function useFeedDragDrop(
     setDraggedIndex(index)
   }
 
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>, index: number) => {
+  const handleDragOver = (e: React.DragEvent<HTMLElement>, index: number) => {
     e.preventDefault()
     if (draggedIndex !== null && draggedIndex !== index) {
       const newPosts = [...reorderedPosts]
@@ -70,7 +70,6 @@ export function useFeedDragDrop(
   const handleDragEnd = async () => {
     if (draggedIndex === null) return
     
-    const originalIndex = draggedIndex
     setDraggedIndex(null)
     
     // Check if order actually changed
@@ -134,4 +133,3 @@ export function useFeedDragDrop(
     handleDragEnd,
   }
 }
-

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, type ReactNode } from "react"
+import { useEffect, useState } from "react"
 import Image from "next/image"
 import { useFeedPostPolling } from "@/lib/hooks/use-feed-post-polling"
 import { toast } from "@/hooks/use-toast"
@@ -16,9 +16,225 @@ interface FeedGridItemProps {
   onAddImage?: (postId: number) => void
   onGenerateImage?: (postId: number) => Promise<void>
   onDragStart: () => void
-  onDragOver: (e: React.DragEvent<HTMLDivElement>) => void
+  onDragOver: (e: React.DragEvent<HTMLElement>) => void
   onDragEnd: () => void
-  onGenerate: (postId: number) => Promise<void>
+  onGenerate: (postId: number) => Promise<any>
+}
+
+const getInitialPredictionId = (post: any) =>
+  post?.prediction_id && !post?.image_url ? post.prediction_id : null
+
+const syncPredictionId = (
+  post: any,
+  predictionId: string | null,
+  setPredictionId: (value: string | null) => void
+) => {
+  if (post?.image_url) {
+    if (predictionId) {
+      setPredictionId(null)
+    }
+    return
+  }
+
+  if (post?.prediction_id && post.prediction_id !== predictionId) {
+    setPredictionId(post.prediction_id)
+  }
+}
+
+const getIsGenerating = ({
+  isManualFeed,
+  displayImageUrl,
+  pollingStatus,
+  predictionId,
+  post,
+}: {
+  isManualFeed: boolean
+  displayImageUrl: string | null
+  pollingStatus: string
+  predictionId: string | null
+  post: any
+}) =>
+  !isManualFeed &&
+  !displayImageUrl &&
+  (pollingStatus === "generating" ||
+    !!predictionId ||
+    (post.generation_status === "generating" && post.prediction_id && !post.image_url) ||
+    (post.prediction_id && !post.image_url))
+
+async function stopGeneration({
+  event,
+  canStop,
+  isStopping,
+  postId,
+  onGenerateImage,
+  setPredictionId,
+  setIsStopping,
+}: {
+  event: React.MouseEvent<HTMLButtonElement>
+  canStop: boolean
+  isStopping: boolean
+  postId: number
+  onGenerateImage?: (postId: number) => Promise<void>
+  setPredictionId: (value: string | null) => void
+  setIsStopping: (value: boolean) => void
+}) {
+  event.stopPropagation()
+
+  if (!canStop || isStopping) {
+    return
+  }
+
+  if (!confirm("Stop this generation? If it doesn't complete, we'll refund your credit.")) {
+    return
+  }
+
+  setIsStopping(true)
+  try {
+    const response = await fetch(`/api/feed/post/${postId}/cancel`, { method: "POST" })
+    const data = await response.json().catch(() => ({}))
+
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to stop generation")
+    }
+
+    setPredictionId(null)
+    onGenerateImage?.(postId).catch(() => {})
+
+    toast({
+      title: "Generation stopped",
+      description: data.refunded ? "Credit refunded." : "No credit refund needed.",
+    })
+  } catch (error) {
+    toast({
+      title: "Could not stop generation",
+      description: error instanceof Error ? error.message : "Please try again",
+      variant: "destructive",
+    })
+  } finally {
+    setIsStopping(false)
+  }
+}
+
+async function startGeneration({
+  event,
+  postId,
+  onGenerate,
+  setPredictionId,
+}: {
+  event: React.MouseEvent<HTMLButtonElement>
+  postId: number
+  onGenerate: (postId: number) => Promise<any>
+  setPredictionId: (value: string | null) => void
+}) {
+  event.stopPropagation()
+
+  const tempPredictionId = `temp-${Date.now()}`
+  setPredictionId(tempPredictionId)
+  console.log("[Feed Grid Item] 🚀 Starting generation (optimistic UI) for post", postId)
+
+  try {
+    const data = await onGenerate(postId)
+    if (data?.predictionId) {
+      setPredictionId(data.predictionId)
+      console.log("[Feed Grid Item] ✅ Generation started for post", postId, "predictionId:", data.predictionId)
+      return
+    }
+
+    setPredictionId(null)
+  } catch (error) {
+    setPredictionId(null)
+    console.error("[Feed Grid Item] Error starting generation:", error)
+  }
+}
+
+function renderContent({
+  displayImageUrl,
+  isGenerating,
+  canStop,
+  isStopping,
+  showGenerateButton,
+  post,
+  onAddImage,
+  onGenerateClick,
+  onStopGeneration,
+}: {
+  displayImageUrl: string | null
+  isGenerating: boolean
+  canStop: boolean
+  isStopping: boolean
+  showGenerateButton: boolean
+  post: any
+  onAddImage?: (postId: number) => void
+  onGenerateClick: (event: React.MouseEvent<HTMLButtonElement>) => void
+  onStopGeneration: (event: React.MouseEvent<HTMLButtonElement>) => void
+}) {
+  if (displayImageUrl && !isGenerating) {
+    return (
+      <Image
+        src={displayImageUrl}
+        alt={`Post ${post.position}`}
+        fill
+        className="object-cover"
+        sizes="(max-width: 768px) 33vw, 311px"
+      />
+    )
+  }
+
+  if (isGenerating) {
+    return (
+      <div className="absolute inset-0 flex flex-col items-center justify-center bg-[rgba(28,27,25,0.72)] backdrop-blur-sm">
+        <span className="mb-2 h-5 w-5 animate-spin rounded-full border border-[rgba(195,190,182,0.35)] border-t-[#c8c4bb]" />
+        <div className="text-center text-[10px] font-['Inter'] font-medium text-[#8a8780]">
+          Creating...
+        </div>
+        <button
+          type="button"
+          onClick={onStopGeneration}
+          disabled={!canStop || isStopping}
+          className={`mt-2 text-[10px] font-light ${
+            !canStop || isStopping ? "text-[#8a8780] opacity-40" : "text-[#a8a49c] hover:text-[#f0ede8]"
+          }`}
+        >
+          {isStopping ? "Stopping..." : "Stop generation"}
+        </button>
+      </div>
+    )
+  }
+
+  if (showGenerateButton) {
+    return (
+      <button
+        type="button"
+        className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center bg-[rgba(175,170,162,0.04)] p-3 transition-colors hover:bg-[rgba(175,170,162,0.10)]"
+        onClick={onGenerateClick}
+      >
+        <div className="stone-chip mb-2 rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-[#a8a49c]">
+          Add
+        </div>
+        <div className="text-center font-['Inter'] text-[10px] font-medium uppercase tracking-[0.2em] text-[#8a8780]">
+          Generate image
+        </div>
+      </button>
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center bg-[rgba(175,170,162,0.04)] p-3 transition-colors hover:bg-[rgba(175,170,162,0.10)]"
+      onClick={(event) => {
+        event.stopPropagation()
+        onAddImage?.(post.id)
+      }}
+    >
+      <div className="stone-chip mb-2 rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-[#8a8780]">
+        Add
+      </div>
+      <div className="text-center font-['Inter'] text-[10px] font-medium uppercase tracking-[0.2em] text-[#8a8780]">
+        Click to add image
+      </div>
+    </button>
+  )
 }
 
 export default function FeedGridItem({
@@ -35,242 +251,88 @@ export default function FeedGridItem({
   onDragOver,
   onDragEnd,
   onGenerate,
-}: FeedGridItemProps) {
-  // Store predictionId for polling
-  // FIX: Only store predictionId if post doesn't already have an image
-  // If post already has image_url, we don't need to poll
-  const [predictionId, setPredictionId] = useState<string | null>(
-    post?.prediction_id && !post?.image_url ? post.prediction_id : null
-  )
+}: Readonly<FeedGridItemProps>) {
+  const [predictionId, setPredictionId] = useState<string | null>(getInitialPredictionId(post))
   const [isStopping, setIsStopping] = useState(false)
 
-  // FIX: Use per-placeholder polling hook (matches concept card pattern)
-  // CRITICAL: Only poll if we have predictionId AND no image_url yet
-  // If post already has image_url, don't poll (enabled = false)
   const { status: pollingStatus, imageUrl: pollingImageUrl } = useFeedPostPolling({
     feedId,
     postId: post.id,
     predictionId,
-    enabled: !!predictionId && !post?.image_url, // Only poll if we have predictionId and no image in DB yet
+    enabled: !!predictionId && !post?.image_url,
     onComplete: (imageUrl) => {
       console.log("[Feed Grid Item] ✅ Generation completed for post", post.id, "imageUrl:", imageUrl)
-      // Clear predictionId to stop polling
       setPredictionId(null)
-      // Call refresh callback to update parent feed data
-      if (onGenerateImage) {
-        onGenerateImage(post.id)
-      }
+      onGenerateImage?.(post.id)
     },
     onError: (error) => {
       console.error("[Feed Grid Item] ❌ Generation failed for post", post.id, ":", error)
-      // Clear predictionId to stop polling
       setPredictionId(null)
     },
   })
 
-  // Update predictionId when post data changes
-  // FIX: Only update if post doesn't already have an image_url
   useEffect(() => {
-    // If post already has image_url, clear predictionId (no need to poll)
-    if (post?.image_url) {
-      if (predictionId) {
-        setPredictionId(null)
-      }
-      return
-    }
-    
-    // Only set predictionId if post has one and no image yet
-    if (post?.prediction_id && post.prediction_id !== predictionId) {
-      setPredictionId(post.prediction_id)
-    }
-  }, [post?.prediction_id, post?.image_url, predictionId])
+    syncPredictionId(post, predictionId, setPredictionId)
+  }, [post, predictionId])
 
-  // Use image URL from polling if available, otherwise use post data
-  // CRITICAL: Define this FIRST before using it in isGenerating
   const displayImageUrl = pollingImageUrl || post.image_url || null
-
-  // FIX: Show immediate loading state for optimistic UI (temp predictionId)
-  // CRITICAL: Don't show generating if we already have an image
-  const isGenerating = !isManualFeed && !displayImageUrl && (
-    pollingStatus === "generating" ||
-    !!predictionId ||
-    (post.generation_status === "generating" && post.prediction_id && !post.image_url) ||
-    (post.prediction_id && !post.image_url)
-  )
-
-  // A post is complete if it has an image_url
+  const isGenerating = getIsGenerating({
+    isManualFeed,
+    displayImageUrl,
+    pollingStatus,
+    predictionId,
+    post,
+  })
   const isComplete = !!displayImageUrl
   const canStop = !!predictionId && !predictionId.startsWith("temp-")
 
-  const handleStopGeneration = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation()
+  const content = renderContent({
+    displayImageUrl,
+    isGenerating,
+    canStop,
+    isStopping,
+    showGenerateButton,
+    post,
+    onAddImage,
+    onGenerateClick: (event) =>
+      startGeneration({
+        event,
+        postId: post.id,
+        onGenerate,
+        setPredictionId,
+      }),
+    onStopGeneration: (event) =>
+      stopGeneration({
+        event,
+        canStop,
+        isStopping,
+        postId: post.id,
+        onGenerateImage,
+        setPredictionId,
+        setIsStopping,
+      }),
+  })
 
-    if (!canStop || isStopping) {
-      return
-    }
+  const baseClassName = `relative block aspect-square w-full overflow-hidden rounded-[18px] border border-[color:var(--glass-border-subtle)] bg-[rgba(175,170,162,0.08)] backdrop-blur-[28px] transition-all duration-200 ${
+    isDragging ? "scale-95 opacity-50" : ""
+  }`
 
-    const confirmed = confirm("Stop this generation? If it doesn't complete, we'll refund your credit.")
-    if (!confirmed) return
-
-    setIsStopping(true)
-    try {
-      const response = await fetch(`/api/feed/post/${post.id}/cancel`, { method: "POST" })
-      const data = await response.json().catch(() => ({}))
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to stop generation")
-      }
-
-      setPredictionId(null)
-      if (onGenerateImage) {
-        onGenerateImage(post.id).catch(() => {})
-      }
-
-      const refundNote = data.refunded ? "Credit refunded." : "No credit refund needed."
-      toast({
-        title: "Generation stopped",
-        description: refundNote,
-      })
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Please try again"
-      toast({
-        title: "Could not stop generation",
-        description: message,
-        variant: "destructive",
-      })
-    } finally {
-      setIsStopping(false)
-    }
-  }
-
-  const handleGenerateClick = async (e: React.MouseEvent) => {
-    e.stopPropagation()
-    
-    // OPTIMISTIC UI: Set temporary predictionId immediately to show loading state
-    // This makes the UI feel instant even though API call takes a few seconds
-    const tempPredictionId = `temp-${Date.now()}`
-    setPredictionId(tempPredictionId)
-    console.log("[Feed Grid Item] 🚀 Starting generation (optimistic UI) for post", post.id)
-    
-    try {
-      const data = await onGenerate(post.id)
-      // Store actual predictionId from response to start polling (replaces temp one)
-      if (data?.predictionId) {
-        setPredictionId(data.predictionId)
-        console.log("[Feed Grid Item] ✅ Generation started for post", post.id, "predictionId:", data.predictionId)
-      } else {
-        // If no predictionId, clear optimistic state
-        setPredictionId(null)
-      }
-    } catch (error) {
-      // Clear optimistic state on error
-      setPredictionId(null)
-      console.error("[Feed Grid Item] Error starting generation:", error)
-    }
-  }
-
-  const handleOpenPost = () => {
-    if (isComplete) {
-      onPostClick(post)
-    }
-  }
-
-  const handleRootKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (!isComplete) return
-
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault()
-      handleOpenPost()
-    }
-  }
-
-  let content: ReactNode
-
-  if (displayImageUrl && !isGenerating) {
-    content = (
-      <Image
-        src={displayImageUrl || "/placeholder.svg"}
-        alt={`Post ${post.position}`}
-        fill
-        className="object-cover"
-        sizes="(max-width: 768px) 33vw, 311px"
-      />
-    )
-  } else if (isGenerating) {
-    content = (
-      <div className="absolute inset-0 flex flex-col items-center justify-center bg-[rgba(28,27,25,0.72)] backdrop-blur-sm">
-        <span className="mb-2 h-5 w-5 rounded-full border border-[rgba(195,190,182,0.35)] border-t-[#c8c4bb] animate-spin" />
-        <div className="text-center text-[10px] font-['Inter'] font-medium text-[#8a8780]">
-          Creating...
-        </div>
-        <button
-          type="button"
-          onClick={handleStopGeneration}
-          disabled={!canStop || isStopping}
-          className={`mt-2 text-[10px] font-light ${
-            !canStop || isStopping ? "text-[#8a8780] opacity-40" : "text-[#a8a49c] hover:text-[#f0ede8]"
-          }`}
-        >
-          {isStopping ? "Stopping..." : "Stop generation"}
-        </button>
-      </div>
-    )
-  } else if (showGenerateButton) {
-    content = (
+  if (isComplete) {
+    return (
       <button
         type="button"
-        className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center bg-[rgba(175,170,162,0.04)] p-3 transition-colors hover:bg-[rgba(175,170,162,0.10)]"
-        onClick={handleGenerateClick}
-        disabled={isGenerating}
+        draggable={!isSavingOrder}
+        onDragStart={onDragStart}
+        onDragOver={onDragOver}
+        onDragEnd={onDragEnd}
+        onClick={() => onPostClick(post)}
+        aria-label={`Open post ${post.position}`}
+        className={`${baseClassName} ${!isSavingOrder ? "cursor-move hover:opacity-90" : "cursor-pointer"}`}
       >
-        <div className="stone-chip mb-2 rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-[#a8a49c]">
-          Add
-        </div>
-        <div className="text-center font-['Inter'] text-[10px] font-medium uppercase tracking-[0.2em] text-[#8a8780]">
-          Generate image
-        </div>
-      </button>
-    )
-  } else {
-    content = (
-      <button
-        type="button"
-        className="absolute inset-0 flex cursor-pointer flex-col items-center justify-center bg-[rgba(175,170,162,0.04)] p-3 transition-colors hover:bg-[rgba(175,170,162,0.10)]"
-        onClick={(event) => {
-          event.stopPropagation()
-          if (onAddImage) {
-            onAddImage(post.id)
-          }
-        }}
-      >
-        <div className="stone-chip mb-2 rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-[#8a8780]">
-          Add
-        </div>
-        <div className="text-center font-['Inter'] text-[10px] font-medium uppercase tracking-[0.2em] text-[#8a8780]">
-          Click to add image
-        </div>
+        {content}
       </button>
     )
   }
 
-  return (
-    <div
-      draggable={isComplete && !isSavingOrder}
-      onDragStart={onDragStart}
-      onDragOver={onDragOver}
-      onDragEnd={onDragEnd}
-      onClick={isComplete ? handleOpenPost : undefined}
-      onKeyDown={handleRootKeyDown}
-      role={isComplete ? "button" : undefined}
-      tabIndex={isComplete ? 0 : undefined}
-      aria-label={isComplete ? `Open post ${post.position}` : undefined}
-      className={`relative aspect-square overflow-hidden rounded-[18px] border border-[color:var(--glass-border-subtle)] bg-[rgba(175,170,162,0.08)] backdrop-blur-[28px] transition-all duration-200 ${
-        isDragging ? 'opacity-50 scale-95' : ''
-      } ${
-        isComplete && !isSavingOrder ? 'cursor-move hover:opacity-90' : 'cursor-pointer'
-      }`}
-    >
-      {content}
-    </div>
-  )
+  return <div className={`${baseClassName} cursor-pointer`}>{content}</div>
 }

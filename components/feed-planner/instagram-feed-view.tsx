@@ -699,11 +699,10 @@ export default function InstagramFeedView({
             aria-label="Close bio editor"
             onClick={() => !isSavingBio && setShowBioModal(false)}
           />
-          <div
-            role="dialog"
-            aria-modal="true"
+          <dialog
+            open
             aria-label="Edit bio"
-            className="stone-shell-panel relative z-[1] w-full max-w-md space-y-4 rounded-[20px] p-6 text-white"
+            className="stone-shell-panel relative z-[1] m-0 w-full max-w-md space-y-4 rounded-[20px] border-0 p-6 text-white shadow-none"
           >
             <h2 className="text-lg font-light uppercase tracking-[0.12em]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
               {isSavingBio && !bioText ? "Creating Your Bio" : "Edit Bio"}
@@ -749,7 +748,7 @@ export default function InstagramFeedView({
                 </button>
               )}
             </div>
-          </div>
+          </dialog>
         </div>
       )}
 

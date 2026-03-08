@@ -62,13 +62,13 @@ function usePullToRefresh(params: {
     let touchStartY = 0
 
     const handleTouchStart = (event: TouchEvent) => {
-      if (window.scrollY === 0) {
+      if (globalThis.scrollY === 0) {
         touchStartY = event.touches[0].clientY
       }
     }
 
     const handleTouchMove = (event: TouchEvent) => {
-      if (window.scrollY === 0 && touchStartY > 0) {
+      if (globalThis.scrollY === 0 && touchStartY > 0) {
         const touchY = event.touches[0].clientY
         const distance = touchY - touchStartY
 
@@ -92,14 +92,14 @@ function usePullToRefresh(params: {
       touchStartY = 0
     }
 
-    window.addEventListener("touchstart", handleTouchStart)
-    window.addEventListener("touchmove", handleTouchMove)
-    window.addEventListener("touchend", handleTouchEnd)
+    globalThis.addEventListener("touchstart", handleTouchStart)
+    globalThis.addEventListener("touchmove", handleTouchMove)
+    globalThis.addEventListener("touchend", handleTouchEnd)
 
     return () => {
-      window.removeEventListener("touchstart", handleTouchStart)
-      window.removeEventListener("touchmove", handleTouchMove)
-      window.removeEventListener("touchend", handleTouchEnd)
+      globalThis.removeEventListener("touchstart", handleTouchStart)
+      globalThis.removeEventListener("touchmove", handleTouchMove)
+      globalThis.removeEventListener("touchend", handleTouchEnd)
     }
   }, [contentFilter, mutate, mutateFeed, mutateVideos, pullDistance, setIsPulling, setPullDistance])
 }
@@ -123,7 +123,7 @@ function useFirstImageGeneratedToast(allImages: GalleryImage[] | undefined, toas
         title: "Your first brand photo is ready",
         description: "Next: Create your first feed",
         action: (
-          <ToastAction altText="Create feed" onClick={() => (window.location.hash = "feed-planner")}>
+          <ToastAction altText="Create feed" onClick={() => (globalThis.location.hash = "feed-planner")}>
             Create Feed
           </ToastAction>
         ),
@@ -675,7 +675,7 @@ export default function GalleryScreen({ user, userId: _userId }: Readonly<Galler
           onStartNow={handleStartNow}
           onClearSearch={() => setSearchQuery("")}
           onGoToFeedPlanner={() => {
-            window.location.hash = "feed-planner"
+            globalThis.location.hash = "feed-planner"
           }}
           onGoToMaya={() => {
             const mayaTab = document.querySelector('[data-tab="maya"]') as HTMLButtonElement
