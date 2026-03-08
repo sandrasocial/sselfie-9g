@@ -6,7 +6,6 @@ import type { GalleryImage } from "@/lib/data/images"
 import { InstagramReelPreview } from "./instagram-reel-preview"
 import { ProfileImageSelector } from "@/components/profile-image-selector"
 import { GalleryInstagramSkeleton } from "./gallery-skeleton"
-import UnifiedLoading from "./unified-loading"
 import { triggerHaptic, triggerSuccessHaptic, triggerErrorHaptic } from "@/lib/utils/haptics"
 import { useToast } from "@/hooks/use-toast"
 import FullscreenImageModal from "./fullscreen-image-modal"
@@ -48,7 +47,7 @@ interface GeneratedVideo {
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
-export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
+export default function GalleryScreen({ user, userId: _userId }: GalleryScreenProps) {
   const [favorites, setFavorites] = useState<Set<string>>(new Set())
   const [lightboxImage, setLightboxImage] = useState<GalleryImage | null>(null)
   const [previewVideo, setPreviewVideo] = useState<GeneratedVideo | null>(null)
@@ -441,7 +440,7 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
 
   if (isCurrentlyLoading) {
     return (
-      <div className="space-y-4 sm:space-y-6 pb-24 pt-3 sm:pt-4 bg-[#0d0c0b]">
+      <div className="space-y-4 sm:space-y-6 pb-24 pt-3 sm:pt-4">
         <div className="flex items-center justify-between mb-4 sm:mb-6 px-4">
           <h1 className="text-xl sm:text-2xl md:text-3xl font-['Cormorant_Garamond'] font-light text-[#f0ede8]">
             Gallery
@@ -457,8 +456,8 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
 
   if (currentError) {
     return (
-      <div className="flex items-center justify-center min-h-[400px] bg-[#0d0c0b]">
-        <div className="text-center space-y-4">
+      <div className="flex items-center justify-center min-h-[400px] px-4">
+        <div className="stone-panel rounded-[24px] p-8 text-center space-y-4">
           <p className="text-sm font-light text-red-400">Failed to load images</p>
           <button
             onClick={() => {
@@ -467,7 +466,7 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
                 mutateFeed()
               }
             }}
-            className="px-4 py-2 text-[10px] uppercase tracking-[0.3em] font-['Inter'] font-medium bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.25)] rounded-lg text-[#a8a49c] hover:bg-[rgba(175,170,162,0.18)] transition-all duration-200"
+            className="stone-chip px-4 py-2 text-[10px] uppercase tracking-[0.3em] font-['Inter'] font-medium text-[#a8a49c] hover:bg-[rgba(175,170,162,0.18)] transition-all duration-200 rounded-lg"
           >
             Retry
           </button>
@@ -479,13 +478,13 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
   const displayName = user.name || user.email?.split("@")[0] || "User"
 
   return (
-    <div className="space-y-4 sm:space-y-6 pb-24 bg-[#0d0c0b]" ref={scrollContainerRef}>
+    <div className="space-y-4 sm:space-y-6 pb-24" ref={scrollContainerRef}>
       {isPulling && (
         <div
           className="fixed top-0 left-0 right-0 flex items-center justify-center z-50 transition-all"
           style={{ transform: `translateY(${Math.min(pullDistance - 40, 60)}px)` }}
         >
-          <div className="bg-[#1c1b19] border border-[rgba(195,190,182,0.25)] text-[#f0ede8] px-4 py-2 rounded-full text-xs font-['Inter']">
+          <div className="stone-chip px-4 py-2 rounded-full text-xs font-['Inter'] text-[#f0ede8]">
             {pullDistance > 80 ? "Release to refresh" : "Pull to refresh"}
           </div>
         </div>
@@ -544,7 +543,7 @@ export default function GalleryScreen({ user, userId }: GalleryScreenProps) {
           onLongPressEnd={handleLongPressEnd}
         />
       ) : (
-        <div className="bg-[rgba(175,170,162,0.10)] backdrop-blur-[50px] border border-[rgba(195,190,182,0.25)] rounded-2xl p-8 text-center sm:p-12 mx-4">
+        <div className="stone-panel rounded-2xl p-8 text-center sm:p-12 mx-4">
           {contentFilter === "videos" ? (
             <>
               <div className="mx-auto mb-6 font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780]">Videos</div>

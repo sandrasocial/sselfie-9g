@@ -23,11 +23,9 @@ export function InviteFriendsCTA() {
   }
 
   return (
-    <div
-      className={`${DesignClasses.background.primary} ${DesignClasses.border.medium} ${DesignClasses.radius.md} ${DesignClasses.spacing.padding.md} ${DesignClasses.shadows.card}`}
-    >
+    <div className={`stone-panel ${DesignClasses.radius.md} ${DesignClasses.spacing.padding.md}`}>
       <div className="flex items-start gap-4">
-        <div className={`p-2 ${DesignClasses.background.tertiary} ${DesignClasses.radius.sm}`}>
+        <div className={`stone-chip p-2 ${DesignClasses.radius.sm}`}>
           <Gift size={20} className={DesignClasses.text.primary} />
         </div>
         <div className="flex-1">

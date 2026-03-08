@@ -97,7 +97,7 @@ function GalleryImageGridComponent({
           ) : (
             <button
               onClick={onLoadMore}
-              className="px-6 py-3 text-xs tracking-[0.2em] uppercase font-light bg-white/5 border border-white/15 rounded-xl text-white hover:bg-white/10 transition-all duration-200"
+              className="stone-chip px-6 py-3 text-xs tracking-[0.2em] uppercase font-light rounded-xl text-white hover:bg-[rgba(175,170,162,0.12)] transition-all duration-200"
             >
               Load More Images
             </button>
@@ -152,7 +152,7 @@ function VideoThumbnail({
     <button
       ref={containerRef}
       onClick={() => onVideoClick(video)}
-      className="relative aspect-[9/16] overflow-hidden bg-white/5"
+      className="relative aspect-[9/16] overflow-hidden bg-[rgba(175,170,162,0.08)] rounded-xl border border-[color:var(--glass-border-subtle)]"
     >
       {posterImage ? (
         // Show poster image as thumbnail (lazy loaded)
@@ -176,7 +176,7 @@ function VideoThumbnail({
         <div className="w-full h-full bg-white/10 animate-pulse" />
       )}
       <div className="absolute inset-0 bg-gradient-to-b from-black/5 via-black/15 to-black/55" />
-      <div className="absolute bottom-2 left-2 rounded-full border border-white/20 bg-black/25 px-3 py-1 text-[10px] uppercase tracking-[0.22em] text-white/90 backdrop-blur-xl">
+      <div className="absolute bottom-2 left-2 rounded-full border border-[color:var(--glass-border)] bg-[rgba(28,27,25,0.48)] px-3 py-1 text-[10px] uppercase tracking-[0.22em] text-white/90 backdrop-blur-xl">
         ANIMATE -&gt;
       </div>
     </button>

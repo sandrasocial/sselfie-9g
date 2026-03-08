@@ -26,6 +26,10 @@ import { getBrandColorThemeColors } from "@/lib/style-presets"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
+const feedPlannerShellClass = "mx-auto w-full max-w-none md:max-w-[935px]"
+const feedPlannerCanvasClass = `${feedPlannerShellClass} stone-shell-panel overflow-hidden rounded-[32px]`
+const feedPlannerStateClass = `${feedPlannerShellClass} stone-shell-panel flex min-h-[60vh] items-center justify-center rounded-[32px] p-4`
+
 interface InstagramFeedViewProps {
   feedId: number
   onBack?: () => void
@@ -252,12 +256,6 @@ export default function InstagramFeedView({
     }
   }
 
-  const handleFeedChange = (newFeedId: number) => {
-    if (typeof window !== "undefined") {
-      window.location.href = `/feed-planner?feedId=${newFeedId}`
-    }
-  }
-
   // Memoize posts to prevent unnecessary re-renders
   // NOTE: This hook MUST be called before any early returns to comply with Rules of Hooks
   const posts = useMemo(() => {
@@ -289,7 +287,7 @@ export default function InstagramFeedView({
   
   // Calculate ready posts for confetti
   const readyPosts = postStatuses.filter((p: any) => p.isComplete).length
-  const { showConfetti } = useFeedConfetti(readyPosts)
+  useFeedConfetti(readyPosts)
 
   // Log post status for debugging - only log once per feed load to prevent excessive logging during polling
   useEffect(() => {
@@ -322,7 +320,7 @@ export default function InstagramFeedView({
   // Handle error responses
   if (feedData?.error) {
     return (
-      <div className="mx-auto flex min-h-screen w-full max-w-none items-center justify-center bg-[var(--color-obsidian)] p-4 md:max-w-[935px]">
+      <div className={feedPlannerStateClass}>
         <div className="text-center space-y-4">
           <h2 className="text-xl font-light uppercase tracking-[0.15em] text-white">Feed Not Found</h2>
           <p className="text-sm text-white/65">{feedData.error}</p>
@@ -344,7 +342,7 @@ export default function InstagramFeedView({
   // Handle error responses (check both feedData.error and feedError from SWR)
   if (feedError || feedData?.error) {
     return (
-      <div className="mx-auto flex min-h-screen w-full max-w-none items-center justify-center bg-[var(--color-obsidian)] p-4 md:max-w-[935px]">
+      <div className={feedPlannerStateClass}>
         <div className="text-center space-y-4 max-w-md">
           <h2 className="text-xl font-light uppercase tracking-[0.15em] text-white">Feed Not Found</h2>
           <p className="text-sm text-white/65">{feedData?.error || feedError?.message || "Unable to load feed data"}</p>
@@ -379,7 +377,7 @@ export default function InstagramFeedView({
     // If we have an error in the response, show that
     if (feedData?.error) {
       return (
-        <div className="mx-auto flex min-h-screen w-full max-w-none items-center justify-center bg-[var(--color-obsidian)] p-4 md:max-w-[935px]">
+        <div className={feedPlannerStateClass}>
           <div className="text-center space-y-4 max-w-md">
             <h2 className="text-xl font-light uppercase tracking-[0.15em] text-white">Feed Not Found</h2>
             <p className="text-sm text-white/65">{feedData.error}</p>
@@ -412,7 +410,7 @@ export default function InstagramFeedView({
       
       // Show error UI for invalid data structure
       return (
-        <div className="mx-auto flex min-h-screen w-full max-w-none items-center justify-center bg-[var(--color-obsidian)] p-4 md:max-w-[935px]">
+        <div className={feedPlannerStateClass}>
           <div className="text-center space-y-4 max-w-md">
             <h2 className="text-xl font-light uppercase tracking-[0.15em] text-white">Invalid Feed Data</h2>
             <p className="text-sm text-white/65">The feed data structure is invalid. Please try creating a new feed.</p>
@@ -534,7 +532,7 @@ export default function InstagramFeedView({
   }
 
   return (
-    <div className="mx-auto min-h-screen w-full max-w-none bg-[var(--color-obsidian)] md:max-w-[935px]">
+    <div className={feedPlannerCanvasClass}>
       <FeedHeader
         feedData={feedData}
         currentFeedId={feedId}
@@ -596,7 +594,7 @@ export default function InstagramFeedView({
                 {/* Helpful hint for empty posts */}
                 {displayPosts.some((p: any) => !p.image_url) && (
                   <div className="mt-6 px-4 text-center">
-                    <p className="text-xs font-light text-white/55">
+                    <p className="text-xs font-light text-[color:var(--color-smoke)]">
                       Click any empty post to upload an image or select from your gallery
                     </p>
                   </div>
@@ -695,7 +693,7 @@ export default function InstagramFeedView({
       {/* Bio Editing Modal */}
       {showBioModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm" onClick={() => !isSavingBio && setShowBioModal(false)}>
-          <div className="w-full max-w-md space-y-4 rounded-[20px] border border-white/20 bg-[rgba(13,15,19,0.94)] p-6 text-white backdrop-blur-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="stone-shell-panel w-full max-w-md space-y-4 rounded-[20px] p-6 text-white" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-light uppercase tracking-[0.12em]" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
               {isSavingBio && !bioText ? "Creating Your Bio" : "Edit Bio"}
             </h2>
@@ -713,7 +711,7 @@ export default function InstagramFeedView({
                   value={bioText}
                   onChange={(e) => setBioText(e.target.value)}
                   placeholder="Your AI-generated bio will appear here..."
-                  className="h-32 w-full resize-none rounded-xl border border-white/20 bg-white/8 p-3 text-sm text-white placeholder:text-white/45 focus:outline-none focus:ring-1 focus:ring-white/40"
+                  className="stone-chip h-32 w-full resize-none rounded-xl p-3 text-sm text-white placeholder:text-white/45 focus:outline-none focus:ring-1 focus:ring-white/40"
                   maxLength={150}
                   disabled={isSavingBio}
                 />
@@ -734,7 +732,7 @@ export default function InstagramFeedView({
                 <button
                   onClick={handleSaveBio}
                   disabled={!bioText.trim()}
-                  className="rounded-full border border-white/25 bg-white/10 px-4 py-2 text-sm uppercase tracking-[0.2em] text-white transition-colors hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="stone-chip rounded-full px-4 py-2 text-sm uppercase tracking-[0.2em] text-white transition-colors hover:bg-[rgba(175,170,162,0.16)] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Save
                 </button>

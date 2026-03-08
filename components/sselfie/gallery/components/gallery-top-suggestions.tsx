@@ -12,20 +12,20 @@ export function GalleryTopSuggestions({ images, onSelect }: GalleryTopSuggestion
   if (!images.length) return null
 
   return (
-    <div className="rounded-[20px] border border-white/12 bg-white/[0.04] p-4 backdrop-blur-xl sm:p-5">
-      <h3 className="text-xs uppercase tracking-[0.3em] text-white/70">Your top 3 for profile photo</h3>
+    <div className="stone-panel rounded-[20px] p-4 sm:p-5">
+      <h3 className="text-xs uppercase tracking-[0.3em] text-[color:var(--text-accent)]">Your top 3 for profile photo</h3>
       <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
         {images.map((img) => (
           <button
             key={img.id}
             onClick={onSelect}
-            className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg border border-white/20 bg-white/[0.03]"
+            className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg border border-[color:var(--glass-border)] bg-[rgba(175,170,162,0.08)]"
           >
             <Image src={img.image_url} alt="Top image" fill className="object-cover" sizes="80px" />
           </button>
         ))}
       </div>
-      <p className="mt-2 text-xs font-light text-white/60">Tap to set as profile photo</p>
+      <p className="mt-2 text-xs font-light text-[color:var(--color-smoke)]">Tap to set as profile photo</p>
     </div>
   )
 }

@@ -70,7 +70,7 @@ function GalleryImageCardComponent({
       onMouseDown={handleMouseDown}
       onMouseUp={onLongPressEnd}
       onMouseLeave={onLongPressEnd}
-      className="relative aspect-square overflow-hidden bg-[#1c1b19] border border-[rgba(195,190,182,0.15)] rounded-xl"
+      className="relative aspect-square overflow-hidden bg-[rgba(175,170,162,0.08)] border border-[rgba(195,190,182,0.15)] rounded-xl"
     >
       <ProgressiveImage
         src={image.image_url || "/placeholder.svg"}

@@ -30,10 +30,10 @@ export default function MiniProductCard({
   return (
     <Link
       href={href}
-      className="flex flex-col w-full max-w-[160px] h-[200px] rounded-xl border border-white/10 bg-[rgba(255,255,255,0.04)] overflow-hidden transition-all hover:border-white/20 hover:bg-[rgba(255,255,255,0.07)] active:scale-[0.98]"
+      className="stone-panel flex h-[200px] w-full max-w-[160px] flex-col overflow-hidden rounded-xl transition-all hover:bg-[rgba(175,170,162,0.16)] active:scale-[0.98]"
     >
       {/* Image */}
-      <div className="relative w-full h-[88px] bg-[rgba(255,255,255,0.07)] overflow-hidden shrink-0">
+      <div className="relative h-[88px] w-full shrink-0 overflow-hidden bg-[rgba(175,170,162,0.10)]">
         {imageUrl ? (
           <img
             src={imageUrl}
@@ -41,8 +41,8 @@ export default function MiniProductCard({
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[rgba(255,255,255,0.08)] to-[rgba(255,255,255,0.04)]">
-            <span className="font-serif text-2xl font-extralight tracking-wider uppercase text-white/30">
+          <div className="flex h-full w-full items-center justify-center bg-[linear-gradient(135deg,rgba(240,237,232,0.14),rgba(175,170,162,0.06))]">
+            <span className="font-serif text-2xl font-extralight tracking-wider uppercase text-white/35">
               {name.charAt(0)}
             </span>
           </div>
@@ -57,10 +57,10 @@ export default function MiniProductCard({
         >
           {name}
         </h3>
-        <p className="text-[12px] font-light text-white/50 mt-1">
+        <p className="mt-1 text-[12px] font-light text-[color:var(--color-smoke)]">
           {currency}{price}
         </p>
-        <span className="text-[12px] font-light text-white/75 mt-auto pt-2 transition-colors inline-flex self-start">
+        <span className="mt-auto inline-flex self-start pt-2 text-[12px] font-light text-[color:var(--color-porcelain)] transition-colors">
           Get it →
         </span>
       </div>

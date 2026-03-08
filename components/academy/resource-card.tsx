@@ -68,9 +68,9 @@ export default function ResourceCard({ resource, onDownload }: ResourceCardProps
   }
 
   return (
-    <div className="bg-[rgba(175,170,162,0.10)] backdrop-blur-[50px] border border-[rgba(195,190,182,0.25)] rounded-2xl overflow-hidden hover:border-[rgba(195,190,182,0.40)] hover:bg-[rgba(175,170,162,0.18)] transition-all group">
+    <div className="stone-panel group overflow-hidden rounded-2xl transition-all hover:border-[rgba(195,190,182,0.40)] hover:bg-[rgba(175,170,162,0.18)]">
       {/* Thumbnail */}
-      <div className="relative aspect-[4/3] bg-[#1c1b19] overflow-hidden">
+      <div className="relative aspect-[4/3] overflow-hidden bg-[rgba(28,27,25,0.68)]">
         {resource.thumbnail_url ? (
           <img
             src={resource.thumbnail_url || "/placeholder.svg"}
@@ -83,7 +83,7 @@ export default function ResourceCard({ resource, onDownload }: ResourceCardProps
           </div>
         )}
         {resource.month && (
-          <div className="absolute top-3 left-3 px-3 py-1 bg-[rgba(168,164,156,0.20)] border border-[rgba(195,190,182,0.25)] text-[#a8a49c] font-['Inter'] text-[10px] tracking-[0.5em] uppercase font-medium rounded-full">
+          <div className="stone-chip absolute left-3 top-3 rounded-full px-3 py-1 font-['Inter'] text-[10px] font-medium uppercase tracking-[0.5em] text-[#a8a49c]">
             {resource.month}
           </div>
         )}
@@ -111,7 +111,7 @@ export default function ResourceCard({ resource, onDownload }: ResourceCardProps
 
         <button
           onClick={handleClick}
-          className="w-full flex items-center justify-center gap-2 bg-[#c8c4bb] text-[#0d0c0b] py-3 rounded-full font-['Inter'] font-medium text-xs tracking-[0.15em] uppercase hover:bg-[#f0ede8] transition-all active:scale-95"
+          className="flex w-full items-center justify-center gap-2 rounded-full bg-[color:var(--color-porcelain)] py-3 font-['Inter'] text-xs font-medium uppercase tracking-[0.15em] text-[#0d0c0b] transition-all active:scale-95 hover:bg-[#f0ede8]"
           style={{ touchAction: "manipulation" }}
         >
           <span className="font-['Inter'] text-[10px] tracking-[0.5em] uppercase font-medium text-[#0d0c0b]">File</span>

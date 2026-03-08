@@ -175,7 +175,7 @@ export default function FeedGridItem({
       onDragStart={onDragStart}
       onDragOver={onDragOver}
       onDragEnd={onDragEnd}
-      className={`relative aspect-square bg-[#1c1b19] border border-[rgba(195,190,182,0.15)] rounded-xl overflow-hidden transition-all duration-200 ${
+      className={`relative aspect-square overflow-hidden rounded-[18px] border border-[color:var(--glass-border-subtle)] bg-[rgba(175,170,162,0.08)] backdrop-blur-[28px] transition-all duration-200 ${
         isDragging ? 'opacity-50 scale-95' : ''
       } ${
         isComplete && !isSavingOrder ? 'cursor-move hover:opacity-90' : 'cursor-pointer'
@@ -191,7 +191,7 @@ export default function FeedGridItem({
           onClick={() => onPostClick(post)}
         />
       ) : isGenerating ? (
-        <div className="absolute inset-0 flex flex-col items-center justify-center bg-[rgba(13,12,11,0.7)] backdrop-blur-sm">
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-[rgba(28,27,25,0.72)] backdrop-blur-sm">
           <span className="mb-2 h-5 w-5 rounded-full border border-[rgba(195,190,182,0.35)] border-t-[#c8c4bb] animate-spin" />
           <div className="text-center text-[10px] font-['Inter'] font-medium text-[#8a8780]">
             Creating...
@@ -215,7 +215,7 @@ export default function FeedGridItem({
             onClick={handleGenerateClick}
             disabled={isGenerating}
           >
-            <div className="mb-2 rounded-full border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-[#a8a49c]">
+            <div className="stone-chip mb-2 rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-[#a8a49c]">
               Add
             </div>
             <div className="text-center font-['Inter'] text-[10px] font-medium uppercase tracking-[0.2em] text-[#8a8780]">
@@ -233,7 +233,7 @@ export default function FeedGridItem({
               }
             }}
           >
-            <div className="mb-2 rounded-full border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.10)] px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-[#8a8780]">
+            <div className="stone-chip mb-2 rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-[#8a8780]">
               Add
             </div>
             <div className="text-center font-['Inter'] text-[10px] font-medium uppercase tracking-[0.2em] text-[#8a8780]">
