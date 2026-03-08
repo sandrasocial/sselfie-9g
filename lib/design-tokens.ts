@@ -5,16 +5,12 @@
  */
 
 const cardClass = [
-  "bg-[color:var(--glass-bg)]",
-  "backdrop-blur-[50px]",
-  "border",
-  "border-[color:var(--glass-border)]",
+  "stone-panel",
   "rounded-2xl",
   "sm:rounded-3xl",
   "p-4",
   "sm:p-6",
   "text-[color:var(--color-porcelain)]",
-  "shadow-[0_24px_80px_rgba(0,0,0,0.28)]",
 ].join(" ")
 
 const buttonPrimaryClass = [
@@ -40,13 +36,9 @@ const buttonPrimaryClass = [
 ].join(" ")
 
 const containerClass = [
-  "bg-[color:var(--app-bg-glass)]",
-  "backdrop-blur-[70px]",
-  "border",
-  "border-[color:var(--glass-border-subtle)]",
+  "stone-shell-panel",
   "rounded-3xl",
   "sm:rounded-4xl",
-  "shadow-[0_30px_120px_rgba(0,0,0,0.32)]",
 ].join(" ")
 
 export const COLORS = {

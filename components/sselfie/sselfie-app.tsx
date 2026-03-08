@@ -842,20 +842,19 @@ export default function SselfieApp({
 
   return (
     <div
-        className="h-screen relative overflow-hidden prevent-horizontal-scroll"
+        className="stone-stage h-screen relative overflow-hidden prevent-horizontal-scroll"
         style={{
-          background:
-            "var(--app-bg-primary), radial-gradient(72% 58% at 16% 4%, var(--app-bg-glow-1) 0%, transparent 72%), radial-gradient(84% 62% at 84% 9%, var(--app-bg-glow-2) 0%, transparent 75%), linear-gradient(180deg, rgba(18,14,11,0.76) 0%, rgba(14,11,9,0.9) 52%, rgba(10,8,7,0.96) 100%)",
-          fontFamily:
-            '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+          fontFamily: "var(--font-body)",
           paddingTop: "env(safe-area-inset-top)",
         }}
       >
         <ServiceWorkerProvider />
 
-      <div className="absolute inset-0">
-        <div className="absolute top-0 left-1/4 h-96 w-96 rounded-full blur-3xl" style={{ background: "var(--app-bg-glow-1)" }} />
-        <div className="absolute bottom-0 right-1/4 h-96 w-96 rounded-full blur-3xl" style={{ background: "var(--app-bg-glow-2)" }} />
+      <div className="pointer-events-none absolute inset-0">
+        <div className="app-shell-backdrop absolute inset-[-8%]" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(30,26,22,0.18)_0%,rgba(13,12,11,0.4)_52%,rgba(13,12,11,0.68)_100%)]" />
+        <div className="absolute top-[-10%] left-[12%] h-[24rem] w-[24rem] rounded-full bg-[rgba(200,196,187,0.14)] blur-[120px]" />
+        <div className="absolute bottom-[-14%] right-[10%] h-[22rem] w-[22rem] rounded-full bg-[rgba(84,69,53,0.34)] blur-[120px]" />
       </div>
 
       {isWelcome && creditBalance === 0 && (
