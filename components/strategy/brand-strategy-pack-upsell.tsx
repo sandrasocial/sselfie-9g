@@ -33,7 +33,7 @@ export default function BrandStrategyPackUpsell({ strategyToken }: BrandStrategy
       <a href={checkoutHref} className="btn-primary" onClick={handleCheckoutClick}>
         Get your Brand Strategy Pack instantly — $19
       </a>
-      <a href="https://sselfie.ai/auth/sign-up?checkout=studio_membership" className="btn-secondary">
+      <a href="/checkout/membership" className="btn-secondary">
         Join Studio — €97/month
       </a>
     </div>

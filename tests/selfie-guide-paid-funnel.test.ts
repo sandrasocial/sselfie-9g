@@ -38,32 +38,34 @@ describe("selfie guide paid funnel", () => {
     expect(stripeActionContents).toContain("STRIPE_PRICE_SELFIE_GUIDE_BUNDLE")
   })
 
-  it("ships a dedicated checkout chooser and paid landing page", () => {
+  it("ships a paid landing page with a direct guide checkout path", () => {
     const checkoutRoutePath = path.join(ROOT, "app/checkout/selfie-guide/page.tsx")
-    const landingContents = fs.readFileSync(path.join(ROOT, "app/selfie-guide/page.tsx"), "utf8")
+    const landingContents = fs.readFileSync(
+      path.join(ROOT, "components/selfie-guide/selfie-guide-paid-landing.tsx"),
+      "utf8",
+    )
     const checkoutContents = fs.readFileSync(checkoutRoutePath, "utf8")
 
     expect(fs.existsSync(checkoutRoutePath)).toBe(true)
-    expect(landingContents).toContain("One Good Selfie. Your Entire Brand.")
-    expect(landingContents).not.toContain("SelfieGuideLanding")
-    expect(checkoutContents).toContain("Guide + Brand Strategy Bundle")
-    expect(checkoutContents).toContain("plan=bundle")
-    expect(checkoutContents).toContain("selfie_guide_bundle")
+    expect(landingContents).toContain('href="/checkout/selfie-guide?plan=guide"')
+    expect(checkoutContents).toContain('createLandingCheckoutSession("selfie_guide"')
+    expect(checkoutContents).toContain('startProductCheckoutSession("selfie_guide"')
+    expect(checkoutContents).toContain("createLandingCheckoutSession")
+    expect(checkoutContents).not.toContain("selfie_guide_bundle")
+    expect(checkoutContents).not.toContain("Choose your next step before you pay")
+    expect(checkoutContents).not.toContain("/auth/login?returnTo=")
   })
 
-  it("fulfills guide and bundle purchases with delivery and access", () => {
+  it("fulfills guide purchases with delivery and access", () => {
     const webhookContents = fs.readFileSync(path.join(ROOT, "app/api/webhooks/stripe/route.ts"), "utf8")
     const successContents = fs.readFileSync(path.join(ROOT, "components/checkout/success-content.tsx"), "utf8")
 
     expect(webhookContents).toContain("bought_selfie_guide")
-    expect(webhookContents).toContain("bought_selfie_guide_bundle")
-    expect(webhookContents).toContain("bought_brand_strategy_pack")
     expect(webhookContents).toContain("SELFIE_GUIDE_PRESET_DOWNLOAD_URL")
     expect(successContents).toContain('"selfie_guide"')
-    expect(successContents).toContain('"selfie_guide_bundle"')
   })
 
-  it("keeps a course-aligned legacy capture page with checkout entry", () => {
+  it("keeps a course-aligned legacy capture page with a direct guide checkout entry", () => {
     const legacyRouteContents = fs.readFileSync(path.join(ROOT, "app/freebie/selfie-guide/page.tsx"), "utf8")
     const legacyLandingContents = fs.readFileSync(
       path.join(ROOT, "components/freebie/selfie-guide-landing.tsx"),
@@ -71,7 +73,14 @@ describe("selfie guide paid funnel", () => {
     )
 
     expect(legacyRouteContents).toContain("SelfieGuideLanding")
-    expect(legacyLandingContents).toContain("/checkout/selfie-guide")
-    expect(legacyLandingContents).toContain("/checkout/selfie-guide?plan=bundle")
+    expect(legacyLandingContents).toContain('/checkout/selfie-guide?plan=guide')
+    expect(legacyLandingContents).not.toContain('/checkout/selfie-guide?plan=bundle')
+  })
+
+  it("validates only the requested product price when building authenticated checkout sessions", () => {
+    const stripeActionContents = fs.readFileSync(path.join(ROOT, "app/actions/stripe.ts"), "utf8")
+
+    expect(stripeActionContents).toContain("assertStripePriceConfigForProduct(product.type)")
+    expect(stripeActionContents).not.toContain("await assertStripePricingConfig()")
   })
 })

@@ -74,7 +74,7 @@ export default function SelfieGuideLanding() {
                     Full course access, the 7-day challenge, and the preset bonus.
                   </p>
                   <Link
-                    href="/checkout/selfie-guide"
+                    href="/checkout/selfie-guide?plan=guide"
                     className="mt-6 inline-flex min-h-[50px] w-full items-center justify-center rounded-full border border-[rgba(240,237,232,0.16)] px-6 text-[11px] font-medium uppercase tracking-[0.26em] text-[#f0ede8] transition hover:border-[rgba(240,237,232,0.42)] hover:bg-[rgba(240,237,232,0.06)]"
                   >
                     Checkout the guide
@@ -82,18 +82,18 @@ export default function SelfieGuideLanding() {
                 </div>
 
                 <div className="rounded-[28px] border border-[rgba(240,237,232,0.24)] bg-[linear-gradient(180deg,rgba(240,237,232,0.14),rgba(175,170,162,0.08))] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.28)] backdrop-blur-[30px]">
-                  <p className="text-[10px] uppercase tracking-[0.34em] text-[#8a8780]">Bundle</p>
+                  <p className="text-[10px] uppercase tracking-[0.34em] text-[#8a8780]">Next step</p>
                   <p className={`${cormorant.className} mt-3 text-[34px] font-light uppercase tracking-[0.08em] text-[#f0ede8]`}>
-                    $27
+                    $19
                   </p>
                   <p className="mt-3 text-sm font-light leading-7 text-[rgba(240,237,232,0.8)]">
-                    Add the Brand Strategy Pack now and skip the separate $19 upsell later.
+                    Add the Brand Strategy Pack when you want the message and content direction behind the visuals.
                   </p>
                   <Link
-                    href="/checkout/selfie-guide?plan=bundle"
+                    href="/checkout/brand-strategy-pack"
                     className="mt-6 inline-flex min-h-[50px] w-full items-center justify-center rounded-full bg-[#f0ede8] px-6 text-[11px] font-medium uppercase tracking-[0.26em] text-[#0d0c0b] transition hover:bg-white"
                   >
-                    Checkout the $27 bundle
+                    Get the Brand Strategy Pack
                   </Link>
                 </div>
               </div>
