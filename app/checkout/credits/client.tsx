@@ -48,8 +48,8 @@ export default function CreditsCheckoutClient() {
       <div className="min-h-screen bg-[#0d0c0b] text-[#f0ede8] flex flex-col">
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-4xl mx-auto p-4 md:p-8">
-            <EmbeddedCheckoutProvider stripe={stripePromise} options={{ clientSecret }}>
-              <EmbeddedCheckout onComplete={handleComplete} />
+            <EmbeddedCheckoutProvider stripe={stripePromise} options={{ clientSecret, onComplete: handleComplete }}>
+              <EmbeddedCheckout />
             </EmbeddedCheckoutProvider>
           </div>
         </div>
