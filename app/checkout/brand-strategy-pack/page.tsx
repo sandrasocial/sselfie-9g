@@ -21,6 +21,14 @@ function resolveReturnTo(params: BrandStrategyPackCheckoutParams) {
   return "/brand-strategy"
 }
 
+function resolveSource(params: BrandStrategyPackCheckoutParams) {
+  if (typeof params.strategyToken === "string" && params.strategyToken.trim().length > 0) {
+    return "strategy_result_upsell"
+  }
+
+  return "brand_strategy_paid"
+}
+
 function buildFailedCheckoutRedirect(returnTo: string) {
   return `${returnTo}${returnTo.includes("?") ? "&" : "?"}checkout=failed`
 }
@@ -32,6 +40,7 @@ export default async function BrandStrategyPackCheckoutPage({
 }) {
   const params = await searchParams
   const returnTo = resolveReturnTo(params)
+  const source = resolveSource(params)
 
   const supabase = await createServerClient()
   const {
@@ -41,11 +50,11 @@ export default async function BrandStrategyPackCheckoutPage({
   try {
     const clientSecret = authUser
       ? await startProductCheckoutSession("brand_strategy_pack", undefined, {
-          source: "freebie_upsell",
+          source,
           returnTo,
         })
       : await createLandingCheckoutSession("brand_strategy_pack", undefined, null, {
-          source: "freebie_upsell",
+          source,
           returnTo,
         })
 

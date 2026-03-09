@@ -1366,7 +1366,7 @@ export async function POST(request: NextRequest) {
                 VALUES (
                   ${userId},
                   'bought_brand_strategy_pack',
-                  ${source || 'freebie_upsell'},
+                  ${source || 'brand_strategy_paid'},
                   ${JSON.stringify({
                     stripe_session_id: session.id,
                     stripe_payment_id: paymentIdForStorage,
@@ -1420,7 +1420,7 @@ export async function POST(request: NextRequest) {
                   eventName: "brand_strategy_pack_checkout_success",
                   userId: String(userId),
                   properties: {
-                    source: source || "freebie_upsell",
+                    source: source || "brand_strategy_paid",
                     product_type: "brand_strategy_pack",
                     value: paymentAmountCents / 100,
                     currency: "usd",
@@ -1664,7 +1664,7 @@ export async function POST(request: NextRequest) {
                     VALUES (
                       ${userId},
                       'bought_brand_strategy_pack',
-                      ${source || 'selfie_guide_order_bump'},
+                      ${'selfie_guide_order_bump'},
                       ${JSON.stringify({
                         stripe_session_id: session.id,
                         stripe_payment_id: brandStrategyPaymentId,
@@ -1717,7 +1717,7 @@ export async function POST(request: NextRequest) {
                       eventName: "brand_strategy_pack_checkout_success",
                       userId: String(userId),
                       properties: {
-                        source: source || "selfie_guide_order_bump",
+                        source: "selfie_guide_order_bump",
                         product_type: "brand_strategy_pack",
                         value: brandStrategyBumpAmountCents / 100,
                         currency: "usd",

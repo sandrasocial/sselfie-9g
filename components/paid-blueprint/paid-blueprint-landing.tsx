@@ -1,10 +1,7 @@
 "use client"
 
-import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { useRouter } from "next/navigation"
-import { BlueprintEmailCapture } from "@/components/blueprint/blueprint-email-capture"
 import { formatPriceFromCents, getProductById } from "@/lib/products"
 
 /**
@@ -17,11 +14,9 @@ import { formatPriceFromCents, getProductById } from "@/lib/products"
  * - Pricing card style from main landing page
  * - Email capture component from free blueprint
  * 
- * Flow: Button → Email Capture Modal → Checkout
+ * Flow: Button → Checkout
  */
 export default function PaidBlueprintLanding() {
-  const router = useRouter()
-  const [showEmailModal, setShowEmailModal] = useState(false)
   const blueprintProduct = getProductById("paid_blueprint")
   const blueprintPrice = blueprintProduct ? formatPriceFromCents(blueprintProduct.priceInCents) : "$47"
 
@@ -31,13 +26,6 @@ export default function PaidBlueprintLanding() {
     if (element) {
       element.scrollIntoView({ behavior: "smooth", block: "start" })
     }
-  }
-
-  // Handle email capture success - route to checkout
-  const handleEmailSuccess = (email: string, _name: string, _accessToken: string) => {
-    setShowEmailModal(false)
-    // Route to checkout with email
-    router.push(`/checkout/blueprint?email=${encodeURIComponent(email)}`)
   }
 
   return (
@@ -115,12 +103,12 @@ export default function PaidBlueprintLanding() {
 
           {/* Direct CTA Button */}
           <div className="mb-4 sm:mb-6">
-            <button
-              onClick={() => setShowEmailModal(true)}
+            <Link
+              href="/checkout/blueprint"
               className="bg-white text-black px-6 sm:px-8 py-3 sm:py-3.5 rounded-lg text-xs sm:text-sm font-medium uppercase tracking-wider hover:bg-stone-100 transition-all duration-200 min-h-[40px] sm:min-h-[44px] flex items-center justify-center whitespace-nowrap"
             >
               Get My 30 Photos →
-            </button>
+            </Link>
           </div>
 
           <button
@@ -191,12 +179,12 @@ export default function PaidBlueprintLanding() {
                 <p>• Ready to download instantly</p>
                 <p>• No subscription required</p>
               </div>
-              <button
-                onClick={() => setShowEmailModal(true)}
+              <Link
+                href="/checkout/blueprint"
                 className="btn w-full text-[10px] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Get My 30 Photos →
-              </button>
+              </Link>
             </div>
           </div>
         </div>
@@ -368,12 +356,12 @@ export default function PaidBlueprintLanding() {
 
           {/* Direct CTA Button */}
           <div className="mb-6">
-            <button
-              onClick={() => setShowEmailModal(true)}
+            <Link
+              href="/checkout/blueprint"
               className="bg-white text-black px-6 sm:px-8 py-3 sm:py-3.5 rounded-lg text-sm font-medium uppercase tracking-wider hover:bg-stone-100 transition-all duration-200 min-h-[44px] flex items-center justify-center whitespace-nowrap"
             >
               Get My 30 Photos →
-            </button>
+            </Link>
           </div>
 
           <p className="text-xs sm:text-sm font-light text-stone-400">
@@ -403,30 +391,6 @@ export default function PaidBlueprintLanding() {
           </div>
         </div>
       </footer>
-
-      {/* Email Capture Modal */}
-      {showEmailModal && (
-        <div className="fixed inset-0 z-200 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="relative w-full max-w-[600px] max-h-[90vh] overflow-auto rounded-lg">
-            <button
-              onClick={() => setShowEmailModal(false)}
-              className="absolute top-4 right-4 z-10 text-white hover:text-stone-300 transition-colors"
-              aria-label="Close"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-            <div style={{ minHeight: "500px" }}>
-              <BlueprintEmailCapture 
-                onSuccess={handleEmailSuccess}
-                formData={{}}
-                currentStep={0}
-              />
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Pricing Card Styles - matching main landing page */}
       <style jsx>{`
