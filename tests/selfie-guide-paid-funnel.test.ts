@@ -68,8 +68,8 @@ describe("selfie guide paid funnel", () => {
     expect(webhookContents).toContain("bought_selfie_guide")
     expect(webhookContents).toContain("SELFIE_GUIDE_PRESET_DOWNLOAD_URL")
     expect(webhookContents).toContain("boughtBrandStrategyBump")
-    expect(landingActionContents).toContain("optional_items")
-    expect(stripeActionContents).toContain("optional_items")
+    expect(landingActionContents).not.toContain("optional_items:")
+    expect(stripeActionContents).not.toContain("optional_items:")
     expect(landingActionContents).toContain('expand: ["line_items", "line_items.data.price", "customer"]')
     expect(successContents).toContain('"selfie_guide"')
   })
@@ -81,10 +81,14 @@ describe("selfie guide paid funnel", () => {
     expect(legacyRouteContents).not.toContain("SelfieGuideLanding")
   })
 
-  it("validates only the requested product price when building authenticated checkout sessions", () => {
+  it("does not block checkout sessions with a live Stripe pricing preflight", () => {
+    const landingActionContents = fs.readFileSync(path.join(ROOT, "app/actions/landing-checkout.ts"), "utf8")
     const stripeActionContents = fs.readFileSync(path.join(ROOT, "app/actions/stripe.ts"), "utf8")
 
-    expect(stripeActionContents).toContain("assertStripePriceConfigForProduct(product.type)")
+    expect(landingActionContents).not.toContain("assertStripePriceConfigForProduct")
+    expect(landingActionContents).not.toContain("stripe.prices.retrieve(")
+    expect(stripeActionContents).not.toContain("assertStripePriceConfigForProduct")
+    expect(stripeActionContents).not.toContain("stripe.prices.retrieve(")
     expect(stripeActionContents).not.toContain("await assertStripePricingConfig()")
   })
 })

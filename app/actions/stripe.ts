@@ -4,7 +4,6 @@ import { stripe } from "@/lib/stripe"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getCreditPackageById, getProductById } from "@/lib/products"
 import { createServerClient } from "@/lib/supabase/server"
-import { assertStripePriceConfigForProduct } from "@/lib/stripe/validate-pricing-config"
 import { getMembershipPromoBlockReason } from "@/lib/stripe/membership-promo-policy"
 import { sql } from "@/lib/db/client"
 
@@ -94,9 +93,6 @@ export async function startProductCheckoutSession(
     throw new Error(`Product with id "${productId}" not found`)
   }
 
-  // Validate only the requested product pricing so one broken SKU cannot block another checkout.
-  await assertStripePriceConfigForProduct(product.type)
-
   const supabase = await createServerClient()
   const {
     data: { user: authUser },
@@ -148,7 +144,6 @@ export async function startProductCheckoutSession(
   
   // FIX B1: Removed hardcoded fallback - fail fast if env var not set
   let stripePriceId: string | undefined
-  const brandStrategyBumpPriceId = process.env.STRIPE_PRICE_BRAND_STRATEGY_PACK?.trim()
   const envVarName =
     product.type === "one_time_session"
       ? "STRIPE_ONE_TIME_SESSION_PRICE_ID"
@@ -258,16 +253,8 @@ export async function startProductCheckoutSession(
         quantity: 1,
       },
     ],
-    ...(product.type === "selfie_guide" && brandStrategyBumpPriceId
-      ? {
-          optional_items: [
-            {
-              price: brandStrategyBumpPriceId,
-              quantity: 1,
-            },
-          ],
-        }
-      : {}),
+    // NOTE: optional_items is NOT supported with ui_mode: "embedded" (Stripe restriction).
+    // Brand Strategy order bump is delivered via post-purchase email in the Stripe webhook.
     mode: isSubscription ? "subscription" : "payment",
     // Apply validated coupon OR allow promotion codes (mutually exclusive per Stripe API)
     ...(validatedCoupon && {

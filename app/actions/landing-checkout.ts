@@ -4,7 +4,6 @@ import { stripe } from "@/lib/stripe"
 import { getProductById } from "@/lib/products"
 import { sql } from "@/lib/db/client"
 import type Stripe from "stripe"
-import { assertStripePriceConfigForProduct } from "@/lib/stripe/validate-pricing-config"
 import { getMembershipPromoBlockReason } from "@/lib/stripe/membership-promo-policy"
 
 type LandingCheckoutOptions = {
@@ -32,9 +31,6 @@ export async function createLandingCheckoutSession(
   const checkoutSource = options?.source?.trim() || "landing_page"
 
   const actualPrice = product.priceInCents
-
-  // Validate only the requested product pricing so unrelated SKU misconfig doesn't block this checkout.
-  await assertStripePriceConfigForProduct(product.type)
 
   console.log("[v0] Checkout config:", {
     productId,
@@ -84,53 +80,6 @@ export async function createLandingCheckoutSession(
   }
 
   console.log("[v0] Using Stripe Price ID:", stripePriceId)
-
-  // FIX B2: Strict validation - NO automatic fallback to "any active price"
-  // Validate that the configured price ID exists and is active
-  try {
-    const priceObj = await stripe.prices.retrieve(stripePriceId)
-    
-    if (!priceObj.active) {
-      console.error("[v0] ❌ CRITICAL: Configured price ID is INACTIVE:", stripePriceId)
-      console.error("[v0] ❌ Environment variable:", envVarName)
-      console.error("[v0] ❌ This indicates a configuration error that must be fixed")
-      
-      throw new Error(
-        `The configured price for ${product.name} is inactive in Stripe. ` +
-        `Please contact support. (Price ID: ${stripePriceId}, Env: ${envVarName})`
-      )
-    }
-    
-    // Additional validation: verify price matches expected product type
-    if (isSubscription && !priceObj.recurring) {
-      console.error("[v0] ❌ CRITICAL: Price is one-time but product requires subscription")
-      throw new Error(
-        `Price configuration error for ${product.name}. Please contact support.`
-      )
-    }
-    
-    if (!isSubscription && priceObj.recurring) {
-      console.error("[v0] ❌ CRITICAL: Price is subscription but product is one-time")
-      throw new Error(
-        `Price configuration error for ${product.name}. Please contact support.`
-      )
-    }
-    
-    console.log("[v0] ✅ Price validation passed:", stripePriceId, `($${(priceObj.unit_amount || 0) / 100})`)
-  } catch (error: any) {
-    // If price doesn't exist, throw helpful error
-    if (error.code === "resource_missing") {
-      console.error("[v0] ❌ CRITICAL: Price ID not found in Stripe:", stripePriceId)
-      console.error("[v0] ❌ Environment variable:", envVarName)
-      
-      throw new Error(
-        `The configured price for ${product.name} does not exist in Stripe. ` +
-        `Please contact support. (Price ID: ${stripePriceId}, Env: ${envVarName})`
-      )
-    }
-    // Re-throw all errors (including our custom validation errors)
-    throw error
-  }
 
   // Validate promo code if provided (consistent with startCreditCheckoutSession)
   let validatedCoupon: string | null = null
