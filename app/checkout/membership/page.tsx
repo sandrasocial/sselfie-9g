@@ -22,10 +22,10 @@ export default async function MembershipCheckoutPage({
       redirect(`/checkout?client_secret=${clientSecret}`)
     } else {
       // Fallback if session creation fails
-      redirect("/auth/sign-up?checkout=studio_membership")
+      redirect("/checkout/failure?product=sselfie_studio_membership")
     }
   } catch (error) {
     console.error("[v0] Error creating membership checkout session:", error)
-    redirect("/auth/sign-up?checkout=studio_membership")
+    redirect("/checkout/failure?product=sselfie_studio_membership")
   }
 }

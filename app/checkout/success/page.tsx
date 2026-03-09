@@ -4,7 +4,13 @@ import { SuccessContent } from "@/components/checkout/success-content"
 export default async function CheckoutSuccessPage({
   searchParams,
 }: {
-  searchParams: Promise<{ session_id?: string; email?: string; type?: string; return_to?: string }>
+  searchParams: Promise<{
+    session_id?: string
+    email?: string
+    type?: string
+    return_to?: string
+    brand_strategy_bump?: string
+  }>
 }) {
   const params = await searchParams
 
@@ -27,6 +33,7 @@ export default async function CheckoutSuccessPage({
         sessionId={params.session_id}
         purchaseType={params.type}
         returnTo={params.return_to}
+        brandStrategyBumpSelected={params.brand_strategy_bump === "1"}
       />
     </Suspense>
   )

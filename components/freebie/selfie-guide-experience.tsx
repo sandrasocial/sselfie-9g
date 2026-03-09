@@ -500,9 +500,16 @@ function SevenDayChallenge() {
 interface SelfieGuideExperienceProps {
   firstName: string
   guideMarkdown: string
+  checkoutSessionId?: string
+  brandStrategyBumpSelected?: boolean
 }
 
-export default function SelfieGuideExperience({ firstName, guideMarkdown }: SelfieGuideExperienceProps) {
+export default function SelfieGuideExperience({
+  firstName,
+  guideMarkdown,
+  checkoutSessionId,
+  brandStrategyBumpSelected = false,
+}: SelfieGuideExperienceProps) {
   const chapters = useMemo(() => {
     const parsed = parseSelfieGuideChapters(guideMarkdown)
     if (parsed.length > 0) return parsed
@@ -512,6 +519,10 @@ export default function SelfieGuideExperience({ firstName, guideMarkdown }: Self
   const [activeChapterIndex, setActiveChapterIndex] = useState(0)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [checkedChecklistItems, setCheckedChecklistItems] = useState<Set<string>>(() => new Set())
+  const [brandStrategySetupToken, setBrandStrategySetupToken] = useState<string | null>(null)
+  const [brandStrategyStatus, setBrandStrategyStatus] = useState(
+    brandStrategyBumpSelected ? "Preparing your Brand Strategy..." : "",
+  )
 
   const currentChapter = chapters[Math.min(activeChapterIndex, Math.max(chapters.length - 1, 0))]
   const currentChapterTitle = normalizeChapterTitle(currentChapter.title)
@@ -534,6 +545,65 @@ export default function SelfieGuideExperience({ firstName, guideMarkdown }: Self
     if (!target) return
     window.history.replaceState(null, "", `#${target.id}`)
   }, [activeChapterIndex, chapters])
+
+  useEffect(() => {
+    if (!brandStrategyBumpSelected || !checkoutSessionId || brandStrategySetupToken) {
+      return
+    }
+
+    let cancelled = false
+    let attempts = 0
+
+    const pollSetupToken = async () => {
+      try {
+        const response = await fetch(
+          `/api/brand-strategy/setup-token?session_id=${encodeURIComponent(checkoutSessionId)}`,
+          { cache: "no-store" },
+        )
+        const data = await response.json()
+
+        if (cancelled) {
+          return
+        }
+
+        if (response.ok && data.setupToken) {
+          setBrandStrategySetupToken(data.setupToken)
+          setBrandStrategyStatus("Your strategy is ready.")
+          return
+        }
+
+        attempts += 1
+
+        if (response.status === 409) {
+          setBrandStrategyStatus(
+            attempts < 20
+              ? "Preparing your Brand Strategy..."
+              : attempts < 40
+                ? "Payment confirmed. Finalizing your Brand Strategy..."
+                : "Almost there. Your Brand Strategy is still syncing.",
+          )
+          return
+        }
+
+        setBrandStrategyStatus(data.error || "Your Brand Strategy is still syncing. We also sent your setup link by email.")
+      } catch {
+        if (!cancelled) {
+          attempts += 1
+          if (attempts >= 40) {
+            setBrandStrategyStatus("Your Brand Strategy is still syncing. We also sent your setup link by email.")
+          }
+        }
+      }
+    }
+
+    const interval = setInterval(pollSetupToken, 2000)
+    pollSetupToken()
+
+    return () => {
+      cancelled = true
+      clearInterval(interval)
+    }
+  }, [brandStrategyBumpSelected, brandStrategySetupToken, checkoutSessionId])
 
   // Close sidebar on chapter select (mobile)
   function goToChapter(index: number) {
@@ -793,10 +863,21 @@ export default function SelfieGuideExperience({ firstName, guideMarkdown }: Self
               Turn the visuals into a message people actually remember.
             </p>
             <div className="sg-funnel-ctas">
-              <Link href="/checkout/brand-strategy-pack" className="sg-cta-primary">
-                Checkout Brand Strategy Pack
-              </Link>
+              {brandStrategySetupToken ? (
+                <Link href={`/brand-strategy/setup/${encodeURIComponent(brandStrategySetupToken)}`} className="sg-cta-primary">
+                  Build My Brand Strategy
+                </Link>
+              ) : brandStrategyBumpSelected ? (
+                <button type="button" className="sg-cta-primary is-disabled" disabled>
+                  Preparing your Brand Strategy...
+                </button>
+              ) : (
+                <Link href="/checkout/brand-strategy-pack" className="sg-cta-primary">
+                  Checkout Brand Strategy Pack
+                </Link>
+              )}
             </div>
+            {brandStrategyBumpSelected ? <p className="sg-funnel-status">{brandStrategyStatus}</p> : null}
           </div>
         </section>
       </main>
@@ -1632,9 +1713,22 @@ export default function SelfieGuideExperience({ firstName, guideMarkdown }: Self
           text-transform: uppercase;
           border-radius: 999px;
           transition: opacity 0.18s ease;
+          border: none;
         }
 
         .sg-cta-primary:hover { opacity: 0.88; }
+
+        .sg-cta-primary.is-disabled {
+          opacity: 0.72;
+          cursor: wait;
+        }
+
+        .sg-funnel-status {
+          margin-top: 14px;
+          font-size: 12px;
+          line-height: 1.7;
+          color: var(--c-smoke);
+        }
 
         /* ── Mobile responsive ────────── */
 
