@@ -94,13 +94,12 @@ openclaw agent --agent north --local --message "YOUR MESSAGE"
 
 | Commit | Description | Date |
 |--------|-------------|------|
+| `4c03c85a` | chore(V-02): remove archived email tooling and sync agent context | 2026-03-09 |
 | `e537db70` | feat(V-02): add strategy order bump fulfillment and email cleanup | 2026-03-09 |
 | `770d687b` | feat: Brand Strategy $19 paid flow + delivery email | 2026-03-09 |
 | `c9acc7fc` | feat(V-02 Step 1): retire freebie routes + rename nurture templates | 2026-03-09 |
-| `dbdedfd5` | docs(CLAUDE.md): V-02 sync — retire freebie language, add Brand Strategy $19, add Codex commits | 2026-03-09 |
 | `37d76465` | Merge: harden selfie guide funnel (access token, success polling, product routing) | 2026-03-09 |
 | `a3820f48` | fix: harden selfie guide to studio funnel | 2026-03-09 |
-| `d5982ecf` | Merge: funnel hardening checkout | 2026-03-09 |
 
 ---
 
