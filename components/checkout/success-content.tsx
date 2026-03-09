@@ -54,13 +54,13 @@ function getProductLabel(productType: string | undefined) {
 function getSuccessActionConfig(productType: string | undefined, resolvedReturnTo: string): SuccessActionConfig {
   if (productType === "brand_strategy_pack") {
     return {
-      href: "/checkout/membership",
-      label: "Join Studio",
+      href: "/brand-strategy",
+      label: "Check your email",
       helper:
-        "Your strategy is ready. If you want the full system that helps you keep showing up, Studio is the next step.",
-      eventName: "brand_strategy_pack_studio_click",
-      secondaryHref: resolvedReturnTo,
-      secondaryLabel: "View your strategy",
+        "Maya is ready. Check your inbox — we sent you a link to fill in your brand details. Takes two minutes.",
+      eventName: "brand_strategy_pack_setup_click",
+      secondaryHref: "/checkout/membership",
+      secondaryLabel: "Explore Studio",
     }
   }
 

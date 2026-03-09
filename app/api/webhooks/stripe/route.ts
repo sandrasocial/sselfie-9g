@@ -13,6 +13,7 @@ import {
   SELFIE_GUIDE_PAID_DELIVERY_SUBJECT,
 } from "@/lib/email/templates/selfie-guide-paid-delivery"
 import { generatePaymentFailedEmail } from "@/lib/email/templates/payment-failed"
+import { generateBrandStrategySetupNotificationEmail } from "@/lib/email/templates/brand-strategy-setup-notification"
 import { ACADEMY_PRODUCTS } from "@/lib/products"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
 import { checkWebhookRateLimit } from "@/lib/rate-limit"
@@ -1379,6 +1380,46 @@ export async function POST(request: NextRequest) {
                 )
                 ON CONFLICT (user_id, tag) DO NOTHING
               `
+
+              // Generate setup token for the post-payment questionnaire
+              const brandStrategySetupToken = randomUUID()
+              try {
+                await sql`
+                  UPDATE subscriptions
+                  SET setup_token = ${brandStrategySetupToken}::uuid,
+                      updated_at = NOW()
+                  WHERE user_id = ${userId}
+                    AND product_type = 'brand_strategy_pack'
+                    AND status = 'active'
+                `
+
+                if (customerEmail) {
+                  const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
+                  const setupUrl = `${productionUrl}/brand-strategy/setup/${brandStrategySetupToken}`
+                  const bspFirstName = getFirstNameForEmail({
+                    fullName: session.customer_details?.name,
+                    email: customerEmail,
+                  })
+                  const setupEmailContent = generateBrandStrategySetupNotificationEmail({
+                    firstName: bspFirstName,
+                    recipientEmail: customerEmail,
+                    setupUrl,
+                  })
+                  await sendEmail({
+                    from: "Maya at SSELFIE <hello@sselfie.ai>",
+                    to: customerEmail,
+                    replyTo: "hello@sselfie.ai",
+                    subject: setupEmailContent.subject,
+                    html: setupEmailContent.html,
+                    text: setupEmailContent.text,
+                    tags: ["brand-strategy-setup"],
+                    emailType: "brand-strategy-setup",
+                  })
+                  console.log(`[v0] ✅ Brand Strategy setup email sent to ${customerEmail}, setup token: ${brandStrategySetupToken}`)
+                }
+              } catch (setupErr: any) {
+                console.error(`[v0] Error generating brand strategy setup token/email:`, setupErr.message)
+              }
 
               try {
                 await logAnalyticsEvent({

@@ -1,3 +1,7 @@
+// DEPRECATED 2026-03-09: New entries come via /api/brand-strategy/generate (paid flow).
+// This route is kept to serve legacy freebie_brand_strategies tokens already in the DB.
+// The freebie_brand_strategies table and /strategy/[token] result page are still live.
+// DO NOT DELETE — existing tokens still resolve to /strategy/[token].
 import { type NextRequest, NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
 import { addOrUpdateResendContact } from "@/lib/resend/manage-contact"
