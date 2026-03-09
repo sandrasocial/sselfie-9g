@@ -9,7 +9,7 @@ export interface SelfieGuidePaidDeliveryParams {
   passwordSetupLink?: string
 }
 
-export const SELFIE_GUIDE_PAID_DELIVERY_SUBJECT = "Your Selfie Guide is ready"
+export const SELFIE_GUIDE_PAID_DELIVERY_SUBJECT = "Your Selfie Guide is ready — access inside"
 
 export function generateSelfieGuidePaidDeliveryEmail(params: SelfieGuidePaidDeliveryParams): {
   html: string

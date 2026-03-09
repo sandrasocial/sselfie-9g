@@ -27,55 +27,8 @@ export const EMAIL_ENV = {
 } as const
 
 export const MARKETING_SEGMENTS = {
-  // Archived or unscheduled lifecycle flows retained for restoration and manual ops.
-  blueprintDay3: readNormalizedEnv("RESEND_SEGMENT_BLUEPRINT_DAY_3"),
-  blueprintDay7: readNormalizedEnv("RESEND_SEGMENT_BLUEPRINT_DAY_7"),
-  blueprintDay14: readNormalizedEnv("RESEND_SEGMENT_BLUEPRINT_DAY_14"),
-  paidBlueprintDay1: readNormalizedEnv("RESEND_SEGMENT_PAID_BLUEPRINT_DAY_1"),
-  paidBlueprintDay3: readNormalizedEnv("RESEND_SEGMENT_PAID_BLUEPRINT_DAY_3"),
-  paidBlueprintDay7: readNormalizedEnv("RESEND_SEGMENT_PAID_BLUEPRINT_DAY_7"),
-
-  // Active nurture sequence.
-  nurtureDay1: readNormalizedEnv("RESEND_SEGMENT_NURTURE_DAY_1"),
-  nurtureDay3: readNormalizedEnv("RESEND_SEGMENT_NURTURE_DAY_3"),
-  nurtureDay7: readNormalizedEnv("RESEND_SEGMENT_NURTURE_DAY_7"),
-  nurtureDay10: readNormalizedEnv("RESEND_SEGMENT_NURTURE_DAY_10"),
-
-  // Archived welcome lifecycle sequence kept for manual restoration.
-  welcomeDay0: readNormalizedEnv("RESEND_SEGMENT_WELCOME_DAY_0"),
-  welcomeDay3: readNormalizedEnv("RESEND_SEGMENT_WELCOME_DAY_3"),
-  welcomeDay7: readNormalizedEnv("RESEND_SEGMENT_WELCOME_DAY_7"),
-  welcomeDay14: readNormalizedEnv("RESEND_SEGMENT_WELCOME_DAY_14"),
-  welcomeDay21: readNormalizedEnv("RESEND_SEGMENT_WELCOME_DAY_21"),
-  welcomeDay28: readNormalizedEnv("RESEND_SEGMENT_WELCOME_DAY_28"),
-  monthlyUsageRecap: readNormalizedEnv("RESEND_SEGMENT_MONTHLY_USAGE_RECAP"),
-
   // Active onboarding sequence.
   onboardingDay0: readNormalizedEnv("RESEND_SEGMENT_ONBOARDING_DAY_0"),
   onboardingDay2: readNormalizedEnv("RESEND_SEGMENT_ONBOARDING_DAY_2"),
   onboardingDay7: readNormalizedEnv("RESEND_SEGMENT_ONBOARDING_DAY_7"),
-
-  // Archived or unscheduled growth / recovery flows retained for restoration and manual ops.
-  reengagementDay0: readNormalizedEnv("RESEND_SEGMENT_REENGAGEMENT_DAY_0"),
-  reengagementDay7: readNormalizedEnv("RESEND_SEGMENT_REENGAGEMENT_DAY_7"),
-  reengagementDay14: readNormalizedEnv("RESEND_SEGMENT_REENGAGEMENT_DAY_14"),
-  winBackOffer: readNormalizedEnv("RESEND_SEGMENT_WIN_BACK_OFFER"),
-  reactivationDay0: readNormalizedEnv("RESEND_SEGMENT_REACTIVATION_DAY_0"),
-  reactivationDay2: readNormalizedEnv("RESEND_SEGMENT_REACTIVATION_DAY_2"),
-  reactivationDay5: readNormalizedEnv("RESEND_SEGMENT_REACTIVATION_DAY_5"),
-  reactivationDay7: readNormalizedEnv("RESEND_SEGMENT_REACTIVATION_DAY_7"),
-  reactivationDay10: readNormalizedEnv("RESEND_SEGMENT_REACTIVATION_DAY_10"),
-  reactivationDay14: readNormalizedEnv("RESEND_SEGMENT_REACTIVATION_DAY_14"),
-  reactivationDay20: readNormalizedEnv("RESEND_SEGMENT_REACTIVATION_DAY_20"),
-  reactivationDay25: readNormalizedEnv("RESEND_SEGMENT_REACTIVATION_DAY_25"),
-  upsellDay10: readNormalizedEnv("RESEND_SEGMENT_UPSELL_DAY_10"),
-  upsellFreebieMembership: readNormalizedEnv("RESEND_SEGMENT_UPSELL_FREEBIE_MEMBERSHIP"),
-  coldEduDay1: readNormalizedEnv("RESEND_SEGMENT_COLD_EDU_DAY_1"),
-  coldEduDay3: readNormalizedEnv("RESEND_SEGMENT_COLD_EDU_DAY_3"),
-  coldEduDay7: readNormalizedEnv("RESEND_SEGMENT_COLD_EDU_DAY_7"),
-  discoveryDay0: readNormalizedEnv("RESEND_SEGMENT_DISCOVERY_DAY_0"),
-  discoveryDay3: readNormalizedEnv("RESEND_SEGMENT_DISCOVERY_DAY_3"),
-  discoveryDay5: readNormalizedEnv("RESEND_SEGMENT_DISCOVERY_DAY_5"),
-  discoveryDay7: readNormalizedEnv("RESEND_SEGMENT_DISCOVERY_DAY_7"),
-  discoveryDay10: readNormalizedEnv("RESEND_SEGMENT_DISCOVERY_DAY_10"),
 } as const

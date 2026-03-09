@@ -112,6 +112,18 @@ export async function POST(request: NextRequest) {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object
+        let expandedSession: any | null = null
+        const getExpandedSession = async () => {
+          if (expandedSession) {
+            return expandedSession
+          }
+
+          expandedSession = await stripe.checkout.sessions.retrieve(session.id, {
+            expand: ["line_items", "line_items.data.price"],
+          })
+
+          return expandedSession
+        }
 
         console.log("[v0] 🎉 Checkout session completed!")
         console.log("[v0] Session ID:", session.id)
@@ -1440,7 +1452,7 @@ export async function POST(request: NextRequest) {
               }
             }
           } else if (productType === "selfie_guide") {
-            // ✨ SELFIE GUIDE: Log payment, grant access, send delivery email with download link
+            // ✨ SELFIE GUIDE: Log payment, grant access, send delivery email with access link
             if (!isPaymentPaid) {
               console.log(
                 `[v0] ⚠️ Selfie Guide checkout completed but payment not confirmed (status: '${session.payment_status}').`,
@@ -1456,11 +1468,40 @@ export async function POST(request: NextRequest) {
               let paymentAmountCents = session.amount_total || 0
               let customerId =
                 typeof session.customer === "string" ? session.customer : session.customer?.id || null
+              let boughtBrandStrategyBump = false
+              let brandStrategyBumpAmountCents = 0
+
+              try {
+                const hydratedSession = await getExpandedSession()
+                const lineItems = hydratedSession.line_items?.data || []
+                const selfieGuidePriceId = process.env.STRIPE_PRICE_SELFIE_GUIDE?.trim()
+                const brandStrategyPriceId = process.env.STRIPE_PRICE_BRAND_STRATEGY_PACK?.trim()
+
+                const selfieGuideLineItem = lineItems.find((item: any) => {
+                  const linePriceId = typeof item.price === "string" ? item.price : item.price?.id
+                  return linePriceId === selfieGuidePriceId
+                })
+
+                const brandStrategyLineItem = lineItems.find((item: any) => {
+                  const linePriceId = typeof item.price === "string" ? item.price : item.price?.id
+                  return linePriceId === brandStrategyPriceId
+                })
+
+                if (typeof selfieGuideLineItem?.amount_total === "number") {
+                  paymentAmountCents = selfieGuideLineItem.amount_total
+                }
+
+                if (typeof brandStrategyLineItem?.amount_total === "number" && brandStrategyLineItem.amount_total > 0) {
+                  boughtBrandStrategyBump = true
+                  brandStrategyBumpAmountCents = brandStrategyLineItem.amount_total
+                }
+              } catch (lineItemError: any) {
+                console.error(`[v0] Error expanding Selfie Guide checkout line items:`, lineItemError.message)
+              }
 
               if (paymentIntentId) {
                 try {
                   const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId)
-                  paymentAmountCents = paymentIntent.amount || paymentAmountCents
                   customerId =
                     typeof paymentIntent.customer === "string"
                       ? paymentIntent.customer
@@ -1555,6 +1596,164 @@ export async function POST(request: NextRequest) {
                 )
                 ON CONFLICT (user_id, tag) DO NOTHING
               `
+
+              if (boughtBrandStrategyBump && customerEmail) {
+                try {
+                  const brandStrategyPaymentId = paymentIntentId
+                    ? `${paymentIntentId}:brand_strategy_pack`
+                    : `${session.id}:brand_strategy_pack`
+
+                  if (customerId) {
+                    await sql`
+                      INSERT INTO stripe_payments (
+                        stripe_payment_id,
+                        stripe_customer_id,
+                        user_id,
+                        amount_cents,
+                        currency,
+                        status,
+                        payment_type,
+                        product_type,
+                        description,
+                        metadata,
+                        payment_date,
+                        is_test_mode,
+                        created_at,
+                        updated_at
+                      )
+                      VALUES (
+                        ${brandStrategyPaymentId},
+                        ${customerId},
+                        ${userId},
+                        ${brandStrategyBumpAmountCents},
+                        'usd',
+                        'succeeded',
+                        'brand_strategy_pack',
+                        'brand_strategy_pack',
+                        ${'Brand Strategy Pack (Selfie Guide order bump)'},
+                        ${JSON.stringify({
+                          ...(session.metadata || {}),
+                          source_session_id: session.id,
+                          source_payment_id: paymentIdForStorage,
+                          source_product_type: 'selfie_guide',
+                        })},
+                        NOW(),
+                        ${isTestMode},
+                        NOW(),
+                        NOW()
+                      )
+                      ON CONFLICT (stripe_payment_id)
+                      DO UPDATE SET
+                        amount_cents = ${brandStrategyBumpAmountCents},
+                        status = 'succeeded',
+                        updated_at = NOW()
+                    `
+                  }
+
+                  await sql`
+                    INSERT INTO subscriptions (
+                      user_id,
+                      product_type,
+                      plan,
+                      status,
+                      stripe_customer_id,
+                      created_at,
+                      updated_at
+                    )
+                    SELECT
+                      ${userId},
+                      'brand_strategy_pack',
+                      'brand_strategy_pack',
+                      'active',
+                      ${customerId},
+                      NOW(),
+                      NOW()
+                    WHERE NOT EXISTS (
+                      SELECT 1
+                      FROM subscriptions
+                      WHERE user_id = ${userId}
+                        AND product_type = 'brand_strategy_pack'
+                        AND status = 'active'
+                    )
+                  `
+
+                  await sql`
+                    INSERT INTO user_tags (user_id, tag, source, metadata)
+                    VALUES (
+                      ${userId},
+                      'bought_brand_strategy_pack',
+                      ${source || 'selfie_guide_order_bump'},
+                      ${JSON.stringify({
+                        stripe_session_id: session.id,
+                        stripe_payment_id: brandStrategyPaymentId,
+                        source_product_type: 'selfie_guide',
+                      })}
+                    )
+                    ON CONFLICT (user_id, tag) DO NOTHING
+                  `
+
+                  const brandStrategySetupToken = randomUUID()
+                  await sql`
+                    UPDATE subscriptions
+                    SET setup_token = ${brandStrategySetupToken}::uuid,
+                        updated_at = NOW()
+                    WHERE user_id = ${userId}
+                      AND product_type = 'brand_strategy_pack'
+                      AND status = 'active'
+                  `
+
+                  await updateTags(customerEmail, {
+                    product: "brand-strategy-pack",
+                    bought_brand_strategy_pack: "true",
+                  })
+
+                  const productionUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
+                  const setupUrl = `${productionUrl}/brand-strategy/setup/${brandStrategySetupToken}`
+                  const bspFirstName = getFirstNameForEmail({
+                    fullName: session.customer_details?.name,
+                    email: customerEmail,
+                  })
+                  const setupEmailContent = generateBrandStrategySetupNotificationEmail({
+                    firstName: bspFirstName,
+                    recipientEmail: customerEmail,
+                    setupUrl,
+                  })
+
+                  await sendEmail({
+                    from: "Maya at SSELFIE <hello@sselfie.ai>",
+                    to: customerEmail,
+                    replyTo: "hello@sselfie.ai",
+                    subject: setupEmailContent.subject,
+                    html: setupEmailContent.html,
+                    text: setupEmailContent.text,
+                    tags: ["brand-strategy-setup", "selfie-guide-order-bump"],
+                    emailType: "brand-strategy-setup",
+                  })
+
+                  try {
+                    await logAnalyticsEvent({
+                      eventName: "brand_strategy_pack_checkout_success",
+                      userId: String(userId),
+                      properties: {
+                        source: source || "selfie_guide_order_bump",
+                        product_type: "brand_strategy_pack",
+                        value: brandStrategyBumpAmountCents / 100,
+                        currency: "usd",
+                        stripe_session_id: session.id,
+                        stripe_payment_id: brandStrategyPaymentId,
+                        source_product_type: "selfie_guide",
+                        is_test_mode: isTestMode,
+                      },
+                    })
+                  } catch {
+                    // best effort only
+                  }
+
+                  console.log(`[v0] ✅ Brand Strategy order bump fulfilled for ${customerEmail}`)
+                } catch (bumpError: any) {
+                  console.error(`[v0] Error fulfilling Brand Strategy order bump:`, bumpError.message)
+                }
+              }
 
               // Send delivery email with download link
               try {

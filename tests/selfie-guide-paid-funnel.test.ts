@@ -33,9 +33,12 @@ describe("selfie guide paid funnel", () => {
 
   it("uses dedicated Stripe price environment variables for guide and bundle checkout", () => {
     const stripeActionContents = fs.readFileSync(path.join(ROOT, "app/actions/stripe.ts"), "utf8")
+    const landingActionContents = fs.readFileSync(path.join(ROOT, "app/actions/landing-checkout.ts"), "utf8")
 
     expect(stripeActionContents).toContain("STRIPE_PRICE_SELFIE_GUIDE")
     expect(stripeActionContents).toContain("STRIPE_PRICE_SELFIE_GUIDE_BUNDLE")
+    expect(stripeActionContents).toContain("STRIPE_PRICE_BRAND_STRATEGY_PACK")
+    expect(landingActionContents).toContain("STRIPE_PRICE_BRAND_STRATEGY_PACK")
   })
 
   it("ships a paid landing page with a direct guide checkout path", () => {
@@ -59,22 +62,23 @@ describe("selfie guide paid funnel", () => {
   it("fulfills guide purchases with delivery and access", () => {
     const webhookContents = fs.readFileSync(path.join(ROOT, "app/api/webhooks/stripe/route.ts"), "utf8")
     const successContents = fs.readFileSync(path.join(ROOT, "components/checkout/success-content.tsx"), "utf8")
+    const landingActionContents = fs.readFileSync(path.join(ROOT, "app/actions/landing-checkout.ts"), "utf8")
+    const stripeActionContents = fs.readFileSync(path.join(ROOT, "app/actions/stripe.ts"), "utf8")
 
     expect(webhookContents).toContain("bought_selfie_guide")
     expect(webhookContents).toContain("SELFIE_GUIDE_PRESET_DOWNLOAD_URL")
+    expect(webhookContents).toContain("boughtBrandStrategyBump")
+    expect(landingActionContents).toContain("optional_items")
+    expect(stripeActionContents).toContain("optional_items")
+    expect(landingActionContents).toContain('expand: ["line_items", "line_items.data.price", "customer"]')
     expect(successContents).toContain('"selfie_guide"')
   })
 
-  it("keeps a course-aligned legacy capture page with a direct guide checkout entry", () => {
+  it("retires the legacy freebie capture route behind a redirect to the paid landing", () => {
     const legacyRouteContents = fs.readFileSync(path.join(ROOT, "app/freebie/selfie-guide/page.tsx"), "utf8")
-    const legacyLandingContents = fs.readFileSync(
-      path.join(ROOT, "components/freebie/selfie-guide-landing.tsx"),
-      "utf8",
-    )
 
-    expect(legacyRouteContents).toContain("SelfieGuideLanding")
-    expect(legacyLandingContents).toContain('/checkout/selfie-guide?plan=guide')
-    expect(legacyLandingContents).not.toContain('/checkout/selfie-guide?plan=bundle')
+    expect(legacyRouteContents).toContain('redirect("/selfie-guide")')
+    expect(legacyRouteContents).not.toContain("SelfieGuideLanding")
   })
 
   it("validates only the requested product price when building authenticated checkout sessions", () => {

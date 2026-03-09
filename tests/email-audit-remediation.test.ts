@@ -35,6 +35,7 @@ describe("email audit remediation", () => {
       passwordSetupLink: "https://sselfie.ai/auth/setup-password",
     })
 
+    expect(content.subject).toBe("Your Selfie Guide is ready — access inside")
     expect(content.subject.toLowerCase()).not.toContain("download")
     expect(content.html.toLowerCase()).not.toContain("download your selfie guide")
     expect(content.text.toLowerCase()).not.toContain("download your selfie guide")
@@ -62,7 +63,7 @@ describe("email audit remediation", () => {
       productType: "sselfie_studio_membership",
     })
 
-    expect(content.html).toContain("https://sselfie.ai/studio")
+    expect(content.html).toContain("https://sselfie.ai/studio?tab=maya")
     expect(content.html).not.toContain("app.sselfie.ai")
     expect(content.html).toContain("#0d0c0b")
     expect(content.html).toContain("#f0ede8")
@@ -86,7 +87,7 @@ describe("email audit remediation", () => {
 
     expect(sendMock).toHaveBeenCalledTimes(1)
     const payload = sendMock.mock.calls[0][0]
-    expect(payload.html).toContain("https://sselfie.ai/studio")
+    expect(payload.html).toContain("https://sselfie.ai/studio?tab=maya")
     expect(payload.html).not.toContain("app.sselfie.ai")
   })
 })

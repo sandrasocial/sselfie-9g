@@ -148,6 +148,7 @@ export async function startProductCheckoutSession(
   
   // FIX B1: Removed hardcoded fallback - fail fast if env var not set
   let stripePriceId: string | undefined
+  const brandStrategyBumpPriceId = process.env.STRIPE_PRICE_BRAND_STRATEGY_PACK?.trim()
   const envVarName =
     product.type === "one_time_session"
       ? "STRIPE_ONE_TIME_SESSION_PRICE_ID"
@@ -257,6 +258,16 @@ export async function startProductCheckoutSession(
         quantity: 1,
       },
     ],
+    ...(product.type === "selfie_guide" && brandStrategyBumpPriceId
+      ? {
+          optional_items: [
+            {
+              price: brandStrategyBumpPriceId,
+              quantity: 1,
+            },
+          ],
+        }
+      : {}),
     mode: isSubscription ? "subscription" : "payment",
     // Apply validated coupon OR allow promotion codes (mutually exclusive per Stripe API)
     ...(validatedCoupon && {

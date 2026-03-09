@@ -32,6 +32,7 @@ export async function createLandingCheckoutSession(
   const checkoutSource = options?.source?.trim() || "landing_page"
 
   const actualPrice = product.priceInCents
+  const brandStrategyBumpPriceId = process.env.STRIPE_PRICE_BRAND_STRATEGY_PACK?.trim()
 
   // Validate only the requested product pricing so unrelated SKU misconfig doesn't block this checkout.
   await assertStripePriceConfigForProduct(product.type)
@@ -174,6 +175,16 @@ export async function createLandingCheckoutSession(
         quantity: 1,
       },
     ],
+    ...(product.type === "selfie_guide" && brandStrategyBumpPriceId
+      ? {
+          optional_items: [
+            {
+              price: brandStrategyBumpPriceId,
+              quantity: 1,
+            },
+          ],
+        }
+      : {}),
     // Apply validated coupon OR allow promotion codes (mutually exclusive per Stripe API)
     ...(validatedCoupon && {
       discounts: [
@@ -226,7 +237,7 @@ export async function createLandingCheckoutSession(
 export async function getCheckoutSession(sessionId: string) {
   try {
     const session = await stripe.checkout.sessions.retrieve(sessionId, {
-      expand: ["line_items", "customer"],
+      expand: ["line_items", "line_items.data.price", "customer"],
     })
 
     return {
