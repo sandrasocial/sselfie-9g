@@ -22,10 +22,10 @@ export default async function OneTimeCheckoutPage({
       redirect(`/checkout?client_secret=${clientSecret}`)
     } else {
       // Fallback if session creation fails
-      redirect("/auth/sign-up?checkout=one_time")
+      redirect("/checkout/failure?product=one_time_session")
     }
   } catch (error) {
     console.error("[v0] Error creating one-time checkout session:", error)
-    redirect("/auth/sign-up?checkout=one_time")
+    redirect("/checkout/failure?product=one_time_session")
   }
 }

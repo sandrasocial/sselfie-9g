@@ -15,15 +15,17 @@ interface SuccessContentProps {
   sessionId?: string
   purchaseType?: string
   returnTo?: string
+  brandStrategyBumpSelected?: boolean
 }
 
 type SuccessActionConfig = {
   href: string
   label: string
   helper: string
-  eventName?: "brand_strategy_pack_studio_click" | "one_time_session_studio_click"
+  eventName?: "one_time_session_studio_click" | "brand_strategy_pack_studio_click"
   secondaryHref?: string
   secondaryLabel?: string
+  secondaryEventName?: "brand_strategy_pack_studio_click"
 }
 
 function trackClientEvent(event: string, properties?: Record<string, unknown>) {
@@ -54,13 +56,12 @@ function getProductLabel(productType: string | undefined) {
 function getSuccessActionConfig(productType: string | undefined, resolvedReturnTo: string): SuccessActionConfig {
   if (productType === "brand_strategy_pack") {
     return {
-      href: "/brand-strategy",
-      label: "Check your email",
-      helper:
-        "Maya is ready. Check your inbox — we sent you a link to fill in your brand details. Takes two minutes.",
-      eventName: "brand_strategy_pack_setup_click",
+      href: resolvedReturnTo,
+      label: "Open your strategy",
+      helper: "We're getting your private setup link ready now. This usually takes a few seconds.",
       secondaryHref: "/checkout/membership",
       secondaryLabel: "Explore Studio",
+      secondaryEventName: "brand_strategy_pack_studio_click",
     }
   }
 
@@ -87,11 +88,13 @@ export function SuccessContent({
   sessionId,
   purchaseType,
   returnTo,
+  brandStrategyBumpSelected = false,
 }: SuccessContentProps) {
   const router = useRouter()
   const [userInfo, setUserInfo] = useState(initialUserInfo)
   const isBrandEnginePurchase = String(purchaseType || "").startsWith("brand_engine_")
   const isSelfieGuidePurchase = purchaseType === "selfie_guide" || purchaseType === "selfie_guide_bundle"
+  const isBrandStrategyPurchase = purchaseType === "brand_strategy_pack"
   const resolvedReturnTo = sanitizeRedirect(returnTo || null, "/brand-strategy")
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [name, setName] = useState("")
@@ -105,7 +108,7 @@ export function SuccessContent({
     // Decision 2: Paid blueprint now uses same flow as other products
     // User info polling is only needed for unauthenticated users (account creation)
 
-    if (initialEmail && !isBrandEnginePurchase && !isSelfieGuidePurchase) {
+    if (initialEmail && !isBrandEnginePurchase && !isSelfieGuidePurchase && !isBrandStrategyPurchase) {
       let attempts = 0
       const MAX_ATTEMPTS = 40 // Increased to 80 seconds total
 
@@ -149,7 +152,7 @@ export function SuccessContent({
         clearInterval(pollInterval)
       }
     }
-  }, [initialEmail, isBrandEnginePurchase, isSelfieGuidePurchase, purchaseType])
+  }, [initialEmail, isBrandEnginePurchase, isBrandStrategyPurchase, isSelfieGuidePurchase, purchaseType])
 
   // FIX 3: Poll access status before redirecting (wait for webhook to complete)
   const [isPollingAccess, setIsPollingAccess] = useState(false)
@@ -165,6 +168,12 @@ export function SuccessContent({
   const [selfieGuideRecoveryMessage, setSelfieGuideRecoveryMessage] = useState(
     "Your payment went through. Your guide access is still syncing.",
   )
+  const [isPollingBrandStrategySetup, setIsPollingBrandStrategySetup] = useState(
+    Boolean(isBrandStrategyPurchase && sessionId),
+  )
+  const [brandStrategyPollAttempts, setBrandStrategyPollAttempts] = useState(0)
+  const [brandStrategyStatus, setBrandStrategyStatus] = useState("Preparing your private setup link.")
+  const [showBrandStrategyTimeout, setShowBrandStrategyTimeout] = useState(false)
   const selfieGuideResolutionTrackedRef = useRef(false)
   const selfieGuideFailureTrackedRef = useRef(false)
   const resolvedProductType = (userInfo?.productType || purchaseType || "") as string
@@ -186,6 +195,13 @@ export function SuccessContent({
         return
       }
 
+      if (isBrandStrategyPurchase && sessionId) {
+        setIsPollingBrandStrategySetup(true)
+        setBrandStrategyPollAttempts(0)
+        setShowBrandStrategyTimeout(false)
+        return
+      }
+
       if (isSelfieGuidePurchase && (sessionId || user)) {
         setIsPollingSelfieGuideAccess(true)
         setSelfieGuidePollAttempts(0)
@@ -200,7 +216,68 @@ export function SuccessContent({
       }
     }
     checkAuth()
-  }, [isSelfieGuidePurchase, purchaseType, router, sessionId])
+  }, [isBrandStrategyPurchase, isSelfieGuidePurchase, purchaseType, router, sessionId])
+
+  useEffect(() => {
+    if (!isPollingBrandStrategySetup || !sessionId || !isBrandStrategyPurchase) {
+      return
+    }
+
+    const pollSetupToken = async () => {
+      try {
+        const response = await fetch(
+          `/api/brand-strategy/setup-token?session_id=${encodeURIComponent(sessionId)}`,
+          { cache: "no-store" },
+        )
+        const data = await response.json()
+
+        if (response.ok && data.setupToken) {
+          setIsPollingBrandStrategySetup(false)
+          router.push(`/brand-strategy/setup/${encodeURIComponent(data.setupToken)}`)
+          return
+        }
+
+        if (response.status === 409) {
+          setBrandStrategyPollAttempts((prev) => {
+            const next = prev + 1
+            setBrandStrategyStatus(
+              next < 20
+                ? "Preparing your private setup link."
+                : next < 40
+                  ? "Payment confirmed. Building your setup link now..."
+                  : "Almost there. Your strategy setup is still syncing.",
+            )
+
+            if (next >= MAX_POLL_ATTEMPTS) {
+              setIsPollingBrandStrategySetup(false)
+              setShowBrandStrategyTimeout(true)
+            }
+
+            return next
+          })
+          return
+        }
+
+        setIsPollingBrandStrategySetup(false)
+        setShowBrandStrategyTimeout(true)
+      } catch (error) {
+        console.error("[SUCCESS PAGE] Brand strategy setup polling error:", error)
+        setBrandStrategyPollAttempts((prev) => {
+          const next = prev + 1
+          if (next >= MAX_POLL_ATTEMPTS) {
+            setIsPollingBrandStrategySetup(false)
+            setShowBrandStrategyTimeout(true)
+          }
+          return next
+        })
+      }
+    }
+
+    const interval = setInterval(pollSetupToken, 2000)
+    pollSetupToken()
+
+    return () => clearInterval(interval)
+  }, [isBrandStrategyPurchase, isPollingBrandStrategySetup, router, sessionId])
 
   useEffect(() => {
     if (!isPollingSelfieGuideAccess || !isSelfieGuidePurchase || (!sessionId && !isAuthenticated)) {
@@ -230,7 +307,15 @@ export function SuccessContent({
           }
 
           setTimeout(() => {
-            router.push(`/selfie-guide/access/${encodeURIComponent(data.accessToken)}`)
+            const qs = new URLSearchParams()
+            if (sessionId) {
+              qs.set("checkout_session", sessionId)
+            }
+            if (brandStrategyBumpSelected) {
+              qs.set("brand_strategy_bump", "1")
+            }
+            const search = qs.toString()
+            router.push(`/selfie-guide/access/${encodeURIComponent(data.accessToken)}${search ? `?${search}` : ""}`)
           }, 400)
           return
         }
@@ -306,7 +391,15 @@ export function SuccessContent({
     pollGuideAccess()
 
     return () => clearInterval(interval)
-  }, [isAuthenticated, isPollingSelfieGuideAccess, isSelfieGuidePurchase, purchaseType, router, sessionId])
+  }, [
+    brandStrategyBumpSelected,
+    isAuthenticated,
+    isPollingSelfieGuideAccess,
+    isSelfieGuidePurchase,
+    purchaseType,
+    router,
+    sessionId,
+  ])
 
   // Poll access status for paid blueprint purchases
   useEffect(() => {
@@ -437,6 +530,73 @@ export function SuccessContent({
             <a href="mailto:support@sselfie.ai?subject=Selfie%20Guide%20access%20help">Email Support</a>
           </Button>
         </div>
+      </div>
+    )
+  }
+
+  if (isPollingBrandStrategySetup && isBrandStrategyPurchase) {
+    return (
+      <div className="min-h-screen bg-[#0d0c0b] flex flex-col items-center justify-center min-h-[400px] space-y-4 p-4">
+        <LoadingSpinner size="lg" />
+        <p className="text-lg font-medium text-[#f0ede8]">{brandStrategyStatus}</p>
+        <p className="text-sm text-[#8a8780]">
+          Estimated time remaining: {Math.max(0, 120 - (brandStrategyPollAttempts * 2))}s
+        </p>
+        <div className="w-64 bg-[rgba(175,170,162,0.20)] rounded-full h-2">
+          <div
+            className="bg-[#c8c4bb] h-2 rounded-full transition-all duration-1000"
+            style={{ width: `${(brandStrategyPollAttempts / MAX_POLL_ATTEMPTS) * 100}%` }}
+          />
+        </div>
+      </div>
+    )
+  }
+
+  if (showBrandStrategyTimeout && isBrandStrategyPurchase) {
+    return (
+      <div className="min-h-screen bg-[#0d0c0b] flex flex-col items-center justify-center space-y-6 p-6">
+        <div className="bg-[rgba(175,170,162,0.10)] backdrop-blur-[50px] border border-[rgba(195,190,182,0.25)] rounded-2xl p-8 max-w-md w-full text-center space-y-4">
+          <h2 className="font-['Cormorant_Garamond'] font-light text-3xl text-[#f0ede8]">
+            Your strategy is still syncing
+          </h2>
+          <p className="text-[#8a8780] max-w-md">
+            Your payment went through. We&apos;re still preparing your private setup link.
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <Button
+            onClick={() => {
+              setShowBrandStrategyTimeout(false)
+              setBrandStrategyPollAttempts(0)
+              setBrandStrategyStatus("Preparing your private setup link.")
+              setIsPollingBrandStrategySetup(true)
+            }}
+            variant="default"
+            className="bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[#f0ede8] transition-colors"
+          >
+            Try Again
+          </Button>
+          <Button
+            onClick={() => {
+              trackClientEvent("brand_strategy_pack_studio_click", {
+                source_product: "brand_strategy_pack",
+                source_surface: "checkout_timeout",
+              })
+              router.push("/checkout/membership")
+            }}
+            variant="outline"
+            className="border-[rgba(195,190,182,0.25)] text-[#f0ede8] tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[rgba(175,170,162,0.10)] transition-colors"
+          >
+            Explore Studio
+          </Button>
+        </div>
+        <p className="text-sm text-[#8a8780]">
+          We also sent your setup link by email. If you still need help,{" "}
+          <a href="mailto:support@sselfie.ai" className="underline text-[#a8a49c] hover:text-[#f0ede8]">
+            contact support
+          </a>
+          .
+        </p>
       </div>
     )
   }
@@ -1012,7 +1172,14 @@ export function SuccessContent({
               {successAction.secondaryHref && successAction.secondaryLabel ? (
                 <div className="mt-4">
                   <button
-                    onClick={() => router.push(successAction.secondaryHref!)}
+                    onClick={() => {
+                      if (successAction.secondaryEventName) {
+                        trackClientEvent(successAction.secondaryEventName, {
+                          source_product: resolvedProductType,
+                        })
+                      }
+                      router.push(successAction.secondaryHref!)
+                    }}
                     className="text-[10px] sm:text-xs text-[#c8c4bb] font-light uppercase tracking-[0.2em] underline underline-offset-4"
                   >
                     {successAction.secondaryLabel}

@@ -166,10 +166,12 @@ function StatusView({ title, body, ctaLabel = "Back to Selfie Guide" }: { title:
 
 interface PageProps {
   params: Promise<{ token: string }>
+  searchParams: Promise<{ checkout_session?: string; brand_strategy_bump?: string }>
 }
 
-export default async function SelfieGuideAccessPage({ params }: PageProps) {
+export default async function SelfieGuideAccessPage({ params, searchParams }: PageProps) {
   const { token } = await params
+  const query = await searchParams
   const [result, guideMarkdown] = await Promise.all([getSubscriber(token), getGuideMarkdown()])
 
   if (result.status === "not_found") {
@@ -185,5 +187,12 @@ export default async function SelfieGuideAccessPage({ params }: PageProps) {
     return <StatusView title="UNAVAILABLE" body="We couldn't load your guide right now. Please try again in a moment." />
   }
 
-  return <SelfieGuideExperience firstName={upperName(result.data.name)} guideMarkdown={guideMarkdown} />
+  return (
+    <SelfieGuideExperience
+      firstName={upperName(result.data.name)}
+      guideMarkdown={guideMarkdown}
+      checkoutSessionId={typeof query.checkout_session === "string" ? query.checkout_session : undefined}
+      brandStrategyBumpSelected={query.brand_strategy_bump === "1"}
+    />
+  )
 }
