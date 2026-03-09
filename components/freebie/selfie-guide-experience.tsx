@@ -758,6 +758,7 @@ export default function SelfieGuideExperience({
       h3: ({ children }) => <h3 className="prose-h3">{children}</h3>,
       strong: ({ children }) => <strong className="prose-strong">{children}</strong>,
       em: ({ children }) => <em className="prose-em">{children}</em>,
+      blockquote: ({ children }) => <blockquote className="prose-blockquote">{children}</blockquote>,
       p: ({ children }) => {
         const text = getPlainText(children).replace(/\s+/g, " ").trim()
         const imageMarker = extractImageMarker(text)
@@ -1503,6 +1504,23 @@ export default function SelfieGuideExperience({
         .prose-em {
           font-style: italic;
           color: var(--c-pale);
+        }
+
+        .prose-blockquote {
+          margin: 28px 0;
+          padding: 0 0 0 22px;
+          border-left: 2px solid var(--c-pale);
+        }
+
+        .prose-blockquote .prose-p {
+          margin: 0 0 8px;
+          font-size: 17px;
+          font-style: italic;
+          color: var(--c-stone);
+        }
+
+        .prose-blockquote .prose-p:last-child {
+          margin-bottom: 0;
         }
 
         .prose-ul,
