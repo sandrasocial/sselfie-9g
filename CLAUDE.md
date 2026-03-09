@@ -1,5 +1,5 @@
 # SSELFIE Operational Memory
-*Last updated: 2026-03-02 — Read this at the start of every session*
+*Last updated: 2026-03-09 — Read this at the start of every session*
 
 ---
 
@@ -57,11 +57,28 @@ openclaw agent --agent north --local --message "YOUR MESSAGE"
 
 ---
 
-## Current Priority: Website Agent V1 Sprint
+## Current Priorities
+
+### V-02 Full Funnel Hardening (Active — 2026-03-09)
+
+| Step | Task | Status |
+|------|------|--------|
+| 0 | Git sync + CLAUDE.md update | ✅ Done |
+| 1 | Retire freebie routes (redirects + template rename) | 🔄 In progress |
+| 2 | Brand Strategy $19: landing + setup questionnaire + generate API + DB migration | Pending |
+| 3 | Critical email fixes (download language, firstName, Studio URL) | Pending |
+| 4 | Selfie Guide Day 0 activation email + cron block | Pending |
+| 5 | Brand Strategy paid delivery email | Pending |
+| 6 | Stripe order bump (Brand Strategy on Selfie Guide checkout) | Pending |
+| 7 | Fix nurture N2 missing CTA | Pending |
+| 8 | Delete 11 dead cron routes + ~22 dead templates | Pending |
+| 9 | Daily funnel monitoring scheduled task | Pending |
+
+### Website Agent V1 Sprint (On hold)
 
 | Week | Tasks | Status |
 |------|-------|--------|
-| W1-A | Security hardening (north-notifier token, bridge auth) | ⏸ Awaiting Sandra go/no-go |
+| W1-A | Security hardening (north-notifier token, bridge auth) | ⏸ On hold |
 | W1-B | Core agent loop | Pending |
 | W1-C | Website read/write | Pending |
 | W2-A | Brand voice layer | Pending |
@@ -70,6 +87,19 @@ openclaw agent --agent north --local --message "YOUR MESSAGE"
 
 **Locked price:** €27/month standalone
 **North must read Codex spec before any agent work**
+
+---
+
+## Recent Codex Commits
+
+| Commit | Description | Date |
+|--------|-------------|------|
+| `37d76465` | Merge: harden selfie guide funnel (access token, success polling, product routing) | 2026-03-09 |
+| `a3820f48` | fix: harden selfie guide to studio funnel | 2026-03-09 |
+| `d5982ecf` | Merge: funnel hardening checkout | 2026-03-09 |
+| `7109535b` | fix: harden public offer checkout funnel | 2026-03-09 |
+| `34e4a275` | feat(M-12): Selfie Guide interactive upgrade — v3 content + checklist + 7-Day Challenge | 2026-03-09 |
+| `39bf931` | fix: freebie upsell `?checkout=studio_membership` redirects to `/checkout/membership` | 2026-03-02 |
 
 ---
 
@@ -85,10 +115,13 @@ openclaw agent --agent north --local --message "YOUR MESSAGE"
 | Total active paying | 28 (15 Studio + 13 Blueprint) — verified 2026-03-02 |
 | Studio checkout URL | `https://sselfie.ai/checkout/membership` |
 | Feed Planner checkout | `https://sselfie.ai/checkout/blueprint` |
-| Freebie form URL | `https://sselfie.ai/freebie/brand-strategy` (NEW — replaces Blueprint freebie) |
-| Freebie result URL | `https://sselfie.ai/strategy/[token]` |
-| Freebie upsell fix | ✅ SHIPPED 2026-03-02 — commit `39bf931` — `?checkout=studio_membership` now correctly redirects to `/checkout/membership` in both `handleLogin` + `handleSignUp` |
-| Freebie Resend tag | source: "freebie-strategy" (new leads tagged this — distinct from old Blueprint Freebie segment) |
+| Selfie Guide checkout URL | `https://sselfie.ai/checkout/selfie-guide` |
+| Selfie Guide access URL | `https://sselfie.ai/selfie-guide/access/[token]` |
+| Brand Strategy landing URL | `https://sselfie.ai/brand-strategy` ($19 paid — ManyChat STRATEGY keyword) |
+| Brand Strategy checkout URL | `https://sselfie.ai/checkout/brand-strategy-pack` |
+| Brand Strategy setup URL | `https://sselfie.ai/brand-strategy/setup/[setupToken]` (post-payment questionnaire) |
+| Brand Strategy result URL | `https://sselfie.ai/strategy/[accessToken]` (paid — generated after questionnaire) |
+| Upsell fix | ✅ SHIPPED 2026-03-02 — commit `39bf931` — `?checkout=studio_membership` → `/checkout/membership` |
 | Blueprint price ID | `price_1SnlJEEVJvME7vkw1thdr7WK` |
 | Stripe portal | Session-based — link to `https://sselfie.ai/studio?tab=settings` |
 | Stripe portal config | `bpc_1SRX2wEVJvME7vkwu0rlIgfW` |
@@ -104,7 +137,7 @@ openclaw agent --agent north --local --message "YOUR MESSAGE"
 | Segment | Count | Notes |
 |---------|-------|-------|
 | Main Audience | 2,965 | ✅ Use for all broadcasts |
-| Brand Blueprint Freebie | ~892 | Freebie downloaders |
+| Brand Blueprint (legacy) | ~892 | Legacy Blueprint freebie downloaders — old segment, no new entries |
 | Paid users | 93 | ⚠️ MIXED: one-time + beta + Studio members |
 | Beta Customers | 73 | Old beta pricing (€47/€79/€99) |
 | Cold Users | 0 | Empty — pending cleanup |
@@ -118,9 +151,14 @@ openclaw agent --agent north --local --message "YOUR MESSAGE"
 | Product | Price | Status | Notes |
 |---------|-------|--------|-------|
 | Studio membership | €97/mo | ✅ Active | Cancel anytime |
+| Selfie Guide | €17 | ✅ Active | `selfie_guide` type — interactive course, checkout + access token flow |
+| Selfie Guide Bundle | €27 | ✅ Active | `selfie_guide_bundle` type — guide + extras |
+| Brand Strategy Pack | $19 | ✅ Active | `brand_strategy_pack` — pay → questionnaire → Maya generates → `/strategy/[token]` |
 | Feed Planner | See blueprint | ✅ Active | `paid_blueprint` type |
 | Mini-products (4) | DEACTIVATED | ❌ | Prices set active=false. Become free workbooks in Academy |
 | Website Agent V1 | €27/mo | 🔒 Planned | Standalone, not bundled |
+
+**⚠️ NO FREEBIE PRODUCTS** — all entry points are paid. `/freebie/*` routes redirect to paid pages. `freebie_brand_strategies` table kept for legacy tokens; no new free entries.
 
 **Mini-product price IDs (deactivated — do not reactivate):**
 - What To Say: `price_1T2xljEVJvME7vkwFcaN1GEw`
@@ -135,7 +173,7 @@ openclaw agent --agent north --local --message "YOUR MESSAGE"
 - Studio membership has **NEVER** had a dedicated broadcast before Feb 28, 2026
 - Feb 28, 2026: First Studio membership email sent — Broadcast ID `8cacda39-7495-47a6-8505-c6985df7eaeb`
 - Feb 28, 2026: Recovery emails sent to 9 members with failed payments
-- Mar 02, 2026: SEQ-01 Freebie Nurture approved (5 emails, Day 2/5/9/14/20) — saved `~/stella/drafts/SEQ-FREEBIE-NURTURE-APPROVED-2026-03-02.md` — north-email activating in Resend (upsell fix shipped, no more hold)
+- Mar 02, 2026: SEQ-01 Nurture sequence approved (5 emails, Day 2/5/9/14/20 for Selfie Guide buyers) — templates renamed from `nurture-freebie-n*.ts` → `nurture-strategy-n*.ts` in V-02
 - **Always send to Main Audience** (2,965) for full-list broadcasts — NOT smaller segments
 
 ---
