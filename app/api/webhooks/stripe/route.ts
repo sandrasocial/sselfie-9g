@@ -1473,9 +1473,9 @@ export async function POST(request: NextRequest) {
                   paymentAmountCents = selfieGuideLineItem.amount_total
                 }
 
-                if (typeof brandStrategyLineItem?.amount_total === "number" && brandStrategyLineItem.amount_total > 0) {
+                if (brandStrategyLineItem) {
                   boughtBrandStrategyBump = true
-                  brandStrategyBumpAmountCents = brandStrategyLineItem.amount_total
+                  brandStrategyBumpAmountCents = brandStrategyLineItem.amount_total ?? 0
                 }
               } catch (lineItemError: any) {
                 console.error(`[v0] Error expanding Selfie Guide checkout line items:`, lineItemError.message)
