@@ -125,6 +125,30 @@ describe("SelfieGuideExperience interactive features", () => {
     expect(screen.getByText("THE RESULT")).toBeInTheDocument()
   })
 
+  it("uses the approved guide CTA routes for Maya, brand strategy, and membership", () => {
+    const markdown = [
+      "## PART 8: Meet Maya, Your AI Brand Partner",
+      "[Open Maya in Studio](/auth/sign-up?returnTo=%2Fstudio%3Ftab%3Dmaya)",
+      "[Get the $19 Brand Strategy](/checkout/brand-strategy-pack)",
+      "[Join Studio Membership](/checkout/membership)",
+    ].join("\n\n")
+
+    render(<SelfieGuideExperience firstName="SANDRA" guideMarkdown={markdown} />)
+
+    expect(screen.getByRole("link", { name: "Open Maya in Studio" })).toHaveAttribute(
+      "href",
+      "/auth/sign-up?returnTo=%2Fstudio%3Ftab%3Dmaya"
+    )
+    expect(screen.getByRole("link", { name: "Get the $19 Brand Strategy" })).toHaveAttribute(
+      "href",
+      "/checkout/brand-strategy-pack"
+    )
+    expect(screen.getByRole("link", { name: "Join Studio Membership" })).toHaveAttribute(
+      "href",
+      "/checkout/membership"
+    )
+  })
+
   it("shows a single short brand strategy upsell at the end of the guide", () => {
     const markdown = ["## PART 1: Intro", "Short body."].join("\n")
 

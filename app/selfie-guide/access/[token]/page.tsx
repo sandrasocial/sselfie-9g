@@ -40,7 +40,10 @@ async function getGuideMarkdown() {
 
   try {
     const markdown = await readFile(GUIDE_CONTENT_PATH, "utf8")
-    cachedGuideMarkdown = markdown.replace(/\]\(#\)/g, "](/brand-strategy)")
+    cachedGuideMarkdown = markdown
+      .replace(/\]\(#\)/g, "](/checkout/brand-strategy-pack)")
+      .replace(/\]\(\/studio\?tab=maya\)/g, "](/auth/sign-up?returnTo=%2Fstudio%3Ftab%3Dmaya)")
+      .replace(/\]\(\/brand-strategy\)/g, "](/checkout/brand-strategy-pack)")
     return cachedGuideMarkdown
   } catch (error) {
     console.error("[selfie-guide access] failed to load markdown:", error)

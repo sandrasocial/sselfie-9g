@@ -343,7 +343,7 @@ The selfie she works from has to be good. The better your selfie, the better the
 
 If you are not already inside SSELFIE Studio, you can join and generate your first brand photos today.
 
-[Open Maya in Studio](/studio?tab=maya)
+[Open Maya in Studio](/auth/sign-up?returnTo=%2Fstudio%3Ftab%3Dmaya)
 
 ---
 
@@ -377,10 +377,10 @@ You've just learned everything you need to take a great selfie. But a great self
 
 The women I know who are actually building audiences — they're not winging it. They've got a system. They know who they're talking to. They know what to say. They show up consistently because they're not spending hours staring at a blank caption box.
 
-**That's what the €17 Brand Strategy gives you.** Not just "what to post." But why people follow someone like you, who your actual audience is, and exactly how to turn one selfie into a week of content that sounds like you — not like you're trying too hard.
+**That's what the $19 Brand Strategy gives you.** Not just "what to post." But why people follow someone like you, who your actual audience is, and exactly how to turn one selfie into a week of content that sounds like you — not like you're trying too hard.
 
 Ready?
 
-[Get the €17 Brand Strategy](/brand-strategy)
+[Get the $19 Brand Strategy](/checkout/brand-strategy-pack)
 
 [Join Studio Membership](/checkout/membership)
