@@ -32,7 +32,6 @@ export async function createLandingCheckoutSession(
   const checkoutSource = options?.source?.trim() || "landing_page"
 
   const actualPrice = product.priceInCents
-  const brandStrategyBumpPriceId = process.env.STRIPE_PRICE_BRAND_STRATEGY_PACK?.trim()
 
   // Validate only the requested product pricing so unrelated SKU misconfig doesn't block this checkout.
   await assertStripePriceConfigForProduct(product.type)
@@ -175,16 +174,8 @@ export async function createLandingCheckoutSession(
         quantity: 1,
       },
     ],
-    ...(product.type === "selfie_guide" && brandStrategyBumpPriceId
-      ? {
-          optional_items: [
-            {
-              price: brandStrategyBumpPriceId,
-              quantity: 1,
-            },
-          ],
-        }
-      : {}),
+    // NOTE: optional_items is NOT supported with ui_mode: "embedded" (Stripe restriction).
+    // Brand Strategy order bump is delivered via post-purchase email in the Stripe webhook.
     // Apply validated coupon OR allow promotion codes (mutually exclusive per Stripe API)
     ...(validatedCoupon && {
       discounts: [
