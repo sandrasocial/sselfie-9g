@@ -26,7 +26,7 @@ export function getProductGenerationPrompt(product: string | null, userContext: 
 
   switch (product) {
     case "what_to_say":
-      return `## User Purchased: What To Say (€17)
+      return `## User Purchased: What To Say ($17)
 
 Generate **30 personalized captions** for their business.
 
@@ -42,7 +42,7 @@ Generate 30 captions in 5 categories (6 each):
 Each caption: 150-250 words, warm voice, 1-2 emojis, ready to post.`
 
     case "show_up":
-      return `## User Purchased: Show Up (€27)
+      return `## User Purchased: Show Up ($27)
 
 Generate a **30-day content calendar**.
 
@@ -59,7 +59,7 @@ Mix: 40% educational, 30% story, 20% proof, 10% CTA.
 Weekly themes: Week 1 = Permission + Visibility, Week 2 = Authority, Week 3 = Proof, Week 4 = Momentum.`
 
     case "get_paid":
-      return `## User Purchased: Get Paid (€47)
+      return `## User Purchased: Get Paid ($47)
 
 Create a **monetization strategy + checklist**.
 
@@ -67,14 +67,14 @@ Their business: ${brandProfile.business_type || "Not specified"} | Goals: ${bran
 
 Deliver:
 1. 5 revenue streams (Digital Products, Services, Membership, Affiliates, Sponsorships)
-   - For each: how it works, €/month potential, time to launch, difficulty
-2. 20-item quick launch checklist (path to first €1K/month)
+   - For each: how it works, $/month potential, time to launch, difficulty
+2. 20-item quick launch checklist (path to first $1K/month)
 3. 90-day timeline (what to launch when)
 
 Be specific to their business, not generic.`
 
     case "ai_photo_prompts":
-      return `## User Purchased: AI Photo Prompts (€17)
+      return `## User Purchased: AI Photo Prompts ($17)
 
 Generate **20 personalized photo prompts** for their phone camera.
 

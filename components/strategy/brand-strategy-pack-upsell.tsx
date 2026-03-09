@@ -34,7 +34,7 @@ export default function BrandStrategyPackUpsell({ strategyToken }: BrandStrategy
         Get your Brand Strategy Pack instantly — $19
       </a>
       <a href="/checkout/membership" className="btn-secondary">
-        Join Studio — €97/month
+        Join Studio — $97/month
       </a>
     </div>
   )

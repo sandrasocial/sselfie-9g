@@ -108,7 +108,7 @@ export async function GET(request: NextRequest) {
       selfie_guide: {
         envVar: "STRIPE_PRICE_SELFIE_GUIDE",
         expectedAmount: 1700,
-        expectedAmountFormatted: "EUR 17.00",
+        expectedAmountFormatted: "$17.00",
         expectedRecurring: false,
       },
     }

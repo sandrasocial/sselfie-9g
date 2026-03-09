@@ -889,7 +889,7 @@ export async function POST(request: NextRequest) {
                 show_up: { name: "Get Paid", price: "EUR 47", productId: "get_paid" },
                 get_paid: {
                   name: "Creator Studio membership",
-                  price: "EUR 97/month",
+                  price: "$97/month",
                   productId: "membership",
                 },
                 ai_photo_prompts: { name: "What To Say", price: "EUR 17", productId: "what_to_say" },

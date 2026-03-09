@@ -61,7 +61,7 @@ const FIELD_PLACEHOLDERS: Record<MayaOfferBriefField, string> = {
   designStyle: "Scandinavian minimal, luxury editorial, bold playful...",
   offerType: "Course, service, coaching...",
   transformation: "What result do they get?",
-  pricePoint: "€97, $497, etc",
+  pricePoint: "$97, $497, etc",
   formatAndDuration: "4-week cohort, 1:1, self-paced",
   idealClient: "Who this is for",
   biggestStruggle: "What pain should the page call out?",

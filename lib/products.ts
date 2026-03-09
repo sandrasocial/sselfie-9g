@@ -39,7 +39,7 @@ export interface AcademyProduct {
   name: string
   tagline: string
   price: number
-  currency: "eur"
+  currency: "usd" | "eur"
   stripePriceId: string
   manychatKeyword: "SAY" | "CONTENT" | "PAID" | "PHOTOS" | "EDIT" | "BRAND"
   tag:
@@ -140,7 +140,7 @@ export const PRICING_PRODUCTS: PricingProduct[] = [
     name: "Selfie Guide",
     displayName: "Selfie Guide",
     description: "Turn one good selfie into your brand",
-    priceInCents: 1700, // EUR 17 one-time
+    priceInCents: 1700, // $17 one-time
     type: "selfie_guide",
     tag: "bought_selfie_guide",
     features: [

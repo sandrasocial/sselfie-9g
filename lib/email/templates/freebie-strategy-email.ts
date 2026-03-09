@@ -60,7 +60,7 @@ export function generateStrategyEmail(params: StrategyEmailParams): { html: stri
             <td style="padding:0 28px 16px;">
               <p style="margin:0 0 16px;color:rgba(255,255,255,0.78);font-size:15px;line-height:1.8;">This is yours to keep. Bookmark the link — it lives there permanently.</p>
               <p style="margin:0 0 18px;color:rgba(255,255,255,0.78);font-size:15px;line-height:1.8;">And if you're ready to go deeper: SSELFIE Studio is where this comes to life. Every month, new AI tools, Sandra live, and a community of women building their brand.</p>
-              <p style="margin:0 0 22px;"><a href="https://sselfie.ai/checkout/membership" style="color:#ffffff;font-size:13px;font-weight:500;">Join Studio — €97/month</a></p>
+              <p style="margin:0 0 22px;"><a href="https://sselfie.ai/checkout/membership" style="color:#ffffff;font-size:13px;font-weight:500;">Join Studio — $97/month</a></p>
               <p style="margin:0;color:rgba(255,255,255,0.78);font-size:15px;line-height:1.7;">— Sandra (& Maya)<br />The Selfie Queen<br />sselfie.ai</p>
             </td>
           </tr>
@@ -98,7 +98,7 @@ This is yours to keep. Bookmark the link — it lives there permanently.
 
 And if you're ready to go deeper: SSELFIE Studio is where this comes to life. Every month, new AI tools, Sandra live, and a community of women building their brand.
 
-Join Studio — €97/month: https://sselfie.ai/checkout/membership
+Join Studio — $97/month: https://sselfie.ai/checkout/membership
 
 — Sandra (& Maya)
 The Selfie Queen

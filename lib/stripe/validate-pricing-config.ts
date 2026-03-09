@@ -78,7 +78,7 @@ const EXPECTED_CONFIGS: ExpectedStripeConfig[] = [
   {
     envVarName: "STRIPE_PRICE_SELFIE_GUIDE",
     productType: "selfie_guide",
-    expectedAmount: 1700, // EUR 17
+    expectedAmount: 1700, // $17
     expectedRecurring: false,
   },
 ]
@@ -251,7 +251,7 @@ export async function assertStripePricingConfig(): Promise<void> {
       "  STRIPE_PAID_BLUEPRINT_PRICE_ID = Active price for $47 one-time payment",
       "  STRIPE_PRICE_BRAND_STRATEGY_PACK = Active price for $19 one-time payment",
       "  STRIPE_PRICE_SELFIE_GUIDE_BUNDLE = Active price for $27 one-time payment",
-      "  STRIPE_PRICE_SELFIE_GUIDE = Active price for EUR 17 one-time payment",
+      "  STRIPE_PRICE_SELFIE_GUIDE = Active price for $17 one-time payment",
       "",
       "=" .repeat(80),
       "",

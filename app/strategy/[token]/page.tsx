@@ -481,7 +481,7 @@ export default async function FreebieStrategyResultPage({ params }: PageProps) {
           </p>
           <div className="upsell-buttons">
             <a href="https://sselfie.ai/checkout/membership" className="btn-primary">
-              Join Studio — €97/month
+              Join Studio — $97/month
             </a>
             <a href="https://sselfie.ai/checkout/blueprint" className="btn-secondary">
               Try Feed Planner first

@@ -38,7 +38,7 @@ export function generateNurtureStrategyN3Email({
               <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">That's what Creator Studio is.</p>
               <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">It's where your brand strategy becomes your content engine.</p>
               <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">You get Maya trained on your brand, a full content system that works with how you actually post, AI photo generation so you never run out of visuals, and monthly drops with new tools and templates.</p>
-              <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">EUR 97/month. Cancel anytime.</p>
+              <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">$97/month. Cancel anytime.</p>
               <p style="margin:0 0 14px;font-size:16px;line-height:1.7;">I built this because I needed it myself. And then my members needed it. And now it's the thing I'm most proud of building.</p>
               <p style="margin:0 0 18px;"><a href="${MEMBERSHIP_URL}" style="color:#0a0a0a;font-size:15px;font-weight:600;">Take a look -></a></p>
               <p style="margin:0;font-size:16px;line-height:1.7;">Not pushing you. Just wanted you to know it exists.<br/><br/>Sandra</p>
@@ -65,7 +65,7 @@ It's where your brand strategy becomes your content engine.
 
 You get Maya trained on your brand, a full content system that works with how you actually post, AI photo generation so you never run out of visuals, and monthly drops with new tools and templates.
 
-EUR 97/month. Cancel anytime.
+$97/month. Cancel anytime.
 
 I built this because I needed it myself. And then my members needed it. And now it's the thing I'm most proud of building.
 

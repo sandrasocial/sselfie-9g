@@ -3,8 +3,22 @@ import { randomUUID } from "crypto"
 import { sql } from "@/lib/db/client"
 import { normalizeFreebieEmailTags, resolveAccessToken } from "@/lib/freebie/subscribe-utils"
 
+function resolveSubscriberName(email: string, name?: string | null) {
+  const cleanedName = typeof name === "string" ? name.trim() : ""
+  if (cleanedName.length > 0) {
+    return cleanedName
+  }
+
+  const emailLocalPart = email.split("@")[0]?.trim() || ""
+  if (emailLocalPart.length === 0) {
+    return "Selfie Guide buyer"
+  }
+
+  return emailLocalPart
+}
+
 export async function ensurePaidSelfieGuideSubscriber(email: string, name?: string | null) {
-  const cleanedName = typeof name === "string" && name.trim().length > 0 ? name.trim() : null
+  const resolvedName = resolveSubscriberName(email, name)
   const existingSubscriber = await sql`
     SELECT id, access_token, email_tags
     FROM freebie_subscribers
@@ -28,7 +42,7 @@ export async function ensurePaidSelfieGuideSubscriber(email: string, name?: stri
     await sql`
       UPDATE freebie_subscribers
       SET
-        name = COALESCE(${cleanedName}, name),
+        name = COALESCE(NULLIF(${resolvedName}, ''), name),
         source = 'selfie-guide-paid',
         access_token = ${accessToken},
         email_tags = ${normalizedTags}::text[],
@@ -57,7 +71,7 @@ export async function ensurePaidSelfieGuideSubscriber(email: string, name?: stri
     )
     VALUES (
       ${email},
-      ${cleanedName},
+      ${resolvedName},
       'selfie-guide-paid',
       ${accessToken},
       ${normalizedTags}::text[],

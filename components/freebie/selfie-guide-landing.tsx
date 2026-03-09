@@ -68,7 +68,7 @@ export default function SelfieGuideLanding() {
                 <div className="rounded-[28px] border border-[rgba(195,190,182,0.16)] bg-[rgba(175,170,162,0.08)] p-6 backdrop-blur-[30px]">
                   <p className="text-[10px] uppercase tracking-[0.34em] text-[#8a8780]">Guide only</p>
                   <p className={`${cormorant.className} mt-3 text-[34px] font-light uppercase tracking-[0.08em] text-[#f0ede8]`}>
-                    €17
+                    $17
                   </p>
                   <p className="mt-3 text-sm font-light leading-7 text-[rgba(240,237,232,0.74)]">
                     Full course access, the 7-day challenge, and the preset bonus.
