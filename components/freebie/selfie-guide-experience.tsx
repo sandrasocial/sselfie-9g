@@ -317,6 +317,12 @@ const VISUAL_LIBRARY: Record<string, VisualSpec> = {
     src: "/images/selfie-guide/editing-before-after.png",
     alt: "Before and after selfie editing comparison showing subtle improvements in light and contrast",
   },
+  "feed-post-3.png": {
+    label: "THE RESULT",
+    caption: "Consistent editorial vibe, built from your own face instead of stock imagery.",
+    src: "/images/selfie-guide/feed-post-3.png",
+    alt: "Sandra's brand photo with consistent editorial style and cohesive aesthetic",
+  },
 }
 
 const SEVEN_DAY_CHALLENGE_DAYS: ChallengeDay[] = [

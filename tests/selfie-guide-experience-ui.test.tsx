@@ -84,6 +84,20 @@ describe("SelfieGuideExperience interactive features", () => {
     )
   })
 
+  it("renders the v3 result image marker for Maya sections", () => {
+    const markdown = [
+      "## PART 8: Meet Maya, Your AI Brand Partner",
+      "[IMAGE: feed-post-3.png — Sandra's brand photo with consistent editorial style and cohesive aesthetic]",
+    ].join("\n")
+
+    render(<SelfieGuideExperience firstName="SANDRA" guideMarkdown={markdown} />)
+
+    expect(
+      screen.getByRole("img", { name: /Sandra's brand photo with consistent editorial style/i })
+    ).toBeInTheDocument()
+    expect(screen.getByText("THE RESULT")).toBeInTheDocument()
+  })
+
   it("shows a single short brand strategy upsell at the end of the guide", () => {
     const markdown = ["## PART 1: Intro", "Short body."].join("\n")
 
