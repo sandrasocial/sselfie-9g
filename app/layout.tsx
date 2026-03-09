@@ -76,7 +76,6 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://sselfie.ai",
   },
-  generator: "v0.app",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
