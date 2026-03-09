@@ -84,6 +84,33 @@ describe("SelfieGuideExperience interactive features", () => {
     )
   })
 
+  it("renders the original settings walkthrough pages for the settings marker", () => {
+    const markdown = [
+      "## PART 1: Your iPhone Camera Settings",
+      "[IMAGE: iphone-settings-mockup.png — iPhone Settings → Camera screen showing Grid, Mirror Front Camera, Smart HDR enabled and Live Photos disabled]",
+    ].join("\n")
+
+    render(<SelfieGuideExperience firstName="SANDRA" guideMarkdown={markdown} />)
+
+    expect(screen.getByRole("img", { name: /Original settings walkthrough page 1/i })).toBeInTheDocument()
+    expect(screen.getByRole("img", { name: /Original settings walkthrough page 2/i })).toBeInTheDocument()
+    expect(screen.getByRole("img", { name: /Original settings walkthrough page 3/i })).toBeInTheDocument()
+  })
+
+  it("renders the lighting comparison as four separate original examples", () => {
+    const markdown = [
+      "## PART 2: Light Changes Everything",
+      "[IMAGE: lighting-comparison-grid.png — Four-panel lighting comparison showing window light, golden hour, ring light, and cloudy day examples]",
+    ].join("\n")
+
+    render(<SelfieGuideExperience firstName="SANDRA" guideMarkdown={markdown} />)
+
+    expect(screen.getByText("Window / natural light")).toBeInTheDocument()
+    expect(screen.getByText("Golden hour")).toBeInTheDocument()
+    expect(screen.getByText("Ring light")).toBeInTheDocument()
+    expect(screen.getByText("Cloudy day")).toBeInTheDocument()
+  })
+
   it("renders the v3 result image marker for Maya sections", () => {
     const markdown = [
       "## PART 8: Meet Maya, Your AI Brand Partner",
@@ -112,5 +139,22 @@ describe("SelfieGuideExperience interactive features", () => {
       "/checkout/brand-strategy-pack"
     )
     expect(screen.queryByRole("link", { name: "Join Studio Membership" })).not.toBeInTheDocument()
+  })
+
+  it("shows the preset bundle CTA when a preset URL is available", () => {
+    const markdown = ["## PART 1: Intro", "Short body."].join("\n")
+
+    render(
+      <SelfieGuideExperience
+        firstName="SANDRA"
+        guideMarkdown={markdown}
+        presetDownloadUrl="https://example.com/presets"
+      />
+    )
+
+    expect(screen.getByRole("link", { name: "Open preset pack" })).toHaveAttribute(
+      "href",
+      "https://example.com/presets"
+    )
   })
 })

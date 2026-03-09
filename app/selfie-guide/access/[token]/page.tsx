@@ -193,6 +193,7 @@ export default async function SelfieGuideAccessPage({ params, searchParams }: Pa
       guideMarkdown={guideMarkdown}
       checkoutSessionId={typeof query.checkout_session === "string" ? query.checkout_session : undefined}
       brandStrategyBumpSelected={query.brand_strategy_bump === "1"}
+      presetDownloadUrl={process.env.SELFIE_GUIDE_PRESET_DOWNLOAD_URL || undefined}
     />
   )
 }

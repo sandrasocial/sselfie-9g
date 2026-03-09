@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { useEffect, useMemo, useState } from "react"
+import { type ReactNode, useEffect, useMemo, useState } from "react"
 import { Cormorant_Garamond, Inter } from "next/font/google"
 import ReactMarkdown, { type Components } from "react-markdown"
 import {
@@ -45,6 +45,10 @@ type ChallengeDay = {
   description: string
 }
 
+type ComparisonImage = GuideImage & {
+  label: string
+}
+
 type ChapterMoodSpec = {
   match: RegExp
   eyebrow: string
@@ -72,11 +76,11 @@ const MAYA_GALLERY_IMAGES: readonly GuideImage[] = [
     height: 2304,
   },
   {
-    src: "/images/selfie-guide/feed-post-3.png",
-    alt: "Sandra's brand photo with consistent editorial style and cohesive aesthetic",
+    src: "/images/selfie-guide/black-blazer-seated-coffee.jpg",
+    alt: "Sandra seated with a coffee in hand in a dark editorial interior, maintaining a polished consistent visual style",
     caption: "Consistent editorial vibe",
-    width: 1856,
-    height: 2304,
+    width: 1134,
+    height: 2016,
   },
   {
     src: "/images/selfie-guide/feed-post-5.png",
@@ -109,27 +113,27 @@ const CHAPTER_MOOD_LIBRARY: readonly ChapterMoodSpec[] = [
     copy: "A clean settings setup and a camera you can trust will make every chapter after this feel easier.",
     items: [
       {
-        src: "/images/selfie-guide/iphone-settings-mockup.png",
-        alt: "Close-up of an iPhone camera settings screen reflected through a ring light",
-        caption: "A 60-second setup removes half the friction.",
-        width: 1856,
-        height: 2304,
-        layout: "feature",
-      },
-      {
-        src: "/images/selfie-guide/mirror-selfie-closeup.jpg",
-        alt: "Close-up mirror selfie of Sandra holding her phone near her face",
-        caption: "Clean framing starts before you press the shutter.",
-        width: 908,
-        height: 1613,
+        src: "/images/selfie-guide/mirror-selfie-side-profile.jpg",
+        alt: "Side-profile mirror selfie of Sandra in a cream ribbed top showing clean phone framing",
+        caption: "A simple setup is easier to repeat than a complicated one.",
+        width: 454,
+        height: 807,
         layout: "portrait",
       },
       {
-        src: "/images/selfie-guide/studio-black-portrait.png",
-        alt: "Sandra in a black long-sleeve top seated in soft studio light",
-        caption: "Even simple setups look elevated when the technical basics are right.",
-        width: 645,
-        height: 1398,
+        src: "/images/selfie-guide/face-covered-selfie.jpg",
+        alt: "Front-facing mirror selfie with the phone centered in front of Sandra's face to show framing and hand placement",
+        caption: "Clean framing starts before you press the shutter.",
+        width: 521,
+        height: 926,
+        layout: "portrait",
+      },
+      {
+        src: "/images/selfie-guide/cream-shirt-closeup.jpg",
+        alt: "Close portrait of Sandra in a cream ribbed top showing soft indoor light and natural skin texture",
+        caption: "Even the simplest setup looks stronger when the basics are correct.",
+        width: 454,
+        height: 807,
         layout: "portrait",
       },
     ],
@@ -141,11 +145,11 @@ const CHAPTER_MOOD_LIBRARY: readonly ChapterMoodSpec[] = [
     copy: "The guide reads better when the lesson is visual. Use these references to see exactly how light changes the whole mood of a selfie.",
     items: [
       {
-        src: "/images/selfie-guide/window-editorial-portrait.jpg",
-        alt: "Sandra standing beside a bright window in a black blazer, showing clean natural light on her face",
-        caption: "Window light gives shape without harshness.",
-        width: 762,
-        height: 1143,
+        src: "/images/selfie-guide/notebook-window-closeup.jpg",
+        alt: "Sandra reading beside a window in soft natural light with clean skin tones and gentle shadow",
+        caption: "Soft daylight gives shape without harshness.",
+        width: 692,
+        height: 1229,
         layout: "portrait",
       },
       {
@@ -213,19 +217,19 @@ const CHAPTER_MOOD_LIBRARY: readonly ChapterMoodSpec[] = [
     copy: "You do not need a different face for the camera. You need repetition, calm, and a setup that already works for you.",
     items: [
       {
-        src: "/images/selfie-guide/window-editorial-portrait.jpg",
-        alt: "Sandra standing beside a bright window in a black blazer, showing clean natural light on her face",
+        src: "/images/selfie-guide/black-blazer-coffee-standing.jpg",
+        alt: "Sandra standing in a black blazer with coffee in hand, looking composed in a modern interior",
         caption: "Calm expression reads stronger than a forced smile.",
-        width: 762,
-        height: 1143,
+        width: 980,
+        height: 1741,
         layout: "portrait",
       },
       {
-        src: "/images/selfie-guide/studio-black-portrait.png",
-        alt: "Sandra in a black long-sleeve top seated in soft studio light",
+        src: "/images/selfie-guide/mirror-sunglasses-blazer.jpg",
+        alt: "Sandra in a black blazer and sunglasses standing in front of a round mirror",
         caption: "Presence is usually a quieter choice than people think.",
-        width: 645,
-        height: 1398,
+        width: 1152,
+        height: 2048,
         layout: "portrait",
       },
     ],
@@ -237,20 +241,20 @@ const CHAPTER_MOOD_LIBRARY: readonly ChapterMoodSpec[] = [
     copy: "When the visuals are coherent, one selfie becomes a post, a reel, stories, and the seed of a real brand system.",
     items: [
       {
-        src: "/images/selfie-guide/feed-post-1.png",
-        alt: "Editorial lifestyle photo of Sandra lounging on a dark sofa in a black dress",
+        src: "/images/selfie-guide/scandinavian-light-dreamy-collage.png",
+        alt: "Moodboard collage from the original guide showing Scandinavian light and dreamy textures for a cohesive visual direction",
         caption: "A single visual direction travels well across formats.",
-        width: 1856,
-        height: 2304,
-        layout: "portrait",
+        width: 432,
+        height: 432,
+        layout: "square",
       },
       {
-        src: "/images/selfie-guide/feed-post-5.png",
-        alt: "Editorial-style portrait of Sandra in neutral tailoring outside a city building",
+        src: "/images/selfie-guide/nordic-deep-urban-collage.png",
+        alt: "Moodboard collage from the original guide showing Nordic deep urban styling references and textures",
         caption: "The content feels more premium when the aesthetic is consistent.",
-        width: 1856,
-        height: 2304,
-        layout: "portrait",
+        width: 432,
+        height: 432,
+        layout: "square",
       },
     ],
   },
@@ -261,43 +265,90 @@ const CHAPTER_MOOD_LIBRARY: readonly ChapterMoodSpec[] = [
     copy: "The challenge should look achievable, not abstract. Use the cards below as your tracker.",
     items: [
       {
-        src: "/images/selfie-guide/window-lighting-setup.png",
-        alt: "Sandra taking a selfie in soft window light with her phone raised at a flattering angle",
-        caption: "Day 1 starts with a window and a phone.",
-        width: 1856,
-        height: 2304,
-        layout: "feature",
+        src: "/images/selfie-guide/mirror-selfie-white-cardigan.jpg",
+        alt: "Mirror selfie of Sandra in a white cardigan showing a simple, repeatable phone practice shot",
+        caption: "Day 1 starts with a phone, a window, and one repeatable frame.",
+        width: 454,
+        height: 807,
+        layout: "portrait",
       },
       {
-        src: "/images/selfie-guide/cloudy-day-portrait.jpg",
-        alt: "Sandra standing outdoors on an overcast day in front of a mountain landscape",
+        src: "/images/selfie-guide/alpine-rock-portrait.jpg",
+        alt: "Sandra seated on a rock overlooking the fjord in natural outdoor light",
         caption: "Simple location. Strong result.",
-        width: 576,
-        height: 1024,
+        width: 681,
+        height: 1210,
         layout: "portrait",
       },
     ],
   },
 ] as const
 
-const VISUAL_LIBRARY: Record<string, VisualSpec> = {
-  "iphone-settings-mockup.png": {
-    label: "SETTINGS CHEAT SHEET",
-    caption: "Your iPhone camera settings in 60 seconds. These three changes make a bigger difference than any filter.",
-    src: "/images/selfie-guide/iphone-settings-mockup.png",
-    alt: "Close-up of an iPhone camera settings screen reflected through a ring light",
+const SETTINGS_WALKTHROUGH_IMAGES: readonly GuideImage[] = [
+  {
+    src: "/images/selfie-guide/settings-original-page-1.png",
+    alt: "Original settings walkthrough page 1 showing the iPhone Camera menu and recommended entry point",
+    caption: "Step 1",
+    width: 1241,
+    height: 1755,
   },
+  {
+    src: "/images/selfie-guide/settings-original-page-2.png",
+    alt: "Original settings walkthrough page 2 showing grid and framing controls from the guide",
+    caption: "Step 2",
+    width: 1241,
+    height: 1755,
+  },
+  {
+    src: "/images/selfie-guide/settings-original-page-3.png",
+    alt: "Original settings walkthrough page 3 showing the final camera toggles from the guide",
+    caption: "Step 3",
+    width: 1241,
+    height: 1755,
+  },
+] as const
+
+const LIGHTING_COMPARISON_IMAGES: readonly ComparisonImage[] = [
+  {
+    label: "Window / natural light",
+    src: "/images/selfie-guide/window-natural-guide-portrait.jpg",
+    alt: "Sandra standing by a bright window in natural light with soft contrast across her face",
+    caption: "Soft, even, and the easiest place to start.",
+    width: 762,
+    height: 1143,
+  },
+  {
+    label: "Golden hour",
+    src: "/images/selfie-guide/golden-hour-guide-portrait.jpg",
+    alt: "Sandra standing beside a pool during golden hour with warm light on her face",
+    caption: "Warm and glowy, especially for lifestyle content.",
+    width: 1361,
+    height: 2420,
+  },
+  {
+    label: "Ring light",
+    src: "/images/selfie-guide/ring-light-guide-portrait.png",
+    alt: "Sandra seated in front of a ring light with the full face visible and centered in frame",
+    caption: "Clean and controlled when the light stays in front.",
+    width: 645,
+    height: 1398,
+  },
+  {
+    label: "Cloudy day",
+    src: "/images/selfie-guide/cloudy-mountain-guide-portrait.jpg",
+    alt: "Sandra outdoors in front of a mountain landscape under overcast light",
+    caption: "Soft outdoor light that works like a giant natural softbox.",
+    width: 576,
+    height: 1024,
+  },
+] as const
+
+const VISUAL_LIBRARY: Record<string, VisualSpec> = {
   "window-lighting-setup.png": {
     label: "THE WINDOW TECHNIQUE",
     caption: "Face the light, stand back a little, and let the phone do less work.",
     src: "/images/selfie-guide/window-lighting-setup.png",
     alt: "Sandra taking a selfie in soft window light with her phone raised at a flattering angle",
-  },
-  "lighting-comparison-grid.png": {
-    label: "LIGHTING COMPARISON",
-    caption: "Same face, same phone, four totally different outcomes. Light changes everything.",
-    src: "/images/selfie-guide/lighting-comparison-grid.png",
-    alt: "Four-panel lighting comparison showing window light, golden hour, ring light, and cloudy day examples",
   },
   "angle-comparison-grid.png": {
     label: "ANGLE GUIDE",
@@ -464,6 +515,78 @@ function FeedPreview() {
   )
 }
 
+function ProseVisualFrame({
+  label,
+  caption,
+  children,
+}: {
+  label: string
+  caption: string
+  children: ReactNode
+}) {
+  return (
+    <figure className="prose-img-block">
+      <p className="prose-img-label">{label}</p>
+      {children}
+      <figcaption className="prose-img-caption">{caption}</figcaption>
+    </figure>
+  )
+}
+
+function SettingsWalkthroughVisual() {
+  return (
+    <ProseVisualFrame
+      label="SETTINGS CHEAT SHEET"
+      caption="Your iPhone camera settings in 60 seconds. These three screenshots are the exact original guide walkthrough."
+    >
+      <div className="settings-visual-grid">
+        {SETTINGS_WALKTHROUGH_IMAGES.map(image => (
+          <figure key={image.src} className="settings-visual-item">
+            <div className="settings-visual-wrap">
+              <Image
+                src={image.src}
+                alt={image.alt}
+                width={image.width}
+                height={image.height}
+                sizes="(max-width: 900px) 100vw, 33vw"
+                className="settings-visual-image"
+              />
+            </div>
+            <figcaption className="settings-visual-step">{image.caption}</figcaption>
+          </figure>
+        ))}
+      </div>
+    </ProseVisualFrame>
+  )
+}
+
+function LightingComparisonVisual() {
+  return (
+    <ProseVisualFrame
+      label="LIGHTING COMPARISON"
+      caption="Same face, same phone, four totally different outcomes. Light changes everything."
+    >
+      <div className="lighting-visual-grid">
+        {LIGHTING_COMPARISON_IMAGES.map(image => (
+          <figure key={image.src} className="lighting-visual-item">
+            <div className="lighting-visual-wrap">
+              <Image
+                src={image.src}
+                alt={image.alt}
+                width={image.width}
+                height={image.height}
+                sizes="(max-width: 900px) 100vw, 50vw"
+                className="lighting-visual-image"
+              />
+            </div>
+            <figcaption className="lighting-visual-label">{image.label}</figcaption>
+          </figure>
+        ))}
+      </div>
+    </ProseVisualFrame>
+  )
+}
+
 function SevenDayChallenge() {
   const [completedDays, setCompletedDays] = useState<Set<number>>(() => new Set())
 
@@ -508,6 +631,7 @@ interface SelfieGuideExperienceProps {
   guideMarkdown: string
   checkoutSessionId?: string
   brandStrategyBumpSelected?: boolean
+  presetDownloadUrl?: string
 }
 
 export default function SelfieGuideExperience({
@@ -515,6 +639,7 @@ export default function SelfieGuideExperience({
   guideMarkdown,
   checkoutSessionId,
   brandStrategyBumpSelected = false,
+  presetDownloadUrl,
 }: SelfieGuideExperienceProps) {
   const chapters = useMemo(() => {
     const parsed = parseSelfieGuideChapters(guideMarkdown)
@@ -639,6 +764,8 @@ export default function SelfieGuideExperience({
 
         if (!imageMarker) return <p className="prose-p">{children}</p>
 
+        if (imageMarker === "iphone-settings-mockup.png") return <SettingsWalkthroughVisual />
+        if (imageMarker === "lighting-comparison-grid.png") return <LightingComparisonVisual />
         if (imageMarker === "feed-post-1.png") return <MayaGallery />
         if (imageMarker === "img-editorial-dark.png") return <FeedPreview />
 
@@ -869,6 +996,16 @@ export default function SelfieGuideExperience({
               Turn the visuals into a message people actually remember.
             </p>
             <div className="sg-funnel-ctas">
+              {presetDownloadUrl ? (
+                <a
+                  href={presetDownloadUrl}
+                  className="sg-cta-secondary"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Open preset pack
+                </a>
+              ) : null}
               {brandStrategySetupToken ? (
                 <Link href={`/brand-strategy/setup/${encodeURIComponent(brandStrategySetupToken)}`} className="sg-cta-primary">
                   Build My Brand Strategy
@@ -1490,6 +1627,49 @@ export default function SelfieGuideExperience({
           padding: 8px 24px 0;
         }
 
+        .settings-visual-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 12px;
+          padding: 0 24px;
+        }
+
+        .settings-visual-item,
+        .lighting-visual-item {
+          margin: 0;
+        }
+
+        .settings-visual-wrap,
+        .lighting-visual-wrap {
+          overflow: hidden;
+          border: 1px solid var(--c-border);
+          background: rgba(28, 27, 25, 0.92);
+        }
+
+        .settings-visual-image,
+        .lighting-visual-image {
+          display: block;
+          width: 100%;
+          height: auto;
+        }
+
+        .settings-visual-step,
+        .lighting-visual-label {
+          padding-top: 8px;
+          font-size: 10px;
+          font-weight: 500;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          color: var(--c-cream);
+        }
+
+        .lighting-visual-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 12px;
+          padding: 0 24px;
+        }
+
         /* ── Maya gallery ────────────── */
 
         .maya-gallery {
@@ -1704,14 +1884,15 @@ export default function SelfieGuideExperience({
 
         .sg-funnel-ctas {
           display: flex;
+          flex-wrap: wrap;
+          gap: 12px;
           justify-content: center;
         }
 
-        .sg-cta-primary {
+        .sg-cta-primary,
+        .sg-cta-secondary {
           display: inline-block;
           padding: 13px 22px;
-          background: var(--c-cream);
-          color: var(--c-black);
           text-decoration: none;
           font-size: 9px;
           font-weight: 500;
@@ -1719,10 +1900,26 @@ export default function SelfieGuideExperience({
           text-transform: uppercase;
           border-radius: 999px;
           transition: opacity 0.18s ease;
+          text-align: center;
+        }
+
+        .sg-cta-primary {
+          background: var(--c-cream);
+          color: var(--c-black);
           border: none;
         }
 
         .sg-cta-primary:hover { opacity: 0.88; }
+
+        .sg-cta-secondary {
+          background: transparent;
+          color: var(--c-cream);
+          border: 1px solid rgba(240, 237, 232, 0.24);
+        }
+
+        .sg-cta-secondary:hover {
+          opacity: 0.88;
+        }
 
         .sg-cta-primary.is-disabled {
           opacity: 0.72;
@@ -1791,6 +1988,12 @@ export default function SelfieGuideExperience({
           .prose-img-block {
             margin: 28px 0;
           }
+
+          .settings-visual-grid,
+          .lighting-visual-grid {
+            grid-template-columns: 1fr;
+            padding: 0;
+          }
         }
 
         @media (max-width: 480px) {
@@ -1811,6 +2014,10 @@ export default function SelfieGuideExperience({
           }
 
           .sg-cta-primary {
+            text-align: center;
+          }
+
+          .sg-cta-secondary {
             text-align: center;
           }
         }
