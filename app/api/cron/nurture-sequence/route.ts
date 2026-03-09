@@ -8,15 +8,15 @@ import {
   FREEBIE_STRATEGY_EMAIL_TOUCHES,
   SELFIE_GUIDE_EMAIL_TOUCHES,
 } from "@/lib/email/selfie-guide-email-sequence"
-import { generateNurtureFreebieN1Email } from "@/lib/email/templates/nurture-freebie-n1"
-import { generateNurtureFreebieN2Email } from "@/lib/email/templates/nurture-freebie-n2"
-import { generateNurtureFreebieN3Email } from "@/lib/email/templates/nurture-freebie-n3"
-import { generateNurtureFreebieN4Email } from "@/lib/email/templates/nurture-freebie-n4"
-import { generateNurtureFreebieN5Email } from "@/lib/email/templates/nurture-freebie-n5"
+import { generateNurtureStrategyN1Email } from "@/lib/email/templates/nurture-strategy-n1"
+import { generateNurtureStrategyN2Email } from "@/lib/email/templates/nurture-strategy-n2"
+import { generateNurtureStrategyN3Email } from "@/lib/email/templates/nurture-strategy-n3"
+import { generateNurtureStrategyN4Email } from "@/lib/email/templates/nurture-strategy-n4"
+import { generateNurtureStrategyN5Email } from "@/lib/email/templates/nurture-strategy-n5"
 import { generateSelfieGuideActivationDay0Email } from "@/lib/email/templates/selfie-guide-activation-day0"
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://sselfie.ai"
-const STRATEGY_FALLBACK_URL = `${SITE_URL}/freebie/brand-strategy`
+const STRATEGY_FALLBACK_URL = `${SITE_URL}/brand-strategy`
 const FROM_EMAIL = "Sandra from SSELFIE <hello@sselfie.ai>"
 const REPLY_TO_EMAIL = "hello@sselfie.ai"
 
@@ -125,7 +125,7 @@ async function sendStrategyTouchEmail(touchKey: StrategyTouchKey, lead: Strategy
 
   switch (touchKey) {
     case "n1": {
-      const email = generateNurtureFreebieN1Email({
+      const email = generateNurtureStrategyN1Email({
         firstName,
         recipientEmail,
         strategyUrl: strategyUrlForLead(lead),
@@ -139,11 +139,15 @@ async function sendStrategyTouchEmail(touchKey: StrategyTouchKey, lead: Strategy
         html: email.html,
         text: email.text,
         emailType,
-        tags: ["nurture-freebie", touchKey],
+        tags: ["nurture-strategy", touchKey],
       })
     }
     case "n2": {
-      const email = generateNurtureFreebieN2Email({ firstName, recipientEmail })
+      const email = generateNurtureStrategyN2Email({
+        firstName,
+        recipientEmail,
+        strategyUrl: strategyUrlForLead(lead),
+      })
       return sendEmail({
         to: recipientEmail,
         from: FROM_EMAIL,
@@ -152,11 +156,11 @@ async function sendStrategyTouchEmail(touchKey: StrategyTouchKey, lead: Strategy
         html: email.html,
         text: email.text,
         emailType,
-        tags: ["nurture-freebie", touchKey],
+        tags: ["nurture-strategy", touchKey],
       })
     }
     case "n3": {
-      const email = generateNurtureFreebieN3Email({ firstName, recipientEmail })
+      const email = generateNurtureStrategyN3Email({ firstName, recipientEmail })
       return sendEmail({
         to: recipientEmail,
         from: FROM_EMAIL,
@@ -165,11 +169,11 @@ async function sendStrategyTouchEmail(touchKey: StrategyTouchKey, lead: Strategy
         html: email.html,
         text: email.text,
         emailType,
-        tags: ["nurture-freebie", touchKey],
+        tags: ["nurture-strategy", touchKey],
       })
     }
     case "n4": {
-      const email = generateNurtureFreebieN4Email({ firstName, recipientEmail })
+      const email = generateNurtureStrategyN4Email({ firstName, recipientEmail })
       return sendEmail({
         to: recipientEmail,
         from: FROM_EMAIL,
@@ -178,11 +182,11 @@ async function sendStrategyTouchEmail(touchKey: StrategyTouchKey, lead: Strategy
         html: email.html,
         text: email.text,
         emailType,
-        tags: ["nurture-freebie", touchKey],
+        tags: ["nurture-strategy", touchKey],
       })
     }
     case "n5": {
-      const email = generateNurtureFreebieN5Email({ firstName, recipientEmail })
+      const email = generateNurtureStrategyN5Email({ firstName, recipientEmail })
       return sendEmail({
         to: recipientEmail,
         from: FROM_EMAIL,
@@ -191,7 +195,7 @@ async function sendStrategyTouchEmail(touchKey: StrategyTouchKey, lead: Strategy
         html: email.html,
         text: email.text,
         emailType,
-        tags: ["nurture-freebie", touchKey],
+        tags: ["nurture-strategy", touchKey],
       })
     }
   }
