@@ -53,7 +53,7 @@ export default function PaidBlueprintLanding() {
           href="/feed-planner"
           className="pointer-events-auto text-[10px] uppercase tracking-[0.2em] text-white opacity-90 hover:opacity-100 transition-opacity py-2"
         >
-          Free Blueprint
+          Feed Planner
         </Link>
       </nav>
 
@@ -163,7 +163,7 @@ export default function PaidBlueprintLanding() {
             <div className="space-y-3">
               <h3 className="text-xl font-light text-white mb-2">Your Brand Aesthetic</h3>
               <p className="text-sm sm:text-base font-light text-stone-300 leading-relaxed">
-                Photos match the mood you chose in your free blueprint: luxury, minimal, or beige. All you.
+                Photos match the direction you want: luxury, minimal, or beige. Still all you.
               </p>
             </div>
           </div>
@@ -216,27 +216,27 @@ export default function PaidBlueprintLanding() {
               <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-4 text-xl font-light">
                 1
               </div>
-              <h3 className="text-lg font-light text-white mb-2">Answer Questions</h3>
+              <h3 className="text-lg font-light text-white mb-2">Upload Your Selfies</h3>
               <p className="text-sm font-light text-stone-400 leading-relaxed">
-                Complete your free brand blueprint if you haven\u0027t already. It takes just 3 minutes.
+                Start with 1-3 clear selfies. That is enough to create your photo set.
               </p>
             </div>
             <div className="text-center">
               <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-4 text-xl font-light">
                 2
               </div>
-              <h3 className="text-lg font-light text-white mb-2">Get Your Blueprint</h3>
+              <h3 className="text-lg font-light text-white mb-2">We Build Your Set</h3>
               <p className="text-sm font-light text-stone-400 leading-relaxed">
-                Receive your personalized strategy, content calendar, and caption templates.
+                We create 30 custom brand photos in the look you want.
               </p>
             </div>
             <div className="text-center">
               <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-4 text-xl font-light">
                 3
               </div>
-              <h3 className="text-lg font-light text-white mb-2">Get Your Photos</h3>
+              <h3 className="text-lg font-light text-white mb-2">Download And Post</h3>
               <p className="text-sm font-light text-stone-400 leading-relaxed">
-                Upload 1-3 selfies and we\u0027ll create 30 custom photos that look like you. It\u0027s that simple.
+                Your photos are ready to use right away. No subscription needed.
               </p>
             </div>
           </div>
@@ -332,9 +332,9 @@ export default function PaidBlueprintLanding() {
               </p>
             </div>
             <div>
-              <h3 className="text-lg font-light text-white mb-2">Do I need the free blueprint first?</h3>
+              <h3 className="text-lg font-light text-white mb-2">Can I buy this on its own?</h3>
               <p className="text-sm sm:text-base font-light text-stone-400 leading-relaxed">
-                Yes. The free blueprint helps us understand your brand and style, so your 30 photos actually look like you and match your aesthetic.
+                Yes. You can buy it as a standalone offer and get your 30 photos without going through another funnel first.
               </p>
             </div>
             <div>

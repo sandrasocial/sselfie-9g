@@ -2,8 +2,13 @@
 
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
-import Image from "next/image"
-import { trackCTAClick, trackPricingView, trackCheckoutStart, trackLandingView } from "@/lib/analytics"
+import {
+  trackCTAClick,
+  trackPricingView,
+  trackCheckoutStart,
+  trackLandingView,
+  trackSelfieGuideEntryClick,
+} from "@/lib/analytics"
 import { startEmbeddedCheckout } from "@/lib/start-embedded-checkout"
 import { handleCheckoutFailure } from "@/lib/checkout-failure"
 import TestimonialCarousel from "@/components/testimonials/testimonial-carousel"
@@ -13,54 +18,17 @@ export default function LandingPageNew() {
   const [activeScene, setActiveScene] = useState(0)
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null)
   const [showStickyFooter, setShowStickyFooter] = useState(false)
-  const [isPaidBlueprintEnabled, setIsPaidBlueprintEnabled] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const scenesRef = useRef<(HTMLDivElement | null)[]>([])
-  const oneTimeProduct = getProductById("one_time_session")
+  const selfieGuideProduct = getProductById("selfie_guide")
   const membershipProduct = getProductById("sselfie_studio_membership")
-  const oneTimePrice = oneTimeProduct ? formatPriceFromCents(oneTimeProduct.priceInCents) : "$49"
+  const selfieGuidePrice = selfieGuideProduct ? formatPriceFromCents(selfieGuideProduct.priceInCents) : "$17"
   const membershipPrice = membershipProduct ? formatPriceFromCents(membershipProduct.priceInCents) : "$97"
 
   const totalScenes = 9
 
   useEffect(() => {
     trackLandingView()
-  }, [])
-
-  useEffect(() => {
-    let isMounted = true
-    const abortController = new AbortController()
-
-    const loadPaidBlueprintFlag = async () => {
-      try {
-        const response = await fetch("/api/feature-flags/paid-blueprint", {
-          method: "GET",
-          cache: "no-store",
-          signal: abortController.signal,
-        })
-
-        if (!response.ok) {
-          throw new Error(`Failed to load paid blueprint flag (${response.status})`)
-        }
-
-        const data = await response.json()
-        if (isMounted) {
-          setIsPaidBlueprintEnabled(Boolean(data?.enabled))
-        }
-      } catch (error) {
-        if (!abortController.signal.aborted) {
-          console.warn("[Landing] Failed to load paid blueprint feature flag:", error)
-          setIsPaidBlueprintEnabled(false)
-        }
-      }
-    }
-
-    loadPaidBlueprintFlag()
-
-    return () => {
-      isMounted = false
-      abortController.abort()
-    }
   }, [])
 
   // Track pricing section view
@@ -132,8 +100,7 @@ export default function LandingPageNew() {
       setCheckoutLoading(tierId)
       
       const productNames: Record<string, string> = {
-        one_time_session: "Starter Photoshoot",
-        sselfie_studio_membership: "Creator Studio",
+        sselfie_studio_membership: "Studio Membership",
       }
       const productName = productNames[tierId] || tierId
       trackCheckoutStart(tierId, undefined)
@@ -149,7 +116,7 @@ export default function LandingPageNew() {
         error,
         source: "landing_new_pricing",
         productId: tierId,
-        fallbackPath: tierId === "one_time_session" ? "/checkout/one-time" : "/checkout/membership",
+        fallbackPath: "/checkout/membership",
       })
       setCheckoutLoading(null)
     }
@@ -255,24 +222,22 @@ export default function LandingPageNew() {
               SSELFIE Studio helps you make beautiful, on-brand photos and plan your social feed, even if you don&apos;t have time, confidence, or a big team.
             </p>
             <div className="fade-up" style={{ transitionDelay: "0.2s", marginTop: "10px", display: "flex", flexDirection: "column", gap: "12px", alignItems: "center" }}>
-              <a
-                href="#membership"
-                onClick={(e) => {
-                  e.preventDefault()
-                  trackCTAClick("hero", "Join SSELFIE Studio", "#membership")
-                  scrollToPricing()
+              <Link
+                href="/selfie-guide"
+                onClick={() => {
+                  trackSelfieGuideEntryClick("hero")
                 }}
                 className="btn shadow-xl"
               >
-                Join SSELFIE Studio →
-              </a>
+                Start with the Selfie Guide →
+              </Link>
               <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "center" }}>
                 <a
-                  href="/auth/sign-up"
+                  href="#membership"
                   onClick={(e) => {
                     e.preventDefault()
-                    trackCTAClick("hero", "Try it for free", "/auth/sign-up")
-                    window.location.href = "/auth/sign-up"
+                    trackCTAClick("hero", "See Studio", "#membership")
+                    scrollToPricing()
                   }}
                   className="btn shadow-xl"
                   style={{
@@ -281,18 +246,8 @@ export default function LandingPageNew() {
                     color: "#c8c4bb"
                   }}
                 >
-                  Try it for free
+                  See Studio
                 </a>
-                {isPaidBlueprintEnabled && (
-                  <Link
-                    href="/paid-blueprint"
-                    onClick={() => trackCTAClick("hero", "Get 30 Photos", "/paid-blueprint")}
-                    className="btn shadow-xl"
-                    style={{ background: "transparent", border: "1px solid rgba(195, 190, 182, 0.5)", color: "#c8c4bb" }}
-                  >
-                    Get 30 Photos
-                  </Link>
-                )}
               </div>
             </div>
             <p className="description fade-up mx-auto max-w-sm mt-4" style={{ textShadow: "0 1px 5px rgba(0,0,0,0.3)", fontSize: "14px", marginTop: "16px" }}>
@@ -442,15 +397,15 @@ export default function LandingPageNew() {
               </div>
               <div className="fade-up mt-6">
                 <a
-                  href="#membership"
+                  href="/selfie-guide"
                   onClick={(e) => {
                     e.preventDefault()
-                    trackCTAClick("how-it-works", "Start your first studio session", "#membership")
-                    scrollToPricing()
+                    trackSelfieGuideEntryClick("how-it-works")
+                    window.location.href = "/selfie-guide"
                   }}
                   className="btn"
                 >
-                  Start your first studio session →
+                  Start with the Selfie Guide →
                 </a>
               </div>
             </div>
@@ -701,7 +656,7 @@ export default function LandingPageNew() {
                 Join SSELFIE Studio
               </h2>
               <p className="description text-center mb-8 fade-up">
-                Everything you need to stay visible, in one membership.
+                Start with the guide. Step into Studio when you want the full visibility system.
               </p>
 
               <div
@@ -715,38 +670,41 @@ export default function LandingPageNew() {
                 }}
                 className="md:flex-row md:gap-8"
               >
-                {/* Starter Photoshoot Card */}
+                {/* Selfie Guide Card */}
                 <div className="pricing-card fade-up relative overflow-hidden group flex-1">
                   <div className="flex justify-between items-center mb-4">
                     <div>
-                      <h3 className="text-lg font-serif text-white">Starter Photoshoot</h3>
-                      <p className="text-stone-400 text-[10px] uppercase tracking-wider">Try It First</p>
+                      <h3 className="text-lg font-serif text-white">Selfie Guide</h3>
+                      <p className="text-stone-400 text-[10px] uppercase tracking-wider">Start Here</p>
                     </div>
                     <div className="text-right">
-                      <span className="text-xl font-serif">{oneTimePrice}</span>
+                      <span className="text-xl font-serif">{selfieGuidePrice}</span>
                       <span className="text-[9px] uppercase text-stone-500 block">one-time</span>
                     </div>
                   </div>
                   <div className="space-y-2 text-xs text-stone-300 font-light mb-6">
-                    <p>• 50 professional brand photos</p>
-                    <p>• Your AI model trained on your photos</p>
+                    <p>• The exact selfie framework Sandra uses</p>
+                    <p>• 7-day challenge to get you moving fast</p>
+                    <p>• Instant access right after payment</p>
                   </div>
-                  <button
-                    onClick={() => handleStartCheckout("one_time_session")}
-                    disabled={checkoutLoading === "one_time_session"}
-                    className="btn w-full text-[10px] disabled:opacity-50 disabled:cursor-not-allowed"
+                  <Link
+                    href="/selfie-guide"
+                    onClick={() => {
+                      trackSelfieGuideEntryClick("pricing")
+                    }}
+                    className="btn w-full text-[10px] text-center"
                   >
-                    {checkoutLoading === "one_time_session" ? "Loading..." : "Get Started"}
-                  </button>
+                    Start Here
+                  </Link>
                 </div>
 
-                {/* Creator Studio Card */}
+                {/* Studio Card */}
                 <div className="pricing-card fade-up relative overflow-hidden group flex-1">
                   <div className="absolute top-0 left-0 w-1 h-full bg-white" />
                   <div className="flex justify-between items-center mb-4">
                     <div>
-                      <h3 className="text-lg font-serif text-white">Creator Studio</h3>
-                      <p className="text-stone-400 text-[10px] uppercase tracking-wider">Most Popular</p>
+                      <h3 className="text-lg font-serif text-white">Studio Membership</h3>
+                      <p className="text-stone-400 text-[10px] uppercase tracking-wider">Next Step</p>
                     </div>
                     <div className="text-right">
                       <span className="text-xl font-serif">{membershipPrice}</span>
@@ -755,30 +713,18 @@ export default function LandingPageNew() {
                   </div>
                   <div className="space-y-2 text-xs text-stone-300 font-light mb-6">
                     <p>• Fresh brand photos every month</p>
-                    <p>• Feed planner</p>
-                    <p>• Learning hub with short tutorials</p>
-                    <p>• Monthly ideas and strategy drops</p>
+                    <p>• Feed planner + Gallery + Maya</p>
+                    <p>• Monthly credits included</p>
+                    <p>• Ongoing content system and support</p>
                   </div>
                   <button
                     onClick={() => handleStartCheckout("sselfie_studio_membership")}
                     disabled={checkoutLoading === "sselfie_studio_membership"}
                     className="btn w-full text-[10px] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {checkoutLoading === "sselfie_studio_membership" ? "Loading..." : "See Inside →"}
+                    {checkoutLoading === "sselfie_studio_membership" ? "Loading..." : "Join Studio →"}
                   </button>
                 </div>
-              </div>
-
-              {/* Credit Packs Link */}
-              <div className="pricing-card fade-up border-stone-800 bg-transparent text-center py-4 mb-4 mt-4">
-                <p className="text-stone-400 text-[10px] mb-2">Need extra credits?</p>
-                <Link
-                  href="/checkout/credits"
-                  onClick={() => trackCTAClick("pricing", "See Credit Packs", "/checkout/credits")}
-                  className="text-[10px] uppercase tracking-widest text-white border-b border-white/30 pb-1 hover:border-white transition"
-                >
-                  See Credit Packs
-                </Link>
               </div>
 
               <p className="text-center text-[9px] text-stone-400 mt-2 fade-up pb-8 md:pb-0 font-light">
@@ -873,15 +819,15 @@ export default function LandingPageNew() {
                 You don&apos;t need perfect photos. You just need to show up.
               </h2>
               <a
-                href="#membership"
+                href="/selfie-guide"
                 onClick={(e) => {
                   e.preventDefault()
-                  trackCTAClick("closing", "Join the Studio Today", "#membership")
-                  scrollToPricing()
+                  trackSelfieGuideEntryClick("closing")
+                  window.location.href = "/selfie-guide"
                 }}
                 className="btn"
               >
-                Join the Studio Today →
+                Start with the Selfie Guide →
               </a>
             </div>
             <div className="grid gap-8 mb-12 pb-12" style={{ borderBottom: "1px solid rgba(175,170,162,0.12)" }}>

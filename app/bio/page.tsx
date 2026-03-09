@@ -1,11 +1,10 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { Play, Heart, GraduationCap, Instagram } from 'lucide-react'
 import { useScroll, useTransform, motion } from 'framer-motion'
-import { trackEvent, trackCTAClick, trackCheckoutStart } from '@/lib/analytics'
+import { trackEvent, trackCTAClick, trackCheckoutStart, trackSelfieGuideEntryClick } from '@/lib/analytics'
 import { startEmbeddedCheckout } from '@/lib/start-embedded-checkout'
 import { handleCheckoutFailure } from "@/lib/checkout-failure"
 
@@ -40,8 +39,7 @@ export default function BioPage() {
       setCheckoutLoading(productId)
       
       const productNames: Record<string, string> = {
-        one_time_session: "Starter Photoshoot",
-        sselfie_studio_membership: "Creator Studio",
+        sselfie_studio_membership: "Studio Membership",
       }
       const productName = productNames[productId] || productId
       trackCheckoutStart(productId, undefined)
@@ -57,7 +55,7 @@ export default function BioPage() {
         error,
         source: "bio_checkout",
         productId,
-        fallbackPath: productId === "one_time_session" ? "/checkout/one-time" : "/checkout/membership",
+        fallbackPath: "/checkout/membership",
       })
       setCheckoutLoading(null)
     }
@@ -164,22 +162,20 @@ export default function BioPage() {
 
           {/* Primary CTAs with Thumbnails */}
           <div className="space-y-6 mb-16 max-w-lg mx-auto">
-            {/* Button 1: Photoshoot */}
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault()
-                if (checkoutLoading) return
-                handleStartCheckout("one_time_session")
+            {/* Button 1: Selfie Guide */}
+            <Link
+              href="/selfie-guide"
+              onClick={() => {
+                trackSelfieGuideEntryClick('bio')
               }}
               className={`group relative block overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm hover:bg-white/10 transition-all ${
-                checkoutLoading === "one_time_session" ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
+                checkoutLoading ? "opacity-100" : "cursor-pointer"
               }`}
             >
               <div className="relative h-32 overflow-hidden">
                 <img
-                  src="https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/maya-pro-generations/mg0q5j29yhrmr0cvh4gax57cnr-p22TsIJ1grFHwnQrt2tXZ5foPm1vvv.png"
-                  alt="Starter Photoshoot"
+                  src="https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/maya-pro-generations/30vxpdwy61rmw0cvdxj8apjzgc-xG6gcWZ8hR4QLToseBbqTGM0dPr9NM.png"
+                  alt="Selfie Guide"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                   style={{ objectPosition: "center top" }}
                   loading="lazy"
@@ -189,16 +185,16 @@ export default function BioPage() {
               <div className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-lg font-serif text-white mb-1">Starter Photoshoot</h3>
-                    <p className="text-xs text-white/60 uppercase tracking-wider">Try It First</p>
+                    <h3 className="text-lg font-serif text-white mb-1">Selfie Guide</h3>
+                    <p className="text-xs text-white/60 uppercase tracking-wider">Start Here</p>
                   </div>
                   <div className="text-right">
-                    <span className="text-xl font-serif text-white">$49</span>
+                    <span className="text-xl font-serif text-white">$17</span>
                     <span className="text-[9px] uppercase text-white/50 block">one-time</span>
                   </div>
                 </div>
               </div>
-            </a>
+            </Link>
 
             {/* Button 2: Studio - MOST POPULAR */}
             <a
@@ -229,8 +225,8 @@ export default function BioPage() {
               <div className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-lg font-serif text-white mb-1">Creator Studio</h3>
-                    <p className="text-xs text-white/60 uppercase tracking-wider">Most Popular</p>
+                    <h3 className="text-lg font-serif text-white mb-1">Studio Membership</h3>
+                    <p className="text-xs text-white/60 uppercase tracking-wider">Next Step</p>
                   </div>
                   <div className="text-right">
                     <span className="text-xl font-serif text-white">$97</span>
@@ -240,28 +236,6 @@ export default function BioPage() {
               </div>
             </a>
 
-            {/* Button 3: Blueprint */}
-            <Link
-              href="/blueprint"
-              onClick={() => handleLinkClick('bio_cta_blueprint', '/blueprint')}
-              className="group relative block overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm hover:bg-white/10 transition-all"
-            >
-              <div className="relative h-32 overflow-hidden">
-                <img
-                  src="https://kcnmiu7u3eszdkja.public.blob.vercel-storage.com/tmpbmq4nfg7.png"
-                  alt="Free Brand Blueprint"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                  style={{ objectPosition: "center center" }}
-                  loading="lazy"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-              </div>
-              <div className="p-6">
-                <div className="flex items-center justify-center">
-                  <h3 className="text-lg font-serif text-white">Get Free Brand Blueprint</h3>
-                </div>
-              </div>
-            </Link>
           </div>
 
           {/* Secondary Links */}

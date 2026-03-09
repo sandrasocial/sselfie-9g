@@ -27,6 +27,10 @@ describe("analytics event contract", () => {
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("brand_strategy_pack_checkout_start")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("brand_strategy_pack_checkout_success")
     expect(ALLOWED_ANALYTICS_EVENTS).toContain("brand_strategy_pack_studio_click")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("one_time_session_studio_click")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("selfie_guide_entry_click")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("selfie_guide_access_resolved")
+    expect(ALLOWED_ANALYTICS_EVENTS).toContain("selfie_guide_access_failed")
   })
 
   it("rejects unknown event names", () => {
@@ -42,5 +46,7 @@ describe("analytics event contract", () => {
     expect(isAllowedAnalyticsEventName("maya_tool_blocked_low_credits")).toBe(true)
     expect(isAllowedAnalyticsEventName("maya_multi_step_executor_run")).toBe(true)
     expect(isAllowedAnalyticsEventName("brand_strategy_pack_checkout_success")).toBe(true)
+    expect(isAllowedAnalyticsEventName("selfie_guide_entry_click")).toBe(true)
+    expect(isAllowedAnalyticsEventName("selfie_guide_access_resolved")).toBe(true)
   })
 })

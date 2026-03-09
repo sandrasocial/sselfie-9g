@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import Image from "next/image"
@@ -12,11 +12,82 @@ import { sanitizeRedirect } from "@/lib/security/url-validator"
 interface SuccessContentProps {
   initialUserInfo: any
   initialEmail?: string
+  sessionId?: string
   purchaseType?: string
   returnTo?: string
 }
 
-export function SuccessContent({ initialUserInfo, initialEmail, purchaseType, returnTo }: SuccessContentProps) {
+type SuccessActionConfig = {
+  href: string
+  label: string
+  helper: string
+  eventName?: "brand_strategy_pack_studio_click" | "one_time_session_studio_click"
+  secondaryHref?: string
+  secondaryLabel?: string
+}
+
+function trackClientEvent(event: string, properties?: Record<string, unknown>) {
+  import("@/lib/analytics/client")
+    .then(({ trackAnalyticsEvent }) => trackAnalyticsEvent({ event, properties }))
+    .catch(() => {})
+}
+
+function getProductLabel(productType: string | undefined) {
+  switch (productType) {
+    case "sselfie_studio_membership":
+      return "Studio Membership"
+    case "one_time_session":
+      return "Starter Photoshoot"
+    case "credit_topup":
+      return "Credit Top-Up"
+    case "brand_strategy_pack":
+      return "Brand Strategy Pack"
+    case "selfie_guide":
+      return "Selfie Guide"
+    case "selfie_guide_bundle":
+      return "Selfie Guide + Brand Strategy Bundle"
+    default:
+      return "Purchase"
+  }
+}
+
+function getSuccessActionConfig(productType: string | undefined, resolvedReturnTo: string): SuccessActionConfig {
+  if (productType === "brand_strategy_pack") {
+    return {
+      href: "/checkout/membership",
+      label: "Join Studio",
+      helper:
+        "Your strategy is ready. If you want the full system that helps you keep showing up, Studio is the next step.",
+      eventName: "brand_strategy_pack_studio_click",
+      secondaryHref: resolvedReturnTo,
+      secondaryLabel: "View your strategy",
+    }
+  }
+
+  if (productType === "one_time_session") {
+    return {
+      href: "/checkout/membership",
+      label: "Join Studio",
+      helper:
+        "Your photoshoot is confirmed. If you want monthly photos, planning, and credits, Studio is the next step.",
+      eventName: "one_time_session_studio_click",
+    }
+  }
+
+  return {
+    href: "/studio",
+    label: "Open Studio",
+    helper: "Your purchase is complete. Open Studio and keep going.",
+  }
+}
+
+export function SuccessContent({
+  initialUserInfo,
+  initialEmail,
+  sessionId,
+  purchaseType,
+  returnTo,
+}: SuccessContentProps) {
   const router = useRouter()
   const [userInfo, setUserInfo] = useState(initialUserInfo)
   const isBrandEnginePurchase = String(purchaseType || "").startsWith("brand_engine_")
@@ -34,7 +105,7 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType, re
     // Decision 2: Paid blueprint now uses same flow as other products
     // User info polling is only needed for unauthenticated users (account creation)
 
-    if (initialEmail && !isBrandEnginePurchase) {
+    if (initialEmail && !isBrandEnginePurchase && !isSelfieGuidePurchase) {
       let attempts = 0
       const MAX_ATTEMPTS = 40 // Increased to 80 seconds total
 
@@ -78,7 +149,7 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType, re
         clearInterval(pollInterval)
       }
     }
-  }, [initialEmail, isBrandEnginePurchase, purchaseType])
+  }, [initialEmail, isBrandEnginePurchase, isSelfieGuidePurchase, purchaseType])
 
   // FIX 3: Poll access status before redirecting (wait for webhook to complete)
   const [isPollingAccess, setIsPollingAccess] = useState(false)
@@ -87,10 +158,17 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType, re
   const [pollingMessage, setPollingMessage] = useState("Processing your payment. This can take up to 2 minutes.")
   const [timeRemaining, setTimeRemaining] = useState(120)
   const [showTimeoutActions, setShowTimeoutActions] = useState(false)
-  const [isPollingSelfieGuideAccess, setIsPollingSelfieGuideAccess] = useState(false)
+  const [isPollingSelfieGuideAccess, setIsPollingSelfieGuideAccess] = useState(Boolean(isSelfieGuidePurchase && sessionId))
   const [selfieGuidePollAttempts, setSelfieGuidePollAttempts] = useState(0)
   const [selfieGuideStatus, setSelfieGuideStatus] = useState("Preparing your guide. This can take up to 2 minutes.")
   const [showSelfieGuideTimeout, setShowSelfieGuideTimeout] = useState(false)
+  const [selfieGuideRecoveryMessage, setSelfieGuideRecoveryMessage] = useState(
+    "Your payment went through. Your guide access is still syncing.",
+  )
+  const selfieGuideResolutionTrackedRef = useRef(false)
+  const selfieGuideFailureTrackedRef = useRef(false)
+  const resolvedProductType = (userInfo?.productType || purchaseType || "") as string
+  const successAction = getSuccessActionConfig(resolvedProductType, resolvedReturnTo)
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -108,20 +186,10 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType, re
         return
       }
 
-      if (purchaseType === "brand_strategy_pack") {
-        if (user) {
-          setTimeout(() => {
-            router.push(resolvedReturnTo)
-          }, 800)
-        } else {
-          router.push(`/auth/login?returnTo=${encodeURIComponent(resolvedReturnTo)}`)
-        }
-        return
-      }
-
-      if (user && isSelfieGuidePurchase) {
+      if (isSelfieGuidePurchase && (sessionId || user)) {
         setIsPollingSelfieGuideAccess(true)
         setSelfieGuidePollAttempts(0)
+        setShowSelfieGuideTimeout(false)
         return
       }
 
@@ -132,24 +200,54 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType, re
       }
     }
     checkAuth()
-  }, [isSelfieGuidePurchase, purchaseType, resolvedReturnTo, router])
+  }, [isSelfieGuidePurchase, purchaseType, router, sessionId])
 
   useEffect(() => {
-    if (!isPollingSelfieGuideAccess || !isAuthenticated || !isSelfieGuidePurchase) {
+    if (!isPollingSelfieGuideAccess || !isSelfieGuidePurchase || (!sessionId && !isAuthenticated)) {
       return
     }
 
     const pollGuideAccess = async () => {
       try {
-        const response = await fetch("/api/selfie-guide/access-token", { cache: "no-store" })
+        const response = await fetch(
+          sessionId
+            ? `/api/selfie-guide/access-token?session_id=${encodeURIComponent(sessionId)}`
+            : "/api/selfie-guide/access-token",
+          { cache: "no-store" },
+        )
         const data = await response.json()
 
         if (response.ok && data.accessToken) {
           setIsPollingSelfieGuideAccess(false)
           setSelfieGuideStatus("Guide ready. Opening now...")
+
+          if (!selfieGuideResolutionTrackedRef.current) {
+            selfieGuideResolutionTrackedRef.current = true
+            trackClientEvent("selfie_guide_access_resolved", {
+              purchase_type: purchaseType || "selfie_guide",
+              session_id: sessionId || null,
+            })
+          }
+
           setTimeout(() => {
             router.push(`/selfie-guide/access/${encodeURIComponent(data.accessToken)}`)
           }, 400)
+          return
+        }
+
+        if (response.status >= 400 && response.status < 500 && response.status !== 409) {
+          setIsPollingSelfieGuideAccess(false)
+          setShowSelfieGuideTimeout(true)
+          setSelfieGuideRecoveryMessage(data.error || "We couldn't verify your guide access yet.")
+
+          if (!selfieGuideFailureTrackedRef.current) {
+            selfieGuideFailureTrackedRef.current = true
+            trackClientEvent("selfie_guide_access_failed", {
+              purchase_type: purchaseType || "selfie_guide",
+              session_id: sessionId || null,
+              reason: data.error || "client_error",
+            })
+          }
           return
         }
 
@@ -167,6 +265,16 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType, re
           if (next >= MAX_POLL_ATTEMPTS) {
             setIsPollingSelfieGuideAccess(false)
             setShowSelfieGuideTimeout(true)
+            setSelfieGuideRecoveryMessage("Your payment is confirmed. Your guide access is taking longer than expected.")
+
+            if (!selfieGuideFailureTrackedRef.current) {
+              selfieGuideFailureTrackedRef.current = true
+              trackClientEvent("selfie_guide_access_failed", {
+                purchase_type: purchaseType || "selfie_guide",
+                session_id: sessionId || null,
+                reason: "timeout",
+              })
+            }
           }
 
           return next
@@ -178,6 +286,16 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType, re
           if (next >= MAX_POLL_ATTEMPTS) {
             setIsPollingSelfieGuideAccess(false)
             setShowSelfieGuideTimeout(true)
+            setSelfieGuideRecoveryMessage("Your payment is confirmed. Your guide access is taking longer than expected.")
+
+            if (!selfieGuideFailureTrackedRef.current) {
+              selfieGuideFailureTrackedRef.current = true
+              trackClientEvent("selfie_guide_access_failed", {
+                purchase_type: purchaseType || "selfie_guide",
+                session_id: sessionId || null,
+                reason: "network_error",
+              })
+            }
           }
           return next
         })
@@ -188,7 +306,7 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType, re
     pollGuideAccess()
 
     return () => clearInterval(interval)
-  }, [isAuthenticated, isPollingSelfieGuideAccess, isSelfieGuidePurchase, router])
+  }, [isAuthenticated, isPollingSelfieGuideAccess, isSelfieGuidePurchase, purchaseType, router, sessionId])
 
   // Poll access status for paid blueprint purchases
   useEffect(() => {
@@ -294,27 +412,29 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType, re
       <div className="min-h-screen bg-[#0d0c0b] flex flex-col items-center justify-center space-y-6 p-6">
         <div className="bg-[rgba(175,170,162,0.10)] backdrop-blur-[50px] border border-[rgba(195,190,182,0.25)] rounded-2xl p-8 max-w-md w-full text-center space-y-4">
           <h2 className="font-['Cormorant_Garamond'] font-light text-3xl text-[#f0ede8]">
-            Your guide is on the way
+            Your guide is still syncing
           </h2>
-          <p className="text-[#8a8780] max-w-md">
-            Payment went through. Your guide link is still syncing, and the email with your guide and preset pack is on
-            the way.
-          </p>
+          <p className="text-[#8a8780] max-w-md">{selfieGuideRecoveryMessage}</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-4">
           <Button
-            onClick={() => window.location.reload()}
+            onClick={() => {
+              setShowSelfieGuideTimeout(false)
+              setSelfieGuidePollAttempts(0)
+              setSelfieGuideStatus("Preparing your guide. This can take up to 2 minutes.")
+              setIsPollingSelfieGuideAccess(true)
+            }}
             variant="default"
             className="bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[#f0ede8] transition-colors"
           >
-            Refresh Status
+            Try Again
           </Button>
           <Button
-            onClick={() => router.push("/selfie-guide")}
+            asChild
             variant="outline"
             className="border-[rgba(195,190,182,0.25)] text-[#f0ede8] tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[rgba(175,170,162,0.10)] transition-colors"
           >
-            Back to Selfie Guide
+            <a href="mailto:support@sselfie.ai?subject=Selfie%20Guide%20access%20help">Email Support</a>
           </Button>
         </div>
       </div>
@@ -428,8 +548,8 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType, re
         return
       }
 
-      window.location.href = "/maya"
-    } catch (err) {
+      window.location.reload()
+    } catch {
       setError("Something went wrong. Please try again.")
       setIsSubmitting(false)
     }
@@ -530,9 +650,9 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType, re
       <div className="min-h-screen bg-[#0d0c0b] flex items-center justify-center p-4">
         <div className="text-center">
           <div className="font-['Cormorant_Garamond'] font-light text-xl sm:text-2xl tracking-[0.3em] sm:tracking-[0.2em] uppercase text-[#f0ede8] mb-4 animate-pulse">
-            PREPARING YOUR ACCOUNT
+            PREPARING YOUR PURCHASE
           </div>
-          <div className="text-xs sm:text-sm text-[#8a8780] font-light">Setting everything up for you...</div>
+          <div className="text-xs sm:text-sm text-[#8a8780] font-light">Finalizing everything for you...</div>
         </div>
       </div>
     )
@@ -586,7 +706,7 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType, re
               LET&apos;S GET YOU STARTED
             </h1>
             <p className="text-sm sm:text-base text-[#8a8780] font-light leading-relaxed max-w-xl mx-auto px-4">
-              Just a few quick details and you&apos;ll be creating your first AI photos. This takes less than a minute.
+              Add your password so you can open everything inside SSELFIE. This takes less than a minute.
             </p>
           </div>
 
@@ -724,7 +844,7 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType, re
                 LET&apos;S GET YOU STARTED
               </h1>
               <p className="text-sm sm:text-base text-[#8a8780] font-light leading-relaxed max-w-xl mx-auto px-4">
-                Just a few quick details and you&apos;ll be creating your first AI photos. This takes less than a minute.
+                Add your password so you can open everything inside SSELFIE. This takes less than a minute.
               </p>
             </div>
 
@@ -838,8 +958,8 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType, re
                 {isPollingAccess
                   ? `Setting up your paid access... (${pollAttempts + 1}/${MAX_POLL_ATTEMPTS})`
                   : isAuthenticated
-                  ? "Your purchase is complete. Time to create something amazing."
-                  : "Check your email for next steps."}
+                    ? successAction.helper
+                    : "Check your email for next steps."}
               </p>
             </div>
 
@@ -851,19 +971,7 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType, re
                 <div className="flex justify-between items-center pb-4 border-b border-[rgba(195,190,182,0.20)]">
                   <span className="text-xs sm:text-sm text-[#8a8780] font-light tracking-[0.3em] uppercase">Product</span>
                   <span className="text-sm sm:text-base text-[#f0ede8] font-light">
-                    {userInfo.productType === "sselfie_studio_membership"
-                      ? "Studio Membership"
-                      : userInfo.productType === "one_time_session"
-                        ? "One-Time Session"
-                        : userInfo.productType === "credit_topup"
-                          ? "Credit Top-Up"
-                          : userInfo.productType === "brand_strategy_pack"
-                            ? "Brand Strategy Pack"
-                            : userInfo.productType === "selfie_guide"
-                              ? "Selfie Guide"
-                              : userInfo.productType === "selfie_guide_bundle"
-                                ? "Selfie Guide + Brand Strategy Bundle"
-                                : "Purchase"}
+                    {getProductLabel(userInfo.productType || purchaseType)}
                   </span>
                 </div>
                 {userInfo.credits && Number(userInfo.credits) > 0 && (
@@ -889,11 +997,28 @@ export function SuccessContent({ initialUserInfo, initialEmail, purchaseType, re
 
             <div className="text-center">
               <button
-                onClick={() => router.push("/maya")}
+                onClick={() => {
+                  if (successAction.eventName) {
+                    trackClientEvent(successAction.eventName, {
+                      source_product: resolvedProductType,
+                    })
+                  }
+                  router.push(successAction.href)
+                }}
                 className="bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-8 sm:px-12 py-3 sm:py-4 rounded-full hover:bg-[#f0ede8] transition-colors min-h-[44px]"
               >
-                Continue
+                {successAction.label}
               </button>
+              {successAction.secondaryHref && successAction.secondaryLabel ? (
+                <div className="mt-4">
+                  <button
+                    onClick={() => router.push(successAction.secondaryHref!)}
+                    className="text-[10px] sm:text-xs text-[#c8c4bb] font-light uppercase tracking-[0.2em] underline underline-offset-4"
+                  >
+                    {successAction.secondaryLabel}
+                  </button>
+                </div>
+              ) : null}
               <p className="text-[10px] sm:text-xs text-[#8a8780] font-light mt-4 sm:mt-6">
                 A confirmation email has been sent to {userInfo.email || initialEmail}
               </p>
