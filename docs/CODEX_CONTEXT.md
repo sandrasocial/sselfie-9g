@@ -21,10 +21,11 @@
 4. **Test-first mindset** – for bugfixes write a repro or failing test before patching. If automated tests don't exist, document the manual steps and regressions.
 5. **No broad refactors** without explicit ask; focus on localized changes that support diagnostics, automations, or reliability.
 
-## Current focus areas (updated 2026-03-02)
+## Current focus areas (updated 2026-03-09)
 
-- **Email system reboot**: `nurture-sequence` cron needs full rewrite for `freebie_brand_strategies` table (new freebie). New timing: Day 2/5/9/14/20. New templates: N1-N5. Task spec: `tasks/codex-EMAIL-SYSTEM-AUDIT-AND-REBOOT-2026-03-02.md`
-- **Freebie funnel**: New freebie live at `/freebie/brand-strategy`. DB table: `freebie_brand_strategies`. Upsell fix SHIPPED commit `39bf931` — `?checkout=studio_membership` now correctly redirects. Source tag: `source=freebie-strategy` in Resend.
+- **V-02 funnel hardening**: Paid Selfie Guide + Brand Strategy flow is the live acquisition ladder. `/freebie/*` routes redirect to paid pages, `brand_strategy_pack` uses post-payment setup tokens, and the Selfie Guide checkout now offers Brand Strategy as a Stripe optional item.
+- **Email system cleanup**: Live lifecycle paths are `onboarding-sequence`, `nurture-sequence`, and `win-back-sequence`. The old manual/scheduled campaign catalog, archived cron copies, and dead funnel templates were removed on 2026-03-09 to reduce agent confusion.
+- **Monitoring gap**: Existing repo support includes `app/api/cron/funnel-report-daily/route.ts`, `scripts/funnel-digest.mjs`, and `app/api/cron/cron-health-check/route.ts`. The dedicated daily funnel-health scheduler requested in V-02 is still pending.
 - **Agent V1** (Website Agent €27/mo): Spec at `docs/codex-tasks/AGENT-V1-EXECUTION-SPEC-2026-02-28.md`. Waiting Sandra go/no-go.
 - **Academy**: Monthly drops E2E blocked — no published rows in `academy_monthly_drops` table. Marked in STATUS.md commit `4b28007a`.
 - **Reconciliation pipelines**: `reconcile-generations`, `reconcile-subscriptions`, `reconcile-feed-posts` — keep running and logging cleanly.

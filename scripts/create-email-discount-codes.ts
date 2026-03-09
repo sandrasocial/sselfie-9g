@@ -184,7 +184,7 @@ async function createAllDiscountCodes() {
   console.log("   Codes are already configured in checkout sessions (allow_promotion_codes: true)")
 
   console.log("\n📧 EMAIL INTEGRATION:")
-  console.log("   - BLUEPRINT10: Use in win-back-offer.tsx template (Day 14)")
+  console.log("   - BLUEPRINT10: Reserved for a future manual win-back offer if needed")
   console.log("   - WELCOMEBACK15: Use in welcome-back Day 14 email")
 
   console.log("\n✅ All discount codes are ready to use!\n")

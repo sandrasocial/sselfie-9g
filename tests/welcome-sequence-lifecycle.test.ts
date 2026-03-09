@@ -5,7 +5,10 @@ import {
   generateWelcomeDay21,
   generateWelcomeDay28,
 } from "@/lib/email/templates/welcome-sequence"
-import { MARKETING_TEMPLATE_CATALOG } from "@/lib/email/marketing-template-catalog"
+import fs from "fs"
+import path from "path"
+
+const ROOT = process.cwd()
 
 describe("welcome lifecycle templates", () => {
   it("renders day 14, 21, and 28 templates with studio CTA", () => {
@@ -20,11 +23,11 @@ describe("welcome lifecycle templates", () => {
     }
   })
 
-  it("registers new welcome lifecycle templates in marketing catalog", () => {
-    const emailTypes = new Set(MARKETING_TEMPLATE_CATALOG.map((item) => item.emailType))
-    expect(emailTypes.has("welcome-day-14")).toBe(true)
-    expect(emailTypes.has("welcome-day-21")).toBe(true)
-    expect(emailTypes.has("welcome-day-28")).toBe(true)
+  it("keeps the welcome lifecycle templates available to the Stella bridge", () => {
+    const emailRender = fs.readFileSync(path.join(ROOT, "lib/stella/email-render.ts"), "utf8")
+
+    expect(emailRender).toContain('case "welcome-day-14"')
+    expect(emailRender).toContain('case "welcome-day-21"')
+    expect(emailRender).toContain('case "welcome-day-28"')
   })
 })
-

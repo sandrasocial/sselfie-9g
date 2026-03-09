@@ -8,7 +8,7 @@ const broadcastOnlyRoutes = [
   "app/api/cron/onboarding-sequence/route.ts",
 ]
 
-const archivedRoutes = [
+const removedLegacyRoutes = [
   "archived/email/cron/blueprint-discovery-funnel/route.ts",
   "archived/email/cron/cold-reeducation-sequence/route.ts",
   "archived/email/cron/milestone-bonuses/route.ts",
@@ -55,9 +55,9 @@ describe("Email routing separation", () => {
     }
   })
 
-  it("archives unscheduled cron routes outside the live app tree", () => {
-    for (const route of archivedRoutes) {
-      expect(fs.existsSync(path.join(ROOT, route))).toBe(true)
+  it("removes unscheduled legacy cron routes from the repo", () => {
+    for (const route of removedLegacyRoutes) {
+      expect(fs.existsSync(path.join(ROOT, route))).toBe(false)
     }
   })
 })

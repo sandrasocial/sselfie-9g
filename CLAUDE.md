@@ -64,14 +64,14 @@ openclaw agent --agent north --local --message "YOUR MESSAGE"
 | Step | Task | Status |
 |------|------|--------|
 | 0 | Git sync + CLAUDE.md update | ✅ Done |
-| 1 | Retire freebie routes (redirects + template rename) | 🔄 In progress |
-| 2 | Brand Strategy $19: landing + setup questionnaire + generate API + DB migration | Pending |
-| 3 | Critical email fixes (download language, firstName, Studio URL) | Pending |
-| 4 | Selfie Guide Day 0 activation email + cron block | Pending |
-| 5 | Brand Strategy paid delivery email | Pending |
-| 6 | Stripe order bump (Brand Strategy on Selfie Guide checkout) | Pending |
-| 7 | Fix nurture N2 missing CTA | Pending |
-| 8 | Delete 11 dead cron routes + ~22 dead templates | Pending |
+| 1 | Retire freebie routes (redirects + template rename) | ✅ Done |
+| 2 | Brand Strategy $19: landing + setup questionnaire + generate API + DB migration | ✅ Done |
+| 3 | Critical email fixes (download language, firstName, Studio URL) | ✅ Done |
+| 4 | Selfie Guide Day 0 activation email + cron block | ✅ Done |
+| 5 | Brand Strategy paid delivery email | ✅ Done |
+| 6 | Stripe order bump (Brand Strategy on Selfie Guide checkout) | ✅ Done |
+| 7 | Fix nurture N2 missing CTA | ✅ Done |
+| 8 | Delete dead funnel email tooling + archived cron/template debt | ✅ Done |
 | 9 | Daily funnel monitoring scheduled task | Pending |
 
 ### Website Agent V1 Sprint (On hold)
@@ -94,12 +94,13 @@ openclaw agent --agent north --local --message "YOUR MESSAGE"
 
 | Commit | Description | Date |
 |--------|-------------|------|
+| `e537db70` | feat(V-02): add strategy order bump fulfillment and email cleanup | 2026-03-09 |
+| `770d687b` | feat: Brand Strategy $19 paid flow + delivery email | 2026-03-09 |
+| `c9acc7fc` | feat(V-02 Step 1): retire freebie routes + rename nurture templates | 2026-03-09 |
+| `dbdedfd5` | docs(CLAUDE.md): V-02 sync — retire freebie language, add Brand Strategy $19, add Codex commits | 2026-03-09 |
 | `37d76465` | Merge: harden selfie guide funnel (access token, success polling, product routing) | 2026-03-09 |
 | `a3820f48` | fix: harden selfie guide to studio funnel | 2026-03-09 |
 | `d5982ecf` | Merge: funnel hardening checkout | 2026-03-09 |
-| `7109535b` | fix: harden public offer checkout funnel | 2026-03-09 |
-| `34e4a275` | feat(M-12): Selfie Guide interactive upgrade — v3 content + checklist + 7-Day Challenge | 2026-03-09 |
-| `39bf931` | fix: freebie upsell `?checkout=studio_membership` redirects to `/checkout/membership` | 2026-03-02 |
 
 ---
 
@@ -174,6 +175,7 @@ openclaw agent --agent north --local --message "YOUR MESSAGE"
 - Feb 28, 2026: First Studio membership email sent — Broadcast ID `8cacda39-7495-47a6-8505-c6985df7eaeb`
 - Feb 28, 2026: Recovery emails sent to 9 members with failed payments
 - Mar 02, 2026: SEQ-01 Nurture sequence approved (5 emails, Day 2/5/9/14/20 for Selfie Guide buyers) — templates renamed from `nurture-freebie-n*.ts` → `nurture-strategy-n*.ts` in V-02
+- Mar 09, 2026: Legacy manual/scheduled campaign stack removed from repo. Archived cron copies, old campaign catalog/executor, and dead funnel templates deleted so agents only see live email paths.
 - **Always send to Main Audience** (2,965) for full-list broadcasts — NOT smaller segments
 
 ---
