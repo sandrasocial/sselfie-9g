@@ -69,7 +69,7 @@ Turn Codex from a collection of loose reporting jobs into a small set of autonom
 | Automation ID | Engine name | Purpose | Works | Action or report | Status |
 | --- | --- | --- | --- | --- | --- |
 | `hourly-ops-triage` | Product Health Engine | Detect and repair runtime failures, cron failures, webhook/admin issues, and obvious env drift | Yes, validated 2026-03-10 | Action-first | ACTIVE |
-| `daily-funnel-health` | User Journey Engine | Validate public paid flows, route integrity, and delivery paths | Yes. Repo-owned headless smoke validated locally on 2026-03-10; targeted browser diagnosis remains available | Action-first | ACTIVE |
+| `daily-funnel-health` | User Journey Engine | Validate public paid flows, route integrity, delivery paths, and signup-to-first-output activation | Yes. Repo-owned headless smoke validated locally on 2026-03-10; activation repair loop added 2026-03-10 | Action-first | ACTIVE |
 | `nightly-maya-quality` | Maya Quality Engine | Detect Maya prompt drift, inline tool regressions, and character consistency issues | Yes. Initial audit shipped 2026-03-10 and immediately surfaced a prompt-authority bypass candidate | Action-first | ACTIVE |
 | `nightly-brand-consistency` | Brand Consistency Engine | Detect visual, typography, and copy drift across public paid surfaces and live templates | Yes. Initial audit shipped 2026-03-10 and surfaced live email/font drift | Action-first | ACTIVE |
 | `weekly-cohort-report` | Growth Intelligence Engine | Detect funnel trend changes, Maya activation issues, and growth opportunities | Yes, validated 2026-03-10 | Action-first | ACTIVE |
@@ -108,8 +108,8 @@ Turn Codex from a collection of loose reporting jobs into a small set of autonom
 
 - Automation: `daily-funnel-health`
 - Schedule: nightly at 01:30, every day
-- Inputs: `automation:journey-smoke`, `audit:journey`, `audit:integration-health`, `playwright`, `funnel-integrity-audit`, `sselfie-maya-os`
-- Outcome: keep the public paid ladder healthy from landing to checkout to delivery
+- Inputs: `automation:journey-smoke`, `audit:journey`, `audit:integration-health`, `product-qa-digest.mjs`, targeted onboarding vitest suites, `playwright`, `funnel-integrity-audit`, `sselfie-maya-os`
+- Outcome: keep the public paid ladder healthy from landing to checkout to delivery, then keep `signup -> Maya -> first output` from drifting or stalling
 
 ### 3. Growth Intelligence Engine
 

@@ -50,6 +50,22 @@ async function main() {
       SELECT COUNT(*)::int AS count
       FROM users
       WHERE created_at > NOW() - ${hours} * INTERVAL '1 hour'
+        AND LOWER(COALESCE(email, '')) NOT LIKE '%@playwright.test%'
+        AND LOWER(COALESCE(email, '')) NOT LIKE '%@test.local%'
+        AND LOWER(COALESCE(email, '')) NOT LIKE '%@sselfie.test%'
+        AND LOWER(COALESCE(email, '')) NOT LIKE '%@sselfie-studio.internal%'
+        AND LOWER(COALESCE(email, '')) NOT LIKE '%@example.com%'
+        AND LOWER(COALESCE(email, '')) NOT LIKE '%@yopmail.com%'
+        AND LOWER(COALESCE(email, '')) NOT LIKE '%@%.test'
+        AND LOWER(COALESCE(email, '')) NOT LIKE '%@%.local'
+        AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'test-%'
+        AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'test_%'
+        AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'playwright%'
+        AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'e2e%'
+        AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'debug%'
+        AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'smoke+%'
+        AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'qa-%'
+        AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'qa_%'
     `
     return rows[0]
   })
@@ -60,6 +76,22 @@ async function main() {
         SELECT id::text AS user_id, stack_auth_user_id::text AS stack_auth_user_id
         FROM users
         WHERE created_at > NOW() - ${hours} * INTERVAL '1 hour'
+          AND LOWER(COALESCE(email, '')) NOT LIKE '%@playwright.test%'
+          AND LOWER(COALESCE(email, '')) NOT LIKE '%@test.local%'
+          AND LOWER(COALESCE(email, '')) NOT LIKE '%@sselfie.test%'
+          AND LOWER(COALESCE(email, '')) NOT LIKE '%@sselfie-studio.internal%'
+          AND LOWER(COALESCE(email, '')) NOT LIKE '%@example.com%'
+          AND LOWER(COALESCE(email, '')) NOT LIKE '%@yopmail.com%'
+          AND LOWER(COALESCE(email, '')) NOT LIKE '%@%.test'
+          AND LOWER(COALESCE(email, '')) NOT LIKE '%@%.local'
+          AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'test-%'
+          AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'test_%'
+          AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'playwright%'
+          AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'e2e%'
+          AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'debug%'
+          AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'smoke+%'
+          AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'qa-%'
+          AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'qa_%'
       ),
       keys AS (
         SELECT b.user_id, k.key
@@ -156,6 +188,8 @@ async function main() {
         : "Unknown activation query error"
     lines.push(`- Error: ${errorMessage}`)
   }
+  lines.push(``)
+  lines.push(`- Synthetic smoke-test signups are excluded from activation health.`)
   lines.push(``)
 
   lines.push(`## Feature usage`)

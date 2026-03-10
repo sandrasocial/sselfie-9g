@@ -15,6 +15,7 @@ describe("growth intelligence synthetic-account filtering", () => {
   it("applies the synthetic-user filter to live growth scripts", () => {
     const funnelDigest = readFileSync(resolve(process.cwd(), "scripts/funnel-digest.mjs"), "utf8")
     const cohortReport = readFileSync(resolve(process.cwd(), "scripts/cohort-report-weekly.mjs"), "utf8")
+    const productQaDigest = readFileSync(resolve(process.cwd(), "scripts/product-qa-digest.mjs"), "utf8")
 
     expect(funnelDigest).toContain("LOWER(COALESCE(email, '')) NOT LIKE")
     expect(funnelDigest).toContain("%@example.com%")
@@ -22,5 +23,8 @@ describe("growth intelligence synthetic-account filtering", () => {
     expect(cohortReport).toContain("LOWER(COALESCE(email, '')) NOT LIKE")
     expect(cohortReport).toContain("%@example.com%")
     expect(cohortReport).toContain("%@sselfie.test%")
+    expect(productQaDigest).toContain("LOWER(COALESCE(email, '')) NOT LIKE")
+    expect(productQaDigest).toContain("%@example.com%")
+    expect(productQaDigest).toContain("%@sselfie.test%")
   })
 })
