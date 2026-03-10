@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { createNewChat } from "@/lib/data/maya"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { normalizeMayaChatType } from "@/lib/maya/chat-type"
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,7 +43,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json().catch(() => ({}))
-    const chatType = body.chatType || "maya"
+    const chatType = normalizeMayaChatType(body.chatType || "maya")
 
     console.log("[v0] Creating new chat:", {
       userId: dbUser.id,

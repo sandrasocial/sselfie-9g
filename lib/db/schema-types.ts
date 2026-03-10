@@ -74,7 +74,7 @@ export interface MayaChat {
   id: number  // SERIAL (INTEGER), NOT UUID
   user_id: string  // TEXT, NOT UUID
   title: string | null
-  chat_type?: string  // 'maya' | 'feed-planner' | 'pro'
+  chat_type?: string  // 'maya' | 'pro' | 'feed_planner' | legacy feed aliases
   created_at: string
   updated_at: string
 }
@@ -294,4 +294,3 @@ export function toSerialId(id: string | number): number {
 export function toTextId(id: string | number): string {
   return typeof id === 'string' ? id : String(id)
 }
-

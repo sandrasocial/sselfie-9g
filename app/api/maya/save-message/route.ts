@@ -8,6 +8,7 @@ import {
   loadChatById,
 } from "@/lib/data/maya"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { isFeedPlannerChatType } from "@/lib/maya/chat-type"
 
 const DUPLICATE_WINDOW_MS = 120_000
 
@@ -108,16 +109,16 @@ export async function POST(request: NextRequest) {
 
     // Validate feedCards only allowed in Feed tab chats
     if (feedCards && Array.isArray(feedCards) && feedCards.length > 0) {
-      if (chatType !== "feed-planner") {
+      if (!isFeedPlannerChatType(chatType)) {
         console.warn("[v0] ⚠️ Attempted to save feed cards to wrong chat type:", {
           chatId,
           chatType,
           feedCardsCount: feedCards.length,
-          message: "Feed cards only allowed in Feed tab chats (feed-planner)"
+          message: "Feed cards only allowed in Feed Planner chats"
         })
         return NextResponse.json({ 
           error: "Invalid chat type for feed cards",
-          details: `Feed cards can only be saved to Feed tab chats (feed-planner), but chat is type ${chatType}`
+          details: `Feed cards can only be saved to Feed Planner chats, but chat is type ${chatType}`
         }, { status: 400 })
       }
     }

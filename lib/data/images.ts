@@ -44,7 +44,10 @@ export interface GalleryImage {
 }
 
 /**
- * Fetch paginated images for a user from ai_images table
+ * Fetch paginated gallery images from the canonical ai_images store.
+ *
+ * `generated_images` remains a legacy staging table for older Classic flows and
+ * should not be the primary source for user-facing gallery reads.
  */
 export async function getUserImages(
   userId: string,
@@ -99,7 +102,8 @@ export async function getUserImages(
 }
 
 /**
- * Fetch all images for a user from both ai_images and generated_images tables
+ * Fetch all images for a user with ai_images as canonical and generated_images
+ * only as a legacy fallback for rows that have not been mirrored yet.
  */
 export async function getAllUserImages(userId: string): Promise<GalleryImage[]> {
   try {
@@ -132,6 +136,13 @@ export async function getAllUserImages(userId: string): Promise<GalleryImage[]> 
         created_at
       FROM generated_images
       WHERE user_id = ${userId}
+        AND COALESCE(selected_url, (string_to_array(image_urls, ','))[1]) IS NOT NULL
+        AND NOT EXISTS (
+          SELECT 1
+          FROM ai_images
+          WHERE ai_images.user_id = generated_images.user_id
+            AND ai_images.image_url = COALESCE(generated_images.selected_url, (string_to_array(generated_images.image_urls, ','))[1])
+        )
       ORDER BY created_at DESC
     `
 

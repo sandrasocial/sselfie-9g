@@ -37,5 +37,21 @@ describe("Maya OpenRouter model routing", () => {
         isStudioProMode: true,
       }),
     ).toBe("prompt_builder")
+
+    expect(
+      resolveMayaChatTask({
+        chatType: "feed_planner",
+        isPromptBuilder: false,
+        isStudioProMode: false,
+      }),
+    ).toBe("feed_planner")
+
+    expect(
+      resolveMayaChatTask({
+        chatType: "feed-planner",
+        isPromptBuilder: false,
+        isStudioProMode: false,
+      }),
+    ).toBe("feed_planner")
   })
 })

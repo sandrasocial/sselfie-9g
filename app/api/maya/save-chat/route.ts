@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { sql } from "@/lib/db/client"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
+import { normalizeMayaChatType } from "@/lib/maya/chat-type"
 
 
 export async function POST(req: Request) {
@@ -21,7 +22,7 @@ export async function POST(req: Request) {
 
     // CRITICAL FIX: Set chat_type when creating chat (default to "maya" for backward compatibility)
     // This ensures chats are properly typed and can be filtered correctly
-    const finalChatType = chatType || "maya"
+    const finalChatType = normalizeMayaChatType(chatType || "maya")
     
     const [chat] = await sql`
       INSERT INTO maya_chats (user_id, chat_type, created_at, updated_at)

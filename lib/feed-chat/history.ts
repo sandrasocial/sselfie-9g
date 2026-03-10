@@ -1,4 +1,5 @@
 import { sql } from "@/lib/db/client"
+import { getMayaChatTypeAliases, normalizeMayaChatType } from "@/lib/maya/chat-type"
 
 
 export interface FeedChatMessage {
@@ -24,18 +25,32 @@ export interface FeedChat {
  * Get or create a chat for the feed designer
  */
 export async function getOrCreateFeedChat(userId: string, feedLayoutId: number): Promise<FeedChat> {
+  const canonicalChatType = normalizeMayaChatType("feed_planner")
+  const feedChatAliases = getMayaChatTypeAliases(canonicalChatType)
+
   // Try to find existing chat for this feed
   const existingChats = await sql`
     SELECT * FROM maya_chats
     WHERE user_id = ${userId}
       AND feed_layout_id = ${feedLayoutId}
-      AND chat_type = 'feed_designer'
+      AND chat_type = ANY(${feedChatAliases as unknown as string[]})
     ORDER BY last_activity DESC
     LIMIT 1
   `
 
   if (existingChats.length > 0) {
-    return existingChats[0] as FeedChat
+    const existingChat = existingChats[0] as FeedChat
+    if (existingChat.chat_type !== canonicalChatType) {
+      await sql`
+        UPDATE maya_chats
+        SET chat_type = ${canonicalChatType}, updated_at = NOW()
+        WHERE id = ${existingChat.id}
+      `
+    }
+    return {
+      ...existingChat,
+      chat_type: canonicalChatType,
+    }
   }
 
   // Create new chat
@@ -51,8 +66,8 @@ export async function getOrCreateFeedChat(userId: string, feedLayoutId: number):
     ) VALUES (
       ${userId},
       ${feedLayoutId},
-      'feed_designer',
-      'Feed Designer Chat',
+      ${canonicalChatType},
+      'Feed Planner Chat',
       ${JSON.stringify({ agents_used: [], research_completed: false })},
       NOW(),
       NOW()
@@ -60,7 +75,10 @@ export async function getOrCreateFeedChat(userId: string, feedLayoutId: number):
     RETURNING *
   `
 
-  return newChat[0] as FeedChat
+  return {
+    ...(newChat[0] as FeedChat),
+    chat_type: canonicalChatType,
+  }
 }
 
 /**

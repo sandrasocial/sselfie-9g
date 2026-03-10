@@ -5,6 +5,7 @@ import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { sql } from "@/lib/db/client"
 import { parseMayaToolMarkers, stripMayaToolMarkers } from "@/lib/maya/tool-markers"
 import { extractMayaVideoCardMarkers } from "@/lib/maya/video-card-marker"
+import { isFeedPlannerChatType, normalizeMayaChatType } from "@/lib/maya/chat-type"
 
 
 /**
@@ -628,7 +629,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const requestedChatId = searchParams.get("chatId")
-    const chatType = searchParams.get("chatType") || "maya"
+    const chatType = normalizeMayaChatType(searchParams.get("chatType") || "maya")
 
     let chat
     if (requestedChatId) {
@@ -648,7 +649,7 @@ export async function GET(request: NextRequest) {
       }
       
       // Double-check: Verify chat_type matches (defensive programming)
-      if (chat.chat_type !== chatType) {
+      if (normalizeMayaChatType(chat.chat_type) !== chatType) {
         console.error("[v0] ❌ CRITICAL: Chat type mismatch after loadChatById:", {
           chatId: chat.id,
           requestedChatType: chatType,
@@ -706,7 +707,7 @@ export async function GET(request: NextRequest) {
     // - Photos Tab (chatType="maya"/"pro"): Only process concept cards
     // - This ensures proper separation and avoids unnecessary processing
     // ============================================================================
-    const isFeedTab = chatType === "feed-planner"
+    const isFeedTab = isFeedPlannerChatType(chatType)
     const isPhotosTab = chatType === "maya" || chatType === "pro"
     
     const formattedMessages = await Promise.all(messages.map(async (msg) => {

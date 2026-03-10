@@ -1,4 +1,5 @@
 import { createOpenAI } from "@ai-sdk/openai"
+import { isFeedPlannerChatType } from "@/lib/maya/chat-type"
 
 export type MayaRoutingTask =
   | "chat_default"
@@ -42,7 +43,7 @@ export function resolveMayaChatTask(input: {
   isStudioProMode: boolean
 }): MayaRoutingTask {
   if (input.isPromptBuilder || input.chatType === "prompt_builder") return "prompt_builder"
-  if (input.chatType === "feed-planner") return "feed_planner"
+  if (isFeedPlannerChatType(input.chatType)) return "feed_planner"
   if (input.chatType === "pro-photoshoot") return "pro_photoshoot"
   if (input.isStudioProMode) return "chat_pro"
   return "chat_default"

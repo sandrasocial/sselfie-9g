@@ -3,6 +3,7 @@ import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
 import { loadChatById } from "@/lib/data/maya"
 import { sql } from "@/lib/db/client"
+import { isFeedPlannerChatType } from "@/lib/maya/chat-type"
 
 
 /**
@@ -120,17 +121,17 @@ export async function POST(request: NextRequest) {
 
     // Validate feedCards only allowed in Feed tab chats
     if (feedCards && Array.isArray(feedCards) && feedCards.length > 0) {
-      if (chatType !== "feed-planner") {
+      if (!isFeedPlannerChatType(chatType)) {
         console.warn("[update-message] ⚠️ Attempted to update feed cards in wrong chat type:", {
           messageId: messageIdNum,
           chatId: currentMessage.chat_id,
           chatType,
           feedCardsCount: feedCards.length,
-          message: "Feed cards only allowed in Feed tab chats (feed-planner)"
+          message: "Feed cards only allowed in Feed Planner chats"
         })
         return NextResponse.json({ 
           error: "Invalid chat type for feed cards",
-          details: `Feed cards can only be updated in Feed tab chats (feed-planner), but chat is type ${chatType}`
+          details: `Feed cards can only be updated in Feed Planner chats, but chat is type ${chatType}`
         }, { status: 400 })
       }
     }

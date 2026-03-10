@@ -7,7 +7,7 @@
 ## 1. Overview
 
 - **Feature name:** Gallery
-- **One-line:** View, filter, search, and manage AI-generated images and videos; favorites, bulk actions (save, download, favorite, delete); profile image picker; feed filter for feed-planner images.
+- **One-line:** View, filter, search, and manage AI-generated images and videos; favorites, bulk actions (save, download, favorite, delete); profile image picker; feed filter for feed-planner images. `ai_images` is the canonical gallery store. `generated_images` is legacy Classic staging and only a fallback when a row has not been mirrored yet.
 - **Entry points:**
   - `/studio?tab=gallery`
   - In-app: bottom nav “Gallery” in `SselfieApp`
@@ -59,7 +59,7 @@
 
 - **Credits:** Gallery does not deduct credits; it displays and manages already-generated content. Generation (Maya, Feed) consumes credits.
 - **Entitlements / access:** All authenticated users see their own images only; API uses session/user id to scope queries.
-- **Data flow:** Images from `images` (or generation_trackers) table; favorites in DB or image metadata; feed filter uses feed-post image linkage.
+- **Data flow:** User-facing gallery reads should resolve from `ai_images` first. `generated_images` remains a legacy Classic-mode staging source and only acts as a fallback for older rows that have not been mirrored into `ai_images` yet. Favorites live on canonical gallery records; feed filter uses feed-post image linkage.
 
 ---
 

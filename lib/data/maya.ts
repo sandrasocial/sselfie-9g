@@ -1,5 +1,6 @@
 import { sql } from "@/lib/db/client"
 import { getRedisClient, CacheKeys, CacheTTL } from "@/lib/redis"
+import { getMayaChatTypeAliases, normalizeMayaChatType } from "@/lib/maya/chat-type"
 
 
 export interface MayaChat {
@@ -90,11 +91,14 @@ export async function loadChatById(chatId: number, userId: string, chatType?: st
 
   // CRITICAL: Validate chat_type matches requested chatType
   // This prevents Feed tab chats from loading in Photos tab and vice versa
-  if (chatType && loadedChat.chat_type !== chatType) {
+  const requestedChatType = chatType ? normalizeMayaChatType(chatType) : null
+  const actualChatType = normalizeMayaChatType(loadedChat.chat_type)
+
+  if (requestedChatType && actualChatType !== requestedChatType) {
     console.warn("[v0] ⚠️ Chat type mismatch:", {
       chatId,
-      requestedChatType: chatType,
-      actualChatType: loadedChat.chat_type,
+      requestedChatType,
+      actualChatType,
       message: "Chat exists but wrong type - returning null to prevent wrong tab loading"
     })
     return null // Chat exists but wrong type
@@ -107,31 +111,54 @@ export async function loadChatById(chatId: number, userId: string, chatType?: st
     WHERE id = ${chatId}
   `
 
-  return loadedChat
+  return {
+    ...loadedChat,
+    chat_type: actualChatType,
+  }
 }
 
 // Get or create active chat for user
 export async function getOrCreateActiveChat(userId: string, chatType = "maya"): Promise<MayaChat> {
+  const canonicalChatType = normalizeMayaChatType(chatType)
+  const chatTypeAliases = getMayaChatTypeAliases(canonicalChatType)
+
   // Try to get the most recent active chat of the specified type
   const existingChats = await sql`
     SELECT * FROM maya_chats
-    WHERE user_id = ${userId} AND chat_type = ${chatType}
+    WHERE user_id = ${userId} AND chat_type = ANY(${chatTypeAliases as unknown as string[]})
     ORDER BY last_activity DESC
     LIMIT 1
   `
 
   if (existingChats.length > 0) {
-    return existingChats[0] as MayaChat
+    const existingChat = existingChats[0] as MayaChat
+    const existingChatType = normalizeMayaChatType(existingChat.chat_type)
+
+    if (existingChat.chat_type !== existingChatType) {
+      await sql`
+        UPDATE maya_chats
+        SET chat_type = ${existingChatType}, updated_at = NOW()
+        WHERE id = ${existingChat.id}
+      `
+    }
+
+    return {
+      ...existingChat,
+      chat_type: existingChatType,
+    }
   }
 
   // Create new chat with the specified type
   const newChat = await sql`
     INSERT INTO maya_chats (user_id, chat_title, chat_category, chat_type, last_activity)
-    VALUES (${userId}, 'New Chat', 'general', ${chatType}, NOW())
+    VALUES (${userId}, 'New Chat', 'general', ${canonicalChatType}, NOW())
     RETURNING *
   `
 
-  return newChat[0] as MayaChat
+  return {
+    ...(newChat[0] as MayaChat),
+    chat_type: canonicalChatType,
+  }
 }
 
 export async function getChatMessages(chatId: number): Promise<MayaChatMessage[]> {
@@ -583,7 +610,10 @@ export async function linkPersonalMemoryToBrand(userId: string, brandId: number)
 
 // Get all user chats for history browsing
 export async function getUserChats(userId: string, chatType?: string, limit = 20): Promise<MayaChat[]> {
-  const chats = chatType
+  const normalizedChatType = chatType ? normalizeMayaChatType(chatType) : undefined
+  const chatTypeAliases = normalizedChatType ? getMayaChatTypeAliases(normalizedChatType) : undefined
+
+  const chats = normalizedChatType
     ? await sql`
         SELECT 
           mc.*,
@@ -597,7 +627,7 @@ export async function getUserChats(userId: string, chatType?: string, limit = 20
           ) as first_message
         FROM maya_chats mc
         LEFT JOIN maya_chat_messages mcm ON mcm.chat_id = mc.id
-        WHERE mc.user_id = ${userId} AND mc.chat_type = ${chatType}
+        WHERE mc.user_id = ${userId} AND mc.chat_type = ANY(${chatTypeAliases as unknown as string[]})
         GROUP BY mc.id
         ORDER BY mc.last_activity DESC
         LIMIT ${limit}
@@ -621,7 +651,10 @@ export async function getUserChats(userId: string, chatType?: string, limit = 20
         LIMIT ${limit}
       `
 
-  return chats as MayaChat[]
+  return (chats as MayaChat[]).map((chat) => ({
+    ...chat,
+    chat_type: normalizeMayaChatType(chat.chat_type),
+  }))
 }
 
 // Create a new chat (not just get or create)
@@ -630,12 +663,14 @@ export async function createNewChat(userId: string, chatType = "maya", title?: s
     throw new Error("User ID is required to create a chat")
   }
 
-  console.log("[v0] createNewChat called:", { userId, chatType, title })
+  const canonicalChatType = normalizeMayaChatType(chatType)
+
+  console.log("[v0] createNewChat called:", { userId, chatType: canonicalChatType, title })
 
   try {
     const newChat = await sql`
       INSERT INTO maya_chats (user_id, chat_title, chat_category, chat_type, last_activity)
-      VALUES (${userId}, ${title || "New Chat"}, 'general', ${chatType}, NOW())
+      VALUES (${userId}, ${title || "New Chat"}, 'general', ${canonicalChatType}, NOW())
       RETURNING *
     `
 
@@ -644,7 +679,10 @@ export async function createNewChat(userId: string, chatType = "maya", title?: s
     }
 
     console.log("[v0] Chat created in database:", { chatId: newChat[0].id, userId: newChat[0].user_id })
-    return newChat[0] as MayaChat
+    return {
+      ...(newChat[0] as MayaChat),
+      chat_type: canonicalChatType,
+    }
   } catch (error: any) {
     console.error("[v0] Database error in createNewChat:", {
       message: error.message,
@@ -652,7 +690,7 @@ export async function createNewChat(userId: string, chatType = "maya", title?: s
       constraint: error.constraint,
       detail: error.detail,
       userId,
-      chatType
+      chatType: canonicalChatType
     })
     throw error
   }

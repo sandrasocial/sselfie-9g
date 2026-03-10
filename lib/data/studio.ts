@@ -23,13 +23,39 @@ export async function getGenerationStats(userId: string): Promise<GenerationStat
   console.log("[v0] Fetching generation stats for user:", userId)
 
   const [stats] = await sql`
-    SELECT 
-      COUNT(*)::int as total_generated,
-      COUNT(*) FILTER (WHERE saved = true)::int as total_favorites,
-      COUNT(*) FILTER (WHERE created_at >= date_trunc('month', NOW() AT TIME ZONE 'UTC'))::int as generations_this_month,
-      COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '7 days')::int as recent_generations
-    FROM generated_images
-    WHERE user_id = ${userId}
+    WITH canonical_ai_images AS (
+      SELECT
+        created_at,
+        COALESCE(is_favorite, false) AS is_favorite
+      FROM ai_images
+      WHERE user_id = ${userId}
+        AND image_url IS NOT NULL
+    ),
+    legacy_generated_images AS (
+      SELECT
+        gi.created_at,
+        COALESCE(gi.saved, false) AS is_favorite
+      FROM generated_images gi
+      WHERE gi.user_id = ${userId}
+        AND COALESCE(gi.selected_url, (string_to_array(gi.image_urls, ','))[1]) IS NOT NULL
+        AND NOT EXISTS (
+          SELECT 1
+          FROM ai_images ai
+          WHERE ai.user_id = gi.user_id
+            AND ai.image_url = COALESCE(gi.selected_url, (string_to_array(gi.image_urls, ','))[1])
+        )
+    ),
+    combined_images AS (
+      SELECT * FROM canonical_ai_images
+      UNION ALL
+      SELECT * FROM legacy_generated_images
+    )
+    SELECT
+      COUNT(*)::int AS total_generated,
+      COUNT(*) FILTER (WHERE is_favorite = true)::int AS total_favorites,
+      COUNT(*) FILTER (WHERE created_at >= date_trunc('month', NOW() AT TIME ZONE 'UTC'))::int AS generations_this_month,
+      COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '7 days')::int AS recent_generations
+    FROM combined_images
   `
 
   console.log("[v0] Raw stats from database:", stats)
@@ -44,18 +70,46 @@ export async function getGenerationStats(userId: string): Promise<GenerationStat
 
 export async function getRecentGenerations(userId: string, limit = 10): Promise<RecentGeneration[]> {
   const generations = await sql`
-    SELECT 
-      id,
-      COALESCE(selected_url, (string_to_array(image_urls, ','))[1]) as image_url,
-      prompt,
-      description,
-      category,
-      subcategory,
-      created_at,
-      saved
-    FROM generated_images
-    WHERE user_id = ${userId}
-      AND (selected_url IS NOT NULL OR image_urls IS NOT NULL)
+    WITH canonical_ai_images AS (
+      SELECT
+        id,
+        image_url,
+        prompt,
+        generated_prompt AS description,
+        category,
+        NULL::text AS subcategory,
+        created_at,
+        COALESCE(is_favorite, false) AS saved
+      FROM ai_images
+      WHERE user_id = ${userId}
+        AND image_url IS NOT NULL
+    ),
+    legacy_generated_images AS (
+      SELECT
+        gi.id,
+        COALESCE(gi.selected_url, (string_to_array(gi.image_urls, ','))[1]) AS image_url,
+        gi.prompt,
+        gi.description,
+        gi.category,
+        gi.subcategory,
+        gi.created_at,
+        COALESCE(gi.saved, false) AS saved
+      FROM generated_images gi
+      WHERE gi.user_id = ${userId}
+        AND COALESCE(gi.selected_url, (string_to_array(gi.image_urls, ','))[1]) IS NOT NULL
+        AND NOT EXISTS (
+          SELECT 1
+          FROM ai_images ai
+          WHERE ai.user_id = gi.user_id
+            AND ai.image_url = COALESCE(gi.selected_url, (string_to_array(gi.image_urls, ','))[1])
+        )
+    )
+    SELECT *
+    FROM (
+      SELECT * FROM canonical_ai_images
+      UNION ALL
+      SELECT * FROM legacy_generated_images
+    ) combined_images
     ORDER BY created_at DESC
     LIMIT ${limit}
   `
