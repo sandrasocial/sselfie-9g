@@ -43,7 +43,8 @@ describe("maya offer brief marker parsing", () => {
     const instruction = buildOfferBriefInstruction(brief)
     const memorySummary = summarizeOfferBriefForMemory(brief)
 
-    expect(instruction).toContain("high-converting landing page draft")
+    expect(instruction).toContain("landing page draft. Offer: 1:1 Coaching.")
+    expect(instruction).not.toContain("high-converting")
     expect(instruction).toContain("Design direction: luxury editorial.")
     expect(instruction).toContain("1:1 Coaching")
     expect(memorySummary).toContain("Design style: luxury editorial")

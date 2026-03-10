@@ -10,7 +10,7 @@ import { composeMayaLandingCopy } from "@/lib/maya/page-generation/copy-composer
 import { isMayaPageRendererV2Enabled, STUDIO_CHECKOUT_URL } from "@/lib/maya/page-generation/constants"
 import { selectLandingImages } from "@/lib/maya/page-generation/image-selector"
 import { renderMayaLandingHtml } from "@/lib/maya/page-generation/render-landing"
-import { resolveMayaLandingSnapshot } from "@/lib/maya/page-generation/snapshot-resolver"
+import { resolveMayaLandingSnapshot, type MayaLandingSnapshotResolution } from "@/lib/maya/page-generation/snapshot-resolver"
 import {
   sanitizeHeadline,
   sanitizePageTitle,
@@ -181,6 +181,47 @@ function buildPreviewText(assetType: MayaGeneratedAssetType, instruction: string
     return sanitizePreview(`Drafted a workbook outline for: ${seed}. Includes intro, step-by-step framework, and action pages.`)
   }
   return sanitizePreview(`Drafted a landing page structure for: ${seed}. Includes headline, offer, proof, and CTA sections.`)
+}
+
+function buildPageFallbackMetadataFromSnapshot(input: {
+  instruction: string
+  snapshot: MayaLandingSnapshotResolution | null
+}): { title: string; previewText: string } | null {
+  const snapshot = input.snapshot
+  if (!snapshot) return null
+
+  const offer = sanitizeUserFacingText(snapshot.resolvedOffer || "", 72)
+  const audience = sanitizeUserFacingText(snapshot.resolvedAudience || "", 96)
+  const transformation = sanitizeHeadline(snapshot.resolvedTransformation || "")
+
+  const titleSeed =
+    transformation && transformation !== "Build your next offer with Maya"
+      ? transformation
+      : offer
+
+  if (!titleSeed) return null
+
+  const previewLines = [
+    offer ? `Drafted a landing page for ${offer}.` : "Drafted a landing page from your saved Maya offer context.",
+    audience ? `Written for ${audience}.` : "",
+    transformation && transformation !== "Build your next offer with Maya"
+      ? `Centers the promise: ${transformation}.`
+      : "Includes a clear promise, proof, and CTA.",
+  ].filter(Boolean)
+
+  return {
+    title: sanitizePageTitle("page", `Landing Page: ${titleSeed}`),
+    previewText: sanitizePreview(previewLines.join(" ")),
+  }
+}
+
+function buildLandingHeadline(title: string, instruction: string): string {
+  const titleSeed = sanitizeUserFacingText(title.replace(/^landing page:\s*/i, ""), 96)
+  if (titleSeed && !/^landing page$/i.test(titleSeed)) {
+    return toHeadline(titleSeed)
+  }
+
+  return toHeadline(extractPrimaryIntent(instruction))
 }
 
 async function loadUserImageUrls(userId: string): Promise<string[]> {
@@ -458,7 +499,7 @@ function buildLandingPageHtml(
   imageUrls: string[],
 ): string {
   const direction = inferDesignDirection(instruction)
-  const headline = escapeHtml(toHeadline(extractPrimaryIntent(instruction)))
+  const headline = escapeHtml(buildLandingHeadline(title, instruction))
   const safeTitle = escapeHtml(title)
   const safePreview = escapeHtml(previewText)
   const heroImage = imageUrls[0] || ""
@@ -2070,6 +2111,23 @@ export async function createMayaGeneratedAsset(input: {
       blueprint = v2Page.blueprint
     } catch (error) {
       console.error("[Maya Asset] V2 landing generation failed, falling back to legacy renderer:", error)
+    }
+  }
+
+  if (input.assetType === "page" && !previewHtml) {
+    try {
+      const fallbackSnapshot = await resolveMayaLandingSnapshot(normalizedUserId)
+      const fallbackMetadata = buildPageFallbackMetadataFromSnapshot({
+        instruction,
+        snapshot: fallbackSnapshot,
+      })
+
+      if (fallbackMetadata) {
+        title = fallbackMetadata.title
+        previewText = fallbackMetadata.previewText
+      }
+    } catch (error) {
+      console.error("[Maya Asset] Page fallback metadata resolution failed:", error)
     }
   }
 
