@@ -21,6 +21,28 @@ const ONBOARDING_KEYS = [
   "RESEND_SEGMENT_ONBOARDING_DAY_7",
 ] as const
 
+async function fetchResendSegments(): Promise<Array<{ id: string; name: string }>> {
+  const apiKey = process.env.RESEND_API_KEY?.trim()
+  if (!apiKey) {
+    return []
+  }
+
+  const res = await fetch("https://api.resend.com/segments", {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+    },
+  })
+
+  if (!res.ok) {
+    const text = await res.text()
+    throw new Error(`Resend API error (${res.status}): ${text}`)
+  }
+
+  const data = await res.json()
+  return Array.isArray(data?.data) ? data.data : []
+}
+
 async function checkVercelEnv(): Promise<void> {
   const token = process.env.VERCEL_TOKEN
   if (!token || token.trim() === "") {
@@ -68,23 +90,46 @@ async function checkVercelEnv(): Promise<void> {
   console.log("\nAll onboarding segment env vars are set in Vercel.")
 }
 
-function checkLocalEnv(): void {
+async function checkLocalEnv(): Promise<void> {
   console.log("Local / .env.local — onboarding segment env:\n")
   const missing: string[] = []
+  const configured: Array<{ key: string; value: string }> = []
   for (const name of ONBOARDING_KEYS) {
     const v = process.env[name]
     if (!v || String(v).trim() === "") {
       missing.push(name)
       console.log(`  ❌ ${name}: (not set)`)
     } else {
-      console.log(`  ✅ ${name}: ${String(v).slice(0, 8)}...`)
+      const value = String(v).trim()
+      configured.push({ key: name, value })
+      console.log(`  ✅ ${name}: ${value.slice(0, 8)}...`)
     }
   }
   if (missing.length > 0) {
     console.log("\nSet these in Vercel → Project → Settings → Environment Variables, and create matching segments in Resend.")
     process.exit(1)
   }
-  console.log("\nAll onboarding segment env vars are set locally.")
+
+  const segments = await fetchResendSegments()
+  if (segments.length > 0) {
+    const stale = configured.filter(({ value }) => !segments.some((segment) => segment.id === value))
+    if (stale.length > 0) {
+      console.log("")
+      for (const entry of stale) {
+        console.log(`  ❌ ${entry.key}: ID does not exist in Resend`)
+      }
+      console.log("\nLocal onboarding segment IDs are stale. Recreate segments and update env before the cron runs.")
+      process.exit(1)
+    }
+
+    console.log("")
+    for (const entry of configured) {
+      const segment = segments.find((candidate) => candidate.id === entry.value)
+      console.log(`  ↳ ${entry.key}: ${segment?.name || "verified"}`)
+    }
+  }
+
+  console.log("\nAll onboarding segment env vars are set locally and resolve in Resend.")
 }
 
 async function main() {
@@ -92,7 +137,7 @@ async function main() {
   if (useVercel) {
     await checkVercelEnv()
   } else {
-    checkLocalEnv()
+    await checkLocalEnv()
   }
 }
 

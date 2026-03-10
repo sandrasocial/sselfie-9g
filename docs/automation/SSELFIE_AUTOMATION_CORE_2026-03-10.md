@@ -40,7 +40,7 @@ Turn Codex from a collection of loose reporting jobs into a small set of autonom
 
 | Skill | Purpose | Works with current codebase | Action or report | Class | Used by |
 | --- | --- | --- | --- | --- | --- |
-| `playwright` | Browser automation for live flow validation | Partially. Browser launch was blocked by the current Chrome session on 2026-03-10, so engine prompt includes a fallback | Real action | CORE | User Journey Engine |
+| `playwright` | Browser automation for live flow validation and targeted UI debugging | Yes. The User Journey Engine now uses a repo-owned headless smoke script first and reserves the skill for targeted diagnosis | Real action | CORE | User Journey Engine |
 | `sentry` | Read-only production error inspection | Token-dependent, not exercised in this audit | Diagnostic | SUPPORTING | Product Health Engine fallback |
 | `vercel-deploy` | Preview or production deploy helper | Not used in automation core | Real action | SUPPORTING | Manual only |
 | `gh-fix-ci` | Investigate failing GitHub Actions checks | Not used in automation core | Real action after approval | SUPPORTING | Manual only |
@@ -69,7 +69,7 @@ Turn Codex from a collection of loose reporting jobs into a small set of autonom
 | Automation ID | Engine name | Purpose | Works | Action or report | Status |
 | --- | --- | --- | --- | --- | --- |
 | `hourly-ops-triage` | Product Health Engine | Detect and repair runtime failures, cron failures, webhook/admin issues, and obvious env drift | Yes, validated 2026-03-10 | Action-first | ACTIVE |
-| `daily-funnel-health` | User Journey Engine | Validate public paid flows, route integrity, and delivery paths | Yes, route scan validated 2026-03-10; browser automation has fallback | Action-first | ACTIVE |
+| `daily-funnel-health` | User Journey Engine | Validate public paid flows, route integrity, and delivery paths | Yes. Repo-owned headless smoke validated locally on 2026-03-10; targeted browser diagnosis remains available | Action-first | ACTIVE |
 | `weekly-cohort-report` | Growth Intelligence Engine | Detect funnel trend changes, Maya activation issues, and growth opportunities | Yes, validated 2026-03-10 | Action-first | ACTIVE |
 | `weekly-cleanup-radar` | Code Stability Engine | Detect code drift, dead code, prompt drift, and monthly architecture risk | Yes, validated 2026-03-10 | Action-first | ACTIVE |
 | `daily-billing-audit` | Revenue Intelligence Engine | Detect revenue leaks, subscription linkage issues, and pricing or entitlement drift | Yes, validated 2026-03-10 | Action-first | ACTIVE |
@@ -106,7 +106,7 @@ Turn Codex from a collection of loose reporting jobs into a small set of autonom
 
 - Automation: `daily-funnel-health`
 - Schedule: nightly at 01:30, every day
-- Inputs: `audit:journey`, `audit:integration-health`, `playwright`, `funnel-integrity-audit`, `sselfie-maya-os`
+- Inputs: `automation:journey-smoke`, `audit:journey`, `audit:integration-health`, `playwright`, `funnel-integrity-audit`, `sselfie-maya-os`
 - Outcome: keep the public paid ladder healthy from landing to checkout to delivery
 
 ### 3. Growth Intelligence Engine

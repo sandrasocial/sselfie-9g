@@ -20,6 +20,7 @@
     "audit-revenue": "tsx scripts/audit-revenue-sources.ts",
     "automation:triage": "node scripts/triage-hourly.mjs",
     "automation:funnel": "node scripts/funnel-digest.mjs",
+    "automation:journey-smoke": "tsx scripts/user-journey-smoke.ts",
     "automation:support": "node scripts/support-digest.mjs",
     "automation:archive": "node scripts/archive-automation-outputs.mjs",
     "automation:daily": "node scripts/run-automation-daily.mjs",
