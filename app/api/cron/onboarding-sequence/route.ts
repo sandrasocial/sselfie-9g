@@ -44,14 +44,37 @@ export async function GET(request: Request) {
 
     const isProduction = process.env.VERCEL_ENV === "production" || process.env.NODE_ENV === "production"
 
-    if (isProduction && cronSecret) {
+    if (isProduction) {
+      if (!cronSecret) {
+        console.error("[v0] [CRON] Unauthorized: CRON_SECRET not set in production")
+        await cronLogger.error(new Error("Unauthorized"), { reason: "CRON_SECRET not set in production" })
+        return NextResponse.json({ error: "Unauthorized: CRON_SECRET required in production" }, { status: 401 })
+      }
       if (authHeader !== `Bearer ${cronSecret}`) {
         console.error("[v0] [CRON] Unauthorized: Invalid or missing CRON_SECRET")
         await cronLogger.error(new Error("Unauthorized"), { reason: "Invalid CRON_SECRET" })
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
       }
-    } else if (!cronSecret && isProduction) {
-      console.warn("[v0] [CRON] WARNING: CRON_SECRET not set in production!")
+    }
+
+    // In production, require onboarding segment IDs so the cron fails visibly instead of at send time
+    const isProductionEnv = process.env.VERCEL_ENV === "production" || process.env.NODE_ENV === "production"
+    if (isProductionEnv) {
+      const missing = []
+      if (!MARKETING_SEGMENTS.onboardingDay0) missing.push("RESEND_SEGMENT_ONBOARDING_DAY_0")
+      if (!MARKETING_SEGMENTS.onboardingDay2) missing.push("RESEND_SEGMENT_ONBOARDING_DAY_2")
+      if (!MARKETING_SEGMENTS.onboardingDay7) missing.push("RESEND_SEGMENT_ONBOARDING_DAY_7")
+      if (missing.length > 0) {
+        await cronLogger.error(new Error("Onboarding segment env vars missing"), { missing })
+        return NextResponse.json(
+          {
+            error: "Onboarding sequence cannot run: missing Resend segment configuration",
+            missingEnvVars: missing,
+            hint: "Set RESEND_SEGMENT_ONBOARDING_DAY_0, RESEND_SEGMENT_ONBOARDING_DAY_2, RESEND_SEGMENT_ONBOARDING_DAY_7 in Vercel (and create segments in Resend if needed).",
+          },
+          { status: 503 },
+        )
+      }
     }
 
     console.log("[v0] [CRON] Starting onboarding email sequence...")

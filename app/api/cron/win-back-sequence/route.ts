@@ -35,7 +35,12 @@ export async function GET(request: Request) {
     const cronSecret = process.env.CRON_SECRET
     const isProduction = process.env.VERCEL_ENV === "production" || process.env.NODE_ENV === "production"
 
-    if (isProduction && cronSecret) {
+    if (isProduction) {
+      if (!cronSecret) {
+        console.error("[win-back] Unauthorized: CRON_SECRET not set in production")
+        await cronLogger.error(new Error("Unauthorized"), { reason: "CRON_SECRET not set in production" })
+        return NextResponse.json({ error: "Unauthorized: CRON_SECRET required in production" }, { status: 401 })
+      }
       if (authHeader !== `Bearer ${cronSecret}`) {
         console.error("[win-back] Unauthorized: Invalid or missing CRON_SECRET")
         await cronLogger.error(new Error("Unauthorized"), { reason: "Invalid CRON_SECRET" })

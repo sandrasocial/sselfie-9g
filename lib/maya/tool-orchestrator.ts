@@ -87,7 +87,6 @@ const MULTI_STEP_CONNECTOR_REGEX = /\b(and then|after that|then|also|plus|and)\b
 const PAGE_ASSET_REGEX = /\b(landing page|landing pages|sales page|sales pages|homepage|home page|strategy page|strategy pages|web page|web pages)\b/i
 const PAGE_ASSET_STRICT_REGEX = /\b(landing page|landing pages|sales page|sales pages|homepage|home page|strategy page|strategy pages|web page|web pages)\b/i
 const CALENDAR_ASSET_REGEX = /\b(content calendar|calendar|feed planner|planner|schedule)\b/i
-const PDF_ASSET_REGEX = /\b(pdf|workbook|ebook|guide|cheatsheet|download)\b/i
 const PAGE_HELP_ACTION_REGEX = /\b(help|improve|optimi[sz]e|review|launch|fix)\b/i
 const BRIEF_HAS_OFFER_REGEX = /\b(course|coaching|service|product|membership|program|workshop|template|offer)\b/i
 const BRIEF_HAS_OUTCOME_REGEX = /\b(transform|transformation|result|outcome|help.*(?:achieve|get)|promise|benefit)\b/i
@@ -111,9 +110,6 @@ function buildMultiStepInstruction(assetType: MayaAssetType, userText: string): 
   if (assetType === "calendar") {
     return `Create a content calendar draft based on this request: ${userText}`
   }
-  if (assetType === "pdf") {
-    return `Create a workbook PDF draft based on this request: ${userText}`
-  }
   return `Create a landing page draft based on this request: ${userText}`
 }
 
@@ -124,7 +120,6 @@ function detectMultiAssetCreateIntents(userText: string): MayaAssetCreateIntent[
   const detectedTypes: MayaAssetType[] = []
   if (PAGE_ASSET_REGEX.test(userText)) detectedTypes.push("page")
   if (CALENDAR_ASSET_REGEX.test(userText)) detectedTypes.push("calendar")
-  if (PDF_ASSET_REGEX.test(userText)) detectedTypes.push("pdf")
 
   const uniqueTypes = Array.from(new Set(detectedTypes))
   if (uniqueTypes.length < 2) return []
@@ -228,6 +223,13 @@ export function orchestrateMayaTurn(input: {
 
   const assetCreateIntent = detectMayaAssetCreateIntent(normalizedText)
   if (assetCreateIntent) {
+    if (assetCreateIntent.assetType === "pdf") {
+      return {
+        kind: "none",
+        reason: "no_match",
+      }
+    }
+
     if (!allowPageAssetsInChat && assetCreateIntent.assetType === "page") {
       return {
         kind: "page_generation_paused",

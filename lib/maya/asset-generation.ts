@@ -10,7 +10,7 @@ import { composeMayaLandingCopy } from "@/lib/maya/page-generation/copy-composer
 import { isMayaPageRendererV2Enabled, STUDIO_CHECKOUT_URL } from "@/lib/maya/page-generation/constants"
 import { selectLandingImages } from "@/lib/maya/page-generation/image-selector"
 import { renderMayaLandingHtml } from "@/lib/maya/page-generation/render-landing"
-import { resolveMayaLandingSnapshot } from "@/lib/maya/page-generation/snapshot-resolver"
+import { resolveMayaLandingSnapshot, type MayaLandingSnapshotResolution } from "@/lib/maya/page-generation/snapshot-resolver"
 import {
   sanitizeHeadline,
   sanitizePageTitle,
@@ -19,21 +19,23 @@ import {
 } from "@/lib/maya/page-generation/sanitizers"
 import type { MayaLandingPageBlueprint } from "@/lib/maya/page-generation/types"
 import { generateInstagramCaption, extractHashtagsFromCaption, limitHashtags } from "@/lib/feed-planner/caption-writer"
+import type {
+  MayaCalendarAssetPreviewData,
+  MayaGeneratedAsset,
+  MayaGeneratedAssetPreviewData,
+  MayaGeneratedAssetType,
+  MayaPageAssetPreviewData,
+  MayaPdfAssetPreviewData,
+} from "@/lib/maya/generated-asset-types"
 
-export type MayaGeneratedAssetType = "page" | "calendar" | "pdf"
-
-export interface MayaGeneratedAsset {
-  id: string
-  assetType: MayaGeneratedAssetType
-  title: string
-  instruction: string
-  previewText: string
-  previewHtml: string
-  blueprint?: MayaLandingPageBlueprint
-  url?: string
-  createdAt: string
-  status: "draft"
-}
+export type {
+  MayaCalendarAssetPreviewData,
+  MayaGeneratedAsset,
+  MayaGeneratedAssetPreviewData,
+  MayaGeneratedAssetType,
+  MayaPageAssetPreviewData,
+  MayaPdfAssetPreviewData,
+} from "@/lib/maya/generated-asset-types"
 
 const MAX_STORED_ASSETS = 40
 const MAX_PREVIEW_TEXT_LENGTH = 240
@@ -181,6 +183,47 @@ function buildPreviewText(assetType: MayaGeneratedAssetType, instruction: string
   return sanitizePreview(`Drafted a landing page structure for: ${seed}. Includes headline, offer, proof, and CTA sections.`)
 }
 
+function buildPageFallbackMetadataFromSnapshot(input: {
+  instruction: string
+  snapshot: MayaLandingSnapshotResolution | null
+}): { title: string; previewText: string } | null {
+  const snapshot = input.snapshot
+  if (!snapshot) return null
+
+  const offer = sanitizeUserFacingText(snapshot.resolvedOffer || "", 72)
+  const audience = sanitizeUserFacingText(snapshot.resolvedAudience || "", 96)
+  const transformation = sanitizeHeadline(snapshot.resolvedTransformation || "")
+
+  const titleSeed =
+    transformation && transformation !== "Build your next offer with Maya"
+      ? transformation
+      : offer
+
+  if (!titleSeed) return null
+
+  const previewLines = [
+    offer ? `Drafted a landing page for ${offer}.` : "Drafted a landing page from your saved Maya offer context.",
+    audience ? `Written for ${audience}.` : "",
+    transformation && transformation !== "Build your next offer with Maya"
+      ? `Centers the promise: ${transformation}.`
+      : "Includes a clear promise, proof, and CTA.",
+  ].filter(Boolean)
+
+  return {
+    title: sanitizePageTitle("page", `Landing Page: ${titleSeed}`),
+    previewText: sanitizePreview(previewLines.join(" ")),
+  }
+}
+
+function buildLandingHeadline(title: string, instruction: string): string {
+  const titleSeed = sanitizeUserFacingText(title.replace(/^landing page:\s*/i, ""), 96)
+  if (titleSeed && !/^landing page$/i.test(titleSeed)) {
+    return toHeadline(titleSeed)
+  }
+
+  return toHeadline(extractPrimaryIntent(instruction))
+}
+
 async function loadUserImageUrls(userId: string): Promise<string[]> {
   const urls: string[] = []
 
@@ -253,10 +296,79 @@ async function loadUserImageUrls(userId: string): Promise<string[]> {
   return uniqueStrings(urls).slice(0, MAX_IMAGE_SOURCES)
 }
 
+function buildLandingPreviewData(input: {
+  title: string
+  previewText: string
+  blueprint?: MayaLandingPageBlueprint
+  imageUrls: string[]
+}): MayaPageAssetPreviewData {
+  const blueprint = input.blueprint
+  const heroImageUrl = blueprint?.heroImageUrl || input.imageUrls[0]
+  const supportImageUrls = uniqueStrings([
+    ...(blueprint?.supportImageUrls || []),
+    ...input.imageUrls.slice(heroImageUrl ? 1 : 0, 4),
+  ]).slice(0, 3)
+
+  return {
+    kind: "page",
+    eyebrow: "Maya Page Draft",
+    headline: sanitizeHeadline(blueprint?.hook || input.title),
+    truth: sanitizeUserFacingText(blueprint?.truth || input.previewText, 220),
+    ctaLabel: sanitizeUserFacingText(blueprint?.ctaLabel || "Join Studio", 48),
+    heroImageUrl: heroImageUrl || undefined,
+    supportImageUrls,
+    proofBullets: (blueprint?.proofBullets || [])
+      .map((bullet) => sanitizeUserFacingText(bullet, 120))
+      .filter(Boolean)
+      .slice(0, 3),
+  }
+}
+
+function buildCalendarPreviewData(input: {
+  previewText: string
+  posts: MayaCalendarPostPlan[]
+}): MayaCalendarAssetPreviewData {
+  const now = new Date()
+  const monthLabel = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" }).format(now)
+
+  return {
+    kind: "calendar",
+    monthLabel,
+    summary: sanitizeUserFacingText(input.previewText, 180),
+    posts: input.posts.slice(0, 9).map((post) => ({
+      id: post.id,
+      dayLabel: post.dayLabel,
+      postType: post.postType,
+      hook: sanitizeUserFacingText(post.hook, 90),
+      overlay: sanitizeUserFacingText(post.coverOverlay || post.cta || post.hook, 72),
+      imageUrl: post.imageUrl,
+    })),
+  }
+}
+
+function buildPdfPreviewData(input: {
+  title: string
+  instruction: string
+}): MayaPdfAssetPreviewData {
+  const chapterSeed = sanitizeUserFacingText(extractPrimaryIntent(input.instruction), 160)
+  const chapters = uniqueStrings([
+    "Define the promise",
+    "Build the framework",
+    chapterSeed ? `Apply it to ${chapterSeed.toLowerCase()}` : "Add implementation prompts",
+  ]).slice(0, 3)
+
+  return {
+    kind: "pdf",
+    headline: sanitizeHeadline(input.title),
+    chapters,
+  }
+}
+
 interface MayaPageGenerationPayload {
   title: string
   previewText: string
   previewHtml: string
+  previewData?: MayaGeneratedAssetPreviewData
   blueprint?: MayaLandingPageBlueprint
 }
 
@@ -290,6 +402,12 @@ async function generateLandingPageV2(input: {
     title: sanitizePageTitle("page", render.title),
     previewText: sanitizePreview(render.previewText),
     previewHtml: render.html,
+    previewData: buildLandingPreviewData({
+      title: render.title,
+      previewText: render.previewText,
+      blueprint: copy.blueprint,
+      imageUrls: [images.heroImageUrl, ...images.supportImageUrls].filter(Boolean),
+    }),
     blueprint: copy.blueprint,
   }
 }
@@ -366,6 +484,10 @@ async function generateCalendarAsset(input: {
     title,
     previewText,
     previewHtml,
+    previewData: buildCalendarPreviewData({
+      previewText,
+      posts: postsWithStoryCaptions,
+    }),
   }
 }
 
@@ -377,7 +499,7 @@ function buildLandingPageHtml(
   imageUrls: string[],
 ): string {
   const direction = inferDesignDirection(instruction)
-  const headline = escapeHtml(toHeadline(extractPrimaryIntent(instruction)))
+  const headline = escapeHtml(buildLandingHeadline(title, instruction))
   const safeTitle = escapeHtml(title)
   const safePreview = escapeHtml(previewText)
   const heroImage = imageUrls[0] || ""
@@ -1905,6 +2027,10 @@ function parseExistingAssets(value: unknown): MayaGeneratedAsset[] {
       const instruction = typeof row.instruction === "string" ? sanitizeInstruction(row.instruction) : ""
       const previewText = typeof row.previewText === "string" ? sanitizePreview(row.previewText) : ""
       const previewHtml = typeof row.previewHtml === "string" ? row.previewHtml : ""
+      const previewData =
+        row.previewData && typeof row.previewData === "object"
+          ? (row.previewData as MayaGeneratedAssetPreviewData)
+          : undefined
       const blueprint =
         row.blueprint && typeof row.blueprint === "object" ? (row.blueprint as MayaLandingPageBlueprint) : undefined
       const url = typeof row.url === "string" ? row.url : undefined
@@ -1920,6 +2046,7 @@ function parseExistingAssets(value: unknown): MayaGeneratedAsset[] {
         instruction,
         previewText,
         previewHtml,
+        previewData,
         blueprint,
         url,
         createdAt,
@@ -1953,6 +2080,7 @@ export async function createMayaGeneratedAsset(input: {
   let title = buildTitle(input.assetType, instruction)
   let previewText = buildPreviewText(input.assetType, instruction)
   let previewHtml = ""
+  let previewData: MayaGeneratedAssetPreviewData | undefined
   let blueprint: MayaLandingPageBlueprint | undefined
 
   if (calendarRendererEnabled) {
@@ -1965,6 +2093,7 @@ export async function createMayaGeneratedAsset(input: {
       title = calendarAsset.title
       previewText = calendarAsset.previewText
       previewHtml = calendarAsset.previewHtml
+      previewData = calendarAsset.previewData
     } catch (error) {
       console.error("[Maya Asset] Calendar generation failed, falling back to legacy renderer:", error)
     }
@@ -1978,15 +2107,56 @@ export async function createMayaGeneratedAsset(input: {
       title = v2Page.title
       previewText = v2Page.previewText
       previewHtml = v2Page.previewHtml
+      previewData = v2Page.previewData
       blueprint = v2Page.blueprint
     } catch (error) {
       console.error("[Maya Asset] V2 landing generation failed, falling back to legacy renderer:", error)
     }
   }
 
+  if (input.assetType === "page" && !previewHtml) {
+    try {
+      const fallbackSnapshot = await resolveMayaLandingSnapshot(normalizedUserId)
+      const fallbackMetadata = buildPageFallbackMetadataFromSnapshot({
+        instruction,
+        snapshot: fallbackSnapshot,
+      })
+
+      if (fallbackMetadata) {
+        title = fallbackMetadata.title
+        previewText = fallbackMetadata.previewText
+      }
+    } catch (error) {
+      console.error("[Maya Asset] Page fallback metadata resolution failed:", error)
+    }
+  }
+
   if (!previewHtml) {
     const imageUrls = await loadUserImageUrls(normalizedUserId)
     previewHtml = buildPreviewHtmlForAsset(id, input.assetType, title, previewText, instruction, imageUrls)
+    previewData =
+      input.assetType === "calendar"
+        ? buildCalendarPreviewData({
+            previewText,
+            posts: buildCalendarPosts({
+              instruction,
+              imageUrls,
+              trendSignals: getDefaultMayaInstagramTrendSignals(),
+              offer: normalizeCalendarContextValue(
+                sanitizeUserFacingText(extractPrimaryIntent(instruction), 120),
+                "signature offer",
+                {
+                  maxLength: 84,
+                  maxWords: 7,
+                },
+              ),
+              audience: "your ideal audience",
+              transformation: "a clear transformation",
+            }),
+          })
+        : input.assetType === "pdf"
+          ? buildPdfPreviewData({ title, instruction })
+          : buildLandingPreviewData({ title, previewText, blueprint, imageUrls })
   }
   const url = `/maya/asset/${encodeURIComponent(id)}`
 
@@ -1997,6 +2167,7 @@ export async function createMayaGeneratedAsset(input: {
     instruction,
     previewText,
     previewHtml,
+    previewData,
     blueprint,
     url,
     createdAt,
@@ -2100,6 +2271,7 @@ export async function updateMayaGeneratedAsset(input: {
   let updatedTitle = sanitizePageTitle(targetAsset.assetType, targetAsset.title)
   let previewText = sanitizePreview(`Updated with your latest edit: ${extractPrimaryIntent(editInstruction)}.`)
   let previewHtml = ""
+  let previewData = targetAsset.previewData
   let blueprint = targetAsset.blueprint
 
   if (calendarRendererEnabled) {
@@ -2112,6 +2284,7 @@ export async function updateMayaGeneratedAsset(input: {
       updatedTitle = calendarAsset.title
       previewText = calendarAsset.previewText
       previewHtml = calendarAsset.previewHtml
+      previewData = calendarAsset.previewData
       blueprint = undefined
     } catch (error) {
       console.error("[Maya Asset] Calendar update failed, falling back to legacy renderer:", error)
@@ -2126,6 +2299,7 @@ export async function updateMayaGeneratedAsset(input: {
       updatedTitle = v2Page.title
       previewText = v2Page.previewText
       previewHtml = v2Page.previewHtml
+      previewData = v2Page.previewData
       blueprint = v2Page.blueprint
     } catch (error) {
       console.error("[Maya Asset] V2 landing update failed, falling back to legacy renderer:", error)
@@ -2142,6 +2316,29 @@ export async function updateMayaGeneratedAsset(input: {
       mergedInstruction,
       imageUrls,
     )
+    previewData =
+      targetAsset.assetType === "calendar"
+        ? buildCalendarPreviewData({
+            previewText,
+            posts: buildCalendarPosts({
+              instruction: mergedInstruction,
+              imageUrls,
+              trendSignals: getDefaultMayaInstagramTrendSignals(),
+              offer: normalizeCalendarContextValue(
+                sanitizeUserFacingText(extractPrimaryIntent(mergedInstruction), 120),
+                "signature offer",
+                {
+                  maxLength: 84,
+                  maxWords: 7,
+                },
+              ),
+              audience: "your ideal audience",
+              transformation: "a clear transformation",
+            }),
+          })
+        : targetAsset.assetType === "pdf"
+          ? buildPdfPreviewData({ title: updatedTitle, instruction: mergedInstruction })
+          : buildLandingPreviewData({ title: updatedTitle, previewText, blueprint, imageUrls })
   }
 
   const updatedAsset: MayaGeneratedAsset = {
@@ -2150,6 +2347,7 @@ export async function updateMayaGeneratedAsset(input: {
     instruction: mergedInstruction,
     previewText,
     previewHtml,
+    previewData,
     blueprint,
     createdAt: nowIso,
     status: "draft",
@@ -2230,7 +2428,7 @@ export async function regenerateMayaPersonalPageById(input: {
     (assetType === "calendar"
       ? "Create a content calendar draft for my current offer"
       : assetType === "pdf"
-        ? "Create a workbook draft for my current offer"
+        ? "Workbook draft"
         : "Create a landing page draft for my current offer")
   const instruction = sanitizeInstruction(rawInstruction)
   const updatedAt = new Date().toISOString()
@@ -2238,6 +2436,7 @@ export async function regenerateMayaPersonalPageById(input: {
   let title = sanitizePageTitle(assetType, String(row.title || ""))
   let previewText = buildPreviewText(assetType, instruction)
   let previewHtml = ""
+  let previewData: MayaGeneratedAssetPreviewData | undefined
   let blueprint: MayaLandingPageBlueprint | undefined
 
   const v2Enabled =
@@ -2255,6 +2454,7 @@ export async function regenerateMayaPersonalPageById(input: {
       title = calendarAsset.title
       previewText = calendarAsset.previewText
       previewHtml = calendarAsset.previewHtml
+      previewData = calendarAsset.previewData
       blueprint = undefined
     } catch (error) {
       console.error("[Maya Asset] Calendar regenerate failed, falling back to legacy renderer:", error)
@@ -2269,6 +2469,7 @@ export async function regenerateMayaPersonalPageById(input: {
       title = v2Page.title
       previewText = v2Page.previewText
       previewHtml = v2Page.previewHtml
+      previewData = v2Page.previewData
       blueprint = v2Page.blueprint
     } catch (error) {
       console.error("[Maya Asset] Regenerate V2 failed, falling back to legacy renderer:", error)
@@ -2278,6 +2479,29 @@ export async function regenerateMayaPersonalPageById(input: {
   if (!previewHtml) {
     const imageUrls = await loadUserImageUrls(normalizedUserId)
     previewHtml = buildPreviewHtmlForAsset(row.id, assetType, title, previewText, instruction, imageUrls)
+    previewData =
+      assetType === "calendar"
+        ? buildCalendarPreviewData({
+            previewText,
+            posts: buildCalendarPosts({
+              instruction,
+              imageUrls,
+              trendSignals: getDefaultMayaInstagramTrendSignals(),
+              offer: normalizeCalendarContextValue(
+                sanitizeUserFacingText(extractPrimaryIntent(instruction), 120),
+                "signature offer",
+                {
+                  maxLength: 84,
+                  maxWords: 7,
+                },
+              ),
+              audience: "your ideal audience",
+              transformation: "a clear transformation",
+            }),
+          })
+        : assetType === "pdf"
+          ? buildPdfPreviewData({ title, instruction })
+          : buildLandingPreviewData({ title, previewText, blueprint, imageUrls })
   }
 
   const regeneratedAsset: MayaGeneratedAsset = {
@@ -2287,6 +2511,7 @@ export async function regenerateMayaPersonalPageById(input: {
     instruction,
     previewText,
     previewHtml,
+    previewData,
     blueprint,
     createdAt: updatedAt,
     status: "draft",
@@ -2384,6 +2609,10 @@ export async function getMayaGeneratedAsset(
     instruction: sanitizeInstruction(String(pageJson.instruction || page.title || "")),
     previewText,
     previewHtml: page.published_html,
+    previewData:
+      pageJson.previewData && typeof pageJson.previewData === "object"
+        ? (pageJson.previewData as MayaGeneratedAssetPreviewData)
+        : undefined,
     blueprint:
       pageJson.blueprint && typeof pageJson.blueprint === "object"
         ? (pageJson.blueprint as MayaLandingPageBlueprint)

@@ -47,7 +47,12 @@
     "audit:gravity": "tsx scripts/audit/gravity-scanner.ts",
     "audit:markdown-hygiene": "tsx scripts/audit/markdown-repo-curator.ts scan",
     "audit:markdown-hygiene:apply": "tsx scripts/audit/markdown-repo-curator.ts apply",
-    "audit:control": "pnpm -s audit:repo-map & pnpm -s audit:dead-code & pnpm -s audit:journey & pnpm -s audit:prompt-authority & pnpm -s audit:integration-health & pnpm -s audit:architecture-simplifier & pnpm -s audit:upgrade-readiness & pnpm -s audit:gravity & wait"
+    "audit:control": "pnpm -s audit:repo-map & pnpm -s audit:dead-code & pnpm -s audit:journey & pnpm -s audit:prompt-authority & pnpm -s audit:integration-health & pnpm -s audit:architecture-simplifier & pnpm -s audit:upgrade-readiness & pnpm -s audit:gravity & wait",
+    "email:audit": "tsx scripts/email-audit-diagnostics.ts",
+    "email:audit:fix": "tsx scripts/email-audit-diagnostics.ts --fix",
+    "email:verify-onboarding-segments": "tsx scripts/verify-onboarding-segment-env.ts",
+    "email:verify-onboarding-segments:vercel": "tsx scripts/verify-onboarding-segment-env.ts --vercel",
+    "email:set-vercel-onboarding-segments": "tsx scripts/set-vercel-onboarding-segments.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "latest",

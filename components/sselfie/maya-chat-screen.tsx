@@ -24,6 +24,7 @@ import MayaPromptsTab from "./maya/maya-prompts-tab"
 import MayaTrainingTab from "./maya/maya-training-tab"
 import StudioMemberOnboarding from "./maya/studio-member-onboarding"
 import MembershipHomeCard from "./maya/membership-home-card"
+import MayaWelcomePanel from "./maya/maya-welcome-panel"
 import { useRouter } from "next/navigation"
 import useSWR from "swr"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
@@ -103,6 +104,12 @@ function isFeatureEnabled(value?: string | null): boolean {
   return normalized === "1" || normalized === "true"
 }
 
+function isDefaultOnFeatureEnabled(value?: string | null): boolean {
+  if (!value) return true
+  const normalized = value.trim().toLowerCase()
+  return normalized === "1" || normalized === "true"
+}
+
 interface MayaChatScreenProps {
   onImageGenerated?: () => void
   user: any | null // User object passed down (type from parent component)
@@ -151,7 +158,7 @@ export default function MayaChatScreen({
   firstTimeProductUser = false,
 }: MayaChatScreenProps) {
   const { toast } = useToast()
-  const isLandingPagesUiEnabled = isFeatureEnabled(process.env.NEXT_PUBLIC_FEATURE_MAYA_LANDING_PAGES_UI)
+  const isLandingPagesUiEnabled = isDefaultOnFeatureEnabled(process.env.NEXT_PUBLIC_FEATURE_MAYA_LANDING_PAGES_UI)
   const isFeedTabDisabled = true
   const [inputValue, setInputValue] = useState("")
   const [showHistory, setShowHistory] = useState(false)
@@ -367,9 +374,6 @@ export default function MayaChatScreen({
     libraryTotalImages,
     loadLibrary,
     saveLibrary,
-    addImages,
-    removeImages,
-    clearLibrary,
     updateIntent,
     refreshLibrary,
     uploadedImages,
@@ -2038,20 +2042,16 @@ export default function MayaChatScreen({
   const getOutcomeStartPrompts = (isProMode: boolean): Array<{ label: string; prompt: string }> => {
     if (isProMode) {
       return [
-        { label: "Create Photoshoot", prompt: "I want to create a photoshoot for my new offer" },
         { label: "Use My Selfies", prompt: "Let's create a photo using my uploaded selfies" },
         { label: "Upload Assets", prompt: "I want to upload product photos and brand references" },
         { label: "Create Calendar", prompt: "Create a content calendar draft for this week" },
-        { label: "Create Workbook", prompt: "Create a workbook PDF draft for this offer" },
       ]
     }
 
     return [
-      { label: "Create Photoshoot", prompt: "I want to create a photo for my new offer" },
       { label: "Train My Model", prompt: "I want to train my custom model" },
       { label: "Upload Selfies", prompt: "I want to upload selfies first" },
       { label: "Create Calendar", prompt: "Create a content calendar draft for this week" },
-      { label: "Create Workbook", prompt: "Create a workbook PDF draft for this offer" },
     ]
   }
 
@@ -3680,7 +3680,6 @@ export default function MayaChatScreen({
           credits={creditBalance}
           onManageLibrary={undefined}
           onAddImages={undefined}
-          onStartFresh={undefined}
           isAdmin={isAdmin}
           selectedGuideId={selectedGuideId}
           selectedGuideCategory={selectedGuideCategory}
@@ -4073,21 +4072,13 @@ export default function MayaChatScreen({
                     setShowHistory(true)
                   }}
                   onGeneratePhoto={() => {
-                    setActiveMayaTab("photos")
-                    if (typeof window !== "undefined") {
-                      localStorage.setItem("mayaActiveTab", "photos")
-                      window.history.replaceState(null, "", "#maya")
-                    }
+                    handleSendMessage("I need photos for Monday's post")
                   }}
                   onPlanFeed={() => {
-                    setActiveTab?.("feed-planner")
+                    handleSendMessage("Plan my week and build an Instagram feed for my offer")
                   }}
                   onBrowseStyles={() => {
-                    setActiveMayaTab("prompts")
-                    if (typeof window !== "undefined") {
-                      localStorage.setItem("mayaActiveTab", "prompts")
-                      window.history.replaceState(null, "", "#maya/prompts")
-                    }
+                    handleSendMessage("Show me fresh style directions for my next post")
                   }}
                   onCreateCalendar={() => {
                     handleSendMessage("Create a content calendar draft for this week")
@@ -4095,6 +4086,13 @@ export default function MayaChatScreen({
                   onUploadAssets={() => {
                     handleSendMessage("I want to upload product photos and brand references")
                   }}
+                  onBuildPage={
+                    isLandingPagesUiEnabled
+                      ? () => {
+                          handleSendMessage("Create a landing page draft for my current offer")
+                        }
+                      : undefined
+                  }
                   onExploreMonthlyDrop={() => {
                     if (typeof window !== "undefined") {
                       const nextUrl = new URL(window.location.href)
@@ -4117,66 +4115,54 @@ export default function MayaChatScreen({
                   paddingBottom: photoTabBottomSpacing,
                 }}
               >
-              <div className="max-w-2xl w-full space-y-8">
-                {/* Show ImageUploadFlow if library is empty, otherwise show welcome */}
-                {libraryTotalImages === 0 ? (
-                  <div className="flex flex-col items-center justify-center text-center space-y-6 py-8">
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-[rgba(195,190,182,0.40)] overflow-hidden">
-                      <img
-                        src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
-                        alt="Maya"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="space-y-3">
-                      <h2 className="text-xl sm:text-2xl font-serif font-extralight tracking-[0.3em] text-[#f0ede8] uppercase">
-                        Welcome
-                      </h2>
-                      <p className="text-xs sm:text-sm text-[#8a8780] tracking-wide max-w-md leading-relaxed px-4">
-                        Hi, I&apos;m Maya. SELFIE mode uses your linked reference photos instead of your trained model. Perfect for product shots, lifestyle content, and trying new looks.
-                      </p>
-                    </div>
-                    <div className="w-full max-w-sm rounded-2xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4 text-left">
-                      <p className="text-[11px] uppercase tracking-[0.2em] text-[#8a8780] mb-2">
-                        Quick Start
-                      </p>
-                      <p className="text-xs text-[#8a8780] leading-relaxed">
-                        Use <span className="text-[#f0ede8] font-medium">Add Image</span> in the chat input to link 1-3 reference photos.
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  // Welcome message when library has images - matches Classic styling
-                  <div className="flex flex-col items-center justify-center text-center space-y-6">
-                    {/* Maya's Avatar - same styling as Classic */}
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-[rgba(195,190,182,0.40)] overflow-hidden">
-                      <img
-                        src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
-                        alt="Maya"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                        <div className="space-y-3">
-                      <h2 className="text-xl sm:text-2xl font-serif font-extralight tracking-[0.3em] text-[#f0ede8] uppercase">
-                        Welcome
-                      </h2>
-                      <p className="text-xs sm:text-sm text-[#8a8780] tracking-wide max-w-md leading-relaxed px-4">
-                        Hi, I&apos;m Maya. Your reference photos are linked. Choose a quick prompt below to start creating.
-                      </p>
-                        </div>
-
-                    {/* Quick Suggestion Prompts - use same variant as Classic Mode for consistency */}
-                          <MayaQuickPrompts
-                            prompts={currentPrompts}
-                            onSelect={handleSendMessage}
-                            disabled={isTyping || isGeneratingConcepts}
-                      variant="empty-state"
-                            studioProMode={proMode}
-                            isEmpty={isEmpty}
-                          />
-                  </div>
-                )}
-              </div>
+                <div className="max-w-2xl w-full space-y-8">
+                  <MayaWelcomePanel
+                    eyebrow="Maya"
+                    title="Create inside Maya"
+                    subtitle={
+                      libraryTotalImages === 0
+                        ? "SELFIE mode uses your linked references instead of your trained model. Start with a post, a weekly plan, or new editorial photos."
+                        : "Your reference photos are linked. Start with a post, a weekly plan, or a new set of editorial images."
+                    }
+                    uploadHint={
+                      libraryTotalImages === 0
+                        ? "Use Add Image in the input bar to link 1-3 reference photos. Maya will use them in every new draft."
+                        : undefined
+                    }
+                    previewImageUrls={uploadedImages.map((image) => image.url)}
+                    actions={[
+                      {
+                        label: "Create a post",
+                        onClick: () => handleSendMessage("I need photos for Monday's post"),
+                        variant: "primary",
+                      },
+                      {
+                        label: "Plan my week",
+                        onClick: () => handleSendMessage("Plan my week and build an Instagram feed for my offer"),
+                      },
+                      {
+                        label: "New photos",
+                        onClick: () => handleSendMessage("Create new editorial photos for my offer"),
+                      },
+                      ...(isLandingPagesUiEnabled
+                        ? [
+                            {
+                              label: "Build a page",
+                              onClick: () => handleSendMessage("Create a landing page draft for my current offer"),
+                            },
+                          ]
+                        : []),
+                    ]}
+                  />
+                  <MayaQuickPrompts
+                    prompts={currentPrompts}
+                    onSelect={handleSendMessage}
+                    disabled={isTyping || isGeneratingConcepts}
+                    variant="empty-state"
+                    studioProMode={proMode}
+                    isEmpty={isEmpty}
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -4191,26 +4177,44 @@ export default function MayaChatScreen({
                   paddingBottom: photoTabBottomSpacing,
                 }}
               >
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-[rgba(195,190,182,0.40)] overflow-hidden mb-4 sm:mb-6">
-                <img
-                  src="https://i.postimg.cc/fTtCnzZv/out-1-22.png"
-                  alt="Maya"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <h2 className="text-xl sm:text-2xl font-serif font-extralight tracking-[0.3em] text-[#f0ede8] uppercase mb-2 sm:mb-3 text-center">
-                Welcome
-              </h2>
-              <p className="text-xs sm:text-sm text-[#8a8780] tracking-wide text-center mb-4 sm:mb-6 max-w-md leading-relaxed px-4">
-                Hi, I&apos;m Maya. I&apos;ll help you create beautiful photos and videos.
-              </p>
-              <MayaQuickPrompts
-                prompts={currentPrompts}
-                onSelect={handleSendMessage}
-                disabled={isTyping}
-                variant="empty-state"
-                studioProMode={proMode}
-              />
+                <div className="w-full max-w-2xl space-y-8">
+                  <MayaWelcomePanel
+                    eyebrow="Maya"
+                    title="Start with your first output"
+                    subtitle="Ask Maya for a photo, a weekly content plan, or a page draft. The result will stay inline so you can refine it without leaving chat."
+                    previewImageUrls={uploadedImages.map((image) => image.url)}
+                    actions={[
+                      {
+                        label: "Create a post",
+                        onClick: () => handleSendMessage("I need photos for Monday's post"),
+                        variant: "primary",
+                      },
+                      {
+                        label: "Plan my week",
+                        onClick: () => handleSendMessage("Create a content calendar draft for this week"),
+                      },
+                      {
+                        label: "New photos",
+                        onClick: () => handleSendMessage("Create new photos for my offer"),
+                      },
+                      ...(isLandingPagesUiEnabled
+                        ? [
+                            {
+                              label: "Build a page",
+                              onClick: () => handleSendMessage("Create a landing page draft for my current offer"),
+                            },
+                          ]
+                        : []),
+                    ]}
+                  />
+                  <MayaQuickPrompts
+                    prompts={currentPrompts}
+                    onSelect={handleSendMessage}
+                    disabled={isTyping}
+                    variant="empty-state"
+                    studioProMode={proMode}
+                  />
+                </div>
               </div>
             </div>
           )}
@@ -4662,14 +4666,6 @@ export default function MayaChatScreen({
                 setShowUploadFlow(true)
               })
             })
-          }}
-          onStartFresh={async () => {
-            if (confirm('Are you sure you want to start fresh? This will clear your image library.')) {
-              await clearLibrary()
-              setMessages([])
-              handleNewChat()
-              setShowLibraryModal(false)
-            }
           }}
           onEditIntent={async () => {
             // TODO: Open intent editor modal

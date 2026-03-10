@@ -44,7 +44,7 @@ export default function MayaQuickPrompts({
   // **NEW: Quick Chips variant** — rendered above input in Chat Focus mode
   if (variant === "quick-chips") {
     const chipClass =
-      "shrink-0 px-4 py-2 rounded-full border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.08)] hover:bg-[rgba(175,170,162,0.15)] hover:text-[#f0ede8] active:bg-[rgba(175,170,162,0.20)] transition-colors text-xs font-medium text-[#8a8780] whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(168,164,156,0.40)]"
+      "shrink-0 rounded-full border border-[rgba(195,190,182,0.18)] bg-[rgba(175,170,162,0.10)] px-4 py-2 text-[11px] uppercase tracking-[0.16em] text-[color:var(--text-accent)] transition-colors hover:bg-[rgba(175,170,162,0.18)] hover:text-[color:var(--color-porcelain)] active:bg-[rgba(175,170,162,0.22)] whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(168,164,156,0.40)]"
     return (
       <div className="flex overflow-x-auto scrollbar-hide gap-2 px-4 py-2 w-full">
         {prompts.map((item, index) => (
@@ -63,10 +63,10 @@ export default function MayaQuickPrompts({
 
   // Existing variants unchanged...
   const wrapperClass =
-    "rounded-2xl border border-[rgba(195,190,182,0.15)] bg-[rgba(175,170,162,0.08)] backdrop-blur-[20px] p-3"
+    "stone-panel rounded-[24px] p-3"
   const railClass = "flex gap-2 overflow-x-auto scrollbar-hide snap-x snap-mandatory"
   const pillClass =
-    "shrink-0 px-4 py-2.5 rounded-lg border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] hover:bg-[rgba(175,170,162,0.18)] transition-colors min-h-[40px] text-[11px] font-medium uppercase tracking-[0.35em] text-[#8a8780] hover:text-[#f0ede8] whitespace-nowrap snap-start disabled:opacity-50 disabled:cursor-not-allowed"
+    "shrink-0 rounded-full border border-[rgba(195,190,182,0.18)] bg-[rgba(175,170,162,0.10)] px-4 py-2.5 text-[11px] uppercase tracking-[0.18em] text-[color:var(--text-accent)] transition-colors min-h-[40px] hover:bg-[rgba(175,170,162,0.18)] hover:text-[color:var(--color-porcelain)] whitespace-nowrap snap-start disabled:opacity-50 disabled:cursor-not-allowed"
 
   if (variant === "empty-state") {
     return (

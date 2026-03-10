@@ -51,6 +51,10 @@
     {
       "path": "/api/cron/maya-instagram-trends-weekly",
       "schedule": "30 6 * * 1"
+    },
+    {
+      "path": "/api/cron/admin-alerts",
+      "schedule": "0 7 * * *"
     }
   ]
 }

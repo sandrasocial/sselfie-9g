@@ -19,7 +19,7 @@ describe("GET /api/studio/hub contract", () => {
     delete process.env.NEXT_PUBLIC_FEATURE_MAYA_LANDING_PAGES_UI
   })
 
-  it("returns paused payload with recent photos/videos and empty pages", async () => {
+  it("returns page drafts alongside recent photos and videos when Maya pages are enabled", async () => {
     mockSql
       .mockResolvedValueOnce([
         {
@@ -31,6 +31,17 @@ describe("GET /api/studio/hub contract", () => {
           post_count: 9,
           updated_at: "2026-03-05T08:00:00.000Z",
           created_at: "2026-03-05T08:00:00.000Z",
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          id: "page-1",
+          title: "Studio Offer Page",
+          page_type: "landing",
+          status: "published",
+          live_url: "/p/sandra/studio-offer",
+          version: 3,
+          updated_at: "2026-03-05T09:00:00.000Z",
         },
       ])
       .mockResolvedValueOnce([
@@ -62,12 +73,17 @@ describe("GET /api/studio/hub contract", () => {
     const payload = await response.json()
 
     expect(payload.success).toBe(true)
-    expect(payload.landingPagesPaused).toBe(true)
+    expect(payload.landingPagesPaused).toBe(false)
     expect(Array.isArray(payload.pages)).toBe(true)
-    expect(payload.pages).toEqual([])
+    expect(payload.pages[0]).toMatchObject({
+      id: "page-1",
+      title: "Studio Offer Page",
+      pageType: "landing",
+    })
     expect(Array.isArray(payload.recentPhotos)).toBe(true)
     expect(Array.isArray(payload.recentVideos)).toBe(true)
     expect(payload.recentPhotos[0]?.imageUrl).toContain("photo.jpg")
     expect(payload.recentVideos[0]?.videoUrl).toContain("video.mp4")
+    expect(payload.stats.pageCount).toBe(1)
   })
 })

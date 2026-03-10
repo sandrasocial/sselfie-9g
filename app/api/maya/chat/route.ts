@@ -81,7 +81,7 @@ function isChatFirstMayaEnabled(envValue?: string | null): boolean {
 }
 
 function isMayaLandingPagesInChatEnabled(envValue?: string | null): boolean {
-  if (!envValue) return false
+  if (!envValue) return true
   const normalized = envValue.trim().toLowerCase()
   return normalized === "true" || normalized === "1"
 }
@@ -104,7 +104,7 @@ function createLandingPagesPausedResponse(validUIMessages: UIMessage[], preface?
         delta:
           `${preface ? `${preface.trim()} ` : ""}` +
           `Landing pages are paused right now while we finish the quality relaunch. ` +
-          `In this chat, I can run photos, videos, concept cards, feed planning, and workbook drafts.`,
+          `In this chat, I can run photos, videos, concept cards, and feed planning.`,
       })
       writer.write({ type: "text-end", id: textPartId })
     },

@@ -246,7 +246,7 @@ export function buildOfferBriefInstruction(brief: MayaOfferBrief): string {
   const sections = [
     isCalendar
       ? `Create an Instagram content calendar draft for this offer: ${brief.offerType}.`
-      : `Create a high-converting landing page draft for this offer: ${brief.offerType}.`,
+      : `Create a landing page draft. Offer: ${brief.offerType}.`,
     brief.designStyle ? `Design direction: ${brief.designStyle}.` : null,
     `Main transformation: ${brief.transformation}.`,
     `Ideal client: ${brief.idealClient}.`,

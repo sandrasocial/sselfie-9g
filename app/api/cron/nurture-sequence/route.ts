@@ -60,31 +60,38 @@ function selfieGuideAccessUrl(candidate: SelfieGuideActivationCandidate): string
 }
 
 async function getStrategyCandidatesForTouch(days: number, emailType: string): Promise<StrategyLeadCandidate[]> {
+  // Target Brand Strategy Pack ($19) buyers who completed the questionnaire (have a strategy row with setup_token).
+  // Uses freebie_brand_strategies.created_at for day offset (strategy completion date).
   return (await sql`
     SELECT
       fbs.id,
-      fbs.email,
-      fbs.name,
+      u.email,
+      COALESCE(NULLIF(BTRIM(u.display_name), ''), NULLIF(BTRIM(u.name), '')) AS name,
       fbs.access_token,
       fbs.created_at
-    FROM freebie_brand_strategies fbs
-    WHERE fbs.email IS NOT NULL
-      AND fbs.email <> ''
+    FROM subscriptions s
+    INNER JOIN users u ON u.id::text = s.user_id
+    INNER JOIN freebie_brand_strategies fbs
+      ON LOWER(fbs.email) = LOWER(u.email)
+      AND fbs.setup_token IS NOT NULL
+    WHERE s.product_type = 'brand_strategy_pack'
+      AND s.status = 'active'
+      AND u.email IS NOT NULL
+      AND u.email <> ''
       AND fbs.created_at <= NOW() - (${`${days} days`}::interval)
       AND NOT EXISTS (
         SELECT 1
         FROM email_logs el
-        WHERE LOWER(el.user_email) = LOWER(fbs.email)
+        WHERE LOWER(el.user_email) = LOWER(u.email)
           AND el.email_type = ${emailType}
           AND el.status IN ('sent', 'delivered')
       )
       AND NOT EXISTS (
         SELECT 1
-        FROM subscriptions s
-        INNER JOIN users u ON u.id::varchar = s.user_id
-        WHERE LOWER(u.email) = LOWER(fbs.email)
-          AND s.status = 'active'
-          AND s.product_type IN ('sselfie_studio_membership', 'brand_studio_membership')
+        FROM subscriptions s2
+        WHERE s2.user_id = s.user_id
+          AND s2.status = 'active'
+          AND s2.product_type IN ('sselfie_studio_membership', 'brand_studio_membership')
       )
     ORDER BY fbs.created_at ASC
     LIMIT 200
@@ -230,9 +237,15 @@ export async function GET(request: Request) {
     const cronSecret = process.env.CRON_SECRET
     const isProduction = process.env.VERCEL_ENV === "production" || process.env.NODE_ENV === "production"
 
-    if (isProduction && cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-      await cronLogger.error(new Error("Unauthorized"), { reason: "Invalid CRON_SECRET" })
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    if (isProduction) {
+      if (!cronSecret) {
+        await cronLogger.error(new Error("Unauthorized"), { reason: "CRON_SECRET not set in production" })
+        return NextResponse.json({ error: "Unauthorized: CRON_SECRET required in production" }, { status: 401 })
+      }
+      if (authHeader !== `Bearer ${cronSecret}`) {
+        await cronLogger.error(new Error("Unauthorized"), { reason: "Invalid CRON_SECRET" })
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      }
     }
 
     const results = {

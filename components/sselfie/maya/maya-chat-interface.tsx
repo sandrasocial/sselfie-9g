@@ -12,6 +12,8 @@ import FeedStrategyCard from "@/components/feed-planner/feed-strategy-card"
 import UnifiedLoading from "../unified-loading"
 import MayaOfferBriefForm from "./maya-offer-brief-form"
 import type { MayaOfferBrief, MayaOfferBriefAssetType } from "@/lib/maya/offer-brief"
+import MayaGeneratedAssetCard from "./maya-generated-asset-card"
+import { MayaInlineAction, MayaInlineCard, MayaInlinePill } from "./maya-inline-card"
 import {
   hasFeedStrategyArtifacts,
   stripFeedStrategyArtifacts,
@@ -20,7 +22,7 @@ import {
 type OfferBriefFormValues = Omit<MayaOfferBrief, "assetType">
 
 function isFeatureEnabled(value?: string | null): boolean {
-  if (!value) return false
+  if (!value) return true
   const normalized = value.trim().toLowerCase()
   return normalized === "1" || normalized === "true"
 }
@@ -857,11 +859,6 @@ export default function MayaChatInterface({
                                   description: "Draft your monthly calendar and keep editing in-thread.",
                                 },
                                 {
-                                  title: "Create Workbook PDF",
-                                  prompt: "Create a workbook PDF for my offer",
-                                  description: "Generate a draft workbook and refine it in chat.",
-                                },
-                                {
                                   title: "Upload Product Assets",
                                   prompt: "Open upload zone for products",
                                   description: "Add selfies, products, people, and vibe references.",
@@ -901,109 +898,131 @@ export default function MayaChatInterface({
                               const state = output.state || "ready"
                               const stats = output.stats || { feedCount: 0, pageCount: 0, photoCount: 0, videoCount: 0 }
                               const feeds = Array.isArray(output.feeds) ? output.feeds : []
+                              const pages = Array.isArray(output.pages) ? output.pages : []
                               const recentPhotos = Array.isArray(output.recentPhotos) ? output.recentPhotos : []
                               const recentVideos = Array.isArray(output.recentVideos) ? output.recentVideos : []
 
                               if (state === "loading") {
                                 return (
-                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4">
-                                    <div className="text-xs uppercase tracking-[0.2em] text-[#8a8780]">Studio Hub</div>
-                                    <div className="mt-2 text-sm text-[#f0ede8]">Loading your created assets…</div>
-                                  </div>
+                                  <MayaInlineCard
+                                    key={partIndex}
+                                    eyebrow="Studio Hub"
+                                    title="My Studio"
+                                    subtitle="Loading your created assets, drafts, and recent outputs."
+                                  />
                                 )
                               }
 
                               if (state === "error") {
                                 return (
-                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4">
-                                    <div className="text-xs uppercase tracking-[0.2em] text-[#8a8780]">Studio Hub</div>
-                                    <div className="mt-2 text-sm text-[#f5c2c2]">{output.message || "Could not load Studio Hub."}</div>
-                                  </div>
+                                  <MayaInlineCard
+                                    key={partIndex}
+                                    eyebrow="Studio Hub"
+                                    title="My Studio"
+                                    subtitle={output.message || "Could not load Studio Hub."}
+                                  />
                                 )
                               }
 
                               return (
-                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4">
-                                  <div className="flex items-center justify-between gap-2">
-                                    <div className="text-xs uppercase tracking-[0.2em] text-[#8a8780]">Studio Hub</div>
-                                    <a
-                                      href="/studio?tab=studio#studio"
-                                      className="text-[10px] uppercase tracking-[0.16em] text-[#cfcfcf] hover:text-white"
-                                    >
+                                <MayaInlineCard
+                                  key={partIndex}
+                                  eyebrow="Studio Hub"
+                                  title="My Studio"
+                                  subtitle="Feeds, pages, photos, and videos surfaced from your current Maya workspace."
+                                  actions={
+                                    <MayaInlineAction href="/studio?tab=studio#studio">
                                       Open Full Hub
-                                    </a>
+                                    </MayaInlineAction>
+                                  }
+                                >
+                                  <div className="grid gap-px overflow-hidden rounded-[22px] border border-[rgba(195,190,182,0.14)] bg-[rgba(175,170,162,0.10)] sm:grid-cols-4">
+                                    {[
+                                      { label: "Feeds", value: Number(stats.feedCount || 0) },
+                                      { label: "Pages", value: Number(stats.pageCount || 0) },
+                                      { label: "Photos", value: Number(stats.photoCount || 0) },
+                                      { label: "Videos", value: Number(stats.videoCount || 0) },
+                                    ].map((item) => (
+                                      <div key={item.label} className="stone-inset-panel px-3 py-3">
+                                        <div className="text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-smoke)]">
+                                          {item.label}
+                                        </div>
+                                        <div className="mt-1 text-[22px] text-[color:var(--color-porcelain)]">{item.value}</div>
+                                      </div>
+                                    ))}
                                   </div>
 
-                                  <div className="mt-3 grid grid-cols-3 gap-2">
-                                    <div className="rounded-lg border border-[rgba(195,190,182,0.15)] bg-[rgba(28,27,25,0.40)] px-2 py-2">
-                                      <div className="text-[10px] uppercase tracking-[0.14em] text-[#adadad]">Feeds</div>
-                                      <div className="mt-1 text-sm text-white">{Number(stats.feedCount || 0)}</div>
-                                    </div>
-                                    <div className="rounded-lg border border-[rgba(195,190,182,0.15)] bg-[rgba(28,27,25,0.40)] px-2 py-2">
-                                      <div className="text-[10px] uppercase tracking-[0.14em] text-[#adadad]">Photos</div>
-                                      <div className="mt-1 text-sm text-white">{Number(stats.photoCount || 0)}</div>
-                                    </div>
-                                    <div className="rounded-lg border border-[rgba(195,190,182,0.15)] bg-[rgba(28,27,25,0.40)] px-2 py-2">
-                                      <div className="text-[10px] uppercase tracking-[0.14em] text-[#adadad]">Videos</div>
-                                      <div className="mt-1 text-sm text-white">{Number(stats.videoCount || 0)}</div>
-                                    </div>
-                                  </div>
-
-                                  {(recentPhotos.length > 0 || recentVideos.length > 0 || feeds.length > 0) && (
-                                    <div className="mt-3 space-y-2">
+                                  {(feeds.length > 0 || pages.length > 0 || recentPhotos.length > 0 || recentVideos.length > 0) ? (
+                                    <div className="mt-4 grid gap-3 lg:grid-cols-2">
                                       {feeds.slice(0, 2).map((feed: any) => (
                                         <div
                                           key={`hub-feed-${feed.id}`}
-                                          className="rounded-lg border border-[rgba(195,190,182,0.15)] bg-[rgba(28,27,25,0.40)] px-3 py-2"
+                                          className="stone-inset-panel rounded-[22px] px-4 py-3"
                                         >
-                                          <div className="flex items-center justify-between gap-2">
-                                            <div className="text-xs text-white">{feed.title || `Feed ${feed.id}`}</div>
-                                            <a
-                                              href={feed.openUrl || "/studio?tab=feed-planner#feed-planner"}
-                                              className="text-[10px] uppercase tracking-[0.14em] text-[#cfcfcf] hover:text-white"
-                                            >
+                                          <div className="flex items-center justify-between gap-3">
+                                            <div>
+                                              <div className="text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-smoke)]">Feed</div>
+                                              <div className="mt-1 text-sm text-[color:var(--color-porcelain)]">{feed.title || `Feed ${feed.id}`}</div>
+                                            </div>
+                                            <MayaInlineAction href={feed.openUrl || "/studio?tab=feed-planner#feed-planner"}>
                                               Open
-                                            </a>
+                                            </MayaInlineAction>
                                           </div>
                                         </div>
                                       ))}
-                                      {recentPhotos.slice(0, 2).map((photo: any) => (
+                                      {pages.slice(0, 1).map((page: any) => (
+                                        <div
+                                          key={`hub-page-${page.id}`}
+                                          className="stone-inset-panel rounded-[22px] px-4 py-3"
+                                        >
+                                          <div className="flex items-center justify-between gap-3">
+                                            <div>
+                                              <div className="text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-smoke)]">Page Draft</div>
+                                              <div className="mt-1 text-sm text-[color:var(--color-porcelain)]">{page.title || "Landing page draft"}</div>
+                                            </div>
+                                            <MayaInlineAction href={page.liveUrl || "/studio?tab=maya#maya"}>
+                                              Open
+                                            </MayaInlineAction>
+                                          </div>
+                                        </div>
+                                      ))}
+                                      {recentPhotos.slice(0, 1).map((photo: any) => (
                                         <div
                                           key={`hub-photo-${photo.id}`}
-                                          className="rounded-lg border border-[rgba(195,190,182,0.15)] bg-[rgba(28,27,25,0.40)] px-3 py-2"
+                                          className="stone-inset-panel rounded-[22px] px-4 py-3"
                                         >
-                                          <div className="flex items-center justify-between gap-2">
-                                            <div className="text-xs text-white">
-                                              {photo.prompt || "Recent photo"}
+                                          <div className="flex items-center justify-between gap-3">
+                                            <div>
+                                              <div className="text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-smoke)]">Recent Photo</div>
+                                              <div className="mt-1 text-sm text-[color:var(--color-porcelain)]">
+                                                {photo.prompt || "Recent photo"}
+                                              </div>
                                             </div>
-                                            <a
-                                              href={photo.openUrl || "/studio?tab=gallery#gallery"}
-                                              className="text-[10px] uppercase tracking-[0.14em] text-[#cfcfcf] hover:text-white"
-                                            >
+                                            <MayaInlineAction href={photo.openUrl || "/studio?tab=gallery#gallery"}>
                                               Open
-                                            </a>
+                                            </MayaInlineAction>
                                           </div>
                                         </div>
                                       ))}
                                       {recentVideos.slice(0, 1).map((video: any) => (
                                         <div
                                           key={`hub-video-${video.id}`}
-                                          className="rounded-lg border border-[rgba(195,190,182,0.15)] bg-[rgba(28,27,25,0.40)] px-3 py-2"
+                                          className="stone-inset-panel rounded-[22px] px-4 py-3"
                                         >
-                                          <div className="flex items-center justify-between gap-2">
-                                            <div className="text-xs text-white">Latest video draft</div>
-                                            <a
-                                              href={video.openUrl || "/studio?tab=maya#maya/videos"}
-                                              className="text-[10px] uppercase tracking-[0.14em] text-[#cfcfcf] hover:text-white"
-                                            >
+                                          <div className="flex items-center justify-between gap-3">
+                                            <div>
+                                              <div className="text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-smoke)]">Latest Video</div>
+                                              <div className="mt-1 text-sm text-[color:var(--color-porcelain)]">Motion draft ready</div>
+                                            </div>
+                                            <MayaInlineAction href={video.openUrl || "/studio?tab=maya#maya/videos"}>
                                               Open
-                                            </a>
+                                            </MayaInlineAction>
                                           </div>
                                         </div>
                                       ))}
                                     </div>
-                                  )}
-                                </div>
+                                  ) : null}
+                                </MayaInlineCard>
                               )
                             }
 
@@ -1014,46 +1033,58 @@ export default function MayaChatInterface({
 
                               if (state === "loading") {
                                 return (
-                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4">
-                                    <div className="text-xs uppercase tracking-[0.2em] text-[#8a8780]">Gallery</div>
-                                    <div className="mt-2 text-sm text-[#f0ede8]">Loading your latest images…</div>
-                                  </div>
+                                  <MayaInlineCard
+                                    key={partIndex}
+                                    eyebrow="Gallery"
+                                    title="Recent Photos"
+                                    subtitle="Loading your latest images from Maya and Studio."
+                                  />
                                 )
                               }
 
                               if (state === "error") {
                                 return (
-                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4">
-                                    <div className="text-xs uppercase tracking-[0.2em] text-[#8a8780]">Gallery</div>
-                                    <div className="mt-2 text-sm text-[#f5c2c2]">{output.message || "Could not load gallery."}</div>
-                                  </div>
+                                  <MayaInlineCard
+                                    key={partIndex}
+                                    eyebrow="Gallery"
+                                    title="Recent Photos"
+                                    subtitle={output.message || "Could not load gallery."}
+                                  />
                                 )
                               }
 
                               return (
-                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4">
-                                  <div className="flex items-center justify-between gap-3">
-                                    <div className="text-xs uppercase tracking-[0.2em] text-[#8a8780]">Gallery</div>
-                                    <div className="text-[10px] uppercase tracking-[0.16em] text-[#bdbdbd]">
-                                      {Number(output.total || images.length)} images
-                                    </div>
-                                  </div>
+                                <MayaInlineCard
+                                  key={partIndex}
+                                  eyebrow="Gallery"
+                                  title="Recent Photos"
+                                  subtitle="Your latest outputs stay here so Maya can reuse them in new drafts."
+                                  aside={<MayaInlinePill>{Number(output.total || images.length)} images</MayaInlinePill>}
+                                  actions={<MayaInlineAction href="/studio?tab=gallery#gallery">Open Gallery</MayaInlineAction>}
+                                >
                                   {images.length > 0 ? (
-                                    <div className="mt-3 grid grid-cols-3 gap-2">
+                                    <div className="grid grid-cols-3 gap-2.5">
                                       {images.slice(0, 6).map((image: any, index: number) => (
-                                        <div key={image.id || index} className="aspect-square overflow-hidden rounded-lg border border-[rgba(195,190,182,0.20)]">
-                                          <img
-                                            src={image.imageUrl || image.image_url}
-                                            alt="Gallery image"
-                                            className="h-full w-full object-cover"
-                                          />
+                                        <div
+                                          key={image.id || index}
+                                          className="stone-inset-panel overflow-hidden rounded-[20px]"
+                                        >
+                                          <div className="aspect-square overflow-hidden">
+                                            <img
+                                              src={image.imageUrl || image.image_url}
+                                              alt="Gallery image"
+                                              className="h-full w-full object-cover"
+                                            />
+                                          </div>
                                         </div>
                                       ))}
                                     </div>
                                   ) : (
-                                    <p className="mt-2 text-sm text-[#cfcfcf]">No images yet. Generate your first photo and Maya will keep it here.</p>
+                                    <div className="stone-inset-panel rounded-[22px] px-4 py-4 text-sm text-[color:var(--text-accent)]">
+                                      No images yet. Generate your first photo and Maya will keep it here.
+                                    </div>
                                   )}
-                                </div>
+                                </MayaInlineCard>
                               )
                             }
 
@@ -1063,24 +1094,34 @@ export default function MayaChatInterface({
 
                               if (state === "loading") {
                                 return (
-                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4 text-sm text-[#f0ede8]">
-                                    Saving to gallery…
-                                  </div>
+                                  <MayaInlineCard
+                                    key={partIndex}
+                                    eyebrow="Gallery"
+                                    title="Saving Photo"
+                                    subtitle="Adding this image to your gallery."
+                                  />
                                 )
                               }
 
                               if (state === "error") {
                                 return (
-                                  <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4 text-sm text-[#f5c2c2]">
-                                    {output.message || "Could not save to gallery."}
-                                  </div>
+                                  <MayaInlineCard
+                                    key={partIndex}
+                                    eyebrow="Gallery"
+                                    title="Save Failed"
+                                    subtitle={output.message || "Could not save to gallery."}
+                                  />
                                 )
                               }
 
                               return (
-                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4 text-sm text-[#f0ede8]">
-                                  {output.message || "Saved to your gallery."}
-                                </div>
+                                <MayaInlineCard
+                                  key={partIndex}
+                                  eyebrow="Gallery"
+                                  title="Saved"
+                                  subtitle={output.message || "Saved to your gallery."}
+                                  actions={<MayaInlineAction href="/studio?tab=gallery#gallery">Open Gallery</MayaInlineAction>}
+                                />
                               )
                             }
 
@@ -1098,10 +1139,13 @@ export default function MayaChatInterface({
                               ]
 
                               return (
-                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4">
-                                  <div className="text-xs uppercase tracking-[0.2em] text-[#8a8780]">Create Photo</div>
-                                  <p className="mt-2 text-sm text-[#d5d5d5]">Choose how you want Maya to generate this image.</p>
-                                  <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                                <MayaInlineCard
+                                  key={partIndex}
+                                  eyebrow="Create Photo"
+                                  title="Choose Your Source"
+                                  subtitle="Keep generation inside Maya. Pick the image source and I’ll handle the rest."
+                                >
+                                  <div className="grid gap-2 sm:grid-cols-3">
                                     {options.map((option) => {
                                       const isSelected = selectedSource === option.id
                                       return (
@@ -1111,8 +1155,8 @@ export default function MayaChatInterface({
                                           onClick={() => onToolSelectGenerationSource?.(option.id)}
                                           className={`rounded-lg border px-3 py-2 text-left transition-colors ${
                                             isSelected
-                                              ? "border-[rgba(195,190,182,0.50)] bg-[rgba(175,170,162,0.25)]"
-                                              : "border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.06)] hover:bg-[rgba(175,170,162,0.15)]"
+                                              ? "border-[rgba(240,237,232,0.18)] bg-[rgba(240,237,232,0.14)]"
+                                              : "stone-inset-panel hover:bg-[rgba(175,170,162,0.16)]"
                                           }`}
                                         >
                                           <div className="text-[11px] uppercase tracking-[0.16em] text-[#f0ede8]">{option.label}</div>
@@ -1121,7 +1165,7 @@ export default function MayaChatInterface({
                                       )
                                     })}
                                   </div>
-                                </div>
+                                </MayaInlineCard>
                               )
                             }
 
@@ -1142,19 +1186,17 @@ export default function MayaChatInterface({
                               const categoryLabel = categoryLabelMap[category] || "Selfies"
 
                               return (
-                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4">
-                                  <div className="text-xs uppercase tracking-[0.2em] text-[#8a8780]">Upload Zone</div>
-                                  <p className="mt-2 text-sm text-[#d5d5d5]">
-                                    Ready for {categoryLabel.toLowerCase()}. Open the inline uploader and drop your images.
-                                  </p>
-                                  <button
-                                    type="button"
-                                    onClick={() => onToolOpenUploadZone?.(category)}
-                                    className="mt-3 rounded-lg border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.12)] px-3 py-2 text-[11px] uppercase tracking-[0.16em] text-[#f0ede8] transition-colors hover:bg-[rgba(175,170,162,0.22)]"
-                                  >
-                                    Open Upload
-                                  </button>
-                                </div>
+                                <MayaInlineCard
+                                  key={partIndex}
+                                  eyebrow="Upload Zone"
+                                  title={`Add ${categoryLabel}`}
+                                  subtitle={`Ready for ${categoryLabel.toLowerCase()}. Open the inline uploader and drop your images.`}
+                                  actions={
+                                    <MayaInlineAction onClick={() => onToolOpenUploadZone?.(category)} variant="primary">
+                                      Open Upload
+                                    </MayaInlineAction>
+                                  }
+                                />
                               )
                             }
 
@@ -1198,17 +1240,17 @@ export default function MayaChatInterface({
                                   : `Maya will apply your next edit instructions to this ${assetLabel}.`
 
                               return (
-                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4">
-                                  <div className="flex items-center justify-between gap-3">
-                                    <div className="text-xs uppercase tracking-[0.2em] text-[#8a8780]">Editing Workspace</div>
-                                    <div className="text-[10px] uppercase tracking-[0.16em] text-[#bdbdbd]">{assetType}</div>
+                                <MayaInlineCard
+                                  key={partIndex}
+                                  eyebrow="Editing Workspace"
+                                  title={assetLabel}
+                                  subtitle={helperText}
+                                  aside={<MayaInlinePill tone="strong">{assetType}</MayaInlinePill>}
+                                >
+                                  <div className="stone-inset-panel rounded-[22px] px-4 py-4 text-[11px] leading-relaxed text-[color:var(--text-accent)]">
+                                    Next step: describe the exact change you want, whether it is the headline, CTA, section copy, layout, or tile content. Maya keeps editing this same asset in place.
                                   </div>
-                                  <div className="mt-2 text-sm text-[#f0ede8]">{assetLabel}</div>
-                                  <div className="mt-1 text-xs text-[#cfcfcf]">{helperText}</div>
-                                  <div className="mt-3 rounded-lg border border-[rgba(195,190,182,0.20)] bg-[rgba(28,27,25,0.40)] px-3 py-2 text-[11px] text-[#8a8780]">
-                                    Next step: describe the exact change you want (headline, CTA, section copy, layout), and Maya keeps editing this same asset.
-                                  </div>
-                                </div>
+                                </MayaInlineCard>
                               )
                             }
 
@@ -1234,39 +1276,23 @@ export default function MayaChatInterface({
                                 typeof output.url === "string" && output.url.trim().length > 0 ? output.url : null
 
                               return (
-                                <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4">
-                                  <div className="flex items-center justify-between gap-3">
-                                    <div className="text-xs uppercase tracking-[0.2em] text-[#8a8780]">Draft Ready</div>
-                                    <div className="text-[10px] uppercase tracking-[0.16em] text-[#bdbdbd]">{assetType}</div>
-                                  </div>
-                                  <div className="mt-2 text-sm text-[#f0ede8]">{assetLabel}</div>
-                                  <div className="mt-1 text-xs text-[#cfcfcf]">{previewText}</div>
-                                  {output.assetId ? (
-                                    <div className="mt-3 overflow-hidden rounded-lg border border-[rgba(255,255,255,0.12)] bg-white">
-                                      <iframe
-                                        title={`${assetLabel} preview`}
-                                        src={`/api/maya/generated-assets/${encodeURIComponent(output.assetId)}/html`}
-                                        className="h-64 w-full"
-                                      />
-                                    </div>
-                                  ) : null}
-                                  {url ? (
-                                    <a
-                                      href={url}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="mt-3 inline-flex rounded-lg border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.12)] px-3 py-2 text-[11px] uppercase tracking-[0.16em] text-[#f0ede8] transition-colors hover:bg-[rgba(175,170,162,0.22)]"
-                                    >
-                                      Open Draft
-                                    </a>
-                                  ) : null}
-                                </div>
+                                <MayaGeneratedAssetCard
+                                  key={partIndex}
+                                  assetType={assetType}
+                                  assetLabel={assetLabel}
+                                  assetId={output.assetId}
+                                  previewText={previewText}
+                                  url={url}
+                                />
                               )
                             }
 
                             if (part.type === "tool-structuredAssetBlocked") {
                               const output = (part as any).output || {}
                               const assetType = output.assetType || "calendar"
+                              if (assetType === "pdf") {
+                                return null
+                              }
                               if (!isLandingPagesUiEnabled && assetType === "page") {
                                 return null
                               }
@@ -1283,42 +1309,29 @@ export default function MayaChatInterface({
                               const quickRetryPrompt =
                                 assetType === "calendar"
                                   ? "Create a content calendar for my current offer this week."
-                                  : assetType === "pdf"
-                                    ? "Create a workbook draft for my current offer."
-                                    : "Create a landing page draft for my current offer."
+                                  : "Create a landing page draft for my current offer."
 
                               return (
-                                <div
+                                <MayaInlineCard
                                   key={partIndex}
-                                  className="mt-3 rounded-xl border border-[rgba(195,190,182,0.22)] bg-[rgba(175,170,162,0.12)] p-4"
+                                  eyebrow="Need One Detail"
+                                  title={`Ready to build your ${assetType}`}
+                                  subtitle={`I only need ${missingLabel} before execution.`}
+                                  actions={
+                                    <>
+                                      <MayaInlineAction onClick={() => onToolPromptSelect?.(quickRetryPrompt)} variant="primary">
+                                        Retry Build
+                                      </MayaInlineAction>
+                                      <MayaInlineAction onClick={() => onToolPromptSelect?.("I need one quick form to fill the missing details.")}>
+                                        Missing Detail Form
+                                      </MayaInlineAction>
+                                    </>
+                                  }
                                 >
-                                  <div className="text-xs uppercase tracking-[0.2em] text-[#8a8780]">Need One Detail</div>
-                                  <div className="mt-2 text-sm text-[#f0ede8]">
-                                    I’m ready to build your {assetType} in template mode.
-                                  </div>
-                                  <div className="mt-1 text-xs text-[#d0d0d0]">
-                                    I only need {missingLabel} before execution.
-                                  </div>
-                                  <div className="mt-3 rounded-lg border border-[rgba(195,190,182,0.20)] bg-[rgba(28,27,25,0.40)] px-3 py-2 text-[11px] text-[#8a8780]">
+                                  <div className="stone-inset-panel rounded-[22px] px-4 py-4 text-[11px] leading-relaxed text-[color:var(--text-accent)]">
                                     {recoveryHint}
                                   </div>
-                                  <div className="mt-3 flex flex-wrap gap-2">
-                                    <button
-                                      type="button"
-                                      onClick={() => onToolPromptSelect?.(quickRetryPrompt)}
-                                      className="rounded-lg border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.15)] px-3 py-2 text-[11px] uppercase tracking-[0.16em] text-[#f0ede8] transition-colors hover:bg-[rgba(175,170,162,0.25)]"
-                                    >
-                                      Retry Build
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => onToolPromptSelect?.("I need one quick form to fill the missing details.")}
-                                      className="rounded-lg border border-[rgba(195,190,182,0.20)] bg-transparent px-3 py-2 text-[11px] uppercase tracking-[0.16em] text-[#8a8780] transition-colors hover:bg-[rgba(175,170,162,0.12)]"
-                                    >
-                                      Missing Detail Form
-                                    </button>
-                                  </div>
-                                </div>
+                                </MayaInlineCard>
                               )
                             }
 

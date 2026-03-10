@@ -16,15 +16,30 @@ async function main() {
   const subscriptions = await stripe.subscriptions.list({
     status: 'active',
     limit: 100,
-    expand: ['data.items.data.price'],
+    expand: ['data.items.data.price', 'data.discount'],
   })
 
   let totalMRR_NOK = 0
   let totalMRR_USD = 0
   let totalMRR_EUR = 0
+  let betaUserCount = 0
   const breakdown: Record<string, { count: number; mrr: number; currency: string }> = {}
 
   for (const sub of subscriptions.data) {
+    // Check for beta discount (50% lifetime)
+    let discountMultiplier = 1.0
+    if (sub.discount) {
+      const coupon = sub.discount.coupon
+      if (coupon.percent_off && coupon.percent_off >= 50 && coupon.duration === 'forever') {
+        discountMultiplier = (100 - coupon.percent_off) / 100
+        betaUserCount++
+      } else if (coupon.percent_off) {
+        discountMultiplier = (100 - coupon.percent_off) / 100
+      } else if (coupon.amount_off) {
+        // Handle fixed amount discounts separately below
+      }
+    }
+
     for (const item of sub.items.data) {
       const price = item.price as Stripe.Price
       const amount = price.unit_amount || 0
@@ -36,6 +51,14 @@ async function main() {
         monthlyAmount = amount * item.quantity
       } else if (interval === 'year') {
         monthlyAmount = Math.round((amount * item.quantity) / 12)
+      }
+
+      // Apply discount multiplier
+      monthlyAmount = Math.round(monthlyAmount * discountMultiplier)
+
+      // Handle fixed amount discounts
+      if (sub.discount?.coupon.amount_off) {
+        monthlyAmount -= sub.discount.coupon.amount_off
       }
 
       if (monthlyAmount > 0) {
@@ -57,13 +80,13 @@ async function main() {
     }
   }
 
-  console.log('\n📊 MRR BREAKDOWN BY PRICE:')
+  console.log('\n📊 MRR BREAKDOWN BY PRICE (after discounts):')
   for (const [priceId, data] of Object.entries(breakdown)) {
     const symbol = data.currency === 'NOK' ? 'kr' : data.currency === 'USD' ? '$' : '€'
-    console.log(`  ${priceId}: ${data.count} subs × ${symbol}${(data.mrr / data.count / 100).toFixed(2)} = ${symbol}${(data.mrr / 100).toFixed(2)}/mo`)
+    console.log(`  ${priceId}: ${data.count} subs × avg ${symbol}${(data.mrr / data.count / 100).toFixed(2)} = ${symbol}${(data.mrr / 100).toFixed(2)}/mo`)
   }
 
-  console.log('\n💰 TOTAL MRR BY CURRENCY:')
+  console.log('\n💰 TOTAL MRR BY CURRENCY (ACTUAL REVENUE AFTER DISCOUNTS):')
   if (totalMRR_NOK > 0) console.log(`  NOK: kr${(totalMRR_NOK / 100).toFixed(2)}`)
   if (totalMRR_USD > 0) {
     console.log(`  USD: $${(totalMRR_USD / 100).toFixed(2)}`)
@@ -72,17 +95,21 @@ async function main() {
     const usdToNok = 10.5
     const mrrInNok = (totalMRR_USD / 100) * usdToNok
     console.log(`  (≈ NOK ${mrrInNok.toFixed(2)} at ~10.5 rate — Stripe dashboard shows this)`)
+    const mrrInEur = (totalMRR_USD / 100) * 0.93
+    console.log(`  (≈ EUR €${mrrInEur.toFixed(2)} at ~0.93 rate)`)
   }
   if (totalMRR_EUR > 0) console.log(`  EUR: €${(totalMRR_EUR / 100).toFixed(2)}`)
 
   console.log(`\n👥 Active subscriptions: ${subscriptions.data.length}`)
+  console.log(`🔴 Beta users (50% lifetime discount): ${betaUserCount}`)
 
   return { 
     totalMRR_NOK, 
     totalMRR_USD, 
     totalMRR_EUR, 
     breakdown, 
-    count: subscriptions.data.length 
+    count: subscriptions.data.length,
+    betaUserCount
   }
 }
 

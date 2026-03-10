@@ -126,6 +126,15 @@ describe("orchestrateMayaTurn", () => {
     expect(result).toEqual({ kind: "none", reason: "empty_text" })
   })
 
+  it("does not route workbook requests into structured asset creation", () => {
+    const result = orchestrateMayaTurn({
+      userText: "Create a workbook PDF draft for my coaching offer",
+      activeAssetContext: null,
+    })
+
+    expect(result).toEqual({ kind: "none", reason: "no_match" })
+  })
+
   it("pauses landing-page creation in chat when page assets are disabled", () => {
     const result = orchestrateMayaTurn({
       userText: "Create a landing page for my studio offer",
