@@ -18,21 +18,21 @@ export function generatePaymentUpdateEmail(params: PaymentRecoveryParams) {
   <meta charset="utf-8">
   <title>Quick Payment Update Needed</title>
 </head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #fafaf9; margin: 0; padding: 20px;">
+<body style="font-family: Inter, Arial, sans-serif; background: #fafaf9; margin: 0; padding: 20px;">
   <div style="max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px;">
     
     <h2 style="color: #1c1917; font-size: 22px; margin: 0 0 20px;">Hi ${displayName},</h2>
     
-    <p style="font-size: 16px; line-height: 1.6; color: #44403c;">There was a small issue processing your payment for SSELFIE ${planName}.</p>
+    <p style="font-size: 16px; line-height: 1.6; color: #292524;">There was a small issue processing your payment for SSELFIE ${planName}.</p>
     
-    <div style="background: #fef3c7; padding: 20px; border-radius: 8px; border: 1px solid #f59e0b; margin: 20px 0;">
-      <h3 style="color: #92400e; margin: 0 0 10px; font-size: 16px;">💳 Quick Fix Needed</h3>
-      <p style="margin: 0; color: #92400e; font-size: 14px;">Your card couldn't be charged for your ${planName} (${amount}). This happens sometimes!</p>
+    <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; border: 1px solid #e5e5e5; margin: 20px 0;">
+      <h3 style="color: #1c1917; margin: 0 0 10px; font-size: 16px;">Quick fix needed</h3>
+      <p style="margin: 0; color: #666666; font-size: 14px;">Your card couldn't be charged for your ${planName} (${amount}). This happens sometimes.</p>
     </div>
     
-    <p style="font-size: 16px; line-height: 1.6; color: #44403c;">No worries — it takes 30 seconds to fix:</p>
+    <p style="font-size: 16px; line-height: 1.6; color: #292524;">No worries. It takes about 30 seconds to fix:</p>
     
-    <ol style="color: #44403c; line-height: 1.8; padding-left: 20px;">
+    <ol style="color: #292524; line-height: 1.8; padding-left: 20px;">
       <li>Click the button below</li>
       <li>Update your payment method</li>
       <li>Continue creating amazing content!</li>
@@ -45,13 +45,13 @@ export function generatePaymentUpdateEmail(params: PaymentRecoveryParams) {
       </a>
     </div>
     
-    <div style="background: #f5f5f4; padding: 20px; border-radius: 8px; margin: 25px 0;">
+    <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 25px 0;">
       <p style="margin: 0; color: #57534e; font-size: 14px; text-align: center;">
         <strong>Your account is still active</strong> — just need to update your payment to continue!
       </p>
     </div>
     
-    <p style="font-size: 14px; color: #78716c; text-align: center; margin: 20px 0 0;">
+    <p style="font-size: 14px; color: #8a8780; text-align: center; margin: 20px 0 0;">
       Questions? Just reply and I'll help sort it out!<br>
       Sandra ✨
     </p>
@@ -95,19 +95,19 @@ export function generateWeMissYouEmail(params: PaymentRecoveryParams) {
   <meta charset="utf-8">
   <title>We Miss You in SSELFIE</title>
 </head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #fafaf9; margin: 0; padding: 20px;">
+<body style="font-family: Inter, Arial, sans-serif; background: #fafaf9; margin: 0; padding: 20px;">
   <div style="max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px;">
     
     <h2 style="color: #1c1917; font-size: 22px; margin: 0 0 20px;">${displayName}, we miss you! 💔</h2>
     
-    <p style="font-size: 16px; line-height: 1.6; color: #44403c;">I noticed your ${planName} payment didn't go through a few days ago, and I wanted to reach out personally.</p>
+    <p style="font-size: 16px; line-height: 1.6; color: #292524;">I noticed your ${planName} payment didn't go through a few days ago, and I wanted to reach out personally.</p>
     
-    <p style="font-size: 16px; line-height: 1.6; color: #44403c;">I know how it feels when tech stuff gets in the way of creating. That's exactly why I built SSELFIE — to make showing up online <em>easier</em>, not harder.</p>
+    <p style="font-size: 16px; line-height: 1.6; color: #292524;">I know how it feels when tech stuff gets in the way of creating. That's exactly why I built SSELFIE — to make showing up online <em>easier</em>, not harder.</p>
     
-    <div style="background: #eff6ff; padding: 25px; border-radius: 8px; margin: 25px 0;">
-      <h3 style="color: #1d4ed8; margin: 0 0 15px; font-size: 18px;">💫 Special Welcome Back Offer</h3>
-      <p style="margin: 0 0 15px; color: #1e40af;">Because I want you back in the SSELFIE community:</p>
-      <ul style="color: #1e40af; margin: 0; line-height: 1.8;">
+    <div style="background: #f5f5f5; padding: 25px; border-radius: 8px; margin: 25px 0;">
+      <h3 style="color: #1c1917; margin: 0 0 15px; font-size: 18px; font-family: 'Cormorant Garamond', Georgia, serif;">Welcome back offer</h3>
+      <p style="margin: 0 0 15px; color: #666666;">Because I want you back in the SSELFIE community:</p>
+      <ul style="color: #292524; margin: 0; line-height: 1.8;">
         <li><strong>30 professional photos</strong> styled for your brand</li>
         <li><strong>Complete Instagram strategy</strong></li>
         <li><strong>Ready-to-use captions</strong> for each post</li>
@@ -115,18 +115,18 @@ export function generateWeMissYouEmail(params: PaymentRecoveryParams) {
       </ul>
     </div>
     
-    <div style="background: #fef2f2; padding: 20px; border-radius: 8px; border: 1px solid #f87171; margin: 25px 0;">
-      <p style="margin: 0; color: #dc2626; font-size: 15px; text-align: center; font-weight: 600;">🎁 This week only: Get your ${planName} for just $37</p>
+    <div style="background: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #e5e5e5; margin: 25px 0;">
+      <p style="margin: 0; color: #1c1917; font-size: 15px; text-align: center; font-weight: 600;">This week only: Get your ${planName} for just $37</p>
     </div>
     
     <div style="text-align: center; margin: 30px 0;">
       <a href="${siteUrl}/checkout/blueprint?discount=WELCOME_BACK&utm_source=email&utm_medium=recovery&utm_campaign=we_miss_you" 
-         style="background: #dc2626; color: white; padding: 16px 32px; text-decoration: none; border-radius: 6px; font-size: 16px; font-weight: 600; display: inline-block;">
+         style="background: #1c1917; color: white; padding: 16px 32px; text-decoration: none; border-radius: 6px; font-size: 16px; font-weight: 600; display: inline-block;">
         Welcome Back - Get Blueprint ($37) →
       </a>
     </div>
     
-    <p style="font-size: 14px; color: #78716c; text-align: center; margin: 20px 0 0;">
+    <p style="font-size: 14px; color: #8a8780; text-align: center; margin: 20px 0 0;">
       Questions? Just reply — I personally read every email.<br>
       Sandra ✨
     </p>

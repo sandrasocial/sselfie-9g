@@ -19,7 +19,7 @@ export function generateFeedbackReplyEmail({
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Reply to Your Feedback</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #fafaf9;">
+<body style="margin: 0; padding: 0; font-family: Inter, Arial, sans-serif; background-color: #fafaf9;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #fafaf9; padding: 40px 20px;">
     <tr>
       <td align="center">
@@ -28,14 +28,14 @@ export function generateFeedbackReplyEmail({
           <!-- Header -->
           <tr>
             <td style="padding: 40px 40px 0 40px; text-align: center;">
-              <h1 style="margin: 0; font-family: 'Georgia', serif; font-size: 32px; font-weight: 300; letter-spacing: 0.2em; text-transform: uppercase; color: #0c0a09;">SSELFIE</h1>
+              <h1 style="margin: 0; font-family: 'Cormorant Garamond', Georgia, serif; font-size: 32px; font-weight: 300; letter-spacing: 0.2em; text-transform: uppercase; color: #0c0a09;">SSELFIE</h1>
             </td>
           </tr>
           
           <!-- Content -->
           <tr>
             <td style="padding: 40px;">
-              <h2 style="margin: 0 0 20px 0; font-family: 'Georgia', serif; font-size: 24px; font-weight: 300; color: #0c0a09;">Hi ${userName}!</h2>
+              <h2 style="margin: 0 0 20px 0; font-family: 'Cormorant Garamond', Georgia, serif; font-size: 24px; font-weight: 300; color: #0c0a09;">Hi ${userName}!</h2>
               
               <p style="margin: 0 0 24px 0; font-size: 16px; line-height: 1.6; color: #57534e;">
                 We've responded to your feedback. Here's our reply:
@@ -48,9 +48,9 @@ export function generateFeedbackReplyEmail({
               
               <!-- Original Feedback Reference -->
               <div style="border-top: 1px solid #e7e5e4; padding-top: 24px; margin-top: 24px;">
-                <p style="margin: 0 0 8px 0; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #78716c;">Your Original Feedback:</p>
-                <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 500; color: #44403c;">${originalSubject}</p>
-                <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #78716c;">${originalMessage}</p>
+                <p style="margin: 0 0 8px 0; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #8a8780;">Your Original Feedback:</p>
+                <p style="margin: 0 0 8px 0; font-size: 14px; font-weight: 500; color: #666666;">${originalSubject}</p>
+                <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #8a8780;">${originalMessage}</p>
               </div>
               
               <p style="margin: 32px 0 0 0; font-size: 15px; line-height: 1.6; color: #57534e;">
@@ -73,9 +73,9 @@ export function generateFeedbackReplyEmail({
           <!-- Footer -->
           <tr>
             <td style="padding: 32px 40px; background-color: #fafaf9; border-top: 1px solid #e7e5e4;">
-              <p style="margin: 0 0 8px 0; font-size: 13px; color: #78716c; text-align: center;">
+              <p style="margin: 0 0 8px 0; font-size: 13px; color: #8a8780; text-align: center;">
                 xo,<br>
-                <strong style="color: #44403c;">Sandra</strong>
+                <strong style="color: #666666;">Sandra</strong>
               </p>
               <p style="margin: 16px 0 0 0; font-size: 12px; color: #a8a29e; text-align: center;">
                 SSELFIE Studio · Your AI Beauty & Content Studio

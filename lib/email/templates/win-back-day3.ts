@@ -31,7 +31,7 @@ export function generateWinBackDay3Email(params: WinBackDay3Params): {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Something I want to say</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #fafaf9;">
+<body style="margin: 0; padding: 0; font-family: Inter, Arial, sans-serif; background-color: #fafaf9;">
   <table role="presentation" style="width: 100%; border-collapse: collapse;">
     <tr>
       <td align="center" style="padding: 20px;">
@@ -40,7 +40,7 @@ export function generateWinBackDay3Email(params: WinBackDay3Params): {
           <!-- Header -->
           <tr>
             <td style="background-color: #0c0a09; padding: 40px 24px; text-align: center;">
-              <h1 style="margin: 0; font-family: 'Times New Roman', serif; font-size: 32px; font-weight: 200; letter-spacing: 0.3em; color: #fafaf9; text-transform: uppercase;">
+              <h1 style="margin: 0; font-family: 'Cormorant Garamond', Georgia, serif; font-size: 32px; font-weight: 200; letter-spacing: 0.3em; color: #fafaf9; text-transform: uppercase;">
                 S S E L F I E
               </h1>
             </td>
@@ -89,7 +89,7 @@ export function generateWinBackDay3Email(params: WinBackDay3Params): {
                 <p style="margin: 0; font-size: 15px; line-height: 1.7; color: #57534e; font-style: italic;">
                   And if there's any part of you that's still curious — the door is open. No pressure, no expiry, no pitch.
                 </p>
-                <p style="margin: 12px 0 0; font-size: 14px; color: #78716c;">
+                <p style="margin: 12px 0 0; font-size: 14px; color: #8a8780;">
                   <a href="${rejoinLink}" style="color: #1c1917; text-decoration: underline;">Come back and start fresh &rarr;</a>
                 </p>
               </div>
@@ -102,12 +102,12 @@ export function generateWinBackDay3Email(params: WinBackDay3Params): {
 
           <!-- Footer -->
           <tr>
-            <td style="padding: 30px; background-color: #f5f5f4; border-top: 1px solid #e7e5e4; text-align: center;">
-              <p style="margin: 0 0 8px; font-size: 12px; color: #78716c;">
+            <td style="padding: 30px; background-color: #f5f5f5; border-top: 1px solid #e7e5e4; text-align: center;">
+              <p style="margin: 0 0 8px; font-size: 12px; color: #8a8780;">
                 SSELFIE Studio &mdash; Where Visibility Meets Financial Freedom
               </p>
-              <p style="margin: 0; font-size: 12px; color: #78716c;">
-                <a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color: #78716c; text-decoration: underline;">Unsubscribe</a>
+              <p style="margin: 0; font-size: 12px; color: #8a8780;">
+                <a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color: #8a8780; text-decoration: underline;">Unsubscribe</a>
               </p>
             </td>
           </tr>

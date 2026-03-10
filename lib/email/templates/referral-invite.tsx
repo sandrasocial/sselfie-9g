@@ -22,14 +22,14 @@ export function generateReferralInviteEmail(params: ReferralInviteParams): {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Your friend thinks you'd love SSELFIE</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #fafaf9;">
+<body style="margin: 0; padding: 0; font-family: Inter, Arial, sans-serif; background-color: #fafaf9;">
   <table role="presentation" style="width: 100%; border-collapse: collapse;">
     <tr>
       <td align="center" style="padding: 20px 0;">
         <table role="presentation" style="width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
           <tr>
             <td style="padding: 40px 30px 20px 30px; text-align: center;">
-              <h1 style="margin: 0 0 10px; font-family: Georgia, serif; font-size: 28px; line-height: 32px; color: #1c1917; font-weight: 300;">
+              <h1 style="margin: 0 0 10px; font-family: 'Cormorant Garamond', Georgia, serif; font-size: 28px; line-height: 32px; color: #1c1917; font-weight: 300;">
                 ${referrerDisplay} thinks you'd love SSELFIE
               </h1>
               <p style="margin: 0; font-size: 16px; line-height: 24px; color: #292524;">

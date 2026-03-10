@@ -21,7 +21,7 @@ export function generateCreditRenewalEmail(params: CreditRenewalParams): {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Your monthly SSELFIE credits are here 🎉</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #fafaf9;">
+<body style="margin: 0; padding: 0; font-family: Inter, Arial, sans-serif; background-color: #fafaf9;">
   <table role="presentation" style="width: 100%; border-collapse: collapse;">
     <tr>
       <td align="center" style="padding: 20px;">
@@ -30,7 +30,7 @@ export function generateCreditRenewalEmail(params: CreditRenewalParams): {
           <!-- Header -->
           <tr>
             <td style="padding: 40px 30px 20px; text-align: center;">
-              <h1 style="margin: 0 0 20px; color: #1c1917; font-size: 28px; font-weight: 300; letter-spacing: 0.3em; text-transform: uppercase; font-family: Georgia, serif;">
+              <h1 style="margin: 0 0 20px; color: #1c1917; font-size: 28px; font-weight: 300; letter-spacing: 0.3em; text-transform: uppercase; font-family: 'Cormorant Garamond', Georgia, serif;">
                 S S E L F I E
               </h1>
             </td>

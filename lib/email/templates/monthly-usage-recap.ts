@@ -22,7 +22,7 @@ export function generateMonthlyUsageRecapEmail(params: MonthlyUsageRecapParams =
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${subject}</title>
 </head>
-<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;background:#fafaf9;">
+<body style="margin:0;padding:0;font-family:Inter,Arial,sans-serif;background:#fafaf9;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
     <tr>
       <td align="center" style="padding:32px 16px;">
@@ -42,15 +42,15 @@ export function generateMonthlyUsageRecapEmail(params: MonthlyUsageRecapParams =
               <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin:0 0 18px;">
                 <tr>
                   <td style="padding:12px;border:1px solid #e7e5e4;">
-                    <div style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#78716c;">Photos generated</div>
+                    <div style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#8a8780;">Photos generated</div>
                     <div style="font-size:28px;color:#1c1917;line-height:1.2;">${photosGenerated}</div>
                   </td>
                   <td style="padding:12px;border:1px solid #e7e5e4;">
-                    <div style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#78716c;">Credits used</div>
+                    <div style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#8a8780;">Credits used</div>
                     <div style="font-size:28px;color:#1c1917;line-height:1.2;">${creditsUsed}</div>
                   </td>
                   <td style="padding:12px;border:1px solid #e7e5e4;">
-                    <div style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#78716c;">Credits left</div>
+                    <div style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#8a8780;">Credits left</div>
                     <div style="font-size:28px;color:#1c1917;line-height:1.2;">${creditsRemaining}</div>
                   </td>
                 </tr>
@@ -72,9 +72,9 @@ export function generateMonthlyUsageRecapEmail(params: MonthlyUsageRecapParams =
           </tr>
 
           <tr>
-            <td style="padding:20px 24px;border-top:1px solid #e7e5e4;background:#f5f5f4;">
-              <p style="margin:0;font-size:12px;color:#78716c;">SSELFIE</p>
-              <p style="margin:8px 0 0;font-size:12px;color:#78716c;"><a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:#78716c;text-decoration:underline;">Unsubscribe</a></p>
+            <td style="padding:20px 24px;border-top:1px solid #e7e5e4;background:#f5f5f5;">
+              <p style="margin:0;font-size:12px;color:#8a8780;">SSELFIE</p>
+              <p style="margin:8px 0 0;font-size:12px;color:#8a8780;"><a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:#8a8780;text-decoration:underline;">Unsubscribe</a></p>
             </td>
           </tr>
         </table>

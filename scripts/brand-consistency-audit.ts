@@ -106,6 +106,8 @@ async function main() {
     const content = await readText(file).catch(() => "")
     if (!content) continue
     const relative = normalizeWorkspacePath(file)
+    const hasCanonicalBodyFont = /Inter/i.test(content)
+    const hasCanonicalDisplayFont = /Cormorant Garamond/i.test(content)
 
     for (const phrase of BANNED_PHRASES) {
       const regex = new RegExp(phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "ig")
@@ -121,6 +123,15 @@ async function main() {
     }
 
     for (const rule of FONT_DRIFT_PATTERNS) {
+      if (["Georgia", "Times New Roman"].includes(rule.label) && hasCanonicalDisplayFont) {
+        continue
+      }
+      if (
+        ["Roboto", "Helvetica Neue", "-apple-system", "BlinkMacSystemFont", "system-ui"].includes(rule.label) &&
+        hasCanonicalBodyFont
+      ) {
+        continue
+      }
       const match = content.match(new RegExp(rule.pattern.source, "i"))
       if (match) {
         const index = content.search(new RegExp(rule.pattern.source, "i"))

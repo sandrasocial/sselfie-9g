@@ -63,7 +63,7 @@ export function renderStoneShell({
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${escapeHtml(title)}</title>
 </head>
-<body style="margin:0;padding:0;background:${COLORS.shell};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Helvetica,Arial,sans-serif;color:${COLORS.text};">
+<body style="margin:0;padding:0;background:${COLORS.shell};font-family:Inter,Arial,sans-serif;color:${COLORS.text};">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:${COLORS.shell};">
     <tr>
       <td align="center" style="padding:24px;">
@@ -71,7 +71,7 @@ export function renderStoneShell({
           <tr>
             <td style="padding:36px 30px 18px;background:linear-gradient(180deg, rgba(240,237,232,0.03) 0%, rgba(28,27,25,1) 100%);border-bottom:1px solid ${COLORS.lineSoft};">
               <p style="margin:0;color:${COLORS.quiet};font-size:10px;font-weight:600;letter-spacing:0.4em;text-transform:uppercase;">${escapeHtml(eyebrow)}</p>
-              <h1 style="margin:16px 0 0;color:${COLORS.text};font-family:Georgia,'Times New Roman',serif;font-size:44px;font-weight:300;line-height:0.95;letter-spacing:0.03em;">${escapeHtml(title)}</h1>
+              <h1 style="margin:16px 0 0;color:${COLORS.text};font-family:'Cormorant Garamond',Georgia,serif;font-size:44px;font-weight:300;line-height:0.95;letter-spacing:0.03em;">${escapeHtml(title)}</h1>
               ${subtitleHtml}
             </td>
           </tr>

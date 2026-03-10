@@ -32,14 +32,14 @@ export function generateShopifyMigrationEmail(params: ShopifyMigrationWelcomePar
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Your ${courseName} is waiting for you</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #fafaf9;">
+<body style="margin: 0; padding: 0; font-family: Inter, Arial, sans-serif; background-color: #fafaf9;">
   <table role="presentation" style="width: 100%; border-collapse: collapse;">
     <tr>
       <td align="center" style="padding: 24px;">
         <table role="presentation" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 12px; overflow: hidden;">
           <tr>
             <td style="padding: 36px 32px 16px; text-align: center;">
-              <h1 style="margin: 0 0 12px; color: #1c1917; font-size: 26px; font-weight: 300; letter-spacing: 0.3em; text-transform: uppercase; font-family: Georgia, serif;">
+              <h1 style="margin: 0 0 12px; color: #1c1917; font-size: 26px; font-weight: 300; letter-spacing: 0.3em; text-transform: uppercase; font-family: 'Cormorant Garamond', Georgia, serif;">
                 S S E L F I E
               </h1>
               <p style="margin: 0; color: #57534e; font-size: 15px; font-weight: 300; line-height: 1.6;">

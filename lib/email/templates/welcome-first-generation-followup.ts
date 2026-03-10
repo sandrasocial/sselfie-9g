@@ -17,7 +17,7 @@ export function generateWelcomeFirstGenerationFollowupEmail(input: {
   const subject = "Your brand photo is waiting for you"
 
   const html = `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; color: #1c1917; line-height: 1.6; max-width: 600px; margin: 0 auto; padding: 24px;">
+    <div style="font-family: Inter, Arial, sans-serif; color: #1c1917; line-height: 1.6; max-width: 600px; margin: 0 auto; padding: 24px;">
       <p style="margin:0 0 12px 0;">Hey ${firstName},</p>
       <p style="margin:0 0 16px 0;">Your first brand image is waiting for you inside SSELFIE.</p>
       ${imageHtml}
@@ -44,4 +44,3 @@ export function generateWelcomeFirstGenerationFollowupEmail(input: {
 
   return { subject, html, text }
 }
-

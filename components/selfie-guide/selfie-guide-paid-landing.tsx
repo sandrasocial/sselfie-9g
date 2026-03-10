@@ -376,7 +376,7 @@ export default function SelfieGuidePaidLanding({ checkoutFailed }: Props) {
 
         .error-msg {
           margin: 0;
-          color: #fca5a5;
+          color: #c8c4bb;
           font-size: 13px;
         }
 

@@ -26,7 +26,7 @@ export function generateNurtureStrategyN2Email({
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>the part nobody tells you</title>
 </head>
-<body style="margin:0;padding:0;background:#fafaf9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Helvetica,Arial,sans-serif;color:#1c1917;">
+<body style="margin:0;padding:0;background:#fafaf9;font-family:Inter,Arial,sans-serif;color:#1c1917;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#fafaf9;">
     <tr>
       <td align="center" style="padding:24px;">
