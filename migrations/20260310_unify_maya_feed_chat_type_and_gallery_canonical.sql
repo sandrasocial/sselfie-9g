@@ -3,12 +3,12 @@
 
 BEGIN;
 
+ALTER TABLE maya_chats DROP CONSTRAINT IF EXISTS maya_chats_chat_type_check;
+ALTER TABLE maya_chats DROP CONSTRAINT IF EXISTS chat_type_check;
+
 UPDATE maya_chats
 SET chat_type = 'feed_planner'
 WHERE LOWER(COALESCE(chat_type, '')) IN ('feed_planner', 'feed-planner', 'feed_designer', 'feed-designer');
-
-ALTER TABLE maya_chats DROP CONSTRAINT IF EXISTS maya_chats_chat_type_check;
-ALTER TABLE maya_chats DROP CONSTRAINT IF EXISTS chat_type_check;
 
 ALTER TABLE maya_chats
 ADD CONSTRAINT maya_chats_chat_type_check
