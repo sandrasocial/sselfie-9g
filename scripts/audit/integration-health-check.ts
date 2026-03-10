@@ -4,7 +4,11 @@ import { REPO_ROOT, normalizeWorkspacePath, readText, walkFiles, writeReport } f
 type IntegrationCheck = {
   name: string
   dependency: string
-  envVars: string[]
+  envVars?: string[]
+  envGroups?: Array<{
+    label: string
+    anyOf: string[]
+  }>
   requiredPaths: string[]
 }
 
@@ -49,7 +53,26 @@ async function main() {
     {
       name: "Upstash Redis",
       dependency: "@upstash/redis",
-      envVars: ["UPSTASH_REDIS_REST_URL", "UPSTASH_REDIS_REST_TOKEN"],
+      envGroups: [
+        {
+          label: "Upstash Redis URL",
+          anyOf: [
+            "UPSTASH_KV_REST_API_URL",
+            "UPSTASH_KV_KV_REST_API_URL",
+            "UPSTASH_REDIS_REST_URL",
+            "UPSTASH_KV_REST_URL",
+          ],
+        },
+        {
+          label: "Upstash Redis token",
+          anyOf: [
+            "UPSTASH_KV_REST_API_TOKEN",
+            "UPSTASH_KV_KV_REST_API_TOKEN",
+            "UPSTASH_REDIS_REST_TOKEN",
+            "UPSTASH_KV_REST_TOKEN",
+          ],
+        },
+      ],
       requiredPaths: ["lib/cache.ts"],
     },
     {
@@ -74,7 +97,11 @@ async function main() {
 
   const findings: Finding[] = checks.map((check) => {
     const dependencyOk = Boolean(allDeps[check.dependency])
-    const missingEnv = check.envVars.filter((envVar) => !process.env[envVar])
+    const missingEnv = check.envGroups?.length
+      ? check.envGroups
+          .filter((group) => !group.anyOf.some((envVar) => Boolean(process.env[envVar])))
+          .map((group) => group.label)
+      : (check.envVars || []).filter((envVar) => !process.env[envVar])
     const missingPaths = check.requiredPaths.filter(
       (requiredPath) => !relFiles.some((file) => file === requiredPath || file.startsWith(`${requiredPath}/`)),
     )
