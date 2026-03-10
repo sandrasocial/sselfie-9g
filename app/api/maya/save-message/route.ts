@@ -8,7 +8,7 @@ import {
   loadChatById,
 } from "@/lib/data/maya"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
-import { isFeedPlannerChatType } from "@/lib/maya/chat-type"
+import { supportsFeedCardsInChat } from "@/lib/maya/chat-type"
 
 const DUPLICATE_WINDOW_MS = 120_000
 
@@ -107,18 +107,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Validate feedCards only allowed in Feed tab chats
+    // Inline Maya feed cards can now persist in standard Maya/Pro chats and the legacy feed planner thread.
     if (feedCards && Array.isArray(feedCards) && feedCards.length > 0) {
-      if (!isFeedPlannerChatType(chatType)) {
+      if (!supportsFeedCardsInChat(chatType)) {
         console.warn("[v0] ⚠️ Attempted to save feed cards to wrong chat type:", {
           chatId,
           chatType,
           feedCardsCount: feedCards.length,
-          message: "Feed cards only allowed in Feed Planner chats"
+          message: "Feed cards only allowed in Maya, Pro, or Feed Planner chats",
         })
         return NextResponse.json({ 
           error: "Invalid chat type for feed cards",
-          details: `Feed cards can only be saved to Feed Planner chats, but chat is type ${chatType}`
+          details: `Feed cards can only be saved to Maya, Pro, or Feed Planner chats, but chat is type ${chatType}`,
         }, { status: 400 })
       }
     }

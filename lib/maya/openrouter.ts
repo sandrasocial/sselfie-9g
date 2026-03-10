@@ -41,8 +41,10 @@ export function resolveMayaChatTask(input: {
   chatType: string
   isPromptBuilder: boolean
   isStudioProMode: boolean
+  preferFeedPlannerContext?: boolean
 }): MayaRoutingTask {
   if (input.isPromptBuilder || input.chatType === "prompt_builder") return "prompt_builder"
+  if (input.preferFeedPlannerContext) return "feed_planner"
   if (isFeedPlannerChatType(input.chatType)) return "feed_planner"
   if (input.chatType === "pro-photoshoot") return "pro_photoshoot"
   if (input.isStudioProMode) return "chat_pro"

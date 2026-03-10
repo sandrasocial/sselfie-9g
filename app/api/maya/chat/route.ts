@@ -25,6 +25,7 @@ import { extractLatestUserText, hydrateMayaToolDispatchIntent } from "@/lib/maya
 import { stripMayaToolMarkers } from "@/lib/maya/tool-markers"
 import { formatMayaToolMarker } from "@/lib/maya/tool-registry"
 import { logAnalyticsEvent } from "@/lib/analytics/events"
+import { isFeedPlannerChatType, normalizeMayaChatType } from "@/lib/maya/chat-type"
 import {
   persistMayaRememberedPreference,
   getMayaActiveAssetContext,
@@ -281,10 +282,11 @@ export async function POST(req: Request) {
     // Get chatType from body, or fallback to header, or default to "maya"
     const chatTypeHeader = req.headers.get("x-chat-type")
     const activeTabHeader = req.headers.get("x-active-tab") // Feed tab flag
-    const requestedChatType = chatTypeFromBody || chatTypeHeader || "maya"
+    const requestedChatType = normalizeMayaChatType(chatTypeFromBody || chatTypeHeader || "maya")
     const unifiedMayaUiEnabled = isUnifiedMayaUiEnabled(process.env.FEATURE_UNIFIED_MAYA_UI)
     let chatType = requestedChatType
-    let isFeedTab = activeTabHeader === "feed"
+    let isFeedTab = activeTabHeader === "feed" || isFeedPlannerChatType(requestedChatType)
+    let useFeedPlannerContext = isFeedTab
     
   console.log("[Maya Chat API] 🔍 Headers received:", {
     fromBody: chatTypeFromBody,
@@ -343,11 +345,27 @@ export async function POST(req: Request) {
         hasTrainedLoraModel,
         isContentPlanning: isContentPlanningIntent(latestUserText),
       })
-      chatType = autoMode
-      isFeedTab = autoMode === "feed-planner"
+      const normalizedAutoMode = normalizeMayaChatType(autoMode)
+
+      if (isFeedTab) {
+        chatType = requestedChatType
+        useFeedPlannerContext = true
+      } else if (isFeedPlannerChatType(normalizedAutoMode)) {
+        // Inline feed turns should stay inside the current Maya/Pro thread while still
+        // getting Feed Planner prompting and model routing.
+        chatType = requestedChatType
+        useFeedPlannerContext = true
+      } else {
+        chatType = normalizedAutoMode
+        isFeedTab = isFeedPlannerChatType(chatType)
+        useFeedPlannerContext = isFeedTab
+      }
+
       console.log("[Maya Chat API] Unified routing applied:", {
         requestedChatType,
-        selectedChatType: chatType,
+        selectedChatType: normalizedAutoMode,
+        persistedChatType: chatType,
+        useFeedPlannerContext,
         hasReferenceImage,
         hasTrainedLoraModel,
       })
@@ -450,7 +468,7 @@ export async function POST(req: Request) {
     const latestUserTextForSkills = extractLatestUserText(validUIMessages as any)
 
     const chatFirstMayaEnabled = isChatFirstMayaEnabled(process.env.FEATURE_CHAT_FIRST_MAYA)
-    if (chatFirstMayaEnabled && !isPromptBuilder && chatType !== "feed-planner" && chatType !== "pro-photoshoot") {
+    if (chatFirstMayaEnabled && !isPromptBuilder && !useFeedPlannerContext && chatType !== "pro-photoshoot") {
       const allowPageAssetsInChat = isMayaLandingPagesInChatEnabled(
         process.env.FEATURE_MAYA_LANDING_PAGES_IN_CHAT,
       )
@@ -1820,7 +1838,7 @@ export async function POST(req: Request) {
     if (chatType === "prompt_builder") {
       systemPrompt = PROMPT_BUILDER_SYSTEM
       console.log("[Maya Chat] Using Prompt Builder system prompt")
-    } else if (chatType === "feed-planner" && (isFeedTab || unifiedMayaUiEnabled)) {
+    } else if (useFeedPlannerContext && (isFeedTab || unifiedMayaUiEnabled)) {
       // 🔴 CRITICAL FIX: Only load feed planner context if BOTH conditions are true
       // This prevents the massive feed planner context (880+ lines) from leaking into regular Maya chat
       // Feed Planner Context: Add visual design guidance for feed creation
@@ -1856,6 +1874,7 @@ export async function POST(req: Request) {
       console.log("[Maya Chat] ✅✅✅ FEED PLANNER AESTHETIC EXPERTISE LOADED ✅✅✅", {
         chatType,
         isFeedTab,
+        useFeedPlannerContext,
         userSelectedMode,
         studioProHeader,
         hasStudioProHeader,
@@ -1863,6 +1882,7 @@ export async function POST(req: Request) {
         feedContextLength: getFeedPlannerContextAddon(userSelectedMode).length,
         unifiedSystemLength: unifiedSystemPrompt.length,
         contextOrder: "unified-system-first-then-feed-context",
+        feedEntryMode: isFeedTab ? "feed_tab" : "inline_maya_chat",
         message: userSelectedMode === "pro" ? "User selected Pro Mode - all posts will be Pro" :
                  userSelectedMode === "classic" ? "User selected Classic Mode - all posts will be Classic" :
                  "Auto-detect mode per post (default - using Classic Mode config)"
@@ -1902,7 +1922,10 @@ export async function POST(req: Request) {
         mode: isStudioProMode ? "PRO" : "CLASSIC",
         systemPromptLength: systemPrompt.length,
         contextType: "regular-maya-only",
-        warning: isFeedTab && chatType !== "feed-planner" ? "⚠️ isFeedTab=true but chatType is not feed-planner - feed context correctly NOT loaded" : null
+        warning:
+          isFeedTab && !isFeedPlannerChatType(chatType)
+            ? "⚠️ isFeedTab=true but persisted chatType is not feed planner"
+            : null,
       })
     }
 
@@ -2247,16 +2270,19 @@ ${mayaSkillSelection.promptAddendum}
 
 You must apply this skill pack for prompt composition while preserving Maya's conversational voice.`
 
+    const routingChatType = useFeedPlannerContext ? "feed_planner" : chatType
     const mayaTask = resolveMayaChatTask({
-      chatType,
+      chatType: routingChatType,
       isPromptBuilder,
       isStudioProMode,
+      preferFeedPlannerContext: useFeedPlannerContext,
     })
     const selectedModel = getMayaModelForTask(mayaTask)
     const primaryModel = getMayaGatewayModel(mayaTask)
     const openRouterFallbackModel = createMayaOpenRouterFallbackModel(mayaTask)
     console.log("[Maya Chat] Model routing:", {
       chatType,
+      routingChatType,
       isPromptBuilder,
       isStudioProMode,
       skillId: mayaSkillSelection.skillId,

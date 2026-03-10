@@ -339,6 +339,10 @@ export default function MayaChatScreen({
   const [pendingConceptRequest, setPendingConceptRequest] = useState<string | null>(null)
   const [isGeneratingConcepts, setIsGeneratingConcepts] = useState(false)
   const [isCreatingFeed, setIsCreatingFeed] = useState(false)
+  const [pendingFeedRequest, setPendingFeedRequest] = useState<{
+    strategyJson: string
+    messageId: string
+  } | null>(null)
   
   // Track messages that should show image upload module
   const [messagesWithUploadModule, setMessagesWithUploadModule] = useState<Set<string>>(new Set())
@@ -406,7 +410,7 @@ export default function MayaChatScreen({
   const [showGallerySelector, setShowGallerySelector] = useState(false)
   const [isGeneratingPro, setIsGeneratingPro] = useState(false)
   const promptGenerationTriggeredRef = useRef<Set<string>>(new Set()) // Track messages that have already triggered prompt generation
-  // processedFeedMessagesRef moved to MayaFeedTab component (feed trigger detection is now handled in FeedTab)
+  const processedFeedMessagesRef = useRef<Set<string>>(new Set())
   // CRITICAL FIX: Track processed concept messages to prevent duplication on page refresh
   const processedConceptMessagesRef = useRef<Set<string>>(new Set())
   const processedToolMessagesRef = useRef<Set<string>>(new Set())
@@ -520,23 +524,92 @@ export default function MayaChatScreen({
 
   // Image persistence and gallery loading are now handled by useMayaImages hook
 
-  // Feed creation handler - notification callback
-  // Actual feed creation logic is in FeedTab component using lib/maya/feed-generation-handler.ts
-  // FeedTab manages its own loading state via setIsCreatingFeed prop
-  // This callback is called AFTER feed creation completes (for any additional side effects if needed)
+  // Feed creation notification callback shared by the legacy feed tab and the inline Maya flow.
   const createFeedFromStrategy = useCallback(async (strategy: any) => {
-    // FeedTab already handles feed creation and loading state
-    // This is just a notification callback for any additional parent-side logic if needed
-    console.log("[FEED] Feed creation completed via FeedTab:", strategy?.posts?.length || 0, "posts")
+    console.log("[FEED] Feed strategy prepared:", strategy?.posts?.length || 0, "posts")
   }, [])
+
+  const handleCreateInlineFeed = useCallback(
+    async (strategy: any) => {
+      try {
+        setMessages((prevMessages: any[]) => {
+          let attachedToAssistant = false
+          const updatedMessages = prevMessages.map((message) => ({
+            ...message,
+            parts: Array.isArray(message.parts) ? [...message.parts] : undefined,
+          }))
+
+          for (let i = updatedMessages.length - 1; i >= 0; i -= 1) {
+            const message = updatedMessages[i]
+            if (message.role !== "assistant") continue
+
+            const hasFeedCard = message.parts?.some((part: any) => part.type === "tool-generateFeed")
+            if (hasFeedCard) {
+              attachedToAssistant = true
+              break
+            }
+
+            const existingParts = Array.isArray(message.parts) ? [...message.parts] : []
+            updatedMessages[i] = {
+              ...message,
+              parts: [
+                ...existingParts,
+                {
+                  type: "tool-generateFeed",
+                  output: {
+                    strategy,
+                    title: strategy.feedTitle || strategy.title || "Instagram Feed",
+                    description: strategy.overallVibe || strategy.colorPalette || "",
+                    posts: strategy.posts || [],
+                    isSaved: false,
+                    proMode,
+                    styleStrength,
+                    promptAccuracy,
+                    aspectRatio,
+                    realismStrength,
+                  },
+                },
+              ],
+            }
+            attachedToAssistant = true
+            break
+          }
+
+          if (!attachedToAssistant) {
+            console.warn("[FEED] No assistant message available for inline feed card attachment")
+          }
+
+          return updatedMessages
+        })
+
+        await createFeedFromStrategy(strategy)
+      } catch (error) {
+        console.error("[FEED] ❌ Error creating inline feed card:", error)
+      } finally {
+        setIsCreatingFeed(false)
+      }
+    },
+    [
+      setMessages,
+      createFeedFromStrategy,
+      proMode,
+      styleStrength,
+      promptAccuracy,
+      aspectRatio,
+      realismStrength,
+    ],
+  )
 
   // CRITICAL FIX: Clear processed concept messages ref when chatId changes (new chat created)
   // This prevents re-processing messages when switching chats or creating new chats
   useEffect(() => {
+    processedFeedMessagesRef.current.clear()
     processedConceptMessagesRef.current.clear()
     processedToolMessagesRef.current.clear()
     clearAllVideoPolls()
     setPendingConceptRequest(null) // Clear pending request on chat change
+    setPendingFeedRequest(null)
+    setIsCreatingFeed(false)
     console.log("[v0] ✅ Cleared processedConceptMessagesRef for new chat:", chatId)
   }, [chatId, clearAllVideoPolls])
 
@@ -551,6 +624,170 @@ export default function MayaChatScreen({
       setShowStudioMemberOnboarding(true)
     }
   }, [isMembership, firstTimeProductUser])
+
+  useEffect(() => {
+    if (!isCreatingFeed) return
+
+    const hasFeedCard = messages.some((message: any) =>
+      message.parts?.some((part: any) => part.type === "tool-generateFeed"),
+    )
+
+    if (hasFeedCard) {
+      console.log("[FEED] ✅ Feed card detected in Maya chat - clearing loader")
+      setIsCreatingFeed(false)
+    }
+  }, [messages, isCreatingFeed])
+
+  useEffect(() => {
+    const shouldHandleInlineFeed = isFeedTabDisabled || activeMayaTab !== "feed"
+    if (!shouldHandleInlineFeed) return
+    if (messages.length === 0) return
+    if (isCreatingFeed) return
+    if (pendingFeedRequest) return
+
+    const lastAssistantMessage = messages
+      .filter((message: any) => message.role === "assistant")
+      .slice(-1)[0]
+
+    if (!lastAssistantMessage) return
+
+    const messageId = lastAssistantMessage.id
+    const textContent = getMessageText(lastAssistantMessage)
+    if (!textContent) return
+
+    let messageKey: string
+    if (messageId) {
+      messageKey = messageId
+    } else {
+      let hash = 0
+      for (let i = 0; i < textContent.length; i += 1) {
+        const char = textContent.charCodeAt(i)
+        hash = (hash << 5) - hash + char
+        hash &= hash
+      }
+      messageKey = `streaming-${Math.abs(hash).toString(36)}`
+    }
+
+    if (processedFeedMessagesRef.current.has(messageKey)) {
+      return
+    }
+
+    const alreadyHasFeedCard = lastAssistantMessage.parts?.some(
+      (part: any) => part.type === "tool-generateFeed",
+    )
+    if (alreadyHasFeedCard) {
+      processedFeedMessagesRef.current.add(messageKey)
+      return
+    }
+
+    const extractStrategyJson = (text: string): string | null => {
+      const inlineMatch = text.match(/\[CREATE_FEED_STRATEGY:\s*(\{[\s\S]*\})\]/i)
+      if (inlineMatch?.[1]) return inlineMatch[1]
+
+      const fencedJsonMatch = text.match(/\[CREATE_FEED_STRATEGY\][\s\S]*?```json\s*([\s\S]*?)\s*```/i)
+      if (fencedJsonMatch?.[1]) return fencedJsonMatch[1]
+
+      const fencedMatch = text.match(/\[CREATE_FEED_STRATEGY\][\s\S]*?```\s*([\s\S]*?)\s*```/i)
+      if (fencedMatch?.[1]) return fencedMatch[1]
+
+      if (text.includes("[CREATE_FEED_STRATEGY]")) {
+        const markerIndex = text.indexOf("[CREATE_FEED_STRATEGY]")
+        const afterMarker = text.slice(markerIndex)
+        const jsonStart = afterMarker.indexOf("{")
+        const jsonEnd = afterMarker.lastIndexOf("}") + 1
+        if (jsonStart >= 0 && jsonEnd > jsonStart) {
+          return afterMarker.slice(jsonStart, jsonEnd)
+        }
+      }
+
+      return null
+    }
+
+    const strategyJson = extractStrategyJson(textContent)
+    if (!strategyJson) return
+
+    console.log("[FEED] ✅ Detected inline feed trigger in Maya chat:", {
+      messageKey,
+      messageId: messageId || "no-id-yet",
+      strategyLength: strategyJson.length,
+    })
+    processedFeedMessagesRef.current.add(messageKey)
+    setIsCreatingFeed(true)
+    setPendingFeedRequest({ strategyJson, messageId: messageId || messageKey })
+  }, [
+    messages,
+    isCreatingFeed,
+    pendingFeedRequest,
+    activeMayaTab,
+    isFeedTabDisabled,
+    getMessageText,
+  ])
+
+  useEffect(() => {
+    const shouldHandleInlineFeed = isFeedTabDisabled || activeMayaTab !== "feed"
+    if (!shouldHandleInlineFeed) return
+    if (!pendingFeedRequest) return
+    if (status === "streaming" || status === "submitted") return
+
+    const processFeed = async () => {
+      if (!isCreatingFeed) {
+        setIsCreatingFeed(true)
+      }
+
+      try {
+        const apiEndpoint = proMode ? "/api/maya/pro/generate-feed" : "/api/maya/generate-feed"
+        const requestBody = proMode
+          ? {
+              strategyJson: pendingFeedRequest.strategyJson,
+              chatId,
+              imageLibrary,
+              conversationContext: undefined,
+            }
+          : {
+              strategyJson: pendingFeedRequest.strategyJson,
+              chatId,
+              conversationContext: undefined,
+            }
+
+        const response = await fetch(apiEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(requestBody),
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: "Unknown error" }))
+          throw new Error(errorData.error || "Failed to process feed strategy")
+        }
+
+        const data = await response.json()
+        if (!data.success || !data.strategy) {
+          throw new Error("Invalid response from generate-feed endpoint")
+        }
+
+        await handleCreateInlineFeed(data.strategy)
+      } catch (error) {
+        console.error("[FEED] ❌ Error processing inline Maya feed:", error)
+        processedFeedMessagesRef.current.delete(pendingFeedRequest.messageId)
+        setIsCreatingFeed(false)
+      } finally {
+        setPendingFeedRequest(null)
+      }
+    }
+
+    processFeed()
+  }, [
+    pendingFeedRequest,
+    isCreatingFeed,
+    chatId,
+    handleCreateInlineFeed,
+    proMode,
+    imageLibrary,
+    status,
+    activeMayaTab,
+    isFeedTabDisabled,
+  ])
 
   // Detect [GENERATE_CONCEPTS] trigger in messages
   useEffect(() => {
@@ -1426,6 +1663,7 @@ export default function MayaChatScreen({
         role: "assistant",
         content: saveTextContent || "",
         conceptCards: conceptCards.length > 0 ? conceptCards : null,
+        feedCards: feedCards.length > 0 ? feedCards : null,
       }),
     })
       .then((res) => res.json())

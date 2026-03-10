@@ -44,3 +44,12 @@ export function getMayaChatTypeAliases(value?: string | null): string[] {
 export function isFeedPlannerChatType(value?: string | null): boolean {
   return normalizeMayaChatType(value, "") === MAYA_CHAT_TYPE_FEED_PLANNER
 }
+
+export function isPhotosChatType(value?: string | null): boolean {
+  const normalized = normalizeMayaChatType(value, "")
+  return normalized === MAYA_CHAT_TYPE_DEFAULT || normalized === MAYA_CHAT_TYPE_PRO
+}
+
+export function supportsFeedCardsInChat(value?: string | null): boolean {
+  return isPhotosChatType(value) || isFeedPlannerChatType(value)
+}

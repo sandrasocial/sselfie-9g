@@ -5,7 +5,12 @@ import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { sql } from "@/lib/db/client"
 import { parseMayaToolMarkers, stripMayaToolMarkers } from "@/lib/maya/tool-markers"
 import { extractMayaVideoCardMarkers } from "@/lib/maya/video-card-marker"
-import { isFeedPlannerChatType, normalizeMayaChatType } from "@/lib/maya/chat-type"
+import {
+  isFeedPlannerChatType,
+  isPhotosChatType,
+  normalizeMayaChatType,
+  supportsFeedCardsInChat,
+} from "@/lib/maya/chat-type"
 
 
 /**
@@ -322,9 +327,10 @@ async function processFeedCards(
   
   // Helper to check if feed card already exists
   const hasFeedCard = (feedId: number | undefined) => {
-    return existingParts.some((p: any) => 
-      p.type === 'tool-generateFeed' && 
-      (feedId ? p.output?.feedId === feedId : !p.output?.feedId)
+    return [...existingParts, ...feedCardParts].some(
+      (part: any) =>
+        part.type === "tool-generateFeed" &&
+        (feedId ? part.output?.feedId === feedId : !part.output?.feedId),
     )
   }
   
@@ -613,6 +619,20 @@ async function processFeedCards(
   return feedCardParts
 }
 
+function appendFeedCardParts(parts: any[], feedCardParts: any[], textContent: string) {
+  feedCardParts.forEach((part) => {
+    if (part.output?.feedId && textContent.includes(`[FEED_CARD:${part.output.feedId}]`)) {
+      const cleanTextContent = textContent.replace(/\[FEED_CARD:\d+\]/g, "").trim()
+      if (parts.length > 0 && parts[0].type === "text") {
+        parts[0].text = cleanTextContent || ""
+      } else if (cleanTextContent) {
+        parts[0] = { type: "text", text: cleanTextContent }
+      }
+    }
+    parts.push(part)
+  })
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { user, error: authError } = await getAuthenticatedUser()
@@ -708,7 +728,8 @@ export async function GET(request: NextRequest) {
     // - This ensures proper separation and avoids unnecessary processing
     // ============================================================================
     const isFeedTab = isFeedPlannerChatType(chatType)
-    const isPhotosTab = chatType === "maya" || chatType === "pro"
+    const isPhotosTab = isPhotosChatType(chatType)
+    const supportsFeedCards = supportsFeedCardsInChat(chatType)
     
     const formattedMessages = await Promise.all(messages.map(async (msg) => {
       const baseMessage = {
@@ -930,8 +951,17 @@ export async function GET(request: NextRequest) {
           }
         }
         
-        // NOTE: Feed cards are NOT processed here - they're in separate Feed tab
-        // If a message somehow has both, it's a data inconsistency that should be fixed
+        if (supportsFeedCards) {
+          const feedCardParts = await processFeedCards(
+            msg,
+            parsedStylingDetails,
+            textContent,
+            neonUser,
+            parts,
+          )
+
+          appendFeedCardParts(parts, feedCardParts, textContent)
+        }
         
         return {
           ...baseMessage,
@@ -962,8 +992,7 @@ export async function GET(request: NextRequest) {
         console.log("[v0] ✅ Restored inspiration image for message", msg.id)
       }
 
-      // Process feed cards ONLY for Feed tab
-      if (isFeedTab) {
+      if (supportsFeedCards) {
         const feedCardParts = await processFeedCards(
           msg,
           parsedStylingDetails,
@@ -971,22 +1000,13 @@ export async function GET(request: NextRequest) {
           neonUser,
           parts
         )
-        
-        // Add feed card parts to message
-        feedCardParts.forEach(part => {
-          // Clean [FEED_CARD:feedId] marker from text content if present
-          if (part.output?.feedId && textContent.includes(`[FEED_CARD:${part.output.feedId}]`)) {
-            const cleanTextContent = textContent.replace(/\[FEED_CARD:\d+\]/g, '').trim()
-            if (parts.length > 0 && parts[0].type === 'text') {
-              parts[0].text = cleanTextContent || ""
-            } else if (cleanTextContent) {
-              parts[0] = { type: "text", text: cleanTextContent }
-            }
-          }
-          parts.push(part)
+
+        appendFeedCardParts(parts, feedCardParts, textContent)
+
+        console.log("[v0] ✅ Processed", feedCardParts.length, "feed card(s) for message", msg.id, {
+          chatType,
+          mode: isFeedTab ? "feed_tab" : "inline_maya",
         })
-        
-        console.log("[v0] ✅ Processed", feedCardParts.length, "feed card(s) for Feed tab message", msg.id)
       }
 
       if (isPhotosTab && videoCardParts.length > 0) {

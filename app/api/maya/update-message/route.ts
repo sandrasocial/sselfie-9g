@@ -3,7 +3,7 @@ import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getEffectiveNeonUser } from "@/lib/simple-impersonation"
 import { loadChatById } from "@/lib/data/maya"
 import { sql } from "@/lib/db/client"
-import { isFeedPlannerChatType } from "@/lib/maya/chat-type"
+import { supportsFeedCardsInChat } from "@/lib/maya/chat-type"
 
 
 /**
@@ -119,19 +119,19 @@ export async function POST(request: NextRequest) {
     // CRITICAL FIX: Validate chat_type before updating feed cards
     const chatType = chat.chat_type || "maya" // Default to "maya" for legacy chats
 
-    // Validate feedCards only allowed in Feed tab chats
+    // Inline Maya feed cards can now persist in standard Maya/Pro chats and the legacy feed planner thread.
     if (feedCards && Array.isArray(feedCards) && feedCards.length > 0) {
-      if (!isFeedPlannerChatType(chatType)) {
+      if (!supportsFeedCardsInChat(chatType)) {
         console.warn("[update-message] ⚠️ Attempted to update feed cards in wrong chat type:", {
           messageId: messageIdNum,
           chatId: currentMessage.chat_id,
           chatType,
           feedCardsCount: feedCards.length,
-          message: "Feed cards only allowed in Feed Planner chats"
+          message: "Feed cards only allowed in Maya, Pro, or Feed Planner chats",
         })
         return NextResponse.json({ 
           error: "Invalid chat type for feed cards",
-          details: `Feed cards can only be updated in Feed Planner chats, but chat is type ${chatType}`
+          details: `Feed cards can only be updated in Maya, Pro, or Feed Planner chats, but chat is type ${chatType}`,
         }, { status: 400 })
       }
     }
