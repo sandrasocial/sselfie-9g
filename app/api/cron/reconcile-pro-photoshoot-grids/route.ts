@@ -28,7 +28,7 @@ export async function GET(request: Request) {
 
     const summary = await reconcileProPhotoshootGrids({
       limit: Number.parseInt(process.env.RECONCILE_PRO_PHOTOSHOOT_LIMIT || "6", 10),
-      minAgeMinutes: Number.parseInt(process.env.RECONCILE_PRO_PHOTOSHOOT_MIN_AGE_MIN || "5", 10),
+      minAgeMinutes: Number.parseInt(process.env.RECONCILE_PRO_PHOTOSHOOT_MIN_AGE_MIN || "1", 10),
     })
 
     await cronLogger.success(summary as any)
@@ -41,4 +41,3 @@ export async function GET(request: Request) {
     )
   }
 }
-

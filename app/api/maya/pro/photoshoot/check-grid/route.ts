@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getDbClient } from "@/lib/db/client"
 import { checkNanoBananaPrediction } from "@/lib/nano-banana-client"
 import { requireAdmin, isProPhotoshootEnabled } from "@/lib/admin-feature-flags"
+import { resolveProPhotoshootPrediction } from "@/lib/generation/pro-photoshoot-prediction-state"
 import { put } from "@vercel/blob"
 import sharp from "sharp"
 
@@ -70,12 +71,13 @@ export async function GET(request: NextRequest) {
 
     // Check prediction status
     const prediction = await checkNanoBananaPrediction(predictionId)
+    const resolution = resolveProPhotoshootPrediction(prediction)
 
-    if (prediction.status === "succeeded" && prediction.output) {
+    if (resolution.status === "completed") {
       console.log("[ProPhotoshoot] ✅ Grid generation completed, processing...")
 
       // Download grid image
-      const gridResponse = await fetch(prediction.output)
+      const gridResponse = await fetch(resolution.outputUrl)
       if (!gridResponse.ok) {
         throw new Error(`Failed to download grid: ${gridResponse.statusText}`)
       }
@@ -231,7 +233,7 @@ export async function GET(request: NextRequest) {
         galleryImageIds, // Include gallery IDs for carousel creation
         framesCount: frameUrls.length,
       })
-    } else if (prediction.status === "failed") {
+    } else if (resolution.status === "failed") {
       // Update grid status
       await sql`
         UPDATE pro_photoshoot_grids
@@ -243,7 +245,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         success: false,
         status: "failed",
-        error: prediction.error || "Generation failed",
+        error: resolution.error,
       })
     }
 
@@ -260,4 +262,3 @@ export async function GET(request: NextRequest) {
     )
   }
 }
-

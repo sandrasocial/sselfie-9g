@@ -4,6 +4,7 @@ import { getDbClient } from "@/lib/db/client"
 import { isProPhotoshootEnabled } from "@/lib/admin-feature-flags"
 import { checkNanoBananaPrediction } from "@/lib/nano-banana-client"
 import { acquireKvLock, releaseKvLock } from "@/lib/cache"
+import { resolveProPhotoshootPrediction } from "@/lib/generation/pro-photoshoot-prediction-state"
 import { put } from "@vercel/blob"
 import sharp from "sharp"
 
@@ -121,9 +122,10 @@ export async function reconcileProPhotoshootGrids(input?: {
 
       try {
         const prediction = await checkNanoBananaPrediction(predictionId)
+        const resolution = resolveProPhotoshootPrediction(prediction)
 
-        if (prediction.status === "succeeded" && prediction.output) {
-          const outputUrl = String(prediction.output || "")
+        if (resolution.status === "completed") {
+          const outputUrl = resolution.outputUrl
           const gridResponse = await fetch(outputUrl)
           if (!gridResponse.ok) throw new Error(`Failed to download grid: ${gridResponse.statusText}`)
           const gridBuffer = Buffer.from(await gridResponse.arrayBuffer())
@@ -240,13 +242,18 @@ export async function reconcileProPhotoshootGrids(input?: {
           }
 
           completed++
-        } else if (prediction.status === "failed") {
+        } else if (resolution.status === "failed") {
           await sql`
             UPDATE pro_photoshoot_grids
             SET generation_status = 'failed',
                 updated_at = NOW()
             WHERE id = ${gridId}
           `
+          console.warn("[v0] [RECONCILE] Marked pro photoshoot grid failed:", {
+            gridId,
+            predictionId,
+            reason: resolution.error,
+          })
           failed++
         } else {
           stillProcessing++
@@ -273,4 +280,3 @@ export async function reconcileProPhotoshootGrids(input?: {
     errors,
   }
 }
-

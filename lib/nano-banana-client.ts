@@ -19,6 +19,7 @@ export interface NanoBananaOutput {
   status: "starting" | "processing" | "succeeded" | "failed"
   output?: string // Image URL when succeeded
   error?: string
+  dataRemoved?: boolean
 }
 
 /**
@@ -147,6 +148,7 @@ export async function generateWithNanoBanana(
       status: prediction.status as any,
       output,
       error: prediction.error ? String(prediction.error) : undefined,
+      dataRemoved: Boolean((prediction as any).data_removed),
     }
   } catch (error) {
     console.error("[NANO-BANANA] Generation error:", error)
@@ -191,6 +193,7 @@ export async function checkNanoBananaPrediction(
       status: prediction.status as any,
       output,
       error: prediction.error ? String(prediction.error) : undefined,
+      dataRemoved: Boolean((prediction as any).data_removed),
     }
   } catch (error) {
     console.error("[NANO-BANANA] Status check error:", error)
