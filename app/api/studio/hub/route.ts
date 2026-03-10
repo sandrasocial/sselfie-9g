@@ -52,7 +52,7 @@ function toIso(value: unknown): string {
 }
 
 function isFeatureEnabled(value?: string | null): boolean {
-  if (!value) return false
+  if (!value) return true
   const normalized = value.trim().toLowerCase()
   return normalized === "true" || normalized === "1"
 }

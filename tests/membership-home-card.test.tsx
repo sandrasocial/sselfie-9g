@@ -11,6 +11,7 @@ describe("MembershipHomeCard", () => {
     const onBrowseStyles = vi.fn()
     const onCreateCalendar = vi.fn()
     const onUploadAssets = vi.fn()
+    const onBuildPage = vi.fn()
 
     render(
       <MembershipHomeCard
@@ -23,21 +24,22 @@ describe("MembershipHomeCard", () => {
         onBrowseStyles={onBrowseStyles}
         onCreateCalendar={onCreateCalendar}
         onUploadAssets={onUploadAssets}
+        onBuildPage={onBuildPage}
       />,
     )
 
-    expect(screen.getByText("Your Credits")).toBeInTheDocument()
-    expect(screen.getByText("247 ready")).toBeInTheDocument()
+    expect(screen.getByText("Everything stays with Maya")).toBeInTheDocument()
+    expect(screen.getByText("247 credits")).toBeInTheDocument()
     expect(screen.getByText("Storm campaign draft")).toBeInTheDocument()
     expect(screen.queryByText("This Month")).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole("button", { name: /pick up where you left off/i }))
-    fireEvent.click(screen.getByRole("button", { name: /generate a photo/i }))
-    fireEvent.click(screen.getByRole("button", { name: /plan my feed/i }))
+    fireEvent.click(screen.getByRole("button", { name: /^open$/i }))
+    fireEvent.click(screen.getByRole("button", { name: /create a post/i }))
+    fireEvent.click(screen.getByRole("button", { name: /plan my week/i }))
     fireEvent.click(screen.getByRole("button", { name: /browse styles/i }))
     fireEvent.click(screen.getByRole("button", { name: /create calendar/i }))
     fireEvent.click(screen.getByRole("button", { name: /upload assets/i }))
-    expect(screen.queryByRole("button", { name: /build landing page/i })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole("button", { name: /build a page/i }))
 
     expect(onContinue).toHaveBeenCalledTimes(1)
     expect(onGeneratePhoto).toHaveBeenCalledTimes(1)
@@ -45,6 +47,7 @@ describe("MembershipHomeCard", () => {
     expect(onBrowseStyles).toHaveBeenCalledTimes(1)
     expect(onCreateCalendar).toHaveBeenCalledTimes(1)
     expect(onUploadAssets).toHaveBeenCalledTimes(1)
+    expect(onBuildPage).toHaveBeenCalledTimes(1)
   })
 
   it("renders monthly drop row when provided", () => {
@@ -66,7 +69,7 @@ describe("MembershipHomeCard", () => {
     expect(screen.getByText("This Month")).toBeInTheDocument()
     expect(screen.getByText("Coastal Summer style pack")).toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole("button", { name: /^explore →$/i }))
+    fireEvent.click(screen.getByRole("button", { name: /^explore$/i }))
     expect(onExploreMonthlyDrop).toHaveBeenCalledTimes(1)
   })
 })

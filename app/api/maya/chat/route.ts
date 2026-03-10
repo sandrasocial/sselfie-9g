@@ -81,7 +81,7 @@ function isChatFirstMayaEnabled(envValue?: string | null): boolean {
 }
 
 function isMayaLandingPagesInChatEnabled(envValue?: string | null): boolean {
-  if (!envValue) return false
+  if (!envValue) return true
   const normalized = envValue.trim().toLowerCase()
   return normalized === "true" || normalized === "1"
 }

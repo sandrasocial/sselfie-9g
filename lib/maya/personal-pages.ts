@@ -1,4 +1,8 @@
 import { sql } from "@/lib/db/client"
+import type {
+  MayaGeneratedAssetPreviewData,
+  MayaGeneratedAssetType,
+} from "@/lib/maya/generated-asset-types"
 
 type PersonalPageType = "landing" | "calendar" | "workbook"
 
@@ -18,11 +22,12 @@ export interface MayaPersonalPageRow {
 
 export interface MayaAssetForPersistence {
   id: string
-  assetType: "page" | "calendar" | "pdf"
+  assetType: MayaGeneratedAssetType
   title: string
   instruction: string
   previewText: string
   previewHtml: string
+  previewData?: MayaGeneratedAssetPreviewData
   blueprint?: Record<string, unknown>
 }
 
@@ -52,7 +57,7 @@ function normalizePathPart(value: string): string {
   return sanitizePublicSlug(decodeURIComponent(value || "").trim())
 }
 
-function mapAssetTypeToPageType(assetType: "page" | "calendar" | "pdf"): PersonalPageType {
+function mapAssetTypeToPageType(assetType: MayaGeneratedAssetType): PersonalPageType {
   if (assetType === "calendar") return "calendar"
   if (assetType === "pdf") return "workbook"
   return "landing"
@@ -64,7 +69,7 @@ function makeFallbackOwnerSlug(userId: string): string {
 }
 
 export function buildPersonalPageSlug(input: {
-  assetType: "page" | "calendar" | "pdf"
+  assetType: MayaGeneratedAssetType
   title: string
   assetId: string
 }): string {
@@ -199,6 +204,7 @@ export async function persistMayaAssetAsPersonalPage(input: {
     assetType: input.asset.assetType,
     instruction: input.asset.instruction,
     previewText: input.asset.previewText,
+    previewData: input.asset.previewData || null,
     blueprint: input.asset.blueprint || null,
   }
 

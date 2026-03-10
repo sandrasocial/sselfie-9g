@@ -9,11 +9,17 @@ function read(relPath: string): string {
   return fs.readFileSync(path.join(ROOT, relPath), "utf8")
 }
 
-describe("maya landing freeze hygiene", () => {
-  it("keeps landing pages hidden from entry prompts and enables UI flag gating", () => {
+describe("maya landing page chat hygiene", () => {
+  it("surfaces landing pages in Maya entry actions while keeping the UI flag available", () => {
     const mayaChatScreen = read("components/sselfie/maya-chat-screen.tsx")
-    expect(mayaChatScreen).not.toContain("Build Landing Page")
+    expect(mayaChatScreen).toContain("Build a page")
     expect(mayaChatScreen).toContain("NEXT_PUBLIC_FEATURE_MAYA_LANDING_PAGES_UI")
+  })
+
+  it("keeps feed planning inline from the Maya home state", () => {
+    const mayaChatScreen = read("components/sselfie/maya-chat-screen.tsx")
+    expect(mayaChatScreen).toContain('handleSendMessage("Plan my week and build an Instagram feed for my offer")')
+    expect(mayaChatScreen).not.toContain('setActiveTab?.("feed-planner")')
   })
 
   it("removes duplicate header upload/library actions in Maya shell", () => {
@@ -31,9 +37,9 @@ describe("maya landing freeze hygiene", () => {
     expect(handleNewChatBlock).not.toContain("clearLibrary(")
   })
 
-  it("uses paused routing copy for landing page intents in maya chat route", () => {
+  it("enables landing page routing in maya chat by default while preserving an explicit off switch", () => {
     const mayaChatRoute = read("app/api/maya/chat/route.ts")
+    expect(mayaChatRoute).toContain("if (!envValue) return true")
     expect(mayaChatRoute).toContain("Landing pages are paused right now")
-    expect(mayaChatRoute).not.toContain("I opened your Studio Hub so you can continue page work there.")
   })
 })

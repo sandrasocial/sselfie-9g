@@ -116,6 +116,11 @@ describe("maya calendar asset generation", () => {
     expect(asset.previewHtml).toContain("Read full caption")
     expect(asset.previewHtml).toContain("#personalbrand #contentstrategy #instagramtips #storytelling #creatorbusiness")
     expect(asset.previewHtml).not.toContain("#growthhacks")
+    expect(asset.previewData?.kind).toBe("calendar")
+    if (asset.previewData?.kind === "calendar") {
+      expect(asset.previewData.posts.length).toBeGreaterThan(0)
+      expect(asset.previewData.posts[0]?.dayLabel).toBe("Monday")
+    }
     expect(mockGenerateInstagramCaption).toHaveBeenCalled()
     expect(asset.url).toBe("/p/sandra/calendar-v2")
   })

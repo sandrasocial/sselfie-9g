@@ -1,5 +1,7 @@
 "use client"
 
+import { MayaInlineAction, MayaInlineCard, MayaInlinePill } from "./maya-inline-card"
+
 interface MembershipHomeCardProps {
   creditsReady: number
   lastSessionTitle?: string | null
@@ -10,6 +12,7 @@ interface MembershipHomeCardProps {
   onBrowseStyles: () => void
   onCreateCalendar?: () => void
   onUploadAssets?: () => void
+  onBuildPage?: () => void
   onExploreMonthlyDrop?: () => void
 }
 
@@ -23,6 +26,7 @@ export default function MembershipHomeCard({
   onBrowseStyles,
   onCreateCalendar,
   onUploadAssets,
+  onBuildPage,
   onExploreMonthlyDrop,
 }: MembershipHomeCardProps) {
   const normalizedCredits = Math.max(0, Math.round(creditsReady))
@@ -33,98 +37,101 @@ export default function MembershipHomeCard({
   const hasMonthlyDrop = typeof monthlyDropName === "string" && monthlyDropName.trim().length > 0
 
   return (
-    <div className="w-full max-w-2xl mx-auto px-4 sm:px-6">
-      <div className="rounded-3xl border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.15)] backdrop-blur-[50px] p-4 sm:p-5 space-y-4">
-        <section className="rounded-2xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-3.5 sm:p-4">
-          <p className="font-['Inter'] font-medium text-[10px] tracking-[0.5em] uppercase text-[#8a8780]">
-            Your Credits
-          </p>
-          <p className="mt-2 text-2xl sm:text-[28px] leading-none text-[#f0ede8] font-medium tracking-[0.03em]">
-            {normalizedCredits.toLocaleString()} ready
-          </p>
-        </section>
+    <div className="w-full max-w-3xl">
+      <MayaInlineCard
+        eyebrow="My Studio"
+        title="Everything stays with Maya"
+        subtitle="Create photos, plan the week, draft your calendar, and open your latest work from one premium workspace."
+        aside={<MayaInlinePill tone="strong">{normalizedCredits.toLocaleString()} credits</MayaInlinePill>}
+        actions={
+          <>
+            <MayaInlineAction onClick={onGeneratePhoto} variant="primary">
+              Create a post
+            </MayaInlineAction>
+            <MayaInlineAction onClick={onPlanFeed}>Plan my week</MayaInlineAction>
+            <MayaInlineAction onClick={onBrowseStyles}>Browse styles</MayaInlineAction>
+            {onBuildPage ? <MayaInlineAction onClick={onBuildPage}>Build a page</MayaInlineAction> : null}
+          </>
+        }
+      >
+        <div className="grid gap-3 lg:grid-cols-[1.05fr_0.95fr]">
+          <div className="space-y-3">
+            <div className="stone-inset-panel rounded-[22px] px-4 py-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-smoke)]">Continue</div>
+                  <div className="mt-2 text-sm leading-relaxed text-[color:var(--color-porcelain)]">
+                    {safeLastSessionTitle}
+                  </div>
+                </div>
+                <MayaInlineAction onClick={onContinue}>Open</MayaInlineAction>
+              </div>
+            </div>
 
-        <section className="rounded-2xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-3.5 sm:p-4">
-          <p className="font-['Inter'] font-medium text-[10px] tracking-[0.5em] uppercase text-[#8a8780]">
-            Continue
-          </p>
-          <p className="mt-2 text-sm sm:text-[15px] leading-relaxed text-[#f0ede8]">
-            {safeLastSessionTitle}
-          </p>
-          <button
-            type="button"
-            onClick={onContinue}
-            className="mt-3 text-[11px] sm:text-xs uppercase tracking-[0.18em] text-[#a8a49c] hover:text-[#f0ede8] transition-colors"
-          >
-            Pick up where you left off →
-          </button>
-        </section>
+            {hasMonthlyDrop ? (
+              <div className="stone-inset-panel rounded-[22px] px-4 py-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-smoke)]">This Month</div>
+                    <div className="mt-2 text-sm leading-relaxed text-[color:var(--color-porcelain)]">
+                      {monthlyDropName}
+                    </div>
+                  </div>
+                  <MayaInlineAction onClick={onExploreMonthlyDrop ?? onBrowseStyles}>Explore</MayaInlineAction>
+                </div>
+              </div>
+            ) : null}
 
-        {hasMonthlyDrop && (
-          <section className="rounded-2xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-3.5 sm:p-4">
-            <p className="font-['Inter'] font-medium text-[10px] tracking-[0.5em] uppercase text-[#8a8780]">
-              This Month
-            </p>
-            <p className="mt-2 text-sm sm:text-[15px] leading-relaxed text-[#f0ede8]">
-              {monthlyDropName}
-            </p>
-            <button
-              type="button"
-              onClick={onExploreMonthlyDrop ?? onBrowseStyles}
-              className="mt-3 text-[11px] sm:text-xs uppercase tracking-[0.18em] text-[#a8a49c] hover:text-[#f0ede8] transition-colors"
-            >
-              Explore →
-            </button>
-          </section>
-        )}
+            {(onCreateCalendar || onUploadAssets) ? (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {onCreateCalendar ? (
+                  <div className="stone-inset-panel rounded-[22px] px-4 py-4">
+                    <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-smoke)]">Calendar</div>
+                    <div className="mt-2 text-sm text-[color:var(--color-porcelain)]">
+                      Build this week&apos;s plan inline with Maya.
+                    </div>
+                    <div className="mt-3">
+                      <MayaInlineAction onClick={onCreateCalendar}>Create calendar</MayaInlineAction>
+                    </div>
+                  </div>
+                ) : null}
+                {onUploadAssets ? (
+                  <div className="stone-inset-panel rounded-[22px] px-4 py-4">
+                    <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-smoke)]">Assets</div>
+                    <div className="mt-2 text-sm text-[color:var(--color-porcelain)]">
+                      Upload product photos and references for new drafts.
+                    </div>
+                    <div className="mt-3">
+                      <MayaInlineAction onClick={onUploadAssets}>Upload assets</MayaInlineAction>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
 
-        <section className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
-          <button
-            type="button"
-            onClick={onGeneratePhoto}
-            className="rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] px-3 py-3 text-[11px] uppercase tracking-[0.16em] text-[#a8a49c] hover:bg-[rgba(175,170,162,0.18)] hover:text-[#f0ede8] transition-colors"
-          >
-            Generate a photo →
-          </button>
-          <button
-            type="button"
-            onClick={onPlanFeed}
-            className="rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] px-3 py-3 text-[11px] uppercase tracking-[0.16em] text-[#a8a49c] hover:bg-[rgba(175,170,162,0.18)] hover:text-[#f0ede8] transition-colors"
-          >
-            Plan my feed →
-          </button>
-          <button
-            type="button"
-            onClick={onBrowseStyles}
-            className="rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] px-3 py-3 text-[11px] uppercase tracking-[0.16em] text-[#a8a49c] hover:bg-[rgba(175,170,162,0.18)] hover:text-[#f0ede8] transition-colors"
-          >
-            Browse styles →
-          </button>
-        </section>
-
-        {(onCreateCalendar || onUploadAssets) && (
-          <section className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
-            {onCreateCalendar && (
-              <button
-                type="button"
-                onClick={onCreateCalendar}
-                className="rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] px-3 py-3 text-[11px] uppercase tracking-[0.16em] text-[#a8a49c] hover:bg-[rgba(175,170,162,0.18)] hover:text-[#f0ede8] transition-colors"
-              >
-                Create calendar →
-              </button>
-            )}
-            {onUploadAssets && (
-              <button
-                type="button"
-                onClick={onUploadAssets}
-                className="rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] px-3 py-3 text-[11px] uppercase tracking-[0.16em] text-[#a8a49c] hover:bg-[rgba(175,170,162,0.18)] hover:text-[#f0ede8] transition-colors"
-              >
-                Upload assets →
-              </button>
-            )}
-          </section>
-        )}
-      </div>
+          <div className="stone-inset-panel rounded-[24px] px-4 py-4">
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-smoke)]">Inline Workflow</div>
+              <MayaInlinePill tone="muted">Maya-first</MayaInlinePill>
+            </div>
+            <div className="mt-4 space-y-3">
+              {[
+                "Ask Maya for a post, week plan, or draft.",
+                "Review the result card inline in chat.",
+                "Refine, save, or publish without leaving the thread.",
+              ].map((step, index) => (
+                <div key={step} className="rounded-[20px] border border-[rgba(195,190,182,0.14)] bg-[rgba(175,170,162,0.08)] px-3.5 py-3">
+                  <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-smoke)]">
+                    0{index + 1}
+                  </div>
+                  <div className="mt-1 text-sm leading-relaxed text-[color:var(--color-porcelain)]">{step}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </MayaInlineCard>
     </div>
   )
 }
