@@ -2428,7 +2428,7 @@ export async function regenerateMayaPersonalPageById(input: {
     (assetType === "calendar"
       ? "Create a content calendar draft for my current offer"
       : assetType === "pdf"
-        ? "Create a workbook draft for my current offer"
+        ? "Workbook draft"
         : "Create a landing page draft for my current offer")
   const instruction = sanitizeInstruction(rawInstruction)
   const updatedAt = new Date().toISOString()

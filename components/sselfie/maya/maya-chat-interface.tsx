@@ -1290,6 +1290,9 @@ export default function MayaChatInterface({
                             if (part.type === "tool-structuredAssetBlocked") {
                               const output = (part as any).output || {}
                               const assetType = output.assetType || "calendar"
+                              if (assetType === "pdf") {
+                                return null
+                              }
                               if (!isLandingPagesUiEnabled && assetType === "page") {
                                 return null
                               }
@@ -1306,9 +1309,7 @@ export default function MayaChatInterface({
                               const quickRetryPrompt =
                                 assetType === "calendar"
                                   ? "Create a content calendar for my current offer this week."
-                                  : assetType === "pdf"
-                                    ? "Create a workbook draft for my current offer."
-                                    : "Create a landing page draft for my current offer."
+                                  : "Create a landing page draft for my current offer."
 
                               return (
                                 <MayaInlineCard

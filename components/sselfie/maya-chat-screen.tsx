@@ -3680,7 +3680,6 @@ export default function MayaChatScreen({
           credits={creditBalance}
           onManageLibrary={undefined}
           onAddImages={undefined}
-          onStartFresh={undefined}
           isAdmin={isAdmin}
           selectedGuideId={selectedGuideId}
           selectedGuideCategory={selectedGuideCategory}
