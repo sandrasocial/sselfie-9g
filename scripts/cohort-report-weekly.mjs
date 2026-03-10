@@ -59,6 +59,22 @@ async function main() {
           last_login_at
         FROM users
         WHERE created_at >= NOW() - (${weeks} * 7) * INTERVAL '1 day'
+          AND LOWER(COALESCE(email, '')) NOT LIKE '%@playwright.test%'
+          AND LOWER(COALESCE(email, '')) NOT LIKE '%@test.local%'
+          AND LOWER(COALESCE(email, '')) NOT LIKE '%@sselfie.test%'
+          AND LOWER(COALESCE(email, '')) NOT LIKE '%@sselfie-studio.internal%'
+          AND LOWER(COALESCE(email, '')) NOT LIKE '%@example.com%'
+          AND LOWER(COALESCE(email, '')) NOT LIKE '%@yopmail.com%'
+          AND LOWER(COALESCE(email, '')) NOT LIKE '%@%.test'
+          AND LOWER(COALESCE(email, '')) NOT LIKE '%@%.local'
+          AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'test-%'
+          AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'test_%'
+          AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'playwright%'
+          AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'e2e%'
+          AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'debug%'
+          AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'smoke+%'
+          AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'qa-%'
+          AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'qa_%'
       ),
       keys AS (
         SELECT

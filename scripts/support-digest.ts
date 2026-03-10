@@ -8,6 +8,7 @@ import { neon } from "@neondatabase/serverless"
 import * as dotenv from "dotenv"
 import { mkdirSync, writeFileSync } from "node:fs"
 import { resolve } from "node:path"
+import { isSyntheticAnalyticsEmail } from "./_shared/synthetic-email-filter.mjs"
 
 dotenv.config({ path: resolve(process.cwd(), ".env.local") })
 
@@ -118,7 +119,21 @@ async function main() {
         user_email IS NULL
         OR (
           LOWER(user_email) NOT LIKE '%@playwright.test%'
+          AND LOWER(user_email) NOT LIKE '%@test.local%'
+          AND LOWER(user_email) NOT LIKE '%@sselfie.test%'
+          AND LOWER(user_email) NOT LIKE '%@sselfie-studio.internal%'
           AND LOWER(user_email) NOT LIKE '%@example.com%'
+          AND LOWER(user_email) NOT LIKE '%@yopmail.com%'
+          AND LOWER(user_email) NOT LIKE '%@%.test'
+          AND LOWER(user_email) NOT LIKE '%@%.local'
+          AND LOWER(SPLIT_PART(user_email, '@', 1)) NOT LIKE 'test-%'
+          AND LOWER(SPLIT_PART(user_email, '@', 1)) NOT LIKE 'test_%'
+          AND LOWER(SPLIT_PART(user_email, '@', 1)) NOT LIKE 'playwright%'
+          AND LOWER(SPLIT_PART(user_email, '@', 1)) NOT LIKE 'e2e%'
+          AND LOWER(SPLIT_PART(user_email, '@', 1)) NOT LIKE 'debug%'
+          AND LOWER(SPLIT_PART(user_email, '@', 1)) NOT LIKE 'smoke+%'
+          AND LOWER(SPLIT_PART(user_email, '@', 1)) NOT LIKE 'qa-%'
+          AND LOWER(SPLIT_PART(user_email, '@', 1)) NOT LIKE 'qa_%'
           AND user_email NOT LIKE '{%'
           AND user_email NOT LIKE '[%'
         )
@@ -135,7 +150,21 @@ async function main() {
       AND user_email IS NOT NULL
       AND (
         LOWER(user_email) LIKE '%@playwright.test%'
+        OR LOWER(user_email) LIKE '%@test.local%'
+        OR LOWER(user_email) LIKE '%@sselfie.test%'
+        OR LOWER(user_email) LIKE '%@sselfie-studio.internal%'
         OR LOWER(user_email) LIKE '%@example.com%'
+        OR LOWER(user_email) LIKE '%@yopmail.com%'
+        OR LOWER(user_email) LIKE '%@%.test'
+        OR LOWER(user_email) LIKE '%@%.local'
+        OR LOWER(SPLIT_PART(user_email, '@', 1)) LIKE 'test-%'
+        OR LOWER(SPLIT_PART(user_email, '@', 1)) LIKE 'test_%'
+        OR LOWER(SPLIT_PART(user_email, '@', 1)) LIKE 'playwright%'
+        OR LOWER(SPLIT_PART(user_email, '@', 1)) LIKE 'e2e%'
+        OR LOWER(SPLIT_PART(user_email, '@', 1)) LIKE 'debug%'
+        OR LOWER(SPLIT_PART(user_email, '@', 1)) LIKE 'smoke+%'
+        OR LOWER(SPLIT_PART(user_email, '@', 1)) LIKE 'qa-%'
+        OR LOWER(SPLIT_PART(user_email, '@', 1)) LIKE 'qa_%'
         OR user_email LIKE '{%'
         OR user_email LIKE '[%'
       )
@@ -151,9 +180,19 @@ async function main() {
   lines.push(`- Window: last ${hours} hour(s)`)
   lines.push(``)
 
+  const realNewUsers = (newUsers as any[]).filter((user) => !isSyntheticAnalyticsEmail(user.email))
+  const syntheticNewUsers = (newUsers as any[]).filter((user) => isSyntheticAnalyticsEmail(user.email))
+
   lines.push(`## New users`)
-  lines.push(`Count: ${(newUsers as any[]).length}`)
-  for (const u of newUsers as any[]) {
+  lines.push(`Count: ${realNewUsers.length}`)
+  for (const u of realNewUsers) {
+    lines.push(`- ${u.email || "(no email)"} (plan: ${u.plan || "n/a"}) created: ${iso(u.created_at)} last_login: ${u.last_login_at ? iso(u.last_login_at) : "n/a"}`)
+  }
+  lines.push(``)
+
+  lines.push(`## Synthetic / smoke signups`)
+  lines.push(`Count: ${syntheticNewUsers.length}`)
+  for (const u of syntheticNewUsers) {
     lines.push(`- ${u.email || "(no email)"} (plan: ${u.plan || "n/a"}) created: ${iso(u.created_at)} last_login: ${u.last_login_at ? iso(u.last_login_at) : "n/a"}`)
   }
   lines.push(``)

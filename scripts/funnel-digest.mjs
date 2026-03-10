@@ -68,6 +68,22 @@ async function main() {
       SELECT COUNT(*)::int AS count, MAX(created_at) AS last_created
       FROM users
       WHERE created_at > NOW() - ${hours} * INTERVAL '1 hour'
+        AND LOWER(COALESCE(email, '')) NOT LIKE '%@playwright.test%'
+        AND LOWER(COALESCE(email, '')) NOT LIKE '%@test.local%'
+        AND LOWER(COALESCE(email, '')) NOT LIKE '%@sselfie.test%'
+        AND LOWER(COALESCE(email, '')) NOT LIKE '%@sselfie-studio.internal%'
+        AND LOWER(COALESCE(email, '')) NOT LIKE '%@example.com%'
+        AND LOWER(COALESCE(email, '')) NOT LIKE '%@yopmail.com%'
+        AND LOWER(COALESCE(email, '')) NOT LIKE '%@%.test'
+        AND LOWER(COALESCE(email, '')) NOT LIKE '%@%.local'
+        AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'test-%'
+        AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'test_%'
+        AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'playwright%'
+        AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'e2e%'
+        AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'debug%'
+        AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'smoke+%'
+        AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'qa-%'
+        AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'qa_%'
     `
     return rows[0]
   })
@@ -117,12 +133,36 @@ async function main() {
         COUNT(*)::int AS count,
         COUNT(DISTINCT user_id)::int AS users_count,
         SUM(COALESCE(amount, 0))::bigint AS credits_sum,
-        MAX(created_at) AS last_created
-      FROM credit_transactions
-      WHERE transaction_type = 'bonus'
+        MAX(ct.created_at) AS last_created
+      FROM credit_transactions ct
+      LEFT JOIN users u
+        ON u.id::text = ct.user_id::text
+        OR u.stack_auth_user_id::text = ct.user_id::text
+      WHERE ct.transaction_type = 'bonus'
         AND description = 'Free blueprint credits (welcome bonus)'
-        AND created_at > NOW() - ${hours} * INTERVAL '1 hour'
+        AND ct.created_at > NOW() - ${hours} * INTERVAL '1 hour'
         AND COALESCE(is_test_mode, FALSE) = FALSE
+        AND (
+          u.id IS NULL
+          OR (
+            LOWER(COALESCE(u.email, '')) NOT LIKE '%@playwright.test%'
+            AND LOWER(COALESCE(u.email, '')) NOT LIKE '%@test.local%'
+            AND LOWER(COALESCE(u.email, '')) NOT LIKE '%@sselfie.test%'
+            AND LOWER(COALESCE(u.email, '')) NOT LIKE '%@sselfie-studio.internal%'
+            AND LOWER(COALESCE(u.email, '')) NOT LIKE '%@example.com%'
+            AND LOWER(COALESCE(u.email, '')) NOT LIKE '%@yopmail.com%'
+            AND LOWER(COALESCE(u.email, '')) NOT LIKE '%@%.test'
+            AND LOWER(COALESCE(u.email, '')) NOT LIKE '%@%.local'
+            AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'test-%'
+            AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'test_%'
+            AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'playwright%'
+            AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'e2e%'
+            AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'debug%'
+            AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'smoke+%'
+            AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'qa-%'
+            AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'qa_%'
+          )
+        )
     `
     return rows[0]
   })
@@ -130,12 +170,36 @@ async function main() {
   const freebieUsage = await safeQuery("freebie_bonus_usage", async () => {
     const rows = await sql`
       WITH bonus_users AS (
-        SELECT DISTINCT user_id
-        FROM credit_transactions
-        WHERE transaction_type = 'bonus'
-          AND description = 'Free blueprint credits (welcome bonus)'
-          AND created_at > NOW() - ${hours} * INTERVAL '1 hour'
-          AND COALESCE(is_test_mode, FALSE) = FALSE
+        SELECT DISTINCT ct.user_id
+        FROM credit_transactions ct
+        LEFT JOIN users u
+          ON u.id::text = ct.user_id::text
+          OR u.stack_auth_user_id::text = ct.user_id::text
+        WHERE ct.transaction_type = 'bonus'
+          AND ct.description = 'Free blueprint credits (welcome bonus)'
+          AND ct.created_at > NOW() - ${hours} * INTERVAL '1 hour'
+          AND COALESCE(ct.is_test_mode, FALSE) = FALSE
+          AND (
+            u.id IS NULL
+            OR (
+              LOWER(COALESCE(u.email, '')) NOT LIKE '%@playwright.test%'
+              AND LOWER(COALESCE(u.email, '')) NOT LIKE '%@test.local%'
+              AND LOWER(COALESCE(u.email, '')) NOT LIKE '%@sselfie.test%'
+              AND LOWER(COALESCE(u.email, '')) NOT LIKE '%@sselfie-studio.internal%'
+              AND LOWER(COALESCE(u.email, '')) NOT LIKE '%@example.com%'
+              AND LOWER(COALESCE(u.email, '')) NOT LIKE '%@yopmail.com%'
+              AND LOWER(COALESCE(u.email, '')) NOT LIKE '%@%.test'
+              AND LOWER(COALESCE(u.email, '')) NOT LIKE '%@%.local'
+              AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'test-%'
+              AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'test_%'
+              AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'playwright%'
+              AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'e2e%'
+              AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'debug%'
+              AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'smoke+%'
+              AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'qa-%'
+              AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'qa_%'
+            )
+          )
       )
       SELECT
         COUNT(DISTINCT bu.user_id)::int AS bonus_users,
@@ -175,6 +239,22 @@ async function main() {
         SELECT id::text AS user_id, created_at
         FROM users
         WHERE created_at > NOW() - ${hours} * INTERVAL '1 hour'
+          AND LOWER(COALESCE(email, '')) NOT LIKE '%@playwright.test%'
+          AND LOWER(COALESCE(email, '')) NOT LIKE '%@test.local%'
+          AND LOWER(COALESCE(email, '')) NOT LIKE '%@sselfie.test%'
+          AND LOWER(COALESCE(email, '')) NOT LIKE '%@sselfie-studio.internal%'
+          AND LOWER(COALESCE(email, '')) NOT LIKE '%@example.com%'
+          AND LOWER(COALESCE(email, '')) NOT LIKE '%@yopmail.com%'
+          AND LOWER(COALESCE(email, '')) NOT LIKE '%@%.test'
+          AND LOWER(COALESCE(email, '')) NOT LIKE '%@%.local'
+          AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'test-%'
+          AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'test_%'
+          AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'playwright%'
+          AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'e2e%'
+          AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'debug%'
+          AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'smoke+%'
+          AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'qa-%'
+          AND LOWER(SPLIT_PART(COALESCE(email, ''), '@', 1)) NOT LIKE 'qa_%'
       ),
       outputs AS (
         SELECT user_id::text AS user_id, created_at FROM ai_images
@@ -206,21 +286,64 @@ async function main() {
     const rows = await sql`
       SELECT
         COUNT(*)::int AS count,
-        COUNT(DISTINCT user_id)::int AS users_count,
-        MAX(created_at) AS last_created
-      FROM analytics_events
-      WHERE created_at > NOW() - ${hours} * INTERVAL '1 hour'
-        AND event_name = 'activation_continue_clicked'
-        AND COALESCE(properties->>'next_action', '') = 'generate_first_image'
+        COUNT(DISTINCT ae.user_id)::int AS users_count,
+        MAX(ae.created_at) AS last_created
+      FROM analytics_events ae
+      JOIN users u
+        ON u.id::text = ae.user_id::text
+        OR u.stack_auth_user_id::text = ae.user_id::text
+      WHERE ae.created_at > NOW() - ${hours} * INTERVAL '1 hour'
+        AND ae.event_name = 'activation_continue_clicked'
+        AND COALESCE(ae.properties->>'next_action', '') = 'generate_first_image'
+        AND LOWER(COALESCE(u.email, '')) NOT LIKE '%@playwright.test%'
+        AND LOWER(COALESCE(u.email, '')) NOT LIKE '%@test.local%'
+        AND LOWER(COALESCE(u.email, '')) NOT LIKE '%@sselfie.test%'
+        AND LOWER(COALESCE(u.email, '')) NOT LIKE '%@sselfie-studio.internal%'
+        AND LOWER(COALESCE(u.email, '')) NOT LIKE '%@example.com%'
+        AND LOWER(COALESCE(u.email, '')) NOT LIKE '%@yopmail.com%'
+        AND LOWER(COALESCE(u.email, '')) NOT LIKE '%@%.test'
+        AND LOWER(COALESCE(u.email, '')) NOT LIKE '%@%.local'
+        AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'test-%'
+        AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'test_%'
+        AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'playwright%'
+        AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'e2e%'
+        AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'debug%'
+        AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'smoke+%'
+        AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'qa-%'
+        AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'qa_%'
     `
     return rows[0]
   })
 
   const genTrackers = await safeQuery("generation_trackers", async () => {
     const rows = await sql`
-      SELECT status, COUNT(*)::int AS count, MAX(created_at) AS last_created
-      FROM generation_trackers
-      WHERE created_at > NOW() - ${hours} * INTERVAL '1 hour'
+      SELECT gt.status, COUNT(*)::int AS count, MAX(gt.created_at) AS last_created
+      FROM generation_trackers gt
+      LEFT JOIN users u
+        ON u.id::text = gt.user_id::text
+        OR u.stack_auth_user_id::text = gt.user_id::text
+      WHERE gt.created_at > NOW() - ${hours} * INTERVAL '1 hour'
+        AND (
+          u.id IS NULL
+          OR (
+            LOWER(COALESCE(u.email, '')) NOT LIKE '%@playwright.test%'
+            AND LOWER(COALESCE(u.email, '')) NOT LIKE '%@test.local%'
+            AND LOWER(COALESCE(u.email, '')) NOT LIKE '%@sselfie.test%'
+            AND LOWER(COALESCE(u.email, '')) NOT LIKE '%@sselfie-studio.internal%'
+            AND LOWER(COALESCE(u.email, '')) NOT LIKE '%@example.com%'
+            AND LOWER(COALESCE(u.email, '')) NOT LIKE '%@yopmail.com%'
+            AND LOWER(COALESCE(u.email, '')) NOT LIKE '%@%.test'
+            AND LOWER(COALESCE(u.email, '')) NOT LIKE '%@%.local'
+            AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'test-%'
+            AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'test_%'
+            AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'playwright%'
+            AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'e2e%'
+            AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'debug%'
+            AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'smoke+%'
+            AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'qa-%'
+            AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'qa_%'
+          )
+        )
       GROUP BY status
       ORDER BY count DESC
       LIMIT 20
@@ -230,9 +353,33 @@ async function main() {
 
   const aiImages = await safeQuery("ai_images", async () => {
     const rows = await sql`
-      SELECT COUNT(*)::int AS count, MAX(created_at) AS last_created
-      FROM ai_images
-      WHERE created_at > NOW() - ${hours} * INTERVAL '1 hour'
+      SELECT COUNT(*)::int AS count, MAX(ai.created_at) AS last_created
+      FROM ai_images ai
+      LEFT JOIN users u
+        ON u.id::text = ai.user_id::text
+        OR u.stack_auth_user_id::text = ai.user_id::text
+      WHERE ai.created_at > NOW() - ${hours} * INTERVAL '1 hour'
+        AND (
+          u.id IS NULL
+          OR (
+            LOWER(COALESCE(u.email, '')) NOT LIKE '%@playwright.test%'
+            AND LOWER(COALESCE(u.email, '')) NOT LIKE '%@test.local%'
+            AND LOWER(COALESCE(u.email, '')) NOT LIKE '%@sselfie.test%'
+            AND LOWER(COALESCE(u.email, '')) NOT LIKE '%@sselfie-studio.internal%'
+            AND LOWER(COALESCE(u.email, '')) NOT LIKE '%@example.com%'
+            AND LOWER(COALESCE(u.email, '')) NOT LIKE '%@yopmail.com%'
+            AND LOWER(COALESCE(u.email, '')) NOT LIKE '%@%.test'
+            AND LOWER(COALESCE(u.email, '')) NOT LIKE '%@%.local'
+            AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'test-%'
+            AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'test_%'
+            AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'playwright%'
+            AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'e2e%'
+            AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'debug%'
+            AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'smoke+%'
+            AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'qa-%'
+            AND LOWER(SPLIT_PART(COALESCE(u.email, ''), '@', 1)) NOT LIKE 'qa_%'
+          )
+        )
     `
     return rows[0]
   })
@@ -342,6 +489,7 @@ async function main() {
 
   lines.push(`## Notes`)
   lines.push(`- Welcome bonus credits are top-of-funnel activation credits and are not cash revenue.`)
+  lines.push(`- Synthetic smoke-test accounts are excluded from signup, activation, and generation metrics.`)
   if (newSubs.ok && payments.ok && Number(newSubs.value.count ?? 0) > 0 && Number(payments.value.count ?? 0) === 0) {
     lines.push(`- New subscriptions with zero succeeded Stripe payments in the same window usually indicate webhook timing lag, non-active/past_due subscription rows, or manual/backfilled records.`)
   }
