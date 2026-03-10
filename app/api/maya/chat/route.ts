@@ -81,9 +81,7 @@ function isChatFirstMayaEnabled(envValue?: string | null): boolean {
 }
 
 function isMayaLandingPagesInChatEnabled(envValue?: string | null): boolean {
-  if (!envValue) return true
-  const normalized = envValue.trim().toLowerCase()
-  return normalized === "true" || normalized === "1"
+  return false
 }
 
 function isMayaStrictAssetToolRoutingEnabled(envValue?: string | null): boolean {
@@ -103,8 +101,8 @@ function createLandingPagesPausedResponse(validUIMessages: UIMessage[], preface?
         id: textPartId,
         delta:
           `${preface ? `${preface.trim()} ` : ""}` +
-          `Landing pages are paused right now while we finish the quality relaunch. ` +
-          `In this chat, I can run photos, videos, concept cards, and feed planning.`,
+          `Landing page drafts are retired right now while we rebuild this feature. ` +
+          `In this chat, I can run photos, videos, concept cards, feed planning, and content calendars.`,
       })
       writer.write({ type: "text-end", id: textPartId })
     },

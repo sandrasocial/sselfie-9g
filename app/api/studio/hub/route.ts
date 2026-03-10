@@ -51,12 +51,6 @@ function toIso(value: unknown): string {
   return new Date(0).toISOString()
 }
 
-function isFeatureEnabled(value?: string | null): boolean {
-  if (!value) return true
-  const normalized = value.trim().toLowerCase()
-  return normalized === "true" || normalized === "1"
-}
-
 function isMissingRelationError(error: unknown): boolean {
   const err = error as { code?: string; message?: string }
   const code = typeof err?.code === "string" ? err.code : ""
@@ -93,8 +87,7 @@ async function handleGetStudioHub({
 }) {
   try {
     const userId = String(user.id)
-    const landingPagesUiEnabled = isFeatureEnabled(process.env.NEXT_PUBLIC_FEATURE_MAYA_LANDING_PAGES_UI)
-    const landingPagesPaused = !landingPagesUiEnabled
+    const landingPagesPaused = true
 
     const [feeds, pages, recentPhotos, recentVideos, generatedImageCount, aiImageCount, videoCount] = await Promise.all([
       safeQueryRows(async () => {
@@ -125,18 +118,16 @@ async function handleGetStudioHub({
         `
         return rows as HubFeedRow[]
       }, [] as HubFeedRow[]),
-      landingPagesPaused
-        ? Promise.resolve([] as HubPageRow[])
-        : safeQueryRows(async () => {
-            const rows = await sql`
-              SELECT id, title, page_type, status, live_url, version, updated_at
-              FROM personal_pages
-              WHERE user_id = ${userId}
-              ORDER BY updated_at DESC
-              LIMIT 24
-            `
-            return rows as HubPageRow[]
-          }, [] as HubPageRow[]),
+      safeQueryRows(async () => {
+        const rows = await sql`
+          SELECT id, title, page_type, status, live_url, version, updated_at
+          FROM personal_pages
+          WHERE user_id = ${userId}
+          ORDER BY updated_at DESC
+          LIMIT 24
+        `
+        return rows as HubPageRow[]
+      }, [] as HubPageRow[]),
       safeQueryRows(async () => {
         const rows = await sql`
           WITH combined AS (
@@ -278,7 +269,7 @@ async function handleGetStudioHub({
       landingPagesPaused,
       stats: {
         feedCount: serializedFeeds.length,
-        pageCount: safePages.length,
+        pageCount: 0,
         photoCount: generatedImageCount + aiImageCount,
         videoCount,
       },

@@ -50,14 +50,12 @@ interface HubPageItem {
 
 interface HubStats {
   feedCount: number
-  pageCount: number
   photoCount: number
   videoCount: number
 }
 
 interface StudioHubResponse {
   success: boolean
-  landingPagesPaused?: boolean
   stats: HubStats
   feeds: HubFeedItem[]
   pages: HubPageItem[]
@@ -161,12 +159,10 @@ export default function StudioHubScreen() {
     )
   }
 
-  const stats = data.stats || { feedCount: 0, pageCount: 0, photoCount: 0, videoCount: 0 }
+  const stats = data.stats || { feedCount: 0, photoCount: 0, videoCount: 0 }
   const feeds = Array.isArray(data.feeds) ? data.feeds : []
   const recentPhotos = Array.isArray(data.recentPhotos) ? data.recentPhotos : []
   const recentVideos = Array.isArray(data.recentVideos) ? data.recentVideos : []
-  const pages = Array.isArray(data.pages) ? data.pages : []
-  const landingPagesPaused = data.landingPagesPaused !== false
 
   const displayPhotos =
     recentPhotos.length > 0
@@ -216,13 +212,7 @@ export default function StudioHubScreen() {
             </div>
           </div>
 
-          {landingPagesPaused ? (
-            <div className="stone-chip mt-4 rounded-[22px] px-4 py-3 text-xs text-[color:var(--text-accent)]">
-              Landing pages are intentionally paused in Maya and Studio while the V2 quality relaunch is in progress.
-            </div>
-          ) : null}
-
-          <div className="mt-5 grid gap-px overflow-hidden rounded-[24px] border border-[color:var(--glass-border-subtle)] bg-[color:var(--glass-divider)] sm:grid-cols-4">
+          <div className="mt-5 grid gap-px overflow-hidden rounded-[24px] border border-[color:var(--glass-border-subtle)] bg-[color:var(--glass-divider)] sm:grid-cols-3">
             <div className={`${sectionInsetClass} px-4 py-3`}>
               <p className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--color-smoke)]">Photos</p>
               <p className="mt-1 text-2xl text-[color:var(--color-porcelain)]">{stats.photoCount}</p>
@@ -235,36 +225,7 @@ export default function StudioHubScreen() {
               <p className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--color-smoke)]">Feed Systems</p>
               <p className="mt-1 text-2xl text-[color:var(--color-porcelain)]">{stats.feedCount}</p>
             </div>
-            <div className={`${sectionInsetClass} px-4 py-3`}>
-              <p className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--color-smoke)]">Pages</p>
-              <p className="mt-1 text-2xl text-[color:var(--color-porcelain)]">{stats.pageCount}</p>
-            </div>
           </div>
-
-          {!landingPagesPaused && pages.length > 0 ? (
-            <Section title="Page Drafts" subtitle="Landing pages and live offer pages created with Maya.">
-              <div className="grid gap-3 sm:grid-cols-2">
-                {pages.slice(0, 4).map((page) => (
-                  <div key={page.id} className="stone-panel rounded-[22px] p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-smoke)]">
-                          {page.pageType}
-                        </p>
-                        <p className="mt-2 text-sm text-[color:var(--color-porcelain)]">{page.title}</p>
-                        <p className="mt-1 text-[11px] text-[color:var(--text-accent)]">
-                          v{page.version} · {formatRelativeDate(page.updatedAt)}
-                        </p>
-                      </div>
-                      <Link href={page.liveUrl || page.openInMayaUrl} className={secondaryActionClass}>
-                        Open
-                      </Link>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </Section>
-          ) : null}
 
           <div className="mt-5 grid gap-4 lg:grid-cols-2">
             <Section title="Recent Photos" subtitle="Latest visuals from your gallery and brand assets.">

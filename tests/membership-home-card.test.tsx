@@ -11,8 +11,6 @@ describe("MembershipHomeCard", () => {
     const onBrowseStyles = vi.fn()
     const onCreateCalendar = vi.fn()
     const onUploadAssets = vi.fn()
-    const onBuildPage = vi.fn()
-
     render(
       <MembershipHomeCard
         creditsReady={247}
@@ -24,7 +22,6 @@ describe("MembershipHomeCard", () => {
         onBrowseStyles={onBrowseStyles}
         onCreateCalendar={onCreateCalendar}
         onUploadAssets={onUploadAssets}
-        onBuildPage={onBuildPage}
       />,
     )
 
@@ -39,7 +36,6 @@ describe("MembershipHomeCard", () => {
     fireEvent.click(screen.getByRole("button", { name: /browse styles/i }))
     fireEvent.click(screen.getByRole("button", { name: /create calendar/i }))
     fireEvent.click(screen.getByRole("button", { name: /upload assets/i }))
-    fireEvent.click(screen.getByRole("button", { name: /build a page/i }))
 
     expect(onContinue).toHaveBeenCalledTimes(1)
     expect(onGeneratePhoto).toHaveBeenCalledTimes(1)
@@ -47,7 +43,7 @@ describe("MembershipHomeCard", () => {
     expect(onBrowseStyles).toHaveBeenCalledTimes(1)
     expect(onCreateCalendar).toHaveBeenCalledTimes(1)
     expect(onUploadAssets).toHaveBeenCalledTimes(1)
-    expect(onBuildPage).toHaveBeenCalledTimes(1)
+    expect(screen.queryByRole("button", { name: /build a page/i })).not.toBeInTheDocument()
   })
 
   it("renders monthly drop row when provided", () => {

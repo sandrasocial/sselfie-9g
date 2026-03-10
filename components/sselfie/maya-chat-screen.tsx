@@ -104,12 +104,6 @@ function isFeatureEnabled(value?: string | null): boolean {
   return normalized === "1" || normalized === "true"
 }
 
-function isDefaultOnFeatureEnabled(value?: string | null): boolean {
-  if (!value) return true
-  const normalized = value.trim().toLowerCase()
-  return normalized === "1" || normalized === "true"
-}
-
 interface MayaChatScreenProps {
   onImageGenerated?: () => void
   user: any | null // User object passed down (type from parent component)
@@ -158,7 +152,7 @@ export default function MayaChatScreen({
   firstTimeProductUser = false,
 }: MayaChatScreenProps) {
   const { toast } = useToast()
-  const isLandingPagesUiEnabled = isDefaultOnFeatureEnabled(process.env.NEXT_PUBLIC_FEATURE_MAYA_LANDING_PAGES_UI)
+  const isLandingPagesUiEnabled = false
   const isFeedTabDisabled = true
   const [inputValue, setInputValue] = useState("")
   const [showHistory, setShowHistory] = useState(false)
@@ -1189,7 +1183,7 @@ export default function MayaChatScreen({
           }
 
           if (marker.tool === "collect_offer_brief") {
-            if (!isLandingPagesUiEnabled && marker.assetType === "page") {
+            if (marker.assetType === "page") {
               continue
             }
             updateAssistantToolPart("tool-collectOfferBrief", {
@@ -1201,7 +1195,7 @@ export default function MayaChatScreen({
           }
 
           if (marker.tool === "edit_asset") {
-            if (!isLandingPagesUiEnabled && marker.assetType === "page") {
+            if (marker.assetType === "page") {
               continue
             }
             updateAssistantToolPart("tool-editAsset", {
@@ -1213,7 +1207,7 @@ export default function MayaChatScreen({
           }
 
           if (marker.tool === "create_asset") {
-            if (!isLandingPagesUiEnabled && marker.assetType === "page") {
+            if (marker.assetType === "page") {
               continue
             }
             updateAssistantToolPart("tool-createAssetPreview", {
@@ -1227,7 +1221,7 @@ export default function MayaChatScreen({
           }
 
           if (marker.tool === "structured_asset_blocked") {
-            if (!isLandingPagesUiEnabled && marker.assetType === "page") {
+            if (marker.assetType === "page") {
               continue
             }
             updateAssistantToolPart("tool-structuredAssetBlocked", {
@@ -4086,13 +4080,6 @@ export default function MayaChatScreen({
                   onUploadAssets={() => {
                     handleSendMessage("I want to upload product photos and brand references")
                   }}
-                  onBuildPage={
-                    isLandingPagesUiEnabled
-                      ? () => {
-                          handleSendMessage("Create a landing page draft for my current offer")
-                        }
-                      : undefined
-                  }
                   onExploreMonthlyDrop={() => {
                     if (typeof window !== "undefined") {
                       const nextUrl = new URL(window.location.href)
@@ -4144,14 +4131,6 @@ export default function MayaChatScreen({
                         label: "New photos",
                         onClick: () => handleSendMessage("Create new editorial photos for my offer"),
                       },
-                      ...(isLandingPagesUiEnabled
-                        ? [
-                            {
-                              label: "Build a page",
-                              onClick: () => handleSendMessage("Create a landing page draft for my current offer"),
-                            },
-                          ]
-                        : []),
                     ]}
                   />
                   <MayaQuickPrompts
@@ -4181,7 +4160,7 @@ export default function MayaChatScreen({
                   <MayaWelcomePanel
                     eyebrow="Maya"
                     title="Start with your first output"
-                    subtitle="Ask Maya for a photo, a weekly content plan, or a page draft. The result will stay inline so you can refine it without leaving chat."
+                    subtitle="Ask Maya for a photo or a weekly content plan. The result will stay inline so you can refine it without leaving chat."
                     previewImageUrls={uploadedImages.map((image) => image.url)}
                     actions={[
                       {
@@ -4197,14 +4176,6 @@ export default function MayaChatScreen({
                         label: "New photos",
                         onClick: () => handleSendMessage("Create new photos for my offer"),
                       },
-                      ...(isLandingPagesUiEnabled
-                        ? [
-                            {
-                              label: "Build a page",
-                              onClick: () => handleSendMessage("Create a landing page draft for my current offer"),
-                            },
-                          ]
-                        : []),
                     ]}
                   />
                   <MayaQuickPrompts

@@ -917,6 +917,9 @@ export async function GET(request: NextRequest) {
               },
             })
           } else if (marker.tool === "collect_offer_brief") {
+            if (marker.assetType === "page") {
+              continue
+            }
             parts.push({
               type: "tool-collectOfferBrief",
               output: {
@@ -927,6 +930,9 @@ export async function GET(request: NextRequest) {
               },
             })
           } else if (marker.tool === "edit_asset") {
+            if (marker.assetType === "page") {
+              continue
+            }
             parts.push({
               type: "tool-editAsset",
               output: {
@@ -937,6 +943,9 @@ export async function GET(request: NextRequest) {
               },
             })
           } else if (marker.tool === "create_asset") {
+            if (marker.assetType === "page") {
+              continue
+            }
             parts.push({
               type: "tool-createAssetPreview",
               output: {
@@ -1075,6 +1084,9 @@ export async function GET(request: NextRequest) {
               },
             })
           } else if (marker.tool === "collect_offer_brief") {
+            if (marker.assetType === "page") {
+              continue
+            }
             parts.push({
               type: "tool-collectOfferBrief",
               output: {
@@ -1085,6 +1097,9 @@ export async function GET(request: NextRequest) {
               },
             })
           } else if (marker.tool === "edit_asset") {
+            if (marker.assetType === "page") {
+              continue
+            }
             parts.push({
               type: "tool-editAsset",
               output: {
@@ -1095,6 +1110,9 @@ export async function GET(request: NextRequest) {
               },
             })
           } else if (marker.tool === "create_asset") {
+            if (marker.assetType === "page") {
+              continue
+            }
             parts.push({
               type: "tool-createAssetPreview",
               output: {

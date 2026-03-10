@@ -16,10 +16,9 @@ describe("GET /api/studio/hub contract", () => {
   beforeEach(() => {
     vi.resetModules()
     vi.clearAllMocks()
-    delete process.env.NEXT_PUBLIC_FEATURE_MAYA_LANDING_PAGES_UI
   })
 
-  it("returns page drafts alongside recent photos and videos when Maya pages are enabled", async () => {
+  it("retires landing-page drafts from the Studio Hub payload while keeping recent photos and videos", async () => {
     mockSql
       .mockResolvedValueOnce([
         {
@@ -73,17 +72,13 @@ describe("GET /api/studio/hub contract", () => {
     const payload = await response.json()
 
     expect(payload.success).toBe(true)
-    expect(payload.landingPagesPaused).toBe(false)
+    expect(payload.landingPagesPaused).toBe(true)
     expect(Array.isArray(payload.pages)).toBe(true)
-    expect(payload.pages[0]).toMatchObject({
-      id: "page-1",
-      title: "Studio Offer Page",
-      pageType: "landing",
-    })
+    expect(payload.pages).toEqual([])
     expect(Array.isArray(payload.recentPhotos)).toBe(true)
     expect(Array.isArray(payload.recentVideos)).toBe(true)
     expect(payload.recentPhotos[0]?.imageUrl).toContain("photo.jpg")
     expect(payload.recentVideos[0]?.videoUrl).toContain("video.mp4")
-    expect(payload.stats.pageCount).toBe(1)
+    expect(payload.stats.pageCount).toBe(0)
   })
 })

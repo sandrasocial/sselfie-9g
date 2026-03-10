@@ -454,7 +454,7 @@ export async function getUserContextForMaya(authUserId: string): Promise<string>
         if (typeof latestOfferBrief.callToAction === "string" && latestOfferBrief.callToAction.trim()) {
           contextParts.push(`- CTA: ${latestOfferBrief.callToAction}`)
         }
-        contextParts.push("If the user asks for a landing page, use this brief before asking repeated questions.")
+        contextParts.push("If the user asks for a content calendar, use this brief before asking repeated questions.")
       }
 
       if (activeAssetContext) {

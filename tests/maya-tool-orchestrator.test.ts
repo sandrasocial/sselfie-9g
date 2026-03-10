@@ -22,9 +22,9 @@ describe("orchestrateMayaTurn", () => {
     const result = orchestrateMayaTurn({
       userText: "change the headline and CTA",
       activeAssetContext: {
-        assetType: "page",
-        assetLabel: "Landing Page",
-        assetId: "maya_page_123",
+        assetType: "calendar",
+        assetLabel: "Content Calendar",
+        assetId: "maya_calendar_123",
         updatedAt: new Date().toISOString(),
       },
     })
@@ -32,49 +32,43 @@ describe("orchestrateMayaTurn", () => {
     expect(result.kind).toBe("asset_edit")
   })
 
-  it("routes landing-page requests with missing detail to offer brief collection", () => {
+  it("retires landing-page requests instead of collecting an offer brief", () => {
     const result = orchestrateMayaTurn({
       userText: "create a landing page for my studio membership offer",
       activeAssetContext: null,
     })
 
-    expect(result.kind).toBe("collect_offer_brief")
-    if (result.kind === "collect_offer_brief") {
-      expect(result.assetType).toBe("page")
-    }
+    expect(result.kind).toBe("page_generation_paused")
   })
 
-  it("routes implicit landing-page help requests to offer brief collection", () => {
+  it("retires implicit landing-page help requests", () => {
     const result = orchestrateMayaTurn({
       userText: "can you help me with a landing page for my offer?",
       activeAssetContext: null,
     })
 
-    expect(result.kind).toBe("collect_offer_brief")
+    expect(result.kind).toBe("page_generation_paused")
   })
 
-  it("routes direct page creation when brief details are already present", () => {
+  it("retires direct page creation even when the brief details are present", () => {
     const result = orchestrateMayaTurn({
       userText:
         "Create a landing page for my coaching offer that helps founders sign clients, target audience is female founders, price is €497",
       activeAssetContext: null,
     })
 
-    expect(result.kind).toBe("asset_create")
-    if (result.kind === "asset_create") {
-      expect(result.intent.assetType).toBe("page")
-    }
+    expect(result.kind).toBe("page_generation_paused")
   })
 
-  it("routes multi-step asset creation for combined requests", () => {
+  it("keeps the calendar path when a mixed request also mentions a retired landing page", () => {
     const result = orchestrateMayaTurn({
       userText: "Create a landing page and a content calendar for this launch",
       activeAssetContext: null,
     })
 
-    expect(result.kind).toBe("multi_step_asset_create")
-    if (result.kind === "multi_step_asset_create") {
-      expect(result.intents.map((intent) => intent.assetType)).toEqual(["page", "calendar"])
+    expect(result.kind).toBe("asset_create")
+    if (result.kind === "asset_create") {
+      expect(result.intent.assetType).toBe("calendar")
     }
   })
 
@@ -135,7 +129,7 @@ describe("orchestrateMayaTurn", () => {
     expect(result).toEqual({ kind: "none", reason: "no_match" })
   })
 
-  it("pauses landing-page creation in chat when page assets are disabled", () => {
+  it("retires landing-page creation even when page assets are explicitly disabled", () => {
     const result = orchestrateMayaTurn({
       userText: "Create a landing page for my studio offer",
       activeAssetContext: null,
@@ -147,7 +141,7 @@ describe("orchestrateMayaTurn", () => {
     expect(result.kind).toBe("page_generation_paused")
   })
 
-  it("pauses landing-page edit routing when page assets are disabled", () => {
+  it("retires landing-page edit routing when page assets are disabled", () => {
     const result = orchestrateMayaTurn({
       userText: "Update this landing page headline",
       activeAssetContext: {
@@ -158,6 +152,20 @@ describe("orchestrateMayaTurn", () => {
       },
       options: {
         allowPageAssetsInChat: false,
+      },
+    })
+
+    expect(result.kind).toBe("page_generation_paused")
+  })
+
+  it("retires landing-page edits from active page context by default", () => {
+    const result = orchestrateMayaTurn({
+      userText: "Update this landing page headline",
+      activeAssetContext: {
+        assetType: "page",
+        assetLabel: "Landing Page",
+        assetId: "maya_page_123",
+        updatedAt: new Date().toISOString(),
       },
     })
 

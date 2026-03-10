@@ -22,7 +22,7 @@ import {
 type OfferBriefFormValues = Omit<MayaOfferBrief, "assetType">
 
 function isFeatureEnabled(value?: string | null): boolean {
-  if (!value) return true
+  if (!value) return false
   const normalized = value.trim().toLowerCase()
   return normalized === "1" || normalized === "true"
 }
@@ -929,17 +929,16 @@ export default function MayaChatInterface({
                                   key={partIndex}
                                   eyebrow="Studio Hub"
                                   title="My Studio"
-                                  subtitle="Feeds, pages, photos, and videos surfaced from your current Maya workspace."
+                                  subtitle="Feeds, photos, and videos surfaced from your current Maya workspace."
                                   actions={
                                     <MayaInlineAction href="/studio?tab=studio#studio">
                                       Open Full Hub
                                     </MayaInlineAction>
                                   }
                                 >
-                                  <div className="grid gap-px overflow-hidden rounded-[22px] border border-[rgba(195,190,182,0.14)] bg-[rgba(175,170,162,0.10)] sm:grid-cols-4">
+                                  <div className="grid gap-px overflow-hidden rounded-[22px] border border-[rgba(195,190,182,0.14)] bg-[rgba(175,170,162,0.10)] sm:grid-cols-3">
                                     {[
                                       { label: "Feeds", value: Number(stats.feedCount || 0) },
-                                      { label: "Pages", value: Number(stats.pageCount || 0) },
                                       { label: "Photos", value: Number(stats.photoCount || 0) },
                                       { label: "Videos", value: Number(stats.videoCount || 0) },
                                     ].map((item) => (
@@ -952,7 +951,7 @@ export default function MayaChatInterface({
                                     ))}
                                   </div>
 
-                                  {(feeds.length > 0 || pages.length > 0 || recentPhotos.length > 0 || recentVideos.length > 0) ? (
+                                  {(feeds.length > 0 || recentPhotos.length > 0 || recentVideos.length > 0) ? (
                                     <div className="mt-4 grid gap-3 lg:grid-cols-2">
                                       {feeds.slice(0, 2).map((feed: any) => (
                                         <div
@@ -965,22 +964,6 @@ export default function MayaChatInterface({
                                               <div className="mt-1 text-sm text-[color:var(--color-porcelain)]">{feed.title || `Feed ${feed.id}`}</div>
                                             </div>
                                             <MayaInlineAction href={feed.openUrl || "/studio?tab=feed-planner#feed-planner"}>
-                                              Open
-                                            </MayaInlineAction>
-                                          </div>
-                                        </div>
-                                      ))}
-                                      {pages.slice(0, 1).map((page: any) => (
-                                        <div
-                                          key={`hub-page-${page.id}`}
-                                          className="stone-inset-panel rounded-[22px] px-4 py-3"
-                                        >
-                                          <div className="flex items-center justify-between gap-3">
-                                            <div>
-                                              <div className="text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-smoke)]">Page Draft</div>
-                                              <div className="mt-1 text-sm text-[color:var(--color-porcelain)]">{page.title || "Landing page draft"}</div>
-                                            </div>
-                                            <MayaInlineAction href={page.liveUrl || "/studio?tab=maya#maya"}>
                                               Open
                                             </MayaInlineAction>
                                           </div>
@@ -1203,7 +1186,7 @@ export default function MayaChatInterface({
                             if (part.type === "tool-collectOfferBrief") {
                               const output = (part as any).output || {}
                               const assetType = output.assetType || "page"
-                              if (!isLandingPagesUiEnabled && assetType === "page") {
+                              if (assetType === "page") {
                                 return null
                               }
                               return (
@@ -1223,7 +1206,7 @@ export default function MayaChatInterface({
                             if (part.type === "tool-editAsset") {
                               const output = (part as any).output || {}
                               const assetType = output.assetType || "page"
-                              if (!isLandingPagesUiEnabled && assetType === "page") {
+                              if (assetType === "page") {
                                 return null
                               }
                               const assetLabel =
@@ -1290,10 +1273,7 @@ export default function MayaChatInterface({
                             if (part.type === "tool-structuredAssetBlocked") {
                               const output = (part as any).output || {}
                               const assetType = output.assetType || "calendar"
-                              if (assetType === "pdf") {
-                                return null
-                              }
-                              if (!isLandingPagesUiEnabled && assetType === "page") {
+                              if (assetType === "pdf" || assetType === "page") {
                                 return null
                               }
                               const recoveryHint =
@@ -1309,7 +1289,7 @@ export default function MayaChatInterface({
                               const quickRetryPrompt =
                                 assetType === "calendar"
                                   ? "Create a content calendar for my current offer this week."
-                                  : "Create a landing page draft for my current offer."
+                                  : "Create a content calendar for my current offer this week."
 
                               return (
                                 <MayaInlineCard

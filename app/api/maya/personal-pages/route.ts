@@ -16,7 +16,9 @@ export async function GET(_request: NextRequest) {
     }
 
     const pages = await listPersonalPagesForUser(neonUser.id, 30)
-    const serializedPages = pages.map((page) => ({
+    const serializedPages = pages
+      .filter((page) => page.page_type === "calendar")
+      .map((page) => ({
       id: page.id,
       title: page.title || "Untitled",
       pageType: page.page_type,
@@ -26,7 +28,7 @@ export async function GET(_request: NextRequest) {
       slug: page.slug,
       version: page.version,
       updatedAt: page.updated_at,
-    }))
+      }))
 
     return NextResponse.json({
       success: true,

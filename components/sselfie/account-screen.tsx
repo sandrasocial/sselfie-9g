@@ -614,7 +614,7 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
 
           <div className={`${glassCard} p-5 sm:p-6`}>
             <div className="mb-4 flex items-center justify-between gap-3">
-              <h3 className="display-header text-xl font-light text-[color:var(--color-porcelain)]">Maya Pages</h3>
+              <h3 className="display-header text-xl font-light text-[color:var(--color-porcelain)]">Maya Assets</h3>
               <span className="text-[10px] uppercase tracking-[0.35em] text-[color:var(--color-smoke)]">
                 {personalPages.length} total
               </span>
@@ -644,7 +644,7 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
               </div>
             ) : (
               <p className="text-sm text-[color:var(--color-smoke)]">
-                Your Maya pages will appear here after you create a landing page or content calendar in chat.
+                Your Maya assets will appear here after you create a content calendar in chat.
               </p>
             )}
           </div>

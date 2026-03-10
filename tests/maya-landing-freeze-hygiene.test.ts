@@ -10,10 +10,11 @@ function read(relPath: string): string {
 }
 
 describe("maya landing page chat hygiene", () => {
-  it("surfaces landing pages in Maya entry actions while keeping the UI flag available", () => {
+  it("removes landing pages from Maya entry actions and retired page prompts", () => {
     const mayaChatScreen = read("components/sselfie/maya-chat-screen.tsx")
-    expect(mayaChatScreen).toContain("Build a page")
-    expect(mayaChatScreen).toContain("NEXT_PUBLIC_FEATURE_MAYA_LANDING_PAGES_UI")
+    expect(mayaChatScreen).not.toContain("Build a page")
+    expect(mayaChatScreen).not.toContain("Create a landing page draft for my current offer")
+    expect(mayaChatScreen).not.toContain("or a page draft")
   })
 
   it("keeps feed planning inline from the Maya home state", () => {
@@ -26,7 +27,7 @@ describe("maya landing page chat hygiene", () => {
     const mayaChatScreen = read("components/sselfie/maya-chat-screen.tsx")
     expect(mayaChatScreen).toContain("onManageLibrary={undefined}")
     expect(mayaChatScreen).toContain("onAddImages={undefined}")
-    expect(mayaChatScreen).toContain("onStartFresh={undefined}")
+    expect(mayaChatScreen).not.toContain("onStartFresh={undefined}")
     expect(mayaChatScreen).toContain("onEditIntent={undefined}")
   })
 
@@ -37,9 +38,8 @@ describe("maya landing page chat hygiene", () => {
     expect(handleNewChatBlock).not.toContain("clearLibrary(")
   })
 
-  it("enables landing page routing in maya chat by default while preserving an explicit off switch", () => {
+  it("retires landing page routing in maya chat", () => {
     const mayaChatRoute = read("app/api/maya/chat/route.ts")
-    expect(mayaChatRoute).toContain("if (!envValue) return true")
-    expect(mayaChatRoute).toContain("Landing pages are paused right now")
+    expect(mayaChatRoute).toContain("Landing page drafts are retired right now")
   })
 })

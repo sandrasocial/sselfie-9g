@@ -151,7 +151,7 @@ export function orchestrateMayaTurn(input: {
   if (!normalizedText) {
     return { kind: "none", reason: "empty_text" }
   }
-  const allowPageAssetsInChat = input.options?.allowPageAssetsInChat ?? true
+  const allowPageAssetsInChat = input.options?.allowPageAssetsInChat ?? false
 
   const rememberIntent = detectMayaRememberIntent(normalizedText)
   if (rememberIntent) {
@@ -174,7 +174,7 @@ export function orchestrateMayaTurn(input: {
 
   const assetEditIntent = detectMayaAssetEditIntent(normalizedText, input.activeAssetContext)
   if (assetEditIntent) {
-    if (!allowPageAssetsInChat && assetEditIntent.assetType === "page") {
+    if (assetEditIntent.assetType === "page") {
       return {
         kind: "page_generation_paused",
         reason: "chat_page_flow_disabled",
@@ -190,7 +190,7 @@ export function orchestrateMayaTurn(input: {
 
   const multiAssetCreateIntents = detectMultiAssetCreateIntents(normalizedText)
   if (multiAssetCreateIntents.length > 1) {
-    if (!allowPageAssetsInChat) {
+    if (!allowPageAssetsInChat || multiAssetCreateIntents.some((intent) => intent.assetType === "page")) {
       const nonPageIntents = multiAssetCreateIntents.filter((intent) => intent.assetType !== "page")
       if (nonPageIntents.length > 1) {
         return {
@@ -230,19 +230,10 @@ export function orchestrateMayaTurn(input: {
       }
     }
 
-    if (!allowPageAssetsInChat && assetCreateIntent.assetType === "page") {
+    if (assetCreateIntent.assetType === "page") {
       return {
         kind: "page_generation_paused",
         reason: "chat_page_flow_disabled",
-      }
-    }
-
-    if (assetCreateIntent.assetType === "page" && needsLandingPageBrief(normalizedText)) {
-      return {
-        kind: "collect_offer_brief",
-        assetType: "page",
-        executionMode: "tool",
-        requiresStructuredRender: false,
       }
     }
 
@@ -256,27 +247,9 @@ export function orchestrateMayaTurn(input: {
 
   const implicitPageIntent = detectImplicitPageIntent(normalizedText)
   if (implicitPageIntent) {
-    if (!allowPageAssetsInChat) {
-      return {
-        kind: "page_generation_paused",
-        reason: "chat_page_flow_disabled",
-      }
-    }
-
-    if (needsLandingPageBrief(normalizedText)) {
-      return {
-        kind: "collect_offer_brief",
-        assetType: "page",
-        executionMode: "tool",
-        requiresStructuredRender: false,
-      }
-    }
-
     return {
-      kind: "asset_create",
-      intent: implicitPageIntent,
-      executionMode: "tool",
-      requiresStructuredRender: true,
+      kind: "page_generation_paused",
+      reason: "chat_page_flow_disabled",
     }
   }
 

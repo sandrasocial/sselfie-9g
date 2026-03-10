@@ -12,7 +12,6 @@ interface MembershipHomeCardProps {
   onBrowseStyles: () => void
   onCreateCalendar?: () => void
   onUploadAssets?: () => void
-  onBuildPage?: () => void
   onExploreMonthlyDrop?: () => void
 }
 
@@ -26,7 +25,6 @@ export default function MembershipHomeCard({
   onBrowseStyles,
   onCreateCalendar,
   onUploadAssets,
-  onBuildPage,
   onExploreMonthlyDrop,
 }: MembershipHomeCardProps) {
   const normalizedCredits = Math.max(0, Math.round(creditsReady))
@@ -50,7 +48,6 @@ export default function MembershipHomeCard({
             </MayaInlineAction>
             <MayaInlineAction onClick={onPlanFeed}>Plan my week</MayaInlineAction>
             <MayaInlineAction onClick={onBrowseStyles}>Browse styles</MayaInlineAction>
-            {onBuildPage ? <MayaInlineAction onClick={onBuildPage}>Build a page</MayaInlineAction> : null}
           </>
         }
       >
