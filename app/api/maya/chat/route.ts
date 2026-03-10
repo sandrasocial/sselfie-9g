@@ -49,6 +49,7 @@ import { isMayaPageRendererV2Enabled } from "@/lib/maya/page-generation/constant
 import {
   createMayaOpenRouterFallbackModel,
   getMayaGatewayModel,
+  getMayaMaxTokensForTask,
   getMayaModelForTask,
   resolveMayaChatTask,
 } from "@/lib/maya/openrouter"
@@ -2280,6 +2281,7 @@ You must apply this skill pack for prompt composition while preserving Maya's co
     const selectedModel = getMayaModelForTask(mayaTask)
     const primaryModel = getMayaGatewayModel(mayaTask)
     const openRouterFallbackModel = createMayaOpenRouterFallbackModel(mayaTask)
+    const maxTokens = getMayaMaxTokensForTask(mayaTask)
     console.log("[Maya Chat] Model routing:", {
       chatType,
       routingChatType,
@@ -2299,7 +2301,7 @@ You must apply this skill pack for prompt composition while preserving Maya's co
         model: primaryModel,
         system: systemPrompt,
         messages: modelMessages,
-        maxTokens: 4096, // CRITICAL: Ensure Maya has enough tokens to complete response including [GENERATE_CONCEPTS] trigger
+        maxTokens,
         temperature: 0.7, // Balanced creativity and consistency
       } as any)
     } catch (streamError) {
@@ -2310,7 +2312,7 @@ You must apply this skill pack for prompt composition while preserving Maya's co
             model: openRouterFallbackModel,
             system: systemPrompt,
             messages: modelMessages,
-            maxTokens: 4096,
+            maxTokens,
             temperature: 0.7,
           } as any)
           console.log("[Maya Chat] OpenRouter fallback activated for chat")
