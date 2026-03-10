@@ -118,4 +118,38 @@ describe("GET /api/maya/load-chat inline feed hydration", () => {
     expect(feedPart.output.feedId).toBe(44)
     expect(feedPart.output.title).toBe("Launch Feed")
   })
+
+  it("restores an unsaved inline feed card from the fenced CREATE_FEED_STRATEGY payload", async () => {
+    mockGetChatMessages.mockResolvedValue([
+      {
+        id: 100,
+        chat_id: 123,
+        role: "assistant",
+        content:
+          'I mapped this into a saved-ready 9-post layout.\n\n[CREATE_FEED_STRATEGY]\n```json\n{"feedTitle":"Launch Feed","overallVibe":"Luxury launch week","posts":[{"position":1,"visualDirection":"Editorial portrait"}]}\n```',
+        concept_cards: null,
+        feed_cards: null,
+        styling_details: null,
+        created_at: new Date().toISOString(),
+      },
+    ])
+
+    const { GET } = await import("@/app/api/maya/load-chat/route")
+
+    const response = await GET(
+      new Request("http://localhost/api/maya/load-chat?chatId=123&chatType=maya") as any,
+    )
+
+    expect(response.status).toBe(200)
+    const payload = await response.json()
+    const assistantMessage = payload.messages[0]
+    const feedParts = assistantMessage.parts.filter((part: any) => part.type === "tool-generateFeed")
+    const feedPart = feedParts[0]
+
+    expect(feedPart).toBeTruthy()
+    expect(feedPart.output.feedId).toBeUndefined()
+    expect(feedPart.output.title).toBe("Launch Feed")
+    expect(feedPart.output.posts).toHaveLength(1)
+    expect(feedPart.output.posts[0].visualDirection).toBe("Editorial portrait")
+  })
 })
