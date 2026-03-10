@@ -1,4 +1,4 @@
-export const SUPPORTED_FEED_PLAN_POST_COUNTS = [9, 12] as const
+export const SUPPORTED_FEED_PLAN_POST_COUNTS = [6, 9, 12] as const
 export const DEFAULT_INLINE_MAYA_FEED_POST_COUNT = 9
 
 function removeInlineFeedStrategyBlocks(text: string): string {
@@ -93,10 +93,16 @@ export function stripFeedStrategyArtifacts(text: string): string {
     // Handle split streaming text parts that can leak feed JSON fragments before the card is ready.
     cleanedText = cleanedText
       .replace(/^\s*\{\s*$/gm, "")
+      .replace(/^\s*`{3}json\s*$/gmi, "")
+      .replace(/^\s*`{3}\s*$/gm, "")
       .replace(/^\s*"feedTitle"\s*:\s*".*?,?\s*$/gmi, "")
       .replace(/^\s*"title"\s*:\s*".*?,?\s*$/gmi, "")
+      .replace(/^\s*"aesthetic"\s*:\s*".*?,?\s*$/gmi, "")
       .replace(/^\s*"overallVibe"\s*:\s*".*?,?\s*$/gmi, "")
       .replace(/^\s*"colorPalette"\s*:\s*".*?,?\s*$/gmi, "")
+      .replace(/^\s*"strategicRationale"\s*:\s*.*$/gmi, "")
+      .replace(/^\s*"totalCredits"\s*:\s*\d+.*$/gmi, "")
+      .replace(/^\s*\{?\s*"[^"]+"\s*:\s*.*$/gmi, "")
       .replace(/^\s*"posts"\s*:\s*\[.*$/gmi, "")
       .replace(/^\s*\{\s*"position"\s*:\s*\d+.*$/gmi, "")
       .replace(/^\s*"position"\s*:\s*\d+.*$/gmi, "")

@@ -25,10 +25,11 @@ describe("maya feed strategy helpers", () => {
     expect(value).toBe("I built your grid.")
   })
 
-  it("treats feed cards as 9- or 12-post only and only retries transient failures", () => {
+  it("treats feed cards as 6-, 9-, or 12-post layouts and only retries transient failures", () => {
+    expect(isSupportedFeedPlanPostCount(6)).toBe(true)
     expect(isSupportedFeedPlanPostCount(9)).toBe(true)
     expect(isSupportedFeedPlanPostCount(12)).toBe(true)
-    expect(isSupportedFeedPlanPostCount(6)).toBe(false)
+    expect(isSupportedFeedPlanPostCount(8)).toBe(false)
 
     expect(shouldRetryInlineFeedGeneration(400)).toBe(false)
     expect(shouldRetryInlineFeedGeneration(429)).toBe(true)
