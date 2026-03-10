@@ -25,6 +25,7 @@ import MayaTrainingTab from "./maya/maya-training-tab"
 import StudioMemberOnboarding from "./maya/studio-member-onboarding"
 import MembershipHomeCard from "./maya/membership-home-card"
 import MayaWelcomePanel from "./maya/maya-welcome-panel"
+import WelcomeFirstGenerationFlow from "./maya/welcome-first-generation-flow"
 import { useRouter } from "next/navigation"
 import useSWR from "swr"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
@@ -88,6 +89,11 @@ type MonthlyDropRow = {
 
 type MonthlyDropsResponse = {
   monthlyDrops?: MonthlyDropRow[]
+}
+
+type WelcomeFirstGenerationState = {
+  enabled?: boolean
+  eligible?: boolean
 }
 
 const simpleFetcher = async <T,>(url: string): Promise<T> => {
@@ -180,6 +186,7 @@ export default function MayaChatScreen({
   const [showCollapsedPrompts, setShowCollapsedPrompts] = useState(false)
   const [academyJourneyPrompt, setAcademyJourneyPrompt] = useState<"first_gen" | "three_gen" | null>(null)
   const [isLoadingAcademyJourneyState, setIsLoadingAcademyJourneyState] = useState(false)
+  const [welcomeFlowDismissed, setWelcomeFlowDismissed] = useState(false)
   const router = useRouter()
 
   const { data: myProductsData } = useSWR<MyProductsResponse>(
@@ -190,7 +197,6 @@ export default function MayaChatScreen({
     user && isMembership ? "/api/academy/monthly-drops" : null,
     simpleFetcher,
   )
-
   const ownedMiniProductIds = useMemo<Set<MiniProductId>>(() => {
     const owned = new Set<MiniProductId>()
 
@@ -238,6 +244,14 @@ export default function MayaChatScreen({
     }
     return "photos" // Default to Photos tab
   })
+  const { data: welcomeFirstGenerationState } = useSWR<WelcomeFirstGenerationState>(
+    user && !isMembership && activeMayaTab === "photos" ? "/api/onboarding/welcome-first-generation-state" : null,
+    simpleFetcher,
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 30000,
+    },
+  )
   
   // Mode managed by useMayaMode hook
   const { proMode, setProMode, getModeString, hasModeChanged } = useMayaMode(forcedProMode)
@@ -3624,6 +3638,16 @@ export default function MayaChatScreen({
     activeMayaTab === "photos" && !isMembership && !hasWhatToSayAccess && hasBrandStrategyOutput
   const showShowUpUpsellCard =
     activeMayaTab === "photos" && !isMembership && !hasShowUpAccess && hasFeedPlannerSignal
+  const showWelcomeFirstGenerationFlow =
+    activeMayaTab === "photos" &&
+    !isMembership &&
+    !showReturningMemberHome &&
+    !isLoadingChat &&
+    !isTyping &&
+    hasLoadedChatRef.current &&
+    !hasVisibleMessages &&
+    welcomeFirstGenerationState?.eligible === true &&
+    !welcomeFlowDismissed
 
   // NOTE: Workbench should always be available in Pro mode for manual creation
   // Therefore, we always show the chat UI when in Pro mode, which includes the workbench
@@ -4159,12 +4183,12 @@ export default function MayaChatScreen({
                 <div className="w-full max-w-2xl space-y-8">
                   <MayaWelcomePanel
                     eyebrow="Maya"
-                    title="Start with your first output"
-                    subtitle="Ask Maya for a photo or a weekly content plan. The result will stay inline so you can refine it without leaving chat."
+                    title="Let's make your first photo easy"
+                    subtitle="Tell Maya what you need. She'll draft it right here so you can keep going without leaving chat."
                     previewImageUrls={uploadedImages.map((image) => image.url)}
                     actions={[
                       {
-                        label: "Create a post",
+                        label: "Make my first photo",
                         onClick: () => handleSendMessage("I need photos for Monday's post"),
                         variant: "primary",
                       },
@@ -4173,8 +4197,8 @@ export default function MayaChatScreen({
                         onClick: () => handleSendMessage("Create a content calendar draft for this week"),
                       },
                       {
-                        label: "New photos",
-                        onClick: () => handleSendMessage("Create new photos for my offer"),
+                        label: "Show me ideas",
+                        onClick: () => handleSendMessage("Show me fresh style directions for my next post"),
                       },
                     ]}
                   />
@@ -4191,6 +4215,17 @@ export default function MayaChatScreen({
           )}
           </div>
         </>
+      )}
+
+      {showWelcomeFirstGenerationFlow && (
+        <WelcomeFirstGenerationFlow
+          userHasTrainedModel={hasTrainedModel}
+          onDone={() => setWelcomeFlowDismissed(true)}
+          onGenerated={() => {
+            setWelcomeFlowDismissed(true)
+            onImageGenerated?.()
+          }}
+        />
       )}
 
       {/* Fixed Bottom Input Area - Show in Photos and Feed tabs */}

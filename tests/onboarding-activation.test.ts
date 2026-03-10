@@ -97,8 +97,8 @@ describe("getActivationChecklist", () => {
 })
 
 describe("getActivationContinueHref", () => {
-  it("routes first-generation activation to feed planner generate mode", () => {
-    expect(getActivationContinueHref("generate_first_image")).toBe("/feed-planner?activation=generate")
+  it("routes first-generation activation back into Maya", () => {
+    expect(getActivationContinueHref("generate_first_image")).toBe("/studio?tab=maya")
   })
 
   it("returns null for upload step because UI should open wizard in place", () => {

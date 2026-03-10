@@ -610,6 +610,25 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
       activationChecklist.nextAction !== "none",
   )
 
+  const activationCardCopy =
+    activationChecklist.nextAction === "upload_selfie"
+      ? {
+          title: "Start with Maya",
+          subtitle: "Upload one selfie first. Then Maya can make your first photo with you.",
+          cta: "Upload my selfie →",
+        }
+      : activationChecklist.nextAction === "generate_first_image"
+        ? {
+            title: "Your first photo is next",
+            subtitle: "Open Maya and make one image first. That is the quick win that gets everything moving.",
+            cta: "Open Maya →",
+          }
+        : {
+            title: "Keep going with Maya",
+            subtitle: "Maya will guide the next step right inside chat.",
+            cta: "Continue →",
+          }
+
   const handleActivationContinue = () => {
     trackAnalyticsEvent({
       event: "activation_continue_clicked",
@@ -640,10 +659,10 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h3 className="font-['Cormorant_Garamond'] text-xl font-light tracking-[0.14em] uppercase text-white">
-                  Start Your First Feed
+                  {activationCardCopy.title}
                 </h3>
                 <p className="mt-2 text-sm text-white/65">
-                  One tap to continue setup and create your first feed.
+                  {activationCardCopy.subtitle}
                 </p>
               </div>
               <button
@@ -651,7 +670,7 @@ export default function FeedPlannerClient({ access: accessProp, userId, userName
                 onClick={handleActivationContinue}
                 className="h-11 min-w-[160px] rounded-full border border-white/25 bg-white/10 px-6 text-xs font-medium tracking-[0.22em] uppercase text-white transition-colors hover:bg-white/15"
               >
-                Create my first feed →
+                {activationCardCopy.cta}
               </button>
             </div>
           </div>

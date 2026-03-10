@@ -57,6 +57,6 @@ export function getActivationChecklist(input: ActivationChecklistInput): {
 
 export function getActivationContinueHref(nextAction: ActivationNextAction): string | null {
   if (nextAction === "train_model") return "/studio?tab=maya"
-  if (nextAction === "generate_first_image") return "/feed-planner?activation=generate"
+  if (nextAction === "generate_first_image") return "/studio?tab=maya"
   return null
 }

@@ -53,11 +53,11 @@ export default function MayaWelcomePanel({
         <div className="grid gap-3 lg:grid-cols-[1.1fr_0.9fr]">
           <div className="space-y-3">
             <div className="rounded-[22px] border border-[rgba(195,190,182,0.16)] bg-[rgba(175,170,162,0.12)] px-4 py-3 text-right text-sm text-[color:var(--color-porcelain)]">
-              I need photos for Monday&apos;s post
+              I need one photo for Monday&apos;s post
             </div>
             <div className="stone-inset-panel rounded-[22px] px-4 py-4">
               <div className="text-sm leading-relaxed text-[color:var(--color-porcelain)]">
-                Understood. I can create the photos, map the week, build the calendar, and draft the page right here in chat.
+                Perfect. I can make the photo, map the week, and keep it all moving right here in chat.
               </div>
             </div>
             {uploadHint ? (

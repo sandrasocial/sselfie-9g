@@ -59,6 +59,9 @@ export default function WelcomeFirstGenerationFlow({
     }
     return null
   }, [selectedStyle, topPrompts])
+  const shouldShowModeStep = userHasTrainedModel
+  const totalSteps = shouldShowModeStep ? 3 : 2
+  const visibleStep = shouldShowModeStep ? step : step === 3 ? 2 : 1
 
   useEffect(() => {
     if (!hasTrackedStart) {
@@ -254,9 +257,12 @@ export default function WelcomeFirstGenerationFlow({
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[rgba(13,12,11,0.80)] backdrop-blur-sm p-4">
         <div className="w-full max-w-md bg-[rgba(175,170,162,0.15)] backdrop-blur-[70px] border border-[rgba(195,190,182,0.25)] rounded-3xl p-8 sm:p-12">
           <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780] mb-2">
-            YOUR FIRST PHOTO
+            MAYA
           </p>
-          <p className="font-['Cormorant_Garamond'] font-light text-2xl sm:text-3xl text-[#f0ede8] tracking-wide mb-6">Your first photo is ready.</p>
+          <p className="font-['Cormorant_Garamond'] font-light text-2xl sm:text-3xl text-[#f0ede8] tracking-wide mb-3">Your first photo is ready.</p>
+          <p className="text-sm text-[#8a8780] leading-relaxed mb-6">
+            Good. This is your quick win. Keep this thread open and let&apos;s build from here.
+          </p>
           <img src={generatedImageUrl} alt="Your first brand photo" className="w-full aspect-square object-cover rounded-2xl mb-6 border border-[rgba(195,190,182,0.20)]" />
           <div className="space-y-3">
             <button
@@ -267,7 +273,7 @@ export default function WelcomeFirstGenerationFlow({
               }}
               className="w-full inline-flex items-center justify-center bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[#f0ede8] transition-colors"
             >
-              Photoshoot — Create 6–9 photos in this style
+              Make 6 more in this style
             </button>
             <button
               type="button"
@@ -287,17 +293,17 @@ export default function WelcomeFirstGenerationFlow({
       <div className="w-full max-w-md bg-[rgba(175,170,162,0.15)] backdrop-blur-[70px] border border-[rgba(195,190,182,0.25)] rounded-3xl overflow-hidden flex flex-col max-h-[90vh]">
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-[rgba(195,190,182,0.20)]">
           <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780]">
-            YOUR FIRST PHOTO IN 3 STEPS
+            MAYA
           </p>
           <button type="button" onClick={handleSkip} className="text-[#8a8780] hover:text-[#f0ede8] transition-colors" aria-label="Close">
             <span className="text-[11px] tracking-[0.12em] uppercase">Close</span>
           </button>
         </div>
         <div className="flex gap-1.5 justify-center py-4">
-          {([1, 2, 3] as const).map((s) => (
+          {Array.from({ length: totalSteps }, (_, index) => index + 1).map((s) => (
             <div
               key={s}
-              className={`h-1.5 w-8 rounded-full transition-colors ${step >= s ? "bg-[#c8c4bb]" : "bg-[rgba(175,170,162,0.25)]"}`}
+              className={`h-1.5 w-8 rounded-full transition-colors ${visibleStep >= s ? "bg-[#c8c4bb]" : "bg-[rgba(175,170,162,0.25)]"}`}
               aria-hidden
             />
           ))}
@@ -306,7 +312,10 @@ export default function WelcomeFirstGenerationFlow({
           {step === 1 && (
             <>
               <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780] mb-6">
-                STEP 1: CHOOSE A STYLE
+                STEP 1: PICK THE VIBE
+              </p>
+              <p className="text-sm text-[#8a8780] leading-relaxed mb-6">
+                Start simple. Pick the direction that feels most like you.
               </p>
               <div className="grid grid-cols-2 gap-4 mb-8">
                 {(styleOptions.length ? styleOptions : STYLE_OPTIONS).map((opt) => (
@@ -328,10 +337,10 @@ export default function WelcomeFirstGenerationFlow({
               </div>
               <button
                 type="button"
-                onClick={() => setStep(2)}
+                onClick={() => setStep(shouldShowModeStep ? 2 : 3)}
                 className="w-full inline-flex items-center justify-center bg-[#c8c4bb] text-[#0d0c0b] font-medium tracking-[0.15em] uppercase text-xs px-6 py-3 rounded-full hover:bg-[#f0ede8] transition-colors"
               >
-                Next
+                This one
               </button>
               <button type="button" onClick={handleSkip} className="w-full mt-3 text-xs text-[#8a8780] hover:text-[#f0ede8] transition-colors text-center">
                 Skip for now
@@ -339,10 +348,10 @@ export default function WelcomeFirstGenerationFlow({
             </>
           )}
 
-          {step === 2 && (
+          {step === 2 && shouldShowModeStep && (
             <>
               <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780] mb-6">
-                STEP 2: PICK YOUR MODE
+                STEP 2: CHOOSE HOW YOU WANT TO CREATE
               </p>
               <div className="space-y-3 mb-8">
                 {userHasTrainedModel && (
@@ -354,11 +363,11 @@ export default function WelcomeFirstGenerationFlow({
                         ? "border-[#a8a49c] bg-[rgba(168,164,156,0.15)]"
                         : "border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.06)] hover:border-[rgba(195,190,182,0.45)]"
                     }`}
-                  >
-                    <span className="font-['Inter'] font-medium text-[10px] tracking-[0.3em] uppercase text-[#f0ede8] block mb-1">
-                      MY MODEL
-                    </span>
-                    <span className="text-sm text-[#8a8780] leading-relaxed">Use your trained model (Fast, consistent)</span>
+                    >
+                      <span className="font-['Inter'] font-medium text-[10px] tracking-[0.3em] uppercase text-[#f0ede8] block mb-1">
+                        MY MODEL
+                      </span>
+                    <span className="text-sm text-[#8a8780] leading-relaxed">Fastest option. Maya uses the model that already knows your face.</span>
                   </button>
                 )}
                 <button
@@ -373,7 +382,7 @@ export default function WelcomeFirstGenerationFlow({
                   <span className="font-['Inter'] font-medium text-[10px] tracking-[0.3em] uppercase text-[#f0ede8] block mb-1">
                     SELFIE
                   </span>
-                  <span className="text-sm text-[#8a8780] leading-relaxed">Use reference selfies (More control)</span>
+                  <span className="text-sm text-[#8a8780] leading-relaxed">Use one clear selfie. Maya will work from that and keep it simple.</span>
                 </button>
               </div>
               <div className="flex gap-3">
@@ -400,10 +409,10 @@ export default function WelcomeFirstGenerationFlow({
               <p className="font-['Inter'] font-medium text-[10px] uppercase tracking-[0.5em] text-[#8a8780] mb-2">
                 STEP 3: GENERATE
               </p>
-              <p className="text-sm text-[#8a8780] leading-relaxed mb-6">Let&apos;s create your first photo in this style.</p>
+              <p className="text-sm text-[#8a8780] leading-relaxed mb-6">Let&apos;s make your first photo now. No stress. We just need one strong image.</p>
               {selectedMode === "pro" && (
                 <div className="mb-6">
-                  <label className="block font-['Inter'] font-medium text-[10px] uppercase tracking-[0.4em] text-[#8a8780] mb-2">Upload one selfie</label>
+                  <label className="block font-['Inter'] font-medium text-[10px] uppercase tracking-[0.4em] text-[#8a8780] mb-2">Upload one clear selfie</label>
                   <input
                     type="file"
                     accept="image/*"
@@ -415,14 +424,14 @@ export default function WelcomeFirstGenerationFlow({
               {(status === "uploading" || status === "generating" || status === "polling") && (
                 <div className="rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] px-4 py-3 text-sm text-[#8a8780] mb-4 flex items-center gap-2">
                   <div className="h-4 w-4 rounded-full border-2 border-[rgba(195,190,182,0.30)] border-t-[#c8c4bb] animate-spin shrink-0" />
-                  Creating your photo...
+                  Maya is making your photo...
                 </div>
               )}
               {errorMessage && <p className="text-sm text-red-300 mb-4">{errorMessage}</p>}
               <div className="flex gap-3">
                 <button
                   type="button"
-                  onClick={() => setStep(2)}
+                  onClick={() => setStep(shouldShowModeStep ? 2 : 1)}
                   className="py-3 px-5 border border-[rgba(195,190,182,0.30)] text-[#8a8780] hover:text-[#f0ede8] hover:border-[rgba(195,190,182,0.55)] text-xs uppercase tracking-[0.1em] rounded-full transition-colors"
                 >
                   Back
@@ -433,7 +442,7 @@ export default function WelcomeFirstGenerationFlow({
                   disabled={!canGenerateStep3 || status === "uploading" || status === "generating" || status === "polling"}
                   className="flex-1 py-3 bg-[#c8c4bb] text-[#0d0c0b] text-xs font-medium uppercase tracking-[0.1em] rounded-full hover:bg-[#f0ede8] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Generate Now
+                  Make my photo
                 </button>
               </div>
               <button type="button" onClick={handleSkip} className="w-full mt-3 text-xs text-[#8a8780] hover:text-[#f0ede8] transition-colors text-center">
