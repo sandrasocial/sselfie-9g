@@ -24,12 +24,12 @@ Turn Codex from a collection of loose reporting jobs into a small set of autonom
 
 | Skill | Purpose | Works with current codebase | Action or report | Class | Used by |
 | --- | --- | --- | --- | --- | --- |
-| `sselfie-maya-os` | Canonical Maya-first user journey and route rules | Yes | Guidance for action | CORE | User Journey Engine, Growth Intelligence Engine |
+| `sselfie-maya-os` | Canonical Maya-first user journey and route rules | Yes | Guidance for action | CORE | User Journey Engine, Maya Quality Engine, Growth Intelligence Engine |
 | `funnel-integrity-audit` | Detect checkout, CTA, auth-wall, and delivery leaks | Yes | Diagnostic that drives fixes | CORE | User Journey Engine, Revenue Intelligence Engine |
 | `integration-health-check` | Validate Stripe, Neon, Resend, Redis, Blob, Supabase wiring | Yes, validated 2026-03-10 | Diagnostic that drives fixes | CORE | Product Health Engine, User Journey Engine |
 | `user-journey-scanner` | Scan the live paid-only route ladder | Yes, updated 2026-03-10 | Diagnostic that drives fixes | CORE | User Journey Engine |
 | `dead-code-hunter` | Find likely dead code and stale exports | Yes, validated 2026-03-10 | Report input for cleanup | SUPPORTING | Code Stability Engine |
-| `prompt-authority-inspector` | Detect prompt drift and shadow prompt paths | Yes, validated 2026-03-10 | Report input for cleanup | SUPPORTING | Code Stability Engine |
+| `prompt-authority-inspector` | Detect prompt drift and shadow prompt paths | Yes, validated 2026-03-10 | Report input for cleanup | SUPPORTING | Code Stability Engine, Maya Quality Engine |
 | `repo-cartographer` | Map the current backend/frontend/integration surface | Yes, validated 2026-03-10 | Report input for cleanup | SUPPORTING | Code Stability Engine |
 | `architecture-simplifier` | Surface high-risk dense areas and duplication hotspots | Yes, validated 2026-03-10 | Report input for cleanup | SUPPORTING | Code Stability Engine monthly pass |
 | `gravity-scanner` | Identify high-gravity files and dependency hubs | Yes, validated 2026-03-10 | Report input for cleanup | SUPPORTING | Code Stability Engine monthly pass |
@@ -70,6 +70,8 @@ Turn Codex from a collection of loose reporting jobs into a small set of autonom
 | --- | --- | --- | --- | --- | --- |
 | `hourly-ops-triage` | Product Health Engine | Detect and repair runtime failures, cron failures, webhook/admin issues, and obvious env drift | Yes, validated 2026-03-10 | Action-first | ACTIVE |
 | `daily-funnel-health` | User Journey Engine | Validate public paid flows, route integrity, and delivery paths | Yes. Repo-owned headless smoke validated locally on 2026-03-10; targeted browser diagnosis remains available | Action-first | ACTIVE |
+| `nightly-maya-quality` | Maya Quality Engine | Detect Maya prompt drift, inline tool regressions, and character consistency issues | Yes. Initial audit shipped 2026-03-10 and immediately surfaced a prompt-authority bypass candidate | Action-first | ACTIVE |
+| `nightly-brand-consistency` | Brand Consistency Engine | Detect visual, typography, and copy drift across public paid surfaces and live templates | Yes. Initial audit shipped 2026-03-10 and surfaced live email/font drift | Action-first | ACTIVE |
 | `weekly-cohort-report` | Growth Intelligence Engine | Detect funnel trend changes, Maya activation issues, and growth opportunities | Yes, validated 2026-03-10 | Action-first | ACTIVE |
 | `weekly-cleanup-radar` | Code Stability Engine | Detect code drift, dead code, prompt drift, and monthly architecture risk | Yes, validated 2026-03-10 | Action-first | ACTIVE |
 | `daily-billing-audit` | Revenue Intelligence Engine | Detect revenue leaks, subscription linkage issues, and pricing or entitlement drift | Yes, validated 2026-03-10 | Action-first | ACTIVE |
@@ -116,7 +118,21 @@ Turn Codex from a collection of loose reporting jobs into a small set of autonom
 - Inputs: `funnel-digest.mjs`, `support-digest.mjs`, `cohort-report-weekly.mjs`, `sselfie-maya-os`
 - Outcome: detect funnel movement, Maya-stage friction, and the biggest growth opportunity
 
-### 4. Code Stability Engine
+### 4. Maya Quality Engine
+
+- Automation: `nightly-maya-quality`
+- Schedule: nightly at 02:05, every day
+- Inputs: `audit:maya-quality`, `check:prompt-authority`, targeted Maya vitest suites, `sselfie-maya-os`, `prompt-authority-inspector`
+- Outcome: keep Maya in character, keep prompt authority centralized, and keep inline tools reliable
+
+### 5. Brand Consistency Engine
+
+- Automation: `nightly-brand-consistency`
+- Schedule: nightly at 03:10, every day
+- Inputs: `audit:brand-consistency`, `docs/brand/VOICE_BIBLE.md`, `docs/brand/DO_DONT.md`, `app/globals.css`
+- Outcome: keep the paid funnel and live templates consistent in voice, typography, and visual language
+
+### 6. Code Stability Engine
 
 - Automation: `weekly-cleanup-radar`
 - Schedule: Sunday 04:00
@@ -124,7 +140,7 @@ Turn Codex from a collection of loose reporting jobs into a small set of autonom
 - Monthly deep pass: if run occurs on day 1 through 7, also run `audit:architecture-simplifier` and `audit:gravity`
 - Outcome: make only low-risk cleanup and drift fixes automatically
 
-### 5. Revenue Intelligence Engine
+### 7. Revenue Intelligence Engine
 
 - Automation: `daily-billing-audit`
 - Schedule: Monday 06:45
@@ -144,6 +160,7 @@ To support the requested monthly loop without unsupported RRULEs:
 This keeps the schedule valid while still delivering:
 
 - nightly bug detection and user journey validation
+- nightly Maya quality and brand consistency checks
 - weekly codebase, funnel, and revenue analysis
 - monthly architecture and growth opportunity passes
 

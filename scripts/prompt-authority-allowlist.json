@@ -3,5 +3,10 @@
     "file": "app/api/feed-planner/create-strategy/route.ts",
     "reason": "Legacy deprecated route - will be removed in future version",
     "migrationPlan": "Route is deprecated, users should use Maya Chat Feed Tab instead"
+  },
+  {
+    "file": "app/api/maya/brand-strategy/route.ts",
+    "reason": "Brand Strategy Pack still uses a route-local JSON strategy prompt, but the route is already audited via route-audit and is not part of the inline Maya tool path.",
+    "migrationPlan": "Move strategy-pack generation into the canonical prompt authority layer when the paid pack generation flow is consolidated."
   }
 ]
