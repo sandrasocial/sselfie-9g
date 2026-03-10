@@ -66,7 +66,7 @@ async function getStrategyCandidatesForTouch(days: number, emailType: string): P
     SELECT
       fbs.id,
       u.email,
-      COALESCE(NULLIF(BTRIM(u.display_name), ''), NULLIF(BTRIM(u.name), '')) AS name,
+      NULLIF(BTRIM(u.display_name), '') AS name,
       fbs.access_token,
       fbs.created_at
     FROM subscriptions s
@@ -102,7 +102,7 @@ async function getSelfieGuideActivationCandidates(): Promise<SelfieGuideActivati
   return (await sql`
     SELECT DISTINCT ON (LOWER(u.email))
       u.email,
-      COALESCE(NULLIF(BTRIM(fs.name), ''), NULLIF(BTRIM(u.display_name), ''), NULLIF(BTRIM(u.name), '')) AS name,
+      COALESCE(NULLIF(BTRIM(fs.name), ''), NULLIF(BTRIM(u.display_name), '')) AS name,
       fs.access_token,
       s.created_at AS subscription_created_at
     FROM subscriptions s

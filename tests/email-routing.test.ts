@@ -55,6 +55,11 @@ describe("Email routing separation", () => {
     }
   })
 
+  it("nurture sequence does not query the removed users.name column", () => {
+    const contents = fs.readFileSync(path.join(ROOT, "app/api/cron/nurture-sequence/route.ts"), "utf8")
+    expect(contents).not.toContain("u.name")
+  })
+
   it("removes unscheduled legacy cron routes from the repo", () => {
     for (const route of removedLegacyRoutes) {
       expect(fs.existsSync(path.join(ROOT, route))).toBe(false)
