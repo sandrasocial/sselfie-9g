@@ -51,14 +51,15 @@ export async function GET() {
 
       try {
         const subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId, {
-          expand: ["items.data.price", "discounts.coupon"],
+          expand: ["items.data.price", "discount.coupon"],
         })
 
         const price = subscription.items.data[0]?.price
         const unitAmount = price?.unit_amount ?? null
-        const discount = Array.isArray(subscription.discounts) ? subscription.discounts[0] : null
-        const discountObj = typeof discount === "string" ? null : discount
-        const coupon = (discountObj as any)?.coupon || null
+        
+        // Check for discount (singular, not plural)
+        const discount = subscription.discount
+        const coupon = discount?.coupon || null
         const percentOff = typeof coupon?.percent_off === "number" ? coupon.percent_off : 0
         const duration = typeof coupon?.duration === "string" ? coupon.duration : ""
 
@@ -70,12 +71,18 @@ export async function GET() {
           continue
         }
 
+        // Calculate actual revenue after discount
+        let actualRevenue = unitAmount !== null ? unitAmount / 100 : 0
+        if (percentOff > 0) {
+          actualRevenue = actualRevenue * (1 - percentOff / 100)
+        }
+
         discountedUsers.push({
           email: member.email,
           joinedAt: member.created_at,
           plan: member.plan || "sselfie_studio_membership",
           status: member.status,
-          revenue: unitAmount !== null ? unitAmount / 100 : 0,
+          revenue: actualRevenue,
         })
       } catch (error) {
         console.error(`[v0] Beta users API: Failed to inspect subscription ${stripeSubscriptionId}:`, error)
