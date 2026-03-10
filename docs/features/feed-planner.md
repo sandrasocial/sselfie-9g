@@ -7,7 +7,7 @@
 ## 1. Overview
 
 - **Feature name:** Feed Planner
-- **One-line:** Manual, click-and-create Instagram feed planning: create feeds, define strategy, generate 9-post grids with AI images and captions, save and download. Serves as the **Blueprint funnel** for Free → Paid Blueprint → Creator Studio. (No conversational Maya flow; Maya Feed tab is disabled.)
+- **One-line:** Manual, click-and-create Instagram feed planning: create feeds, define strategy, generate 9-post grids with AI images and captions, save and download. Serves as the **Blueprint funnel** for Free → Paid Blueprint → Creator Studio. The live `create-from-strategy` path is currently **Pro-only** even though some surrounding Classic branching still exists. (No conversational Maya flow; Maya Feed tab is disabled.)
 - **Entry points:**
   - `/feed-planner` (direct; defaults to feed-planner tab)
   - `/studio?tab=feed-planner`
@@ -18,6 +18,7 @@
 
 - **Original intent:** Feed Planner was originally designed to be **Maya conversational** — Maya would assist in designing a 9-post feed and implement directly into Feed Planner for the user. That conversational path was **never implemented correctly** despite many weeks of effort.
 - **Current reality:** After repeated try/fail cycles, the product became **manual feed creation with click-and-create** instead of Maya conversational. The implementation evolved through **V1 and V2**, built back and forth over a long period, and was perceived as **too complex and over-engineered**.
+- **Current generation mode reality:** The live `app/api/feed-planner/create-from-strategy/route.ts` path forces every created post into **Pro mode**. Classic branching still exists in adjacent feed-planner code, but it is dormant in the current planner creation flow.
 - **Role in the funnel:** Feed Planner **became the Blueprint funnel** for the rest of the user journey and features. It is the main conversion and value-delivery surface: Free users get limited preview (e.g. 2 credits); Paid Blueprint and Creator Studio get full 9-post grids and strategy. Full journey and three-tier system: **`docs/COMPLETE_USER_JOURNEY_MAP.md`** (Free → Paid Blueprint → Membership; credits, access matrix, email sequences).
 - **Relationship to Maya:** The **Maya Feed tab** (conversational “Maya assists in designing a feed”) is **disabled** in Maya. Feed Planner is a **standalone tab** with a manual flow only. Any future “Maya implements directly to Feed Planner” would be a separate product/engineering initiative.
 
@@ -75,6 +76,7 @@ Branches: no onboarding → skip wizard; paid returning → skip welcome wizard;
 ## 5. Logic (credits, entitlements, access)
 
 - **Credits:** Checked/deducted in feed image generation routes (e.g. `generate-single`, `generate-images`, feed-planner batch). Typical: **2 credits per scene**; full 9-post feed = 18 credits. Balance from `/api/user/credits`. Free: 2 credits (one-time grant); Paid Blueprint: 60 credits one-time; Creator Studio: 200/month.
+- **Generation mode:** The live `create-from-strategy` planner path currently forces all generated planner posts to **Pro mode**. Treat any remaining Classic branching in nearby feed-planner files as dormant until a deliberate consolidation pass reintroduces it.
 - **Entitlements / access:** `lib/feed-planner/access-control.ts` and `/api/feed-planner/access`. **Free:** limited (e.g. 1-post preview, 2 credits). **Paid Blueprint:** full Feed Planner, 9-post grids. **Creator Studio:** full access, 200 monthly credits. Onboarding and welcome wizards from `/api/user/onboarding-status`, `/api/user/setup-status`, `/api/feed-planner/welcome-status`.
 - **Data flow:** Feeds and posts in DB (feeds, feed_posts, strategies); images via generation_trackers and gallery; personal brand from `/api/profile/personal-brand`. Feed Planner is the **Blueprint funnel** surface for conversion (free → paid → membership).
 

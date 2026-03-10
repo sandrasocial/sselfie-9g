@@ -15,10 +15,15 @@ import type { NextRequest } from "next/server"
 export const maxDuration = 60
 
 /**
- * Pro Mode Chat API Route
- * 
- * Handles chat interactions for Studio Pro Mode.
- * Uses Pro Mode personality, checks credits, and handles concept generation triggers.
+ * Specialized Maya Pro chat route.
+ *
+ * This file is not the primary live Maya chat backend for the current app
+ * shell. The active Maya UI (`useMayaChat`) posts to `/api/maya/chat` and
+ * switches behavior with headers such as `x-studio-pro-mode`,
+ * `x-chat-type`, and `x-active-tab`.
+ *
+ * Keep this route for older/manual Pro-only callers and narrow integrations
+ * until the chat surface is fully consolidated.
  */
 export async function POST(req: NextRequest) {
   console.log("[v0] [PRO MODE] Maya Pro chat API called")

@@ -12,6 +12,16 @@ import {
   normalizeFeedStyleV2Name,
 } from "@/lib/feed-planner/feed-style-prompt-loader"
 
+/**
+ * Live Feed Planner creation route.
+ *
+ * Current production behavior here is Pro-only: every created post is forced to
+ * `generationMode = "pro"` and priced with the Studio Pro/Nano Banana path.
+ *
+ * Some surrounding feed-planner code still contains Classic branching, but it
+ * is dormant for this route until a later consolidation pass intentionally
+ * re-enables it.
+ */
 
 export const maxDuration = 300
 
@@ -1053,4 +1063,3 @@ export async function POST(request: NextRequest) {
       )
     }
 */
-

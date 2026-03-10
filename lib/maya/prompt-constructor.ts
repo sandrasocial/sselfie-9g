@@ -1,26 +1,27 @@
 /**
  * PROMPT CONSTRUCTOR - Classic Mode Builder
- * 
+ *
  * PURPOSE: Builds prompts for Classic Mode (Flux LoRA) image generation.
- * 
+ *
  * USAGE:
  * - Called from: app/api/maya/generate-concepts/route.ts (Classic Mode)
  * - Used by: Classic Mode concept generation and image generation
- * 
+ *
  * OUTPUT FORMAT:
  * - Length: 250-500 words
- * - Structure: Trigger word + brand names + detailed descriptions + camera specs
- * - Style: Technical, includes camera specs, lighting details, aesthetic reference
- * 
+ * - Structure: Natural-language scene prompt with brand names, lighting, and camera specs
+ * - Trigger word is prefixed later by buildPromptWithFeatures()
+ * - Style: Detailed Classic prompt copy, not a Studio Pro/Nano Banana builder
+ *
  * INTELLIGENCE SOURCE:
  * - Uses brand-library-2025.ts for brand intelligence (generateCompleteOutfit)
  * - Includes real brand names: Alo Yoga, Lululemon, Nike, The Row, Bottega, etc.
- * 
+ *
  * KEY FUNCTIONS:
  * - buildPrompt() - Main prompt builder
  * - buildPromptWithFeatures() - Enhanced version with additional features
  * - validatePromptLength() - Ensures prompt length is within limits
- * 
+ *
  * Based on 100+ real prompts used in production.
  * Last Updated: January 4, 2026 (Post-cleanup)
  */
@@ -230,10 +231,10 @@ function getAestheticReference(category: string | null): string {
 function buildHeader(params: PromptConstructorParams): string {
   const format = params.format || 'portrait 2:3'
   const hairStyle = params.hairStyle || 'natural styling'
-  
-  // 🔴 CRITICAL: For Studio Pro Mode (NanoBanana), use the mandatory identity preservation instruction
-  // This replaces trigger words which are only for Classic Mode (Flux)
-  // The prompt constructor is ONLY used in Studio Pro Mode, so always use NanoBanana instruction
+
+  // The current Classic prompt format starts with identity-preservation language.
+  // That wording belongs to this Classic builder; it does not mean this file is
+  // part of the Studio Pro/Nano Banana pipeline.
   if (params.category === 'luxury') {
     return `Maintain exactly the characteristics of the person in the attachment (face, visual identity). Do not copy the original photo. Format: ${format}. Hair with ${hairStyle}. Hyper-realistic.`
   }
@@ -508,7 +509,7 @@ Shot with ${cameraSpec}, ${aestheticRef}, 4K resolution, hyper-realistic quality
   }
   
   if (categoryLower === 'casual' || categoryLower === 'coffee-run' || categoryLower === 'street-style') {
-    // 🔴 CRITICAL: Studio Pro Mode (NanoBanana) requires identity preservation instruction at start
+    // Classic prompt copy keeps the same identity-preservation instruction at the start.
     const identityInstruction = 'Maintain exactly the characteristics of the person in the attachment (face, visual identity). Do not copy the original photo.'
     const age = userAge || 'Woman in late twenties'
     const action = params.action || getDefaultAction(category)
@@ -574,7 +575,7 @@ Shot with ${cameraSpec}, ${aestheticRef}, 4K resolution, hyper-realistic quality
   }
   
   // Default format (similar to casual) - includes travel, cozy, Christmas, etc.
-  // 🔴 CRITICAL: Studio Pro Mode (NanoBanana) requires identity preservation instruction at start
+  // Keep the same Classic identity-preservation sentence for non-workout/luxury cases too.
   const identityInstruction = 'Maintain exactly the characteristics of the person in the attachment (face, visual identity). Do not copy the original photo.'
   const age = userAge || 'Woman in late twenties'
   const action = params.action || getDefaultAction(category)
@@ -755,9 +756,8 @@ export function buildPromptWithFeatures(
   // This prevents duplication when both are set to the same value
   const featuresToAdd = physicalPreferences || userFeatures
   if (featuresToAdd) {
-    // 🔴 CRITICAL: In Studio Pro Mode, physicalPreferences may include hair info from image analysis
-    // Image analysis can see actual hair from uploaded selfies, so we should use it
-    // Only filter out generic assumptions that don't come from image analysis or user preferences
+    // Prompt-constructor callers may pass image-derived physical preferences.
+    // Keep real observed/user-provided hair details, but strip generic guessed copy.
     let cleanedFeatures = featuresToAdd
     
     // Check if this looks like it came from image analysis (has descriptive context)
@@ -814,7 +814,6 @@ export function validatePromptLength(prompt: string): { valid: boolean; wordCoun
     wordCount,
   }
 }
-
 
 
 

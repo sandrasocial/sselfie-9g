@@ -56,6 +56,20 @@ import { selectMayaSkill } from "@/lib/maya/skills/skill-router"
 
 import { NextResponse } from "next/server"
 
+/**
+ * Primary live Maya chat route.
+ *
+ * The current Maya UI (`useMayaChat`) posts here for Classic, Studio Pro,
+ * feed-planner, prompt-builder, and chat-first tool-dispatch turns.
+ *
+ * Runtime mode is selected inside this route via headers/body state such as:
+ * - `x-studio-pro-mode`
+ * - `x-chat-type`
+ * - `x-active-tab`
+ *
+ * `/api/maya/pro/chat` still exists for older or narrower Pro-only callers,
+ * but it is not the main route used by the live Maya shell.
+ */
 export const maxDuration = 60
 
 function isChatFirstMayaEnabled(envValue?: string | null): boolean {
