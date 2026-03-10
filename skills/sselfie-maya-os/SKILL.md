@@ -17,6 +17,7 @@ description: Canonical Maya-first operating model for SSELFIE user journey, scre
 - Treat Maya as the product shell, not a side assistant.
 - Prefer conversation-first interactions over navigation-first interactions.
 - Keep one canonical funnel path per step; avoid alias route growth.
+- Treat paid entry routes as canonical. Legacy `/freebie/*` routes are redirects only.
 - Keep analytics event names inside the allowlist contract.
 - Keep changes low-blast-radius and verifiable with tests/build.
 

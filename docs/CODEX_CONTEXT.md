@@ -21,11 +21,11 @@
 4. **Test-first mindset** – for bugfixes write a repro or failing test before patching. If automated tests don't exist, document the manual steps and regressions.
 5. **No broad refactors** without explicit ask; focus on localized changes that support diagnostics, automations, or reliability.
 
-## Current focus areas (updated 2026-03-09)
+## Current focus areas (updated 2026-03-10)
 
 - **V-02 funnel hardening**: Paid Selfie Guide + Brand Strategy flow is the live acquisition ladder. `/freebie/*` routes redirect to paid pages, `brand_strategy_pack` uses post-payment setup tokens, and the Selfie Guide checkout now offers Brand Strategy as a Stripe optional item.
 - **Email system cleanup**: Live lifecycle paths are `onboarding-sequence`, `nurture-sequence`, and `win-back-sequence`. The old manual/scheduled campaign catalog, archived cron copies, and dead funnel templates were removed on 2026-03-09 to reduce agent confusion.
-- **Monitoring gap**: Existing repo support includes `app/api/cron/funnel-report-daily/route.ts`, `scripts/funnel-digest.mjs`, and `app/api/cron/cron-health-check/route.ts`. The dedicated daily funnel-health scheduler requested in V-02 is still pending.
+- **Automation layer**: Codex Desktop automations were rebuilt on 2026-03-10 into a smaller operational set: hourly incident repair, daily funnel guard, and nightly platform maintenance. Legacy report-only automations were archived out of the active folder.
 - **Agent V1** (Website Agent €27/mo): Spec at `docs/codex-tasks/AGENT-V1-EXECUTION-SPEC-2026-02-28.md`. Waiting Sandra go/no-go.
 - **Academy**: Monthly drops E2E blocked — no published rows in `academy_monthly_drops` table. Marked in STATUS.md commit `4b28007a`.
 - **Reconciliation pipelines**: `reconcile-generations`, `reconcile-subscriptions`, `reconcile-feed-posts` — keep running and logging cleanly.
@@ -88,7 +88,7 @@ Next steps: Codex implements tasks in order: A-01 → A-02 → B-01 → E-01/02/
    Next steps: [What will happen next]
    ```
    Mention this template in new threads and keep it synchronized with `docs/CODEX_CONTEXT.md`.
-5. **Worktrees & automations hygiene** – keep worktrees topic-specific (`worktree-{topic}`), avoid creating multiples unless needed, and archive/close automations only when fully resolved. Automation files (`$CODEX_HOME/automations`) remain read-only unless explicitly requested.
+5. **Worktrees & automations hygiene** – keep worktrees topic-specific (`worktree-{topic}`), avoid creating multiples unless needed, and archive/close automations only when fully resolved. Automation files (`$CODEX_HOME/automations`) are operational config and should only be edited on explicit automation requests.
 
 ## Automation/Lock hygiene reminders
 

@@ -1,12 +1,19 @@
 ---
 name: user-journey-scanner
-description: Reconstruct the real in-app user journey from routes and API surfaces. Use for onboarding clarity, funnel audits, and drop-off diagnosis.
+description: Reconstruct SSELFIE's live paid-only journey from routes and API surfaces. Use for onboarding clarity, funnel audits, and drop-off diagnosis.
 ---
 
 # User Journey Scanner
 
 ## Purpose
 Map how a user actually moves through SSELFIE from entry to monetization.
+
+Treat the paid ladder as canonical:
+- `selfie-guide`
+- `brand-strategy-pack`
+- `membership`
+
+Legacy `/freebie/*` routes are redirects, not primary acquisition steps.
 
 ## Run
 1. `pnpm audit:journey`

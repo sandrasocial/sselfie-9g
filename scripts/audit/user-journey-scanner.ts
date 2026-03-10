@@ -19,11 +19,13 @@ async function main() {
 
   const mustHave = [
     "/",
+    "/selfie-guide",
+    "/brand-strategy",
+    "/checkout/selfie-guide",
+    "/checkout/brand-strategy-pack",
+    "/strategy/[token]",
     "/studio",
-    "/freebie/brand-strategy",
     "/checkout/membership",
-    "/feed-planner",
-    "/academy",
   ]
 
   const present = mustHave.filter((route) => routes.includes(route))
@@ -36,13 +38,13 @@ async function main() {
   const chatRoutes = apiRouteFiles.map((f) => normalizeWorkspacePath(f)).filter((f) => /maya|chat|generate|tool/i.test(f))
 
   const journey: string[] = []
-  journey.push("Landing")
-  journey.push("→ Signup / Login")
-  journey.push("→ Studio (Maya-first shell)")
-  journey.push("→ Maya Chat / Tool execution")
-  journey.push("→ Asset creation (images/videos/pages/feed)")
-  journey.push("→ Save/publish in Studio Hub")
-  journey.push("→ Monetization (checkout/subscription/credits)")
+  journey.push("Landing / paid offer page")
+  journey.push("→ Direct checkout (Selfie Guide / Brand Strategy / Membership)")
+  journey.push("→ Success or tokenized access route")
+  journey.push("→ Delivery surface (guide / strategy / Studio)")
+  journey.push("→ Studio onboarding")
+  journey.push("→ Maya-first creation flow")
+  journey.push("→ Expansion (membership / credits / Academy)")
 
   const lines: string[] = []
   lines.push("# User Journey Scan")
@@ -62,7 +64,7 @@ async function main() {
   lines.push("")
   lines.push("## Product Surface Routes")
   lines.push(`- Total page routes: ${routes.length}`)
-  for (const route of routes.filter((r) => /studio|academy|feed|gallery|checkout|freebie|strategy|account|maya/i.test(r)).slice(0, 40)) {
+  for (const route of routes.filter((r) => /studio|academy|feed|gallery|checkout|selfie-guide|brand-strategy|strategy|account|maya/i.test(r)).slice(0, 40)) {
     lines.push(`- ${route}`)
   }
   lines.push("")
