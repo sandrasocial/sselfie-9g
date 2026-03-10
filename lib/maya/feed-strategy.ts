@@ -1,6 +1,20 @@
 export const SUPPORTED_FEED_PLAN_POST_COUNTS = [6, 9, 12] as const
 export const DEFAULT_INLINE_MAYA_FEED_POST_COUNT = 9
 
+function returnIfValidFeedStrategyJson(candidate: string | null | undefined): string | null {
+  if (!candidate) return null
+
+  const trimmedCandidate = candidate.trim()
+  if (!trimmedCandidate) return null
+
+  try {
+    JSON.parse(trimmedCandidate)
+    return trimmedCandidate
+  } catch {
+    return null
+  }
+}
+
 function removeInlineFeedStrategyBlocks(text: string): string {
   let cleanedText = text
   let feedStrategyIndex = cleanedText.search(/\[CREATE_FEED_STRATEGY:/i)
@@ -54,13 +68,13 @@ export function extractFeedStrategyJson(text: string): string | null {
   if (!text || !text.includes("[CREATE_FEED_STRATEGY")) return null
 
   const inlineMatch = text.match(/\[CREATE_FEED_STRATEGY:\s*(\{[\s\S]*\})\]/i)
-  if (inlineMatch?.[1]) return inlineMatch[1]
+  if (inlineMatch?.[1]) return returnIfValidFeedStrategyJson(inlineMatch[1])
 
   const fencedJsonMatch = text.match(/\[CREATE_FEED_STRATEGY\][\s\S]*?```json\s*([\s\S]*?)\s*```/i)
-  if (fencedJsonMatch?.[1]) return fencedJsonMatch[1]
+  if (fencedJsonMatch?.[1]) return returnIfValidFeedStrategyJson(fencedJsonMatch[1])
 
   const fencedMatch = text.match(/\[CREATE_FEED_STRATEGY\][\s\S]*?```\s*([\s\S]*?)\s*```/i)
-  if (fencedMatch?.[1]) return fencedMatch[1]
+  if (fencedMatch?.[1]) return returnIfValidFeedStrategyJson(fencedMatch[1])
 
   const markerIndex = text.indexOf("[CREATE_FEED_STRATEGY]")
   if (markerIndex >= 0) {
@@ -68,7 +82,7 @@ export function extractFeedStrategyJson(text: string): string | null {
     const jsonStart = afterMarker.indexOf("{")
     const jsonEnd = afterMarker.lastIndexOf("}") + 1
     if (jsonStart >= 0 && jsonEnd > jsonStart) {
-      return afterMarker.slice(jsonStart, jsonEnd)
+      return returnIfValidFeedStrategyJson(afterMarker.slice(jsonStart, jsonEnd))
     }
   }
 

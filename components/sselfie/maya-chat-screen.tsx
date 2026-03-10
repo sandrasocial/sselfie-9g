@@ -752,16 +752,27 @@ export default function MayaChatScreen({
       }
 
       try {
+        const latestAssistantMessage = [...messages]
+          .filter((message: any) => message.role === "assistant")
+          .slice(-1)[0]
+        const latestStrategyJson =
+          extractFeedStrategyJson(
+            getMessageText(
+              messages.find((message: any) => String(message?.id) === String(pendingFeedRequest.messageId)) ||
+                latestAssistantMessage,
+            ),
+          ) || pendingFeedRequest.strategyJson
+
         const apiEndpoint = proMode ? "/api/maya/pro/generate-feed" : "/api/maya/generate-feed"
         const requestBody = proMode
           ? {
-              strategyJson: pendingFeedRequest.strategyJson,
+              strategyJson: latestStrategyJson,
               chatId,
               imageLibrary,
               conversationContext: undefined,
             }
           : {
-              strategyJson: pendingFeedRequest.strategyJson,
+              strategyJson: latestStrategyJson,
               chatId,
               conversationContext: undefined,
             }
@@ -828,9 +839,11 @@ export default function MayaChatScreen({
     handleCreateInlineFeed,
     proMode,
     imageLibrary,
+    messages,
     status,
     activeMayaTab,
     isFeedTabDisabled,
+    getMessageText,
     sanitizeInlineFeedMessage,
     toast,
   ])
