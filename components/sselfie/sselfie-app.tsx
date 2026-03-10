@@ -1147,7 +1147,11 @@ export default function SselfieApp({
 
           <div
             ref={scrollContainerRef}
-            className={`h-full ${DesignClasses.spacing.paddingX.md} pb-32 sm:pb-36 md:pb-40 pt-4 sm:pt-6 md:pt-8 overflow-y-auto`}
+            className={
+              activeTab === "maya"
+                ? "h-full overflow-hidden"
+                : `h-full ${DesignClasses.spacing.paddingX.md} pb-32 sm:pb-36 md:pb-40 pt-4 sm:pt-6 md:pt-8 overflow-y-auto`
+            }
           >
             {shouldShowUpgradeBanner && activeUpgrade && (
               <div className="mb-4">

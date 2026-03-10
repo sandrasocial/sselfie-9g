@@ -186,6 +186,19 @@ describe("orchestrateMayaTurn", () => {
       expect(result.requiresStructuredRender).toBe(true)
     }
   })
+
+  it("routes soft calendar asks (HTML calendar phrasing) into asset creation", () => {
+    const result = orchestrateMayaTurn({
+      userText: "Can you give me an HTML content calendar for this week?",
+      activeAssetContext: null,
+    })
+
+    expect(result.kind).toBe("asset_create")
+    if (result.kind === "asset_create") {
+      expect(result.intent.assetType).toBe("calendar")
+      expect(result.intent.instruction.toLowerCase()).toContain("content calendar")
+    }
+  })
 })
 
 describe("estimateToolDispatchCredits", () => {

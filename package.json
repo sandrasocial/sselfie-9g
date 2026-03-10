@@ -43,6 +43,7 @@
     "audit:journey": "tsx scripts/audit/user-journey-scanner.ts",
     "audit:prompt-authority": "tsx scripts/audit/prompt-authority-inspector.ts",
     "audit:maya-quality": "tsx scripts/maya-quality-audit.ts",
+    "audit:maya-ui-health": "node scripts/maya-ui-health-engine.mjs",
     "audit:brand-consistency": "tsx scripts/brand-consistency-audit.ts",
     "audit:integration-health": "tsx scripts/audit/integration-health-check.ts",
     "audit:architecture-simplifier": "tsx scripts/audit/architecture-simplifier.ts",
