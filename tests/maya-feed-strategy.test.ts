@@ -17,6 +17,14 @@ describe("maya feed strategy helpers", () => {
     expect(value).toContain('"position":1')
   })
 
+  it("does not return a partial feed strategy while Maya is still streaming JSON", () => {
+    const value = extractFeedStrategyJson(
+      'I built your grid.\n\n[CREATE_FEED_STRATEGY]\n```json\n{"feedTitle":"Launch","posts":[{"position":1,"visualDirection":"Portrait"}',
+    )
+
+    expect(value).toBeNull()
+  })
+
   it("strips feed strategy payload fragments from user-facing text", () => {
     const value = stripFeedStrategyArtifacts(
       'I built your grid.\n\n[CREATE_FEED_STRATEGY]\n```json\n{"feedTitle":"Launch"}\n```\n"posts":[{"position":1,"visualDirection":"Portrait"}]',
