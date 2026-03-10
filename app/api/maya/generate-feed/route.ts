@@ -36,6 +36,10 @@ import { type NextRequest, NextResponse } from "next/server"
 import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { getUserByAuthId } from "@/lib/user-mapping"
 import type { FeedStrategy } from "@/lib/maya/feed-generation-handler"
+import {
+  isSupportedFeedPlanPostCount,
+  SUPPORTED_FEED_PLAN_POST_COUNTS,
+} from "@/lib/maya/feed-strategy"
 
 export async function POST(req: NextRequest) {
   try {
@@ -102,10 +106,14 @@ export async function POST(req: NextRequest) {
     }
 
     // Support both 9 posts (Maya Feed Chat) and 12 posts (Blueprint)
-    if (strategy.posts.length !== 9 && strategy.posts.length !== 12) {
+    if (!isSupportedFeedPlanPostCount(strategy.posts.length)) {
       console.error(`[generate-feed] ❌ Strategy must have 9 or 12 posts, found ${strategy.posts.length}`)
       return NextResponse.json(
-        { error: `Strategy must contain exactly 9 posts (Maya Feed Chat) or 12 posts (Blueprint), found ${strategy.posts.length}` },
+        {
+          error: `Strategy must contain exactly 9 posts (Maya Feed Chat) or 12 posts (Blueprint), found ${strategy.posts.length}`,
+          code: "UNSUPPORTED_FEED_POST_COUNT",
+          supportedPostCounts: SUPPORTED_FEED_PLAN_POST_COUNTS,
+        },
         { status: 400 }
       )
     }
@@ -163,4 +171,3 @@ export async function POST(req: NextRequest) {
     )
   }
 }
-

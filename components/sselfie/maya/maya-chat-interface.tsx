@@ -12,6 +12,10 @@ import FeedStrategyCard from "@/components/feed-planner/feed-strategy-card"
 import UnifiedLoading from "../unified-loading"
 import MayaOfferBriefForm from "./maya-offer-brief-form"
 import type { MayaOfferBrief, MayaOfferBriefAssetType } from "@/lib/maya/offer-brief"
+import {
+  hasFeedStrategyArtifacts,
+  stripFeedStrategyArtifacts,
+} from "@/lib/maya/feed-strategy"
 
 type OfferBriefFormValues = Omit<MayaOfferBrief, "assetType">
 
@@ -157,7 +161,8 @@ export default function MayaChatInterface({
   const stripControlText = (text: string): string => {
     if (!text) return ""
 
-    return text
+    return stripFeedStrategyArtifacts(
+      text
       .replace(/\[GENERATE_PROMPTS[:\s]+[^\]]+\]/gi, "")
       .replace(/\[GENERATE_CONCEPTS\]\s*[^\n]*/gi, "")
       .replace(/\[SHOW_CAPABILITIES\]/gi, "")
@@ -175,11 +180,11 @@ export default function MayaChatInterface({
       .replace(/\[STRUCTURED_ASSET_BLOCKED(?:\s*:\s*[^\]]+)?\]/gi, "")
       .replace(/\[GENERATE_CAPTIONS\]/gi, "")
       .replace(/\[GENERATE_STRATEGY\]/gi, "")
-      .replace(/\[CREATE_FEED_STRATEGY(?:\s*:[\s\S]*?)?\]/gi, "")
       .replace(/\[Inspiration Image: https?:\/\/[^\]]+\]/g, "")
       .replace(/\n{3,}/g, "\n\n")
       .replace(/\s{2,}/g, " ")
-      .trim()
+      .trim(),
+    )
   }
 
   const hasRenderableMessage = (msg: UIMessage): boolean => {
@@ -326,7 +331,8 @@ export default function MayaChatInterface({
   }
 
   const renderMessageContent = (text: string, isUser: boolean) => {
-    let cleanedText = text.replace(/\[GENERATE_PROMPTS[:\s]+[^\]]+\]/gi, "").trim()
+    let cleanedText = stripFeedStrategyArtifacts(text)
+    cleanedText = cleanedText.replace(/\[GENERATE_PROMPTS[:\s]+[^\]]+\]/gi, "").trim()
     cleanedText = cleanedText.replace(/\[GENERATE_CONCEPTS\]\s*[^\n]*/gi, "").trim()
     cleanedText = cleanedText.replace(/\[SHOW_CAPABILITIES\]/gi, "").trim()
     cleanedText = cleanedText.replace(/\[SHOW_GALLERY\]/gi, "").trim()
@@ -337,51 +343,6 @@ export default function MayaChatInterface({
     cleanedText = cleanedText.replace(/\[SUBMIT_OFFER_BRIEF:\s*[^\]]+\]/gi, "").trim()
     cleanedText = cleanedText.replace(/\[EDIT_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
     cleanedText = cleanedText.replace(/\[CREATE_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
-    // Remove feed creation trigger (with JSON content)
-    // Use bracket counting to properly match nested JSON structures
-    // This handles complex JSON with nested arrays/objects by finding the matching closing bracket
-    let feedStrategyIndex = cleanedText.search(/\[CREATE_FEED_STRATEGY:/i)
-    while (feedStrategyIndex >= 0) {
-      // Find the matching closing bracket by counting brackets
-      let bracketCount = 0
-      let endIndex = -1
-      for (let i = feedStrategyIndex; i < cleanedText.length; i++) {
-        if (cleanedText[i] === '[') bracketCount++
-        if (cleanedText[i] === ']') {
-          bracketCount--
-          if (bracketCount === 0) {
-            endIndex = i
-            break
-          }
-        }
-      }
-      if (endIndex >= 0) {
-        cleanedText = cleanedText.substring(0, feedStrategyIndex) + cleanedText.substring(endIndex + 1)
-      } else {
-        // If no matching bracket found, just remove from [CREATE_FEED_STRATEGY: to end
-        cleanedText = cleanedText.substring(0, feedStrategyIndex)
-        break
-      }
-      feedStrategyIndex = cleanedText.search(/\[CREATE_FEED_STRATEGY:/i)
-    }
-    
-    // Also remove standalone [CREATE_FEED_STRATEGY] trigger (without JSON)
-    cleanedText = cleanedText.replace(/\[CREATE_FEED_STRATEGY\]/gi, '').trim()
-    
-    // Remove feed strategy JSON blocks that appear after the trigger
-    // Pattern: ```json followed by any content (including incomplete JSON)
-    cleanedText = cleanedText.replace(/```json[\s\S]*?```/gi, '').trim()
-    
-    // Remove any remaining ``` code blocks that might contain JSON
-    cleanedText = cleanedText.replace(/```[\s\S]*?```/g, '').trim()
-    
-    // Also remove JSON blocks that start with { "feedStrategy"
-    cleanedText = cleanedText.replace(/\{\s*"feedStrategy"[\s\S]*?\}/g, '').trim()
-    
-    // Remove incomplete JSON blocks (starting with { but might be cut off)
-    cleanedText = cleanedText.replace(/\{\s*"feedStrategy"[\s\S]*$/g, '').trim()
-    cleanedText = cleanedText.replace(/\{\s*"position"[\s\S]*$/g, '').trim()
-    
     // Remove "Aesthetic Choice:" section headers and content
     cleanedText = cleanedText.replace(/Aesthetic Choice:[\s\S]*?(?=\n\n|\nOverall|$)/gi, '').trim()
     
@@ -575,6 +536,11 @@ export default function MayaChatInterface({
                       const textParts = msg.parts.filter((p) => p && p.type === "text")
                       const imageParts = msg.parts.filter((p) => p && (p as any).type === "image")
                       const otherParts = msg.parts.filter((p) => p && p.type !== "text" && (p as any).type !== "image")
+                      const fullMessageText = textParts
+                        .map((part: any) => part?.text || "")
+                        .join("")
+                      const messageHasFeedArtifacts = hasFeedStrategyArtifacts(fullMessageText)
+                      const hasFeedCard = msg.parts?.some((p: any) => p.type === "tool-generateFeed")
                       
                       return (
                         <>
@@ -590,81 +556,17 @@ export default function MayaChatInterface({
                             >
                               {textParts.map((part, idx) => {
                                 const text = (part as any)?.text || ''
-                                
-                                // CRITICAL: Hide text content while feed is being created (same as concept cards)
-                                // Check if this message contains feed creation trigger and feed is still being created
-                                const hasFeedTrigger = text.includes("[CREATE_FEED_STRATEGY") || 
-                                                      text.includes("```json") ||
-                                                      text.includes('"feedStrategy"') ||
-                                                      text.includes('"position"') ||
-                                                      text.includes("Aesthetic Choice:") ||
-                                                      text.includes("Overall Vibe:")
-                                
-                                // Check if feed card already exists (if it does, don't show loader or text)
-                                const hasFeedCard = msg.parts?.some((p: any) => p.type === "tool-generateFeed")
-                                
-                                // If feed is being created and this message has feed content, show loading instead of text
-                                // CRITICAL: Only show loader if feed card doesn't exist yet (prevents stuck loader)
-                                // CRITICAL: Don't return early - allow text processing to continue for trigger detection
-                                const shouldShowLoader = isCreatingFeed && hasFeedTrigger && !hasFeedCard
-                                
-                                // CRITICAL: If feed card exists, hide all text content (including JSON)
-                                // This prevents raw JSON from being displayed to users
-                                const shouldHideText = hasFeedCard && hasFeedTrigger
+                                const shouldShowLoader =
+                                  isCreatingFeed && messageHasFeedArtifacts && !hasFeedCard && idx === 0
+                                const shouldHideText =
+                                  (isCreatingFeed && messageHasFeedArtifacts && !hasFeedCard && idx > 0) ||
+                                  (hasFeedCard && messageHasFeedArtifacts)
                                 
                                 // Check for prompt suggestions in workbench mode
                                 const parsedPromptSuggestions = parsePromptSuggestions(text)
                                 
                                 // Remove prompts from display text if they're in workbench (Studio Pro mode)
-                                let displayText = text
-                                
-                                // Remove feed-related triggers from display text (always, regardless of mode)
-                                // First, remove [CREATE_FEED_STRATEGY:...] with JSON inside brackets
-                                let feedStrategyIndex = displayText.search(/\[CREATE_FEED_STRATEGY:/i)
-                                while (feedStrategyIndex >= 0) {
-                                  let bracketCount = 0
-                                  let endIndex = -1
-                                  for (let i = feedStrategyIndex; i < displayText.length; i++) {
-                                    if (displayText[i] === '[') bracketCount++
-                                    if (displayText[i] === ']') {
-                                      bracketCount--
-                                      if (bracketCount === 0) {
-                                        endIndex = i
-                                        break
-                                      }
-                                    }
-                                  }
-                                  if (endIndex >= 0) {
-                                    displayText = displayText.substring(0, feedStrategyIndex) + displayText.substring(endIndex + 1)
-                                  } else {
-                                    displayText = displayText.substring(0, feedStrategyIndex)
-                                    break
-                                  }
-                                  feedStrategyIndex = displayText.search(/\[CREATE_FEED_STRATEGY:/i)
-                                }
-                                
-                                // Remove standalone [CREATE_FEED_STRATEGY] trigger (without JSON)
-                                displayText = displayText.replace(/\[CREATE_FEED_STRATEGY\]/gi, '').trim()
-                                
-                                // Remove feed strategy JSON blocks (```json code blocks)
-                                // Match ```json followed by any content including incomplete JSON
-                                displayText = displayText.replace(/```json[\s\S]*?```/gi, '').trim()
-                                
-                                // Remove any remaining ``` code blocks that might contain JSON
-                                displayText = displayText.replace(/```[\s\S]*?```/g, '').trim()
-                                
-                                // Remove JSON blocks that start with { "feedStrategy" (without code fences)
-                                // Match from opening brace to closing brace, handling nested structures
-                                // Use non-greedy matching with proper brace counting
-                                let jsonMatch
-                                while ((jsonMatch = displayText.match(/\{\s*"feedStrategy"[\s\S]*?\}/)) !== null) {
-                                  displayText = displayText.replace(/\{\s*"feedStrategy"[\s\S]*?\}/, '').trim()
-                                }
-                                
-                                // Remove incomplete JSON blocks (starting with { but might be cut off)
-                                // Match from { to end of text or next section
-                                displayText = displayText.replace(/\{\s*"feedStrategy"[\s\S]*$/g, '').trim()
-                                displayText = displayText.replace(/\{\s*"position"[\s\S]*$/g, '').trim()
+                                let displayText = stripFeedStrategyArtifacts(text)
                                 
                                 // Remove "Aesthetic Choice:" section headers and content
                                 displayText = displayText.replace(/Aesthetic Choice:[\s\S]*?(?=\n\n|\nOverall|$)/gi, '').trim()
@@ -747,7 +649,7 @@ export default function MayaChatInterface({
                                           />
                                         </div>
                                       </div>
-                                    ) : shouldHideText ? (
+                                    ) : shouldHideText || displayText.length === 0 ? (
                                       // CRITICAL: Hide text content when feed card exists to prevent JSON from showing
                                       null
                                     ) : (

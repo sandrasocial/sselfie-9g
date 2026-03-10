@@ -5,6 +5,7 @@ import { getAuthenticatedUser } from "@/lib/auth-helper"
 import { sql } from "@/lib/db/client"
 import { parseMayaToolMarkers, stripMayaToolMarkers } from "@/lib/maya/tool-markers"
 import { extractMayaVideoCardMarkers } from "@/lib/maya/video-card-marker"
+import { extractFeedStrategyJson } from "@/lib/maya/feed-strategy"
 import {
   isFeedPlannerChatType,
   isPhotosChatType,
@@ -546,11 +547,10 @@ async function processFeedCards(
   }
   
   // Check for CREATE_FEED_STRATEGY trigger (unsaved feeds)
-  const createFeedStrategyMatch = textContent.match(/\[CREATE_FEED_STRATEGY:\s*(\{[\s\S]*?\})\]/i)
-  if (createFeedStrategyMatch && !hasFeedCard(undefined)) {
+  const unsavedFeedStrategyJson = extractFeedStrategyJson(textContent)
+  if (unsavedFeedStrategyJson && !hasFeedCard(undefined)) {
     try {
-      const strategyJson = createFeedStrategyMatch[1]
-      const strategy = JSON.parse(strategyJson)
+      const strategy = JSON.parse(unsavedFeedStrategyJson)
       console.log("[v0] ✅ Found unsaved feed strategy in message:", {
         hasStrategy: !!strategy,
         postsCount: strategy.posts?.length || 0,

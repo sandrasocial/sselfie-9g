@@ -51,6 +51,11 @@ import { Typography, Colors } from '@/lib/maya/pro/design-system'
 import { useToast } from "@/hooks/use-toast"
 import { DesignClasses, ComponentClasses } from "@/lib/design-tokens"
 import { startEmbeddedCheckout } from "@/lib/start-embedded-checkout"
+import {
+  extractFeedStrategyJson,
+  stripFeedStrategyArtifacts,
+  shouldRetryInlineFeedGeneration,
+} from "@/lib/maya/feed-strategy"
 
 const MINI_PRODUCT_IDS = ["what_to_say", "show_up", "get_paid", "ai_photo_prompts"] as const
 type MiniProductId = (typeof MINI_PRODUCT_IDS)[number]
@@ -455,6 +460,41 @@ export default function MayaChatScreen({
     return ""
   }, [])
 
+  const sanitizeInlineFeedMessage = useCallback((targetMessageId?: string | null) => {
+    setMessages((prevMessages: any[]) => {
+      const nextMessages = [...prevMessages]
+      let targetIndex = targetMessageId
+        ? nextMessages.findIndex((message: any) => String(message?.id) === String(targetMessageId))
+        : -1
+
+      if (targetIndex < 0) {
+        for (let i = nextMessages.length - 1; i >= 0; i -= 1) {
+          if (nextMessages[i]?.role !== "assistant") continue
+          if (extractFeedStrategyJson(getMessageText(nextMessages[i]))) {
+            targetIndex = i
+            break
+          }
+        }
+      }
+
+      if (targetIndex < 0) return prevMessages
+
+      const message = nextMessages[targetIndex]
+      const sanitizedText = stripFeedStrategyArtifacts(getMessageText(message))
+      const nonTextParts = Array.isArray(message?.parts)
+        ? message.parts.filter((part: any) => part?.type !== "text")
+        : []
+
+      nextMessages[targetIndex] = {
+        ...message,
+        content: sanitizedText,
+        parts: sanitizedText ? [{ type: "text", text: sanitizedText }, ...nonTextParts] : nonTextParts,
+      }
+
+      return nextMessages
+    })
+  }, [getMessageText, setMessages])
+
   const updateAssistantToolPart = useCallback(
     (partType: string, output: any, targetMessageId?: string | null) => {
       setMessages((prevMessages: any[]) => {
@@ -680,30 +720,7 @@ export default function MayaChatScreen({
       return
     }
 
-    const extractStrategyJson = (text: string): string | null => {
-      const inlineMatch = text.match(/\[CREATE_FEED_STRATEGY:\s*(\{[\s\S]*\})\]/i)
-      if (inlineMatch?.[1]) return inlineMatch[1]
-
-      const fencedJsonMatch = text.match(/\[CREATE_FEED_STRATEGY\][\s\S]*?```json\s*([\s\S]*?)\s*```/i)
-      if (fencedJsonMatch?.[1]) return fencedJsonMatch[1]
-
-      const fencedMatch = text.match(/\[CREATE_FEED_STRATEGY\][\s\S]*?```\s*([\s\S]*?)\s*```/i)
-      if (fencedMatch?.[1]) return fencedMatch[1]
-
-      if (text.includes("[CREATE_FEED_STRATEGY]")) {
-        const markerIndex = text.indexOf("[CREATE_FEED_STRATEGY]")
-        const afterMarker = text.slice(markerIndex)
-        const jsonStart = afterMarker.indexOf("{")
-        const jsonEnd = afterMarker.lastIndexOf("}") + 1
-        if (jsonStart >= 0 && jsonEnd > jsonStart) {
-          return afterMarker.slice(jsonStart, jsonEnd)
-        }
-      }
-
-      return null
-    }
-
-    const strategyJson = extractStrategyJson(textContent)
+    const strategyJson = extractFeedStrategyJson(textContent)
     if (!strategyJson) return
 
     console.log("[FEED] ✅ Detected inline feed trigger in Maya chat:", {
@@ -758,7 +775,34 @@ export default function MayaChatScreen({
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({ error: "Unknown error" }))
-          throw new Error(errorData.error || "Failed to process feed strategy")
+          const errorMessage = errorData.error || "Failed to process feed strategy"
+
+          if (shouldRetryInlineFeedGeneration(response.status)) {
+            throw new Error(errorMessage)
+          }
+
+          console.warn("[FEED] Inline feed validation blocked card creation:", {
+            status: response.status,
+            messageId: pendingFeedRequest.messageId,
+            code: errorData.code,
+            error: errorMessage,
+          })
+          sanitizeInlineFeedMessage(pendingFeedRequest.messageId)
+
+          if (errorData.code === "UNSUPPORTED_FEED_POST_COUNT") {
+            toast({
+              title: "Feed card needs a full grid",
+              description: "Maya can only turn 9- or 12-post strategies into feed cards right now.",
+            })
+          } else {
+            toast({
+              title: "Feed card not created",
+              description: errorMessage,
+            })
+          }
+
+          setIsCreatingFeed(false)
+          return
         }
 
         const data = await response.json()
@@ -787,6 +831,8 @@ export default function MayaChatScreen({
     status,
     activeMayaTab,
     isFeedTabDisabled,
+    sanitizeInlineFeedMessage,
+    toast,
   ])
 
   // Detect [GENERATE_CONCEPTS] trigger in messages
@@ -1532,7 +1578,8 @@ export default function MayaChatScreen({
     // If so, don't save yet - wait for feed card creation
     // CRITICAL: For unsaved feeds, the CREATE_FEED_STRATEGY trigger must stay in text
     // so it can be detected again on page reload (like concept cards work)
-    const hasFeedTrigger = /\[CREATE_FEED_STRATEGY:/i.test(textContent)
+    const hasFeedTrigger =
+      !!extractFeedStrategyJson(textContent) || textContent.includes("[CREATE_FEED_STRATEGY]")
     const hasFeedCard = lastAssistantMessage.parts?.some(
       (p: any) => p.type === "tool-generateFeed",
     )
@@ -1580,7 +1627,7 @@ export default function MayaChatScreen({
       // CRITICAL: Remove [CREATE_FEED_STRATEGY] trigger for SAVED feeds
       // Unsaved feeds keep the trigger so they can be recreated on reload
       // Saved feeds use [FEED_CARD:feedId] markers instead
-      saveTextContent = saveTextContent.replace(/\[CREATE_FEED_STRATEGY:\s*\{[\s\S]*?\}\]/gi, '').trim()
+      saveTextContent = stripFeedStrategyArtifacts(saveTextContent)
       
       const feedMarkers = feedCards.map(f => `[FEED_CARD:${f.feedId}]`).join(" ")
       saveTextContent = `${saveTextContent}\n${feedMarkers}`.trim()
@@ -3435,7 +3482,8 @@ export default function MayaChatScreen({
   // - Whether chatId exists (new chats get chatId immediately but have no messages)
   // The key indicator of a "new chat" is: no messages
   const stripChatControlText = (text: string): string =>
-    text
+    stripFeedStrategyArtifacts(
+      text
       .replace(/\[GENERATE_PROMPTS[:\s]+[^\]]+\]/gi, "")
       .replace(/\[GENERATE_CONCEPTS\]\s*[^\n]*/gi, "")
       .replace(/\[SHOW_CAPABILITIES\]/gi, "")
@@ -3453,10 +3501,10 @@ export default function MayaChatScreen({
       .replace(/\[STRUCTURED_ASSET_BLOCKED(?:\s*:\s*[^\]]+)?\]/gi, "")
       .replace(/\[GENERATE_CAPTIONS\]/gi, "")
       .replace(/\[GENERATE_STRATEGY\]/gi, "")
-      .replace(/\[CREATE_FEED_STRATEGY(?:\s*:[\s\S]*?)?\]/gi, "")
       .replace(/\[Inspiration Image: https?:\/\/[^\]]+\]/g, "")
       .replace(/\s{2,}/g, " ")
-      .trim()
+      .trim(),
+    )
 
   const hasVisibleMessages = useMemo(() => {
     return (messages || []).some((message: any) => {
