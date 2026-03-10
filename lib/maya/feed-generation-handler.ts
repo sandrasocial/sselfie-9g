@@ -22,6 +22,7 @@ import {
   type ColorPalette,
   type FeedPromptParams
 } from '@/lib/feed-planner/feed-prompt-expert'
+import { isSupportedFeedPlanPostCount } from "@/lib/maya/feed-strategy"
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -288,8 +289,8 @@ export function parseFeedStrategy(mayaResponse: string, userRequest?: string): F
       return null
     }
 
-    if (strategyData.posts.length !== 9) {
-      console.error(`[FEED-PARSER] Strategy must have exactly 9 posts, found ${strategyData.posts.length}`)
+    if (!isSupportedFeedPlanPostCount(strategyData.posts.length)) {
+      console.error(`[FEED-PARSER] Strategy must have exactly 6, 9, or 12 posts, found ${strategyData.posts.length}`)
       return null
     }
 
@@ -643,7 +644,9 @@ export function validateFeedStructure(feed: {
 
   if (!feed.title) errors.push('Missing feed title')
   if (!feed.posts || !Array.isArray(feed.posts)) errors.push('Missing posts array')
-  if (feed.posts && feed.posts.length !== 9) errors.push('Feed must have exactly 9 posts')
+  if (feed.posts && !isSupportedFeedPlanPostCount(feed.posts.length)) {
+    errors.push('Feed must have exactly 6, 9, or 12 posts')
+  }
 
   // Validate each post
   feed.posts?.forEach((post, index) => {
@@ -653,8 +656,8 @@ export function validateFeedStructure(feed: {
     if (!post.prompt || post.prompt.trim() === '') {
       errors.push(`Post ${index + 1} missing prompt`)
     }
-    if (post.position < 1 || post.position > 9) {
-      errors.push(`Post ${index + 1} has invalid position (must be 1-9)`)
+    if (post.position < 1 || post.position > 12) {
+      errors.push(`Post ${index + 1} has invalid position (must be 1-12)`)
     }
   })
 

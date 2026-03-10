@@ -11,6 +11,7 @@ import {
   getFeedStyleVariationById,
   normalizeFeedStyleV2Name,
 } from "@/lib/feed-planner/feed-style-prompt-loader"
+import { isSupportedFeedPlanPostCount } from "@/lib/maya/feed-strategy"
 
 /**
  * Live Feed Planner creation route.
@@ -35,7 +36,8 @@ function truncate(str: string | null | undefined, maxLength: number, defaultValu
 function getLayoutType(gridPattern: string | undefined, posts: any[]): string {
   if (!posts || posts.length === 0) return "Mixed Layout"
   
-  // Support both 9 posts (Maya Feed Chat) and 12 posts (Blueprint)
+  // Support compact 6-post layouts plus the standard 9- and 12-post grids.
+  if (posts.length === 6) return "grid_3x2"
   if (posts.length === 12) return "grid_3x4"
   if (posts.length === 9) return "grid_3x3"
   
@@ -134,11 +136,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Support both 9 posts (Maya Feed Chat) and 12 posts (Blueprint)
-    if (strategy.posts.length !== 9 && strategy.posts.length !== 12) {
-      console.error("[FEED-FROM-STRATEGY] Invalid strategy: expected 9 or 12 posts, got", strategy.posts.length)
+    // Feed cards support compact 6-post layouts plus the standard 9- and 12-post grids.
+    if (!isSupportedFeedPlanPostCount(strategy.posts.length)) {
+      console.error("[FEED-FROM-STRATEGY] Invalid strategy: expected 6, 9, or 12 posts, got", strategy.posts.length)
       return NextResponse.json(
-        { error: "Strategy must contain exactly 9 posts (Maya Feed Chat) or 12 posts (Blueprint)" },
+        { error: "Strategy must contain exactly 6, 9, or 12 posts" },
         { status: 400 }
       )
     }

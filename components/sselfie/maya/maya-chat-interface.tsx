@@ -556,10 +556,12 @@ export default function MayaChatInterface({
                             >
                               {textParts.map((part, idx) => {
                                 const text = (part as any)?.text || ''
+                                const shouldShowPendingFeedLoader =
+                                  messageHasFeedArtifacts && !hasFeedCard && (isCreatingFeed || isTyping)
                                 const shouldShowLoader =
-                                  isCreatingFeed && messageHasFeedArtifacts && !hasFeedCard && idx === 0
+                                  shouldShowPendingFeedLoader && idx === 0
                                 const shouldHideText =
-                                  (isCreatingFeed && messageHasFeedArtifacts && !hasFeedCard && idx > 0) ||
+                                  (shouldShowPendingFeedLoader && idx > 0) ||
                                   (hasFeedCard && messageHasFeedArtifacts)
                                 
                                 // Check for prompt suggestions in workbench mode
