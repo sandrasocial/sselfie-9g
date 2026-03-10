@@ -25,7 +25,7 @@
 
 - **V-02 funnel hardening**: Paid Selfie Guide + Brand Strategy flow is the live acquisition ladder. `/freebie/*` routes redirect to paid pages, `brand_strategy_pack` uses post-payment setup tokens, and the Selfie Guide checkout now offers Brand Strategy as a Stripe optional item.
 - **Email system cleanup**: Live lifecycle paths are `onboarding-sequence`, `nurture-sequence`, and `win-back-sequence`. The old manual/scheduled campaign catalog, archived cron copies, and dead funnel templates were removed on 2026-03-09 to reduce agent confusion.
-- **Automation layer**: Codex Desktop automations were rebuilt on 2026-03-10 into a smaller operational set: hourly incident repair, daily funnel guard, and nightly platform maintenance. Legacy report-only automations were archived out of the active folder.
+- **Automation layer**: Codex Desktop automations were rebuilt on 2026-03-10 into 5 engine loops: Product Health, User Journey, Growth Intelligence, Code Stability, and Revenue Intelligence. Legacy report-only automations were archived out of the active folder. Source of truth: `docs/automation/SSELFIE_AUTOMATION_CORE_2026-03-10.md`.
 - **Agent V1** (Website Agent €27/mo): Spec at `docs/codex-tasks/AGENT-V1-EXECUTION-SPEC-2026-02-28.md`. Waiting Sandra go/no-go.
 - **Academy**: Monthly drops E2E blocked — no published rows in `academy_monthly_drops` table. Marked in STATUS.md commit `4b28007a`.
 - **Reconciliation pipelines**: `reconcile-generations`, `reconcile-subscriptions`, `reconcile-feed-posts` — keep running and logging cleanly.
@@ -45,6 +45,7 @@
 | `docs/features/` | **Per-feature source of truth** for research and implementation: `maya.md`, `feed-planner.md`, `gallery.md`, `academy.md`, `profile.md`, `admin.md`. **Research agents:** read the relevant feature doc, then fill "Current value / pain" and "Opportunities" using `output/automation/funnel-digest-*.md`, `output/automation/support-digest-*.md`, and feedback. See `docs/features/README.md` for how to use. |
 | `docs/codex-tasks/` | **Implementation task list for Codex.** Read `RESEARCH-SPRINT-CODEX-TASKS-2026-02-25.md` for the current 11 prioritized tasks (A-01 → E-03). Start here for implementation work. |
 | `docs/in-app-funnel/` | **Research deliverables for in-app journey + Academy funnel integration** (produced Feb 2026). Read these before implementing tasks A-01, C-01, C-02, C-03: `01-journey-map-2026-02-25.md` (4-stage funnel map), `02-content-copy-2026-02-25.md` (all CTAs, Maya system prompts, email copy), `03-designs-wireframes-2026-02-25.md` (mobile wireframes for Academy tab, post-purchase modal, Maya guided path), `04-prioritized-list-2026-02-25.md` (3-slice sprint plan + open questions for Sandra), `05-slice-1-verification-checklist.md` (QA checklist for Slice 1 tasks). |
+| `docs/automation/` | Automation operating model and engine inventory. Read `SSELFIE_AUTOMATION_CORE_2026-03-10.md` before changing Codex Desktop automations or platform maintenance loops. |
 | `skills/sselfie-maya-os/` | **Shared agent skill for Maya-first operating model.** Contains canonical user journey, screen map, scaling playbook, and QA checklist for funnel/frontend changes. |
 
 ## Current state — Research Sprint Feb 2026

@@ -72,7 +72,7 @@ openclaw agent --agent north --local --message "YOUR MESSAGE"
 | 6 | Stripe order bump (Brand Strategy on Selfie Guide checkout) | ✅ Done |
 | 7 | Fix nurture N2 missing CTA | ✅ Done |
 | 8 | Delete dead funnel email tooling + archived cron/template debt | ✅ Done |
-| 9 | Daily funnel monitoring scheduled task | ✅ Done (Codex automation rebuild 2026-03-10) |
+| 9 | Daily funnel monitoring scheduled task | ✅ Done (automation core rebuilt into 5 engines on 2026-03-10) |
 
 ### Website Agent V1 Sprint (On hold)
 
