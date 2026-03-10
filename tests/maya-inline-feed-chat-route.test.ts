@@ -74,6 +74,7 @@ vi.mock("@/lib/maya/studio-pro-system-prompt", () => ({
 vi.mock("@/lib/maya/openrouter", () => ({
   createMayaOpenRouterFallbackModel: vi.fn(() => null),
   getMayaGatewayModel: vi.fn(() => "gateway-model"),
+  getMayaMaxTokensForTask: vi.fn(() => 8192),
   getMayaModelForTask: vi.fn(() => "gateway-model"),
   resolveMayaChatTask: mockResolveMayaChatTask,
 }))
@@ -204,6 +205,11 @@ describe("POST /api/maya/chat inline feed routing", () => {
         chat_type: "maya",
       }),
       { onConflict: "id" },
+    )
+    expect(mockStreamText).toHaveBeenCalledWith(
+      expect.objectContaining({
+        maxTokens: 8192,
+      }),
     )
   })
 })

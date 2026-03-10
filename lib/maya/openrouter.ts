@@ -22,8 +22,23 @@ const TASK_MODEL_MAP: Record<MayaRoutingTask, string> = {
   feed_prompt_batch: "anthropic/claude-sonnet-4.5",
 }
 
+const TASK_MAX_TOKENS_MAP: Record<MayaRoutingTask, number> = {
+  chat_default: 4096,
+  chat_pro: 4096,
+  prompt_builder: 4096,
+  feed_planner: 8192,
+  pro_photoshoot: 4096,
+  feed_prompt: 4096,
+  feed_prompt_locked_aesthetic: 4096,
+  feed_prompt_batch: 4096,
+}
+
 export function getMayaModelForTask(task: MayaRoutingTask): string {
   return TASK_MODEL_MAP[task]
+}
+
+export function getMayaMaxTokensForTask(task: MayaRoutingTask): number {
+  return TASK_MAX_TOKENS_MAP[task]
 }
 
 function isTruthy(value?: string | null): boolean {
