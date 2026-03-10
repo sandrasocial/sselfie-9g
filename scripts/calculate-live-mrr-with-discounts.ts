@@ -31,7 +31,7 @@ async function main() {
 
   for (const sub of subscriptions.data) {
     const email = typeof sub.customer === 'string' ? sub.customer : (sub.customer as Stripe.Customer).email || 'unknown'
-    
+
     for (const item of sub.items.data) {
       const price = item.price as Stripe.Price
       const amount = price.unit_amount || 0
@@ -46,10 +46,10 @@ async function main() {
 
       if (monthlyAmount > 0) {
         totalMRR_USD += monthlyAmount
-        
+
         let discountInfo = 'none'
         let isBeta = false
-        
+
         if (sub.discount) {
           const coupon = sub.discount.coupon
           if (coupon.percent_off) {
@@ -62,7 +62,7 @@ async function main() {
             discountInfo = `$${coupon.amount_off/100} off (${coupon.duration})`
           }
         }
-        
+
         breakdown.push({
           email,
           priceId: price.id,

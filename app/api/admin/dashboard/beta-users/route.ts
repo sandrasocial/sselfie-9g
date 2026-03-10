@@ -56,7 +56,7 @@ export async function GET() {
 
         const price = subscription.items.data[0]?.price
         const unitAmount = price?.unit_amount ?? null
-        
+
         // Check for discount (singular, not plural)
         const discount = subscription.discount
         const coupon = discount?.coupon || null
