@@ -644,7 +644,7 @@ export default function AccountScreen({ user, creditBalance: _creditBalance }: A
               </div>
             ) : (
               <p className="text-sm text-[color:var(--color-smoke)]">
-                Your Maya pages will appear here after you create a landing page, calendar, or workbook in chat.
+                Your Maya pages will appear here after you create a landing page or content calendar in chat.
               </p>
             )}
           </div>

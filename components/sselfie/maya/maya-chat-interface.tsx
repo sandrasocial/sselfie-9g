@@ -859,11 +859,6 @@ export default function MayaChatInterface({
                                   description: "Draft your monthly calendar and keep editing in-thread.",
                                 },
                                 {
-                                  title: "Create Workbook PDF",
-                                  prompt: "Create a workbook PDF for my offer",
-                                  description: "Generate a draft workbook and refine it in chat.",
-                                },
-                                {
                                   title: "Upload Product Assets",
                                   prompt: "Open upload zone for products",
                                   description: "Add selfies, products, people, and vibe references.",

@@ -374,9 +374,6 @@ export default function MayaChatScreen({
     libraryTotalImages,
     loadLibrary,
     saveLibrary,
-    addImages,
-    removeImages,
-    clearLibrary,
     updateIntent,
     refreshLibrary,
     uploadedImages,
@@ -2045,20 +2042,16 @@ export default function MayaChatScreen({
   const getOutcomeStartPrompts = (isProMode: boolean): Array<{ label: string; prompt: string }> => {
     if (isProMode) {
       return [
-        { label: "Create Photoshoot", prompt: "I want to create a photoshoot for my new offer" },
         { label: "Use My Selfies", prompt: "Let's create a photo using my uploaded selfies" },
         { label: "Upload Assets", prompt: "I want to upload product photos and brand references" },
         { label: "Create Calendar", prompt: "Create a content calendar draft for this week" },
-        { label: "Create Workbook", prompt: "Create a workbook PDF draft for this offer" },
       ]
     }
 
     return [
-      { label: "Create Photoshoot", prompt: "I want to create a photo for my new offer" },
       { label: "Train My Model", prompt: "I want to train my custom model" },
       { label: "Upload Selfies", prompt: "I want to upload selfies first" },
       { label: "Create Calendar", prompt: "Create a content calendar draft for this week" },
-      { label: "Create Workbook", prompt: "Create a workbook PDF draft for this offer" },
     ]
   }
 
@@ -4674,14 +4667,6 @@ export default function MayaChatScreen({
                 setShowUploadFlow(true)
               })
             })
-          }}
-          onStartFresh={async () => {
-            if (confirm('Are you sure you want to start fresh? This will clear your image library.')) {
-              await clearLibrary()
-              setMessages([])
-              handleNewChat()
-              setShowLibraryModal(false)
-            }
           }}
           onEditIntent={async () => {
             // TODO: Open intent editor modal

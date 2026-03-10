@@ -2005,7 +2005,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                     : undefined
                 }
                 onCreateProPhotoshoot={
-                  isProMode && !isCreatingProPhotoshoot && generatedImageUrl
+                  isAdmin && isProMode && !isCreatingProPhotoshoot && generatedImageUrl
                     ? handleCreateProPhotoshoot
                     : undefined
                 }
@@ -2014,7 +2014,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
             )}
 
             {/* Pro Photoshoot Panel */}
-            {isProMode && proPhotoshootSessionId && !proPhotoshootCarousel && (
+            {isAdmin && isProMode && proPhotoshootSessionId && !proPhotoshootCarousel && (
               <div className="mt-4">
                 {proPhotoshootError && (
                   <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
@@ -2035,7 +2035,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
             )}
 
             {/* Pro Photoshoot Carousel */}
-            {isProMode && proPhotoshootCarousel && (
+            {isAdmin && isProMode && proPhotoshootCarousel && (
               <div className="mt-4">
                 <InstagramCarouselCard
                   images={proPhotoshootCarousel.frames.map((url, i) => ({
