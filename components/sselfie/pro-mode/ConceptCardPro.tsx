@@ -52,6 +52,7 @@ interface ConceptCardProProps {
   selectedGuideId?: number | null // Selected guide ID for saving
   onSaveToGuide?: (concept: any, imageUrl?: string) => void // Save handler from parent
   messageId?: string // Message ID for updating JSONB when image is generated
+  chatId?: string | number // Chat ID fallback when messageId is a temp client-side ID
 }
 
 const PRO_CARD_BG = "rgba(255,255,255,0.04)"
@@ -74,6 +75,7 @@ export default function ConceptCardPro({
   selectedGuideId = null,
   onSaveToGuide,
   messageId,
+  chatId,
 }: ConceptCardProProps) {
   const { toast } = useToast()
   const PRO_MODE_GENERATION_CREDITS = 2
@@ -1048,7 +1050,7 @@ Focus on the outfit, location, and color grade. Output only the full ready-to-us
                   credentials: 'include',
                   body: JSON.stringify({
                     messageId: messageId,
-                    content: '', // Preserve existing content (API will handle this)
+                    chatId: chatId, // Fallback when messageId is a temp client-side ID
                     conceptCards: [updatedConcept], // API will merge with existing concepts
                   }),
                 })

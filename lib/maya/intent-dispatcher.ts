@@ -47,24 +47,9 @@ const SHOW_STUDIO_HUB_INTENT_REGEX =
   /\b(show|open|view|check)\b[\s\S]{0,30}\b(studio hub|my assets|everything you created|what you created|created assets|my drafts)\b/i
 const SHOW_GALLERY_INTENT_REGEX = /\b(show|open|view|see|browse|pull up)\b[\s\S]{0,24}\b(gallery|photos?|images?)\b/i
 const SAVE_TO_GALLERY_INTENT_REGEX = /\b(save|store|keep)\b[\s\S]{0,36}\b(gallery|my gallery)\b/i
-const GENERATE_IMAGE_INTENT_REGEX = /\b(create|generate|make|shoot)\b[\s\S]{0,48}\b(photo|image|picture|photoshoot|shot)\b/i
 const GENERATE_VIDEO_INTENT_REGEX = /\b(create|generate|make|animate|turn)\b[\s\S]{0,60}\b(video|reel|b-?roll|animation|animate)\b/i
 const SHOW_UPLOAD_ZONE_INTENT_REGEX = /\b(upload|drop|add|attach)\b[\s\S]{0,40}\b(selfies?|photos?|images?|references?|products?)\b/i
 const IMAGE_ID_REGEX = /\b(?:ai|gen)_\d+\b/i
-
-function detectGenerationSource(userText: string): MayaGenerationSource {
-  const normalizedText = userText.toLowerCase()
-  if (/\b(selfie|uploaded selfies|uploaded images|reference photos?)\b/i.test(normalizedText)) {
-    return "selfies"
-  }
-  if (/\b(custom model|trained model|my model|lora)\b/i.test(normalizedText)) {
-    return "custom_model"
-  }
-  if (/\b(base model|latest model|default model)\b/i.test(normalizedText)) {
-    return "base_model"
-  }
-  return "choose_source"
-}
 
 function detectUploadCategory(userText: string): MayaUploadCategory {
   const normalizedText = userText.toLowerCase()
@@ -105,47 +90,8 @@ export function detectMayaToolDispatchIntent(userText: string): MayaToolDispatch
     }
   }
 
-  if (GENERATE_IMAGE_INTENT_REGEX.test(userText)) {
-    const source = detectGenerationSource(userText)
-
-    if (source === "selfies") {
-      return {
-        tool: "generate_image",
-        source,
-        responseText:
-          `Perfect. We’ll use your selfies so it still looks and feels like you.\n` +
-          `${formatMayaToolMarker("generate_image", source)}`,
-      }
-    }
-
-    if (source === "custom_model") {
-      return {
-        tool: "generate_image",
-        source,
-        responseText:
-          `Perfect. I’ll use your trained model for stronger identity match.\n` +
-          `${formatMayaToolMarker("generate_image", source)}`,
-      }
-    }
-
-    if (source === "base_model") {
-      return {
-        tool: "generate_image",
-        source,
-        responseText:
-          `Got it. I’ll use the latest base model and optimize the prompt for it.\n` +
-          `${formatMayaToolMarker("generate_image", source)}`,
-      }
-    }
-
-    return {
-      tool: "generate_image",
-      source: "choose_source",
-      responseText:
-        `Let's make this easy. Choose your generation path and I’ll run it inline.\n` +
-        `${formatMayaToolMarker("generate_image", "choose_source")}`,
-    }
-  }
+  // Photo creation prompts fall through to Maya (Claude) which responds with [GENERATE_CONCEPTS].
+  // Do NOT dispatch generate_image here — that caused a dead-end card loop with no actual generation.
 
   if (GENERATE_VIDEO_INTENT_REGEX.test(userText)) {
     return {
@@ -182,34 +128,6 @@ export function detectMayaToolDispatchIntent(userText: string): MayaToolDispatch
   }
 
   return null
-}
-
-function getGenerateImageResponse(source: MayaGenerationSource): string {
-  if (source === "selfies") {
-    return (
-      `Perfect. We’ll use your selfies so it still looks and feels like you.\n` +
-      `${formatMayaToolMarker("generate_image", source)}`
-    )
-  }
-
-  if (source === "custom_model") {
-    return (
-      `Perfect. I’ll use your trained model for stronger identity match.\n` +
-      `${formatMayaToolMarker("generate_image", source)}`
-    )
-  }
-
-  if (source === "base_model") {
-    return (
-      `Got it. I’ll use the latest base model and optimize the prompt for it.\n` +
-      `${formatMayaToolMarker("generate_image", source)}`
-    )
-  }
-
-  return (
-    `Let's make this easy. Choose your generation path and I’ll run it inline.\n` +
-    `${formatMayaToolMarker("generate_image", "choose_source")}`
-  )
 }
 
 export function hydrateMayaToolDispatchIntent(
@@ -309,7 +227,7 @@ export function hydrateMayaToolDispatchIntent(
           source: hydratedSource,
           responseText:
             `I checked your profile and assets and picked the best path for you.\n` +
-            getGenerateImageResponse(hydratedSource),
+            `${formatMayaToolMarker("generate_image", hydratedSource)}`,
         }
       }
     }
@@ -317,7 +235,7 @@ export function hydrateMayaToolDispatchIntent(
     return {
       ...intent,
       source: policy.effectiveSource,
-      responseText: getGenerateImageResponse(policy.effectiveSource),
+      responseText: `${formatMayaToolMarker("generate_image", policy.effectiveSource)}`,
     }
   }
 

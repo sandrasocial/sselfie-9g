@@ -548,6 +548,7 @@ export default function MayaHeaderUnified({
               <div className="shrink-0 flex items-center gap-1.5">
                 {onHistory && (
                   <button
+                    type="button"
                     onClick={onHistory}
                     className="touch-manipulation active:scale-95 min-h-[34px] px-3 rounded-lg border border-[rgba(195,190,182,0.20)] bg-transparent hover:bg-[rgba(175,170,162,0.12)] transition-colors"
                     style={{
@@ -565,6 +566,7 @@ export default function MayaHeaderUnified({
                 )}
                 {onNewProject && (
                   <button
+                    type="button"
                     onClick={onNewProject}
                     className="touch-manipulation active:scale-95 min-h-[34px] px-3 rounded-lg border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.15)] hover:bg-[rgba(175,170,162,0.22)] transition-colors"
                     style={{

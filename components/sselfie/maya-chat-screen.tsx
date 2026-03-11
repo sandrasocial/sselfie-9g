@@ -60,10 +60,10 @@ import {
   shouldRetryInlineFeedGeneration,
 } from "@/lib/maya/feed-strategy"
 import {
-  getMayaVideosTabQuickPrompts,
   isMayaTabScopedChatEnabled,
   resolveMayaChatTypeForTab,
 } from "@/lib/maya/tab-scope"
+import { getMayaSurfaceQuickPrompts, getMayaInputPlaceholder } from "@/lib/maya/prompt-contract"
 
 const MINI_PRODUCT_IDS = ["what_to_say", "show_up", "get_paid", "ai_photo_prompts"] as const
 type MiniProductId = (typeof MINI_PRODUCT_IDS)[number]
@@ -187,7 +187,6 @@ export default function MayaChatScreen({
   const [isDragging, setIsDragging] = useState(false)
   const [contentFilter, setContentFilter] = useState<"all" | "photos" | "videos">("all")
   const [currentPrompts, setCurrentPrompts] = useState<Array<{ label: string; prompt: string }>>([])
-  const [userGender, setUserGender] = useState<string | null>(null)
   const [showHeader, setShowHeader] = useState(true)
   const [creditBalance, setCreditBalance] = useState<number>(0)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
@@ -196,6 +195,7 @@ export default function MayaChatScreen({
   const [academyJourneyPrompt, setAcademyJourneyPrompt] = useState<"first_gen" | "three_gen" | null>(null)
   const [isLoadingAcademyJourneyState, setIsLoadingAcademyJourneyState] = useState(false)
   const [welcomeFlowDismissed, setWelcomeFlowDismissed] = useState(false)
+  const [calendarSuggestionDismissed, setCalendarSuggestionDismissed] = useState(false)
   const router = useRouter()
 
   const { data: myProductsData } = useSWR<MyProductsResponse>(
@@ -460,7 +460,6 @@ export default function MayaChatScreen({
   // Prompt suggestions state
   const [promptSuggestions, setPromptSuggestions] = useState<PromptSuggestion[]>([])
   const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false)
-
   // Extract user authentication status and the chat ID to load from props or context (if available)
   // For this example, we'll assume they are available as `isAuthenticated` and `chatIdToLoad`
   const isAuthenticated = !!user // Simple check for demonstration
@@ -1007,6 +1006,7 @@ export default function MayaChatScreen({
           p?.type === "tool-generateVideo" ||
           p?.type === "tool-showUploadZone" ||
           p?.type === "tool-switchMayaTab" ||
+          p?.type === "tool-mayaGapOffer" ||
           p?.type === "tool-collectOfferBrief" ||
           p?.type === "tool-editAsset" ||
           p?.type === "tool-createAssetPreview" ||
@@ -1258,6 +1258,12 @@ export default function MayaChatScreen({
             }, targetMessageId)
           }
 
+          if (marker.tool === "maya_gap_offer") {
+            updateAssistantToolPart("tool-mayaGapOffer", {
+              dayLabels: marker.dayLabels || [],
+            }, targetMessageId)
+          }
+
           if (marker.tool === "structured_asset_blocked") {
             if (marker.assetType === "page") {
               continue
@@ -1446,10 +1452,19 @@ export default function MayaChatScreen({
 
         let response: Response
         try {
-          // 🔴 CRITICAL FIX: Use Pro Mode API when proMode is true
-          // Double-check proMode value to ensure we're using the current state
-          const currentProMode = proMode
-          const apiEndpoint = currentProMode 
+          // Determine whether to use the Pro (selfie-based) endpoint.
+          // Use Pro if proMode is already on, OR if the user explicitly asked for
+          // selfie-based generation AND they have selfies in their library.
+          // NOTE: check imageLibrary directly — hasImageLibrary is gated on proMode
+          // and would always be false in Classic mode, defeating the purpose.
+          const latestUserMsgText = userMessages[0] ? getMessageText(userMessages[0]) : ""
+          const SELFIE_SIGNAL_RE = /\b(selfie|selfies|my selfies|use selfies|my photos|my uploads|my references)\b/i
+          const hasSelfieSignal =
+            SELFIE_SIGNAL_RE.test(latestUserMsgText) ||
+            SELFIE_SIGNAL_RE.test(pendingConceptRequest ?? "")
+          const selfiesAvailable = imageLibrary != null && (imageLibrary?.selfies?.length ?? 0) > 0
+          const currentProMode = proMode || (hasSelfieSignal && selfiesAvailable)
+          const apiEndpoint = currentProMode
             ? "/api/maya/pro/generate-concepts"
             : "/api/maya/generate-concepts"
           
@@ -1912,272 +1927,16 @@ export default function MayaChatScreen({
   const isTyping = status === "submitted" || status === "streaming"
 
 
-  const promptPoolWoman = {
-    lifestyle: [
-      {
-        label: "Coffee Run",
-        prompt: "Casual coffee run moment with cozy layered outfit",
-      },
-      {
-        label: "Brunch Vibes",
-        prompt: "Brunch date look with effortless chic styling",
-      },
-      {
-        label: "Night Out",
-        prompt: "Night out with elevated evening style",
-      },
-      {
-        label: "Street Fashion",
-        prompt: "Street style moment with trendy urban outfit",
-      },
-    ],
-    aesthetic: [
-      {
-        label: "Scandinavian",
-        prompt: "Scandinavian minimalism with neutral tones and clean lines",
-      },
-      {
-        label: "Dark & Moody",
-        prompt: "Dark moody aesthetic with rich tones",
-      },
-      {
-        label: "Cozy Home",
-        prompt: "Cozy home moment with comfortable relaxed style",
-      },
-      {
-        label: "Luxury",
-        prompt: "Luxury quiet elegance with sophisticated pieces",
-      },
-    ],
-    outdoors: [
-      {
-        label: "Cabin Cozy",
-        prompt: "Cabin cozy vibes with warm layered outfit",
-      },
-      {
-        label: "Outdoors",
-        prompt: "Outdoor moment with natural light and casual style",
-      },
-      {
-        label: "Hiking",
-        prompt: "Hiking adventure with functional sporty outfit",
-      },
-      {
-        label: "Golden Hour",
-        prompt: "Golden hour outdoor moment with soft natural light",
-      },
-    ],
-  }
-
-  const promptPoolMan = {
-    lifestyle: [
-      {
-        label: "Coffee Run",
-        prompt: "Casual coffee run with laid-back urban style",
-      },
-      {
-        label: "Brunch",
-        prompt: "Brunch spot with smart casual outfit",
-      },
-      {
-        label: "Night Out",
-        prompt: "Night out with sharp evening style",
-      },
-      {
-        label: "Street Fashion",
-        prompt: "Street style moment with contemporary urban look",
-      },
-    ],
-    aesthetic: [
-      {
-        label: "Scandinavian",
-        prompt: "Scandinavian minimal with clean architectural style",
-      },
-      {
-        label: "Dark & Moody",
-        prompt: "Dark moody aesthetic with strong contrast",
-      },
-      {
-        label: "Cozy Home",
-        prompt: "Cozy home moment with comfortable relaxed fit",
-      },
-      {
-        label: "Luxury",
-        prompt: "Luxury refined elegance with tailored pieces",
-      },
-    ],
-    outdoors: [
-      {
-        label: "Cabin Cozy",
-        prompt: "Cabin vibes with rugged layered style",
-      },
-      {
-        label: "Outdoors",
-        prompt: "Outdoor moment with natural setting and casual fit",
-      },
-      {
-        label: "Sporty",
-        prompt: "Sporty active look with athletic style",
-      },
-      {
-        label: "Hiking",
-        prompt: "Hiking adventure with functional outdoor gear",
-      },
-    ],
-  }
-
-  // Get Pro Mode quick suggestions based on categories
-  const getProModeQuickSuggestions = (): Array<{ label: string; prompt: string }> => {
-    const categories = ['WELLNESS', 'LUXURY', 'LIFESTYLE', 'FASHION', 'TRAVEL', 'BEAUTY']
-    const suggestions: Array<{ label: string; prompt: string }> = []
-
-    const categoryExamples: Record<string, Array<{ label: string; prompt: string }>> = {
-      WELLNESS: [
-        { label: 'Wellness Moment', prompt: 'Create wellness content with calm, grounded presence in minimal space' },
-        { label: 'Athletic Ready', prompt: 'Alo Yoga athletic wear, natural movement, wellness aesthetic' },
-      ],
-      LUXURY: [
-        { label: 'Quiet Luxury', prompt: 'Sophisticated editorial portrait, quiet luxury aesthetic, timeless pieces' },
-        { label: 'Chic Minimal', prompt: 'Minimalist luxury look, refined styling, architectural setting' },
-      ],
-      LIFESTYLE: [
-        { label: 'Coastal Living', prompt: 'Coastal lifestyle moment, effortless styling, natural light' },
-        { label: 'Coffee Run', prompt: 'Relatable everyday moment, cafe setting, Pinterest aesthetic' },
-      ],
-      FASHION: [
-        { label: 'Street Style', prompt: 'Editorial street style, fashion-forward outfit, urban setting' },
-        { label: 'Editorial Look', prompt: 'Fashion editorial portrait, trend-aware styling, clean background' },
-      ],
-      TRAVEL: [
-        { label: 'Airport Chic', prompt: 'Effortless travel style, airport terminal, sophisticated travel aesthetic' },
-        { label: 'Destination Ready', prompt: 'Travel content, destination setting, aspirational calm energy' },
-      ],
-      BEAUTY: [
-        { label: 'Clean Beauty', prompt: 'Natural beauty moment, fresh skin focus, editorial beauty lighting' },
-        { label: 'Skincare Glow', prompt: 'Skincare routine content, glowing skin, minimal beauty aesthetic' },
-      ],
-    }
-
-    // Get 1 example from each category
-    categories.forEach(category => {
-      const examples = categoryExamples[category]
-      if (examples && examples.length > 0) {
-        const randomExample = examples[Math.floor(Math.random() * examples.length)]
-        suggestions.push(randomExample)
-      }
-    })
-
-    // Shuffle and return 4 suggestions
-    return suggestions.sort(() => Math.random() - 0.5).slice(0, 4)
-  }
-
-  const getOutcomeStartPrompts = (isProMode: boolean): Array<{ label: string; prompt: string }> => {
-    if (isProMode) {
-      return [
-        { label: "Selfie", prompt: "Let's create a photo using my uploaded selfies" },
-        { label: "Upload Assets", prompt: "I want to upload product photos and brand references" },
-        { label: "Create Calendar", prompt: "Create a content calendar draft for this week" },
-      ]
-    }
-
-    return [
-      { label: "Train My Model", prompt: "I want to train my custom model" },
-      { label: "Selfie", prompt: "I want to upload selfies first" },
-      { label: "Create Calendar", prompt: "Create a content calendar draft for this week" },
-    ]
-  }
-
-  const mergeUniquePrompts = (prompts: Array<{ label: string; prompt: string }>) => {
-    const seen = new Set<string>()
-    return prompts.filter((item) => {
-      const key = `${item.label.toLowerCase()}::${item.prompt.toLowerCase()}`
-      if (seen.has(key)) return false
-      seen.add(key)
-      return true
-    })
-  }
-
-  const getRandomPrompts = (gender: string | null) => {
-    const promptPool = gender === "woman" ? promptPoolWoman : promptPoolMan
-    const allCategories = Object.values(promptPool)
-    const selected: Array<{ label: string; prompt: string }> = []
-
-    // Get 1-2 from each category, shuffled
-    allCategories.forEach((category) => {
-      const shuffled = [...category].sort(() => Math.random() - 0.5)
-      selected.push(...shuffled.slice(0, Math.random() > 0.5 ? 2 : 1))
-    })
-
-    // Shuffle all selected and take 4
-    return selected.sort(() => Math.random() - 0.5).slice(0, 4)
-  }
-
-  // Feed Tab Quick Prompts
-  const getFeedQuickPrompts = (): Array<{ label: string; prompt: string }> => {
-    return [
-      { label: "Create Feed Layout", prompt: "Create an Instagram feed layout for my business" },
-      { label: "Create Captions", prompt: "Create captions for my feed posts" },
-      { label: "Create Strategy", prompt: "Create a strategy document for my feed" },
-    ]
-  }
-
-  const withCapabilityPrompt = (prompts: Array<{ label: string; prompt: string }>) => {
-    const capabilityPrompt = { label: "What can Maya do?", prompt: "What can you do for me in this app?" }
-    const filtered = prompts.filter(
-      (item) =>
-        item.prompt.trim().toLowerCase() !== capabilityPrompt.prompt.toLowerCase() &&
-        item.label.trim().toLowerCase() !== capabilityPrompt.label.toLowerCase(),
-    )
-    return [capabilityPrompt, ...filtered].slice(0, 7)
-  }
-
-  // Update prompts based on mode and active tab
+  // Update prompts based on the locked tab-scoped contract.
   useEffect(() => {
-    if (isTabScopedChatEnabled && activeMayaTab === "videos") {
-      setCurrentPrompts(getMayaVideosTabQuickPrompts())
-      return
-    }
-
-    // Feed tab uses feed-specific prompts
-    if (activeMayaTab === "feed") {
-      const feedPrompts = getFeedQuickPrompts()
-      console.log("[v0] Setting Feed tab prompts:", feedPrompts.length)
-      setCurrentPrompts(feedPrompts)
-      return
-    }
-
-    // Both modes now support quick suggestions (for Photos tab)
-    const fetchUserGender = async () => {
-      try {
-        console.log("[v0] Fetching user gender from /api/user/profile")
-        const response = await fetch("/api/user/profile")
-        console.log("[v0] Profile API response status:", response.status)
-
-        if (response.ok) {
-          const data = await response.json()
-          console.log("[v0] Profile API data:", data)
-          setUserGender(data.gender || null)
-          
-          const starterPrompts = getOutcomeStartPrompts(proMode)
-          const stylePrompts = proMode ? getProModeQuickSuggestions() : getRandomPrompts(data.gender || null)
-          const mergedPrompts = mergeUniquePrompts([...starterPrompts, ...stylePrompts])
-          console.log("[v0] Setting prompt set:", { proMode, total: mergedPrompts.length })
-          setCurrentPrompts(withCapabilityPrompt(mergedPrompts))
-        } else {
-          console.error("[v0] Profile API error:", response.status, response.statusText)
-          const starterPrompts = getOutcomeStartPrompts(proMode)
-          const stylePrompts = hasProFeatures ? getProModeQuickSuggestions() : getRandomPrompts(null)
-          setCurrentPrompts(withCapabilityPrompt(mergeUniquePrompts([...starterPrompts, ...stylePrompts])))
-        }
-      } catch (error) {
-        console.error("[v0] Error fetching user gender:", error)
-        const starterPrompts = getOutcomeStartPrompts(proMode)
-        const stylePrompts = proMode ? getProModeQuickSuggestions() : getRandomPrompts(null)
-        setCurrentPrompts(withCapabilityPrompt(mergeUniquePrompts([...starterPrompts, ...stylePrompts])))
-      }
-    }
-    fetchUserGender()
-  }, [proMode, activeMayaTab, hasProFeatures, isTabScopedChatEnabled])
+    setCurrentPrompts(
+      getMayaSurfaceQuickPrompts({
+        activeTab: activeMayaTab,
+        proMode,
+        hasTrainedModel,
+      }),
+    )
+  }, [activeMayaTab, proMode, hasTrainedModel])
 
   useEffect(() => {
     const fetchCredits = async () => {
@@ -2559,11 +2318,39 @@ export default function MayaChatScreen({
   const handlePhaseTwoGenerationSource = useCallback(
     (source: PhaseTwoGenerationSource) => {
       if (source === "selfies") {
+        // If the user already has linked selfies, keep them in Photos and continue.
+        if (hasImageLibrary && imageLibrary.selfies.length > 0) {
+          if (!proMode) {
+            setProMode(true)
+          }
+          setMayaTabAndHash("photos")
+          toast({
+            title: "Perfect — using your linked selfies",
+            description: "Tell me what you want to create and I’ll build it with your current references.",
+          })
+          return
+        }
+
+        // No linked selfies yet: open upload flow.
         handlePhaseTwoUploadZone("selfies")
         return
       }
 
       if (source === "custom_model") {
+        // If model exists, stay in Photos and use it directly.
+        if (hasTrainedModel) {
+          if (proMode) {
+            setProMode(false)
+          }
+          setMayaTabAndHash("photos")
+          toast({
+            title: "My Model is ready",
+            description: "Describe the photo you want and I’ll generate it with your trained model.",
+          })
+          return
+        }
+
+        // No trained model yet: move user to training.
         if (proMode) {
           setProMode(false)
         }
@@ -2580,7 +2367,16 @@ export default function MayaChatScreen({
         description: "Describe the photo you want and Maya will generate it in Classic mode.",
       })
     },
-    [handlePhaseTwoUploadZone, proMode, setProMode, setMayaTabAndHash, toast],
+    [
+      handlePhaseTwoUploadZone,
+      hasImageLibrary,
+      hasTrainedModel,
+      imageLibrary.selfies.length,
+      proMode,
+      setProMode,
+      setMayaTabAndHash,
+      toast,
+    ],
   )
 
   const handleToolSubmitOfferBrief = useCallback(
@@ -2935,6 +2731,7 @@ export default function MayaChatScreen({
     setSelectedPrompt("")
     setMessagesWithUploadModule(new Set())
     setPendingConceptRequest(null)
+    setCalendarSuggestionDismissed(false)
       promptGenerationTriggeredRef.current.clear() // Clear prompt generation tracking
     clearAllVideoPolls()
 
@@ -3712,6 +3509,23 @@ export default function MayaChatScreen({
   const showClassicEmptyState = !showReturningMemberHome && isEmpty && !proMode && !isTyping
   const showAnyEmptyState = showReturningMemberHome || showProEmptyState || showClassicEmptyState
   const photoTabBottomSpacing = "calc(var(--input-bar-height, 168px) + max(16px, env(safe-area-inset-bottom, 0px)))"
+  const linkedSelfieCount = imageLibrary?.selfies?.length ?? 0
+  const hasLinkedSelfies = linkedSelfieCount > 0
+  const generatedPhotoCountInChat = useMemo(() => {
+    return (messages || []).reduce((count: number, message: any) => {
+      if (message?.role !== "assistant") return count
+      if (!Array.isArray(message?.parts)) return count
+      const hasImage = message.parts.some(
+        (part: any) => part?.type === "image" && typeof part?.image === "string",
+      )
+      return count + (hasImage ? 1 : 0)
+    }, 0)
+  }, [messages])
+  const hasGeneratedPhotoInChat = generatedPhotoCountInChat > 0
+  const showCalendarSuggestion =
+    generatedPhotoCountInChat >= 2 && !calendarSuggestionDismissed && activeMayaTab === "photos"
+  const hasPhotoMomentum =
+    hasGeneratedPhotoInChat || (libraryTotalImages ?? 0) > 0 || (sharedImages?.length ?? 0) > 0
 
   const returningMemberLastSessionTitle =
     typeof chatTitle === "string" && chatTitle.trim().length > 0 && !/^new chat$/i.test(chatTitle.trim())
@@ -3807,10 +3621,10 @@ export default function MayaChatScreen({
 
       {/* Fixed Header with Integrated Tabs - Always visible */}
       {/* Mobile optimized: safe area insets, responsive padding */}
-      {/* Using z-[100] to ensure it's above all other content */}
+      {/* Using z-100 to ensure it's above all other content */}
       <div
         ref={headerRef}
-        className="fixed top-0 left-0 right-0 z-[100] border-b border-[rgba(195,190,182,0.15)] bg-[rgba(175,170,162,0.08)] backdrop-blur-[50px]"
+        className="fixed top-0 left-0 right-0 z-100 border-b border-[rgba(195,190,182,0.15)] bg-[rgba(175,170,162,0.08)] backdrop-blur-[50px]"
         style={{
           paddingTop: 'max(0.625rem, env(safe-area-inset-top, 0px))',
         }}
@@ -3830,7 +3644,7 @@ export default function MayaChatScreen({
           selectedGuideCategory={selectedGuideCategory}
           onGuideChange={onGuideChange}
           userId={userId}
-          showModeToggle={isMembership && !hideModeComplexity} // Hide mode controls in unified UX
+          showModeToggle={!hideModeComplexity && activeMayaTab === "photos"} // Show for all Photos tab users
           onEditIntent={undefined}
           onNavigation={handleNavigation}
           onNewProject={handleNewChat}
@@ -4189,6 +4003,8 @@ export default function MayaChatScreen({
           promptSuggestions={promptSuggestions}
           generationSettings={settings}
           enhancedAuthenticity={enhancedAuthenticity}
+          userHasTrainedModel={hasTrainedModel}
+          linkedSelfieCount={imageLibrary.selfies.length}
           onToolSelectGenerationSource={handlePhaseTwoGenerationSource}
           onToolOpenUploadZone={handlePhaseTwoUploadZone}
           onToolPromptSelect={handleSendMessage}
@@ -4258,32 +4074,58 @@ export default function MayaChatScreen({
                 <div className="max-w-2xl w-full space-y-8">
                   <MayaWelcomePanel
                     eyebrow="Maya"
-                    title="Create inside Maya"
+                    title={
+                      hasLinkedSelfies
+                        ? hasPhotoMomentum
+                          ? "Ready for your next photo"
+                          : "Your selfies are ready"
+                        : "Let’s link your selfies first"
+                    }
                     subtitle={
-                      libraryTotalImages === 0
-                        ? "SELFIE mode uses your linked references instead of your trained model. Start with a post, a weekly plan, or new editorial photos."
-                        : "Your reference photos are linked. Start with a post, a weekly plan, or a new set of editorial images."
+                      hasLinkedSelfies
+                        ? hasPhotoMomentum
+                          ? "You already have momentum. Tell me what to create and I’ll build the next photo with your linked look."
+                          : "Perfect start. I can use your linked selfies right now for your first photo."
+                        : "Add 1-3 selfies once, and I’ll reuse them across new photos in this chat."
                     }
                     uploadHint={
-                      libraryTotalImages === 0
-                        ? "Use Add Image in the input bar to link 1-3 reference photos. Maya will use them in every new draft."
-                        : undefined
+                      hasLinkedSelfies
+                        ? undefined
+                        : "Tap Add Image in the input bar to link selfies."
                     }
                     previewImageUrls={uploadedImages.map((image) => image.url)}
                     actions={[
-                      {
-                        label: "Create a post",
-                        onClick: () => handleSendMessage("I need photos for Monday's post"),
-                        variant: "primary",
-                      },
-                      {
-                        label: "Plan my week",
-                        onClick: () => handleSendMessage("Plan my week and build an Instagram feed for my offer"),
-                      },
-                      {
-                        label: "New photos",
-                        onClick: () => handleSendMessage("Create new editorial photos for my offer"),
-                      },
+                      ...(hasLinkedSelfies
+                        ? [
+                            {
+                              label: hasPhotoMomentum ? "Use my selfies again" : "Create my first photo",
+                              onClick: () => handleSendMessage("Use my selfies and create a photo for my brand now"),
+                              variant: "primary" as const,
+                            },
+                            {
+                              label: "Use base model",
+                              onClick: () => handleSendMessage("Use the base model and create a photo for my brand now"),
+                            },
+                            {
+                              label: "Build my week plan",
+                              onClick: () => handleSendMessage("Create a content calendar draft for this week"),
+                            },
+                          ]
+                        : [
+                            {
+                              label: "Add my selfies",
+                              onClick: () => handlePhaseTwoUploadZone("selfies"),
+                              variant: "primary" as const,
+                            },
+                            {
+                              label: "Use base model now",
+                              onClick: () => handleSendMessage("Use the base model and create a photo for my brand now"),
+                            },
+                            {
+                              label: "Train my model",
+                              onClick: () => setMayaTabAndHash("training"),
+                            },
+                          ]),
                     ]}
                   />
                   <MayaQuickPrompts
@@ -4312,22 +4154,44 @@ export default function MayaChatScreen({
                 <div className="w-full max-w-2xl space-y-8">
                   <MayaWelcomePanel
                     eyebrow="Maya"
-                    title="Let's make your first photo easy"
-                    subtitle="Tell Maya what you need. She'll draft it right here so you can keep going without leaving chat."
+                    title={
+                      hasTrainedModel
+                        ? hasPhotoMomentum
+                          ? "My Model is ready"
+                          : "Let’s create your first My Model photo"
+                        : hasPhotoMomentum
+                          ? "Ready for your next photo"
+                          : "Let’s make your first photo easy"
+                    }
+                    subtitle={
+                      hasTrainedModel
+                        ? "Your trained model is ready in Photos. Ask for the scene and I’ll generate it here."
+                        : "Tell Maya what you need and I’ll draft it right here so you can keep going without leaving chat."
+                    }
                     previewImageUrls={uploadedImages.map((image) => image.url)}
                     actions={[
                       {
-                        label: "Make my first photo",
-                        onClick: () => handleSendMessage("I need photos for Monday's post"),
+                        label: hasTrainedModel ? "Use my model now" : hasPhotoMomentum ? "Create next photo" : "Make my first photo",
+                        onClick: () =>
+                          handleSendMessage(
+                            hasTrainedModel
+                              ? "Use my trained model and create a photo for my brand now"
+                              : "Create a photo for my brand now",
+                          ),
                         variant: "primary",
                       },
                       {
-                        label: "Plan my week",
-                        onClick: () => handleSendMessage("Create a content calendar draft for this week"),
+                        label: hasTrainedModel ? "Use my selfies" : "Use base model",
+                        onClick: () =>
+                          handleSendMessage(
+                            hasTrainedModel
+                              ? "Use my selfies and create a photo for my brand now"
+                              : "Use the base model and create a photo for my brand now",
+                          ),
                       },
                       {
-                        label: "Show me ideas",
-                        onClick: () => handleSendMessage("Show me fresh style directions for my next post"),
+                        label: "Create this week’s plan",
+                        onClick: () => handleSendMessage("Create a content calendar draft for this week"),
                       },
                     ]}
                   />
@@ -4359,10 +4223,10 @@ export default function MayaChatScreen({
 
       {/* Fixed Bottom Input Area - Show in tab-scoped Maya chats */}
       {/* Subtle background for contrast - positioned above nav, z-index below nav */}
-      {(activeMayaTab === "photos" || activeMayaTab === "feed" || (isTabScopedChatEnabled && activeMayaTab === "videos")) && (
+      {(activeMayaTab === "photos" || activeMayaTab === "feed") && (
         <div
           ref={inputBarRef}
-          className="fixed left-0 right-0 bg-[rgba(175,170,162,0.06)] backdrop-blur-[30px] border-t border-[rgba(195,190,182,0.15)] px-3 sm:px-4 py-2 sm:py-2.5 z-[90] flex flex-col"
+          className="fixed left-0 right-0 bg-[rgba(175,170,162,0.06)] backdrop-blur-[30px] border-t border-[rgba(195,190,182,0.15)] px-3 sm:px-4 py-2 sm:py-2.5 z-90 flex flex-col"
           style={{
             // Dock above bottom nav; avoid blocking the chat area while scrolling.
             bottom: "calc(var(--sselfie-bottom-nav-height, 96px) + 4px)",
@@ -4370,6 +4234,39 @@ export default function MayaChatScreen({
           }}
         >
           <div className="mx-auto w-full max-w-5xl">
+            {/* Calendar suggestion — fires after 2nd photo in session */}
+            {showCalendarSuggestion && (
+              <div className="mb-2 flex items-center gap-2 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.08)] px-3 py-2.5 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <span className="shrink-0 text-[10px] text-[#c8c4bb]">✦</span>
+                <div className="flex-1 min-w-0">
+                  <span className="text-xs text-[#f0ede8]">
+                    {generatedPhotoCountInChat} photos created.{" "}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleSendMessage(
+                        "Plan my content calendar for this week using the photos I just created",
+                      )
+                      setCalendarSuggestionDismissed(true)
+                    }}
+                    className="text-xs text-[#c8c4bb] hover:text-[#f0ede8] transition-colors"
+                    style={{ textDecoration: "underline", textUnderlineOffset: "3px" }}
+                  >
+                    Plan the week around them?
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCalendarSuggestionDismissed(true)}
+                  className="shrink-0 text-[11px] leading-none text-[#8a8780] hover:text-[#f0ede8] transition-colors px-1 py-0.5"
+                  aria-label="Dismiss"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
             {/* Quick Actions */}
             {shouldShowInputPrompts ? (
               <MayaQuickPrompts
@@ -4423,7 +4320,7 @@ export default function MayaChatScreen({
               onRemoveImage={() => setUploadedImage(null)}
               isLoading={isTyping || isGeneratingConcepts}
               disabled={isTyping || isGeneratingConcepts}
-              placeholder="Message Maya..."
+              placeholder={getMayaInputPlaceholder(activeMayaTab as any)}
               showSettingsButton={!hasProFeatures}
               onSettingsClick={() => {
                 setShowSettings(true)
@@ -4441,103 +4338,30 @@ export default function MayaChatScreen({
       )}
 
       {/* Tab Content - Videos Tab */}
+      {/* Pure gallery surface — pick a photo, tap Animate, done. No chat or text input here. */}
       {activeMayaTab === "videos" && (
         <div className="flex-1 min-h-0 flex flex-col overflow-y-auto">
           <div
             className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6"
             style={{
               paddingTop: "calc(var(--maya-header-height, 124px) + 8px)",
-              paddingBottom: photoTabBottomSpacing,
+              paddingBottom: "calc(var(--sselfie-bottom-nav-height, 96px) + 24px)",
             }}
           >
-            {isLoadingChat && messages.length === 0 ? (
-              <div className="flex items-center justify-center min-h-[320px]">
-                <UnifiedLoading message="Loading videos..." variant="section" />
-              </div>
-            ) : null}
-
-            {!hasVisibleMessages ? (
-              <div className="mx-auto w-full max-w-3xl py-6">
-                <MayaInlineCard
-                  eyebrow="Videos"
-                  title="Let’s turn one photo into a reel"
-                  subtitle="Tell me what you want to make, then pick the photo you want to use. I’ll guide the rest from here."
-                  actions={
-                    <>
-                      <MayaInlineAction
-                        onClick={() => handleSendMessage("Create a short video from one of my photos")}
-                        variant="primary"
-                      >
-                        Make a Reel
-                      </MayaInlineAction>
-                      <MayaInlineAction onClick={() => handleSendMessage("Show me my gallery so I can choose a photo for a video")}>
-                        Choose a Photo
-                      </MayaInlineAction>
-                    </>
-                  }
-                >
-                  <div className="stone-inset-panel rounded-[22px] px-4 py-4 text-sm leading-relaxed text-[color:var(--text-accent)]">
-                    No stress. Start with one good photo and I&apos;ll help you turn it into motion.
-                  </div>
-                </MayaInlineCard>
-              </div>
-            ) : (
-              <div className="mx-auto w-full max-w-5xl">
-                <MayaChatInterface
-                  messages={messages}
-                  filteredMessages={filteredMessages}
-                  setMessages={setMessages}
-                  proMode={proMode}
-                  isTyping={isTyping}
-                  isGeneratingConcepts={isGeneratingConcepts}
-                  isGeneratingPro={isGeneratingPro}
-                  contentFilter={contentFilter}
-                  messagesContainerRef={messagesContainerRef as React.RefObject<HTMLDivElement>}
-                  messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
-                  showScrollButton={showScrollButton}
-                  isAtBottomRef={isAtBottomRef}
-                  scrollToBottom={scrollToBottom}
-                  onFeedSaved={handleFeedSaved}
-                  chatId={chatId ?? undefined}
-                  uploadedImages={uploadedImages}
-                  setCreditBalance={setCreditBalance}
-                  onImageGenerated={onImageGenerated}
-                  isAdmin={isAdmin}
-                  selectedGuideId={selectedGuideId}
-                  selectedGuideCategory={selectedGuideCategory}
-                  onSaveToGuide={handleSaveToGuide}
-                  userId={userId}
-                  user={user}
-                  promptSuggestions={promptSuggestions}
-                  generationSettings={settings}
-                  enhancedAuthenticity={enhancedAuthenticity}
-                  onToolSelectGenerationSource={handlePhaseTwoGenerationSource}
-                  onToolOpenUploadZone={handlePhaseTwoUploadZone}
-                  onToolPromptSelect={handleSendMessage}
-                  onToolSubmitOfferBrief={handleToolSubmitOfferBrief}
-                  onToolStartVideoGeneration={handleToolStartVideoGeneration}
-                  activeTab={activeMayaTab}
-                  onSwitchTab={handleSwitchScopedTab}
-                />
-              </div>
-            )}
-
-            <div className="mx-auto mt-6 w-full max-w-7xl">
-              <MayaVideosTab
-                user={user}
-                creditBalance={creditBalance}
-                onCreditsUpdate={setCreditBalance}
-                sharedImages={getSharedImages().map(img => ({
-                  url: img.url,
-                  id: img.id,
-                  prompt: img.prompt,
-                  description: img.description,
-                  category: img.category,
-                }))}
-                chatGuided={isTabScopedChatEnabled}
-                onSelectSourceImage={startInlineVideoFromSource}
-              />
-            </div>
+            <MayaVideosTab
+              user={user}
+              creditBalance={creditBalance}
+              onCreditsUpdate={setCreditBalance}
+              sharedImages={getSharedImages().map(img => ({
+                url: img.url,
+                id: img.id,
+                prompt: img.prompt,
+                description: img.description,
+                category: img.category,
+              }))}
+              chatGuided={false}
+              onSelectSourceImage={undefined}
+            />
           </div>
         </div>
       )}
@@ -4921,11 +4745,9 @@ export default function MayaChatScreen({
                   if (library.intent) {
                     await updateIntent(library.intent)
                   }
-                  // Close modal after saving when editing
+                  // Stay in a single flow after editing so users can continue to "Start Creating".
                   if (manageCategory) {
-                    setShowUploadFlow(false)
                     setManageCategory(null)
-                    setShowLibraryModal(true) // Reopen library modal to show updated library
                   }
                 }}
                 onStartCreating={async (library) => {
@@ -4980,20 +4802,12 @@ export default function MayaChatScreen({
                   }
                 }}
                 onManageCategory={(category) => {
-                  // 🔴 FIX: Open manage modal for category
-                  console.log("[v0] [PRO MODE] Manage category from upload flow:", category)
-                  setShowUploadFlow(false)
-                  setShowLibraryModal(true)
+                  // Keep edits inside the same upload flow modal (no nested modal reopen).
+                  setManageCategory(category)
                 }}
                 onCancel={() => {
                   setShowUploadFlow(false)
                   setManageCategory(null)
-                  // Reopen library modal when canceling from edit mode
-                  if (manageCategory) {
-                    setTimeout(() => {
-                      setShowLibraryModal(true)
-                    }, 100)
-                  }
                 }}
               />
             </div>

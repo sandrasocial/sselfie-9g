@@ -67,8 +67,8 @@ import { NextResponse } from "next/server"
 /**
  * Primary live Maya chat route.
  *
- * The current Maya UI (`useMayaChat`) posts here for Classic, Studio Pro,
- * feed-planner, prompt-builder, and chat-first tool-dispatch turns.
+ * The current Maya UI (`useMayaChat`) posts here for Photos/Videos/Train
+ * tab-scoped turns, prompt-builder, and tool-dispatch execution.
  *
  * Runtime mode is selected inside this route via headers/body state such as:
  * - `x-studio-pro-mode`
@@ -96,6 +96,12 @@ function isMayaStrictAssetToolRoutingEnabled(envValue?: string | null): boolean 
   return normalized === "true" || normalized === "1"
 }
 
+function isMayaChatApiDebugEnabled(envValue?: string | null): boolean {
+  if (!envValue) return false
+  const normalized = envValue.trim().toLowerCase()
+  return normalized === "true" || normalized === "1"
+}
+
 function createLandingPagesPausedResponse(validUIMessages: UIMessage[], preface?: string) {
   const stream = createUIMessageStream({
     originalMessages: validUIMessages as any,
@@ -108,7 +114,7 @@ function createLandingPagesPausedResponse(validUIMessages: UIMessage[], preface?
         delta:
           `${preface ? `${preface.trim()} ` : ""}` +
           `Landing page drafts are retired right now while we rebuild this feature. ` +
-          `In this chat, I can run photos, videos, concept cards, feed planning, and content calendars.`,
+          `I can still help you with photo ideas, concept cards, videos, and training guidance in Maya.`,
       })
       writer.write({ type: "text-end", id: textPartId })
     },
@@ -282,7 +288,14 @@ You: "Absolutely! Keeping the Chanel aesthetic but making it more relaxed..."
 These prompts will be used by hundreds of users. Quality and professionalism matter. Sandra trusts you to create prompts that represent her brand well.`
 
 export async function POST(req: Request) {
-  console.log("[v0] Maya chat API called")
+  const mayaChatApiDebug = isMayaChatApiDebugEnabled(process.env.FEATURE_MAYA_CHAT_API_DEBUG)
+  const debugLog = (...args: unknown[]) => {
+    if (mayaChatApiDebug) {
+      console.log(...args)
+    }
+  }
+
+  debugLog("[Maya Chat API] Request received")
 
   try {
     const { user: authUser, error: authError } = await getAuthenticatedUser()
@@ -301,7 +314,7 @@ export async function POST(req: Request) {
 
     const dbUserId = user.id
 
-    console.log("[v0] User authenticated:", { userId, dbUserId, userEmail: user.email })
+    debugLog("[Maya Chat API] User authenticated", { userId, dbUserId, userEmail: user.email })
 
     const body = await req.json()
     const {
@@ -330,27 +343,16 @@ export async function POST(req: Request) {
     let isFeedTab = activeTabHeader === "feed" || isFeedPlannerChatType(requestedChatType)
     let useFeedPlannerContext = isFeedTab
     
-  console.log("[Maya Chat API] 🔍 Headers received:", {
-    fromBody: chatTypeFromBody,
-    fromHeader: chatTypeHeader,
-    activeTabHeader,
-    isFeedTab,
+    debugLog("[Maya Chat API] Headers normalized", {
+      fromBody: chatTypeFromBody,
+      fromHeader: chatTypeHeader,
+      activeTabHeader,
+      isFeedTab,
       final: chatType,
       unifiedMayaUiEnabled,
-      allHeaders: {
-        "x-chat-type": chatTypeHeader,
-        "x-active-tab": activeTabHeader,
-        "x-studio-pro-mode": req.headers.get("x-studio-pro-mode"),
-      },
-    // PRODUCTION DEBUG: Log ALL headers
-    allRequestHeaders: Object.fromEntries(req.headers.entries()),
-  })
+    })
     
-    if (isFeedTab) {
-      console.log("[Maya Chat API] ✅ FEED TAB DETECTED - Will load aesthetic expertise")
-    } else {
-      console.log("[Maya Chat API] ⚠️ NOT feed tab - activeTabHeader:", activeTabHeader)
-    }
+    debugLog("[Maya Chat API] Feed context", { isFeedTab, activeTabHeader })
 
     // Check if this is prompt_builder mode (admin tool) or admin user - bypass credit check
     const isPromptBuilder = chatType === "prompt_builder"
@@ -424,7 +426,7 @@ export async function POST(req: Request) {
         useFeedPlannerContext = isFeedTab
       }
 
-      console.log("[Maya Chat API] Unified routing applied:", {
+      debugLog("[Maya Chat API] Unified routing applied", {
         requestedChatType,
         selectedChatType: normalizedAutoMode,
         persistedChatType: chatType,
@@ -438,11 +440,13 @@ export async function POST(req: Request) {
     if (!isPromptBuilder && !isAdmin) {
       const hasCredits = await checkCredits(dbUserId, 1)
       if (!hasCredits) {
-        console.log("[v0] User has insufficient credits for Maya chat")
+        debugLog("[Maya Chat API] User has insufficient credits")
         return NextResponse.json({ error: "Insufficient credits" }, { status: 402 })
       }
     } else {
-      console.log("[v0] Bypassing credit check for:", isPromptBuilder ? "prompt_builder mode" : "admin user")
+      debugLog("[Maya Chat API] Bypassing credit check", {
+        reason: isPromptBuilder ? "prompt_builder mode" : "admin user",
+      })
     }
 
     if (!uiMessages) {
@@ -464,13 +468,13 @@ export async function POST(req: Request) {
     // Remove any messages with invalid structure (tool calls, malformed content, etc.)
     const validUIMessages = uiMessages.filter((m: any) => {
       if (!m || !m.role) {
-        console.log("[v0] ⚠️ Filtering out message with missing role")
+        debugLog("[Maya Chat API] Dropping message with missing role")
         return false
       }
       
       // Only allow user and assistant messages (no system messages from UI)
       if (m.role !== "user" && m.role !== "assistant") {
-        console.log("[v0] ⚠️ Filtering out message with invalid role:", m.role)
+        debugLog("[Maya Chat API] Dropping message with invalid role", m.role)
         return false
       }
       
@@ -492,7 +496,7 @@ export async function POST(req: Request) {
           return false
         })
         if (hasInvalidTypes) {
-          console.log("[v0] ⚠️ Filtering out message with invalid tool types in content:", m.id || "unknown")
+          debugLog("[Maya Chat API] Dropping invalid tool payload in message content", m.id || "unknown")
           return false
         }
       }
@@ -519,7 +523,7 @@ export async function POST(req: Request) {
           return false
         })
         if (hasInvalidTypes) {
-          console.log("[v0] ⚠️ Filtering out message with invalid parts:", m.id || "unknown")
+          debugLog("[Maya Chat API] Dropping message with invalid parts", m.id || "unknown")
           return false
         }
       }
@@ -527,7 +531,10 @@ export async function POST(req: Request) {
       return true
     })
     
-    console.log("[v0] Filtered", uiMessages.length, "UI messages to", validUIMessages.length, "valid messages")
+    debugLog("[Maya Chat API] UI messages filtered", {
+      incoming: uiMessages.length,
+      valid: validUIMessages.length,
+    })
     const latestUserTextForSkills = extractLatestUserText(validUIMessages as any)
 
     const tabHandoff =
@@ -943,6 +950,21 @@ export async function POST(req: Request) {
             `${generatedAsset.assetType}|${encodeURIComponent(generatedAsset.title)}`,
           )
 
+          const gapParts: string[] = []
+          if (generatedAsset.assetType === "calendar" && generatedAsset.previewData?.kind === "calendar") {
+            const calendarPreview = generatedAsset.previewData
+            const gapPosts = calendarPreview.posts.filter((p) => !p.imageUrl || p.imageUrl.trim() === "")
+            if (gapPosts.length > 0) {
+              const gapDayLabels = gapPosts.map((p) => p.dayLabel).filter(Boolean)
+              if (gapDayLabels.length > 0) {
+                const gapPayload = gapDayLabels.join("|")
+                gapParts.push(
+                  `\n\nYour calendar's ready. ${gapDayLabels.length} ${gapDayLabels.length === 1 ? "day doesn't" : "days don't"} have a photo yet — want me to create them?\n${formatMayaToolMarker("maya_gap_offer", gapPayload)}`,
+                )
+              }
+            }
+          }
+
           const stream = createUIMessageStream({
             originalMessages: validUIMessages as any,
             execute: ({ writer }) => {
@@ -952,9 +974,10 @@ export async function POST(req: Request) {
                 type: "text-delta",
                 id: textPartId,
                 delta:
-                  `Done. I created a draft for your ${generatedAsset.title} and loaded it inline so you can iterate fast.\n` +
+                  `I've got your draft ready. You can tweak it right here.\n` +
                   `${createAssetMarker}\n` +
-                  `${editAssetMarker}`,
+                  `${editAssetMarker}` +
+                  gapParts.join(""),
               })
               writer.write({ type: "text-end", id: textPartId })
             },
@@ -1124,6 +1147,20 @@ export async function POST(req: Request) {
             return [createAssetMarker, editAssetMarker]
           })
 
+          const gapParts: string[] = []
+          const calendarAsset = createdAssets.find((a) => a.assetType === "calendar")
+          if (calendarAsset?.previewData?.kind === "calendar") {
+            const gapPosts = calendarAsset.previewData.posts.filter((p) => !p.imageUrl || p.imageUrl.trim() === "")
+            if (gapPosts.length > 0) {
+              const gapDayLabels = gapPosts.map((p) => p.dayLabel).filter(Boolean)
+              if (gapDayLabels.length > 0) {
+                gapParts.push(
+                  `\n\nYour calendar's ready. ${gapDayLabels.length} ${gapDayLabels.length === 1 ? "day doesn't" : "days don't"} have a photo yet — want me to create them?\n${formatMayaToolMarker("maya_gap_offer", gapDayLabels.join("|"))}`,
+                )
+              }
+            }
+          }
+
           const stream = createUIMessageStream({
             originalMessages: validUIMessages as any,
             execute: ({ writer }) => {
@@ -1133,9 +1170,9 @@ export async function POST(req: Request) {
                 type: "text-delta",
                 id: textPartId,
                 delta:
-                  `Done. I built ${createdAssets.length} drafts in one run so you can move faster. ` +
-                  `I loaded each one inline and set your latest draft as active.\n` +
-                  markers.join("\n"),
+                  `I built ${createdAssets.length} drafts for you. You can tweak any of them right here.\n` +
+                  markers.join("\n") +
+                  gapParts.join(""),
               })
               writer.write({ type: "text-end", id: textPartId })
             },
@@ -1426,7 +1463,7 @@ export async function POST(req: Request) {
           }
           newParts.push({ type: "image", image: imageUrl })
           
-          console.log("[v0] ✅ Extracted inspiration image from text marker:", imageUrl.substring(0, 100) + "...")
+          debugLog("[Maya Chat API] Extracted inspiration image marker")
           return { ...m, parts: newParts }
         }
       }
@@ -1440,12 +1477,12 @@ export async function POST(req: Request) {
             if (!p || !p.type) return false
             // Filter out tool types (not supported in chat messages sent to AI SDK)
             if (p.type === "tool-result" || p.type === "tool-call" || (p.type && p.type.startsWith("tool-"))) {
-              console.log("[v0] ⚠️ Filtering out tool part type:", p.type)
+              debugLog("[Maya Chat API] Dropping tool part from user message", p.type)
               return false
             }
             // Only allow text and image parts
             if (p.type !== "text" && p.type !== "image" && p.type !== "file") {
-              console.log("[v0] ⚠️ Filtering out unsupported part type:", p.type)
+              debugLog("[Maya Chat API] Dropping unsupported part type", p.type)
               return false
             }
             return true
@@ -1455,7 +1492,7 @@ export async function POST(req: Request) {
               // Ensure image URL is in the 'image' property
               const imageUrl = p.image || p.url || p.src || p.data
               if (imageUrl) {
-                console.log("[v0] ✅ Normalizing image part with URL:", imageUrl.substring(0, 100) + "...")
+                debugLog("[Maya Chat API] Normalizing image part")
                 return { type: "image", image: imageUrl }
               }
             }
@@ -1507,7 +1544,7 @@ export async function POST(req: Request) {
         if (guidePromptMatch && guidePromptMatch[1]) {
           extractedGuidePrompt = guidePromptMatch[1].trim()
           guidePromptActive = true
-          console.log("[v0] ✅ Detected guide prompt (length:", extractedGuidePrompt.length, "chars)")
+          debugLog("[Maya Chat API] Guide prompt detected", { length: extractedGuidePrompt.length })
           break // Use the most recent guide prompt
         }
         
@@ -1515,7 +1552,7 @@ export async function POST(req: Request) {
         const clearGuidePromptKeywords = /different|change|instead|new.*prompt|clear.*guide|stop.*using.*guide/i.test(messageText)
         if (clearGuidePromptKeywords && extractedGuidePrompt) {
           guidePromptActive = false
-          console.log("[v0] 🔄 User requested to clear guide prompt")
+          debugLog("[Maya Chat API] Guide prompt clear intent detected")
         }
       }
     }
@@ -1562,10 +1599,10 @@ export async function POST(req: Request) {
     let enhancedConversationContext = conversationSummary
     if (extractedGuidePrompt && guidePromptActive) {
       enhancedConversationContext = `${conversationSummary}\n\n[GUIDE_PROMPT_ACTIVE: true]\n[GUIDE_PROMPT_TEXT: ${extractedGuidePrompt}]\n\n**CRITICAL:** The user has provided a detailed guide prompt above. When responding, reference the SPECIFIC elements they mentioned (outfit, location, lighting, camera specs, etc.). DO NOT use generic phrases - use their EXACT words and details.`
-      console.log("[v0] 📋 Guide prompt included in conversation context (length:", extractedGuidePrompt.length, "chars)")
+      debugLog("[Maya Chat API] Guide prompt added to context", { length: extractedGuidePrompt.length })
     }
 
-    console.log("[v0] Conversation summary length:", conversationSummary.length)
+    debugLog("[Maya Chat API] Conversation summary built", { length: conversationSummary.length })
 
     // 🔴 CRITICAL FIX: Filter out messages with empty content BEFORE normalization
     // AI SDK doesn't allow empty messages except for the optional final assistant message
@@ -1591,13 +1628,16 @@ export async function POST(req: Request) {
       }
       
       if (!hasContent) {
-        console.log("[v0] ⚠️ Filtering out message with empty content:", m.id || "unknown", m.role)
+        debugLog("[Maya Chat API] Dropping empty-content message", { id: m.id || "unknown", role: m.role })
       }
       
       return hasContent
     })
     
-    console.log("[v0] Filtered", messages.length, "messages to", messagesWithContent.length, "messages with content")
+    debugLog("[Maya Chat API] Messages with content", {
+      input: messages.length,
+      filtered: messagesWithContent.length,
+    })
     
     // CRITICAL: Normalize messages to ensure they have 'parts' array format
     // convertToModelMessages expects messages with 'parts' array, not just 'content' field
@@ -1685,7 +1725,7 @@ export async function POST(req: Request) {
       return m
     }).filter((m: any) => m !== null) // Remove any null messages from normalization
 
-    console.log("[v0] Normalized", normalizedMessages.length, "messages (after filtering nulls)")
+    debugLog("[Maya Chat API] Normalized messages", { normalized: normalizedMessages.length })
 
     // Convert UI messages to model messages using AI SDK's convertToModelMessages
     // This properly handles images, text, and other content types
@@ -1704,12 +1744,15 @@ export async function POST(req: Request) {
       modelMessages = []
     }
     
-    console.log("[v0] Converted", normalizedMessages.length, "normalized messages to", modelMessages.length, "model messages")
+    debugLog("[Maya Chat API] Converted model messages", {
+      normalized: normalizedMessages.length,
+      model: modelMessages.length,
+    })
     
     // CRITICAL: Validate and filter model messages to ensure they're in correct format
     modelMessages = modelMessages.filter((m: any) => {
       if (!m || !m.role) {
-        console.log("[v0] ⚠️ Filtering out model message with missing role")
+        debugLog("[Maya Chat API] Dropping model message with missing role")
         return false
       }
       
@@ -1721,19 +1764,19 @@ export async function POST(req: Request) {
             if (!c || !c.type) return true
             // Only allow text, image, file types
             if (c.type !== "text" && c.type !== "image" && c.type !== "file") {
-              console.log("[v0] ⚠️ Filtering out model message with invalid content type:", c.type)
+              debugLog("[Maya Chat API] Dropping model message with invalid content type", c.type)
               return true
             }
             // Validate text parts have text property
             if (c.type === "text" && typeof c.text !== "string") {
-              console.log("[v0] ⚠️ Filtering out model message with invalid text part")
+              debugLog("[Maya Chat API] Dropping model message with invalid text part")
               return true
             }
             return false
           })
           if (hasInvalidTypes) return false
         } else if (typeof m.content !== "string") {
-          console.log("[v0] ⚠️ Filtering out model message with invalid content type:", typeof m.content)
+          debugLog("[Maya Chat API] Dropping model message with invalid content shape", typeof m.content)
           return false
         }
       }
@@ -2029,6 +2072,25 @@ ${finalUserContext}
 - Connect their current request to their brand story and aesthetic when relevant
 - Show you understand their brand and vision - make them feel seen and understood
 - Use this to enhance concepts, but always prioritize what they're asking for RIGHT NOW if it conflicts`
+    }
+
+    // Inject current mode context so Maya knows what generation mode is active
+    // and can guide users to the MY MODEL ↔ SELFIE toggle when they ask for the other mode.
+    if (!isPromptBuilder && !useFeedPlannerContext) {
+      if (isStudioProMode) {
+        systemPrompt += `\n\n## CURRENT GENERATION MODE: SELFIE
+The user is in **Selfie mode** — photos are generated using their linked reference selfies (NanoBanana Pro).
+- When they ask for a photo, respond normally and use [GENERATE_CONCEPTS] with selfie-optimised prompts.
+- If they ask to "use my trained model", "use my custom model", or want LoRA-based generation, don't try to do it in this mode. Say warmly: "You're in Selfie mode right now. Tap **MY MODEL** in the header to switch, then I'll generate with your trained model."
+- Keep the redirect short — one sentence is enough. Never apologise, never over-explain.`
+      } else {
+        systemPrompt += `\n\n## CURRENT GENERATION MODE: MY MODEL
+The user is in **My Model mode** — photos are generated using their trained custom model (LoRA).
+- When they ask for a photo, respond normally and use [GENERATE_CONCEPTS] with model-based prompts.
+- If they ask to "use my selfies", "use my uploaded photos", or want selfie/reference-based generation, don't try to do it in this mode. Say warmly: "You're in My Model mode right now. Tap **SELFIE** in the header to switch, then I'll use your reference photos."
+- If they don't have a trained model yet and ask for model-based generation, guide them: "You haven't trained a model yet. Head to the Train tab to set one up, or tap SELFIE to use your uploaded photos instead."
+- Keep the redirect short — one sentence is enough. Never apologise, never over-explain.`
+      }
     }
 
     if (productGenerationPrompt) {

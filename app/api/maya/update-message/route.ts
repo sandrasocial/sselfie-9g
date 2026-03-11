@@ -260,12 +260,15 @@ export async function POST(request: NextRequest) {
         WHERE id = ${messageIdNum}
       `
     } else if (conceptCards && !feedCards) {
-      // Update content and concept_cards together
-      await sql`
-        UPDATE maya_chat_messages
-        SET content = ${updatedContent}
-        WHERE id = ${messageIdNum}
-      `
+      // concept_cards were already updated above.
+      // Only touch content if a non-empty value was explicitly provided.
+      if (safeContent) {
+        await sql`
+          UPDATE maya_chat_messages
+          SET content = ${updatedContent}
+          WHERE id = ${messageIdNum}
+        `
+      }
     }
 
     // Invalidate cache

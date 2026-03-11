@@ -17,6 +17,8 @@ export interface MayaTabHandoff {
 
 const VIDEO_SCOPE_REGEX = /\b(video|reel|animate|animation|motion|b-?roll)\b/i
 const TRAINING_SCOPE_REGEX = /\b(train|training|my model|custom model|trained model|lora)\b/i
+const PHOTOS_MODEL_USAGE_REGEX =
+  /\b(use|using|create|generate|make)\b[\s\S]{0,40}\b(my model|trained model|custom model)\b[\s\S]{0,80}\b(photo|photos|image|images|picture|pictures)\b/i
 const VIDEOS_TAB_ALLOWED_REGEX =
   /\b(video|reel|animate|animation|motion|b-?roll|gallery|reference|upload|latest photo|pick .*photo|choose .*photo)\b/i
 const CHAT_SCOPE_REGEX =
@@ -74,6 +76,12 @@ export function resolveMayaTabHandoff(input: {
   const activeTab = input.activeTab || "photos"
 
   if (activeTab === "photos") {
+    // Keep trained-model generation requests in Photos.
+    // Example: "Use my trained model and create a photo for my brand"
+    if (PHOTOS_MODEL_USAGE_REGEX.test(userText)) {
+      return null
+    }
+
     if (TRAINING_SCOPE_REGEX.test(userText)) {
       return {
         targetTab: "training",
@@ -112,9 +120,9 @@ export function resolveMayaTabHandoff(input: {
     if (CHAT_SCOPE_REGEX.test(userText)) {
       return {
         targetTab: "photos",
-        title: "Let’s move this to Chat",
-        subtitle: "This tab is just for video work. In Chat I can help with photos, planning, and next steps.",
-        ctaLabel: "Go to Chat",
+        title: "Let’s move this to Photos",
+        subtitle: "This tab is just for video work. In Photos I can help you create and refine brand images.",
+        ctaLabel: "Go to Photos",
       }
     }
   }
@@ -134,20 +142,16 @@ export function encodeMayaTabHandoffPayload(handoff: MayaTabHandoff): string {
 export function getMayaVideosTabQuickPrompts(): Array<{ label: string; prompt: string }> {
   return [
     {
-      label: "Make a Reel",
-      prompt: "Create a short video from one of my photos",
+      label: "Animate a Photo",
+      prompt: "Show me my photos so I can pick one to animate",
     },
     {
-      label: "Choose a Photo",
-      prompt: "Show me my gallery so I can choose a photo for a video",
+      label: "Latest Photo",
+      prompt: "Use my latest photo and create a video",
     },
     {
-      label: "Use My Latest Photo",
-      prompt: "Use my latest photo for a video",
-    },
-    {
-      label: "Show Motion Ideas",
-      prompt: "Show me the best video options for my photos",
+      label: "Create a Reel",
+      prompt: "Create a short reel from one of my brand photos",
     },
   ]
 }

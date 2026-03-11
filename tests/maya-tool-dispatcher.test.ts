@@ -38,10 +38,14 @@ describe("maya phase 2 tool dispatcher", () => {
     expect(intent?.responseText).toContain("[SAVE_TO_GALLERY:latest]")
   })
 
-  it("routes create photo intent to generate image marker", () => {
+  it("does not dispatch photo creation — lets Maya AI handle it via [GENERATE_CONCEPTS]", () => {
     const intent = detectMayaToolDispatchIntent("I want to create a photo for my offer")
-    expect(intent?.tool).toBe("generate_image")
-    expect(intent?.responseText).toContain("[GENERATE_IMAGE:choose_source]")
+    expect(intent).toBeNull()
+  })
+
+  it("does not dispatch explicit source intent — lets Maya AI handle generation directly", () => {
+    const intent = detectMayaToolDispatchIntent("use my model for this")
+    expect(intent).toBeNull()
   })
 
   it("routes video intent to generate video marker", () => {
@@ -52,7 +56,7 @@ describe("maya phase 2 tool dispatcher", () => {
 
   it("does not misroute mixed help + photo intent to capabilities", () => {
     const intent = detectMayaToolDispatchIntent("help me create a photo for launch week")
-    expect(intent?.tool).toBe("generate_image")
+    expect(intent).toBeNull()
   })
 
   it("routes upload selfie intent to upload zone marker", () => {
@@ -76,11 +80,11 @@ describe("maya phase 2 tool dispatcher", () => {
   })
 
   it("hydrates choose-source image intent to custom model when trained model exists", () => {
-    const intent = detectMayaToolDispatchIntent("create a photo for my launch")
-    expect(intent?.tool).toBe("generate_image")
-    if (!intent || intent.tool !== "generate_image") return
-
-    const hydrated = hydrateMayaToolDispatchIntent(intent, {
+    const hydrated = hydrateMayaToolDispatchIntent({
+      tool: "generate_image",
+      source: "choose_source",
+      responseText: "",
+    }, {
       generation: {
         hasTrainedModel: true,
         canUseCustomModel: true,

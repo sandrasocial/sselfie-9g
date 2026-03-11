@@ -1149,6 +1149,11 @@ export async function GET(request: NextRequest) {
                 url: marker.url || "",
               },
             })
+          } else if (marker.tool === "maya_gap_offer") {
+            parts.push({
+              type: "tool-mayaGapOffer",
+              output: { dayLabels: marker.dayLabels || [] },
+            })
           }
         }
       }

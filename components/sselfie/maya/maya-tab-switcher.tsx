@@ -15,7 +15,7 @@ interface MayaTabSwitcherProps {
 /**
  * Maya Tab Switcher Component
  * 
- * Horizontal tab navigation for switching between Photos, Videos, Prompts, and Training tabs.
+ * Horizontal tab navigation for switching between Photos, Videos, and Training tabs.
  * 
  * **Design Principles:**
  * - Text-based labels (following design system)
@@ -39,7 +39,7 @@ export default function MayaTabSwitcher({
   className = "",
 }: MayaTabSwitcherProps) {
   const tabs = [
-    { id: "photos" as const, label: "Chat" },
+    { id: "photos" as const, label: "Photos" },
     { id: "videos" as const, label: "Videos" },
     { id: "training" as const, label: "Train" },
   ]

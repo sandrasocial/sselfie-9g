@@ -110,6 +110,18 @@ describe("parseMayaToolMarkers", () => {
       },
     ])
   })
+
+  it("parses maya gap offer marker with day labels", () => {
+    const markers = parseMayaToolMarkers(
+      "I've built your calendar. 2 slots are missing strong photos — want me to create them now?\n[MAYA_GAP_OFFER:Tuesday|Friday]",
+    )
+    expect(markers).toEqual([
+      {
+        tool: "maya_gap_offer",
+        dayLabels: ["Tuesday", "Friday"],
+      },
+    ])
+  })
 })
 
 describe("stripMayaToolMarkers", () => {
@@ -167,6 +179,14 @@ describe("stripMayaToolMarkers", () => {
       "Let's move this.\n[SWITCH_MAYA_TAB:videos|Let%27s%20make%20this%20in%20Videos|Videos%20has%20its%20own%20chat.|Go%20to%20Videos]\nSee you there.",
     )
     expect(stripped).toBe("Let's move this. See you there.")
+  })
+
+  it("removes maya gap offer marker text from assistant message", () => {
+    const stripped = stripMayaToolMarkers(
+      "I've built your calendar. 2 slots are missing strong photos — want me to create them now?\n[MAYA_GAP_OFFER:Tuesday|Friday]",
+    )
+    expect(stripped).toContain("I've built your calendar")
+    expect(stripped).not.toContain("MAYA_GAP_OFFER")
   })
 
   it("removes persisted video card markers from assistant message", () => {

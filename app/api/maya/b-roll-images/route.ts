@@ -36,7 +36,8 @@ export async function GET(request: Request) {
           category,
           'ai_images' as source,
           image_url,
-          created_at
+          created_at,
+          1 as source_priority
         FROM ai_images
         WHERE user_id = ${neonUser.id}
           AND image_url IS NOT NULL
@@ -50,7 +51,8 @@ export async function GET(request: Request) {
           category,
           'generated_images' as source,
           COALESCE(selected_url, (string_to_array(image_urls::text, ','))[1]) as image_url,
-          created_at
+          created_at,
+          2 as source_priority
         FROM generated_images
         WHERE user_id = ${neonUser.id}
           AND (selected_url IS NOT NULL OR image_urls IS NOT NULL)
@@ -63,7 +65,8 @@ export async function GET(request: Request) {
           'upload' as category,
           'brand_assets' as source,
           file_url as image_url,
-          created_at
+          created_at,
+          0 as source_priority
         FROM brand_assets
         WHERE user_id = ${neonUser.id}
           AND file_url IS NOT NULL
@@ -80,7 +83,10 @@ export async function GET(request: Request) {
           source,
           image_url,
           created_at,
-          ROW_NUMBER() OVER (PARTITION BY image_url ORDER BY created_at DESC) as rn
+          ROW_NUMBER() OVER (
+            PARTITION BY image_url
+            ORDER BY source_priority ASC NULLS LAST, created_at DESC NULLS LAST
+          ) as rn
         FROM combined
       )
       SELECT 
@@ -92,7 +98,7 @@ export async function GET(request: Request) {
         created_at
       FROM deduplicated
       WHERE rn = 1
-      ORDER BY created_at DESC
+      ORDER BY created_at DESC NULLS LAST
       LIMIT ${limit}
       OFFSET ${offset}
     `

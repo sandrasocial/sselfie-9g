@@ -37,7 +37,7 @@ describe("maya tab scope", () => {
     })
   })
 
-  it("hands off photo and planning asks from Videos to Chat", () => {
+  it("hands off photo and planning asks from Videos to Photos", () => {
     const handoff = resolveMayaTabHandoff({
       activeTab: "videos",
       userText: "Plan my week and help me make photos for it",
@@ -45,8 +45,17 @@ describe("maya tab scope", () => {
 
     expect(handoff).toMatchObject({
       targetTab: "photos",
-      ctaLabel: "Go to Chat",
+      ctaLabel: "Go to Photos",
     })
+  })
+
+  it("keeps trained-model photo prompts inside Photos", () => {
+    expect(
+      resolveMayaTabHandoff({
+        activeTab: "photos",
+        userText: "Use my trained model and create a photo for my brand",
+      }),
+    ).toBeNull()
   })
 
   it("keeps gallery selection asks inside Videos", () => {

@@ -11,6 +11,7 @@ export type MayaToolId =
   | "create_asset"
   | "collect_offer_brief"
   | "structured_asset_blocked"
+  | "maya_gap_offer"
 
 export interface MayaToolDefinition {
   id: MayaToolId
@@ -91,6 +92,12 @@ export const MAYA_TOOL_REGISTRY: Record<MayaToolId, MayaToolDefinition> = {
     label: "Structured Asset Blocked",
     marker: "STRUCTURED_ASSET_BLOCKED",
     resultType: "tool-structuredAssetBlocked",
+  },
+  maya_gap_offer: {
+    id: "maya_gap_offer",
+    label: "Calendar Gap Offer",
+    marker: "MAYA_GAP_OFFER",
+    resultType: "tool-mayaGapOffer",
   },
 }
 

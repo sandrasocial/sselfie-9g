@@ -105,6 +105,26 @@ export default function ImageUploadFlow({
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [validationError, setValidationError] = useState<string | null>(null)
 
+  const focusPrimaryCta = () => {
+    if (typeof window === "undefined") return
+    window.setTimeout(() => {
+      const primaryCta = document.querySelector<HTMLButtonElement>('[data-maya-primary-cta="true"]')
+      if (!primaryCta) return
+      primaryCta.scrollIntoView({ behavior: "smooth", block: "nearest" })
+      primaryCta.focus({ preventScroll: true })
+    }, 120)
+  }
+
+  useEffect(() => {
+    if (editCategory === "selfies") {
+      setCurrentStep(2)
+      return
+    }
+    if (editCategory === "products" || editCategory === "people" || editCategory === "vibes") {
+      setCurrentStep(3)
+    }
+  }, [editCategory])
+
   // Helper function to remove an image from a category
   const handleRemoveImage = (category: 'selfies' | 'products' | 'people' | 'vibes', imageUrl: string) => {
     setLibrary((prev) => {
@@ -191,6 +211,7 @@ export default function ImageUploadFlow({
     
     setShowGalleryModal(false)
     setGalleryCategory(null)
+    focusPrimaryCta()
   }
 
   const handleUploadNew = () => {
@@ -474,7 +495,7 @@ export default function ImageUploadFlow({
   // AFTER STATE: SHOW LIBRARY WITH IMAGES
   // ============================================================================
 
-  if (showAfterState && getTotalImageCount() > 0) {
+  if (showAfterState && getTotalImageCount() > 0 && !editCategory) {
     return (
       <div className="flex flex-col min-h-[600px] px-3 sm:px-4 md:px-6 py-6 sm:py-8 md:py-12">
         <div className="max-w-[900px] w-full mx-auto space-y-6 sm:space-y-8">
@@ -634,6 +655,7 @@ export default function ImageUploadFlow({
           <div className="pt-6">
           <button
             onClick={handleStartCreating}
+            data-maya-primary-cta="true"
             className="touch-manipulation active:scale-95 w-full sm:w-auto"
             style={{
               fontFamily: Typography.ui.fontFamily,
@@ -1041,6 +1063,7 @@ export default function ImageUploadFlow({
                 }
               }}
               disabled={library.selfies.length === 0 && editCategory !== 'selfies'}
+              data-maya-primary-cta="true"
               style={{
                 fontFamily: Typography.ui.fontFamily,
                 fontSize: Typography.ui.sizes.md,
@@ -1403,6 +1426,7 @@ export default function ImageUploadFlow({
                   handleContinueFromStep3()
                 }
               }}
+              data-maya-primary-cta="true"
               style={{
                 fontFamily: Typography.ui.fontFamily,
                 fontSize: Typography.ui.sizes.md,
@@ -1661,6 +1685,7 @@ export default function ImageUploadFlow({
             <button
               onClick={handleComplete}
               disabled={!library.intent.trim()}
+              data-maya-primary-cta="true"
               style={{
                 fontFamily: Typography.ui.fontFamily,
                 fontSize: Typography.ui.sizes.md,

@@ -121,6 +121,7 @@ export default function MayaConceptCards({
                   predictionId: (concept as any).predictionId, // From JSONB
                 }}
                 messageId={messageId}
+                chatId={chatId}
                 isAdmin={isAdmin}
                 selectedGuideId={selectedGuideId}
                 onSaveToGuide={onSaveToGuide}

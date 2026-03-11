@@ -1,4 +1,6 @@
 import { sql } from "@/lib/db/client"
+import { generateText } from "ai"
+import { createMayaOpenRouterModel } from "@/lib/maya/openrouter"
 import { persistMayaAssetAsPersonalPage } from "@/lib/maya/personal-pages"
 import { mergeMayaMemoryData } from "@/lib/maya/memory-store"
 import {
@@ -224,76 +226,146 @@ function buildLandingHeadline(title: string, instruction: string): string {
   return toHeadline(extractPrimaryIntent(instruction))
 }
 
-async function loadUserImageUrls(userId: string): Promise<string[]> {
-  const urls: string[] = []
+export type MayaImageWithContext = {
+  url: string
+  description: string
+  category: string
+  source: "generated" | "ai_images" | "brand_assets"
+}
+
+async function loadUserImagesWithContext(userId: string): Promise<MayaImageWithContext[]> {
+  const seen = new Set<string>()
+  const items: MayaImageWithContext[] = []
+
+  function push(url: string, description: string, category: string, source: MayaImageWithContext["source"]) {
+    const normalized = normalizeUrl(url)
+    if (!normalized || seen.has(normalized)) return
+    seen.add(normalized)
+    items.push({
+      url: normalized,
+      description: sanitizeUserFacingText(description || "", 300),
+      category: sanitizeUserFacingText(category || "general", 64),
+      source,
+    })
+    if (items.length >= MAX_IMAGE_SOURCES) return
+  }
 
   try {
     const generatedRows = await sql`
-      SELECT selected_url, image_urls
+      SELECT selected_url, image_urls, prompt, category, subcategory
       FROM generated_images
       WHERE user_id = ${userId}
       ORDER BY created_at DESC
-      LIMIT ${MAX_IMAGE_SOURCES}
+      LIMIT ${MAX_IMAGE_SOURCES * 2}
     `
 
-    for (const row of generatedRows as Array<{ selected_url?: string | null; image_urls?: string[] | string | null }>) {
+    for (const row of generatedRows as Array<{
+      selected_url?: string | null
+      image_urls?: string[] | string | null
+      prompt?: string | null
+      category?: string | null
+      subcategory?: string | null
+    }>) {
+      const desc = [row.prompt, row.subcategory, row.category].filter(Boolean).join(" — ") || "Generated image"
+      const cat = (row.category || row.subcategory || "concept") as string
       const selected = normalizeUrl(row.selected_url)
-      if (selected) urls.push(selected)
-
+      if (selected) {
+        push(selected, desc, cat, "generated")
+        if (items.length >= MAX_IMAGE_SOURCES) break
+      }
       if (Array.isArray(row.image_urls)) {
-        row.image_urls.forEach((url) => {
-          const normalized = normalizeUrl(url)
-          if (normalized) urls.push(normalized)
-        })
+        row.image_urls.forEach((u) => push(u, desc, cat, "generated"))
       } else if (typeof row.image_urls === "string") {
-        row.image_urls.split(",").forEach((url) => {
-          const normalized = normalizeUrl(url)
-          if (normalized) urls.push(normalized)
-        })
+        row.image_urls.split(",").forEach((u) => push(u, desc, cat, "generated"))
       }
     }
   } catch (error) {
     console.warn("[Maya Asset] Could not read generated_images:", error)
   }
 
+  if (items.length >= MAX_IMAGE_SOURCES) return items.slice(0, MAX_IMAGE_SOURCES)
+
   try {
     const aiRows = await sql`
-      SELECT image_url
+      SELECT image_url, prompt, category
       FROM ai_images
       WHERE user_id = ${userId}
+        AND image_url IS NOT NULL
+        AND generation_status = 'completed'
       ORDER BY created_at DESC
       LIMIT ${MAX_IMAGE_SOURCES}
     `
 
-    for (const row of aiRows as Array<{ image_url?: string | null }>) {
+    for (const row of aiRows as Array<{ image_url?: string | null; prompt?: string | null; category?: string | null }>) {
       const normalized = normalizeUrl(row.image_url)
-      if (normalized) urls.push(normalized)
+      if (!normalized || seen.has(normalized)) continue
+      seen.add(normalized)
+      items.push({
+        url: normalized,
+        description: sanitizeUserFacingText(row.prompt || "", 300),
+        category: sanitizeUserFacingText(row.category || "concept", 64),
+        source: "ai_images",
+      })
+      if (items.length >= MAX_IMAGE_SOURCES) break
     }
   } catch {
     // ai_images may not exist in all environments.
   }
 
+  if (items.length >= MAX_IMAGE_SOURCES) return items.slice(0, MAX_IMAGE_SOURCES)
+
   try {
     const brandRows = await sql`
-      SELECT file_url, file_type
+      SELECT file_url, file_type, description, file_name
       FROM brand_assets
       WHERE user_id = ${userId}
       ORDER BY created_at DESC
       LIMIT ${MAX_IMAGE_SOURCES}
     `
 
-    for (const row of brandRows as Array<{ file_url?: string | null; file_type?: string | null }>) {
+    for (const row of brandRows as Array<{
+      file_url?: string | null
+      file_type?: string | null
+      description?: string | null
+      file_name?: string | null
+    }>) {
       const type = (row.file_type || "").toLowerCase()
-      if (type.includes("image") || type.includes("jpg") || type.includes("png") || type.includes("webp")) {
-        const normalized = normalizeUrl(row.file_url)
-        if (normalized) urls.push(normalized)
-      }
+      if (!type.includes("image") && !type.includes("jpg") && !type.includes("png") && !type.includes("webp")) continue
+      const normalized = normalizeUrl(row.file_url)
+      if (!normalized || seen.has(normalized)) continue
+      seen.add(normalized)
+      items.push({
+        url: normalized,
+        description: sanitizeUserFacingText(
+          [row.description, row.file_name].filter(Boolean).join(" — ") || "Uploaded reference",
+          300,
+        ),
+        category: "upload",
+        source: "brand_assets",
+      })
+      if (items.length >= MAX_IMAGE_SOURCES) break
     }
   } catch (error) {
     console.warn("[Maya Asset] Could not read brand_assets:", error)
   }
 
-  return uniqueStrings(urls).slice(0, MAX_IMAGE_SOURCES)
+  return items.slice(0, MAX_IMAGE_SOURCES)
+}
+
+function getUrlsFromImageContext(items: MayaImageWithContext[]): string[] {
+  return items.map((i) => i.url)
+}
+
+async function getDisplayNameForUser(userId: string): Promise<string> {
+  try {
+    const rows = await sql`
+      SELECT display_name FROM users WHERE id = ${userId} LIMIT 1
+    `
+    const name = (rows[0] as { display_name?: string | null } | undefined)?.display_name
+    return typeof name === "string" ? name.trim() : ""
+  } catch {
+    return ""
+  }
 }
 
 function buildLandingPreviewData(input: {
@@ -417,11 +489,13 @@ async function generateCalendarAsset(input: {
   assetId: string
   instruction: string
 }): Promise<MayaPageGenerationPayload> {
-  const [snapshot, imageUrls, trendSignals] = await Promise.all([
+  const [snapshot, imageContext, trendSignals, displayName] = await Promise.all([
     resolveMayaLandingSnapshot(input.userId),
-    loadUserImageUrls(input.userId),
+    loadUserImagesWithContext(input.userId),
     getLatestMayaInstagramTrendSignals(),
+    getDisplayNameForUser(input.userId),
   ])
+  const imageUrls = getUrlsFromImageContext(imageContext)
 
   const fallbackIntent = sanitizeUserFacingText(extractPrimaryIntent(input.instruction), 120)
   const fallbackOffer =
@@ -455,20 +529,14 @@ async function generateCalendarAsset(input: {
   const previewText = sanitizePreview(
     `9-post IG calendar for ${offer}. Story-led hooks, copy-ready captions, and hashtag sets tuned for ${audience}.`,
   )
-  const posts = buildCalendarPosts({
+  const postsWithStoryCaptions = await generateCalendarWithMayaVoice({
     instruction: `${input.instruction} Style: ${style}`,
-    imageUrls,
+    imageContext,
     trendSignals,
     offer,
     audience,
     transformation,
-  })
-  const postsWithStoryCaptions = await enrichCalendarPostsWithCaptions({
-    posts,
-    offer,
-    audience,
-    transformation,
-    trendSignals,
+    style,
     brandProfile: snapshot.brandProfile || {},
   })
   const previewHtml = buildCalendarHtml({
@@ -478,6 +546,7 @@ async function generateCalendarAsset(input: {
     imageUrls,
     posts: postsWithStoryCaptions,
     trendSignals,
+    displayName: displayName || undefined,
   })
 
   return {
@@ -846,6 +915,8 @@ interface MayaCalendarRenderInput {
   imageUrls: string[]
   posts: MayaCalendarPostPlan[]
   trendSignals: MayaInstagramTrendSignals
+  /** User's display name for post cards; falls back to "sselfie" if omitted */
+  displayName?: string
 }
 
 const CALENDAR_DAY_LABELS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday", "Bonus A", "Bonus B"]
@@ -1105,6 +1176,155 @@ function getCalendarCaptionType(position: number): "story" | "value" | "motivati
   return pattern[position - 1] || "story"
 }
 
+type MayaCalendarLlmPost = {
+  id: string
+  dayLabel: string
+  postType: string
+  hook: string
+  direction: string
+  cta: string
+  caption: string
+  hashtags: string
+  imageIndex?: number
+  hasImage?: boolean
+}
+
+async function generateCalendarWithMayaVoice(input: {
+  instruction: string
+  imageContext: MayaImageWithContext[]
+  trendSignals: MayaInstagramTrendSignals
+  offer: string
+  audience: string
+  transformation: string
+  style: string
+  brandProfile: Record<string, unknown>
+}): Promise<MayaCalendarPostPlan[]> {
+  const imageUrls = getUrlsFromImageContext(input.imageContext)
+  const imageInventoryText =
+    input.imageContext.length > 0
+      ? input.imageContext
+          .map(
+            (img, i) =>
+              `[${i}] ${img.description || "No description"} (category: ${img.category}, source: ${img.source})`,
+          )
+          .join("\n")
+      : "No images available. Mark every post with hasImage: false."
+
+  const systemPrompt = `You are Maya, the SSELFIE content strategist. Your voice is warm, real, clear, and actionable — like a supportive friend who speaks from lived experience. You never use generic marketing jargon, empty hype, or preachy tone.
+
+Your job: create a 9-post Instagram content calendar (Monday–Friday plus Saturday, Sunday, Bonus A, Bonus B) that sounds like the creator wrote it themselves. Each post must have:
+- A punchy hook (headline-style)
+- A short direction line (what the post is about — specific to their offer/audience, not generic advice)
+- A clear CTA
+- A full caption (2–4 short paragraphs, copy-ready, in their voice)
+- 3–5 hashtags
+
+Image assignment: You have an image inventory below. For each post, choose the best-matching image by index (0-based) when the image fits the post concept. Set hasImage: true and imageIndex to that index. If no image fits that slot, set hasImage: false and omit imageIndex. Do not repeat the same image index for multiple posts unless the inventory has fewer than 9 images.
+
+Output only a single JSON array of 9 objects. Each object must have: id ("post-1" through "post-9"), dayLabel, postType ("Reel"|"Carousel"|"Post"), hook, direction, cta, caption, hashtags, imageIndex (number or omit), hasImage (boolean). No markdown, no explanation.`
+
+  const userPrompt = `Creator context:
+- Offer: ${input.offer}
+- Audience: ${input.audience}
+- Transformation they promise: ${input.transformation}
+- Style note: ${input.style}
+
+Image inventory (use the index in brackets to assign imageIndex):
+${imageInventoryText}
+
+Calendar instruction: ${input.instruction}
+
+Trend hints (use for variety, do not copy verbatim): Hooks — ${(input.trendSignals.hookPatterns || []).slice(0, 5).join(" | ")}. CTAs — ${(input.trendSignals.ctaPatterns || []).slice(0, 3).join(" | ")}.
+
+Output the JSON array of 9 posts only.`
+
+  try {
+    const model = createMayaOpenRouterModel("feed_planner")
+    const { text } = await generateText({
+      model,
+      system: systemPrompt,
+      prompt: userPrompt,
+      maxTokens: 4096,
+      temperature: 0.7,
+    })
+
+    const jsonMatch = text.replace(/^[\s\S]*?\[/, "[").replace(/\][\s\S]*$/, "]")
+    let parsed: MayaCalendarLlmPost[]
+    try {
+      parsed = JSON.parse(jsonMatch) as MayaCalendarLlmPost[]
+    } catch {
+      const bracketStart = text.indexOf("[")
+      const bracketEnd = text.lastIndexOf("]")
+      if (bracketStart >= 0 && bracketEnd > bracketStart) {
+        parsed = JSON.parse(text.slice(bracketStart, bracketEnd + 1)) as MayaCalendarLlmPost[]
+      } else {
+        throw new Error("No JSON array in response")
+      }
+    }
+
+    if (!Array.isArray(parsed) || parsed.length < 9) {
+      throw new Error("LLM did not return 9 posts")
+    }
+
+    const posts: MayaCalendarPostPlan[] = []
+    for (let i = 0; i < 9; i++) {
+      const p = parsed[i] || parsed[0]
+      const postId = `post-${i + 1}`
+      const dayLabel = CALENDAR_DAY_LABELS[i] || p?.dayLabel || `Day ${i + 1}`
+      const postType = (["Reel", "Carousel", "Post"].includes(p?.postType) ? p.postType : CALENDAR_POST_TYPES[i]) as CalendarPostType
+      const hook = sanitizeHeadline(p?.hook || "Start with one clear hook.")
+      const direction = sanitizeUserFacingText(p?.direction || "", 220)
+      const cta = sanitizeUserFacingText(p?.cta || "Save this for your next post.", 120)
+      const caption = sanitizeUserFacingText(p?.caption || "", 2000)
+      const hashtags = sanitizeUserFacingText(p?.hashtags || "#personalbrand #contentstrategy", 200)
+      const hasImage = p?.hasImage === true && typeof p?.imageIndex === "number"
+      const imageIndex = hasImage ? Math.min(Math.max(0, p.imageIndex!), input.imageContext.length - 1) : -1
+      const imageUrl =
+        hasImage && imageIndex >= 0 && input.imageContext[imageIndex]
+          ? input.imageContext[imageIndex].url
+          : undefined
+      const carouselSlides =
+        postType === "Carousel"
+          ? buildCarouselSlides({ postId, hook, direction, cta })
+          : []
+      const coverOverlay = postType === "Carousel" ? carouselSlides[0]?.overlay || hook : hook
+
+      posts.push({
+        id: postId,
+        dayLabel,
+        postType,
+        hook,
+        direction,
+        cta,
+        caption,
+        hashtags,
+        coverOverlay,
+        carouselSlides,
+        imageUrl,
+      })
+    }
+    return posts
+  } catch (error) {
+    console.warn("[Maya Calendar] generateCalendarWithMayaVoice failed, using legacy pipeline:", error)
+    const legacyPosts = buildCalendarPosts({
+      instruction: input.instruction,
+      imageUrls,
+      trendSignals: input.trendSignals,
+      offer: input.offer,
+      audience: input.audience,
+      transformation: input.transformation,
+    })
+    return enrichCalendarPostsWithCaptions({
+      posts: legacyPosts,
+      offer: input.offer,
+      audience: input.audience,
+      transformation: input.transformation,
+      trendSignals: input.trendSignals,
+      brandProfile: input.brandProfile,
+    })
+  }
+}
+
 function parseCalendarHashtagSeeds(trendSignals: MayaInstagramTrendSignals): string[] {
   const parsed = trendSignals.hashtagSets.flatMap((set) =>
     String(set || "")
@@ -1213,10 +1433,8 @@ function buildCalendarHtml(input: MayaCalendarRenderInput): string {
   const safeTitle = escapeHtml(input.title)
   const safePreview = escapeHtml(input.previewText)
   const heroImage = input.imageUrls[0] || CALENDAR_FALLBACK_IMAGES[0]
-  const trendNotesHtml = input.trendSignals.formatNotes
-    .slice(0, 5)
-    .map((note) => `<li>${escapeHtml(note)}</li>`)
-    .join("")
+  const profileLabel = escapeHtml((input.displayName || "sselfie").trim() || "sselfie")
+  const profileInitial = (input.displayName || "S").trim().charAt(0).toUpperCase() || "S"
 
   const feedGridHtml = input.posts
     .map((post) => {
@@ -1267,9 +1485,9 @@ function buildCalendarHtml(input: MayaCalendarRenderInput): string {
         <article class="post-card" id="${escapeHtml(post.id)}">
           <div class="post-header">
             <div class="post-profile">
-              <span class="profile-dot">S</span>
+              <span class="profile-dot">${profileInitial}</span>
               <div class="profile-meta">
-                <p class="profile-name">sselfie</p>
+                <p class="profile-name">${profileLabel}</p>
                 <p class="profile-sub">${escapeHtml(post.postType)}</p>
               </div>
             </div>
@@ -1298,7 +1516,7 @@ function buildCalendarHtml(input: MayaCalendarRenderInput): string {
             ${carouselSlidesHtml}
             <div class="caption-block">
               <p class="caption-preview is-collapsed" id="${escapeHtml(captionPreviewId)}">
-                <span class="caption-author">sselfie</span>
+                <span class="caption-author">${profileLabel}</span>
                 <span>${escapeHtml(post.caption)}</span>
               </p>
               <button
@@ -1858,13 +2076,7 @@ function buildCalendarHtml(input: MayaCalendarRenderInput): string {
     </section>
     <main class="wrap">
       <section class="section">
-        <p class="section-label">01 — CURRENT INSTAGRAM DIRECTION</p>
-        <div class="trend-notes">
-          <ul>${trendNotesHtml}</ul>
-        </div>
-      </section>
-      <section class="section">
-        <p class="section-label">02 — FEED GRID PREVIEW</p>
+        <p class="section-label">01 — FEED GRID PREVIEW</p>
         <div class="feed-grid">${feedGridHtml}</div>
       </section>
       <section class="cards-grid">${cardsHtml}</section>
@@ -2132,7 +2344,8 @@ export async function createMayaGeneratedAsset(input: {
   }
 
   if (!previewHtml) {
-    const imageUrls = await loadUserImageUrls(normalizedUserId)
+    const imageContext = await loadUserImagesWithContext(normalizedUserId)
+    const imageUrls = getUrlsFromImageContext(imageContext)
     previewHtml = buildPreviewHtmlForAsset(id, input.assetType, title, previewText, instruction, imageUrls)
     previewData =
       input.assetType === "calendar"
@@ -2307,7 +2520,8 @@ export async function updateMayaGeneratedAsset(input: {
   }
 
   if (!previewHtml) {
-    const imageUrls = await loadUserImageUrls(normalizedUserId)
+    const imageContext = await loadUserImagesWithContext(normalizedUserId)
+    const imageUrls = getUrlsFromImageContext(imageContext)
     previewHtml = buildPreviewHtmlForAsset(
       targetAsset.id,
       targetAsset.assetType,
@@ -2477,7 +2691,8 @@ export async function regenerateMayaPersonalPageById(input: {
   }
 
   if (!previewHtml) {
-    const imageUrls = await loadUserImageUrls(normalizedUserId)
+    const imageContext = await loadUserImagesWithContext(normalizedUserId)
+    const imageUrls = getUrlsFromImageContext(imageContext)
     previewHtml = buildPreviewHtmlForAsset(row.id, assetType, title, previewText, instruction, imageUrls)
     previewData =
       assetType === "calendar"

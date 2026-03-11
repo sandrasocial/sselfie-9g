@@ -194,23 +194,23 @@ export default function ImageGalleryModal({
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0 bg-white/95 backdrop-blur-xl border border-stone-200/60">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0 bg-[rgba(18,17,16,0.96)] backdrop-blur-xl border border-[rgba(195,190,182,0.25)]">
         <div className="flex flex-col h-full max-h-[90vh]">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-stone-200/40">
+          <div className="flex items-center justify-between p-6 border-b border-[rgba(195,190,182,0.20)]">
             <div>
               <DialogTitle asChild>
-                <h2 className="font-serif text-2xl font-extralight tracking-[0.2em] uppercase text-stone-950">
+                <h2 className="font-serif text-2xl font-extralight tracking-[0.2em] uppercase text-[#f0ede8]">
                   {multiple ? 'Select Images' : 'Select Image'}
                 </h2>
               </DialogTitle>
-              <p className="text-sm text-stone-500 font-light mt-1">
+              <p className="text-sm text-[#a8a49c] font-light mt-1">
                 {multiple ? 'Choose multiple images from your gallery' : 'Choose from your gallery'}
               </p>
             </div>
             <button
               onClick={onClose}
-              className="rounded-lg border border-stone-300 px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-stone-700 hover:bg-stone-100 transition-colors"
+              className="rounded-lg border border-[rgba(195,190,182,0.35)] px-3 py-1.5 text-[10px] uppercase tracking-[0.2em] text-[#c8c4bb] hover:bg-[rgba(175,170,162,0.15)] transition-colors"
               aria-label="Close"
             >
               Close
@@ -243,8 +243,8 @@ export default function ImageGalleryModal({
                       onClick={() => handleImageClick(image.image_url)}
                       className={`aspect-square relative group overflow-hidden rounded-lg border-2 transition-all ${
                         isSelected
-                          ? "border-stone-950 ring-2 ring-stone-950"
-                          : "border-stone-200/40 hover:border-stone-400"
+                          ? "border-[#f0ede8] ring-2 ring-[rgba(240,237,232,0.65)]"
+                          : "border-[rgba(195,190,182,0.30)] hover:border-[rgba(240,237,232,0.55)]"
                       }`}
                     >
                       <img
@@ -254,14 +254,14 @@ export default function ImageGalleryModal({
                         loading="lazy"
                       />
                       {isSelected && (
-                        <div className="absolute inset-0 bg-stone-950/40 flex items-center justify-center">
-                          <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-                            <span className="text-[10px] uppercase tracking-[0.2em] text-stone-950">Ok</span>
+                        <div className="absolute inset-0 bg-[rgba(10,10,10,0.55)] flex items-center justify-center">
+                          <div className="w-8 h-8 bg-[#f0ede8] rounded-full flex items-center justify-center">
+                            <span className="text-[10px] uppercase tracking-[0.2em] text-[#0d0c0b]">Ok</span>
                           </div>
                         </div>
                       )}
                       {multiple && isSelected && (
-                        <div className="absolute top-2 right-2 w-6 h-6 bg-stone-950 text-white rounded-full flex items-center justify-center text-xs font-medium">
+                        <div className="absolute top-2 right-2 w-6 h-6 bg-[#0d0c0b] text-[#f0ede8] rounded-full flex items-center justify-center text-xs font-medium">
                           {Array.from(selectedImages).indexOf(image.image_url) + 1}
                         </div>
                       )}
@@ -274,14 +274,14 @@ export default function ImageGalleryModal({
                 {fetchImages && hasMore && (
                   <div ref={loadMoreRef} className="flex items-center justify-center py-6">
                     {isLoadingMore ? (
-                      <div className="flex items-center gap-2 text-stone-500">
-                        <span className="h-5 w-5 rounded-full border border-stone-300 border-t-stone-500 animate-spin" />
+                      <div className="flex items-center gap-2 text-[#a8a49c]">
+                        <span className="h-5 w-5 rounded-full border border-[rgba(195,190,182,0.45)] border-t-[#f0ede8] animate-spin" />
                         <span className="text-sm font-light">Loading more images...</span>
                       </div>
                     ) : (
                       <button
                         onClick={loadMore}
-                        className="px-6 py-3 text-sm font-medium tracking-wider uppercase bg-stone-100 text-stone-700 rounded-lg hover:bg-stone-200 transition-all"
+                        className="px-6 py-3 text-sm font-medium tracking-wider uppercase bg-[rgba(175,170,162,0.16)] text-[#f0ede8] rounded-lg hover:bg-[rgba(175,170,162,0.24)] transition-all"
                       >
                         Load More
                       </button>
@@ -293,22 +293,22 @@ export default function ImageGalleryModal({
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-3 p-6 border-t border-stone-200/40">
+          <div className="flex items-center justify-end gap-3 p-6 border-t border-[rgba(195,190,182,0.20)]">
             <button
               onClick={onClose}
-              className="px-6 py-3 text-sm font-medium tracking-wider uppercase bg-stone-100 text-stone-700 rounded-lg hover:bg-stone-200 transition-all"
+              className="px-6 py-3 text-sm font-medium tracking-wider uppercase bg-[rgba(175,170,162,0.16)] text-[#c8c4bb] rounded-lg hover:bg-[rgba(175,170,162,0.24)] transition-all"
             >
               Cancel
             </button>
             {multiple && selectedImages.size > 0 && (
-              <div className="text-sm text-stone-600 font-light">
+              <div className="text-sm text-[#a8a49c] font-light">
                 {selectedImages.size} {selectedImages.size === 1 ? 'image' : 'images'} selected
               </div>
             )}
             <button
               onClick={handleSelect}
               disabled={multiple ? selectedImages.size === 0 : !selectedImage}
-              className="px-6 py-3 text-sm font-medium tracking-wider uppercase bg-stone-950 text-white rounded-lg hover:bg-stone-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-3 text-sm font-medium tracking-wider uppercase bg-[#f0ede8] text-[#0d0c0b] rounded-lg hover:bg-[#ffffff] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {multiple ? `Use ${selectedImages.size > 0 ? `${selectedImages.size} ` : ''}Image${selectedImages.size !== 1 ? 's' : ''}` : 'Use Image'}
             </button>

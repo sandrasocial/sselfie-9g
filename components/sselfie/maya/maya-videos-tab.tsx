@@ -497,11 +497,9 @@ export default function MayaVideosTab({
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Info Section */}
         <div className={`bg-stone-100/40 ${DesignClasses.radius.lg} ${DesignClasses.spacing.padding.md} ${DesignClasses.border.stone}`}>
-          <div className="mb-4">
-            <p className="text-xs sm:text-sm font-light text-stone-600 text-center">
-              Pick one photo and I&apos;ll help you turn it into a reel. Simple start. No stress.
-            </p>
-          </div>
+          <p className="text-xs sm:text-sm font-light text-stone-600 text-center">
+            Tap the Animate button on any photo below and I&apos;ll turn it into a reel.
+          </p>
         </div>
 
         {/* Shared Images Section (if any) */}
@@ -589,9 +587,7 @@ export default function MayaVideosTab({
                 No Photos Yet
               </h3>
               <p className="text-sm font-light text-stone-600 mb-6">
-                {chatGuided
-                  ? "Once you have a photo, pick it here and I’ll turn it into motion right here in Videos."
-                  : "Start with a photo first, then come back here and I’ll help you turn it into motion."}
+                Create a photo in the Photos tab first, then come back here and tap Animate to turn it into motion.
               </p>
             </div>
           </div>

@@ -77,6 +77,8 @@ interface MayaChatInterfaceProps {
     realismStrength: number
   }
   enhancedAuthenticity?: boolean
+  userHasTrainedModel?: boolean
+  linkedSelfieCount?: number
   onToolSelectGenerationSource?: (source: "selfies" | "custom_model" | "base_model") => void
   onToolOpenUploadZone?: (category: "selfies" | "products" | "people" | "vibes") => void
   onToolPromptSelect?: (prompt: string) => void
@@ -136,6 +138,8 @@ export default function MayaChatInterface({
   promptSuggestions,
   generationSettings,
   enhancedAuthenticity,
+  userHasTrainedModel = false,
+  linkedSelfieCount = 0,
   onToolSelectGenerationSource,
   onToolOpenUploadZone,
   onToolPromptSelect,
@@ -159,6 +163,7 @@ export default function MayaChatInterface({
     "tool-editAsset",
     "tool-createAssetPreview",
     "tool-structuredAssetBlocked",
+    "tool-mayaGapOffer",
     "tool-generateFeed",
     "tool-generateCaptions",
     "tool-generateStrategy",
@@ -185,6 +190,7 @@ export default function MayaChatInterface({
       .replace(/\[SUBMIT_OFFER_BRIEF:\s*[^\]]+\]/gi, "")
       .replace(/\[EDIT_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "")
       .replace(/\[CREATE_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replace(/\[MAYA_GAP_OFFER(?:\s*:\s*[^\]]+)?\]/gi, "")
       .replace(/\[STRUCTURED_ASSET_BLOCKED(?:\s*:\s*[^\]]+)?\]/gi, "")
       .replace(/\[GENERATE_CAPTIONS\]/gi, "")
       .replace(/\[GENERATE_STRATEGY\]/gi, "")
@@ -360,7 +366,7 @@ export default function MayaChatInterface({
     cleanedText = cleanedText.replace(/\[COLLECT_OFFER_BRIEF(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
     cleanedText = cleanedText.replace(/\[SUBMIT_OFFER_BRIEF:\s*[^\]]+\]/gi, "").trim()
     cleanedText = cleanedText.replace(/\[EDIT_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
-    cleanedText = cleanedText.replace(/\[CREATE_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
+    cleanedText = cleanedText.replace(/\[CREATE_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "").replace(/\[MAYA_GAP_OFFER(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
     // Remove "Aesthetic Choice:" section headers and content
     cleanedText = cleanedText.replace(/Aesthetic Choice:[\s\S]*?(?=\n\n|\nOverall|$)/gi, '').trim()
     
@@ -959,10 +965,10 @@ export default function MayaChatInterface({
                                       { label: "Videos", value: Number(stats.videoCount || 0) },
                                     ].map((item) => (
                                       <div key={item.label} className="stone-inset-panel px-3 py-3">
-                                        <div className="text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-smoke)]">
+                                        <div className="text-[10px] uppercase tracking-[0.16em] text-(--color-smoke)">
                                           {item.label}
                                         </div>
-                                        <div className="mt-1 text-[22px] text-[color:var(--color-porcelain)]">{item.value}</div>
+                                        <div className="mt-1 text-[22px] text-(--color-porcelain)">{item.value}</div>
                                       </div>
                                     ))}
                                   </div>
@@ -976,8 +982,8 @@ export default function MayaChatInterface({
                                         >
                                           <div className="flex items-center justify-between gap-3">
                                             <div>
-                                              <div className="text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-smoke)]">Feed</div>
-                                              <div className="mt-1 text-sm text-[color:var(--color-porcelain)]">{feed.title || `Feed ${feed.id}`}</div>
+                                              <div className="text-[10px] uppercase tracking-[0.16em] text-(--color-smoke)">Feed</div>
+                                              <div className="mt-1 text-sm text-(--color-porcelain)">{feed.title || `Feed ${feed.id}`}</div>
                                             </div>
                                             <MayaInlineAction href={feed.openUrl || "/studio?tab=feed-planner#feed-planner"}>
                                               Open
@@ -992,8 +998,8 @@ export default function MayaChatInterface({
                                         >
                                           <div className="flex items-center justify-between gap-3">
                                             <div>
-                                              <div className="text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-smoke)]">Recent Photo</div>
-                                              <div className="mt-1 text-sm text-[color:var(--color-porcelain)]">
+                                              <div className="text-[10px] uppercase tracking-[0.16em] text-(--color-smoke)">Recent Photo</div>
+                                              <div className="mt-1 text-sm text-(--color-porcelain)">
                                                 {photo.prompt || "Recent photo"}
                                               </div>
                                             </div>
@@ -1010,8 +1016,8 @@ export default function MayaChatInterface({
                                         >
                                           <div className="flex items-center justify-between gap-3">
                                             <div>
-                                              <div className="text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-smoke)]">Latest Video</div>
-                                              <div className="mt-1 text-sm text-[color:var(--color-porcelain)]">Motion draft ready</div>
+                                              <div className="text-[10px] uppercase tracking-[0.16em] text-(--color-smoke)">Latest Video</div>
+                                              <div className="mt-1 text-sm text-(--color-porcelain)">Motion draft ready</div>
                                             </div>
                                             <MayaInlineAction href={video.openUrl || "/studio?tab=maya#maya/videos"}>
                                               Open
@@ -1079,7 +1085,7 @@ export default function MayaChatInterface({
                                       ))}
                                     </div>
                                   ) : (
-                                    <div className="stone-inset-panel rounded-[22px] px-4 py-4 text-sm text-[color:var(--text-accent)]">
+                                    <div className="stone-inset-panel rounded-[22px] px-4 py-4 text-sm text-(--text-accent)">
                                       No images yet. Generate your first photo and I'll keep it here.
                                     </div>
                                   )}
@@ -1127,43 +1133,66 @@ export default function MayaChatInterface({
                             if (part.type === "tool-generateImage") {
                               const output = (part as any).output || {}
                               const selectedSource = output.source || "choose_source"
+                              const hasLinkedSelfies = linkedSelfieCount > 0
+                              const selfieDescription = hasLinkedSelfies
+                                ? `Use your ${linkedSelfieCount} linked selfie${linkedSelfieCount === 1 ? "" : "s"} right now.`
+                                : "No linked selfies yet. I’ll open upload so we can add them first."
+                              const modelDescription = userHasTrainedModel
+                                ? "Your trained model is ready. I’ll keep you in Photos and generate from it."
+                                : "No trained model yet. I’ll take you to Train first."
+                              const sourceSubtitle = hasLinkedSelfies || userHasTrainedModel
+                                ? "Pick your lane and I’ll handle the rest."
+                                : "Pick a source and I’ll guide you to the right setup first."
                               const options: Array<{
                                 id: "selfies" | "custom_model" | "base_model"
                                 label: string
                                 description: string
                               }> = [
-                                { id: "selfies", label: "Selfie", description: "Use linked references or upload selfies." },
-                                { id: "custom_model", label: "My Model", description: "Use your trained model for consistent results." },
-                                { id: "base_model", label: "Base Model", description: "Create with the default model." },
+                                { id: "selfies", label: "Selfie", description: selfieDescription },
+                                { id: "custom_model", label: userHasTrainedModel ? "My Model" : "Train My Model", description: modelDescription },
+                                { id: "base_model", label: "Base Model", description: "Create with Maya's default photo model." },
                               ]
+
+                              const selectedOption = options.find((option) => option.id === selectedSource)
 
                               return (
                                 <MayaInlineCard
                                   key={partIndex}
                                   eyebrow="Create Photo"
                                   title="Choose Your Source"
-                                  subtitle="Keep generation inside Maya. Pick the image source and I’ll handle the rest."
+                                  subtitle={sourceSubtitle}
                                 >
-                                  <div className="grid gap-2 sm:grid-cols-3">
-                                    {options.map((option) => {
-                                      const isSelected = selectedSource === option.id
-                                      return (
-                                        <button
-                                          key={option.id}
-                                          type="button"
-                                          onClick={() => onToolSelectGenerationSource?.(option.id)}
-                                          className={`rounded-lg border px-3 py-2 text-left transition-colors ${
-                                            isSelected
-                                              ? "border-[rgba(240,237,232,0.18)] bg-[rgba(240,237,232,0.14)]"
-                                              : "stone-inset-panel hover:bg-[rgba(175,170,162,0.16)]"
-                                          }`}
-                                        >
-                                          <div className="text-[11px] uppercase tracking-[0.16em] text-[#f0ede8]">{option.label}</div>
-                                          <div className="mt-1 text-xs text-[#bdbdbd]">{option.description}</div>
-                                        </button>
-                                      )
-                                    })}
-                                  </div>
+                                  {selectedSource !== "choose_source" && selectedOption ? (
+                                    <div className="stone-inset-panel rounded-[20px] border border-[rgba(240,237,232,0.16)] bg-[rgba(240,237,232,0.12)] px-4 py-3">
+                                      <div className="text-[11px] uppercase tracking-[0.16em] text-[#f0ede8]">
+                                        {selectedOption.label} selected
+                                      </div>
+                                      <div className="mt-1 text-xs text-[#d5d5d5]">
+                                        {selectedOption.description}
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="grid gap-2 sm:grid-cols-3">
+                                      {options.map((option) => {
+                                        const isSelected = selectedSource === option.id
+                                        return (
+                                          <button
+                                            key={option.id}
+                                            type="button"
+                                            onClick={() => onToolSelectGenerationSource?.(option.id)}
+                                            className={`rounded-lg border px-3 py-2 text-left transition-colors ${
+                                              isSelected
+                                                ? "border-[rgba(240,237,232,0.18)] bg-[rgba(240,237,232,0.14)]"
+                                                : "stone-inset-panel hover:bg-[rgba(175,170,162,0.16)]"
+                                            }`}
+                                          >
+                                            <div className="text-[11px] uppercase tracking-[0.16em] text-[#f0ede8]">{option.label}</div>
+                                            <div className="mt-1 text-xs text-[#bdbdbd]">{option.description}</div>
+                                          </button>
+                                        )
+                                      })}
+                                    </div>
+                                  )}
                                 </MayaInlineCard>
                               )
                             }
@@ -1212,7 +1241,7 @@ export default function MayaChatInterface({
                                     ? "Go to Videos"
                                     : targetTab === "training"
                                       ? "Go to Train"
-                                      : "Go to Chat"
+                                      : "Go to Photos"
 
                               return (
                                 <MayaInlineCard
@@ -1282,7 +1311,7 @@ export default function MayaChatInterface({
                                   subtitle={helperText}
                                   aside={<MayaInlinePill tone="strong">{assetType}</MayaInlinePill>}
                                 >
-                                  <div className="stone-inset-panel rounded-[22px] px-4 py-4 text-[11px] leading-relaxed text-[color:var(--text-accent)]">
+                                  <div className="stone-inset-panel rounded-[22px] px-4 py-4 text-[11px] leading-relaxed text-(--text-accent)">
                                     Next step: describe the exact change you want, whether it is the headline, CTA, section copy, layout, or tile content. Maya keeps editing this same asset in place.
                                   </div>
                                 </MayaInlineCard>
@@ -1322,6 +1351,33 @@ export default function MayaChatInterface({
                               )
                             }
 
+                            if (part.type === "tool-mayaGapOffer") {
+                              const output = (part as any).output || {}
+                              const dayLabels = Array.isArray(output.dayLabels) ? output.dayLabels : []
+                              const count = dayLabels.length
+                              if (count === 0) return null
+                              const prompt =
+                                count === 1
+                                  ? `Create a photo for ${dayLabels[0]} to fill my calendar.`
+                                  : `Create photos for ${dayLabels.join(" and ")} to fill my calendar.`
+                              return (
+                                <MayaInlineCard
+                                  key={partIndex}
+                                  eyebrow="Calendar"
+                                  title={count === 1 ? "1 day without a photo" : `${count} days without a photo`}
+                                  subtitle="I can create them for you."
+                                  actions={
+                                    <MayaInlineAction
+                                      onClick={() => onToolPromptSelect?.(prompt)}
+                                      variant="primary"
+                                    >
+                                      Create them
+                                    </MayaInlineAction>
+                                  }
+                                />
+                              )
+                            }
+
                             if (part.type === "tool-structuredAssetBlocked") {
                               const output = (part as any).output || {}
                               const assetType = output.assetType || "calendar"
@@ -1331,13 +1387,13 @@ export default function MayaChatInterface({
                               const recoveryHint =
                                 typeof output.recoveryHint === "string" && output.recoveryHint.trim().length > 0
                                   ? output.recoveryHint
-                                  : "Tell me exactly what to build and I’ll run it in your template flow."
+                                  : "Tell me exactly what to build and I’ll run it in your flow."
                               const missingFields = Array.isArray(output.missingFields)
                                 ? output.missingFields
                                 : []
                               const missingLabel = missingFields.includes("action_verb")
                                 ? "what to create"
-                                : "one missing detail"
+                                : "one detail"
                               const quickRetryPrompt =
                                 assetType === "calendar"
                                   ? "Create a content calendar for my current offer this week."
@@ -1346,21 +1402,21 @@ export default function MayaChatInterface({
                               return (
                                 <MayaInlineCard
                                   key={partIndex}
-                                  eyebrow="Need One Detail"
+                                  eyebrow="Almost there"
                                   title={`Ready to build your ${assetType}`}
-                                  subtitle={`I only need ${missingLabel} before execution.`}
+                                  subtitle={`I only need ${missingLabel} and I can run it.`}
                                   actions={
                                     <>
                                       <MayaInlineAction onClick={() => onToolPromptSelect?.(quickRetryPrompt)} variant="primary">
-                                        Retry Build
+                                        Retry
                                       </MayaInlineAction>
                                       <MayaInlineAction onClick={() => onToolPromptSelect?.("I need one quick form to fill the missing details.")}>
-                                        Missing Detail Form
+                                        Fill in the details
                                       </MayaInlineAction>
                                     </>
                                   }
                                 >
-                                  <div className="stone-inset-panel rounded-[22px] px-4 py-4 text-[11px] leading-relaxed text-[color:var(--text-accent)]">
+                                  <div className="stone-inset-panel rounded-[22px] px-4 py-4 text-[11px] leading-relaxed text-(--text-accent)">
                                     {recoveryHint}
                                   </div>
                                 </MayaInlineCard>
@@ -1631,24 +1687,24 @@ export default function MayaChatInterface({
                                     <MayaInlineCard
                                       key={partIndex}
                                       eyebrow="Videos"
-                                      title="Pick the photo you want me to animate"
+                                      title="Choose a photo to animate"
                                       subtitle={
                                         images.length > 0
-                                          ? `I found ${images.length} option${images.length === 1 ? "" : "s"} for you. Your photo picker is right below.`
-                                          : "Your photo picker is right below."
+                                          ? `${images.length} photo${images.length === 1 ? "" : "s"} ready. Scroll down to pick one.`
+                                          : "Your gallery is right below — pick one to start."
                                       }
                                       actions={
                                         <>
                                           <MayaInlineAction onClick={scrollToVideosGallery} variant="primary">
-                                            Show My Photos
+                                            View My Photos
                                           </MayaInlineAction>
                                           <MayaInlineAction onClick={() => onToolOpenUploadZone?.("selfies")}>
-                                            Upload a New Photo
+                                            Upload a Photo
                                           </MayaInlineAction>
                                         </>
                                       }
                                     >
-                                      <div className="stone-inset-panel rounded-[22px] px-4 py-4 text-sm leading-relaxed text-[color:var(--text-accent)]">
+                                      <div className="stone-inset-panel rounded-[22px] px-4 py-4 text-sm leading-relaxed text-(--text-accent)">
                                         No stress. Pick one photo below and I&apos;ll take it from there.
                                       </div>
                                     </MayaInlineCard>
@@ -1725,7 +1781,7 @@ export default function MayaChatInterface({
                                           }}
                                           className="mt-2 rounded-lg border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.12)] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.22)]"
                                         >
-                                          {activeTab === "videos" ? "Go to Chat" : "Create Photo First"}
+                                          {activeTab === "videos" ? "Go to Photos" : "Create Photo First"}
                                         </button>
                                         <button
                                           type="button"

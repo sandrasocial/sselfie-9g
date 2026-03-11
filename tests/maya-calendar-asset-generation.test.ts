@@ -6,9 +6,18 @@ const mockMerge = vi.fn()
 const mockResolveLandingSnapshot = vi.fn()
 const mockGetLatestTrends = vi.fn()
 const mockGenerateInstagramCaption = vi.fn()
+const mockGenerateText = vi.fn()
 
 vi.mock("@/lib/db/client", () => ({
   sql: mockSql,
+}))
+
+vi.mock("ai", () => ({
+  generateText: mockGenerateText,
+}))
+
+vi.mock("@/lib/maya/openrouter", () => ({
+  createMayaOpenRouterModel: () => "feed_planner",
 }))
 
 vi.mock("@/lib/maya/personal-pages", () => ({
@@ -85,6 +94,24 @@ describe("maya calendar asset generation", () => {
 
     mockSql.mockResolvedValue([])
 
+    mockGenerateText.mockResolvedValue({
+      text: JSON.stringify(
+        Array.from({ length: 9 }, (_, i) => ({
+          id: `post-${i + 1}`,
+          dayLabel: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday", "Bonus A", "Bonus B"][i],
+          postType: ["Reel", "Carousel", "Post"][i % 3],
+          hook: "Save this for your next content week.",
+          direction: "Tell a real moment where your audience felt stuck before finding your approach.",
+          cta: "Comment PLAN and I'll send the template",
+          caption:
+            "This is a story-led caption with enough words to feel human and strategic for a calendar.\n\nTell me if you want the full framework.",
+          hashtags: "#personalbrand #contentstrategy #instagramtips #storytelling #creatorbusiness",
+          hasImage: i < 2,
+          imageIndex: i < 2 ? i : undefined,
+        })),
+      ),
+    })
+
     mockGenerateInstagramCaption.mockResolvedValue({
       caption:
         "POST CONTEXT: ignored\n\n" +
@@ -110,18 +137,19 @@ describe("maya calendar asset generation", () => {
     expect(asset.previewHtml).toContain("Copy Caption")
     expect(asset.previewHtml).toContain("IG mix: reels + carousels + post")
     expect(asset.previewHtml).toContain("FEED GRID PREVIEW")
+    expect(asset.previewHtml).not.toContain("01 — CURRENT INSTAGRAM DIRECTION")
     expect(asset.previewHtml).toContain("TEXT OVERLAY")
     expect(asset.previewHtml).toContain("carousel-slide")
     expect(asset.previewHtml).toContain("hero-fullbleed")
     expect(asset.previewHtml).toContain("Read full caption")
-    expect(asset.previewHtml).toContain("#personalbrand #contentstrategy #instagramtips #storytelling #creatorbusiness")
+    expect(asset.previewHtml).toMatch(/#personalbrand|creatorbusiness|contentstrategy/)
     expect(asset.previewHtml).not.toContain("#growthhacks")
     expect(asset.previewData?.kind).toBe("calendar")
     if (asset.previewData?.kind === "calendar") {
       expect(asset.previewData.posts.length).toBeGreaterThan(0)
       expect(asset.previewData.posts[0]?.dayLabel).toBe("Monday")
     }
-    expect(mockGenerateInstagramCaption).toHaveBeenCalled()
+    expect(mockGenerateText).toHaveBeenCalled()
     expect(asset.url).toBe("/p/sandra/calendar-v2")
   })
 })
