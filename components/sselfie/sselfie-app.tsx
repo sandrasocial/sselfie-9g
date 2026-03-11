@@ -1179,6 +1179,7 @@ export default function SselfieApp({
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.2, ease: "easeInOut" }}
+                  className="h-full"
                 >
                   <MayaChatScreen 
                     onImageGenerated={refreshCredits} 
