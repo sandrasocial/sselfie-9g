@@ -56,7 +56,7 @@ interface MayaHeaderUnifiedProps {
   disableFeedTab?: boolean
   
   // Access Control
-  showModeToggle?: boolean // Show Pro/Classic toggle (only for membership users)
+  showModeToggle?: boolean // Show Selfie/My Model toggle
 }
 
 /**
@@ -402,7 +402,7 @@ export default function MayaHeaderUnified({
             </button>
           )}
 
-          {/* Mode Toggle - Show only for membership users (segmented control showing both options)
+          {/* Mode Toggle - segmented control showing both options
               Progressive enhancement: Same component, different state based on current mode */}
           {showModeToggle && (
             proMode ? (

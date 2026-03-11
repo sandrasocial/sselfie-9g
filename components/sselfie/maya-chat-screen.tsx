@@ -133,7 +133,6 @@ interface MayaChatScreenProps {
   onGuideChange?: (id: number | null, category: string | null) => void // Callback when guide selection changes
   hasTrainedModel?: boolean // Whether user has a trained model
   isMembership?: boolean // Whether user has membership (for Pro/Classic toggle visibility)
-  hideModeComplexity?: boolean
   academyPurchaseProduct?: string
   firstTimeProductUser?: boolean
 }
@@ -163,7 +162,6 @@ export default function MayaChatScreen({
   onGuideChange,
   hasTrainedModel = true, // Default to true to avoid breaking existing usage
   isMembership = false, // Default to false - only membership users see Pro/Classic toggle
-  hideModeComplexity = false,
   academyPurchaseProduct,
   firstTimeProductUser = false,
 }: MayaChatScreenProps) {
@@ -3714,7 +3712,7 @@ export default function MayaChatScreen({
           selectedGuideCategory={selectedGuideCategory}
           onGuideChange={onGuideChange}
           userId={userId}
-          showModeToggle={!hideModeComplexity && activeMayaTab === "photos"} // Show for all Photos tab users
+          showModeToggle={activeMayaTab === "photos"}
           onEditIntent={undefined}
           onNavigation={handleNavigation}
           onNewProject={handleNewChat}

@@ -47,6 +47,11 @@ import { AnimatePresence, motion } from "framer-motion"
 import useSWR from "swr"
 import { useRouter, useSearchParams } from "next/navigation"
 import {
+  MAYA_MODE_STORAGE_KEY,
+  MAYA_MODE_TOUCHED_STORAGE_KEY,
+  readMayaProModePreference,
+} from "@/lib/maya/mode-storage"
+import {
   readStudioTabFromHash,
   readStudioTabFromSearchParams,
   resolveStudioTab,
@@ -98,10 +103,6 @@ export default function SselfieApp({
   academyPurchaseProduct,
   firstTimeProductUser = false,
 }: SselfieAppProps) {
-  const isUnifiedMayaUiEnabled =
-    process.env.NEXT_PUBLIC_FEATURE_UNIFIED_MAYA_UI === "true" ||
-    process.env.NEXT_PUBLIC_FEATURE_UNIFIED_MAYA_UI === "1"
-
   const isMembershipUser =
     (subscriptionStatus === "active" || subscriptionStatus === "trialing") &&
     ["sselfie_studio_membership", "brand_studio_membership", "pro", "one_time_session"].includes(productType || "")
@@ -166,9 +167,7 @@ export default function SselfieApp({
   
   // Feed Planner Pro Mode state (shared with Maya via localStorage)
   const [feedPlannerProMode, setFeedPlannerProMode] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false
-    const saved = localStorage.getItem("mayaProMode")
-    return saved === "true"
+    return readMayaProModePreference()
   })
   
   // Sync Feed Planner Pro Mode with localStorage changes
@@ -176,8 +175,8 @@ export default function SselfieApp({
     if (typeof window === "undefined") return
     
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "mayaProMode") {
-        setFeedPlannerProMode(e.newValue === "true")
+      if (e.key === MAYA_MODE_STORAGE_KEY || e.key === MAYA_MODE_TOUCHED_STORAGE_KEY) {
+        setFeedPlannerProMode(readMayaProModePreference())
       }
     }
     
@@ -190,8 +189,7 @@ export default function SselfieApp({
     
     // Also check localStorage periodically for same-window changes
     const interval = setInterval(() => {
-      const saved = localStorage.getItem("mayaProMode")
-      const newMode = saved === "true"
+      const newMode = readMayaProModePreference()
       if (newMode !== feedPlannerProMode) {
         setFeedPlannerProMode(newMode)
       }
@@ -1167,7 +1165,6 @@ export default function SselfieApp({
               userId={userId}
               hasTrainedModel={hasTrainedModel}
               isMembership={access.hasFullAccess}
-              hideModeComplexity={isUnifiedMayaUiEnabled}
               academyPurchaseProduct={academyPurchaseProduct}
               firstTimeProductUser={firstTimeProductUser}
             />

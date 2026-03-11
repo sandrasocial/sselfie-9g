@@ -51,4 +51,10 @@ describe("maya layout hygiene", () => {
     expect(appShell).toContain('`relative h-full ${DesignClasses.container} overflow-hidden`')
     expect(appShell).toContain("overflow-y-auto")
   })
+
+  it("always shows the selfie and my model toggle on the Maya photos surface", () => {
+    const mayaChatScreen = read("components/sselfie/maya-chat-screen.tsx")
+    expect(mayaChatScreen).toContain('showModeToggle={activeMayaTab === "photos"}')
+    expect(mayaChatScreen).not.toContain("showModeToggle={!hideModeComplexity && activeMayaTab === \"photos\"}")
+  })
 })

@@ -23,6 +23,12 @@ import FeedHighlightsModal from "./feed-highlights-modal"
 import FeedSinglePlaceholder from "./feed-single-placeholder"
 import type { FeedPlannerAccess } from "@/lib/feed-planner/access-control"
 import { getBrandColorThemeColors } from "@/lib/style-presets"
+import {
+  MAYA_MODE_STORAGE_KEY,
+  MAYA_MODE_TOUCHED_STORAGE_KEY,
+  readMayaProModePreference,
+  writeMayaProModePreference,
+} from "@/lib/maya/mode-storage"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -80,15 +86,14 @@ export default function InstagramFeedView({
   const [showHighlightsModal, setShowHighlightsModal] = useState(false)
   const [brandColors, setBrandColors] = useState<string[]>([])
   const [generationMode, setGenerationMode] = useState<"classic" | "pro">(() => {
-    if (typeof window === "undefined") return "pro"
-    return localStorage.getItem("mayaProMode") === "true" ? "pro" : "classic"
+    return readMayaProModePreference() ? "pro" : "classic"
   })
 
   useEffect(() => {
     if (typeof window === "undefined") return
     const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === "mayaProMode") {
-        setGenerationMode(event.newValue === "true" ? "pro" : "classic")
+      if (event.key === MAYA_MODE_STORAGE_KEY || event.key === MAYA_MODE_TOUCHED_STORAGE_KEY) {
+        setGenerationMode(readMayaProModePreference() ? "pro" : "classic")
       }
     }
     const handleCustomEvent = (event: Event) => {
@@ -109,7 +114,7 @@ export default function InstagramFeedView({
     const nextMode = generationMode === "pro" ? "classic" : "pro"
     setGenerationMode(nextMode)
     if (typeof window !== "undefined") {
-      localStorage.setItem("mayaProMode", nextMode === "pro" ? "true" : "false")
+      writeMayaProModePreference(nextMode === "pro")
       window.dispatchEvent(new CustomEvent("feedPlannerModeChanged", { detail: { mode: nextMode === "pro" } }))
     }
   }

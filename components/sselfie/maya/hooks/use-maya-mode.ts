@@ -2,7 +2,7 @@
  * useMayaMode Hook
  * 
  * Manages Maya Pro Mode state with localStorage persistence:
- * - proMode: boolean (default: false)
+ * - proMode: boolean (default: true / SELFIE)
  * - Mode persistence to localStorage
  * - Support for forced mode (admin mode)
  * 
@@ -14,36 +14,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import { trackAnalyticsEvent } from "@/lib/analytics/client"
-
-const STORAGE_KEY = "mayaProMode"
-
-/**
- * Load mode from localStorage
- */
-function loadModeFromStorage(): boolean {
-  if (typeof window === "undefined") {
-    return false
-  }
-
-  const saved = localStorage.getItem(STORAGE_KEY)
-  return saved === "true"
-}
-
-/**
- * Save mode to localStorage
- */
-function saveModeToStorage(mode: boolean) {
-  if (typeof window === "undefined") {
-    return
-  }
-
-  try {
-    localStorage.setItem(STORAGE_KEY, mode.toString())
-    console.log("[useMayaMode] 💾 Saved mode to localStorage:", mode ? "Pro" : "Classic")
-  } catch (error) {
-    console.error("[useMayaMode] ❌ Error saving mode to localStorage:", error)
-  }
-}
+import { readMayaProModePreference, writeMayaProModePreference } from "@/lib/maya/mode-storage"
 
 export interface UseMayaModeReturn {
   // Mode state
@@ -68,15 +39,15 @@ export interface UseMayaModeReturn {
 export function useMayaMode(forcedMode?: boolean): UseMayaModeReturn {
   const hasLoadedFromStorageRef = useRef(false)
   
-  // Initialize state: forcedMode takes precedence, then localStorage, then default false
+  // Initialize state: forcedMode takes precedence, then persisted preference, then default SELFIE.
   const [proMode, setProModeState] = useState<boolean>(() => {
     // If forcedMode is explicitly provided (even if false), use it
     if (forcedMode !== undefined) {
       return forcedMode
     }
     
-    // Otherwise, load from localStorage
-    return loadModeFromStorage()
+    // Otherwise, use the saved preference only after the user has explicitly chosen a mode.
+    return readMayaProModePreference()
   })
 
   // Update state if forcedMode changes (for admin mode changes)
@@ -100,7 +71,12 @@ export function useMayaMode(forcedMode?: boolean): UseMayaModeReturn {
       return
     }
 
-    saveModeToStorage(proMode)
+    try {
+      writeMayaProModePreference(proMode)
+      console.log("[useMayaMode] 💾 Saved mode to localStorage:", proMode ? "Pro" : "Classic")
+    } catch (error) {
+      console.error("[useMayaMode] ❌ Error saving mode to localStorage:", error)
+    }
   }, [proMode, forcedMode])
 
   // Setter wrapper that can be called externally
