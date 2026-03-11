@@ -53,7 +53,8 @@ import ProModeChatHistory from "./pro-mode/ProModeChatHistory"
 import { Typography, Colors } from '@/lib/maya/pro/design-system'
 import { useToast } from "@/hooks/use-toast"
 import { DesignClasses, ComponentClasses } from "@/lib/design-tokens"
-import { startEmbeddedCheckout } from "@/lib/start-embedded-checkout"
+import { handleCheckoutFailure } from "@/lib/checkout-failure"
+import { openEmbeddedCheckout } from "@/lib/start-embedded-checkout"
 import {
   extractFeedStrategyJson,
   stripFeedStrategyArtifacts,
@@ -64,9 +65,12 @@ import {
   resolveMayaChatTypeForTab,
 } from "@/lib/maya/tab-scope"
 import { getMayaSurfaceQuickPrompts, getMayaInputPlaceholder } from "@/lib/maya/prompt-contract"
+import MayaUpsellCard from "./maya/maya-upsell-card"
 
 const MINI_PRODUCT_IDS = ["what_to_say", "show_up", "get_paid", "ai_photo_prompts"] as const
 type MiniProductId = (typeof MINI_PRODUCT_IDS)[number]
+type MayaDismissibleUpsellId = MiniProductId | "zero_credits"
+const MAYA_DISMISSED_UPSELLS_STORAGE_KEY = "sselfie.maya.dismissedUpsells"
 
 const ACADEMY_PRODUCT_ID_ALIASES: Record<string, MiniProductId> = {
   what_to_say: "what_to_say",
@@ -196,6 +200,7 @@ export default function MayaChatScreen({
   const [isLoadingAcademyJourneyState, setIsLoadingAcademyJourneyState] = useState(false)
   const [welcomeFlowDismissed, setWelcomeFlowDismissed] = useState(false)
   const [calendarSuggestionDismissed, setCalendarSuggestionDismissed] = useState(false)
+  const [dismissedUpsells, setDismissedUpsells] = useState<Set<MayaDismissibleUpsellId>>(new Set())
   const router = useRouter()
 
   const { data: myProductsData } = useSWR<MyProductsResponse>(
@@ -691,6 +696,28 @@ export default function MayaChatScreen({
   }, [isMembership, firstTimeProductUser])
 
   useEffect(() => {
+    if (typeof window === "undefined") return
+
+    try {
+      const stored = window.sessionStorage.getItem(MAYA_DISMISSED_UPSELLS_STORAGE_KEY)
+      if (!stored) return
+      const parsed = JSON.parse(stored)
+      if (Array.isArray(parsed)) {
+        setDismissedUpsells(
+          new Set(
+            parsed.filter(
+              (value): value is MayaDismissibleUpsellId =>
+                value === "zero_credits" || MINI_PRODUCT_IDS.includes(value),
+            ),
+          ),
+        )
+      }
+    } catch {
+      // Ignore storage failures.
+    }
+  }, [])
+
+  useEffect(() => {
     if (!isCreatingFeed) return
 
     const hasFeedCard = messages.some((message: any) =>
@@ -702,6 +729,40 @@ export default function MayaChatScreen({
       setIsCreatingFeed(false)
     }
   }, [messages, isCreatingFeed])
+
+  const dismissUpsellCard = useCallback((productId: MayaDismissibleUpsellId) => {
+    setDismissedUpsells((previous) => {
+      const next = new Set(previous)
+      next.add(productId)
+
+      if (typeof window !== "undefined") {
+        try {
+          window.sessionStorage.setItem(
+            MAYA_DISMISSED_UPSELLS_STORAGE_KEY,
+            JSON.stringify(Array.from(next)),
+          )
+        } catch {
+          // Ignore storage failures.
+        }
+      }
+
+      return next
+    })
+  }, [])
+
+  const handleOpenStudioCheckout = useCallback(async (source: string) => {
+    try {
+      await openEmbeddedCheckout("sselfie_studio_membership")
+    } catch (error) {
+      console.error("[Maya] Failed to start Studio checkout:", error)
+      handleCheckoutFailure({
+        error,
+        source,
+        productId: "sselfie_studio_membership",
+        fallbackPath: "/checkout/membership",
+      })
+    }
+  }, [])
 
   useEffect(() => {
     const shouldHandleInlineFeed = isFeedTabDisabled || activeMayaTab !== "feed"
@@ -3576,9 +3637,17 @@ export default function MayaChatScreen({
   })
 
   const showWhatToSayUpsellCard =
-    activeMayaTab === "photos" && !isMembership && !hasWhatToSayAccess && hasBrandStrategyOutput
+    activeMayaTab === "photos" &&
+    !isMembership &&
+    !hasWhatToSayAccess &&
+    hasBrandStrategyOutput &&
+    !dismissedUpsells.has("what_to_say")
   const showShowUpUpsellCard =
-    activeMayaTab === "photos" && !isMembership && !hasShowUpAccess && hasFeedPlannerSignal
+    activeMayaTab === "photos" &&
+    !isMembership &&
+    !hasShowUpAccess &&
+    hasFeedPlannerSignal &&
+    !dismissedUpsells.has("show_up")
   const showWelcomeFirstGenerationFlow =
     activeMayaTab === "photos" &&
     !isMembership &&
@@ -3709,7 +3778,7 @@ export default function MayaChatScreen({
 
           {/* Zero-credits upgrade nudge — shown inline when a free (non-membership) user
               has exhausted their credits on the Photos tab. */}
-          {!isMembership && creditBalance === 0 && (
+          {!isMembership && creditBalance === 0 && !dismissedUpsells.has("zero_credits") && (
             <div className="mx-3 sm:mx-4 mb-1">
               <div className="border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] backdrop-blur-[20px] rounded-xl p-4 flex items-start gap-3">
                 <div className="flex-1 min-w-0">
@@ -3719,7 +3788,7 @@ export default function MayaChatScreen({
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <button
-                      onClick={() => startEmbeddedCheckout("sselfie_studio_membership")}
+                      onClick={() => void handleOpenStudioCheckout("maya_zero_credits_nudge")}
                       className="shrink-0 text-xs font-medium text-[#0d0c0b] bg-[#c8c4bb] rounded-lg px-3 py-1.5 hover:bg-[#f0ede8] transition-colors whitespace-nowrap"
                     >
                       Upgrade to Studio →
@@ -3729,6 +3798,12 @@ export default function MayaChatScreen({
                       className="shrink-0 text-xs font-medium text-[#8a8780] bg-[rgba(175,170,162,0.10)] border border-[rgba(195,190,182,0.20)] rounded-lg px-3 py-1.5 hover:bg-[rgba(175,170,162,0.18)] transition-colors whitespace-nowrap"
                     >
                       Buy credits
+                    </button>
+                    <button
+                      onClick={() => dismissUpsellCard("zero_credits")}
+                      className="shrink-0 text-xs font-medium text-[#8a8780] rounded-lg px-3 py-1.5 hover:text-[#f0ede8] transition-colors whitespace-nowrap"
+                    >
+                      Not now
                     </button>
                   </div>
                 </div>
@@ -3931,47 +4006,23 @@ export default function MayaChatScreen({
 
       {showWhatToSayUpsellCard && (
         <div className="px-4 sm:px-6 py-3">
-          <div className="rounded-2xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] backdrop-blur-[20px] p-4">
-            <p
-              className="text-[11px] tracking-[0.18em] uppercase text-[#f0ede8]"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
-              Want This With Captions?
-            </p>
-            <p className="text-sm text-[#8a8780] mt-2">
-              What To Say includes 30 caption templates matched to your brand pillars.
-            </p>
-            <button
-              type="button"
-              onClick={() => startEmbeddedCheckout("sselfie_studio_membership")}
-              className="mt-3 text-[11px] uppercase tracking-[0.16em] text-[#f0ede8] hover:text-[#c8c4bb] transition-colors"
-            >
-              Upgrade to Studio — includes everything →
-            </button>
-          </div>
+          <MayaUpsellCard
+            eyebrow="Want This With Captions?"
+            description="What To Say includes 30 caption templates matched to your brand pillars."
+            onUpgrade={() => void handleOpenStudioCheckout("maya_what_to_say_upsell")}
+            onDismiss={() => dismissUpsellCard("what_to_say")}
+          />
         </div>
       )}
 
       {showShowUpUpsellCard && (
         <div className="px-4 sm:px-6 py-3">
-          <div className="rounded-2xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] backdrop-blur-[20px] p-4">
-            <p
-              className="text-[11px] tracking-[0.18em] uppercase text-[#f0ede8]"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
-              Want a 7-day posting plan?
-            </p>
-            <p className="text-sm text-[#8a8780] mt-2">
-              Show Up builds your consistency schedule around your content.
-            </p>
-            <button
-              type="button"
-              onClick={() => startEmbeddedCheckout("sselfie_studio_membership")}
-              className="mt-3 text-[11px] uppercase tracking-[0.16em] text-[#f0ede8] hover:text-[#c8c4bb] transition-colors"
-            >
-              Upgrade to Studio — includes everything →
-            </button>
-          </div>
+          <MayaUpsellCard
+            eyebrow="Want a 7-day posting plan?"
+            description="Show Up builds your consistency schedule around your content."
+            onUpgrade={() => void handleOpenStudioCheckout("maya_show_up_upsell")}
+            onDismiss={() => dismissUpsellCard("show_up")}
+          />
         </div>
       )}
 
@@ -4410,7 +4461,7 @@ export default function MayaChatScreen({
             onOpenTrainingFlow={() => handlePhaseTwoGenerationSource("custom_model")}
             onOpenCreditsModal={() => setShowBuyCreditsModal(true)}
             aiPhotoPromptsLocked={!hasAiPhotoPromptsAccess}
-            onUpgradeToStudio={() => startEmbeddedCheckout("sselfie_studio_membership")}
+            onUpgradeToStudio={() => void handleOpenStudioCheckout("maya_prompts_lock")}
           />
         </div>
       )}
@@ -4481,7 +4532,7 @@ export default function MayaChatScreen({
             creditBalance={creditBalance}
             isMembership={isMembership}
             onBuyCredits={() => setShowBuyCreditsModal(true)}
-            onJoinStudio={() => startEmbeddedCheckout("sselfie_studio_membership")}
+            onJoinStudio={() => void handleOpenStudioCheckout("maya_training_low_credits")}
           />
         </div>
       )}

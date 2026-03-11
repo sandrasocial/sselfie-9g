@@ -18,3 +18,20 @@ export async function startEmbeddedCheckout(productId: string): Promise<string> 
 
   throw new Error(data?.error || "Failed to start checkout")
 }
+
+export function buildEmbeddedCheckoutUrl(clientSecret: string): string {
+  return `/checkout?client_secret=${encodeURIComponent(clientSecret)}`
+}
+
+export async function openEmbeddedCheckout(
+  productId: string,
+  navigate: (url: string) => void = (url) => {
+    if (typeof window !== "undefined") {
+      window.location.href = url
+    }
+  },
+): Promise<string> {
+  const clientSecret = await startEmbeddedCheckout(productId)
+  navigate(buildEmbeddedCheckoutUrl(clientSecret))
+  return clientSecret
+}
