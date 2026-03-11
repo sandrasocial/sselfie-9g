@@ -22,7 +22,8 @@ describe("maya prompt contract", () => {
       hasTrainedModel: true,
     })
 
-    expect(prompts.map((item) => item.label)).toContain("Use My Model")
+    expect(prompts.map((item) => item.label)).toContain("My Model")
+    expect(prompts.map((item) => item.label)).toContain("Plan My Week")
     expect(prompts.map((item) => item.label)).not.toContain("Train My Model")
   })
 
@@ -33,9 +34,10 @@ describe("maya prompt contract", () => {
       hasTrainedModel: true,
     })
 
-    expect(prompts.map((item) => item.label)).toContain("Use My Selfies")
-    expect(prompts.map((item) => item.label)).toContain("Upload References")
-    expect(prompts.map((item) => item.label)).not.toContain("Create Calendar")
+    expect(prompts.map((item) => item.label)).toContain("New Photo")
+    expect(prompts.map((item) => item.label)).toContain("Upload & Create")
+    expect(prompts.map((item) => item.label)).toContain("Plan My Week")
+    expect(prompts.map((item) => item.label)).not.toContain("Train My Model")
   })
 
   it("reuses the dedicated videos prompt contract in Videos", () => {
@@ -46,10 +48,9 @@ describe("maya prompt contract", () => {
     })
 
     expect(prompts.map((item) => item.label)).toEqual([
-      "Make a Reel",
-      "Choose a Photo",
-      "Use My Latest Photo",
-      "Show Motion Ideas",
+      "Animate a Photo",
+      "Latest Photo",
+      "Create a Reel",
     ])
   })
 })

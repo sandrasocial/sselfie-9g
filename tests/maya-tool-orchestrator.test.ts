@@ -72,17 +72,13 @@ describe("orchestrateMayaTurn", () => {
     }
   })
 
-  it("routes generate-image for mixed help + photo requests", () => {
+  it("keeps mixed help + photo requests in Maya chat instead of direct tool dispatch", () => {
     const result = orchestrateMayaTurn({
       userText: "help me create a photo for my new offer",
       activeAssetContext: null,
     })
 
-    expect(result.kind).toBe("tool_dispatch")
-    if (result.kind === "tool_dispatch") {
-      expect(result.intent.tool).toBe("generate_image")
-      expect(result.intent.responseText).toContain("[GENERATE_IMAGE:")
-    }
+    expect(result).toEqual({ kind: "none", reason: "no_match" })
   })
 
   it("routes explicit capability discovery prompts", () => {

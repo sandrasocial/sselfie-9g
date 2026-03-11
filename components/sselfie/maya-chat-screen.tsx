@@ -3622,10 +3622,10 @@ export default function MayaChatScreen({
 
       {/* Fixed Header with Integrated Tabs - Always visible */}
       {/* Mobile optimized: safe area insets, responsive padding */}
-      {/* Using z-100 to ensure it's above all other content */}
+      {/* Use a real Tailwind arbitrary z-index so the fixed header stays above cards and drawers. */}
       <div
         ref={headerRef}
-        className="fixed top-0 left-0 right-0 z-100 border-b border-[rgba(195,190,182,0.15)] bg-[rgba(175,170,162,0.08)] backdrop-blur-[50px]"
+        className="fixed top-0 left-0 right-0 z-[100] border-b border-[rgba(195,190,182,0.15)] bg-[rgba(175,170,162,0.08)] backdrop-blur-[50px]"
         style={{
           paddingTop: 'max(0.625rem, env(safe-area-inset-top, 0px))',
         }}
@@ -4227,7 +4227,7 @@ export default function MayaChatScreen({
       {(activeMayaTab === "photos" || activeMayaTab === "feed") && (
         <div
           ref={inputBarRef}
-          className="fixed left-0 right-0 bg-[rgba(175,170,162,0.06)] backdrop-blur-[30px] border-t border-[rgba(195,190,182,0.15)] px-3 sm:px-4 py-2 sm:py-2.5 z-90 flex flex-col"
+          className="fixed left-0 right-0 z-[90] flex flex-col border-t border-[rgba(195,190,182,0.15)] bg-[rgba(175,170,162,0.06)] px-3 py-2 backdrop-blur-[30px] sm:px-4 sm:py-2.5"
           style={{
             // Dock above bottom nav; avoid blocking the chat area while scrolling.
             bottom: "calc(var(--sselfie-bottom-nav-height, 96px) + 4px)",

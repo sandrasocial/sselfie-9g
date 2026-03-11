@@ -808,6 +808,10 @@ export default function SselfieApp({
   const shouldShowUpgradeBanner =
     ["gallery", "maya"].includes(activeTab) && !!activeUpgrade && access.canUseGenerators
   const showShellHeader = activeTab !== "maya"
+  const appShellClassName =
+    activeTab === "maya"
+      ? "relative h-full overflow-visible"
+      : `relative h-full ${DesignClasses.container} overflow-hidden`
 
   const logUpgradeEvent = async (eventType: "impression" | "dismiss" | "cta_click", opportunityType?: string) => {
     try {
@@ -1144,7 +1148,7 @@ export default function SselfieApp({
       )}
 
       <main className="relative h-full overflow-hidden lg:mx-3 pb-2 sm:pb-3 md:pb-4">
-        <div className={`relative h-full ${DesignClasses.container} overflow-hidden`}>
+        <div className={appShellClassName}>
 
           {/*
             Maya is rendered OUTSIDE the scroll container and AnimatePresence.

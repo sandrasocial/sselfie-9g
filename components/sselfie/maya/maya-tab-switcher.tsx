@@ -47,26 +47,18 @@ export default function MayaTabSwitcher({
   const containerRef = useRef<HTMLDivElement>(null)
   const activeTabRef = useRef<HTMLButtonElement>(null)
 
-  // Scroll active tab into view on mobile when tab changes
+  // Keep the active tab visible on narrow screens without forcing it to center
+  // and clipping the first/last tab when header actions are present.
   useEffect(() => {
     if (activeTabRef.current && containerRef.current) {
       const container = containerRef.current
       const activeButton = activeTabRef.current
-      
-      // Calculate scroll position to center the active tab
-      const containerRect = container.getBoundingClientRect()
-      const buttonRect = activeButton.getBoundingClientRect()
-      const scrollLeft = container.scrollLeft
-      const buttonLeft = buttonRect.left - containerRect.left + scrollLeft
-      const buttonWidth = buttonRect.width
-      const containerWidth = containerRect.width
-      
-      // Center the active tab in the viewport
-      const targetScroll = buttonLeft - (containerWidth / 2) + (buttonWidth / 2)
-      
-      container.scrollTo({
-        left: targetScroll,
-        behavior: 'smooth',
+      if (container.scrollWidth <= container.clientWidth) return
+
+      activeButton.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+        inline: "nearest",
       })
     }
   }, [activeTab])
@@ -74,7 +66,7 @@ export default function MayaTabSwitcher({
   return (
     <div 
       ref={containerRef}
-      className={`inline-flex w-fit max-w-full items-center gap-1 overflow-x-auto py-1.5 ${className}`} 
+      className={`flex w-full min-w-0 items-center gap-1 overflow-x-auto py-1.5 ${className}`} 
       style={{ 
         scrollbarWidth: 'none', 
         msOverflowStyle: 'none',

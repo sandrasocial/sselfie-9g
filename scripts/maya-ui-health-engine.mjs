@@ -34,14 +34,16 @@ async function runStaticChecks() {
 
   const appShell = await readFile(resolve(process.cwd(), "components/sselfie/sselfie-app.tsx"), "utf8")
   checks.push({
-    label: "maya shell isolates scroll container",
+    label: "maya shell bypasses glass container",
     status:
+      appShell.includes("const appShellClassName =") &&
       appShell.includes('activeTab === "maya"') &&
-      appShell.includes('"h-full overflow-hidden"') &&
+      appShell.includes('"relative h-full overflow-visible"') &&
+      appShell.includes('`relative h-full ${DesignClasses.container} overflow-hidden`') &&
       appShell.includes("overflow-y-auto")
         ? "pass"
         : "fail",
-    detail: "Maya tab must avoid nested overflow-y shell to prevent mobile fixed-layer drift.",
+    detail: "Maya must bypass the glass shell because backdrop-filter traps fixed header/input layers on iOS Safari.",
   })
 
   const memoryLayer = await readFile(resolve(process.cwd(), "lib/maya/memory-layer.ts"), "utf8")

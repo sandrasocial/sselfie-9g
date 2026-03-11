@@ -38,12 +38,17 @@ describe("maya layout hygiene", () => {
     const tabSwitcher = read("components/sselfie/maya/maya-tab-switcher.tsx")
     expect(tabSwitcher).toContain("min-h-[34px] sm:min-h-[36px]")
     expect(tabSwitcher).toContain("letterSpacing: \"0.26em\"")
+    expect(tabSwitcher).toContain('inline: "nearest"')
     expect(tabSwitcher).not.toContain("rounded-full border transition-all")
+    expect(tabSwitcher).not.toContain("container.scrollTo({")
   })
 
   it("uses the shared scroll shell with Maya overflow visibility", () => {
     const appShell = read("components/sselfie/sselfie-app.tsx")
-    expect(appShell).toContain('activeTab === "maya" ? "overflow-visible" : "overflow-hidden"')
+    expect(appShell).toContain("const appShellClassName =")
+    expect(appShell).toContain('activeTab === "maya"')
+    expect(appShell).toContain('"relative h-full overflow-visible"')
+    expect(appShell).toContain('`relative h-full ${DesignClasses.container} overflow-hidden`')
     expect(appShell).toContain("overflow-y-auto")
   })
 })

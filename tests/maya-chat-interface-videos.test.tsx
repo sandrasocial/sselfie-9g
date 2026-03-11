@@ -98,11 +98,11 @@ describe("MayaChatInterface videos rendering", () => {
 
     renderInterface(messages, { activeTab: "videos" })
 
-    expect(screen.getByText(/Your photo picker is right below\./i)).toBeInTheDocument()
-    expect(screen.getByRole("button", { name: "Show My Photos" })).toBeInTheDocument()
+    expect(screen.getByText(/Scroll down to pick one\./i)).toBeInTheDocument()
+    expect(screen.getByRole("button", { name: "View My Photos" })).toBeInTheDocument()
     expect(screen.queryByAltText("Video source")).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole("button", { name: "Show My Photos" }))
+    fireEvent.click(screen.getByRole("button", { name: "View My Photos" }))
     expect(scrollIntoView).toHaveBeenCalled()
   })
 })
