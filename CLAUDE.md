@@ -1,5 +1,5 @@
 # SSELFIE Operational Memory
-*Last updated: 2026-03-10 — Read this at the start of every session*
+*Last updated: 2026-03-11 — Read this at the start of every session*
 
 ---
 
@@ -74,14 +74,31 @@ openclaw agent --agent north --local --message "YOUR MESSAGE"
 | 8 | Delete dead funnel email tooling + archived cron/template debt | ✅ Done |
 | 9 | Daily funnel monitoring scheduled task | ✅ Done (automation core rebuilt into 5 engines on 2026-03-10) |
 
-### Maya Reliability Program (Active - 2026-03-11)
+### Maya UX Stabilization — Shipped ✅ (2026-03-11, commit `b950f1db`)
 
-- Source of truth: `docs/MAYA_RELIABILITY_PROGRAM_2026-03-11.md`
-- Keep the shipped model-choice stabilization from `main` (`7e798510`)
-- Freeze Maya's visible top tabs to `Photos`, `Videos`, and `Train`
-- Feed stays in Feed Planner until Maya feed ownership is rebuilt cleanly
-- No new Maya top tabs, `chat_type` values, or mixed inline/task-tab UX without updating the source-of-truth docs and adding load/save/new-chat/test coverage
-- Landing pages, workbooks, and member-facing broken photoshoot flows stay retired/hidden until rebuilt
+Source of truth: `docs/MAYA_RELIABILITY_PROGRAM_2026-03-11.md`
+
+**Locked — do not reverse:**
+- Maya top tabs: **Photos**, **Videos**, **Train** only. No Feed tab. No new top tabs.
+- Feed stays in Feed Planner until Maya feed ownership is rebuilt cleanly.
+- No new `chat_type` values without DB migration + load/save/new-chat/test coverage.
+- Landing pages, workbooks, and pro-photoshoot flows stay retired/hidden until rebuilt.
+
+**What shipped (commit `b950f1db`):**
+- `MY MODEL / SELFIE` toggle visible to all Photos tab users (was membership-gated)
+- Selfie detection fix: checks `imageLibrary` directly, no longer gated on `proMode`
+- Mode-pure quick prompts per mode (`lib/maya/prompt-contract.ts` — new file)
+- Maya system prompt now injects `CURRENT GENERATION MODE` block; guides users to toggle instead of silently failing cross-mode requests
+- Pro concept card JSONB save fix: `chatId` passed as fallback when `messageId` is a temp AI SDK ID
+- `update-message` content overwrite bug fixed — no longer blanks message text when saving `concept_cards` only
+- Content calendar rebuilt: Maya voice copy, curated image selection, gap offer for missing photos
+- Image Gallery modal dark theme fixed
+- Videos tab: isolated per-tab chat sessions, cleaner voice and flow
+- B-roll deduplication: brand_assets → ai_images → generated_images priority
+
+**Still open:**
+- Videos tab full Maya-guided flow rebuild (tab-scoped sessions added; end-to-end flow pending)
+- Chat tab prompt cleanup — image creation not yet separated from planning prompts
 
 ### Website Agent V1 Sprint (On hold)
 
@@ -103,12 +120,13 @@ openclaw agent --agent north --local --message "YOUR MESSAGE"
 
 | Commit | Description | Date |
 |--------|-------------|------|
+| `b950f1db` | fix(maya): mode toggle, pro JSONB save, mode-aware prompts + UX cleanup | 2026-03-11 |
+| `7e798510` | fix(maya): stabilize model-choice UX and unblock training CTA | 2026-03-11 |
+| `74eb299e` | fix: stabilize studio header across tab switches | 2026-03-11 |
 | `4c03c85a` | chore(V-02): remove archived email tooling and sync agent context | 2026-03-09 |
 | `e537db70` | feat(V-02): add strategy order bump fulfillment and email cleanup | 2026-03-09 |
 | `770d687b` | feat: Brand Strategy $19 paid flow + delivery email | 2026-03-09 |
 | `c9acc7fc` | feat(V-02 Step 1): retire freebie routes + rename nurture templates | 2026-03-09 |
-| `37d76465` | Merge: harden selfie guide funnel (access token, success polling, product routing) | 2026-03-09 |
-| `a3820f48` | fix: harden selfie guide to studio funnel | 2026-03-09 |
 
 ---
 
