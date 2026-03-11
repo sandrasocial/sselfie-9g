@@ -745,6 +745,7 @@ export default function SselfieApp({
     { id: "maya", label: "Maya" },
     { id: "studio", label: "Studio" },
     { id: "gallery", label: "Gallery" },
+    { id: "feed-planner", label: "Feed" },
     { id: "academy", label: "Academy" },
     { id: "account", label: "Account" },
   ]
