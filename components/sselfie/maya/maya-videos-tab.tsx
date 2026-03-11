@@ -493,14 +493,13 @@ export default function MayaVideosTab({
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+    <div id="maya-videos-gallery" className="flex-1 overflow-y-auto p-4 sm:p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Info Section */}
         <div className={`bg-stone-100/40 ${DesignClasses.radius.lg} ${DesignClasses.spacing.padding.md} ${DesignClasses.border.stone}`}>
           <div className="mb-4">
             <p className="text-xs sm:text-sm font-light text-stone-600 text-center">
-              Create professional video content from your Maya-generated images. Click any image to animate it into a
-              stunning video reel.
+              Pick one photo and I&apos;ll help you turn it into a reel. Simple start. No stress.
             </p>
           </div>
         </div>
@@ -508,9 +507,9 @@ export default function MayaVideosTab({
         {/* Shared Images Section (if any) */}
         {sharedImages.length > 0 && (
           <div>
-            <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-950 mb-4">
-              From Photos Tab
-            </h3>
+              <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-950 mb-4">
+              Picked In Chat
+              </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6 mb-8">
               {sharedImages.map((shared) => {
                 const imageId = shared.id
@@ -587,12 +586,12 @@ export default function MayaVideosTab({
           <div className={`bg-stone-100/40 ${DesignClasses.radius.xl} ${DesignClasses.spacing.padding.xl} text-center ${DesignClasses.border.stone}`}>
             <div className="max-w-md mx-auto space-y-4">
               <h3 className="text-xl font-serif font-extralight tracking-[0.15em] text-stone-950 uppercase mb-3">
-                No Images Yet
+                No Photos Yet
               </h3>
               <p className="text-sm font-light text-stone-600 mb-6">
                 {chatGuided
-                  ? "Once you have a few photos, pick one here and I’ll turn it into motion inside this Videos chat."
-                  : "Start creating images with Maya to build your video library. Ask Maya to generate lifestyle content, product shots, or any visual assets you need."}
+                  ? "Once you have a photo, pick it here and I’ll turn it into motion right here in Videos."
+                  : "Start with a photo first, then come back here and I’ll help you turn it into motion."}
               </p>
             </div>
           </div>
@@ -601,7 +600,7 @@ export default function MayaVideosTab({
             {sharedImages.length > 0 && (
               <div>
                 <h3 className="text-sm font-serif font-extralight tracking-[0.2em] uppercase text-stone-950 mb-4">
-                  All Images
+                  Your Photos
                 </h3>
               </div>
             )}

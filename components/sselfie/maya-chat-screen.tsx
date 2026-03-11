@@ -4460,24 +4460,24 @@ export default function MayaChatScreen({
               <div className="mx-auto w-full max-w-3xl py-6">
                 <MayaInlineCard
                   eyebrow="Videos"
-                  title="Let’s turn your photos into motion"
-                  subtitle="Ask me for a reel, pick a photo from your gallery, or drop in a new reference. I’ll keep the whole video flow here."
+                  title="Let’s turn one photo into a reel"
+                  subtitle="Tell me what you want to make, then pick the photo you want to use. I’ll guide the rest from here."
                   actions={
                     <>
                       <MayaInlineAction
                         onClick={() => handleSendMessage("Create a short video from one of my photos")}
                         variant="primary"
                       >
-                        Start a Video
+                        Make a Reel
                       </MayaInlineAction>
                       <MayaInlineAction onClick={() => handleSendMessage("Show me my gallery so I can choose a photo for a video")}>
-                        Pick From Gallery
+                        Choose a Photo
                       </MayaInlineAction>
                     </>
                   }
                 >
                   <div className="stone-inset-panel rounded-[22px] px-4 py-4 text-sm leading-relaxed text-[color:var(--text-accent)]">
-                    I’ll help you choose the right image, write the motion prompt, and keep every draft in this Videos chat.
+                    No stress. Start with one good photo and I&apos;ll help you turn it into motion.
                   </div>
                 </MayaInlineCard>
               </div>

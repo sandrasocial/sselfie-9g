@@ -71,10 +71,10 @@ describe("maya tab scope", () => {
   it("returns video prompts that keep Maya in the video workflow", () => {
     const prompts = getMayaVideosTabQuickPrompts()
     expect(prompts.map((item) => item.label)).toEqual([
-      "Start a Video",
-      "Pick From Gallery",
+      "Make a Reel",
+      "Choose a Photo",
       "Use My Latest Photo",
-      "Show Video Options",
+      "Show Motion Ideas",
     ])
   })
 })

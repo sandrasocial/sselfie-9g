@@ -134,11 +134,11 @@ export function encodeMayaTabHandoffPayload(handoff: MayaTabHandoff): string {
 export function getMayaVideosTabQuickPrompts(): Array<{ label: string; prompt: string }> {
   return [
     {
-      label: "Start a Video",
+      label: "Make a Reel",
       prompt: "Create a short video from one of my photos",
     },
     {
-      label: "Pick From Gallery",
+      label: "Choose a Photo",
       prompt: "Show me my gallery so I can choose a photo for a video",
     },
     {
@@ -146,7 +146,7 @@ export function getMayaVideosTabQuickPrompts(): Array<{ label: string; prompt: s
       prompt: "Use my latest photo for a video",
     },
     {
-      label: "Show Video Options",
+      label: "Show Motion Ideas",
       prompt: "Show me the best video options for my photos",
     },
   ]

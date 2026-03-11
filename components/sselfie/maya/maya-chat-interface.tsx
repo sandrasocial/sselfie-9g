@@ -195,6 +195,14 @@ export default function MayaChatInterface({
     )
   }
 
+  const scrollToVideosGallery = () => {
+    if (typeof document === "undefined") return
+    document.getElementById("maya-videos-gallery")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    })
+  }
+
   const hasRenderableMessage = (msg: UIMessage): boolean => {
     if (!msg) return false
 
@@ -1609,7 +1617,7 @@ export default function MayaChatInterface({
                                     <div className="flex items-center gap-2 text-[#8a8780]">
                                       <div className="w-1.5 h-1.5 border-2 border-[#a8a49c] border-t-transparent rounded-full animate-spin" />
                                       <span className="text-xs tracking-[0.15em] uppercase font-light">
-                                        Loading images for video...
+                                        Pulling your photo options...
                                       </span>
                                     </div>
                                   </div>
@@ -1618,11 +1626,39 @@ export default function MayaChatInterface({
 
                               if (output && output.state === "choose_image") {
                                 const images = Array.isArray(output.images) ? output.images : []
+                                if (activeTab === "videos") {
+                                  return (
+                                    <MayaInlineCard
+                                      key={partIndex}
+                                      eyebrow="Videos"
+                                      title="Pick the photo you want me to animate"
+                                      subtitle={
+                                        images.length > 0
+                                          ? `I found ${images.length} option${images.length === 1 ? "" : "s"} for you. Your photo picker is right below.`
+                                          : "Your photo picker is right below."
+                                      }
+                                      actions={
+                                        <>
+                                          <MayaInlineAction onClick={scrollToVideosGallery} variant="primary">
+                                            Show My Photos
+                                          </MayaInlineAction>
+                                          <MayaInlineAction onClick={() => onToolOpenUploadZone?.("selfies")}>
+                                            Upload a New Photo
+                                          </MayaInlineAction>
+                                        </>
+                                      }
+                                    >
+                                      <div className="stone-inset-panel rounded-[22px] px-4 py-4 text-sm leading-relaxed text-[color:var(--text-accent)]">
+                                        No stress. Pick one photo below and I&apos;ll take it from there.
+                                      </div>
+                                    </MayaInlineCard>
+                                  )
+                                }
                                 return (
                                   <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4">
-                                    <div className="text-xs uppercase tracking-[0.2em] text-[#8a8780]">Create Video</div>
+                                    <div className="text-xs uppercase tracking-[0.2em] text-[#8a8780]">Videos</div>
                                     <p className="mt-2 text-sm text-[#d5d5d5]">
-                                      Pick from your gallery or upload a new reference and I'll animate it right here.
+                                      Pick a photo or upload a new one and I&apos;ll turn it into motion here.
                                     </p>
                                     <div className="mt-3 flex flex-wrap gap-2">
                                       <button
@@ -1676,7 +1712,7 @@ export default function MayaChatInterface({
                                     ) : (
                                       <div className="mt-3 rounded-lg border border-[rgba(195,190,182,0.20)] bg-[rgba(28,27,25,0.30)] p-3">
                                         <p className="text-xs text-[#d7d7d7]">
-                                          No images found yet. Generate a photo first, then I can animate it.
+                                          You don&apos;t have a photo here yet. Make one first, then I can animate it.
                                         </p>
                                         <button
                                           type="button"
