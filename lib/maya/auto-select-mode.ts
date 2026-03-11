@@ -1,5 +1,9 @@
 export type MayaUnifiedMode = "pro" | "maya" | "feed-planner"
 
+const STRUCTURED_CALENDAR_TARGET_REGEX = /\b(content calendar|calendar)\b/i
+const STRUCTURED_CALENDAR_CREATE_REGEX =
+  /\b(create|build|generate|make|draft|design|write|need|want|show me|give me|can you|could you|help me)\b/i
+
 export interface AutoSelectMayaModeParams {
   hasReferenceImage: boolean
   hasTrainedLoraModel: boolean
@@ -21,6 +25,14 @@ export function autoSelectMayaMode(params: AutoSelectMayaModeParams): MayaUnifie
 
 export function isContentPlanningIntent(text: string): boolean {
   const normalized = text.toLowerCase()
+
+  if (
+    STRUCTURED_CALENDAR_TARGET_REGEX.test(normalized) &&
+    STRUCTURED_CALENDAR_CREATE_REGEX.test(normalized)
+  ) {
+    return false
+  }
+
   return /(content plan|content calendar|feed plan|instagram plan|posting plan|caption plan|reels plan|strategy|weekly plan|monthly plan)/.test(
     normalized,
   )

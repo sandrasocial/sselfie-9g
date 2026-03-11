@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation"
 import { createLandingCheckoutSession } from "@/app/actions/landing-checkout"
 
+export const dynamic = "force-dynamic"
+
 export default async function MembershipCheckoutPage({
   searchParams,
 }: {

@@ -68,6 +68,11 @@ describe("isContentPlanningIntent", () => {
     expect(isContentPlanningIntent("I need an instagram posting strategy")).toBe(true)
   })
 
+  it("keeps explicit calendar build requests in Maya structured asset routing", () => {
+    expect(isContentPlanningIntent("Create a content calendar for this month")).toBe(false)
+    expect(isContentPlanningIntent("Can you give me a content calendar for this week?")).toBe(false)
+  })
+
   it("ignores normal image prompt requests", () => {
     expect(isContentPlanningIntent("Create a luxury portrait with soft lighting")).toBe(false)
   })

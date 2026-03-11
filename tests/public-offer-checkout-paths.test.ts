@@ -35,6 +35,7 @@ describe("public offer checkout paths", () => {
     const membershipContents = fs.readFileSync(path.join(ROOT, "app/checkout/membership/page.tsx"), "utf8")
 
     expect(membershipContents).toContain('createLandingCheckoutSession("sselfie_studio_membership"')
+    expect(membershipContents).toContain('export const dynamic = "force-dynamic"')
     expect(membershipContents).toContain('if (error?.digest?.startsWith("NEXT_REDIRECT"))')
   })
 
@@ -42,6 +43,7 @@ describe("public offer checkout paths", () => {
     const membershipContents = fs.readFileSync(path.join(ROOT, "app/checkout/membership/page.tsx"), "utf8")
     const oneTimeContents = fs.readFileSync(path.join(ROOT, "app/checkout/one-time/page.tsx"), "utf8")
 
+    expect(oneTimeContents).toContain('export const dynamic = "force-dynamic"')
     expect(membershipContents).toContain('if (error?.digest?.startsWith("NEXT_REDIRECT"))')
     expect(oneTimeContents).toContain('if (error?.digest?.startsWith("NEXT_REDIRECT"))')
   })

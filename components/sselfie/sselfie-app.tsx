@@ -445,6 +445,7 @@ export default function SselfieApp({
     userEmail,
     userRole,
   })
+  const appShellClassName = activeTab === "maya" ? "h-full overflow-visible" : `h-full ${DesignClasses.container} overflow-hidden`
   // New users: not a member, has welcome credits (just signed up), and hasn't trained a model yet.
   // Once credits hit 0 OR they train a model, they've experienced value and see the full tab bar.
   const isNewUser = !access.isMember && creditBalance > 0 && !hasTrainedModel
@@ -917,7 +918,7 @@ export default function SselfieApp({
         )}
 
       <main className="relative h-full lg:mx-3 pb-2 sm:pb-3 md:pb-4">
-        <div className={`h-full ${DesignClasses.container} ${activeTab === "maya" ? "overflow-visible" : "overflow-hidden"}`}>
+        <div className={appShellClassName}>
           {/* Hide header when in Maya tab - it has its own header */}
           {activeTab !== "maya" && (
             <header className={`sticky top-0 z-10 border-b ${DesignClasses.border.stone} ${DesignClasses.spacing.paddingX.sm} py-3 pt-safe`} style={{ background: 'rgba(175,170,162,0.08)', backdropFilter: 'blur(50px)' }}>
