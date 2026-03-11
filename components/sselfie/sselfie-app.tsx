@@ -745,7 +745,6 @@ export default function SselfieApp({
     { id: "maya", label: "Maya" },
     { id: "studio", label: "Studio" },
     { id: "gallery", label: "Gallery" },
-    { id: "feed-planner", label: "Feed" },
     { id: "academy", label: "Academy" },
     { id: "account", label: "Account" },
   ]
@@ -1150,7 +1149,13 @@ export default function SselfieApp({
 
           <div
             ref={scrollContainerRef}
-            className={`h-full ${DesignClasses.spacing.paddingX.md} pb-32 sm:pb-36 md:pb-40 ${showShellHeader ? "pt-20 sm:pt-24 md:pt-24" : "pt-4 sm:pt-6 md:pt-8"} overflow-y-auto`}
+            className={activeTab === "maya"
+              // Maya manages its own fixed header, scroll container, and input bar.
+              // Shell padding and overflow-y-auto must be removed to avoid:
+              //   1. Extra scrollable void (stacked pb-32 + MayaChatScreen paddingBottom)
+              //   2. Nested scroll contexts that trap position:fixed header on iOS Safari
+              ? "h-full overflow-hidden"
+              : `h-full ${DesignClasses.spacing.paddingX.md} pb-32 sm:pb-36 md:pb-40 ${showShellHeader ? "pt-20 sm:pt-24 md:pt-24" : "pt-4 sm:pt-6 md:pt-8"} overflow-y-auto`}
           >
             {shouldShowUpgradeBanner && activeUpgrade && (
               <div className="mb-4">

@@ -3601,7 +3601,8 @@ export default function MayaChatScreen({
       style={{
         background:
           "var(--app-bg-primary), radial-gradient(80% 55% at 20% 0%, var(--app-bg-glow-1) 0%, transparent 70%), radial-gradient(90% 60% at 80% 10%, var(--app-bg-glow-2) 0%, transparent 72%), linear-gradient(180deg, rgba(18,14,11,0.82) 0%, rgba(14,11,9,0.9) 52%, rgba(10,8,7,0.94) 100%)",
-        paddingBottom: "var(--sselfie-bottom-nav-height, 96px)",
+        // No paddingBottom here — the messages container handles its own input-bar
+        // clearance. Adding it here was creating a stacked empty gap on mobile.
       }}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
@@ -3881,7 +3882,7 @@ export default function MayaChatScreen({
             </div>
           )}
           <div 
-            className="flex-1 min-h-0 flex flex-col overflow-y-auto"
+            className="flex-1 min-h-0 flex flex-col"
           >
       {!isLoadingAcademyJourneyState && academyJourneyPrompt && (
         <div className="px-4 sm:px-6 py-3">
