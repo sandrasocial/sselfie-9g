@@ -13,6 +13,13 @@ export type MayaToolMarker =
   | { tool: "generate_video" }
   | { tool: "show_upload_zone"; category: "selfies" | "products" | "people" | "vibes" }
   | {
+      tool: "switch_maya_tab"
+      targetTab: "photos" | "videos" | "training"
+      title?: string
+      subtitle?: string
+      ctaLabel?: string
+    }
+  | {
       tool: "collect_offer_brief"
       assetType: "page" | "calendar"
       prefill?: Partial<MayaOfferBriefFormValues>
@@ -42,6 +49,7 @@ const SAVE_TO_GALLERY_REGEX = /\[SAVE_TO_GALLERY(?:\s*:\s*([^\]]+))?\]/gi
 const GENERATE_IMAGE_REGEX = /\[GENERATE_IMAGE(?:\s*:\s*([^\]]+))?\]/gi
 const GENERATE_VIDEO_REGEX = /\[GENERATE_VIDEO(?:\s*:\s*([^\]]+))?\]/gi
 const SHOW_UPLOAD_ZONE_REGEX = /\[SHOW_UPLOAD_ZONE(?:\s*:\s*([^\]]+))?\]/gi
+const SWITCH_MAYA_TAB_REGEX = /\[SWITCH_MAYA_TAB(?:\s*:\s*([^\]]+))?\]/gi
 const COLLECT_OFFER_BRIEF_REGEX = /\[COLLECT_OFFER_BRIEF(?:\s*:\s*([^\]]+))?\]/gi
 const SUBMIT_OFFER_BRIEF_REGEX = /\[SUBMIT_OFFER_BRIEF:\s*[^\]]+\]/gi
 const EDIT_ASSET_REGEX = /\[EDIT_ASSET(?:\s*:\s*([^\]]+))?\]/gi
@@ -52,6 +60,16 @@ const SAVE_TARGET_IMAGE_ID_REGEX = /^(?:ai|gen)_\d+$/i
 const GENERATE_SOURCE_SET = new Set(["selfies", "custom_model", "base_model", "choose_source"])
 const UPLOAD_CATEGORY_SET = new Set(["selfies", "products", "people", "vibes"])
 const EDIT_ASSET_SET = new Set(["page", "calendar", "pdf"])
+const TAB_HANDOFF_SET = new Set(["photos", "videos", "training"])
+
+function decodeMarkerText(value: string): string {
+  if (!value) return ""
+  try {
+    return decodeURIComponent(value)
+  } catch {
+    return value
+  }
+}
 
 function getDefaultAssetLabel(assetType: "page" | "calendar" | "pdf"): string {
   if (assetType === "calendar") return "Content Calendar"
@@ -134,6 +152,24 @@ export function parseMayaToolMarkers(text: string): MayaToolMarker[] {
   }
 
   SHOW_UPLOAD_ZONE_REGEX.lastIndex = 0
+
+  let switchTabMatch: RegExpExecArray | null = null
+  while ((switchTabMatch = SWITCH_MAYA_TAB_REGEX.exec(text)) !== null) {
+    const rawPayload = (switchTabMatch[1] || "").trim()
+    const [rawTab = "", rawTitle = "", rawSubtitle = "", rawCta = ""] = rawPayload.split("|")
+    const normalizedTab = rawTab.trim().toLowerCase()
+    const targetTab = TAB_HANDOFF_SET.has(normalizedTab) ? normalizedTab : "photos"
+
+    markers.push({
+      tool: "switch_maya_tab",
+      targetTab: targetTab as "photos" | "videos" | "training",
+      title: decodeMarkerText(rawTitle.trim()) || undefined,
+      subtitle: decodeMarkerText(rawSubtitle.trim()) || undefined,
+      ctaLabel: decodeMarkerText(rawCta.trim()) || undefined,
+    })
+  }
+
+  SWITCH_MAYA_TAB_REGEX.lastIndex = 0
 
   let collectOfferBriefMatch: RegExpExecArray | null = null
   while ((collectOfferBriefMatch = COLLECT_OFFER_BRIEF_REGEX.exec(text)) !== null) {
@@ -280,6 +316,7 @@ export function stripMayaToolMarkers(text: string): string {
     .replace(GENERATE_IMAGE_REGEX, "")
     .replace(GENERATE_VIDEO_REGEX, "")
     .replace(SHOW_UPLOAD_ZONE_REGEX, "")
+    .replace(SWITCH_MAYA_TAB_REGEX, "")
     .replace(COLLECT_OFFER_BRIEF_REGEX, "")
     .replace(SUBMIT_OFFER_BRIEF_REGEX, "")
     .replace(EDIT_ASSET_REGEX, "")

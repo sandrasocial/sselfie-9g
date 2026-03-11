@@ -6,6 +6,7 @@ export type MayaToolId =
   | "generate_image"
   | "generate_video"
   | "show_upload_zone"
+  | "switch_maya_tab"
   | "edit_asset"
   | "create_asset"
   | "collect_offer_brief"
@@ -60,6 +61,12 @@ export const MAYA_TOOL_REGISTRY: Record<MayaToolId, MayaToolDefinition> = {
     label: "Show Upload Zone",
     marker: "SHOW_UPLOAD_ZONE",
     resultType: "tool-showUploadZone",
+  },
+  switch_maya_tab: {
+    id: "switch_maya_tab",
+    label: "Switch Maya Tab",
+    marker: "SWITCH_MAYA_TAB",
+    resultType: "tool-switchMayaTab",
   },
   edit_asset: {
     id: "edit_asset",

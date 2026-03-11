@@ -13,6 +13,14 @@ interface MayaVideosTabProps {
   user: any
   creditBalance: number
   onCreditsUpdate: (balance: number) => void
+  chatGuided?: boolean
+  onSelectSourceImage?: (input: {
+    imageId: string
+    imageUrl: string
+    prompt?: string
+    description?: string
+    category?: string
+  }) => void
   sharedImages?: Array<{
     url: string
     id: string
@@ -67,6 +75,8 @@ export default function MayaVideosTab({
   user,
   creditBalance,
   onCreditsUpdate,
+  chatGuided = false,
+  onSelectSourceImage,
   sharedImages = [],
 }: MayaVideosTabProps) {
   const [generatingVideos, setGeneratingVideos] = useState<Set<string>>(new Set())
@@ -524,9 +534,19 @@ export default function MayaVideosTab({
                       isGenerating={isGenerating}
                       onFavoriteToggle={() => handleFavoriteToggle(imageId, false)}
                       onDelete={() => handleDelete(imageId)}
-                      onAnimate={() =>
+                      onAnimate={() => {
+                        if (chatGuided && onSelectSourceImage) {
+                          onSelectSourceImage({
+                            imageId,
+                            imageUrl: shared.url,
+                            prompt: shared.prompt || "",
+                            description: shared.description || shared.prompt || "",
+                            category: shared.category || "",
+                          })
+                          return
+                        }
                         handleAnimate(imageId, shared.url, shared.description || shared.prompt || "", shared.prompt || "", shared.category || "")
-                      }
+                      }}
                       isFavorite={false}
                       showAnimateOverlay={true}
                       animateOverlayStyle="create"
@@ -570,8 +590,9 @@ export default function MayaVideosTab({
                 No Images Yet
               </h3>
               <p className="text-sm font-light text-stone-600 mb-6">
-                Start creating images with Maya to build your video library. Ask Maya to generate lifestyle content,
-                product shots, or any visual assets you need.
+                {chatGuided
+                  ? "Once you have a few photos, pick one here and I’ll turn it into motion inside this Videos chat."
+                  : "Start creating images with Maya to build your video library. Ask Maya to generate lifestyle content, product shots, or any visual assets you need."}
               </p>
             </div>
           </div>
@@ -608,9 +629,19 @@ export default function MayaVideosTab({
                       isGenerating={isGenerating}
                       onFavoriteToggle={() => handleFavoriteToggle(imageId, false)}
                       onDelete={() => handleDelete(imageId)}
-                      onAnimate={() =>
+                      onAnimate={() => {
+                        if (chatGuided && onSelectSourceImage) {
+                          onSelectSourceImage({
+                            imageId: String(imageId),
+                            imageUrl: image.image_url,
+                            prompt: image.prompt || "",
+                            description: image.description || image.prompt,
+                            category: image.category || "",
+                          })
+                          return
+                        }
                         handleAnimate(imageId, image.image_url, image.description || image.prompt, image.prompt, image.category || "")
-                      }
+                      }}
                       isFavorite={false}
                       showAnimateOverlay={true}
                       animateOverlayStyle="create"

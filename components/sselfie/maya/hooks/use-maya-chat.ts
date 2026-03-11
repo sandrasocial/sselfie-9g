@@ -16,6 +16,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import { useChat } from "@ai-sdk/react"
 import { DefaultChatTransport } from "ai"
+import { isMayaTabScopedChatEnabled, resolveMayaChatTypeForTab, type MayaSurfaceTab } from "@/lib/maya/tab-scope"
 
 const CHAT_ID_STORAGE_KEY_PREFIX = "mayaCurrentChatId"
 
@@ -30,8 +31,8 @@ export interface UseMayaChatProps {
   initialChatId?: number
   proMode: boolean
   user: any | null
-  getModeString: () => "pro" | "maya" | "feed-planner"
-  activeTab?: string // Feed tab flag
+  getModeString: () => "pro" | "maya"
+  activeTab?: MayaSurfaceTab
   academyPurchaseProduct?: string
   firstTimeProductUser?: boolean
 }
@@ -108,11 +109,14 @@ export function useMayaChat({
   initialChatId,
   proMode,
   user,
-  getModeString,
+  getModeString: _getModeString,
   activeTab,
   academyPurchaseProduct,
   firstTimeProductUser,
 }: UseMayaChatProps): UseMayaChatReturn {
+  const isTabScopedChatEnabled = isMayaTabScopedChatEnabled(
+    process.env.NEXT_PUBLIC_FEATURE_MAYA_TAB_SCOPED_CHAT,
+  )
   // Chat state
   const [chatId, setChatId] = useState<number | null>(initialChatId || null)
   const [chatTitle, setChatTitle] = useState<string>("Chat with Maya")
@@ -134,13 +138,13 @@ export function useMayaChat({
   const pendingMessagesRef = useRef<any[] | null>(null)
 
   // Helper function to get the correct chatType based on activeTab
-  // Feed tab uses "feed-planner", otherwise use getModeString() result
   const getChatType = useCallback((): string => {
-    if (activeTab === "feed") {
-      return "feed-planner"
-    }
-    return getModeString()
-  }, [activeTab, getModeString])
+    return resolveMayaChatTypeForTab({
+      activeTab,
+      proMode,
+      enabled: isTabScopedChatEnabled,
+    })
+  }, [activeTab, isTabScopedChatEnabled, proMode])
 
   // Integrate useChat from AI SDK
   // NOTE: Headers are evaluated once when transport is created, so we use useMemo to recreate transport when dependencies change
@@ -511,7 +515,11 @@ export function useMayaChat({
     }
 
     // Calculate chat type directly from activeTab and proMode to avoid function reference issues
-    const chatType = activeTab === "feed" ? "feed-planner" : (proMode ? "pro" : "maya")
+    const chatType = resolveMayaChatTypeForTab({
+      activeTab,
+      proMode,
+      enabled: isTabScopedChatEnabled,
+    })
 
     // Validate chatType before making request
     if (!chatType || typeof chatType !== "string") {
@@ -608,7 +616,7 @@ export function useMayaChat({
     // NOTE: hasUsedMayaBefore is NOT in dependencies to prevent infinite loops
     // The guard (lastCheckedKeyRef) prevents re-checking the same combination
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, proMode, activeTab])
+  }, [user?.id, proMode, activeTab, isTabScopedChatEnabled])
 
   // Load chat when user or mode changes
   useEffect(() => {
@@ -684,7 +692,11 @@ export function useMayaChat({
 
     // Check if mode/chatType changed (using chatType instead of mode to handle Feed tab)
     // Calculate chatType directly from activeTab and proMode to avoid function reference issues
-    const currentChatType = activeTab === "feed" ? "feed-planner" : (proMode ? "pro" : "maya")
+    const currentChatType = resolveMayaChatTypeForTab({
+      activeTab,
+      proMode,
+      enabled: isTabScopedChatEnabled,
+    })
     const chatTypeChanged = lastModeRef.current !== null && lastModeRef.current !== currentChatType
 
     console.log("[useMayaChat] Current chatType:", currentChatType, "lastModeRef:", lastModeRef.current, "chatTypeChanged:", chatTypeChanged, "chatId:", chatId, "messagesCount:", messages.length)
@@ -790,7 +802,7 @@ export function useMayaChat({
     // Note: We calculate chatType directly from activeTab and proMode (not using getModeString) to avoid function reference issues
     // loadChat is NOT in dependencies to avoid infinite loops, but we pass currentChatType explicitly
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, proMode, activeTab])
+  }, [user, proMode, activeTab, isTabScopedChatEnabled])
 
   // CRITICAL FIX: Set messages after useChat resets when chatId changes
   // useChat resets when chatSessionId (based on chatId) changes, clearing messages

@@ -55,6 +55,12 @@ import {
 } from "@/lib/maya/openrouter"
 import type { MayaCriticalLandingField } from "@/lib/maya/page-generation/types"
 import { selectMayaSkill } from "@/lib/maya/skills/skill-router"
+import {
+  encodeMayaTabHandoffPayload,
+  isMayaTabScopedChatEnabled,
+  resolveMayaTabHandoff,
+  type MayaSurfaceTab,
+} from "@/lib/maya/tab-scope"
 
 import { NextResponse } from "next/server"
 
@@ -103,6 +109,34 @@ function createLandingPagesPausedResponse(validUIMessages: UIMessage[], preface?
           `${preface ? `${preface.trim()} ` : ""}` +
           `Landing page drafts are retired right now while we rebuild this feature. ` +
           `In this chat, I can run photos, videos, concept cards, feed planning, and content calendars.`,
+      })
+      writer.write({ type: "text-end", id: textPartId })
+    },
+  })
+
+  return createUIMessageStreamResponse({ stream })
+}
+
+function createTabHandoffResponse(
+  validUIMessages: UIMessage[],
+  input: {
+    targetTab: "photos" | "videos" | "training"
+    title: string
+    subtitle: string
+    ctaLabel: string
+  },
+) {
+  const switchMarker = formatMayaToolMarker("switch_maya_tab", encodeMayaTabHandoffPayload(input))
+
+  const stream = createUIMessageStream({
+    originalMessages: validUIMessages as any,
+    execute: ({ writer }) => {
+      const textPartId = `switch-maya-tab-${Date.now().toString(36)}`
+      writer.write({ type: "text-start", id: textPartId })
+      writer.write({
+        type: "text-delta",
+        id: textPartId,
+        delta: `I want to keep this simple for you. ${input.subtitle}\n${switchMarker}`,
       })
       writer.write({ type: "text-end", id: textPartId })
     },
@@ -283,6 +317,15 @@ export async function POST(req: Request) {
     const activeTabHeader = req.headers.get("x-active-tab") // Feed tab flag
     const requestedChatType = normalizeMayaChatType(chatTypeFromBody || chatTypeHeader || "maya")
     const unifiedMayaUiEnabled = isUnifiedMayaUiEnabled(process.env.FEATURE_UNIFIED_MAYA_UI)
+    const tabScopedChatEnabled = isMayaTabScopedChatEnabled(process.env.FEATURE_MAYA_TAB_SCOPED_CHAT)
+    const activeMayaTab =
+      activeTabHeader === "photos" ||
+      activeTabHeader === "videos" ||
+      activeTabHeader === "training" ||
+      activeTabHeader === "feed" ||
+      activeTabHeader === "prompts"
+        ? (activeTabHeader as MayaSurfaceTab)
+        : undefined
     let chatType = requestedChatType
     let isFeedTab = activeTabHeader === "feed" || isFeedPlannerChatType(requestedChatType)
     let useFeedPlannerContext = isFeedTab
@@ -363,7 +406,11 @@ export async function POST(req: Request) {
       })
       const normalizedAutoMode = normalizeMayaChatType(autoMode)
 
-      if (isFeedTab) {
+      if (tabScopedChatEnabled && activeMayaTab === "videos") {
+        chatType = requestedChatType
+        isFeedTab = false
+        useFeedPlannerContext = false
+      } else if (isFeedTab) {
         chatType = requestedChatType
         useFeedPlannerContext = true
       } else if (isFeedPlannerChatType(normalizedAutoMode)) {
@@ -482,6 +529,18 @@ export async function POST(req: Request) {
     
     console.log("[v0] Filtered", uiMessages.length, "UI messages to", validUIMessages.length, "valid messages")
     const latestUserTextForSkills = extractLatestUserText(validUIMessages as any)
+
+    const tabHandoff =
+      tabScopedChatEnabled && activeMayaTab
+        ? resolveMayaTabHandoff({
+            activeTab: activeMayaTab,
+            userText: latestUserTextForSkills,
+          })
+        : null
+
+    if (tabHandoff) {
+      return createTabHandoffResponse(validUIMessages as UIMessage[], tabHandoff)
+    }
 
     const chatFirstMayaEnabled = isChatFirstMayaEnabled(process.env.FEATURE_CHAT_FIRST_MAYA)
     if (chatFirstMayaEnabled && !isPromptBuilder && !useFeedPlannerContext && chatType !== "pro-photoshoot") {

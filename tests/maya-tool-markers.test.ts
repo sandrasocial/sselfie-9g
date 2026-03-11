@@ -95,6 +95,21 @@ describe("parseMayaToolMarkers", () => {
     )
     expect(markers).toEqual([{ tool: "generate_video" }])
   })
+
+  it("parses Maya tab handoff marker", () => {
+    const markers = parseMayaToolMarkers(
+      "Let's move this.\n[SWITCH_MAYA_TAB:videos|Let%27s%20make%20this%20in%20Videos|Videos%20has%20its%20own%20chat.|Go%20to%20Videos]",
+    )
+    expect(markers).toEqual([
+      {
+        tool: "switch_maya_tab",
+        targetTab: "videos",
+        title: "Let's make this in Videos",
+        subtitle: "Videos has its own chat.",
+        ctaLabel: "Go to Videos",
+      },
+    ])
+  })
 })
 
 describe("stripMayaToolMarkers", () => {
@@ -145,6 +160,13 @@ describe("stripMayaToolMarkers", () => {
       "Animation ready.\n[GENERATE_VIDEO]\nPick your source image.",
     )
     expect(stripped).toBe("Animation ready. Pick your source image.")
+  })
+
+  it("removes switch tab marker text from assistant message", () => {
+    const stripped = stripMayaToolMarkers(
+      "Let's move this.\n[SWITCH_MAYA_TAB:videos|Let%27s%20make%20this%20in%20Videos|Videos%20has%20its%20own%20chat.|Go%20to%20Videos]\nSee you there.",
+    )
+    expect(stripped).toBe("Let's move this. See you there.")
   })
 
   it("removes persisted video card markers from assistant message", () => {

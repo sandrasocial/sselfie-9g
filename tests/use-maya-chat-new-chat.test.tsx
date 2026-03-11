@@ -21,11 +21,18 @@ vi.mock("ai", () => ({
 
 type HookValue = ReturnType<typeof useMayaChat>
 
-function HookHarness({ onReady }: { onReady: (value: HookValue) => void }) {
+function HookHarness({
+  onReady,
+  activeTab,
+}: {
+  onReady: (value: HookValue) => void
+  activeTab?: "photos" | "videos" | "training" | "prompts" | "feed"
+}) {
   const value = useMayaChat({
     proMode: false,
     user: null,
     getModeString: () => "maya",
+    activeTab,
   })
 
   React.useEffect(() => {
@@ -87,6 +94,60 @@ describe("useMayaChat handleNewChat", () => {
     let hookValue: HookValue | null = null
 
     render(<HookHarness onReady={(value) => { hookValue = value }} />)
+
+    await waitFor(() => {
+      expect(hookValue).not.toBeNull()
+    })
+
+    await act(async () => {
+      await expect(hookValue!.handleNewChat()).resolves.toBeUndefined()
+    })
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/maya/new-chat",
+      expect.objectContaining({ method: "POST" }),
+    )
+  })
+
+  it("creates a videos chat when the active tab is videos", async () => {
+    const fetchMock = vi.spyOn(global, "fetch" as any).mockImplementation(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+
+      if (url.includes("/api/maya/new-chat")) {
+        expect(init?.body).toBe(JSON.stringify({ chatType: "videos" }))
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ chatId: 456 }),
+        } as Response
+      }
+
+      if (url.includes("/api/maya/chats")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ chats: [] }),
+        } as Response
+      }
+
+      if (url.includes("/api/maya/load-chat")) {
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({ chatId: null, chatTitle: "Chat with Maya", messages: [] }),
+        } as Response
+      }
+
+      return {
+        ok: false,
+        status: 404,
+        json: async () => ({}),
+      } as Response
+    })
+
+    let hookValue: HookValue | null = null
+
+    render(<HookHarness activeTab="videos" onReady={(value) => { hookValue = value }} />)
 
     await waitFor(() => {
       expect(hookValue).not.toBeNull()

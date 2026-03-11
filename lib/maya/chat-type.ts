@@ -1,8 +1,15 @@
 export const MAYA_CHAT_TYPE_DEFAULT = "maya"
 export const MAYA_CHAT_TYPE_PRO = "pro"
+export const MAYA_CHAT_TYPE_VIDEOS = "videos"
 export const MAYA_CHAT_TYPE_FEED_PLANNER = "feed_planner"
 export const MAYA_CHAT_TYPE_PROMPT_BUILDER = "prompt_builder"
 export const MAYA_CHAT_TYPE_PRO_PHOTOSHOOT = "pro-photoshoot"
+
+const VIDEOS_CHAT_TYPE_ALIASES = [
+  MAYA_CHAT_TYPE_VIDEOS,
+  "maya-videos",
+  "maya_videos",
+] as const
 
 const FEED_PLANNER_CHAT_TYPE_ALIASES = [
   MAYA_CHAT_TYPE_FEED_PLANNER,
@@ -25,6 +32,9 @@ export function normalizeMayaChatType(
   if (FEED_PLANNER_CHAT_TYPE_ALIASES.includes(sanitized as (typeof FEED_PLANNER_CHAT_TYPE_ALIASES)[number])) {
     return MAYA_CHAT_TYPE_FEED_PLANNER
   }
+  if (VIDEOS_CHAT_TYPE_ALIASES.includes(sanitized as (typeof VIDEOS_CHAT_TYPE_ALIASES)[number])) {
+    return MAYA_CHAT_TYPE_VIDEOS
+  }
   if (sanitized === "prompt-builder") return MAYA_CHAT_TYPE_PROMPT_BUILDER
   if (sanitized === "pro_photoshoot") return MAYA_CHAT_TYPE_PRO_PHOTOSHOOT
 
@@ -38,6 +48,10 @@ export function getMayaChatTypeAliases(value?: string | null): string[] {
     return [...FEED_PLANNER_CHAT_TYPE_ALIASES]
   }
 
+  if (normalized === MAYA_CHAT_TYPE_VIDEOS) {
+    return [...VIDEOS_CHAT_TYPE_ALIASES]
+  }
+
   return [normalized]
 }
 
@@ -48,6 +62,10 @@ export function isFeedPlannerChatType(value?: string | null): boolean {
 export function isPhotosChatType(value?: string | null): boolean {
   const normalized = normalizeMayaChatType(value, "")
   return normalized === MAYA_CHAT_TYPE_DEFAULT || normalized === MAYA_CHAT_TYPE_PRO
+}
+
+export function isVideosChatType(value?: string | null): boolean {
+  return normalizeMayaChatType(value, "") === MAYA_CHAT_TYPE_VIDEOS
 }
 
 export function supportsFeedCardsInChat(value?: string | null): boolean {

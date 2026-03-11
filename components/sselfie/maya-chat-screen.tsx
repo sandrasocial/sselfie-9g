@@ -22,6 +22,7 @@ import MayaTabSwitcher from "./maya/maya-tab-switcher"
 import MayaVideosTab from "./maya/maya-videos-tab"
 import MayaPromptsTab from "./maya/maya-prompts-tab"
 import MayaTrainingTab from "./maya/maya-training-tab"
+import { MayaInlineAction, MayaInlineCard } from "./maya/maya-inline-card"
 import StudioMemberOnboarding from "./maya/studio-member-onboarding"
 import MembershipHomeCard from "./maya/membership-home-card"
 import MayaWelcomePanel from "./maya/maya-welcome-panel"
@@ -58,6 +59,11 @@ import {
   stripFeedStrategyArtifacts,
   shouldRetryInlineFeedGeneration,
 } from "@/lib/maya/feed-strategy"
+import {
+  getMayaVideosTabQuickPrompts,
+  isMayaTabScopedChatEnabled,
+  resolveMayaChatTypeForTab,
+} from "@/lib/maya/tab-scope"
 
 const MINI_PRODUCT_IDS = ["what_to_say", "show_up", "get_paid", "ai_photo_prompts"] as const
 type MiniProductId = (typeof MINI_PRODUCT_IDS)[number]
@@ -160,6 +166,9 @@ export default function MayaChatScreen({
   const { toast } = useToast()
   const isLandingPagesUiEnabled = false
   const isFeedTabDisabled = true
+  const isTabScopedChatEnabled = isMayaTabScopedChatEnabled(
+    process.env.NEXT_PUBLIC_FEATURE_MAYA_TAB_SCOPED_CHAT,
+  )
   const [inputValue, setInputValue] = useState("")
   const [showHistory, setShowHistory] = useState(false)
   const [showNavMenu, setShowNavMenu] = useState(false)
@@ -255,6 +264,11 @@ export default function MayaChatScreen({
   
   // Mode managed by useMayaMode hook
   const { proMode, setProMode, getModeString, hasModeChanged } = useMayaMode(forcedProMode)
+  const currentChatType = resolveMayaChatTypeForTab({
+    activeTab: activeMayaTab,
+    proMode,
+    enabled: isTabScopedChatEnabled,
+  })
 
   const formattedCreditBalance = Number.isFinite(creditBalance)
     ? Math.round(creditBalance).toLocaleString()
@@ -992,6 +1006,7 @@ export default function MayaChatScreen({
           p?.type === "tool-generateImage" ||
           p?.type === "tool-generateVideo" ||
           p?.type === "tool-showUploadZone" ||
+          p?.type === "tool-switchMayaTab" ||
           p?.type === "tool-collectOfferBrief" ||
           p?.type === "tool-editAsset" ||
           p?.type === "tool-createAssetPreview" ||
@@ -1088,6 +1103,15 @@ export default function MayaChatScreen({
                 total: 0,
               }, targetMessageId)
             }
+          }
+
+          if (marker.tool === "switch_maya_tab") {
+            updateAssistantToolPart("tool-switchMayaTab", {
+              targetTab: marker.targetTab,
+              title: marker.title,
+              subtitle: marker.subtitle,
+              ctaLabel: marker.ctaLabel,
+            }, targetMessageId)
           }
 
           if (marker.tool === "save_to_gallery") {
@@ -2109,6 +2133,11 @@ export default function MayaChatScreen({
 
   // Update prompts based on mode and active tab
   useEffect(() => {
+    if (isTabScopedChatEnabled && activeMayaTab === "videos") {
+      setCurrentPrompts(getMayaVideosTabQuickPrompts())
+      return
+    }
+
     // Feed tab uses feed-specific prompts
     if (activeMayaTab === "feed") {
       const feedPrompts = getFeedQuickPrompts()
@@ -2148,7 +2177,7 @@ export default function MayaChatScreen({
       }
     }
     fetchUserGender()
-  }, [proMode, activeMayaTab])
+  }, [proMode, activeMayaTab, hasProFeatures, isTabScopedChatEnabled])
 
   useEffect(() => {
     const fetchCredits = async () => {
@@ -2444,7 +2473,7 @@ export default function MayaChatScreen({
         console.log("[v0] No chatId exists, creating new chat before sending message...")
         try {
           // 🔴 FIX: Use correct chatType based on mode (Pro Mode vs Classic Mode)
-          const chatType = getModeString()
+          const chatType = currentChatType
           const response = await fetch("/api/maya/new-chat", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -2491,13 +2520,29 @@ export default function MayaChatScreen({
     }
   }
 
-  const setMayaTabAndHash = useCallback((tab: "photos" | "training") => {
+  const setMayaTabAndHash = useCallback((tab: "photos" | "videos" | "training") => {
     setActiveMayaTab(tab)
     if (typeof window !== "undefined") {
       localStorage.setItem("mayaActiveTab", tab)
-      window.history.replaceState(null, "", tab === "training" ? "#maya/training" : "#maya")
+      const nextHash =
+        tab === "training" ? "#maya/training" : tab === "videos" ? "#maya/videos" : "#maya"
+      window.history.replaceState(null, "", nextHash)
     }
   }, [])
+
+  const handleSwitchScopedTab = useCallback(
+    (tab: "photos" | "videos" | "training") => {
+      setMayaTabAndHash(tab)
+      trackAnalyticsEvent({
+        event: "maya_tab_handoff_opened",
+        properties: {
+          fromTab: activeMayaTab,
+          toTab: tab,
+        },
+      }).catch(() => {})
+    },
+    [activeMayaTab, setMayaTabAndHash],
+  )
 
   const handlePhaseTwoUploadZone = useCallback(
     (category: PhaseTwoUploadCategory = "selfies") => {
@@ -2569,8 +2614,9 @@ export default function MayaChatScreen({
   )
 
   const persistVideoCardMarker = useCallback(
-    async (input: { messageId: string; videoUrl: string; motionPrompt?: string; imageUrl?: string }) => {
-      if (!chatId) return
+    async (input: { messageId: string; videoUrl: string; motionPrompt?: string; imageUrl?: string; chatIdOverride?: number }) => {
+      const targetChatId = input.chatIdOverride ?? chatId
+      if (!targetChatId) return
 
       const targetMessage = messages.find((message: any) => String(message?.id) === String(input.messageId))
       const fallbackAssistant = [...messages].reverse().find((message: any) => message?.role === "assistant")
@@ -2606,7 +2652,7 @@ export default function MayaChatScreen({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          chatId,
+          chatId: targetChatId,
           messageId: messageToPersist.id,
           content: nextContent,
         }),
@@ -2628,6 +2674,7 @@ export default function MayaChatScreen({
       prompt?: string
       description?: string
       category?: string
+      chatIdOverride?: number
     }) => {
       const fallbackPrompt = input.prompt?.trim() || input.description?.trim() || "Cinematic lifestyle scene"
 
@@ -2745,6 +2792,7 @@ export default function MayaChatScreen({
                 videoUrl: pollData.videoUrl,
                 motionPrompt: appliedMotionPrompt,
                 imageUrl: input.imageUrl,
+                chatIdOverride: input.chatIdOverride,
               })
 
               try {
@@ -2812,6 +2860,73 @@ export default function MayaChatScreen({
       }
     },
     [clearVideoPollForMessage, persistVideoCardMarker, updateAssistantToolPart],
+  )
+
+  const startInlineVideoFromSource = useCallback(
+    async (input: {
+      imageId: string
+      imageUrl: string
+      prompt?: string
+      description?: string
+      category?: string
+    }) => {
+      let nextChatId = chatId
+
+      if (!nextChatId) {
+        await baseHandleNewChat()
+
+        if (typeof window !== "undefined") {
+          const storedChatId = localStorage.getItem(`mayaCurrentChatId_${currentChatType}`)
+          nextChatId = storedChatId ? Number.parseInt(storedChatId, 10) : null
+        }
+      }
+
+      const userMessageId =
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `maya-user-${Date.now().toString(36)}`
+      const assistantMessageId =
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `maya-assistant-${Date.now().toString(36)}`
+
+      setMessages((prev: any[]) => [
+        ...prev,
+        {
+          id: userMessageId,
+          role: "user",
+          parts: [{ type: "text", text: "Turn this photo into a short video." }],
+        },
+        {
+          id: assistantMessageId,
+          role: "assistant",
+          parts: [
+            {
+              type: "text",
+              text: "Perfect. I’m turning this photo into motion now.",
+            },
+            {
+              type: "tool-generateVideo",
+              output: {
+                state: "loading",
+                imageUrl: input.imageUrl,
+              },
+            },
+          ],
+        },
+      ])
+
+      await handleToolStartVideoGeneration({
+        messageId: assistantMessageId,
+        imageId: input.imageId,
+        imageUrl: input.imageUrl,
+        prompt: input.prompt,
+        description: input.description,
+        category: input.category,
+        chatIdOverride: nextChatId ?? undefined,
+      })
+    },
+    [baseHandleNewChat, chatId, currentChatType, handleToolStartVideoGeneration, setMessages],
   )
 
   // Wrapper for handleNewChat that adds component-specific logic
@@ -3525,6 +3640,7 @@ export default function MayaChatScreen({
       .replace(/\[GENERATE_VIDEO(?:\s*:\s*[^\]]+)?\]/gi, "")
       .replace(/\[VIDEO_CARD:[^\]]+\]/gi, "")
       .replace(/\[SHOW_UPLOAD_ZONE(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replace(/\[SWITCH_MAYA_TAB(?:\s*:\s*[^\]]+)?\]/gi, "")
       .replace(/\[COLLECT_OFFER_BRIEF(?:\s*:\s*[^\]]+)?\]/gi, "")
       .replace(/\[SUBMIT_OFFER_BRIEF:\s*[^\]]+\]/gi, "")
       .replace(/\[EDIT_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "")
@@ -3553,6 +3669,7 @@ export default function MayaChatScreen({
             part.type === "tool-saveToGallery" ||
             part.type === "tool-generateImage" ||
             part.type === "tool-showUploadZone" ||
+            part.type === "tool-switchMayaTab" ||
             (part.type === "tool-collectOfferBrief" &&
               (isLandingPagesUiEnabled || (part as any)?.output?.assetType !== "page")) ||
             (part.type === "tool-editAsset" &&
@@ -3919,11 +4036,11 @@ export default function MayaChatScreen({
           onSelectChat={handleSelectChat}
           onNewChat={handleNewChat}
           onDeleteChat={handleDeleteChat}
-          chatType={activeMayaTab === "feed" ? "feed-planner" : getModeString()}
+          chatType={currentChatType}
         />
       )}
 
-      <MayaSettingsPanel
+        <MayaSettingsPanel
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
         styleStrength={styleStrength}
@@ -4077,6 +4194,8 @@ export default function MayaChatScreen({
           onToolPromptSelect={handleSendMessage}
           onToolSubmitOfferBrief={handleToolSubmitOfferBrief}
           onToolStartVideoGeneration={handleToolStartVideoGeneration}
+          activeTab={activeMayaTab}
+          onSwitchTab={handleSwitchScopedTab}
         />
       )}
           {showReturningMemberHome && (
@@ -4238,9 +4357,9 @@ export default function MayaChatScreen({
         />
       )}
 
-      {/* Fixed Bottom Input Area - Show in Photos and Feed tabs */}
+      {/* Fixed Bottom Input Area - Show in tab-scoped Maya chats */}
       {/* Subtle background for contrast - positioned above nav, z-index below nav */}
-      {(activeMayaTab === "photos" || activeMayaTab === "feed") && (
+      {(activeMayaTab === "photos" || activeMayaTab === "feed" || (isTabScopedChatEnabled && activeMayaTab === "videos")) && (
         <div
           ref={inputBarRef}
           className="fixed left-0 right-0 bg-[rgba(175,170,162,0.06)] backdrop-blur-[30px] border-t border-[rgba(195,190,182,0.15)] px-3 sm:px-4 py-2 sm:py-2.5 z-[90] flex flex-col"
@@ -4323,31 +4442,103 @@ export default function MayaChatScreen({
 
       {/* Tab Content - Videos Tab */}
       {activeMayaTab === "videos" && (
-        <div
-          style={{
-            // Header (~56-64px) + Tabs (~50px) + safe area = ~106-114px total
-            paddingTop: 'calc(106px + max(0.625rem, env(safe-area-inset-top, 0px)))',
-            paddingBottom: '20px', // Space for content
-          }}
-        >
-          {/* CRITICAL FIX: Show loading indicator during chat load */}
-          {isLoadingChat && messages.length === 0 && (
-            <div className="flex items-center justify-center min-h-[400px]">
-              <UnifiedLoading message="Loading videos..." variant="section" />
+        <div className="flex-1 min-h-0 flex flex-col overflow-y-auto">
+          <div
+            className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6"
+            style={{
+              paddingTop: "calc(var(--maya-header-height, 124px) + 8px)",
+              paddingBottom: photoTabBottomSpacing,
+            }}
+          >
+            {isLoadingChat && messages.length === 0 ? (
+              <div className="flex items-center justify-center min-h-[320px]">
+                <UnifiedLoading message="Loading videos..." variant="section" />
+              </div>
+            ) : null}
+
+            {!hasVisibleMessages ? (
+              <div className="mx-auto w-full max-w-3xl py-6">
+                <MayaInlineCard
+                  eyebrow="Videos"
+                  title="Let’s turn your photos into motion"
+                  subtitle="Ask me for a reel, pick a photo from your gallery, or drop in a new reference. I’ll keep the whole video flow here."
+                  actions={
+                    <>
+                      <MayaInlineAction
+                        onClick={() => handleSendMessage("Create a short video from one of my photos")}
+                        variant="primary"
+                      >
+                        Start a Video
+                      </MayaInlineAction>
+                      <MayaInlineAction onClick={() => handleSendMessage("Show me my gallery so I can choose a photo for a video")}>
+                        Pick From Gallery
+                      </MayaInlineAction>
+                    </>
+                  }
+                >
+                  <div className="stone-inset-panel rounded-[22px] px-4 py-4 text-sm leading-relaxed text-[color:var(--text-accent)]">
+                    I’ll help you choose the right image, write the motion prompt, and keep every draft in this Videos chat.
+                  </div>
+                </MayaInlineCard>
+              </div>
+            ) : (
+              <div className="mx-auto w-full max-w-5xl">
+                <MayaChatInterface
+                  messages={messages}
+                  filteredMessages={filteredMessages}
+                  setMessages={setMessages}
+                  proMode={proMode}
+                  isTyping={isTyping}
+                  isGeneratingConcepts={isGeneratingConcepts}
+                  isGeneratingPro={isGeneratingPro}
+                  contentFilter={contentFilter}
+                  messagesContainerRef={messagesContainerRef as React.RefObject<HTMLDivElement>}
+                  messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
+                  showScrollButton={showScrollButton}
+                  isAtBottomRef={isAtBottomRef}
+                  scrollToBottom={scrollToBottom}
+                  onFeedSaved={handleFeedSaved}
+                  chatId={chatId ?? undefined}
+                  uploadedImages={uploadedImages}
+                  setCreditBalance={setCreditBalance}
+                  onImageGenerated={onImageGenerated}
+                  isAdmin={isAdmin}
+                  selectedGuideId={selectedGuideId}
+                  selectedGuideCategory={selectedGuideCategory}
+                  onSaveToGuide={handleSaveToGuide}
+                  userId={userId}
+                  user={user}
+                  promptSuggestions={promptSuggestions}
+                  generationSettings={settings}
+                  enhancedAuthenticity={enhancedAuthenticity}
+                  onToolSelectGenerationSource={handlePhaseTwoGenerationSource}
+                  onToolOpenUploadZone={handlePhaseTwoUploadZone}
+                  onToolPromptSelect={handleSendMessage}
+                  onToolSubmitOfferBrief={handleToolSubmitOfferBrief}
+                  onToolStartVideoGeneration={handleToolStartVideoGeneration}
+                  activeTab={activeMayaTab}
+                  onSwitchTab={handleSwitchScopedTab}
+                />
+              </div>
+            )}
+
+            <div className="mx-auto mt-6 w-full max-w-7xl">
+              <MayaVideosTab
+                user={user}
+                creditBalance={creditBalance}
+                onCreditsUpdate={setCreditBalance}
+                sharedImages={getSharedImages().map(img => ({
+                  url: img.url,
+                  id: img.id,
+                  prompt: img.prompt,
+                  description: img.description,
+                  category: img.category,
+                }))}
+                chatGuided={isTabScopedChatEnabled}
+                onSelectSourceImage={startInlineVideoFromSource}
+              />
             </div>
-          )}
-          <MayaVideosTab
-            user={user}
-            creditBalance={creditBalance}
-            onCreditsUpdate={setCreditBalance}
-          sharedImages={getSharedImages().map(img => ({
-            url: img.url,
-            id: img.id,
-            prompt: img.prompt,
-            description: img.description,
-            category: img.category,
-          }))}
-          />
+          </div>
         </div>
       )}
 
@@ -4702,7 +4893,7 @@ export default function MayaChatScreen({
           onSelectChat={handleSelectChat}
           onNewChat={handleNewChat}
           onDeleteChat={handleDeleteChat}
-          chatType={activeMayaTab === "feed" ? "feed-planner" : getModeString()}
+          chatType={currentChatType}
         />
       )}
 

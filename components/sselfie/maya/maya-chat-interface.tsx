@@ -18,6 +18,7 @@ import {
   hasFeedStrategyArtifacts,
   stripFeedStrategyArtifacts,
 } from "@/lib/maya/feed-strategy"
+import type { MayaSurfaceTab } from "@/lib/maya/tab-scope"
 
 type OfferBriefFormValues = Omit<MayaOfferBrief, "assetType">
 
@@ -88,7 +89,8 @@ interface MayaChatInterfaceProps {
     description?: string
     category?: string
   }) => void
-  
+  activeTab?: MayaSurfaceTab
+  onSwitchTab?: (tab: "photos" | "videos" | "training") => void
 }
 
 /**
@@ -139,6 +141,8 @@ export default function MayaChatInterface({
   onToolPromptSelect,
   onToolSubmitOfferBrief,
   onToolStartVideoGeneration,
+  activeTab = "photos",
+  onSwitchTab,
 }: MayaChatInterfaceProps) {
   const isDevVideoDebug = process.env.NODE_ENV !== "production"
   const isLandingPagesUiEnabled = isFeatureEnabled(process.env.NEXT_PUBLIC_FEATURE_MAYA_LANDING_PAGES_UI)
@@ -150,6 +154,7 @@ export default function MayaChatInterface({
     "tool-saveToGallery",
     "tool-generateImage",
     "tool-showUploadZone",
+    "tool-switchMayaTab",
     "tool-collectOfferBrief",
     "tool-editAsset",
     "tool-createAssetPreview",
@@ -175,6 +180,7 @@ export default function MayaChatInterface({
       .replace(/\[GENERATE_VIDEO(?:\s*:\s*[^\]]+)?\]/gi, "")
       .replace(/\[VIDEO_CARD:[^\]]+\]/gi, "")
       .replace(/\[SHOW_UPLOAD_ZONE(?:\s*:\s*[^\]]+)?\]/gi, "")
+      .replace(/\[SWITCH_MAYA_TAB(?:\s*:\s*[^\]]+)?\]/gi, "")
       .replace(/\[COLLECT_OFFER_BRIEF(?:\s*:\s*[^\]]+)?\]/gi, "")
       .replace(/\[SUBMIT_OFFER_BRIEF:\s*[^\]]+\]/gi, "")
       .replace(/\[EDIT_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "")
@@ -340,7 +346,9 @@ export default function MayaChatInterface({
     cleanedText = cleanedText.replace(/\[SHOW_GALLERY\]/gi, "").trim()
     cleanedText = cleanedText.replace(/\[SAVE_TO_GALLERY(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
     cleanedText = cleanedText.replace(/\[GENERATE_IMAGE(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
+    cleanedText = cleanedText.replace(/\[GENERATE_VIDEO(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
     cleanedText = cleanedText.replace(/\[SHOW_UPLOAD_ZONE(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
+    cleanedText = cleanedText.replace(/\[SWITCH_MAYA_TAB(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
     cleanedText = cleanedText.replace(/\[COLLECT_OFFER_BRIEF(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
     cleanedText = cleanedText.replace(/\[SUBMIT_OFFER_BRIEF:\s*[^\]]+\]/gi, "").trim()
     cleanedText = cleanedText.replace(/\[EDIT_ASSET(?:\s*:\s*[^\]]+)?\]/gi, "").trim()
@@ -1183,6 +1191,42 @@ export default function MayaChatInterface({
                               )
                             }
 
+                            if (part.type === "tool-switchMayaTab") {
+                              const output = (part as any).output || {}
+                              const targetTab =
+                                output.targetTab === "videos" || output.targetTab === "training"
+                                  ? output.targetTab
+                                  : "photos"
+                              const ctaLabel =
+                                typeof output.ctaLabel === "string" && output.ctaLabel.trim().length > 0
+                                  ? output.ctaLabel
+                                  : targetTab === "videos"
+                                    ? "Go to Videos"
+                                    : targetTab === "training"
+                                      ? "Go to Train"
+                                      : "Go to Chat"
+
+                              return (
+                                <MayaInlineCard
+                                  key={partIndex}
+                                  eyebrow="Next Step"
+                                  title={output.title || "Let’s move this to the right chat"}
+                                  subtitle={
+                                    output.subtitle ||
+                                    "I’ll keep this clean for you. Open the right Maya tab and I’ll continue there."
+                                  }
+                                  actions={
+                                    <MayaInlineAction
+                                      onClick={() => onSwitchTab?.(targetTab)}
+                                      variant="primary"
+                                    >
+                                      {ctaLabel}
+                                    </MayaInlineAction>
+                                  }
+                                />
+                              )
+                            }
+
                             if (part.type === "tool-collectOfferBrief") {
                               const output = (part as any).output || {}
                               const assetType = output.assetType || "page"
@@ -1636,10 +1680,16 @@ export default function MayaChatInterface({
                                         </p>
                                         <button
                                           type="button"
-                                          onClick={() => onToolPromptSelect?.("Create a photo for my brand")}
+                                          onClick={() => {
+                                            if (activeTab === "videos" && onSwitchTab) {
+                                              onSwitchTab("photos")
+                                              return
+                                            }
+                                            onToolPromptSelect?.("Create a photo for my brand")
+                                          }}
                                           className="mt-2 rounded-lg border border-[rgba(195,190,182,0.25)] bg-[rgba(175,170,162,0.12)] px-3 py-1.5 text-[10px] uppercase tracking-[0.14em] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.22)]"
                                         >
-                                          Create Photo First
+                                          {activeTab === "videos" ? "Go to Chat" : "Create Photo First"}
                                         </button>
                                         <button
                                           type="button"

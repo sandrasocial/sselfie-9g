@@ -9,6 +9,7 @@ import { extractFeedStrategyJson } from "@/lib/maya/feed-strategy"
 import {
   isFeedPlannerChatType,
   isPhotosChatType,
+  isVideosChatType,
   normalizeMayaChatType,
   supportsFeedCardsInChat,
 } from "@/lib/maya/chat-type"
@@ -729,6 +730,8 @@ export async function GET(request: NextRequest) {
     // ============================================================================
     const isFeedTab = isFeedPlannerChatType(chatType)
     const isPhotosTab = isPhotosChatType(chatType)
+    const isVideosTab = isVideosChatType(chatType)
+    const supportsVideoCards = isPhotosTab || isVideosTab
     const supportsFeedCards = supportsFeedCardsInChat(chatType)
     
     const formattedMessages = await Promise.all(messages.map(async (msg) => {
@@ -853,8 +856,10 @@ export async function GET(request: NextRequest) {
           },
         })
 
-        for (const videoCardPart of videoCardParts) {
-          parts.push(videoCardPart)
+        if (supportsVideoCards) {
+          for (const videoCardPart of videoCardParts) {
+            parts.push(videoCardPart)
+          }
         }
 
         // Restore Phase 1 tool markers for chat history continuity.
@@ -898,7 +903,7 @@ export async function GET(request: NextRequest) {
               },
             })
           } else if (marker.tool === "generate_video") {
-            if (videoCardParts.length === 0) {
+            if (supportsVideoCards && videoCardParts.length === 0) {
               const images = await getLatestVideoSourcePreview(neonUser.id, 6)
               parts.push({
                 type: "tool-generateVideo",
@@ -908,6 +913,16 @@ export async function GET(request: NextRequest) {
                 },
               })
             }
+          } else if (marker.tool === "switch_maya_tab") {
+            parts.push({
+              type: "tool-switchMayaTab",
+              output: {
+                targetTab: marker.targetTab,
+                title: marker.title,
+                subtitle: marker.subtitle,
+                ctaLabel: marker.ctaLabel,
+              },
+            })
           } else if (marker.tool === "show_upload_zone") {
             parts.push({
               type: "tool-showUploadZone",
@@ -1018,13 +1033,13 @@ export async function GET(request: NextRequest) {
         })
       }
 
-      if (isPhotosTab && videoCardParts.length > 0) {
+      if (supportsVideoCards && videoCardParts.length > 0) {
         for (const videoCardPart of videoCardParts) {
           parts.push(videoCardPart)
         }
       }
 
-      if (isPhotosTab && toolMarkers.length > 0) {
+      if ((isPhotosTab || isVideosTab) && toolMarkers.length > 0) {
         for (const marker of toolMarkers) {
           if (marker.tool === "show_capabilities") {
             parts.push({
@@ -1065,7 +1080,7 @@ export async function GET(request: NextRequest) {
               },
             })
           } else if (marker.tool === "generate_video") {
-            if (videoCardParts.length === 0) {
+            if (supportsVideoCards && videoCardParts.length === 0) {
               const images = await getLatestVideoSourcePreview(neonUser.id, 6)
               parts.push({
                 type: "tool-generateVideo",
@@ -1075,6 +1090,16 @@ export async function GET(request: NextRequest) {
                 },
               })
             }
+          } else if (marker.tool === "switch_maya_tab") {
+            parts.push({
+              type: "tool-switchMayaTab",
+              output: {
+                targetTab: marker.targetTab,
+                title: marker.title,
+                subtitle: marker.subtitle,
+                ctaLabel: marker.ctaLabel,
+              },
+            })
           } else if (marker.tool === "show_upload_zone") {
             parts.push({
               type: "tool-showUploadZone",
