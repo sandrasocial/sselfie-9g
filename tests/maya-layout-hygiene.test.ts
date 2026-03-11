@@ -41,10 +41,9 @@ describe("maya layout hygiene", () => {
     expect(tabSwitcher).not.toContain("rounded-full border transition-all")
   })
 
-  it("avoids wrapping Maya in the global overflow-y scroll shell", () => {
+  it("uses the shared scroll shell with Maya overflow visibility", () => {
     const appShell = read("components/sselfie/sselfie-app.tsx")
-    expect(appShell).toContain('activeTab === "maya"')
-    expect(appShell).toContain('"h-full overflow-hidden"')
+    expect(appShell).toContain('activeTab === "maya" ? "overflow-visible" : "overflow-hidden"')
     expect(appShell).toContain("overflow-y-auto")
   })
 })

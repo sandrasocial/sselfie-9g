@@ -445,7 +445,6 @@ export default function SselfieApp({
     userEmail,
     userRole,
   })
-  const appShellClassName = activeTab === "maya" ? "h-full overflow-visible" : `h-full ${DesignClasses.container} overflow-hidden`
   // New users: not a member, has welcome credits (just signed up), and hasn't trained a model yet.
   // Once credits hit 0 OR they train a model, they've experienced value and see the full tab bar.
   const isNewUser = !access.isMember && creditBalance > 0 && !hasTrainedModel
@@ -808,6 +807,7 @@ export default function SselfieApp({
   const activeUpgrade = upgradeOpportunities.find((op) => !dismissedUpgradeTypes.has(op.type))
   const shouldShowUpgradeBanner =
     ["gallery", "maya"].includes(activeTab) && !!activeUpgrade && access.canUseGenerators
+  const showShellHeader = activeTab !== "maya"
 
   const logUpgradeEvent = async (eventType: "impression" | "dismiss" | "cta_click", opportunityType?: string) => {
     try {
@@ -917,242 +917,240 @@ export default function SselfieApp({
           </div>
         )}
 
-      <main className="relative h-full lg:mx-3 pb-2 sm:pb-3 md:pb-4">
-        <div className={appShellClassName}>
-          {/* Hide header when in Maya tab - it has its own header */}
-          {activeTab !== "maya" && (
-            <header className={`sticky top-0 z-10 border-b ${DesignClasses.border.stone} ${DesignClasses.spacing.paddingX.sm} py-3 pt-safe`} style={{ background: 'rgba(175,170,162,0.08)', backdropFilter: 'blur(50px)' }}>
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 shrink-0">
-                  <div className={`${DesignClasses.typography.heading.h4} text-[#f0ede8]`}>
-                    SSELFIE
-                  </div>
-                </div>
+      {showShellHeader && (
+        <header className={`fixed top-0 left-0 right-0 z-[85] border-b ${DesignClasses.border.stone} ${DesignClasses.spacing.paddingX.sm} py-3 pt-safe`} style={{ background: 'rgba(175,170,162,0.08)', backdropFilter: 'blur(50px)' }}>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 shrink-0">
+              <div className={`${DesignClasses.typography.heading.h4} text-[#f0ede8]`}>
+                SSELFIE
+              </div>
+            </div>
 
-                <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                  {/* My Feed dropdown - only show in feed planner */}
-                  {activeTab === "feed-planner" && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button
-                          className={`flex items-center gap-1.5 px-3 py-1.5 ${DesignClasses.radius.sm} hover:bg-[rgba(175,170,162,0.12)] transition-colors text-xs font-medium text-[#f0ede8] min-h-[36px]`}
-                          aria-label="My Feed"
-                          style={{ background: 'rgba(175,170,162,0.10)', border: '1px solid rgba(195,190,182,0.20)' }}
-                        >
-                          <span>Feeds</span>
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className={`w-56 ${DesignClasses.background.overlay} ${DesignClasses.blur.md} ${DesignClasses.border.stone} shadow-lg`}>
-                        <div className="px-3 py-2">
-                          <div className={`${DesignClasses.typography.label.uppercase} ${DesignClasses.text.tertiary} mb-2`}>Feed History</div>
-                          <div className="max-h-64 overflow-y-auto">
-                            {isLoadingFeeds ? (
-                              <div className="px-2 py-4 text-center text-xs text-[#8a8780]">Loading feeds...</div>
-                            ) : feedListError ? (
-                              <div className="px-2 py-4 text-center text-xs text-red-500">Failed to load feeds</div>
-                            ) : feeds.length === 0 ? (
-                              <div className="px-2 py-4 text-center text-xs text-[#8a8780]">No feeds yet</div>
-                            ) : (
-                              feeds.map((feed: any) => (
-                                <div key={feed.id} className="group relative">
-                                  <DropdownMenuItem
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      // Update search params - router.replace updates URL without navigation
-                                      const currentPath = window.location.pathname
-                                      router.replace(`${currentPath}?feedId=${feed.id}#feed-planner`)
-                                    }}
-                                    className={`cursor-pointer ${currentFeedId === feed.id ? 'bg-[rgba(175,170,162,0.14)]' : ''}`}
-                                  >
-                                    <div className="flex items-center gap-2.5 w-full">
-                                      {/* Color indicator - always visible */}
-                                      <div
-                                        className="w-4 h-4 rounded-full shrink-0 border-2 flex-shrink-0"
-                                        style={{
-                                          backgroundColor: feed.display_color || '#2e2c29',
-                                          borderColor: feed.display_color || '#3a3630',
-                                          borderStyle: feed.display_color ? 'solid' : 'dashed',
-                                        }}
-                                        title={feed.display_color ? `Color: ${feed.display_color}` : 'No color set'}
-                                      >
-                                        {!feed.display_color && (
-                                          <div className="w-full h-full flex items-center justify-center">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-[#8a8780]"></div>
-                                          </div>
-                                        )}
-                                      </div>
-                                      <div className="flex flex-col flex-1 min-w-0">
-                                        <span className="text-sm font-medium text-[#f0ede8] truncate">{feed.title || `Feed ${feed.id}`}</span>
-                                        {feed.layout_type === 'preview' ? (
-                                          <span className="text-xs text-[#8a8780]">Preview Feed</span>
-                                        ) : feed.image_count !== undefined ? (
-                                          <span className="text-xs text-[#8a8780]">{feed.image_count}/{feed.layout_type === 'grid_3x4' ? '12' : '9'} images</span>
-                                        ) : null}
-                                      </div>
-                                    </div>
-                                  </DropdownMenuItem>
-                                  {/* Edit button - appears on hover */}
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation()
-                                      handleEditFeed(feed)
-                                    }}
-                                    className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-[rgba(175,170,162,0.12)] rounded"
-                                    aria-label="Edit feed"
-                                  >
-                                    <span className="text-[9px] tracking-[0.2em] uppercase text-[#8a8780]">Edit</span>
-                                  </button>
-                                </div>
-                              ))
-                            )}
-                          </div>
-                        </div>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-
-                  {/* Feed Edit Modal */}
-                  <Dialog open={!!editingFeed} onOpenChange={(open) => !open && setEditingFeed(null)}>
-                    <DialogContent className="sm:max-w-md">
-                      <DialogHeader>
-                        <DialogTitle>Edit Feed</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4 py-4">
-                        <div>
-                          <label className="text-sm font-medium text-[#a8a49c] mb-1.5 block">
-                            Feed Name
-                          </label>
-                          <Input
-                            value={editTitle}
-                            onChange={(e) => setEditTitle(e.target.value)}
-                            placeholder="Enter feed name"
-                            className="w-full"
-                            maxLength={50}
-                          />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-[#a8a49c] mb-2 block">
-                            Color
-                          </label>
-                          <div className="grid grid-cols-6 gap-2">
-                            {presetColors.map((color) => (
-                              <button
-                                key={color.value || "none"}
-                                onClick={() => setEditColor(color.value)}
-                                className={`w-10 h-10 rounded-full border-2 transition-all ${
-                                  editColor === color.value
-                                    ? 'border-[#f0ede8] scale-110'
-                                    : 'border-[rgba(195,190,182,0.25)] hover:border-[rgba(195,190,182,0.40)]'
-                                }`}
-                                style={{
-                                  backgroundColor: color.value || 'transparent',
-                                  borderStyle: color.value ? 'solid' : 'dashed',
-                                }}
-                                aria-label={color.name}
-                                title={color.name}
-                              />
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <button
-                          onClick={() => setEditingFeed(null)}
-                          className="px-4 py-2 text-sm text-[#8a8780] hover:text-[#f0ede8]"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={handleSaveFeed}
-                          disabled={isSaving}
-                          className={`px-4 py-2 text-sm font-medium rounded-md ${
-                            isSaving
-                              ? 'bg-[rgba(175,170,162,0.16)] text-[#8a8780] cursor-not-allowed'
-                              : 'bg-[#c8c4bb] text-[#0d0c0b] hover:bg-[#f0ede8]'
-                          }`}
-                        >
-                          {isSaving ? "Saving..." : "Save"}
-                        </button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
-
-                  <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+              {/* My Feed dropdown - only show in feed planner */}
+              {activeTab === "feed-planner" && (
+                <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button
-                      className={`flex items-center justify-center w-9 h-9 ${DesignClasses.radius.sm} hover:bg-[rgba(175,170,162,0.12)] transition-colors`}
-                      aria-label="Menu"
+                      className={`flex items-center gap-1.5 px-3 py-1.5 ${DesignClasses.radius.sm} hover:bg-[rgba(175,170,162,0.12)] transition-colors text-xs font-medium text-[#f0ede8] min-h-[36px]`}
+                      aria-label="My Feed"
                       style={{ background: 'rgba(175,170,162,0.10)', border: '1px solid rgba(195,190,182,0.20)' }}
                     >
-                      <span className="text-base leading-none text-[#f0ede8]">≡</span>
+                      <span>Feeds</span>
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className={`w-64 ${DesignClasses.background.overlay} ${DesignClasses.blur.md} ${DesignClasses.border.stone} shadow-lg`}>
+                  <DropdownMenuContent align="end" className={`w-56 ${DesignClasses.background.overlay} ${DesignClasses.blur.md} ${DesignClasses.border.stone} shadow-lg`}>
                     <div className="px-3 py-2">
-                      <div className={`${DesignClasses.typography.label.uppercase} ${DesignClasses.text.tertiary}`}>
-                        Your Credits
-                      </div>
-                      <div className={`text-2xl font-serif font-extralight ${DesignClasses.text.primary} tabular-nums mt-1`}>
-                        {creditBalance.toFixed(1)}
+                      <div className={`${DesignClasses.typography.label.uppercase} ${DesignClasses.text.tertiary} mb-2`}>Feed History</div>
+                      <div className="max-h-64 overflow-y-auto">
+                        {isLoadingFeeds ? (
+                          <div className="px-2 py-4 text-center text-xs text-[#8a8780]">Loading feeds...</div>
+                        ) : feedListError ? (
+                          <div className="px-2 py-4 text-center text-xs text-red-500">Failed to load feeds</div>
+                        ) : feeds.length === 0 ? (
+                          <div className="px-2 py-4 text-center text-xs text-[#8a8780]">No feeds yet</div>
+                        ) : (
+                          feeds.map((feed: any) => (
+                            <div key={feed.id} className="group relative">
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  // Update search params - router.replace updates URL without navigation
+                                  const currentPath = window.location.pathname
+                                  router.replace(`${currentPath}?feedId=${feed.id}#feed-planner`)
+                                }}
+                                className={`cursor-pointer ${currentFeedId === feed.id ? 'bg-[rgba(175,170,162,0.14)]' : ''}`}
+                              >
+                                <div className="flex items-center gap-2.5 w-full">
+                                  {/* Color indicator - always visible */}
+                                  <div
+                                    className="w-4 h-4 rounded-full shrink-0 border-2 flex-shrink-0"
+                                    style={{
+                                      backgroundColor: feed.display_color || '#2e2c29',
+                                      borderColor: feed.display_color || '#3a3630',
+                                      borderStyle: feed.display_color ? 'solid' : 'dashed',
+                                    }}
+                                    title={feed.display_color ? `Color: ${feed.display_color}` : 'No color set'}
+                                  >
+                                    {!feed.display_color && (
+                                      <div className="w-full h-full flex items-center justify-center">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-[#8a8780]"></div>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-col flex-1 min-w-0">
+                                    <span className="text-sm font-medium text-[#f0ede8] truncate">{feed.title || `Feed ${feed.id}`}</span>
+                                    {feed.layout_type === 'preview' ? (
+                                      <span className="text-xs text-[#8a8780]">Preview Feed</span>
+                                    ) : feed.image_count !== undefined ? (
+                                      <span className="text-xs text-[#8a8780]">{feed.image_count}/{feed.layout_type === 'grid_3x4' ? '12' : '9'} images</span>
+                                    ) : null}
+                                  </div>
+                                </div>
+                              </DropdownMenuItem>
+                              {/* Edit button - appears on hover */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  handleEditFeed(feed)
+                                }}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 hover:bg-[rgba(175,170,162,0.12)] rounded"
+                                aria-label="Edit feed"
+                              >
+                                <span className="text-[9px] tracking-[0.2em] uppercase text-[#8a8780]">Edit</span>
+                              </button>
+                            </div>
+                          ))
+                        )}
                       </div>
                     </div>
-                    <DropdownMenuSeparator />
-                    <div className="px-3 py-2">
-                      <div className={`${DesignClasses.typography.label.uppercase} ${DesignClasses.text.tertiary} mb-1`}>Navigate</div>
-                      <div className="grid grid-cols-2 gap-1">
-                        {tabs.map((tab) => {
-                          return (
-                            <button
-                              key={`menu-${tab.id}`}
-                              onClick={() => {
-                                handleTabChange(tab.id)
-                                setIsMenuOpen(false)
-                              }}
-                              className={`flex items-center ${DesignClasses.spacing.gap.sm} px-2 py-2 ${DesignClasses.radius.sm} hover:bg-[rgba(175,170,162,0.12)] text-left transition-colors`}
-                            >
-                              <span className="text-xs font-medium text-[#f0ede8]">{tab.label}</span>
-                            </button>
-                          )
-                        })}
-                      </div>
-                    </div>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={() => {
-                        setShowBuyCreditsModal(true)
-                        setIsMenuOpen(false)
-                      }}
-                      className="cursor-pointer"
-                    >
-                      <span className="text-sm">Buy More Credits</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <div className="cursor-pointer">
-                        <InstallButton variant="menu" />
-                      </div>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={handleLogout}
-                      disabled={isLoggingOut}
-                      className="cursor-pointer text-red-400 focus:text-red-300 focus:bg-red-500/10"
-                    >
-                      <span className="text-sm">{isLoggingOut ? "Signing Out..." : "Sign Out"}</span>
-                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+              )}
+
+              {/* Feed Edit Modal */}
+              <Dialog open={!!editingFeed} onOpenChange={(open) => !open && setEditingFeed(null)}>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Edit Feed</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div>
+                      <label className="text-sm font-medium text-[#a8a49c] mb-1.5 block">
+                        Feed Name
+                      </label>
+                      <Input
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        placeholder="Enter feed name"
+                        className="w-full"
+                        maxLength={50}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-[#a8a49c] mb-2 block">
+                        Color
+                      </label>
+                      <div className="grid grid-cols-6 gap-2">
+                        {presetColors.map((color) => (
+                          <button
+                            key={color.value || "none"}
+                            onClick={() => setEditColor(color.value)}
+                            className={`w-10 h-10 rounded-full border-2 transition-all ${
+                              editColor === color.value
+                                ? 'border-[#f0ede8] scale-110'
+                                : 'border-[rgba(195,190,182,0.25)] hover:border-[rgba(195,190,182,0.40)]'
+                            }`}
+                            style={{
+                              backgroundColor: color.value || 'transparent',
+                              borderStyle: color.value ? 'solid' : 'dashed',
+                            }}
+                            aria-label={color.name}
+                            title={color.name}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <button
+                      onClick={() => setEditingFeed(null)}
+                      className="px-4 py-2 text-sm text-[#8a8780] hover:text-[#f0ede8]"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSaveFeed}
+                      disabled={isSaving}
+                      className={`px-4 py-2 text-sm font-medium rounded-md ${
+                        isSaving
+                          ? 'bg-[rgba(175,170,162,0.16)] text-[#8a8780] cursor-not-allowed'
+                          : 'bg-[#c8c4bb] text-[#0d0c0b] hover:bg-[#f0ede8]'
+                      }`}
+                    >
+                      {isSaving ? "Saving..." : "Save"}
+                    </button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              <DropdownMenu open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className={`flex items-center justify-center w-9 h-9 ${DesignClasses.radius.sm} hover:bg-[rgba(175,170,162,0.12)] transition-colors`}
+                  aria-label="Menu"
+                  style={{ background: 'rgba(175,170,162,0.10)', border: '1px solid rgba(195,190,182,0.20)' }}
+                >
+                  <span className="text-base leading-none text-[#f0ede8]">≡</span>
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className={`w-64 ${DesignClasses.background.overlay} ${DesignClasses.blur.md} ${DesignClasses.border.stone} shadow-lg`}>
+                <div className="px-3 py-2">
+                  <div className={`${DesignClasses.typography.label.uppercase} ${DesignClasses.text.tertiary}`}>
+                    Your Credits
+                  </div>
+                  <div className={`text-2xl font-serif font-extralight ${DesignClasses.text.primary} tabular-nums mt-1`}>
+                    {creditBalance.toFixed(1)}
+                  </div>
                 </div>
-              </div>
-            </header>
-          )}
+                <DropdownMenuSeparator />
+                <div className="px-3 py-2">
+                  <div className={`${DesignClasses.typography.label.uppercase} ${DesignClasses.text.tertiary} mb-1`}>Navigate</div>
+                  <div className="grid grid-cols-2 gap-1">
+                    {tabs.map((tab) => {
+                      return (
+                        <button
+                          key={`menu-${tab.id}`}
+                          onClick={() => {
+                            handleTabChange(tab.id)
+                            setIsMenuOpen(false)
+                          }}
+                          className={`flex items-center ${DesignClasses.spacing.gap.sm} px-2 py-2 ${DesignClasses.radius.sm} hover:bg-[rgba(175,170,162,0.12)] text-left transition-colors`}
+                        >
+                          <span className="text-xs font-medium text-[#f0ede8]">{tab.label}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => {
+                    setShowBuyCreditsModal(true)
+                    setIsMenuOpen(false)
+                  }}
+                  className="cursor-pointer"
+                >
+                  <span className="text-sm">Buy More Credits</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <div className="cursor-pointer">
+                    <InstallButton variant="menu" />
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  disabled={isLoggingOut}
+                  className="cursor-pointer text-red-400 focus:text-red-300 focus:bg-red-500/10"
+                >
+                  <span className="text-sm">{isLoggingOut ? "Signing Out..." : "Sign Out"}</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            </div>
+          </div>
+        </header>
+      )}
+
+      <main className="relative h-full overflow-hidden lg:mx-3 pb-2 sm:pb-3 md:pb-4">
+        <div className={`relative h-full ${DesignClasses.container} ${activeTab === "maya" ? "overflow-visible" : "overflow-hidden"}`}>
+          {/* Hide header when in Maya tab - it has its own header */}
+          
 
           <div
             ref={scrollContainerRef}
-            className={
-              activeTab === "maya"
-                ? "h-full overflow-hidden"
-                : `h-full ${DesignClasses.spacing.paddingX.md} pb-32 sm:pb-36 md:pb-40 pt-4 sm:pt-6 md:pt-8 overflow-y-auto`
-            }
+            className={`h-full ${DesignClasses.spacing.paddingX.md} pb-32 sm:pb-36 md:pb-40 ${showShellHeader ? "pt-20 sm:pt-24 md:pt-24" : "pt-4 sm:pt-6 md:pt-8"} overflow-y-auto`}
           >
             {shouldShowUpgradeBanner && activeUpgrade && (
               <div className="mb-4">
