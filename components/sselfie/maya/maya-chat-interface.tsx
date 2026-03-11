@@ -18,6 +18,7 @@ import {
   hasFeedStrategyArtifacts,
   stripFeedStrategyArtifacts,
 } from "@/lib/maya/feed-strategy"
+import { MAYA_CHAT_SCROLL_TOP_OFFSET } from "@/lib/maya/layout-contract"
 import type { MayaSurfaceTab } from "@/lib/maya/tab-scope"
 
 type OfferBriefFormValues = Omit<MayaOfferBrief, "assetType">
@@ -535,7 +536,7 @@ export default function MayaChatInterface({
         className="h-full overflow-y-auto pr-1 scroll-smooth"
         style={{
           // Layout contract: measured fixed header height + breathing room.
-          paddingTop: "calc(var(--maya-header-height, 124px) + 16px)",
+          paddingTop: MAYA_CHAT_SCROLL_TOP_OFFSET,
           // Keep last message clear of dynamic input dock only (nav is already below the dock).
           paddingBottom: "calc(var(--input-bar-height, 168px) + max(16px, env(safe-area-inset-bottom, 0px)))",
         }}

@@ -115,7 +115,7 @@ export default function MayaTrainingTab({
 
   if (error) {
     return (
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6 relative min-h-0">
+      <div className="flex-1 p-4 sm:p-6 relative min-h-0">
         <div className="max-w-4xl mx-auto">
           <div className="text-center py-12">
             <h2 className="text-xl sm:text-2xl font-serif font-extralight tracking-[0.2em] uppercase text-white mb-3">
@@ -137,7 +137,7 @@ export default function MayaTrainingTab({
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 sm:p-6 relative min-h-0">
+    <div className="flex-1 p-4 sm:p-6 relative min-h-0">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8 sm:mb-12">

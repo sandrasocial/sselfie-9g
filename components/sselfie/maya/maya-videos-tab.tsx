@@ -464,7 +464,7 @@ export default function MayaVideosTab({
 
   if (imagesLoading) {
     return (
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+      <div className="flex-1 p-4 sm:p-6">
         <div className="max-w-7xl mx-auto">
           <UnifiedLoading variant="screen" message="Loading images..." />
         </div>
@@ -474,7 +474,7 @@ export default function MayaVideosTab({
 
   if (imagesError) {
     return (
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+      <div className="flex-1 p-4 sm:p-6">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="text-center space-y-4">
@@ -493,7 +493,7 @@ export default function MayaVideosTab({
   }
 
   return (
-    <div id="maya-videos-gallery" className="flex-1 overflow-y-auto p-4 sm:p-6">
+    <div id="maya-videos-gallery" className="flex-1 p-4 sm:p-6">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Info Section */}
         <div className={`bg-stone-100/40 ${DesignClasses.radius.lg} ${DesignClasses.spacing.padding.md} ${DesignClasses.border.stone}`}>

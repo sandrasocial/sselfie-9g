@@ -64,6 +64,9 @@ import {
   isMayaTabScopedChatEnabled,
   resolveMayaChatTypeForTab,
 } from "@/lib/maya/tab-scope"
+import {
+  MAYA_SURFACE_TOP_OFFSET,
+} from "@/lib/maya/layout-contract"
 import { getMayaSurfaceQuickPrompts, getMayaInputPlaceholder } from "@/lib/maya/prompt-contract"
 import MayaUpsellCard from "./maya/maya-upsell-card"
 
@@ -3757,7 +3760,7 @@ export default function MayaChatScreen({
       {activeMayaTab === "photos" && (
         <div
           className="shrink-0"
-          style={{ marginTop: "calc(var(--maya-header-height, 124px) + 8px)" }}
+          style={{ marginTop: MAYA_SURFACE_TOP_OFFSET }}
         >
           {/* Credit welcome banner — shown to non-members with credits on an empty session.
               Creates urgency and clarity: "you have X free photos, go use them." */}
@@ -4069,7 +4072,7 @@ export default function MayaChatScreen({
               <div
                 className="flex flex-col items-center justify-start py-6"
                 style={{
-                  paddingTop: "calc(var(--maya-header-height, 124px) + 8px)",
+                  paddingTop: MAYA_SURFACE_TOP_OFFSET,
                   paddingBottom: photoTabBottomSpacing,
                 }}
               >
@@ -4117,7 +4120,7 @@ export default function MayaChatScreen({
               <div
                 className="mx-auto w-full max-w-2xl pt-4 pb-6 sm:pb-8"
                 style={{
-                  paddingTop: "calc(var(--maya-header-height, 124px) + 8px)",
+                  paddingTop: MAYA_SURFACE_TOP_OFFSET,
                   paddingBottom: photoTabBottomSpacing,
                 }}
               >
@@ -4197,7 +4200,7 @@ export default function MayaChatScreen({
               <div
                 className="flex flex-col items-center justify-start py-6"
                 style={{
-                  paddingTop: "calc(var(--maya-header-height, 124px) + 8px)",
+                  paddingTop: MAYA_SURFACE_TOP_OFFSET,
                   paddingBottom: photoTabBottomSpacing,
                 }}
               >
@@ -4390,11 +4393,11 @@ export default function MayaChatScreen({
       {/* Tab Content - Videos Tab */}
       {/* Pure gallery surface — pick a photo, tap Animate, done. No chat or text input here. */}
       {activeMayaTab === "videos" && (
-        <div className="flex-1 min-h-0 flex flex-col overflow-y-auto">
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
           <div
             className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-6"
             style={{
-              paddingTop: "calc(var(--maya-header-height, 124px) + 8px)",
+              paddingTop: MAYA_SURFACE_TOP_OFFSET,
               paddingBottom: "calc(var(--sselfie-bottom-nav-height, 96px) + 24px)",
             }}
           >
@@ -4420,8 +4423,7 @@ export default function MayaChatScreen({
       {activeMayaTab === "prompts" && (
         <div
           style={{
-            // Header (~56-64px) + Tabs (~50px) + safe area = ~106-114px total
-            paddingTop: 'calc(106px + max(0.625rem, env(safe-area-inset-top, 0px)))',
+            paddingTop: MAYA_SURFACE_TOP_OFFSET,
             paddingBottom: '20px', // Space for content
           }}
         >
@@ -4519,7 +4521,7 @@ export default function MayaChatScreen({
         <div
           className="flex-1 min-h-0 overflow-y-auto relative z-10"
           style={{
-            paddingTop: "calc(var(--maya-header-height, 124px) + 8px)",
+            paddingTop: MAYA_SURFACE_TOP_OFFSET,
             paddingBottom: "20px",
           }}
         >

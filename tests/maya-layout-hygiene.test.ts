@@ -57,4 +57,25 @@ describe("maya layout hygiene", () => {
     expect(mayaChatScreen).toContain('showModeToggle={activeMayaTab === "photos"}')
     expect(mayaChatScreen).not.toContain("showModeToggle={!hideModeComplexity && activeMayaTab === \"photos\"}")
   })
+
+  it("uses the shared header offset contract across Maya tab surfaces", () => {
+    const mayaChatScreen = read("components/sselfie/maya-chat-screen.tsx")
+    const mayaChatInterface = read("components/sselfie/maya/maya-chat-interface.tsx")
+
+    expect(mayaChatScreen).toContain("MAYA_SURFACE_TOP_OFFSET")
+    expect(mayaChatScreen).not.toContain('calc(var(--maya-header-height, 124px) + 8px)')
+    expect(mayaChatScreen).not.toContain("calc(106px + max(0.625rem, env(safe-area-inset-top, 0px)))")
+    expect(mayaChatInterface).toContain("MAYA_CHAT_SCROLL_TOP_OFFSET")
+    expect(mayaChatInterface).not.toContain('calc(var(--maya-header-height, 124px) + 16px)')
+  })
+
+  it("keeps Maya fixed-header tabs on a single scroll shell", () => {
+    const mayaChatScreen = read("components/sselfie/maya-chat-screen.tsx")
+    const mayaTrainingTab = read("components/sselfie/maya/maya-training-tab.tsx")
+    const mayaVideosTab = read("components/sselfie/maya/maya-videos-tab.tsx")
+
+    expect(mayaChatScreen).toContain('className="flex-1 min-h-0 flex flex-col overflow-hidden"')
+    expect(mayaTrainingTab).not.toContain('className="flex-1 overflow-y-auto p-4 sm:p-6 relative min-h-0"')
+    expect(mayaVideosTab).not.toContain('className="flex-1 overflow-y-auto p-4 sm:p-6"')
+  })
 })
