@@ -1,4 +1,5 @@
 import { CREDIT_COSTS } from "@/lib/credits"
+import { getCreditCostForSource } from "@/lib/maya/model-choice-policy"
 import {
   detectMayaAssetCreateIntent,
   detectMayaAssetIntentResult,
@@ -72,7 +73,7 @@ export type MayaTurnAction =
 export function estimateToolDispatchCredits(intent: MayaToolDispatchIntent): number {
   if (intent.tool === "generate_image") {
     if (!intent.source || intent.source === "choose_source") return 0
-    return CREDIT_COSTS.IMAGE
+    return getCreditCostForSource(intent.source)
   }
 
   if (intent.tool === "generate_video") {

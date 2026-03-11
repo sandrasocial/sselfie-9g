@@ -38,8 +38,8 @@ export default function MembershipHomeCard({
     <div className="w-full max-w-3xl">
       <MayaInlineCard
         eyebrow="My Studio"
-        title="Everything stays with Maya"
-        subtitle="Create photos, plan the week, draft your calendar, and open your latest work from one premium workspace."
+        title="Your studio lives here"
+        subtitle="Tell me what you need, and I'll build it here with you - posts, weekly plans, and calendar drafts in one flow."
         aside={<MayaInlinePill tone="strong">{normalizedCredits.toLocaleString()} credits</MayaInlinePill>}
         actions={
           <>
@@ -85,7 +85,7 @@ export default function MembershipHomeCard({
                   <div className="stone-inset-panel rounded-[22px] px-4 py-4">
                     <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-smoke)]">Calendar</div>
                     <div className="mt-2 text-sm text-[color:var(--color-porcelain)]">
-                      Build this week&apos;s plan inline with Maya.
+                      Let&apos;s map this week together and keep it easy to follow.
                     </div>
                     <div className="mt-3">
                       <MayaInlineAction onClick={onCreateCalendar}>Create calendar</MayaInlineAction>
@@ -96,7 +96,7 @@ export default function MembershipHomeCard({
                   <div className="stone-inset-panel rounded-[22px] px-4 py-4">
                     <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-smoke)]">Assets</div>
                     <div className="mt-2 text-sm text-[color:var(--color-porcelain)]">
-                      Upload product photos and references for new drafts.
+                      Drop in product photos or references and I&apos;ll use them in new drafts.
                     </div>
                     <div className="mt-3">
                       <MayaInlineAction onClick={onUploadAssets}>Upload assets</MayaInlineAction>
@@ -109,14 +109,14 @@ export default function MembershipHomeCard({
 
           <div className="stone-inset-panel rounded-[24px] px-4 py-4">
             <div className="flex items-center justify-between gap-2">
-              <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-smoke)]">Inline Workflow</div>
-              <MayaInlinePill tone="muted">Maya-first</MayaInlinePill>
+              <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-smoke)]">How we work</div>
+              <MayaInlinePill tone="muted">In chat</MayaInlinePill>
             </div>
             <div className="mt-4 space-y-3">
               {[
-                "Ask Maya for a post, week plan, or draft.",
-                "Review the result card inline in chat.",
-                "Refine, save, or publish without leaving the thread.",
+                "Ask for what you need right now.",
+                "Review it right here and tweak fast.",
+                "Save or publish when it feels right.",
               ].map((step, index) => (
                 <div key={step} className="rounded-[20px] border border-[rgba(195,190,182,0.14)] bg-[rgba(175,170,162,0.08)] px-3.5 py-3">
                   <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-smoke)]">

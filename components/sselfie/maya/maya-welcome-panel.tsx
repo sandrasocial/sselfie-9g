@@ -57,7 +57,7 @@ export default function MayaWelcomePanel({
             </div>
             <div className="stone-inset-panel rounded-[22px] px-4 py-4">
               <div className="text-sm leading-relaxed text-[color:var(--color-porcelain)]">
-                Perfect. I can make the photo, map the week, and keep it all moving right here in chat.
+                Perfect. I&apos;ll make the photo, map the week, and keep everything moving right here with you.
               </div>
             </div>
             {uploadHint ? (
@@ -69,8 +69,8 @@ export default function MayaWelcomePanel({
 
           <div className="stone-inset-panel rounded-[24px] px-4 py-4">
             <div className="flex items-center justify-between gap-2">
-              <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-smoke)]">Inline Preview</div>
-              <MayaInlinePill tone="muted">3 frames</MayaInlinePill>
+              <div className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-smoke)]">Your preview</div>
+              <MayaInlinePill tone="muted">3 photos</MayaInlinePill>
             </div>
             <div className="mt-3 grid grid-cols-3 gap-2.5">
               {images.map((imageUrl, index) => (
@@ -83,7 +83,7 @@ export default function MayaWelcomePanel({
               ))}
             </div>
             <div className="mt-3 text-xs leading-relaxed text-[color:var(--text-accent)]">
-              Maya will keep outputs inline so you can refine, save, and publish without leaving the thread.
+              I&apos;ll show each result right here so you can tweak it, save it, or publish—no jumping to other screens.
             </div>
           </div>
         </div>

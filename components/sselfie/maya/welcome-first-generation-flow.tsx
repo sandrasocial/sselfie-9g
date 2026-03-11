@@ -261,7 +261,7 @@ export default function WelcomeFirstGenerationFlow({
           </p>
           <p className="font-['Cormorant_Garamond'] font-light text-2xl sm:text-3xl text-[#f0ede8] tracking-wide mb-3">Your first photo is ready.</p>
           <p className="text-sm text-[#8a8780] leading-relaxed mb-6">
-            Good. This is your quick win. Keep this thread open and let&apos;s build from here.
+            Good. This is your quick win. Keep this chat open and let&apos;s build from here.
           </p>
           <img src={generatedImageUrl} alt="Your first brand photo" className="w-full aspect-square object-cover rounded-2xl mb-6 border border-[rgba(195,190,182,0.20)]" />
           <div className="space-y-3">

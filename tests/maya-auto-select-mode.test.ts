@@ -60,6 +60,28 @@ describe("autoSelectMayaMode", () => {
       }),
     ).toBe("pro")
   })
+
+  it("uses policy when canUseSelfies is provided: no model but has selfies → pro", () => {
+    expect(
+      autoSelectMayaMode({
+        hasReferenceImage: false,
+        hasTrainedLoraModel: false,
+        isContentPlanning: false,
+        canUseSelfies: true,
+      }),
+    ).toBe("pro")
+  })
+
+  it("uses policy when canUseSelfies is provided: no model and no selfies → pro", () => {
+    expect(
+      autoSelectMayaMode({
+        hasReferenceImage: false,
+        hasTrainedLoraModel: false,
+        isContentPlanning: false,
+        canUseSelfies: false,
+      }),
+    ).toBe("pro")
+  })
 })
 
 describe("isContentPlanningIntent", () => {

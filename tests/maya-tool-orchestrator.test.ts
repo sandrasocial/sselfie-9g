@@ -202,11 +202,27 @@ describe("orchestrateMayaTurn", () => {
 })
 
 describe("estimateToolDispatchCredits", () => {
-  it("assigns image credit estimates only when source is explicit", () => {
+  it("assigns image credit estimates by source (Selfie = Pro cost, My Model/Base = Classic cost)", () => {
     expect(
       estimateToolDispatchCredits({
         tool: "generate_image",
         source: "selfies",
+        responseText: "x",
+      }),
+    ).toBe(2)
+
+    expect(
+      estimateToolDispatchCredits({
+        tool: "generate_image",
+        source: "custom_model",
+        responseText: "x",
+      }),
+    ).toBe(1)
+
+    expect(
+      estimateToolDispatchCredits({
+        tool: "generate_image",
+        source: "base_model",
         responseText: "x",
       }),
     ).toBe(1)

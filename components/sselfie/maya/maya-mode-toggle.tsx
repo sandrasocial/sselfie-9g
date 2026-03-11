@@ -87,8 +87,8 @@ export default function MayaModeToggle({
               ? "bg-[rgba(175,170,162,0.25)] text-[#f0ede8] cursor-default"
               : "bg-transparent text-[#8a8780] hover:bg-[rgba(175,170,162,0.10)] cursor-pointer"
           }`}
-          aria-label="Switch to SELFIE - Upload selfies for faster generation"
-          title="Switch to SELFIE - Upload selfies for faster generation"
+          aria-label="Switch to SELFIE - Use linked references or upload selfies"
+          title="Switch to SELFIE - Use linked references or upload selfies"
           disabled={isProMode}
         >
           <span className="text-[9px] sm:text-xs md:text-sm font-serif font-extralight tracking-[0.12em] sm:tracking-[0.2em] uppercase whitespace-nowrap">
@@ -107,10 +107,10 @@ export default function MayaModeToggle({
         onClick={onToggle}
         className="touch-manipulation active:scale-95 px-4 py-2 rounded-lg transition-colors bg-[rgba(175,170,162,0.10)] text-[#f0ede8] hover:bg-[rgba(175,170,162,0.20)] border border-[rgba(195,190,182,0.25)] min-h-[36px]"
         aria-label={isClassicMode
-          ? "Switch to SELFIE - Upload selfies for faster generation"
+          ? "Switch to SELFIE - Use linked references or upload selfies"
           : "Switch to MY MODEL - Use your trained model for consistent results"}
         title={isClassicMode
-          ? "Switch to SELFIE - Upload selfies for faster generation"
+          ? "Switch to SELFIE - Use linked references or upload selfies"
           : "Switch to MY MODEL - Use your trained model for consistent results"}
       >
         <span className="text-xs sm:text-sm font-serif font-extralight tracking-[0.2em] uppercase">

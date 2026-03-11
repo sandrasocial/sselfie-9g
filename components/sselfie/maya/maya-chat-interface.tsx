@@ -846,17 +846,17 @@ export default function MayaChatInterface({
                                 {
                                   title: "Create Concept Cards",
                                   prompt: "Generate concept cards for my next content shoot",
-                                  description: "Draft post, reel, and carousel concepts in the same thread.",
+                                  description: "Draft post, reel, and carousel concepts right here in the chat.",
                                 },
                                 {
                                   title: "Animate to Video",
                                   prompt: "Animate my latest image into a short reel",
-                                  description: "Pick an image and launch video generation inline.",
+                                  description: "Pick an image and I'll create a video from it right here.",
                                 },
                                 {
                                   title: "Create Content Calendar",
                                   prompt: "Create a content calendar for this month",
-                                  description: "Draft your monthly calendar and keep editing in-thread.",
+                                  description: "Draft your monthly calendar and keep editing right here.",
                                 },
                                 {
                                   title: "Upload Product Assets",
@@ -866,7 +866,7 @@ export default function MayaChatInterface({
                                 {
                                   title: "Open My Studio Hub",
                                   prompt: "Show my studio hub and everything you've created",
-                                  description: "View your latest feeds, photos, and videos inline.",
+                                  description: "See your latest feeds, photos, and videos here.",
                                 },
                               ]
 
@@ -908,7 +908,7 @@ export default function MayaChatInterface({
                                     key={partIndex}
                                     eyebrow="Studio Hub"
                                     title="My Studio"
-                                    subtitle="Loading your created assets, drafts, and recent outputs."
+                                    subtitle="Loading your drafts and recent work."
                                   />
                                 )
                               }
@@ -1041,7 +1041,7 @@ export default function MayaChatInterface({
                                   key={partIndex}
                                   eyebrow="Gallery"
                                   title="Recent Photos"
-                                  subtitle="Your latest outputs stay here so Maya can reuse them in new drafts."
+                                  subtitle="Your latest photos stay here so I can use them in new drafts."
                                   aside={<MayaInlinePill>{Number(output.total || images.length)} images</MayaInlinePill>}
                                   actions={<MayaInlineAction href="/studio?tab=gallery#gallery">Open Gallery</MayaInlineAction>}
                                 >
@@ -1064,7 +1064,7 @@ export default function MayaChatInterface({
                                     </div>
                                   ) : (
                                     <div className="stone-inset-panel rounded-[22px] px-4 py-4 text-sm text-[color:var(--text-accent)]">
-                                      No images yet. Generate your first photo and Maya will keep it here.
+                                      No images yet. Generate your first photo and I'll keep it here.
                                     </div>
                                   )}
                                 </MayaInlineCard>
@@ -1116,8 +1116,8 @@ export default function MayaChatInterface({
                                 label: string
                                 description: string
                               }> = [
-                                { id: "selfies", label: "Use Selfies", description: "Upload or use linked references." },
-                                { id: "custom_model", label: "Train Model", description: "Go to training with your selfies." },
+                                { id: "selfies", label: "Selfie", description: "Use linked references or upload selfies." },
+                                { id: "custom_model", label: "My Model", description: "Use your trained model for consistent results." },
                                 { id: "base_model", label: "Base Model", description: "Create with the default model." },
                               ]
 
@@ -1173,7 +1173,7 @@ export default function MayaChatInterface({
                                   key={partIndex}
                                   eyebrow="Upload Zone"
                                   title={`Add ${categoryLabel}`}
-                                  subtitle={`Ready for ${categoryLabel.toLowerCase()}. Open the inline uploader and drop your images.`}
+                                  subtitle={`Ready for ${categoryLabel.toLowerCase()}. Add your images here.`}
                                   actions={
                                     <MayaInlineAction onClick={() => onToolOpenUploadZone?.(category)} variant="primary">
                                       Open Upload
@@ -1578,7 +1578,7 @@ export default function MayaChatInterface({
                                   <div key={partIndex} className="mt-3 rounded-xl border border-[rgba(195,190,182,0.20)] bg-[rgba(175,170,162,0.10)] p-4">
                                     <div className="text-xs uppercase tracking-[0.2em] text-[#8a8780]">Create Video</div>
                                     <p className="mt-2 text-sm text-[#d5d5d5]">
-                                      Pick from your gallery or upload a new reference and Maya will animate it inline.
+                                      Pick from your gallery or upload a new reference and I'll animate it right here.
                                     </p>
                                     <div className="mt-3 flex flex-wrap gap-2">
                                       <button

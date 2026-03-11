@@ -326,15 +326,31 @@ export async function POST(req: Request) {
         (typeof latestUserMessage?.content === "string" ? latestUserMessage.content : "")
 
       let hasTrainedLoraModel = false
+      let canUseSelfies = false
       try {
-        const modelRows = await sql`
-          SELECT 1
-          FROM user_models
-          WHERE user_id = ${dbUserId}
-            AND training_status = 'completed'
-          LIMIT 1
-        `
+        const [modelRows, libraryRows] = await Promise.all([
+          sql`
+            SELECT 1
+            FROM user_models
+            WHERE user_id = ${dbUserId}
+              AND training_status = 'completed'
+            LIMIT 1
+          `,
+          sql`
+            SELECT 1
+            FROM user_image_libraries
+            WHERE user_id::text = ${dbUserId}
+              AND (
+                (selfies IS NOT NULL AND array_length(selfies, 1) > 0)
+                OR (products IS NOT NULL AND array_length(products, 1) > 0)
+                OR (people IS NOT NULL AND array_length(people, 1) > 0)
+                OR (vibes IS NOT NULL AND array_length(vibes, 1) > 0)
+              )
+            LIMIT 1
+          `,
+        ])
         hasTrainedLoraModel = modelRows.length > 0
+        canUseSelfies = libraryRows.length > 0
       } catch (modelError) {
         console.error("[Maya Chat API] Failed checking trained model for unified routing:", modelError)
       }
@@ -343,6 +359,7 @@ export async function POST(req: Request) {
         hasReferenceImage,
         hasTrainedLoraModel,
         isContentPlanning: isContentPlanningIntent(latestUserText),
+        canUseSelfies,
       })
       const normalizedAutoMode = normalizeMayaChatType(autoMode)
 

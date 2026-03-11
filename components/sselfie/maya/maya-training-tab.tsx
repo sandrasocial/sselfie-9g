@@ -4,6 +4,7 @@ import { useState } from "react"
 import useSWR from "swr"
 import Image from "next/image"
 import RetrainModelModal from "../retrain-model-modal"
+import { trackAnalyticsEvent } from "@/lib/analytics/client"
 
 interface MayaTrainingTabProps {
   userId?: string
@@ -61,7 +62,45 @@ export default function MayaTrainingTab({
   const needsTrainingCredits = !isTraining && !isCompleted && !isFailed && creditBalance < trainingCost
 
   const handleStartTraining = () => {
-    window.dispatchEvent(new CustomEvent('open-onboarding'))
+    if (needsTrainingCredits) {
+      trackAnalyticsEvent({
+        event: "training_cta_clicked",
+        properties: {
+          outcome: "low_credits_redirect",
+          isMembership,
+          creditBalance: Math.round(creditBalance),
+          requiredCredits: trainingCost,
+          source: "maya_training_tab",
+        },
+      }).catch(() => {})
+      onBuyCredits?.()
+      return
+    }
+    if (!userId) {
+      trackAnalyticsEvent({
+        event: "training_cta_clicked",
+        properties: {
+          outcome: "missing_userid",
+          isMembership,
+          creditBalance: Math.round(creditBalance),
+          requiredCredits: trainingCost,
+          source: "maya_training_tab",
+        },
+      }).catch(() => {})
+      alert("Please refresh the page and try again.")
+      return
+    }
+    trackAnalyticsEvent({
+      event: "training_cta_clicked",
+      properties: {
+        outcome: "opened_modal",
+        isMembership,
+        creditBalance: Math.round(creditBalance),
+        requiredCredits: trainingCost,
+        source: "maya_training_tab",
+      },
+    }).catch(() => {})
+    setShowRetrainModal(true)
   }
 
   const handleManageTraining = () => {
@@ -76,7 +115,7 @@ export default function MayaTrainingTab({
 
   if (error) {
     return (
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 relative min-h-0">
         <div className="max-w-4xl mx-auto">
           <div className="text-center py-12">
             <h2 className="text-xl sm:text-2xl font-serif font-extralight tracking-[0.2em] uppercase text-white mb-3">
@@ -98,7 +137,7 @@ export default function MayaTrainingTab({
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+    <div className="flex-1 overflow-y-auto p-4 sm:p-6 relative min-h-0">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8 sm:mb-12">
@@ -235,10 +274,10 @@ export default function MayaTrainingTab({
               </p>
               <button
                 onClick={handleStartTraining}
-                disabled={needsTrainingCredits}
-                className="px-6 py-3 bg-white/10 text-white rounded-lg hover:bg-white/16 transition-colors text-sm font-medium tracking-wide uppercase mx-auto disabled:opacity-50 disabled:cursor-not-allowed border border-white/12"
+                type="button"
+                className="px-6 py-3 bg-white/10 text-white rounded-lg hover:bg-white/16 transition-colors text-sm font-medium tracking-wide uppercase mx-auto border border-white/12 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Start Training
+                {needsTrainingCredits ? "Get credits to train" : "Start Training"}
               </button>
             </div>
           )}

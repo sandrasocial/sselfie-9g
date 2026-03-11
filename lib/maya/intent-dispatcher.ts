@@ -1,5 +1,8 @@
 import { formatMayaToolMarker } from "@/lib/maya/tool-registry"
 
+import type { ModelChoiceSource } from "@/lib/maya/model-choice-policy"
+import { resolveModelChoice } from "@/lib/maya/model-choice-policy"
+
 type MayaGenerationSource = "selfies" | "custom_model" | "base_model" | "choose_source"
 type MayaUploadCategory = "selfies" | "products" | "people" | "vibes"
 
@@ -259,15 +262,22 @@ export function hydrateMayaToolDispatchIntent(
   }
 
   if (intent.tool === "generate_image") {
-    const requestedSource = intent.source || "choose_source"
+    const requestedSource = (intent.source || "choose_source") as ModelChoiceSource
+    const policy = resolveModelChoice({
+      readiness: {
+        hasTrainedModel: snapshot.generation.canUseCustomModel,
+        canUseSelfies: snapshot.generation.canUseSelfies,
+      },
+      selectedSource: requestedSource,
+    })
 
-    if (requestedSource === "custom_model" && !snapshot.generation.canUseCustomModel) {
+    if (policy.fallbackReason === "training_required") {
       if (snapshot.generation.canUseSelfies) {
         return {
           ...intent,
           source: "selfies",
           responseText:
-            `Your trained model is not ready yet, so I switched this to selfies to keep momentum.\n` +
+            `Your trained model isn't ready yet, so I'm using your selfies for this one so we keep moving.\n` +
             `${formatMayaToolMarker("generate_image", "selfies")}`,
         }
       }
@@ -276,13 +286,13 @@ export function hydrateMayaToolDispatchIntent(
         ...intent,
         source: "choose_source",
         responseText:
-          `Your trained model is not ready yet. Drop selfies first or run this on the base model.\n` +
+          `Your trained model isn't ready yet. Add selfies to use Selfie mode, or train your model to use My Model.\n` +
           `${formatMayaToolMarker("show_upload_zone", "selfies")}\n` +
           `${formatMayaToolMarker("generate_image", "choose_source")}`,
       }
     }
 
-    if (requestedSource === "selfies" && !snapshot.generation.canUseSelfies) {
+    if (policy.fallbackReason === "no_selfies") {
       return {
         ...intent,
         responseText:
@@ -292,13 +302,13 @@ export function hydrateMayaToolDispatchIntent(
     }
 
     if (requestedSource === "choose_source") {
-      const hydratedSource = snapshot.generation.recommendedSource
+      const hydratedSource = policy.recommendedSource
       if (hydratedSource !== "base_model") {
         return {
           ...intent,
           source: hydratedSource,
           responseText:
-            `I already checked your profile and assets, so I preselected the best path.\n` +
+            `I checked your profile and assets and picked the best path for you.\n` +
             getGenerateImageResponse(hydratedSource),
         }
       }
@@ -306,7 +316,8 @@ export function hydrateMayaToolDispatchIntent(
 
     return {
       ...intent,
-      responseText: getGenerateImageResponse(requestedSource),
+      source: policy.effectiveSource,
+      responseText: getGenerateImageResponse(policy.effectiveSource),
     }
   }
 

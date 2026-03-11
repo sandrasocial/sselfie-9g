@@ -25,7 +25,7 @@ describe("MembershipHomeCard", () => {
       />,
     )
 
-    expect(screen.getByText("Everything stays with Maya")).toBeInTheDocument()
+    expect(screen.getByText("Your studio lives here")).toBeInTheDocument()
     expect(screen.getByText("247 credits")).toBeInTheDocument()
     expect(screen.getByText("Storm campaign draft")).toBeInTheDocument()
     expect(screen.queryByText("This Month")).not.toBeInTheDocument()

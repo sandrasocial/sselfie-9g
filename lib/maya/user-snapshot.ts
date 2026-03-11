@@ -5,6 +5,7 @@ import {
   type MayaOfferBriefField,
   type MayaOfferBriefFormValues,
 } from "@/lib/maya/offer-brief"
+import { getRecommendedSource } from "@/lib/maya/model-choice-policy"
 import type { MayaActiveAssetContext, MayaAssetType } from "@/lib/maya/memory-layer"
 
 interface UploadLibraryRow {
@@ -374,11 +375,15 @@ export async function getMayaUserSnapshot(userId: string | number): Promise<Maya
       hasAny: totalUploads > 0,
     }
 
+    const recommendedSource = getRecommendedSource({
+      hasTrainedModel,
+      canUseSelfies: uploads.hasAny,
+    })
     const generation: MayaGenerationSnapshot = {
       hasTrainedModel,
       canUseCustomModel: hasTrainedModel,
       canUseSelfies: uploads.hasAny,
-      recommendedSource: hasTrainedModel ? "custom_model" : uploads.hasAny ? "selfies" : "base_model",
+      recommendedSource,
     }
 
     return {

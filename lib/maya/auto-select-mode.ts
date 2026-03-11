@@ -1,3 +1,5 @@
+import { getRecommendedSource } from "@/lib/maya/model-choice-policy"
+
 export type MayaUnifiedMode = "pro" | "maya" | "feed-planner"
 
 const STRUCTURED_CALENDAR_TARGET_REGEX = /\b(content calendar|calendar)\b/i
@@ -8,6 +10,8 @@ export interface AutoSelectMayaModeParams {
   hasReferenceImage: boolean
   hasTrainedLoraModel: boolean
   isContentPlanning: boolean
+  /** When set, used with hasTrainedLoraModel to resolve recommended source via policy (my model vs selfie). */
+  canUseSelfies?: boolean
 }
 
 export function isUnifiedMayaUiEnabled(envValue?: string | null): boolean {
@@ -20,6 +24,13 @@ export function autoSelectMayaMode(params: AutoSelectMayaModeParams): MayaUnifie
   if (params.isContentPlanning) return "feed-planner"
   if (params.hasReferenceImage) return "pro"
   if (params.hasTrainedLoraModel) return "maya"
+  if (params.canUseSelfies !== undefined) {
+    const recommended = getRecommendedSource({
+      hasTrainedModel: params.hasTrainedLoraModel,
+      canUseSelfies: params.canUseSelfies,
+    })
+    return recommended === "custom_model" ? "maya" : "pro"
+  }
   return "pro"
 }
 

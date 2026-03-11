@@ -2050,7 +2050,7 @@ export default function MayaChatScreen({
   const getOutcomeStartPrompts = (isProMode: boolean): Array<{ label: string; prompt: string }> => {
     if (isProMode) {
       return [
-        { label: "Use My Selfies", prompt: "Let's create a photo using my uploaded selfies" },
+        { label: "Selfie", prompt: "Let's create a photo using my uploaded selfies" },
         { label: "Upload Assets", prompt: "I want to upload product photos and brand references" },
         { label: "Create Calendar", prompt: "Create a content calendar draft for this week" },
       ]
@@ -2058,7 +2058,7 @@ export default function MayaChatScreen({
 
     return [
       { label: "Train My Model", prompt: "I want to train my custom model" },
-      { label: "Upload Selfies", prompt: "I want to upload selfies first" },
+      { label: "Selfie", prompt: "I want to upload selfies first" },
       { label: "Create Calendar", prompt: "Create a content calendar draft for this week" },
     ]
   }
@@ -2920,6 +2920,16 @@ export default function MayaChatScreen({
     // Only create new chat if mode is actually changing
     if (proMode === newMode) {
       console.log("[v0] Mode switch skipped - already in", newMode ? "Pro" : "Classic", "mode")
+      return
+    }
+
+    // When switching to My Model (classic) and user has no trained model, show training CTA instead of switching
+    if (!newMode && !hasTrainedModel) {
+      setMayaTabAndHash("training")
+      toast({
+        title: "Train My Model",
+        description: "Train your model once to use My Model for consistent results. Selfie mode is ready whenever you need it.",
+      })
       return
     }
 
@@ -4442,7 +4452,7 @@ export default function MayaChatScreen({
       {/* Tab Content - Training Tab */}
       {activeMayaTab === "training" && (
         <div
-          className="flex-1 min-h-0 overflow-y-auto"
+          className="flex-1 min-h-0 overflow-y-auto relative z-10"
           style={{
             paddingTop: "calc(var(--maya-header-height, 124px) + 8px)",
             paddingBottom: "20px",

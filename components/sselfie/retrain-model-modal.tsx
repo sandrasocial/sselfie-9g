@@ -141,6 +141,8 @@ export default function RetrainModelModal({
   })
 
   const modelId = trainingStatus?.model?.id
+  const hasTrainedModel = Boolean(trainingStatus?.hasTrainedModel)
+  const isFirstTraining = !hasTrainedModel
   const isTraining =
     trainingStatus?.model?.training_status === "training" || trainingStatus?.model?.training_status === "processing"
 
@@ -474,10 +476,12 @@ export default function RetrainModelModal({
                   >
                     <div className="text-center">
                       <h2 className={`${DesignClasses.typography.heading.h3} ${DesignClasses.text.primary} mb-2`}>
-                        Retrain Your Model
+                        {isFirstTraining ? "Train Your Model" : "Retrain Your Model"}
                       </h2>
                       <p className={`${DesignClasses.typography.body.small} ${DesignClasses.text.tertiary}`}>
-                        Upload new selfies to improve your AI model
+                        {isFirstTraining
+                          ? "Upload selfies so Maya can learn your look."
+                          : "Upload new selfies to improve your AI model."}
                       </p>
                     </div>
 
@@ -621,7 +625,7 @@ export default function RetrainModelModal({
                             {isUploading && compressionProgress.total === 0 ? "Uploading..." : compressionProgress.stage || "Processing..."}
                           </span>
                         ) : (
-                          "Start Retraining"
+                          isFirstTraining ? "Start Training" : "Start Retraining"
                         )}
                       </button>
                     )}
@@ -644,7 +648,7 @@ export default function RetrainModelModal({
                       </div>
                     </div>
                     <h2 className={`${DesignClasses.typography.heading.h3} ${DesignClasses.text.primary}`}>
-                      Retraining Your Model
+                      {isFirstTraining ? "Training Your Model" : "Retraining Your Model"}
                     </h2>
                     <p className={`${DesignClasses.typography.body.medium} ${DesignClasses.text.secondary}`}>
                       Your AI is learning from your new photos. This usually takes a couple of minutes.
@@ -681,10 +685,12 @@ export default function RetrainModelModal({
                       </div>
                     </div>
                     <h2 className={`${DesignClasses.typography.heading.h2} ${DesignClasses.text.primary}`}>
-                      Retraining Complete
+                      {isFirstTraining ? "Training Complete" : "Retraining Complete"}
                     </h2>
                     <p className={`${DesignClasses.typography.body.medium} ${DesignClasses.text.secondary} max-w-md mx-auto`}>
-                      Your AI model has been updated with your new photos.
+                      {isFirstTraining
+                        ? "Your AI model is ready. You can now use My Model."
+                        : "Your AI model has been updated with your new photos."}
                     </p>
                   </motion.div>
                 )}
