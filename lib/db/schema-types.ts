@@ -74,7 +74,7 @@ export interface MayaChat {
   id: number  // SERIAL (INTEGER), NOT UUID
   user_id: string  // TEXT, NOT UUID
   title: string | null
-  chat_type?: string  // 'maya' | 'pro' | 'feed_planner' | legacy feed aliases
+  chat_type?: string  // 'maya' | 'pro' | 'videos' | 'feed_planner' | legacy feed aliases
   created_at: string
   updated_at: string
 }
