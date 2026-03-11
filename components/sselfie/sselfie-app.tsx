@@ -1144,56 +1144,51 @@ export default function SselfieApp({
       )}
 
       <main className="relative h-full overflow-hidden lg:mx-3 pb-2 sm:pb-3 md:pb-4">
-        <div className={`relative h-full ${DesignClasses.container} ${activeTab === "maya" ? "overflow-visible" : "overflow-hidden"}`}>
-          {/* Hide header when in Maya tab - it has its own header */}
-          
+        <div className={`relative h-full ${DesignClasses.container} overflow-hidden`}>
 
-          <div
-            ref={scrollContainerRef}
-            className={activeTab === "maya"
-              // Maya manages its own fixed header, scroll container, and input bar.
-              // Shell padding and overflow-y-auto must be removed to avoid:
-              //   1. Extra scrollable void (stacked pb-32 + MayaChatScreen paddingBottom)
-              //   2. Nested scroll contexts that trap position:fixed header on iOS Safari
-              ? "h-full overflow-hidden"
-              : `h-full ${DesignClasses.spacing.paddingX.md} pb-32 sm:pb-36 md:pb-40 ${showShellHeader ? "pt-20 sm:pt-24 md:pt-24" : "pt-4 sm:pt-6 md:pt-8"} overflow-y-auto`}
-          >
-            {shouldShowUpgradeBanner && activeUpgrade && (
-              <div className="mb-4">
-                <SmartUpgradeBanner
-                  opportunity={activeUpgrade}
-                  onUpgrade={() => {
-                    logUpgradeEvent("cta_click", activeUpgrade.type)
-                    setShowUpgradeModal(true)
-                  }}
-                  onDismiss={dismissUpgrade}
-                />
-              </div>
-            )}
+          {/*
+            Maya is rendered OUTSIDE the scroll container and AnimatePresence.
+            Reason: MayaChatScreen uses position:fixed for its header and input bar.
+            Wrapping it in a motion.div (even with opacity-only animation) causes
+            Framer Motion to apply will-change/transform, which creates a new
+            compositing layer. On iOS Safari this traps position:fixed children
+            relative to the layer instead of the viewport — clipping the header
+            and misplacing the input bar on real devices.
+          */}
+          {activeTab === "maya" && (
+            <MayaChatScreen
+              onImageGenerated={refreshCredits}
+              user={user}
+              setActiveTab={handleTabChange}
+              userId={userId}
+              hasTrainedModel={hasTrainedModel}
+              isMembership={access.hasFullAccess}
+              hideModeComplexity={isUnifiedMayaUiEnabled}
+              academyPurchaseProduct={academyPurchaseProduct}
+              firstTimeProductUser={firstTimeProductUser}
+            />
+          )}
 
-            <AnimatePresence mode="wait">
-              {activeTab === "maya" ? (
-                <motion.div
-                  key={activeTab}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2, ease: "easeInOut" }}
-                  className="h-full"
-                >
-                  <MayaChatScreen 
-                    onImageGenerated={refreshCredits} 
-                    user={user} 
-                    setActiveTab={handleTabChange}
-                    userId={userId}
-                    hasTrainedModel={hasTrainedModel}
-                    isMembership={access.hasFullAccess} // Only membership users see Pro/Classic toggle
-                    hideModeComplexity={isUnifiedMayaUiEnabled}
-                    academyPurchaseProduct={academyPurchaseProduct}
-                    firstTimeProductUser={firstTimeProductUser}
+          {/* All non-Maya tabs share the standard scroll container + AnimatePresence */}
+          {activeTab !== "maya" && (
+            <div
+              ref={scrollContainerRef}
+              className={`h-full ${DesignClasses.spacing.paddingX.md} pb-32 sm:pb-36 md:pb-40 ${showShellHeader ? "pt-20 sm:pt-24 md:pt-24" : "pt-4 sm:pt-6 md:pt-8"} overflow-y-auto`}
+            >
+              {shouldShowUpgradeBanner && activeUpgrade && (
+                <div className="mb-4">
+                  <SmartUpgradeBanner
+                    opportunity={activeUpgrade}
+                    onUpgrade={() => {
+                      logUpgradeEvent("cta_click", activeUpgrade.type)
+                      setShowUpgradeModal(true)
+                    }}
+                    onDismiss={dismissUpgrade}
                   />
-                </motion.div>
-              ) : (
+                </div>
+              )}
+
+              <AnimatePresence mode="wait">
                 <motion.div
                   key={activeTab}
                   initial={{ opacity: 0 }}
@@ -1201,29 +1196,29 @@ export default function SselfieApp({
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.2, ease: "easeInOut" }}
                 >
-                {activeTab === "studio" && (
-                  <StudioHubScreen />
-                )}
-                {activeTab === "gallery" && (
-                  !access.canUseGenerators ? (
-                    <UpgradeOrCredits feature="Gallery" isPaidBlueprintUser={isPaidBlueprintUserForAccess} requiresMembership={true} />
-                  ) : (
-                    <GalleryScreen user={user} userId={userId} />
-                  )
-                )}
-                {activeTab === "feed-planner" && <FeedPlannerClient userId={userId.toString()} userName={userName} />}
-                {activeTab === "academy" && (
-                  (!access.canUseGenerators || academyBlocked) ? (
-                    <UpgradeOrCredits feature="Academy" isPaidBlueprintUser={isPaidBlueprintUserForAccess} requiresMembership={true} />
-                  ) : (
-                    <AcademyScreen />
-                  )
-                )}
+                  {activeTab === "studio" && (
+                    <StudioHubScreen />
+                  )}
+                  {activeTab === "gallery" && (
+                    !access.canUseGenerators ? (
+                      <UpgradeOrCredits feature="Gallery" isPaidBlueprintUser={isPaidBlueprintUserForAccess} requiresMembership={true} />
+                    ) : (
+                      <GalleryScreen user={user} userId={userId} />
+                    )
+                  )}
+                  {activeTab === "feed-planner" && <FeedPlannerClient userId={userId.toString()} userName={userName} />}
+                  {activeTab === "academy" && (
+                    (!access.canUseGenerators || academyBlocked) ? (
+                      <UpgradeOrCredits feature="Academy" isPaidBlueprintUser={isPaidBlueprintUserForAccess} requiresMembership={true} />
+                    ) : (
+                      <AcademyScreen />
+                    )
+                  )}
                   {activeTab === "account" && <AccountScreen user={user} creditBalance={creditBalance} />}
                 </motion.div>
-            )}
-            </AnimatePresence>
-          </div>
+              </AnimatePresence>
+            </div>
+          )}
         </div>
       </main>
 
