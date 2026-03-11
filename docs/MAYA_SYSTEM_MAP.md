@@ -3,6 +3,13 @@
 Status: live-code audit as of 2026-03-09
 Scope: user-facing Maya only. Admin-only surfaces are called out but excluded from the main map.
 
+Current product lock (2026-03-11):
+
+- Recovery plan source of truth: `docs/MAYA_RELIABILITY_PROGRAM_2026-03-11.md`
+- Visible Maya top tabs are `Chat`, `Videos`, and `Train`
+- `Prompts` and `Feed` still exist in code, but are not part of the locked visible Maya surface
+- `/api/maya/create-page` and `/api/maya/create-pdf` are retired with `410` responses
+
 ## 1. What Maya is in this repo
 
 Maya is not just a chat assistant. In the live codebase, Maya is the main user operating layer for:
@@ -111,10 +118,11 @@ flowchart LR
   - owns chat state, mode state, image library state, concept trigger detection, and tool marker rendering
   - loads/saves messages via Maya APIs
   - internally tracks tabs for `photos`, `videos`, `prompts`, `training`, `feed`
-  - important current-state note: the `feed` tab is disabled and reroutes to `photos`
+  - important current-state note: only `photos`, `videos`, and `training` are part of the locked visible Maya surface
 
 - `components/sselfie/maya/maya-tab-switcher.tsx`
   - live visible tabs are `Chat`, `Videos`, `Train`
+  - product direction is to treat `Chat` as the `Photos` surface
 
 - `components/sselfie/maya/maya-chat-interface.tsx`
   - renders assistant/user messages, tool parts, concept cards, feed cards, video cards

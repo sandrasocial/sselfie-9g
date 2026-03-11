@@ -4,18 +4,27 @@
 
 ---
 
+## Reality check (2026-03-11)
+
+- Current Maya recovery source of truth: `docs/MAYA_RELIABILITY_PROGRAM_2026-03-11.md`
+- Visible Maya top tabs are `Chat`, `Videos`, and `Train`
+- `Prompts` and `Feed` still exist in code, but are not part of the locked visible Maya surface
+- `Chat` is currently the live label, but product direction is to treat it as the `Photos` surface
+- Landing page and workbook creation are retired at the route layer (`/api/maya/create-page` and `/api/maya/create-pdf` return `410`)
+- Training is credit-gated in the live backend; product guidance recommends `10-15` images even though the current route minimum is still `5`
+
 ## 1. Overview
 
 - **Feature name:** Maya
-- **One-line:** Conversational AI that knows the user (brand profile injected); Classic mode (custom Flux model + trigger word) and Pro mode (Nano Banana Pro + reference images); image generation, photoshoots, videos, prompts tab, and training (membership-only). **Feed tab is currently disabled.**
+- **One-line:** Conversational AI operating layer for SSELFIE. Visible Maya surfaces are currently Chat/Photos, Videos, and Train. Classic mode uses a trained FLUX model; Selfie mode uses Nano Banana Pro with references. Landing pages and workbooks are retired. Feed is still a separate deep-editor flow.
 - **Entry points:**
   - `/studio` (default tab can be Maya via `?tab=maya`)
   - `/maya` (direct; paid-blueprint users are redirected to `/blueprint`)
   - In-app: bottom nav “Maya” / chat icon in `SselfieApp`
 - **Who can access:**
-  - **Studio members:** Full Maya access, including **Training tab** (custom model training).
+  - **Studio members:** Full Maya access, monthly credits, and Maya mode/source controls.
   - **Paid blueprint only:** Redirected to `/blueprint`; no Maya.
-  - **Free / one-time:** Maya access except Training (with credit gating on generation).
+  - **Free / one-time:** Maya access with credit gating. Training can be entered from Maya, but starting training still requires credits.
 
 ### Product intent (canonical)
 
@@ -26,8 +35,8 @@
 - **After image generation:** **Photoshoot button** — user can create a **photoshoot in that exact style**: **6–9 photos**, same outfits and style, shown as an **Instagram carousel preview**.
 - **Videos tab:** Shows as **image cards** (click to create videos). Sends **motion prompts to Replicate** to animate that exact image. Shows as **Instagram reel preview** for the user.
 - **Prompts tab:** Intended to be **Sandra’s favourites** (best-performing prompts). **Not fully built out** — needs to be optimized and researched for best-performing prompts (Nano Banana Pro) in cool styles and fashion-forward outfits. **As of now, not many prompts are added.**
-- **Training tab:** **Custom model training**; user uploads selfies and trains their custom model. **Currently only accessible for membership users.**
-- **Feed tab:** **Disabled in Maya at the moment.**
+- **Training tab:** **Custom model training**; user uploads selfies and trains their custom model. Product guidance is 10-15 images.
+- **Feed tab:** Logic exists in code, but it is **not part of the locked visible Maya surface right now**.
 
 ---
 

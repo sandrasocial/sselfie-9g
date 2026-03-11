@@ -74,6 +74,15 @@ openclaw agent --agent north --local --message "YOUR MESSAGE"
 | 8 | Delete dead funnel email tooling + archived cron/template debt | ✅ Done |
 | 9 | Daily funnel monitoring scheduled task | ✅ Done (automation core rebuilt into 5 engines on 2026-03-10) |
 
+### Maya Reliability Program (Active - 2026-03-11)
+
+- Source of truth: `docs/MAYA_RELIABILITY_PROGRAM_2026-03-11.md`
+- Keep the shipped model-choice stabilization from `main` (`7e798510`)
+- Freeze Maya's visible top tabs to `Photos`, `Videos`, and `Train`
+- Feed stays in Feed Planner until Maya feed ownership is rebuilt cleanly
+- No new Maya top tabs, `chat_type` values, or mixed inline/task-tab UX without updating the source-of-truth docs and adding load/save/new-chat/test coverage
+- Landing pages, workbooks, and member-facing broken photoshoot flows stay retired/hidden until rebuilt
+
 ### Website Agent V1 Sprint (On hold)
 
 | Week | Tasks | Status |

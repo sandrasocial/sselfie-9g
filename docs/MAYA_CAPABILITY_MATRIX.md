@@ -7,7 +7,13 @@ Last updated: 2026-03-10
 - Thread state: `maya_chats`, `maya_chat_messages`
 - User image history: `ai_images`
 - User memory: `user_personal_brand`, `maya_personal_memory`
-- Generated asset drafts: `maya_produced_assets`, `personal_pages`
+- Generated asset drafts: `maya_produced_assets`, `personal_pages` (calendar drafts active; landing pages retired)
+
+## Current product lock
+
+- Landing page and workbook creation are retired while rebuilt
+- Visible Maya top tabs are `Photos`, `Videos`, and `Train`
+- Feed remains a separate deep editor until the Maya feed contract is rebuilt
 
 ## Canonical Journeys
 
@@ -22,7 +28,7 @@ Last updated: 2026-03-10
 | Feed | Maya chat | `/api/maya/chat` -> inline feed card -> Feed Planner deep editor | `feed_layouts`, `feed_posts`, Maya chat messages | Entry is inline in Maya; deeper editing stays in Feed Planner |
 | Training | Maya chat / Studio | training flow + model completion | user model state | Completion should affect Classic defaults immediately |
 | Content calendar | Maya chat | `/api/maya/chat` -> `/api/maya/create-calendar` | `maya_produced_assets`, `personal_pages`, Maya memory | Calendar draft should render inline and reopen from chat |
-| HTML / page draft | Maya chat | `/api/maya/chat` -> `/api/maya/create-page` | `maya_produced_assets`, `personal_pages`, Maya memory | Draft preview, reopen, and publish stay on existing page infra |
+| HTML / page draft | Retired | `/api/maya/create-page` returns `410` | existing `personal_pages` only | Not part of the current live Maya contract |
 
 ## Release Gates
 - Every Maya journey needs:
