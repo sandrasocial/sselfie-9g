@@ -4,13 +4,18 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { useMayaChat } from "@/components/sselfie/maya/hooks/use-maya-chat"
 
+const useChatCallIds = vi.hoisted(() => [] as string[])
+
 vi.mock("@ai-sdk/react", () => ({
-  useChat: () => ({
-    messages: [],
-    sendMessage: vi.fn(),
-    status: "ready",
-    setMessages: vi.fn(),
-  }),
+  useChat: (config: { id?: string }) => {
+    useChatCallIds.push(config.id || "")
+    return {
+      messages: [],
+      sendMessage: vi.fn(),
+      status: "ready",
+      setMessages: vi.fn(),
+    }
+  },
 }))
 
 vi.mock("ai", () => ({
@@ -45,6 +50,7 @@ function HookHarness({
 describe("useMayaChat handleNewChat", () => {
   beforeEach(() => {
     vi.restoreAllMocks()
+    useChatCallIds.length = 0
     Object.defineProperty(window, "localStorage", {
       value: {
         getItem: vi.fn(() => null),
@@ -161,5 +167,25 @@ describe("useMayaChat handleNewChat", () => {
       "/api/maya/new-chat",
       expect.objectContaining({ method: "POST" }),
     )
+  })
+
+  it("isolates the client chat session id between photos and videos tabs", async () => {
+    let hookValue: HookValue | null = null
+
+    const { rerender } = render(
+      <HookHarness activeTab="photos" onReady={(value) => { hookValue = value }} />,
+    )
+
+    await waitFor(() => {
+      expect(hookValue).not.toBeNull()
+    })
+
+    expect(useChatCallIds.at(-1)).toBe("maya-chat-maya-new")
+
+    rerender(<HookHarness activeTab="videos" onReady={(value) => { hookValue = value }} />)
+
+    await waitFor(() => {
+      expect(useChatCallIds.at(-1)).toBe("maya-chat-videos-new")
+    })
   })
 })

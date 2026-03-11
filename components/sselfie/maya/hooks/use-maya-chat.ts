@@ -172,13 +172,12 @@ export function useMayaChat({
     }) as any
   }, [proMode, currentChatType, activeTab, academyPurchaseProduct, firstTimeProductUser])
 
-  // Create a unique ID for the chat session to force useChat to reset when chatId changes
-  // This ensures that when a new chat is created, all previous messages are cleared
-  // NOTE: We DON'T include currentChatType here because each tab stores its own chatId
-  // Including chatType causes useChat to reset on tab switch, which clears messages
+  // Create a unique ID for the client chat session.
+  // Each Maya tab needs its own live AI SDK session so messages do not bleed between
+  // Photos and Videos while the correct tab-specific history loads.
   const chatSessionId = useMemo(() => {
-    return `maya-chat-${chatId || 'new'}`
-  }, [chatId])
+    return `maya-chat-${currentChatType}-${chatId || "new"}`
+  }, [chatId, currentChatType])
 
   const { messages, sendMessage, status, setMessages } = useChat({
     id: chatSessionId, // Force reset when chatId or chatType changes
