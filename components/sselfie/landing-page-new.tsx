@@ -867,7 +867,7 @@ export default function LandingPageNew() {
 
       {/* Navigation Dots */}
       <div
-        className="fixed right-4 top-1/2 -translate-y-1/2 z-100 flex flex-col gap-2.5"
+        className="fixed right-4 top-1/2 -translate-y-1/2 z-[100] flex flex-col gap-2.5"
         style={{ zIndex: 100 }}
       >
         {Array.from({ length: totalScenes }).map((_, index) => (

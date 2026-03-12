@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { stripe } from "@/lib/stripe"
 import { sql } from "@/lib/db/client"
 import { withAuth } from "@/lib/auth/with-auth"
+import { buildStudioTabPath } from "@/lib/studio/tab-routing"
 
 async function handleCreatePortalSession({
   request,
@@ -104,7 +105,7 @@ async function handleCreatePortalSession({
     // Create Stripe customer portal session
     const portalSession = await stripe.billingPortal.sessions.create({
       customer: stripeCustomerId,
-      return_url: `${baseUrl}/studio?tab=settings`,
+      return_url: `${baseUrl}${buildStudioTabPath("account")}`,
       configuration: process.env.STRIPE_PORTAL_CONFIGURATION_ID,
     })
 

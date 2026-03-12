@@ -4,6 +4,7 @@ import {
   resolveStudioTab,
   resolvePostAuthRedirect,
   DEFAULT_STUDIO_AUTH_REDIRECT,
+  buildStudioTabPath,
   readStudioTabFromSearchParams,
   readStudioTabFromHash,
   type StudioTab,
@@ -84,5 +85,12 @@ describe("studio tab routing", () => {
 
   it("rejects non-relative post-auth redirects", () => {
     expect(resolvePostAuthRedirect("https://evil.example")).toBe(DEFAULT_STUDIO_AUTH_REDIRECT)
+  })
+
+  it("builds valid account routes for return flows", () => {
+    const accountRoute = buildStudioTabPath("account")
+
+    expect(accountRoute).toBe("/studio?tab=account")
+    expect(readStudioTabFromSearchParams(new URL(accountRoute, "https://sselfie.ai").searchParams)).toBe("account")
   })
 })

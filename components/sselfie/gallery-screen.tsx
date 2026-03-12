@@ -29,7 +29,8 @@ import { ToastAction } from "@/components/ui/toast"
 
 interface GalleryScreenProps {
   user: any
-  userId: string
+  userId: string | number
+  hasPaidAccess?: boolean
 }
 
 interface GeneratedVideo {
@@ -181,6 +182,7 @@ function GalleryContentEmptyState({
   onClearSearch,
   onGoToFeedPlanner,
   onGoToMaya,
+  hasPaidAccess,
 }: Readonly<{
   contentFilter: string
   searchQuery: string
@@ -188,6 +190,7 @@ function GalleryContentEmptyState({
   onClearSearch: () => void
   onGoToFeedPlanner: () => void
   onGoToMaya: () => void
+  hasPaidAccess: boolean
 }>) {
   const baseButtonClass =
     "rounded-full bg-[#c8c4bb] px-6 py-3 text-xs font-medium uppercase tracking-[0.15em] text-[#0d0c0b] transition-colors hover:bg-[#f0ede8]"
@@ -257,12 +260,12 @@ function GalleryContentEmptyState({
 
   return (
     <div className="mx-4">
-      <GalleryEmptyState onStartNow={onStartNow} />
+      <GalleryEmptyState onStartNow={onStartNow} hasPaidAccess={hasPaidAccess} />
     </div>
   )
 }
 
-export default function GalleryScreen({ user, userId: _userId }: Readonly<GalleryScreenProps>) {
+export default function GalleryScreen({ user, userId: _userId, hasPaidAccess = false }: Readonly<GalleryScreenProps>) {
   const [favorites, setFavorites] = useState<Set<string>>(new Set())
   const [lightboxImage, setLightboxImage] = useState<GalleryImage | null>(null)
   const [previewVideo, setPreviewVideo] = useState<GeneratedVideo | null>(null)
@@ -681,6 +684,7 @@ export default function GalleryScreen({ user, userId: _userId }: Readonly<Galler
             const mayaTab = document.querySelector('[data-tab="maya"]') as HTMLButtonElement
             mayaTab?.click()
           }}
+          hasPaidAccess={hasPaidAccess}
         />
       )}
 

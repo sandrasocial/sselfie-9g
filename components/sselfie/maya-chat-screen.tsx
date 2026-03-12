@@ -4776,7 +4776,7 @@ export default function MayaChatScreen({
       {/* Pro Feature: Image Upload Flow Modal (Pro Mode only - for library management) */}
       {/* Modal must be above header (z-[100]) and bottom nav (z-[70]) */}
       {hasProFeatures && showUploadFlow && (
-        <div className="fixed inset-0 z-150 bg-[rgba(13,12,11,0.80)] backdrop-blur-sm flex items-center justify-center p-4" style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        <div className="fixed inset-0 z-[150] bg-[rgba(13,12,11,0.80)] backdrop-blur-sm flex items-center justify-center p-4" style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
           <div className="bg-[rgba(28,27,25,0.96)] backdrop-blur-[50px] border border-[rgba(195,190,182,0.20)] rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
             <div className="p-4 border-b border-[rgba(195,190,182,0.15)] flex items-center justify-between">
               <h3 className="text-lg font-medium text-[#f0ede8]">Add Images to Library</h3>

@@ -17,11 +17,10 @@ export function FeedbackButton({ userId, userEmail, userName }: FeedbackButtonPr
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-32 sm:bottom-24 right-4 sm:right-6 z-40 flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 bg-stone-950 text-white rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-all duration-300 group"
+        className="fixed right-4 sm:right-6 z-40 flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 bg-stone-950 text-white rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-all duration-300 group"
         aria-label="Send feedback"
         style={{
-          // Ensure it doesn't overlap with chat input area
-          marginBottom: 'env(safe-area-inset-bottom, 0)',
+          bottom: "calc(var(--sselfie-bottom-nav-height, 96px) + max(0.75rem, env(safe-area-inset-bottom, 0px)))",
         }}
       >
         <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6 group-hover:rotate-12 transition-transform duration-300" strokeWidth={2} />

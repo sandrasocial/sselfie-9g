@@ -1204,7 +1204,11 @@ export default function SselfieApp({
                     !access.canUseGenerators ? (
                       <UpgradeOrCredits feature="Gallery" isPaidBlueprintUser={isPaidBlueprintUserForAccess} requiresMembership={true} />
                     ) : (
-                      <GalleryScreen user={user} userId={userId} />
+                      <GalleryScreen
+                        user={user}
+                        userId={userId}
+                        hasPaidAccess={access.isMember || isPaidBlueprintUserForAccess}
+                      />
                     )
                   )}
                   {activeTab === "feed-planner" && <FeedPlannerClient userId={userId.toString()} userName={userName} />}

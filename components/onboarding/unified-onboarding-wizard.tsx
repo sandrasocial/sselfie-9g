@@ -475,7 +475,7 @@ export default function UnifiedOnboardingWizard({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-100 bg-black/70 backdrop-blur-md"
+            className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-md"
             onClick={handleDismissWithAnalytics}
           />
 
@@ -484,7 +484,7 @@ export default function UnifiedOnboardingWizard({
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed inset-0 z-100 flex items-center justify-center p-4 pb-24 sm:pb-28 md:pb-32"
+            className="fixed inset-0 z-[100] flex items-center justify-center p-4 pb-24 sm:pb-28 md:pb-32"
             onClick={(e) => e.stopPropagation()}
             style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 6rem)" }}
           >

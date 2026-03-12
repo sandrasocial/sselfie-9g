@@ -1,7 +1,12 @@
 export const STUDIO_TABS = ["maya", "studio", "gallery", "feed-planner", "academy", "account"] as const
-export const DEFAULT_STUDIO_AUTH_REDIRECT = "/studio?tab=maya"
 
 export type StudioTab = (typeof STUDIO_TABS)[number]
+
+export function buildStudioTabPath(tab: StudioTab): string {
+  return `/studio?tab=${tab}`
+}
+
+export const DEFAULT_STUDIO_AUTH_REDIRECT = buildStudioTabPath("maya")
 
 function normalizeTab(value: string | null | undefined): string | null {
   if (typeof value !== "string") return null
